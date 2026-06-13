@@ -645,6 +645,7 @@ def require_semantic_control_policy(policy: dict[str, Any]) -> dict[str, Any]:
     require_layout_path(layout, "ontology_closed_loop_evidence")
     require_layout_path(layout, "ontology_review_dashboard")
     require_layout_path(layout, "ontology_owner_decision_report")
+    require_layout_path(layout, "ontology_decision_import_preview")
     require_layout_path(layout, "semantic_lint_smoke")
     boundary = require_object(policy, "authority_boundary", "semantic_control_policy")
     for field in (
@@ -658,6 +659,7 @@ def require_semantic_control_policy(policy: dict[str, Any]) -> dict[str, Any]:
         "ontology_closed_loop_evidence_is_authority",
         "ontology_review_dashboard_is_authority",
         "ontology_owner_decision_report_is_authority",
+        "ontology_decision_import_preview_is_authority",
         "prompt_agent_execution_allowed",
         "automatic_import_lock_update",
         "automatic_canonical_node_update",
@@ -1931,6 +1933,127 @@ def require_semantic_control_policy(policy: dict[str, Any]) -> dict[str, Any]:
         owner_decision_contract,
         "next_gap",
         "semantic_control_policy.ontology_owner_decision_report_contract",
+    )
+    decision_import_contract = require_object(
+        policy, "ontology_decision_import_preview_contract", "semantic_control_policy"
+    )
+    if (
+        require_string(
+            decision_import_contract,
+            "artifact_kind",
+            "semantic_control_policy.ontology_decision_import_preview_contract",
+        )
+        != "ontology_decision_import_preview"
+    ):
+        raise ValueError(
+            "semantic_control_policy.ontology_decision_import_preview_contract.artifact_kind "
+            "must be ontology_decision_import_preview"
+        )
+    if (
+        require_string(
+            decision_import_contract,
+            "source_review_dashboard_artifact_kind",
+            "semantic_control_policy.ontology_decision_import_preview_contract",
+        )
+        != "ontology_review_dashboard"
+    ):
+        raise ValueError(
+            "semantic_control_policy.ontology_decision_import_preview_contract."
+            "source_review_dashboard_artifact_kind must be ontology_review_dashboard"
+        )
+    if (
+        require_string(
+            decision_import_contract,
+            "source_owner_decision_report_artifact_kind",
+            "semantic_control_policy.ontology_decision_import_preview_contract",
+        )
+        != "ontology_owner_decision_report"
+    ):
+        raise ValueError(
+            "semantic_control_policy.ontology_decision_import_preview_contract."
+            "source_owner_decision_report_artifact_kind must be ontology_owner_decision_report"
+        )
+    decision_import_target = require_object(
+        decision_import_contract,
+        "target",
+        "semantic_control_policy.ontology_decision_import_preview_contract",
+    )
+    require_string(
+        decision_import_target,
+        "target_kind",
+        "semantic_control_policy.ontology_decision_import_preview_contract.target",
+    )
+    require_string(
+        decision_import_target,
+        "target_ref",
+        "semantic_control_policy.ontology_decision_import_preview_contract.target",
+    )
+    preview_states = set(
+        require_string_list(
+            decision_import_contract,
+            "preview_states",
+            "semantic_control_policy.ontology_decision_import_preview_contract",
+        )
+    )
+    required_preview_states = {
+        "blocked_by_semantic_gate",
+        "ready_for_operator_review",
+        "rejected_by_owner",
+        "needs_clarification",
+        "unmatched_decision",
+    }
+    missing_preview_states = sorted(required_preview_states - preview_states)
+    if missing_preview_states:
+        raise ValueError(
+            "semantic_control_policy.ontology_decision_import_preview_contract.preview_states "
+            f"missing: {', '.join(missing_preview_states)}"
+        )
+    decision_import_consumer_boundary = require_object(
+        decision_import_contract,
+        "consumer_boundary",
+        "semantic_control_policy.ontology_decision_import_preview_contract",
+    )
+    for field in ("for_specgraph_decision_import_preview", "for_specspace_review_dashboard"):
+        if (
+            require_bool(
+                decision_import_consumer_boundary,
+                field,
+                "semantic_control_policy.ontology_decision_import_preview_contract."
+                "consumer_boundary",
+            )
+            is not True
+        ):
+            raise ValueError(
+                "semantic_control_policy.ontology_decision_import_preview_contract."
+                f"consumer_boundary.{field} must be true"
+            )
+    for field in (
+        "may_execute_prompt_agent",
+        "may_write_ontology_package",
+        "may_update_ontology_lockfile",
+        "may_mutate_canonical_specs",
+        "may_mark_candidate_accepted",
+        "may_apply_preview",
+        "may_import_into_specgraph",
+        "may_close_semantic_gate",
+    ):
+        if (
+            require_bool(
+                decision_import_consumer_boundary,
+                field,
+                "semantic_control_policy.ontology_decision_import_preview_contract."
+                "consumer_boundary",
+            )
+            is not False
+        ):
+            raise ValueError(
+                "semantic_control_policy.ontology_decision_import_preview_contract."
+                f"consumer_boundary.{field} must be false"
+            )
+    require_string(
+        decision_import_contract,
+        "next_gap",
+        "semantic_control_policy.ontology_decision_import_preview_contract",
     )
     return policy
 
@@ -4356,6 +4479,325 @@ def require_ontology_owner_decision_report(
     return owner_decision_report
 
 
+def build_ontology_decision_import_preview(
+    semantic_policy: dict[str, Any],
+    *,
+    semantic_policy_path: Path,
+    dashboard: dict[str, Any],
+    owner_decision_report: dict[str, Any],
+) -> dict[str, Any]:
+    require_semantic_control_policy(semantic_policy)
+    require_ontology_review_dashboard(dashboard)
+    require_ontology_owner_decision_report(owner_decision_report)
+
+    decision_import_contract = require_object(
+        semantic_policy, "ontology_decision_import_preview_contract", "semantic_control_policy"
+    )
+    semantic_layout = require_object(
+        semantic_policy, "repository_layout", "semantic_control_policy"
+    )
+    dashboard_artifact = require_surface_output_artifact(dashboard, "ontology_review_dashboard")
+    owner_decision_report_artifact = require_surface_output_artifact(
+        owner_decision_report, "ontology_owner_decision_report"
+    )
+    dashboard_summary = require_object(dashboard, "status_summary", "dashboard")
+    dashboard_status = require_string(dashboard_summary, "status", "dashboard.status_summary")
+    preview_states = set(
+        require_string_list(
+            decision_import_contract,
+            "preview_states",
+            "semantic_control_policy.ontology_decision_import_preview_contract",
+        )
+    )
+
+    closed_loop_entries = dashboard.get("closed_loop_entries")
+    if not isinstance(closed_loop_entries, list):
+        raise ValueError("dashboard.closed_loop_entries must be a list")
+    closed_loop_by_decision_key: dict[tuple[str, str], dict[str, Any]] = {}
+    for index, raw_entry in enumerate(closed_loop_entries):
+        if not isinstance(raw_entry, dict):
+            raise ValueError(f"dashboard.closed_loop_entries[{index}] must be an object")
+        candidate_id = require_string(
+            raw_entry, "candidate_id", f"dashboard.closed_loop_entries[{index}]"
+        )
+        intake_id = require_string(
+            raw_entry, "intake_id", f"dashboard.closed_loop_entries[{index}]"
+        )
+        closed_loop_by_decision_key[(candidate_id, intake_id)] = raw_entry
+
+    raw_decisions = owner_decision_report.get("decisions")
+    if not isinstance(raw_decisions, list):
+        raise ValueError("owner_decision_report.decisions must be a list")
+    previews: list[dict[str, Any]] = []
+    for index, raw_decision in enumerate(raw_decisions):
+        if not isinstance(raw_decision, dict):
+            raise ValueError(f"owner_decision_report.decisions[{index}] must be an object")
+        context = f"owner_decision_report.decisions[{index}]"
+        decision_id = require_string(raw_decision, "decision_id", context)
+        candidate_id = require_string(raw_decision, "candidate_id", context)
+        intake_id = require_string(raw_decision, "intake_id", context)
+        decision_state = require_string(raw_decision, "decision_state", context)
+        if decision_state not in {"accepted", "rejected", "needs_clarification"}:
+            raise ValueError(f"{context}.decision_state must be supported")
+        matched_entry = closed_loop_by_decision_key.get((candidate_id, intake_id))
+        matched_evidence_id = ""
+        matched_source_intake_state = ""
+        matched_evidence_state = ""
+        required_human_action = "review_unmatched_ontology_owner_decision"
+        if matched_entry is None:
+            preview_state = "unmatched_decision"
+        else:
+            matched_evidence_id = require_string(
+                matched_entry,
+                "evidence_id",
+                f"dashboard.closed_loop_entries[{candidate_id}]",
+            )
+            matched_source_intake_state = require_string(
+                matched_entry,
+                "source_intake_state",
+                f"dashboard.closed_loop_entries[{candidate_id}]",
+            )
+            matched_evidence_state = require_string(
+                matched_entry,
+                "evidence_state",
+                f"dashboard.closed_loop_entries[{candidate_id}]",
+            )
+            if decision_state == "rejected":
+                preview_state = "rejected_by_owner"
+                required_human_action = "record_owner_rejection_without_import"
+            elif decision_state == "needs_clarification":
+                preview_state = "needs_clarification"
+                required_human_action = "request_owner_clarification"
+            elif (
+                dashboard_status == "blocked_by_semantic_gate"
+                or matched_evidence_state == "blocked_by_semantic_gate"
+            ):
+                preview_state = "blocked_by_semantic_gate"
+                required_human_action = require_string(
+                    matched_entry,
+                    "required_human_action",
+                    f"dashboard.closed_loop_entries[{candidate_id}]",
+                )
+            else:
+                preview_state = "ready_for_operator_review"
+                required_human_action = "operator_review_ontology_owner_decision"
+        if preview_state not in preview_states:
+            raise ValueError(
+                "semantic_control_policy.ontology_decision_import_preview_contract."
+                f"preview_states does not declare computed state {preview_state}"
+            )
+        import_recommended = (
+            preview_state == "ready_for_operator_review" and decision_state == "accepted"
+        )
+        previews.append(
+            {
+                "preview_id": f"ontology-decision-import-preview-{symbol_slug(decision_id)}",
+                "decision_id": decision_id,
+                "candidate_id": candidate_id,
+                "intake_id": intake_id,
+                "decision_state": decision_state,
+                "ontology_decision_ref": require_string(
+                    raw_decision, "ontology_decision_ref", context
+                ),
+                "decided_by": require_string(raw_decision, "decided_by", context),
+                "decided_at": require_string(raw_decision, "decided_at", context),
+                "reason": optional_string(raw_decision, "reason", context),
+                "accepted_ontology_delta": require_bool(
+                    raw_decision, "accepted_ontology_delta", context
+                ),
+                "matched_closed_loop_evidence_id": matched_evidence_id,
+                "matched_source_intake_state": matched_source_intake_state,
+                "matched_evidence_state": matched_evidence_state,
+                "preview_state": preview_state,
+                "required_human_action": required_human_action,
+                "import_recommended": import_recommended,
+                "imports_into_specgraph": False,
+                "closes_semantic_gate": False,
+                "mutates_canonical_specs": False,
+                "writes_ontology_package": False,
+                "updates_ontology_lockfile": False,
+            }
+        )
+
+    accepted_count = sum(1 for preview in previews if preview["decision_state"] == "accepted")
+    rejected_count = sum(1 for preview in previews if preview["decision_state"] == "rejected")
+    clarification_count = sum(
+        1 for preview in previews if preview["decision_state"] == "needs_clarification"
+    )
+    importable_count = sum(1 for preview in previews if preview["import_recommended"])
+    blocked_count = sum(
+        1 for preview in previews if preview["preview_state"] == "blocked_by_semantic_gate"
+    )
+    unmatched_count = sum(
+        1 for preview in previews if preview["preview_state"] == "unmatched_decision"
+    )
+    if not previews:
+        status = "no_decisions"
+    elif blocked_count:
+        status = "blocked_by_semantic_gate"
+    elif importable_count:
+        status = "ready_for_operator_review"
+    elif unmatched_count:
+        status = "unmatched_decision"
+    elif clarification_count:
+        status = "needs_clarification"
+    else:
+        status = "rejected_by_owner"
+
+    source_artifacts = copy_json_object(require_object(dashboard, "source_artifacts", "dashboard"))
+    source_artifacts["ontology_review_dashboard"] = dashboard_artifact
+    source_artifacts["ontology_owner_decision_report"] = owner_decision_report_artifact
+
+    return {
+        "artifact_kind": require_string(
+            decision_import_contract,
+            "artifact_kind",
+            "semantic_control_policy.ontology_decision_import_preview_contract",
+        ),
+        "schema_version": 1,
+        "proposal_id": "0115",
+        "policy_basis": semantic_policy["policy_basis"],
+        "source_policy": relative_path(semantic_policy_path),
+        "source_artifacts": source_artifacts,
+        "target": copy_json_object(
+            require_object(
+                decision_import_contract,
+                "target",
+                "semantic_control_policy.ontology_decision_import_preview_contract",
+            )
+        ),
+        "canonical_mutations_allowed": False,
+        "tracked_artifacts_written": False,
+        "decision_import_previews": previews,
+        "consumer_boundary": copy_json_object(
+            require_object(
+                decision_import_contract,
+                "consumer_boundary",
+                "semantic_control_policy.ontology_decision_import_preview_contract",
+            )
+        ),
+        "authority_boundary": copy_json_object(
+            require_object(semantic_policy, "authority_boundary", "semantic_control_policy")
+        ),
+        "summary": {
+            "status": status,
+            "preview_count": len(previews),
+            "accepted_count": accepted_count,
+            "rejected_count": rejected_count,
+            "clarification_count": clarification_count,
+            "importable_count": importable_count,
+            "blocked_count": blocked_count,
+            "unmatched_count": unmatched_count,
+            "next_gap": require_string(
+                decision_import_contract,
+                "next_gap",
+                "semantic_control_policy.ontology_decision_import_preview_contract",
+            ),
+        },
+        "output_artifact": require_layout_path(semantic_layout, "ontology_decision_import_preview"),
+    }
+
+
+def require_ontology_decision_import_preview(
+    preview: dict[str, Any],
+) -> dict[str, Any]:
+    if preview.get("artifact_kind") != "ontology_decision_import_preview":
+        raise ValueError(
+            "decision_import_preview.artifact_kind must be ontology_decision_import_preview"
+        )
+    if require_int(preview, "schema_version", "decision_import_preview") != 1:
+        raise ValueError("decision_import_preview.schema_version must be 1")
+    if require_string(preview, "proposal_id", "decision_import_preview") != "0115":
+        raise ValueError("decision_import_preview.proposal_id must be 0115")
+    if require_bool(preview, "canonical_mutations_allowed", "decision_import_preview") is not False:
+        raise ValueError("decision_import_preview.canonical_mutations_allowed must be false")
+    if require_bool(preview, "tracked_artifacts_written", "decision_import_preview") is not False:
+        raise ValueError("decision_import_preview.tracked_artifacts_written must be false")
+    require_surface_output_artifact(preview, "ontology_decision_import_preview")
+    require_object(preview, "source_artifacts", "decision_import_preview")
+    summary = require_object(preview, "summary", "decision_import_preview")
+    status = require_string(summary, "status", "decision_import_preview.summary")
+    supported_states = {
+        "blocked_by_semantic_gate",
+        "ready_for_operator_review",
+        "rejected_by_owner",
+        "needs_clarification",
+        "unmatched_decision",
+        "no_decisions",
+    }
+    if status not in supported_states:
+        raise ValueError("decision_import_preview.summary.status is not supported")
+    decision_import_previews = preview.get("decision_import_previews")
+    if not isinstance(decision_import_previews, list):
+        raise ValueError("decision_import_preview.decision_import_previews must be a list")
+    for index, raw_entry in enumerate(decision_import_previews):
+        if not isinstance(raw_entry, dict):
+            raise ValueError(
+                f"decision_import_preview.decision_import_previews[{index}] must be an object"
+            )
+        context = f"decision_import_preview.decision_import_previews[{index}]"
+        require_string(raw_entry, "preview_id", context)
+        require_string(raw_entry, "decision_id", context)
+        require_string(raw_entry, "candidate_id", context)
+        require_string(raw_entry, "intake_id", context)
+        decision_state = require_string(raw_entry, "decision_state", context)
+        if decision_state not in {"accepted", "rejected", "needs_clarification"}:
+            raise ValueError(f"{context}.decision_state must be supported")
+        preview_state = require_string(raw_entry, "preview_state", context)
+        if preview_state not in supported_states - {"no_decisions"}:
+            raise ValueError(f"{context}.preview_state must be supported")
+        import_recommended = require_bool(raw_entry, "import_recommended", context)
+        if import_recommended is not (preview_state == "ready_for_operator_review"):
+            raise ValueError(
+                f"{context}.import_recommended must match ready_for_operator_review state"
+            )
+        for field in (
+            "imports_into_specgraph",
+            "closes_semantic_gate",
+            "mutates_canonical_specs",
+            "writes_ontology_package",
+            "updates_ontology_lockfile",
+        ):
+            if require_bool(raw_entry, field, context) is not False:
+                raise ValueError(f"{context}.{field} must be false")
+    consumer_boundary = require_object(preview, "consumer_boundary", "decision_import_preview")
+    for field in ("for_specgraph_decision_import_preview", "for_specspace_review_dashboard"):
+        if (
+            require_bool(consumer_boundary, field, "decision_import_preview.consumer_boundary")
+            is not True
+        ):
+            raise ValueError(f"decision_import_preview.consumer_boundary.{field} must be true")
+    for field in (
+        "may_execute_prompt_agent",
+        "may_write_ontology_package",
+        "may_update_ontology_lockfile",
+        "may_mutate_canonical_specs",
+        "may_mark_candidate_accepted",
+        "may_apply_preview",
+        "may_import_into_specgraph",
+        "may_close_semantic_gate",
+    ):
+        if (
+            require_bool(consumer_boundary, field, "decision_import_preview.consumer_boundary")
+            is not False
+        ):
+            raise ValueError(f"decision_import_preview.consumer_boundary.{field} must be false")
+    authority_boundary = require_object(preview, "authority_boundary", "decision_import_preview")
+    for field in (
+        "ontology_decision_import_preview_is_authority",
+        "prompt_agent_execution_allowed",
+        "automatic_import_lock_update",
+        "automatic_canonical_node_update",
+        "canonical_mutations_allowed",
+    ):
+        if (
+            require_bool(authority_boundary, field, "decision_import_preview.authority_boundary")
+            is not False
+        ):
+            raise ValueError(f"decision_import_preview.authority_boundary.{field} must be false")
+    return preview
+
+
 def build_ontology_semantic_lint_smoke(
     semantic_policy: dict[str, Any],
     *,
@@ -4709,6 +5151,12 @@ def build_ontology_import_surfaces(
                 semantic_policy_path=semantic_policy_path,
                 closed_loop_evidence=surfaces["ontology_closed_loop_evidence"],
             )
+            surfaces["ontology_decision_import_preview"] = build_ontology_decision_import_preview(
+                semantic_policy,
+                semantic_policy_path=semantic_policy_path,
+                dashboard=surfaces["ontology_review_dashboard"],
+                owner_decision_report=surfaces["ontology_owner_decision_report"],
+            )
             surfaces["semantic_lint_smoke"] = build_ontology_semantic_lint_smoke(
                 semantic_policy,
                 semantic_policy_path=semantic_policy_path,
@@ -4777,6 +5225,10 @@ def write_ontology_import_surfaces(
     if "ontology_owner_decision_report" in surfaces:
         destinations["ontology_owner_decision_report"] = require_surface_output_artifact(
             surfaces["ontology_owner_decision_report"], "ontology_owner_decision_report"
+        )
+    if "ontology_decision_import_preview" in surfaces:
+        destinations["ontology_decision_import_preview"] = require_surface_output_artifact(
+            surfaces["ontology_decision_import_preview"], "ontology_decision_import_preview"
         )
     if "semantic_lint_smoke" in surfaces:
         destinations["semantic_lint_smoke"] = require_surface_output_artifact(

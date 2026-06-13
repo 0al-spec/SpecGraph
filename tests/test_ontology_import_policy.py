@@ -145,6 +145,9 @@ def test_ontology_semantic_control_policy_defines_review_only_contract() -> None
     assert policy["repository_layout"]["ontology_owner_decision_report"] == (
         "runs/ontology_owner_decision_report.json"
     )
+    assert policy["repository_layout"]["ontology_decision_import_preview"] == (
+        "runs/ontology_decision_import_preview.json"
+    )
     assert policy["repository_layout"]["ontology_delta_candidate_review_packet"] == (
         "runs/ontology_delta_candidate_review_packet.json"
     )
@@ -395,6 +398,38 @@ def test_ontology_semantic_control_policy_defines_review_only_contract() -> None
     assert owner_decision_contract["consumer_boundary"]["may_mark_candidate_accepted"] is False
     assert owner_decision_contract["consumer_boundary"]["may_import_into_specgraph"] is False
     assert owner_decision_contract["consumer_boundary"]["may_close_semantic_gate"] is False
+    decision_import_contract = policy["ontology_decision_import_preview_contract"]
+    assert decision_import_contract["artifact_kind"] == "ontology_decision_import_preview"
+    assert decision_import_contract["source_review_dashboard_artifact_kind"] == (
+        "ontology_review_dashboard"
+    )
+    assert decision_import_contract["source_owner_decision_report_artifact_kind"] == (
+        "ontology_owner_decision_report"
+    )
+    assert decision_import_contract["target"] == {
+        "target_kind": "proposal",
+        "target_ref": "SG-RFC-0115",
+    }
+    assert {
+        "blocked_by_semantic_gate",
+        "ready_for_operator_review",
+        "rejected_by_owner",
+        "needs_clarification",
+        "unmatched_decision",
+    }.issubset(set(decision_import_contract["preview_states"]))
+    assert (
+        decision_import_contract["consumer_boundary"]["for_specgraph_decision_import_preview"]
+        is True
+    )
+    assert decision_import_contract["consumer_boundary"]["for_specspace_review_dashboard"] is True
+    assert decision_import_contract["consumer_boundary"]["may_execute_prompt_agent"] is False
+    assert decision_import_contract["consumer_boundary"]["may_write_ontology_package"] is False
+    assert decision_import_contract["consumer_boundary"]["may_update_ontology_lockfile"] is False
+    assert decision_import_contract["consumer_boundary"]["may_mutate_canonical_specs"] is False
+    assert decision_import_contract["consumer_boundary"]["may_mark_candidate_accepted"] is False
+    assert decision_import_contract["consumer_boundary"]["may_apply_preview"] is False
+    assert decision_import_contract["consumer_boundary"]["may_import_into_specgraph"] is False
+    assert decision_import_contract["consumer_boundary"]["may_close_semantic_gate"] is False
     owner_decision_fixture = policy["owner_decision_fixture"]
     assert owner_decision_fixture["artifact_kind"] == "ontology_owner_decision_fixture"
     assert {decision["decision_state"] for decision in owner_decision_fixture["decisions"]} == {
@@ -419,6 +454,7 @@ def test_ontology_semantic_control_policy_defines_review_only_contract() -> None
     assert boundary["ontology_closed_loop_evidence_is_authority"] is False
     assert boundary["ontology_review_dashboard_is_authority"] is False
     assert boundary["ontology_owner_decision_report_is_authority"] is False
+    assert boundary["ontology_decision_import_preview_is_authority"] is False
     assert boundary["prompt_agent_execution_allowed"] is False
     assert boundary["automatic_canonical_node_update"] is False
 
@@ -1187,6 +1223,73 @@ def test_ontology_owner_decision_report_builds_read_only_decision_contract() -> 
     assert report["authority_boundary"]["ontology_owner_decision_report_is_authority"] is False
 
 
+def test_ontology_decision_import_preview_builds_read_only_preview() -> None:
+    module = load_ontology_imports_module()
+
+    surfaces = module.build_ontology_import_surfaces(FIXTURE)
+
+    preview = surfaces["ontology_decision_import_preview"]
+    assert preview["artifact_kind"] == "ontology_decision_import_preview"
+    assert preview["proposal_id"] == "0115"
+    assert preview["target"] == {
+        "target_kind": "proposal",
+        "target_ref": "SG-RFC-0115",
+    }
+    assert preview["source_artifacts"]["ontology_review_dashboard"] == (
+        "runs/ontology_review_dashboard.json"
+    )
+    assert preview["source_artifacts"]["ontology_owner_decision_report"] == (
+        "runs/ontology_owner_decision_report.json"
+    )
+    assert preview["canonical_mutations_allowed"] is False
+    assert preview["tracked_artifacts_written"] is False
+    assert preview["summary"] == {
+        "status": "blocked_by_semantic_gate",
+        "preview_count": 2,
+        "accepted_count": 1,
+        "rejected_count": 1,
+        "clarification_count": 0,
+        "importable_count": 0,
+        "blocked_count": 1,
+        "unmatched_count": 1,
+        "next_gap": "build_specspace_owner_decision_review_surface",
+    }
+
+    previews = {entry["decision_id"]: entry for entry in preview["decision_import_previews"]}
+    accepted = previews["ontology-owner-decision-accept-casfunction"]
+    assert accepted["candidate_id"] == "ontology-delta-candidate-examcalc-casfunction"
+    assert accepted["decision_state"] == "accepted"
+    assert accepted["preview_state"] == "blocked_by_semantic_gate"
+    assert accepted["matched_closed_loop_evidence_id"] == (
+        "ontology-closed-loop-evidence-ontology-delta-candidate-examcalc-casfunction"
+    )
+    assert accepted["matched_source_intake_state"] == "blocked_by_semantic_gate"
+    assert accepted["required_human_action"] == "resolve_blocking_ontology_semantic_findings"
+    assert accepted["import_recommended"] is False
+    assert accepted["imports_into_specgraph"] is False
+    assert accepted["closes_semantic_gate"] is False
+    assert accepted["mutates_canonical_specs"] is False
+    assert accepted["writes_ontology_package"] is False
+    assert accepted["updates_ontology_lockfile"] is False
+    rejected = previews["ontology-owner-decision-reject-legacyterm"]
+    assert rejected["decision_state"] == "rejected"
+    assert rejected["preview_state"] == "unmatched_decision"
+    assert rejected["matched_closed_loop_evidence_id"] == ""
+    assert rejected["required_human_action"] == "review_unmatched_ontology_owner_decision"
+    assert rejected["import_recommended"] is False
+    assert preview["consumer_boundary"]["for_specgraph_decision_import_preview"] is True
+    assert preview["consumer_boundary"]["for_specspace_review_dashboard"] is True
+    assert preview["consumer_boundary"]["may_execute_prompt_agent"] is False
+    assert preview["consumer_boundary"]["may_write_ontology_package"] is False
+    assert preview["consumer_boundary"]["may_update_ontology_lockfile"] is False
+    assert preview["consumer_boundary"]["may_mutate_canonical_specs"] is False
+    assert preview["consumer_boundary"]["may_mark_candidate_accepted"] is False
+    assert preview["consumer_boundary"]["may_apply_preview"] is False
+    assert preview["consumer_boundary"]["may_import_into_specgraph"] is False
+    assert preview["consumer_boundary"]["may_close_semantic_gate"] is False
+    assert preview["authority_boundary"]["ontology_decision_import_preview_is_authority"] is False
+
+
 def test_ontology_semantic_review_surface_rejects_authority_expansion(
     tmp_path: Path,
 ) -> None:
@@ -1489,6 +1592,47 @@ def test_ontology_owner_decision_report_rejects_inconsistent_accepted_flag(
         )
 
 
+def test_ontology_decision_import_preview_rejects_policy_apply_authority(
+    tmp_path: Path,
+) -> None:
+    module = load_ontology_imports_module()
+    module.ROOT = tmp_path
+    fixture_path = write_temp_fixture(tmp_path, load_fixture_payload())
+    policy_path = write_temp_policy(tmp_path)
+    semantic_policy = json.loads(
+        (ROOT / "tools" / "ontology_semantic_control_policy.json").read_text()
+    )
+    semantic_policy["ontology_decision_import_preview_contract"]["consumer_boundary"][
+        "may_apply_preview"
+    ] = True
+    semantic_policy_path = write_temp_semantic_control_policy(tmp_path, semantic_policy)
+
+    with pytest.raises(ValueError, match="may_apply_preview"):
+        module.build_ontology_import_surfaces(
+            fixture_path,
+            policy_path=policy_path,
+            semantic_policy_path=semantic_policy_path,
+        )
+
+
+def test_ontology_decision_import_preview_rejects_source_import_authority() -> None:
+    module = load_ontology_imports_module()
+    semantic_policy = json.loads(
+        (ROOT / "tools" / "ontology_semantic_control_policy.json").read_text()
+    )
+    surfaces = module.build_ontology_import_surfaces(FIXTURE)
+    owner_decision_report = json.loads(json.dumps(surfaces["ontology_owner_decision_report"]))
+    owner_decision_report["decisions"][0]["imports_into_specgraph"] = True
+
+    with pytest.raises(ValueError, match=r"decisions\[0\]\.imports_into_specgraph"):
+        module.build_ontology_decision_import_preview(
+            semantic_policy,
+            semantic_policy_path=ROOT / "tools" / "ontology_semantic_control_policy.json",
+            dashboard=surfaces["ontology_review_dashboard"],
+            owner_decision_report=owner_decision_report,
+        )
+
+
 def test_ontology_delta_candidate_review_packet_uses_policy_review_action_order(
     tmp_path: Path,
 ) -> None:
@@ -1598,6 +1742,9 @@ def test_ontology_semantic_write_uses_surface_output_artifact(tmp_path: Path) ->
     semantic_policy["repository_layout"]["ontology_owner_decision_report"] = (
         "runs/custom_ontology_owner_decision_report.json"
     )
+    semantic_policy["repository_layout"]["ontology_decision_import_preview"] = (
+        "runs/custom_ontology_decision_import_preview.json"
+    )
     semantic_policy["repository_layout"]["semantic_lint_smoke"] = (
         "runs/custom_semantic_lint_smoke.json"
     )
@@ -1635,6 +1782,7 @@ def test_ontology_semantic_write_uses_surface_output_artifact(tmp_path: Path) ->
     assert "runs/custom_closed_loop_evidence.json" in written_paths
     assert "runs/custom_ontology_review_dashboard.json" in written_paths
     assert "runs/custom_ontology_owner_decision_report.json" in written_paths
+    assert "runs/custom_ontology_decision_import_preview.json" in written_paths
     assert "runs/custom_semantic_lint_smoke.json" in written_paths
     assert not (tmp_path / "runs" / "ontology_delta_candidate_review_packet.json").exists()
     assert not (tmp_path / "runs" / "ontology_semantic_context_pack.json").exists()
@@ -1645,6 +1793,7 @@ def test_ontology_semantic_write_uses_surface_output_artifact(tmp_path: Path) ->
     assert not (tmp_path / "runs" / "ontology_closed_loop_evidence.json").exists()
     assert not (tmp_path / "runs" / "ontology_review_dashboard.json").exists()
     assert not (tmp_path / "runs" / "ontology_owner_decision_report.json").exists()
+    assert not (tmp_path / "runs" / "ontology_decision_import_preview.json").exists()
     assert not (tmp_path / "runs" / "ontology_semantic_lint_smoke.json").exists()
 
 
@@ -1816,6 +1965,7 @@ def test_make_ontology_imports_writes_declared_surfaces() -> None:
         "runs/ontology_closed_loop_evidence.json": "ontology_closed_loop_evidence",
         "runs/ontology_review_dashboard.json": "ontology_review_dashboard",
         "runs/ontology_owner_decision_report.json": "ontology_owner_decision_report",
+        "runs/ontology_decision_import_preview.json": "ontology_decision_import_preview",
         "runs/ontology_semantic_lint_smoke.json": "ontology_semantic_lint_smoke",
     }
     for relative_path, artifact_kind in expected.items():
@@ -1831,6 +1981,7 @@ def test_make_ontology_imports_writes_declared_surfaces() -> None:
             "ontology_closed_loop_evidence": "0111",
             "ontology_review_dashboard": "0113",
             "ontology_owner_decision_report": "0114",
+            "ontology_decision_import_preview": "0115",
             "ontology_semantic_lint_smoke": "0103",
         }.get(artifact_kind, "0060")
         assert payload["proposal_id"] == expected_proposal_id
@@ -2522,4 +2673,43 @@ def test_proposal_0111_runtime_registry_tracks_closed_loop_evidence() -> None:
     assert (
         "docs/supervisor_manual.md",
         "runs/ontology_closed_loop_evidence.json",
+    ) in observation_markers
+
+
+def test_proposal_0115_runtime_registry_tracks_decision_import_preview() -> None:
+    registry = json.loads((ROOT / "tools" / "proposal_runtime_registry.json").read_text())
+    entries = {entry["proposal_id"]: entry for entry in registry if isinstance(entry, dict)}
+    proposal = entries["0115"]
+
+    runtime_markers = {(item["path"], item["pattern"]) for item in proposal["runtime_markers"]}
+    validation_markers = {
+        (item["path"], item["pattern"]) for item in proposal["validation_markers"]
+    }
+    observation_markers = {
+        (item["path"], item["pattern"]) for item in proposal["observation_markers"]
+    }
+
+    assert (
+        "tools/ontology_semantic_control_policy.json",
+        "ontology_decision_import_preview_contract",
+    ) in runtime_markers
+    assert (
+        "tools/ontology_imports.py",
+        "def build_ontology_decision_import_preview(",
+    ) in runtime_markers
+    assert (
+        "tools/ontology_imports.py",
+        "def require_ontology_decision_import_preview(",
+    ) in runtime_markers
+    assert (
+        "tests/test_ontology_import_policy.py",
+        "def test_ontology_decision_import_preview_builds_read_only_preview(",
+    ) in validation_markers
+    assert (
+        "tools/README.md",
+        "runs/ontology_decision_import_preview.json",
+    ) in observation_markers
+    assert (
+        "docs/supervisor_manual.md",
+        "runs/ontology_decision_import_preview.json",
     ) in observation_markers

@@ -1650,6 +1650,10 @@ authoritative.
   - typed read-only Ontology owner decision report carrying accepted/rejected
     decision evidence for later import previews without closing gates or
     mutating canonical specs
+- `runs/ontology_decision_import_preview.json`
+  - read-only preview that matches Ontology owner decisions to closed-loop
+    evidence and shows operator-review/import readiness without applying those
+    decisions or mutating canonical specs
 
 ### Queue and proposal surfaces
 
