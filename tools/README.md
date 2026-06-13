@@ -184,6 +184,12 @@ Supervisor modes:
   a reviewable packet that requires human/operator review without creating
   proposals, applying patches, mutating canonical specs, or publishing local
   artifacts.
+- `--build-local-operator-executor-analysis-report-review-outcome`: build
+  local-only `runs/local_operator_executor_analysis_report_review_outcome.json`
+  by consuming a human-review-ready `analysis_report` review packet and the
+  `executor_analysis_report_consumption_policy`, preserving operator review
+  evidence without creating proposal drafts, applying patches, mutating
+  canonical specs, changing proposal status, or publishing local artifacts.
 - `--build-local-operator-executor-proposal-draft-candidate`: build local-only
   `runs/local_operator_executor_proposal_draft_candidate.json` by consuming a
   valid `proposal_draft` review packet and the
@@ -595,6 +601,12 @@ Key derived artifacts:
   preserving findings/evidence as review input while requiring human/operator
   review and forbidding canonical mutation, proposal status mutation, patch
   application, gap closure, and public static publication
+- `runs/local_operator_executor_analysis_report_review_outcome.json`:
+  local-only outcome built from a valid `analysis_report` review packet and the
+  analysis report consumption policy, preserving sanitized findings/evidence as
+  operator review input while forbidding proposal draft candidate production,
+  canonical mutation, proposal status mutation, patch application, gap closure,
+  and public static publication
 - `runs/local_operator_executor_proposal_draft_candidate.json`: local-only
   proposal draft candidate built from a valid `proposal_draft` review packet,
   requiring explicit human promotion into the proposal lane while forbidding
@@ -629,6 +641,10 @@ Key derived artifacts:
   production, forbidden effects, authority expansion, direct canonical
   mutation, patch application, gap closure, proposal status mutation, and static
   publication
+- `executor_analysis_report_review_outcome_contract`: local-only outcome
+  contract for turning a valid `analysis_report` review packet into operator
+  review input while keeping executor report, review packet, and outcome
+  non-authoritative
 - `proposal_draft_candidate_promotion_policy`: policy-only surface that allows
   only valid local proposal draft candidates plus explicit human authorization
   to request a future promotion packet, while rejecting direct proposal markdown

@@ -27145,6 +27145,12 @@ def test_supervisor_executor_adapter_policy_declares_request_report_contract() -
     assert policy["repository_layout"]["local_operator_report_review_packet_artifact"] == (
         "runs/local_operator_executor_report_review_packet.json"
     )
+    analysis_outcome_artifact = policy["repository_layout"][
+        "local_operator_analysis_report_review_outcome_artifact"
+    ]
+    assert analysis_outcome_artifact == (
+        "runs/local_operator_executor_analysis_report_review_outcome.json"
+    )
     assert policy["index_contract"]["artifact_kind"] == "supervisor_executor_adapter_index"
     assert "entries" in policy["index_contract"]["stable_fields"]
     assert "passport_diagnostics" in policy["index_contract"]["stable_fields"]
@@ -27280,6 +27286,34 @@ def test_supervisor_executor_adapter_policy_declares_request_report_contract() -
     assert analysis_policy["authority_boundary"]["canonical_mutations_allowed"] is False
     assert analysis_policy["authority_boundary"]["proposal_status_mutations_allowed"] is False
     assert analysis_policy["next_gap"] == "build_executor_analysis_report_review_outcome"
+    outcome_contract = policy["executor_analysis_report_review_outcome_contract"]
+    assert outcome_contract["artifact_kind"] == (
+        "local_operator_executor_analysis_report_review_outcome"
+    )
+    assert outcome_contract["source_review_packet_artifact"] == (
+        "runs/local_operator_executor_report_review_packet.json"
+    )
+    assert outcome_contract["source_report_artifact"] == (
+        "runs/local_operator_executor_report.json"
+    )
+    assert outcome_contract["source_policy_artifact_kind"] == (
+        "executor_analysis_report_consumption_policy"
+    )
+    assert outcome_contract["local_only"] is True
+    assert outcome_contract["outcome_kind"] == "analysis_report_review_outcome"
+    assert outcome_contract["consumer"] == "analysis_report_reviewer"
+    outcome_transformation = outcome_contract["transformation"]
+    assert outcome_transformation == "review_packet_to_analysis_report_review_outcome"
+    assert outcome_contract["requested_effects"] == ["analysis_report_review_outcome"]
+    assert "ready_for_operator_review" in outcome_contract["status_values"]
+    assert "source_report_kind_is_analysis_report" in outcome_contract["check_ids"]
+    assert outcome_contract["authority_boundary"]["executor_report_is_authority"] is False
+    assert outcome_contract["authority_boundary"]["review_packet_is_authority"] is False
+    assert outcome_contract["authority_boundary"]["outcome_is_authority"] is False
+    assert outcome_contract["authority_boundary"]["canonical_mutations_allowed"] is False
+    assert outcome_contract["authority_boundary"]["proposal_draft_candidate_allowed"] is False
+    assert outcome_contract["privacy_boundary"]["public_static_publish"] is False
+    assert outcome_contract["next_gap"] == "define_executor_analysis_report_followup_policy"
     promotion_policy = policy["proposal_draft_candidate_promotion_policy"]
     assert promotion_policy["artifact_kind"] == "proposal_draft_candidate_promotion_policy"
     assert promotion_policy["source_candidate_artifact"] == (
@@ -29963,6 +29997,7 @@ def test_validate_executor_analysis_report_consumption_request_accepts_analysis_
         "source_review_packet_valid": True,
         "source_review_packet_status": "ready_for_review",
         "source_review_state": "ready_for_human_review",
+        "source_report_status": "valid_report",
         "source_report_kind": "analysis_report",
         "next_gap": "build_executor_analysis_report_review_outcome",
     }
@@ -30071,6 +30106,262 @@ def test_validate_executor_analysis_report_consumption_request_rejects_authority
     assert any(
         finding["code"] == "unexpected_analysis_report_authority_boundary_field"
         and finding["field"] == "authority_boundary.canonical_fact_assertions_allowed"
+        for finding in validation["findings"]
+    )
+
+
+def test_build_local_operator_executor_analysis_report_review_outcome_from_valid_packet(
+    supervisor_module: object,
+) -> None:
+    report = supervisor_module.default_local_operator_executor_report_sample()
+    report["report"]["findings"] = [
+        {"code": "advisory_gap", "message": "Review bounded executor follow-up policy."}
+    ]
+    packet = supervisor_module.build_local_operator_executor_report_review_packet(report)
+
+    outcome = supervisor_module.build_local_operator_executor_analysis_report_review_outcome(packet)
+
+    assert outcome["artifact_kind"] == (
+        supervisor_module.LOCAL_OPERATOR_EXECUTOR_ANALYSIS_REPORT_REVIEW_OUTCOME_ARTIFACT_KIND
+    )
+    assert outcome["local_only"] is True
+    assert outcome["source_review_packet_artifact"] == (
+        "runs/local_operator_executor_report_review_packet.json"
+    )
+    assert outcome["source_report_artifact"] == "runs/local_operator_executor_report.json"
+    assert outcome["outcome_kind"] == "analysis_report_review_outcome"
+    assert outcome["summary"] == {
+        "status": "ready_for_operator_review",
+        "report_kind": "analysis_report",
+        "producer_kind": "coding_agent",
+        "authority_level": "review_only",
+        "human_review_required": True,
+        "canonical_mutations_allowed": False,
+        "proposal_draft_candidate_allowed": False,
+        "next_gap": "define_executor_analysis_report_followup_policy",
+    }
+    assert outcome["analysis_review_outcome"]["outcome_state"] == "ready_for_operator_review"
+    assert outcome["analysis_review_outcome"]["source_report_kind"] == "analysis_report"
+    assert outcome["analysis_review_outcome"]["operator_decision_required"] is True
+    assert outcome["analysis_review_outcome"]["outcome_is_authority"] is False
+    assert outcome["analysis_review_outcome"]["findings"] == report["report"]["findings"]
+    assert outcome["analysis_review_outcome"]["evidence_refs"] == [
+        "runs/local_operator_executor_task_smoke.json"
+    ]
+    assert outcome["analysis_consumption_validation"]["valid"] is True
+    assert outcome["source_review_packet_validation"]["valid"] is True
+    assert outcome["outcome_validation"]["valid"] is True
+    assert {check["check_id"]: check["status"] for check in outcome["checks"]} == {
+        "source_review_packet_present": "passed",
+        "source_review_packet_valid": "passed",
+        "analysis_consumption_policy_allows_outcome": "passed",
+        "source_report_kind_is_analysis_report": "passed",
+        "authority_boundary_preserved": "passed",
+        "privacy_boundary_preserved": "passed",
+        "outcome_contract_valid": "passed",
+    }
+    validation = supervisor_module.validate_local_operator_executor_analysis_report_review_outcome(
+        outcome
+    )
+    assert validation["valid"] is True
+    dumped = json.dumps(outcome, sort_keys=True)
+    assert "/Users/" not in dumped
+    assert "raw_stdout" not in dumped
+    assert "raw_stderr" not in dumped
+    assert "raw response" not in dumped.lower()
+
+
+def test_build_local_operator_executor_analysis_report_review_outcome_blocks_missing_packet(
+    supervisor_module: object,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setattr(
+        supervisor_module,
+        "load_local_operator_executor_report_review_packet_artifact",
+        lambda: None,
+    )
+
+    outcome = supervisor_module.build_local_operator_executor_analysis_report_review_outcome()
+
+    assert outcome["summary"]["status"] == "blocked_missing_review_packet"
+    assert outcome["summary"]["next_gap"] == "run_executor_report_review_packet_until_ready"
+    assert outcome["analysis_review_outcome"]["outcome_state"] == "blocked"
+    checks = {check["check_id"]: check["status"] for check in outcome["checks"]}
+    assert checks["source_review_packet_present"] == "missing"
+    assert checks["analysis_consumption_policy_allows_outcome"] == "failed"
+
+
+def test_build_local_operator_executor_analysis_report_review_outcome_blocks_proposal_packet(
+    supervisor_module: object,
+) -> None:
+    report = supervisor_module.default_local_operator_executor_report_sample(
+        report_kind="proposal_draft"
+    )
+    packet = supervisor_module.build_local_operator_executor_report_review_packet(report)
+
+    outcome = supervisor_module.build_local_operator_executor_analysis_report_review_outcome(packet)
+
+    assert outcome["summary"]["status"] == "blocked_consumption_policy"
+    assert outcome["summary"]["next_gap"] == "repair_executor_analysis_report_consumption_policy"
+    assert outcome["analysis_review_outcome"]["source_report_kind"] == "proposal_draft"
+    assert outcome["analysis_review_outcome"]["findings"] == []
+    assert any(
+        finding["code"] == "analysis_source_review_packet_report_kind_not_allowed"
+        for finding in outcome["analysis_consumption_validation"]["findings"]
+    )
+
+
+def test_build_local_operator_executor_analysis_report_review_outcome_blocks_authority_expansion(
+    supervisor_module: object,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    packet = supervisor_module.build_local_operator_executor_report_review_packet(
+        supervisor_module.default_local_operator_executor_report_sample()
+    )
+    original_default_request = (
+        supervisor_module.default_executor_analysis_report_consumption_request
+    )
+
+    def authority_expanding_request(**kwargs: object) -> dict[str, object]:
+        request = original_default_request(**kwargs)
+        request["authority_boundary"]["review_packet_is_authority"] = True
+        request["authority_boundary"]["canonical_mutations_allowed"] = True
+        return request
+
+    monkeypatch.setattr(
+        supervisor_module,
+        "default_executor_analysis_report_consumption_request",
+        authority_expanding_request,
+    )
+
+    outcome = supervisor_module.build_local_operator_executor_analysis_report_review_outcome(packet)
+
+    assert outcome["summary"]["status"] == "blocked_authority_boundary"
+    assert any(
+        finding["code"] == "invalid_analysis_report_authority_boundary"
+        for finding in outcome["analysis_consumption_validation"]["findings"]
+    )
+    checks = {check["check_id"]: check["status"] for check in outcome["checks"]}
+    assert checks["authority_boundary_preserved"] == "failed"
+
+
+def test_build_local_operator_executor_analysis_report_review_outcome_blocks_privacy_leakage(
+    supervisor_module: object,
+) -> None:
+    packet = supervisor_module.build_local_operator_executor_report_review_packet(
+        supervisor_module.default_local_operator_executor_report_sample()
+    )
+    packet["review_packet"]["findings"] = [{"message": "see /Users/egor/private"}]
+
+    outcome = supervisor_module.build_local_operator_executor_analysis_report_review_outcome(packet)
+
+    assert outcome["summary"]["status"] == "blocked_invalid_review_packet"
+    assert outcome["analysis_review_outcome"]["findings"] == []
+    dumped = json.dumps(outcome, sort_keys=True)
+    assert "/Users/egor/private" not in dumped
+    assert any(
+        finding["code"] == "machine_local_path_persisted"
+        for finding in outcome["analysis_consumption_validation"]["findings"]
+    )
+
+
+def test_build_local_operator_executor_analysis_report_review_outcome_rejects_status_spoof(
+    supervisor_module: object,
+) -> None:
+    packet = supervisor_module.build_local_operator_executor_report_review_packet(
+        supervisor_module.default_local_operator_executor_report_sample()
+    )
+    packet["review_packet"]["source_report_status"] = "invalid_report"
+
+    outcome = supervisor_module.build_local_operator_executor_analysis_report_review_outcome(packet)
+
+    assert outcome["summary"]["status"] == "blocked_invalid_review_packet"
+    assert outcome["analysis_review_outcome"]["source_report_status"] == "valid_report"
+    assert any(
+        finding["code"] == "analysis_source_review_packet_source_report_status_mismatch"
+        for finding in outcome["analysis_consumption_validation"]["findings"]
+    )
+
+
+def test_validate_local_operator_executor_analysis_report_review_outcome_rejects_authority(
+    supervisor_module: object,
+) -> None:
+    packet = supervisor_module.build_local_operator_executor_report_review_packet(
+        supervisor_module.default_local_operator_executor_report_sample()
+    )
+    outcome = supervisor_module.build_local_operator_executor_analysis_report_review_outcome(packet)
+    outcome["summary"]["canonical_mutations_allowed"] = True
+    outcome["summary"]["proposal_draft_candidate_allowed"] = True
+    outcome["authority_boundary"]["outcome_is_authority"] = True
+
+    validation = supervisor_module.validate_local_operator_executor_analysis_report_review_outcome(
+        outcome
+    )
+
+    assert validation["valid"] is False
+    finding_codes = {finding["code"] for finding in validation["findings"]}
+    assert "analysis_report_review_outcome_allows_canonical_mutation" in finding_codes
+    assert "analysis_report_review_outcome_allows_proposal_draft_candidate" in finding_codes
+    assert "invalid_analysis_report_review_outcome_authority_boundary" in finding_codes
+
+
+def test_validate_local_operator_executor_analysis_report_review_outcome_requires_checks(
+    supervisor_module: object,
+) -> None:
+    packet = supervisor_module.build_local_operator_executor_report_review_packet(
+        supervisor_module.default_local_operator_executor_report_sample()
+    )
+    outcome = supervisor_module.build_local_operator_executor_analysis_report_review_outcome(packet)
+    outcome["checks"] = []
+
+    validation = supervisor_module.validate_local_operator_executor_analysis_report_review_outcome(
+        outcome
+    )
+
+    assert validation["valid"] is False
+    assert any(
+        finding["code"] == "missing_analysis_report_review_outcome_check"
+        for finding in validation["findings"]
+    )
+
+
+def test_validate_local_operator_executor_analysis_report_review_outcome_rejects_ready_wrong_kind(
+    supervisor_module: object,
+) -> None:
+    packet = supervisor_module.build_local_operator_executor_report_review_packet(
+        supervisor_module.default_local_operator_executor_report_sample()
+    )
+    outcome = supervisor_module.build_local_operator_executor_analysis_report_review_outcome(packet)
+    outcome["summary"]["report_kind"] = "proposal_draft"
+    outcome["analysis_review_outcome"]["source_report_kind"] = "proposal_draft"
+
+    validation = supervisor_module.validate_local_operator_executor_analysis_report_review_outcome(
+        outcome
+    )
+
+    assert validation["valid"] is False
+    finding_codes = {finding["code"] for finding in validation["findings"]}
+    assert "analysis_report_review_outcome_ready_report_kind_invalid" in finding_codes
+    assert "analysis_report_review_outcome_ready_source_kind_invalid" in finding_codes
+
+
+def test_validate_local_operator_executor_analysis_report_review_outcome_rejects_state_mismatch(
+    supervisor_module: object,
+) -> None:
+    packet = supervisor_module.build_local_operator_executor_report_review_packet(
+        supervisor_module.default_local_operator_executor_report_sample()
+    )
+    outcome = supervisor_module.build_local_operator_executor_analysis_report_review_outcome(packet)
+    outcome["summary"]["status"] = "blocked_consumption_policy"
+    outcome["analysis_review_outcome"]["outcome_state"] = "ready_for_operator_review"
+
+    validation = supervisor_module.validate_local_operator_executor_analysis_report_review_outcome(
+        outcome
+    )
+
+    assert validation["valid"] is False
+    assert any(
+        finding["code"] == "analysis_report_review_outcome_state_mismatch"
         for finding in validation["findings"]
     )
 
@@ -32152,6 +32443,50 @@ def test_main_builds_local_operator_executor_report_review_packet_as_standalone_
         )
     )
     assert artifact["summary"] == {"status": "ready_for_review"}
+
+
+def test_main_builds_local_operator_executor_analysis_report_review_outcome_as_standalone_command(
+    supervisor_module: object,
+    repo_fixture: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    ready_projection = {
+        "named_filters": {"ready_for_operator_review": ["coding_agent"]},
+    }
+    monkeypatch.setattr(
+        supervisor_module,
+        "build_local_operator_executor_analysis_report_review_outcome",
+        lambda: {
+            "artifact_kind": (
+                supervisor_module.LOCAL_OPERATOR_EXECUTOR_ANALYSIS_REPORT_REVIEW_OUTCOME_ARTIFACT_KIND
+            ),
+            "schema_version": (
+                supervisor_module.LOCAL_OPERATOR_EXECUTOR_ANALYSIS_REPORT_REVIEW_OUTCOME_SCHEMA_VERSION
+            ),
+            "local_only": True,
+            "summary": {"status": "ready_for_operator_review"},
+            "analysis_review_outcome": {"outcome_state": "ready_for_operator_review"},
+            "checks": [],
+            "viewer_projection": ready_projection,
+        },
+    )
+
+    exit_code = supervisor_module.main(
+        build_local_operator_executor_analysis_report_review_outcome_mode=True
+    )
+
+    assert exit_code == 0
+    outcome = json.loads(capsys.readouterr().out)
+    assert outcome["artifact_kind"] == (
+        supervisor_module.LOCAL_OPERATOR_EXECUTOR_ANALYSIS_REPORT_REVIEW_OUTCOME_ARTIFACT_KIND
+    )
+    artifact = json.loads(
+        (
+            repo_fixture / "runs" / "local_operator_executor_analysis_report_review_outcome.json"
+        ).read_text(encoding="utf-8")
+    )
+    assert artifact["summary"] == {"status": "ready_for_operator_review"}
 
 
 def test_main_builds_local_operator_executor_proposal_draft_candidate_as_standalone_command(
