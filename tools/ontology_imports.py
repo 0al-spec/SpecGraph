@@ -641,6 +641,7 @@ def require_semantic_control_policy(policy: dict[str, Any]) -> dict[str, Any]:
     require_layout_path(layout, "semantic_lint_report")
     require_layout_path(layout, "semantic_review_surface")
     require_layout_path(layout, "supervisor_semantic_gate")
+    require_layout_path(layout, "ontology_delta_draft_intake")
     require_layout_path(layout, "semantic_lint_smoke")
     boundary = require_object(policy, "authority_boundary", "semantic_control_policy")
     for field in (
@@ -650,6 +651,7 @@ def require_semantic_control_policy(policy: dict[str, Any]) -> dict[str, Any]:
         "ontology_delta_candidate_is_authority",
         "semantic_review_surface_is_authority",
         "supervisor_semantic_gate_is_authority",
+        "ontology_delta_draft_intake_is_authority",
         "prompt_agent_execution_allowed",
         "automatic_import_lock_update",
         "automatic_canonical_node_update",
@@ -1326,6 +1328,158 @@ def require_semantic_control_policy(policy: dict[str, Any]) -> dict[str, Any]:
         supervisor_gate_contract,
         "next_gap",
         "semantic_control_policy.supervisor_semantic_gate_contract",
+    )
+    draft_intake_contract = require_object(
+        policy, "ontology_delta_draft_intake_contract", "semantic_control_policy"
+    )
+    if (
+        require_string(
+            draft_intake_contract,
+            "artifact_kind",
+            "semantic_control_policy.ontology_delta_draft_intake_contract",
+        )
+        != "ontology_delta_draft_intake"
+    ):
+        raise ValueError(
+            "semantic_control_policy.ontology_delta_draft_intake_contract.artifact_kind "
+            "must be ontology_delta_draft_intake"
+        )
+    expected_draft_sources = {
+        "source_supervisor_semantic_gate_artifact_kind": "ontology_supervisor_semantic_gate",
+        "source_delta_candidate_review_packet_artifact_kind": (
+            "ontology_delta_candidate_review_packet"
+        ),
+    }
+    for field, expected in expected_draft_sources.items():
+        if (
+            require_string(
+                draft_intake_contract,
+                field,
+                "semantic_control_policy.ontology_delta_draft_intake_contract",
+            )
+            != expected
+        ):
+            raise ValueError(
+                "semantic_control_policy.ontology_delta_draft_intake_contract."
+                f"{field} must be {expected}"
+            )
+    draft_intake_target = require_object(
+        draft_intake_contract,
+        "target",
+        "semantic_control_policy.ontology_delta_draft_intake_contract",
+    )
+    require_string(
+        draft_intake_target,
+        "target_kind",
+        "semantic_control_policy.ontology_delta_draft_intake_contract.target",
+    )
+    require_string(
+        draft_intake_target,
+        "target_ref",
+        "semantic_control_policy.ontology_delta_draft_intake_contract.target",
+    )
+    require_string(
+        draft_intake_contract,
+        "candidate_source",
+        "semantic_control_policy.ontology_delta_draft_intake_contract",
+    )
+    allowed_intake_states = set(
+        require_string_list(
+            draft_intake_contract,
+            "allowed_intake_states",
+            "semantic_control_policy.ontology_delta_draft_intake_contract",
+        )
+    )
+    required_intake_states = {
+        "blocked_by_semantic_gate",
+        "awaiting_ontology_owner_review",
+        "no_candidates",
+    }
+    missing_intake_states = sorted(required_intake_states - allowed_intake_states)
+    if missing_intake_states:
+        raise ValueError(
+            "semantic_control_policy.ontology_delta_draft_intake_contract."
+            f"allowed_intake_states missing: {', '.join(missing_intake_states)}"
+        )
+    required_gate_states = set(
+        require_string_list(
+            draft_intake_contract,
+            "required_gate_states",
+            "semantic_control_policy.ontology_delta_draft_intake_contract",
+        )
+    )
+    missing_required_gate_states = sorted(
+        {"blocked", "review_pending", "clear"} - required_gate_states
+    )
+    if missing_required_gate_states:
+        raise ValueError(
+            "semantic_control_policy.ontology_delta_draft_intake_contract."
+            f"required_gate_states missing: {', '.join(missing_required_gate_states)}"
+        )
+    blocked_gate_states = set(
+        require_string_list(
+            draft_intake_contract,
+            "blocked_gate_states",
+            "semantic_control_policy.ontology_delta_draft_intake_contract",
+        )
+    )
+    if "blocked" not in blocked_gate_states:
+        raise ValueError(
+            "semantic_control_policy.ontology_delta_draft_intake_contract."
+            "blocked_gate_states must include blocked"
+        )
+    review_required_candidate_states = set(
+        require_string_list(
+            draft_intake_contract,
+            "review_required_candidate_states",
+            "semantic_control_policy.ontology_delta_draft_intake_contract",
+        )
+    )
+    if "needs_ontology_owner_review" not in review_required_candidate_states:
+        raise ValueError(
+            "semantic_control_policy.ontology_delta_draft_intake_contract."
+            "review_required_candidate_states must include needs_ontology_owner_review"
+        )
+    draft_intake_consumer_boundary = require_object(
+        draft_intake_contract,
+        "consumer_boundary",
+        "semantic_control_policy.ontology_delta_draft_intake_contract",
+    )
+    if (
+        require_bool(
+            draft_intake_consumer_boundary,
+            "for_ontology_owner_draft_intake",
+            "semantic_control_policy.ontology_delta_draft_intake_contract.consumer_boundary",
+        )
+        is not True
+    ):
+        raise ValueError(
+            "semantic_control_policy.ontology_delta_draft_intake_contract.consumer_boundary."
+            "for_ontology_owner_draft_intake must be true"
+        )
+    for field in (
+        "may_execute_prompt_agent",
+        "may_write_ontology_package",
+        "may_update_ontology_lockfile",
+        "may_mutate_canonical_specs",
+        "may_mark_candidate_accepted",
+    ):
+        if (
+            require_bool(
+                draft_intake_consumer_boundary,
+                field,
+                "semantic_control_policy.ontology_delta_draft_intake_contract.consumer_boundary",
+            )
+            is not False
+        ):
+            raise ValueError(
+                "semantic_control_policy.ontology_delta_draft_intake_contract."
+                f"consumer_boundary.{field} must be false"
+            )
+    require_string(
+        draft_intake_contract,
+        "next_gap",
+        "semantic_control_policy.ontology_delta_draft_intake_contract",
     )
     return policy
 
@@ -2642,6 +2796,236 @@ def build_ontology_supervisor_semantic_gate(
     }
 
 
+def require_ontology_supervisor_semantic_gate(
+    supervisor_gate: dict[str, Any],
+) -> dict[str, Any]:
+    if supervisor_gate.get("artifact_kind") != "ontology_supervisor_semantic_gate":
+        raise ValueError("supervisor_gate.artifact_kind must be ontology_supervisor_semantic_gate")
+    if require_int(supervisor_gate, "schema_version", "supervisor_gate") != 1:
+        raise ValueError("supervisor_gate.schema_version must be 1")
+    if require_string(supervisor_gate, "proposal_id", "supervisor_gate") != "0109":
+        raise ValueError("supervisor_gate.proposal_id must be 0109")
+    if require_bool(supervisor_gate, "canonical_mutations_allowed", "supervisor_gate") is not False:
+        raise ValueError("supervisor_gate.canonical_mutations_allowed must be false")
+    if require_bool(supervisor_gate, "tracked_artifacts_written", "supervisor_gate") is not False:
+        raise ValueError("supervisor_gate.tracked_artifacts_written must be false")
+    require_surface_output_artifact(supervisor_gate, "supervisor_semantic_gate")
+    require_object(supervisor_gate, "source_artifacts", "supervisor_gate")
+    gate = require_object(supervisor_gate, "gate", "supervisor_gate")
+    gate_state = require_string(gate, "gate_state", "supervisor_gate.gate")
+    if gate_state not in {"blocked", "review_pending", "clear"}:
+        raise ValueError(
+            "supervisor_gate.gate.gate_state must be blocked, review_pending, or clear"
+        )
+    require_string(gate, "required_human_action", "supervisor_gate.gate")
+    for field in ("blocking_item_ids", "review_required_item_ids", "candidate_item_ids"):
+        require_string_list(gate, field, "supervisor_gate.gate")
+    consumer_boundary = require_object(supervisor_gate, "consumer_boundary", "supervisor_gate")
+    if (
+        require_bool(
+            consumer_boundary,
+            "for_supervisor_gate_evidence",
+            "supervisor_gate.consumer_boundary",
+        )
+        is not True
+    ):
+        raise ValueError(
+            "supervisor_gate.consumer_boundary.for_supervisor_gate_evidence must be true"
+        )
+    for field in (
+        "may_execute_prompt_agent",
+        "may_write_ontology_package",
+        "may_update_ontology_lockfile",
+        "may_mutate_canonical_specs",
+        "may_mark_candidate_accepted",
+    ):
+        if require_bool(consumer_boundary, field, "supervisor_gate.consumer_boundary") is not False:
+            raise ValueError(f"supervisor_gate.consumer_boundary.{field} must be false")
+    authority_boundary = require_object(supervisor_gate, "authority_boundary", "supervisor_gate")
+    for field in (
+        "supervisor_semantic_gate_is_authority",
+        "prompt_agent_execution_allowed",
+        "automatic_import_lock_update",
+        "automatic_canonical_node_update",
+        "canonical_mutations_allowed",
+    ):
+        if (
+            require_bool(authority_boundary, field, "supervisor_gate.authority_boundary")
+            is not False
+        ):
+            raise ValueError(f"supervisor_gate.authority_boundary.{field} must be false")
+    return supervisor_gate
+
+
+def build_ontology_delta_draft_intake(
+    semantic_policy: dict[str, Any],
+    *,
+    semantic_policy_path: Path,
+    review_packet: dict[str, Any],
+    supervisor_gate: dict[str, Any],
+) -> dict[str, Any]:
+    require_semantic_control_policy(semantic_policy)
+    require_ontology_delta_candidate_review_packet(review_packet)
+    require_ontology_supervisor_semantic_gate(supervisor_gate)
+
+    intake_contract = require_object(
+        semantic_policy, "ontology_delta_draft_intake_contract", "semantic_control_policy"
+    )
+    semantic_layout = require_object(
+        semantic_policy, "repository_layout", "semantic_control_policy"
+    )
+    gate = require_object(supervisor_gate, "gate", "supervisor_gate")
+    gate_state = require_string(gate, "gate_state", "supervisor_gate.gate")
+    blocked_gate_states = set(
+        require_string_list(
+            intake_contract,
+            "blocked_gate_states",
+            "semantic_control_policy.ontology_delta_draft_intake_contract",
+        )
+    )
+    review_required_candidate_states = set(
+        require_string_list(
+            intake_contract,
+            "review_required_candidate_states",
+            "semantic_control_policy.ontology_delta_draft_intake_contract",
+        )
+    )
+    raw_candidates = review_packet.get("candidates")
+    if not isinstance(raw_candidates, list):
+        raise ValueError("review_packet.candidates must be a list")
+
+    draft_requests: list[dict[str, Any]] = []
+    for index, raw_candidate in enumerate(raw_candidates):
+        if not isinstance(raw_candidate, dict):
+            raise ValueError(f"review_packet.candidates[{index}] must be an object")
+        candidate_id = require_string(
+            raw_candidate, "candidate_id", f"review_packet.candidates[{index}]"
+        )
+        term = require_string(raw_candidate, "term", f"review_packet.candidates[{index}]")
+        review_state = require_string(
+            raw_candidate, "review_state", f"review_packet.candidates[{index}]"
+        )
+        if gate_state in blocked_gate_states:
+            intake_state = "blocked_by_semantic_gate"
+            required_human_action = require_string(
+                gate, "required_human_action", "supervisor_gate.gate"
+            )
+        elif review_state in review_required_candidate_states:
+            intake_state = "awaiting_ontology_owner_review"
+            required_human_action = "ontology_owner_review_delta_candidate"
+        else:
+            intake_state = "awaiting_ontology_owner_review"
+            required_human_action = "ontology_owner_review_delta_candidate"
+        draft_requests.append(
+            {
+                "intake_id": f"ontology-delta-draft-intake-{symbol_slug(candidate_id)}",
+                "candidate_id": candidate_id,
+                "term": term,
+                "review_state": review_state,
+                "intake_state": intake_state,
+                "required_human_action": required_human_action,
+                "blocked_by_gate_state": gate_state if gate_state in blocked_gate_states else "",
+                "blocking_item_ids": require_string_list(
+                    gate, "blocking_item_ids", "supervisor_gate.gate"
+                ),
+                "draft_delta": copy_json_object(
+                    require_object(
+                        raw_candidate,
+                        "proposed_delta",
+                        f"review_packet.candidates[{index}]",
+                    )
+                ),
+                "writes_ontology_package": False,
+                "updates_ontology_lockfile": False,
+                "mutates_canonical_specs": False,
+                "marks_candidate_accepted": False,
+            }
+        )
+
+    if not draft_requests:
+        intake_status = "no_candidates"
+        required_human_action = "none"
+    elif gate_state in blocked_gate_states:
+        intake_status = "blocked_by_semantic_gate"
+        required_human_action = require_string(
+            gate, "required_human_action", "supervisor_gate.gate"
+        )
+    else:
+        intake_status = "awaiting_ontology_owner_review"
+        required_human_action = "ontology_owner_review_delta_candidate"
+    allowed_intake_states = set(
+        require_string_list(
+            intake_contract,
+            "allowed_intake_states",
+            "semantic_control_policy.ontology_delta_draft_intake_contract",
+        )
+    )
+    if intake_status not in allowed_intake_states:
+        raise ValueError(
+            "semantic_control_policy.ontology_delta_draft_intake_contract."
+            f"allowed_intake_states does not declare computed state {intake_status}"
+        )
+
+    supervisor_source_artifacts = copy_json_object(
+        require_object(supervisor_gate, "source_artifacts", "supervisor_gate")
+    )
+    source_artifacts = {
+        **supervisor_source_artifacts,
+        "supervisor_semantic_gate": require_surface_output_artifact(
+            supervisor_gate, "supervisor_semantic_gate"
+        ),
+        "ontology_delta_candidate_review_packet": require_surface_output_artifact(
+            review_packet, "ontology_delta_candidate_review_packet"
+        ),
+    }
+    return {
+        "artifact_kind": require_string(
+            intake_contract,
+            "artifact_kind",
+            "semantic_control_policy.ontology_delta_draft_intake_contract",
+        ),
+        "schema_version": 1,
+        "proposal_id": "0110",
+        "policy_basis": semantic_policy["policy_basis"],
+        "source_policy": relative_path(semantic_policy_path),
+        "source_artifacts": source_artifacts,
+        "target": copy_json_object(
+            require_object(
+                intake_contract,
+                "target",
+                "semantic_control_policy.ontology_delta_draft_intake_contract",
+            )
+        ),
+        "canonical_mutations_allowed": False,
+        "tracked_artifacts_written": False,
+        "gate": copy_json_object(gate),
+        "draft_requests": draft_requests,
+        "consumer_boundary": copy_json_object(
+            require_object(
+                intake_contract,
+                "consumer_boundary",
+                "semantic_control_policy.ontology_delta_draft_intake_contract",
+            )
+        ),
+        "authority_boundary": copy_json_object(
+            require_object(semantic_policy, "authority_boundary", "semantic_control_policy")
+        ),
+        "summary": {
+            "status": intake_status,
+            "gate_state": gate_state,
+            "candidate_count": len(raw_candidates),
+            "draft_request_count": len(draft_requests),
+            "required_human_action": required_human_action,
+            "next_gap": require_string(
+                intake_contract,
+                "next_gap",
+                "semantic_control_policy.ontology_delta_draft_intake_contract",
+            ),
+        },
+        "output_artifact": require_layout_path(semantic_layout, "ontology_delta_draft_intake"),
+    }
+
+
 def build_ontology_semantic_lint_smoke(
     semantic_policy: dict[str, Any],
     *,
@@ -2971,6 +3355,12 @@ def build_ontology_import_surfaces(
                 semantic_policy_path=semantic_policy_path,
                 review_surface=surfaces["semantic_review_surface"],
             )
+            surfaces["ontology_delta_draft_intake"] = build_ontology_delta_draft_intake(
+                semantic_policy,
+                semantic_policy_path=semantic_policy_path,
+                review_packet=surfaces["ontology_delta_candidate_review_packet"],
+                supervisor_gate=surfaces["supervisor_semantic_gate"],
+            )
             surfaces["semantic_lint_smoke"] = build_ontology_semantic_lint_smoke(
                 semantic_policy,
                 semantic_policy_path=semantic_policy_path,
@@ -3023,6 +3413,10 @@ def write_ontology_import_surfaces(
     if "supervisor_semantic_gate" in surfaces:
         destinations["supervisor_semantic_gate"] = require_surface_output_artifact(
             surfaces["supervisor_semantic_gate"], "supervisor_semantic_gate"
+        )
+    if "ontology_delta_draft_intake" in surfaces:
+        destinations["ontology_delta_draft_intake"] = require_surface_output_artifact(
+            surfaces["ontology_delta_draft_intake"], "ontology_delta_draft_intake"
         )
     if "semantic_lint_smoke" in surfaces:
         destinations["semantic_lint_smoke"] = require_surface_output_artifact(

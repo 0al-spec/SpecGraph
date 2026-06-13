@@ -1415,5 +1415,18 @@
     "required_provenance_links": [
       "source_draft_ref"
     ]
+  },
+  {
+    "proposal_id": "0110",
+    "source_artifact_class": "working_draft",
+    "source_refs": [
+      "docs/archive/proposal_sources/0110_ontology_delta_draft_intake.md"
+    ],
+    "motivating_concern": "SpecGraph can derive ontology semantic gate evidence and delta candidate review packets, but Ontology owner workflows need a typed non-mutating intake artifact before any candidate can become package-draft material",
+    "normalized_title": "Ontology Delta Draft Intake",
+    "bounded_scope": "Add a deterministic ontology delta draft intake derived from the 0109 supervisor semantic gate and 0106 delta candidate review packet, carrying candidate payloads, gate state, blocking refs, required human action, and false write/mutation/acceptance flags under runs/ without writing Ontology packages or lockfiles, mutating canonical specs, accepting candidate terms, bypassing blocked semantic gates, invoking prompt agents, parsing arbitrary text, or running ontologyc.",
+    "required_provenance_links": [
+      "source_draft_ref"
+    ]
   }
 ]
