@@ -1376,5 +1376,18 @@
     "required_provenance_links": [
       "source_draft_ref"
     ]
+  },
+  {
+    "proposal_id": "0107",
+    "source_artifact_class": "working_draft",
+    "source_refs": [
+      "docs/archive/proposal_sources/0107_executor_analysis_report_consumption_policy.md"
+    ],
+    "motivating_concern": "SpecGraph can build review packets from local executor reports and route proposal_draft packets toward future proposal draft candidates, but real local executor reports commonly produce analysis_report packets that need a separate review outcome path without proposal-draft authority",
+    "normalized_title": "Executor Analysis Report Consumption Policy",
+    "bounded_scope": "Add a policy-only validator surface for consuming human-review-ready analysis_report executor review packets as future analysis review outcome input, while rejecting proposal draft candidate effects, proposal_draft packets, authority expansion, canonical mutations, patch application, gap closure, proposal status mutation, static publication, and any new executor runtime or actual outcome generation.",
+    "required_provenance_links": [
+      "source_draft_ref"
+    ]
   }
 ]
