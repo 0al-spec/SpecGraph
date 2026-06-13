@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
 import re
 from pathlib import Path
@@ -13,6 +14,8 @@ import yaml
 
 ROOT = Path(__file__).resolve().parents[1]
 POLICY_PATH = ROOT / "tools" / "ontology_import_policy.json"
+SEMANTIC_CONTROL_POLICY_PATH = Path("tools") / "ontology_semantic_control_policy.json"
+DEFAULT_SEMANTIC_POLICY = object()
 CONCEPT_REF_PATTERN = re.compile(r"^[A-Za-z][A-Za-z0-9_]*:[A-Za-z][A-Za-z0-9_]*$")
 DIGEST_PATTERN = re.compile(r"^sha256:[0-9a-f]{64}$")
 
@@ -217,6 +220,13 @@ def require_layout_path(layout: dict[str, Any], key: str) -> str:
     return value
 
 
+def require_surface_output_artifact(surface: dict[str, Any], key: str) -> str:
+    value = surface.get("output_artifact")
+    if not isinstance(value, str) or not value.strip():
+        raise ValueError(f"{key}.output_artifact must be a non-empty string")
+    return value
+
+
 def require_bool(mapping: dict[str, Any], field: str, context: str) -> bool:
     value = mapping.get(field)
     if not isinstance(value, bool):
@@ -241,6 +251,10 @@ def require_string_list(mapping: dict[str, Any], field: str, context: str) -> li
 def require_digest(value: str, context: str) -> None:
     if not DIGEST_PATTERN.fullmatch(value):
         raise ValueError(f"{context} must be a sha256:<64 lowercase hex> digest")
+
+
+def normalize_term(value: str) -> str:
+    return re.sub(r"\s+", " ", value.strip().lower().replace("_", " "))
 
 
 def ontologyc_adapter_report_contract(policy: dict[str, Any]) -> dict[str, Any]:
@@ -603,15 +617,416 @@ def build_ontologyc_adapter_report_smoke(
     }
 
 
+def require_semantic_control_policy(policy: dict[str, Any]) -> dict[str, Any]:
+    if policy.get("artifact_kind") != "ontology_semantic_control_policy":
+        raise ValueError(
+            "semantic_control_policy.artifact_kind must be ontology_semantic_control_policy"
+        )
+    if require_int(policy, "schema_version", "semantic_control_policy") != 1:
+        raise ValueError("semantic_control_policy.schema_version must be 1")
+    if require_string(policy, "proposal_id", "semantic_control_policy") != "0103":
+        raise ValueError("semantic_control_policy.proposal_id must be 0103")
+    boundary = require_object(policy, "authority_boundary", "semantic_control_policy")
+    for field in (
+        "context_pack_is_authority",
+        "lint_report_is_authority",
+        "smoke_report_is_authority",
+        "ontology_delta_candidate_is_authority",
+        "prompt_agent_execution_allowed",
+        "automatic_import_lock_update",
+        "automatic_canonical_node_update",
+        "canonical_mutations_allowed",
+    ):
+        if require_bool(boundary, field, "semantic_control_policy.authority_boundary") is not False:
+            raise ValueError(f"semantic_control_policy.authority_boundary.{field} must be false")
+    for field in ("ontology_governance_required", "specgraph_proposal_review_required"):
+        if require_bool(boundary, field, "semantic_control_policy.authority_boundary") is not True:
+            raise ValueError(f"semantic_control_policy.authority_boundary.{field} must be true")
+
+    output_contract = require_object(policy, "derived_output_contract", "semantic_control_policy")
+    for field in (
+        "canonical_mutations_allowed",
+        "tracked_artifacts_written",
+        "writes_canonical_specs",
+    ):
+        if (
+            require_bool(
+                output_contract,
+                field,
+                "semantic_control_policy.derived_output_contract",
+            )
+            is not False
+        ):
+            raise ValueError(
+                f"semantic_control_policy.derived_output_contract.{field} must be false"
+            )
+    allowed_roots = require_string_list(
+        output_contract,
+        "allowed_output_roots",
+        "semantic_control_policy.derived_output_contract",
+    )
+    normalized_roots = {Path(root).as_posix().rstrip("/") for root in allowed_roots}
+    if normalized_roots != {"runs"}:
+        raise ValueError(
+            "semantic_control_policy.derived_output_contract.allowed_output_roots "
+            "must only allow runs/"
+        )
+
+    contract = require_object(policy, "semantic_lint_contract", "semantic_control_policy")
+    classifications = require_string_list(
+        contract, "term_classifications", "semantic_control_policy.semantic_lint_contract"
+    )
+    statuses = require_string_list(
+        contract, "term_statuses", "semantic_control_policy.semantic_lint_contract"
+    )
+    priority = require_string_list(
+        contract, "summary_status_priority", "semantic_control_policy.semantic_lint_contract"
+    )
+    required_classifications = {
+        "accepted_term",
+        "accepted_alias",
+        "deprecated_term",
+        "ambiguous_term",
+        "unknown_term",
+        "out_of_domain_term",
+        "relation_conflict",
+        "candidate_delta_term",
+    }
+    missing_classifications = sorted(required_classifications - set(classifications))
+    if missing_classifications:
+        raise ValueError(
+            "semantic_control_policy.semantic_lint_contract.term_classifications "
+            f"missing: {', '.join(missing_classifications)}"
+        )
+    if not priority or any(status not in statuses for status in priority):
+        raise ValueError(
+            "semantic_control_policy.semantic_lint_contract.summary_status_priority "
+            "must reference declared statuses"
+        )
+    suggestions = require_object(
+        contract, "suggested_actions", "semantic_control_policy.semantic_lint_contract"
+    )
+    for classification in classifications:
+        require_string(suggestions, classification, "semantic_control_policy.suggested_actions")
+
+    source_contract = require_object(policy, "source_surface_contract", "semantic_control_policy")
+    required_artifact_kinds = require_string_list(
+        source_contract,
+        "required_artifact_kinds",
+        "semantic_control_policy.source_surface_contract",
+    )
+    if not required_artifact_kinds:
+        raise ValueError("semantic_control_policy.source_surface_contract requires artifacts")
+    flags = require_object(
+        source_contract,
+        "required_authority_flags",
+        "semantic_control_policy.source_surface_contract",
+    )
+    for field in ("canonical_mutations_allowed", "tracked_artifacts_written"):
+        if (
+            require_bool(flags, field, "semantic_control_policy.required_authority_flags")
+            is not False
+        ):
+            raise ValueError(
+                f"semantic_control_policy.required_authority_flags.{field} must be false"
+            )
+    return policy
+
+
+def semantic_control_map(
+    semantic_policy: dict[str, Any],
+    section: str,
+    *,
+    key_field: str = "term",
+) -> dict[str, dict[str, Any]]:
+    controls = require_object(semantic_policy, "semantic_controls", "semantic_control_policy")
+    values = controls.get(section, [])
+    if not isinstance(values, list):
+        raise ValueError(f"semantic_control_policy.semantic_controls.{section} must be a list")
+    entries: dict[str, dict[str, Any]] = {}
+    for index, item in enumerate(values):
+        if not isinstance(item, dict):
+            raise ValueError(
+                f"semantic_control_policy.semantic_controls.{section}[{index}] must be an object"
+            )
+        key = normalize_term(
+            require_string(
+                item,
+                key_field,
+                f"semantic_control_policy.semantic_controls.{section}[{index}]",
+            )
+        )
+        if key in entries:
+            raise ValueError(
+                f"semantic_control_policy.semantic_controls.{section}[{index}] duplicates {key!r}"
+            )
+        entries[key] = item
+    return entries
+
+
+def semantic_term_status(classification: str) -> str:
+    return {
+        "accepted_term": "grounded",
+        "accepted_alias": "grounded_with_aliases",
+        "deprecated_term": "blocked_deprecated_terms",
+        "ambiguous_term": "review_required_ambiguous_terms",
+        "unknown_term": "review_required_unknown_terms",
+        "out_of_domain_term": "blocked_out_of_domain",
+        "relation_conflict": "blocked_relation_conflict",
+        "candidate_delta_term": "review_required_unknown_terms",
+    }.get(classification, "review_required_unknown_terms")
+
+
+def semantic_summary_status(statuses: list[str], semantic_policy: dict[str, Any]) -> str:
+    if not statuses:
+        return "grounded"
+    contract = require_object(semantic_policy, "semantic_lint_contract", "semantic_control_policy")
+    priority = require_string_list(
+        contract, "summary_status_priority", "semantic_control_policy.semantic_lint_contract"
+    )
+    present = set(statuses)
+    for status in priority:
+        if status in present:
+            return status
+    return sorted(present)[0]
+
+
+def semantic_next_gap(status: str, semantic_policy: dict[str, Any]) -> str:
+    defaults = require_object(semantic_policy, "next_gap_defaults", "semantic_control_policy")
+    return require_string(defaults, status, "semantic_control_policy.next_gap_defaults")
+
+
+def validate_semantic_source_surfaces(
+    semantic_policy: dict[str, Any],
+    *,
+    package_index: dict[str, Any],
+    gap_index: dict[str, Any],
+    governance_evidence_index: dict[str, Any],
+    binding_preview: dict[str, Any],
+) -> None:
+    source_contract = require_object(
+        semantic_policy, "source_surface_contract", "semantic_control_policy"
+    )
+    required_artifact_kinds = set(
+        require_string_list(
+            source_contract,
+            "required_artifact_kinds",
+            "semantic_control_policy.source_surface_contract",
+        )
+    )
+    surfaces = {
+        "ontology_package_index": package_index,
+        "ontology_import_gap_index": gap_index,
+        "ontology_governance_evidence_index": governance_evidence_index,
+        "ontology_binding_preview": binding_preview,
+    }
+    missing = sorted(required_artifact_kinds - set(surfaces))
+    if missing:
+        raise ValueError(f"semantic source surfaces missing: {', '.join(missing)}")
+    for artifact_kind in sorted(required_artifact_kinds):
+        surface = surfaces[artifact_kind]
+        if require_string(surface, "artifact_kind", artifact_kind) != artifact_kind:
+            raise ValueError(f"{artifact_kind}.artifact_kind must be {artifact_kind}")
+        for field in ("canonical_mutations_allowed", "tracked_artifacts_written"):
+            if require_bool(surface, field, artifact_kind) is not False:
+                raise ValueError(f"{artifact_kind}.{field} must be false")
+
+
+def build_ontology_semantic_lint_smoke(
+    semantic_policy: dict[str, Any],
+    *,
+    semantic_policy_path: Path,
+    import_policy: dict[str, Any],
+    package_index: dict[str, Any],
+    gap_index: dict[str, Any],
+    governance_evidence_index: dict[str, Any],
+    binding_preview: dict[str, Any],
+) -> dict[str, Any]:
+    require_semantic_control_policy(semantic_policy)
+    validate_semantic_source_surfaces(
+        semantic_policy,
+        package_index=package_index,
+        gap_index=gap_index,
+        governance_evidence_index=governance_evidence_index,
+        binding_preview=binding_preview,
+    )
+    contract = require_object(semantic_policy, "semantic_lint_contract", "semantic_control_policy")
+    suggested_actions = require_object(
+        contract, "suggested_actions", "semantic_control_policy.semantic_lint_contract"
+    )
+    aliases = semantic_control_map(semantic_policy, "aliases")
+    deprecated_terms = semantic_control_map(semantic_policy, "deprecated_terms")
+    relation_conflicts = semantic_control_map(semantic_policy, "relation_conflicts")
+    smoke_fixture = require_object(semantic_policy, "smoke_fixture", "semantic_control_policy")
+    detected_terms = smoke_fixture.get("detected_terms")
+    if not isinstance(detected_terms, list) or not detected_terms:
+        raise ValueError(
+            "semantic_control_policy.smoke_fixture.detected_terms must be a non-empty list"
+        )
+    generated_text = require_string(
+        smoke_fixture,
+        "generated_text",
+        "semantic_control_policy.smoke_fixture",
+    )
+
+    accepted_by_ref = {
+        str(entry.get("source_ref", "")).strip(): entry
+        for entry in binding_preview.get("resolved_refs", [])
+        if isinstance(entry, dict) and str(entry.get("source_ref", "")).strip()
+    }
+    gap_by_ref = {
+        str(gap.get("missing_concept", {}).get("ref", "")).strip(): gap
+        for gap in gap_index.get("gaps", [])
+        if isinstance(gap, dict) and isinstance(gap.get("missing_concept"), dict)
+    }
+
+    term_results: list[dict[str, Any]] = []
+    statuses: list[str] = []
+    classification_counts = {
+        classification: 0
+        for classification in require_string_list(
+            contract, "term_classifications", "semantic_control_policy.semantic_lint_contract"
+        )
+    }
+    for index, raw_term in enumerate(detected_terms):
+        if not isinstance(raw_term, dict):
+            raise ValueError(
+                f"semantic_control_policy.smoke_fixture.detected_terms[{index}] must be an object"
+            )
+        term = require_string(
+            raw_term,
+            "term",
+            f"semantic_control_policy.smoke_fixture.detected_terms[{index}]",
+        )
+        normalized = normalize_term(term)
+        source_ref = str(raw_term.get("source_ref", "")).strip()
+        result: dict[str, Any] = {
+            "term": term,
+            "normalized_term": normalized,
+            "source_ref": source_ref or None,
+        }
+
+        if normalized in relation_conflicts:
+            control = relation_conflicts[normalized]
+            classification = "relation_conflict"
+            result["accepted_relation_ref"] = require_string(
+                control, "accepted_relation_ref", "semantic_control_policy.relation_conflicts"
+            )
+            result["reason"] = str(control.get("reason", "")).strip()
+        elif normalized in deprecated_terms:
+            control = deprecated_terms[normalized]
+            classification = "deprecated_term"
+            result["replacement_ref"] = require_string(
+                control, "replacement_ref", "semantic_control_policy.deprecated_terms"
+            )
+            result["reason"] = str(control.get("reason", "")).strip()
+        elif source_ref and source_ref in accepted_by_ref:
+            classification = "accepted_term"
+            result["concept_ref"] = accepted_by_ref[source_ref]
+        elif normalized in aliases:
+            control = aliases[normalized]
+            concept_ref = require_string(control, "concept_ref", "semantic_control_policy.aliases")
+            if concept_ref not in accepted_by_ref:
+                classification = "unknown_term"
+                result["unresolved_alias_ref"] = concept_ref
+            else:
+                classification = "accepted_alias"
+                result["concept_ref"] = accepted_by_ref[concept_ref]
+                result["alias_of"] = concept_ref
+                result["reason"] = str(control.get("reason", "")).strip()
+        elif source_ref and source_ref in gap_by_ref:
+            classification = "unknown_term"
+            result["gap"] = gap_by_ref[source_ref]
+        else:
+            classification = "unknown_term"
+
+        status = semantic_term_status(classification)
+        statuses.append(status)
+        classification_counts[classification] += 1
+        result["classification"] = classification
+        result["status"] = status
+        result["suggested_action"] = require_string(
+            suggested_actions, classification, "semantic_control_policy.suggested_actions"
+        )
+        term_results.append(result)
+
+    summary_status = semantic_summary_status(statuses, semantic_policy)
+    review_required_count = sum(1 for status in statuses if status.startswith("review_required_"))
+    blocking_count = sum(1 for status in statuses if status.startswith("blocked_"))
+    import_layout = require_object(import_policy, "repository_layout", "ontology_import_policy")
+    semantic_layout = require_object(
+        semantic_policy, "repository_layout", "semantic_control_policy"
+    )
+    return {
+        "artifact_kind": require_string(
+            contract, "smoke_artifact_kind", "semantic_control_policy.semantic_lint_contract"
+        ),
+        "schema_version": 1,
+        "proposal_id": semantic_policy["proposal_id"],
+        "policy_basis": semantic_policy["policy_basis"],
+        "source_policy": relative_path(semantic_policy_path),
+        "source_surfaces": {
+            "ontology_package_index": require_layout_path(import_layout, "package_index"),
+            "ontology_import_gap_index": require_layout_path(import_layout, "gap_index"),
+            "ontology_governance_evidence_index": require_layout_path(
+                import_layout, "governance_evidence_index"
+            ),
+            "ontology_binding_preview": require_layout_path(import_layout, "binding_preview"),
+        },
+        "target": copy_json_object(
+            require_object(
+                smoke_fixture,
+                "target",
+                "semantic_control_policy.smoke_fixture",
+            )
+        ),
+        "input": {
+            "generated_text_sha256": "sha256:"
+            + hashlib.sha256(generated_text.encode("utf-8")).hexdigest(),
+            "detected_term_count": len(term_results),
+        },
+        "canonical_mutations_allowed": False,
+        "tracked_artifacts_written": False,
+        "term_results": term_results,
+        "authority_boundary": copy_json_object(
+            require_object(semantic_policy, "authority_boundary", "semantic_control_policy")
+        ),
+        "summary": {
+            "status": summary_status,
+            "term_count": len(term_results),
+            "classification_counts": {
+                key: value for key, value in sorted(classification_counts.items()) if value
+            },
+            "review_required_count": review_required_count,
+            "blocking_count": blocking_count,
+            "next_gap": semantic_next_gap(summary_status, semantic_policy),
+        },
+        "output_artifact": require_layout_path(semantic_layout, "semantic_lint_smoke"),
+    }
+
+
+def copy_json_object(value: dict[str, Any]) -> dict[str, Any]:
+    return json.loads(json.dumps(value, sort_keys=True))
+
+
 def build_ontology_import_surfaces(
     fixture_path: Path,
     *,
     policy_path: Path = POLICY_PATH,
     adapter_report_path: Path | None = None,
+    semantic_policy_path: Path | None | object = DEFAULT_SEMANTIC_POLICY,
 ) -> dict[str, dict[str, Any]]:
     policy = load_json(policy_path)
     fixture = load_yaml(fixture_path)
     validate_fixture(policy, fixture)
+    import_layout = require_object(policy, "repository_layout", "ontology_import_policy")
+    default_fixture_path = ROOT / require_layout_path(import_layout, "default_fixture")
+    if semantic_policy_path is DEFAULT_SEMANTIC_POLICY:
+        semantic_policy_path = (
+            SEMANTIC_CONTROL_POLICY_PATH
+            if fixture_path.resolve() == default_fixture_path.resolve()
+            else None
+        )
 
     package = fixture["package"]
     binding = fixture["binding"]
@@ -773,6 +1188,21 @@ def build_ontology_import_surfaces(
             resolved_refs=resolved_refs,
             unresolved_refs=unresolved_refs,
         )
+    if semantic_policy_path is not None:
+        assert isinstance(semantic_policy_path, Path)
+        if not semantic_policy_path.is_absolute():
+            semantic_policy_path = ROOT / semantic_policy_path
+        if semantic_policy_path.exists():
+            semantic_policy = load_json(semantic_policy_path)
+            surfaces["semantic_lint_smoke"] = build_ontology_semantic_lint_smoke(
+                semantic_policy,
+                semantic_policy_path=semantic_policy_path,
+                import_policy=policy,
+                package_index=package_index,
+                gap_index=gap_index,
+                governance_evidence_index=governance_evidence_index,
+                binding_preview=binding_preview,
+            )
     return surfaces
 
 
@@ -796,6 +1226,10 @@ def write_ontology_import_surfaces(
     }
     if "adapter_report_smoke" in surfaces:
         destinations["adapter_report_smoke"] = require_layout_path(layout, "adapter_report_smoke")
+    if "semantic_lint_smoke" in surfaces:
+        destinations["semantic_lint_smoke"] = require_surface_output_artifact(
+            surfaces["semantic_lint_smoke"], "semantic_lint_smoke"
+        )
     written = []
     for key, relative in destinations.items():
         payload = surfaces[key]
@@ -828,6 +1262,19 @@ def parse_args() -> argparse.Namespace:
             "adapter report only when --fixture is the default fixture."
         ),
     )
+    parser.add_argument(
+        "--semantic-policy",
+        default=None,
+        help=(
+            "Ontology semantic control policy JSON path. Defaults to the checked-in "
+            "policy only when --fixture is the default fixture."
+        ),
+    )
+    parser.add_argument(
+        "--no-semantic-policy",
+        action="store_true",
+        help="Disable semantic-control derived surfaces for this run.",
+    )
     return parser.parse_args()
 
 
@@ -848,9 +1295,19 @@ def main() -> int:
             adapter_report_path = ROOT / adapter_report_path
     elif fixture_path.resolve() == default_fixture_path.resolve():
         adapter_report_path = ROOT / str(layout["default_adapter_report"])
+    if args.semantic_policy and args.no_semantic_policy:
+        raise ValueError("--semantic-policy and --no-semantic-policy are mutually exclusive")
+    semantic_policy_path = None
+    if args.semantic_policy:
+        semantic_policy_path = Path(args.semantic_policy)
+        if not semantic_policy_path.is_absolute():
+            semantic_policy_path = ROOT / semantic_policy_path
+    elif not args.no_semantic_policy and fixture_path.resolve() == default_fixture_path.resolve():
+        semantic_policy_path = SEMANTIC_CONTROL_POLICY_PATH
     surfaces = build_ontology_import_surfaces(
         fixture_path,
         adapter_report_path=adapter_report_path,
+        semantic_policy_path=semantic_policy_path,
     )
     if args.write:
         written = write_ontology_import_surfaces(surfaces)

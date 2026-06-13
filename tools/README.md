@@ -118,9 +118,13 @@ Supervisor modes:
   `runs/ontology_prompt_invocation_index.json`. It also validates the
   `ontologyc_adapter_report` fixture and emits
   `runs/ontologyc_adapter_report_smoke.json`, preserving source/version/digest
-  checks for `ontologyc validate-specgraph` output. These surfaces resolve known
-  imported refs and preserve unresolved refs as reviewable ontology gaps without
-  mutating canonical `specs/nodes/*.yaml`.
+  checks for `ontologyc validate-specgraph` output. The same command consumes
+  `tools/ontology_semantic_control_policy.json` and emits
+  `runs/ontology_semantic_lint_smoke.json`, classifying accepted, alias,
+  unknown, deprecated, and relation-conflict terms against the imported
+  ontology fixture. These surfaces resolve known imported refs and preserve
+  unresolved refs as reviewable ontology gaps without mutating canonical
+  `specs/nodes/*.yaml`.
 - `--build-supervisor-executor-adapter-index`: build
   `runs/supervisor_executor_adapter_index.json` from the 0056 policy so
   executor backend availability, capability gaps, and Agent Passport CLI
