@@ -6119,5 +6119,70 @@
         "pattern": "\"local_operator_executor_analysis_report_review_outcome.json\""
       }
     ]
+  },
+  {
+    "proposal_id": "0113",
+    "posture": "bounded_runtime_followup",
+    "runtime_surfaces": [
+      "docs/proposals/0113_ontology_review_dashboard.md",
+      "docs/archive/proposal_sources/0113_ontology_review_dashboard.md",
+      "tools/ontology_semantic_control_policy.json",
+      "tools/ontology_imports.py",
+      "tools/README.md",
+      "docs/supervisor_manual.md",
+      "Makefile",
+      "tests/test_ontology_import_policy.py",
+      "runs/ontology_review_dashboard.json"
+    ],
+    "runtime_markers": [
+      {
+        "path": "tools/ontology_semantic_control_policy.json",
+        "pattern": "ontology_review_dashboard_contract"
+      },
+      {
+        "path": "tools/ontology_imports.py",
+        "pattern": "def build_ontology_review_dashboard("
+      },
+      {
+        "path": "tools/ontology_imports.py",
+        "pattern": "def require_ontology_review_dashboard("
+      },
+      {
+        "path": "tools/ontology_imports.py",
+        "pattern": "\"ontology_review_dashboard\""
+      }
+    ],
+    "validation_markers": [
+      {
+        "path": "tests/test_ontology_import_policy.py",
+        "pattern": "def test_ontology_review_dashboard_builds_rich_review_projection("
+      },
+      {
+        "path": "tests/test_ontology_import_policy.py",
+        "pattern": "def test_ontology_review_dashboard_rejects_policy_authority_expansion("
+      },
+      {
+        "path": "tests/test_ontology_import_policy.py",
+        "pattern": "runs/ontology_review_dashboard.json"
+      }
+    ],
+    "observation_markers": [
+      {
+        "path": "Makefile",
+        "pattern": "ontology-imports:"
+      },
+      {
+        "path": "tools/README.md",
+        "pattern": "runs/ontology_review_dashboard.json"
+      },
+      {
+        "path": "docs/supervisor_manual.md",
+        "pattern": "runs/ontology_review_dashboard.json"
+      },
+      {
+        "path": "docs/proposals/0113_ontology_review_dashboard.md",
+        "pattern": "build_specspace_rich_ontology_review_panel"
+      }
+    ]
   }
 ]

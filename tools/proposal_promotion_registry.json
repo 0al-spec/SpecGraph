@@ -1454,5 +1454,18 @@
     "required_provenance_links": [
       "source_draft_ref"
     ]
+  },
+  {
+    "proposal_id": "0113",
+    "source_artifact_class": "working_draft",
+    "source_refs": [
+      "docs/archive/proposal_sources/0113_ontology_review_dashboard.md"
+    ],
+    "motivating_concern": "SpecGraph can emit closed-loop Ontology evidence, but operators and SpecSpace still need one richer read-only dashboard artifact that combines semantic gate state, blocking findings, pending owner decisions, delta candidates, draft requests, and review actions.",
+    "normalized_title": "Ontology Review Dashboard",
+    "bounded_scope": "Add a deterministic ontology_review_dashboard artifact derived from the 0108 semantic review surface, 0109 supervisor semantic gate, 0110 delta draft intake, and 0111 closed-loop evidence, carrying status summary, gate state, review items, delta candidates, draft requests, closed-loop entries, review actions, source artifact refs, and false authority/mutation/import flags under runs/ without importing owner decisions, writing Ontology packages or lockfiles, mutating canonical specs, accepting candidate terms, closing semantic gates, invoking prompt agents, parsing arbitrary text, or running ontologyc.",
+    "required_provenance_links": [
+      "source_draft_ref"
+    ]
   }
 ]

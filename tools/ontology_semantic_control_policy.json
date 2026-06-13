@@ -10,7 +10,8 @@
     "docs/proposals/0108_ontology_semantic_review_surface.md",
     "docs/proposals/0109_ontology_supervisor_semantic_gate.md",
     "docs/proposals/0110_ontology_delta_draft_intake.md",
-    "docs/proposals/0111_ontology_closed_loop_evidence.md"
+    "docs/proposals/0111_ontology_closed_loop_evidence.md",
+    "docs/proposals/0113_ontology_review_dashboard.md"
   ],
   "policy_basis": "docs/proposals/0100_ontology_grounded_semantic_control.md",
   "repository_layout": {
@@ -21,6 +22,7 @@
     "supervisor_semantic_gate": "runs/ontology_supervisor_semantic_gate.json",
     "ontology_delta_draft_intake": "runs/ontology_delta_draft_intake.json",
     "ontology_closed_loop_evidence": "runs/ontology_closed_loop_evidence.json",
+    "ontology_review_dashboard": "runs/ontology_review_dashboard.json",
     "semantic_lint_smoke": "runs/ontology_semantic_lint_smoke.json"
   },
   "derived_output_contract": {
@@ -276,6 +278,48 @@
     },
     "next_gap": "wire_closed_loop_evidence_into_specgraph_review"
   },
+  "ontology_review_dashboard_contract": {
+    "artifact_kind": "ontology_review_dashboard",
+    "source_review_surface_artifact_kind": "ontology_semantic_review_surface",
+    "source_supervisor_semantic_gate_artifact_kind": "ontology_supervisor_semantic_gate",
+    "source_delta_draft_intake_artifact_kind": "ontology_delta_draft_intake",
+    "source_closed_loop_evidence_artifact_kind": "ontology_closed_loop_evidence",
+    "target": {
+      "target_kind": "proposal",
+      "target_ref": "SG-RFC-0113"
+    },
+    "dashboard_sections": [
+      "status_summary",
+      "gate",
+      "blocking_items",
+      "review_required_items",
+      "delta_candidates",
+      "draft_requests",
+      "closed_loop_entries",
+      "review_actions",
+      "source_artifacts",
+      "authority_boundary"
+    ],
+    "status_states": [
+      "blocked_by_semantic_gate",
+      "pending_ontology_owner_decision",
+      "review_pending",
+      "clear",
+      "no_candidates"
+    ],
+    "consumer_boundary": {
+      "for_specgraph_review_dashboard": true,
+      "for_specspace_review_dashboard": true,
+      "may_execute_prompt_agent": false,
+      "may_write_ontology_package": false,
+      "may_update_ontology_lockfile": false,
+      "may_mutate_canonical_specs": false,
+      "may_mark_candidate_accepted": false,
+      "may_import_owner_decision": false,
+      "may_close_semantic_gate": false
+    },
+    "next_gap": "build_specspace_rich_ontology_review_panel"
+  },
   "semantic_lint_contract": {
     "future_artifact_kind": "ontology_semantic_lint_report",
     "smoke_artifact_kind": "ontology_semantic_lint_smoke",
@@ -378,6 +422,7 @@
     "supervisor_semantic_gate_is_authority": false,
     "ontology_delta_draft_intake_is_authority": false,
     "ontology_closed_loop_evidence_is_authority": false,
+    "ontology_review_dashboard_is_authority": false,
     "ontology_governance_required": true,
     "specgraph_proposal_review_required": true,
     "prompt_agent_execution_allowed": false,
