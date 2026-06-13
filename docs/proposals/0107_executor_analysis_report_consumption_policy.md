@@ -82,7 +82,7 @@ reviewing analysis reports while keeping proposal production closed.
 
 - Building the analysis report review outcome artifact.
 - Converting `analysis_report` packets into proposal draft candidates.
-- Creating or editing files under `docs/proposals/`.
+- Creating or editing unrelated files under `docs/proposals/`.
 - Applying patches.
 - Mutating canonical specs.
 - Closing gaps.

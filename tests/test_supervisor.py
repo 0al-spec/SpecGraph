@@ -29984,6 +29984,30 @@ def test_validate_executor_analysis_report_consumption_request_rejects_forbidden
     )
 
 
+def test_validate_executor_analysis_report_consumption_request_excludes_empty_effect(
+    supervisor_module: object,
+) -> None:
+    packet = supervisor_module.build_local_operator_executor_report_review_packet(
+        supervisor_module.default_local_operator_executor_report_sample()
+    )
+    request = supervisor_module.default_executor_analysis_report_consumption_request(
+        requested_effects=["analysis_report_review_outcome", ""],
+    )
+
+    validation = supervisor_module.validate_executor_analysis_report_consumption_request(
+        request,
+        review_packet=packet,
+    )
+
+    assert validation["valid"] is False
+    assert validation["normalized"]["requested_effects"] == ["analysis_report_review_outcome"]
+    assert any(
+        finding["code"] == "analysis_report_effect_empty"
+        and finding["field"] == "requested_effects[1]"
+        for finding in validation["findings"]
+    )
+
+
 def test_validate_executor_analysis_report_consumption_request_rejects_authority_expansion(
     supervisor_module: object,
 ) -> None:

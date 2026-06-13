@@ -22158,7 +22158,6 @@ def validate_executor_analysis_report_consumption_effects(
         )
     for index, effect in enumerate(effects):
         effect_text = str(effect).strip()
-        normalized_effects.append(effect_text)
         if not effect_text:
             findings.append(
                 executor_report_finding(
@@ -22168,6 +22167,7 @@ def validate_executor_analysis_report_consumption_effects(
                 )
             )
             continue
+        normalized_effects.append(effect_text)
         if effect_text in forbidden:
             findings.append(
                 executor_report_finding(
