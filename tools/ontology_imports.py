@@ -640,6 +640,7 @@ def require_semantic_control_policy(policy: dict[str, Any]) -> dict[str, Any]:
     require_layout_path(layout, "semantic_context_pack")
     require_layout_path(layout, "semantic_lint_report")
     require_layout_path(layout, "semantic_review_surface")
+    require_layout_path(layout, "supervisor_semantic_gate")
     require_layout_path(layout, "semantic_lint_smoke")
     boundary = require_object(policy, "authority_boundary", "semantic_control_policy")
     for field in (
@@ -648,6 +649,7 @@ def require_semantic_control_policy(policy: dict[str, Any]) -> dict[str, Any]:
         "smoke_report_is_authority",
         "ontology_delta_candidate_is_authority",
         "semantic_review_surface_is_authority",
+        "supervisor_semantic_gate_is_authority",
         "prompt_agent_execution_allowed",
         "automatic_import_lock_update",
         "automatic_canonical_node_update",
@@ -1150,6 +1152,180 @@ def require_semantic_control_policy(policy: dict[str, Any]) -> dict[str, Any]:
         review_surface_contract,
         "next_gap",
         "semantic_control_policy.semantic_review_surface_contract",
+    )
+    supervisor_gate_contract = require_object(
+        policy, "supervisor_semantic_gate_contract", "semantic_control_policy"
+    )
+    if (
+        require_string(
+            supervisor_gate_contract,
+            "artifact_kind",
+            "semantic_control_policy.supervisor_semantic_gate_contract",
+        )
+        != "ontology_supervisor_semantic_gate"
+    ):
+        raise ValueError(
+            "semantic_control_policy.supervisor_semantic_gate_contract.artifact_kind "
+            "must be ontology_supervisor_semantic_gate"
+        )
+    if (
+        require_string(
+            supervisor_gate_contract,
+            "source_review_surface_artifact_kind",
+            "semantic_control_policy.supervisor_semantic_gate_contract",
+        )
+        != "ontology_semantic_review_surface"
+    ):
+        raise ValueError(
+            "semantic_control_policy.supervisor_semantic_gate_contract."
+            "source_review_surface_artifact_kind must be ontology_semantic_review_surface"
+        )
+    supervisor_gate_target = require_object(
+        supervisor_gate_contract,
+        "target",
+        "semantic_control_policy.supervisor_semantic_gate_contract",
+    )
+    require_string(
+        supervisor_gate_target,
+        "target_kind",
+        "semantic_control_policy.supervisor_semantic_gate_contract.target",
+    )
+    require_string(
+        supervisor_gate_target,
+        "target_ref",
+        "semantic_control_policy.supervisor_semantic_gate_contract.target",
+    )
+    gate_states = set(
+        require_string_list(
+            supervisor_gate_contract,
+            "gate_states",
+            "semantic_control_policy.supervisor_semantic_gate_contract",
+        )
+    )
+    required_gate_states = {"clear", "review_pending", "blocked"}
+    missing_gate_states = sorted(required_gate_states - gate_states)
+    if missing_gate_states:
+        raise ValueError(
+            "semantic_control_policy.supervisor_semantic_gate_contract.gate_states "
+            f"missing: {', '.join(missing_gate_states)}"
+        )
+    blocking_states = set(
+        require_string_list(
+            supervisor_gate_contract,
+            "blocking_review_states",
+            "semantic_control_policy.supervisor_semantic_gate_contract",
+        )
+    )
+    if "blocked" not in blocking_states:
+        raise ValueError(
+            "semantic_control_policy.supervisor_semantic_gate_contract."
+            "blocking_review_states must include blocked"
+        )
+    review_states = set(
+        require_string_list(
+            supervisor_gate_contract,
+            "review_required_states",
+            "semantic_control_policy.supervisor_semantic_gate_contract",
+        )
+    )
+    required_review_states = {"needs_review", "needs_ontology_owner_review"}
+    missing_review_states = sorted(required_review_states - review_states)
+    if missing_review_states:
+        raise ValueError(
+            "semantic_control_policy.supervisor_semantic_gate_contract.review_required_states "
+            f"missing: {', '.join(missing_review_states)}"
+        )
+    if not require_string_list(
+        supervisor_gate_contract,
+        "evidence_sections",
+        "semantic_control_policy.supervisor_semantic_gate_contract",
+    ):
+        raise ValueError(
+            "semantic_control_policy.supervisor_semantic_gate_contract.evidence_sections "
+            "must be non-empty"
+        )
+    if not require_string_list(
+        supervisor_gate_contract,
+        "failure_modes",
+        "semantic_control_policy.supervisor_semantic_gate_contract",
+    ):
+        raise ValueError(
+            "semantic_control_policy.supervisor_semantic_gate_contract.failure_modes "
+            "must be non-empty"
+        )
+    invocation_boundary = require_object(
+        supervisor_gate_contract,
+        "typed_invocation_boundary",
+        "semantic_control_policy.supervisor_semantic_gate_contract",
+    )
+    require_string(
+        invocation_boundary,
+        "input_artifact",
+        "semantic_control_policy.supervisor_semantic_gate_contract.typed_invocation_boundary",
+    )
+    require_string(
+        invocation_boundary,
+        "output_artifact",
+        "semantic_control_policy.supervisor_semantic_gate_contract.typed_invocation_boundary",
+    )
+    for field in (
+        "prompt_agent_executed",
+        "prompt_agent_execution_allowed",
+        "supervisor_prompt_mutation_allowed",
+    ):
+        if (
+            require_bool(
+                invocation_boundary,
+                field,
+                "semantic_control_policy.supervisor_semantic_gate_contract."
+                "typed_invocation_boundary",
+            )
+            is not False
+        ):
+            raise ValueError(
+                "semantic_control_policy.supervisor_semantic_gate_contract."
+                f"typed_invocation_boundary.{field} must be false"
+            )
+    supervisor_gate_consumer_boundary = require_object(
+        supervisor_gate_contract,
+        "consumer_boundary",
+        "semantic_control_policy.supervisor_semantic_gate_contract",
+    )
+    if (
+        require_bool(
+            supervisor_gate_consumer_boundary,
+            "for_supervisor_gate_evidence",
+            "semantic_control_policy.supervisor_semantic_gate_contract.consumer_boundary",
+        )
+        is not True
+    ):
+        raise ValueError(
+            "semantic_control_policy.supervisor_semantic_gate_contract.consumer_boundary."
+            "for_supervisor_gate_evidence must be true"
+        )
+    for field in (
+        "may_execute_prompt_agent",
+        "may_write_ontology_package",
+        "may_update_ontology_lockfile",
+        "may_mutate_canonical_specs",
+        "may_mark_candidate_accepted",
+    ):
+        if (
+            require_bool(
+                supervisor_gate_consumer_boundary,
+                field,
+                "semantic_control_policy.supervisor_semantic_gate_contract.consumer_boundary",
+            )
+            is not False
+        ):
+            raise ValueError(
+                "semantic_control_policy.supervisor_semantic_gate_contract.consumer_boundary."
+                f"{field} must be false"
+            )
+    require_string(
+        supervisor_gate_contract,
+        "next_gap",
+        "semantic_control_policy.supervisor_semantic_gate_contract",
     )
     return policy
 
@@ -2236,6 +2412,247 @@ def build_ontology_semantic_review_surface(
     }
 
 
+def require_ontology_semantic_review_surface(
+    review_surface: dict[str, Any],
+) -> dict[str, Any]:
+    if review_surface.get("artifact_kind") != "ontology_semantic_review_surface":
+        raise ValueError("review_surface.artifact_kind must be ontology_semantic_review_surface")
+    if require_int(review_surface, "schema_version", "review_surface") != 1:
+        raise ValueError("review_surface.schema_version must be 1")
+    if require_string(review_surface, "proposal_id", "review_surface") != "0108":
+        raise ValueError("review_surface.proposal_id must be 0108")
+    if require_bool(review_surface, "canonical_mutations_allowed", "review_surface") is not False:
+        raise ValueError("review_surface.canonical_mutations_allowed must be false")
+    if require_bool(review_surface, "tracked_artifacts_written", "review_surface") is not False:
+        raise ValueError("review_surface.tracked_artifacts_written must be false")
+    require_surface_output_artifact(review_surface, "semantic_review_surface")
+    require_object(review_surface, "source_artifacts", "review_surface")
+    require_object(review_surface, "grounding_summary", "review_surface")
+    require_object(review_surface, "summary", "review_surface")
+    if not isinstance(review_surface.get("review_items"), list):
+        raise ValueError("review_surface.review_items must be a list")
+    if not isinstance(review_surface.get("review_actions"), list):
+        raise ValueError("review_surface.review_actions must be a list")
+    consumer_boundary = require_object(review_surface, "consumer_boundary", "review_surface")
+    if (
+        require_bool(
+            consumer_boundary,
+            "for_supervisor_gate_evidence",
+            "review_surface.consumer_boundary",
+        )
+        is not True
+    ):
+        raise ValueError(
+            "review_surface.consumer_boundary.for_supervisor_gate_evidence must be true"
+        )
+    for field in (
+        "may_execute_prompt_agent",
+        "may_write_ontology_package",
+        "may_update_ontology_lockfile",
+        "may_mutate_canonical_specs",
+        "may_mark_candidate_accepted",
+    ):
+        if require_bool(consumer_boundary, field, "review_surface.consumer_boundary") is not False:
+            raise ValueError(f"review_surface.consumer_boundary.{field} must be false")
+    authority_boundary = require_object(review_surface, "authority_boundary", "review_surface")
+    for field in (
+        "semantic_review_surface_is_authority",
+        "supervisor_semantic_gate_is_authority",
+        "prompt_agent_execution_allowed",
+        "automatic_import_lock_update",
+        "automatic_canonical_node_update",
+        "canonical_mutations_allowed",
+    ):
+        if (
+            require_bool(authority_boundary, field, "review_surface.authority_boundary")
+            is not False
+        ):
+            raise ValueError(f"review_surface.authority_boundary.{field} must be false")
+    return review_surface
+
+
+def build_ontology_supervisor_semantic_gate(
+    semantic_policy: dict[str, Any],
+    *,
+    semantic_policy_path: Path,
+    review_surface: dict[str, Any],
+) -> dict[str, Any]:
+    require_semantic_control_policy(semantic_policy)
+    require_ontology_semantic_review_surface(review_surface)
+
+    gate_contract = require_object(
+        semantic_policy, "supervisor_semantic_gate_contract", "semantic_control_policy"
+    )
+    semantic_layout = require_object(
+        semantic_policy, "repository_layout", "semantic_control_policy"
+    )
+    semantic_review_surface_artifact = require_surface_output_artifact(
+        review_surface, "semantic_review_surface"
+    )
+    supervisor_semantic_gate_artifact = require_layout_path(
+        semantic_layout, "supervisor_semantic_gate"
+    )
+    source_artifacts = copy_json_object(
+        require_object(review_surface, "source_artifacts", "review_surface")
+    )
+    source_artifacts["semantic_review_surface"] = semantic_review_surface_artifact
+    summary = require_object(review_surface, "summary", "review_surface")
+    review_items = review_surface["review_items"]
+    assert isinstance(review_items, list)
+
+    blocking_states = set(
+        require_string_list(
+            gate_contract,
+            "blocking_review_states",
+            "semantic_control_policy.supervisor_semantic_gate_contract",
+        )
+    )
+    review_states = set(
+        require_string_list(
+            gate_contract,
+            "review_required_states",
+            "semantic_control_policy.supervisor_semantic_gate_contract",
+        )
+    )
+    blocking_item_ids: list[str] = []
+    review_required_item_ids: list[str] = []
+    candidate_item_ids: list[str] = []
+    for index, raw_item in enumerate(review_items):
+        if not isinstance(raw_item, dict):
+            raise ValueError(f"review_surface.review_items[{index}] must be an object")
+        item_id = require_string(raw_item, "item_id", f"review_surface.review_items[{index}]")
+        review_state = require_string(
+            raw_item, "review_state", f"review_surface.review_items[{index}]"
+        )
+        item_kind = require_string(raw_item, "item_kind", f"review_surface.review_items[{index}]")
+        if review_state in blocking_states:
+            blocking_item_ids.append(item_id)
+        elif review_state in review_states:
+            review_required_item_ids.append(item_id)
+        if item_kind == "ontology_delta_candidate":
+            candidate_item_ids.append(item_id)
+
+    blocking_count = require_int(summary, "blocking_count", "review_surface.summary")
+    review_required_count = require_int(summary, "review_required_count", "review_surface.summary")
+    candidate_count = require_int(summary, "candidate_count", "review_surface.summary")
+    if blocking_count != len(blocking_item_ids):
+        raise ValueError(
+            "review_surface.summary.blocking_count must match blocking review item count"
+        )
+    if blocking_count or blocking_item_ids:
+        gate_state = "blocked"
+        outcome = "semantic_gate_blocked"
+        required_human_action = "resolve_blocking_ontology_semantic_findings"
+    elif review_required_count or candidate_count or review_required_item_ids:
+        gate_state = "review_pending"
+        outcome = "semantic_review_pending"
+        required_human_action = "review_ontology_semantic_items"
+    else:
+        gate_state = "clear"
+        outcome = "semantic_gate_clear"
+        required_human_action = "none"
+
+    gate_states = set(
+        require_string_list(
+            gate_contract,
+            "gate_states",
+            "semantic_control_policy.supervisor_semantic_gate_contract",
+        )
+    )
+    if gate_state not in gate_states:
+        raise ValueError(
+            "semantic_control_policy.supervisor_semantic_gate_contract.gate_states "
+            f"does not declare computed gate state {gate_state}"
+        )
+
+    invocation_boundary = copy_json_object(
+        require_object(
+            gate_contract,
+            "typed_invocation_boundary",
+            "semantic_control_policy.supervisor_semantic_gate_contract",
+        )
+    )
+    invocation_boundary["input_artifact"] = semantic_review_surface_artifact
+    invocation_boundary["output_artifact"] = supervisor_semantic_gate_artifact
+    return {
+        "artifact_kind": require_string(
+            gate_contract,
+            "artifact_kind",
+            "semantic_control_policy.supervisor_semantic_gate_contract",
+        ),
+        "schema_version": 1,
+        "proposal_id": "0109",
+        "policy_basis": semantic_policy["policy_basis"],
+        "source_policy": relative_path(semantic_policy_path),
+        "source_artifacts": source_artifacts,
+        "target": copy_json_object(
+            require_object(
+                gate_contract,
+                "target",
+                "semantic_control_policy.supervisor_semantic_gate_contract",
+            )
+        ),
+        "canonical_mutations_allowed": False,
+        "tracked_artifacts_written": False,
+        "typed_invocation_boundary": invocation_boundary,
+        "gate": {
+            "gate_state": gate_state,
+            "outcome": outcome,
+            "required_human_action": required_human_action,
+            "blocking_item_ids": blocking_item_ids,
+            "review_required_item_ids": review_required_item_ids,
+            "candidate_item_ids": candidate_item_ids,
+        },
+        "evidence_refs": {
+            "evidence_sections": require_string_list(
+                gate_contract,
+                "evidence_sections",
+                "semantic_control_policy.supervisor_semantic_gate_contract",
+            ),
+            "source_artifacts": source_artifacts,
+            "review_item_ids": [
+                require_string(item, "item_id", "review_surface.review_items")
+                for item in review_items
+                if isinstance(item, dict)
+            ],
+            "blocking_item_ids": blocking_item_ids,
+            "review_required_item_ids": review_required_item_ids,
+            "candidate_item_ids": candidate_item_ids,
+        },
+        "failure_modes": require_string_list(
+            gate_contract,
+            "failure_modes",
+            "semantic_control_policy.supervisor_semantic_gate_contract",
+        ),
+        "consumer_boundary": copy_json_object(
+            require_object(
+                gate_contract,
+                "consumer_boundary",
+                "semantic_control_policy.supervisor_semantic_gate_contract",
+            )
+        ),
+        "authority_boundary": copy_json_object(
+            require_object(semantic_policy, "authority_boundary", "semantic_control_policy")
+        ),
+        "summary": {
+            "status": gate_state,
+            "source_status": require_string(summary, "status", "review_surface.summary"),
+            "blocking_count": blocking_count,
+            "review_required_count": review_required_count,
+            "candidate_count": candidate_count,
+            "review_item_count": require_int(
+                summary, "review_item_count", "review_surface.summary"
+            ),
+            "next_gap": require_string(
+                gate_contract,
+                "next_gap",
+                "semantic_control_policy.supervisor_semantic_gate_contract",
+            ),
+        },
+        "output_artifact": supervisor_semantic_gate_artifact,
+    }
+
+
 def build_ontology_semantic_lint_smoke(
     semantic_policy: dict[str, Any],
     *,
@@ -2560,6 +2977,11 @@ def build_ontology_import_surfaces(
                 lint_report=semantic_lint_report,
                 review_packet=surfaces["ontology_delta_candidate_review_packet"],
             )
+            surfaces["supervisor_semantic_gate"] = build_ontology_supervisor_semantic_gate(
+                semantic_policy,
+                semantic_policy_path=semantic_policy_path,
+                review_surface=surfaces["semantic_review_surface"],
+            )
             surfaces["semantic_lint_smoke"] = build_ontology_semantic_lint_smoke(
                 semantic_policy,
                 semantic_policy_path=semantic_policy_path,
@@ -2608,6 +3030,10 @@ def write_ontology_import_surfaces(
     if "semantic_review_surface" in surfaces:
         destinations["semantic_review_surface"] = require_surface_output_artifact(
             surfaces["semantic_review_surface"], "semantic_review_surface"
+        )
+    if "supervisor_semantic_gate" in surfaces:
+        destinations["supervisor_semantic_gate"] = require_surface_output_artifact(
+            surfaces["supervisor_semantic_gate"], "supervisor_semantic_gate"
         )
     if "semantic_lint_smoke" in surfaces:
         destinations["semantic_lint_smoke"] = require_surface_output_artifact(

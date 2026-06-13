@@ -7,7 +7,8 @@
     "docs/proposals/0104_ontology_semantic_context_pack.md",
     "docs/proposals/0105_ontology_semantic_lint_report.md",
     "docs/proposals/0106_ontology_delta_candidate_review_packet.md",
-    "docs/proposals/0108_ontology_semantic_review_surface.md"
+    "docs/proposals/0108_ontology_semantic_review_surface.md",
+    "docs/proposals/0109_ontology_supervisor_semantic_gate.md"
   ],
   "policy_basis": "docs/proposals/0100_ontology_grounded_semantic_control.md",
   "repository_layout": {
@@ -15,6 +16,7 @@
     "semantic_context_pack": "runs/ontology_semantic_context_pack.json",
     "semantic_lint_report": "runs/ontology_semantic_lint_report.json",
     "semantic_review_surface": "runs/ontology_semantic_review_surface.json",
+    "supervisor_semantic_gate": "runs/ontology_supervisor_semantic_gate.json",
     "semantic_lint_smoke": "runs/ontology_semantic_lint_smoke.json"
   },
   "derived_output_contract": {
@@ -162,6 +164,55 @@
     },
     "next_gap": "build_specspace_semantic_review_surface_consumer"
   },
+  "supervisor_semantic_gate_contract": {
+    "artifact_kind": "ontology_supervisor_semantic_gate",
+    "source_review_surface_artifact_kind": "ontology_semantic_review_surface",
+    "target": {
+      "target_kind": "proposal",
+      "target_ref": "SG-RFC-0109"
+    },
+    "gate_states": [
+      "clear",
+      "review_pending",
+      "blocked"
+    ],
+    "blocking_review_states": [
+      "blocked"
+    ],
+    "review_required_states": [
+      "needs_review",
+      "needs_ontology_owner_review"
+    ],
+    "evidence_sections": [
+      "source_artifacts",
+      "grounding_summary",
+      "blocking_findings",
+      "review_required_findings",
+      "delta_candidates",
+      "review_actions"
+    ],
+    "failure_modes": [
+      "missing_or_invalid_semantic_review_surface",
+      "blocking_semantic_findings",
+      "ontology_owner_review_required"
+    ],
+    "typed_invocation_boundary": {
+      "input_artifact": "runs/ontology_semantic_review_surface.json",
+      "output_artifact": "runs/ontology_supervisor_semantic_gate.json",
+      "prompt_agent_executed": false,
+      "prompt_agent_execution_allowed": false,
+      "supervisor_prompt_mutation_allowed": false
+    },
+    "consumer_boundary": {
+      "for_supervisor_gate_evidence": true,
+      "may_execute_prompt_agent": false,
+      "may_write_ontology_package": false,
+      "may_update_ontology_lockfile": false,
+      "may_mutate_canonical_specs": false,
+      "may_mark_candidate_accepted": false
+    },
+    "next_gap": "wire_supervisor_semantic_gate_into_targeted_runs"
+  },
   "semantic_lint_contract": {
     "future_artifact_kind": "ontology_semantic_lint_report",
     "smoke_artifact_kind": "ontology_semantic_lint_smoke",
@@ -261,6 +312,7 @@
     "smoke_report_is_authority": false,
     "ontology_delta_candidate_is_authority": false,
     "semantic_review_surface_is_authority": false,
+    "supervisor_semantic_gate_is_authority": false,
     "ontology_governance_required": true,
     "specgraph_proposal_review_required": true,
     "prompt_agent_execution_allowed": false,

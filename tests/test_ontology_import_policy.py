@@ -130,6 +130,9 @@ def test_ontology_semantic_control_policy_defines_review_only_contract() -> None
     assert policy["repository_layout"]["semantic_review_surface"] == (
         "runs/ontology_semantic_review_surface.json"
     )
+    assert policy["repository_layout"]["supervisor_semantic_gate"] == (
+        "runs/ontology_supervisor_semantic_gate.json"
+    )
     assert policy["repository_layout"]["ontology_delta_candidate_review_packet"] == (
         "runs/ontology_delta_candidate_review_packet.json"
     )
@@ -208,6 +211,37 @@ def test_ontology_semantic_control_policy_defines_review_only_contract() -> None
     assert review_surface_contract["consumer_boundary"]["may_update_ontology_lockfile"] is False
     assert review_surface_contract["consumer_boundary"]["may_mutate_canonical_specs"] is False
     assert review_surface_contract["consumer_boundary"]["may_mark_candidate_accepted"] is False
+    supervisor_gate_contract = policy["supervisor_semantic_gate_contract"]
+    assert supervisor_gate_contract["artifact_kind"] == "ontology_supervisor_semantic_gate"
+    assert supervisor_gate_contract["source_review_surface_artifact_kind"] == (
+        "ontology_semantic_review_surface"
+    )
+    assert supervisor_gate_contract["target"] == {
+        "target_kind": "proposal",
+        "target_ref": "SG-RFC-0109",
+    }
+    assert {"clear", "review_pending", "blocked"}.issubset(
+        set(supervisor_gate_contract["gate_states"])
+    )
+    assert "blocked" in supervisor_gate_contract["blocking_review_states"]
+    assert {"needs_review", "needs_ontology_owner_review"}.issubset(
+        set(supervisor_gate_contract["review_required_states"])
+    )
+    assert supervisor_gate_contract["consumer_boundary"]["for_supervisor_gate_evidence"] is True
+    assert supervisor_gate_contract["consumer_boundary"]["may_execute_prompt_agent"] is False
+    assert supervisor_gate_contract["consumer_boundary"]["may_write_ontology_package"] is False
+    assert supervisor_gate_contract["consumer_boundary"]["may_update_ontology_lockfile"] is False
+    assert supervisor_gate_contract["consumer_boundary"]["may_mutate_canonical_specs"] is False
+    assert supervisor_gate_contract["consumer_boundary"]["may_mark_candidate_accepted"] is False
+    assert supervisor_gate_contract["typed_invocation_boundary"]["prompt_agent_executed"] is False
+    assert (
+        supervisor_gate_contract["typed_invocation_boundary"]["prompt_agent_execution_allowed"]
+        is False
+    )
+    assert (
+        supervisor_gate_contract["typed_invocation_boundary"]["supervisor_prompt_mutation_allowed"]
+        is False
+    )
     contract = policy["semantic_lint_contract"]
     assert contract["smoke_artifact_kind"] == "ontology_semantic_lint_smoke"
     assert {
@@ -221,6 +255,7 @@ def test_ontology_semantic_control_policy_defines_review_only_contract() -> None
     assert boundary["smoke_report_is_authority"] is False
     assert boundary["ontology_delta_candidate_is_authority"] is False
     assert boundary["semantic_review_surface_is_authority"] is False
+    assert boundary["supervisor_semantic_gate_is_authority"] is False
     assert boundary["prompt_agent_execution_allowed"] is False
     assert boundary["automatic_canonical_node_update"] is False
 
@@ -656,6 +691,79 @@ def test_ontology_semantic_review_surface_builds_specspace_surface() -> None:
     assert surface["authority_boundary"]["semantic_review_surface_is_authority"] is False
 
 
+def test_ontology_supervisor_semantic_gate_builds_gate_evidence() -> None:
+    module = load_ontology_imports_module()
+
+    surfaces = module.build_ontology_import_surfaces(FIXTURE)
+
+    gate = surfaces["supervisor_semantic_gate"]
+    assert gate["artifact_kind"] == "ontology_supervisor_semantic_gate"
+    assert gate["proposal_id"] == "0109"
+    assert gate["target"] == {
+        "target_kind": "proposal",
+        "target_ref": "SG-RFC-0109",
+    }
+    assert gate["source_artifacts"] == {
+        "semantic_context_pack": "runs/ontology_semantic_context_pack.json",
+        "semantic_lint_report": "runs/ontology_semantic_lint_report.json",
+        "ontology_delta_candidate_review_packet": (
+            "runs/ontology_delta_candidate_review_packet.json"
+        ),
+        "semantic_review_surface": "runs/ontology_semantic_review_surface.json",
+    }
+    assert gate["canonical_mutations_allowed"] is False
+    assert gate["tracked_artifacts_written"] is False
+    assert gate["typed_invocation_boundary"] == {
+        "input_artifact": "runs/ontology_semantic_review_surface.json",
+        "output_artifact": "runs/ontology_supervisor_semantic_gate.json",
+        "prompt_agent_executed": False,
+        "prompt_agent_execution_allowed": False,
+        "supervisor_prompt_mutation_allowed": False,
+    }
+    assert gate["gate"] == {
+        "gate_state": "blocked",
+        "outcome": "semantic_gate_blocked",
+        "required_human_action": "resolve_blocking_ontology_semantic_findings",
+        "blocking_item_ids": [
+            "semantic-finding-exampolicy",
+            "semantic-finding-allows-policy",
+        ],
+        "review_required_item_ids": [
+            "semantic-finding-casfunction",
+            "ontology-delta-candidate-examcalc-casfunction",
+        ],
+        "candidate_item_ids": ["ontology-delta-candidate-examcalc-casfunction"],
+    }
+    assert gate["summary"] == {
+        "status": "blocked",
+        "source_status": "blocked_relation_conflict",
+        "blocking_count": 2,
+        "review_required_count": 1,
+        "candidate_count": 1,
+        "review_item_count": 4,
+        "next_gap": "wire_supervisor_semantic_gate_into_targeted_runs",
+    }
+    assert gate["evidence_refs"]["source_artifacts"]["semantic_review_surface"] == (
+        "runs/ontology_semantic_review_surface.json"
+    )
+    assert gate["evidence_refs"]["blocking_item_ids"] == [
+        "semantic-finding-exampolicy",
+        "semantic-finding-allows-policy",
+    ]
+    assert gate["failure_modes"] == [
+        "missing_or_invalid_semantic_review_surface",
+        "blocking_semantic_findings",
+        "ontology_owner_review_required",
+    ]
+    assert gate["consumer_boundary"]["for_supervisor_gate_evidence"] is True
+    assert gate["consumer_boundary"]["may_execute_prompt_agent"] is False
+    assert gate["consumer_boundary"]["may_write_ontology_package"] is False
+    assert gate["consumer_boundary"]["may_update_ontology_lockfile"] is False
+    assert gate["consumer_boundary"]["may_mutate_canonical_specs"] is False
+    assert gate["consumer_boundary"]["may_mark_candidate_accepted"] is False
+    assert gate["authority_boundary"]["supervisor_semantic_gate_is_authority"] is False
+
+
 def test_ontology_semantic_review_surface_rejects_authority_expansion(
     tmp_path: Path,
 ) -> None:
@@ -676,6 +784,83 @@ def test_ontology_semantic_review_surface_rejects_authority_expansion(
             fixture_path,
             policy_path=policy_path,
             semantic_policy_path=semantic_policy_path,
+        )
+
+
+def test_ontology_supervisor_semantic_gate_rejects_policy_authority_expansion(
+    tmp_path: Path,
+) -> None:
+    module = load_ontology_imports_module()
+    module.ROOT = tmp_path
+    fixture_path = write_temp_fixture(tmp_path, load_fixture_payload())
+    policy_path = write_temp_policy(tmp_path)
+    semantic_policy = json.loads(
+        (ROOT / "tools" / "ontology_semantic_control_policy.json").read_text()
+    )
+    semantic_policy["supervisor_semantic_gate_contract"]["consumer_boundary"][
+        "may_execute_prompt_agent"
+    ] = True
+    semantic_policy_path = write_temp_semantic_control_policy(tmp_path, semantic_policy)
+
+    with pytest.raises(ValueError, match="may_execute_prompt_agent"):
+        module.build_ontology_import_surfaces(
+            fixture_path,
+            policy_path=policy_path,
+            semantic_policy_path=semantic_policy_path,
+        )
+
+
+def test_ontology_supervisor_semantic_gate_rejects_source_authority_expansion() -> None:
+    module = load_ontology_imports_module()
+    semantic_policy = json.loads(
+        (ROOT / "tools" / "ontology_semantic_control_policy.json").read_text()
+    )
+    surfaces = module.build_ontology_import_surfaces(FIXTURE)
+    review_surface = json.loads(json.dumps(surfaces["semantic_review_surface"]))
+    review_surface["consumer_boundary"]["may_execute_prompt_agent"] = True
+
+    with pytest.raises(ValueError, match="may_execute_prompt_agent"):
+        module.build_ontology_supervisor_semantic_gate(
+            semantic_policy,
+            semantic_policy_path=ROOT / "tools" / "ontology_semantic_control_policy.json",
+            review_surface=review_surface,
+        )
+
+
+def test_ontology_supervisor_semantic_gate_rejects_source_supervisor_authority() -> None:
+    module = load_ontology_imports_module()
+    semantic_policy = json.loads(
+        (ROOT / "tools" / "ontology_semantic_control_policy.json").read_text()
+    )
+    surfaces = module.build_ontology_import_surfaces(FIXTURE)
+    review_surface = json.loads(json.dumps(surfaces["semantic_review_surface"]))
+    review_surface["authority_boundary"]["supervisor_semantic_gate_is_authority"] = True
+
+    with pytest.raises(ValueError, match="supervisor_semantic_gate_is_authority"):
+        module.build_ontology_supervisor_semantic_gate(
+            semantic_policy,
+            semantic_policy_path=ROOT / "tools" / "ontology_semantic_control_policy.json",
+            review_surface=review_surface,
+        )
+
+
+def test_ontology_supervisor_semantic_gate_rejects_stale_blocking_summary() -> None:
+    module = load_ontology_imports_module()
+    semantic_policy = json.loads(
+        (ROOT / "tools" / "ontology_semantic_control_policy.json").read_text()
+    )
+    surfaces = module.build_ontology_import_surfaces(FIXTURE)
+    review_surface = json.loads(json.dumps(surfaces["semantic_review_surface"]))
+    review_surface["summary"]["blocking_count"] = 1
+    for item in review_surface["review_items"]:
+        if item["review_state"] == "blocked":
+            item["review_state"] = "needs_review"
+
+    with pytest.raises(ValueError, match="blocking_count"):
+        module.build_ontology_supervisor_semantic_gate(
+            semantic_policy,
+            semantic_policy_path=ROOT / "tools" / "ontology_semantic_control_policy.json",
+            review_surface=review_surface,
         )
 
 
@@ -773,6 +958,9 @@ def test_ontology_semantic_write_uses_surface_output_artifact(tmp_path: Path) ->
     semantic_policy["repository_layout"]["semantic_review_surface"] = (
         "runs/custom_semantic_review_surface.json"
     )
+    semantic_policy["repository_layout"]["supervisor_semantic_gate"] = (
+        "runs/custom_supervisor_semantic_gate.json"
+    )
     semantic_policy["repository_layout"]["semantic_lint_smoke"] = (
         "runs/custom_semantic_lint_smoke.json"
     )
@@ -783,6 +971,17 @@ def test_ontology_semantic_write_uses_surface_output_artifact(tmp_path: Path) ->
         policy_path=policy_path,
         semantic_policy_path=semantic_policy_path,
     )
+    gate = surfaces["supervisor_semantic_gate"]
+    assert gate["typed_invocation_boundary"]["input_artifact"] == (
+        "runs/custom_semantic_review_surface.json"
+    )
+    assert gate["typed_invocation_boundary"]["output_artifact"] == (
+        "runs/custom_supervisor_semantic_gate.json"
+    )
+    assert gate["source_artifacts"]["semantic_review_surface"] == (
+        "runs/custom_semantic_review_surface.json"
+    )
+    assert gate["output_artifact"] == "runs/custom_supervisor_semantic_gate.json"
     written = module.write_ontology_import_surfaces(
         surfaces,
         policy_path=policy_path,
@@ -794,11 +993,13 @@ def test_ontology_semantic_write_uses_surface_output_artifact(tmp_path: Path) ->
     assert "runs/custom_semantic_context_pack.json" in written_paths
     assert "runs/custom_semantic_lint_report.json" in written_paths
     assert "runs/custom_semantic_review_surface.json" in written_paths
+    assert "runs/custom_supervisor_semantic_gate.json" in written_paths
     assert "runs/custom_semantic_lint_smoke.json" in written_paths
     assert not (tmp_path / "runs" / "ontology_delta_candidate_review_packet.json").exists()
     assert not (tmp_path / "runs" / "ontology_semantic_context_pack.json").exists()
     assert not (tmp_path / "runs" / "ontology_semantic_lint_report.json").exists()
     assert not (tmp_path / "runs" / "ontology_semantic_review_surface.json").exists()
+    assert not (tmp_path / "runs" / "ontology_supervisor_semantic_gate.json").exists()
     assert not (tmp_path / "runs" / "ontology_semantic_lint_smoke.json").exists()
 
 
@@ -965,6 +1166,7 @@ def test_make_ontology_imports_writes_declared_surfaces() -> None:
             "ontology_delta_candidate_review_packet"
         ),
         "runs/ontology_semantic_review_surface.json": "ontology_semantic_review_surface",
+        "runs/ontology_supervisor_semantic_gate.json": "ontology_supervisor_semantic_gate",
         "runs/ontology_semantic_lint_smoke.json": "ontology_semantic_lint_smoke",
     }
     for relative_path, artifact_kind in expected.items():
@@ -975,11 +1177,37 @@ def test_make_ontology_imports_writes_declared_surfaces() -> None:
             "ontology_semantic_context_pack": "0104",
             "ontology_semantic_lint_report": "0105",
             "ontology_semantic_review_surface": "0108",
+            "ontology_supervisor_semantic_gate": "0109",
             "ontology_semantic_lint_smoke": "0103",
         }.get(artifact_kind, "0060")
         assert payload["proposal_id"] == expected_proposal_id
         assert payload["canonical_mutations_allowed"] is False
         assert payload["tracked_artifacts_written"] is False
+
+
+def test_supervisor_build_ontology_supervisor_semantic_gate_command() -> None:
+    result = subprocess.run(
+        [
+            sys.executable,
+            "tools/supervisor.py",
+            "--build-ontology-supervisor-semantic-gate",
+        ],
+        cwd=ROOT,
+        check=True,
+        capture_output=True,
+        text=True,
+    )
+
+    payload = json.loads(result.stdout)
+    assert payload["artifact_kind"] == "ontology_supervisor_semantic_gate_report"
+    assert payload["summary"]["gate_state"] == "blocked"
+    assert payload["summary"]["required_human_action"] == (
+        "resolve_blocking_ontology_semantic_findings"
+    )
+    assert payload["summary"]["artifact_path"] == "runs/ontology_supervisor_semantic_gate.json"
+    written_paths = set(payload["written_artifacts"]["paths"])
+    assert "runs/ontology_semantic_review_surface.json" in written_paths
+    assert "runs/ontology_supervisor_semantic_gate.json" in written_paths
 
 
 def test_ontology_import_fixture_validation_rejects_missing_subject(tmp_path: Path) -> None:
@@ -1522,4 +1750,47 @@ def test_proposal_0108_runtime_registry_tracks_semantic_review_surface() -> None
     assert (
         "tools/README.md",
         "runs/ontology_semantic_review_surface.json",
+    ) in observation_markers
+
+
+def test_proposal_0109_runtime_registry_tracks_supervisor_semantic_gate() -> None:
+    registry = json.loads((ROOT / "tools" / "proposal_runtime_registry.json").read_text())
+    entries = {entry["proposal_id"]: entry for entry in registry if isinstance(entry, dict)}
+    proposal = entries["0109"]
+
+    runtime_markers = {(item["path"], item["pattern"]) for item in proposal["runtime_markers"]}
+    validation_markers = {
+        (item["path"], item["pattern"]) for item in proposal["validation_markers"]
+    }
+    observation_markers = {
+        (item["path"], item["pattern"]) for item in proposal["observation_markers"]
+    }
+
+    assert (
+        "tools/ontology_semantic_control_policy.json",
+        "supervisor_semantic_gate_contract",
+    ) in runtime_markers
+    assert (
+        "tools/ontology_imports.py",
+        "def build_ontology_supervisor_semantic_gate(",
+    ) in runtime_markers
+    assert (
+        "tools/supervisor.py",
+        "--build-ontology-supervisor-semantic-gate",
+    ) in runtime_markers
+    assert (
+        "tests/test_ontology_import_policy.py",
+        "def test_ontology_supervisor_semantic_gate_builds_gate_evidence(",
+    ) in validation_markers
+    assert (
+        "tests/test_ontology_import_policy.py",
+        "def test_supervisor_build_ontology_supervisor_semantic_gate_command(",
+    ) in validation_markers
+    assert (
+        "tools/README.md",
+        "runs/ontology_supervisor_semantic_gate.json",
+    ) in observation_markers
+    assert (
+        "docs/supervisor_manual.md",
+        "--build-ontology-supervisor-semantic-gate",
     ) in observation_markers

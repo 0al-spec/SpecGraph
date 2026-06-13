@@ -5531,7 +5531,9 @@
       "docs/archive/proposal_sources/0103_ontology_semantic_control_policy.md",
       "tools/ontology_semantic_control_policy.json",
       "tools/ontology_imports.py",
+      "tools/supervisor.py",
       "tools/README.md",
+      "docs/supervisor_manual.md",
       "Makefile",
       "tests/test_ontology_import_policy.py",
       "runs/ontology_semantic_lint_smoke.json"
@@ -5858,6 +5860,70 @@
       {
         "path": "docs/proposals/0108_ontology_semantic_review_surface.md",
         "pattern": "build_specspace_semantic_review_surface_consumer"
+      }
+    ]
+  },
+  {
+    "proposal_id": "0109",
+    "posture": "bounded_runtime_followup",
+    "runtime_surfaces": [
+      "docs/proposals/0109_ontology_supervisor_semantic_gate.md",
+      "docs/archive/proposal_sources/0109_ontology_supervisor_semantic_gate.md",
+      "tools/ontology_semantic_control_policy.json",
+      "tools/ontology_imports.py",
+      "tools/README.md",
+      "Makefile",
+      "tests/test_ontology_import_policy.py",
+      "runs/ontology_supervisor_semantic_gate.json"
+    ],
+    "runtime_markers": [
+      {
+        "path": "tools/ontology_semantic_control_policy.json",
+        "pattern": "supervisor_semantic_gate_contract"
+      },
+      {
+        "path": "tools/ontology_imports.py",
+        "pattern": "def build_ontology_supervisor_semantic_gate("
+      },
+      {
+        "path": "tools/ontology_imports.py",
+        "pattern": "\"supervisor_semantic_gate\""
+      },
+      {
+        "path": "tools/supervisor.py",
+        "pattern": "--build-ontology-supervisor-semantic-gate"
+      }
+    ],
+    "validation_markers": [
+      {
+        "path": "tests/test_ontology_import_policy.py",
+        "pattern": "def test_ontology_supervisor_semantic_gate_builds_gate_evidence("
+      },
+      {
+        "path": "tests/test_ontology_import_policy.py",
+        "pattern": "runs/ontology_supervisor_semantic_gate.json"
+      },
+      {
+        "path": "tests/test_ontology_import_policy.py",
+        "pattern": "def test_supervisor_build_ontology_supervisor_semantic_gate_command("
+      }
+    ],
+    "observation_markers": [
+      {
+        "path": "Makefile",
+        "pattern": "ontology-imports:"
+      },
+      {
+        "path": "tools/README.md",
+        "pattern": "runs/ontology_supervisor_semantic_gate.json"
+      },
+      {
+        "path": "docs/supervisor_manual.md",
+        "pattern": "--build-ontology-supervisor-semantic-gate"
+      },
+      {
+        "path": "docs/proposals/0109_ontology_supervisor_semantic_gate.md",
+        "pattern": "wire_supervisor_semantic_gate_into_targeted_runs"
       }
     ]
   }

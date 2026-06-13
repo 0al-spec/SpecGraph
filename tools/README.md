@@ -128,12 +128,18 @@ Supervisor modes:
   actions from that context pack, then
   `runs/ontology_delta_candidate_review_packet.json` for explicit ontology-owner
   review actions and `runs/ontology_semantic_review_surface.json` as the
-  SpecSpace/supervisor-facing review surface, plus
+  SpecSpace/supervisor-facing review surface,
+  `runs/ontology_supervisor_semantic_gate.json` as typed supervisor gate
+  evidence derived from that surface, plus
   `runs/ontology_semantic_lint_smoke.json`,
   classifying accepted, alias, unknown, deprecated, and relation-conflict terms
   against the imported ontology fixture. These surfaces resolve known imported
   refs and preserve unresolved refs as reviewable ontology gaps without
   mutating canonical `specs/nodes/*.yaml`.
+- `--build-ontology-supervisor-semantic-gate`: refresh the same ontology
+  semantic surfaces through the supervisor entrypoint and print a compact gate
+  report for `runs/ontology_supervisor_semantic_gate.json` without running
+  prompt agents or mutating canonical specs.
 - `--build-supervisor-executor-adapter-index`: build
   `runs/supervisor_executor_adapter_index.json` from the 0056 policy so
   executor backend availability, capability gaps, and Agent Passport CLI
