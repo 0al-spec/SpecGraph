@@ -326,6 +326,33 @@ def test_ontology_semantic_context_pack_builds_agent_context() -> None:
     assert context_pack["authority_boundary"]["context_pack_is_authority"] is False
 
 
+def test_ontology_semantic_context_pack_rejects_non_relation_conflict_embedding(
+    tmp_path: Path,
+) -> None:
+    module = load_ontology_imports_module()
+    module.ROOT = tmp_path
+    fixture_path = write_temp_fixture(tmp_path, load_fixture_payload())
+    policy_path = write_temp_policy(tmp_path)
+    semantic_policy = json.loads(
+        (ROOT / "tools" / "ontology_semantic_control_policy.json").read_text()
+    )
+    semantic_policy["semantic_controls"]["relation_conflicts"][0]["accepted_relation_ref"] = (
+        "examcalc:Exam"
+    )
+    semantic_policy_path = write_temp_semantic_control_policy(tmp_path, semantic_policy)
+
+    surfaces = module.build_ontology_import_surfaces(
+        fixture_path,
+        policy_path=policy_path,
+        semantic_policy_path=semantic_policy_path,
+    )
+
+    conflict = surfaces["semantic_context_pack"]["relation_conflicts"][0]
+    assert conflict["accepted_relation_ref"] == "examcalc:Exam"
+    assert conflict["status"] == "unresolved_relation_ref"
+    assert "accepted_relation" not in conflict
+
+
 def test_ontology_semantic_default_policy_follows_root_override(tmp_path: Path) -> None:
     module = load_ontology_imports_module()
     module.ROOT = tmp_path

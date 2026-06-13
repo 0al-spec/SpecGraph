@@ -1019,7 +1019,7 @@ def build_ontology_semantic_context_pack(
         deprecated_terms.append(deprecated)
 
     relation_conflicts = []
-    accepted_relation_refs = {entry["source_ref"] for entry in accepted_relations}
+    accepted_relations_by_ref = {entry["source_ref"]: entry for entry in accepted_relations}
     for normalized_term, control in sorted(
         semantic_control_map(semantic_policy, "relation_conflicts").items()
     ):
@@ -1032,13 +1032,13 @@ def build_ontology_semantic_context_pack(
             "accepted_relation_ref": accepted_relation_ref,
             "status": (
                 "grounded"
-                if accepted_relation_ref in accepted_relation_refs
+                if accepted_relation_ref in accepted_relations_by_ref
                 else "unresolved_relation_ref"
             ),
             "reason": str(control.get("reason", "")).strip(),
         }
-        if accepted_relation_ref in accepted_by_ref:
-            conflict["accepted_relation"] = accepted_by_ref[accepted_relation_ref]
+        if accepted_relation_ref in accepted_relations_by_ref:
+            conflict["accepted_relation"] = accepted_relations_by_ref[accepted_relation_ref]
         relation_conflicts.append(conflict)
 
     raw_gaps = gap_index.get("gaps")
