@@ -29997,6 +29997,7 @@ def test_validate_executor_analysis_report_consumption_request_accepts_analysis_
         "source_review_packet_valid": True,
         "source_review_packet_status": "ready_for_review",
         "source_review_state": "ready_for_human_review",
+        "source_report_status": "valid_report",
         "source_report_kind": "analysis_report",
         "next_gap": "build_executor_analysis_report_review_outcome",
     }
@@ -30264,6 +30265,24 @@ def test_build_local_operator_executor_analysis_report_review_outcome_blocks_pri
     )
 
 
+def test_build_local_operator_executor_analysis_report_review_outcome_rejects_status_spoof(
+    supervisor_module: object,
+) -> None:
+    packet = supervisor_module.build_local_operator_executor_report_review_packet(
+        supervisor_module.default_local_operator_executor_report_sample()
+    )
+    packet["review_packet"]["source_report_status"] = "invalid_report"
+
+    outcome = supervisor_module.build_local_operator_executor_analysis_report_review_outcome(packet)
+
+    assert outcome["summary"]["status"] == "blocked_invalid_review_packet"
+    assert outcome["analysis_review_outcome"]["source_report_status"] == "valid_report"
+    assert any(
+        finding["code"] == "analysis_source_review_packet_source_report_status_mismatch"
+        for finding in outcome["analysis_consumption_validation"]["findings"]
+    )
+
+
 def test_validate_local_operator_executor_analysis_report_review_outcome_rejects_authority(
     supervisor_module: object,
 ) -> None:
@@ -30284,6 +30303,67 @@ def test_validate_local_operator_executor_analysis_report_review_outcome_rejects
     assert "analysis_report_review_outcome_allows_canonical_mutation" in finding_codes
     assert "analysis_report_review_outcome_allows_proposal_draft_candidate" in finding_codes
     assert "invalid_analysis_report_review_outcome_authority_boundary" in finding_codes
+
+
+def test_validate_local_operator_executor_analysis_report_review_outcome_requires_checks(
+    supervisor_module: object,
+) -> None:
+    packet = supervisor_module.build_local_operator_executor_report_review_packet(
+        supervisor_module.default_local_operator_executor_report_sample()
+    )
+    outcome = supervisor_module.build_local_operator_executor_analysis_report_review_outcome(packet)
+    outcome["checks"] = []
+
+    validation = supervisor_module.validate_local_operator_executor_analysis_report_review_outcome(
+        outcome
+    )
+
+    assert validation["valid"] is False
+    assert any(
+        finding["code"] == "missing_analysis_report_review_outcome_check"
+        for finding in validation["findings"]
+    )
+
+
+def test_validate_local_operator_executor_analysis_report_review_outcome_rejects_ready_wrong_kind(
+    supervisor_module: object,
+) -> None:
+    packet = supervisor_module.build_local_operator_executor_report_review_packet(
+        supervisor_module.default_local_operator_executor_report_sample()
+    )
+    outcome = supervisor_module.build_local_operator_executor_analysis_report_review_outcome(packet)
+    outcome["summary"]["report_kind"] = "proposal_draft"
+    outcome["analysis_review_outcome"]["source_report_kind"] = "proposal_draft"
+
+    validation = supervisor_module.validate_local_operator_executor_analysis_report_review_outcome(
+        outcome
+    )
+
+    assert validation["valid"] is False
+    finding_codes = {finding["code"] for finding in validation["findings"]}
+    assert "analysis_report_review_outcome_ready_report_kind_invalid" in finding_codes
+    assert "analysis_report_review_outcome_ready_source_kind_invalid" in finding_codes
+
+
+def test_validate_local_operator_executor_analysis_report_review_outcome_rejects_state_mismatch(
+    supervisor_module: object,
+) -> None:
+    packet = supervisor_module.build_local_operator_executor_report_review_packet(
+        supervisor_module.default_local_operator_executor_report_sample()
+    )
+    outcome = supervisor_module.build_local_operator_executor_analysis_report_review_outcome(packet)
+    outcome["summary"]["status"] = "blocked_consumption_policy"
+    outcome["analysis_review_outcome"]["outcome_state"] = "ready_for_operator_review"
+
+    validation = supervisor_module.validate_local_operator_executor_analysis_report_review_outcome(
+        outcome
+    )
+
+    assert validation["valid"] is False
+    assert any(
+        finding["code"] == "analysis_report_review_outcome_state_mismatch"
+        for finding in validation["findings"]
+    )
 
 
 def test_validate_executor_report_to_proposal_draft_request_rejects_missing_packet(

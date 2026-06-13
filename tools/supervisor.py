@@ -22318,6 +22318,7 @@ def validate_executor_report_review_packet_source_for_analysis_report(
     }
     packet_status = str(summary.get("status", "")).strip()
     review_state = str(nested_packet.get("review_state", "")).strip()
+    nested_source_report_status = str(nested_packet.get("source_report_status", "")).strip()
     report_kind = str(summary.get("report_kind", "")).strip()
     source_report_kind = str(source_report_normalized.get("report_kind", "")).strip()
     source_summary_status = str(source_report_normalized.get("summary_status", "")).strip()
@@ -22371,6 +22372,21 @@ def validate_executor_report_review_packet_source_for_analysis_report(
                 code="analysis_source_review_packet_source_report_not_valid_report",
                 field="review_packet.source_report_validation.normalized.summary_status",
                 message="Analysis report consumption requires a valid_report source report.",
+            )
+        )
+    if (
+        nested_source_report_status
+        and source_summary_status
+        and nested_source_report_status != source_summary_status
+    ):
+        findings.append(
+            executor_report_finding(
+                code="analysis_source_review_packet_source_report_status_mismatch",
+                field="review_packet.review_packet.source_report_status",
+                message=(
+                    "Analysis report consumption requires nested source_report_status to "
+                    "match validated source report summary status."
+                ),
             )
         )
     if source_report_kind not in allowed_report_kinds:
@@ -22449,6 +22465,7 @@ def validate_executor_report_review_packet_source_for_analysis_report(
             "source_review_packet_valid": bool(packet_validation.get("valid", False)),
             "source_review_packet_status": packet_status,
             "source_review_state": review_state,
+            "source_report_status": source_summary_status,
             "report_kind": report_kind,
             "source_report_kind": source_report_kind,
             "producer_kind": str(summary.get("producer_kind", "")).strip(),
@@ -22575,6 +22592,7 @@ def validate_executor_analysis_report_consumption_request(
             "source_review_packet_valid": source_normalized.get("source_review_packet_valid"),
             "source_review_packet_status": source_normalized.get("source_review_packet_status", ""),
             "source_review_state": source_normalized.get("source_review_state", ""),
+            "source_report_status": source_normalized.get("source_report_status", ""),
             "source_report_kind": source_normalized.get("source_report_kind", ""),
             "next_gap": str(
                 policy.get("next_gap", "build_executor_analysis_report_review_outcome")
@@ -22629,6 +22647,8 @@ def local_operator_executor_analysis_report_review_outcome_status(
             for finding in (policy_findings or [])
             if isinstance(finding, dict)
         }
+        if "analysis_source_review_packet_source_report_status_mismatch" in finding_codes:
+            return "blocked_invalid_review_packet"
         if any("authority_boundary" in code for code in finding_codes):
             return "blocked_authority_boundary"
         return "blocked_consumption_policy"
@@ -22765,6 +22785,9 @@ def validate_local_operator_executor_analysis_report_review_outcome(
     allowed_statuses = {
         str(status).strip() for status in contract.get("status_values", []) if str(status).strip()
     }
+    required_check_ids = [
+        str(check_id).strip() for check_id in contract.get("check_ids", []) if str(check_id).strip()
+    ]
     status = str(summary.get("status", "")).strip()
     if status not in allowed_statuses:
         findings.append(
@@ -22774,6 +22797,88 @@ def validate_local_operator_executor_analysis_report_review_outcome(
                 message="Analysis report review outcome status is not allowed.",
             )
         )
+    summary_report_kind = str(summary.get("report_kind", "")).strip()
+    outcome_source_report_kind = str(review_outcome.get("source_report_kind", "")).strip()
+    if status == "ready_for_operator_review" and summary_report_kind != "analysis_report":
+        findings.append(
+            executor_report_finding(
+                code="analysis_report_review_outcome_ready_report_kind_invalid",
+                field="summary.report_kind",
+                message=(
+                    "Ready analysis report review outcomes require report_kind=analysis_report."
+                ),
+            )
+        )
+    if status == "ready_for_operator_review" and outcome_source_report_kind != "analysis_report":
+        findings.append(
+            executor_report_finding(
+                code="analysis_report_review_outcome_ready_source_kind_invalid",
+                field="analysis_review_outcome.source_report_kind",
+                message=(
+                    "Ready analysis report review outcomes require source_report_kind="
+                    "analysis_report."
+                ),
+            )
+        )
+    if (
+        summary_report_kind
+        and outcome_source_report_kind
+        and summary_report_kind != outcome_source_report_kind
+    ):
+        findings.append(
+            executor_report_finding(
+                code="analysis_report_review_outcome_report_kind_mismatch",
+                field="analysis_review_outcome.source_report_kind",
+                message="Outcome source_report_kind must match summary.report_kind.",
+            )
+        )
+    outcome_state = str(review_outcome.get("outcome_state", "")).strip()
+    expected_outcome_state = (
+        "ready_for_operator_review" if status == "ready_for_operator_review" else "blocked"
+    )
+    if outcome_state != expected_outcome_state:
+        findings.append(
+            executor_report_finding(
+                code="analysis_report_review_outcome_state_mismatch",
+                field="analysis_review_outcome.outcome_state",
+                message="Outcome payload state must match summary.status.",
+            )
+        )
+    checks = outcome.get("checks", [])
+    if not isinstance(checks, list):
+        findings.append(
+            executor_report_finding(
+                code="analysis_report_review_outcome_checks_not_list",
+                field="checks",
+                message="Analysis report review outcome checks must be a list.",
+            )
+        )
+        checks = []
+    check_status_by_id = {
+        str(check.get("check_id", "")).strip(): str(check.get("status", "")).strip()
+        for check in checks
+        if isinstance(check, dict)
+    }
+    for check_id in required_check_ids:
+        check_status = check_status_by_id.get(check_id, "")
+        if not check_status:
+            findings.append(
+                executor_report_finding(
+                    code="missing_analysis_report_review_outcome_check",
+                    field=f"checks.{check_id}",
+                    message=f"Analysis report review outcome is missing check {check_id}.",
+                )
+            )
+        elif status == "ready_for_operator_review" and check_status != "passed":
+            findings.append(
+                executor_report_finding(
+                    code="analysis_report_review_outcome_ready_check_not_passed",
+                    field=f"checks.{check_id}",
+                    message=(
+                        "Ready analysis report review outcome requires all contract checks to pass."
+                    ),
+                )
+            )
     if summary.get("human_review_required") is not True:
         findings.append(
             executor_report_finding(
@@ -22819,8 +22924,9 @@ def validate_local_operator_executor_analysis_report_review_outcome(
         "findings": findings,
         "normalized": {
             "status": status,
-            "review_state": str(review_outcome.get("review_state", "")).strip(),
-            "report_kind": str(summary.get("report_kind", "")).strip(),
+            "outcome_state": outcome_state,
+            "report_kind": summary_report_kind,
+            "source_report_kind": outcome_source_report_kind,
             "next_gap": str(summary.get("next_gap", "")).strip(),
         },
     }
@@ -22985,6 +23091,11 @@ def build_local_operator_executor_analysis_report_review_outcome(
                 else "Analysis report review outcome would expose unsafe source packet data."
             ),
         ),
+        local_operator_smoke_check(
+            check_id="outcome_contract_valid",
+            status="passed",
+            message="Analysis report review outcome matches the outcome contract.",
+        ),
     ]
     status_before_contract = local_operator_executor_analysis_report_review_outcome_status(
         checks,
@@ -23027,7 +23138,7 @@ def build_local_operator_executor_analysis_report_review_outcome(
         else []
     )
     producer_kind = str(summary.get("producer_kind", "")).strip()
-    source_report_status = str(nested_packet.get("source_report_status", "")).strip()
+    source_report_status = str(normalized_policy.get("source_report_status", "")).strip()
     named_filters = {
         str(name).strip(): [] for name in contract.get("named_filters", []) if str(name).strip()
     }
@@ -23105,17 +23216,18 @@ def build_local_operator_executor_analysis_report_review_outcome(
         "findings": copy.deepcopy(outcome_validation.get("findings", [])),
         "normalized": copy.deepcopy(outcome_validation.get("normalized", {})),
     }
-    checks.append(
-        local_operator_smoke_check(
-            check_id="outcome_contract_valid",
-            status="passed" if outcome_validation.get("valid") is True else "failed",
-            message=(
+    for check in checks:
+        if (
+            isinstance(check, dict)
+            and str(check.get("check_id", "")).strip() == "outcome_contract_valid"
+        ):
+            check["status"] = "passed" if outcome_validation.get("valid") is True else "failed"
+            check["message"] = (
                 "Analysis report review outcome matches the outcome contract."
                 if outcome_validation.get("valid") is True
                 else "Analysis report review outcome does not match the outcome contract."
-            ),
-        )
-    )
+            )
+            break
     final_status = local_operator_executor_analysis_report_review_outcome_status(
         checks,
         policy_findings=policy_findings,
