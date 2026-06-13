@@ -1480,5 +1480,18 @@
     "required_provenance_links": [
       "source_draft_ref"
     ]
+  },
+  {
+    "proposal_id": "0115",
+    "source_artifact_class": "working_draft",
+    "source_refs": [
+      "docs/archive/proposal_sources/0115_ontology_decision_import_preview.md"
+    ],
+    "motivating_concern": "SpecGraph has a typed Ontology owner decision report, but operators and SpecSpace need a deterministic read-only preview that shows how accepted/rejected decisions match closed-loop evidence before any later import workflow is considered.",
+    "normalized_title": "Ontology Decision Import Preview",
+    "bounded_scope": "Add a deterministic ontology_decision_import_preview artifact that joins the ontology review dashboard and owner decision report by candidate id and intake id, carrying matched evidence refs, source intake state, owner decision state, preview state, required human action, and explicit false apply/import/gate-close/canonical-mutation/package-write/lockfile-update flags under runs/ without applying owner decisions, importing decisions into SpecGraph, marking candidates accepted, closing gates, writing Ontology packages or lockfiles, mutating canonical specs, invoking prompt agents, parsing arbitrary text, or running ontologyc.",
+    "required_provenance_links": [
+      "source_draft_ref"
+    ]
   }
 ]

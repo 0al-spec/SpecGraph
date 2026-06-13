@@ -140,6 +140,9 @@ Supervisor modes:
   and closed-loop evidence,
   `runs/ontology_owner_decision_report.json` as the typed read-only
   accepted/rejected Ontology owner decision report for later import previews,
+  `runs/ontology_decision_import_preview.json` as the read-only preview that
+  matches owner decisions back to closed-loop evidence and recommends operator
+  review without applying imports,
   plus
   `runs/ontology_semantic_lint_smoke.json`,
   classifying accepted, alias, unknown, deprecated, and relation-conflict terms

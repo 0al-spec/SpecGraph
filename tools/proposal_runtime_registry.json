@@ -6249,5 +6249,70 @@
         "pattern": "build_ontology_decision_import_preview"
       }
     ]
+  },
+  {
+    "proposal_id": "0115",
+    "posture": "bounded_runtime_followup",
+    "runtime_surfaces": [
+      "docs/proposals/0115_ontology_decision_import_preview.md",
+      "docs/archive/proposal_sources/0115_ontology_decision_import_preview.md",
+      "tools/ontology_semantic_control_policy.json",
+      "tools/ontology_imports.py",
+      "tools/README.md",
+      "docs/supervisor_manual.md",
+      "Makefile",
+      "tests/test_ontology_import_policy.py",
+      "runs/ontology_decision_import_preview.json"
+    ],
+    "runtime_markers": [
+      {
+        "path": "tools/ontology_semantic_control_policy.json",
+        "pattern": "ontology_decision_import_preview_contract"
+      },
+      {
+        "path": "tools/ontology_imports.py",
+        "pattern": "def build_ontology_decision_import_preview("
+      },
+      {
+        "path": "tools/ontology_imports.py",
+        "pattern": "def require_ontology_decision_import_preview("
+      },
+      {
+        "path": "tools/ontology_imports.py",
+        "pattern": "\"ontology_decision_import_preview\""
+      }
+    ],
+    "validation_markers": [
+      {
+        "path": "tests/test_ontology_import_policy.py",
+        "pattern": "def test_ontology_decision_import_preview_builds_read_only_preview("
+      },
+      {
+        "path": "tests/test_ontology_import_policy.py",
+        "pattern": "def test_ontology_decision_import_preview_rejects_policy_apply_authority("
+      },
+      {
+        "path": "tests/test_ontology_import_policy.py",
+        "pattern": "runs/ontology_decision_import_preview.json"
+      }
+    ],
+    "observation_markers": [
+      {
+        "path": "Makefile",
+        "pattern": "ontology-imports:"
+      },
+      {
+        "path": "tools/README.md",
+        "pattern": "runs/ontology_decision_import_preview.json"
+      },
+      {
+        "path": "docs/supervisor_manual.md",
+        "pattern": "runs/ontology_decision_import_preview.json"
+      },
+      {
+        "path": "docs/proposals/0115_ontology_decision_import_preview.md",
+        "pattern": "build_specspace_owner_decision_review_surface"
+      }
+    ]
   }
 ]
