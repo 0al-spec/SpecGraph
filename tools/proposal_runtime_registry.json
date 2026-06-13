@@ -5926,5 +5926,67 @@
         "pattern": "wire_supervisor_semantic_gate_into_targeted_runs"
       }
     ]
+  },
+  {
+    "proposal_id": "0110",
+    "posture": "bounded_runtime_followup",
+    "runtime_surfaces": [
+      "docs/proposals/0110_ontology_delta_draft_intake.md",
+      "docs/archive/proposal_sources/0110_ontology_delta_draft_intake.md",
+      "tools/ontology_semantic_control_policy.json",
+      "tools/ontology_imports.py",
+      "tools/README.md",
+      "docs/supervisor_manual.md",
+      "Makefile",
+      "tests/test_ontology_import_policy.py",
+      "tests/test_supervisor.py",
+      "runs/ontology_delta_draft_intake.json"
+    ],
+    "runtime_markers": [
+      {
+        "path": "tools/ontology_semantic_control_policy.json",
+        "pattern": "ontology_delta_draft_intake_contract"
+      },
+      {
+        "path": "tools/ontology_imports.py",
+        "pattern": "def build_ontology_delta_draft_intake("
+      },
+      {
+        "path": "tools/ontology_imports.py",
+        "pattern": "\"ontology_delta_draft_intake\""
+      }
+    ],
+    "validation_markers": [
+      {
+        "path": "tests/test_ontology_import_policy.py",
+        "pattern": "def test_ontology_delta_draft_intake_builds_review_only_intake("
+      },
+      {
+        "path": "tests/test_ontology_import_policy.py",
+        "pattern": "runs/ontology_delta_draft_intake.json"
+      },
+      {
+        "path": "tests/test_supervisor.py",
+        "pattern": "def test_supervisor_output_summary_includes_ontology_gate_report("
+      }
+    ],
+    "observation_markers": [
+      {
+        "path": "Makefile",
+        "pattern": "ontology-imports:"
+      },
+      {
+        "path": "tools/README.md",
+        "pattern": "runs/ontology_delta_draft_intake.json"
+      },
+      {
+        "path": "docs/supervisor_manual.md",
+        "pattern": "runs/ontology_delta_draft_intake.json"
+      },
+      {
+        "path": "docs/proposals/0110_ontology_delta_draft_intake.md",
+        "pattern": "collect_ontology_owner_delta_decisions"
+      }
+    ]
   }
 ]

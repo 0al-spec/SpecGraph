@@ -57,6 +57,7 @@ runs/ontology_semantic_lint_report.json
 runs/ontology_delta_candidate_review_packet.json
 runs/ontology_semantic_review_surface.json
 runs/ontology_supervisor_semantic_gate.json
+runs/ontology_delta_draft_intake.json
 runs/ontology_semantic_lint_smoke.json
 ```
 
@@ -74,6 +75,12 @@ executing prompt agents or mutating canonical specs.
 Use `tools/supervisor.py --build-ontology-supervisor-semantic-gate` when the
 operator wants the supervisor entrypoint to refresh these surfaces and print the
 compact gate report without starting an ordinary targeted refinement run.
+
+`runs/ontology_delta_draft_intake.json` is the Ontology owner handoff surface
+for candidate draft requests. It preserves candidate payloads and required human
+action, but a blocked semantic gate keeps requests in
+`blocked_by_semantic_gate`; it does not write Ontology packages or accept
+candidate terms.
 
 ## Boundary
 

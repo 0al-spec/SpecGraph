@@ -130,7 +130,9 @@ Supervisor modes:
   review actions and `runs/ontology_semantic_review_surface.json` as the
   SpecSpace/supervisor-facing review surface,
   `runs/ontology_supervisor_semantic_gate.json` as typed supervisor gate
-  evidence derived from that surface, plus
+  evidence derived from that surface,
+  `runs/ontology_delta_draft_intake.json` as a review-only Ontology owner
+  draft-intake handoff for delta candidates, plus
   `runs/ontology_semantic_lint_smoke.json`,
   classifying accepted, alias, unknown, deprecated, and relation-conflict terms
   against the imported ontology fixture. These surfaces resolve known imported

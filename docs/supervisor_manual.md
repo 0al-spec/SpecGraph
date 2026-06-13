@@ -1636,6 +1636,9 @@ authoritative.
   - ontology semantic gate evidence derived from the 0108 review surface; it
     maps blocking findings to `blocked`, review-required findings or candidates
     to `review_pending`, and clean surfaces to `clear`
+- `runs/ontology_delta_draft_intake.json`
+  - review-only Ontology owner handoff surface for delta candidate draft
+    requests; blocked semantic gates keep requests non-materialized
 
 ### Queue and proposal surfaces
 
