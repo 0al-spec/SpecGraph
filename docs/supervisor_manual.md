@@ -101,6 +101,8 @@ particular task.
   `--build-vocabulary-drift-report`
 - inspect tracked pre-spec semantics and downstream lineage:
   `--build-pre-spec-semantics-index`
+- refresh ontology semantic surfaces and emit a supervisor gate report:
+  `--build-ontology-supervisor-semantic-gate`
 - build a derived spec-to-code trace index:
   `--build-spec-trace-index`
 - build a derived evidence-plane index:
@@ -1630,6 +1632,10 @@ authoritative.
 - `runs/graph_health_trends.json`
   - longitudinal graph-health report grouped by recurring signals and
     current-vs-historical recurrence
+- `runs/ontology_supervisor_semantic_gate.json`
+  - ontology semantic gate evidence derived from the 0108 review surface; it
+    maps blocking findings to `blocked`, review-required findings or candidates
+    to `review_pending`, and clean surfaces to `clear`
 
 ### Queue and proposal surfaces
 

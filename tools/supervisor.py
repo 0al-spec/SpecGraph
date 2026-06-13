@@ -94,6 +94,7 @@ Derived artifacts:
 - spec activity feed: `runs/spec_activity_feed.json`
 - project environment: `runs/project_environment.json`
 - product workspace initialization: `runs/product_workspace_initialization.json`
+- ontology supervisor semantic gate: `runs/ontology_supervisor_semantic_gate.json`
 """
 
 from __future__ import annotations
@@ -46736,6 +46737,51 @@ def emit_supervisor_json(payload: dict[str, Any], *, output_mode: str) -> None:
     print(json.dumps(output, ensure_ascii=False, indent=2))
 
 
+def build_ontology_supervisor_semantic_gate_report() -> dict[str, Any]:
+    module_path = TOOLS_DIR / "ontology_imports.py"
+    spec = importlib.util.spec_from_file_location(
+        "specgraph_ontology_imports_for_supervisor_gate", module_path
+    )
+    if spec is None or spec.loader is None:
+        raise RuntimeError(f"failed to load ontology imports module from {module_path}")
+    module = importlib.util.module_from_spec(spec)
+    sys.modules[spec.name] = module
+    spec.loader.exec_module(module)
+
+    policy = module.load_json(module.POLICY_PATH)
+    layout = policy.get("repository_layout")
+    if not isinstance(layout, dict):
+        raise ValueError("ontology_import_policy.repository_layout must be an object")
+    default_fixture = module.ROOT / str(layout["default_fixture"])
+    default_adapter_report = module.ROOT / str(layout["default_adapter_report"])
+    surfaces = module.build_ontology_import_surfaces(
+        default_fixture,
+        adapter_report_path=default_adapter_report,
+    )
+    written_paths = module.write_ontology_import_surfaces(surfaces)
+    gate = surfaces["supervisor_semantic_gate"]
+    return {
+        "artifact_kind": "ontology_supervisor_semantic_gate_report",
+        "schema_version": 1,
+        "canonical_mutations_allowed": False,
+        "tracked_artifacts_written": False,
+        "summary": {
+            "status": gate["summary"]["status"],
+            "gate_state": gate["gate"]["gate_state"],
+            "outcome": gate["gate"]["outcome"],
+            "required_human_action": gate["gate"]["required_human_action"],
+            "artifact_path": gate["output_artifact"],
+            "next_gap": gate["summary"]["next_gap"],
+        },
+        "written_artifacts": {
+            "count": len(written_paths),
+            "paths": [os.path.relpath(path, module.ROOT) for path in written_paths],
+        },
+        "gate": gate["gate"],
+        "source_artifacts": gate["source_artifacts"],
+    }
+
+
 def acceptance_reference_indexes(
     references: Any,
     *,
@@ -50603,6 +50649,7 @@ def main(
     build_factory_architecture_index_mode: bool = False,
     build_swift_typed_tooling_index_mode: bool = False,
     build_project_environment_mode: bool = False,
+    build_ontology_supervisor_semantic_gate_mode: bool = False,
     init_product_workspace_mode: bool = False,
     product_workspace_project_id: str | None = None,
     product_workspace_display_name: str | None = None,
@@ -50729,6 +50776,7 @@ def main(
         "--build-factory-architecture-index": build_factory_architecture_index_mode,
         "--build-swift-typed-tooling-index": build_swift_typed_tooling_index_mode,
         "--build-project-environment": build_project_environment_mode,
+        "--build-ontology-supervisor-semantic-gate": (build_ontology_supervisor_semantic_gate_mode),
         "--init-product-workspace": init_product_workspace_mode,
         "--build-review-feedback-index": build_review_feedback_index_mode,
         "--build-supervisor-executor-adapter-index": build_supervisor_executor_adapter_index_mode,
@@ -50952,6 +51000,19 @@ def main(
     ):
         print(
             "--build-project-environment does not accept supervisor run/salvage inputs",
+            file=sys.stderr,
+        )
+        return 1
+
+    if build_ontology_supervisor_semantic_gate_mode and (
+        supervisor_salvage_worktree_path
+        or supervisor_run_path
+        or supervisor_raw_artifact_uri
+        or supervisor_raw_retention_expires_at
+    ):
+        print(
+            "--build-ontology-supervisor-semantic-gate does not accept supervisor "
+            "run/salvage inputs",
             file=sys.stderr,
         )
         return 1
@@ -51555,6 +51616,40 @@ def main(
         environment = build_project_environment()
         write_project_environment(environment)
         emit_supervisor_json(environment, output_mode=normalized_output_mode)
+        return 0
+
+    if build_ontology_supervisor_semantic_gate_mode:
+        if any(
+            (
+                dry_run,
+                auto_approve,
+                loop,
+                resolve_gate,
+                decision,
+                note,
+                target_spec,
+                split_proposal,
+                apply_split_proposal,
+                operator_note,
+                mutation_budget,
+                run_authority,
+                execution_profile,
+                child_model,
+                child_timeout_seconds,
+                verbose,
+                list_stale_runtime,
+                clean_stale_runtime,
+                observe_graph_health_mode,
+                operator_request_packet_path,
+            )
+        ):
+            print(
+                "--build-ontology-supervisor-semantic-gate must be used as a standalone command",
+                file=sys.stderr,
+            )
+            return 1
+        report = build_ontology_supervisor_semantic_gate_report()
+        emit_supervisor_json(report, output_mode=normalized_output_mode)
         return 0
 
     if init_product_workspace_mode:
@@ -55069,6 +55164,14 @@ if __name__ == "__main__":
         ),
     )
     parser.add_argument(
+        "--build-ontology-supervisor-semantic-gate",
+        action="store_true",
+        help=(
+            "Refresh ontology semantic surfaces and emit a supervisor semantic gate "
+            "report without running prompt agents or mutating canonical specs"
+        ),
+    )
+    parser.add_argument(
         "--init-product-workspace",
         action="store_true",
         help=(
@@ -55784,6 +55887,9 @@ if __name__ == "__main__":
             build_factory_architecture_index_mode=args.build_factory_architecture_index,
             build_swift_typed_tooling_index_mode=args.build_swift_typed_tooling_index,
             build_project_environment_mode=args.build_project_environment,
+            build_ontology_supervisor_semantic_gate_mode=(
+                args.build_ontology_supervisor_semantic_gate
+            ),
             init_product_workspace_mode=args.init_product_workspace,
             product_workspace_project_id=args.project_id,
             product_workspace_display_name=args.display_name,

@@ -1402,5 +1402,18 @@
     "required_provenance_links": [
       "source_draft_ref"
     ]
+  },
+  {
+    "proposal_id": "0109",
+    "source_artifact_class": "working_draft",
+    "source_refs": [
+      "docs/archive/proposal_sources/0109_ontology_supervisor_semantic_gate.md"
+    ],
+    "motivating_concern": "SpecGraph can emit a unified ontology semantic review surface, but supervisor gate flows need a typed gate artifact that maps blocking and review-required ontology evidence into gate state without granting generated ontology material canonical authority",
+    "normalized_title": "Ontology Supervisor Semantic Gate",
+    "bounded_scope": "Add a deterministic ontology supervisor semantic gate derived from the 0108 review surface, carrying gate state, required human action, evidence refs, failure modes, and typed invocation boundary under runs/ without wiring ordinary targeted runs, writing Ontology packages or lockfiles, mutating canonical specs, accepting candidate terms, invoking prompt agents, parsing arbitrary text, or running ontologyc.",
+    "required_provenance_links": [
+      "source_draft_ref"
+    ]
   }
 ]

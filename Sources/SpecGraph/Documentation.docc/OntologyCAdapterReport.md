@@ -56,6 +56,7 @@ runs/ontology_semantic_context_pack.json
 runs/ontology_semantic_lint_report.json
 runs/ontology_delta_candidate_review_packet.json
 runs/ontology_semantic_review_surface.json
+runs/ontology_supervisor_semantic_gate.json
 runs/ontology_semantic_lint_smoke.json
 ```
 
@@ -63,6 +64,16 @@ runs/ontology_semantic_lint_smoke.json
 surface for grounding summary, blocking findings, review-required findings,
 delta candidates, and non-mutating review actions. It is derived evidence only;
 it is not canonical Ontology authority.
+
+`runs/ontology_supervisor_semantic_gate.json` is the supervisor-facing gate
+artifact derived from the review surface. It maps blocking ontology findings to
+`blocked`, review-required findings or candidates to `review_pending`, and clean
+surfaces to `clear`. It carries required human action and evidence refs without
+executing prompt agents or mutating canonical specs.
+
+Use `tools/supervisor.py --build-ontology-supervisor-semantic-gate` when the
+operator wants the supervisor entrypoint to refresh these surfaces and print the
+compact gate report without starting an ordinary targeted refinement run.
 
 ## Boundary
 
