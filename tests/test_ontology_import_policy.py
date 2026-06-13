@@ -51,7 +51,9 @@ def write_temp_semantic_control_policy(
     policy = payload or json.loads(
         (ROOT / "tools" / "ontology_semantic_control_policy.json").read_text()
     )
-    policy_path = tmp_path / "ontology_semantic_control_policy.json"
+    policy_dir = tmp_path / "tools"
+    policy_dir.mkdir(parents=True, exist_ok=True)
+    policy_path = policy_dir / "ontology_semantic_control_policy.json"
     policy_path.write_text(json.dumps(policy, indent=2, sort_keys=True), encoding="utf-8")
     return policy_path
 
@@ -491,6 +493,192 @@ def test_ontology_delta_candidate_review_packet_builds_review_packet() -> None:
     assert packet["authority_boundary"]["ontology_delta_candidate_is_authority"] is False
 
 
+def test_ontology_delta_candidate_review_packet_uses_policy_review_action_order(
+    tmp_path: Path,
+) -> None:
+    module = load_ontology_imports_module()
+    module.ROOT = tmp_path
+    fixture_path = write_temp_fixture(tmp_path, load_fixture_payload())
+    policy_path = write_temp_policy(tmp_path)
+    semantic_policy = json.loads(
+        (ROOT / "tools" / "ontology_semantic_control_policy.json").read_text()
+    )
+    semantic_policy["ontology_delta_candidate_review_packet_contract"]["review_actions"] = [
+        "request_clarification",
+        "reject_candidate",
+        "approve_for_ontology_package_draft",
+    ]
+    semantic_policy_path = write_temp_semantic_control_policy(tmp_path, semantic_policy)
+
+    surfaces = module.build_ontology_import_surfaces(
+        fixture_path,
+        policy_path=policy_path,
+        semantic_policy_path=semantic_policy_path,
+    )
+
+    assert [
+        action["action"]
+        for action in surfaces["ontology_delta_candidate_review_packet"]["review_actions"]
+    ] == [
+        "request_clarification",
+        "reject_candidate",
+        "approve_for_ontology_package_draft",
+    ]
+
+
+def test_ontology_delta_candidate_review_packet_rejects_unsupported_review_action(
+    tmp_path: Path,
+) -> None:
+    module = load_ontology_imports_module()
+    module.ROOT = tmp_path
+    fixture_path = write_temp_fixture(tmp_path, load_fixture_payload())
+    policy_path = write_temp_policy(tmp_path)
+    semantic_policy = json.loads(
+        (ROOT / "tools" / "ontology_semantic_control_policy.json").read_text()
+    )
+    semantic_policy["ontology_delta_candidate_review_packet_contract"]["review_actions"].append(
+        "auto_apply_candidate"
+    )
+    semantic_policy_path = write_temp_semantic_control_policy(tmp_path, semantic_policy)
+
+    with pytest.raises(ValueError, match="unsupported action"):
+        module.build_ontology_import_surfaces(
+            fixture_path,
+            policy_path=policy_path,
+            semantic_policy_path=semantic_policy_path,
+        )
+
+
+def test_ontology_semantic_default_policy_follows_root_override(tmp_path: Path) -> None:
+    module = load_ontology_imports_module()
+    module.ROOT = tmp_path
+    fixture_path = write_temp_fixture(tmp_path, load_fixture_payload())
+    policy_path = write_temp_policy(tmp_path)
+    semantic_policy_path = write_temp_semantic_control_policy(tmp_path)
+
+    surfaces = module.build_ontology_import_surfaces(
+        fixture_path,
+        policy_path=policy_path,
+    )
+
+    assert surfaces["semantic_context_pack"]["source_policy"] == (
+        "tools/ontology_semantic_control_policy.json"
+    )
+    assert semantic_policy_path.exists()
+
+
+def test_ontology_semantic_write_uses_surface_output_artifact(tmp_path: Path) -> None:
+    module = load_ontology_imports_module()
+    module.ROOT = tmp_path
+    fixture_path = write_temp_fixture(tmp_path, load_fixture_payload())
+    policy_path = write_temp_policy(tmp_path)
+    semantic_policy = json.loads(
+        (ROOT / "tools" / "ontology_semantic_control_policy.json").read_text()
+    )
+    semantic_policy["repository_layout"]["ontology_delta_candidate_review_packet"] = (
+        "runs/custom_delta_candidate_review_packet.json"
+    )
+    semantic_policy["repository_layout"]["semantic_context_pack"] = (
+        "runs/custom_semantic_context_pack.json"
+    )
+    semantic_policy["repository_layout"]["semantic_lint_report"] = (
+        "runs/custom_semantic_lint_report.json"
+    )
+    semantic_policy["repository_layout"]["semantic_lint_smoke"] = (
+        "runs/custom_semantic_lint_smoke.json"
+    )
+    semantic_policy_path = write_temp_semantic_control_policy(tmp_path, semantic_policy)
+
+    surfaces = module.build_ontology_import_surfaces(
+        fixture_path,
+        policy_path=policy_path,
+        semantic_policy_path=semantic_policy_path,
+    )
+    written = module.write_ontology_import_surfaces(
+        surfaces,
+        policy_path=policy_path,
+        out_dir=tmp_path,
+    )
+
+    written_paths = {path.relative_to(tmp_path).as_posix() for path in written}
+    assert "runs/custom_delta_candidate_review_packet.json" in written_paths
+    assert "runs/custom_semantic_context_pack.json" in written_paths
+    assert "runs/custom_semantic_lint_report.json" in written_paths
+    assert "runs/custom_semantic_lint_smoke.json" in written_paths
+    assert not (tmp_path / "runs" / "ontology_delta_candidate_review_packet.json").exists()
+    assert not (tmp_path / "runs" / "ontology_semantic_context_pack.json").exists()
+    assert not (tmp_path / "runs" / "ontology_semantic_lint_report.json").exists()
+    assert not (tmp_path / "runs" / "ontology_semantic_lint_smoke.json").exists()
+
+
+def test_ontology_semantic_context_pack_rejects_malformed_governance_evidence() -> None:
+    module = load_ontology_imports_module()
+    surfaces = module.build_ontology_import_surfaces(FIXTURE)
+    governance = dict(surfaces["governance_evidence_index"])
+    governance["evidence"] = ["not-an-object"]
+    semantic_policy = json.loads(
+        (ROOT / "tools" / "ontology_semantic_control_policy.json").read_text()
+    )
+    import_policy = json.loads((ROOT / "tools" / "ontology_import_policy.json").read_text())
+
+    with pytest.raises(ValueError, match=r"ontology_governance_evidence_index\.evidence\[0\]"):
+        module.build_ontology_semantic_context_pack(
+            semantic_policy,
+            semantic_policy_path=ROOT / "tools" / "ontology_semantic_control_policy.json",
+            import_policy=import_policy,
+            package_index=surfaces["package_index"],
+            gap_index=surfaces["gap_index"],
+            governance_evidence_index=governance,
+            binding_preview=surfaces["binding_preview"],
+        )
+
+
+def test_ontology_semantic_lint_report_rejects_non_string_source_ref(
+    tmp_path: Path,
+) -> None:
+    module = load_ontology_imports_module()
+    module.ROOT = tmp_path
+    fixture_path = write_temp_fixture(tmp_path, load_fixture_payload())
+    policy_path = write_temp_policy(tmp_path)
+    semantic_policy = json.loads(
+        (ROOT / "tools" / "ontology_semantic_control_policy.json").read_text()
+    )
+    semantic_policy["smoke_fixture"]["detected_terms"][0]["source_ref"] = 123
+    semantic_policy_path = write_temp_semantic_control_policy(tmp_path, semantic_policy)
+
+    with pytest.raises(ValueError, match=r"detected_terms\[0\]\.source_ref"):
+        module.build_ontology_import_surfaces(
+            fixture_path,
+            policy_path=policy_path,
+            semantic_policy_path=semantic_policy_path,
+        )
+
+
+def test_ontology_semantic_lint_report_treats_none_source_ref_as_absent(
+    tmp_path: Path,
+) -> None:
+    module = load_ontology_imports_module()
+    module.ROOT = tmp_path
+    fixture_path = write_temp_fixture(tmp_path, load_fixture_payload())
+    policy_path = write_temp_policy(tmp_path)
+    semantic_policy = json.loads(
+        (ROOT / "tools" / "ontology_semantic_control_policy.json").read_text()
+    )
+    semantic_policy["smoke_fixture"]["detected_terms"][0]["source_ref"] = None
+    semantic_policy_path = write_temp_semantic_control_policy(tmp_path, semantic_policy)
+
+    surfaces = module.build_ontology_import_surfaces(
+        fixture_path,
+        policy_path=policy_path,
+        semantic_policy_path=semantic_policy_path,
+    )
+
+    finding = surfaces["semantic_lint_report"]["findings"][0]
+    assert finding["term"] == "Exam"
+    assert finding["source_ref"] is None
+    assert finding["classification"] == "unknown_term"
+
+
 def test_ontology_import_governance_and_prompt_surfaces_are_derived() -> None:
     module = load_ontology_imports_module()
 
@@ -926,6 +1114,10 @@ def test_cli_custom_fixture_does_not_require_default_adapter_report(tmp_path: Pa
     surfaces = json.loads(completed.stdout)
 
     assert "adapter_report_smoke" not in surfaces
+    assert "ontology_delta_candidate_review_packet" not in surfaces
+    assert "semantic_context_pack" not in surfaces
+    assert "semantic_lint_report" not in surfaces
+    assert "semantic_lint_smoke" not in surfaces
     assert surfaces["package_index"]["proposal_id"] == "custom-0060"
 
 
