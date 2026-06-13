@@ -969,6 +969,7 @@ def test_cli_custom_fixture_does_not_require_default_adapter_report(tmp_path: Pa
 
     assert "adapter_report_smoke" not in surfaces
     assert "semantic_context_pack" not in surfaces
+    assert "semantic_lint_report" not in surfaces
     assert "semantic_lint_smoke" not in surfaces
     assert surfaces["package_index"]["proposal_id"] == "custom-0060"
 

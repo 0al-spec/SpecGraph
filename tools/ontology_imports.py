@@ -227,6 +227,15 @@ def require_surface_output_artifact(surface: dict[str, Any], key: str) -> str:
     return value
 
 
+def optional_string(mapping: dict[str, Any], field: str, context: str) -> str:
+    if field not in mapping or mapping[field] is None:
+        return ""
+    value = mapping[field]
+    if not isinstance(value, str):
+        raise ValueError(f"{context}.{field} must be a string when provided")
+    return value.strip()
+
+
 def require_bool(mapping: dict[str, Any], field: str, context: str) -> bool:
     value = mapping.get(field)
     if not isinstance(value, bool):
@@ -987,7 +996,7 @@ def build_semantic_term_results(
             raise ValueError(f"{detected_terms_context}[{index}] must be an object")
         term = require_string(raw_term, "term", f"{detected_terms_context}[{index}]")
         normalized = normalize_term(term)
-        source_ref = str(raw_term.get("source_ref", "")).strip()
+        source_ref = optional_string(raw_term, "source_ref", f"{detected_terms_context}[{index}]")
         result: dict[str, Any] = {
             "term": term,
             "normalized_term": normalized,
