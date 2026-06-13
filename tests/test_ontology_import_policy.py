@@ -124,6 +124,9 @@ def test_ontology_semantic_control_policy_defines_review_only_contract() -> None
     assert policy["repository_layout"]["semantic_context_pack"] == (
         "runs/ontology_semantic_context_pack.json"
     )
+    assert policy["repository_layout"]["semantic_lint_report"] == (
+        "runs/ontology_semantic_lint_report.json"
+    )
     context_contract = policy["semantic_context_pack_contract"]
     assert context_contract["artifact_kind"] == "ontology_semantic_context_pack"
     assert context_contract["target"] == {
@@ -134,6 +137,19 @@ def test_ontology_semantic_control_policy_defines_review_only_contract() -> None
     assert context_contract["consumer_boundary"]["for_specspace_review_surface"] is True
     assert context_contract["consumer_boundary"]["may_execute_prompt_agent"] is False
     assert context_contract["consumer_boundary"]["may_mutate_canonical_specs"] is False
+    report_contract = policy["semantic_lint_report_contract"]
+    assert report_contract["artifact_kind"] == "ontology_semantic_lint_report"
+    assert report_contract["source_context_pack_artifact_kind"] == (
+        "ontology_semantic_context_pack"
+    )
+    assert report_contract["target"] == {
+        "target_kind": "proposal",
+        "target_ref": "SG-RFC-0105",
+    }
+    assert report_contract["consumer_boundary"]["for_supervisor_gate_evidence"] is True
+    assert report_contract["consumer_boundary"]["for_specspace_review_surface"] is True
+    assert report_contract["consumer_boundary"]["may_execute_prompt_agent"] is False
+    assert report_contract["consumer_boundary"]["may_write_ontology_delta"] is False
     contract = policy["semantic_lint_contract"]
     assert contract["smoke_artifact_kind"] == "ontology_semantic_lint_smoke"
     assert {
@@ -353,6 +369,76 @@ def test_ontology_semantic_context_pack_rejects_non_relation_conflict_embedding(
     assert "accepted_relation" not in conflict
 
 
+def test_ontology_semantic_lint_report_builds_review_findings() -> None:
+    module = load_ontology_imports_module()
+
+    surfaces = module.build_ontology_import_surfaces(FIXTURE)
+
+    report = surfaces["semantic_lint_report"]
+    assert report["artifact_kind"] == "ontology_semantic_lint_report"
+    assert report["proposal_id"] == "0105"
+    assert report["target"] == {
+        "target_kind": "proposal",
+        "target_ref": "SG-RFC-0105",
+    }
+    assert report["source_context_pack"] == "runs/ontology_semantic_context_pack.json"
+    assert report["canonical_mutations_allowed"] is False
+    assert report["tracked_artifacts_written"] is False
+    assert report["summary"] == {
+        "status": "blocked_relation_conflict",
+        "finding_count": 5,
+        "classification_counts": {
+            "accepted_alias": 1,
+            "accepted_term": 1,
+            "deprecated_term": 1,
+            "relation_conflict": 1,
+            "unknown_term": 1,
+        },
+        "review_required_count": 1,
+        "blocking_count": 2,
+        "candidate_delta_count": 1,
+        "next_review_gap": "review_ontology_relation_conflict",
+        "next_gap": "build_ontology_delta_candidate_review_packet",
+    }
+
+    by_term = {entry["term"]: entry for entry in report["findings"]}
+    assert by_term["Exam"]["classification"] == "accepted_term"
+    assert by_term["requires policy"]["classification"] == "accepted_alias"
+    assert by_term["CASFunction"]["classification"] == "unknown_term"
+    assert by_term["CASFunction"]["gap"]["gap_id"] == "ontology-gap-examcalc-casfunction"
+    assert by_term["ExamPolicy"]["classification"] == "deprecated_term"
+    assert by_term["allows policy"]["classification"] == "relation_conflict"
+
+    blocking_terms = {entry["term"] for entry in report["blocking_findings"]}
+    assert blocking_terms == {"ExamPolicy", "allows policy"}
+    review_terms = {entry["term"] for entry in report["review_required_findings"]}
+    assert review_terms == {"CASFunction"}
+
+    assert report["candidate_delta_terms"] == [
+        {
+            "term": "CASFunction",
+            "source_ref": "examcalc:CASFunction",
+            "missing_concept": {
+                "ref": "examcalc:CASFunction",
+                "namespace_hint": "examcalc",
+                "concept_hint": "CASFunction",
+            },
+            "gap_id": "ontology-gap-examcalc-casfunction",
+            "recommended_route": "ontology_package_draft",
+            "suggested_action": "emit_ontology_gap",
+        }
+    ]
+    action_counts = {
+        entry["action"]: entry["term_count"] for entry in report["recommended_actions"]
+    }
+    assert action_counts["emit_ontology_gap"] == 1
+    assert action_counts["replace_with_accepted_term"] == 1
+    assert action_counts["use_accepted_relation"] == 1
+    assert report["consumer_boundary"]["for_supervisor_gate_evidence"] is True
+    assert report["consumer_boundary"]["may_write_ontology_delta"] is False
+    assert report["authority_boundary"]["lint_report_is_authority"] is False
+
+
 def test_ontology_semantic_default_policy_follows_root_override(tmp_path: Path) -> None:
     module = load_ontology_imports_module()
     module.ROOT = tmp_path
@@ -382,6 +468,9 @@ def test_ontology_semantic_write_uses_surface_output_artifact(tmp_path: Path) ->
     semantic_policy["repository_layout"]["semantic_context_pack"] = (
         "runs/custom_semantic_context_pack.json"
     )
+    semantic_policy["repository_layout"]["semantic_lint_report"] = (
+        "runs/custom_semantic_lint_report.json"
+    )
     semantic_policy["repository_layout"]["semantic_lint_smoke"] = (
         "runs/custom_semantic_lint_smoke.json"
     )
@@ -400,8 +489,10 @@ def test_ontology_semantic_write_uses_surface_output_artifact(tmp_path: Path) ->
 
     written_paths = {path.relative_to(tmp_path).as_posix() for path in written}
     assert "runs/custom_semantic_context_pack.json" in written_paths
+    assert "runs/custom_semantic_lint_report.json" in written_paths
     assert "runs/custom_semantic_lint_smoke.json" in written_paths
     assert not (tmp_path / "runs" / "ontology_semantic_context_pack.json").exists()
+    assert not (tmp_path / "runs" / "ontology_semantic_lint_report.json").exists()
     assert not (tmp_path / "runs" / "ontology_semantic_lint_smoke.json").exists()
 
 
@@ -425,6 +516,52 @@ def test_ontology_semantic_context_pack_rejects_malformed_governance_evidence() 
             governance_evidence_index=governance,
             binding_preview=surfaces["binding_preview"],
         )
+
+
+def test_ontology_semantic_lint_report_rejects_non_string_source_ref(
+    tmp_path: Path,
+) -> None:
+    module = load_ontology_imports_module()
+    module.ROOT = tmp_path
+    fixture_path = write_temp_fixture(tmp_path, load_fixture_payload())
+    policy_path = write_temp_policy(tmp_path)
+    semantic_policy = json.loads(
+        (ROOT / "tools" / "ontology_semantic_control_policy.json").read_text()
+    )
+    semantic_policy["smoke_fixture"]["detected_terms"][0]["source_ref"] = 123
+    semantic_policy_path = write_temp_semantic_control_policy(tmp_path, semantic_policy)
+
+    with pytest.raises(ValueError, match=r"detected_terms\[0\]\.source_ref"):
+        module.build_ontology_import_surfaces(
+            fixture_path,
+            policy_path=policy_path,
+            semantic_policy_path=semantic_policy_path,
+        )
+
+
+def test_ontology_semantic_lint_report_treats_none_source_ref_as_absent(
+    tmp_path: Path,
+) -> None:
+    module = load_ontology_imports_module()
+    module.ROOT = tmp_path
+    fixture_path = write_temp_fixture(tmp_path, load_fixture_payload())
+    policy_path = write_temp_policy(tmp_path)
+    semantic_policy = json.loads(
+        (ROOT / "tools" / "ontology_semantic_control_policy.json").read_text()
+    )
+    semantic_policy["smoke_fixture"]["detected_terms"][0]["source_ref"] = None
+    semantic_policy_path = write_temp_semantic_control_policy(tmp_path, semantic_policy)
+
+    surfaces = module.build_ontology_import_surfaces(
+        fixture_path,
+        policy_path=policy_path,
+        semantic_policy_path=semantic_policy_path,
+    )
+
+    finding = surfaces["semantic_lint_report"]["findings"][0]
+    assert finding["term"] == "Exam"
+    assert finding["source_ref"] is None
+    assert finding["classification"] == "unknown_term"
 
 
 def test_ontology_import_governance_and_prompt_surfaces_are_derived() -> None:
@@ -517,6 +654,7 @@ def test_make_ontology_imports_writes_declared_surfaces() -> None:
         "runs/ontology_prompt_invocation_index.json": "ontology_prompt_invocation_index",
         "runs/ontologyc_adapter_report_smoke.json": "ontologyc_adapter_report_smoke",
         "runs/ontology_semantic_context_pack.json": "ontology_semantic_context_pack",
+        "runs/ontology_semantic_lint_report.json": "ontology_semantic_lint_report",
         "runs/ontology_semantic_lint_smoke.json": "ontology_semantic_lint_smoke",
     }
     for relative_path, artifact_kind in expected.items():
@@ -524,6 +662,7 @@ def test_make_ontology_imports_writes_declared_surfaces() -> None:
         assert payload["artifact_kind"] == artifact_kind
         expected_proposal_id = {
             "ontology_semantic_context_pack": "0104",
+            "ontology_semantic_lint_report": "0105",
             "ontology_semantic_lint_smoke": "0103",
         }.get(artifact_kind, "0060")
         assert payload["proposal_id"] == expected_proposal_id
@@ -899,6 +1038,7 @@ def test_cli_custom_fixture_does_not_require_default_adapter_report(tmp_path: Pa
 
     assert "adapter_report_smoke" not in surfaces
     assert "semantic_context_pack" not in surfaces
+    assert "semantic_lint_report" not in surfaces
     assert "semantic_lint_smoke" not in surfaces
     assert surfaces["package_index"]["proposal_id"] == "custom-0060"
 
@@ -975,4 +1115,35 @@ def test_proposal_0104_runtime_registry_tracks_context_pack() -> None:
     assert (
         "tools/README.md",
         "runs/ontology_semantic_context_pack.json",
+    ) in observation_markers
+
+
+def test_proposal_0105_runtime_registry_tracks_lint_report() -> None:
+    registry = json.loads((ROOT / "tools" / "proposal_runtime_registry.json").read_text())
+    entries = {entry["proposal_id"]: entry for entry in registry if isinstance(entry, dict)}
+    proposal = entries["0105"]
+
+    runtime_markers = {(item["path"], item["pattern"]) for item in proposal["runtime_markers"]}
+    validation_markers = {
+        (item["path"], item["pattern"]) for item in proposal["validation_markers"]
+    }
+    observation_markers = {
+        (item["path"], item["pattern"]) for item in proposal["observation_markers"]
+    }
+
+    assert (
+        "tools/ontology_semantic_control_policy.json",
+        "semantic_lint_report_contract",
+    ) in runtime_markers
+    assert (
+        "tools/ontology_imports.py",
+        "def build_ontology_semantic_lint_report(",
+    ) in runtime_markers
+    assert (
+        "tests/test_ontology_import_policy.py",
+        "def test_ontology_semantic_lint_report_builds_review_findings(",
+    ) in validation_markers
+    assert (
+        "tools/README.md",
+        "runs/ontology_semantic_lint_report.json",
     ) in observation_markers
