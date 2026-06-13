@@ -1363,5 +1363,18 @@
     "required_provenance_links": [
       "source_draft_ref"
     ]
+  },
+  {
+    "proposal_id": "0106",
+    "source_artifact_class": "working_draft",
+    "source_refs": [
+      "docs/archive/proposal_sources/0106_ontology_delta_candidate_review_packet.md"
+    ],
+    "motivating_concern": "SpecGraph can emit ontology semantic lint report candidate delta terms, but Ontology owner and SpecSpace review flows need an explicit review packet before any candidate can be routed without granting generated terms canonical authority",
+    "normalized_title": "Ontology Delta Candidate Review Packet",
+    "bounded_scope": "Add a deterministic ontology delta candidate review packet derived from the 0105 lint report, carrying candidate identity, missing concept metadata, proposed draft delta, and explicit non-mutating review actions under runs/ without writing Ontology packages, updating lockfiles, mutating canonical specs, accepting terms automatically, invoking prompt agents, or adding SpecSpace UI.",
+    "required_provenance_links": [
+      "source_draft_ref"
+    ]
   }
 ]
