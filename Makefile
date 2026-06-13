@@ -25,7 +25,8 @@ PYTHON_TARGETS := viewer-surfaces dashboard backlog next-move spec-activity grap
 	factory-architecture swift-typed-tooling project-environment init-product-workspace review-feedback \
 	executor-adapters executor-readiness executor-smoke executor-task-smoke \
 	executor-report-contract executor-report-smoke executor-report-review-packet \
-	executor-proposal-draft-candidate executor-proposal-promotion-packet \
+	executor-analysis-report-review-outcome executor-proposal-draft-candidate \
+	executor-proposal-promotion-packet \
 	executor-proposal-source-materialize executor-public-proposal-doc-materialize \
 	agent-passports agent-runtime-evidence docc-sync publish-bundle test test-supervisor
 
@@ -81,6 +82,7 @@ help:
 			'  make executor-report-contract Refresh local operator executor report contract JSON' \
 			'  make executor-report-smoke    Run local operator bounded executor report smoke' \
 			'  make executor-report-review-packet Build local operator executor report review packet' \
+			'  make executor-analysis-report-review-outcome Build local analysis report review outcome' \
 			'  make executor-proposal-draft-candidate Build local operator proposal draft candidate' \
 			'  make executor-proposal-promotion-packet Build local operator proposal promotion packet' \
 			'  make executor-proposal-source-materialize Materialize local proposal source draft' \
@@ -289,6 +291,10 @@ executor-report-smoke:
 .PHONY: executor-report-review-packet
 executor-report-review-packet:
 	@$(PYTHON) $(SUPERVISOR) --build-local-operator-executor-report-review-packet
+
+.PHONY: executor-analysis-report-review-outcome
+executor-analysis-report-review-outcome:
+	@$(PYTHON) $(SUPERVISOR) --build-local-operator-executor-analysis-report-review-outcome
 
 .PHONY: executor-proposal-draft-candidate
 executor-proposal-draft-candidate:

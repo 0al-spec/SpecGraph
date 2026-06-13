@@ -210,6 +210,9 @@ LOCAL_OPERATOR_EXECUTOR_REPORT_RELATIVE_PATH = "runs/local_operator_executor_rep
 LOCAL_OPERATOR_EXECUTOR_REPORT_REVIEW_PACKET_RELATIVE_PATH = (
     "runs/local_operator_executor_report_review_packet.json"
 )
+LOCAL_OPERATOR_EXECUTOR_ANALYSIS_REPORT_REVIEW_OUTCOME_RELATIVE_PATH = (
+    "runs/local_operator_executor_analysis_report_review_outcome.json"
+)
 LOCAL_OPERATOR_EXECUTOR_PROPOSAL_DRAFT_CANDIDATE_RELATIVE_PATH = (
     "runs/local_operator_executor_proposal_draft_candidate.json"
 )
@@ -3219,6 +3222,13 @@ LOCAL_OPERATOR_EXECUTOR_REPORT_REVIEW_PACKET_FILENAME = Path(
         )
     )
 ).name
+LOCAL_OPERATOR_EXECUTOR_ANALYSIS_REPORT_REVIEW_OUTCOME_FILENAME = Path(
+    str(
+        supervisor_executor_adapter_policy_lookup(
+            "repository_layout.local_operator_analysis_report_review_outcome_artifact"
+        )
+    )
+).name
 LOCAL_OPERATOR_EXECUTOR_PROPOSAL_DRAFT_CANDIDATE_FILENAME = Path(
     str(
         supervisor_executor_adapter_policy_lookup(
@@ -3290,6 +3300,16 @@ LOCAL_OPERATOR_EXECUTOR_REPORT_REVIEW_PACKET_ARTIFACT_KIND = str(
 LOCAL_OPERATOR_EXECUTOR_REPORT_REVIEW_PACKET_SCHEMA_VERSION = int(
     supervisor_executor_adapter_policy_lookup(
         "executor_report_review_packet_contract.schema_version"
+    )
+)
+LOCAL_OPERATOR_EXECUTOR_ANALYSIS_REPORT_REVIEW_OUTCOME_ARTIFACT_KIND = str(
+    supervisor_executor_adapter_policy_lookup(
+        "executor_analysis_report_review_outcome_contract.artifact_kind"
+    )
+)
+LOCAL_OPERATOR_EXECUTOR_ANALYSIS_REPORT_REVIEW_OUTCOME_SCHEMA_VERSION = int(
+    supervisor_executor_adapter_policy_lookup(
+        "executor_analysis_report_review_outcome_contract.schema_version"
     )
 )
 LOCAL_OPERATOR_EXECUTOR_PROPOSAL_DRAFT_CANDIDATE_ARTIFACT_KIND = str(
@@ -18198,6 +18218,10 @@ def local_operator_executor_report_review_packet_path() -> Path:
     return ROOT / LOCAL_OPERATOR_EXECUTOR_REPORT_REVIEW_PACKET_RELATIVE_PATH
 
 
+def local_operator_executor_analysis_report_review_outcome_path() -> Path:
+    return RUNS_DIR / LOCAL_OPERATOR_EXECUTOR_ANALYSIS_REPORT_REVIEW_OUTCOME_FILENAME
+
+
 def local_operator_executor_proposal_draft_candidate_path() -> Path:
     return RUNS_DIR / LOCAL_OPERATOR_EXECUTOR_PROPOSAL_DRAFT_CANDIDATE_FILENAME
 
@@ -22560,6 +22584,570 @@ def validate_executor_analysis_report_consumption_request(
         "authority_validation": authority_validation,
         "source_review_packet_validation": source_validation,
     }
+
+
+def executor_analysis_report_review_outcome_contract() -> dict[str, Any]:
+    contract = supervisor_executor_adapter_policy_lookup(
+        "executor_analysis_report_review_outcome_contract"
+    )
+    return contract if isinstance(contract, dict) else {}
+
+
+def local_operator_executor_analysis_report_review_outcome_next_gap(status: str) -> str:
+    contract = executor_analysis_report_review_outcome_contract()
+    if status == "ready_for_operator_review":
+        return str(
+            contract.get("next_gap", "define_executor_analysis_report_followup_policy")
+        ).strip()
+    return {
+        "blocked_missing_review_packet": "run_executor_report_review_packet_until_ready",
+        "blocked_invalid_review_packet": "repair_executor_report_review_packet",
+        "blocked_consumption_policy": "repair_executor_analysis_report_consumption_policy",
+        "blocked_authority_boundary": "repair_executor_analysis_report_consumption_policy",
+        "blocked_privacy_boundary": "repair_executor_analysis_report_review_outcome_privacy",
+        "blocked_policy_contract": "repair_executor_analysis_report_review_outcome_contract",
+    }.get(status, "repair_executor_analysis_report_review_outcome")
+
+
+def local_operator_executor_analysis_report_review_outcome_status(
+    checks: list[dict[str, Any]],
+    *,
+    policy_findings: list[dict[str, Any]] | None = None,
+) -> str:
+    status_by_id = {
+        str(check.get("check_id", "")).strip(): str(check.get("status", "")).strip()
+        for check in checks
+        if isinstance(check, dict)
+    }
+    if status_by_id.get("source_review_packet_present") != "passed":
+        return "blocked_missing_review_packet"
+    if status_by_id.get("source_review_packet_valid") != "passed":
+        return "blocked_invalid_review_packet"
+    if status_by_id.get("analysis_consumption_policy_allows_outcome") != "passed":
+        finding_codes = {
+            str(finding.get("code", "")).strip()
+            for finding in (policy_findings or [])
+            if isinstance(finding, dict)
+        }
+        if any("authority_boundary" in code for code in finding_codes):
+            return "blocked_authority_boundary"
+        return "blocked_consumption_policy"
+    if status_by_id.get("source_report_kind_is_analysis_report") != "passed":
+        return "blocked_consumption_policy"
+    if status_by_id.get("authority_boundary_preserved") != "passed":
+        return "blocked_authority_boundary"
+    if status_by_id.get("privacy_boundary_preserved") != "passed":
+        return "blocked_privacy_boundary"
+    if (
+        "outcome_contract_valid" in status_by_id
+        and status_by_id.get("outcome_contract_valid") != "passed"
+    ):
+        return "blocked_policy_contract"
+    return "ready_for_operator_review"
+
+
+def validate_local_operator_executor_analysis_report_review_outcome(
+    outcome: object,
+) -> dict[str, Any]:
+    contract = executor_analysis_report_review_outcome_contract()
+    findings: list[dict[str, str]] = []
+    if not isinstance(outcome, dict):
+        return {
+            "valid": False,
+            "findings": [
+                executor_report_finding(
+                    code="analysis_report_review_outcome_not_object",
+                    field="outcome",
+                    message="Analysis report review outcome must be a JSON object.",
+                )
+            ],
+            "normalized": {},
+        }
+    findings.extend(executor_report_forbidden_key_findings(outcome))
+    findings.extend(executor_report_machine_local_path_findings(outcome))
+    findings.extend(executor_report_secret_like_value_findings(outcome))
+    for field in [
+        str(field).strip() for field in contract.get("required_fields", []) if str(field).strip()
+    ]:
+        if field not in outcome:
+            findings.append(
+                executor_report_finding(
+                    code="missing_analysis_report_review_outcome_field",
+                    field=field,
+                    message=f"Analysis report review outcome is missing field {field}.",
+                )
+            )
+    if (
+        outcome.get("artifact_kind")
+        != LOCAL_OPERATOR_EXECUTOR_ANALYSIS_REPORT_REVIEW_OUTCOME_ARTIFACT_KIND
+    ):
+        findings.append(
+            executor_report_finding(
+                code="invalid_analysis_report_review_outcome_artifact_kind",
+                field="artifact_kind",
+                message="Analysis report review outcome artifact_kind is invalid.",
+            )
+        )
+    if (
+        outcome.get("schema_version")
+        != LOCAL_OPERATOR_EXECUTOR_ANALYSIS_REPORT_REVIEW_OUTCOME_SCHEMA_VERSION
+    ):
+        findings.append(
+            executor_report_finding(
+                code="invalid_analysis_report_review_outcome_schema_version",
+                field="schema_version",
+                message="Analysis report review outcome schema_version is invalid.",
+            )
+        )
+    if outcome.get("local_only") is not True:
+        findings.append(
+            executor_report_finding(
+                code="analysis_report_review_outcome_local_only_required",
+                field="local_only",
+                message="Analysis report review outcome must remain local-only.",
+            )
+        )
+    if (
+        outcome.get("source_review_packet_artifact")
+        != LOCAL_OPERATOR_EXECUTOR_REPORT_REVIEW_PACKET_RELATIVE_PATH
+    ):
+        findings.append(
+            executor_report_finding(
+                code="invalid_analysis_report_review_outcome_source_packet",
+                field="source_review_packet_artifact",
+                message="Analysis report review outcome must reference the local review packet.",
+            )
+        )
+    if outcome.get("source_report_artifact") != LOCAL_OPERATOR_EXECUTOR_REPORT_RELATIVE_PATH:
+        findings.append(
+            executor_report_finding(
+                code="invalid_analysis_report_review_outcome_source_report",
+                field="source_report_artifact",
+                message="Analysis report review outcome must reference the local executor report.",
+            )
+        )
+    if (
+        outcome.get("outcome_kind")
+        != str(contract.get("outcome_kind", "analysis_report_review_outcome")).strip()
+    ):
+        findings.append(
+            executor_report_finding(
+                code="invalid_analysis_report_review_outcome_kind",
+                field="outcome_kind",
+                message="Analysis report review outcome kind is invalid.",
+            )
+        )
+    summary = outcome.get("summary", {})
+    summary = summary if isinstance(summary, dict) else {}
+    if not isinstance(outcome.get("summary"), dict):
+        findings.append(
+            executor_report_finding(
+                code="analysis_report_review_outcome_summary_not_object",
+                field="summary",
+                message="Analysis report review outcome summary must be an object.",
+            )
+        )
+    review_outcome = outcome.get("analysis_review_outcome", {})
+    review_outcome = review_outcome if isinstance(review_outcome, dict) else {}
+    if not isinstance(outcome.get("analysis_review_outcome"), dict):
+        findings.append(
+            executor_report_finding(
+                code="analysis_report_review_outcome_payload_not_object",
+                field="analysis_review_outcome",
+                message="Analysis report review outcome payload must be an object.",
+            )
+        )
+    authority_boundary = outcome.get("authority_boundary", {})
+    authority_validation = validate_executor_analysis_report_review_outcome_authority_boundary(
+        authority_boundary
+    )
+    findings.extend(copy.deepcopy(authority_validation.get("findings", [])))
+    allowed_statuses = {
+        str(status).strip() for status in contract.get("status_values", []) if str(status).strip()
+    }
+    status = str(summary.get("status", "")).strip()
+    if status not in allowed_statuses:
+        findings.append(
+            executor_report_finding(
+                code="invalid_analysis_report_review_outcome_status",
+                field="summary.status",
+                message="Analysis report review outcome status is not allowed.",
+            )
+        )
+    if summary.get("human_review_required") is not True:
+        findings.append(
+            executor_report_finding(
+                code="analysis_report_review_outcome_human_review_not_required",
+                field="summary.human_review_required",
+                message="Analysis report review outcome must require human review.",
+            )
+        )
+    if summary.get("canonical_mutations_allowed") is not False:
+        findings.append(
+            executor_report_finding(
+                code="analysis_report_review_outcome_allows_canonical_mutation",
+                field="summary.canonical_mutations_allowed",
+                message="Analysis report review outcome must not allow canonical mutation.",
+            )
+        )
+    if summary.get("proposal_draft_candidate_allowed") is not False:
+        findings.append(
+            executor_report_finding(
+                code="analysis_report_review_outcome_allows_proposal_draft_candidate",
+                field="summary.proposal_draft_candidate_allowed",
+                message="Analysis report review outcome must not allow proposal draft candidates.",
+            )
+        )
+    if review_outcome.get("operator_decision_required") is not True:
+        findings.append(
+            executor_report_finding(
+                code="analysis_report_review_outcome_operator_decision_not_required",
+                field="analysis_review_outcome.operator_decision_required",
+                message="Analysis report review outcome must require an operator decision.",
+            )
+        )
+    if review_outcome.get("outcome_is_authority") is not False:
+        findings.append(
+            executor_report_finding(
+                code="analysis_report_review_outcome_is_authority",
+                field="analysis_review_outcome.outcome_is_authority",
+                message="Analysis report review outcome must not be authority.",
+            )
+        )
+    return {
+        "valid": not findings,
+        "findings": findings,
+        "normalized": {
+            "status": status,
+            "review_state": str(review_outcome.get("review_state", "")).strip(),
+            "report_kind": str(summary.get("report_kind", "")).strip(),
+            "next_gap": str(summary.get("next_gap", "")).strip(),
+        },
+    }
+
+
+def validate_executor_analysis_report_review_outcome_authority_boundary(
+    authority_boundary: object,
+) -> dict[str, Any]:
+    contract = executor_analysis_report_review_outcome_contract()
+    expected = contract.get("authority_boundary", {})
+    expected = expected if isinstance(expected, dict) else {}
+    boundary = authority_boundary if isinstance(authority_boundary, dict) else {}
+    findings: list[dict[str, str]] = []
+    if not isinstance(authority_boundary, dict):
+        findings.append(
+            executor_report_finding(
+                code="analysis_report_review_outcome_authority_boundary_not_object",
+                field="authority_boundary",
+                message="Analysis report review outcome authority_boundary must be an object.",
+            )
+        )
+    for field in sorted(boundary):
+        if field not in expected:
+            findings.append(
+                executor_report_finding(
+                    code="unexpected_analysis_report_review_outcome_authority_field",
+                    field=f"authority_boundary.{field}",
+                    message=(
+                        "Analysis report review outcome includes an unexpected authority field."
+                    ),
+                )
+            )
+    for field, expected_value in expected.items():
+        if boundary.get(field) is not expected_value:
+            findings.append(
+                executor_report_finding(
+                    code="invalid_analysis_report_review_outcome_authority_boundary",
+                    field=f"authority_boundary.{field}",
+                    message="Analysis report review outcome must preserve review-only authority.",
+                )
+            )
+    return {
+        "valid": not findings,
+        "findings": findings,
+        "normalized": {field: boundary.get(field) for field in sorted(expected)},
+    }
+
+
+def build_local_operator_executor_analysis_report_review_outcome(
+    review_packet: dict[str, Any] | None = None,
+) -> dict[str, Any]:
+    contract = executor_analysis_report_review_outcome_contract()
+    review_packet = (
+        review_packet
+        if isinstance(review_packet, dict)
+        else load_local_operator_executor_report_review_packet_artifact()
+    )
+    source_packet_present = isinstance(review_packet, dict)
+    request = default_executor_analysis_report_consumption_request(
+        consumer=str(contract.get("consumer", "analysis_report_reviewer")).strip(),
+        transformation=str(
+            contract.get("transformation", "review_packet_to_analysis_report_review_outcome")
+        ).strip(),
+        requested_effects=[
+            str(effect).strip()
+            for effect in contract.get("requested_effects", ["analysis_report_review_outcome"])
+            if str(effect).strip()
+        ],
+    )
+    policy_validation = validate_executor_analysis_report_consumption_request(
+        request,
+        review_packet=review_packet if source_packet_present else None,
+    )
+    policy_findings = policy_validation.get("findings", [])
+    policy_findings = policy_findings if isinstance(policy_findings, list) else []
+    normalized_policy = policy_validation.get("normalized", {})
+    normalized_policy = normalized_policy if isinstance(normalized_policy, dict) else {}
+    source_validation = policy_validation.get("source_review_packet_validation", {})
+    source_validation = source_validation if isinstance(source_validation, dict) else {}
+    packet_validation = source_validation.get("packet_validation", {})
+    packet_validation = packet_validation if isinstance(packet_validation, dict) else {}
+    source_packet_valid = bool(
+        source_packet_present
+        and packet_validation.get("valid") is True
+        and normalized_policy.get("source_review_packet_status") == "ready_for_review"
+        and normalized_policy.get("source_review_state") == "ready_for_human_review"
+    )
+    authority_validation = policy_validation.get("authority_validation", {})
+    authority_validation = authority_validation if isinstance(authority_validation, dict) else {}
+    authority_boundary = copy.deepcopy(contract.get("authority_boundary", {}))
+    authority_preserved = (
+        authority_validation.get("valid") is True
+        and authority_boundary.get("executor_report_is_authority") is False
+        and authority_boundary.get("review_packet_is_authority") is False
+        and authority_boundary.get("outcome_is_authority") is False
+        and authority_boundary.get("human_or_supervisor_review_required") is True
+        and authority_boundary.get("canonical_mutations_allowed") is False
+        and authority_boundary.get("proposal_draft_candidate_allowed") is False
+        and authority_boundary.get("proposal_status_mutations_allowed") is False
+        and authority_boundary.get("gap_closure_allowed") is False
+        and authority_boundary.get("patch_application_allowed") is False
+        and authority_boundary.get("static_publish_of_local_outcome_allowed") is False
+    )
+    source_report_kind = str(normalized_policy.get("source_report_kind", "")).strip()
+    privacy_findings: list[dict[str, str]] = []
+    if source_packet_present:
+        privacy_findings.extend(executor_report_forbidden_key_findings(review_packet))
+        privacy_findings.extend(executor_report_machine_local_path_findings(review_packet))
+        privacy_findings.extend(executor_report_secret_like_value_findings(review_packet))
+    checks = [
+        local_operator_smoke_check(
+            check_id="source_review_packet_present",
+            status="passed" if source_packet_present else "missing",
+            message=(
+                "Local operator executor report review packet is present."
+                if source_packet_present
+                else "Local operator executor report review packet is missing."
+            ),
+        ),
+        local_operator_smoke_check(
+            check_id="source_review_packet_valid",
+            status="passed" if source_packet_valid else "failed",
+            message=(
+                "Local operator executor report review packet is ready for analysis review."
+                if source_packet_valid
+                else "Local operator executor report review packet is missing or invalid."
+            ),
+        ),
+        local_operator_smoke_check(
+            check_id="analysis_consumption_policy_allows_outcome",
+            status="passed" if policy_validation.get("valid") is True else "failed",
+            message=(
+                "Analysis report consumption policy allows building a review outcome."
+                if policy_validation.get("valid") is True
+                else "Analysis report consumption policy does not allow this review outcome."
+            ),
+        ),
+        local_operator_smoke_check(
+            check_id="source_report_kind_is_analysis_report",
+            status="passed" if source_report_kind == "analysis_report" else "failed",
+            message=(
+                "Source review packet carries an analysis_report source report."
+                if source_report_kind == "analysis_report"
+                else "Source review packet does not carry an analysis_report source report."
+            ),
+        ),
+        local_operator_smoke_check(
+            check_id="authority_boundary_preserved",
+            status="passed" if authority_preserved else "failed",
+            message=(
+                "Analysis report review outcome preserves the review-only authority boundary."
+                if authority_preserved
+                else "Analysis report review outcome would expand authority."
+            ),
+        ),
+        local_operator_smoke_check(
+            check_id="privacy_boundary_preserved",
+            status="passed" if not privacy_findings else "failed",
+            message=(
+                "Analysis report review outcome preserves the source packet privacy boundary."
+                if not privacy_findings
+                else "Analysis report review outcome would expose unsafe source packet data."
+            ),
+        ),
+    ]
+    status_before_contract = local_operator_executor_analysis_report_review_outcome_status(
+        checks,
+        policy_findings=policy_findings,
+    )
+    source_packet = review_packet if source_packet_present else {}
+    summary = source_packet.get("summary", {}) if isinstance(source_packet, dict) else {}
+    summary = summary if isinstance(summary, dict) else {}
+    nested_packet = (
+        source_packet.get("review_packet", {}) if isinstance(source_packet, dict) else {}
+    )
+    nested_packet = nested_packet if isinstance(nested_packet, dict) else {}
+    findings = nested_packet.get("findings", []) if source_packet_present else []
+    findings = (
+        copy.deepcopy(findings)
+        if isinstance(findings, list) and status_before_contract == "ready_for_operator_review"
+        else []
+    )
+    evidence_refs = nested_packet.get("evidence_refs", []) if source_packet_present else []
+    evidence_refs = (
+        [
+            safe_ref
+            for safe_ref in (safe_executor_report_evidence_ref(ref) for ref in evidence_refs)
+            if safe_ref
+        ]
+        if isinstance(evidence_refs, list) and status_before_contract == "ready_for_operator_review"
+        else []
+    )
+    proposed_artifacts = (
+        nested_packet.get("proposed_artifacts", []) if source_packet_present else []
+    )
+    proposed_artifacts = (
+        [
+            safe_ref
+            for safe_ref in (safe_executor_report_evidence_ref(ref) for ref in proposed_artifacts)
+            if safe_ref
+        ]
+        if isinstance(proposed_artifacts, list)
+        and status_before_contract == "ready_for_operator_review"
+        else []
+    )
+    producer_kind = str(summary.get("producer_kind", "")).strip()
+    source_report_status = str(nested_packet.get("source_report_status", "")).strip()
+    named_filters = {
+        str(name).strip(): [] for name in contract.get("named_filters", []) if str(name).strip()
+    }
+    named_filters.setdefault(status_before_contract, []).append(producer_kind or "missing_producer")
+    for key in list(named_filters):
+        named_filters[key] = sorted(set(named_filters[key]))
+    outcome = {
+        "artifact_kind": LOCAL_OPERATOR_EXECUTOR_ANALYSIS_REPORT_REVIEW_OUTCOME_ARTIFACT_KIND,
+        "schema_version": LOCAL_OPERATOR_EXECUTOR_ANALYSIS_REPORT_REVIEW_OUTCOME_SCHEMA_VERSION,
+        "generated_at": utc_now_iso(),
+        "policy_reference": {
+            **supervisor_executor_adapter_policy_reference(),
+            "policy_section": "executor_analysis_report_consumption_policy",
+            "outcome_contract_section": "executor_analysis_report_review_outcome_contract",
+        },
+        "source_review_packet_artifact": LOCAL_OPERATOR_EXECUTOR_REPORT_REVIEW_PACKET_RELATIVE_PATH,
+        "source_report_artifact": LOCAL_OPERATOR_EXECUTOR_REPORT_RELATIVE_PATH,
+        "local_only": bool(contract.get("local_only", True)),
+        "outcome_kind": str(contract.get("outcome_kind", "analysis_report_review_outcome")).strip(),
+        "authority_boundary": authority_boundary,
+        "privacy_boundary": copy.deepcopy(contract.get("privacy_boundary", {})),
+        "summary": {
+            "status": status_before_contract,
+            "report_kind": str(summary.get("report_kind", "")).strip(),
+            "producer_kind": producer_kind,
+            "authority_level": "review_only",
+            "human_review_required": True,
+            "canonical_mutations_allowed": False,
+            "proposal_draft_candidate_allowed": False,
+            "next_gap": local_operator_executor_analysis_report_review_outcome_next_gap(
+                status_before_contract
+            ),
+        },
+        "analysis_review_outcome": {
+            "outcome_state": (
+                "ready_for_operator_review"
+                if status_before_contract == "ready_for_operator_review"
+                else "blocked"
+            ),
+            "source_report_status": source_report_status,
+            "source_review_state": str(nested_packet.get("review_state", "")).strip(),
+            "source_report_kind": source_report_kind,
+            "findings": findings,
+            "evidence_refs": evidence_refs,
+            "proposed_artifacts": proposed_artifacts,
+            "review_questions": [],
+            "operator_decision_required": True,
+            "outcome_is_authority": False,
+            "recommended_next_gap": local_operator_executor_analysis_report_review_outcome_next_gap(
+                status_before_contract
+            ),
+        },
+        "analysis_consumption_request": request,
+        "analysis_consumption_validation": {
+            "valid": bool(policy_validation.get("valid", False)),
+            "finding_count": len(policy_findings),
+            "findings": copy.deepcopy(policy_findings),
+            "normalized": copy.deepcopy(normalized_policy),
+        },
+        "source_review_packet_validation": {
+            "valid": bool(packet_validation.get("valid", False)),
+            "finding_count": int(packet_validation.get("finding_count", 0) or 0),
+            "findings": copy.deepcopy(packet_validation.get("findings", [])),
+            "normalized": copy.deepcopy(source_validation.get("normalized", {})),
+        },
+        "checks": checks,
+        "viewer_projection": {
+            "named_filters": named_filters,
+        },
+    }
+    outcome_validation = validate_local_operator_executor_analysis_report_review_outcome(outcome)
+    outcome["outcome_validation"] = {
+        "valid": bool(outcome_validation.get("valid", False)),
+        "finding_count": len(outcome_validation.get("findings", [])),
+        "findings": copy.deepcopy(outcome_validation.get("findings", [])),
+        "normalized": copy.deepcopy(outcome_validation.get("normalized", {})),
+    }
+    checks.append(
+        local_operator_smoke_check(
+            check_id="outcome_contract_valid",
+            status="passed" if outcome_validation.get("valid") is True else "failed",
+            message=(
+                "Analysis report review outcome matches the outcome contract."
+                if outcome_validation.get("valid") is True
+                else "Analysis report review outcome does not match the outcome contract."
+            ),
+        )
+    )
+    final_status = local_operator_executor_analysis_report_review_outcome_status(
+        checks,
+        policy_findings=policy_findings,
+    )
+    outcome["summary"]["status"] = final_status
+    outcome["summary"]["next_gap"] = (
+        local_operator_executor_analysis_report_review_outcome_next_gap(final_status)
+    )
+    outcome["analysis_review_outcome"]["outcome_state"] = (
+        "ready_for_operator_review" if final_status == "ready_for_operator_review" else "blocked"
+    )
+    outcome["analysis_review_outcome"]["recommended_next_gap"] = (
+        local_operator_executor_analysis_report_review_outcome_next_gap(final_status)
+    )
+    outcome["viewer_projection"]["named_filters"] = {
+        key: [] for key in outcome["viewer_projection"]["named_filters"]
+    }
+    outcome["viewer_projection"]["named_filters"].setdefault(final_status, []).append(
+        producer_kind or "missing_producer"
+    )
+    for key in list(outcome["viewer_projection"]["named_filters"]):
+        outcome["viewer_projection"]["named_filters"][key] = sorted(
+            set(outcome["viewer_projection"]["named_filters"][key])
+        )
+    return outcome
+
+
+def write_local_operator_executor_analysis_report_review_outcome(index: dict[str, Any]) -> Path:
+    path = local_operator_executor_analysis_report_review_outcome_path()
+    with artifact_lock(path):
+        atomic_write_json(path, index)
+    return path
 
 
 def executor_report_to_proposal_draft_policy() -> dict[str, Any]:
@@ -50702,6 +51290,7 @@ def main(
     build_local_operator_executor_report_contract_mode: bool = False,
     build_local_operator_executor_report_smoke_mode: bool = False,
     build_local_operator_executor_report_review_packet_mode: bool = False,
+    build_local_operator_executor_analysis_report_review_outcome_mode: bool = False,
     build_local_operator_executor_proposal_draft_candidate_mode: bool = False,
     build_local_operator_executor_proposal_promotion_packet_mode: bool = False,
     build_local_operator_executor_proposal_source_materialization_mode: bool = False,
@@ -50793,6 +51382,9 @@ def main(
         ),
         "--build-local-operator-executor-report-review-packet": (
             build_local_operator_executor_report_review_packet_mode
+        ),
+        "--build-local-operator-executor-analysis-report-review-outcome": (
+            build_local_operator_executor_analysis_report_review_outcome_mode
         ),
         "--build-local-operator-executor-proposal-draft-candidate": (
             build_local_operator_executor_proposal_draft_candidate_mode
@@ -51774,6 +52366,7 @@ def main(
                 build_local_operator_executor_report_contract_mode,
                 build_local_operator_executor_report_smoke_mode,
                 build_local_operator_executor_report_review_packet_mode,
+                build_local_operator_executor_analysis_report_review_outcome_mode,
                 build_local_operator_executor_proposal_draft_candidate_mode,
                 build_agent_runtime_enforcement_evidence_mode,
             )
@@ -51999,6 +52592,42 @@ def main(
         write_local_operator_executor_report_review_packet(index)
         emit_supervisor_json(index, output_mode=normalized_output_mode)
         return 0 if index.get("summary", {}).get("status") == "ready_for_review" else 1
+
+    if build_local_operator_executor_analysis_report_review_outcome_mode:
+        if any(
+            (
+                dry_run,
+                auto_approve,
+                loop,
+                resolve_gate,
+                decision,
+                note,
+                target_spec,
+                split_proposal,
+                apply_split_proposal,
+                operator_note,
+                mutation_budget,
+                run_authority,
+                execution_profile,
+                child_model,
+                child_timeout_seconds,
+                verbose,
+                list_stale_runtime,
+                clean_stale_runtime,
+                observe_graph_health_mode,
+                operator_request_packet_path,
+            )
+        ):
+            print(
+                "--build-local-operator-executor-analysis-report-review-outcome must be used "
+                "as a standalone command",
+                file=sys.stderr,
+            )
+            return 1
+        index = build_local_operator_executor_analysis_report_review_outcome()
+        write_local_operator_executor_analysis_report_review_outcome(index)
+        emit_supervisor_json(index, output_mode=normalized_output_mode)
+        return 0 if index.get("summary", {}).get("status") == "ready_for_operator_review" else 1
 
     if build_local_operator_executor_proposal_draft_candidate_mode:
         if any(
@@ -55566,6 +56195,14 @@ if __name__ == "__main__":
         ),
     )
     parser.add_argument(
+        "--build-local-operator-executor-analysis-report-review-outcome",
+        action="store_true",
+        help=(
+            "Build a local-only analysis report review outcome from a valid analysis "
+            "review packet, without creating proposal drafts or mutating canonical specs"
+        ),
+    )
+    parser.add_argument(
         "--build-local-operator-executor-proposal-draft-candidate",
         action="store_true",
         help=(
@@ -55955,6 +56592,9 @@ if __name__ == "__main__":
             ),
             build_local_operator_executor_report_review_packet_mode=(
                 args.build_local_operator_executor_report_review_packet
+            ),
+            build_local_operator_executor_analysis_report_review_outcome_mode=(
+                args.build_local_operator_executor_analysis_report_review_outcome
             ),
             build_local_operator_executor_proposal_draft_candidate_mode=(
                 args.build_local_operator_executor_proposal_draft_candidate

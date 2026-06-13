@@ -6045,5 +6045,79 @@
         "pattern": "wire_closed_loop_evidence_into_specgraph_review"
       }
     ]
+  },
+  {
+    "proposal_id": "0112",
+    "posture": "bounded_runtime_followup",
+    "runtime_surfaces": [
+      "docs/proposals/0112_build_executor_analysis_report_review_outcome.md",
+      "docs/archive/proposal_sources/0112_build_executor_analysis_report_review_outcome.md",
+      "tools/supervisor_executor_adapter_policy.json",
+      "tools/supervisor.py",
+      "tools/README.md",
+      "Makefile",
+      "tools/build_static_artifact_bundle.py",
+      "tests/test_supervisor.py",
+      "tests/test_static_artifact_bundle.py",
+      "runs/local_operator_executor_analysis_report_review_outcome.json"
+    ],
+    "runtime_markers": [
+      {
+        "path": "tools/supervisor_executor_adapter_policy.json",
+        "pattern": "executor_analysis_report_review_outcome_contract"
+      },
+      {
+        "path": "tools/supervisor.py",
+        "pattern": "def build_local_operator_executor_analysis_report_review_outcome("
+      },
+      {
+        "path": "tools/supervisor.py",
+        "pattern": "def validate_local_operator_executor_analysis_report_review_outcome("
+      },
+      {
+        "path": "tools/supervisor.py",
+        "pattern": "--build-local-operator-executor-analysis-report-review-outcome"
+      },
+      {
+        "path": "Makefile",
+        "pattern": "executor-analysis-report-review-outcome:"
+      }
+    ],
+    "validation_markers": [
+      {
+        "path": "tests/test_supervisor.py",
+        "pattern": "def test_build_local_operator_executor_analysis_report_review_outcome_from_valid_packet("
+      },
+      {
+        "path": "tests/test_supervisor.py",
+        "pattern": "def test_build_local_operator_executor_analysis_report_review_outcome_blocks_proposal_packet("
+      },
+      {
+        "path": "tests/test_supervisor.py",
+        "pattern": "def test_build_local_operator_executor_analysis_report_review_outcome_blocks_authority_expansion("
+      },
+      {
+        "path": "tests/test_supervisor.py",
+        "pattern": "def test_validate_local_operator_executor_analysis_report_review_outcome_rejects_authority("
+      },
+      {
+        "path": "tests/test_static_artifact_bundle.py",
+        "pattern": "local_operator_executor_analysis_report_review_outcome.json"
+      }
+    ],
+    "observation_markers": [
+      {
+        "path": "docs/proposals/0112_build_executor_analysis_report_review_outcome.md",
+        "pattern": "define_executor_analysis_report_followup_policy"
+      },
+      {
+        "path": "tools/README.md",
+        "pattern": "executor_analysis_report_review_outcome_contract"
+      },
+      {
+        "path": "tools/build_static_artifact_bundle.py",
+        "pattern": "\"local_operator_executor_analysis_report_review_outcome.json\""
+      }
+    ]
   }
 ]

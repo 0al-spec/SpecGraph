@@ -1441,5 +1441,18 @@
     "required_provenance_links": [
       "source_draft_ref"
     ]
+  },
+  {
+    "proposal_id": "0112",
+    "source_artifact_class": "working_draft",
+    "source_refs": [
+      "docs/archive/proposal_sources/0112_build_executor_analysis_report_review_outcome.md"
+    ],
+    "motivating_concern": "SpecGraph can validate analysis_report review packets after 0107, but operators still need a deterministic local-only review outcome artifact before any follow-up policy can decide what to do with analysis findings",
+    "normalized_title": "Build Executor Analysis Report Review Outcome",
+    "bounded_scope": "Add a local-only analysis report review outcome artifact built from a valid analysis_report review packet and executor_analysis_report_consumption_policy, preserving sanitized findings and safe evidence refs while rejecting missing or invalid packets, proposal_draft packets, authority expansion, privacy leakage, proposal draft candidate production, canonical mutation, proposal status mutation, patch application, gap closure, executor invocation, and public static publication.",
+    "required_provenance_links": [
+      "source_draft_ref"
+    ]
   }
 ]
