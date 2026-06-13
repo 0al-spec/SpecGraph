@@ -15,7 +15,9 @@ Add a deterministic `ontology_decision_import_preview` artifact under `runs/`
 that joins `ontology_review_dashboard` and `ontology_owner_decision_report` by
 candidate id and intake id. The preview records matched evidence ids, source
 intake state, owner decision state, preview state, required human action, and
-explicit false apply/import/gate-close/canonical-mutation flags.
+explicit false apply/import/gate-close/canonical-mutation flags. Ignored owner
+decisions from the source report remain visible as diagnostics and do not become
+import previews.
 
 This slice must not apply owner decisions, import decisions into SpecGraph, mark
 candidates accepted, close semantic gates, write Ontology packages, update
@@ -29,7 +31,9 @@ arbitrary text, or run ontologyc.
 - Build `runs/ontology_decision_import_preview.json` from the review dashboard
   and owner decision report.
 - Classify preview rows as blocked, ready for operator review, rejected,
-  clarification-needed, or unmatched.
+  clarification-needed, unmatched, or no-decisions.
+- Carry ignored owner-decision diagnostics from the source report without
+  recommending import.
 - Validate the read-only boundary and reject policy or source authority
   expansion.
 - Cover artifact shape, write path, generated output, and authority rejection in

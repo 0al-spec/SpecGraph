@@ -32,17 +32,21 @@ runs/ontology_decision_import_preview.json
 ```
 
 The artifact joins the rich ontology review dashboard with the owner decision
-report. It shows whether each owner decision is blocked by the semantic gate,
-ready for operator review, rejected, clarification-needed, or unmatched, while
-keeping the result as review evidence only.
+report. It shows whether each valid owner decision is blocked by the semantic
+gate, ready for operator review, rejected, clarification-needed, or unmatched,
+while keeping the result as review evidence only. Invalid or stale owner
+decision inputs that the owner decision report ignored remain visible as
+ignored-owner-decision diagnostics instead of becoming import previews.
 
 ## Goals
 
 - Add `ontology_decision_import_preview` to the semantic policy layout.
-- Define preview states for blocked, ready, rejected, clarification, and
-  unmatched owner decisions.
+- Define preview states for blocked, ready, rejected, clarification, unmatched,
+  and no-decision cases.
 - Preserve owner decision refs, candidate ids, intake ids, matched closed-loop
   evidence ids, source intake state, and required human action.
+- Preserve ignored owner-decision diagnostics from the source owner decision
+  report.
 - Keep apply/import, semantic gate closure, canonical mutation, Ontology package
   writes, lockfile writes, and prompt execution authority disabled.
 - Cover preview shape, write path, generated output, authority boundary, and
@@ -71,7 +75,8 @@ The preview artifact declares:
   },
   "canonical_mutations_allowed": false,
   "tracked_artifacts_written": false,
-  "decision_import_previews": []
+  "decision_import_previews": [],
+  "ignored_owner_decisions": []
 }
 ```
 
@@ -90,6 +95,10 @@ Each preview row records:
 - import recommendation;
 - explicit false import, gate-close, canonical mutation, Ontology package write,
   and lockfile update flags.
+
+When the source owner decision report contains no valid decisions, the preview
+summary reports `status: "no_decisions"` and carries ignored owner decisions as
+diagnostics only.
 
 ## Authority Boundary
 
@@ -114,7 +123,8 @@ This slice is complete when:
   `ontology_decision_import_preview`;
 - `tools/ontology_imports.py` builds and validates the decision import preview;
 - `make ontology-imports` writes `runs/ontology_decision_import_preview.json`;
-- focused tests cover blocked, unmatched, and read-only preview behavior;
+- focused tests cover no-decision, pending-decision, ignored-input, and read-only
+  preview behavior;
 - proposal `0115` is tracked in promotion and runtime registries;
 - proposal gates, DocC sync, and focused Python tests pass.
 

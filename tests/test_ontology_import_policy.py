@@ -416,6 +416,7 @@ def test_ontology_semantic_control_policy_defines_review_only_contract() -> None
         "rejected_by_owner",
         "needs_clarification",
         "unmatched_decision",
+        "no_decisions",
     }.issubset(set(decision_import_contract["preview_states"]))
     assert (
         decision_import_contract["consumer_boundary"]["for_specgraph_decision_import_preview"]
@@ -1192,25 +1193,24 @@ def test_ontology_owner_decision_report_builds_read_only_decision_contract() -> 
     assert report["canonical_mutations_allowed"] is False
     assert report["tracked_artifacts_written"] is False
     assert report["summary"] == {
-        "status": "decisions_available",
-        "decision_count": 2,
-        "accepted_count": 1,
-        "rejected_count": 1,
+        "status": "no_decisions",
+        "decision_count": 0,
+        "accepted_count": 0,
+        "rejected_count": 0,
         "clarification_count": 0,
+        "ignored_decision_count": 2,
         "next_gap": "build_ontology_decision_import_preview",
     }
-
-    decisions = {entry["decision_id"]: entry for entry in report["decisions"]}
-    accepted = decisions["ontology-owner-decision-accept-casfunction"]
-    assert accepted["candidate_id"] == "ontology-delta-candidate-examcalc-casfunction"
-    assert accepted["decision_state"] == "accepted"
-    assert accepted["accepted_ontology_delta"] is True
-    assert accepted["imports_into_specgraph"] is False
-    assert accepted["closes_semantic_gate"] is False
-    assert accepted["mutates_canonical_specs"] is False
-    rejected = decisions["ontology-owner-decision-reject-legacyterm"]
-    assert rejected["decision_state"] == "rejected"
-    assert rejected["accepted_ontology_delta"] is False
+    assert report["decisions"] == []
+    ignored = {entry["decision_id"]: entry for entry in report["ignored_decisions"]}
+    assert (
+        ignored["ontology-owner-decision-accept-casfunction"]["reason"]
+        == "closed_loop_evidence_not_pending_owner_decision"
+    )
+    assert (
+        ignored["ontology-owner-decision-reject-legacyterm"]["reason"]
+        == "missing_closed_loop_evidence"
+    )
     assert report["consumer_boundary"]["for_specgraph_decision_import_preview"] is True
     assert report["consumer_boundary"]["for_specspace_review_dashboard"] is True
     assert report["consumer_boundary"]["may_execute_prompt_agent"] is False
@@ -1244,39 +1244,27 @@ def test_ontology_decision_import_preview_builds_read_only_preview() -> None:
     assert preview["canonical_mutations_allowed"] is False
     assert preview["tracked_artifacts_written"] is False
     assert preview["summary"] == {
-        "status": "blocked_by_semantic_gate",
-        "preview_count": 2,
-        "accepted_count": 1,
-        "rejected_count": 1,
+        "status": "no_decisions",
+        "preview_count": 0,
+        "accepted_count": 0,
+        "rejected_count": 0,
         "clarification_count": 0,
         "importable_count": 0,
-        "blocked_count": 1,
-        "unmatched_count": 1,
+        "blocked_count": 0,
+        "unmatched_count": 0,
+        "ignored_decision_count": 2,
         "next_gap": "build_specspace_owner_decision_review_surface",
     }
-
-    previews = {entry["decision_id"]: entry for entry in preview["decision_import_previews"]}
-    accepted = previews["ontology-owner-decision-accept-casfunction"]
-    assert accepted["candidate_id"] == "ontology-delta-candidate-examcalc-casfunction"
-    assert accepted["decision_state"] == "accepted"
-    assert accepted["preview_state"] == "blocked_by_semantic_gate"
-    assert accepted["matched_closed_loop_evidence_id"] == (
-        "ontology-closed-loop-evidence-ontology-delta-candidate-examcalc-casfunction"
+    assert preview["decision_import_previews"] == []
+    ignored = {entry["decision_id"]: entry for entry in preview["ignored_owner_decisions"]}
+    assert (
+        ignored["ontology-owner-decision-accept-casfunction"]["reason"]
+        == "closed_loop_evidence_not_pending_owner_decision"
     )
-    assert accepted["matched_source_intake_state"] == "blocked_by_semantic_gate"
-    assert accepted["required_human_action"] == "resolve_blocking_ontology_semantic_findings"
-    assert accepted["import_recommended"] is False
-    assert accepted["imports_into_specgraph"] is False
-    assert accepted["closes_semantic_gate"] is False
-    assert accepted["mutates_canonical_specs"] is False
-    assert accepted["writes_ontology_package"] is False
-    assert accepted["updates_ontology_lockfile"] is False
-    rejected = previews["ontology-owner-decision-reject-legacyterm"]
-    assert rejected["decision_state"] == "rejected"
-    assert rejected["preview_state"] == "unmatched_decision"
-    assert rejected["matched_closed_loop_evidence_id"] == ""
-    assert rejected["required_human_action"] == "review_unmatched_ontology_owner_decision"
-    assert rejected["import_recommended"] is False
+    assert (
+        ignored["ontology-owner-decision-reject-legacyterm"]["reason"]
+        == "missing_closed_loop_evidence"
+    )
     assert preview["consumer_boundary"]["for_specgraph_decision_import_preview"] is True
     assert preview["consumer_boundary"]["for_specspace_review_dashboard"] is True
     assert preview["consumer_boundary"]["may_execute_prompt_agent"] is False
@@ -1288,6 +1276,263 @@ def test_ontology_decision_import_preview_builds_read_only_preview() -> None:
     assert preview["consumer_boundary"]["may_import_into_specgraph"] is False
     assert preview["consumer_boundary"]["may_close_semantic_gate"] is False
     assert preview["authority_boundary"]["ontology_decision_import_preview_is_authority"] is False
+
+
+def test_ontology_review_dashboard_keeps_blocked_gate_above_no_candidates() -> None:
+    module = load_ontology_imports_module()
+    semantic_policy = json.loads(
+        (ROOT / "tools" / "ontology_semantic_control_policy.json").read_text()
+    )
+    surfaces = module.build_ontology_import_surfaces(FIXTURE)
+    review_surface = json.loads(json.dumps(surfaces["semantic_review_surface"]))
+    supervisor_gate = json.loads(json.dumps(surfaces["supervisor_semantic_gate"]))
+    draft_intake = json.loads(json.dumps(surfaces["ontology_delta_draft_intake"]))
+    closed_loop_evidence = json.loads(json.dumps(surfaces["ontology_closed_loop_evidence"]))
+
+    review_surface["delta_candidates"] = []
+    review_surface["summary"]["candidate_count"] = 0
+    draft_intake["draft_requests"] = []
+    draft_intake["summary"]["status"] = "no_candidates"
+    draft_intake["summary"]["candidate_count"] = 0
+    draft_intake["summary"]["draft_request_count"] = 0
+    draft_intake["summary"]["required_human_action"] = "none"
+    closed_loop_evidence["evidence_entries"] = []
+    closed_loop_evidence["summary"]["status"] = "no_candidates"
+    closed_loop_evidence["summary"]["evidence_entry_count"] = 0
+    closed_loop_evidence["summary"]["pending_decision_count"] = 0
+    closed_loop_evidence["summary"]["blocked_entry_count"] = 0
+    closed_loop_evidence["summary"]["required_human_action"] = "none"
+
+    dashboard = module.build_ontology_review_dashboard(
+        semantic_policy,
+        semantic_policy_path=ROOT / "tools" / "ontology_semantic_control_policy.json",
+        review_surface=review_surface,
+        supervisor_gate=supervisor_gate,
+        draft_intake=draft_intake,
+        closed_loop_evidence=closed_loop_evidence,
+    )
+
+    assert dashboard["status_summary"]["status"] == "blocked_by_semantic_gate"
+    assert dashboard["status_summary"]["gate_state"] == "blocked"
+    assert dashboard["status_summary"]["closed_loop_status"] == "no_candidates"
+    assert dashboard["status_summary"]["required_human_action"] == (
+        "resolve_blocking_ontology_semantic_findings"
+    )
+
+
+def test_ontology_review_dashboard_rejects_missing_gate_item_ids() -> None:
+    module = load_ontology_imports_module()
+    semantic_policy = json.loads(
+        (ROOT / "tools" / "ontology_semantic_control_policy.json").read_text()
+    )
+    surfaces = module.build_ontology_import_surfaces(FIXTURE)
+    supervisor_gate = json.loads(json.dumps(surfaces["supervisor_semantic_gate"]))
+    supervisor_gate["gate"]["blocking_item_ids"].append("semantic-finding-missing")
+
+    with pytest.raises(ValueError, match="blocking_item_ids"):
+        module.build_ontology_review_dashboard(
+            semantic_policy,
+            semantic_policy_path=ROOT / "tools" / "ontology_semantic_control_policy.json",
+            review_surface=surfaces["semantic_review_surface"],
+            supervisor_gate=supervisor_gate,
+            draft_intake=surfaces["ontology_delta_draft_intake"],
+            closed_loop_evidence=surfaces["ontology_closed_loop_evidence"],
+        )
+
+
+def test_ontology_review_dashboard_uses_gate_action_for_review_pending_no_candidates() -> None:
+    module = load_ontology_imports_module()
+    semantic_policy = json.loads(
+        (ROOT / "tools" / "ontology_semantic_control_policy.json").read_text()
+    )
+    surfaces = module.build_ontology_import_surfaces(FIXTURE)
+    review_surface = json.loads(json.dumps(surfaces["semantic_review_surface"]))
+    supervisor_gate = json.loads(json.dumps(surfaces["supervisor_semantic_gate"]))
+    draft_intake = json.loads(json.dumps(surfaces["ontology_delta_draft_intake"]))
+    closed_loop_evidence = json.loads(json.dumps(surfaces["ontology_closed_loop_evidence"]))
+
+    review_surface["review_items"] = [
+        item
+        for item in review_surface["review_items"]
+        if item["item_id"] == "semantic-finding-casfunction"
+    ]
+    review_surface["blocking_findings"] = []
+    review_surface["delta_candidates"] = []
+    review_surface["summary"]["blocking_count"] = 0
+    review_surface["summary"]["review_required_count"] = 1
+    review_surface["summary"]["candidate_count"] = 0
+    supervisor_gate["gate"] = {
+        "gate_state": "review_pending",
+        "outcome": "semantic_review_pending",
+        "required_human_action": "review_ontology_semantic_items",
+        "blocking_item_ids": [],
+        "review_required_item_ids": ["semantic-finding-casfunction"],
+        "candidate_item_ids": [],
+    }
+    draft_intake["gate"] = json.loads(json.dumps(supervisor_gate["gate"]))
+    draft_intake["draft_requests"] = []
+    draft_intake["summary"]["status"] = "no_candidates"
+    draft_intake["summary"]["gate_state"] = "review_pending"
+    draft_intake["summary"]["candidate_count"] = 0
+    draft_intake["summary"]["draft_request_count"] = 0
+    draft_intake["summary"]["required_human_action"] = "none"
+    closed_loop_evidence["evidence_entries"] = []
+    closed_loop_evidence["summary"]["status"] = "no_candidates"
+    closed_loop_evidence["summary"]["evidence_entry_count"] = 0
+    closed_loop_evidence["summary"]["pending_decision_count"] = 0
+    closed_loop_evidence["summary"]["blocked_entry_count"] = 0
+    closed_loop_evidence["summary"]["required_human_action"] = "none"
+
+    dashboard = module.build_ontology_review_dashboard(
+        semantic_policy,
+        semantic_policy_path=ROOT / "tools" / "ontology_semantic_control_policy.json",
+        review_surface=review_surface,
+        supervisor_gate=supervisor_gate,
+        draft_intake=draft_intake,
+        closed_loop_evidence=closed_loop_evidence,
+    )
+
+    assert dashboard["status_summary"]["status"] == "review_pending"
+    assert dashboard["status_summary"]["closed_loop_status"] == "no_candidates"
+    assert dashboard["status_summary"]["required_human_action"] == (
+        "review_ontology_semantic_items"
+    )
+
+
+def test_ontology_owner_decision_report_builds_matched_pending_decisions() -> None:
+    module = load_ontology_imports_module()
+    semantic_policy = json.loads(
+        (ROOT / "tools" / "ontology_semantic_control_policy.json").read_text()
+    )
+    surfaces = module.build_ontology_import_surfaces(FIXTURE)
+    closed_loop_evidence = json.loads(json.dumps(surfaces["ontology_closed_loop_evidence"]))
+    cas_entry = closed_loop_evidence["evidence_entries"][0]
+    cas_entry["evidence_state"] = "pending_ontology_owner_decision"
+    cas_entry["source_intake_state"] = "awaiting_ontology_owner_review"
+    cas_entry["required_human_action"] = "collect_ontology_owner_delta_decisions"
+    legacy_entry = json.loads(json.dumps(cas_entry))
+    legacy_entry["candidate_id"] = "ontology-delta-candidate-examcalc-legacyterm"
+    legacy_entry["intake_id"] = (
+        "ontology-delta-draft-intake-ontology-delta-candidate-examcalc-legacyterm"
+    )
+    legacy_entry["evidence_id"] = (
+        "ontology-closed-loop-evidence-ontology-delta-candidate-examcalc-legacyterm"
+    )
+    legacy_entry["term"] = "LegacyTerm"
+    closed_loop_evidence["evidence_entries"].append(legacy_entry)
+    closed_loop_evidence["summary"]["status"] = "pending_ontology_owner_decision"
+    closed_loop_evidence["summary"]["evidence_entry_count"] = 2
+    closed_loop_evidence["summary"]["pending_decision_count"] = 2
+    closed_loop_evidence["summary"]["blocked_entry_count"] = 0
+    closed_loop_evidence["summary"]["required_human_action"] = (
+        "collect_ontology_owner_delta_decisions"
+    )
+
+    report = module.build_ontology_owner_decision_report(
+        semantic_policy,
+        semantic_policy_path=ROOT / "tools" / "ontology_semantic_control_policy.json",
+        closed_loop_evidence=closed_loop_evidence,
+    )
+
+    assert report["summary"] == {
+        "status": "decisions_available",
+        "decision_count": 2,
+        "accepted_count": 1,
+        "rejected_count": 1,
+        "clarification_count": 0,
+        "ignored_decision_count": 0,
+        "next_gap": "build_ontology_decision_import_preview",
+    }
+    assert report["ignored_decisions"] == []
+    decisions = {entry["decision_id"]: entry for entry in report["decisions"]}
+    accepted = decisions["ontology-owner-decision-accept-casfunction"]
+    assert accepted["candidate_id"] == "ontology-delta-candidate-examcalc-casfunction"
+    assert accepted["decision_state"] == "accepted"
+    assert accepted["accepted_ontology_delta"] is True
+    assert accepted["source_evidence_state"] == "pending_ontology_owner_decision"
+    assert accepted["source_intake_state"] == "awaiting_ontology_owner_review"
+    assert accepted["imports_into_specgraph"] is False
+    assert accepted["closes_semantic_gate"] is False
+    assert accepted["mutates_canonical_specs"] is False
+    rejected = decisions["ontology-owner-decision-reject-legacyterm"]
+    assert rejected["decision_state"] == "rejected"
+    assert rejected["accepted_ontology_delta"] is False
+
+
+def test_ontology_decision_import_preview_builds_pending_owner_decision_preview() -> None:
+    module = load_ontology_imports_module()
+    semantic_policy = json.loads(
+        (ROOT / "tools" / "ontology_semantic_control_policy.json").read_text()
+    )
+    surfaces = module.build_ontology_import_surfaces(FIXTURE)
+    closed_loop_evidence = json.loads(json.dumps(surfaces["ontology_closed_loop_evidence"]))
+    cas_entry = closed_loop_evidence["evidence_entries"][0]
+    cas_entry["evidence_state"] = "pending_ontology_owner_decision"
+    cas_entry["source_intake_state"] = "awaiting_ontology_owner_review"
+    cas_entry["required_human_action"] = "collect_ontology_owner_delta_decisions"
+    legacy_entry = json.loads(json.dumps(cas_entry))
+    legacy_entry["candidate_id"] = "ontology-delta-candidate-examcalc-legacyterm"
+    legacy_entry["intake_id"] = (
+        "ontology-delta-draft-intake-ontology-delta-candidate-examcalc-legacyterm"
+    )
+    legacy_entry["evidence_id"] = (
+        "ontology-closed-loop-evidence-ontology-delta-candidate-examcalc-legacyterm"
+    )
+    legacy_entry["term"] = "LegacyTerm"
+    closed_loop_evidence["evidence_entries"].append(legacy_entry)
+    closed_loop_evidence["summary"]["status"] = "pending_ontology_owner_decision"
+    closed_loop_evidence["summary"]["evidence_entry_count"] = 2
+    closed_loop_evidence["summary"]["pending_decision_count"] = 2
+    closed_loop_evidence["summary"]["blocked_entry_count"] = 0
+    closed_loop_evidence["summary"]["required_human_action"] = (
+        "collect_ontology_owner_delta_decisions"
+    )
+    owner_decision_report = module.build_ontology_owner_decision_report(
+        semantic_policy,
+        semantic_policy_path=ROOT / "tools" / "ontology_semantic_control_policy.json",
+        closed_loop_evidence=closed_loop_evidence,
+    )
+    dashboard = json.loads(json.dumps(surfaces["ontology_review_dashboard"]))
+    dashboard["status_summary"]["status"] = "pending_ontology_owner_decision"
+    dashboard["status_summary"]["gate_state"] = "review_pending"
+    dashboard["status_summary"]["closed_loop_status"] = "pending_ontology_owner_decision"
+    dashboard["status_summary"]["pending_decision_count"] = 2
+    dashboard["status_summary"]["blocked_entry_count"] = 0
+    dashboard["status_summary"]["evidence_entry_count"] = 2
+    dashboard["status_summary"]["required_human_action"] = "collect_ontology_owner_delta_decisions"
+    dashboard["closed_loop_entries"] = json.loads(
+        json.dumps(closed_loop_evidence["evidence_entries"])
+    )
+
+    preview = module.build_ontology_decision_import_preview(
+        semantic_policy,
+        semantic_policy_path=ROOT / "tools" / "ontology_semantic_control_policy.json",
+        dashboard=dashboard,
+        owner_decision_report=owner_decision_report,
+    )
+
+    assert preview["summary"] == {
+        "status": "ready_for_operator_review",
+        "preview_count": 2,
+        "accepted_count": 1,
+        "rejected_count": 1,
+        "clarification_count": 0,
+        "importable_count": 1,
+        "blocked_count": 0,
+        "unmatched_count": 0,
+        "ignored_decision_count": 0,
+        "next_gap": "build_specspace_owner_decision_review_surface",
+    }
+    previews = {entry["decision_id"]: entry for entry in preview["decision_import_previews"]}
+    accepted = previews["ontology-owner-decision-accept-casfunction"]
+    assert accepted["preview_state"] == "ready_for_operator_review"
+    assert accepted["import_recommended"] is True
+    assert accepted["imports_into_specgraph"] is False
+    assert accepted["matched_evidence_state"] == "pending_ontology_owner_decision"
+    rejected = previews["ontology-owner-decision-reject-legacyterm"]
+    assert rejected["preview_state"] == "rejected_by_owner"
+    assert rejected["import_recommended"] is False
+    assert preview["ignored_owner_decisions"] == []
 
 
 def test_ontology_semantic_review_surface_rejects_authority_expansion(
@@ -1622,6 +1867,30 @@ def test_ontology_decision_import_preview_rejects_source_import_authority() -> N
     )
     surfaces = module.build_ontology_import_surfaces(FIXTURE)
     owner_decision_report = json.loads(json.dumps(surfaces["ontology_owner_decision_report"]))
+    owner_decision_report["decisions"] = [
+        {
+            "decision_id": "ontology-owner-decision-accept-casfunction",
+            "candidate_id": "ontology-delta-candidate-examcalc-casfunction",
+            "intake_id": (
+                "ontology-delta-draft-intake-ontology-delta-candidate-examcalc-casfunction"
+            ),
+            "decision_state": "accepted",
+            "ontology_decision_ref": (
+                "ontology-decision://edu.university.examcalc/0.1.0/casfunction/accepted"
+            ),
+            "decided_by": "ontology-owner",
+            "decided_at": "2026-06-13T00:00:00Z",
+            "accepted_ontology_delta": True,
+            "source_evidence_id": (
+                "ontology-closed-loop-evidence-ontology-delta-candidate-examcalc-casfunction"
+            ),
+            "source_evidence_state": "pending_ontology_owner_decision",
+            "source_intake_state": "awaiting_ontology_owner_review",
+            "imports_into_specgraph": False,
+            "closes_semantic_gate": False,
+            "mutates_canonical_specs": False,
+        }
+    ]
     owner_decision_report["decisions"][0]["imports_into_specgraph"] = True
 
     with pytest.raises(ValueError, match=r"decisions\[0\]\.imports_into_specgraph"):
@@ -1631,6 +1900,24 @@ def test_ontology_decision_import_preview_rejects_source_import_authority() -> N
             dashboard=surfaces["ontology_review_dashboard"],
             owner_decision_report=owner_decision_report,
         )
+
+
+def test_ontology_owner_decision_report_requires_decision_identity_fields() -> None:
+    module = load_ontology_imports_module()
+    surfaces = module.build_ontology_import_surfaces(FIXTURE)
+    report = json.loads(json.dumps(surfaces["ontology_owner_decision_report"]))
+    report["decisions"] = [
+        {
+            "decision_state": "accepted",
+            "accepted_ontology_delta": True,
+            "imports_into_specgraph": False,
+            "closes_semantic_gate": False,
+            "mutates_canonical_specs": False,
+        }
+    ]
+
+    with pytest.raises(ValueError, match=r"decisions\[0\]\.decision_id"):
+        module.require_ontology_owner_decision_report(report)
 
 
 def test_ontology_delta_candidate_review_packet_uses_policy_review_action_order(

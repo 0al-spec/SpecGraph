@@ -375,7 +375,8 @@
       "ready_for_operator_review",
       "rejected_by_owner",
       "needs_clarification",
-      "unmatched_decision"
+      "unmatched_decision",
+      "no_decisions"
     ],
     "consumer_boundary": {
       "for_specgraph_decision_import_preview": true,

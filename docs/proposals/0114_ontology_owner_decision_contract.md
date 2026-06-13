@@ -33,15 +33,20 @@ runs/ontology_owner_decision_report.json
 ```
 
 The artifact provides a typed contract for Ontology-supplied accepted/rejected
-decisions while keeping those decisions as review evidence only. A later import
-preview slice decides how those decisions would affect SpecGraph.
+decisions while keeping those decisions as review evidence only. Decisions must
+match closed-loop evidence that is pending Ontology owner review; stale,
+blocked, or unmatched fixture decisions are reported as ignored inputs instead
+of being emitted as usable decision evidence. A later import preview slice
+decides how valid decisions would affect SpecGraph.
 
 ## Goals
 
 - Add `ontology_owner_decision_report` to the semantic policy layout.
 - Define accepted, rejected, and clarification decision states.
 - Preserve Ontology decision refs, candidate ids, intake ids, decision actor,
-  decision time, and accepted-delta status.
+  decision time, accepted-delta status, and matched closed-loop evidence state.
+- Filter blocked, stale, or unmatched fixture decisions into ignored decision
+  diagnostics.
 - Reject SpecGraph import, semantic gate closure, canonical mutation, prompt
   execution, and Ontology package/lockfile write authority.
 - Cover report shape, write path, authority boundary, and registry trace in
@@ -69,7 +74,8 @@ The report artifact declares:
   },
   "canonical_mutations_allowed": false,
   "tracked_artifacts_written": false,
-  "decisions": []
+  "decisions": [],
+  "ignored_decisions": []
 }
 ```
 
@@ -82,7 +88,12 @@ Each decision records:
 - Ontology decision ref;
 - decision actor and timestamp;
 - accepted-delta flag;
+- matched closed-loop evidence id;
+- matched evidence and intake states;
 - explicit false SpecGraph import, gate-close, and canonical mutation flags.
+
+Ignored decisions record decision identity, source state when present, and the
+reason they were not emitted as decision evidence.
 
 ## Authority Boundary
 
@@ -106,8 +117,8 @@ This slice is complete when:
   `ontology_owner_decision_report`;
 - `tools/ontology_imports.py` builds and validates the owner decision report;
 - `make ontology-imports` writes `runs/ontology_owner_decision_report.json`;
-- focused tests cover accepted/rejected report shape, write path, and authority
-  boundary;
+- focused tests cover accepted/rejected report shape, ignored invalid decisions,
+  write path, and authority boundary;
 - proposal `0114` is tracked in promotion and runtime registries;
 - proposal gates, DocC sync, and focused Python tests pass.
 

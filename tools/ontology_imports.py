@@ -2001,6 +2001,7 @@ def require_semantic_control_policy(policy: dict[str, Any]) -> dict[str, Any]:
         "rejected_by_owner",
         "needs_clarification",
         "unmatched_decision",
+        "no_decisions",
     }
     missing_preview_states = sorted(required_preview_states - preview_states)
     if missing_preview_states:
@@ -3990,7 +3991,7 @@ def build_ontology_review_dashboard(
     closed_loop_status = require_string(
         closed_loop_summary, "status", "closed_loop_evidence.summary"
     )
-    if closed_loop_status == "blocked_by_semantic_gate":
+    if gate_state == "blocked" or closed_loop_status == "blocked_by_semantic_gate":
         dashboard_status = "blocked_by_semantic_gate"
     elif closed_loop_status == "pending_ontology_owner_decision":
         dashboard_status = "pending_ontology_owner_decision"
@@ -4027,15 +4028,25 @@ def build_ontology_review_dashboard(
     review_required_item_ids = require_string_list(
         gate, "review_required_item_ids", "supervisor_gate.gate"
     )
+    missing_blocking_item_ids = sorted(set(blocking_item_ids) - set(review_items_by_id))
+    if missing_blocking_item_ids:
+        raise ValueError(
+            "supervisor_gate.gate.blocking_item_ids missing from review_surface.review_items: "
+            f"{', '.join(missing_blocking_item_ids)}"
+        )
+    missing_review_required_item_ids = sorted(
+        set(review_required_item_ids) - set(review_items_by_id)
+    )
+    if missing_review_required_item_ids:
+        raise ValueError(
+            "supervisor_gate.gate.review_required_item_ids missing from "
+            f"review_surface.review_items: {', '.join(missing_review_required_item_ids)}"
+        )
     blocking_items = [
-        copy_json_object(review_items_by_id[item_id])
-        for item_id in blocking_item_ids
-        if item_id in review_items_by_id
+        copy_json_object(review_items_by_id[item_id]) for item_id in blocking_item_ids
     ]
     review_required_items = [
-        copy_json_object(review_items_by_id[item_id])
-        for item_id in review_required_item_ids
-        if item_id in review_items_by_id
+        copy_json_object(review_items_by_id[item_id]) for item_id in review_required_item_ids
     ]
 
     delta_candidates = review_surface.get("delta_candidates")
@@ -4050,6 +4061,15 @@ def build_ontology_review_dashboard(
     review_actions = review_surface.get("review_actions")
     if not isinstance(review_actions, list):
         raise ValueError("review_surface.review_actions must be a list")
+
+    if gate_state in {"blocked", "review_pending"}:
+        required_human_action = require_string(
+            gate, "required_human_action", "supervisor_gate.gate"
+        )
+    else:
+        required_human_action = require_string(
+            closed_loop_summary, "required_human_action", "closed_loop_evidence.summary"
+        )
 
     return {
         "artifact_kind": require_string(
@@ -4105,9 +4125,7 @@ def build_ontology_review_dashboard(
             "blocked_entry_count": require_int(
                 closed_loop_summary, "blocked_entry_count", "closed_loop_evidence.summary"
             ),
-            "required_human_action": require_string(
-                closed_loop_summary, "required_human_action", "closed_loop_evidence.summary"
-            ),
+            "required_human_action": required_human_action,
             "next_gap": require_string(
                 dashboard_contract,
                 "next_gap",
@@ -4237,7 +4255,23 @@ def build_ontology_owner_decision_report(
             "semantic_control_policy.ontology_owner_decision_report_contract",
         )
     )
+    evidence_entries = closed_loop_evidence.get("evidence_entries")
+    if not isinstance(evidence_entries, list):
+        raise ValueError("closed_loop_evidence.evidence_entries must be a list")
+    closed_loop_by_decision_key: dict[tuple[str, str], dict[str, Any]] = {}
+    for index, raw_entry in enumerate(evidence_entries):
+        if not isinstance(raw_entry, dict):
+            raise ValueError(f"closed_loop_evidence.evidence_entries[{index}] must be an object")
+        candidate_id = require_string(
+            raw_entry, "candidate_id", f"closed_loop_evidence.evidence_entries[{index}]"
+        )
+        intake_id = require_string(
+            raw_entry, "intake_id", f"closed_loop_evidence.evidence_entries[{index}]"
+        )
+        closed_loop_by_decision_key[(candidate_id, intake_id)] = raw_entry
+
     decisions: list[dict[str, Any]] = []
+    ignored_decisions: list[dict[str, Any]] = []
     for index, raw_decision in enumerate(raw_decisions):
         if not isinstance(raw_decision, dict):
             raise ValueError(
@@ -4264,22 +4298,25 @@ def build_ontology_owner_decision_report(
                 "semantic_control_policy.owner_decision_fixture.decisions"
                 f"[{index}].accepted_ontology_delta must match accepted decision_state"
             )
+        decision_id = require_string(
+            raw_decision,
+            "decision_id",
+            f"semantic_control_policy.owner_decision_fixture.decisions[{index}]",
+        )
+        candidate_id = require_string(
+            raw_decision,
+            "candidate_id",
+            f"semantic_control_policy.owner_decision_fixture.decisions[{index}]",
+        )
+        intake_id = require_string(
+            raw_decision,
+            "intake_id",
+            f"semantic_control_policy.owner_decision_fixture.decisions[{index}]",
+        )
         decision = {
-            "decision_id": require_string(
-                raw_decision,
-                "decision_id",
-                f"semantic_control_policy.owner_decision_fixture.decisions[{index}]",
-            ),
-            "candidate_id": require_string(
-                raw_decision,
-                "candidate_id",
-                f"semantic_control_policy.owner_decision_fixture.decisions[{index}]",
-            ),
-            "intake_id": require_string(
-                raw_decision,
-                "intake_id",
-                f"semantic_control_policy.owner_decision_fixture.decisions[{index}]",
-            ),
+            "decision_id": decision_id,
+            "candidate_id": candidate_id,
+            "intake_id": intake_id,
             "decision_state": decision_state,
             "ontology_decision_ref": require_string(
                 raw_decision,
@@ -4324,6 +4361,51 @@ def build_ontology_owner_decision_report(
                     "semantic_control_policy.owner_decision_fixture.decisions"
                     f"[{index}].{field} must be false"
                 )
+        matched_entry = closed_loop_by_decision_key.get((candidate_id, intake_id))
+        if matched_entry is None:
+            ignored_decisions.append(
+                {
+                    "decision_id": decision_id,
+                    "candidate_id": candidate_id,
+                    "intake_id": intake_id,
+                    "decision_state": decision_state,
+                    "reason": "missing_closed_loop_evidence",
+                }
+            )
+            continue
+        source_evidence_state = require_string(
+            matched_entry,
+            "evidence_state",
+            f"closed_loop_evidence.evidence_entries[{candidate_id}]",
+        )
+        source_intake_state = require_string(
+            matched_entry,
+            "source_intake_state",
+            f"closed_loop_evidence.evidence_entries[{candidate_id}]",
+        )
+        if (
+            source_evidence_state != "pending_ontology_owner_decision"
+            or source_intake_state != "awaiting_ontology_owner_review"
+        ):
+            ignored_decisions.append(
+                {
+                    "decision_id": decision_id,
+                    "candidate_id": candidate_id,
+                    "intake_id": intake_id,
+                    "decision_state": decision_state,
+                    "source_evidence_state": source_evidence_state,
+                    "source_intake_state": source_intake_state,
+                    "reason": "closed_loop_evidence_not_pending_owner_decision",
+                }
+            )
+            continue
+        decision["source_evidence_id"] = require_string(
+            matched_entry,
+            "evidence_id",
+            f"closed_loop_evidence.evidence_entries[{candidate_id}]",
+        )
+        decision["source_evidence_state"] = source_evidence_state
+        decision["source_intake_state"] = source_intake_state
         decisions.append(decision)
 
     source_artifacts = copy_json_object(
@@ -4359,6 +4441,7 @@ def build_ontology_owner_decision_report(
         "canonical_mutations_allowed": False,
         "tracked_artifacts_written": False,
         "decisions": decisions,
+        "ignored_decisions": ignored_decisions,
         "consumer_boundary": copy_json_object(
             require_object(
                 owner_decision_contract,
@@ -4375,6 +4458,7 @@ def build_ontology_owner_decision_report(
             "accepted_count": accepted_count,
             "rejected_count": rejected_count,
             "clarification_count": clarification_count,
+            "ignored_decision_count": len(ignored_decisions),
             "next_gap": require_string(
                 owner_decision_contract,
                 "next_gap",
@@ -4409,12 +4493,35 @@ def require_ontology_owner_decision_report(
     require_surface_output_artifact(owner_decision_report, "ontology_owner_decision_report")
     require_object(owner_decision_report, "source_artifacts", "owner_decision_report")
     require_object(owner_decision_report, "summary", "owner_decision_report")
+    ignored_decisions = owner_decision_report.get("ignored_decisions", [])
+    if not isinstance(ignored_decisions, list):
+        raise ValueError("owner_decision_report.ignored_decisions must be a list")
     decisions = owner_decision_report.get("decisions")
     if not isinstance(decisions, list):
         raise ValueError("owner_decision_report.decisions must be a list")
     for index, raw_decision in enumerate(decisions):
         if not isinstance(raw_decision, dict):
             raise ValueError(f"owner_decision_report.decisions[{index}] must be an object")
+        for field in (
+            "decision_id",
+            "candidate_id",
+            "intake_id",
+            "ontology_decision_ref",
+            "decided_by",
+            "decided_at",
+            "source_evidence_id",
+            "source_evidence_state",
+            "source_intake_state",
+        ):
+            require_string(raw_decision, field, f"owner_decision_report.decisions[{index}]")
+        if (
+            raw_decision["source_evidence_state"] != "pending_ontology_owner_decision"
+            or raw_decision["source_intake_state"] != "awaiting_ontology_owner_review"
+        ):
+            raise ValueError(
+                "owner_decision_report.decisions"
+                f"[{index}] must reference pending owner-decision evidence"
+            )
         decision_state = require_string(
             raw_decision, "decision_state", f"owner_decision_report.decisions[{index}]"
         )
@@ -4528,6 +4635,14 @@ def build_ontology_decision_import_preview(
     raw_decisions = owner_decision_report.get("decisions")
     if not isinstance(raw_decisions, list):
         raise ValueError("owner_decision_report.decisions must be a list")
+    raw_ignored_decisions = owner_decision_report.get("ignored_decisions", [])
+    if not isinstance(raw_ignored_decisions, list):
+        raise ValueError("owner_decision_report.ignored_decisions must be a list")
+    ignored_owner_decisions = [
+        copy_json_object(decision)
+        for decision in raw_ignored_decisions
+        if isinstance(decision, dict)
+    ]
     previews: list[dict[str, Any]] = []
     for index, raw_decision in enumerate(raw_decisions):
         if not isinstance(raw_decision, dict):
@@ -4669,6 +4784,7 @@ def build_ontology_decision_import_preview(
         "canonical_mutations_allowed": False,
         "tracked_artifacts_written": False,
         "decision_import_previews": previews,
+        "ignored_owner_decisions": ignored_owner_decisions,
         "consumer_boundary": copy_json_object(
             require_object(
                 decision_import_contract,
@@ -4688,6 +4804,7 @@ def build_ontology_decision_import_preview(
             "importable_count": importable_count,
             "blocked_count": blocked_count,
             "unmatched_count": unmatched_count,
+            "ignored_decision_count": len(ignored_owner_decisions),
             "next_gap": require_string(
                 decision_import_contract,
                 "next_gap",
@@ -4730,6 +4847,9 @@ def require_ontology_decision_import_preview(
     decision_import_previews = preview.get("decision_import_previews")
     if not isinstance(decision_import_previews, list):
         raise ValueError("decision_import_preview.decision_import_previews must be a list")
+    ignored_owner_decisions = preview.get("ignored_owner_decisions", [])
+    if not isinstance(ignored_owner_decisions, list):
+        raise ValueError("decision_import_preview.ignored_owner_decisions must be a list")
     for index, raw_entry in enumerate(decision_import_previews):
         if not isinstance(raw_entry, dict):
             raise ValueError(
