@@ -639,6 +639,7 @@ def require_semantic_control_policy(policy: dict[str, Any]) -> dict[str, Any]:
     require_layout_path(layout, "ontology_delta_candidate_review_packet")
     require_layout_path(layout, "semantic_context_pack")
     require_layout_path(layout, "semantic_lint_report")
+    require_layout_path(layout, "semantic_review_surface")
     require_layout_path(layout, "semantic_lint_smoke")
     boundary = require_object(policy, "authority_boundary", "semantic_control_policy")
     for field in (
@@ -646,6 +647,7 @@ def require_semantic_control_policy(policy: dict[str, Any]) -> dict[str, Any]:
         "lint_report_is_authority",
         "smoke_report_is_authority",
         "ontology_delta_candidate_is_authority",
+        "semantic_review_surface_is_authority",
         "prompt_agent_execution_allowed",
         "automatic_import_lock_update",
         "automatic_canonical_node_update",
@@ -1000,6 +1002,154 @@ def require_semantic_control_policy(policy: dict[str, Any]) -> dict[str, Any]:
         delta_contract,
         "next_gap",
         "semantic_control_policy.ontology_delta_candidate_review_packet_contract",
+    )
+    review_surface_contract = require_object(
+        policy, "semantic_review_surface_contract", "semantic_control_policy"
+    )
+    if (
+        require_string(
+            review_surface_contract,
+            "artifact_kind",
+            "semantic_control_policy.semantic_review_surface_contract",
+        )
+        != "ontology_semantic_review_surface"
+    ):
+        raise ValueError(
+            "semantic_control_policy.semantic_review_surface_contract.artifact_kind "
+            "must be ontology_semantic_review_surface"
+        )
+    expected_source_artifacts = {
+        "source_context_pack_artifact_kind": "ontology_semantic_context_pack",
+        "source_lint_report_artifact_kind": "ontology_semantic_lint_report",
+        "source_delta_candidate_review_packet_artifact_kind": (
+            "ontology_delta_candidate_review_packet"
+        ),
+    }
+    for field, expected in expected_source_artifacts.items():
+        if (
+            require_string(
+                review_surface_contract,
+                field,
+                "semantic_control_policy.semantic_review_surface_contract",
+            )
+            != expected
+        ):
+            raise ValueError(
+                "semantic_control_policy.semantic_review_surface_contract."
+                f"{field} must be {expected}"
+            )
+    review_surface_target = require_object(
+        review_surface_contract,
+        "target",
+        "semantic_control_policy.semantic_review_surface_contract",
+    )
+    require_string(
+        review_surface_target,
+        "target_kind",
+        "semantic_control_policy.semantic_review_surface_contract.target",
+    )
+    require_string(
+        review_surface_target,
+        "target_ref",
+        "semantic_control_policy.semantic_review_surface_contract.target",
+    )
+    review_item_sources = set(
+        require_string_list(
+            review_surface_contract,
+            "review_item_sources",
+            "semantic_control_policy.semantic_review_surface_contract",
+        )
+    )
+    required_review_item_sources = {
+        "blocking_findings",
+        "review_required_findings",
+        "ontology_delta_candidates",
+    }
+    missing_review_item_sources = sorted(required_review_item_sources - review_item_sources)
+    if missing_review_item_sources:
+        raise ValueError(
+            "semantic_control_policy.semantic_review_surface_contract.review_item_sources "
+            f"missing: {', '.join(missing_review_item_sources)}"
+        )
+    if not require_string_list(
+        review_surface_contract,
+        "display_sections",
+        "semantic_control_policy.semantic_review_surface_contract",
+    ):
+        raise ValueError(
+            "semantic_control_policy.semantic_review_surface_contract.display_sections "
+            "must be non-empty"
+        )
+    review_surface_actions = require_string_list(
+        review_surface_contract,
+        "review_actions",
+        "semantic_control_policy.semantic_review_surface_contract",
+    )
+    supported_review_surface_actions = {
+        "replace_with_accepted_term",
+        "use_accepted_relation",
+        "emit_ontology_gap",
+        "approve_for_ontology_package_draft",
+        "reject_candidate",
+        "request_clarification",
+    }
+    missing_review_surface_actions = sorted(
+        supported_review_surface_actions - set(review_surface_actions)
+    )
+    if missing_review_surface_actions:
+        raise ValueError(
+            "semantic_control_policy.semantic_review_surface_contract.review_actions "
+            f"missing: {', '.join(missing_review_surface_actions)}"
+        )
+    unsupported_review_surface_actions = sorted(
+        set(review_surface_actions) - supported_review_surface_actions
+    )
+    if unsupported_review_surface_actions:
+        raise ValueError(
+            "semantic_control_policy.semantic_review_surface_contract.review_actions "
+            f"contains unsupported action: {', '.join(unsupported_review_surface_actions)}"
+        )
+    review_surface_consumer_boundary = require_object(
+        review_surface_contract,
+        "consumer_boundary",
+        "semantic_control_policy.semantic_review_surface_contract",
+    )
+    for field in ("for_supervisor_gate_evidence", "for_specspace_review_surface"):
+        if (
+            require_bool(
+                review_surface_consumer_boundary,
+                field,
+                "semantic_control_policy.semantic_review_surface_contract.consumer_boundary",
+            )
+            is not True
+        ):
+            raise ValueError(
+                "semantic_control_policy.semantic_review_surface_contract.consumer_boundary."
+                f"{field} must be true"
+            )
+    for field in (
+        "may_execute_prompt_agent",
+        "may_write_ontology_package",
+        "may_update_ontology_lockfile",
+        "may_mutate_canonical_specs",
+        "may_mark_candidate_accepted",
+    ):
+        if (
+            require_bool(
+                review_surface_consumer_boundary,
+                field,
+                "semantic_control_policy.semantic_review_surface_contract.consumer_boundary",
+            )
+            is not False
+        ):
+            raise ValueError(
+                "semantic_control_policy.semantic_review_surface_contract.consumer_boundary."
+                f"{field} must be false"
+            )
+    require_string(
+        review_surface_contract,
+        "next_gap",
+        "semantic_control_policy.semantic_review_surface_contract",
     )
     return policy
 
@@ -1753,6 +1903,339 @@ def build_ontology_delta_candidate_review_packet(
     }
 
 
+def require_ontology_delta_candidate_review_packet(
+    review_packet: dict[str, Any],
+) -> dict[str, Any]:
+    if review_packet.get("artifact_kind") != "ontology_delta_candidate_review_packet":
+        raise ValueError(
+            "review_packet.artifact_kind must be ontology_delta_candidate_review_packet"
+        )
+    if require_int(review_packet, "schema_version", "review_packet") != 1:
+        raise ValueError("review_packet.schema_version must be 1")
+    if require_string(review_packet, "proposal_id", "review_packet") != "0106":
+        raise ValueError("review_packet.proposal_id must be 0106")
+    for field in ("canonical_mutations_allowed", "tracked_artifacts_written"):
+        if require_bool(review_packet, field, "review_packet") is not False:
+            raise ValueError(f"review_packet.{field} must be false")
+    boundary = require_object(review_packet, "authority_boundary", "review_packet")
+    if require_bool(
+        boundary,
+        "ontology_delta_candidate_is_authority",
+        "review_packet.authority_boundary",
+    ):
+        raise ValueError(
+            "review_packet.authority_boundary.ontology_delta_candidate_is_authority must be false"
+        )
+    consumer_boundary = require_object(review_packet, "consumer_boundary", "review_packet")
+    for field in (
+        "may_write_ontology_package",
+        "may_update_ontology_lockfile",
+        "may_mutate_canonical_specs",
+    ):
+        if require_bool(consumer_boundary, field, "review_packet.consumer_boundary") is not False:
+            raise ValueError(f"review_packet.consumer_boundary.{field} must be false")
+    return review_packet
+
+
+def semantic_review_finding_items(
+    lint_report: dict[str, Any],
+    field: str,
+    *,
+    review_state: str,
+) -> tuple[list[dict[str, Any]], list[dict[str, Any]]]:
+    raw_findings = lint_report.get(field)
+    if not isinstance(raw_findings, list):
+        raise ValueError(f"lint_report.{field} must be a list")
+    findings: list[dict[str, Any]] = []
+    review_items: list[dict[str, Any]] = []
+    for index, raw_finding in enumerate(raw_findings):
+        if not isinstance(raw_finding, dict):
+            raise ValueError(f"lint_report.{field}[{index}] must be an object")
+        term = require_string(raw_finding, "term", f"lint_report.{field}[{index}]")
+        classification = require_string(
+            raw_finding,
+            "classification",
+            f"lint_report.{field}[{index}]",
+        )
+        status = require_string(raw_finding, "status", f"lint_report.{field}[{index}]")
+        suggested_action = require_string(
+            raw_finding,
+            "suggested_action",
+            f"lint_report.{field}[{index}]",
+        )
+        payload = copy_json_object(raw_finding)
+        findings.append(payload)
+        review_items.append(
+            {
+                "item_id": f"semantic-finding-{symbol_slug(term)}",
+                "item_kind": "semantic_finding",
+                "review_state": review_state,
+                "source": f"ontology_semantic_lint_report.{field}",
+                "term": term,
+                "classification": classification,
+                "status": status,
+                "suggested_action": suggested_action,
+                "payload": payload,
+            }
+        )
+    return findings, review_items
+
+
+def build_ontology_semantic_review_surface(
+    semantic_policy: dict[str, Any],
+    *,
+    semantic_policy_path: Path,
+    context_pack: dict[str, Any],
+    lint_report: dict[str, Any],
+    review_packet: dict[str, Any],
+) -> dict[str, Any]:
+    require_semantic_control_policy(semantic_policy)
+    require_ontology_semantic_context_pack(context_pack)
+    require_ontology_semantic_lint_report(lint_report)
+    require_ontology_delta_candidate_review_packet(review_packet)
+
+    review_surface_contract = require_object(
+        semantic_policy, "semantic_review_surface_contract", "semantic_control_policy"
+    )
+    semantic_layout = require_object(
+        semantic_policy, "repository_layout", "semantic_control_policy"
+    )
+    allowed_actions = set(
+        require_string_list(
+            review_surface_contract,
+            "review_actions",
+            "semantic_control_policy.semantic_review_surface_contract",
+        )
+    )
+
+    blocking_findings, blocking_items = semantic_review_finding_items(
+        lint_report, "blocking_findings", review_state="blocked"
+    )
+    review_required_findings, review_required_items = semantic_review_finding_items(
+        lint_report, "review_required_findings", review_state="needs_review"
+    )
+
+    raw_candidates = review_packet.get("candidates")
+    if not isinstance(raw_candidates, list):
+        raise ValueError("review_packet.candidates must be a list")
+    delta_candidates: list[dict[str, Any]] = []
+    candidate_items: list[dict[str, Any]] = []
+    packet_review_action_names = []
+    raw_packet_actions = review_packet.get("review_actions")
+    if not isinstance(raw_packet_actions, list):
+        raise ValueError("review_packet.review_actions must be a list")
+    for index, raw_action in enumerate(raw_packet_actions):
+        if not isinstance(raw_action, dict):
+            raise ValueError(f"review_packet.review_actions[{index}] must be an object")
+        action = require_string(raw_action, "action", f"review_packet.review_actions[{index}]")
+        if action not in allowed_actions:
+            raise ValueError(
+                "review_packet.review_actions contains action not declared by "
+                f"semantic_review_surface_contract: {action}"
+            )
+        packet_review_action_names.append(action)
+
+    for index, raw_candidate in enumerate(raw_candidates):
+        if not isinstance(raw_candidate, dict):
+            raise ValueError(f"review_packet.candidates[{index}] must be an object")
+        candidate_id = require_string(
+            raw_candidate,
+            "candidate_id",
+            f"review_packet.candidates[{index}]",
+        )
+        term = require_string(raw_candidate, "term", f"review_packet.candidates[{index}]")
+        review_state = require_string(
+            raw_candidate,
+            "review_state",
+            f"review_packet.candidates[{index}]",
+        )
+        payload = copy_json_object(raw_candidate)
+        delta_candidates.append(payload)
+        candidate_items.append(
+            {
+                "item_id": candidate_id,
+                "item_kind": "ontology_delta_candidate",
+                "review_state": review_state,
+                "source": "ontology_delta_candidate_review_packet.candidates",
+                "term": term,
+                "suggested_actions": packet_review_action_names,
+                "payload": payload,
+            }
+        )
+
+    review_actions = []
+    raw_lint_actions = lint_report.get("recommended_actions")
+    if not isinstance(raw_lint_actions, list):
+        raise ValueError("lint_report.recommended_actions must be a list")
+    for index, raw_action in enumerate(raw_lint_actions):
+        if not isinstance(raw_action, dict):
+            raise ValueError(f"lint_report.recommended_actions[{index}] must be an object")
+        action = require_string(
+            raw_action,
+            "action",
+            f"lint_report.recommended_actions[{index}]",
+        )
+        if action not in allowed_actions:
+            continue
+        review_actions.append(
+            {
+                "action": action,
+                "source": "ontology_semantic_lint_report.recommended_actions",
+                "term_count": require_int(
+                    raw_action,
+                    "term_count",
+                    f"lint_report.recommended_actions[{index}]",
+                ),
+                "terms": require_string_list(
+                    raw_action,
+                    "terms",
+                    f"lint_report.recommended_actions[{index}]",
+                ),
+                "writes_ontology_package": False,
+                "mutates_canonical_specs": False,
+            }
+        )
+    for index, raw_action in enumerate(raw_packet_actions):
+        assert isinstance(raw_action, dict)
+        action = require_string(raw_action, "action", f"review_packet.review_actions[{index}]")
+        writes_ontology_package = require_bool(
+            raw_action,
+            "writes_ontology_package",
+            f"review_packet.review_actions[{index}]",
+        )
+        mutates_canonical_specs = require_bool(
+            raw_action,
+            "mutates_canonical_specs",
+            f"review_packet.review_actions[{index}]",
+        )
+        if writes_ontology_package:
+            raise ValueError(
+                f"review_packet.review_actions[{index}].writes_ontology_package must be false"
+            )
+        if mutates_canonical_specs:
+            raise ValueError(
+                f"review_packet.review_actions[{index}].mutates_canonical_specs must be false"
+            )
+        review_actions.append(
+            {
+                "action": action,
+                "source": "ontology_delta_candidate_review_packet.review_actions",
+                "effect": require_string(
+                    raw_action,
+                    "effect",
+                    f"review_packet.review_actions[{index}]",
+                ),
+                "candidate_count": len(delta_candidates),
+                "writes_ontology_package": False,
+                "mutates_canonical_specs": False,
+            }
+        )
+
+    context_summary = require_object(context_pack, "summary", "context_pack")
+    lint_summary = require_object(lint_report, "summary", "lint_report")
+    packet_summary = require_object(review_packet, "summary", "review_packet")
+    review_items = blocking_items + review_required_items + candidate_items
+    return {
+        "artifact_kind": require_string(
+            review_surface_contract,
+            "artifact_kind",
+            "semantic_control_policy.semantic_review_surface_contract",
+        ),
+        "schema_version": 1,
+        "proposal_id": "0108",
+        "policy_basis": semantic_policy["policy_basis"],
+        "source_policy": relative_path(semantic_policy_path),
+        "source_artifacts": {
+            "semantic_context_pack": require_surface_output_artifact(
+                context_pack, "semantic_context_pack"
+            ),
+            "semantic_lint_report": require_surface_output_artifact(
+                lint_report, "semantic_lint_report"
+            ),
+            "ontology_delta_candidate_review_packet": require_surface_output_artifact(
+                review_packet, "ontology_delta_candidate_review_packet"
+            ),
+        },
+        "target": copy_json_object(
+            require_object(
+                review_surface_contract,
+                "target",
+                "semantic_control_policy.semantic_review_surface_contract",
+            )
+        ),
+        "canonical_mutations_allowed": False,
+        "tracked_artifacts_written": False,
+        "grounding_summary": {
+            "source_context_status": require_string(
+                context_summary, "status", "context_pack.summary"
+            ),
+            "source_lint_status": require_string(lint_summary, "status", "lint_report.summary"),
+            "source_delta_candidate_status": require_string(
+                packet_summary, "status", "review_packet.summary"
+            ),
+            "package_count": require_int(context_summary, "package_count", "context_pack.summary"),
+            "accepted_term_count": require_int(
+                context_summary, "accepted_term_count", "context_pack.summary"
+            ),
+            "accepted_relation_count": require_int(
+                context_summary, "accepted_relation_count", "context_pack.summary"
+            ),
+            "alias_count": require_int(context_summary, "alias_count", "context_pack.summary"),
+            "deprecated_term_count": require_int(
+                context_summary, "deprecated_term_count", "context_pack.summary"
+            ),
+            "relation_conflict_count": require_int(
+                context_summary, "relation_conflict_count", "context_pack.summary"
+            ),
+            "unresolved_gap_count": require_int(
+                context_summary, "unresolved_gap_count", "context_pack.summary"
+            ),
+            "governance_evidence_count": require_int(
+                context_summary, "governance_evidence_count", "context_pack.summary"
+            ),
+        },
+        "display_sections": require_string_list(
+            review_surface_contract,
+            "display_sections",
+            "semantic_control_policy.semantic_review_surface_contract",
+        ),
+        "blocking_findings": blocking_findings,
+        "review_required_findings": review_required_findings,
+        "delta_candidates": delta_candidates,
+        "review_items": review_items,
+        "review_actions": review_actions,
+        "consumer_boundary": copy_json_object(
+            require_object(
+                review_surface_contract,
+                "consumer_boundary",
+                "semantic_control_policy.semantic_review_surface_contract",
+            )
+        ),
+        "authority_boundary": copy_json_object(
+            require_object(semantic_policy, "authority_boundary", "semantic_control_policy")
+        ),
+        "summary": {
+            "status": require_string(lint_summary, "status", "lint_report.summary"),
+            "blocking_count": require_int(lint_summary, "blocking_count", "lint_report.summary"),
+            "review_required_count": require_int(
+                lint_summary,
+                "review_required_count",
+                "lint_report.summary",
+            ),
+            "candidate_count": require_int(
+                packet_summary, "candidate_count", "review_packet.summary"
+            ),
+            "review_item_count": len(review_items),
+            "next_gap": require_string(
+                review_surface_contract,
+                "next_gap",
+                "semantic_control_policy.semantic_review_surface_contract",
+            ),
+        },
+        "output_artifact": require_layout_path(semantic_layout, "semantic_review_surface"),
+    }
+
+
 def build_ontology_semantic_lint_smoke(
     semantic_policy: dict[str, Any],
     *,
@@ -2070,6 +2553,13 @@ def build_ontology_import_surfaces(
                     lint_report=semantic_lint_report,
                 )
             )
+            surfaces["semantic_review_surface"] = build_ontology_semantic_review_surface(
+                semantic_policy,
+                semantic_policy_path=semantic_policy_path,
+                context_pack=semantic_context_pack,
+                lint_report=semantic_lint_report,
+                review_packet=surfaces["ontology_delta_candidate_review_packet"],
+            )
             surfaces["semantic_lint_smoke"] = build_ontology_semantic_lint_smoke(
                 semantic_policy,
                 semantic_policy_path=semantic_policy_path,
@@ -2114,6 +2604,10 @@ def write_ontology_import_surfaces(
     if "semantic_lint_report" in surfaces:
         destinations["semantic_lint_report"] = require_surface_output_artifact(
             surfaces["semantic_lint_report"], "semantic_lint_report"
+        )
+    if "semantic_review_surface" in surfaces:
+        destinations["semantic_review_surface"] = require_surface_output_artifact(
+            surfaces["semantic_review_surface"], "semantic_review_surface"
         )
     if "semantic_lint_smoke" in surfaces:
         destinations["semantic_lint_smoke"] = require_surface_output_artifact(

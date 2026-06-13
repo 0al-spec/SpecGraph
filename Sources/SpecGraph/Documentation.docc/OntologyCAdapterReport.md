@@ -41,6 +41,29 @@ ref, and digest. The digest must match the normalized IR `sourceDigest`.
 The smoke also verifies that output refs resolve under the fixture directory and
 that report counts match the resolved concept refs and ontology gaps.
 
+## Semantic Review Surfaces
+
+The same ontology import command consumes:
+
+```text
+tools/ontology_semantic_control_policy.json
+```
+
+and emits deterministic review-only semantic artifacts under `runs/`:
+
+```text
+runs/ontology_semantic_context_pack.json
+runs/ontology_semantic_lint_report.json
+runs/ontology_delta_candidate_review_packet.json
+runs/ontology_semantic_review_surface.json
+runs/ontology_semantic_lint_smoke.json
+```
+
+`runs/ontology_semantic_review_surface.json` is the SpecSpace/supervisor-facing
+surface for grounding summary, blocking findings, review-required findings,
+delta candidates, and non-mutating review actions. It is derived evidence only;
+it is not canonical Ontology authority.
+
 ## Boundary
 
 The adapter report must not:
