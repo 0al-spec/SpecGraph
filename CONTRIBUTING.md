@@ -106,21 +106,41 @@ Before assigning a proposal ID, verify that the candidate is not already claimed
 outside the current checkout. The minimum collision check is:
 
 ```bash
+CANDIDATE_ID=0107
+
 git fetch origin --prune
+# If starting new proposal work, update main before allocation.
+git switch main
+git pull --ff-only
+# If already on a task branch, rebase or merge origin/main before allocation.
+
 make proposal-id
-git branch -a --list '*0107*'          # replace 0107 with the candidate ID
-git worktree list | rg '0107' || true  # replace 0107 with the candidate ID
-rg '0107' docs/proposals docs/archive/proposal_sources tools/proposal_*_registry.json
+git branch -a --list "*${CANDIDATE_ID}*"
+git worktree list | rg "${CANDIDATE_ID}" || true
+rg "${CANDIDATE_ID}" docs/proposals docs/archive/proposal_sources tools/proposal_*_registry.json
+
+# Check open PR metadata and changed proposal/source paths.
 gh pr list --repo 0al-spec/SpecGraph --state open \
-  --json number,title,headRefName,body \
-  --jq '.[] | select((.title + " " + .headRefName + " " + (.body // "")) | test("0107"))'
+  --json number,title,headRefName,body,files \
+  --jq '.[] | select(
+    ((.title + " " + .headRefName + " " + (.body // "")) | test(env.CANDIDATE_ID))
+    or any(.files[]?; (.path // "") | test("^docs/(proposals|archive/proposal_sources)/" + env.CANDIDATE_ID + "_"))
+  )'
+
+# If an open PR touches proposal registries, inspect its diff for the candidate ID.
+for pr in $(gh pr list --repo 0al-spec/SpecGraph --state open \
+  --json number,files \
+  --jq '.[] | select(any(.files[]?; (.path // "") | test("^tools/proposal_.*_registry\\.json$"))) | .number'); do
+  gh pr diff "$pr" --repo 0al-spec/SpecGraph | rg "${CANDIDATE_ID}" || true
+done
 ```
 
 This is an additional guard on top of `make proposal-id`: local files can be
 clean while another worktree, remote branch, or open PR already carries the same
-candidate ID. If a collision exists, do not reuse the ID and do not reserve an
-ID from chat history. Update from `main`, coordinate with the active PR owner if
-needed, then allocate the next deterministic ID.
+candidate ID. `git fetch` alone is not enough because it does not update the
+checkout scanned by `make proposal-id`. If a collision exists, do not reuse the
+ID and do not reserve an ID from chat history. Update from `main`, coordinate
+with the active PR owner if needed, then allocate the next deterministic ID.
 
 Useful patterns:
 
