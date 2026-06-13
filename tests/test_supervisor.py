@@ -23260,6 +23260,40 @@ def test_supervisor_output_summary_includes_compact_graph_next_move_subject(
     }
 
 
+def test_supervisor_output_summary_includes_ontology_gate_report(
+    supervisor_module: object,
+) -> None:
+    summary = supervisor_module.supervisor_output_summary(
+        {
+            "artifact_kind": "ontology_supervisor_semantic_gate_report",
+            "schema_version": 1,
+            "canonical_mutations_allowed": False,
+            "tracked_artifacts_written": False,
+            "summary": {
+                "status": "blocked",
+                "gate_state": "blocked",
+                "required_human_action": "resolve_blocking_ontology_semantic_findings",
+                "artifact_path": "runs/ontology_supervisor_semantic_gate.json",
+                "next_gap": "wire_supervisor_semantic_gate_into_targeted_runs",
+            },
+            "written_artifacts": {
+                "count": 2,
+                "paths": [
+                    "runs/ontology_supervisor_semantic_gate.json",
+                    "runs/ontology_delta_draft_intake.json",
+                ],
+            },
+        }
+    )
+
+    assert summary["artifact_kind"] == "ontology_supervisor_semantic_gate_report"
+    assert summary["summary"]["gate_state"] == "blocked"
+    assert summary["written_artifacts"]["paths"] == [
+        "runs/ontology_supervisor_semantic_gate.json",
+        "runs/ontology_delta_draft_intake.json",
+    ]
+
+
 def test_build_graph_next_moves_prefers_metric_runtime_gap_over_draft_reference(
     supervisor_module: object,
     repo_fixture: Path,

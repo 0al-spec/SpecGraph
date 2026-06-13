@@ -827,6 +827,43 @@ def test_ontology_supervisor_semantic_gate_rejects_source_authority_expansion() 
         )
 
 
+def test_ontology_supervisor_semantic_gate_rejects_source_supervisor_authority() -> None:
+    module = load_ontology_imports_module()
+    semantic_policy = json.loads(
+        (ROOT / "tools" / "ontology_semantic_control_policy.json").read_text()
+    )
+    surfaces = module.build_ontology_import_surfaces(FIXTURE)
+    review_surface = json.loads(json.dumps(surfaces["semantic_review_surface"]))
+    review_surface["authority_boundary"]["supervisor_semantic_gate_is_authority"] = True
+
+    with pytest.raises(ValueError, match="supervisor_semantic_gate_is_authority"):
+        module.build_ontology_supervisor_semantic_gate(
+            semantic_policy,
+            semantic_policy_path=ROOT / "tools" / "ontology_semantic_control_policy.json",
+            review_surface=review_surface,
+        )
+
+
+def test_ontology_supervisor_semantic_gate_rejects_stale_blocking_summary() -> None:
+    module = load_ontology_imports_module()
+    semantic_policy = json.loads(
+        (ROOT / "tools" / "ontology_semantic_control_policy.json").read_text()
+    )
+    surfaces = module.build_ontology_import_surfaces(FIXTURE)
+    review_surface = json.loads(json.dumps(surfaces["semantic_review_surface"]))
+    review_surface["summary"]["blocking_count"] = 1
+    for item in review_surface["review_items"]:
+        if item["review_state"] == "blocked":
+            item["review_state"] = "needs_review"
+
+    with pytest.raises(ValueError, match="blocking_count"):
+        module.build_ontology_supervisor_semantic_gate(
+            semantic_policy,
+            semantic_policy_path=ROOT / "tools" / "ontology_semantic_control_policy.json",
+            review_surface=review_surface,
+        )
+
+
 def test_ontology_delta_candidate_review_packet_uses_policy_review_action_order(
     tmp_path: Path,
 ) -> None:
@@ -934,6 +971,17 @@ def test_ontology_semantic_write_uses_surface_output_artifact(tmp_path: Path) ->
         policy_path=policy_path,
         semantic_policy_path=semantic_policy_path,
     )
+    gate = surfaces["supervisor_semantic_gate"]
+    assert gate["typed_invocation_boundary"]["input_artifact"] == (
+        "runs/custom_semantic_review_surface.json"
+    )
+    assert gate["typed_invocation_boundary"]["output_artifact"] == (
+        "runs/custom_supervisor_semantic_gate.json"
+    )
+    assert gate["source_artifacts"]["semantic_review_surface"] == (
+        "runs/custom_semantic_review_surface.json"
+    )
+    assert gate["output_artifact"] == "runs/custom_supervisor_semantic_gate.json"
     written = module.write_ontology_import_surfaces(
         surfaces,
         policy_path=policy_path,

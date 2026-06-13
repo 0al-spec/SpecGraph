@@ -2457,6 +2457,7 @@ def require_ontology_semantic_review_surface(
     authority_boundary = require_object(review_surface, "authority_boundary", "review_surface")
     for field in (
         "semantic_review_surface_is_authority",
+        "supervisor_semantic_gate_is_authority",
         "prompt_agent_execution_allowed",
         "automatic_import_lock_update",
         "automatic_canonical_node_update",
@@ -2485,12 +2486,16 @@ def build_ontology_supervisor_semantic_gate(
     semantic_layout = require_object(
         semantic_policy, "repository_layout", "semantic_control_policy"
     )
+    semantic_review_surface_artifact = require_surface_output_artifact(
+        review_surface, "semantic_review_surface"
+    )
+    supervisor_semantic_gate_artifact = require_layout_path(
+        semantic_layout, "supervisor_semantic_gate"
+    )
     source_artifacts = copy_json_object(
         require_object(review_surface, "source_artifacts", "review_surface")
     )
-    source_artifacts["semantic_review_surface"] = require_surface_output_artifact(
-        review_surface, "semantic_review_surface"
-    )
+    source_artifacts["semantic_review_surface"] = semantic_review_surface_artifact
     summary = require_object(review_surface, "summary", "review_surface")
     review_items = review_surface["review_items"]
     assert isinstance(review_items, list)
@@ -2530,6 +2535,10 @@ def build_ontology_supervisor_semantic_gate(
     blocking_count = require_int(summary, "blocking_count", "review_surface.summary")
     review_required_count = require_int(summary, "review_required_count", "review_surface.summary")
     candidate_count = require_int(summary, "candidate_count", "review_surface.summary")
+    if blocking_count != len(blocking_item_ids):
+        raise ValueError(
+            "review_surface.summary.blocking_count must match blocking review item count"
+        )
     if blocking_count or blocking_item_ids:
         gate_state = "blocked"
         outcome = "semantic_gate_blocked"
@@ -2563,6 +2572,8 @@ def build_ontology_supervisor_semantic_gate(
             "semantic_control_policy.supervisor_semantic_gate_contract",
         )
     )
+    invocation_boundary["input_artifact"] = semantic_review_surface_artifact
+    invocation_boundary["output_artifact"] = supervisor_semantic_gate_artifact
     return {
         "artifact_kind": require_string(
             gate_contract,
@@ -2638,7 +2649,7 @@ def build_ontology_supervisor_semantic_gate(
                 "semantic_control_policy.supervisor_semantic_gate_contract",
             ),
         },
-        "output_artifact": require_layout_path(semantic_layout, "supervisor_semantic_gate"),
+        "output_artifact": supervisor_semantic_gate_artifact,
     }
 
 
