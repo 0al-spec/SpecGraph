@@ -5808,5 +5808,57 @@
         "pattern": "executor_analysis_report_consumption_policy"
       }
     ]
+  },
+  {
+    "proposal_id": "0108",
+    "posture": "bounded_runtime_followup",
+    "runtime_surfaces": [
+      "docs/proposals/0108_ontology_semantic_review_surface.md",
+      "docs/archive/proposal_sources/0108_ontology_semantic_review_surface.md",
+      "tools/ontology_semantic_control_policy.json",
+      "tools/ontology_imports.py",
+      "tools/README.md",
+      "Makefile",
+      "tests/test_ontology_import_policy.py",
+      "runs/ontology_semantic_review_surface.json"
+    ],
+    "runtime_markers": [
+      {
+        "path": "tools/ontology_semantic_control_policy.json",
+        "pattern": "semantic_review_surface_contract"
+      },
+      {
+        "path": "tools/ontology_imports.py",
+        "pattern": "def build_ontology_semantic_review_surface("
+      },
+      {
+        "path": "tools/ontology_imports.py",
+        "pattern": "\"semantic_review_surface\""
+      }
+    ],
+    "validation_markers": [
+      {
+        "path": "tests/test_ontology_import_policy.py",
+        "pattern": "def test_ontology_semantic_review_surface_builds_specspace_surface("
+      },
+      {
+        "path": "tests/test_ontology_import_policy.py",
+        "pattern": "runs/ontology_semantic_review_surface.json"
+      }
+    ],
+    "observation_markers": [
+      {
+        "path": "Makefile",
+        "pattern": "ontology-imports:"
+      },
+      {
+        "path": "tools/README.md",
+        "pattern": "runs/ontology_semantic_review_surface.json"
+      },
+      {
+        "path": "docs/proposals/0108_ontology_semantic_review_surface.md",
+        "pattern": "build_specspace_semantic_review_surface_consumer"
+      }
+    ]
   }
 ]
