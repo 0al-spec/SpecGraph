@@ -3165,6 +3165,20 @@ def require_ontology_delta_draft_intake(
     require_object(draft_intake, "summary", "draft_intake")
     if not isinstance(draft_intake.get("draft_requests"), list):
         raise ValueError("draft_intake.draft_requests must be a list")
+    for index, raw_request in enumerate(draft_intake["draft_requests"]):
+        if not isinstance(raw_request, dict):
+            raise ValueError(f"draft_intake.draft_requests[{index}] must be an object")
+        for field in (
+            "writes_ontology_package",
+            "updates_ontology_lockfile",
+            "mutates_canonical_specs",
+            "marks_candidate_accepted",
+        ):
+            if (
+                require_bool(raw_request, field, f"draft_intake.draft_requests[{index}]")
+                is not False
+            ):
+                raise ValueError(f"draft_intake.draft_requests[{index}].{field} must be false")
     consumer_boundary = require_object(draft_intake, "consumer_boundary", "draft_intake")
     if (
         require_bool(
@@ -3238,9 +3252,14 @@ def build_ontology_closed_loop_evidence(
         if intake_state == "blocked_by_semantic_gate":
             evidence_state = "blocked_by_semantic_gate"
             specgraph_review_state = "blocked"
-        else:
+        elif intake_state == "awaiting_ontology_owner_review":
             evidence_state = "pending_ontology_owner_decision"
             specgraph_review_state = "pending_ontology_owner_decision"
+        else:
+            raise ValueError(
+                f"draft_intake.draft_requests[{index}].intake_state must be "
+                "blocked_by_semantic_gate or awaiting_ontology_owner_review"
+            )
         evidence_entries.append(
             {
                 "evidence_id": f"ontology-closed-loop-evidence-{symbol_slug(candidate_id)}",

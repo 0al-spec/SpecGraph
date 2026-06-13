@@ -1143,6 +1143,40 @@ def test_ontology_closed_loop_evidence_rejects_source_intake_authority_expansion
         )
 
 
+def test_ontology_closed_loop_evidence_rejects_source_request_authority_expansion() -> None:
+    module = load_ontology_imports_module()
+    semantic_policy = json.loads(
+        (ROOT / "tools" / "ontology_semantic_control_policy.json").read_text()
+    )
+    surfaces = module.build_ontology_import_surfaces(FIXTURE)
+    draft_intake = json.loads(json.dumps(surfaces["ontology_delta_draft_intake"]))
+    draft_intake["draft_requests"][0]["writes_ontology_package"] = True
+
+    with pytest.raises(ValueError, match=r"draft_requests\[0\]\.writes_ontology_package"):
+        module.build_ontology_closed_loop_evidence(
+            semantic_policy,
+            semantic_policy_path=ROOT / "tools" / "ontology_semantic_control_policy.json",
+            draft_intake=draft_intake,
+        )
+
+
+def test_ontology_closed_loop_evidence_rejects_unknown_source_intake_state() -> None:
+    module = load_ontology_imports_module()
+    semantic_policy = json.loads(
+        (ROOT / "tools" / "ontology_semantic_control_policy.json").read_text()
+    )
+    surfaces = module.build_ontology_import_surfaces(FIXTURE)
+    draft_intake = json.loads(json.dumps(surfaces["ontology_delta_draft_intake"]))
+    draft_intake["draft_requests"][0]["intake_state"] = "awaiting-owner-review"
+
+    with pytest.raises(ValueError, match=r"draft_requests\[0\]\.intake_state"):
+        module.build_ontology_closed_loop_evidence(
+            semantic_policy,
+            semantic_policy_path=ROOT / "tools" / "ontology_semantic_control_policy.json",
+            draft_intake=draft_intake,
+        )
+
+
 def test_ontology_delta_candidate_review_packet_uses_policy_review_action_order(
     tmp_path: Path,
 ) -> None:
