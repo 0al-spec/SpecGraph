@@ -51,7 +51,9 @@ def write_temp_semantic_control_policy(
     policy = payload or json.loads(
         (ROOT / "tools" / "ontology_semantic_control_policy.json").read_text()
     )
-    policy_path = tmp_path / "ontology_semantic_control_policy.json"
+    policy_dir = tmp_path / "tools"
+    policy_dir.mkdir(parents=True, exist_ok=True)
+    policy_path = policy_dir / "ontology_semantic_control_policy.json"
     policy_path.write_text(json.dumps(policy, indent=2, sort_keys=True), encoding="utf-8")
     return policy_path
 
@@ -239,6 +241,53 @@ def test_ontology_semantic_lint_smoke_classifies_terms() -> None:
     boundary = smoke["authority_boundary"]
     assert boundary["lint_report_is_authority"] is False
     assert boundary["canonical_mutations_allowed"] is False
+
+
+def test_ontology_semantic_default_policy_follows_root_override(tmp_path: Path) -> None:
+    module = load_ontology_imports_module()
+    module.ROOT = tmp_path
+    fixture_path = write_temp_fixture(tmp_path, load_fixture_payload())
+    policy_path = write_temp_policy(tmp_path)
+    semantic_policy_path = write_temp_semantic_control_policy(tmp_path)
+
+    surfaces = module.build_ontology_import_surfaces(
+        fixture_path,
+        policy_path=policy_path,
+    )
+
+    assert surfaces["semantic_lint_smoke"]["source_policy"] == (
+        "tools/ontology_semantic_control_policy.json"
+    )
+    assert semantic_policy_path.exists()
+
+
+def test_ontology_semantic_write_uses_surface_output_artifact(tmp_path: Path) -> None:
+    module = load_ontology_imports_module()
+    module.ROOT = tmp_path
+    fixture_path = write_temp_fixture(tmp_path, load_fixture_payload())
+    policy_path = write_temp_policy(tmp_path)
+    semantic_policy = json.loads(
+        (ROOT / "tools" / "ontology_semantic_control_policy.json").read_text()
+    )
+    semantic_policy["repository_layout"]["semantic_lint_smoke"] = (
+        "runs/custom_semantic_lint_smoke.json"
+    )
+    semantic_policy_path = write_temp_semantic_control_policy(tmp_path, semantic_policy)
+
+    surfaces = module.build_ontology_import_surfaces(
+        fixture_path,
+        policy_path=policy_path,
+        semantic_policy_path=semantic_policy_path,
+    )
+    written = module.write_ontology_import_surfaces(
+        surfaces,
+        policy_path=policy_path,
+        out_dir=tmp_path,
+    )
+
+    written_paths = {path.relative_to(tmp_path).as_posix() for path in written}
+    assert "runs/custom_semantic_lint_smoke.json" in written_paths
+    assert not (tmp_path / "runs" / "ontology_semantic_lint_smoke.json").exists()
 
 
 def test_ontology_import_governance_and_prompt_surfaces_are_derived() -> None:
@@ -666,6 +715,7 @@ def test_cli_custom_fixture_does_not_require_default_adapter_report(tmp_path: Pa
     surfaces = json.loads(completed.stdout)
 
     assert "adapter_report_smoke" not in surfaces
+    assert "semantic_lint_smoke" not in surfaces
     assert surfaces["package_index"]["proposal_id"] == "custom-0060"
 
 
