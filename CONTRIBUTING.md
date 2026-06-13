@@ -102,6 +102,26 @@ viewer contracts, or runtime processes. Use runtime realization PRs when the
 proposal already exists and the task is to register or implement its derived
 surface or runtime evidence.
 
+Before assigning a proposal ID, verify that the candidate is not already claimed
+outside the current checkout. The minimum collision check is:
+
+```bash
+git fetch origin --prune
+make proposal-id
+git branch -a --list '*0107*'          # replace 0107 with the candidate ID
+git worktree list | rg '0107' || true  # replace 0107 with the candidate ID
+rg '0107' docs/proposals docs/archive/proposal_sources tools/proposal_*_registry.json
+gh pr list --repo 0al-spec/SpecGraph --state open \
+  --json number,title,headRefName,body \
+  --jq '.[] | select((.title + " " + .headRefName + " " + (.body // "")) | test("0107"))'
+```
+
+This is an additional guard on top of `make proposal-id`: local files can be
+clean while another worktree, remote branch, or open PR already carries the same
+candidate ID. If a collision exists, do not reuse the ID and do not reserve an
+ID from chat history. Update from `main`, coordinate with the active PR owner if
+needed, then allocate the next deterministic ID.
+
 Useful patterns:
 
 - Proposal first for new capabilities such as branch rewrite, conversation memory, metric packs, or standalone deployment.
