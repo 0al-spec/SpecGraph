@@ -3,8 +3,12 @@
   "schema_version": 1,
   "proposal_id": "0103",
   "source_proposal": "docs/proposals/0103_ontology_semantic_control_policy.md",
+  "extension_proposals": [
+    "docs/proposals/0104_ontology_semantic_context_pack.md"
+  ],
   "policy_basis": "docs/proposals/0100_ontology_grounded_semantic_control.md",
   "repository_layout": {
+    "semantic_context_pack": "runs/ontology_semantic_context_pack.json",
     "semantic_lint_smoke": "runs/ontology_semantic_lint_smoke.json"
   },
   "derived_output_contract": {
@@ -27,6 +31,42 @@
       "canonical_mutations_allowed": false,
       "tracked_artifacts_written": false
     }
+  },
+  "semantic_context_pack_contract": {
+    "artifact_kind": "ontology_semantic_context_pack",
+    "target": {
+      "target_kind": "proposal",
+      "target_ref": "SG-RFC-0104"
+    },
+    "required_source_surfaces": [
+      "ontology_package_index",
+      "ontology_import_gap_index",
+      "ontology_governance_evidence_index",
+      "ontology_binding_preview"
+    ],
+    "allowed_sections": [
+      "source_surfaces",
+      "target_scope",
+      "packages",
+      "accepted_terms",
+      "accepted_relations",
+      "aliases",
+      "deprecated_terms",
+      "relation_conflicts",
+      "unresolved_gaps",
+      "governance_evidence",
+      "consumer_boundary",
+      "authority_boundary",
+      "summary"
+    ],
+    "consumer_boundary": {
+      "for_prompt_agent_input": true,
+      "for_specspace_review_surface": true,
+      "may_expand_terms_without_review": false,
+      "may_execute_prompt_agent": false,
+      "may_mutate_canonical_specs": false
+    },
+    "next_gap": "build_ontology_semantic_lint_report"
   },
   "semantic_lint_contract": {
     "future_artifact_kind": "ontology_semantic_lint_report",
