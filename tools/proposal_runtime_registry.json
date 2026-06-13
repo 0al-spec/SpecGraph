@@ -6184,5 +6184,70 @@
         "pattern": "build_specspace_rich_ontology_review_panel"
       }
     ]
+  },
+  {
+    "proposal_id": "0114",
+    "posture": "bounded_runtime_followup",
+    "runtime_surfaces": [
+      "docs/proposals/0114_ontology_owner_decision_contract.md",
+      "docs/archive/proposal_sources/0114_ontology_owner_decision_contract.md",
+      "tools/ontology_semantic_control_policy.json",
+      "tools/ontology_imports.py",
+      "tools/README.md",
+      "docs/supervisor_manual.md",
+      "Makefile",
+      "tests/test_ontology_import_policy.py",
+      "runs/ontology_owner_decision_report.json"
+    ],
+    "runtime_markers": [
+      {
+        "path": "tools/ontology_semantic_control_policy.json",
+        "pattern": "ontology_owner_decision_report_contract"
+      },
+      {
+        "path": "tools/ontology_imports.py",
+        "pattern": "def build_ontology_owner_decision_report("
+      },
+      {
+        "path": "tools/ontology_imports.py",
+        "pattern": "def require_ontology_owner_decision_report("
+      },
+      {
+        "path": "tools/ontology_imports.py",
+        "pattern": "\"ontology_owner_decision_report\""
+      }
+    ],
+    "validation_markers": [
+      {
+        "path": "tests/test_ontology_import_policy.py",
+        "pattern": "def test_ontology_owner_decision_report_builds_read_only_decision_contract("
+      },
+      {
+        "path": "tests/test_ontology_import_policy.py",
+        "pattern": "def test_ontology_owner_decision_report_rejects_policy_import_authority("
+      },
+      {
+        "path": "tests/test_ontology_import_policy.py",
+        "pattern": "runs/ontology_owner_decision_report.json"
+      }
+    ],
+    "observation_markers": [
+      {
+        "path": "Makefile",
+        "pattern": "ontology-imports:"
+      },
+      {
+        "path": "tools/README.md",
+        "pattern": "runs/ontology_owner_decision_report.json"
+      },
+      {
+        "path": "docs/supervisor_manual.md",
+        "pattern": "runs/ontology_owner_decision_report.json"
+      },
+      {
+        "path": "docs/proposals/0114_ontology_owner_decision_contract.md",
+        "pattern": "build_ontology_decision_import_preview"
+      }
+    ]
   }
 ]

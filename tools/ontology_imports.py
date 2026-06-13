@@ -644,6 +644,7 @@ def require_semantic_control_policy(policy: dict[str, Any]) -> dict[str, Any]:
     require_layout_path(layout, "ontology_delta_draft_intake")
     require_layout_path(layout, "ontology_closed_loop_evidence")
     require_layout_path(layout, "ontology_review_dashboard")
+    require_layout_path(layout, "ontology_owner_decision_report")
     require_layout_path(layout, "semantic_lint_smoke")
     boundary = require_object(policy, "authority_boundary", "semantic_control_policy")
     for field in (
@@ -656,6 +657,7 @@ def require_semantic_control_policy(policy: dict[str, Any]) -> dict[str, Any]:
         "ontology_delta_draft_intake_is_authority",
         "ontology_closed_loop_evidence_is_authority",
         "ontology_review_dashboard_is_authority",
+        "ontology_owner_decision_report_is_authority",
         "prompt_agent_execution_allowed",
         "automatic_import_lock_update",
         "automatic_canonical_node_update",
@@ -1730,9 +1732,205 @@ def require_semantic_control_policy(policy: dict[str, Any]) -> dict[str, Any]:
         "next_gap",
         "semantic_control_policy.ontology_review_dashboard_contract",
     )
-    require_layout_path(
-        require_object(policy, "repository_layout", "semantic_control_policy"),
-        "ontology_review_dashboard",
+    owner_decision_contract = require_object(
+        policy, "ontology_owner_decision_report_contract", "semantic_control_policy"
+    )
+    if (
+        require_string(
+            owner_decision_contract,
+            "artifact_kind",
+            "semantic_control_policy.ontology_owner_decision_report_contract",
+        )
+        != "ontology_owner_decision_report"
+    ):
+        raise ValueError(
+            "semantic_control_policy.ontology_owner_decision_report_contract.artifact_kind "
+            "must be ontology_owner_decision_report"
+        )
+    if (
+        require_string(
+            owner_decision_contract,
+            "source_closed_loop_evidence_artifact_kind",
+            "semantic_control_policy.ontology_owner_decision_report_contract",
+        )
+        != "ontology_closed_loop_evidence"
+    ):
+        raise ValueError(
+            "semantic_control_policy.ontology_owner_decision_report_contract."
+            "source_closed_loop_evidence_artifact_kind must be ontology_closed_loop_evidence"
+        )
+    owner_decision_target = require_object(
+        owner_decision_contract,
+        "target",
+        "semantic_control_policy.ontology_owner_decision_report_contract",
+    )
+    require_string(
+        owner_decision_target,
+        "target_kind",
+        "semantic_control_policy.ontology_owner_decision_report_contract.target",
+    )
+    require_string(
+        owner_decision_target,
+        "target_ref",
+        "semantic_control_policy.ontology_owner_decision_report_contract.target",
+    )
+    decision_states = set(
+        require_string_list(
+            owner_decision_contract,
+            "decision_states",
+            "semantic_control_policy.ontology_owner_decision_report_contract",
+        )
+    )
+    required_decision_states = {"accepted", "rejected", "needs_clarification"}
+    missing_decision_states = sorted(required_decision_states - decision_states)
+    if missing_decision_states:
+        raise ValueError(
+            "semantic_control_policy.ontology_owner_decision_report_contract.decision_states "
+            f"missing: {', '.join(missing_decision_states)}"
+        )
+    required_decision_fields = set(
+        require_string_list(
+            owner_decision_contract,
+            "required_decision_fields",
+            "semantic_control_policy.ontology_owner_decision_report_contract",
+        )
+    )
+    expected_decision_fields = {
+        "decision_id",
+        "candidate_id",
+        "intake_id",
+        "decision_state",
+        "ontology_decision_ref",
+        "decided_by",
+        "decided_at",
+        "accepted_ontology_delta",
+        "imports_into_specgraph",
+        "closes_semantic_gate",
+        "mutates_canonical_specs",
+    }
+    missing_decision_fields = sorted(expected_decision_fields - required_decision_fields)
+    if missing_decision_fields:
+        raise ValueError(
+            "semantic_control_policy.ontology_owner_decision_report_contract."
+            f"required_decision_fields missing: {', '.join(missing_decision_fields)}"
+        )
+    owner_decision_consumer_boundary = require_object(
+        owner_decision_contract,
+        "consumer_boundary",
+        "semantic_control_policy.ontology_owner_decision_report_contract",
+    )
+    for field in ("for_specgraph_decision_import_preview", "for_specspace_review_dashboard"):
+        if (
+            require_bool(
+                owner_decision_consumer_boundary,
+                field,
+                "semantic_control_policy.ontology_owner_decision_report_contract.consumer_boundary",
+            )
+            is not True
+        ):
+            raise ValueError(
+                "semantic_control_policy.ontology_owner_decision_report_contract."
+                f"consumer_boundary.{field} must be true"
+            )
+    for field in (
+        "may_execute_prompt_agent",
+        "may_write_ontology_package",
+        "may_update_ontology_lockfile",
+        "may_mutate_canonical_specs",
+        "may_mark_candidate_accepted",
+        "may_import_into_specgraph",
+        "may_close_semantic_gate",
+    ):
+        if (
+            require_bool(
+                owner_decision_consumer_boundary,
+                field,
+                "semantic_control_policy.ontology_owner_decision_report_contract.consumer_boundary",
+            )
+            is not False
+        ):
+            raise ValueError(
+                "semantic_control_policy.ontology_owner_decision_report_contract."
+                f"consumer_boundary.{field} must be false"
+            )
+    owner_decision_fixture = require_object(
+        policy, "owner_decision_fixture", "semantic_control_policy"
+    )
+    if (
+        require_string(
+            owner_decision_fixture,
+            "artifact_kind",
+            "semantic_control_policy.owner_decision_fixture",
+        )
+        != "ontology_owner_decision_fixture"
+    ):
+        raise ValueError(
+            "semantic_control_policy.owner_decision_fixture.artifact_kind must be "
+            "ontology_owner_decision_fixture"
+        )
+    owner_fixture_decisions = owner_decision_fixture.get("decisions")
+    if not isinstance(owner_fixture_decisions, list):
+        raise ValueError("semantic_control_policy.owner_decision_fixture.decisions must be a list")
+    for index, raw_decision in enumerate(owner_fixture_decisions):
+        if not isinstance(raw_decision, dict):
+            raise ValueError(
+                f"semantic_control_policy.owner_decision_fixture.decisions[{index}] "
+                "must be an object"
+            )
+        for field in sorted(required_decision_fields):
+            if field in {
+                "accepted_ontology_delta",
+                "imports_into_specgraph",
+                "closes_semantic_gate",
+                "mutates_canonical_specs",
+            }:
+                require_bool(
+                    raw_decision,
+                    field,
+                    f"semantic_control_policy.owner_decision_fixture.decisions[{index}]",
+                )
+            else:
+                require_string(
+                    raw_decision,
+                    field,
+                    f"semantic_control_policy.owner_decision_fixture.decisions[{index}]",
+                )
+        decision_state = require_string(
+            raw_decision,
+            "decision_state",
+            f"semantic_control_policy.owner_decision_fixture.decisions[{index}]",
+        )
+        if decision_state not in decision_states:
+            raise ValueError(
+                "semantic_control_policy.owner_decision_fixture.decisions"
+                f"[{index}].decision_state must be declared by decision_states"
+            )
+        if require_bool(
+            raw_decision,
+            "accepted_ontology_delta",
+            f"semantic_control_policy.owner_decision_fixture.decisions[{index}]",
+        ) != (decision_state == "accepted"):
+            raise ValueError(
+                "semantic_control_policy.owner_decision_fixture.decisions"
+                f"[{index}].accepted_ontology_delta must match accepted decision_state"
+            )
+        for field in ("imports_into_specgraph", "closes_semantic_gate", "mutates_canonical_specs"):
+            if (
+                require_bool(
+                    raw_decision,
+                    field,
+                    f"semantic_control_policy.owner_decision_fixture.decisions[{index}]",
+                )
+                is not False
+            ):
+                raise ValueError(
+                    "semantic_control_policy.owner_decision_fixture.decisions"
+                    f"[{index}].{field} must be false"
+                )
+    require_string(
+        owner_decision_contract,
+        "next_gap",
+        "semantic_control_policy.ontology_owner_decision_report_contract",
     )
     return policy
 
@@ -3887,6 +4085,277 @@ def require_ontology_review_dashboard(
     return dashboard
 
 
+def build_ontology_owner_decision_report(
+    semantic_policy: dict[str, Any],
+    *,
+    semantic_policy_path: Path,
+    closed_loop_evidence: dict[str, Any],
+) -> dict[str, Any]:
+    require_semantic_control_policy(semantic_policy)
+    require_ontology_closed_loop_evidence(closed_loop_evidence)
+
+    owner_decision_contract = require_object(
+        semantic_policy, "ontology_owner_decision_report_contract", "semantic_control_policy"
+    )
+    semantic_layout = require_object(
+        semantic_policy, "repository_layout", "semantic_control_policy"
+    )
+    owner_decision_fixture = require_object(
+        semantic_policy, "owner_decision_fixture", "semantic_control_policy"
+    )
+    raw_decisions = owner_decision_fixture.get("decisions")
+    if not isinstance(raw_decisions, list):
+        raise ValueError("semantic_control_policy.owner_decision_fixture.decisions must be a list")
+
+    decision_states = set(
+        require_string_list(
+            owner_decision_contract,
+            "decision_states",
+            "semantic_control_policy.ontology_owner_decision_report_contract",
+        )
+    )
+    decisions: list[dict[str, Any]] = []
+    for index, raw_decision in enumerate(raw_decisions):
+        if not isinstance(raw_decision, dict):
+            raise ValueError(
+                f"semantic_control_policy.owner_decision_fixture.decisions[{index}] "
+                "must be an object"
+            )
+        decision_state = require_string(
+            raw_decision,
+            "decision_state",
+            f"semantic_control_policy.owner_decision_fixture.decisions[{index}]",
+        )
+        if decision_state not in decision_states:
+            raise ValueError(
+                "semantic_control_policy.owner_decision_fixture.decisions"
+                f"[{index}].decision_state must be declared by decision_states"
+            )
+        accepted_ontology_delta = require_bool(
+            raw_decision,
+            "accepted_ontology_delta",
+            f"semantic_control_policy.owner_decision_fixture.decisions[{index}]",
+        )
+        if accepted_ontology_delta != (decision_state == "accepted"):
+            raise ValueError(
+                "semantic_control_policy.owner_decision_fixture.decisions"
+                f"[{index}].accepted_ontology_delta must match accepted decision_state"
+            )
+        decision = {
+            "decision_id": require_string(
+                raw_decision,
+                "decision_id",
+                f"semantic_control_policy.owner_decision_fixture.decisions[{index}]",
+            ),
+            "candidate_id": require_string(
+                raw_decision,
+                "candidate_id",
+                f"semantic_control_policy.owner_decision_fixture.decisions[{index}]",
+            ),
+            "intake_id": require_string(
+                raw_decision,
+                "intake_id",
+                f"semantic_control_policy.owner_decision_fixture.decisions[{index}]",
+            ),
+            "decision_state": decision_state,
+            "ontology_decision_ref": require_string(
+                raw_decision,
+                "ontology_decision_ref",
+                f"semantic_control_policy.owner_decision_fixture.decisions[{index}]",
+            ),
+            "decided_by": require_string(
+                raw_decision,
+                "decided_by",
+                f"semantic_control_policy.owner_decision_fixture.decisions[{index}]",
+            ),
+            "decided_at": require_string(
+                raw_decision,
+                "decided_at",
+                f"semantic_control_policy.owner_decision_fixture.decisions[{index}]",
+            ),
+            "reason": optional_string(
+                raw_decision,
+                "reason",
+                f"semantic_control_policy.owner_decision_fixture.decisions[{index}]",
+            ),
+            "accepted_ontology_delta": accepted_ontology_delta,
+            "imports_into_specgraph": require_bool(
+                raw_decision,
+                "imports_into_specgraph",
+                f"semantic_control_policy.owner_decision_fixture.decisions[{index}]",
+            ),
+            "closes_semantic_gate": require_bool(
+                raw_decision,
+                "closes_semantic_gate",
+                f"semantic_control_policy.owner_decision_fixture.decisions[{index}]",
+            ),
+            "mutates_canonical_specs": require_bool(
+                raw_decision,
+                "mutates_canonical_specs",
+                f"semantic_control_policy.owner_decision_fixture.decisions[{index}]",
+            ),
+        }
+        for field in ("imports_into_specgraph", "closes_semantic_gate", "mutates_canonical_specs"):
+            if decision[field] is not False:
+                raise ValueError(
+                    "semantic_control_policy.owner_decision_fixture.decisions"
+                    f"[{index}].{field} must be false"
+                )
+        decisions.append(decision)
+
+    source_artifacts = copy_json_object(
+        require_object(closed_loop_evidence, "source_artifacts", "closed_loop_evidence")
+    )
+    source_artifacts["ontology_closed_loop_evidence"] = require_surface_output_artifact(
+        closed_loop_evidence, "ontology_closed_loop_evidence"
+    )
+    accepted_count = sum(1 for decision in decisions if decision["decision_state"] == "accepted")
+    rejected_count = sum(1 for decision in decisions if decision["decision_state"] == "rejected")
+    clarification_count = sum(
+        1 for decision in decisions if decision["decision_state"] == "needs_clarification"
+    )
+    status = "decisions_available" if decisions else "no_decisions"
+    return {
+        "artifact_kind": require_string(
+            owner_decision_contract,
+            "artifact_kind",
+            "semantic_control_policy.ontology_owner_decision_report_contract",
+        ),
+        "schema_version": 1,
+        "proposal_id": "0114",
+        "policy_basis": semantic_policy["policy_basis"],
+        "source_policy": relative_path(semantic_policy_path),
+        "source_artifacts": source_artifacts,
+        "target": copy_json_object(
+            require_object(
+                owner_decision_contract,
+                "target",
+                "semantic_control_policy.ontology_owner_decision_report_contract",
+            )
+        ),
+        "canonical_mutations_allowed": False,
+        "tracked_artifacts_written": False,
+        "decisions": decisions,
+        "consumer_boundary": copy_json_object(
+            require_object(
+                owner_decision_contract,
+                "consumer_boundary",
+                "semantic_control_policy.ontology_owner_decision_report_contract",
+            )
+        ),
+        "authority_boundary": copy_json_object(
+            require_object(semantic_policy, "authority_boundary", "semantic_control_policy")
+        ),
+        "summary": {
+            "status": status,
+            "decision_count": len(decisions),
+            "accepted_count": accepted_count,
+            "rejected_count": rejected_count,
+            "clarification_count": clarification_count,
+            "next_gap": require_string(
+                owner_decision_contract,
+                "next_gap",
+                "semantic_control_policy.ontology_owner_decision_report_contract",
+            ),
+        },
+        "output_artifact": require_layout_path(semantic_layout, "ontology_owner_decision_report"),
+    }
+
+
+def require_ontology_owner_decision_report(
+    owner_decision_report: dict[str, Any],
+) -> dict[str, Any]:
+    if owner_decision_report.get("artifact_kind") != "ontology_owner_decision_report":
+        raise ValueError(
+            "owner_decision_report.artifact_kind must be ontology_owner_decision_report"
+        )
+    if require_int(owner_decision_report, "schema_version", "owner_decision_report") != 1:
+        raise ValueError("owner_decision_report.schema_version must be 1")
+    if require_string(owner_decision_report, "proposal_id", "owner_decision_report") != "0114":
+        raise ValueError("owner_decision_report.proposal_id must be 0114")
+    if (
+        require_bool(owner_decision_report, "canonical_mutations_allowed", "owner_decision_report")
+        is not False
+    ):
+        raise ValueError("owner_decision_report.canonical_mutations_allowed must be false")
+    if (
+        require_bool(owner_decision_report, "tracked_artifacts_written", "owner_decision_report")
+        is not False
+    ):
+        raise ValueError("owner_decision_report.tracked_artifacts_written must be false")
+    require_surface_output_artifact(owner_decision_report, "ontology_owner_decision_report")
+    require_object(owner_decision_report, "source_artifacts", "owner_decision_report")
+    require_object(owner_decision_report, "summary", "owner_decision_report")
+    decisions = owner_decision_report.get("decisions")
+    if not isinstance(decisions, list):
+        raise ValueError("owner_decision_report.decisions must be a list")
+    for index, raw_decision in enumerate(decisions):
+        if not isinstance(raw_decision, dict):
+            raise ValueError(f"owner_decision_report.decisions[{index}] must be an object")
+        decision_state = require_string(
+            raw_decision, "decision_state", f"owner_decision_report.decisions[{index}]"
+        )
+        if decision_state not in {"accepted", "rejected", "needs_clarification"}:
+            raise ValueError(
+                f"owner_decision_report.decisions[{index}].decision_state must be supported"
+            )
+        accepted_ontology_delta = require_bool(
+            raw_decision,
+            "accepted_ontology_delta",
+            f"owner_decision_report.decisions[{index}]",
+        )
+        if accepted_ontology_delta != (decision_state == "accepted"):
+            raise ValueError(
+                "owner_decision_report.decisions"
+                f"[{index}].accepted_ontology_delta must match accepted decision_state"
+            )
+        for field in ("imports_into_specgraph", "closes_semantic_gate", "mutates_canonical_specs"):
+            if (
+                require_bool(raw_decision, field, f"owner_decision_report.decisions[{index}]")
+                is not False
+            ):
+                raise ValueError(f"owner_decision_report.decisions[{index}].{field} must be false")
+    consumer_boundary = require_object(
+        owner_decision_report, "consumer_boundary", "owner_decision_report"
+    )
+    for field in ("for_specgraph_decision_import_preview", "for_specspace_review_dashboard"):
+        if (
+            require_bool(consumer_boundary, field, "owner_decision_report.consumer_boundary")
+            is not True
+        ):
+            raise ValueError(f"owner_decision_report.consumer_boundary.{field} must be true")
+    for field in (
+        "may_execute_prompt_agent",
+        "may_write_ontology_package",
+        "may_update_ontology_lockfile",
+        "may_mutate_canonical_specs",
+        "may_mark_candidate_accepted",
+        "may_import_into_specgraph",
+        "may_close_semantic_gate",
+    ):
+        if (
+            require_bool(consumer_boundary, field, "owner_decision_report.consumer_boundary")
+            is not False
+        ):
+            raise ValueError(f"owner_decision_report.consumer_boundary.{field} must be false")
+    authority_boundary = require_object(
+        owner_decision_report, "authority_boundary", "owner_decision_report"
+    )
+    for field in (
+        "ontology_owner_decision_report_is_authority",
+        "prompt_agent_execution_allowed",
+        "automatic_import_lock_update",
+        "automatic_canonical_node_update",
+        "canonical_mutations_allowed",
+    ):
+        if (
+            require_bool(authority_boundary, field, "owner_decision_report.authority_boundary")
+            is not False
+        ):
+            raise ValueError(f"owner_decision_report.authority_boundary.{field} must be false")
+    return owner_decision_report
+
+
 def build_ontology_semantic_lint_smoke(
     semantic_policy: dict[str, Any],
     *,
@@ -4235,6 +4704,11 @@ def build_ontology_import_surfaces(
                 draft_intake=surfaces["ontology_delta_draft_intake"],
                 closed_loop_evidence=surfaces["ontology_closed_loop_evidence"],
             )
+            surfaces["ontology_owner_decision_report"] = build_ontology_owner_decision_report(
+                semantic_policy,
+                semantic_policy_path=semantic_policy_path,
+                closed_loop_evidence=surfaces["ontology_closed_loop_evidence"],
+            )
             surfaces["semantic_lint_smoke"] = build_ontology_semantic_lint_smoke(
                 semantic_policy,
                 semantic_policy_path=semantic_policy_path,
@@ -4299,6 +4773,10 @@ def write_ontology_import_surfaces(
     if "ontology_review_dashboard" in surfaces:
         destinations["ontology_review_dashboard"] = require_surface_output_artifact(
             surfaces["ontology_review_dashboard"], "ontology_review_dashboard"
+        )
+    if "ontology_owner_decision_report" in surfaces:
+        destinations["ontology_owner_decision_report"] = require_surface_output_artifact(
+            surfaces["ontology_owner_decision_report"], "ontology_owner_decision_report"
         )
     if "semantic_lint_smoke" in surfaces:
         destinations["semantic_lint_smoke"] = require_surface_output_artifact(

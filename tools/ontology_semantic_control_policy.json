@@ -11,7 +11,8 @@
     "docs/proposals/0109_ontology_supervisor_semantic_gate.md",
     "docs/proposals/0110_ontology_delta_draft_intake.md",
     "docs/proposals/0111_ontology_closed_loop_evidence.md",
-    "docs/proposals/0113_ontology_review_dashboard.md"
+    "docs/proposals/0113_ontology_review_dashboard.md",
+    "docs/proposals/0114_ontology_owner_decision_contract.md"
   ],
   "policy_basis": "docs/proposals/0100_ontology_grounded_semantic_control.md",
   "repository_layout": {
@@ -23,6 +24,7 @@
     "ontology_delta_draft_intake": "runs/ontology_delta_draft_intake.json",
     "ontology_closed_loop_evidence": "runs/ontology_closed_loop_evidence.json",
     "ontology_review_dashboard": "runs/ontology_review_dashboard.json",
+    "ontology_owner_decision_report": "runs/ontology_owner_decision_report.json",
     "semantic_lint_smoke": "runs/ontology_semantic_lint_smoke.json"
   },
   "derived_output_contract": {
@@ -320,6 +322,44 @@
     },
     "next_gap": "build_specspace_rich_ontology_review_panel"
   },
+  "ontology_owner_decision_report_contract": {
+    "artifact_kind": "ontology_owner_decision_report",
+    "source_closed_loop_evidence_artifact_kind": "ontology_closed_loop_evidence",
+    "target": {
+      "target_kind": "proposal",
+      "target_ref": "SG-RFC-0114"
+    },
+    "decision_states": [
+      "accepted",
+      "rejected",
+      "needs_clarification"
+    ],
+    "required_decision_fields": [
+      "decision_id",
+      "candidate_id",
+      "intake_id",
+      "decision_state",
+      "ontology_decision_ref",
+      "decided_by",
+      "decided_at",
+      "accepted_ontology_delta",
+      "imports_into_specgraph",
+      "closes_semantic_gate",
+      "mutates_canonical_specs"
+    ],
+    "consumer_boundary": {
+      "for_specgraph_decision_import_preview": true,
+      "for_specspace_review_dashboard": true,
+      "may_execute_prompt_agent": false,
+      "may_write_ontology_package": false,
+      "may_update_ontology_lockfile": false,
+      "may_mutate_canonical_specs": false,
+      "may_mark_candidate_accepted": false,
+      "may_import_into_specgraph": false,
+      "may_close_semantic_gate": false
+    },
+    "next_gap": "build_ontology_decision_import_preview"
+  },
   "semantic_lint_contract": {
     "future_artifact_kind": "ontology_semantic_lint_report",
     "smoke_artifact_kind": "ontology_semantic_lint_smoke",
@@ -413,6 +453,39 @@
       }
     ]
   },
+  "owner_decision_fixture": {
+    "artifact_kind": "ontology_owner_decision_fixture",
+    "decisions": [
+      {
+        "decision_id": "ontology-owner-decision-accept-casfunction",
+        "candidate_id": "ontology-delta-candidate-examcalc-casfunction",
+        "intake_id": "ontology-delta-draft-intake-ontology-delta-candidate-examcalc-casfunction",
+        "decision_state": "accepted",
+        "ontology_decision_ref": "ontology-decision://edu.university.examcalc/0.1.0/casfunction/accepted",
+        "decided_by": "ontology-owner",
+        "decided_at": "2026-06-13T00:00:00Z",
+        "reason": "Accepted as an owner-reviewed package draft candidate for CASFunction.",
+        "accepted_ontology_delta": true,
+        "imports_into_specgraph": false,
+        "closes_semantic_gate": false,
+        "mutates_canonical_specs": false
+      },
+      {
+        "decision_id": "ontology-owner-decision-reject-legacyterm",
+        "candidate_id": "ontology-delta-candidate-examcalc-legacyterm",
+        "intake_id": "ontology-delta-draft-intake-ontology-delta-candidate-examcalc-legacyterm",
+        "decision_state": "rejected",
+        "ontology_decision_ref": "ontology-decision://edu.university.examcalc/0.1.0/legacyterm/rejected",
+        "decided_by": "ontology-owner",
+        "decided_at": "2026-06-13T00:00:00Z",
+        "reason": "Rejected because the term is outside the accepted package vocabulary.",
+        "accepted_ontology_delta": false,
+        "imports_into_specgraph": false,
+        "closes_semantic_gate": false,
+        "mutates_canonical_specs": false
+      }
+    ]
+  },
   "authority_boundary": {
     "context_pack_is_authority": false,
     "lint_report_is_authority": false,
@@ -423,6 +496,7 @@
     "ontology_delta_draft_intake_is_authority": false,
     "ontology_closed_loop_evidence_is_authority": false,
     "ontology_review_dashboard_is_authority": false,
+    "ontology_owner_decision_report_is_authority": false,
     "ontology_governance_required": true,
     "specgraph_proposal_review_required": true,
     "prompt_agent_execution_allowed": false,

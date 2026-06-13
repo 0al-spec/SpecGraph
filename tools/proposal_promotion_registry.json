@@ -1467,5 +1467,18 @@
     "required_provenance_links": [
       "source_draft_ref"
     ]
+  },
+  {
+    "proposal_id": "0114",
+    "source_artifact_class": "working_draft",
+    "source_refs": [
+      "docs/archive/proposal_sources/0114_ontology_owner_decision_contract.md"
+    ],
+    "motivating_concern": "SpecGraph can display closed-loop Ontology evidence, but it lacks a typed read-only contract for accepted/rejected owner decisions returned by Ontology before any decision import preview can be built safely.",
+    "normalized_title": "Ontology Owner Decision Contract",
+    "bounded_scope": "Add a deterministic ontology_owner_decision_report artifact that carries accepted/rejected/clarification owner decisions, decision refs, candidate ids, intake ids, decision actor/time, and explicit false SpecGraph import, semantic-gate closure, and canonical mutation flags under runs/ without importing decisions into SpecGraph, marking candidates accepted, closing gates, writing Ontology packages or lockfiles, mutating canonical specs, invoking prompt agents, parsing arbitrary text, or running ontologyc.",
+    "required_provenance_links": [
+      "source_draft_ref"
+    ]
   }
 ]
