@@ -137,7 +137,10 @@ Supervisor modes:
   loop surface for those intake requests,
   `runs/ontology_review_dashboard.json` as the richer read-only
   SpecGraph/SpecSpace dashboard projection over semantic review, gate, intake,
-  and closed-loop evidence, plus
+  and closed-loop evidence,
+  `runs/ontology_owner_decision_report.json` as the typed read-only
+  accepted/rejected Ontology owner decision report for later import previews,
+  plus
   `runs/ontology_semantic_lint_smoke.json`,
   classifying accepted, alias, unknown, deprecated, and relation-conflict terms
   against the imported ontology fixture. These surfaces resolve known imported

@@ -142,6 +142,9 @@ def test_ontology_semantic_control_policy_defines_review_only_contract() -> None
     assert policy["repository_layout"]["ontology_review_dashboard"] == (
         "runs/ontology_review_dashboard.json"
     )
+    assert policy["repository_layout"]["ontology_owner_decision_report"] == (
+        "runs/ontology_owner_decision_report.json"
+    )
     assert policy["repository_layout"]["ontology_delta_candidate_review_packet"] == (
         "runs/ontology_delta_candidate_review_packet.json"
     )
@@ -355,6 +358,49 @@ def test_ontology_semantic_control_policy_defines_review_only_contract() -> None
     assert dashboard_contract["consumer_boundary"]["may_mark_candidate_accepted"] is False
     assert dashboard_contract["consumer_boundary"]["may_import_owner_decision"] is False
     assert dashboard_contract["consumer_boundary"]["may_close_semantic_gate"] is False
+    owner_decision_contract = policy["ontology_owner_decision_report_contract"]
+    assert owner_decision_contract["artifact_kind"] == "ontology_owner_decision_report"
+    assert owner_decision_contract["source_closed_loop_evidence_artifact_kind"] == (
+        "ontology_closed_loop_evidence"
+    )
+    assert owner_decision_contract["target"] == {
+        "target_kind": "proposal",
+        "target_ref": "SG-RFC-0114",
+    }
+    assert {
+        "accepted",
+        "rejected",
+        "needs_clarification",
+    }.issubset(set(owner_decision_contract["decision_states"]))
+    assert {
+        "decision_id",
+        "candidate_id",
+        "intake_id",
+        "decision_state",
+        "ontology_decision_ref",
+        "accepted_ontology_delta",
+        "imports_into_specgraph",
+        "closes_semantic_gate",
+        "mutates_canonical_specs",
+    }.issubset(set(owner_decision_contract["required_decision_fields"]))
+    assert (
+        owner_decision_contract["consumer_boundary"]["for_specgraph_decision_import_preview"]
+        is True
+    )
+    assert owner_decision_contract["consumer_boundary"]["for_specspace_review_dashboard"] is True
+    assert owner_decision_contract["consumer_boundary"]["may_execute_prompt_agent"] is False
+    assert owner_decision_contract["consumer_boundary"]["may_write_ontology_package"] is False
+    assert owner_decision_contract["consumer_boundary"]["may_update_ontology_lockfile"] is False
+    assert owner_decision_contract["consumer_boundary"]["may_mutate_canonical_specs"] is False
+    assert owner_decision_contract["consumer_boundary"]["may_mark_candidate_accepted"] is False
+    assert owner_decision_contract["consumer_boundary"]["may_import_into_specgraph"] is False
+    assert owner_decision_contract["consumer_boundary"]["may_close_semantic_gate"] is False
+    owner_decision_fixture = policy["owner_decision_fixture"]
+    assert owner_decision_fixture["artifact_kind"] == "ontology_owner_decision_fixture"
+    assert {decision["decision_state"] for decision in owner_decision_fixture["decisions"]} == {
+        "accepted",
+        "rejected",
+    }
     contract = policy["semantic_lint_contract"]
     assert contract["smoke_artifact_kind"] == "ontology_semantic_lint_smoke"
     assert {
@@ -372,6 +418,7 @@ def test_ontology_semantic_control_policy_defines_review_only_contract() -> None
     assert boundary["ontology_delta_draft_intake_is_authority"] is False
     assert boundary["ontology_closed_loop_evidence_is_authority"] is False
     assert boundary["ontology_review_dashboard_is_authority"] is False
+    assert boundary["ontology_owner_decision_report_is_authority"] is False
     assert boundary["prompt_agent_execution_allowed"] is False
     assert boundary["automatic_canonical_node_update"] is False
 
@@ -1091,6 +1138,54 @@ def test_ontology_review_dashboard_builds_rich_review_projection() -> None:
     assert dashboard["authority_boundary"]["ontology_review_dashboard_is_authority"] is False
 
 
+def test_ontology_owner_decision_report_builds_read_only_decision_contract() -> None:
+    module = load_ontology_imports_module()
+
+    surfaces = module.build_ontology_import_surfaces(FIXTURE)
+
+    report = surfaces["ontology_owner_decision_report"]
+    assert report["artifact_kind"] == "ontology_owner_decision_report"
+    assert report["proposal_id"] == "0114"
+    assert report["target"] == {
+        "target_kind": "proposal",
+        "target_ref": "SG-RFC-0114",
+    }
+    assert report["source_artifacts"]["ontology_closed_loop_evidence"] == (
+        "runs/ontology_closed_loop_evidence.json"
+    )
+    assert report["canonical_mutations_allowed"] is False
+    assert report["tracked_artifacts_written"] is False
+    assert report["summary"] == {
+        "status": "no_decisions",
+        "decision_count": 0,
+        "accepted_count": 0,
+        "rejected_count": 0,
+        "clarification_count": 0,
+        "ignored_decision_count": 2,
+        "next_gap": "build_ontology_decision_import_preview",
+    }
+    assert report["decisions"] == []
+    ignored = {entry["decision_id"]: entry for entry in report["ignored_decisions"]}
+    assert (
+        ignored["ontology-owner-decision-accept-casfunction"]["reason"]
+        == "closed_loop_evidence_not_pending_owner_decision"
+    )
+    assert (
+        ignored["ontology-owner-decision-reject-legacyterm"]["reason"]
+        == "missing_closed_loop_evidence"
+    )
+    assert report["consumer_boundary"]["for_specgraph_decision_import_preview"] is True
+    assert report["consumer_boundary"]["for_specspace_review_dashboard"] is True
+    assert report["consumer_boundary"]["may_execute_prompt_agent"] is False
+    assert report["consumer_boundary"]["may_write_ontology_package"] is False
+    assert report["consumer_boundary"]["may_update_ontology_lockfile"] is False
+    assert report["consumer_boundary"]["may_mutate_canonical_specs"] is False
+    assert report["consumer_boundary"]["may_mark_candidate_accepted"] is False
+    assert report["consumer_boundary"]["may_import_into_specgraph"] is False
+    assert report["consumer_boundary"]["may_close_semantic_gate"] is False
+    assert report["authority_boundary"]["ontology_owner_decision_report_is_authority"] is False
+
+
 def test_ontology_review_dashboard_keeps_blocked_gate_above_no_candidates() -> None:
     module = load_ontology_imports_module()
     semantic_policy = json.loads(
@@ -1210,6 +1305,66 @@ def test_ontology_review_dashboard_uses_gate_action_for_review_pending_no_candid
     assert dashboard["status_summary"]["required_human_action"] == (
         "review_ontology_semantic_items"
     )
+
+
+def test_ontology_owner_decision_report_builds_matched_pending_decisions() -> None:
+    module = load_ontology_imports_module()
+    semantic_policy = json.loads(
+        (ROOT / "tools" / "ontology_semantic_control_policy.json").read_text()
+    )
+    surfaces = module.build_ontology_import_surfaces(FIXTURE)
+    closed_loop_evidence = json.loads(json.dumps(surfaces["ontology_closed_loop_evidence"]))
+    cas_entry = closed_loop_evidence["evidence_entries"][0]
+    cas_entry["evidence_state"] = "pending_ontology_owner_decision"
+    cas_entry["source_intake_state"] = "awaiting_ontology_owner_review"
+    cas_entry["required_human_action"] = "collect_ontology_owner_delta_decisions"
+    legacy_entry = json.loads(json.dumps(cas_entry))
+    legacy_entry["candidate_id"] = "ontology-delta-candidate-examcalc-legacyterm"
+    legacy_entry["intake_id"] = (
+        "ontology-delta-draft-intake-ontology-delta-candidate-examcalc-legacyterm"
+    )
+    legacy_entry["evidence_id"] = (
+        "ontology-closed-loop-evidence-ontology-delta-candidate-examcalc-legacyterm"
+    )
+    legacy_entry["term"] = "LegacyTerm"
+    closed_loop_evidence["evidence_entries"].append(legacy_entry)
+    closed_loop_evidence["summary"]["status"] = "pending_ontology_owner_decision"
+    closed_loop_evidence["summary"]["evidence_entry_count"] = 2
+    closed_loop_evidence["summary"]["pending_decision_count"] = 2
+    closed_loop_evidence["summary"]["blocked_entry_count"] = 0
+    closed_loop_evidence["summary"]["required_human_action"] = (
+        "collect_ontology_owner_delta_decisions"
+    )
+
+    report = module.build_ontology_owner_decision_report(
+        semantic_policy,
+        semantic_policy_path=ROOT / "tools" / "ontology_semantic_control_policy.json",
+        closed_loop_evidence=closed_loop_evidence,
+    )
+
+    assert report["summary"] == {
+        "status": "decisions_available",
+        "decision_count": 2,
+        "accepted_count": 1,
+        "rejected_count": 1,
+        "clarification_count": 0,
+        "ignored_decision_count": 0,
+        "next_gap": "build_ontology_decision_import_preview",
+    }
+    assert report["ignored_decisions"] == []
+    decisions = {entry["decision_id"]: entry for entry in report["decisions"]}
+    accepted = decisions["ontology-owner-decision-accept-casfunction"]
+    assert accepted["candidate_id"] == "ontology-delta-candidate-examcalc-casfunction"
+    assert accepted["decision_state"] == "accepted"
+    assert accepted["accepted_ontology_delta"] is True
+    assert accepted["source_evidence_state"] == "pending_ontology_owner_decision"
+    assert accepted["source_intake_state"] == "awaiting_ontology_owner_review"
+    assert accepted["imports_into_specgraph"] is False
+    assert accepted["closes_semantic_gate"] is False
+    assert accepted["mutates_canonical_specs"] is False
+    rejected = decisions["ontology-owner-decision-reject-legacyterm"]
+    assert rejected["decision_state"] == "rejected"
+    assert rejected["accepted_ontology_delta"] is False
 
 
 def test_ontology_semantic_review_surface_rejects_authority_expansion(
@@ -1470,6 +1625,68 @@ def test_ontology_review_dashboard_rejects_source_decision_authority() -> None:
         )
 
 
+def test_ontology_owner_decision_report_rejects_policy_import_authority(
+    tmp_path: Path,
+) -> None:
+    module = load_ontology_imports_module()
+    module.ROOT = tmp_path
+    fixture_path = write_temp_fixture(tmp_path, load_fixture_payload())
+    policy_path = write_temp_policy(tmp_path)
+    semantic_policy = json.loads(
+        (ROOT / "tools" / "ontology_semantic_control_policy.json").read_text()
+    )
+    semantic_policy["ontology_owner_decision_report_contract"]["consumer_boundary"][
+        "may_import_into_specgraph"
+    ] = True
+    semantic_policy_path = write_temp_semantic_control_policy(tmp_path, semantic_policy)
+
+    with pytest.raises(ValueError, match="may_import_into_specgraph"):
+        module.build_ontology_import_surfaces(
+            fixture_path,
+            policy_path=policy_path,
+            semantic_policy_path=semantic_policy_path,
+        )
+
+
+def test_ontology_owner_decision_report_rejects_inconsistent_accepted_flag(
+    tmp_path: Path,
+) -> None:
+    module = load_ontology_imports_module()
+    module.ROOT = tmp_path
+    fixture_path = write_temp_fixture(tmp_path, load_fixture_payload())
+    policy_path = write_temp_policy(tmp_path)
+    semantic_policy = json.loads(
+        (ROOT / "tools" / "ontology_semantic_control_policy.json").read_text()
+    )
+    semantic_policy["owner_decision_fixture"]["decisions"][1]["accepted_ontology_delta"] = True
+    semantic_policy_path = write_temp_semantic_control_policy(tmp_path, semantic_policy)
+
+    with pytest.raises(ValueError, match="accepted_ontology_delta"):
+        module.build_ontology_import_surfaces(
+            fixture_path,
+            policy_path=policy_path,
+            semantic_policy_path=semantic_policy_path,
+        )
+
+
+def test_ontology_owner_decision_report_requires_decision_identity_fields() -> None:
+    module = load_ontology_imports_module()
+    surfaces = module.build_ontology_import_surfaces(FIXTURE)
+    report = json.loads(json.dumps(surfaces["ontology_owner_decision_report"]))
+    report["decisions"] = [
+        {
+            "decision_state": "accepted",
+            "accepted_ontology_delta": True,
+            "imports_into_specgraph": False,
+            "closes_semantic_gate": False,
+            "mutates_canonical_specs": False,
+        }
+    ]
+
+    with pytest.raises(ValueError, match=r"decisions\[0\]\.decision_id"):
+        module.require_ontology_owner_decision_report(report)
+
+
 def test_ontology_delta_candidate_review_packet_uses_policy_review_action_order(
     tmp_path: Path,
 ) -> None:
@@ -1576,6 +1793,9 @@ def test_ontology_semantic_write_uses_surface_output_artifact(tmp_path: Path) ->
     semantic_policy["repository_layout"]["ontology_review_dashboard"] = (
         "runs/custom_ontology_review_dashboard.json"
     )
+    semantic_policy["repository_layout"]["ontology_owner_decision_report"] = (
+        "runs/custom_ontology_owner_decision_report.json"
+    )
     semantic_policy["repository_layout"]["semantic_lint_smoke"] = (
         "runs/custom_semantic_lint_smoke.json"
     )
@@ -1612,6 +1832,7 @@ def test_ontology_semantic_write_uses_surface_output_artifact(tmp_path: Path) ->
     assert "runs/custom_delta_draft_intake.json" in written_paths
     assert "runs/custom_closed_loop_evidence.json" in written_paths
     assert "runs/custom_ontology_review_dashboard.json" in written_paths
+    assert "runs/custom_ontology_owner_decision_report.json" in written_paths
     assert "runs/custom_semantic_lint_smoke.json" in written_paths
     assert not (tmp_path / "runs" / "ontology_delta_candidate_review_packet.json").exists()
     assert not (tmp_path / "runs" / "ontology_semantic_context_pack.json").exists()
@@ -1621,6 +1842,7 @@ def test_ontology_semantic_write_uses_surface_output_artifact(tmp_path: Path) ->
     assert not (tmp_path / "runs" / "ontology_delta_draft_intake.json").exists()
     assert not (tmp_path / "runs" / "ontology_closed_loop_evidence.json").exists()
     assert not (tmp_path / "runs" / "ontology_review_dashboard.json").exists()
+    assert not (tmp_path / "runs" / "ontology_owner_decision_report.json").exists()
     assert not (tmp_path / "runs" / "ontology_semantic_lint_smoke.json").exists()
 
 
@@ -1791,6 +2013,7 @@ def test_make_ontology_imports_writes_declared_surfaces() -> None:
         "runs/ontology_delta_draft_intake.json": "ontology_delta_draft_intake",
         "runs/ontology_closed_loop_evidence.json": "ontology_closed_loop_evidence",
         "runs/ontology_review_dashboard.json": "ontology_review_dashboard",
+        "runs/ontology_owner_decision_report.json": "ontology_owner_decision_report",
         "runs/ontology_semantic_lint_smoke.json": "ontology_semantic_lint_smoke",
     }
     for relative_path, artifact_kind in expected.items():
@@ -1805,6 +2028,7 @@ def test_make_ontology_imports_writes_declared_surfaces() -> None:
             "ontology_delta_draft_intake": "0110",
             "ontology_closed_loop_evidence": "0111",
             "ontology_review_dashboard": "0113",
+            "ontology_owner_decision_report": "0114",
             "ontology_semantic_lint_smoke": "0103",
         }.get(artifact_kind, "0060")
         assert payload["proposal_id"] == expected_proposal_id

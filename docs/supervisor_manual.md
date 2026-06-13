@@ -1646,6 +1646,10 @@ authoritative.
   - richer read-only SpecGraph/SpecSpace dashboard projection combining the
     semantic review surface, supervisor semantic gate, delta draft intake, and
     closed-loop evidence without importing owner decisions or mutating specs
+- `runs/ontology_owner_decision_report.json`
+  - typed read-only Ontology owner decision report carrying accepted/rejected
+    decision evidence for later import previews without closing gates or
+    mutating canonical specs
 
 ### Queue and proposal surfaces
 
