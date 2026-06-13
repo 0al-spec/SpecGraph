@@ -1015,13 +1015,21 @@ def build_ontology_semantic_context_pack(
     raw_gaps = gap_index.get("gaps")
     if not isinstance(raw_gaps, list):
         raise ValueError("ontology_import_gap_index.gaps must be a list")
-    unresolved_gaps = [copy_json_object(gap) for gap in raw_gaps if isinstance(gap, dict)]
+    unresolved_gaps = []
+    for index, gap in enumerate(raw_gaps):
+        if not isinstance(gap, dict):
+            raise ValueError(f"ontology_import_gap_index.gaps[{index}] must be an object")
+        unresolved_gaps.append(copy_json_object(gap))
     raw_evidence = governance_evidence_index.get("evidence")
     if not isinstance(raw_evidence, list):
         raise ValueError("ontology_governance_evidence_index.evidence must be a list")
-    governance_evidence = [
-        copy_json_object(evidence) for evidence in raw_evidence if isinstance(evidence, dict)
-    ]
+    governance_evidence = []
+    for index, evidence in enumerate(raw_evidence):
+        if not isinstance(evidence, dict):
+            raise ValueError(
+                f"ontology_governance_evidence_index.evidence[{index}] must be an object"
+            )
+        governance_evidence.append(copy_json_object(evidence))
     status = "ready_with_gaps" if unresolved_gaps else "ready"
     if not governance_evidence:
         status = "missing_governance_evidence"
