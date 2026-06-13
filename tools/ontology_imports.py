@@ -646,6 +646,35 @@ def require_semantic_control_policy(policy: dict[str, Any]) -> dict[str, Any]:
         if require_bool(boundary, field, "semantic_control_policy.authority_boundary") is not True:
             raise ValueError(f"semantic_control_policy.authority_boundary.{field} must be true")
 
+    output_contract = require_object(policy, "derived_output_contract", "semantic_control_policy")
+    for field in (
+        "canonical_mutations_allowed",
+        "tracked_artifacts_written",
+        "writes_canonical_specs",
+    ):
+        if (
+            require_bool(
+                output_contract,
+                field,
+                "semantic_control_policy.derived_output_contract",
+            )
+            is not False
+        ):
+            raise ValueError(
+                f"semantic_control_policy.derived_output_contract.{field} must be false"
+            )
+    allowed_roots = require_string_list(
+        output_contract,
+        "allowed_output_roots",
+        "semantic_control_policy.derived_output_contract",
+    )
+    normalized_roots = {Path(root).as_posix().rstrip("/") for root in allowed_roots}
+    if normalized_roots != {"runs"}:
+        raise ValueError(
+            "semantic_control_policy.derived_output_contract.allowed_output_roots "
+            "must only allow runs/"
+        )
+
     contract = require_object(policy, "semantic_lint_contract", "semantic_control_policy")
     classifications = require_string_list(
         contract, "term_classifications", "semantic_control_policy.semantic_lint_contract"
