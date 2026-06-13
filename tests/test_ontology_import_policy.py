@@ -136,6 +136,9 @@ def test_ontology_semantic_control_policy_defines_review_only_contract() -> None
     assert policy["repository_layout"]["ontology_delta_draft_intake"] == (
         "runs/ontology_delta_draft_intake.json"
     )
+    assert policy["repository_layout"]["ontology_closed_loop_evidence"] == (
+        "runs/ontology_closed_loop_evidence.json"
+    )
     assert policy["repository_layout"]["ontology_delta_candidate_review_packet"] == (
         "runs/ontology_delta_candidate_review_packet.json"
     )
@@ -279,6 +282,30 @@ def test_ontology_semantic_control_policy_defines_review_only_contract() -> None
     assert delta_draft_intake_contract["consumer_boundary"]["may_update_ontology_lockfile"] is False
     assert delta_draft_intake_contract["consumer_boundary"]["may_mutate_canonical_specs"] is False
     assert delta_draft_intake_contract["consumer_boundary"]["may_mark_candidate_accepted"] is False
+    closed_loop_contract = policy["ontology_closed_loop_evidence_contract"]
+    assert closed_loop_contract["artifact_kind"] == "ontology_closed_loop_evidence"
+    assert closed_loop_contract["source_delta_draft_intake_artifact_kind"] == (
+        "ontology_delta_draft_intake"
+    )
+    assert closed_loop_contract["target"] == {
+        "target_kind": "proposal",
+        "target_ref": "SG-RFC-0111",
+    }
+    assert {
+        "blocked_by_semantic_gate",
+        "pending_ontology_owner_decision",
+        "no_candidates",
+    }.issubset(set(closed_loop_contract["evidence_states"]))
+    assert closed_loop_contract["closed_loop_source"] == (
+        "ontology_delta_draft_intake.draft_requests"
+    )
+    assert closed_loop_contract["consumer_boundary"]["for_specgraph_evidence_review"] is True
+    assert closed_loop_contract["consumer_boundary"]["may_execute_prompt_agent"] is False
+    assert closed_loop_contract["consumer_boundary"]["may_write_ontology_package"] is False
+    assert closed_loop_contract["consumer_boundary"]["may_update_ontology_lockfile"] is False
+    assert closed_loop_contract["consumer_boundary"]["may_mutate_canonical_specs"] is False
+    assert closed_loop_contract["consumer_boundary"]["may_mark_candidate_accepted"] is False
+    assert closed_loop_contract["consumer_boundary"]["may_close_semantic_gate"] is False
     contract = policy["semantic_lint_contract"]
     assert contract["smoke_artifact_kind"] == "ontology_semantic_lint_smoke"
     assert {
@@ -294,6 +321,7 @@ def test_ontology_semantic_control_policy_defines_review_only_contract() -> None
     assert boundary["semantic_review_surface_is_authority"] is False
     assert boundary["supervisor_semantic_gate_is_authority"] is False
     assert boundary["ontology_delta_draft_intake_is_authority"] is False
+    assert boundary["ontology_closed_loop_evidence_is_authority"] is False
     assert boundary["prompt_agent_execution_allowed"] is False
     assert boundary["automatic_canonical_node_update"] is False
 
@@ -869,6 +897,71 @@ def test_ontology_delta_draft_intake_builds_review_only_intake() -> None:
     assert intake["authority_boundary"]["ontology_delta_draft_intake_is_authority"] is False
 
 
+def test_ontology_closed_loop_evidence_builds_specgraph_evidence_surface() -> None:
+    module = load_ontology_imports_module()
+
+    surfaces = module.build_ontology_import_surfaces(FIXTURE)
+
+    evidence = surfaces["ontology_closed_loop_evidence"]
+    assert evidence["artifact_kind"] == "ontology_closed_loop_evidence"
+    assert evidence["proposal_id"] == "0111"
+    assert evidence["target"] == {
+        "target_kind": "proposal",
+        "target_ref": "SG-RFC-0111",
+    }
+    assert evidence["source_artifacts"] == {
+        "semantic_context_pack": "runs/ontology_semantic_context_pack.json",
+        "semantic_lint_report": "runs/ontology_semantic_lint_report.json",
+        "ontology_delta_candidate_review_packet": (
+            "runs/ontology_delta_candidate_review_packet.json"
+        ),
+        "semantic_review_surface": "runs/ontology_semantic_review_surface.json",
+        "supervisor_semantic_gate": "runs/ontology_supervisor_semantic_gate.json",
+        "ontology_delta_draft_intake": "runs/ontology_delta_draft_intake.json",
+    }
+    assert evidence["canonical_mutations_allowed"] is False
+    assert evidence["tracked_artifacts_written"] is False
+    assert evidence["summary"] == {
+        "status": "blocked_by_semantic_gate",
+        "evidence_entry_count": 1,
+        "pending_decision_count": 0,
+        "blocked_entry_count": 1,
+        "required_human_action": "resolve_blocking_ontology_semantic_findings",
+        "next_gap": "wire_closed_loop_evidence_into_specgraph_review",
+    }
+
+    entry = evidence["evidence_entries"][0]
+    assert entry == {
+        "evidence_id": (
+            "ontology-closed-loop-evidence-ontology-delta-candidate-examcalc-casfunction"
+        ),
+        "candidate_id": "ontology-delta-candidate-examcalc-casfunction",
+        "intake_id": ("ontology-delta-draft-intake-ontology-delta-candidate-examcalc-casfunction"),
+        "term": "CASFunction",
+        "source_intake_state": "blocked_by_semantic_gate",
+        "evidence_state": "blocked_by_semantic_gate",
+        "specgraph_review_state": "blocked",
+        "required_human_action": "resolve_blocking_ontology_semantic_findings",
+        "ontology_decision_ref": "",
+        "accepted_ontology_delta": False,
+        "closes_semantic_gate": False,
+        "mutates_canonical_specs": False,
+        "blocking_item_ids": [
+            "semantic-finding-exampolicy",
+            "semantic-finding-allows-policy",
+        ],
+        "source_artifacts": evidence["source_artifacts"],
+    }
+    assert evidence["consumer_boundary"]["for_specgraph_evidence_review"] is True
+    assert evidence["consumer_boundary"]["may_execute_prompt_agent"] is False
+    assert evidence["consumer_boundary"]["may_write_ontology_package"] is False
+    assert evidence["consumer_boundary"]["may_update_ontology_lockfile"] is False
+    assert evidence["consumer_boundary"]["may_mutate_canonical_specs"] is False
+    assert evidence["consumer_boundary"]["may_mark_candidate_accepted"] is False
+    assert evidence["consumer_boundary"]["may_close_semantic_gate"] is False
+    assert evidence["authority_boundary"]["ontology_closed_loop_evidence_is_authority"] is False
+
+
 def test_ontology_semantic_review_surface_rejects_authority_expansion(
     tmp_path: Path,
 ) -> None:
@@ -973,6 +1066,46 @@ def test_ontology_delta_draft_intake_rejects_source_gate_authority_expansion() -
         )
 
 
+def test_ontology_closed_loop_evidence_rejects_policy_authority_expansion(
+    tmp_path: Path,
+) -> None:
+    module = load_ontology_imports_module()
+    module.ROOT = tmp_path
+    fixture_path = write_temp_fixture(tmp_path, load_fixture_payload())
+    policy_path = write_temp_policy(tmp_path)
+    semantic_policy = json.loads(
+        (ROOT / "tools" / "ontology_semantic_control_policy.json").read_text()
+    )
+    semantic_policy["ontology_closed_loop_evidence_contract"]["consumer_boundary"][
+        "may_close_semantic_gate"
+    ] = True
+    semantic_policy_path = write_temp_semantic_control_policy(tmp_path, semantic_policy)
+
+    with pytest.raises(ValueError, match="may_close_semantic_gate"):
+        module.build_ontology_import_surfaces(
+            fixture_path,
+            policy_path=policy_path,
+            semantic_policy_path=semantic_policy_path,
+        )
+
+
+def test_ontology_closed_loop_evidence_rejects_source_intake_authority_expansion() -> None:
+    module = load_ontology_imports_module()
+    semantic_policy = json.loads(
+        (ROOT / "tools" / "ontology_semantic_control_policy.json").read_text()
+    )
+    surfaces = module.build_ontology_import_surfaces(FIXTURE)
+    draft_intake = json.loads(json.dumps(surfaces["ontology_delta_draft_intake"]))
+    draft_intake["consumer_boundary"]["may_write_ontology_package"] = True
+
+    with pytest.raises(ValueError, match="may_write_ontology_package"):
+        module.build_ontology_closed_loop_evidence(
+            semantic_policy,
+            semantic_policy_path=ROOT / "tools" / "ontology_semantic_control_policy.json",
+            draft_intake=draft_intake,
+        )
+
+
 def test_ontology_delta_candidate_review_packet_uses_policy_review_action_order(
     tmp_path: Path,
 ) -> None:
@@ -1073,6 +1206,9 @@ def test_ontology_semantic_write_uses_surface_output_artifact(tmp_path: Path) ->
     semantic_policy["repository_layout"]["ontology_delta_draft_intake"] = (
         "runs/custom_delta_draft_intake.json"
     )
+    semantic_policy["repository_layout"]["ontology_closed_loop_evidence"] = (
+        "runs/custom_closed_loop_evidence.json"
+    )
     semantic_policy["repository_layout"]["semantic_lint_smoke"] = (
         "runs/custom_semantic_lint_smoke.json"
     )
@@ -1096,6 +1232,7 @@ def test_ontology_semantic_write_uses_surface_output_artifact(tmp_path: Path) ->
     assert "runs/custom_semantic_review_surface.json" in written_paths
     assert "runs/custom_supervisor_semantic_gate.json" in written_paths
     assert "runs/custom_delta_draft_intake.json" in written_paths
+    assert "runs/custom_closed_loop_evidence.json" in written_paths
     assert "runs/custom_semantic_lint_smoke.json" in written_paths
     assert not (tmp_path / "runs" / "ontology_delta_candidate_review_packet.json").exists()
     assert not (tmp_path / "runs" / "ontology_semantic_context_pack.json").exists()
@@ -1103,6 +1240,7 @@ def test_ontology_semantic_write_uses_surface_output_artifact(tmp_path: Path) ->
     assert not (tmp_path / "runs" / "ontology_semantic_review_surface.json").exists()
     assert not (tmp_path / "runs" / "ontology_supervisor_semantic_gate.json").exists()
     assert not (tmp_path / "runs" / "ontology_delta_draft_intake.json").exists()
+    assert not (tmp_path / "runs" / "ontology_closed_loop_evidence.json").exists()
     assert not (tmp_path / "runs" / "ontology_semantic_lint_smoke.json").exists()
 
 
@@ -1271,6 +1409,7 @@ def test_make_ontology_imports_writes_declared_surfaces() -> None:
         "runs/ontology_semantic_review_surface.json": "ontology_semantic_review_surface",
         "runs/ontology_supervisor_semantic_gate.json": "ontology_supervisor_semantic_gate",
         "runs/ontology_delta_draft_intake.json": "ontology_delta_draft_intake",
+        "runs/ontology_closed_loop_evidence.json": "ontology_closed_loop_evidence",
         "runs/ontology_semantic_lint_smoke.json": "ontology_semantic_lint_smoke",
     }
     for relative_path, artifact_kind in expected.items():
@@ -1283,6 +1422,7 @@ def test_make_ontology_imports_writes_declared_surfaces() -> None:
             "ontology_semantic_review_surface": "0108",
             "ontology_supervisor_semantic_gate": "0109",
             "ontology_delta_draft_intake": "0110",
+            "ontology_closed_loop_evidence": "0111",
             "ontology_semantic_lint_smoke": "0103",
         }.get(artifact_kind, "0060")
         assert payload["proposal_id"] == expected_proposal_id
@@ -1314,6 +1454,7 @@ def test_supervisor_build_ontology_supervisor_semantic_gate_command() -> None:
     assert "runs/ontology_semantic_review_surface.json" in written_paths
     assert "runs/ontology_supervisor_semantic_gate.json" in written_paths
     assert "runs/ontology_delta_draft_intake.json" in written_paths
+    assert "runs/ontology_closed_loop_evidence.json" in written_paths
 
 
 def test_ontology_import_fixture_validation_rejects_missing_subject(tmp_path: Path) -> None:
@@ -1938,4 +2079,39 @@ def test_proposal_0110_runtime_registry_tracks_delta_draft_intake() -> None:
     assert (
         "docs/supervisor_manual.md",
         "runs/ontology_delta_draft_intake.json",
+    ) in observation_markers
+
+
+def test_proposal_0111_runtime_registry_tracks_closed_loop_evidence() -> None:
+    registry = json.loads((ROOT / "tools" / "proposal_runtime_registry.json").read_text())
+    entries = {entry["proposal_id"]: entry for entry in registry if isinstance(entry, dict)}
+    proposal = entries["0111"]
+
+    runtime_markers = {(item["path"], item["pattern"]) for item in proposal["runtime_markers"]}
+    validation_markers = {
+        (item["path"], item["pattern"]) for item in proposal["validation_markers"]
+    }
+    observation_markers = {
+        (item["path"], item["pattern"]) for item in proposal["observation_markers"]
+    }
+
+    assert (
+        "tools/ontology_semantic_control_policy.json",
+        "ontology_closed_loop_evidence_contract",
+    ) in runtime_markers
+    assert (
+        "tools/ontology_imports.py",
+        "def build_ontology_closed_loop_evidence(",
+    ) in runtime_markers
+    assert (
+        "tests/test_ontology_import_policy.py",
+        "def test_ontology_closed_loop_evidence_builds_specgraph_evidence_surface(",
+    ) in validation_markers
+    assert (
+        "tools/README.md",
+        "runs/ontology_closed_loop_evidence.json",
+    ) in observation_markers
+    assert (
+        "docs/supervisor_manual.md",
+        "runs/ontology_closed_loop_evidence.json",
     ) in observation_markers

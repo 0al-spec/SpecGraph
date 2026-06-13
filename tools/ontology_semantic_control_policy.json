@@ -9,7 +9,8 @@
     "docs/proposals/0106_ontology_delta_candidate_review_packet.md",
     "docs/proposals/0108_ontology_semantic_review_surface.md",
     "docs/proposals/0109_ontology_supervisor_semantic_gate.md",
-    "docs/proposals/0110_ontology_delta_draft_intake.md"
+    "docs/proposals/0110_ontology_delta_draft_intake.md",
+    "docs/proposals/0111_ontology_closed_loop_evidence.md"
   ],
   "policy_basis": "docs/proposals/0100_ontology_grounded_semantic_control.md",
   "repository_layout": {
@@ -19,6 +20,7 @@
     "semantic_review_surface": "runs/ontology_semantic_review_surface.json",
     "supervisor_semantic_gate": "runs/ontology_supervisor_semantic_gate.json",
     "ontology_delta_draft_intake": "runs/ontology_delta_draft_intake.json",
+    "ontology_closed_loop_evidence": "runs/ontology_closed_loop_evidence.json",
     "semantic_lint_smoke": "runs/ontology_semantic_lint_smoke.json"
   },
   "derived_output_contract": {
@@ -250,6 +252,30 @@
     },
     "next_gap": "collect_ontology_owner_delta_decisions"
   },
+  "ontology_closed_loop_evidence_contract": {
+    "artifact_kind": "ontology_closed_loop_evidence",
+    "source_delta_draft_intake_artifact_kind": "ontology_delta_draft_intake",
+    "target": {
+      "target_kind": "proposal",
+      "target_ref": "SG-RFC-0111"
+    },
+    "evidence_states": [
+      "blocked_by_semantic_gate",
+      "pending_ontology_owner_decision",
+      "no_candidates"
+    ],
+    "closed_loop_source": "ontology_delta_draft_intake.draft_requests",
+    "consumer_boundary": {
+      "for_specgraph_evidence_review": true,
+      "may_execute_prompt_agent": false,
+      "may_write_ontology_package": false,
+      "may_update_ontology_lockfile": false,
+      "may_mutate_canonical_specs": false,
+      "may_mark_candidate_accepted": false,
+      "may_close_semantic_gate": false
+    },
+    "next_gap": "wire_closed_loop_evidence_into_specgraph_review"
+  },
   "semantic_lint_contract": {
     "future_artifact_kind": "ontology_semantic_lint_report",
     "smoke_artifact_kind": "ontology_semantic_lint_smoke",
@@ -351,6 +377,7 @@
     "semantic_review_surface_is_authority": false,
     "supervisor_semantic_gate_is_authority": false,
     "ontology_delta_draft_intake_is_authority": false,
+    "ontology_closed_loop_evidence_is_authority": false,
     "ontology_governance_required": true,
     "specgraph_proposal_review_required": true,
     "prompt_agent_execution_allowed": false,

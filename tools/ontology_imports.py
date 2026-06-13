@@ -642,6 +642,7 @@ def require_semantic_control_policy(policy: dict[str, Any]) -> dict[str, Any]:
     require_layout_path(layout, "semantic_review_surface")
     require_layout_path(layout, "supervisor_semantic_gate")
     require_layout_path(layout, "ontology_delta_draft_intake")
+    require_layout_path(layout, "ontology_closed_loop_evidence")
     require_layout_path(layout, "semantic_lint_smoke")
     boundary = require_object(policy, "authority_boundary", "semantic_control_policy")
     for field in (
@@ -652,6 +653,7 @@ def require_semantic_control_policy(policy: dict[str, Any]) -> dict[str, Any]:
         "semantic_review_surface_is_authority",
         "supervisor_semantic_gate_is_authority",
         "ontology_delta_draft_intake_is_authority",
+        "ontology_closed_loop_evidence_is_authority",
         "prompt_agent_execution_allowed",
         "automatic_import_lock_update",
         "automatic_canonical_node_update",
@@ -1480,6 +1482,113 @@ def require_semantic_control_policy(policy: dict[str, Any]) -> dict[str, Any]:
         draft_intake_contract,
         "next_gap",
         "semantic_control_policy.ontology_delta_draft_intake_contract",
+    )
+    closed_loop_contract = require_object(
+        policy, "ontology_closed_loop_evidence_contract", "semantic_control_policy"
+    )
+    if (
+        require_string(
+            closed_loop_contract,
+            "artifact_kind",
+            "semantic_control_policy.ontology_closed_loop_evidence_contract",
+        )
+        != "ontology_closed_loop_evidence"
+    ):
+        raise ValueError(
+            "semantic_control_policy.ontology_closed_loop_evidence_contract.artifact_kind "
+            "must be ontology_closed_loop_evidence"
+        )
+    if (
+        require_string(
+            closed_loop_contract,
+            "source_delta_draft_intake_artifact_kind",
+            "semantic_control_policy.ontology_closed_loop_evidence_contract",
+        )
+        != "ontology_delta_draft_intake"
+    ):
+        raise ValueError(
+            "semantic_control_policy.ontology_closed_loop_evidence_contract."
+            "source_delta_draft_intake_artifact_kind must be ontology_delta_draft_intake"
+        )
+    closed_loop_target = require_object(
+        closed_loop_contract,
+        "target",
+        "semantic_control_policy.ontology_closed_loop_evidence_contract",
+    )
+    require_string(
+        closed_loop_target,
+        "target_kind",
+        "semantic_control_policy.ontology_closed_loop_evidence_contract.target",
+    )
+    require_string(
+        closed_loop_target,
+        "target_ref",
+        "semantic_control_policy.ontology_closed_loop_evidence_contract.target",
+    )
+    evidence_states = set(
+        require_string_list(
+            closed_loop_contract,
+            "evidence_states",
+            "semantic_control_policy.ontology_closed_loop_evidence_contract",
+        )
+    )
+    required_evidence_states = {
+        "blocked_by_semantic_gate",
+        "pending_ontology_owner_decision",
+        "no_candidates",
+    }
+    missing_evidence_states = sorted(required_evidence_states - evidence_states)
+    if missing_evidence_states:
+        raise ValueError(
+            "semantic_control_policy.ontology_closed_loop_evidence_contract."
+            f"evidence_states missing: {', '.join(missing_evidence_states)}"
+        )
+    require_string(
+        closed_loop_contract,
+        "closed_loop_source",
+        "semantic_control_policy.ontology_closed_loop_evidence_contract",
+    )
+    closed_loop_consumer_boundary = require_object(
+        closed_loop_contract,
+        "consumer_boundary",
+        "semantic_control_policy.ontology_closed_loop_evidence_contract",
+    )
+    if (
+        require_bool(
+            closed_loop_consumer_boundary,
+            "for_specgraph_evidence_review",
+            "semantic_control_policy.ontology_closed_loop_evidence_contract.consumer_boundary",
+        )
+        is not True
+    ):
+        raise ValueError(
+            "semantic_control_policy.ontology_closed_loop_evidence_contract.consumer_boundary."
+            "for_specgraph_evidence_review must be true"
+        )
+    for field in (
+        "may_execute_prompt_agent",
+        "may_write_ontology_package",
+        "may_update_ontology_lockfile",
+        "may_mutate_canonical_specs",
+        "may_mark_candidate_accepted",
+        "may_close_semantic_gate",
+    ):
+        if (
+            require_bool(
+                closed_loop_consumer_boundary,
+                field,
+                "semantic_control_policy.ontology_closed_loop_evidence_contract.consumer_boundary",
+            )
+            is not False
+        ):
+            raise ValueError(
+                "semantic_control_policy.ontology_closed_loop_evidence_contract."
+                f"consumer_boundary.{field} must be false"
+            )
+    require_string(
+        closed_loop_contract,
+        "next_gap",
+        "semantic_control_policy.ontology_closed_loop_evidence_contract",
     )
     return policy
 
@@ -3026,6 +3135,206 @@ def build_ontology_delta_draft_intake(
     }
 
 
+def require_ontology_delta_draft_intake(
+    draft_intake: dict[str, Any],
+) -> dict[str, Any]:
+    if draft_intake.get("artifact_kind") != "ontology_delta_draft_intake":
+        raise ValueError("draft_intake.artifact_kind must be ontology_delta_draft_intake")
+    if require_int(draft_intake, "schema_version", "draft_intake") != 1:
+        raise ValueError("draft_intake.schema_version must be 1")
+    if require_string(draft_intake, "proposal_id", "draft_intake") != "0110":
+        raise ValueError("draft_intake.proposal_id must be 0110")
+    if require_bool(draft_intake, "canonical_mutations_allowed", "draft_intake") is not False:
+        raise ValueError("draft_intake.canonical_mutations_allowed must be false")
+    if require_bool(draft_intake, "tracked_artifacts_written", "draft_intake") is not False:
+        raise ValueError("draft_intake.tracked_artifacts_written must be false")
+    require_surface_output_artifact(draft_intake, "ontology_delta_draft_intake")
+    require_object(draft_intake, "source_artifacts", "draft_intake")
+    require_object(draft_intake, "gate", "draft_intake")
+    require_object(draft_intake, "summary", "draft_intake")
+    if not isinstance(draft_intake.get("draft_requests"), list):
+        raise ValueError("draft_intake.draft_requests must be a list")
+    consumer_boundary = require_object(draft_intake, "consumer_boundary", "draft_intake")
+    if (
+        require_bool(
+            consumer_boundary,
+            "for_ontology_owner_draft_intake",
+            "draft_intake.consumer_boundary",
+        )
+        is not True
+    ):
+        raise ValueError(
+            "draft_intake.consumer_boundary.for_ontology_owner_draft_intake must be true"
+        )
+    for field in (
+        "may_execute_prompt_agent",
+        "may_write_ontology_package",
+        "may_update_ontology_lockfile",
+        "may_mutate_canonical_specs",
+        "may_mark_candidate_accepted",
+    ):
+        if require_bool(consumer_boundary, field, "draft_intake.consumer_boundary") is not False:
+            raise ValueError(f"draft_intake.consumer_boundary.{field} must be false")
+    authority_boundary = require_object(draft_intake, "authority_boundary", "draft_intake")
+    for field in (
+        "ontology_delta_draft_intake_is_authority",
+        "prompt_agent_execution_allowed",
+        "automatic_import_lock_update",
+        "automatic_canonical_node_update",
+        "canonical_mutations_allowed",
+    ):
+        if require_bool(authority_boundary, field, "draft_intake.authority_boundary") is not False:
+            raise ValueError(f"draft_intake.authority_boundary.{field} must be false")
+    return draft_intake
+
+
+def build_ontology_closed_loop_evidence(
+    semantic_policy: dict[str, Any],
+    *,
+    semantic_policy_path: Path,
+    draft_intake: dict[str, Any],
+) -> dict[str, Any]:
+    require_semantic_control_policy(semantic_policy)
+    require_ontology_delta_draft_intake(draft_intake)
+
+    closed_loop_contract = require_object(
+        semantic_policy, "ontology_closed_loop_evidence_contract", "semantic_control_policy"
+    )
+    semantic_layout = require_object(
+        semantic_policy, "repository_layout", "semantic_control_policy"
+    )
+    draft_requests = draft_intake["draft_requests"]
+    assert isinstance(draft_requests, list)
+    source_artifacts = copy_json_object(
+        require_object(draft_intake, "source_artifacts", "draft_intake")
+    )
+    source_artifacts["ontology_delta_draft_intake"] = require_surface_output_artifact(
+        draft_intake, "ontology_delta_draft_intake"
+    )
+    evidence_entries: list[dict[str, Any]] = []
+    for index, raw_request in enumerate(draft_requests):
+        if not isinstance(raw_request, dict):
+            raise ValueError(f"draft_intake.draft_requests[{index}] must be an object")
+        intake_id = require_string(
+            raw_request, "intake_id", f"draft_intake.draft_requests[{index}]"
+        )
+        candidate_id = require_string(
+            raw_request, "candidate_id", f"draft_intake.draft_requests[{index}]"
+        )
+        intake_state = require_string(
+            raw_request, "intake_state", f"draft_intake.draft_requests[{index}]"
+        )
+        if intake_state == "blocked_by_semantic_gate":
+            evidence_state = "blocked_by_semantic_gate"
+            specgraph_review_state = "blocked"
+        else:
+            evidence_state = "pending_ontology_owner_decision"
+            specgraph_review_state = "pending_ontology_owner_decision"
+        evidence_entries.append(
+            {
+                "evidence_id": f"ontology-closed-loop-evidence-{symbol_slug(candidate_id)}",
+                "candidate_id": candidate_id,
+                "intake_id": intake_id,
+                "term": require_string(
+                    raw_request, "term", f"draft_intake.draft_requests[{index}]"
+                ),
+                "source_intake_state": intake_state,
+                "evidence_state": evidence_state,
+                "specgraph_review_state": specgraph_review_state,
+                "required_human_action": require_string(
+                    raw_request,
+                    "required_human_action",
+                    f"draft_intake.draft_requests[{index}]",
+                ),
+                "ontology_decision_ref": "",
+                "accepted_ontology_delta": False,
+                "closes_semantic_gate": False,
+                "mutates_canonical_specs": False,
+                "blocking_item_ids": require_string_list(
+                    raw_request,
+                    "blocking_item_ids",
+                    f"draft_intake.draft_requests[{index}]",
+                ),
+                "source_artifacts": source_artifacts,
+            }
+        )
+
+    if not evidence_entries:
+        closed_loop_status = "no_candidates"
+        required_human_action = "none"
+    elif any(entry["evidence_state"] == "blocked_by_semantic_gate" for entry in evidence_entries):
+        closed_loop_status = "blocked_by_semantic_gate"
+        required_human_action = "resolve_blocking_ontology_semantic_findings"
+    else:
+        closed_loop_status = "pending_ontology_owner_decision"
+        required_human_action = "collect_ontology_owner_delta_decisions"
+    evidence_states = set(
+        require_string_list(
+            closed_loop_contract,
+            "evidence_states",
+            "semantic_control_policy.ontology_closed_loop_evidence_contract",
+        )
+    )
+    if closed_loop_status not in evidence_states:
+        raise ValueError(
+            "semantic_control_policy.ontology_closed_loop_evidence_contract."
+            f"evidence_states does not declare computed state {closed_loop_status}"
+        )
+    return {
+        "artifact_kind": require_string(
+            closed_loop_contract,
+            "artifact_kind",
+            "semantic_control_policy.ontology_closed_loop_evidence_contract",
+        ),
+        "schema_version": 1,
+        "proposal_id": "0111",
+        "policy_basis": semantic_policy["policy_basis"],
+        "source_policy": relative_path(semantic_policy_path),
+        "source_artifacts": source_artifacts,
+        "target": copy_json_object(
+            require_object(
+                closed_loop_contract,
+                "target",
+                "semantic_control_policy.ontology_closed_loop_evidence_contract",
+            )
+        ),
+        "canonical_mutations_allowed": False,
+        "tracked_artifacts_written": False,
+        "evidence_entries": evidence_entries,
+        "consumer_boundary": copy_json_object(
+            require_object(
+                closed_loop_contract,
+                "consumer_boundary",
+                "semantic_control_policy.ontology_closed_loop_evidence_contract",
+            )
+        ),
+        "authority_boundary": copy_json_object(
+            require_object(semantic_policy, "authority_boundary", "semantic_control_policy")
+        ),
+        "summary": {
+            "status": closed_loop_status,
+            "evidence_entry_count": len(evidence_entries),
+            "pending_decision_count": sum(
+                1
+                for entry in evidence_entries
+                if entry["evidence_state"] == "pending_ontology_owner_decision"
+            ),
+            "blocked_entry_count": sum(
+                1
+                for entry in evidence_entries
+                if entry["evidence_state"] == "blocked_by_semantic_gate"
+            ),
+            "required_human_action": required_human_action,
+            "next_gap": require_string(
+                closed_loop_contract,
+                "next_gap",
+                "semantic_control_policy.ontology_closed_loop_evidence_contract",
+            ),
+        },
+        "output_artifact": require_layout_path(semantic_layout, "ontology_closed_loop_evidence"),
+    }
+
+
 def build_ontology_semantic_lint_smoke(
     semantic_policy: dict[str, Any],
     *,
@@ -3361,6 +3670,11 @@ def build_ontology_import_surfaces(
                 review_packet=surfaces["ontology_delta_candidate_review_packet"],
                 supervisor_gate=surfaces["supervisor_semantic_gate"],
             )
+            surfaces["ontology_closed_loop_evidence"] = build_ontology_closed_loop_evidence(
+                semantic_policy,
+                semantic_policy_path=semantic_policy_path,
+                draft_intake=surfaces["ontology_delta_draft_intake"],
+            )
             surfaces["semantic_lint_smoke"] = build_ontology_semantic_lint_smoke(
                 semantic_policy,
                 semantic_policy_path=semantic_policy_path,
@@ -3417,6 +3731,10 @@ def write_ontology_import_surfaces(
     if "ontology_delta_draft_intake" in surfaces:
         destinations["ontology_delta_draft_intake"] = require_surface_output_artifact(
             surfaces["ontology_delta_draft_intake"], "ontology_delta_draft_intake"
+        )
+    if "ontology_closed_loop_evidence" in surfaces:
+        destinations["ontology_closed_loop_evidence"] = require_surface_output_artifact(
+            surfaces["ontology_closed_loop_evidence"], "ontology_closed_loop_evidence"
         )
     if "semantic_lint_smoke" in surfaces:
         destinations["semantic_lint_smoke"] = require_surface_output_artifact(

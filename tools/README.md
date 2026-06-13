@@ -132,7 +132,9 @@ Supervisor modes:
   `runs/ontology_supervisor_semantic_gate.json` as typed supervisor gate
   evidence derived from that surface,
   `runs/ontology_delta_draft_intake.json` as a review-only Ontology owner
-  draft-intake handoff for delta candidates, plus
+  draft-intake handoff for delta candidates,
+  `runs/ontology_closed_loop_evidence.json` as the SpecGraph-facing evidence
+  loop surface for those intake requests, plus
   `runs/ontology_semantic_lint_smoke.json`,
   classifying accepted, alias, unknown, deprecated, and relation-conflict terms
   against the imported ontology fixture. These surfaces resolve known imported
