@@ -134,7 +134,10 @@ Supervisor modes:
   `runs/ontology_delta_draft_intake.json` as a review-only Ontology owner
   draft-intake handoff for delta candidates,
   `runs/ontology_closed_loop_evidence.json` as the SpecGraph-facing evidence
-  loop surface for those intake requests, plus
+  loop surface for those intake requests,
+  `runs/ontology_review_dashboard.json` as the richer read-only
+  SpecGraph/SpecSpace dashboard projection over semantic review, gate, intake,
+  and closed-loop evidence, plus
   `runs/ontology_semantic_lint_smoke.json`,
   classifying accepted, alias, unknown, deprecated, and relation-conflict terms
   against the imported ontology fixture. These surfaces resolve known imported

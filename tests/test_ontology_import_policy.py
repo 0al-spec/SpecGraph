@@ -139,6 +139,9 @@ def test_ontology_semantic_control_policy_defines_review_only_contract() -> None
     assert policy["repository_layout"]["ontology_closed_loop_evidence"] == (
         "runs/ontology_closed_loop_evidence.json"
     )
+    assert policy["repository_layout"]["ontology_review_dashboard"] == (
+        "runs/ontology_review_dashboard.json"
+    )
     assert policy["repository_layout"]["ontology_delta_candidate_review_packet"] == (
         "runs/ontology_delta_candidate_review_packet.json"
     )
@@ -306,6 +309,52 @@ def test_ontology_semantic_control_policy_defines_review_only_contract() -> None
     assert closed_loop_contract["consumer_boundary"]["may_mutate_canonical_specs"] is False
     assert closed_loop_contract["consumer_boundary"]["may_mark_candidate_accepted"] is False
     assert closed_loop_contract["consumer_boundary"]["may_close_semantic_gate"] is False
+    dashboard_contract = policy["ontology_review_dashboard_contract"]
+    assert dashboard_contract["artifact_kind"] == "ontology_review_dashboard"
+    assert dashboard_contract["source_review_surface_artifact_kind"] == (
+        "ontology_semantic_review_surface"
+    )
+    assert dashboard_contract["source_supervisor_semantic_gate_artifact_kind"] == (
+        "ontology_supervisor_semantic_gate"
+    )
+    assert dashboard_contract["source_delta_draft_intake_artifact_kind"] == (
+        "ontology_delta_draft_intake"
+    )
+    assert dashboard_contract["source_closed_loop_evidence_artifact_kind"] == (
+        "ontology_closed_loop_evidence"
+    )
+    assert dashboard_contract["target"] == {
+        "target_kind": "proposal",
+        "target_ref": "SG-RFC-0113",
+    }
+    assert {
+        "status_summary",
+        "gate",
+        "blocking_items",
+        "review_required_items",
+        "delta_candidates",
+        "draft_requests",
+        "closed_loop_entries",
+        "review_actions",
+        "source_artifacts",
+        "authority_boundary",
+    }.issubset(set(dashboard_contract["dashboard_sections"]))
+    assert {
+        "blocked_by_semantic_gate",
+        "pending_ontology_owner_decision",
+        "review_pending",
+        "clear",
+        "no_candidates",
+    }.issubset(set(dashboard_contract["status_states"]))
+    assert dashboard_contract["consumer_boundary"]["for_specgraph_review_dashboard"] is True
+    assert dashboard_contract["consumer_boundary"]["for_specspace_review_dashboard"] is True
+    assert dashboard_contract["consumer_boundary"]["may_execute_prompt_agent"] is False
+    assert dashboard_contract["consumer_boundary"]["may_write_ontology_package"] is False
+    assert dashboard_contract["consumer_boundary"]["may_update_ontology_lockfile"] is False
+    assert dashboard_contract["consumer_boundary"]["may_mutate_canonical_specs"] is False
+    assert dashboard_contract["consumer_boundary"]["may_mark_candidate_accepted"] is False
+    assert dashboard_contract["consumer_boundary"]["may_import_owner_decision"] is False
+    assert dashboard_contract["consumer_boundary"]["may_close_semantic_gate"] is False
     contract = policy["semantic_lint_contract"]
     assert contract["smoke_artifact_kind"] == "ontology_semantic_lint_smoke"
     assert {
@@ -322,6 +371,7 @@ def test_ontology_semantic_control_policy_defines_review_only_contract() -> None
     assert boundary["supervisor_semantic_gate_is_authority"] is False
     assert boundary["ontology_delta_draft_intake_is_authority"] is False
     assert boundary["ontology_closed_loop_evidence_is_authority"] is False
+    assert boundary["ontology_review_dashboard_is_authority"] is False
     assert boundary["prompt_agent_execution_allowed"] is False
     assert boundary["automatic_canonical_node_update"] is False
 
@@ -962,6 +1012,206 @@ def test_ontology_closed_loop_evidence_builds_specgraph_evidence_surface() -> No
     assert evidence["authority_boundary"]["ontology_closed_loop_evidence_is_authority"] is False
 
 
+def test_ontology_review_dashboard_builds_rich_review_projection() -> None:
+    module = load_ontology_imports_module()
+
+    surfaces = module.build_ontology_import_surfaces(FIXTURE)
+
+    dashboard = surfaces["ontology_review_dashboard"]
+    assert dashboard["artifact_kind"] == "ontology_review_dashboard"
+    assert dashboard["proposal_id"] == "0113"
+    assert dashboard["target"] == {
+        "target_kind": "proposal",
+        "target_ref": "SG-RFC-0113",
+    }
+    assert dashboard["source_artifacts"] == {
+        "semantic_context_pack": "runs/ontology_semantic_context_pack.json",
+        "semantic_lint_report": "runs/ontology_semantic_lint_report.json",
+        "ontology_delta_candidate_review_packet": (
+            "runs/ontology_delta_candidate_review_packet.json"
+        ),
+        "semantic_review_surface": "runs/ontology_semantic_review_surface.json",
+        "supervisor_semantic_gate": "runs/ontology_supervisor_semantic_gate.json",
+        "ontology_delta_draft_intake": "runs/ontology_delta_draft_intake.json",
+        "ontology_closed_loop_evidence": "runs/ontology_closed_loop_evidence.json",
+    }
+    assert dashboard["canonical_mutations_allowed"] is False
+    assert dashboard["tracked_artifacts_written"] is False
+    assert dashboard["status_summary"] == {
+        "status": "blocked_by_semantic_gate",
+        "gate_state": "blocked",
+        "review_surface_status": "blocked_relation_conflict",
+        "intake_status": "blocked_by_semantic_gate",
+        "closed_loop_status": "blocked_by_semantic_gate",
+        "blocking_count": 2,
+        "review_required_count": 1,
+        "candidate_count": 1,
+        "draft_request_count": 1,
+        "evidence_entry_count": 1,
+        "pending_decision_count": 0,
+        "blocked_entry_count": 1,
+        "required_human_action": "resolve_blocking_ontology_semantic_findings",
+        "next_gap": "build_specspace_rich_ontology_review_panel",
+    }
+    assert dashboard["gate"]["gate_state"] == "blocked"
+    assert [item["item_id"] for item in dashboard["blocking_items"]] == [
+        "semantic-finding-exampolicy",
+        "semantic-finding-allows-policy",
+    ]
+    assert [item["item_id"] for item in dashboard["review_required_items"]] == [
+        "semantic-finding-casfunction",
+        "ontology-delta-candidate-examcalc-casfunction",
+    ]
+    assert [candidate["candidate_id"] for candidate in dashboard["delta_candidates"]] == [
+        "ontology-delta-candidate-examcalc-casfunction"
+    ]
+    assert [request["intake_state"] for request in dashboard["draft_requests"]] == [
+        "blocked_by_semantic_gate"
+    ]
+    assert [entry["evidence_state"] for entry in dashboard["closed_loop_entries"]] == [
+        "blocked_by_semantic_gate"
+    ]
+    assert {action["action"] for action in dashboard["review_actions"]} == {
+        "emit_ontology_gap",
+        "replace_with_accepted_term",
+        "use_accepted_relation",
+        "approve_for_ontology_package_draft",
+        "reject_candidate",
+        "request_clarification",
+    }
+    assert dashboard["consumer_boundary"]["for_specgraph_review_dashboard"] is True
+    assert dashboard["consumer_boundary"]["for_specspace_review_dashboard"] is True
+    assert dashboard["consumer_boundary"]["may_execute_prompt_agent"] is False
+    assert dashboard["consumer_boundary"]["may_write_ontology_package"] is False
+    assert dashboard["consumer_boundary"]["may_update_ontology_lockfile"] is False
+    assert dashboard["consumer_boundary"]["may_mutate_canonical_specs"] is False
+    assert dashboard["consumer_boundary"]["may_mark_candidate_accepted"] is False
+    assert dashboard["consumer_boundary"]["may_import_owner_decision"] is False
+    assert dashboard["consumer_boundary"]["may_close_semantic_gate"] is False
+    assert dashboard["authority_boundary"]["ontology_review_dashboard_is_authority"] is False
+
+
+def test_ontology_review_dashboard_keeps_blocked_gate_above_no_candidates() -> None:
+    module = load_ontology_imports_module()
+    semantic_policy = json.loads(
+        (ROOT / "tools" / "ontology_semantic_control_policy.json").read_text()
+    )
+    surfaces = module.build_ontology_import_surfaces(FIXTURE)
+    review_surface = json.loads(json.dumps(surfaces["semantic_review_surface"]))
+    supervisor_gate = json.loads(json.dumps(surfaces["supervisor_semantic_gate"]))
+    draft_intake = json.loads(json.dumps(surfaces["ontology_delta_draft_intake"]))
+    closed_loop_evidence = json.loads(json.dumps(surfaces["ontology_closed_loop_evidence"]))
+
+    review_surface["delta_candidates"] = []
+    review_surface["summary"]["candidate_count"] = 0
+    draft_intake["draft_requests"] = []
+    draft_intake["summary"]["status"] = "no_candidates"
+    draft_intake["summary"]["candidate_count"] = 0
+    draft_intake["summary"]["draft_request_count"] = 0
+    draft_intake["summary"]["required_human_action"] = "none"
+    closed_loop_evidence["evidence_entries"] = []
+    closed_loop_evidence["summary"]["status"] = "no_candidates"
+    closed_loop_evidence["summary"]["evidence_entry_count"] = 0
+    closed_loop_evidence["summary"]["pending_decision_count"] = 0
+    closed_loop_evidence["summary"]["blocked_entry_count"] = 0
+    closed_loop_evidence["summary"]["required_human_action"] = "none"
+
+    dashboard = module.build_ontology_review_dashboard(
+        semantic_policy,
+        semantic_policy_path=ROOT / "tools" / "ontology_semantic_control_policy.json",
+        review_surface=review_surface,
+        supervisor_gate=supervisor_gate,
+        draft_intake=draft_intake,
+        closed_loop_evidence=closed_loop_evidence,
+    )
+
+    assert dashboard["status_summary"]["status"] == "blocked_by_semantic_gate"
+    assert dashboard["status_summary"]["gate_state"] == "blocked"
+    assert dashboard["status_summary"]["closed_loop_status"] == "no_candidates"
+    assert dashboard["status_summary"]["required_human_action"] == (
+        "resolve_blocking_ontology_semantic_findings"
+    )
+
+
+def test_ontology_review_dashboard_rejects_missing_gate_item_ids() -> None:
+    module = load_ontology_imports_module()
+    semantic_policy = json.loads(
+        (ROOT / "tools" / "ontology_semantic_control_policy.json").read_text()
+    )
+    surfaces = module.build_ontology_import_surfaces(FIXTURE)
+    supervisor_gate = json.loads(json.dumps(surfaces["supervisor_semantic_gate"]))
+    supervisor_gate["gate"]["blocking_item_ids"].append("semantic-finding-missing")
+
+    with pytest.raises(ValueError, match="blocking_item_ids"):
+        module.build_ontology_review_dashboard(
+            semantic_policy,
+            semantic_policy_path=ROOT / "tools" / "ontology_semantic_control_policy.json",
+            review_surface=surfaces["semantic_review_surface"],
+            supervisor_gate=supervisor_gate,
+            draft_intake=surfaces["ontology_delta_draft_intake"],
+            closed_loop_evidence=surfaces["ontology_closed_loop_evidence"],
+        )
+
+
+def test_ontology_review_dashboard_uses_gate_action_for_review_pending_no_candidates() -> None:
+    module = load_ontology_imports_module()
+    semantic_policy = json.loads(
+        (ROOT / "tools" / "ontology_semantic_control_policy.json").read_text()
+    )
+    surfaces = module.build_ontology_import_surfaces(FIXTURE)
+    review_surface = json.loads(json.dumps(surfaces["semantic_review_surface"]))
+    supervisor_gate = json.loads(json.dumps(surfaces["supervisor_semantic_gate"]))
+    draft_intake = json.loads(json.dumps(surfaces["ontology_delta_draft_intake"]))
+    closed_loop_evidence = json.loads(json.dumps(surfaces["ontology_closed_loop_evidence"]))
+
+    review_surface["review_items"] = [
+        item
+        for item in review_surface["review_items"]
+        if item["item_id"] == "semantic-finding-casfunction"
+    ]
+    review_surface["blocking_findings"] = []
+    review_surface["delta_candidates"] = []
+    review_surface["summary"]["blocking_count"] = 0
+    review_surface["summary"]["review_required_count"] = 1
+    review_surface["summary"]["candidate_count"] = 0
+    supervisor_gate["gate"] = {
+        "gate_state": "review_pending",
+        "outcome": "semantic_review_pending",
+        "required_human_action": "review_ontology_semantic_items",
+        "blocking_item_ids": [],
+        "review_required_item_ids": ["semantic-finding-casfunction"],
+        "candidate_item_ids": [],
+    }
+    draft_intake["gate"] = json.loads(json.dumps(supervisor_gate["gate"]))
+    draft_intake["draft_requests"] = []
+    draft_intake["summary"]["status"] = "no_candidates"
+    draft_intake["summary"]["gate_state"] = "review_pending"
+    draft_intake["summary"]["candidate_count"] = 0
+    draft_intake["summary"]["draft_request_count"] = 0
+    draft_intake["summary"]["required_human_action"] = "none"
+    closed_loop_evidence["evidence_entries"] = []
+    closed_loop_evidence["summary"]["status"] = "no_candidates"
+    closed_loop_evidence["summary"]["evidence_entry_count"] = 0
+    closed_loop_evidence["summary"]["pending_decision_count"] = 0
+    closed_loop_evidence["summary"]["blocked_entry_count"] = 0
+    closed_loop_evidence["summary"]["required_human_action"] = "none"
+
+    dashboard = module.build_ontology_review_dashboard(
+        semantic_policy,
+        semantic_policy_path=ROOT / "tools" / "ontology_semantic_control_policy.json",
+        review_surface=review_surface,
+        supervisor_gate=supervisor_gate,
+        draft_intake=draft_intake,
+        closed_loop_evidence=closed_loop_evidence,
+    )
+
+    assert dashboard["status_summary"]["status"] == "review_pending"
+    assert dashboard["status_summary"]["closed_loop_status"] == "no_candidates"
+    assert dashboard["status_summary"]["required_human_action"] == (
+        "review_ontology_semantic_items"
+    )
+
+
 def test_ontology_semantic_review_surface_rejects_authority_expansion(
     tmp_path: Path,
 ) -> None:
@@ -1177,6 +1427,49 @@ def test_ontology_closed_loop_evidence_rejects_unknown_source_intake_state() -> 
         )
 
 
+def test_ontology_review_dashboard_rejects_policy_authority_expansion(
+    tmp_path: Path,
+) -> None:
+    module = load_ontology_imports_module()
+    module.ROOT = tmp_path
+    fixture_path = write_temp_fixture(tmp_path, load_fixture_payload())
+    policy_path = write_temp_policy(tmp_path)
+    semantic_policy = json.loads(
+        (ROOT / "tools" / "ontology_semantic_control_policy.json").read_text()
+    )
+    semantic_policy["ontology_review_dashboard_contract"]["consumer_boundary"][
+        "may_import_owner_decision"
+    ] = True
+    semantic_policy_path = write_temp_semantic_control_policy(tmp_path, semantic_policy)
+
+    with pytest.raises(ValueError, match="may_import_owner_decision"):
+        module.build_ontology_import_surfaces(
+            fixture_path,
+            policy_path=policy_path,
+            semantic_policy_path=semantic_policy_path,
+        )
+
+
+def test_ontology_review_dashboard_rejects_source_decision_authority() -> None:
+    module = load_ontology_imports_module()
+    semantic_policy = json.loads(
+        (ROOT / "tools" / "ontology_semantic_control_policy.json").read_text()
+    )
+    surfaces = module.build_ontology_import_surfaces(FIXTURE)
+    closed_loop_evidence = json.loads(json.dumps(surfaces["ontology_closed_loop_evidence"]))
+    closed_loop_evidence["evidence_entries"][0]["accepted_ontology_delta"] = True
+
+    with pytest.raises(ValueError, match=r"evidence_entries\[0\]\.accepted_ontology_delta"):
+        module.build_ontology_review_dashboard(
+            semantic_policy,
+            semantic_policy_path=ROOT / "tools" / "ontology_semantic_control_policy.json",
+            review_surface=surfaces["semantic_review_surface"],
+            supervisor_gate=surfaces["supervisor_semantic_gate"],
+            draft_intake=surfaces["ontology_delta_draft_intake"],
+            closed_loop_evidence=closed_loop_evidence,
+        )
+
+
 def test_ontology_delta_candidate_review_packet_uses_policy_review_action_order(
     tmp_path: Path,
 ) -> None:
@@ -1280,6 +1573,9 @@ def test_ontology_semantic_write_uses_surface_output_artifact(tmp_path: Path) ->
     semantic_policy["repository_layout"]["ontology_closed_loop_evidence"] = (
         "runs/custom_closed_loop_evidence.json"
     )
+    semantic_policy["repository_layout"]["ontology_review_dashboard"] = (
+        "runs/custom_ontology_review_dashboard.json"
+    )
     semantic_policy["repository_layout"]["semantic_lint_smoke"] = (
         "runs/custom_semantic_lint_smoke.json"
     )
@@ -1315,6 +1611,7 @@ def test_ontology_semantic_write_uses_surface_output_artifact(tmp_path: Path) ->
     assert "runs/custom_supervisor_semantic_gate.json" in written_paths
     assert "runs/custom_delta_draft_intake.json" in written_paths
     assert "runs/custom_closed_loop_evidence.json" in written_paths
+    assert "runs/custom_ontology_review_dashboard.json" in written_paths
     assert "runs/custom_semantic_lint_smoke.json" in written_paths
     assert not (tmp_path / "runs" / "ontology_delta_candidate_review_packet.json").exists()
     assert not (tmp_path / "runs" / "ontology_semantic_context_pack.json").exists()
@@ -1323,6 +1620,7 @@ def test_ontology_semantic_write_uses_surface_output_artifact(tmp_path: Path) ->
     assert not (tmp_path / "runs" / "ontology_supervisor_semantic_gate.json").exists()
     assert not (tmp_path / "runs" / "ontology_delta_draft_intake.json").exists()
     assert not (tmp_path / "runs" / "ontology_closed_loop_evidence.json").exists()
+    assert not (tmp_path / "runs" / "ontology_review_dashboard.json").exists()
     assert not (tmp_path / "runs" / "ontology_semantic_lint_smoke.json").exists()
 
 
@@ -1492,6 +1790,7 @@ def test_make_ontology_imports_writes_declared_surfaces() -> None:
         "runs/ontology_supervisor_semantic_gate.json": "ontology_supervisor_semantic_gate",
         "runs/ontology_delta_draft_intake.json": "ontology_delta_draft_intake",
         "runs/ontology_closed_loop_evidence.json": "ontology_closed_loop_evidence",
+        "runs/ontology_review_dashboard.json": "ontology_review_dashboard",
         "runs/ontology_semantic_lint_smoke.json": "ontology_semantic_lint_smoke",
     }
     for relative_path, artifact_kind in expected.items():
@@ -1505,6 +1804,7 @@ def test_make_ontology_imports_writes_declared_surfaces() -> None:
             "ontology_supervisor_semantic_gate": "0109",
             "ontology_delta_draft_intake": "0110",
             "ontology_closed_loop_evidence": "0111",
+            "ontology_review_dashboard": "0113",
             "ontology_semantic_lint_smoke": "0103",
         }.get(artifact_kind, "0060")
         assert payload["proposal_id"] == expected_proposal_id

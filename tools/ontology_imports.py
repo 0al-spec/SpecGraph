@@ -643,6 +643,7 @@ def require_semantic_control_policy(policy: dict[str, Any]) -> dict[str, Any]:
     require_layout_path(layout, "supervisor_semantic_gate")
     require_layout_path(layout, "ontology_delta_draft_intake")
     require_layout_path(layout, "ontology_closed_loop_evidence")
+    require_layout_path(layout, "ontology_review_dashboard")
     require_layout_path(layout, "semantic_lint_smoke")
     boundary = require_object(policy, "authority_boundary", "semantic_control_policy")
     for field in (
@@ -654,6 +655,7 @@ def require_semantic_control_policy(policy: dict[str, Any]) -> dict[str, Any]:
         "supervisor_semantic_gate_is_authority",
         "ontology_delta_draft_intake_is_authority",
         "ontology_closed_loop_evidence_is_authority",
+        "ontology_review_dashboard_is_authority",
         "prompt_agent_execution_allowed",
         "automatic_import_lock_update",
         "automatic_canonical_node_update",
@@ -1589,6 +1591,148 @@ def require_semantic_control_policy(policy: dict[str, Any]) -> dict[str, Any]:
         closed_loop_contract,
         "next_gap",
         "semantic_control_policy.ontology_closed_loop_evidence_contract",
+    )
+    dashboard_contract = require_object(
+        policy, "ontology_review_dashboard_contract", "semantic_control_policy"
+    )
+    if (
+        require_string(
+            dashboard_contract,
+            "artifact_kind",
+            "semantic_control_policy.ontology_review_dashboard_contract",
+        )
+        != "ontology_review_dashboard"
+    ):
+        raise ValueError(
+            "semantic_control_policy.ontology_review_dashboard_contract.artifact_kind "
+            "must be ontology_review_dashboard"
+        )
+    expected_dashboard_sources = {
+        "source_review_surface_artifact_kind": "ontology_semantic_review_surface",
+        "source_supervisor_semantic_gate_artifact_kind": "ontology_supervisor_semantic_gate",
+        "source_delta_draft_intake_artifact_kind": "ontology_delta_draft_intake",
+        "source_closed_loop_evidence_artifact_kind": "ontology_closed_loop_evidence",
+    }
+    for field, expected in expected_dashboard_sources.items():
+        if (
+            require_string(
+                dashboard_contract,
+                field,
+                "semantic_control_policy.ontology_review_dashboard_contract",
+            )
+            != expected
+        ):
+            raise ValueError(
+                "semantic_control_policy.ontology_review_dashboard_contract."
+                f"{field} must be {expected}"
+            )
+    dashboard_target = require_object(
+        dashboard_contract,
+        "target",
+        "semantic_control_policy.ontology_review_dashboard_contract",
+    )
+    require_string(
+        dashboard_target,
+        "target_kind",
+        "semantic_control_policy.ontology_review_dashboard_contract.target",
+    )
+    require_string(
+        dashboard_target,
+        "target_ref",
+        "semantic_control_policy.ontology_review_dashboard_contract.target",
+    )
+    dashboard_sections = set(
+        require_string_list(
+            dashboard_contract,
+            "dashboard_sections",
+            "semantic_control_policy.ontology_review_dashboard_contract",
+        )
+    )
+    required_dashboard_sections = {
+        "status_summary",
+        "gate",
+        "blocking_items",
+        "review_required_items",
+        "delta_candidates",
+        "draft_requests",
+        "closed_loop_entries",
+        "review_actions",
+        "source_artifacts",
+        "authority_boundary",
+    }
+    missing_dashboard_sections = sorted(required_dashboard_sections - dashboard_sections)
+    if missing_dashboard_sections:
+        raise ValueError(
+            "semantic_control_policy.ontology_review_dashboard_contract.dashboard_sections "
+            f"missing: {', '.join(missing_dashboard_sections)}"
+        )
+    dashboard_states = set(
+        require_string_list(
+            dashboard_contract,
+            "status_states",
+            "semantic_control_policy.ontology_review_dashboard_contract",
+        )
+    )
+    required_dashboard_states = {
+        "blocked_by_semantic_gate",
+        "pending_ontology_owner_decision",
+        "review_pending",
+        "clear",
+        "no_candidates",
+    }
+    missing_dashboard_states = sorted(required_dashboard_states - dashboard_states)
+    if missing_dashboard_states:
+        raise ValueError(
+            "semantic_control_policy.ontology_review_dashboard_contract.status_states "
+            f"missing: {', '.join(missing_dashboard_states)}"
+        )
+    dashboard_consumer_boundary = require_object(
+        dashboard_contract,
+        "consumer_boundary",
+        "semantic_control_policy.ontology_review_dashboard_contract",
+    )
+    for field in ("for_specgraph_review_dashboard", "for_specspace_review_dashboard"):
+        if (
+            require_bool(
+                dashboard_consumer_boundary,
+                field,
+                "semantic_control_policy.ontology_review_dashboard_contract.consumer_boundary",
+            )
+            is not True
+        ):
+            raise ValueError(
+                "semantic_control_policy.ontology_review_dashboard_contract."
+                f"consumer_boundary.{field} must be true"
+            )
+    for field in (
+        "may_execute_prompt_agent",
+        "may_write_ontology_package",
+        "may_update_ontology_lockfile",
+        "may_mutate_canonical_specs",
+        "may_mark_candidate_accepted",
+        "may_import_owner_decision",
+        "may_close_semantic_gate",
+    ):
+        if (
+            require_bool(
+                dashboard_consumer_boundary,
+                field,
+                "semantic_control_policy.ontology_review_dashboard_contract.consumer_boundary",
+            )
+            is not False
+        ):
+            raise ValueError(
+                "semantic_control_policy.ontology_review_dashboard_contract."
+                f"consumer_boundary.{field} must be false"
+            )
+    require_string(
+        dashboard_contract,
+        "next_gap",
+        "semantic_control_policy.ontology_review_dashboard_contract",
+    )
+    require_layout_path(
+        require_object(policy, "repository_layout", "semantic_control_policy"),
+        "ontology_review_dashboard",
     )
     return policy
 
@@ -3365,6 +3509,401 @@ def build_ontology_closed_loop_evidence(
     }
 
 
+def require_ontology_closed_loop_evidence(
+    closed_loop_evidence: dict[str, Any],
+) -> dict[str, Any]:
+    if closed_loop_evidence.get("artifact_kind") != "ontology_closed_loop_evidence":
+        raise ValueError("closed_loop_evidence.artifact_kind must be ontology_closed_loop_evidence")
+    if require_int(closed_loop_evidence, "schema_version", "closed_loop_evidence") != 1:
+        raise ValueError("closed_loop_evidence.schema_version must be 1")
+    if require_string(closed_loop_evidence, "proposal_id", "closed_loop_evidence") != "0111":
+        raise ValueError("closed_loop_evidence.proposal_id must be 0111")
+    if (
+        require_bool(closed_loop_evidence, "canonical_mutations_allowed", "closed_loop_evidence")
+        is not False
+    ):
+        raise ValueError("closed_loop_evidence.canonical_mutations_allowed must be false")
+    if (
+        require_bool(closed_loop_evidence, "tracked_artifacts_written", "closed_loop_evidence")
+        is not False
+    ):
+        raise ValueError("closed_loop_evidence.tracked_artifacts_written must be false")
+    require_surface_output_artifact(closed_loop_evidence, "ontology_closed_loop_evidence")
+    require_object(closed_loop_evidence, "source_artifacts", "closed_loop_evidence")
+    require_object(closed_loop_evidence, "summary", "closed_loop_evidence")
+    evidence_entries = closed_loop_evidence.get("evidence_entries")
+    if not isinstance(evidence_entries, list):
+        raise ValueError("closed_loop_evidence.evidence_entries must be a list")
+    for index, raw_entry in enumerate(evidence_entries):
+        if not isinstance(raw_entry, dict):
+            raise ValueError(f"closed_loop_evidence.evidence_entries[{index}] must be an object")
+        for field in (
+            "accepted_ontology_delta",
+            "closes_semantic_gate",
+            "mutates_canonical_specs",
+        ):
+            if (
+                require_bool(
+                    raw_entry,
+                    field,
+                    f"closed_loop_evidence.evidence_entries[{index}]",
+                )
+                is not False
+            ):
+                raise ValueError(
+                    f"closed_loop_evidence.evidence_entries[{index}].{field} must be false"
+                )
+    consumer_boundary = require_object(
+        closed_loop_evidence, "consumer_boundary", "closed_loop_evidence"
+    )
+    if (
+        require_bool(
+            consumer_boundary,
+            "for_specgraph_evidence_review",
+            "closed_loop_evidence.consumer_boundary",
+        )
+        is not True
+    ):
+        raise ValueError(
+            "closed_loop_evidence.consumer_boundary.for_specgraph_evidence_review must be true"
+        )
+    for field in (
+        "may_execute_prompt_agent",
+        "may_write_ontology_package",
+        "may_update_ontology_lockfile",
+        "may_mutate_canonical_specs",
+        "may_mark_candidate_accepted",
+        "may_close_semantic_gate",
+    ):
+        if (
+            require_bool(consumer_boundary, field, "closed_loop_evidence.consumer_boundary")
+            is not False
+        ):
+            raise ValueError(f"closed_loop_evidence.consumer_boundary.{field} must be false")
+    authority_boundary = require_object(
+        closed_loop_evidence, "authority_boundary", "closed_loop_evidence"
+    )
+    for field in (
+        "ontology_closed_loop_evidence_is_authority",
+        "prompt_agent_execution_allowed",
+        "automatic_import_lock_update",
+        "automatic_canonical_node_update",
+        "canonical_mutations_allowed",
+    ):
+        if (
+            require_bool(authority_boundary, field, "closed_loop_evidence.authority_boundary")
+            is not False
+        ):
+            raise ValueError(f"closed_loop_evidence.authority_boundary.{field} must be false")
+    return closed_loop_evidence
+
+
+def build_ontology_review_dashboard(
+    semantic_policy: dict[str, Any],
+    *,
+    semantic_policy_path: Path,
+    review_surface: dict[str, Any],
+    supervisor_gate: dict[str, Any],
+    draft_intake: dict[str, Any],
+    closed_loop_evidence: dict[str, Any],
+) -> dict[str, Any]:
+    require_semantic_control_policy(semantic_policy)
+    require_ontology_semantic_review_surface(review_surface)
+    require_ontology_supervisor_semantic_gate(supervisor_gate)
+    require_ontology_delta_draft_intake(draft_intake)
+    require_ontology_closed_loop_evidence(closed_loop_evidence)
+
+    dashboard_contract = require_object(
+        semantic_policy, "ontology_review_dashboard_contract", "semantic_control_policy"
+    )
+    semantic_layout = require_object(
+        semantic_policy, "repository_layout", "semantic_control_policy"
+    )
+    semantic_review_surface_artifact = require_surface_output_artifact(
+        review_surface, "semantic_review_surface"
+    )
+    supervisor_semantic_gate_artifact = require_surface_output_artifact(
+        supervisor_gate, "supervisor_semantic_gate"
+    )
+    ontology_delta_draft_intake_artifact = require_surface_output_artifact(
+        draft_intake, "ontology_delta_draft_intake"
+    )
+    ontology_closed_loop_evidence_artifact = require_surface_output_artifact(
+        closed_loop_evidence, "ontology_closed_loop_evidence"
+    )
+
+    supervisor_sources = require_object(supervisor_gate, "source_artifacts", "supervisor_gate")
+    if supervisor_sources.get("semantic_review_surface") != semantic_review_surface_artifact:
+        raise ValueError(
+            "supervisor_gate.source_artifacts.semantic_review_surface must match "
+            "review_surface.output_artifact"
+        )
+    draft_sources = require_object(draft_intake, "source_artifacts", "draft_intake")
+    if draft_sources.get("supervisor_semantic_gate") != supervisor_semantic_gate_artifact:
+        raise ValueError(
+            "draft_intake.source_artifacts.supervisor_semantic_gate must match "
+            "supervisor_gate.output_artifact"
+        )
+    evidence_sources = require_object(
+        closed_loop_evidence, "source_artifacts", "closed_loop_evidence"
+    )
+    if evidence_sources.get("ontology_delta_draft_intake") != ontology_delta_draft_intake_artifact:
+        raise ValueError(
+            "closed_loop_evidence.source_artifacts.ontology_delta_draft_intake must match "
+            "draft_intake.output_artifact"
+        )
+
+    source_artifacts = copy_json_object(
+        require_object(closed_loop_evidence, "source_artifacts", "closed_loop_evidence")
+    )
+    source_artifacts["semantic_review_surface"] = semantic_review_surface_artifact
+    source_artifacts["supervisor_semantic_gate"] = supervisor_semantic_gate_artifact
+    source_artifacts["ontology_delta_draft_intake"] = ontology_delta_draft_intake_artifact
+    source_artifacts["ontology_closed_loop_evidence"] = ontology_closed_loop_evidence_artifact
+
+    gate = require_object(supervisor_gate, "gate", "supervisor_gate")
+    review_summary = require_object(review_surface, "summary", "review_surface")
+    intake_summary = require_object(draft_intake, "summary", "draft_intake")
+    closed_loop_summary = require_object(closed_loop_evidence, "summary", "closed_loop_evidence")
+    gate_state = require_string(gate, "gate_state", "supervisor_gate.gate")
+    closed_loop_status = require_string(
+        closed_loop_summary, "status", "closed_loop_evidence.summary"
+    )
+    if gate_state == "blocked" or closed_loop_status == "blocked_by_semantic_gate":
+        dashboard_status = "blocked_by_semantic_gate"
+    elif closed_loop_status == "pending_ontology_owner_decision":
+        dashboard_status = "pending_ontology_owner_decision"
+    elif gate_state == "review_pending":
+        dashboard_status = "review_pending"
+    elif closed_loop_status == "no_candidates":
+        dashboard_status = "no_candidates"
+    else:
+        dashboard_status = "clear"
+    status_states = set(
+        require_string_list(
+            dashboard_contract,
+            "status_states",
+            "semantic_control_policy.ontology_review_dashboard_contract",
+        )
+    )
+    if dashboard_status not in status_states:
+        raise ValueError(
+            "semantic_control_policy.ontology_review_dashboard_contract.status_states "
+            f"does not declare computed state {dashboard_status}"
+        )
+
+    review_items = review_surface.get("review_items")
+    if not isinstance(review_items, list):
+        raise ValueError("review_surface.review_items must be a list")
+    review_items_by_id: dict[str, dict[str, Any]] = {}
+    for index, raw_item in enumerate(review_items):
+        if not isinstance(raw_item, dict):
+            raise ValueError(f"review_surface.review_items[{index}] must be an object")
+        item_id = require_string(raw_item, "item_id", f"review_surface.review_items[{index}]")
+        review_items_by_id[item_id] = raw_item
+
+    blocking_item_ids = require_string_list(gate, "blocking_item_ids", "supervisor_gate.gate")
+    review_required_item_ids = require_string_list(
+        gate, "review_required_item_ids", "supervisor_gate.gate"
+    )
+    missing_blocking_item_ids = sorted(set(blocking_item_ids) - set(review_items_by_id))
+    if missing_blocking_item_ids:
+        raise ValueError(
+            "supervisor_gate.gate.blocking_item_ids missing from review_surface.review_items: "
+            f"{', '.join(missing_blocking_item_ids)}"
+        )
+    missing_review_required_item_ids = sorted(
+        set(review_required_item_ids) - set(review_items_by_id)
+    )
+    if missing_review_required_item_ids:
+        raise ValueError(
+            "supervisor_gate.gate.review_required_item_ids missing from "
+            f"review_surface.review_items: {', '.join(missing_review_required_item_ids)}"
+        )
+    blocking_items = [
+        copy_json_object(review_items_by_id[item_id]) for item_id in blocking_item_ids
+    ]
+    review_required_items = [
+        copy_json_object(review_items_by_id[item_id]) for item_id in review_required_item_ids
+    ]
+
+    delta_candidates = review_surface.get("delta_candidates")
+    if not isinstance(delta_candidates, list):
+        raise ValueError("review_surface.delta_candidates must be a list")
+    draft_requests = draft_intake.get("draft_requests")
+    if not isinstance(draft_requests, list):
+        raise ValueError("draft_intake.draft_requests must be a list")
+    evidence_entries = closed_loop_evidence.get("evidence_entries")
+    if not isinstance(evidence_entries, list):
+        raise ValueError("closed_loop_evidence.evidence_entries must be a list")
+    review_actions = review_surface.get("review_actions")
+    if not isinstance(review_actions, list):
+        raise ValueError("review_surface.review_actions must be a list")
+
+    if gate_state in {"blocked", "review_pending"}:
+        required_human_action = require_string(
+            gate, "required_human_action", "supervisor_gate.gate"
+        )
+    else:
+        required_human_action = require_string(
+            closed_loop_summary, "required_human_action", "closed_loop_evidence.summary"
+        )
+
+    return {
+        "artifact_kind": require_string(
+            dashboard_contract,
+            "artifact_kind",
+            "semantic_control_policy.ontology_review_dashboard_contract",
+        ),
+        "schema_version": 1,
+        "proposal_id": "0113",
+        "policy_basis": semantic_policy["policy_basis"],
+        "source_policy": relative_path(semantic_policy_path),
+        "source_artifacts": source_artifacts,
+        "target": copy_json_object(
+            require_object(
+                dashboard_contract,
+                "target",
+                "semantic_control_policy.ontology_review_dashboard_contract",
+            )
+        ),
+        "canonical_mutations_allowed": False,
+        "tracked_artifacts_written": False,
+        "dashboard_sections": require_string_list(
+            dashboard_contract,
+            "dashboard_sections",
+            "semantic_control_policy.ontology_review_dashboard_contract",
+        ),
+        "status_summary": {
+            "status": dashboard_status,
+            "gate_state": gate_state,
+            "review_surface_status": require_string(
+                review_summary, "status", "review_surface.summary"
+            ),
+            "intake_status": require_string(intake_summary, "status", "draft_intake.summary"),
+            "closed_loop_status": closed_loop_status,
+            "blocking_count": require_int(
+                review_summary, "blocking_count", "review_surface.summary"
+            ),
+            "review_required_count": require_int(
+                review_summary, "review_required_count", "review_surface.summary"
+            ),
+            "candidate_count": require_int(
+                review_summary, "candidate_count", "review_surface.summary"
+            ),
+            "draft_request_count": require_int(
+                intake_summary, "draft_request_count", "draft_intake.summary"
+            ),
+            "evidence_entry_count": require_int(
+                closed_loop_summary, "evidence_entry_count", "closed_loop_evidence.summary"
+            ),
+            "pending_decision_count": require_int(
+                closed_loop_summary, "pending_decision_count", "closed_loop_evidence.summary"
+            ),
+            "blocked_entry_count": require_int(
+                closed_loop_summary, "blocked_entry_count", "closed_loop_evidence.summary"
+            ),
+            "required_human_action": required_human_action,
+            "next_gap": require_string(
+                dashboard_contract,
+                "next_gap",
+                "semantic_control_policy.ontology_review_dashboard_contract",
+            ),
+        },
+        "gate": copy_json_object(gate),
+        "blocking_items": blocking_items,
+        "review_required_items": review_required_items,
+        "delta_candidates": [
+            copy_json_object(candidate)
+            for candidate in delta_candidates
+            if isinstance(candidate, dict)
+        ],
+        "draft_requests": [
+            copy_json_object(request) for request in draft_requests if isinstance(request, dict)
+        ],
+        "closed_loop_entries": [
+            copy_json_object(entry) for entry in evidence_entries if isinstance(entry, dict)
+        ],
+        "review_actions": [
+            copy_json_object(action) for action in review_actions if isinstance(action, dict)
+        ],
+        "consumer_boundary": copy_json_object(
+            require_object(
+                dashboard_contract,
+                "consumer_boundary",
+                "semantic_control_policy.ontology_review_dashboard_contract",
+            )
+        ),
+        "authority_boundary": copy_json_object(
+            require_object(semantic_policy, "authority_boundary", "semantic_control_policy")
+        ),
+        "output_artifact": require_layout_path(semantic_layout, "ontology_review_dashboard"),
+    }
+
+
+def require_ontology_review_dashboard(
+    dashboard: dict[str, Any],
+) -> dict[str, Any]:
+    if dashboard.get("artifact_kind") != "ontology_review_dashboard":
+        raise ValueError("dashboard.artifact_kind must be ontology_review_dashboard")
+    if require_int(dashboard, "schema_version", "dashboard") != 1:
+        raise ValueError("dashboard.schema_version must be 1")
+    if require_string(dashboard, "proposal_id", "dashboard") != "0113":
+        raise ValueError("dashboard.proposal_id must be 0113")
+    if require_bool(dashboard, "canonical_mutations_allowed", "dashboard") is not False:
+        raise ValueError("dashboard.canonical_mutations_allowed must be false")
+    if require_bool(dashboard, "tracked_artifacts_written", "dashboard") is not False:
+        raise ValueError("dashboard.tracked_artifacts_written must be false")
+    require_surface_output_artifact(dashboard, "ontology_review_dashboard")
+    require_object(dashboard, "source_artifacts", "dashboard")
+    status_summary = require_object(dashboard, "status_summary", "dashboard")
+    status = require_string(status_summary, "status", "dashboard.status_summary")
+    if status not in {
+        "blocked_by_semantic_gate",
+        "pending_ontology_owner_decision",
+        "review_pending",
+        "clear",
+        "no_candidates",
+    }:
+        raise ValueError("dashboard.status_summary.status is not a supported dashboard state")
+    for field in (
+        "blocking_items",
+        "review_required_items",
+        "delta_candidates",
+        "draft_requests",
+        "closed_loop_entries",
+        "review_actions",
+    ):
+        if not isinstance(dashboard.get(field), list):
+            raise ValueError(f"dashboard.{field} must be a list")
+    consumer_boundary = require_object(dashboard, "consumer_boundary", "dashboard")
+    for field in ("for_specgraph_review_dashboard", "for_specspace_review_dashboard"):
+        if require_bool(consumer_boundary, field, "dashboard.consumer_boundary") is not True:
+            raise ValueError(f"dashboard.consumer_boundary.{field} must be true")
+    for field in (
+        "may_execute_prompt_agent",
+        "may_write_ontology_package",
+        "may_update_ontology_lockfile",
+        "may_mutate_canonical_specs",
+        "may_mark_candidate_accepted",
+        "may_import_owner_decision",
+        "may_close_semantic_gate",
+    ):
+        if require_bool(consumer_boundary, field, "dashboard.consumer_boundary") is not False:
+            raise ValueError(f"dashboard.consumer_boundary.{field} must be false")
+    authority_boundary = require_object(dashboard, "authority_boundary", "dashboard")
+    for field in (
+        "ontology_review_dashboard_is_authority",
+        "prompt_agent_execution_allowed",
+        "automatic_import_lock_update",
+        "automatic_canonical_node_update",
+        "canonical_mutations_allowed",
+    ):
+        if require_bool(authority_boundary, field, "dashboard.authority_boundary") is not False:
+            raise ValueError(f"dashboard.authority_boundary.{field} must be false")
+    return dashboard
+
+
 def build_ontology_semantic_lint_smoke(
     semantic_policy: dict[str, Any],
     *,
@@ -3705,6 +4244,14 @@ def build_ontology_import_surfaces(
                 semantic_policy_path=semantic_policy_path,
                 draft_intake=surfaces["ontology_delta_draft_intake"],
             )
+            surfaces["ontology_review_dashboard"] = build_ontology_review_dashboard(
+                semantic_policy,
+                semantic_policy_path=semantic_policy_path,
+                review_surface=surfaces["semantic_review_surface"],
+                supervisor_gate=surfaces["supervisor_semantic_gate"],
+                draft_intake=surfaces["ontology_delta_draft_intake"],
+                closed_loop_evidence=surfaces["ontology_closed_loop_evidence"],
+            )
             surfaces["semantic_lint_smoke"] = build_ontology_semantic_lint_smoke(
                 semantic_policy,
                 semantic_policy_path=semantic_policy_path,
@@ -3765,6 +4312,10 @@ def write_ontology_import_surfaces(
     if "ontology_closed_loop_evidence" in surfaces:
         destinations["ontology_closed_loop_evidence"] = require_surface_output_artifact(
             surfaces["ontology_closed_loop_evidence"], "ontology_closed_loop_evidence"
+        )
+    if "ontology_review_dashboard" in surfaces:
+        destinations["ontology_review_dashboard"] = require_surface_output_artifact(
+            surfaces["ontology_review_dashboard"], "ontology_review_dashboard"
         )
     if "semantic_lint_smoke" in surfaces:
         destinations["semantic_lint_smoke"] = require_surface_output_artifact(
