@@ -220,6 +220,13 @@ Supervisor modes:
   future proposal draft candidate. It accepts only `proposal_draft` review
   packets and keeps executor reports/review packets as input rather than
   authority; it does not create proposal drafts or run a new executor task.
+- `executor_analysis_report_consumption_policy` in
+  `tools/supervisor_executor_adapter_policy.json`: defines the policy-only
+  boundary for consuming human-review-ready `analysis_report` review packets as
+  future analysis review outcome input. It keeps analysis reports separate from
+  the proposal-draft path and rejects proposal draft candidate production,
+  authority expansion, canonical mutation, patch application, gap closure,
+  proposal status mutation, and public static publication.
 - `proposal_draft_candidate_promotion_policy` in
   `tools/supervisor_executor_adapter_policy.json`: defines the policy-only
   boundary for turning a valid local-only proposal draft candidate into a future
@@ -604,6 +611,12 @@ Key derived artifacts:
   proposal draft candidates while rejecting analysis reports, forbidden effects,
   authority expansion, direct canonical mutation, patch application, gap
   closure, and proposal status mutation
+- `executor_analysis_report_consumption_policy`: policy-only surface that
+  allows only human-review-ready `analysis_report` review packets to become
+  future analysis review outcome input while rejecting proposal draft candidate
+  production, forbidden effects, authority expansion, direct canonical
+  mutation, patch application, gap closure, proposal status mutation, and static
+  publication
 - `proposal_draft_candidate_promotion_policy`: policy-only surface that allows
   only valid local proposal draft candidates plus explicit human authorization
   to request a future promotion packet, while rejecting direct proposal markdown
