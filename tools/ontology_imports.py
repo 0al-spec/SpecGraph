@@ -14,7 +14,8 @@ import yaml
 
 ROOT = Path(__file__).resolve().parents[1]
 POLICY_PATH = ROOT / "tools" / "ontology_import_policy.json"
-SEMANTIC_CONTROL_POLICY_PATH = ROOT / "tools" / "ontology_semantic_control_policy.json"
+SEMANTIC_CONTROL_POLICY_PATH = Path("tools") / "ontology_semantic_control_policy.json"
+DEFAULT_SEMANTIC_POLICY = object()
 CONCEPT_REF_PATTERN = re.compile(r"^[A-Za-z][A-Za-z0-9_]*:[A-Za-z][A-Za-z0-9_]*$")
 DIGEST_PATTERN = re.compile(r"^sha256:[0-9a-f]{64}$")
 
@@ -217,6 +218,22 @@ def require_layout_path(layout: dict[str, Any], key: str) -> str:
     if not isinstance(value, str) or not value.strip():
         raise ValueError(f"policy.repository_layout.{key} must be a non-empty string")
     return value
+
+
+def require_surface_output_artifact(surface: dict[str, Any], key: str) -> str:
+    value = surface.get("output_artifact")
+    if not isinstance(value, str) or not value.strip():
+        raise ValueError(f"{key}.output_artifact must be a non-empty string")
+    return value
+
+
+def optional_string(mapping: dict[str, Any], field: str, context: str) -> str:
+    if field not in mapping or mapping[field] is None:
+        return ""
+    value = mapping[field]
+    if not isinstance(value, str):
+        raise ValueError(f"{context}.{field} must be a string when provided")
+    return value.strip()
 
 
 def require_bool(mapping: dict[str, Any], field: str, context: str) -> bool:
@@ -979,7 +996,7 @@ def build_semantic_term_results(
             raise ValueError(f"{detected_terms_context}[{index}] must be an object")
         term = require_string(raw_term, "term", f"{detected_terms_context}[{index}]")
         normalized = normalize_term(term)
-        source_ref = str(raw_term.get("source_ref", "")).strip()
+        source_ref = optional_string(raw_term, "source_ref", f"{detected_terms_context}[{index}]")
         result: dict[str, Any] = {
             "term": term,
             "normalized_term": normalized,
@@ -1166,13 +1183,21 @@ def build_ontology_semantic_context_pack(
     raw_gaps = gap_index.get("gaps")
     if not isinstance(raw_gaps, list):
         raise ValueError("ontology_import_gap_index.gaps must be a list")
-    unresolved_gaps = [copy_json_object(gap) for gap in raw_gaps if isinstance(gap, dict)]
+    unresolved_gaps = []
+    for index, gap in enumerate(raw_gaps):
+        if not isinstance(gap, dict):
+            raise ValueError(f"ontology_import_gap_index.gaps[{index}] must be an object")
+        unresolved_gaps.append(copy_json_object(gap))
     raw_evidence = governance_evidence_index.get("evidence")
     if not isinstance(raw_evidence, list):
         raise ValueError("ontology_governance_evidence_index.evidence must be a list")
-    governance_evidence = [
-        copy_json_object(evidence) for evidence in raw_evidence if isinstance(evidence, dict)
-    ]
+    governance_evidence = []
+    for index, evidence in enumerate(raw_evidence):
+        if not isinstance(evidence, dict):
+            raise ValueError(
+                f"ontology_governance_evidence_index.evidence[{index}] must be an object"
+            )
+        governance_evidence.append(copy_json_object(evidence))
     status = "ready_with_gaps" if unresolved_gaps else "ready"
     if not governance_evidence:
         status = "missing_governance_evidence"
@@ -1534,11 +1559,19 @@ def build_ontology_import_surfaces(
     *,
     policy_path: Path = POLICY_PATH,
     adapter_report_path: Path | None = None,
-    semantic_policy_path: Path | None = SEMANTIC_CONTROL_POLICY_PATH,
+    semantic_policy_path: Path | None | object = DEFAULT_SEMANTIC_POLICY,
 ) -> dict[str, dict[str, Any]]:
     policy = load_json(policy_path)
     fixture = load_yaml(fixture_path)
     validate_fixture(policy, fixture)
+    import_layout = require_object(policy, "repository_layout", "ontology_import_policy")
+    default_fixture_path = ROOT / require_layout_path(import_layout, "default_fixture")
+    if semantic_policy_path is DEFAULT_SEMANTIC_POLICY:
+        semantic_policy_path = (
+            SEMANTIC_CONTROL_POLICY_PATH
+            if fixture_path.resolve() == default_fixture_path.resolve()
+            else None
+        )
 
     package = fixture["package"]
     binding = fixture["binding"]
@@ -1701,6 +1734,7 @@ def build_ontology_import_surfaces(
             unresolved_refs=unresolved_refs,
         )
     if semantic_policy_path is not None:
+        assert isinstance(semantic_policy_path, Path)
         if not semantic_policy_path.is_absolute():
             semantic_policy_path = ROOT / semantic_policy_path
         if semantic_policy_path.exists():
@@ -1752,27 +1786,18 @@ def write_ontology_import_surfaces(
     }
     if "adapter_report_smoke" in surfaces:
         destinations["adapter_report_smoke"] = require_layout_path(layout, "adapter_report_smoke")
-    if (
-        "semantic_context_pack" in surfaces
-        or "semantic_lint_report" in surfaces
-        or "semantic_lint_smoke" in surfaces
-    ):
-        semantic_policy = load_json(SEMANTIC_CONTROL_POLICY_PATH)
-        semantic_layout = require_object(
-            semantic_policy, "repository_layout", "semantic_control_policy"
+    if "semantic_context_pack" in surfaces:
+        destinations["semantic_context_pack"] = require_surface_output_artifact(
+            surfaces["semantic_context_pack"], "semantic_context_pack"
         )
-        if "semantic_context_pack" in surfaces:
-            destinations["semantic_context_pack"] = require_layout_path(
-                semantic_layout, "semantic_context_pack"
-            )
-        if "semantic_lint_report" in surfaces:
-            destinations["semantic_lint_report"] = require_layout_path(
-                semantic_layout, "semantic_lint_report"
-            )
-        if "semantic_lint_smoke" in surfaces:
-            destinations["semantic_lint_smoke"] = require_layout_path(
-                semantic_layout, "semantic_lint_smoke"
-            )
+    if "semantic_lint_report" in surfaces:
+        destinations["semantic_lint_report"] = require_surface_output_artifact(
+            surfaces["semantic_lint_report"], "semantic_lint_report"
+        )
+    if "semantic_lint_smoke" in surfaces:
+        destinations["semantic_lint_smoke"] = require_surface_output_artifact(
+            surfaces["semantic_lint_smoke"], "semantic_lint_smoke"
+        )
     written = []
     for key, relative in destinations.items():
         payload = surfaces[key]
@@ -1805,6 +1830,19 @@ def parse_args() -> argparse.Namespace:
             "adapter report only when --fixture is the default fixture."
         ),
     )
+    parser.add_argument(
+        "--semantic-policy",
+        default=None,
+        help=(
+            "Ontology semantic control policy JSON path. Defaults to the checked-in "
+            "policy only when --fixture is the default fixture."
+        ),
+    )
+    parser.add_argument(
+        "--no-semantic-policy",
+        action="store_true",
+        help="Disable semantic-control derived surfaces for this run.",
+    )
     return parser.parse_args()
 
 
@@ -1825,9 +1863,19 @@ def main() -> int:
             adapter_report_path = ROOT / adapter_report_path
     elif fixture_path.resolve() == default_fixture_path.resolve():
         adapter_report_path = ROOT / str(layout["default_adapter_report"])
+    if args.semantic_policy and args.no_semantic_policy:
+        raise ValueError("--semantic-policy and --no-semantic-policy are mutually exclusive")
+    semantic_policy_path = None
+    if args.semantic_policy:
+        semantic_policy_path = Path(args.semantic_policy)
+        if not semantic_policy_path.is_absolute():
+            semantic_policy_path = ROOT / semantic_policy_path
+    elif not args.no_semantic_policy and fixture_path.resolve() == default_fixture_path.resolve():
+        semantic_policy_path = SEMANTIC_CONTROL_POLICY_PATH
     surfaces = build_ontology_import_surfaces(
         fixture_path,
         adapter_report_path=adapter_report_path,
+        semantic_policy_path=semantic_policy_path,
     )
     if args.write:
         written = write_ontology_import_surfaces(surfaces)
