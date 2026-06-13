@@ -1645,26 +1645,31 @@ def build_ontology_delta_candidate_review_packet(
             }
         )
 
-    review_actions = [
-        {
-            "action": "approve_for_ontology_package_draft",
-            "effect": "route_candidate_to_ontology_owner_package_draft",
-            "writes_ontology_package": False,
-            "mutates_canonical_specs": False,
-        },
-        {
-            "action": "reject_candidate",
-            "effect": "close_candidate_without_delta",
-            "writes_ontology_package": False,
-            "mutates_canonical_specs": False,
-        },
-        {
-            "action": "request_clarification",
-            "effect": "return_to_semantic_review_with_question",
-            "writes_ontology_package": False,
-            "mutates_canonical_specs": False,
-        },
-    ]
+    review_action_effects = {
+        "approve_for_ontology_package_draft": "route_candidate_to_ontology_owner_package_draft",
+        "reject_candidate": "close_candidate_without_delta",
+        "request_clarification": "return_to_semantic_review_with_question",
+    }
+    review_actions = []
+    for action in require_string_list(
+        delta_contract,
+        "review_actions",
+        "semantic_control_policy.ontology_delta_candidate_review_packet_contract",
+    ):
+        effect = review_action_effects.get(action)
+        if effect is None:
+            raise ValueError(
+                "semantic_control_policy.ontology_delta_candidate_review_packet_contract."
+                f"review_actions contains unsupported action {action!r}"
+            )
+        review_actions.append(
+            {
+                "action": action,
+                "effect": effect,
+                "writes_ontology_package": False,
+                "mutates_canonical_specs": False,
+            }
+        )
 
     return {
         "artifact_kind": require_string(
