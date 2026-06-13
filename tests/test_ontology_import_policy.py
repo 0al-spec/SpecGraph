@@ -342,6 +342,33 @@ def test_ontology_semantic_context_pack_builds_agent_context() -> None:
     assert context_pack["authority_boundary"]["context_pack_is_authority"] is False
 
 
+def test_ontology_semantic_context_pack_rejects_non_relation_conflict_embedding(
+    tmp_path: Path,
+) -> None:
+    module = load_ontology_imports_module()
+    module.ROOT = tmp_path
+    fixture_path = write_temp_fixture(tmp_path, load_fixture_payload())
+    policy_path = write_temp_policy(tmp_path)
+    semantic_policy = json.loads(
+        (ROOT / "tools" / "ontology_semantic_control_policy.json").read_text()
+    )
+    semantic_policy["semantic_controls"]["relation_conflicts"][0]["accepted_relation_ref"] = (
+        "examcalc:Exam"
+    )
+    semantic_policy_path = write_temp_semantic_control_policy(tmp_path, semantic_policy)
+
+    surfaces = module.build_ontology_import_surfaces(
+        fixture_path,
+        policy_path=policy_path,
+        semantic_policy_path=semantic_policy_path,
+    )
+
+    conflict = surfaces["semantic_context_pack"]["relation_conflicts"][0]
+    assert conflict["accepted_relation_ref"] == "examcalc:Exam"
+    assert conflict["status"] == "unresolved_relation_ref"
+    assert "accepted_relation" not in conflict
+
+
 def test_ontology_semantic_lint_report_builds_review_findings() -> None:
     module = load_ontology_imports_module()
 
@@ -844,6 +871,48 @@ def test_ontology_semantic_control_policy_rejects_authority_expansion(
     semantic_policy_path = write_temp_semantic_control_policy(tmp_path, semantic_policy)
 
     with pytest.raises(ValueError, match="lint_report_is_authority"):
+        module.build_ontology_import_surfaces(
+            fixture_path,
+            policy_path=policy_path,
+            semantic_policy_path=semantic_policy_path,
+        )
+
+
+def test_ontology_semantic_control_policy_rejects_output_authority_expansion(
+    tmp_path: Path,
+) -> None:
+    module = load_ontology_imports_module()
+    module.ROOT = tmp_path
+    fixture_path = write_temp_fixture(tmp_path, load_fixture_payload())
+    policy_path = write_temp_policy(tmp_path)
+    semantic_policy = json.loads(
+        (ROOT / "tools" / "ontology_semantic_control_policy.json").read_text()
+    )
+    semantic_policy["derived_output_contract"]["writes_canonical_specs"] = True
+    semantic_policy_path = write_temp_semantic_control_policy(tmp_path, semantic_policy)
+
+    with pytest.raises(ValueError, match="writes_canonical_specs"):
+        module.build_ontology_import_surfaces(
+            fixture_path,
+            policy_path=policy_path,
+            semantic_policy_path=semantic_policy_path,
+        )
+
+
+def test_ontology_semantic_control_policy_rejects_non_run_output_roots(
+    tmp_path: Path,
+) -> None:
+    module = load_ontology_imports_module()
+    module.ROOT = tmp_path
+    fixture_path = write_temp_fixture(tmp_path, load_fixture_payload())
+    policy_path = write_temp_policy(tmp_path)
+    semantic_policy = json.loads(
+        (ROOT / "tools" / "ontology_semantic_control_policy.json").read_text()
+    )
+    semantic_policy["derived_output_contract"]["allowed_output_roots"] = ["specs/"]
+    semantic_policy_path = write_temp_semantic_control_policy(tmp_path, semantic_policy)
+
+    with pytest.raises(ValueError, match="allowed_output_roots"):
         module.build_ontology_import_surfaces(
             fixture_path,
             policy_path=policy_path,
