@@ -21916,8 +21916,36 @@ def local_operator_executor_report_review_packet_contract() -> dict[str, Any]:
     return contract if isinstance(contract, dict) else {}
 
 
-def local_operator_executor_report_review_packet_next_gap(status: str) -> str:
+def executor_analysis_report_consumption_policy() -> dict[str, Any]:
+    policy = supervisor_executor_adapter_policy_lookup(
+        "executor_analysis_report_consumption_policy"
+    )
+    return policy if isinstance(policy, dict) else {}
+
+
+def executor_analysis_report_consumption_values(key: str) -> set[str]:
+    policy = executor_analysis_report_consumption_policy()
+    values = policy.get(key, [])
+    if not isinstance(values, list):
+        return set()
+    return {str(value).strip() for value in values if str(value).strip()}
+
+
+def local_operator_executor_report_review_packet_next_gap(
+    status: str,
+    *,
+    report_kind: str = "",
+) -> str:
     contract = local_operator_executor_report_review_packet_contract()
+    if status == "ready_for_review" and str(report_kind).strip() in (
+        executor_analysis_report_consumption_values("allowed_source_report_kinds")
+    ):
+        return str(
+            executor_analysis_report_consumption_policy().get(
+                "next_gap",
+                "build_executor_analysis_report_review_outcome",
+            )
+        ).strip()
     return {
         "ready_for_review": str(
             contract.get(
@@ -22064,6 +22092,472 @@ def validate_local_operator_executor_report_review_packet(packet: object) -> dic
             "report_kind": str(summary.get("report_kind", "")).strip(),
             "review_state": str(review_packet.get("review_state", "")).strip(),
         },
+    }
+
+
+def default_executor_analysis_report_consumption_request(
+    *,
+    consumer: str = "analysis_report_reviewer",
+    transformation: str = "review_packet_to_analysis_report_review_outcome",
+    requested_effects: list[str] | None = None,
+) -> dict[str, Any]:
+    policy = executor_analysis_report_consumption_policy()
+    authority_boundary = policy.get("authority_boundary", {})
+    authority_boundary = authority_boundary if isinstance(authority_boundary, dict) else {}
+    return {
+        "source_review_packet_artifact": LOCAL_OPERATOR_EXECUTOR_REPORT_REVIEW_PACKET_RELATIVE_PATH,
+        "source_report_artifact": LOCAL_OPERATOR_EXECUTOR_REPORT_RELATIVE_PATH,
+        "consumer": consumer,
+        "transformation": transformation,
+        "requested_effects": (
+            requested_effects
+            if requested_effects is not None
+            else ["analysis_report_review_outcome"]
+        ),
+        "authority_boundary": {
+            "executor_report_is_authority": False,
+            "review_packet_is_authority": False,
+            "human_or_supervisor_review_required": bool(
+                authority_boundary.get("human_or_supervisor_review_required", True)
+            ),
+            "canonical_mutations_allowed": False,
+            "proposal_status_mutations_allowed": False,
+            "gap_closure_allowed": False,
+            "patch_application_allowed": False,
+            "static_publish_of_local_report_allowed": False,
+        },
+    }
+
+
+def validate_executor_analysis_report_consumption_effects(
+    effects: object,
+) -> dict[str, Any]:
+    allowed = executor_analysis_report_consumption_values("requested_effects")
+    forbidden = executor_analysis_report_consumption_values("forbidden_effects")
+    findings: list[dict[str, str]] = []
+    if not isinstance(effects, list):
+        return {
+            "valid": False,
+            "effects": [],
+            "findings": [
+                executor_report_finding(
+                    code="analysis_report_effects_not_list",
+                    field="requested_effects",
+                    message="Analysis report consumption effects must be a list.",
+                )
+            ],
+        }
+    normalized_effects: list[str] = []
+    if not effects:
+        findings.append(
+            executor_report_finding(
+                code="analysis_report_effects_empty",
+                field="requested_effects",
+                message="Analysis report consumption must request at least one effect.",
+            )
+        )
+    for index, effect in enumerate(effects):
+        effect_text = str(effect).strip()
+        if not effect_text:
+            findings.append(
+                executor_report_finding(
+                    code="analysis_report_effect_empty",
+                    field=f"requested_effects[{index}]",
+                    message="Analysis report consumption effect must be non-empty.",
+                )
+            )
+            continue
+        normalized_effects.append(effect_text)
+        if effect_text in forbidden:
+            findings.append(
+                executor_report_finding(
+                    code="forbidden_analysis_report_effect",
+                    field=f"requested_effects[{index}]",
+                    message=f"Analysis report consumption effect is forbidden: {effect_text}.",
+                )
+            )
+        elif effect_text not in allowed:
+            findings.append(
+                executor_report_finding(
+                    code="unknown_analysis_report_effect",
+                    field=f"requested_effects[{index}]",
+                    message=f"Analysis report consumption effect is not allowed: {effect_text}.",
+                )
+            )
+    return {
+        "valid": not findings,
+        "effects": normalized_effects,
+        "findings": findings,
+    }
+
+
+def validate_executor_analysis_report_authority_boundary(boundary: object) -> dict[str, Any]:
+    policy = executor_analysis_report_consumption_policy()
+    expected = policy.get("authority_boundary", {})
+    expected = expected if isinstance(expected, dict) else {}
+    boundary_payload = boundary if isinstance(boundary, dict) else {}
+    findings: list[dict[str, str]] = []
+    if not isinstance(boundary, dict):
+        findings.append(
+            executor_report_finding(
+                code="analysis_report_authority_boundary_not_object",
+                field="authority_boundary",
+                message="Analysis report consumption authority boundary must be an object.",
+            )
+        )
+    for key in sorted(boundary_payload):
+        if key not in expected:
+            findings.append(
+                executor_report_finding(
+                    code="unexpected_analysis_report_authority_boundary_field",
+                    field=f"authority_boundary.{key}",
+                    message=(
+                        "Analysis report consumption authority boundary includes an "
+                        "unexpected field."
+                    ),
+                )
+            )
+    for key, expected_value in expected.items():
+        if boundary_payload.get(key) is not expected_value:
+            findings.append(
+                executor_report_finding(
+                    code="invalid_analysis_report_authority_boundary",
+                    field=f"authority_boundary.{key}",
+                    message=(
+                        "Analysis report consumption must preserve the review-only authority "
+                        "boundary."
+                    ),
+                )
+            )
+    return {
+        "valid": not findings,
+        "findings": findings,
+        "normalized": {key: boundary_payload.get(key) for key in sorted(expected)},
+    }
+
+
+def validate_executor_report_review_packet_source_for_analysis_report(
+    review_packet: object,
+) -> dict[str, Any]:
+    policy = executor_analysis_report_consumption_policy()
+    findings: list[dict[str, str]] = []
+    if review_packet is None:
+        return {
+            "valid": False,
+            "findings": [
+                executor_report_finding(
+                    code="analysis_source_review_packet_not_provided",
+                    field="review_packet",
+                    message=(
+                        "Analysis report consumption requires a validated review packet source."
+                    ),
+                )
+            ],
+            "normalized": {
+                "source_review_packet_valid": None,
+                "source_review_packet_status": "",
+                "source_review_state": "",
+            },
+        }
+    packet_validation = validate_local_operator_executor_report_review_packet(review_packet)
+    packet_findings = packet_validation.get("findings", [])
+    packet_findings = packet_findings if isinstance(packet_findings, list) else []
+    findings.extend(copy.deepcopy(packet_findings))
+    packet = review_packet if isinstance(review_packet, dict) else {}
+    summary = packet.get("summary", {}) if isinstance(packet, dict) else {}
+    summary = summary if isinstance(summary, dict) else {}
+    nested_packet = packet.get("review_packet", {}) if isinstance(packet, dict) else {}
+    nested_packet = nested_packet if isinstance(nested_packet, dict) else {}
+    source_report_validation = (
+        packet.get("source_report_validation", {}) if isinstance(packet, dict) else {}
+    )
+    source_report_validation = (
+        source_report_validation if isinstance(source_report_validation, dict) else {}
+    )
+    source_report_normalized = source_report_validation.get("normalized", {})
+    source_report_normalized = (
+        source_report_normalized if isinstance(source_report_normalized, dict) else {}
+    )
+    consumption_validation = (
+        packet.get("consumption_validation", {}) if isinstance(packet, dict) else {}
+    )
+    consumption_validation = (
+        consumption_validation if isinstance(consumption_validation, dict) else {}
+    )
+    checks = packet.get("checks", []) if isinstance(packet, dict) else []
+    checks = checks if isinstance(checks, list) else []
+    check_status_by_id = {
+        str(check.get("check_id", "")).strip(): str(check.get("status", "")).strip()
+        for check in checks
+        if isinstance(check, dict)
+    }
+    packet_status = str(summary.get("status", "")).strip()
+    review_state = str(nested_packet.get("review_state", "")).strip()
+    report_kind = str(summary.get("report_kind", "")).strip()
+    source_report_kind = str(source_report_normalized.get("report_kind", "")).strip()
+    source_summary_status = str(source_report_normalized.get("summary_status", "")).strip()
+    allowed_status = executor_analysis_report_consumption_values("allowed_source_packet_status")
+    allowed_review_states = executor_analysis_report_consumption_values(
+        "allowed_source_review_states"
+    )
+    allowed_report_kinds = executor_analysis_report_consumption_values(
+        "allowed_source_report_kinds"
+    )
+    if packet_status not in allowed_status:
+        findings.append(
+            executor_report_finding(
+                code="analysis_source_review_packet_status_not_allowed",
+                field="review_packet.summary.status",
+                message="Analysis report consumption requires a ready source review packet.",
+            )
+        )
+    if review_state not in allowed_review_states:
+        findings.append(
+            executor_report_finding(
+                code="analysis_source_review_packet_state_not_allowed",
+                field="review_packet.review_packet.review_state",
+                message=(
+                    "Analysis report consumption requires a human-review-ready source packet."
+                ),
+            )
+        )
+    if report_kind not in allowed_report_kinds:
+        findings.append(
+            executor_report_finding(
+                code="analysis_source_review_packet_report_kind_not_allowed",
+                field="review_packet.summary.report_kind",
+                message="Analysis report consumption requires an analysis_report source kind.",
+            )
+        )
+    if source_report_validation.get("valid") is not True:
+        findings.append(
+            executor_report_finding(
+                code="analysis_source_review_packet_source_report_validation_missing",
+                field="review_packet.source_report_validation.valid",
+                message=(
+                    "Analysis report consumption requires builder-produced source report "
+                    "validation."
+                ),
+            )
+        )
+    if source_summary_status != "valid_report":
+        findings.append(
+            executor_report_finding(
+                code="analysis_source_review_packet_source_report_not_valid_report",
+                field="review_packet.source_report_validation.normalized.summary_status",
+                message="Analysis report consumption requires a valid_report source report.",
+            )
+        )
+    if source_report_kind not in allowed_report_kinds:
+        findings.append(
+            executor_report_finding(
+                code="analysis_source_review_packet_source_report_kind_not_allowed",
+                field="review_packet.source_report_validation.normalized.report_kind",
+                message=(
+                    "Analysis report consumption requires the validated source report kind "
+                    "to be analysis_report."
+                ),
+            )
+        )
+    if source_report_kind and source_report_kind != report_kind:
+        findings.append(
+            executor_report_finding(
+                code="analysis_source_review_packet_report_kind_mismatch",
+                field="review_packet.summary.report_kind",
+                message=(
+                    "Analysis report consumption requires summary.report_kind to match the "
+                    "validated source report kind."
+                ),
+            )
+        )
+    if check_status_by_id.get("source_report_valid") != "passed":
+        findings.append(
+            executor_report_finding(
+                code="analysis_source_review_packet_source_report_valid_check_missing",
+                field="review_packet.checks.source_report_valid",
+                message=(
+                    "Analysis report consumption requires the review packet source_report_valid "
+                    "check to pass."
+                ),
+            )
+        )
+    if consumption_validation.get("valid") is not True:
+        findings.append(
+            executor_report_finding(
+                code="analysis_source_review_packet_consumption_validation_missing",
+                field="review_packet.consumption_validation.valid",
+                message=(
+                    "Analysis report consumption requires builder-produced consumption validation."
+                ),
+            )
+        )
+    if summary.get("human_review_required") is not True:
+        findings.append(
+            executor_report_finding(
+                code="analysis_source_review_packet_human_review_not_required",
+                field="review_packet.summary.human_review_required",
+                message="Analysis report consumption requires human review to remain required.",
+            )
+        )
+    if nested_packet.get("operator_decision_required") is not True:
+        findings.append(
+            executor_report_finding(
+                code="analysis_source_review_packet_operator_decision_not_required",
+                field="review_packet.review_packet.operator_decision_required",
+                message="Analysis report consumption requires an operator decision marker.",
+            )
+        )
+    if summary.get("canonical_mutations_allowed") is not False:
+        findings.append(
+            executor_report_finding(
+                code="analysis_source_review_packet_allows_canonical_mutation",
+                field="review_packet.summary.canonical_mutations_allowed",
+                message=(
+                    "Analysis report consumption requires canonical mutations to remain forbidden."
+                ),
+            )
+        )
+    return {
+        "valid": not findings,
+        "findings": findings,
+        "normalized": {
+            "source_review_packet_valid": bool(packet_validation.get("valid", False)),
+            "source_review_packet_status": packet_status,
+            "source_review_state": review_state,
+            "report_kind": report_kind,
+            "source_report_kind": source_report_kind,
+            "producer_kind": str(summary.get("producer_kind", "")).strip(),
+        },
+        "packet_validation": {
+            "valid": bool(packet_validation.get("valid", False)),
+            "finding_count": len(packet_findings),
+            "findings": copy.deepcopy(packet_findings),
+        },
+        "policy_artifact_kind": str(policy.get("artifact_kind", "")).strip(),
+    }
+
+
+def validate_executor_analysis_report_consumption_request(
+    request: object,
+    *,
+    review_packet: object | None = None,
+) -> dict[str, Any]:
+    policy = executor_analysis_report_consumption_policy()
+    findings: list[dict[str, str]] = []
+    if not isinstance(request, dict):
+        return {
+            "valid": False,
+            "findings": [
+                executor_report_finding(
+                    code="analysis_report_request_not_object",
+                    field="request",
+                    message="Analysis report consumption request must be a JSON object.",
+                )
+            ],
+            "normalized": {},
+        }
+    for field in [
+        str(field).strip()
+        for field in policy.get("required_request_fields", [])
+        if str(field).strip()
+    ]:
+        if field not in request:
+            findings.append(
+                executor_report_finding(
+                    code="missing_analysis_report_request_field",
+                    field=field,
+                    message=f"Analysis report consumption request is missing field {field}.",
+                )
+            )
+    source_review_packet_artifact = str(request.get("source_review_packet_artifact", "")).strip()
+    expected_review_packet_artifact = str(
+        policy.get(
+            "source_review_packet_artifact",
+            LOCAL_OPERATOR_EXECUTOR_REPORT_REVIEW_PACKET_RELATIVE_PATH,
+        )
+    ).strip()
+    if source_review_packet_artifact != expected_review_packet_artifact:
+        findings.append(
+            executor_report_finding(
+                code="invalid_analysis_report_source_review_packet_artifact",
+                field="source_review_packet_artifact",
+                message="Analysis report consumption must reference the review packet.",
+            )
+        )
+    source_report_artifact = str(request.get("source_report_artifact", "")).strip()
+    expected_report_artifact = str(
+        policy.get("source_report_artifact", LOCAL_OPERATOR_EXECUTOR_REPORT_RELATIVE_PATH)
+    ).strip()
+    if source_report_artifact != expected_report_artifact:
+        findings.append(
+            executor_report_finding(
+                code="invalid_analysis_report_source_report_artifact",
+                field="source_report_artifact",
+                message="Analysis report consumption must reference the local report.",
+            )
+        )
+    consumer = str(request.get("consumer", "")).strip()
+    expected_consumer = str(policy.get("consumer", "analysis_report_reviewer")).strip()
+    if consumer != expected_consumer:
+        findings.append(
+            executor_report_finding(
+                code="invalid_analysis_report_consumer",
+                field="consumer",
+                message="Analysis report consumption requires the analysis report reviewer.",
+            )
+        )
+    transformation = str(request.get("transformation", "")).strip()
+    expected_transformation = str(
+        policy.get(
+            "transformation",
+            "review_packet_to_analysis_report_review_outcome",
+        )
+    ).strip()
+    if transformation != expected_transformation:
+        findings.append(
+            executor_report_finding(
+                code="invalid_analysis_report_transformation",
+                field="transformation",
+                message=(
+                    "Analysis report consumption must transform review packet to review "
+                    "outcome only."
+                ),
+            )
+        )
+    effects_validation = validate_executor_analysis_report_consumption_effects(
+        request.get("requested_effects")
+    )
+    findings.extend(copy.deepcopy(effects_validation.get("findings", [])))
+    authority_validation = validate_executor_analysis_report_authority_boundary(
+        request.get("authority_boundary")
+    )
+    findings.extend(copy.deepcopy(authority_validation.get("findings", [])))
+    source_validation = validate_executor_report_review_packet_source_for_analysis_report(
+        review_packet
+    )
+    findings.extend(copy.deepcopy(source_validation.get("findings", [])))
+    source_normalized = source_validation.get("normalized", {})
+    source_normalized = source_normalized if isinstance(source_normalized, dict) else {}
+    return {
+        "valid": not findings,
+        "findings": findings,
+        "normalized": {
+            "source_review_packet_artifact": source_review_packet_artifact,
+            "source_report_artifact": source_report_artifact,
+            "consumer": consumer,
+            "transformation": transformation,
+            "requested_effects": copy.deepcopy(effects_validation.get("effects", [])),
+            "source_review_packet_valid": source_normalized.get("source_review_packet_valid"),
+            "source_review_packet_status": source_normalized.get("source_review_packet_status", ""),
+            "source_review_state": source_normalized.get("source_review_state", ""),
+            "source_report_kind": source_normalized.get("source_report_kind", ""),
+            "next_gap": str(
+                policy.get("next_gap", "build_executor_analysis_report_review_outcome")
+            ).strip(),
+        },
+        "effects_validation": effects_validation,
+        "authority_validation": authority_validation,
+        "source_review_packet_validation": source_validation,
     }
 
 
@@ -22701,6 +23195,7 @@ def build_local_operator_executor_report_review_packet(
         if isinstance(proposed_artifacts, list) and source_report_valid
         else []
     )
+    report_kind = str(summary.get("report_kind", "")).strip()
     named_filters = {
         str(name).strip(): [] for name in contract.get("named_filters", []) if str(name).strip()
     }
@@ -22722,12 +23217,15 @@ def build_local_operator_executor_report_review_packet(
         "privacy_boundary": copy.deepcopy(contract.get("privacy_boundary", {})),
         "summary": {
             "status": packet_status,
-            "report_kind": str(summary.get("report_kind", "")).strip(),
+            "report_kind": report_kind,
             "producer_kind": str(producer.get("producer_kind", "")).strip(),
             "authority_level": "review_only",
             "human_review_required": bool(contract.get("human_review_required", True)),
             "canonical_mutations_allowed": False,
-            "next_gap": local_operator_executor_report_review_packet_next_gap(packet_status),
+            "next_gap": local_operator_executor_report_review_packet_next_gap(
+                packet_status,
+                report_kind=report_kind,
+            ),
         },
         "review_packet": {
             "packet_kind": str(contract.get("packet_kind", "executor_report_review")).strip(),

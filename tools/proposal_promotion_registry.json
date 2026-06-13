@@ -1376,5 +1376,31 @@
     "required_provenance_links": [
       "source_draft_ref"
     ]
+  },
+  {
+    "proposal_id": "0107",
+    "source_artifact_class": "working_draft",
+    "source_refs": [
+      "docs/archive/proposal_sources/0107_executor_analysis_report_consumption_policy.md"
+    ],
+    "motivating_concern": "SpecGraph can build review packets from local executor reports and route proposal_draft packets toward future proposal draft candidates, but real local executor reports commonly produce analysis_report packets that need a separate review outcome path without proposal-draft authority",
+    "normalized_title": "Executor Analysis Report Consumption Policy",
+    "bounded_scope": "Add a policy-only validator surface for consuming human-review-ready analysis_report executor review packets as future analysis review outcome input, while rejecting proposal draft candidate effects, proposal_draft packets, authority expansion, canonical mutations, patch application, gap closure, proposal status mutation, static publication, and any new executor runtime or actual outcome generation.",
+    "required_provenance_links": [
+      "source_draft_ref"
+    ]
+  },
+  {
+    "proposal_id": "0108",
+    "source_artifact_class": "working_draft",
+    "source_refs": [
+      "docs/archive/proposal_sources/0108_ontology_semantic_review_surface.md"
+    ],
+    "motivating_concern": "SpecGraph can emit ontology semantic context, lint, and delta candidate artifacts, but SpecSpace and supervisor gate flows need one stable derived semantic review surface before consuming those artifacts without granting generated ontology material canonical authority",
+    "normalized_title": "Ontology Semantic Review Surface",
+    "bounded_scope": "Add a deterministic ontology semantic review surface derived from the 0104 context pack, 0105 lint report, and 0106 delta candidate review packet, carrying grounding summary, blocking findings, review-required findings, delta candidates, unified review items, and non-mutating review actions under runs/ without adding SpecSpace UI, writing Ontology packages or lockfiles, mutating canonical specs, accepting candidate terms, invoking prompt agents, parsing arbitrary text, or running ontologyc.",
+    "required_provenance_links": [
+      "source_draft_ref"
+    ]
   }
 ]
