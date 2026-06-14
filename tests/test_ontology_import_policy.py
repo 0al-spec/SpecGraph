@@ -51,6 +51,20 @@ def write_temp_semantic_control_policy(
     policy = payload or json.loads(
         (ROOT / "tools" / "ontology_semantic_control_policy.json").read_text()
     )
+    source_set = policy.get("semantic_lint_input_sources")
+    if isinstance(source_set, dict):
+        for raw_source in source_set.get("source_outputs", []):
+            if not isinstance(raw_source, dict):
+                continue
+            raw_path = raw_source.get("path")
+            if not isinstance(raw_path, str):
+                continue
+            source_path = ROOT / raw_path
+            if not source_path.exists():
+                continue
+            target_path = tmp_path / raw_path
+            target_path.parent.mkdir(parents=True, exist_ok=True)
+            target_path.write_text(source_path.read_text(encoding="utf-8"), encoding="utf-8")
     policy_dir = tmp_path / "tools"
     policy_dir.mkdir(parents=True, exist_ok=True)
     policy_path = policy_dir / "ontology_semantic_control_policy.json"
@@ -124,6 +138,9 @@ def test_ontology_semantic_control_policy_defines_review_only_contract() -> None
     assert policy["repository_layout"]["semantic_context_pack"] == (
         "runs/ontology_semantic_context_pack.json"
     )
+    assert policy["repository_layout"]["semantic_lint_input"] == (
+        "runs/ontology_semantic_lint_input.json"
+    )
     assert policy["repository_layout"]["semantic_lint_report"] == (
         "runs/ontology_semantic_lint_report.json"
     )
@@ -161,11 +178,32 @@ def test_ontology_semantic_control_policy_defines_review_only_contract() -> None
     assert context_contract["consumer_boundary"]["for_specspace_review_surface"] is True
     assert context_contract["consumer_boundary"]["may_execute_prompt_agent"] is False
     assert context_contract["consumer_boundary"]["may_mutate_canonical_specs"] is False
+    lint_input_contract = policy["semantic_lint_input_contract"]
+    assert lint_input_contract["artifact_kind"] == "ontology_semantic_lint_input"
+    assert lint_input_contract["target"] == {
+        "target_kind": "proposal",
+        "target_ref": "SG-RFC-0116",
+    }
+    assert {"proposal_markdown", "supervisor_run_summary"}.issubset(
+        set(lint_input_contract["source_output_kinds"])
+    )
+    assert lint_input_contract["extraction_mode"] == "deterministic_declared_term_extraction"
+    assert lint_input_contract["consumer_boundary"]["for_semantic_lint_report"] is True
+    assert lint_input_contract["consumer_boundary"]["for_supervisor_gate_evidence"] is True
+    assert lint_input_contract["consumer_boundary"]["may_parse_arbitrary_text"] is False
+    assert lint_input_contract["consumer_boundary"]["may_execute_prompt_agent"] is False
+    assert lint_input_contract["consumer_boundary"]["may_mutate_canonical_specs"] is False
+    lint_input_sources = policy["semantic_lint_input_sources"]
+    assert lint_input_sources["artifact_kind"] == "ontology_semantic_lint_input_source_set"
+    assert lint_input_sources["source_outputs"][0]["path"] == (
+        "docs/proposals/0105_ontology_semantic_lint_report.md"
+    )
     report_contract = policy["semantic_lint_report_contract"]
     assert report_contract["artifact_kind"] == "ontology_semantic_lint_report"
     assert report_contract["source_context_pack_artifact_kind"] == (
         "ontology_semantic_context_pack"
     )
+    assert report_contract["source_lint_input_artifact_kind"] == ("ontology_semantic_lint_input")
     assert report_contract["target"] == {
         "target_kind": "proposal",
         "target_ref": "SG-RFC-0105",
@@ -447,6 +485,7 @@ def test_ontology_semantic_control_policy_defines_review_only_contract() -> None
         "relation_conflict",
     }.issubset(set(contract["term_classifications"]))
     boundary = policy["authority_boundary"]
+    assert boundary["semantic_lint_input_is_authority"] is False
     assert boundary["smoke_report_is_authority"] is False
     assert boundary["ontology_delta_candidate_is_authority"] is False
     assert boundary["semantic_review_surface_is_authority"] is False
@@ -663,6 +702,157 @@ def test_ontology_semantic_context_pack_rejects_non_relation_conflict_embedding(
     assert "accepted_relation" not in conflict
 
 
+def test_ontology_semantic_lint_input_extracts_terms_from_proposal_output() -> None:
+    module = load_ontology_imports_module()
+
+    surfaces = module.build_ontology_import_surfaces(FIXTURE)
+
+    lint_input = surfaces["semantic_lint_input"]
+    assert lint_input["artifact_kind"] == "ontology_semantic_lint_input"
+    assert lint_input["proposal_id"] == "0116"
+    assert lint_input["target"] == {
+        "target_kind": "proposal",
+        "target_ref": "SG-RFC-0116",
+    }
+    assert lint_input["canonical_mutations_allowed"] is False
+    assert lint_input["tracked_artifacts_written"] is False
+    assert lint_input["output_artifact"] == "runs/ontology_semantic_lint_input.json"
+    assert lint_input["summary"] == {
+        "status": "ready",
+        "source_output_count": 1,
+        "detected_term_count": 5,
+        "next_gap": "wire_supervisor_semantic_gate_into_targeted_runs",
+    }
+
+    source = lint_input["source_outputs"][0]
+    assert source["source_id"] == "proposal-0105-semantic-lint-report"
+    assert source["source_kind"] == "proposal_markdown"
+    assert source["path"] == "docs/proposals/0105_ontology_semantic_lint_report.md"
+    assert source["text_sha256"].startswith("sha256:")
+    assert source["declared_term_count"] == 5
+
+    source_text = (ROOT / source["path"]).read_text(encoding="utf-8")
+    by_term = {entry["term"]: entry for entry in lint_input["detected_terms"]}
+    assert sorted(by_term) == [
+        "CASFunction",
+        "Exam",
+        "ExamPolicy",
+        "allows policy",
+        "requires policy",
+    ]
+    assert by_term["CASFunction"]["source_ref"] == "examcalc:CASFunction"
+    assert by_term["Exam"]["source_ref"] == "examcalc:Exam"
+    assert by_term["ExamPolicy"]["source_output_kind"] == "proposal_markdown"
+    span = by_term["allows policy"]["source_span"]
+    assert source_text[span["start_offset"] : span["end_offset"]] == "allows policy"
+    assert span["line"] > 0
+    assert span["column"] > 0
+    assert lint_input["extraction_summary"] == {
+        "mode": "deterministic_declared_term_extraction",
+        "source_output_count": 1,
+        "detected_term_count": 5,
+        "term_source": "semantic_lint_input_sources.source_outputs[].terms",
+        "arbitrary_text_parsed": False,
+        "prompt_agent_executed": False,
+    }
+    assert lint_input["consumer_boundary"]["for_semantic_lint_report"] is True
+    assert lint_input["consumer_boundary"]["may_parse_arbitrary_text"] is False
+    assert lint_input["authority_boundary"]["semantic_lint_input_is_authority"] is False
+
+
+def test_ontology_semantic_lint_input_rejects_misclassified_source_path(
+    tmp_path: Path,
+) -> None:
+    module = load_ontology_imports_module()
+    module.ROOT = tmp_path
+    fixture_path = write_temp_fixture(tmp_path, load_fixture_payload())
+    policy_path = write_temp_policy(tmp_path)
+    semantic_policy = json.loads(
+        (ROOT / "tools" / "ontology_semantic_control_policy.json").read_text()
+    )
+    semantic_policy["semantic_lint_input_sources"]["source_outputs"][0]["path"] = (
+        "runs/local-output.md"
+    )
+    semantic_policy_path = write_temp_semantic_control_policy(tmp_path, semantic_policy)
+
+    with pytest.raises(ValueError, match=r"docs/proposals"):
+        module.build_ontology_import_surfaces(
+            fixture_path,
+            policy_path=policy_path,
+            semantic_policy_path=semantic_policy_path,
+        )
+
+
+def test_ontology_semantic_lint_input_requires_standalone_term_occurrence(
+    tmp_path: Path,
+) -> None:
+    module = load_ontology_imports_module()
+    module.ROOT = tmp_path
+    fixture_path = write_temp_fixture(tmp_path, load_fixture_payload())
+    policy_path = write_temp_policy(tmp_path)
+    semantic_policy = json.loads(
+        (ROOT / "tools" / "ontology_semantic_control_policy.json").read_text()
+    )
+    source = semantic_policy["semantic_lint_input_sources"]["source_outputs"][0]
+    source["path"] = "docs/proposals/substring_only.md"
+    source["terms"] = [{"term": "Exam"}]
+    semantic_policy_path = write_temp_semantic_control_policy(tmp_path, semantic_policy)
+    substring_source = tmp_path / "docs" / "proposals" / "substring_only.md"
+    substring_source.parent.mkdir(parents=True, exist_ok=True)
+    substring_source.write_text("Only ExamPolicy appears in this output.\n", encoding="utf-8")
+
+    with pytest.raises(ValueError, match=r"term 'Exam' was not found"):
+        module.build_ontology_import_surfaces(
+            fixture_path,
+            policy_path=policy_path,
+            semantic_policy_path=semantic_policy_path,
+        )
+
+
+def test_ontology_semantic_lint_input_aggregates_duplicate_terms(tmp_path: Path) -> None:
+    module = load_ontology_imports_module()
+    semantic_policy = json.loads(
+        (ROOT / "tools" / "ontology_semantic_control_policy.json").read_text()
+    )
+    duplicate_source = json.loads(
+        json.dumps(semantic_policy["semantic_lint_input_sources"]["source_outputs"][0])
+    )
+    duplicate_source["source_id"] = "proposal-0105-duplicate-casfunction"
+    duplicate_source["terms"] = [
+        {
+            "term": "CASFunction",
+            "source_ref": "examcalc:CASFunction",
+        }
+    ]
+    semantic_policy["semantic_lint_input_sources"]["source_outputs"].append(duplicate_source)
+    semantic_policy_path = write_temp_semantic_control_policy(tmp_path, semantic_policy)
+
+    surfaces = module.build_ontology_import_surfaces(
+        FIXTURE,
+        semantic_policy_path=semantic_policy_path,
+    )
+
+    lint_input = surfaces["semantic_lint_input"]
+    assert lint_input["summary"]["source_output_count"] == 2
+    assert lint_input["summary"]["detected_term_count"] == 5
+    by_term = {entry["term"]: entry for entry in lint_input["detected_terms"]}
+    assert len(by_term["CASFunction"]["source_occurrences"]) == 2
+    assert {
+        occurrence["source_output_id"]
+        for occurrence in by_term["CASFunction"]["source_occurrences"]
+    } == {
+        "proposal-0105-semantic-lint-report",
+        "proposal-0105-duplicate-casfunction",
+    }
+
+    report = surfaces["semantic_lint_report"]
+    assert report["summary"]["finding_count"] == 5
+    report_by_term = {entry["term"]: entry for entry in report["findings"]}
+    assert len(report_by_term["CASFunction"]["source_occurrences"]) == 2
+    item_ids = [item["item_id"] for item in surfaces["semantic_review_surface"]["review_items"]]
+    assert len(item_ids) == len(set(item_ids))
+
+
 def test_ontology_semantic_lint_report_builds_review_findings() -> None:
     module = load_ontology_imports_module()
 
@@ -676,6 +866,7 @@ def test_ontology_semantic_lint_report_builds_review_findings() -> None:
         "target_ref": "SG-RFC-0105",
     }
     assert report["source_context_pack"] == "runs/ontology_semantic_context_pack.json"
+    assert report["source_lint_input"] == "runs/ontology_semantic_lint_input.json"
     assert report["canonical_mutations_allowed"] is False
     assert report["tracked_artifacts_written"] is False
     assert report["summary"] == {
@@ -697,6 +888,10 @@ def test_ontology_semantic_lint_report_builds_review_findings() -> None:
 
     by_term = {entry["term"]: entry for entry in report["findings"]}
     assert by_term["Exam"]["classification"] == "accepted_term"
+    assert by_term["Exam"]["source_output_id"] == "proposal-0105-semantic-lint-report"
+    assert by_term["Exam"]["source_path"] == (
+        "docs/proposals/0105_ontology_semantic_lint_report.md"
+    )
     assert by_term["requires policy"]["classification"] == "accepted_alias"
     assert by_term["CASFunction"]["classification"] == "unknown_term"
     assert by_term["CASFunction"]["gap"]["gap_id"] == "ontology-gap-examcalc-casfunction"
@@ -2114,6 +2309,9 @@ def test_ontology_semantic_write_uses_surface_output_artifact(tmp_path: Path) ->
     semantic_policy["repository_layout"]["semantic_context_pack"] = (
         "runs/custom_semantic_context_pack.json"
     )
+    semantic_policy["repository_layout"]["semantic_lint_input"] = (
+        "runs/custom_semantic_lint_input.json"
+    )
     semantic_policy["repository_layout"]["semantic_lint_report"] = (
         "runs/custom_semantic_lint_report.json"
     )
@@ -2168,6 +2366,7 @@ def test_ontology_semantic_write_uses_surface_output_artifact(tmp_path: Path) ->
     written_paths = {path.relative_to(tmp_path).as_posix() for path in written}
     assert "runs/custom_delta_candidate_review_packet.json" in written_paths
     assert "runs/custom_semantic_context_pack.json" in written_paths
+    assert "runs/custom_semantic_lint_input.json" in written_paths
     assert "runs/custom_semantic_lint_report.json" in written_paths
     assert "runs/custom_semantic_review_surface.json" in written_paths
     assert "runs/custom_supervisor_semantic_gate.json" in written_paths
@@ -2179,6 +2378,7 @@ def test_ontology_semantic_write_uses_surface_output_artifact(tmp_path: Path) ->
     assert "runs/custom_semantic_lint_smoke.json" in written_paths
     assert not (tmp_path / "runs" / "ontology_delta_candidate_review_packet.json").exists()
     assert not (tmp_path / "runs" / "ontology_semantic_context_pack.json").exists()
+    assert not (tmp_path / "runs" / "ontology_semantic_lint_input.json").exists()
     assert not (tmp_path / "runs" / "ontology_semantic_lint_report.json").exists()
     assert not (tmp_path / "runs" / "ontology_semantic_review_surface.json").exists()
     assert not (tmp_path / "runs" / "ontology_supervisor_semantic_gate.json").exists()
@@ -2222,10 +2422,12 @@ def test_ontology_semantic_lint_report_rejects_non_string_source_ref(
     semantic_policy = json.loads(
         (ROOT / "tools" / "ontology_semantic_control_policy.json").read_text()
     )
-    semantic_policy["smoke_fixture"]["detected_terms"][0]["source_ref"] = 123
+    semantic_policy["semantic_lint_input_sources"]["source_outputs"][0]["terms"][0][
+        "source_ref"
+    ] = 123
     semantic_policy_path = write_temp_semantic_control_policy(tmp_path, semantic_policy)
 
-    with pytest.raises(ValueError, match=r"detected_terms\[0\]\.source_ref"):
+    with pytest.raises(ValueError, match=r"terms\[0\]\.source_ref"):
         module.build_ontology_import_surfaces(
             fixture_path,
             policy_path=policy_path,
@@ -2243,7 +2445,9 @@ def test_ontology_semantic_lint_report_treats_none_source_ref_as_absent(
     semantic_policy = json.loads(
         (ROOT / "tools" / "ontology_semantic_control_policy.json").read_text()
     )
-    semantic_policy["smoke_fixture"]["detected_terms"][0]["source_ref"] = None
+    semantic_policy["semantic_lint_input_sources"]["source_outputs"][0]["terms"][0][
+        "source_ref"
+    ] = None
     semantic_policy_path = write_temp_semantic_control_policy(tmp_path, semantic_policy)
 
     surfaces = module.build_ontology_import_surfaces(
@@ -2348,6 +2552,7 @@ def test_make_ontology_imports_writes_declared_surfaces() -> None:
         "runs/ontology_prompt_invocation_index.json": "ontology_prompt_invocation_index",
         "runs/ontologyc_adapter_report_smoke.json": "ontologyc_adapter_report_smoke",
         "runs/ontology_semantic_context_pack.json": "ontology_semantic_context_pack",
+        "runs/ontology_semantic_lint_input.json": "ontology_semantic_lint_input",
         "runs/ontology_semantic_lint_report.json": "ontology_semantic_lint_report",
         "runs/ontology_delta_candidate_review_packet.json": (
             "ontology_delta_candidate_review_packet"
@@ -2367,6 +2572,7 @@ def test_make_ontology_imports_writes_declared_surfaces() -> None:
         expected_proposal_id = {
             "ontology_delta_candidate_review_packet": "0106",
             "ontology_semantic_context_pack": "0104",
+            "ontology_semantic_lint_input": "0116",
             "ontology_semantic_lint_report": "0105",
             "ontology_semantic_review_surface": "0108",
             "ontology_supervisor_semantic_gate": "0109",
@@ -2887,6 +3093,37 @@ def test_proposal_0105_runtime_registry_tracks_lint_report() -> None:
     assert (
         "tools/README.md",
         "runs/ontology_semantic_lint_report.json",
+    ) in observation_markers
+
+
+def test_proposal_0116_runtime_registry_tracks_lint_input() -> None:
+    registry = json.loads((ROOT / "tools" / "proposal_runtime_registry.json").read_text())
+    entries = {entry["proposal_id"]: entry for entry in registry if isinstance(entry, dict)}
+    proposal = entries["0116"]
+
+    runtime_markers = {(item["path"], item["pattern"]) for item in proposal["runtime_markers"]}
+    validation_markers = {
+        (item["path"], item["pattern"]) for item in proposal["validation_markers"]
+    }
+    observation_markers = {
+        (item["path"], item["pattern"]) for item in proposal["observation_markers"]
+    }
+
+    assert (
+        "tools/ontology_semantic_control_policy.json",
+        "semantic_lint_input_contract",
+    ) in runtime_markers
+    assert (
+        "tools/ontology_imports.py",
+        "def build_ontology_semantic_lint_input(",
+    ) in runtime_markers
+    assert (
+        "tests/test_ontology_import_policy.py",
+        "def test_ontology_semantic_lint_input_extracts_terms_from_proposal_output(",
+    ) in validation_markers
+    assert (
+        "tools/README.md",
+        "runs/ontology_semantic_lint_input.json",
     ) in observation_markers
 
 

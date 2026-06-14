@@ -13,12 +13,14 @@
     "docs/proposals/0111_ontology_closed_loop_evidence.md",
     "docs/proposals/0113_ontology_review_dashboard.md",
     "docs/proposals/0114_ontology_owner_decision_contract.md",
-    "docs/proposals/0115_ontology_decision_import_preview.md"
+    "docs/proposals/0115_ontology_decision_import_preview.md",
+    "docs/proposals/0116_ontology_semantic_lint_input.md"
   ],
   "policy_basis": "docs/proposals/0100_ontology_grounded_semantic_control.md",
   "repository_layout": {
     "ontology_delta_candidate_review_packet": "runs/ontology_delta_candidate_review_packet.json",
     "semantic_context_pack": "runs/ontology_semantic_context_pack.json",
+    "semantic_lint_input": "runs/ontology_semantic_lint_input.json",
     "semantic_lint_report": "runs/ontology_semantic_lint_report.json",
     "semantic_review_surface": "runs/ontology_semantic_review_surface.json",
     "supervisor_semantic_gate": "runs/ontology_supervisor_semantic_gate.json",
@@ -89,11 +91,11 @@
   "semantic_lint_report_contract": {
     "artifact_kind": "ontology_semantic_lint_report",
     "source_context_pack_artifact_kind": "ontology_semantic_context_pack",
+    "source_lint_input_artifact_kind": "ontology_semantic_lint_input",
     "target": {
       "target_kind": "proposal",
       "target_ref": "SG-RFC-0105"
     },
-    "input_fixture": "smoke_fixture",
     "review_sections": [
       "findings",
       "blocking_findings",
@@ -110,6 +112,32 @@
       "may_write_ontology_delta": false
     },
     "next_gap": "build_ontology_delta_candidate_review_packet"
+  },
+  "semantic_lint_input_contract": {
+    "artifact_kind": "ontology_semantic_lint_input",
+    "target": {
+      "target_kind": "proposal",
+      "target_ref": "SG-RFC-0116"
+    },
+    "source_output_kinds": [
+      "proposal_markdown",
+      "supervisor_run_summary"
+    ],
+    "input_sections": [
+      "source_outputs",
+      "detected_terms",
+      "extraction_summary",
+      "authority_boundary"
+    ],
+    "extraction_mode": "deterministic_declared_term_extraction",
+    "consumer_boundary": {
+      "for_semantic_lint_report": true,
+      "for_supervisor_gate_evidence": true,
+      "may_parse_arbitrary_text": false,
+      "may_execute_prompt_agent": false,
+      "may_mutate_canonical_specs": false
+    },
+    "next_gap": "wire_supervisor_semantic_gate_into_targeted_runs"
   },
   "ontology_delta_candidate_review_packet_contract": {
     "artifact_kind": "ontology_delta_candidate_review_packet",
@@ -485,6 +513,35 @@
       }
     ]
   },
+  "semantic_lint_input_sources": {
+    "artifact_kind": "ontology_semantic_lint_input_source_set",
+    "source_outputs": [
+      {
+        "source_id": "proposal-0105-semantic-lint-report",
+        "source_kind": "proposal_markdown",
+        "path": "docs/proposals/0105_ontology_semantic_lint_report.md",
+        "terms": [
+          {
+            "term": "Exam",
+            "source_ref": "examcalc:Exam"
+          },
+          {
+            "term": "requires policy"
+          },
+          {
+            "term": "CASFunction",
+            "source_ref": "examcalc:CASFunction"
+          },
+          {
+            "term": "ExamPolicy"
+          },
+          {
+            "term": "allows policy"
+          }
+        ]
+      }
+    ]
+  },
   "owner_decision_fixture": {
     "artifact_kind": "ontology_owner_decision_fixture",
     "decisions": [
@@ -520,6 +577,7 @@
   },
   "authority_boundary": {
     "context_pack_is_authority": false,
+    "semantic_lint_input_is_authority": false,
     "lint_report_is_authority": false,
     "smoke_report_is_authority": false,
     "ontology_delta_candidate_is_authority": false,

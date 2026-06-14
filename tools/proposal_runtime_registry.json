@@ -6314,5 +6314,71 @@
         "pattern": "build_specspace_owner_decision_review_surface"
       }
     ]
+  },
+  {
+    "proposal_id": "0116",
+    "posture": "bounded_runtime_followup",
+    "runtime_surfaces": [
+      "docs/proposals/0116_ontology_semantic_lint_input.md",
+      "docs/archive/proposal_sources/0116_ontology_semantic_lint_input.md",
+      "tools/ontology_semantic_control_policy.json",
+      "tools/ontology_imports.py",
+      "tools/README.md",
+      "docs/supervisor_manual.md",
+      "Sources/SpecGraph/Documentation.docc/OntologyCAdapterReport.md",
+      "Makefile",
+      "tests/test_ontology_import_policy.py",
+      "runs/ontology_semantic_lint_input.json"
+    ],
+    "runtime_markers": [
+      {
+        "path": "tools/ontology_semantic_control_policy.json",
+        "pattern": "semantic_lint_input_contract"
+      },
+      {
+        "path": "tools/ontology_imports.py",
+        "pattern": "def build_ontology_semantic_lint_input("
+      },
+      {
+        "path": "tools/ontology_imports.py",
+        "pattern": "def require_ontology_semantic_lint_input("
+      },
+      {
+        "path": "tools/ontology_imports.py",
+        "pattern": "\"semantic_lint_input\""
+      }
+    ],
+    "validation_markers": [
+      {
+        "path": "tests/test_ontology_import_policy.py",
+        "pattern": "def test_ontology_semantic_lint_input_extracts_terms_from_proposal_output("
+      },
+      {
+        "path": "tests/test_ontology_import_policy.py",
+        "pattern": "runs/ontology_semantic_lint_input.json"
+      },
+      {
+        "path": "tests/test_ontology_import_policy.py",
+        "pattern": "source_lint_input"
+      }
+    ],
+    "observation_markers": [
+      {
+        "path": "Makefile",
+        "pattern": "ontology-imports:"
+      },
+      {
+        "path": "tools/README.md",
+        "pattern": "runs/ontology_semantic_lint_input.json"
+      },
+      {
+        "path": "docs/supervisor_manual.md",
+        "pattern": "runs/ontology_semantic_lint_input.json"
+      },
+      {
+        "path": "docs/proposals/0116_ontology_semantic_lint_input.md",
+        "pattern": "wire_supervisor_semantic_gate_into_targeted_runs"
+      }
+    ]
   }
 ]

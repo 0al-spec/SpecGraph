@@ -1642,6 +1642,10 @@ authoritative.
 - `runs/ontology_closed_loop_evidence.json`
   - SpecGraph-facing evidence surface for Ontology delta intake requests; it
     keeps blocked or pending owner-decision state explicit without closing gates
+- `runs/ontology_semantic_lint_input.json`
+  - read-only source-backed semantic lint input extracted from tracked
+    proposal/supervisor output sources; it carries source digests and spans
+    without parsing arbitrary text as authority or executing prompt agents
 - `runs/ontology_review_dashboard.json`
   - richer read-only SpecGraph/SpecSpace dashboard projection combining the
     semantic review surface, supervisor semantic gate, delta draft intake, and
