@@ -6960,5 +6960,51 @@
         "pattern": "local_operator_executor_followup_proposal_draft_candidate.json"
       }
     ]
+  },
+  {
+    "proposal_id": "0126",
+    "posture": "deferred_until_canonicalized",
+    "runtime_surfaces": [
+      "docs/proposals/0126_specauthor_claim_calibration_prompt_contract.md",
+      "docs/archive/proposal_sources/0126_specauthor_claim_calibration_prompt_contract.md"
+    ],
+    "runtime_markers": [
+      {
+        "path": "docs/proposals/0126_specauthor_claim_calibration_prompt_contract.md",
+        "pattern": "This document defines a prompt and validation contract only"
+      },
+      {
+        "path": "docs/proposals/0126_specauthor_claim_calibration_prompt_contract.md",
+        "pattern": "SpecAuthorAgent should not write persistent graph specifications in free prose"
+      },
+      {
+        "path": "docs/proposals/0126_specauthor_claim_calibration_prompt_contract.md",
+        "pattern": "SpecGraphWriteGate.claim_calibration_required"
+      }
+    ],
+    "validation_markers": [
+      {
+        "path": "docs/proposals/0126_specauthor_claim_calibration_prompt_contract.md",
+        "pattern": "proposal tracking gate passes"
+      },
+      {
+        "path": "docs/proposals/0126_specauthor_claim_calibration_prompt_contract.md",
+        "pattern": "This contract slice is complete"
+      }
+    ],
+    "observation_markers": [
+      {
+        "path": "docs/proposals/0126_specauthor_claim_calibration_prompt_contract.md",
+        "pattern": "specgraph.prompt-contract.claim-calibration.v0.1"
+      },
+      {
+        "path": "docs/proposals/0126_specauthor_claim_calibration_prompt_contract.md",
+        "pattern": "No ontology/context -> no final spec"
+      },
+      {
+        "path": "docs/proposals/0126_specauthor_claim_calibration_prompt_contract.md",
+        "pattern": "Low R -> not a decision"
+      }
+    ]
   }
 ]
