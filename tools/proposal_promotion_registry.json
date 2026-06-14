@@ -1532,5 +1532,18 @@
     "required_provenance_links": [
       "source_draft_ref"
     ]
+  },
+  {
+    "proposal_id": "0119",
+    "source_artifact_class": "working_draft",
+    "source_refs": [
+      "docs/archive/proposal_sources/0119_ontology_canonicalization_backlog.md"
+    ],
+    "motivating_concern": "After the Ontology semantic-control loop reached source-backed linting, supervisor soft-gate evidence, prompt-agent context, owner decisions, and SpecSpace acknowledgement state, the remaining canonicalization, lockfile, packaging, mutation UI, and supervisor write-boundary debt needs one explicit backlog index before bounded child proposals begin.",
+    "normalized_title": "Ontology Canonicalization Backlog",
+    "bounded_scope": "Record deferred Ontology materialization and packaging debt, including canonical ontology lockfiles, automatic imports into specs, Platform/Docker packaging, SpecSpace mutation UI, and supervisor-driven package writes, while preserving the current review-first boundary and explicitly avoiding runtime implementation, canonical mutation, lockfile writes, package writes, prompt-agent execution, semantic gate closure, and mutation UI.",
+    "required_provenance_links": [
+      "source_draft_ref"
+    ]
   }
 ]

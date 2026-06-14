@@ -6512,5 +6512,51 @@
         "pattern": "produce_ontology_owner_decisions"
       }
     ]
+  },
+  {
+    "proposal_id": "0119",
+    "posture": "deferred_until_canonicalized",
+    "runtime_surfaces": [
+      "docs/proposals/0119_ontology_canonicalization_backlog.md",
+      "docs/archive/proposal_sources/0119_ontology_canonicalization_backlog.md"
+    ],
+    "runtime_markers": [
+      {
+        "path": "docs/proposals/0119_ontology_canonicalization_backlog.md",
+        "pattern": "This document is a backlog index only"
+      },
+      {
+        "path": "docs/proposals/0119_ontology_canonicalization_backlog.md",
+        "pattern": "No current artifact grants authority"
+      },
+      {
+        "path": "docs/proposals/0119_ontology_canonicalization_backlog.md",
+        "pattern": "Proposed Child Proposal Sequence"
+      }
+    ],
+    "validation_markers": [
+      {
+        "path": "docs/proposals/0119_ontology_canonicalization_backlog.md",
+        "pattern": "proposal tracking gate passes"
+      },
+      {
+        "path": "docs/proposals/0119_ontology_canonicalization_backlog.md",
+        "pattern": "This informational slice is complete"
+      }
+    ],
+    "observation_markers": [
+      {
+        "path": "docs/proposals/0119_ontology_canonicalization_backlog.md",
+        "pattern": "split_ontology_lock_preview_compatibility_report"
+      },
+      {
+        "path": "docs/proposals/0119_ontology_canonicalization_backlog.md",
+        "pattern": "canonical `specs/imports/ontology.lock.yaml`"
+      },
+      {
+        "path": "docs/proposals/0119_ontology_canonicalization_backlog.md",
+        "pattern": "SpecSpace mutation UI"
+      }
+    ]
   }
 ]
