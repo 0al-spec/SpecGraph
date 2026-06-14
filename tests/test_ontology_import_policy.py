@@ -295,6 +295,42 @@ def test_ontology_semantic_control_policy_defines_review_only_contract() -> None
         supervisor_gate_contract["typed_invocation_boundary"]["supervisor_prompt_mutation_allowed"]
         is False
     )
+    supervisor_gate_wiring_contract = policy["supervisor_semantic_gate_wiring_contract"]
+    assert (
+        supervisor_gate_wiring_contract["artifact_kind"]
+        == "ontology_supervisor_semantic_gate_run_evidence"
+    )
+    assert (
+        supervisor_gate_wiring_contract["source_supervisor_semantic_gate_artifact_kind"]
+        == "ontology_supervisor_semantic_gate"
+    )
+    assert supervisor_gate_wiring_contract["target"] == {
+        "target_kind": "proposal",
+        "target_ref": "SG-RFC-0117",
+    }
+    assert supervisor_gate_wiring_contract["integration_mode"] == "soft_review_evidence"
+    assert supervisor_gate_wiring_contract["source_artifact"] == (
+        "runs/ontology_supervisor_semantic_gate.json"
+    )
+    assert {"clear", "review_pending", "blocked", "unavailable"}.issubset(
+        set(supervisor_gate_wiring_contract["allowed_gate_states"])
+    )
+    assert {
+        "allow_run",
+        "continue_without_semantic_gate_evidence",
+        "require_review_before_approval",
+    }.issubset(set(supervisor_gate_wiring_contract["run_actions"]))
+    assert supervisor_gate_wiring_contract["auto_approve_requires_gate_state"] == "clear"
+    assert supervisor_gate_wiring_contract["blocks_executor_invocation"] is False
+    assert supervisor_gate_wiring_contract["preserve_blocking_item_ids"] is True
+    assert (
+        supervisor_gate_wiring_contract["consumer_boundary"]["for_supervisor_run_evidence"] is True
+    )
+    assert supervisor_gate_wiring_contract["consumer_boundary"]["may_execute_prompt_agent"] is False
+    assert (
+        supervisor_gate_wiring_contract["consumer_boundary"]["may_mutate_canonical_specs"] is False
+    )
+    assert supervisor_gate_wiring_contract["consumer_boundary"]["may_close_semantic_gate"] is False
     delta_draft_intake_contract = policy["ontology_delta_draft_intake_contract"]
     assert delta_draft_intake_contract["artifact_kind"] == "ontology_delta_draft_intake"
     assert delta_draft_intake_contract["source_supervisor_semantic_gate_artifact_kind"] == (
@@ -3124,6 +3160,37 @@ def test_proposal_0116_runtime_registry_tracks_lint_input() -> None:
     assert (
         "tools/README.md",
         "runs/ontology_semantic_lint_input.json",
+    ) in observation_markers
+
+
+def test_proposal_0117_runtime_registry_tracks_supervisor_soft_gate_wiring() -> None:
+    registry = json.loads((ROOT / "tools" / "proposal_runtime_registry.json").read_text())
+    entries = {entry["proposal_id"]: entry for entry in registry if isinstance(entry, dict)}
+    proposal = entries["0117"]
+
+    runtime_markers = {(item["path"], item["pattern"]) for item in proposal["runtime_markers"]}
+    validation_markers = {
+        (item["path"], item["pattern"]) for item in proposal["validation_markers"]
+    }
+    observation_markers = {
+        (item["path"], item["pattern"]) for item in proposal["observation_markers"]
+    }
+
+    assert (
+        "tools/ontology_semantic_control_policy.json",
+        "supervisor_semantic_gate_wiring_contract",
+    ) in runtime_markers
+    assert (
+        "tools/supervisor.py",
+        "def load_ontology_supervisor_semantic_gate_run_evidence(",
+    ) in runtime_markers
+    assert (
+        "tests/test_supervisor.py",
+        "def test_main_auto_approve_routes_to_review_when_ontology_semantic_gate_blocks(",
+    ) in validation_markers
+    assert (
+        "docs/proposals/0117_ontology_supervisor_soft_gate_wiring.md",
+        "build_prompt_agent_ontology_context_artifact",
     ) in observation_markers
 
 

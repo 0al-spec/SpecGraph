@@ -140,6 +140,62 @@ def grounded_acceptance_evidence(acceptance: list[object]) -> list[str]:
     return [f"Evidence grounds criterion: {str(item).strip()}" for item in acceptance]
 
 
+def write_ontology_supervisor_semantic_gate_fixture(
+    repo_root: Path,
+    *,
+    gate_state: str = "blocked",
+) -> Path:
+    gate_payload = {
+        "artifact_kind": "ontology_supervisor_semantic_gate",
+        "schema_version": 1,
+        "proposal_id": "0109",
+        "canonical_mutations_allowed": False,
+        "tracked_artifacts_written": False,
+        "source_artifacts": {
+            "semantic_review_surface": "runs/ontology_semantic_review_surface.json"
+        },
+        "gate": {
+            "gate_state": gate_state,
+            "outcome": (
+                "semantic_gate_clear"
+                if gate_state == "clear"
+                else (
+                    "semantic_review_pending"
+                    if gate_state == "review_pending"
+                    else "semantic_gate_blocked"
+                )
+            ),
+            "required_human_action": (
+                "none"
+                if gate_state == "clear"
+                else (
+                    "review_ontology_semantic_items"
+                    if gate_state == "review_pending"
+                    else "resolve_blocking_ontology_semantic_findings"
+                )
+            ),
+            "blocking_item_ids": (
+                ["semantic-finding-exampolicy", "semantic-finding-allows-policy"]
+                if gate_state == "blocked"
+                else []
+            ),
+            "review_required_item_ids": (
+                ["semantic-finding-casfunction"] if gate_state == "review_pending" else []
+            ),
+            "candidate_item_ids": [],
+        },
+        "summary": {
+            "status": gate_state,
+            "next_gap": "wire_supervisor_semantic_gate_into_targeted_runs",
+        },
+        "output_artifact": "runs/ontology_supervisor_semantic_gate.json",
+    }
+    path = repo_root / "runs" / "ontology_supervisor_semantic_gate.json"
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(json.dumps(gate_payload), encoding="utf-8")
+    return path
+
+
 def write_default_prompt_overlay_fixture(repo_root: Path) -> None:
     prompt_dir = repo_root / "tools" / "supervisor_prompts"
     prompt_dir.mkdir(parents=True, exist_ok=True)
@@ -36289,6 +36345,104 @@ def test_main_auto_approve_applies_status_and_copies_changes(
     assert updated["last_worktree_path"] == ""
     assert updated["last_branch"] == ""
     assert cleaned == [(worktree.as_posix(), "codex/sg-spec-0001/test")]
+
+
+def test_ontology_supervisor_semantic_gate_missing_artifact_is_soft_evidence(
+    supervisor_module: object,
+    repo_fixture: Path,
+) -> None:
+    evidence = supervisor_module.load_ontology_supervisor_semantic_gate_run_evidence(
+        run_id="RUN-1",
+        spec_id="SG-SPEC-0001",
+    )
+
+    assert evidence["artifact_kind"] == "ontology_supervisor_semantic_gate_run_evidence"
+    assert evidence["proposal_id"] == "0117"
+    assert evidence["source_artifact"] == "runs/ontology_supervisor_semantic_gate.json"
+    assert evidence["source_artifact_status"] == "missing"
+    assert evidence["gate_state"] == "unavailable"
+    assert evidence["canonical_mutations_allowed"] is False
+    assert evidence["tracked_artifacts_written"] is False
+    assert evidence["prompt_agent_executed"] is False
+    assert evidence["run_decision"] == {
+        "run_action": "continue_without_semantic_gate_evidence",
+        "blocks_executor_invocation": False,
+        "suppresses_auto_approve": False,
+        "required_human_action": "refresh_ontology_supervisor_semantic_gate",
+        "auto_approve_requires_gate_state": "clear",
+        "preserved_blocking_item_ids": [],
+    }
+
+
+def test_main_auto_approve_routes_to_review_when_ontology_semantic_gate_blocks(
+    supervisor_module: object,
+    repo_fixture: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    write_ontology_supervisor_semantic_gate_fixture(repo_fixture, gate_state="blocked")
+    worktree = make_fake_worktree(repo_fixture)
+    monkeypatch.setattr(
+        supervisor_module,
+        "create_isolated_worktree",
+        lambda _node_id: (worktree, "codex/sg-spec-0001/test"),
+    )
+
+    changed_snapshots = [[], ["specs/nodes/SG-SPEC-0001.yaml"]]
+    monkeypatch.setattr(
+        supervisor_module, "git_changed_files", lambda _cwd=None: changed_snapshots.pop(0)
+    )
+
+    def fake_executor(_node: object, worktree_path: Path) -> subprocess.CompletedProcess[str]:
+        node_path = worktree_path / "specs" / "nodes" / "SG-SPEC-0001.yaml"
+        data = supervisor_module.get_yaml_module().safe_load(node_path.read_text(encoding="utf-8"))
+        data["acceptance_evidence"] = grounded_acceptance_evidence(data["acceptance"])
+        data["prompt"] = "Semantic gate blocked auto approval."
+        node_path.write_text(json.dumps(data), encoding="utf-8")
+        return subprocess.CompletedProcess(
+            args=["codex"],
+            returncode=0,
+            stdout="RUN_OUTCOME: done\nBLOCKER: none\n",
+            stderr="",
+        )
+
+    cleaned: list[tuple[str, str]] = []
+    monkeypatch.setattr(
+        supervisor_module,
+        "cleanup_isolated_worktree",
+        lambda worktree_path, branch: cleaned.append((Path(worktree_path).as_posix(), branch)),
+    )
+
+    exit_code = supervisor_module.main(executor=fake_executor, auto_approve=True)
+    assert exit_code == 0
+
+    node_path = repo_fixture / "specs" / "nodes" / "SG-SPEC-0001.yaml"
+    updated = supervisor_module.get_yaml_module().safe_load(node_path.read_text(encoding="utf-8"))
+    assert updated["status"] == "outlined"
+    assert updated["gate_state"] == "review_pending"
+    assert updated["proposed_status"] == "specified"
+    assert updated["required_human_action"] == "resolve_blocking_ontology_semantic_findings"
+    assert updated["prompt"] == "Refine this node."
+    assert updated["last_worktree_path"] == worktree.as_posix()
+    assert updated["last_branch"] == "codex/sg-spec-0001/test"
+    assert cleaned == []
+
+    run_log = next((repo_fixture / "runs").glob("*-SG-SPEC-*.json"))
+    payload = json.loads(run_log.read_text(encoding="utf-8"))
+    semantic_gate = payload["ontology_supervisor_semantic_gate"]
+    assert payload["auto_approved"] is False
+    assert payload["accepted_canonical_diff"] is False
+    assert semantic_gate["source_artifact_status"] == "available"
+    assert semantic_gate["gate_state"] == "blocked"
+    assert semantic_gate["run_decision"]["blocks_executor_invocation"] is False
+    assert semantic_gate["run_decision"]["suppresses_auto_approve"] is True
+    assert semantic_gate["run_decision"]["preserved_blocking_item_ids"] == [
+        "semantic-finding-exampolicy",
+        "semantic-finding-allows-policy",
+    ]
+    assert payload["selected_by_rule"]["ontology_semantic_gate"]["gate_state"] == "blocked"
+    inspector_gate = payload["decision_inspector"]["gate"]["ontology_supervisor_semantic_gate"]
+    assert inspector_gate["gate_state"] == "blocked"
+    assert inspector_gate["run_decision"]["suppresses_auto_approve"] is True
 
 
 def test_main_records_supervisor_prompt_overlay_provenance(

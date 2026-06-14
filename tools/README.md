@@ -155,6 +155,10 @@ Supervisor modes:
   semantic surfaces through the supervisor entrypoint and print a compact gate
   report for `runs/ontology_supervisor_semantic_gate.json` without running
   prompt agents or mutating canonical specs.
+- ordinary targeted supervisor runs read
+  `runs/ontology_supervisor_semantic_gate.json` as soft review evidence; a
+  `blocked` or `review_pending` gate suppresses silent `--auto-approve`
+  canonical sync while still leaving executor invocation non-blocking.
 - `--build-supervisor-executor-adapter-index`: build
   `runs/supervisor_executor_adapter_index.json` from the 0056 policy so
   executor backend availability, capability gaps, and Agent Passport CLI

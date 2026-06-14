@@ -85,6 +85,14 @@ Use `tools/supervisor.py --build-ontology-supervisor-semantic-gate` when the
 operator wants the supervisor entrypoint to refresh these surfaces and print the
 compact gate report without starting an ordinary targeted refinement run.
 
+Ordinary targeted supervisor runs read the existing semantic gate artifact as
+soft run evidence. A `clear` gate leaves approval behavior unchanged. A
+`blocked` or `review_pending` gate does not stop executor invocation, but it
+suppresses silent `--auto-approve` canonical sync and routes the candidate
+through the existing `review_pending` path with preserved ontology evidence.
+Missing or malformed gate artifacts are recorded as unavailable evidence rather
+than hard runtime blockers in this MVP wiring slice.
+
 `runs/ontology_delta_draft_intake.json` is the Ontology owner handoff surface
 for candidate draft requests. It preserves candidate payloads and required human
 action, but a blocked semantic gate keeps requests in

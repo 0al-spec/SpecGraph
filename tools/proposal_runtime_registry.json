@@ -6380,5 +6380,72 @@
         "pattern": "wire_supervisor_semantic_gate_into_targeted_runs"
       }
     ]
+  },
+  {
+    "proposal_id": "0117",
+    "posture": "bounded_runtime_followup",
+    "runtime_surfaces": [
+      "docs/proposals/0117_ontology_supervisor_soft_gate_wiring.md",
+      "docs/archive/proposal_sources/0117_ontology_supervisor_soft_gate_wiring.md",
+      "tools/ontology_semantic_control_policy.json",
+      "tools/ontology_imports.py",
+      "tools/supervisor.py",
+      "tools/README.md",
+      "docs/supervisor_manual.md",
+      "Sources/SpecGraph/Documentation.docc/OntologyCAdapterReport.md",
+      "tests/test_ontology_import_policy.py",
+      "tests/test_supervisor.py",
+      "runs/ontology_supervisor_semantic_gate.json"
+    ],
+    "runtime_markers": [
+      {
+        "path": "tools/ontology_semantic_control_policy.json",
+        "pattern": "supervisor_semantic_gate_wiring_contract"
+      },
+      {
+        "path": "tools/supervisor.py",
+        "pattern": "def load_ontology_supervisor_semantic_gate_run_evidence("
+      },
+      {
+        "path": "tools/supervisor.py",
+        "pattern": "\"ontology_supervisor_semantic_gate\""
+      },
+      {
+        "path": "tools/ontology_imports.py",
+        "pattern": "supervisor_semantic_gate_wiring_contract"
+      }
+    ],
+    "validation_markers": [
+      {
+        "path": "tests/test_supervisor.py",
+        "pattern": "def test_ontology_supervisor_semantic_gate_missing_artifact_is_soft_evidence("
+      },
+      {
+        "path": "tests/test_supervisor.py",
+        "pattern": "def test_main_auto_approve_routes_to_review_when_ontology_semantic_gate_blocks("
+      },
+      {
+        "path": "tests/test_ontology_import_policy.py",
+        "pattern": "supervisor_semantic_gate_wiring_contract"
+      }
+    ],
+    "observation_markers": [
+      {
+        "path": "tools/README.md",
+        "pattern": "ordinary targeted supervisor runs read"
+      },
+      {
+        "path": "docs/supervisor_manual.md",
+        "pattern": "soft evidence; non-clear gates suppress"
+      },
+      {
+        "path": "Sources/SpecGraph/Documentation.docc/OntologyCAdapterReport.md",
+        "pattern": "soft run evidence"
+      },
+      {
+        "path": "docs/proposals/0117_ontology_supervisor_soft_gate_wiring.md",
+        "pattern": "build_prompt_agent_ontology_context_artifact"
+      }
+    ]
   }
 ]

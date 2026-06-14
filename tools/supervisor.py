@@ -200,6 +200,7 @@ METRIC_PACK_RUNS_RELATIVE_PATH = "runs/metric_pack_runs.json"
 METRIC_PRICING_PROVENANCE_RELATIVE_PATH = "runs/metric_pricing_provenance.json"
 MODEL_USAGE_TELEMETRY_RELATIVE_PATH = "runs/model_usage_telemetry_index.json"
 SUPERVISOR_EXECUTOR_ADAPTER_INDEX_RELATIVE_PATH = "runs/supervisor_executor_adapter_index.json"
+ONTOLOGY_SUPERVISOR_SEMANTIC_GATE_RELATIVE_PATH = "runs/ontology_supervisor_semantic_gate.json"
 LOCAL_OPERATOR_EXECUTOR_READINESS_RELATIVE_PATH = "runs/local_operator_executor_readiness.json"
 LOCAL_OPERATOR_EXECUTOR_SMOKE_RELATIVE_PATH = "runs/local_operator_executor_smoke.json"
 LOCAL_OPERATOR_EXECUTOR_TASK_SMOKE_RELATIVE_PATH = "runs/local_operator_executor_task_smoke.json"
@@ -11388,6 +11389,10 @@ def proposals_dir_path() -> Path:
     return RUNS_DIR / "proposals"
 
 
+def ontology_supervisor_semantic_gate_path() -> Path:
+    return RUNS_DIR / Path(ONTOLOGY_SUPERVISOR_SEMANTIC_GATE_RELATIVE_PATH).name
+
+
 def intent_layer_nodes_dir_path() -> Path:
     return ROOT / INTENT_LAYER_NODES_RELATIVE_DIR
 
@@ -12709,6 +12714,7 @@ def build_decision_inspector(
     validation_errors: list[str] | None = None,
     validation_findings: list[dict[str, Any]] | None = None,
     pending_review_findings: list[dict[str, Any]] | None = None,
+    ontology_semantic_gate_evidence: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
     normalized_validation_findings = coerce_validation_findings(validation_findings)
     normalized_pending_review_findings = coerce_validation_findings(pending_review_findings)
@@ -12755,6 +12761,27 @@ def build_decision_inspector(
     diff_classification["applied_rules"] = build_diff_classification_rules(
         refinement_acceptance=refinement_acceptance,
     )
+    gate = {
+        "outcome": outcome,
+        "gate_state": gate_state,
+        "required_human_action": required_human_action,
+        "blocker": blocker,
+        "failing_validators": failing_validators,
+        "validation_findings": normalized_validation_findings,
+        "pending_review_findings": normalized_pending_review_findings,
+        "applied_rules": build_gate_decision_rules(
+            gate_state=gate_state,
+            blocker=blocker,
+            failing_validators=failing_validators,
+            refinement_acceptance=refinement_acceptance,
+        ),
+    }
+    compact_ontology_gate = compact_ontology_supervisor_semantic_gate_run_evidence(
+        ontology_semantic_gate_evidence
+    )
+    if compact_ontology_gate:
+        gate["ontology_supervisor_semantic_gate"] = compact_ontology_gate
+
     return {
         "artifact_kind": "decision_inspector",
         "run_id": run_id,
@@ -12765,21 +12792,7 @@ def build_decision_inspector(
             "rule_inputs": copy.deepcopy(selected_by_rule),
             "applied_rules": build_selection_decision_rules(selected_by_rule),
         },
-        "gate": {
-            "outcome": outcome,
-            "gate_state": gate_state,
-            "required_human_action": required_human_action,
-            "blocker": blocker,
-            "failing_validators": failing_validators,
-            "validation_findings": normalized_validation_findings,
-            "pending_review_findings": normalized_pending_review_findings,
-            "applied_rules": build_gate_decision_rules(
-                gate_state=gate_state,
-                blocker=blocker,
-                failing_validators=failing_validators,
-                refinement_acceptance=refinement_acceptance,
-            ),
-        },
+        "gate": gate,
         "diff_classification": diff_classification,
         "queue_effects": {
             "signals": list(graph_health.get("signals", [])),
@@ -47482,6 +47495,202 @@ def build_ontology_supervisor_semantic_gate_report() -> dict[str, Any]:
     }
 
 
+def ontology_semantic_gate_string_list(payload: dict[str, Any], key: str) -> list[str]:
+    raw_items = payload.get(key, [])
+    if not isinstance(raw_items, list):
+        return []
+    return [str(item).strip() for item in raw_items if str(item).strip()]
+
+
+def build_ontology_supervisor_semantic_gate_run_evidence(
+    *,
+    run_id: str,
+    spec_id: str,
+    supervisor_gate: dict[str, Any] | None,
+    source_artifact: str,
+    load_error: str = "",
+) -> dict[str, Any]:
+    status = "available"
+    error = str(load_error).strip()
+    gate_payload: dict[str, Any] = {}
+    source_artifacts: dict[str, Any] = {}
+    summary: dict[str, Any] = {}
+
+    if supervisor_gate is None:
+        status = "missing" if not error else "invalid"
+        gate_state = "unavailable"
+        gate_outcome = "semantic_gate_unavailable"
+        gate_required_human_action = "refresh_ontology_supervisor_semantic_gate"
+        blocking_item_ids: list[str] = []
+        review_required_item_ids: list[str] = []
+        candidate_item_ids: list[str] = []
+    elif supervisor_gate.get("artifact_kind") != "ontology_supervisor_semantic_gate":
+        status = "invalid"
+        error = error or "artifact_kind must be ontology_supervisor_semantic_gate"
+        gate_state = "unavailable"
+        gate_outcome = "semantic_gate_unavailable"
+        gate_required_human_action = "refresh_ontology_supervisor_semantic_gate"
+        blocking_item_ids = []
+        review_required_item_ids = []
+        candidate_item_ids = []
+    else:
+        raw_gate = supervisor_gate.get("gate", {})
+        if not isinstance(raw_gate, dict):
+            status = "invalid"
+            error = error or "supervisor_gate.gate must be an object"
+            gate_payload = {}
+        else:
+            gate_payload = raw_gate
+        raw_state = str(gate_payload.get("gate_state", "")).strip()
+        if raw_state not in {"clear", "review_pending", "blocked"}:
+            status = "invalid"
+            error = error or (
+                "supervisor_gate.gate.gate_state must be clear, review_pending, or blocked"
+            )
+            gate_state = "unavailable"
+        else:
+            gate_state = raw_state
+        gate_outcome = str(gate_payload.get("outcome", "")).strip() or "semantic_gate_unavailable"
+        gate_required_human_action = (
+            str(gate_payload.get("required_human_action", "")).strip()
+            or "refresh_ontology_supervisor_semantic_gate"
+        )
+        blocking_item_ids = ontology_semantic_gate_string_list(gate_payload, "blocking_item_ids")
+        review_required_item_ids = ontology_semantic_gate_string_list(
+            gate_payload, "review_required_item_ids"
+        )
+        candidate_item_ids = ontology_semantic_gate_string_list(gate_payload, "candidate_item_ids")
+        raw_sources = supervisor_gate.get("source_artifacts", {})
+        source_artifacts = copy.deepcopy(raw_sources) if isinstance(raw_sources, dict) else {}
+        raw_summary = supervisor_gate.get("summary", {})
+        summary = copy.deepcopy(raw_summary) if isinstance(raw_summary, dict) else {}
+
+    if status == "available" and gate_state == "clear":
+        run_action = "allow_run"
+        suppresses_auto_approve = False
+        required_human_action = "none"
+    elif status == "available":
+        run_action = "require_review_before_approval"
+        suppresses_auto_approve = True
+        required_human_action = gate_required_human_action
+    else:
+        run_action = "continue_without_semantic_gate_evidence"
+        suppresses_auto_approve = False
+        required_human_action = "refresh_ontology_supervisor_semantic_gate"
+
+    return {
+        "artifact_kind": "ontology_supervisor_semantic_gate_run_evidence",
+        "schema_version": 1,
+        "proposal_id": "0117",
+        "run_id": run_id,
+        "spec_id": spec_id,
+        "source_artifact": source_artifact,
+        "source_artifact_status": status,
+        "load_error": error,
+        "integration_mode": "soft_review_evidence",
+        "canonical_mutations_allowed": False,
+        "tracked_artifacts_written": False,
+        "prompt_agent_executed": False,
+        "prompt_agent_execution_allowed": False,
+        "gate_state": gate_state,
+        "source_gate": {
+            "gate_state": gate_state,
+            "outcome": gate_outcome,
+            "required_human_action": gate_required_human_action,
+            "blocking_item_ids": blocking_item_ids,
+            "review_required_item_ids": review_required_item_ids,
+            "candidate_item_ids": candidate_item_ids,
+        },
+        "source_artifacts": source_artifacts,
+        "source_summary": summary,
+        "run_decision": {
+            "run_action": run_action,
+            "blocks_executor_invocation": False,
+            "suppresses_auto_approve": suppresses_auto_approve,
+            "required_human_action": required_human_action,
+            "auto_approve_requires_gate_state": "clear",
+            "preserved_blocking_item_ids": blocking_item_ids,
+        },
+        "consumer_boundary": {
+            "for_supervisor_run_evidence": True,
+            "may_execute_prompt_agent": False,
+            "may_write_ontology_package": False,
+            "may_update_ontology_lockfile": False,
+            "may_mutate_canonical_specs": False,
+            "may_mark_candidate_accepted": False,
+            "may_close_semantic_gate": False,
+        },
+        "next_gap": "build_prompt_agent_ontology_context_artifact",
+    }
+
+
+def compact_ontology_supervisor_semantic_gate_run_evidence(
+    evidence: dict[str, Any] | None,
+) -> dict[str, Any]:
+    if not isinstance(evidence, dict):
+        return {}
+    source_gate = evidence.get("source_gate", {})
+    run_decision = evidence.get("run_decision", {})
+    return {
+        "artifact_kind": str(evidence.get("artifact_kind", "")).strip(),
+        "source_artifact": str(evidence.get("source_artifact", "")).strip(),
+        "source_artifact_status": str(evidence.get("source_artifact_status", "")).strip(),
+        "gate_state": str(evidence.get("gate_state", "")).strip(),
+        "integration_mode": str(evidence.get("integration_mode", "")).strip(),
+        "source_gate": copy.deepcopy(source_gate) if isinstance(source_gate, dict) else {},
+        "run_decision": copy.deepcopy(run_decision) if isinstance(run_decision, dict) else {},
+    }
+
+
+def load_ontology_supervisor_semantic_gate_run_evidence(
+    *,
+    run_id: str,
+    spec_id: str,
+) -> dict[str, Any]:
+    path = ontology_supervisor_semantic_gate_path()
+    source_artifact = display_artifact_path(path)
+    if not path.exists():
+        return build_ontology_supervisor_semantic_gate_run_evidence(
+            run_id=run_id,
+            spec_id=spec_id,
+            supervisor_gate=None,
+            source_artifact=source_artifact,
+            load_error="",
+        )
+    supervisor_gate, error = load_json_object_report(
+        path, artifact_kind="ontology supervisor semantic gate"
+    )
+    return build_ontology_supervisor_semantic_gate_run_evidence(
+        run_id=run_id,
+        spec_id=spec_id,
+        supervisor_gate=supervisor_gate,
+        source_artifact=source_artifact,
+        load_error=error,
+    )
+
+
+def ontology_supervisor_semantic_gate_suppresses_auto_approve(
+    evidence: dict[str, Any] | None,
+) -> bool:
+    if not isinstance(evidence, dict):
+        return False
+    run_decision = evidence.get("run_decision", {})
+    if not isinstance(run_decision, dict):
+        return False
+    return bool(run_decision.get("suppresses_auto_approve"))
+
+
+def ontology_supervisor_semantic_gate_required_human_action(
+    evidence: dict[str, Any] | None,
+) -> str:
+    if not isinstance(evidence, dict):
+        return ""
+    run_decision = evidence.get("run_decision", {})
+    if not isinstance(run_decision, dict):
+        return ""
+    return str(run_decision.get("required_human_action", "")).strip()
+
+
 def acceptance_reference_indexes(
     references: Any,
     *,
@@ -50331,6 +50540,13 @@ def _process_one_spec(
     run_id = make_run_id(node.id)
     run_started_at = utc_now_iso()
     run_started_monotonic = time.monotonic()
+    ontology_semantic_gate_evidence = load_ontology_supervisor_semantic_gate_run_evidence(
+        run_id=run_id,
+        spec_id=node.id,
+    )
+    selected_by_rule["ontology_semantic_gate"] = (
+        compact_ontology_supervisor_semantic_gate_run_evidence(ontology_semantic_gate_evidence)
+    )
     child_materialization_requested = targeted_child_materialization_requested(
         node=node,
         operator_target=operator_target,
@@ -50648,6 +50864,9 @@ def _process_one_spec(
         blocker = blocker or "refinement acceptance rejected"
         validation_errors = validation_errors + list(refinement_acceptance["errors"])
 
+    ontology_semantic_gate_suppresses_auto_approve = (
+        ontology_supervisor_semantic_gate_suppresses_auto_approve(ontology_semantic_gate_evidence)
+    )
     required_human_action = "resolve gate: approve|retry|split|block|redirect|escalate"
     node.data["proposed_status"] = None
     node.data["proposed_maturity"] = None
@@ -50700,7 +50919,11 @@ def _process_one_spec(
         node.data["proposed_status"] = proposed_status
         node.data["proposed_maturity"] = proposed_maturity
         acceptance_decision = refinement_acceptance["decision"]
-        if auto_approve and acceptance_decision == REFINEMENT_ACCEPT_DECISION_APPROVE:
+        if (
+            auto_approve
+            and acceptance_decision == REFINEMENT_ACCEPT_DECISION_APPROVE
+            and not ontology_semantic_gate_suppresses_auto_approve
+        ):
             sync_files_from_worktree(worktree_path, allowed_changes)
             normalize_materialized_child_specs(materialized_child_paths)
             node.reload()
@@ -50719,7 +50942,12 @@ def _process_one_spec(
             clear_pending_review_state(node)
         else:
             node.data["gate_state"] = "review_pending"
-            if acceptance_decision == REFINEMENT_ACCEPT_DECISION_APPROVE:
+            semantic_gate_required_action = ontology_supervisor_semantic_gate_required_human_action(
+                ontology_semantic_gate_evidence
+            )
+            if ontology_semantic_gate_suppresses_auto_approve and semantic_gate_required_action:
+                required_human_action = semantic_gate_required_action
+            elif acceptance_decision == REFINEMENT_ACCEPT_DECISION_APPROVE:
                 required_human_action = "approve or retry refinement"
             else:
                 required_human_action = "review refinement impact before approval"
@@ -50984,6 +51212,7 @@ def _process_one_spec(
         refactor_queue_after=refactor_queue_after,
         refinement_acceptance=refinement_acceptance,
         pending_review_findings=pending_review_findings,
+        ontology_semantic_gate_evidence=ontology_semantic_gate_evidence,
     )
     evaluator_loop_control = build_evaluator_loop_control(
         run_id=run_id,
@@ -51068,6 +51297,7 @@ def _process_one_spec(
             refactor_queue_after=refactor_queue_after,
             refinement_acceptance=refinement_acceptance,
             pending_review_findings=[],
+            ontology_semantic_gate_evidence=ontology_semantic_gate_evidence,
         )
         evaluator_loop_control = build_evaluator_loop_control(
             run_id=run_id,
@@ -51124,12 +51354,14 @@ def _process_one_spec(
             success
             and auto_approve
             and refinement_acceptance["decision"] == REFINEMENT_ACCEPT_DECISION_APPROVE
+            and not ontology_semantic_gate_suppresses_auto_approve
         ),
         "worktree_path": worktree_path.as_posix(),
         "isolation_mode": isolation_mode_for_branch(branch),
         "yaml_repair_paths": yaml_repair_paths,
         "safe_repair_contract": safe_repair_contract,
         "safe_repair_artifact": safe_repair_artifact,
+        "ontology_supervisor_semantic_gate": ontology_semantic_gate_evidence,
         "branch": branch,
         "changed_files": changed,
         "materialized_child_paths": materialized_child_paths,
