@@ -1558,5 +1558,18 @@
     "required_provenance_links": [
       "source_draft_ref"
     ]
+  },
+  {
+    "proposal_id": "0121",
+    "source_artifact_class": "working_draft",
+    "source_refs": [
+      "docs/archive/proposal_sources/0121_executor_analysis_report_followup_packet.md"
+    ],
+    "motivating_concern": "SpecGraph can validate analysis report review outcome follow-up requests, but it lacks the local-only packet that presents safe decision options before any downstream proposal or canonical workflow can be considered.",
+    "normalized_title": "Build Executor Analysis Report Follow-up Packet",
+    "bounded_scope": "Add a local-only analysis report follow-up packet built from a valid analysis_report review outcome and executor_analysis_report_followup_policy, carrying sanitized findings, safe evidence refs, and governed human decision options while rejecting missing or blocked outcomes, authority expansion, privacy leakage, proposal draft production, executor invocation, proposal markdown writes, registry/status mutation, canonical mutation, patch application, gap closure, and public static publication.",
+    "required_provenance_links": [
+      "source_draft_ref"
+    ]
   }
 ]

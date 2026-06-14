@@ -27394,6 +27394,36 @@ def test_supervisor_executor_adapter_policy_declares_request_report_contract() -
     assert followup_policy["authority_boundary"]["proposal_draft_candidate_allowed"] is False
     assert followup_policy["authority_boundary"]["executor_invocation_allowed"] is False
     assert followup_policy["next_gap"] == "build_executor_analysis_report_followup_packet"
+    followup_packet = policy["executor_analysis_report_followup_packet_contract"]
+    assert followup_packet["artifact_kind"] == (
+        "local_operator_executor_analysis_report_followup_packet"
+    )
+    assert followup_packet["source_outcome_artifact"] == (
+        "runs/local_operator_executor_analysis_report_review_outcome.json"
+    )
+    assert followup_packet["source_policy_artifact_kind"] == (
+        "executor_analysis_report_followup_policy"
+    )
+    assert followup_packet["local_only"] is True
+    assert followup_packet["packet_kind"] == "analysis_report_followup"
+    assert followup_packet["consumer"] == "analysis_report_followup_planner"
+    assert followup_packet["transformation"] == "analysis_review_outcome_to_followup_packet"
+    assert followup_packet["requested_effects"] == ["analysis_report_followup_packet"]
+    assert "ready_for_followup_review" in followup_packet["status_values"]
+    assert "source_outcome_valid" in followup_packet["check_ids"]
+    assert followup_packet["decision_options"] == [
+        "accept",
+        "reject",
+        "defer",
+        "needs_more_evidence",
+    ]
+    assert followup_packet["authority_boundary"]["review_outcome_is_authority"] is False
+    assert followup_packet["authority_boundary"]["followup_packet_is_authority"] is False
+    assert followup_packet["authority_boundary"]["canonical_mutations_allowed"] is False
+    assert followup_packet["authority_boundary"]["proposal_draft_candidate_allowed"] is False
+    assert followup_packet["authority_boundary"]["executor_invocation_allowed"] is False
+    assert followup_packet["privacy_boundary"]["public_static_publish"] is False
+    assert followup_packet["next_gap"] == "human_review_decision_for_executor_followup"
     promotion_policy = policy["proposal_draft_candidate_promotion_policy"]
     assert promotion_policy["artifact_kind"] == "proposal_draft_candidate_promotion_policy"
     assert promotion_policy["source_candidate_artifact"] == (
@@ -30630,6 +30660,236 @@ def test_validate_executor_analysis_report_followup_request_rejects_report_kind_
     finding_codes = {finding["code"] for finding in validation["findings"]}
     assert "analysis_report_review_outcome_ready_report_kind_invalid" in finding_codes
     assert "analysis_report_followup_source_report_kind_not_allowed" in finding_codes
+
+
+def test_build_local_operator_executor_analysis_report_followup_packet_from_ready_outcome(
+    supervisor_module: object,
+) -> None:
+    report = supervisor_module.default_local_operator_executor_report_sample()
+    report["report"]["findings"] = [
+        {"code": "advisory_gap", "message": "Review follow-up decision."}
+    ]
+    packet = supervisor_module.build_local_operator_executor_report_review_packet(report)
+    outcome = supervisor_module.build_local_operator_executor_analysis_report_review_outcome(packet)
+
+    followup = supervisor_module.build_local_operator_executor_analysis_report_followup_packet(
+        outcome
+    )
+
+    assert followup["artifact_kind"] == (
+        supervisor_module.LOCAL_OPERATOR_EXECUTOR_ANALYSIS_REPORT_FOLLOWUP_PACKET_ARTIFACT_KIND
+    )
+    assert followup["local_only"] is True
+    assert followup["source_outcome_artifact"] == (
+        "runs/local_operator_executor_analysis_report_review_outcome.json"
+    )
+    assert followup["packet_kind"] == "analysis_report_followup"
+    assert followup["summary"] == {
+        "status": "ready_for_followup_review",
+        "report_kind": "analysis_report",
+        "producer_kind": "coding_agent",
+        "authority_level": "review_only",
+        "human_review_required": True,
+        "canonical_mutations_allowed": False,
+        "proposal_draft_candidate_allowed": False,
+        "executor_invocation_allowed": False,
+        "next_gap": "human_review_decision_for_executor_followup",
+    }
+    assert followup["followup_packet"]["packet_state"] == "ready_for_followup_review"
+    assert followup["followup_packet"]["source_report_kind"] == "analysis_report"
+    assert followup["followup_packet"]["findings"] == report["report"]["findings"]
+    assert followup["followup_packet"]["evidence_refs"] == [
+        "runs/local_operator_executor_task_smoke.json"
+    ]
+    assert followup["followup_packet"]["decision_options"] == [
+        "accept",
+        "reject",
+        "defer",
+        "needs_more_evidence",
+    ]
+    assert followup["followup_packet"]["operator_decision_required"] is True
+    assert followup["followup_packet"]["followup_packet_is_authority"] is False
+    assert followup["followup_policy_validation"]["valid"] is True
+    assert followup["source_outcome_validation"]["valid"] is True
+    assert followup["packet_validation"]["valid"] is True
+    assert {check["check_id"]: check["status"] for check in followup["checks"]} == {
+        "source_outcome_present": "passed",
+        "source_outcome_valid": "passed",
+        "followup_policy_allows_packet": "passed",
+        "source_report_kind_is_analysis_report": "passed",
+        "authority_boundary_preserved": "passed",
+        "privacy_boundary_preserved": "passed",
+        "followup_packet_contract_valid": "passed",
+    }
+    validation = supervisor_module.validate_local_operator_executor_analysis_report_followup_packet(
+        followup
+    )
+    assert validation["valid"] is True
+    dumped = json.dumps(followup, sort_keys=True)
+    assert "/Users/" not in dumped
+    assert "raw_stdout" not in dumped
+    assert "raw_stderr" not in dumped
+    assert "raw response" not in dumped.lower()
+
+
+def test_build_local_operator_executor_analysis_report_followup_packet_blocks_missing_outcome(
+    supervisor_module: object,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setattr(
+        supervisor_module,
+        "load_local_operator_executor_analysis_report_review_outcome_artifact",
+        lambda: None,
+    )
+
+    followup = supervisor_module.build_local_operator_executor_analysis_report_followup_packet()
+
+    assert followup["summary"]["status"] == "blocked_missing_review_outcome"
+    assert (
+        followup["summary"]["next_gap"] == "run_executor_analysis_report_review_outcome_until_ready"
+    )
+    assert followup["followup_packet"]["packet_state"] == "blocked"
+    checks = {check["check_id"]: check["status"] for check in followup["checks"]}
+    assert checks["source_outcome_present"] == "missing"
+    assert checks["followup_policy_allows_packet"] == "failed"
+
+
+def test_build_local_operator_executor_analysis_report_followup_packet_blocks_source_status(
+    supervisor_module: object,
+) -> None:
+    packet = supervisor_module.build_local_operator_executor_report_review_packet(
+        supervisor_module.default_local_operator_executor_report_sample()
+    )
+    outcome = supervisor_module.build_local_operator_executor_analysis_report_review_outcome(packet)
+    outcome["summary"]["status"] = "blocked_invalid_review_packet"
+    outcome["analysis_review_outcome"]["outcome_state"] = "blocked"
+
+    followup = supervisor_module.build_local_operator_executor_analysis_report_followup_packet(
+        outcome
+    )
+
+    assert followup["summary"]["status"] == "blocked_followup_policy"
+    assert followup["followup_packet"]["packet_state"] == "blocked"
+    assert followup["followup_packet"]["findings"] == []
+    assert any(
+        finding["code"] == "analysis_report_followup_source_outcome_status_not_allowed"
+        for finding in followup["followup_policy_validation"]["findings"]
+    )
+
+
+def test_build_local_operator_executor_analysis_report_followup_packet_blocks_authority_expansion(
+    supervisor_module: object,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    packet = supervisor_module.build_local_operator_executor_report_review_packet(
+        supervisor_module.default_local_operator_executor_report_sample()
+    )
+    outcome = supervisor_module.build_local_operator_executor_analysis_report_review_outcome(packet)
+    original_default_request = supervisor_module.default_executor_analysis_report_followup_request
+
+    def authority_expanding_request(**kwargs: object) -> dict[str, object]:
+        request = original_default_request(**kwargs)
+        request["authority_boundary"]["review_outcome_is_authority"] = True
+        request["authority_boundary"]["executor_invocation_allowed"] = True
+        return request
+
+    monkeypatch.setattr(
+        supervisor_module,
+        "default_executor_analysis_report_followup_request",
+        authority_expanding_request,
+    )
+
+    followup = supervisor_module.build_local_operator_executor_analysis_report_followup_packet(
+        outcome
+    )
+
+    assert followup["summary"]["status"] == "blocked_authority_boundary"
+    assert any(
+        finding["code"] == "invalid_analysis_report_followup_authority_boundary"
+        for finding in followup["followup_policy_validation"]["findings"]
+    )
+    checks = {check["check_id"]: check["status"] for check in followup["checks"]}
+    assert checks["authority_boundary_preserved"] == "failed"
+
+
+def test_build_local_operator_executor_analysis_report_followup_packet_blocks_privacy_leakage(
+    supervisor_module: object,
+) -> None:
+    packet = supervisor_module.build_local_operator_executor_report_review_packet(
+        supervisor_module.default_local_operator_executor_report_sample()
+    )
+    outcome = supervisor_module.build_local_operator_executor_analysis_report_review_outcome(packet)
+    outcome["analysis_review_outcome"]["findings"] = [{"message": "see /Users/egor/private"}]
+
+    followup = supervisor_module.build_local_operator_executor_analysis_report_followup_packet(
+        outcome
+    )
+
+    assert followup["summary"]["status"] == "blocked_invalid_review_outcome"
+    assert followup["followup_packet"]["findings"] == []
+    dumped = json.dumps(followup, sort_keys=True)
+    assert "/Users/egor/private" not in dumped
+    assert any(
+        finding["code"] == "machine_local_path_persisted"
+        for finding in followup["followup_policy_validation"]["findings"]
+    )
+
+
+def test_validate_local_operator_executor_analysis_report_followup_packet_rejects_authority(
+    supervisor_module: object,
+) -> None:
+    packet = supervisor_module.build_local_operator_executor_report_review_packet(
+        supervisor_module.default_local_operator_executor_report_sample()
+    )
+    outcome = supervisor_module.build_local_operator_executor_analysis_report_review_outcome(packet)
+    followup = supervisor_module.build_local_operator_executor_analysis_report_followup_packet(
+        outcome
+    )
+    followup["summary"]["canonical_mutations_allowed"] = True
+    followup["summary"]["proposal_draft_candidate_allowed"] = True
+    followup["authority_boundary"]["followup_packet_is_authority"] = True
+
+    validation = supervisor_module.validate_local_operator_executor_analysis_report_followup_packet(
+        followup
+    )
+
+    assert validation["valid"] is False
+    finding_codes = {finding["code"] for finding in validation["findings"]}
+    assert "analysis_report_followup_packet_allows_canonical_mutation" in finding_codes
+    assert "analysis_report_followup_packet_allows_proposal_draft_candidate" in finding_codes
+    assert "invalid_analysis_report_followup_packet_authority_boundary" in finding_codes
+
+
+def test_main_builds_local_operator_executor_analysis_report_followup_packet(
+    supervisor_module: object,
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    packet = supervisor_module.build_local_operator_executor_report_review_packet(
+        supervisor_module.default_local_operator_executor_report_sample()
+    )
+    outcome = supervisor_module.build_local_operator_executor_analysis_report_review_outcome(packet)
+    monkeypatch.setattr(supervisor_module, "RUNS_DIR", tmp_path)
+    monkeypatch.setattr(
+        supervisor_module,
+        "load_local_operator_executor_analysis_report_review_outcome_artifact",
+        lambda: outcome,
+    )
+
+    exit_code = supervisor_module.main(
+        build_local_operator_executor_analysis_report_followup_packet_mode=True
+    )
+
+    assert exit_code == 0
+    output = json.loads(capsys.readouterr().out)
+    assert output["artifact_kind"] == (
+        supervisor_module.LOCAL_OPERATOR_EXECUTOR_ANALYSIS_REPORT_FOLLOWUP_PACKET_ARTIFACT_KIND
+    )
+    path = tmp_path / "local_operator_executor_analysis_report_followup_packet.json"
+    assert path.is_file()
+    written = json.loads(path.read_text(encoding="utf-8"))
+    assert written["summary"]["status"] == "ready_for_followup_review"
 
 
 def test_validate_executor_report_to_proposal_draft_request_rejects_missing_packet(

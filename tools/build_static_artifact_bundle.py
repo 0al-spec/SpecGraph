@@ -37,6 +37,7 @@ LOCAL_ONLY_RUN_SURFACES = {
     "local_operator_executor_report.json",
     "local_operator_executor_report_review_packet.json",
     "local_operator_executor_analysis_report_review_outcome.json",
+    "local_operator_executor_analysis_report_followup_packet.json",
     "local_operator_executor_proposal_draft_candidate.json",
     "local_operator_executor_proposal_promotion_packet.json",
     "local_operator_executor_proposal_materialization_report.json",

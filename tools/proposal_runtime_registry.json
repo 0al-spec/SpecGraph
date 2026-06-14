@@ -6616,5 +6616,75 @@
         "pattern": "executor_analysis_report_followup_policy"
       }
     ]
+  },
+  {
+    "proposal_id": "0121",
+    "posture": "bounded_runtime_followup",
+    "runtime_surfaces": [
+      "docs/proposals/0121_executor_analysis_report_followup_packet.md",
+      "docs/archive/proposal_sources/0121_executor_analysis_report_followup_packet.md",
+      "tools/supervisor_executor_adapter_policy.json",
+      "tools/supervisor.py",
+      "tools/README.md",
+      "Makefile",
+      "tools/build_static_artifact_bundle.py",
+      "tests/test_supervisor.py",
+      "tests/test_static_artifact_bundle.py",
+      "runs/local_operator_executor_analysis_report_followup_packet.json"
+    ],
+    "runtime_markers": [
+      {
+        "path": "tools/supervisor_executor_adapter_policy.json",
+        "pattern": "executor_analysis_report_followup_packet_contract"
+      },
+      {
+        "path": "tools/supervisor.py",
+        "pattern": "def build_local_operator_executor_analysis_report_followup_packet("
+      },
+      {
+        "path": "tools/supervisor.py",
+        "pattern": "def validate_local_operator_executor_analysis_report_followup_packet("
+      },
+      {
+        "path": "tools/supervisor.py",
+        "pattern": "--build-local-operator-executor-analysis-report-followup-packet"
+      },
+      {
+        "path": "Makefile",
+        "pattern": "executor-analysis-report-followup-packet:"
+      }
+    ],
+    "validation_markers": [
+      {
+        "path": "tests/test_supervisor.py",
+        "pattern": "def test_build_local_operator_executor_analysis_report_followup_packet_from_ready_outcome("
+      },
+      {
+        "path": "tests/test_supervisor.py",
+        "pattern": "def test_build_local_operator_executor_analysis_report_followup_packet_blocks_missing_outcome("
+      },
+      {
+        "path": "tests/test_supervisor.py",
+        "pattern": "def test_build_local_operator_executor_analysis_report_followup_packet_blocks_authority_expansion("
+      },
+      {
+        "path": "tests/test_static_artifact_bundle.py",
+        "pattern": "local_operator_executor_analysis_report_followup_packet.json"
+      }
+    ],
+    "observation_markers": [
+      {
+        "path": "docs/proposals/0121_executor_analysis_report_followup_packet.md",
+        "pattern": "human_review_decision_for_executor_followup"
+      },
+      {
+        "path": "tools/README.md",
+        "pattern": "local_operator_executor_analysis_report_followup_packet.json"
+      },
+      {
+        "path": "tools/build_static_artifact_bundle.py",
+        "pattern": "local_operator_executor_analysis_report_followup_packet.json"
+      }
+    ]
   }
 ]
