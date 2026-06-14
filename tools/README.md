@@ -123,9 +123,11 @@ Supervisor modes:
   `runs/ontology_semantic_context_pack.json`, packaging accepted terms,
   accepted relations, aliases, deprecated terms, relation conflicts, unresolved
   gaps, package metadata, and governance evidence for supervisor/SpecSpace
-  consumers. It also emits `runs/ontology_semantic_lint_report.json`, deriving
-  review findings, blocking findings, candidate delta terms, and recommended
-  actions from that context pack, then
+  consumers. It also emits `runs/ontology_semantic_lint_input.json`, extracting
+  declared semantic terms from tracked proposal/supervisor output sources with
+  source digests and spans, then `runs/ontology_semantic_lint_report.json`,
+  deriving review findings, blocking findings, candidate delta terms, and
+  recommended actions from that context pack and lint input, then
   `runs/ontology_delta_candidate_review_packet.json` for explicit ontology-owner
   review actions and `runs/ontology_semantic_review_surface.json` as the
   SpecSpace/supervisor-facing review surface,

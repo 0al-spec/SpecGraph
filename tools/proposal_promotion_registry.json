@@ -1493,5 +1493,18 @@
     "required_provenance_links": [
       "source_draft_ref"
     ]
+  },
+  {
+    "proposal_id": "0116",
+    "source_artifact_class": "working_draft",
+    "source_refs": [
+      "docs/archive/proposal_sources/0116_ontology_semantic_lint_input.md"
+    ],
+    "motivating_concern": "SpecGraph can classify ontology terms from a semantic context pack, but the full lint report still depended on policy fixture terms instead of a source-backed proposal or supervisor output input.",
+    "normalized_title": "Ontology Semantic Lint Input",
+    "bounded_scope": "Add a deterministic ontology_semantic_lint_input artifact that extracts declared terms from tracked proposal or supervisor output sources, records source digests and spans, and feeds the existing lint report without parsing arbitrary text, invoking prompt agents, writing Ontology packages or lockfiles, mutating canonical specs, accepting candidate terms, closing semantic gates, or adding SpecSpace mutation UI.",
+    "required_provenance_links": [
+      "source_draft_ref"
+    ]
   }
 ]

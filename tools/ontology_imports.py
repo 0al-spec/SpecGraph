@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import argparse
+import copy
 import hashlib
 import json
 import re
@@ -638,6 +639,7 @@ def require_semantic_control_policy(policy: dict[str, Any]) -> dict[str, Any]:
     layout = require_object(policy, "repository_layout", "semantic_control_policy")
     require_layout_path(layout, "ontology_delta_candidate_review_packet")
     require_layout_path(layout, "semantic_context_pack")
+    require_layout_path(layout, "semantic_lint_input")
     require_layout_path(layout, "semantic_lint_report")
     require_layout_path(layout, "semantic_review_surface")
     require_layout_path(layout, "supervisor_semantic_gate")
@@ -650,6 +652,7 @@ def require_semantic_control_policy(policy: dict[str, Any]) -> dict[str, Any]:
     boundary = require_object(policy, "authority_boundary", "semantic_control_policy")
     for field in (
         "context_pack_is_authority",
+        "semantic_lint_input_is_authority",
         "lint_report_is_authority",
         "smoke_report_is_authority",
         "ontology_delta_candidate_is_authority",
@@ -833,6 +836,143 @@ def require_semantic_control_policy(policy: dict[str, Any]) -> dict[str, Any]:
     require_string(
         context_contract, "next_gap", "semantic_control_policy.semantic_context_pack_contract"
     )
+    lint_input_contract = require_object(
+        policy, "semantic_lint_input_contract", "semantic_control_policy"
+    )
+    if (
+        require_string(
+            lint_input_contract,
+            "artifact_kind",
+            "semantic_control_policy.semantic_lint_input_contract",
+        )
+        != "ontology_semantic_lint_input"
+    ):
+        raise ValueError(
+            "semantic_control_policy.semantic_lint_input_contract.artifact_kind "
+            "must be ontology_semantic_lint_input"
+        )
+    lint_input_target = require_object(
+        lint_input_contract, "target", "semantic_control_policy.semantic_lint_input_contract"
+    )
+    require_string(
+        lint_input_target,
+        "target_kind",
+        "semantic_control_policy.semantic_lint_input_contract.target",
+    )
+    require_string(
+        lint_input_target,
+        "target_ref",
+        "semantic_control_policy.semantic_lint_input_contract.target",
+    )
+    require_string_list(
+        lint_input_contract,
+        "source_output_kinds",
+        "semantic_control_policy.semantic_lint_input_contract",
+    )
+    require_string_list(
+        lint_input_contract,
+        "input_sections",
+        "semantic_control_policy.semantic_lint_input_contract",
+    )
+    require_string(
+        lint_input_contract,
+        "extraction_mode",
+        "semantic_control_policy.semantic_lint_input_contract",
+    )
+    lint_input_consumer_boundary = require_object(
+        lint_input_contract,
+        "consumer_boundary",
+        "semantic_control_policy.semantic_lint_input_contract",
+    )
+    for field in ("for_semantic_lint_report", "for_supervisor_gate_evidence"):
+        if (
+            require_bool(
+                lint_input_consumer_boundary,
+                field,
+                "semantic_control_policy.semantic_lint_input_contract.consumer_boundary",
+            )
+            is not True
+        ):
+            raise ValueError(
+                "semantic_control_policy.semantic_lint_input_contract.consumer_boundary."
+                f"{field} must be true"
+            )
+    for field in (
+        "may_parse_arbitrary_text",
+        "may_execute_prompt_agent",
+        "may_mutate_canonical_specs",
+    ):
+        if (
+            require_bool(
+                lint_input_consumer_boundary,
+                field,
+                "semantic_control_policy.semantic_lint_input_contract.consumer_boundary",
+            )
+            is not False
+        ):
+            raise ValueError(
+                "semantic_control_policy.semantic_lint_input_contract.consumer_boundary."
+                f"{field} must be false"
+            )
+    require_string(
+        lint_input_contract, "next_gap", "semantic_control_policy.semantic_lint_input_contract"
+    )
+    lint_input_sources = require_object(
+        policy, "semantic_lint_input_sources", "semantic_control_policy"
+    )
+    if (
+        require_string(
+            lint_input_sources,
+            "artifact_kind",
+            "semantic_control_policy.semantic_lint_input_sources",
+        )
+        != "ontology_semantic_lint_input_source_set"
+    ):
+        raise ValueError(
+            "semantic_control_policy.semantic_lint_input_sources.artifact_kind must be "
+            "ontology_semantic_lint_input_source_set"
+        )
+    raw_source_outputs = lint_input_sources.get("source_outputs")
+    if not isinstance(raw_source_outputs, list) or not raw_source_outputs:
+        raise ValueError(
+            "semantic_control_policy.semantic_lint_input_sources.source_outputs "
+            "must be a non-empty list"
+        )
+    allowed_source_kinds = set(
+        require_string_list(
+            lint_input_contract,
+            "source_output_kinds",
+            "semantic_control_policy.semantic_lint_input_contract",
+        )
+    )
+    for source_index, raw_source in enumerate(raw_source_outputs):
+        if not isinstance(raw_source, dict):
+            raise ValueError(
+                "semantic_control_policy.semantic_lint_input_sources."
+                f"source_outputs[{source_index}] must be an object"
+            )
+        source_context = (
+            f"semantic_control_policy.semantic_lint_input_sources.source_outputs[{source_index}]"
+        )
+        require_string(raw_source, "source_id", source_context)
+        source_kind = require_string(raw_source, "source_kind", source_context)
+        if source_kind not in allowed_source_kinds:
+            raise ValueError(
+                f"{source_context}.source_kind must be declared by source_output_kinds"
+            )
+        source_path = require_string(raw_source, "path", source_context)
+        source_path_value = Path(source_path)
+        if source_path_value.is_absolute() or ".." in source_path_value.parts:
+            raise ValueError(f"{source_context}.path must be a relative repository path")
+        raw_terms = raw_source.get("terms")
+        if not isinstance(raw_terms, list) or not raw_terms:
+            raise ValueError(f"{source_context}.terms must be a non-empty list")
+        for term_index, raw_term in enumerate(raw_terms):
+            if not isinstance(raw_term, dict):
+                raise ValueError(f"{source_context}.terms[{term_index}] must be an object")
+            require_string(raw_term, "term", f"{source_context}.terms[{term_index}]")
+            optional_string(raw_term, "source_ref", f"{source_context}.terms[{term_index}]")
+
     report_contract = require_object(
         policy, "semantic_lint_report_contract", "semantic_control_policy"
     )
@@ -860,6 +1000,18 @@ def require_semantic_control_policy(policy: dict[str, Any]) -> dict[str, Any]:
             "semantic_control_policy.semantic_lint_report_contract."
             "source_context_pack_artifact_kind must be ontology_semantic_context_pack"
         )
+    if (
+        require_string(
+            report_contract,
+            "source_lint_input_artifact_kind",
+            "semantic_control_policy.semantic_lint_report_contract",
+        )
+        != "ontology_semantic_lint_input"
+    ):
+        raise ValueError(
+            "semantic_control_policy.semantic_lint_report_contract."
+            "source_lint_input_artifact_kind must be ontology_semantic_lint_input"
+        )
     report_target = require_object(
         report_contract, "target", "semantic_control_policy.semantic_lint_report_contract"
     )
@@ -868,9 +1020,6 @@ def require_semantic_control_policy(policy: dict[str, Any]) -> dict[str, Any]:
     )
     require_string(
         report_target, "target_ref", "semantic_control_policy.semantic_lint_report_contract.target"
-    )
-    require_string(
-        report_contract, "input_fixture", "semantic_control_policy.semantic_lint_report_contract"
     )
     report_consumer_boundary = require_object(
         report_contract,
@@ -2192,6 +2341,15 @@ def build_semantic_term_results(
             "normalized_term": normalized,
             "source_ref": source_ref or None,
         }
+        for evidence_field in (
+            "source_output_id",
+            "source_output_kind",
+            "source_path",
+            "source_span",
+            "extraction_mode",
+        ):
+            if evidence_field in raw_term:
+                result[evidence_field] = copy.deepcopy(raw_term[evidence_field])
 
         if normalized in relation_conflicts:
             control = relation_conflicts[normalized]
@@ -2469,34 +2627,235 @@ def require_ontology_semantic_context_pack(context_pack: dict[str, Any]) -> dict
     return context_pack
 
 
+def resolve_repository_input_path(raw_path: str, context: str) -> Path:
+    path = Path(raw_path)
+    if path.is_absolute() or ".." in path.parts:
+        raise ValueError(f"{context} must be a relative repository path")
+    candidate = (ROOT / path).resolve()
+    if not candidate.is_relative_to(ROOT.resolve()):
+        raise ValueError(f"{context} must stay within the repository")
+    return candidate
+
+
+def text_position_for_offset(text: str, offset: int) -> tuple[int, int]:
+    prefix = text[:offset]
+    line = prefix.count("\n") + 1
+    last_newline = prefix.rfind("\n")
+    column = offset + 1 if last_newline == -1 else offset - last_newline
+    return line, column
+
+
+def build_ontology_semantic_lint_input(
+    semantic_policy: dict[str, Any],
+    *,
+    semantic_policy_path: Path,
+) -> dict[str, Any]:
+    require_semantic_control_policy(semantic_policy)
+    lint_input_contract = require_object(
+        semantic_policy, "semantic_lint_input_contract", "semantic_control_policy"
+    )
+    lint_input_sources = require_object(
+        semantic_policy, "semantic_lint_input_sources", "semantic_control_policy"
+    )
+    semantic_layout = require_object(
+        semantic_policy, "repository_layout", "semantic_control_policy"
+    )
+    extraction_mode = require_string(
+        lint_input_contract,
+        "extraction_mode",
+        "semantic_control_policy.semantic_lint_input_contract",
+    )
+    allowed_source_kinds = set(
+        require_string_list(
+            lint_input_contract,
+            "source_output_kinds",
+            "semantic_control_policy.semantic_lint_input_contract",
+        )
+    )
+    raw_source_outputs = lint_input_sources.get("source_outputs")
+    if not isinstance(raw_source_outputs, list) or not raw_source_outputs:
+        raise ValueError(
+            "semantic_control_policy.semantic_lint_input_sources.source_outputs "
+            "must be a non-empty list"
+        )
+
+    source_outputs: list[dict[str, Any]] = []
+    detected_terms: list[dict[str, Any]] = []
+    for source_index, raw_source in enumerate(raw_source_outputs):
+        if not isinstance(raw_source, dict):
+            raise ValueError(
+                "semantic_control_policy.semantic_lint_input_sources."
+                f"source_outputs[{source_index}] must be an object"
+            )
+        source_context = (
+            f"semantic_control_policy.semantic_lint_input_sources.source_outputs[{source_index}]"
+        )
+        source_id = require_string(raw_source, "source_id", source_context)
+        source_kind = require_string(raw_source, "source_kind", source_context)
+        if source_kind not in allowed_source_kinds:
+            raise ValueError(
+                f"{source_context}.source_kind must be declared by source_output_kinds"
+            )
+        source_path = require_string(raw_source, "path", source_context)
+        resolved_path = resolve_repository_input_path(source_path, f"{source_context}.path")
+        text = resolved_path.read_text(encoding="utf-8")
+        source_terms = raw_source.get("terms")
+        if not isinstance(source_terms, list) or not source_terms:
+            raise ValueError(f"{source_context}.terms must be a non-empty list")
+        output_term_count = 0
+        for term_index, raw_term in enumerate(source_terms):
+            if not isinstance(raw_term, dict):
+                raise ValueError(f"{source_context}.terms[{term_index}] must be an object")
+            term_context = f"{source_context}.terms[{term_index}]"
+            term = require_string(raw_term, "term", term_context)
+            source_ref = optional_string(raw_term, "source_ref", term_context)
+            start_offset = text.find(term)
+            if start_offset < 0:
+                raise ValueError(f"{term_context}.term {term!r} was not found in {source_path}")
+            end_offset = start_offset + len(term)
+            line, column = text_position_for_offset(text, start_offset)
+            detected_terms.append(
+                {
+                    "term": term,
+                    "source_ref": source_ref or None,
+                    "source_output_id": source_id,
+                    "source_output_kind": source_kind,
+                    "source_path": source_path,
+                    "source_span": {
+                        "line": line,
+                        "column": column,
+                        "start_offset": start_offset,
+                        "end_offset": end_offset,
+                    },
+                    "extraction_mode": extraction_mode,
+                }
+            )
+            output_term_count += 1
+        source_outputs.append(
+            {
+                "source_id": source_id,
+                "source_kind": source_kind,
+                "path": source_path,
+                "text_sha256": "sha256:" + hashlib.sha256(text.encode("utf-8")).hexdigest(),
+                "declared_term_count": output_term_count,
+            }
+        )
+
+    return {
+        "artifact_kind": require_string(
+            lint_input_contract,
+            "artifact_kind",
+            "semantic_control_policy.semantic_lint_input_contract",
+        ),
+        "schema_version": 1,
+        "proposal_id": "0116",
+        "policy_basis": semantic_policy["policy_basis"],
+        "source_policy": relative_path(semantic_policy_path),
+        "target": copy_json_object(
+            require_object(
+                lint_input_contract,
+                "target",
+                "semantic_control_policy.semantic_lint_input_contract",
+            )
+        ),
+        "canonical_mutations_allowed": False,
+        "tracked_artifacts_written": False,
+        "source_outputs": source_outputs,
+        "detected_terms": detected_terms,
+        "extraction_summary": {
+            "mode": extraction_mode,
+            "source_output_count": len(source_outputs),
+            "detected_term_count": len(detected_terms),
+            "term_source": "semantic_lint_input_sources.source_outputs[].terms",
+            "arbitrary_text_parsed": False,
+            "prompt_agent_executed": False,
+        },
+        "consumer_boundary": copy_json_object(
+            require_object(
+                lint_input_contract,
+                "consumer_boundary",
+                "semantic_control_policy.semantic_lint_input_contract",
+            )
+        ),
+        "authority_boundary": copy_json_object(
+            require_object(semantic_policy, "authority_boundary", "semantic_control_policy")
+        ),
+        "summary": {
+            "status": "ready",
+            "source_output_count": len(source_outputs),
+            "detected_term_count": len(detected_terms),
+            "next_gap": require_string(
+                lint_input_contract,
+                "next_gap",
+                "semantic_control_policy.semantic_lint_input_contract",
+            ),
+        },
+        "output_artifact": require_layout_path(semantic_layout, "semantic_lint_input"),
+    }
+
+
+def require_ontology_semantic_lint_input(lint_input: dict[str, Any]) -> dict[str, Any]:
+    if lint_input.get("artifact_kind") != "ontology_semantic_lint_input":
+        raise ValueError("lint_input.artifact_kind must be ontology_semantic_lint_input")
+    if require_int(lint_input, "schema_version", "lint_input") != 1:
+        raise ValueError("lint_input.schema_version must be 1")
+    if require_string(lint_input, "proposal_id", "lint_input") != "0116":
+        raise ValueError("lint_input.proposal_id must be 0116")
+    for field in ("canonical_mutations_allowed", "tracked_artifacts_written"):
+        if require_bool(lint_input, field, "lint_input") is not False:
+            raise ValueError(f"lint_input.{field} must be false")
+    require_surface_output_artifact(lint_input, "semantic_lint_input")
+    source_outputs = lint_input.get("source_outputs")
+    if not isinstance(source_outputs, list) or not source_outputs:
+        raise ValueError("lint_input.source_outputs must be a non-empty list")
+    detected_terms = lint_input.get("detected_terms")
+    if not isinstance(detected_terms, list) or not detected_terms:
+        raise ValueError("lint_input.detected_terms must be a non-empty list")
+    extraction_summary = require_object(lint_input, "extraction_summary", "lint_input")
+    if require_bool(extraction_summary, "arbitrary_text_parsed", "lint_input.extraction_summary"):
+        raise ValueError("lint_input.extraction_summary.arbitrary_text_parsed must be false")
+    if require_bool(extraction_summary, "prompt_agent_executed", "lint_input.extraction_summary"):
+        raise ValueError("lint_input.extraction_summary.prompt_agent_executed must be false")
+    consumer_boundary = require_object(lint_input, "consumer_boundary", "lint_input")
+    for field in ("for_semantic_lint_report", "for_supervisor_gate_evidence"):
+        if require_bool(consumer_boundary, field, "lint_input.consumer_boundary") is not True:
+            raise ValueError(f"lint_input.consumer_boundary.{field} must be true")
+    for field in (
+        "may_parse_arbitrary_text",
+        "may_execute_prompt_agent",
+        "may_mutate_canonical_specs",
+    ):
+        if require_bool(consumer_boundary, field, "lint_input.consumer_boundary") is not False:
+            raise ValueError(f"lint_input.consumer_boundary.{field} must be false")
+    authority_boundary = require_object(lint_input, "authority_boundary", "lint_input")
+    if require_bool(
+        authority_boundary, "semantic_lint_input_is_authority", "lint_input.authority_boundary"
+    ):
+        raise ValueError(
+            "lint_input.authority_boundary.semantic_lint_input_is_authority must be false"
+        )
+    return lint_input
+
+
 def build_ontology_semantic_lint_report(
     semantic_policy: dict[str, Any],
     *,
     semantic_policy_path: Path,
     context_pack: dict[str, Any],
+    lint_input: dict[str, Any],
 ) -> dict[str, Any]:
     require_semantic_control_policy(semantic_policy)
     require_ontology_semantic_context_pack(context_pack)
+    require_ontology_semantic_lint_input(lint_input)
     report_contract = require_object(
         semantic_policy, "semantic_lint_report_contract", "semantic_control_policy"
     )
     semantic_layout = require_object(
         semantic_policy, "repository_layout", "semantic_control_policy"
     )
-    input_fixture_name = require_string(
-        report_contract, "input_fixture", "semantic_control_policy.semantic_lint_report_contract"
-    )
-    input_fixture = require_object(semantic_policy, input_fixture_name, "semantic_control_policy")
-    detected_terms = input_fixture.get("detected_terms")
+    detected_terms = lint_input.get("detected_terms")
     if not isinstance(detected_terms, list) or not detected_terms:
-        raise ValueError(
-            f"semantic_control_policy.{input_fixture_name}.detected_terms must be a non-empty list"
-        )
-    generated_text = require_string(
-        input_fixture,
-        "generated_text",
-        f"semantic_control_policy.{input_fixture_name}",
-    )
+        raise ValueError("lint_input.detected_terms must be a non-empty list")
 
     accepted_by_ref: dict[str, dict[str, Any]] = {}
     for section in ("accepted_terms", "accepted_relations"):
@@ -2521,7 +2880,7 @@ def build_ontology_semantic_lint_report(
     term_results, statuses, classification_counts = build_semantic_term_results(
         semantic_policy,
         detected_terms=detected_terms,
-        detected_terms_context=f"semantic_control_policy.{input_fixture_name}.detected_terms",
+        detected_terms_context="lint_input.detected_terms",
         accepted_by_ref=accepted_by_ref,
         gap_by_ref=gap_by_ref,
     )
@@ -2583,19 +2942,39 @@ def build_ontology_semantic_lint_report(
         "policy_basis": semantic_policy["policy_basis"],
         "source_policy": relative_path(semantic_policy_path),
         "source_context_pack": require_layout_path(semantic_layout, "semantic_context_pack"),
+        "source_lint_input": require_surface_output_artifact(lint_input, "semantic_lint_input"),
         "context_pack_summary": copy_json_object(
             require_object(context_pack, "summary", "context_pack")
         ),
+        "lint_input_summary": copy_json_object(require_object(lint_input, "summary", "lint_input")),
         "target": copy_json_object(
             require_object(
                 report_contract, "target", "semantic_control_policy.semantic_lint_report_contract"
             )
         ),
         "input": {
-            "fixture": input_fixture_name,
-            "detection_mode": "deterministic_policy_fixture_terms",
-            "generated_text_sha256": "sha256:"
-            + hashlib.sha256(generated_text.encode("utf-8")).hexdigest(),
+            "artifact": require_surface_output_artifact(lint_input, "semantic_lint_input"),
+            "detection_mode": require_string(
+                require_object(lint_input, "extraction_summary", "lint_input"),
+                "mode",
+                "lint_input.extraction_summary",
+            ),
+            "source_outputs": [
+                {
+                    "source_id": require_string(
+                        source_output, "source_id", "lint_input.source_outputs"
+                    ),
+                    "source_kind": require_string(
+                        source_output, "source_kind", "lint_input.source_outputs"
+                    ),
+                    "path": require_string(source_output, "path", "lint_input.source_outputs"),
+                    "text_sha256": require_string(
+                        source_output, "text_sha256", "lint_input.source_outputs"
+                    ),
+                }
+                for source_output in lint_input["source_outputs"]
+                if isinstance(source_output, dict)
+            ],
             "detected_term_count": len(term_results),
         },
         "canonical_mutations_allowed": False,
@@ -2648,6 +3027,7 @@ def require_ontology_semantic_lint_report(lint_report: dict[str, Any]) -> dict[s
     boundary = require_object(lint_report, "authority_boundary", "lint_report")
     if require_bool(boundary, "lint_report_is_authority", "lint_report.authority_boundary"):
         raise ValueError("lint_report.authority_boundary.lint_report_is_authority must be false")
+    require_string(lint_report, "source_lint_input", "lint_report")
     consumer_boundary = require_object(lint_report, "consumer_boundary", "lint_report")
     for field in (
         "may_execute_prompt_agent",
@@ -5244,10 +5624,16 @@ def build_ontology_import_surfaces(
                 binding_preview=binding_preview,
             )
             surfaces["semantic_context_pack"] = semantic_context_pack
+            semantic_lint_input = build_ontology_semantic_lint_input(
+                semantic_policy,
+                semantic_policy_path=semantic_policy_path,
+            )
+            surfaces["semantic_lint_input"] = semantic_lint_input
             semantic_lint_report = build_ontology_semantic_lint_report(
                 semantic_policy,
                 semantic_policy_path=semantic_policy_path,
                 context_pack=semantic_context_pack,
+                lint_input=semantic_lint_input,
             )
             surfaces["semantic_lint_report"] = semantic_lint_report
             surfaces["ontology_delta_candidate_review_packet"] = (
@@ -5339,6 +5725,10 @@ def write_ontology_import_surfaces(
     if "semantic_context_pack" in surfaces:
         destinations["semantic_context_pack"] = require_surface_output_artifact(
             surfaces["semantic_context_pack"], "semantic_context_pack"
+        )
+    if "semantic_lint_input" in surfaces:
+        destinations["semantic_lint_input"] = require_surface_output_artifact(
+            surfaces["semantic_lint_input"], "semantic_lint_input"
         )
     if "semantic_lint_report" in surfaces:
         destinations["semantic_lint_report"] = require_surface_output_artifact(
