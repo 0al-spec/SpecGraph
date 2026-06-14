@@ -1584,5 +1584,18 @@
     "required_provenance_links": [
       "source_draft_ref"
     ]
+  },
+  {
+    "proposal_id": "0123",
+    "source_artifact_class": "working_draft",
+    "source_refs": [
+      "docs/archive/proposal_sources/0123_accepted_followup_proposal_draft_request.md"
+    ],
+    "motivating_concern": "SpecGraph can record an accepted executor follow-up decision, but it lacks the local-only bridge request that connects that accepted decision to a later proposal-draft workflow without creating a draft candidate or mutating proposal/canonical state.",
+    "normalized_title": "Accepted Follow-up Proposal Draft Request",
+    "bounded_scope": "Add a local-only proposal draft request artifact built only from an accepted executor follow-up decision, emitting a proposal_draft_request effect while rejecting non-accepted decisions, proposal draft candidate production, executor invocation, proposal markdown writes, registry/status mutation, canonical mutation, patch application, gap closure, authority expansion, and public static publication.",
+    "required_provenance_links": [
+      "source_draft_ref"
+    ]
   }
 ]

@@ -27452,6 +27452,28 @@ def test_supervisor_executor_adapter_policy_declares_request_report_contract() -
     assert followup_decision["authority_boundary"]["proposal_draft_candidate_allowed"] is False
     assert followup_decision["authority_boundary"]["executor_invocation_allowed"] is False
     assert followup_decision["privacy_boundary"]["public_static_publish"] is False
+    draft_request = policy["executor_followup_proposal_draft_request_contract"]
+    assert draft_request["artifact_kind"] == "local_operator_executor_proposal_draft_request"
+    assert draft_request["source_decision_artifact"] == (
+        "runs/local_operator_executor_analysis_report_followup_decision.json"
+    )
+    assert draft_request["local_only"] is True
+    assert draft_request["request_kind"] == "accepted_executor_followup_to_proposal_draft_request"
+    assert draft_request["allowed_source_decision_status"] == [
+        "accepted_for_proposal_draft_request"
+    ]
+    assert draft_request["allowed_source_decisions"] == ["accept"]
+    assert draft_request["requested_effects"] == ["proposal_draft_request"]
+    assert "proposal_draft_candidate" in draft_request["forbidden_effects"]
+    assert "proposal_markdown_write" in draft_request["forbidden_effects"]
+    assert "ready_for_proposal_draft_request" in draft_request["status_values"]
+    assert draft_request["authority_boundary"]["source_decision_is_authority"] is False
+    assert draft_request["authority_boundary"]["request_is_authority"] is False
+    assert draft_request["authority_boundary"]["canonical_mutations_allowed"] is False
+    assert draft_request["authority_boundary"]["proposal_draft_candidate_allowed"] is False
+    assert draft_request["authority_boundary"]["executor_invocation_allowed"] is False
+    assert draft_request["privacy_boundary"]["public_static_publish"] is False
+    assert draft_request["next_gap"] == "build_executor_followup_proposal_draft_candidate"
     promotion_policy = policy["proposal_draft_candidate_promotion_policy"]
     assert promotion_policy["artifact_kind"] == "proposal_draft_candidate_promotion_policy"
     assert promotion_policy["source_candidate_artifact"] == (
@@ -31142,6 +31164,176 @@ def test_main_builds_local_operator_executor_analysis_report_followup_decision(
     assert path.is_file()
     written = json.loads(path.read_text(encoding="utf-8"))
     assert written["summary"]["status"] == "accepted_for_proposal_draft_request"
+
+
+def accepted_executor_followup_decision(supervisor_module: object) -> dict[str, object]:
+    followup_packet = ready_analysis_report_followup_packet(supervisor_module)
+    return supervisor_module.build_local_operator_executor_analysis_report_followup_decision(
+        followup_packet,
+        decision="accept",
+        reviewer="operator",
+        rationale="Reviewed.",
+    )
+
+
+def test_build_local_operator_executor_proposal_draft_request_from_accepted_decision(
+    supervisor_module: object,
+) -> None:
+    decision = accepted_executor_followup_decision(supervisor_module)
+
+    request = supervisor_module.build_local_operator_executor_proposal_draft_request(decision)
+
+    assert request["artifact_kind"] == (
+        supervisor_module.LOCAL_OPERATOR_EXECUTOR_PROPOSAL_DRAFT_REQUEST_ARTIFACT_KIND
+    )
+    assert request["local_only"] is True
+    assert request["source_decision_artifact"] == (
+        "runs/local_operator_executor_analysis_report_followup_decision.json"
+    )
+    assert request["request_kind"] == "accepted_executor_followup_to_proposal_draft_request"
+    assert request["summary"] == {
+        "status": "ready_for_proposal_draft_request",
+        "source_decision": "accept",
+        "source_decision_status": "accepted_for_proposal_draft_request",
+        "authority_level": "request_only",
+        "canonical_mutations_allowed": False,
+        "proposal_draft_candidate_allowed": False,
+        "executor_invocation_allowed": False,
+        "next_gap": "build_executor_followup_proposal_draft_candidate",
+    }
+    assert request["proposal_draft_request"]["request_state"] == (
+        "ready_for_proposal_draft_request"
+    )
+    assert request["proposal_draft_request"]["requested_effects"] == ["proposal_draft_request"]
+    assert request["proposal_draft_request"]["request_is_authority"] is False
+    assert request["proposal_draft_request"]["requires_downstream_policy"] is True
+    assert request["source_decision_validation"]["valid"] is True
+    assert request["request_validation"]["valid"] is True
+    assert {check["check_id"]: check["status"] for check in request["checks"]} == {
+        "source_decision_present": "passed",
+        "source_decision_valid": "passed",
+        "source_decision_accepted": "passed",
+        "authority_boundary_preserved": "passed",
+        "privacy_boundary_preserved": "passed",
+        "proposal_draft_request_contract_valid": "passed",
+    }
+    validation = supervisor_module.validate_local_operator_executor_proposal_draft_request(request)
+    assert validation["valid"] is True
+
+
+def test_build_local_operator_executor_proposal_draft_request_blocks_non_accept_decision(
+    supervisor_module: object,
+) -> None:
+    followup_packet = ready_analysis_report_followup_packet(supervisor_module)
+    decision = supervisor_module.build_local_operator_executor_analysis_report_followup_decision(
+        followup_packet,
+        decision="needs_more_evidence",
+    )
+
+    request = supervisor_module.build_local_operator_executor_proposal_draft_request(decision)
+
+    assert request["summary"]["status"] == "blocked_decision_not_accepted"
+    assert request["proposal_draft_request"]["requested_effects"] == []
+    assert request["proposal_draft_request"]["request_state"] == "blocked"
+    checks = {check["check_id"]: check["status"] for check in request["checks"]}
+    assert checks["source_decision_accepted"] == "failed"
+
+
+def test_build_local_operator_executor_proposal_draft_request_blocks_missing_decision(
+    supervisor_module: object,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setattr(
+        supervisor_module,
+        "load_local_operator_executor_analysis_report_followup_decision_artifact",
+        lambda: None,
+    )
+
+    request = supervisor_module.build_local_operator_executor_proposal_draft_request()
+
+    assert request["summary"]["status"] == "blocked_missing_decision"
+    assert request["summary"]["next_gap"] == "run_executor_followup_decision_until_accepted"
+    checks = {check["check_id"]: check["status"] for check in request["checks"]}
+    assert checks["source_decision_present"] == "missing"
+
+
+def test_validate_local_operator_executor_proposal_draft_request_rejects_authority(
+    supervisor_module: object,
+) -> None:
+    request = supervisor_module.build_local_operator_executor_proposal_draft_request(
+        accepted_executor_followup_decision(supervisor_module)
+    )
+    request["summary"]["canonical_mutations_allowed"] = True
+    request["authority_boundary"]["request_is_authority"] = True
+    request["proposal_draft_request"]["request_is_authority"] = True
+
+    validation = supervisor_module.validate_local_operator_executor_proposal_draft_request(request)
+
+    assert validation["valid"] is False
+    finding_codes = {finding["code"] for finding in validation["findings"]}
+    assert "invalid_proposal_draft_request_authority_boundary" in finding_codes
+    assert "proposal_draft_request_claims_authority" in finding_codes
+    assert "proposal_draft_request_summary_authority_expansion" in finding_codes
+
+
+def test_validate_local_operator_executor_proposal_draft_request_rejects_bad_source_status(
+    supervisor_module: object,
+) -> None:
+    request = supervisor_module.build_local_operator_executor_proposal_draft_request(
+        accepted_executor_followup_decision(supervisor_module)
+    )
+    request["summary"]["source_decision_status"] = "rejected_without_mutation"
+
+    validation = supervisor_module.validate_local_operator_executor_proposal_draft_request(request)
+
+    assert validation["valid"] is False
+    finding_codes = {finding["code"] for finding in validation["findings"]}
+    assert "proposal_draft_request_ready_without_accepted_source_status" in finding_codes
+
+
+def test_validate_local_operator_executor_proposal_draft_request_rejects_forbidden_effect(
+    supervisor_module: object,
+) -> None:
+    request = supervisor_module.build_local_operator_executor_proposal_draft_request(
+        accepted_executor_followup_decision(supervisor_module)
+    )
+    request["proposal_draft_request"]["requested_effects"].append("canonical_spec_mutation")
+
+    validation = supervisor_module.validate_local_operator_executor_proposal_draft_request(request)
+
+    assert validation["valid"] is False
+    finding_codes = {finding["code"] for finding in validation["findings"]}
+    assert "forbidden_proposal_draft_request_effect" in finding_codes
+    assert "proposal_draft_request_effects_mismatch" in finding_codes
+
+
+def test_main_builds_local_operator_executor_proposal_draft_request(
+    supervisor_module: object,
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    decision = accepted_executor_followup_decision(supervisor_module)
+    monkeypatch.setattr(supervisor_module, "RUNS_DIR", tmp_path)
+    monkeypatch.setattr(
+        supervisor_module,
+        "load_local_operator_executor_analysis_report_followup_decision_artifact",
+        lambda: decision,
+    )
+
+    exit_code = supervisor_module.main(
+        build_local_operator_executor_proposal_draft_request_mode=True
+    )
+
+    assert exit_code == 0
+    output = json.loads(capsys.readouterr().out)
+    assert output["artifact_kind"] == (
+        supervisor_module.LOCAL_OPERATOR_EXECUTOR_PROPOSAL_DRAFT_REQUEST_ARTIFACT_KIND
+    )
+    path = tmp_path / "local_operator_executor_proposal_draft_request.json"
+    assert path.is_file()
+    written = json.loads(path.read_text(encoding="utf-8"))
+    assert written["summary"]["status"] == "ready_for_proposal_draft_request"
 
 
 def test_validate_executor_report_to_proposal_draft_request_rejects_missing_packet(

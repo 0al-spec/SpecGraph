@@ -220,6 +220,9 @@ LOCAL_OPERATOR_EXECUTOR_ANALYSIS_REPORT_FOLLOWUP_PACKET_RELATIVE_PATH = (
 LOCAL_OPERATOR_EXECUTOR_ANALYSIS_REPORT_FOLLOWUP_DECISION_RELATIVE_PATH = (
     "runs/local_operator_executor_analysis_report_followup_decision.json"
 )
+LOCAL_OPERATOR_EXECUTOR_PROPOSAL_DRAFT_REQUEST_RELATIVE_PATH = (
+    "runs/local_operator_executor_proposal_draft_request.json"
+)
 LOCAL_OPERATOR_EXECUTOR_PROPOSAL_DRAFT_CANDIDATE_RELATIVE_PATH = (
     "runs/local_operator_executor_proposal_draft_candidate.json"
 )
@@ -3250,6 +3253,13 @@ LOCAL_OPERATOR_EXECUTOR_ANALYSIS_REPORT_FOLLOWUP_DECISION_FILENAME = Path(
         )
     )
 ).name
+LOCAL_OPERATOR_EXECUTOR_PROPOSAL_DRAFT_REQUEST_FILENAME = Path(
+    str(
+        supervisor_executor_adapter_policy_lookup(
+            "repository_layout.local_operator_proposal_draft_request_artifact"
+        )
+    )
+).name
 LOCAL_OPERATOR_EXECUTOR_PROPOSAL_DRAFT_CANDIDATE_FILENAME = Path(
     str(
         supervisor_executor_adapter_policy_lookup(
@@ -3351,6 +3361,16 @@ LOCAL_OPERATOR_EXECUTOR_ANALYSIS_REPORT_FOLLOWUP_DECISION_ARTIFACT_KIND = str(
 LOCAL_OPERATOR_EXECUTOR_ANALYSIS_REPORT_FOLLOWUP_DECISION_SCHEMA_VERSION = int(
     supervisor_executor_adapter_policy_lookup(
         "executor_analysis_report_followup_decision_contract.schema_version"
+    )
+)
+LOCAL_OPERATOR_EXECUTOR_PROPOSAL_DRAFT_REQUEST_ARTIFACT_KIND = str(
+    supervisor_executor_adapter_policy_lookup(
+        "executor_followup_proposal_draft_request_contract.artifact_kind"
+    )
+)
+LOCAL_OPERATOR_EXECUTOR_PROPOSAL_DRAFT_REQUEST_SCHEMA_VERSION = int(
+    supervisor_executor_adapter_policy_lookup(
+        "executor_followup_proposal_draft_request_contract.schema_version"
     )
 )
 LOCAL_OPERATOR_EXECUTOR_PROPOSAL_DRAFT_CANDIDATE_ARTIFACT_KIND = str(
@@ -18283,6 +18303,10 @@ def local_operator_executor_analysis_report_followup_decision_path() -> Path:
     return RUNS_DIR / LOCAL_OPERATOR_EXECUTOR_ANALYSIS_REPORT_FOLLOWUP_DECISION_FILENAME
 
 
+def local_operator_executor_proposal_draft_request_path() -> Path:
+    return RUNS_DIR / LOCAL_OPERATOR_EXECUTOR_PROPOSAL_DRAFT_REQUEST_FILENAME
+
+
 def local_operator_executor_proposal_draft_candidate_path() -> Path:
     return RUNS_DIR / LOCAL_OPERATOR_EXECUTOR_PROPOSAL_DRAFT_CANDIDATE_FILENAME
 
@@ -24906,6 +24930,562 @@ def build_local_operator_executor_analysis_report_followup_decision(
 
 def write_local_operator_executor_analysis_report_followup_decision(index: dict[str, Any]) -> Path:
     path = local_operator_executor_analysis_report_followup_decision_path()
+    with artifact_lock(path):
+        atomic_write_json(path, index)
+    return path
+
+
+def load_local_operator_executor_analysis_report_followup_decision_artifact() -> (
+    dict[str, Any] | None
+):
+    path = local_operator_executor_analysis_report_followup_decision_path()
+    try:
+        payload = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError):
+        return None
+    return payload if isinstance(payload, dict) else None
+
+
+def executor_followup_proposal_draft_request_contract() -> dict[str, Any]:
+    contract = supervisor_executor_adapter_policy_lookup(
+        "executor_followup_proposal_draft_request_contract"
+    )
+    return contract if isinstance(contract, dict) else {}
+
+
+def executor_followup_proposal_draft_request_next_gap(status: str) -> str:
+    contract = executor_followup_proposal_draft_request_contract()
+    if status == "ready_for_proposal_draft_request":
+        return str(contract.get("next_gap", "build_executor_followup_proposal_draft_candidate"))
+    return {
+        "blocked_missing_decision": "run_executor_followup_decision_until_accepted",
+        "blocked_invalid_decision": "repair_executor_followup_human_review_decision",
+        "blocked_decision_not_accepted": "review_executor_followup_decision",
+        "blocked_authority_boundary": "repair_executor_followup_proposal_draft_request_policy",
+        "blocked_privacy_boundary": "repair_executor_followup_proposal_draft_request_privacy",
+        "blocked_policy_contract": "repair_executor_followup_proposal_draft_request_contract",
+    }.get(status, "repair_executor_followup_proposal_draft_request")
+
+
+def executor_followup_proposal_draft_request_status(checks: list[dict[str, Any]]) -> str:
+    status_by_id = {
+        str(check.get("check_id", "")).strip(): str(check.get("status", "")).strip()
+        for check in checks
+        if isinstance(check, dict)
+    }
+    if status_by_id.get("source_decision_present") != "passed":
+        return "blocked_missing_decision"
+    if status_by_id.get("source_decision_valid") != "passed":
+        return "blocked_invalid_decision"
+    if status_by_id.get("source_decision_accepted") != "passed":
+        return "blocked_decision_not_accepted"
+    if status_by_id.get("authority_boundary_preserved") != "passed":
+        return "blocked_authority_boundary"
+    if status_by_id.get("privacy_boundary_preserved") != "passed":
+        return "blocked_privacy_boundary"
+    if (
+        "proposal_draft_request_contract_valid" in status_by_id
+        and status_by_id.get("proposal_draft_request_contract_valid") != "passed"
+    ):
+        return "blocked_policy_contract"
+    return "ready_for_proposal_draft_request"
+
+
+def validate_executor_followup_proposal_draft_request_authority_boundary(
+    authority_boundary: object,
+) -> dict[str, Any]:
+    contract = executor_followup_proposal_draft_request_contract()
+    expected = contract.get("authority_boundary", {})
+    expected = expected if isinstance(expected, dict) else {}
+    boundary = authority_boundary if isinstance(authority_boundary, dict) else {}
+    findings: list[dict[str, str]] = []
+    if not isinstance(authority_boundary, dict):
+        findings.append(
+            executor_report_finding(
+                code="proposal_draft_request_authority_boundary_not_object",
+                field="authority_boundary",
+                message="Proposal draft request authority_boundary must be an object.",
+            )
+        )
+    for field in sorted(boundary):
+        if field not in expected:
+            findings.append(
+                executor_report_finding(
+                    code="unexpected_proposal_draft_request_authority_field",
+                    field=f"authority_boundary.{field}",
+                    message="Proposal draft request includes an extra authority field.",
+                )
+            )
+    for field, expected_value in expected.items():
+        if boundary.get(field) is not expected_value:
+            findings.append(
+                executor_report_finding(
+                    code="invalid_proposal_draft_request_authority_boundary",
+                    field=f"authority_boundary.{field}",
+                    message="Proposal draft request must preserve its authority boundary.",
+                )
+            )
+    return {
+        "valid": not findings,
+        "findings": findings,
+        "normalized": {field: boundary.get(field) for field in sorted(expected)},
+    }
+
+
+def validate_local_operator_executor_proposal_draft_request(
+    request_artifact: object,
+) -> dict[str, Any]:
+    contract = executor_followup_proposal_draft_request_contract()
+    findings: list[dict[str, str]] = []
+    if not isinstance(request_artifact, dict):
+        return {
+            "valid": False,
+            "findings": [
+                executor_report_finding(
+                    code="proposal_draft_request_artifact_not_object",
+                    field="request",
+                    message="Proposal draft request artifact must be a JSON object.",
+                )
+            ],
+            "normalized": {},
+        }
+    findings.extend(executor_report_forbidden_key_findings(request_artifact))
+    findings.extend(executor_report_machine_local_path_findings(request_artifact))
+    findings.extend(executor_report_secret_like_value_findings(request_artifact))
+    for field in [
+        str(field).strip() for field in contract.get("required_fields", []) if str(field).strip()
+    ]:
+        if field not in request_artifact:
+            findings.append(
+                executor_report_finding(
+                    code="missing_proposal_draft_request_artifact_field",
+                    field=field,
+                    message=f"Proposal draft request artifact is missing field {field}.",
+                )
+            )
+    if (
+        request_artifact.get("artifact_kind")
+        != LOCAL_OPERATOR_EXECUTOR_PROPOSAL_DRAFT_REQUEST_ARTIFACT_KIND
+    ):
+        findings.append(
+            executor_report_finding(
+                code="invalid_proposal_draft_request_artifact_kind",
+                field="artifact_kind",
+                message="Proposal draft request artifact_kind is invalid.",
+            )
+        )
+    if (
+        request_artifact.get("schema_version")
+        != LOCAL_OPERATOR_EXECUTOR_PROPOSAL_DRAFT_REQUEST_SCHEMA_VERSION
+    ):
+        findings.append(
+            executor_report_finding(
+                code="invalid_proposal_draft_request_schema_version",
+                field="schema_version",
+                message="Proposal draft request schema_version is invalid.",
+            )
+        )
+    if request_artifact.get("local_only") is not True:
+        findings.append(
+            executor_report_finding(
+                code="proposal_draft_request_local_only_required",
+                field="local_only",
+                message="Proposal draft request must remain local-only.",
+            )
+        )
+    if (
+        request_artifact.get("source_decision_artifact")
+        != LOCAL_OPERATOR_EXECUTOR_ANALYSIS_REPORT_FOLLOWUP_DECISION_RELATIVE_PATH
+    ):
+        findings.append(
+            executor_report_finding(
+                code="invalid_proposal_draft_request_source_decision",
+                field="source_decision_artifact",
+                message="Proposal draft request must reference the local follow-up decision.",
+            )
+        )
+    if request_artifact.get("request_kind") != str(contract.get("request_kind", "")).strip():
+        findings.append(
+            executor_report_finding(
+                code="invalid_proposal_draft_request_kind",
+                field="request_kind",
+                message="Proposal draft request kind is invalid.",
+            )
+        )
+    summary = request_artifact.get("summary", {})
+    summary = summary if isinstance(summary, dict) else {}
+    request_payload = request_artifact.get("proposal_draft_request", {})
+    request_payload = request_payload if isinstance(request_payload, dict) else {}
+    status = str(summary.get("status", "")).strip()
+    allowed_statuses = {
+        str(value).strip() for value in contract.get("status_values", []) if str(value).strip()
+    }
+    if status not in allowed_statuses:
+        findings.append(
+            executor_report_finding(
+                code="invalid_proposal_draft_request_status",
+                field="summary.status",
+                message="Proposal draft request status is not allowed.",
+            )
+        )
+    if status == "ready_for_proposal_draft_request" and summary.get("source_decision") != "accept":
+        findings.append(
+            executor_report_finding(
+                code="proposal_draft_request_ready_without_accept_decision",
+                field="summary.source_decision",
+                message="Ready proposal draft requests require an accepted source decision.",
+            )
+        )
+    allowed_source_statuses = {
+        str(value).strip()
+        for value in contract.get("allowed_source_decision_status", [])
+        if str(value).strip()
+    }
+    source_decision_status = str(summary.get("source_decision_status", "")).strip()
+    if (
+        status == "ready_for_proposal_draft_request"
+        and source_decision_status not in allowed_source_statuses
+    ):
+        findings.append(
+            executor_report_finding(
+                code="proposal_draft_request_ready_without_accepted_source_status",
+                field="summary.source_decision_status",
+                message="Ready proposal draft requests require an accepted source decision status.",
+            )
+        )
+    for field in [
+        "canonical_mutations_allowed",
+        "proposal_draft_candidate_allowed",
+        "executor_invocation_allowed",
+    ]:
+        if summary.get(field) is not False:
+            findings.append(
+                executor_report_finding(
+                    code="proposal_draft_request_summary_authority_expansion",
+                    field=f"summary.{field}",
+                    message="Proposal draft request summary must not expand authority.",
+                )
+            )
+    requested_effects = request_payload.get("requested_effects", [])
+    allowed_effects = {
+        str(effect).strip()
+        for effect in contract.get("requested_effects", [])
+        if str(effect).strip()
+    }
+    forbidden_effects = {
+        str(effect).strip()
+        for effect in contract.get("forbidden_effects", [])
+        if str(effect).strip()
+    }
+    normalized_effects: list[str] = []
+    if not isinstance(requested_effects, list):
+        findings.append(
+            executor_report_finding(
+                code="proposal_draft_request_effects_not_list",
+                field="proposal_draft_request.requested_effects",
+                message="Proposal draft request effects must be a list.",
+            )
+        )
+    else:
+        normalized_effects = [
+            str(effect).strip() for effect in requested_effects if str(effect).strip()
+        ]
+        for index, effect in enumerate(normalized_effects):
+            if effect in forbidden_effects:
+                findings.append(
+                    executor_report_finding(
+                        code="forbidden_proposal_draft_request_effect",
+                        field=f"proposal_draft_request.requested_effects[{index}]",
+                        message=f"Proposal draft request must not request effect {effect}.",
+                    )
+                )
+            elif effect not in allowed_effects:
+                findings.append(
+                    executor_report_finding(
+                        code="unknown_proposal_draft_request_effect",
+                        field=f"proposal_draft_request.requested_effects[{index}]",
+                        message=f"Unknown proposal draft request effect: {effect}.",
+                    )
+                )
+        if (
+            status == "ready_for_proposal_draft_request"
+            and set(normalized_effects) != allowed_effects
+        ):
+            findings.append(
+                executor_report_finding(
+                    code="proposal_draft_request_effects_mismatch",
+                    field="proposal_draft_request.requested_effects",
+                    message="Ready proposal draft request effects must match the contract.",
+                )
+            )
+        if status != "ready_for_proposal_draft_request" and normalized_effects:
+            findings.append(
+                executor_report_finding(
+                    code="blocked_proposal_draft_request_has_effects",
+                    field="proposal_draft_request.requested_effects",
+                    message="Blocked proposal draft requests must not carry requested effects.",
+                )
+            )
+    if request_payload.get("request_is_authority") is not False:
+        findings.append(
+            executor_report_finding(
+                code="proposal_draft_request_claims_authority",
+                field="proposal_draft_request.request_is_authority",
+                message="Proposal draft request is not authority.",
+            )
+        )
+    authority_validation = validate_executor_followup_proposal_draft_request_authority_boundary(
+        request_artifact.get("authority_boundary")
+    )
+    findings.extend(copy.deepcopy(authority_validation.get("findings", [])))
+    checks = request_artifact.get("checks", [])
+    if not isinstance(checks, list):
+        findings.append(
+            executor_report_finding(
+                code="proposal_draft_request_checks_not_list",
+                field="checks",
+                message="Proposal draft request checks must be a list.",
+            )
+        )
+        checks = []
+    check_status_by_id = {
+        str(check.get("check_id", "")).strip(): str(check.get("status", "")).strip()
+        for check in checks
+        if isinstance(check, dict)
+    }
+    for check_id in [
+        str(check_id).strip() for check_id in contract.get("check_ids", []) if str(check_id).strip()
+    ]:
+        check_status = check_status_by_id.get(check_id, "")
+        if not check_status:
+            findings.append(
+                executor_report_finding(
+                    code="missing_proposal_draft_request_check",
+                    field=f"checks.{check_id}",
+                    message=f"Proposal draft request is missing check {check_id}.",
+                )
+            )
+        elif status == "ready_for_proposal_draft_request" and check_status != "passed":
+            findings.append(
+                executor_report_finding(
+                    code="proposal_draft_request_ready_check_not_passed",
+                    field=f"checks.{check_id}",
+                    message="Ready proposal draft requests require passed checks.",
+                )
+            )
+    return {
+        "valid": not findings,
+        "findings": findings,
+        "normalized": {
+            "status": status,
+            "source_decision": str(summary.get("source_decision", "")).strip(),
+            "next_gap": str(summary.get("next_gap", "")).strip(),
+        },
+    }
+
+
+def build_local_operator_executor_proposal_draft_request(
+    decision_artifact: dict[str, Any] | None = None,
+) -> dict[str, Any]:
+    contract = executor_followup_proposal_draft_request_contract()
+    decision_artifact = (
+        decision_artifact
+        if isinstance(decision_artifact, dict)
+        else load_local_operator_executor_analysis_report_followup_decision_artifact()
+    )
+    source_present = isinstance(decision_artifact, dict)
+    source_validation = validate_local_operator_executor_analysis_report_followup_decision(
+        decision_artifact
+    )
+    source_valid = bool(source_present and source_validation.get("valid") is True)
+    source_payload = decision_artifact if source_present else {}
+    source_summary = source_payload.get("summary", {}) if isinstance(source_payload, dict) else {}
+    source_summary = source_summary if isinstance(source_summary, dict) else {}
+    source_decision_payload = (
+        source_payload.get("human_review_decision", {}) if isinstance(source_payload, dict) else {}
+    )
+    source_decision_payload = (
+        source_decision_payload if isinstance(source_decision_payload, dict) else {}
+    )
+    source_status = str(source_summary.get("status", "")).strip()
+    source_decision = str(source_decision_payload.get("decision", "")).strip()
+    allowed_status = {
+        str(value).strip()
+        for value in contract.get("allowed_source_decision_status", [])
+        if str(value).strip()
+    }
+    allowed_decisions = {
+        str(value).strip()
+        for value in contract.get("allowed_source_decisions", [])
+        if str(value).strip()
+    }
+    source_accepted = source_status in allowed_status and source_decision in allowed_decisions
+    authority_boundary = copy.deepcopy(contract.get("authority_boundary", {}))
+    authority_validation = validate_executor_followup_proposal_draft_request_authority_boundary(
+        authority_boundary
+    )
+    privacy_findings: list[dict[str, str]] = []
+    if source_present:
+        privacy_findings.extend(executor_report_forbidden_key_findings(decision_artifact))
+        privacy_findings.extend(executor_report_machine_local_path_findings(decision_artifact))
+        privacy_findings.extend(executor_report_secret_like_value_findings(decision_artifact))
+    checks = [
+        local_operator_smoke_check(
+            check_id="source_decision_present",
+            status="passed" if source_present else "missing",
+            message=(
+                "Executor follow-up decision is present."
+                if source_present
+                else "Executor follow-up decision is missing."
+            ),
+        ),
+        local_operator_smoke_check(
+            check_id="source_decision_valid",
+            status="passed" if source_valid else "failed",
+            message=(
+                "Executor follow-up decision is valid."
+                if source_valid
+                else "Executor follow-up decision is invalid or unavailable."
+            ),
+        ),
+        local_operator_smoke_check(
+            check_id="source_decision_accepted",
+            status="passed" if source_accepted else "failed",
+            message=(
+                "Executor follow-up decision accepts proposal draft request bridging."
+                if source_accepted
+                else "Executor follow-up decision does not accept proposal draft request bridging."
+            ),
+        ),
+        local_operator_smoke_check(
+            check_id="authority_boundary_preserved",
+            status="passed" if authority_validation.get("valid") is True else "failed",
+            message=(
+                "Proposal draft request preserves authority boundary."
+                if authority_validation.get("valid") is True
+                else "Proposal draft request would expand authority."
+            ),
+        ),
+        local_operator_smoke_check(
+            check_id="privacy_boundary_preserved",
+            status="passed" if not privacy_findings else "failed",
+            message=(
+                "Proposal draft request preserves source decision privacy boundary."
+                if not privacy_findings
+                else "Proposal draft request would expose unsafe source decision data."
+            ),
+        ),
+        local_operator_smoke_check(
+            check_id="proposal_draft_request_contract_valid",
+            status="passed",
+            message="Proposal draft request matches the request contract.",
+        ),
+    ]
+    status_before_contract = executor_followup_proposal_draft_request_status(checks)
+    ready = status_before_contract == "ready_for_proposal_draft_request"
+    requested_effects = [
+        str(effect).strip()
+        for effect in contract.get("requested_effects", [])
+        if str(effect).strip()
+    ]
+    artifact = {
+        "artifact_kind": LOCAL_OPERATOR_EXECUTOR_PROPOSAL_DRAFT_REQUEST_ARTIFACT_KIND,
+        "schema_version": LOCAL_OPERATOR_EXECUTOR_PROPOSAL_DRAFT_REQUEST_SCHEMA_VERSION,
+        "generated_at": utc_now_iso(),
+        "policy_reference": {
+            **supervisor_executor_adapter_policy_reference(),
+            "policy_section": "executor_followup_proposal_draft_request_contract",
+        },
+        "source_decision_artifact": (
+            LOCAL_OPERATOR_EXECUTOR_ANALYSIS_REPORT_FOLLOWUP_DECISION_RELATIVE_PATH
+        ),
+        "local_only": bool(contract.get("local_only", True)),
+        "request_kind": str(
+            contract.get("request_kind", "accepted_executor_followup_to_proposal_draft_request")
+        ).strip(),
+        "authority_boundary": authority_boundary,
+        "privacy_boundary": copy.deepcopy(contract.get("privacy_boundary", {})),
+        "summary": {
+            "status": status_before_contract,
+            "source_decision": source_decision,
+            "source_decision_status": source_status,
+            "authority_level": "request_only",
+            "canonical_mutations_allowed": False,
+            "proposal_draft_candidate_allowed": False,
+            "executor_invocation_allowed": False,
+            "next_gap": executor_followup_proposal_draft_request_next_gap(status_before_contract),
+        },
+        "proposal_draft_request": {
+            "request_state": "ready_for_proposal_draft_request" if ready else "blocked",
+            "requested_effects": requested_effects if ready else [],
+            "source_decision": source_decision,
+            "request_is_authority": False,
+            "requires_downstream_policy": True,
+            "recommended_next_gap": executor_followup_proposal_draft_request_next_gap(
+                status_before_contract
+            ),
+        },
+        "source_decision_validation": {
+            "valid": source_valid,
+            "finding_count": len(source_validation.get("findings", [])),
+            "findings": copy.deepcopy(source_validation.get("findings", [])),
+            "normalized": copy.deepcopy(source_validation.get("normalized", {})),
+        },
+        "checks": checks,
+        "viewer_projection": {
+            "named_filters": {str(name).strip(): [] for name in contract.get("named_filters", [])},
+        },
+    }
+    artifact["viewer_projection"]["named_filters"].setdefault(status_before_contract, []).append(
+        source_decision or "missing_decision"
+    )
+    request_validation = validate_local_operator_executor_proposal_draft_request(artifact)
+    artifact["request_validation"] = {
+        "valid": bool(request_validation.get("valid", False)),
+        "finding_count": len(request_validation.get("findings", [])),
+        "findings": copy.deepcopy(request_validation.get("findings", [])),
+        "normalized": copy.deepcopy(request_validation.get("normalized", {})),
+    }
+    for check in checks:
+        if (
+            isinstance(check, dict)
+            and str(check.get("check_id", "")).strip() == "proposal_draft_request_contract_valid"
+        ):
+            check["status"] = "passed" if request_validation.get("valid") is True else "failed"
+            check["message"] = (
+                "Proposal draft request matches the request contract."
+                if request_validation.get("valid") is True
+                else "Proposal draft request does not match the request contract."
+            )
+            break
+    final_status = executor_followup_proposal_draft_request_status(checks)
+    artifact["summary"]["status"] = final_status
+    artifact["summary"]["next_gap"] = executor_followup_proposal_draft_request_next_gap(
+        final_status
+    )
+    artifact["proposal_draft_request"]["request_state"] = (
+        "ready_for_proposal_draft_request"
+        if final_status == "ready_for_proposal_draft_request"
+        else "blocked"
+    )
+    artifact["proposal_draft_request"]["recommended_next_gap"] = (
+        executor_followup_proposal_draft_request_next_gap(final_status)
+    )
+    artifact["viewer_projection"]["named_filters"] = {
+        key: [] for key in artifact["viewer_projection"]["named_filters"]
+    }
+    artifact["viewer_projection"]["named_filters"].setdefault(final_status, []).append(
+        source_decision or "missing_decision"
+    )
+    for key in list(artifact["viewer_projection"]["named_filters"]):
+        artifact["viewer_projection"]["named_filters"][key] = sorted(
+            set(artifact["viewer_projection"]["named_filters"][key])
+        )
+    return artifact
+
+
+def write_local_operator_executor_proposal_draft_request(index: dict[str, Any]) -> Path:
+    path = local_operator_executor_proposal_draft_request_path()
     with artifact_lock(path):
         atomic_write_json(path, index)
     return path
@@ -53276,6 +53856,7 @@ def main(
     executor_followup_decision: str = "needs_more_evidence",
     executor_followup_reviewer: str = "local_operator",
     executor_followup_rationale: str = "",
+    build_local_operator_executor_proposal_draft_request_mode: bool = False,
     build_local_operator_executor_proposal_draft_candidate_mode: bool = False,
     build_local_operator_executor_proposal_promotion_packet_mode: bool = False,
     build_local_operator_executor_proposal_source_materialization_mode: bool = False,
@@ -53376,6 +53957,9 @@ def main(
         ),
         "--build-local-operator-executor-analysis-report-followup-decision": (
             build_local_operator_executor_analysis_report_followup_decision_mode
+        ),
+        "--build-local-operator-executor-proposal-draft-request": (
+            build_local_operator_executor_proposal_draft_request_mode
         ),
         "--build-local-operator-executor-proposal-draft-candidate": (
             build_local_operator_executor_proposal_draft_candidate_mode
@@ -54704,6 +55288,44 @@ def main(
                 "needs_more_evidence",
             }
             else 1
+        )
+
+    if build_local_operator_executor_proposal_draft_request_mode:
+        if any(
+            (
+                dry_run,
+                auto_approve,
+                loop,
+                resolve_gate,
+                decision,
+                note,
+                target_spec,
+                split_proposal,
+                apply_split_proposal,
+                operator_note,
+                mutation_budget,
+                run_authority,
+                execution_profile,
+                child_model,
+                child_timeout_seconds,
+                verbose,
+                list_stale_runtime,
+                clean_stale_runtime,
+                observe_graph_health_mode,
+                operator_request_packet_path,
+            )
+        ):
+            print(
+                "--build-local-operator-executor-proposal-draft-request must be used "
+                "as a standalone command",
+                file=sys.stderr,
+            )
+            return 1
+        index = build_local_operator_executor_proposal_draft_request()
+        write_local_operator_executor_proposal_draft_request(index)
+        emit_supervisor_json(index, output_mode=normalized_output_mode)
+        return (
+            0 if index.get("summary", {}).get("status") == "ready_for_proposal_draft_request" else 1
         )
 
     if build_local_operator_executor_proposal_draft_candidate_mode:
@@ -58312,6 +58934,14 @@ if __name__ == "__main__":
         help="Optional rationale stored in the local executor follow-up decision artifact",
     )
     parser.add_argument(
+        "--build-local-operator-executor-proposal-draft-request",
+        action="store_true",
+        help=(
+            "Build a local-only proposal draft request from an accepted executor follow-up "
+            "decision, without creating proposal drafts or mutating canonical specs"
+        ),
+    )
+    parser.add_argument(
         "--build-local-operator-executor-proposal-draft-candidate",
         action="store_true",
         help=(
@@ -58714,6 +59344,9 @@ if __name__ == "__main__":
             executor_followup_decision=args.executor_followup_decision,
             executor_followup_reviewer=args.executor_followup_reviewer,
             executor_followup_rationale=args.executor_followup_rationale,
+            build_local_operator_executor_proposal_draft_request_mode=(
+                args.build_local_operator_executor_proposal_draft_request
+            ),
             build_local_operator_executor_proposal_draft_candidate_mode=(
                 args.build_local_operator_executor_proposal_draft_candidate
             ),

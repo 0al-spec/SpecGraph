@@ -224,6 +224,12 @@ Supervisor modes:
   `needs_more_evidence`). Accepted decisions only authorize the next governed
   request-building step; they do not write proposals, invoke executors, mutate
   canonical specs, apply patches, close gaps, or publish local artifacts.
+- `--build-local-operator-executor-proposal-draft-request`: build local-only
+  `runs/local_operator_executor_proposal_draft_request.json` by consuming an
+  accepted executor follow-up decision and producing only a request for a future
+  proposal-draft workflow. The request does not create draft candidates, write
+  proposal markdown, invoke executors, mutate registries/status, mutate
+  canonical specs, apply patches, close gaps, or publish local artifacts.
 - `--build-local-operator-executor-proposal-draft-candidate`: build local-only
   `runs/local_operator_executor_proposal_draft_candidate.json` by consuming a
   valid `proposal_draft` review packet and the
