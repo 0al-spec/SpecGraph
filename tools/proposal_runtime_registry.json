@@ -6756,5 +6756,75 @@
         "pattern": "local_operator_executor_analysis_report_followup_decision.json"
       }
     ]
+  },
+  {
+    "proposal_id": "0123",
+    "posture": "bounded_runtime_followup",
+    "runtime_surfaces": [
+      "docs/proposals/0123_accepted_followup_proposal_draft_request.md",
+      "docs/archive/proposal_sources/0123_accepted_followup_proposal_draft_request.md",
+      "tools/supervisor_executor_adapter_policy.json",
+      "tools/supervisor.py",
+      "tools/README.md",
+      "Makefile",
+      "tools/build_static_artifact_bundle.py",
+      "tests/test_supervisor.py",
+      "tests/test_static_artifact_bundle.py",
+      "runs/local_operator_executor_proposal_draft_request.json"
+    ],
+    "runtime_markers": [
+      {
+        "path": "tools/supervisor_executor_adapter_policy.json",
+        "pattern": "executor_followup_proposal_draft_request_contract"
+      },
+      {
+        "path": "tools/supervisor.py",
+        "pattern": "def build_local_operator_executor_proposal_draft_request("
+      },
+      {
+        "path": "tools/supervisor.py",
+        "pattern": "def validate_local_operator_executor_proposal_draft_request("
+      },
+      {
+        "path": "tools/supervisor.py",
+        "pattern": "--build-local-operator-executor-proposal-draft-request"
+      },
+      {
+        "path": "Makefile",
+        "pattern": "executor-proposal-draft-request:"
+      }
+    ],
+    "validation_markers": [
+      {
+        "path": "tests/test_supervisor.py",
+        "pattern": "def test_build_local_operator_executor_proposal_draft_request_from_accepted_decision("
+      },
+      {
+        "path": "tests/test_supervisor.py",
+        "pattern": "def test_build_local_operator_executor_proposal_draft_request_blocks_non_accept_decision("
+      },
+      {
+        "path": "tests/test_supervisor.py",
+        "pattern": "def test_validate_local_operator_executor_proposal_draft_request_rejects_authority("
+      },
+      {
+        "path": "tests/test_static_artifact_bundle.py",
+        "pattern": "local_operator_executor_proposal_draft_request.json"
+      }
+    ],
+    "observation_markers": [
+      {
+        "path": "docs/proposals/0123_accepted_followup_proposal_draft_request.md",
+        "pattern": "build_executor_followup_proposal_draft_candidate"
+      },
+      {
+        "path": "tools/README.md",
+        "pattern": "local_operator_executor_proposal_draft_request.json"
+      },
+      {
+        "path": "tools/build_static_artifact_bundle.py",
+        "pattern": "local_operator_executor_proposal_draft_request.json"
+      }
+    ]
   }
 ]

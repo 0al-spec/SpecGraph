@@ -29,7 +29,7 @@ PYTHON_TARGETS := viewer-surfaces dashboard backlog next-move spec-activity grap
 	executor-adapters executor-readiness executor-smoke executor-task-smoke \
 	executor-report-contract executor-report-smoke executor-report-review-packet \
 	executor-analysis-report-review-outcome executor-analysis-report-followup-packet \
-	executor-followup-decision executor-proposal-draft-candidate \
+	executor-followup-decision executor-proposal-draft-request executor-proposal-draft-candidate \
 	executor-proposal-promotion-packet \
 	executor-proposal-source-materialize executor-public-proposal-doc-materialize \
 	agent-passports agent-runtime-evidence docc-sync publish-bundle test test-supervisor
@@ -89,6 +89,7 @@ help:
 			'  make executor-analysis-report-review-outcome Build local analysis report review outcome' \
 			'  make executor-analysis-report-followup-packet Build local analysis report follow-up packet' \
 			'  make executor-followup-decision EXECUTOR_FOLLOWUP_DECISION=<accept|reject|defer|needs_more_evidence>' \
+			'  make executor-proposal-draft-request Build local proposal draft request from accepted follow-up' \
 			'  make executor-proposal-draft-candidate Build local operator proposal draft candidate' \
 			'  make executor-proposal-promotion-packet Build local operator proposal promotion packet' \
 			'  make executor-proposal-source-materialize Materialize local proposal source draft' \
@@ -309,6 +310,10 @@ executor-analysis-report-followup-packet:
 .PHONY: executor-followup-decision
 executor-followup-decision:
 	@$(PYTHON) $(SUPERVISOR) --build-local-operator-executor-analysis-report-followup-decision --executor-followup-decision "$(EXECUTOR_FOLLOWUP_DECISION)" --executor-followup-reviewer "$(EXECUTOR_FOLLOWUP_REVIEWER)" $(if $(EXECUTOR_FOLLOWUP_RATIONALE),--executor-followup-rationale "$(EXECUTOR_FOLLOWUP_RATIONALE)")
+
+.PHONY: executor-proposal-draft-request
+executor-proposal-draft-request:
+	@$(PYTHON) $(SUPERVISOR) --build-local-operator-executor-proposal-draft-request
 
 .PHONY: executor-proposal-draft-candidate
 executor-proposal-draft-candidate:
