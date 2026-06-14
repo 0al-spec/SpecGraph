@@ -25136,6 +25136,96 @@ def validate_local_operator_executor_proposal_draft_request(
                 message="Ready proposal draft requests require an accepted source decision.",
             )
         )
+    allowed_source_statuses = {
+        str(value).strip()
+        for value in contract.get("allowed_source_decision_status", [])
+        if str(value).strip()
+    }
+    source_decision_status = str(summary.get("source_decision_status", "")).strip()
+    if (
+        status == "ready_for_proposal_draft_request"
+        and source_decision_status not in allowed_source_statuses
+    ):
+        findings.append(
+            executor_report_finding(
+                code="proposal_draft_request_ready_without_accepted_source_status",
+                field="summary.source_decision_status",
+                message="Ready proposal draft requests require an accepted source decision status.",
+            )
+        )
+    for field in [
+        "canonical_mutations_allowed",
+        "proposal_draft_candidate_allowed",
+        "executor_invocation_allowed",
+    ]:
+        if summary.get(field) is not False:
+            findings.append(
+                executor_report_finding(
+                    code="proposal_draft_request_summary_authority_expansion",
+                    field=f"summary.{field}",
+                    message="Proposal draft request summary must not expand authority.",
+                )
+            )
+    requested_effects = request_payload.get("requested_effects", [])
+    allowed_effects = {
+        str(effect).strip()
+        for effect in contract.get("requested_effects", [])
+        if str(effect).strip()
+    }
+    forbidden_effects = {
+        str(effect).strip()
+        for effect in contract.get("forbidden_effects", [])
+        if str(effect).strip()
+    }
+    normalized_effects: list[str] = []
+    if not isinstance(requested_effects, list):
+        findings.append(
+            executor_report_finding(
+                code="proposal_draft_request_effects_not_list",
+                field="proposal_draft_request.requested_effects",
+                message="Proposal draft request effects must be a list.",
+            )
+        )
+    else:
+        normalized_effects = [
+            str(effect).strip() for effect in requested_effects if str(effect).strip()
+        ]
+        for index, effect in enumerate(normalized_effects):
+            if effect in forbidden_effects:
+                findings.append(
+                    executor_report_finding(
+                        code="forbidden_proposal_draft_request_effect",
+                        field=f"proposal_draft_request.requested_effects[{index}]",
+                        message=f"Proposal draft request must not request effect {effect}.",
+                    )
+                )
+            elif effect not in allowed_effects:
+                findings.append(
+                    executor_report_finding(
+                        code="unknown_proposal_draft_request_effect",
+                        field=f"proposal_draft_request.requested_effects[{index}]",
+                        message=f"Unknown proposal draft request effect: {effect}.",
+                    )
+                )
+        if (
+            status == "ready_for_proposal_draft_request"
+            and set(normalized_effects) != allowed_effects
+        ):
+            findings.append(
+                executor_report_finding(
+                    code="proposal_draft_request_effects_mismatch",
+                    field="proposal_draft_request.requested_effects",
+                    message="Ready proposal draft request effects must match the contract.",
+                )
+            )
+        if status != "ready_for_proposal_draft_request" and normalized_effects:
+            findings.append(
+                executor_report_finding(
+                    code="blocked_proposal_draft_request_has_effects",
+                    field="proposal_draft_request.requested_effects",
+                    message="Blocked proposal draft requests must not carry requested effects.",
+                )
+            )
     if request_payload.get("request_is_authority") is not False:
         findings.append(
             executor_report_finding(

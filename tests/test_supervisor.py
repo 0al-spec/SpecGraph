@@ -31273,6 +31273,38 @@ def test_validate_local_operator_executor_proposal_draft_request_rejects_authori
     finding_codes = {finding["code"] for finding in validation["findings"]}
     assert "invalid_proposal_draft_request_authority_boundary" in finding_codes
     assert "proposal_draft_request_claims_authority" in finding_codes
+    assert "proposal_draft_request_summary_authority_expansion" in finding_codes
+
+
+def test_validate_local_operator_executor_proposal_draft_request_rejects_bad_source_status(
+    supervisor_module: object,
+) -> None:
+    request = supervisor_module.build_local_operator_executor_proposal_draft_request(
+        accepted_executor_followup_decision(supervisor_module)
+    )
+    request["summary"]["source_decision_status"] = "rejected_without_mutation"
+
+    validation = supervisor_module.validate_local_operator_executor_proposal_draft_request(request)
+
+    assert validation["valid"] is False
+    finding_codes = {finding["code"] for finding in validation["findings"]}
+    assert "proposal_draft_request_ready_without_accepted_source_status" in finding_codes
+
+
+def test_validate_local_operator_executor_proposal_draft_request_rejects_forbidden_effect(
+    supervisor_module: object,
+) -> None:
+    request = supervisor_module.build_local_operator_executor_proposal_draft_request(
+        accepted_executor_followup_decision(supervisor_module)
+    )
+    request["proposal_draft_request"]["requested_effects"].append("canonical_spec_mutation")
+
+    validation = supervisor_module.validate_local_operator_executor_proposal_draft_request(request)
+
+    assert validation["valid"] is False
+    finding_codes = {finding["code"] for finding in validation["findings"]}
+    assert "forbidden_proposal_draft_request_effect" in finding_codes
+    assert "proposal_draft_request_effects_mismatch" in finding_codes
 
 
 def test_main_builds_local_operator_executor_proposal_draft_request(
