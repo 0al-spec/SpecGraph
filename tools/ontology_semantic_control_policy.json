@@ -15,7 +15,8 @@
     "docs/proposals/0114_ontology_owner_decision_contract.md",
     "docs/proposals/0115_ontology_decision_import_preview.md",
     "docs/proposals/0116_ontology_semantic_lint_input.md",
-    "docs/proposals/0117_ontology_supervisor_soft_gate_wiring.md"
+    "docs/proposals/0117_ontology_supervisor_soft_gate_wiring.md",
+    "docs/proposals/0118_ontology_prompt_agent_context_artifact.md"
   ],
   "policy_basis": "docs/proposals/0100_ontology_grounded_semantic_control.md",
   "repository_layout": {
@@ -285,6 +286,54 @@
       "may_close_semantic_gate": false
     },
     "next_gap": "build_prompt_agent_ontology_context_artifact"
+  },
+  "prompt_agent_ontology_context_contract": {
+    "artifact_kind": "ontology_prompt_invocation_index",
+    "source_context_pack_artifact_kind": "ontology_semantic_context_pack",
+    "source_lint_input_artifact_kind": "ontology_semantic_lint_input",
+    "source_lint_report_artifact_kind": "ontology_semantic_lint_report",
+    "source_delta_candidate_review_packet_artifact_kind": "ontology_delta_candidate_review_packet",
+    "source_supervisor_semantic_gate_artifact_kind": "ontology_supervisor_semantic_gate",
+    "target": {
+      "target_kind": "proposal",
+      "target_ref": "SG-RFC-0118"
+    },
+    "integration_mode": "context_only_no_execution",
+    "context_sections": [
+      "packages",
+      "accepted_terms",
+      "accepted_relations",
+      "aliases",
+      "deprecated_terms",
+      "relation_conflicts",
+      "unresolved_gaps",
+      "governance_evidence"
+    ],
+    "prompt_refs": {
+      "prompt_input_ref": "runs/ontology_prompt_invocation_index.json#invocations[0].prompt_input_refs",
+      "prompt_output_ref": "runs/ontology_prompt_invocation_index.json#invocations[0].prompt_output_refs"
+    },
+    "failure_modes": [
+      "semantic_context_pack_missing_or_invalid",
+      "prompt_agent_not_invoked",
+      "prompt_output_missing",
+      "semantic_lint_report_missing_or_invalid",
+      "ontology_delta_candidate_review_missing_or_invalid"
+    ],
+    "consumer_boundary": {
+      "for_prompt_agent_grounding": true,
+      "for_supervisor_invocation_boundary": true,
+      "for_specspace_review_surface": true,
+      "may_execute_prompt_agent": false,
+      "may_persist_raw_prompt": false,
+      "may_persist_raw_response": false,
+      "may_write_ontology_package": false,
+      "may_update_ontology_lockfile": false,
+      "may_mutate_canonical_specs": false,
+      "may_mark_candidate_accepted": false,
+      "may_close_semantic_gate": false
+    },
+    "next_gap": "produce_ontology_owner_decisions"
   },
   "ontology_delta_draft_intake_contract": {
     "artifact_kind": "ontology_delta_draft_intake",
@@ -623,6 +672,7 @@
     "ontology_review_dashboard_is_authority": false,
     "ontology_owner_decision_report_is_authority": false,
     "ontology_decision_import_preview_is_authority": false,
+    "prompt_agent_context_is_authority": false,
     "ontology_governance_required": true,
     "specgraph_proposal_review_required": true,
     "prompt_agent_execution_allowed": false,

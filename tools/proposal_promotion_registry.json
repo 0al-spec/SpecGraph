@@ -1519,5 +1519,18 @@
     "required_provenance_links": [
       "source_draft_ref"
     ]
+  },
+  {
+    "proposal_id": "0118",
+    "source_artifact_class": "working_draft",
+    "source_refs": [
+      "docs/archive/proposal_sources/0118_ontology_prompt_agent_context_artifact.md"
+    ],
+    "motivating_concern": "SpecGraph can surface ontology semantic gate evidence, but prompt-agent drafting still lacked a typed ontology context boundary that carries project vocabulary, aliases, deprecated terms, relation conflicts, gaps, package refs, digests, and failure modes before generation.",
+    "normalized_title": "Ontology Prompt-Agent Context Artifact",
+    "bounded_scope": "Upgrade runs/ontology_prompt_invocation_index.json into a deterministic context-only prompt-agent ontology boundary that carries validated semantic context, package refs, versions, digests, prompt input/output refs, evidence refs, and failure modes without executing prompt agents, persisting raw prompts or responses, writing Ontology packages or lockfiles, mutating canonical specs, accepting candidate terms, closing semantic gates, or adding SpecSpace mutation UI.",
+    "required_provenance_links": [
+      "source_draft_ref"
+    ]
   }
 ]

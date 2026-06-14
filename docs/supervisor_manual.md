@@ -1642,6 +1642,11 @@ authoritative.
   - ordinary targeted runs read the existing artifact as soft review evidence;
     `blocked` or `review_pending` suppress silent `--auto-approve` canonical
     sync but do not invoke prompt agents or write Ontology packages
+- `runs/ontology_prompt_invocation_index.json`
+  - context-only prompt-agent ontology boundary carrying accepted terms,
+    aliases, deprecated terms, relation conflicts, unresolved gaps, package
+    refs, prompt input/output refs, and failure modes without executing prompt
+    agents or mutating canonical specs
 - `runs/ontology_delta_draft_intake.json`
   - review-only Ontology owner handoff surface for delta candidate draft
     requests; blocked semantic gates keep requests non-materialized

@@ -331,6 +331,42 @@ def test_ontology_semantic_control_policy_defines_review_only_contract() -> None
         supervisor_gate_wiring_contract["consumer_boundary"]["may_mutate_canonical_specs"] is False
     )
     assert supervisor_gate_wiring_contract["consumer_boundary"]["may_close_semantic_gate"] is False
+    prompt_context_contract = policy["prompt_agent_ontology_context_contract"]
+    assert prompt_context_contract["artifact_kind"] == "ontology_prompt_invocation_index"
+    assert prompt_context_contract["target"] == {
+        "target_kind": "proposal",
+        "target_ref": "SG-RFC-0118",
+    }
+    assert prompt_context_contract["integration_mode"] == "context_only_no_execution"
+    assert {
+        "packages",
+        "accepted_terms",
+        "accepted_relations",
+        "aliases",
+        "deprecated_terms",
+        "relation_conflicts",
+        "unresolved_gaps",
+        "governance_evidence",
+    }.issubset(set(prompt_context_contract["context_sections"]))
+    assert {
+        "semantic_context_pack_missing_or_invalid",
+        "prompt_agent_not_invoked",
+        "prompt_output_missing",
+    }.issubset(set(prompt_context_contract["failure_modes"]))
+    assert prompt_context_contract["consumer_boundary"]["for_prompt_agent_grounding"] is True
+    assert (
+        prompt_context_contract["consumer_boundary"]["for_supervisor_invocation_boundary"] is True
+    )
+    assert prompt_context_contract["consumer_boundary"]["for_specspace_review_surface"] is True
+    assert prompt_context_contract["consumer_boundary"]["may_execute_prompt_agent"] is False
+    assert prompt_context_contract["consumer_boundary"]["may_persist_raw_prompt"] is False
+    assert prompt_context_contract["consumer_boundary"]["may_persist_raw_response"] is False
+    assert prompt_context_contract["consumer_boundary"]["may_write_ontology_package"] is False
+    assert prompt_context_contract["consumer_boundary"]["may_update_ontology_lockfile"] is False
+    assert prompt_context_contract["consumer_boundary"]["may_mutate_canonical_specs"] is False
+    assert prompt_context_contract["consumer_boundary"]["may_mark_candidate_accepted"] is False
+    assert prompt_context_contract["consumer_boundary"]["may_close_semantic_gate"] is False
+    assert prompt_context_contract["next_gap"] == "produce_ontology_owner_decisions"
     delta_draft_intake_contract = policy["ontology_delta_draft_intake_contract"]
     assert delta_draft_intake_contract["artifact_kind"] == "ontology_delta_draft_intake"
     assert delta_draft_intake_contract["source_supervisor_semantic_gate_artifact_kind"] == (
@@ -531,6 +567,7 @@ def test_ontology_semantic_control_policy_defines_review_only_contract() -> None
     assert boundary["ontology_review_dashboard_is_authority"] is False
     assert boundary["ontology_owner_decision_report_is_authority"] is False
     assert boundary["ontology_decision_import_preview_is_authority"] is False
+    assert boundary["prompt_agent_context_is_authority"] is False
     assert boundary["prompt_agent_execution_allowed"] is False
     assert boundary["automatic_canonical_node_update"] is False
 
@@ -2524,14 +2561,108 @@ def test_ontology_import_governance_and_prompt_surfaces_are_derived() -> None:
 
     prompt = surfaces["prompt_invocation_index"]
     assert prompt["artifact_kind"] == "ontology_prompt_invocation_index"
+    assert prompt["proposal_id"] == "0118"
     assert prompt["canonical_mutations_allowed"] is False
     assert prompt["tracked_artifacts_written"] is False
-    assert prompt["invocations"] == []
-    assert prompt["summary"] == {
-        "invocation_count": 0,
-        "status": "not_invoked",
-        "next_gap": "none",
+    assert prompt["prompt_agent_executed"] is False
+    assert prompt["prompt_agent_execution_allowed"] is False
+    assert prompt["raw_prompt_persisted"] is False
+    assert prompt["raw_response_persisted"] is False
+    assert prompt["context_digest"].startswith("sha256:")
+    assert prompt["source_artifacts"] == {
+        "ontology_delta_candidate_review_packet": (
+            "runs/ontology_delta_candidate_review_packet.json"
+        ),
+        "ontology_supervisor_semantic_gate": "runs/ontology_supervisor_semantic_gate.json",
+        "semantic_context_pack": "runs/ontology_semantic_context_pack.json",
+        "semantic_lint_input": "runs/ontology_semantic_lint_input.json",
+        "semantic_lint_report": "runs/ontology_semantic_lint_report.json",
     }
+    assert prompt["summary"] == {
+        "status": "context_ready_no_invocation",
+        "invocation_count": 1,
+        "package_ref_count": 1,
+        "accepted_term_count": 1,
+        "accepted_relation_count": 1,
+        "alias_count": 1,
+        "deprecated_term_count": 1,
+        "relation_conflict_count": 1,
+        "unresolved_gap_count": 1,
+        "governance_evidence_count": 1,
+        "prompt_agent_executed": False,
+        "next_gap": "produce_ontology_owner_decisions",
+    }
+    assert prompt["consumer_boundary"]["for_prompt_agent_grounding"] is True
+    assert prompt["consumer_boundary"]["for_supervisor_invocation_boundary"] is True
+    assert prompt["consumer_boundary"]["may_execute_prompt_agent"] is False
+    assert prompt["consumer_boundary"]["may_write_ontology_package"] is False
+    assert prompt["consumer_boundary"]["may_mutate_canonical_specs"] is False
+    assert prompt["authority_boundary"]["prompt_agent_context_is_authority"] is False
+
+    invocation = prompt["invocations"][0]
+    assert invocation["invocation_kind"] == "prompt_agent_ontology_context"
+    assert invocation["status"] == "context_ready_no_invocation"
+    assert invocation["integration_mode"] == "context_only_no_execution"
+    assert invocation["prompt_agent_executed"] is False
+    assert invocation["prompt_agent_execution_allowed"] is False
+    assert invocation["prompt_input_materialized"] is True
+    assert invocation["prompt_output_materialized"] is False
+    assert invocation["raw_prompt_persisted"] is False
+    assert invocation["raw_response_persisted"] is False
+    assert invocation["prompt_input_refs"]["semantic_context_pack"] == (
+        "runs/ontology_semantic_context_pack.json"
+    )
+    assert invocation["prompt_input_refs"]["accepted_terms"] == (
+        "runs/ontology_semantic_context_pack.json#accepted_terms"
+    )
+    assert invocation["prompt_output_refs"] == {
+        "generated_output": "not_materialized",
+        "ontology_delta_candidate_review_packet": (
+            "runs/ontology_delta_candidate_review_packet.json"
+        ),
+        "ontology_supervisor_semantic_gate": "runs/ontology_supervisor_semantic_gate.json",
+        "semantic_lint_report": "runs/ontology_semantic_lint_report.json",
+    }
+    assert invocation["package_refs"] == [
+        {
+            "package_ref": "edu.university.examcalc@0.1.0",
+            "package_id": "edu.university.examcalc",
+            "namespace": "examcalc",
+            "version": "0.1.0",
+            "source_uri": "git+https://github.com/0al-spec/Ontology.git",
+            "source_ref": "main",
+            "digest": ("sha256:7cdf061c1c845e0d0d801c7d935b6d4b765db1317ec595910da2cb910eca9e2f"),
+        }
+    ]
+    assert invocation["context"]["accepted_terms"][0]["source_ref"] == "examcalc:Exam"
+    assert invocation["context"]["accepted_relations"][0]["source_ref"] == (
+        "examcalc:requires_policy"
+    )
+    assert invocation["context"]["aliases"][0]["term"] == "requires policy"
+    assert invocation["context"]["deprecated_terms"][0]["term"] == "ExamPolicy"
+    assert invocation["context"]["relation_conflicts"][0]["term"] == "allows policy"
+    assert invocation["context"]["unresolved_gaps"][0]["missing_concept"]["ref"] == (
+        "examcalc:CASFunction"
+    )
+    assert {
+        "semantic_context_pack_missing_or_invalid",
+        "prompt_agent_not_invoked",
+        "prompt_output_missing",
+    }.issubset(set(invocation["failure_modes"]))
+    module.require_ontology_prompt_invocation_index(prompt)
+
+
+def test_ontology_prompt_agent_context_rejects_execution_boundary_expansion() -> None:
+    module = load_ontology_imports_module()
+    semantic_policy = json.loads(
+        (ROOT / "tools" / "ontology_semantic_control_policy.json").read_text()
+    )
+    semantic_policy["prompt_agent_ontology_context_contract"]["consumer_boundary"][
+        "may_execute_prompt_agent"
+    ] = True
+
+    with pytest.raises(ValueError, match="may_execute_prompt_agent"):
+        module.require_semantic_control_policy(semantic_policy)
 
 
 def test_ontologyc_adapter_report_smoke_validates_report_contract() -> None:
@@ -2617,6 +2748,7 @@ def test_make_ontology_imports_writes_declared_surfaces() -> None:
             "ontology_review_dashboard": "0113",
             "ontology_owner_decision_report": "0114",
             "ontology_decision_import_preview": "0115",
+            "ontology_prompt_invocation_index": "0118",
             "ontology_semantic_lint_smoke": "0103",
         }.get(artifact_kind, "0060")
         assert payload["proposal_id"] == expected_proposal_id
@@ -3191,6 +3323,37 @@ def test_proposal_0117_runtime_registry_tracks_supervisor_soft_gate_wiring() -> 
     assert (
         "docs/proposals/0117_ontology_supervisor_soft_gate_wiring.md",
         "build_prompt_agent_ontology_context_artifact",
+    ) in observation_markers
+
+
+def test_proposal_0118_runtime_registry_tracks_prompt_agent_context() -> None:
+    registry = json.loads((ROOT / "tools" / "proposal_runtime_registry.json").read_text())
+    entries = {entry["proposal_id"]: entry for entry in registry if isinstance(entry, dict)}
+    proposal = entries["0118"]
+
+    runtime_markers = {(item["path"], item["pattern"]) for item in proposal["runtime_markers"]}
+    validation_markers = {
+        (item["path"], item["pattern"]) for item in proposal["validation_markers"]
+    }
+    observation_markers = {
+        (item["path"], item["pattern"]) for item in proposal["observation_markers"]
+    }
+
+    assert (
+        "tools/ontology_semantic_control_policy.json",
+        "prompt_agent_ontology_context_contract",
+    ) in runtime_markers
+    assert (
+        "tools/ontology_imports.py",
+        "def build_ontology_prompt_agent_context_artifact(",
+    ) in runtime_markers
+    assert (
+        "tests/test_ontology_import_policy.py",
+        "def test_ontology_prompt_agent_context_rejects_execution_boundary_expansion(",
+    ) in validation_markers
+    assert (
+        "tools/README.md",
+        "runs/ontology_prompt_invocation_index.json",
     ) in observation_markers
 
 

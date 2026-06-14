@@ -663,6 +663,7 @@ def require_semantic_control_policy(policy: dict[str, Any]) -> dict[str, Any]:
         "ontology_review_dashboard_is_authority",
         "ontology_owner_decision_report_is_authority",
         "ontology_decision_import_preview_is_authority",
+        "prompt_agent_context_is_authority",
         "prompt_agent_execution_allowed",
         "automatic_import_lock_update",
         "automatic_canonical_node_update",
@@ -1657,6 +1658,186 @@ def require_semantic_control_policy(policy: dict[str, Any]) -> dict[str, Any]:
         supervisor_gate_wiring_contract,
         "next_gap",
         "semantic_control_policy.supervisor_semantic_gate_wiring_contract",
+    )
+    prompt_context_contract = require_object(
+        policy, "prompt_agent_ontology_context_contract", "semantic_control_policy"
+    )
+    if (
+        require_string(
+            prompt_context_contract,
+            "artifact_kind",
+            "semantic_control_policy.prompt_agent_ontology_context_contract",
+        )
+        != "ontology_prompt_invocation_index"
+    ):
+        raise ValueError(
+            "semantic_control_policy.prompt_agent_ontology_context_contract."
+            "artifact_kind must be ontology_prompt_invocation_index"
+        )
+    expected_prompt_sources = {
+        "source_context_pack_artifact_kind": "ontology_semantic_context_pack",
+        "source_lint_input_artifact_kind": "ontology_semantic_lint_input",
+        "source_lint_report_artifact_kind": "ontology_semantic_lint_report",
+        "source_delta_candidate_review_packet_artifact_kind": (
+            "ontology_delta_candidate_review_packet"
+        ),
+        "source_supervisor_semantic_gate_artifact_kind": "ontology_supervisor_semantic_gate",
+    }
+    for field, expected in expected_prompt_sources.items():
+        if (
+            require_string(
+                prompt_context_contract,
+                field,
+                "semantic_control_policy.prompt_agent_ontology_context_contract",
+            )
+            != expected
+        ):
+            raise ValueError(
+                "semantic_control_policy.prompt_agent_ontology_context_contract."
+                f"{field} must be {expected}"
+            )
+    prompt_context_target = require_object(
+        prompt_context_contract,
+        "target",
+        "semantic_control_policy.prompt_agent_ontology_context_contract",
+    )
+    require_string(
+        prompt_context_target,
+        "target_kind",
+        "semantic_control_policy.prompt_agent_ontology_context_contract.target",
+    )
+    if (
+        require_string(
+            prompt_context_target,
+            "target_ref",
+            "semantic_control_policy.prompt_agent_ontology_context_contract.target",
+        )
+        != "SG-RFC-0118"
+    ):
+        raise ValueError(
+            "semantic_control_policy.prompt_agent_ontology_context_contract."
+            "target.target_ref must be SG-RFC-0118"
+        )
+    if (
+        require_string(
+            prompt_context_contract,
+            "integration_mode",
+            "semantic_control_policy.prompt_agent_ontology_context_contract",
+        )
+        != "context_only_no_execution"
+    ):
+        raise ValueError(
+            "semantic_control_policy.prompt_agent_ontology_context_contract."
+            "integration_mode must be context_only_no_execution"
+        )
+    prompt_context_sections = set(
+        require_string_list(
+            prompt_context_contract,
+            "context_sections",
+            "semantic_control_policy.prompt_agent_ontology_context_contract",
+        )
+    )
+    required_prompt_context_sections = {
+        "packages",
+        "accepted_terms",
+        "accepted_relations",
+        "aliases",
+        "deprecated_terms",
+        "relation_conflicts",
+        "unresolved_gaps",
+        "governance_evidence",
+    }
+    missing_prompt_context_sections = sorted(
+        required_prompt_context_sections - prompt_context_sections
+    )
+    if missing_prompt_context_sections:
+        raise ValueError(
+            "semantic_control_policy.prompt_agent_ontology_context_contract."
+            f"context_sections missing: {', '.join(missing_prompt_context_sections)}"
+        )
+    prompt_refs = require_object(
+        prompt_context_contract,
+        "prompt_refs",
+        "semantic_control_policy.prompt_agent_ontology_context_contract",
+    )
+    require_string(
+        prompt_refs,
+        "prompt_input_ref",
+        "semantic_control_policy.prompt_agent_ontology_context_contract.prompt_refs",
+    )
+    require_string(
+        prompt_refs,
+        "prompt_output_ref",
+        "semantic_control_policy.prompt_agent_ontology_context_contract.prompt_refs",
+    )
+    failure_modes = set(
+        require_string_list(
+            prompt_context_contract,
+            "failure_modes",
+            "semantic_control_policy.prompt_agent_ontology_context_contract",
+        )
+    )
+    required_failure_modes = {
+        "semantic_context_pack_missing_or_invalid",
+        "prompt_agent_not_invoked",
+        "prompt_output_missing",
+        "semantic_lint_report_missing_or_invalid",
+        "ontology_delta_candidate_review_missing_or_invalid",
+    }
+    missing_failure_modes = sorted(required_failure_modes - failure_modes)
+    if missing_failure_modes:
+        raise ValueError(
+            "semantic_control_policy.prompt_agent_ontology_context_contract."
+            f"failure_modes missing: {', '.join(missing_failure_modes)}"
+        )
+    prompt_consumer_boundary = require_object(
+        prompt_context_contract,
+        "consumer_boundary",
+        "semantic_control_policy.prompt_agent_ontology_context_contract",
+    )
+    for field in (
+        "for_prompt_agent_grounding",
+        "for_supervisor_invocation_boundary",
+        "for_specspace_review_surface",
+    ):
+        if (
+            require_bool(
+                prompt_consumer_boundary,
+                field,
+                "semantic_control_policy.prompt_agent_ontology_context_contract.consumer_boundary",
+            )
+            is not True
+        ):
+            raise ValueError(
+                "semantic_control_policy.prompt_agent_ontology_context_contract."
+                f"consumer_boundary.{field} must be true"
+            )
+    for field in (
+        "may_execute_prompt_agent",
+        "may_persist_raw_prompt",
+        "may_persist_raw_response",
+        "may_write_ontology_package",
+        "may_update_ontology_lockfile",
+        "may_mutate_canonical_specs",
+        "may_mark_candidate_accepted",
+        "may_close_semantic_gate",
+    ):
+        if (
+            require_bool(
+                prompt_consumer_boundary,
+                field,
+                "semantic_control_policy.prompt_agent_ontology_context_contract.consumer_boundary",
+            )
+            is not False
+        ):
+            raise ValueError(
+                "semantic_control_policy.prompt_agent_ontology_context_contract."
+                f"consumer_boundary.{field} must be false"
+            )
+    require_string(
+        prompt_context_contract,
+        "next_gap",
+        "semantic_control_policy.prompt_agent_ontology_context_contract",
     )
     draft_intake_contract = require_object(
         policy, "ontology_delta_draft_intake_contract", "semantic_control_policy"
@@ -4045,6 +4226,328 @@ def require_ontology_supervisor_semantic_gate(
     return supervisor_gate
 
 
+def build_ontology_prompt_agent_context_artifact(
+    semantic_policy: dict[str, Any],
+    *,
+    semantic_policy_path: Path,
+    import_policy: dict[str, Any],
+    context_pack: dict[str, Any],
+    lint_input: dict[str, Any],
+    lint_report: dict[str, Any],
+    review_packet: dict[str, Any],
+    supervisor_gate: dict[str, Any],
+) -> dict[str, Any]:
+    require_semantic_control_policy(semantic_policy)
+    require_ontology_semantic_context_pack(context_pack)
+    require_ontology_semantic_lint_input(lint_input)
+    require_ontology_semantic_lint_report(lint_report)
+    require_ontology_delta_candidate_review_packet(review_packet)
+    require_ontology_supervisor_semantic_gate(supervisor_gate)
+
+    prompt_contract = require_object(
+        semantic_policy, "prompt_agent_ontology_context_contract", "semantic_control_policy"
+    )
+    import_layout = require_object(import_policy, "repository_layout", "ontology_import_policy")
+    output_artifact = require_layout_path(import_layout, "prompt_invocation_index")
+    context_artifact = require_surface_output_artifact(context_pack, "semantic_context_pack")
+    source_artifacts = {
+        "semantic_context_pack": context_artifact,
+        "semantic_lint_input": require_surface_output_artifact(lint_input, "semantic_lint_input"),
+        "semantic_lint_report": require_surface_output_artifact(
+            lint_report, "semantic_lint_report"
+        ),
+        "ontology_delta_candidate_review_packet": require_surface_output_artifact(
+            review_packet, "ontology_delta_candidate_review_packet"
+        ),
+        "ontology_supervisor_semantic_gate": require_surface_output_artifact(
+            supervisor_gate, "supervisor_semantic_gate"
+        ),
+    }
+    context_sections = require_string_list(
+        prompt_contract,
+        "context_sections",
+        "semantic_control_policy.prompt_agent_ontology_context_contract",
+    )
+    context_snapshot: dict[str, Any] = {}
+    for section in context_sections:
+        value = context_pack.get(section)
+        if not isinstance(value, list):
+            raise ValueError(f"context_pack.{section} must be a list")
+        context_snapshot[section] = copy.deepcopy(value)
+
+    package_refs = []
+    for index, package in enumerate(context_snapshot["packages"]):
+        if not isinstance(package, dict):
+            raise ValueError(f"context_pack.packages[{index}] must be an object")
+        package_ref = require_string(package, "package_ref", f"context_pack.packages[{index}]")
+        digest = require_string(package, "digest", f"context_pack.packages[{index}]")
+        require_digest(digest, f"context_pack.packages[{index}].digest")
+        package_refs.append(
+            {
+                "package_ref": package_ref,
+                "package_id": require_string(
+                    package, "package_id", f"context_pack.packages[{index}]"
+                ),
+                "namespace": require_string(
+                    package, "namespace", f"context_pack.packages[{index}]"
+                ),
+                "version": require_string(package, "version", f"context_pack.packages[{index}]"),
+                "source_uri": require_string(
+                    package, "source_uri", f"context_pack.packages[{index}]"
+                ),
+                "source_ref": package.get("source_ref"),
+                "digest": digest,
+            }
+        )
+
+    governance_evidence_refs = []
+    for index, evidence in enumerate(context_snapshot["governance_evidence"]):
+        if not isinstance(evidence, dict):
+            raise ValueError(f"context_pack.governance_evidence[{index}] must be an object")
+        governance_evidence_refs.append(
+            {
+                "decision_ref": require_string(
+                    evidence,
+                    "decision_ref",
+                    f"context_pack.governance_evidence[{index}]",
+                ),
+                "repeatability_report_ref": require_string(
+                    evidence,
+                    "repeatability_report_ref",
+                    f"context_pack.governance_evidence[{index}]",
+                ),
+                "trusted_registry_gate_ref": require_string(
+                    evidence,
+                    "trusted_registry_gate_ref",
+                    f"context_pack.governance_evidence[{index}]",
+                ),
+            }
+        )
+
+    context_digest = stable_json_digest(
+        {
+            "source_artifact": context_artifact,
+            "sections": context_snapshot,
+        }
+    )
+    prompt_input_refs = {
+        "semantic_context_pack": context_artifact,
+        "context_digest": context_digest,
+    }
+    prompt_input_refs.update(
+        {section: f"{context_artifact}#{section}" for section in context_sections}
+    )
+    prompt_output_refs = {
+        "generated_output": "not_materialized",
+        "semantic_lint_report": source_artifacts["semantic_lint_report"],
+        "ontology_delta_candidate_review_packet": source_artifacts[
+            "ontology_delta_candidate_review_packet"
+        ],
+        "ontology_supervisor_semantic_gate": source_artifacts["ontology_supervisor_semantic_gate"],
+    }
+    prompt_refs = copy_json_object(
+        require_object(
+            prompt_contract,
+            "prompt_refs",
+            "semantic_control_policy.prompt_agent_ontology_context_contract",
+        )
+    )
+    consumer_boundary = copy_json_object(
+        require_object(
+            prompt_contract,
+            "consumer_boundary",
+            "semantic_control_policy.prompt_agent_ontology_context_contract",
+        )
+    )
+    invocation = {
+        "invocation_id": "ontology-prompt-agent-context-sg-rfc-0118",
+        "invocation_kind": "prompt_agent_ontology_context",
+        "status": "context_ready_no_invocation",
+        "target": copy_json_object(
+            require_object(
+                prompt_contract,
+                "target",
+                "semantic_control_policy.prompt_agent_ontology_context_contract",
+            )
+        ),
+        "integration_mode": require_string(
+            prompt_contract,
+            "integration_mode",
+            "semantic_control_policy.prompt_agent_ontology_context_contract",
+        ),
+        "prompt_agent_executed": False,
+        "prompt_agent_execution_allowed": False,
+        "prompt_input_materialized": True,
+        "prompt_output_materialized": False,
+        "raw_prompt_persisted": False,
+        "raw_response_persisted": False,
+        "prompt_refs": prompt_refs,
+        "prompt_input_refs": prompt_input_refs,
+        "prompt_output_refs": prompt_output_refs,
+        "package_refs": package_refs,
+        "context": context_snapshot,
+        "evidence_refs": {
+            "source_artifacts": source_artifacts,
+            "package_refs": package_refs,
+            "governance_evidence_refs": governance_evidence_refs,
+        },
+        "failure_modes": require_string_list(
+            prompt_contract,
+            "failure_modes",
+            "semantic_control_policy.prompt_agent_ontology_context_contract",
+        ),
+        "consumer_boundary": consumer_boundary,
+    }
+    return {
+        "artifact_kind": require_string(
+            prompt_contract,
+            "artifact_kind",
+            "semantic_control_policy.prompt_agent_ontology_context_contract",
+        ),
+        "schema_version": 1,
+        "proposal_id": "0118",
+        "policy_basis": semantic_policy["policy_basis"],
+        "source_policy": relative_path(semantic_policy_path),
+        "source_artifacts": source_artifacts,
+        "target": copy_json_object(
+            require_object(
+                prompt_contract,
+                "target",
+                "semantic_control_policy.prompt_agent_ontology_context_contract",
+            )
+        ),
+        "integration_mode": require_string(
+            prompt_contract,
+            "integration_mode",
+            "semantic_control_policy.prompt_agent_ontology_context_contract",
+        ),
+        "canonical_mutations_allowed": False,
+        "tracked_artifacts_written": False,
+        "prompt_agent_executed": False,
+        "prompt_agent_execution_allowed": False,
+        "raw_prompt_persisted": False,
+        "raw_response_persisted": False,
+        "context_digest": context_digest,
+        "invocations": [invocation],
+        "consumer_boundary": consumer_boundary,
+        "authority_boundary": copy_json_object(
+            require_object(semantic_policy, "authority_boundary", "semantic_control_policy")
+        ),
+        "summary": {
+            "status": "context_ready_no_invocation",
+            "invocation_count": 1,
+            "package_ref_count": len(package_refs),
+            "accepted_term_count": len(context_snapshot["accepted_terms"]),
+            "accepted_relation_count": len(context_snapshot["accepted_relations"]),
+            "alias_count": len(context_snapshot["aliases"]),
+            "deprecated_term_count": len(context_snapshot["deprecated_terms"]),
+            "relation_conflict_count": len(context_snapshot["relation_conflicts"]),
+            "unresolved_gap_count": len(context_snapshot["unresolved_gaps"]),
+            "governance_evidence_count": len(governance_evidence_refs),
+            "prompt_agent_executed": False,
+            "next_gap": require_string(
+                prompt_contract,
+                "next_gap",
+                "semantic_control_policy.prompt_agent_ontology_context_contract",
+            ),
+        },
+        "output_artifact": output_artifact,
+    }
+
+
+def require_ontology_prompt_invocation_index(
+    prompt_index: dict[str, Any],
+) -> dict[str, Any]:
+    if prompt_index.get("artifact_kind") != "ontology_prompt_invocation_index":
+        raise ValueError("prompt_index.artifact_kind must be ontology_prompt_invocation_index")
+    if require_int(prompt_index, "schema_version", "prompt_index") != 1:
+        raise ValueError("prompt_index.schema_version must be 1")
+    if require_string(prompt_index, "proposal_id", "prompt_index") != "0118":
+        raise ValueError("prompt_index.proposal_id must be 0118")
+    if require_bool(prompt_index, "canonical_mutations_allowed", "prompt_index") is not False:
+        raise ValueError("prompt_index.canonical_mutations_allowed must be false")
+    if require_bool(prompt_index, "tracked_artifacts_written", "prompt_index") is not False:
+        raise ValueError("prompt_index.tracked_artifacts_written must be false")
+    require_surface_output_artifact(prompt_index, "prompt_index")
+    for field in (
+        "prompt_agent_executed",
+        "prompt_agent_execution_allowed",
+        "raw_prompt_persisted",
+        "raw_response_persisted",
+    ):
+        if require_bool(prompt_index, field, "prompt_index") is not False:
+            raise ValueError(f"prompt_index.{field} must be false")
+    invocations = prompt_index.get("invocations")
+    if not isinstance(invocations, list) or not invocations:
+        raise ValueError("prompt_index.invocations must be a non-empty list")
+    summary = require_object(prompt_index, "summary", "prompt_index")
+    if require_int(summary, "invocation_count", "prompt_index.summary") != len(invocations):
+        raise ValueError("prompt_index.summary.invocation_count must match invocations")
+    consumer_boundary = require_object(prompt_index, "consumer_boundary", "prompt_index")
+    for field in (
+        "for_prompt_agent_grounding",
+        "for_supervisor_invocation_boundary",
+        "for_specspace_review_surface",
+    ):
+        if require_bool(consumer_boundary, field, "prompt_index.consumer_boundary") is not True:
+            raise ValueError(f"prompt_index.consumer_boundary.{field} must be true")
+    for field in (
+        "may_execute_prompt_agent",
+        "may_persist_raw_prompt",
+        "may_persist_raw_response",
+        "may_write_ontology_package",
+        "may_update_ontology_lockfile",
+        "may_mutate_canonical_specs",
+        "may_mark_candidate_accepted",
+        "may_close_semantic_gate",
+    ):
+        if require_bool(consumer_boundary, field, "prompt_index.consumer_boundary") is not False:
+            raise ValueError(f"prompt_index.consumer_boundary.{field} must be false")
+    authority_boundary = require_object(prompt_index, "authority_boundary", "prompt_index")
+    for field in (
+        "prompt_agent_context_is_authority",
+        "prompt_agent_execution_allowed",
+        "automatic_import_lock_update",
+        "automatic_canonical_node_update",
+        "canonical_mutations_allowed",
+    ):
+        if require_bool(authority_boundary, field, "prompt_index.authority_boundary") is not False:
+            raise ValueError(f"prompt_index.authority_boundary.{field} must be false")
+    for index, invocation in enumerate(invocations):
+        if not isinstance(invocation, dict):
+            raise ValueError(f"prompt_index.invocations[{index}] must be an object")
+        for field in (
+            "prompt_agent_executed",
+            "prompt_agent_execution_allowed",
+            "prompt_output_materialized",
+            "raw_prompt_persisted",
+            "raw_response_persisted",
+        ):
+            if require_bool(invocation, field, f"prompt_index.invocations[{index}]") is not False:
+                raise ValueError(f"prompt_index.invocations[{index}].{field} must be false")
+        if (
+            require_bool(
+                invocation,
+                "prompt_input_materialized",
+                f"prompt_index.invocations[{index}]",
+            )
+            is not True
+        ):
+            raise ValueError(
+                f"prompt_index.invocations[{index}].prompt_input_materialized must be true"
+            )
+        require_object(invocation, "prompt_input_refs", f"prompt_index.invocations[{index}]")
+        require_object(invocation, "prompt_output_refs", f"prompt_index.invocations[{index}]")
+        require_object(invocation, "context", f"prompt_index.invocations[{index}]")
+        if not require_string_list(
+            invocation,
+            "failure_modes",
+            f"prompt_index.invocations[{index}]",
+        ):
+            raise ValueError(f"prompt_index.invocations[{index}].failure_modes must be non-empty")
+    return prompt_index
+
+
 def build_ontology_delta_draft_intake(
     semantic_policy: dict[str, Any],
     *,
@@ -5651,6 +6154,16 @@ def copy_json_object(value: dict[str, Any]) -> dict[str, Any]:
     return json.loads(json.dumps(value, sort_keys=True))
 
 
+def stable_json_digest(value: Any) -> str:
+    rendered = json.dumps(
+        value,
+        ensure_ascii=False,
+        separators=(",", ":"),
+        sort_keys=True,
+    )
+    return "sha256:" + hashlib.sha256(rendered.encode("utf-8")).hexdigest()
+
+
 def build_ontology_import_surfaces(
     fixture_path: Path,
     *,
@@ -5876,6 +6389,16 @@ def build_ontology_import_surfaces(
                 semantic_policy,
                 semantic_policy_path=semantic_policy_path,
                 review_surface=surfaces["semantic_review_surface"],
+            )
+            surfaces["prompt_invocation_index"] = build_ontology_prompt_agent_context_artifact(
+                semantic_policy,
+                semantic_policy_path=semantic_policy_path,
+                import_policy=policy,
+                context_pack=semantic_context_pack,
+                lint_input=semantic_lint_input,
+                lint_report=semantic_lint_report,
+                review_packet=surfaces["ontology_delta_candidate_review_packet"],
+                supervisor_gate=surfaces["supervisor_semantic_gate"],
             )
             surfaces["ontology_delta_draft_intake"] = build_ontology_delta_draft_intake(
                 semantic_policy,

@@ -123,7 +123,12 @@ Supervisor modes:
   `runs/ontology_semantic_context_pack.json`, packaging accepted terms,
   accepted relations, aliases, deprecated terms, relation conflicts, unresolved
   gaps, package metadata, and governance evidence for supervisor/SpecSpace
-  consumers. It also emits `runs/ontology_semantic_lint_input.json`, extracting
+  consumers. It also upgrades `runs/ontology_prompt_invocation_index.json` into
+  the 0118 context-only prompt-agent ontology boundary, carrying package refs,
+  accepted terms, aliases, deprecated terms, relation conflicts, unresolved
+  gaps, prompt input/output refs, evidence refs, and failure modes without
+  running prompt agents or persisting raw prompts/responses. It also emits
+  `runs/ontology_semantic_lint_input.json`, extracting
   declared semantic terms from tracked proposal/supervisor output sources with
   source digests and spans, then `runs/ontology_semantic_lint_report.json`,
   deriving review findings, blocking findings, candidate delta terms, and
