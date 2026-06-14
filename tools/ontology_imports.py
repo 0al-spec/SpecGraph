@@ -1487,6 +1487,177 @@ def require_semantic_control_policy(policy: dict[str, Any]) -> dict[str, Any]:
         "next_gap",
         "semantic_control_policy.supervisor_semantic_gate_contract",
     )
+    supervisor_gate_wiring_contract = require_object(
+        policy, "supervisor_semantic_gate_wiring_contract", "semantic_control_policy"
+    )
+    if (
+        require_string(
+            supervisor_gate_wiring_contract,
+            "artifact_kind",
+            "semantic_control_policy.supervisor_semantic_gate_wiring_contract",
+        )
+        != "ontology_supervisor_semantic_gate_run_evidence"
+    ):
+        raise ValueError(
+            "semantic_control_policy.supervisor_semantic_gate_wiring_contract."
+            "artifact_kind must be ontology_supervisor_semantic_gate_run_evidence"
+        )
+    if (
+        require_string(
+            supervisor_gate_wiring_contract,
+            "source_supervisor_semantic_gate_artifact_kind",
+            "semantic_control_policy.supervisor_semantic_gate_wiring_contract",
+        )
+        != "ontology_supervisor_semantic_gate"
+    ):
+        raise ValueError(
+            "semantic_control_policy.supervisor_semantic_gate_wiring_contract."
+            "source_supervisor_semantic_gate_artifact_kind must be "
+            "ontology_supervisor_semantic_gate"
+        )
+    wiring_target = require_object(
+        supervisor_gate_wiring_contract,
+        "target",
+        "semantic_control_policy.supervisor_semantic_gate_wiring_contract",
+    )
+    require_string(
+        wiring_target,
+        "target_kind",
+        "semantic_control_policy.supervisor_semantic_gate_wiring_contract.target",
+    )
+    require_string(
+        wiring_target,
+        "target_ref",
+        "semantic_control_policy.supervisor_semantic_gate_wiring_contract.target",
+    )
+    if (
+        require_string(
+            supervisor_gate_wiring_contract,
+            "integration_mode",
+            "semantic_control_policy.supervisor_semantic_gate_wiring_contract",
+        )
+        != "soft_review_evidence"
+    ):
+        raise ValueError(
+            "semantic_control_policy.supervisor_semantic_gate_wiring_contract."
+            "integration_mode must be soft_review_evidence"
+        )
+    if (
+        require_string(
+            supervisor_gate_wiring_contract,
+            "source_artifact",
+            "semantic_control_policy.supervisor_semantic_gate_wiring_contract",
+        )
+        != "runs/ontology_supervisor_semantic_gate.json"
+    ):
+        raise ValueError(
+            "semantic_control_policy.supervisor_semantic_gate_wiring_contract."
+            "source_artifact must be runs/ontology_supervisor_semantic_gate.json"
+        )
+    wiring_gate_states = set(
+        require_string_list(
+            supervisor_gate_wiring_contract,
+            "allowed_gate_states",
+            "semantic_control_policy.supervisor_semantic_gate_wiring_contract",
+        )
+    )
+    required_wiring_gate_states = {"clear", "review_pending", "blocked", "unavailable"}
+    missing_wiring_gate_states = sorted(required_wiring_gate_states - wiring_gate_states)
+    if missing_wiring_gate_states:
+        raise ValueError(
+            "semantic_control_policy.supervisor_semantic_gate_wiring_contract."
+            f"allowed_gate_states missing: {', '.join(missing_wiring_gate_states)}"
+        )
+    wiring_run_actions = set(
+        require_string_list(
+            supervisor_gate_wiring_contract,
+            "run_actions",
+            "semantic_control_policy.supervisor_semantic_gate_wiring_contract",
+        )
+    )
+    required_run_actions = {
+        "allow_run",
+        "continue_without_semantic_gate_evidence",
+        "require_review_before_approval",
+    }
+    missing_run_actions = sorted(required_run_actions - wiring_run_actions)
+    if missing_run_actions:
+        raise ValueError(
+            "semantic_control_policy.supervisor_semantic_gate_wiring_contract."
+            f"run_actions missing: {', '.join(missing_run_actions)}"
+        )
+    if (
+        require_string(
+            supervisor_gate_wiring_contract,
+            "auto_approve_requires_gate_state",
+            "semantic_control_policy.supervisor_semantic_gate_wiring_contract",
+        )
+        != "clear"
+    ):
+        raise ValueError(
+            "semantic_control_policy.supervisor_semantic_gate_wiring_contract."
+            "auto_approve_requires_gate_state must be clear"
+        )
+    for field, expected in (
+        ("blocks_executor_invocation", False),
+        ("preserve_blocking_item_ids", True),
+    ):
+        if (
+            require_bool(
+                supervisor_gate_wiring_contract,
+                field,
+                "semantic_control_policy.supervisor_semantic_gate_wiring_contract",
+            )
+            is not expected
+        ):
+            expected_text = "true" if expected else "false"
+            raise ValueError(
+                "semantic_control_policy.supervisor_semantic_gate_wiring_contract."
+                f"{field} must be {expected_text}"
+            )
+    wiring_consumer_boundary = require_object(
+        supervisor_gate_wiring_contract,
+        "consumer_boundary",
+        "semantic_control_policy.supervisor_semantic_gate_wiring_contract",
+    )
+    if (
+        require_bool(
+            wiring_consumer_boundary,
+            "for_supervisor_run_evidence",
+            "semantic_control_policy.supervisor_semantic_gate_wiring_contract.consumer_boundary",
+        )
+        is not True
+    ):
+        raise ValueError(
+            "semantic_control_policy.supervisor_semantic_gate_wiring_contract."
+            "consumer_boundary.for_supervisor_run_evidence must be true"
+        )
+    for field in (
+        "may_execute_prompt_agent",
+        "may_write_ontology_package",
+        "may_update_ontology_lockfile",
+        "may_mutate_canonical_specs",
+        "may_mark_candidate_accepted",
+        "may_close_semantic_gate",
+    ):
+        if (
+            require_bool(
+                wiring_consumer_boundary,
+                field,
+                "semantic_control_policy.supervisor_semantic_gate_wiring_contract."
+                "consumer_boundary",
+            )
+            is not False
+        ):
+            raise ValueError(
+                "semantic_control_policy.supervisor_semantic_gate_wiring_contract."
+                f"consumer_boundary.{field} must be false"
+            )
+    require_string(
+        supervisor_gate_wiring_contract,
+        "next_gap",
+        "semantic_control_policy.supervisor_semantic_gate_wiring_contract",
+    )
     draft_intake_contract = require_object(
         policy, "ontology_delta_draft_intake_contract", "semantic_control_policy"
     )

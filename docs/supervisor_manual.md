@@ -103,6 +103,9 @@ particular task.
   `--build-pre-spec-semantics-index`
 - refresh ontology semantic surfaces and emit a supervisor gate report:
   `--build-ontology-supervisor-semantic-gate`
+- ordinary targeted runs read `runs/ontology_supervisor_semantic_gate.json` as
+  soft evidence; non-clear gates suppress `--auto-approve` canonical sync and
+  route successful candidates through `review_pending`
 - build a derived spec-to-code trace index:
   `--build-spec-trace-index`
 - build a derived evidence-plane index:
@@ -1636,6 +1639,9 @@ authoritative.
   - ontology semantic gate evidence derived from the 0108 review surface; it
     maps blocking findings to `blocked`, review-required findings or candidates
     to `review_pending`, and clean surfaces to `clear`
+  - ordinary targeted runs read the existing artifact as soft review evidence;
+    `blocked` or `review_pending` suppress silent `--auto-approve` canonical
+    sync but do not invoke prompt agents or write Ontology packages
 - `runs/ontology_delta_draft_intake.json`
   - review-only Ontology owner handoff surface for delta candidate draft
     requests; blocked semantic gates keep requests non-materialized

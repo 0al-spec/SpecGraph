@@ -1506,5 +1506,18 @@
     "required_provenance_links": [
       "source_draft_ref"
     ]
+  },
+  {
+    "proposal_id": "0117",
+    "source_artifact_class": "working_draft",
+    "source_refs": [
+      "docs/archive/proposal_sources/0117_ontology_supervisor_soft_gate_wiring.md"
+    ],
+    "motivating_concern": "SpecGraph can derive an ontology supervisor semantic gate, but ordinary targeted supervisor runs still ignored that evidence and could silently auto-approve canonical sync without surfacing non-clear ontology gate state.",
+    "normalized_title": "Ontology Supervisor Soft Gate Wiring",
+    "bounded_scope": "Add soft ordinary-run wiring for runs/ontology_supervisor_semantic_gate.json that embeds gate evidence in run artifacts and decision inspector output, suppresses --auto-approve canonical sync when the source gate is blocked or review_pending, and treats missing or malformed gate artifacts as explicit unavailable evidence without invoking prompt agents, rebuilding ontology surfaces, writing Ontology packages or lockfiles, mutating canonical specs by itself, accepting candidate terms, closing gates, or adding SpecSpace mutation UI.",
+    "required_provenance_links": [
+      "source_draft_ref"
+    ]
   }
 ]
