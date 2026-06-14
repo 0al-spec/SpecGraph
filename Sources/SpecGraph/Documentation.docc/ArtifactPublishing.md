@@ -58,6 +58,8 @@ exist after `make executor-smoke`, and
 `make executor-report-review-packet`, and
 `runs/local_operator_executor_proposal_draft_candidate.json` may exist after
 `make executor-proposal-draft-candidate`, and
+`runs/local_operator_executor_followup_proposal_draft_candidate.json` may exist
+after `make executor-followup-proposal-draft-candidate`, and
 `runs/local_operator_executor_proposal_promotion_packet.json` may exist after
 `make executor-proposal-promotion-packet`, and
 `runs/local_operator_executor_proposal_materialization_report.json` may exist

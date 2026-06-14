@@ -31483,6 +31483,70 @@ def test_validate_executor_followup_proposal_draft_candidate_rejects_authority(
     assert "invalid_followup_proposal_draft_candidate_promotion_boundary" in finding_codes
 
 
+def test_validate_executor_followup_proposal_draft_candidate_rejects_privacy_boundary(
+    supervisor_module: object,
+) -> None:
+    candidate = supervisor_module.build_local_operator_executor_followup_proposal_draft_candidate(
+        ready_followup_proposal_draft_request(supervisor_module)
+    )
+    candidate["privacy_boundary"]["public_static_publish"] = True
+    candidate["privacy_boundary"]["canonical_mutations_allowed"] = True
+
+    validation = supervisor_module.validate_executor_followup_proposal_draft_candidate(candidate)
+
+    assert validation["valid"] is False
+    findings_by_field = {finding["field"]: finding["code"] for finding in validation["findings"]}
+    assert (
+        findings_by_field["privacy_boundary.public_static_publish"]
+        == "invalid_followup_proposal_draft_candidate_privacy_boundary"
+    )
+    assert (
+        findings_by_field["privacy_boundary.canonical_mutations_allowed"]
+        == "invalid_followup_proposal_draft_candidate_privacy_boundary"
+    )
+
+
+def test_validate_executor_followup_proposal_draft_candidate_rejects_blocked_request_state(
+    supervisor_module: object,
+) -> None:
+    candidate = supervisor_module.build_local_operator_executor_followup_proposal_draft_candidate(
+        ready_followup_proposal_draft_request(supervisor_module)
+    )
+    candidate["summary"]["source_request_state"] = "blocked"
+
+    validation = supervisor_module.validate_executor_followup_proposal_draft_candidate(candidate)
+
+    assert validation["valid"] is False
+    assert any(
+        finding["code"] == "followup_proposal_draft_candidate_ready_without_ready_request_state"
+        and finding["field"] == "summary.source_request_state"
+        for finding in validation["findings"]
+    )
+
+
+def test_validate_executor_followup_proposal_draft_candidate_rejects_promotion_write_flags(
+    supervisor_module: object,
+) -> None:
+    candidate = supervisor_module.build_local_operator_executor_followup_proposal_draft_candidate(
+        ready_followup_proposal_draft_request(supervisor_module)
+    )
+    candidate["promotion"]["writes_proposal_markdown"] = True
+    candidate["promotion"]["writes_proposal_registry"] = True
+
+    validation = supervisor_module.validate_executor_followup_proposal_draft_candidate(candidate)
+
+    assert validation["valid"] is False
+    findings_by_field = {finding["field"]: finding["code"] for finding in validation["findings"]}
+    assert (
+        findings_by_field["promotion.writes_proposal_markdown"]
+        == "invalid_followup_proposal_draft_candidate_promotion_boundary"
+    )
+    assert (
+        findings_by_field["promotion.writes_proposal_registry"]
+        == "invalid_followup_proposal_draft_candidate_promotion_boundary"
+    )
+
+
 def test_validate_executor_followup_proposal_draft_candidate_rejects_local_paths(
     supervisor_module: object,
 ) -> None:

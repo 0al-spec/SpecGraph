@@ -25619,6 +25619,49 @@ def validate_executor_followup_proposal_draft_candidate_authority_boundary(
     }
 
 
+def validate_executor_followup_proposal_draft_candidate_privacy_boundary(
+    privacy_boundary: object,
+) -> dict[str, Any]:
+    contract = executor_followup_proposal_draft_candidate_contract()
+    expected = contract.get("privacy_boundary", {})
+    expected = expected if isinstance(expected, dict) else {}
+    boundary = privacy_boundary if isinstance(privacy_boundary, dict) else {}
+    findings: list[dict[str, str]] = []
+    if not isinstance(privacy_boundary, dict):
+        findings.append(
+            executor_report_finding(
+                code="followup_proposal_draft_candidate_privacy_boundary_not_object",
+                field="privacy_boundary",
+                message="Follow-up proposal draft candidate privacy_boundary must be an object.",
+            )
+        )
+    for field in sorted(boundary):
+        if field not in expected:
+            findings.append(
+                executor_report_finding(
+                    code="unexpected_followup_proposal_draft_candidate_privacy_field",
+                    field=f"privacy_boundary.{field}",
+                    message="Follow-up proposal draft candidate has an extra privacy field.",
+                )
+            )
+    for field, expected_value in expected.items():
+        if boundary.get(field) != expected_value:
+            findings.append(
+                executor_report_finding(
+                    code="invalid_followup_proposal_draft_candidate_privacy_boundary",
+                    field=f"privacy_boundary.{field}",
+                    message=(
+                        "Follow-up proposal draft candidate must preserve its privacy boundary."
+                    ),
+                )
+            )
+    return {
+        "valid": not findings,
+        "findings": findings,
+        "normalized": {field: boundary.get(field) for field in sorted(expected)},
+    }
+
+
 def validate_executor_followup_proposal_draft_candidate(
     candidate: object,
 ) -> dict[str, Any]:
@@ -25754,6 +25797,11 @@ def validate_executor_followup_proposal_draft_candidate(
         for value in contract.get("allowed_source_request_status", [])
         if str(value).strip()
     }
+    allowed_source_states = {
+        str(value).strip()
+        for value in contract.get("allowed_source_request_states", [])
+        if str(value).strip()
+    }
     if (
         status == "ready_for_promotion_review"
         and str(summary.get("source_request_status", "")).strip() not in allowed_source_statuses
@@ -25763,6 +25811,17 @@ def validate_executor_followup_proposal_draft_candidate(
                 code="followup_proposal_draft_candidate_ready_without_ready_request",
                 field="summary.source_request_status",
                 message="Ready follow-up candidates require a ready source request.",
+            )
+        )
+    if (
+        status == "ready_for_promotion_review"
+        and str(summary.get("source_request_state", "")).strip() not in allowed_source_states
+    ):
+        findings.append(
+            executor_report_finding(
+                code="followup_proposal_draft_candidate_ready_without_ready_request_state",
+                field="summary.source_request_state",
+                message="Ready follow-up candidates require a ready source request state.",
             )
         )
     for field in [
@@ -25782,6 +25841,12 @@ def validate_executor_followup_proposal_draft_candidate(
         candidate.get("authority_boundary")
     )
     findings.extend(copy.deepcopy(authority_validation.get("findings", [])))
+    privacy_boundary_validation = (
+        validate_executor_followup_proposal_draft_candidate_privacy_boundary(
+            candidate.get("privacy_boundary")
+        )
+    )
+    findings.extend(copy.deepcopy(privacy_boundary_validation.get("findings", [])))
     proposal_draft = candidate.get("proposal_draft", {})
     proposal_draft = proposal_draft if isinstance(proposal_draft, dict) else {}
     if not isinstance(candidate.get("proposal_draft"), dict):
@@ -25904,6 +25969,8 @@ def validate_executor_followup_proposal_draft_candidate(
         "proposal_status_mutations_allowed": False,
         "proposal_registry_mutations_allowed": False,
         "proposal_markdown_writes_allowed": False,
+        "writes_proposal_markdown": False,
+        "writes_proposal_registry": False,
     }
     for field, expected_value in expected_promotion.items():
         if promotion.get(field) != expected_value:
