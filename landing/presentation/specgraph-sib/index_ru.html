@@ -1,0 +1,381 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>SIB Metrics для AI-native feature pipelines</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Inter:wght@300;400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <main class="deck-shell" aria-label="Презентация SpecGraph">
+    <header class="deck-topbar" aria-label="Навигация презентации">
+      <a class="brand" href="#slide-1" aria-label="Перейти к титульному слайду">
+        <span class="brand-mark" aria-hidden="true">
+          <svg viewBox="0 0 1091 1091" fill="none" role="img" xmlns="http://www.w3.org/2000/svg">
+            <path d="M374 534.5C374 488.384 336.616 451 290.5 451C244.384 451 207 488.384 207 534.5C207 580.616 244.384 618 290.5 618V642C231.129 642 183 593.871 183 534.5C183 475.129 231.129 427 290.5 427C349.871 427 398 475.129 398 534.5C398 593.871 349.871 642 290.5 642V618C336.616 618 374 580.616 374 534.5Z" fill="currentColor"/>
+            <path d="M881 291.5C881 245.384 843.616 208 797.5 208C751.384 208 714 245.384 714 291.5C714 337.616 751.384 375 797.5 375V399C738.129 399 690 350.871 690 291.5C690 232.129 738.129 184 797.5 184C856.871 184 905 232.129 905 291.5C905 350.871 856.871 399 797.5 399V375C843.616 375 881 337.616 881 291.5Z" fill="currentColor"/>
+            <path d="M881 777.5C881 731.384 843.616 694 797.5 694C751.384 694 714 731.384 714 777.5C714 823.616 751.384 861 797.5 861V885C738.129 885 690 836.871 690 777.5C690 718.129 738.129 670 797.5 670C856.871 670 905 718.129 905 777.5C905 836.871 856.871 885 797.5 885V861C843.616 861 881 823.616 881 777.5Z" fill="currentColor"/>
+            <path d="M606.6 785.6C556.2 785.6 531 758.4 531 704V618.8C531 590.4 527.6 570.6 520.8 559.4C514.4 547.8 504.2 542 490.2 542C485.4 542 483 539.6 483 534.8C483 530 485.4 527.6 490.2 527.6C504.2 527.6 514.4 521.8 520.8 510.2C527.6 498.6 531 478.8 531 450.8V365.6C531 311.2 556.2 284 606.6 284C611.4 284 613.8 286.4 613.8 291.2C613.8 296 611.4 298.4 606.6 298.4C579.4 298.4 565.8 320 565.8 363.2V448.4C565.8 475.2 562.2 494.8 555 507.2C548.2 519.6 537 528.8 521.4 534.8C537 540.8 548.2 550 555 562.4C562.2 574.8 565.8 594.4 565.8 621.2V706.4C565.8 749.6 579.4 771.2 606.6 771.2C611.4 771.2 613.8 773.6 613.8 778.4C613.8 783.2 611.4 785.6 606.6 785.6Z" fill="currentColor"/>
+          </svg>
+        </span>
+        <span>SpecGraph</span>
+      </a>
+      <div class="topbar-meta">
+        <span>10-минутный SIB deck</span>
+        <span>затем демо SpecGraph</span>
+      </div>
+      <nav class="deck-nav" aria-label="Навигация по слайдам">
+        <button class="icon-button" id="prevSlide" type="button" aria-label="Предыдущий слайд" title="Предыдущий слайд">
+          <svg viewBox="0 0 24 24" aria-hidden="true">
+            <path d="m15 18-6-6 6-6" />
+          </svg>
+        </button>
+        <output class="slide-count" id="slideCount" aria-live="polite">01 / 12</output>
+        <button class="icon-button" id="nextSlide" type="button" aria-label="Следующий слайд" title="Следующий слайд">
+          <svg viewBox="0 0 24 24" aria-hidden="true">
+            <path d="m9 18 6-6-6-6" />
+          </svg>
+        </button>
+      </nav>
+    </header>
+
+    <section class="stage" aria-live="polite">
+      <article class="slide is-active" id="slide-1" data-slide aria-label="AI удешевляет артефакты">
+        <div class="slide-grid two-column">
+          <div class="copy-block">
+            <p class="eyebrow">01 / AI удешевляет артефакты</p>
+            <h1 class="title-long">Объём больше не сигнал.</h1>
+            <p class="lede">Новый вопрос: пережил ли intent fan-out.</p>
+          </div>
+          <div class="factory-comparison" aria-label="Старый ручной output и новый AI fan-out">
+            <section class="factory-lane">
+              <span class="lane-label">Раньше</span>
+              <div class="keyboard-glyph" aria-hidden="true">
+                <span></span><span></span><span></span><span></span>
+              </div>
+              <div class="artifact-row" aria-hidden="true">
+                <span></span><span></span><span></span><span></span><span></span>
+              </div>
+              <strong>Усилие -> код</strong>
+            </section>
+            <section class="factory-lane active-lane">
+              <span class="lane-label">AI-эра</span>
+              <div class="intent-atom">Intent Atom</div>
+              <div class="llm-node">LLM</div>
+              <div class="fanout-cloud" aria-hidden="true">
+                <span></span><span></span><span></span><span></span><span></span><span></span>
+                <span></span><span></span><span></span><span></span><span></span><span></span>
+                <span></span><span></span><span></span><span></span><span></span><span></span>
+              </div>
+              <strong>Intent -> правдоподобные артефакты</strong>
+            </section>
+          </div>
+        </div>
+        <aside class="speaker-notes" hidden>
+          AI резко удешевил производство кода, тестов, документации и PR descriptions. Когда артефакт дешевеет, его количество перестаёт быть сигналом. Главный вопрос меняется: не сколько мы произвели, а сохранили ли мы смысл.
+        </aside>
+      </article>
+
+      <article class="slide" id="slide-2" data-slide aria-label="Измеряйте пайплайн, не человека">
+        <div class="slide-grid split-rule">
+          <div>
+            <p class="eyebrow">02 / Измеряйте пайплайн</p>
+            <h2>Измеряйте пайплайн, не человека.</h2>
+            <p class="micro-copy">Больше активности может означать меньше уверенности.</p>
+          </div>
+          <div class="pipeline-ownership" aria-label="Роли человека и агента в feature pipeline">
+            <div class="old-metrics">
+              <span>PRs</span>
+              <span>Lead time</span>
+              <span>Deploy frequency</span>
+            </div>
+            <div class="pipeline-strip">
+              <span>Intent</span>
+              <span>Agent work</span>
+              <span>Evidence</span>
+              <span>Review</span>
+            </div>
+            <div class="optimizer-panel">
+              <strong>Роль человека</strong>
+              <span>scope</span>
+              <span>acceptance</span>
+              <span>evidence design</span>
+            </div>
+          </div>
+        </div>
+        <aside class="speaker-notes" hidden>
+          Классические метрики измеряют output. Агент может улучшить эти числа и одновременно ухудшить систему: расширить scope, сместить смысл, написать тесты под собственную реализацию. Если человек всё чаще улучшает пайплайн, измерять нужно пайплайн.
+        </aside>
+      </article>
+
+      <article class="slide" id="slide-3" data-slide aria-label="Capability pipeline">
+        <div class="slide-grid diagram-layout">
+          <div class="copy-block">
+            <p class="eyebrow">03 / Capability pipeline</p>
+            <h2>Intent проходит gates до capability.</h2>
+            <p class="micro-copy">Outcome отдельно: хороший build всё ещё может быть неверной ставкой.</p>
+          </div>
+          <div class="capability-flow" aria-label="Пайплайн от intent до outcome">
+            <div class="capability-main">
+              <span>Intent</span>
+              <span>Спецификация</span>
+              <span>Реализация</span>
+              <span>Evidence</span>
+              <span>Internal acceptance</span>
+            </div>
+            <div class="outcome-layer">
+              <span>Outcome</span>
+              <small>usage / business impact</small>
+            </div>
+          </div>
+        </div>
+        <aside class="speaker-notes" hidden>
+          Пайплайн: intent, specification, implementation, evidence, internal acceptance, outcome. Outcome вынесен отдельно: пайплайн может идеально сохранить смысл, а продуктовая гипотеза может оказаться неверной. Это разные виды отказа.
+        </aside>
+      </article>
+
+      <article class="slide dense-slide" id="slide-4" data-slide aria-label="Пять наблюдаемых величин">
+        <div class="slide-grid split-rule">
+          <div>
+            <p class="eyebrow">04 / Пять observable-величин</p>
+            <h2>Пять величин живут на пайплайне.</h2>
+            <p class="example-intent">Intent: повторить failed checkout payment без duplicate charge.</p>
+          </div>
+          <div class="observables-table" aria-label="Наблюдаемые величины SIB">
+            <section>
+              <strong>SIB</strong>
+              <span>смысл спецификации / масса реализации</span>
+            </section>
+            <section>
+              <strong>Yield</strong>
+              <span>где задачи вытекают из пайплайна</span>
+            </section>
+            <section>
+              <strong>Cost</strong>
+              <span>токены + review + rework + steering</span>
+            </section>
+            <section>
+              <strong>Drift</strong>
+              <span>мы всё ещё решаем исходную задачу?</span>
+            </section>
+            <section>
+              <strong>pre-SIB</strong>
+              <span>готовность до запуска агента</span>
+            </section>
+          </div>
+        </div>
+        <aside class="speaker-notes" hidden>
+          На одном примере видны пять величин: SIB как баланс смысла и реализации, Yield как утечки, Cost как стоимость принятой capability, Drift как смысловой сдвиг и pre-SIB как готовность пути до запуска агента. Для всех действует принцип: unknown не good и не bad.
+        </aside>
+      </article>
+
+      <article class="slide" id="slide-5" data-slide aria-label="SIB это сигнал, а не score">
+        <div class="slide-grid two-column">
+          <div class="copy-block">
+            <p class="eyebrow">05 / Сигнал, не score</p>
+            <h2>SIB — телескоп, а не scoreboard.</h2>
+            <p class="micro-copy">Pipeline Integrity Index — нормативный слой. SIB остаётся decomposable.</p>
+          </div>
+          <div class="signal-scale" aria-label="Баланс SIB как диагностический сигнал">
+            <div class="scale-beam">
+              <span class="blue-dot" aria-hidden="true"></span>
+              <div class="fulcrum" aria-hidden="true"></div>
+              <div class="red-stack" aria-hidden="true">
+                <span></span><span></span><span></span><span></span><span></span><span></span>
+                <span></span><span></span><span></span><span></span><span></span><span></span>
+              </div>
+            </div>
+            <div class="guardrail-strip">
+              <span>decomposable</span>
+              <span>unknown виден</span>
+              <span>не ранжировать людей</span>
+            </div>
+          </div>
+        </div>
+        <aside class="speaker-notes" hidden>
+          SIB не должен превращаться в общий индекс здоровья и KPI. Это дескриптивный сигнал: посмотри сюда, здесь дисбаланс. Нормативный управляющий слой, если он нужен, должен быть отдельным Pipeline Integrity Index с guardrails и без ранжирования людей.
+        </aside>
+      </article>
+
+      <article class="slide" id="slide-6" data-slide aria-label="Evidence должно доказывать intent">
+        <div class="slide-grid two-column">
+          <div class="copy-block">
+            <p class="eyebrow">06 / Evidence доказывает intent</p>
+            <h2>Coverage не доказывает смысл.</h2>
+            <p class="micro-copy">Разомкнуть петлю самоподтверждения агента.</p>
+          </div>
+          <div class="evidence-chain" aria-label="Intent atom, evidence claim и judge receipt">
+            <section>
+              <strong>Intent Atom</strong>
+              <span>нет duplicate charge</span>
+            </section>
+            <section>
+              <strong>Evidence Claim</strong>
+              <span>тест + сценарий + сигнал</span>
+            </section>
+            <section>
+              <strong>Judge Receipt</strong>
+              <span>подтверждено / частично / слабо</span>
+            </section>
+            <div class="anchor-row">
+              <span>deterministic checks</span>
+              <span>mutation tests</span>
+              <span>human sampling</span>
+              <span>drift judge</span>
+            </div>
+          </div>
+        </div>
+        <aside class="speaker-notes" hidden>
+          Coverage отвечает на вопрос о строках, а нам нужно доказательство intent. Агент может написать реализацию, тесты под неё и объяснение, почему всё хорошо. Мы размыкаем петлю через Intent Atom, Evidence Claim и Judge Receipt с детерминированными якорями и мониторингом drift judge.
+        </aside>
+      </article>
+
+      <article class="slide" id="slide-7" data-slide aria-label="Что нужно доказать">
+        <div class="slide-grid split-rule">
+          <div>
+            <p class="eyebrow">07 / Что нужно доказать</p>
+            <h2>Это гипотезы, не законы.</h2>
+          </div>
+          <div class="hypothesis-grid" aria-label="Гипотезы валидации SIB">
+            <section>
+              <span>H1</span>
+              <strong>pre-SIB предсказывает internal acceptance лучше, чем PR count.</strong>
+            </section>
+            <section>
+              <span>H2</span>
+              <strong>Высокий output при низкой evidence confidence предсказывает rework.</strong>
+            </section>
+            <section>
+              <span>H3</span>
+              <strong>Semantic evidence confidence предсказывает регрессии лучше coverage.</strong>
+            </section>
+          </div>
+        </div>
+        <aside class="speaker-notes" hidden>
+          Это не закон природы, а набор гипотез. pre-SIB должен предсказывать acceptance лучше, чем PR count; output при низкой evidence confidence должен предсказывать rework; semantic confidence должен предсказывать регрессии лучше coverage. Сначала валидирую на своём workflow.
+        </aside>
+      </article>
+
+      <article class="slide" id="slide-8" data-slide aria-label="Финальный тезис и переход к демо">
+        <div class="slide-grid two-column">
+          <div class="copy-block">
+            <p class="eyebrow">08 / Тезис -> демо</p>
+            <h1 class="title-long">AI удешевляет артефакты. <span class="muted-serif">SIB следит за смыслом.</span></h1>
+          </div>
+          <div class="demo-bridge" aria-label="Переход от тезиса SIB к демо SpecGraph">
+            <div class="artifact-field compact-artifacts">
+              <span>код</span>
+              <span>тесты</span>
+              <span>docs</span>
+              <span>PR</span>
+              <strong>смысл?</strong>
+            </div>
+            <div class="demo-card">
+              <span>Дальше</span>
+              <strong>демо SpecGraph</strong>
+              <small>capability pipeline in vivo</small>
+            </div>
+          </div>
+        </div>
+        <aside class="speaker-notes" hidden>
+          Сжатый тезис: AI удешевляет артефакты. SIB наблюдает, сохраняет ли реализация смысл спецификации. SpecGraph превращает это наблюдение в управляемый capability pipeline. Дальше переход к демо.
+        </aside>
+      </article>
+
+      <article class="slide backup-slide" id="slide-9" data-slide aria-label="Backup про False Progress Mass">
+        <div class="slide-grid two-column">
+          <div class="copy-block">
+            <p class="eyebrow">Backup / False Progress Mass</p>
+            <h2>Ложный прогресс имеет массу.</h2>
+            <p class="micro-copy">Поздний semantic defect создаёт ретроактивные потери.</p>
+          </div>
+          <div class="fpm-timeline" aria-label="Timeline массы ложного прогресса">
+            <div class="timeline-axis"><span>t1</span><span>t2</span><span>t3</span><span>t4</span><span>t5</span></div>
+            <div class="bad-premise">bad premise</div>
+            <div class="false-mass" aria-hidden="true">
+              <span></span><span></span><span></span><span></span><span></span><span></span>
+              <span></span><span></span><span></span><span></span><span></span><span></span>
+              <span></span><span></span><span></span><span></span><span></span><span></span>
+            </div>
+            <div class="defect-marker">!</div>
+          </div>
+        </div>
+        <aside class="speaker-notes" hidden>
+          Backup для вопроса про поздно обнаруженные дефекты. False Progress Mass показывает объём реализации и стоимость AI-вывода, накопленные после неверной исходной предпосылки до момента обнаружения.
+        </aside>
+      </article>
+
+      <article class="slide backup-slide" id="slide-10" data-slide aria-label="Backup про Intent Yield и Cost">
+        <div class="slide-grid split-rule">
+          <div>
+            <p class="eyebrow">Backup / IY FC ICC</p>
+            <h2>Экономика конверсии intent.</h2>
+          </div>
+          <div class="conversion-triangle" aria-label="Intent Yield, Functional Cost и Intent Conversion Cost">
+            <div class="triangle-node spec-node">Спецификация</div>
+            <div class="triangle-node cost-node">AI cost</div>
+            <div class="triangle-node func-node">Функциональность</div>
+            <span class="edge-label label-iy">Intent Yield</span>
+            <span class="edge-label label-fc">Functional Cost</span>
+            <span class="edge-label label-icc">Conversion Cost</span>
+          </div>
+        </div>
+        <aside class="speaker-notes" hidden>
+          Backup для вопроса про экономические метрики. Intent Yield, Functional Cost и Intent Conversion Cost связывают заявленное намерение, стоимость AI-вывода и рождение функциональности.
+        </aside>
+      </article>
+
+      <article class="slide backup-slide" id="slide-11" data-slide aria-label="Backup про Probabilistic Friction Curve">
+        <div class="slide-grid two-column">
+          <div class="copy-block">
+            <p class="eyebrow">Backup / Стабильность генерации</p>
+            <h2>У генерации есть кривая трения.</h2>
+            <p class="micro-copy">PFI считает турбулентность. CSI измеряет стабилизацию.</p>
+          </div>
+          <div class="friction-chart" aria-label="Probabilistic friction curve">
+            <svg viewBox="0 0 100 60" preserveAspectRatio="none" aria-hidden="true">
+              <polyline points="2,10 6,52 10,18 14,45 18,8 22,50 26,21 30,42 34,26 38,38 42,30 48,34 56,33 64,32 72,32 82,32 96,32" />
+              <line x1="56" y1="32" x2="96" y2="32" />
+            </svg>
+            <div class="chart-labels"><span>нестабильные попытки</span><span>stable state</span></div>
+          </div>
+        </div>
+        <aside class="speaker-notes" hidden>
+          Backup для вопроса про стабильность генерации. Probabilistic Friction Index считает хаотичные итерации до стабильности, а Checkpoint Stability Index показывает, насколько уточнения вызывают лавинообразные изменения.
+        </aside>
+      </article>
+
+      <article class="slide backup-slide" id="slide-12" data-slide aria-label="Backup про Agent Session Passport">
+        <div class="slide-grid two-column">
+          <div class="copy-block">
+            <p class="eyebrow">Backup / Agent Session Passport</p>
+            <h2>pre-SIB проверяет заявленную работу.</h2>
+            <p class="micro-copy">Запуску агента нужны scope, permissions и expected evidence.</p>
+          </div>
+          <pre class="passport-card" aria-label="Agent Session Passport"><code>goal:
+scope:
+context:
+allowed_files:
+acceptance_criteria:
+expected_evidence:
+result:</code></pre>
+        </div>
+        <aside class="speaker-notes" hidden>
+          Backup для вопроса о том, что именно проверяет pre-SIB. Agent Session Passport делает запуск агента явным рабочим контрактом: goal, scope, context, allowed files, acceptance criteria, expected evidence и result.
+        </aside>
+      </article>
+    </section>
+
+    <footer class="deck-footer">
+      <div class="progress-track" aria-hidden="true">
+        <span id="progressBar"></span>
+      </div>
+    </footer>
+  </main>
+
+  <script src="slides.js"></script>
+</body>
+</html>

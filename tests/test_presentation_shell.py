@@ -6,6 +6,7 @@ PRESENTATION_DIR = REPO_ROOT / "landing" / "presentation" / "specgraph-sib"
 
 def test_presentation_shell_is_static_slide_deck():
     html = (PRESENTATION_DIR / "index.html").read_text(encoding="utf-8")
+    ru_html = (PRESENTATION_DIR / "index_ru.html").read_text(encoding="utf-8")
     css = (PRESENTATION_DIR / "styles.css").read_text(encoding="utf-8")
     js = (PRESENTATION_DIR / "slides.js").read_text(encoding="utf-8")
 
@@ -35,6 +36,16 @@ def test_presentation_shell_is_static_slide_deck():
     assert 'addEventListener("keydown"' in js
     assert "${formatIndex(activeIndex)} / ${formatTotal(slides.length)}" in js
     assert ".demo-bridge .artifact-field span" in css
+    assert ru_html.count("data-slide") == 12
+    assert ru_html.count('class="speaker-notes"') == 12
+    assert '<html lang="ru">' in ru_html
+    assert "Объём больше не сигнал." in ru_html
+    assert "Измеряйте пайплайн, не человека." in ru_html
+    assert "Пять величин живут на пайплайне." in ru_html
+    assert "SIB — телескоп, а не scoreboard." in ru_html
+    assert "Coverage не доказывает смысл." in ru_html
+    assert "демо SpecGraph" in ru_html
+    assert '<script src="slides.js"></script>' in ru_html
 
 
 def test_presentation_shell_uses_specgraph_landing_visual_tokens():
