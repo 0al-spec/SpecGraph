@@ -210,6 +210,13 @@ Supervisor modes:
   `executor_analysis_report_consumption_policy`, preserving operator review
   evidence without creating proposal drafts, applying patches, mutating
   canonical specs, changing proposal status, or publishing local artifacts.
+- `--build-local-operator-executor-analysis-report-followup-packet`: build
+  local-only `runs/local_operator_executor_analysis_report_followup_packet.json`
+  by consuming a ready analysis report review outcome and the
+  `executor_analysis_report_followup_policy`, carrying sanitized findings,
+  safe evidence refs, and governed decision options without invoking executors,
+  creating proposal drafts, applying patches, mutating canonical specs,
+  changing proposal status, or publishing local artifacts.
 - `--build-local-operator-executor-proposal-draft-candidate`: build local-only
   `runs/local_operator_executor_proposal_draft_candidate.json` by consuming a
   valid `proposal_draft` review packet and the

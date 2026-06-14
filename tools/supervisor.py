@@ -214,6 +214,9 @@ LOCAL_OPERATOR_EXECUTOR_REPORT_REVIEW_PACKET_RELATIVE_PATH = (
 LOCAL_OPERATOR_EXECUTOR_ANALYSIS_REPORT_REVIEW_OUTCOME_RELATIVE_PATH = (
     "runs/local_operator_executor_analysis_report_review_outcome.json"
 )
+LOCAL_OPERATOR_EXECUTOR_ANALYSIS_REPORT_FOLLOWUP_PACKET_RELATIVE_PATH = (
+    "runs/local_operator_executor_analysis_report_followup_packet.json"
+)
 LOCAL_OPERATOR_EXECUTOR_PROPOSAL_DRAFT_CANDIDATE_RELATIVE_PATH = (
     "runs/local_operator_executor_proposal_draft_candidate.json"
 )
@@ -3230,6 +3233,13 @@ LOCAL_OPERATOR_EXECUTOR_ANALYSIS_REPORT_REVIEW_OUTCOME_FILENAME = Path(
         )
     )
 ).name
+LOCAL_OPERATOR_EXECUTOR_ANALYSIS_REPORT_FOLLOWUP_PACKET_FILENAME = Path(
+    str(
+        supervisor_executor_adapter_policy_lookup(
+            "repository_layout.local_operator_analysis_report_followup_packet_artifact"
+        )
+    )
+).name
 LOCAL_OPERATOR_EXECUTOR_PROPOSAL_DRAFT_CANDIDATE_FILENAME = Path(
     str(
         supervisor_executor_adapter_policy_lookup(
@@ -3311,6 +3321,16 @@ LOCAL_OPERATOR_EXECUTOR_ANALYSIS_REPORT_REVIEW_OUTCOME_ARTIFACT_KIND = str(
 LOCAL_OPERATOR_EXECUTOR_ANALYSIS_REPORT_REVIEW_OUTCOME_SCHEMA_VERSION = int(
     supervisor_executor_adapter_policy_lookup(
         "executor_analysis_report_review_outcome_contract.schema_version"
+    )
+)
+LOCAL_OPERATOR_EXECUTOR_ANALYSIS_REPORT_FOLLOWUP_PACKET_ARTIFACT_KIND = str(
+    supervisor_executor_adapter_policy_lookup(
+        "executor_analysis_report_followup_packet_contract.artifact_kind"
+    )
+)
+LOCAL_OPERATOR_EXECUTOR_ANALYSIS_REPORT_FOLLOWUP_PACKET_SCHEMA_VERSION = int(
+    supervisor_executor_adapter_policy_lookup(
+        "executor_analysis_report_followup_packet_contract.schema_version"
     )
 )
 LOCAL_OPERATOR_EXECUTOR_PROPOSAL_DRAFT_CANDIDATE_ARTIFACT_KIND = str(
@@ -18235,6 +18255,10 @@ def local_operator_executor_analysis_report_review_outcome_path() -> Path:
     return RUNS_DIR / LOCAL_OPERATOR_EXECUTOR_ANALYSIS_REPORT_REVIEW_OUTCOME_FILENAME
 
 
+def local_operator_executor_analysis_report_followup_packet_path() -> Path:
+    return RUNS_DIR / LOCAL_OPERATOR_EXECUTOR_ANALYSIS_REPORT_FOLLOWUP_PACKET_FILENAME
+
+
 def local_operator_executor_proposal_draft_candidate_path() -> Path:
     return RUNS_DIR / LOCAL_OPERATOR_EXECUTOR_PROPOSAL_DRAFT_CANDIDATE_FILENAME
 
@@ -23660,6 +23684,628 @@ def validate_executor_analysis_report_followup_request(
         "authority_validation": authority_validation,
         "source_outcome_validation": source_validation,
     }
+
+
+def executor_analysis_report_followup_packet_contract() -> dict[str, Any]:
+    contract = supervisor_executor_adapter_policy_lookup(
+        "executor_analysis_report_followup_packet_contract"
+    )
+    return contract if isinstance(contract, dict) else {}
+
+
+def local_operator_executor_analysis_report_followup_packet_next_gap(status: str) -> str:
+    contract = executor_analysis_report_followup_packet_contract()
+    if status == "ready_for_followup_review":
+        return str(contract.get("next_gap", "human_review_decision_for_executor_followup")).strip()
+    return {
+        "blocked_missing_review_outcome": "run_executor_analysis_report_review_outcome_until_ready",
+        "blocked_invalid_review_outcome": "repair_executor_analysis_report_review_outcome",
+        "blocked_followup_policy": "repair_executor_analysis_report_followup_policy",
+        "blocked_authority_boundary": "repair_executor_analysis_report_followup_policy",
+        "blocked_privacy_boundary": "repair_executor_analysis_report_followup_packet_privacy",
+        "blocked_policy_contract": "repair_executor_analysis_report_followup_packet_contract",
+    }.get(status, "repair_executor_analysis_report_followup_packet")
+
+
+def local_operator_executor_analysis_report_followup_packet_status(
+    checks: list[dict[str, Any]],
+    *,
+    policy_findings: list[dict[str, Any]] | None = None,
+) -> str:
+    status_by_id = {
+        str(check.get("check_id", "")).strip(): str(check.get("status", "")).strip()
+        for check in checks
+        if isinstance(check, dict)
+    }
+    if status_by_id.get("source_outcome_present") != "passed":
+        return "blocked_missing_review_outcome"
+    if status_by_id.get("source_outcome_valid") != "passed":
+        return "blocked_invalid_review_outcome"
+    if status_by_id.get("followup_policy_allows_packet") != "passed":
+        finding_codes = {
+            str(finding.get("code", "")).strip()
+            for finding in (policy_findings or [])
+            if isinstance(finding, dict)
+        }
+        if any("authority_boundary" in code for code in finding_codes):
+            return "blocked_authority_boundary"
+        return "blocked_followup_policy"
+    if status_by_id.get("source_report_kind_is_analysis_report") != "passed":
+        return "blocked_followup_policy"
+    if status_by_id.get("authority_boundary_preserved") != "passed":
+        return "blocked_authority_boundary"
+    if status_by_id.get("privacy_boundary_preserved") != "passed":
+        return "blocked_privacy_boundary"
+    if (
+        "followup_packet_contract_valid" in status_by_id
+        and status_by_id.get("followup_packet_contract_valid") != "passed"
+    ):
+        return "blocked_policy_contract"
+    return "ready_for_followup_review"
+
+
+def validate_executor_analysis_report_followup_packet_authority_boundary(
+    authority_boundary: object,
+) -> dict[str, Any]:
+    contract = executor_analysis_report_followup_packet_contract()
+    expected = contract.get("authority_boundary", {})
+    expected = expected if isinstance(expected, dict) else {}
+    boundary = authority_boundary if isinstance(authority_boundary, dict) else {}
+    findings: list[dict[str, str]] = []
+    if not isinstance(authority_boundary, dict):
+        findings.append(
+            executor_report_finding(
+                code="analysis_report_followup_packet_authority_boundary_not_object",
+                field="authority_boundary",
+                message="Analysis report follow-up packet authority_boundary must be an object.",
+            )
+        )
+    for field in sorted(boundary):
+        if field not in expected:
+            findings.append(
+                executor_report_finding(
+                    code="unexpected_analysis_report_followup_packet_authority_field",
+                    field=f"authority_boundary.{field}",
+                    message="Analysis report follow-up packet includes an extra authority field.",
+                )
+            )
+    for field, expected_value in expected.items():
+        if boundary.get(field) is not expected_value:
+            findings.append(
+                executor_report_finding(
+                    code="invalid_analysis_report_followup_packet_authority_boundary",
+                    field=f"authority_boundary.{field}",
+                    message="Analysis report follow-up packet must remain review-only.",
+                )
+            )
+    return {
+        "valid": not findings,
+        "findings": findings,
+        "normalized": {field: boundary.get(field) for field in sorted(expected)},
+    }
+
+
+def validate_local_operator_executor_analysis_report_followup_packet(
+    packet: object,
+) -> dict[str, Any]:
+    contract = executor_analysis_report_followup_packet_contract()
+    findings: list[dict[str, str]] = []
+    if not isinstance(packet, dict):
+        return {
+            "valid": False,
+            "findings": [
+                executor_report_finding(
+                    code="analysis_report_followup_packet_not_object",
+                    field="packet",
+                    message="Analysis report follow-up packet must be a JSON object.",
+                )
+            ],
+            "normalized": {},
+        }
+    findings.extend(executor_report_forbidden_key_findings(packet))
+    findings.extend(executor_report_machine_local_path_findings(packet))
+    findings.extend(executor_report_secret_like_value_findings(packet))
+    for field in [
+        str(field).strip() for field in contract.get("required_fields", []) if str(field).strip()
+    ]:
+        if field not in packet:
+            findings.append(
+                executor_report_finding(
+                    code="missing_analysis_report_followup_packet_field",
+                    field=field,
+                    message=f"Analysis report follow-up packet is missing field {field}.",
+                )
+            )
+    if (
+        packet.get("artifact_kind")
+        != LOCAL_OPERATOR_EXECUTOR_ANALYSIS_REPORT_FOLLOWUP_PACKET_ARTIFACT_KIND
+    ):
+        findings.append(
+            executor_report_finding(
+                code="invalid_analysis_report_followup_packet_artifact_kind",
+                field="artifact_kind",
+                message="Analysis report follow-up packet artifact_kind is invalid.",
+            )
+        )
+    if (
+        packet.get("schema_version")
+        != LOCAL_OPERATOR_EXECUTOR_ANALYSIS_REPORT_FOLLOWUP_PACKET_SCHEMA_VERSION
+    ):
+        findings.append(
+            executor_report_finding(
+                code="invalid_analysis_report_followup_packet_schema_version",
+                field="schema_version",
+                message="Analysis report follow-up packet schema_version is invalid.",
+            )
+        )
+    if packet.get("local_only") is not True:
+        findings.append(
+            executor_report_finding(
+                code="analysis_report_followup_packet_local_only_required",
+                field="local_only",
+                message="Analysis report follow-up packet must remain local-only.",
+            )
+        )
+    if (
+        packet.get("source_outcome_artifact")
+        != LOCAL_OPERATOR_EXECUTOR_ANALYSIS_REPORT_REVIEW_OUTCOME_RELATIVE_PATH
+    ):
+        findings.append(
+            executor_report_finding(
+                code="invalid_analysis_report_followup_packet_source_outcome",
+                field="source_outcome_artifact",
+                message="Analysis report follow-up packet must reference the local outcome.",
+            )
+        )
+    if packet.get("packet_kind") != str(contract.get("packet_kind", "")).strip():
+        findings.append(
+            executor_report_finding(
+                code="invalid_analysis_report_followup_packet_kind",
+                field="packet_kind",
+                message="Analysis report follow-up packet_kind is invalid.",
+            )
+        )
+    summary = packet.get("summary", {})
+    summary = summary if isinstance(summary, dict) else {}
+    if not isinstance(packet.get("summary"), dict):
+        findings.append(
+            executor_report_finding(
+                code="analysis_report_followup_packet_summary_not_object",
+                field="summary",
+                message="Analysis report follow-up packet summary must be an object.",
+            )
+        )
+    followup_packet = packet.get("followup_packet", {})
+    followup_packet = followup_packet if isinstance(followup_packet, dict) else {}
+    if not isinstance(packet.get("followup_packet"), dict):
+        findings.append(
+            executor_report_finding(
+                code="analysis_report_followup_packet_payload_not_object",
+                field="followup_packet",
+                message="Analysis report follow-up packet payload must be an object.",
+            )
+        )
+    authority_validation = validate_executor_analysis_report_followup_packet_authority_boundary(
+        packet.get("authority_boundary")
+    )
+    findings.extend(copy.deepcopy(authority_validation.get("findings", [])))
+    allowed_statuses = {
+        str(status).strip() for status in contract.get("status_values", []) if str(status).strip()
+    }
+    status = str(summary.get("status", "")).strip()
+    if status not in allowed_statuses:
+        findings.append(
+            executor_report_finding(
+                code="invalid_analysis_report_followup_packet_status",
+                field="summary.status",
+                message="Analysis report follow-up packet status is not allowed.",
+            )
+        )
+    if status == "ready_for_followup_review" and summary.get("report_kind") != "analysis_report":
+        findings.append(
+            executor_report_finding(
+                code="analysis_report_followup_packet_ready_report_kind_invalid",
+                field="summary.report_kind",
+                message="Ready follow-up packets require report_kind=analysis_report.",
+            )
+        )
+    packet_state = str(followup_packet.get("packet_state", "")).strip()
+    expected_state = (
+        "ready_for_followup_review" if status == "ready_for_followup_review" else "blocked"
+    )
+    if packet_state != expected_state:
+        findings.append(
+            executor_report_finding(
+                code="analysis_report_followup_packet_state_mismatch",
+                field="followup_packet.packet_state",
+                message="Follow-up packet state must match summary.status.",
+            )
+        )
+    decision_options = followup_packet.get("decision_options", [])
+    expected_options = [
+        str(option).strip()
+        for option in contract.get("decision_options", [])
+        if str(option).strip()
+    ]
+    if decision_options != expected_options:
+        findings.append(
+            executor_report_finding(
+                code="analysis_report_followup_packet_decision_options_invalid",
+                field="followup_packet.decision_options",
+                message="Follow-up packet must carry the governed decision options.",
+            )
+        )
+    checks = packet.get("checks", [])
+    if not isinstance(checks, list):
+        findings.append(
+            executor_report_finding(
+                code="analysis_report_followup_packet_checks_not_list",
+                field="checks",
+                message="Analysis report follow-up packet checks must be a list.",
+            )
+        )
+        checks = []
+    check_status_by_id = {
+        str(check.get("check_id", "")).strip(): str(check.get("status", "")).strip()
+        for check in checks
+        if isinstance(check, dict)
+    }
+    for check_id in [
+        str(check_id).strip() for check_id in contract.get("check_ids", []) if str(check_id).strip()
+    ]:
+        check_status = check_status_by_id.get(check_id, "")
+        if not check_status:
+            findings.append(
+                executor_report_finding(
+                    code="missing_analysis_report_followup_packet_check",
+                    field=f"checks.{check_id}",
+                    message=f"Analysis report follow-up packet is missing check {check_id}.",
+                )
+            )
+        elif status == "ready_for_followup_review" and check_status != "passed":
+            findings.append(
+                executor_report_finding(
+                    code="analysis_report_followup_packet_ready_check_not_passed",
+                    field=f"checks.{check_id}",
+                    message="Ready follow-up packets require all contract checks to pass.",
+                )
+            )
+    if summary.get("human_review_required") is not True:
+        findings.append(
+            executor_report_finding(
+                code="analysis_report_followup_packet_human_review_not_required",
+                field="summary.human_review_required",
+                message="Analysis report follow-up packet must require human review.",
+            )
+        )
+    if summary.get("canonical_mutations_allowed") is not False:
+        findings.append(
+            executor_report_finding(
+                code="analysis_report_followup_packet_allows_canonical_mutation",
+                field="summary.canonical_mutations_allowed",
+                message="Analysis report follow-up packet must not allow canonical mutation.",
+            )
+        )
+    if summary.get("proposal_draft_candidate_allowed") is not False:
+        findings.append(
+            executor_report_finding(
+                code="analysis_report_followup_packet_allows_proposal_draft_candidate",
+                field="summary.proposal_draft_candidate_allowed",
+                message="Analysis report follow-up packet must not allow proposal drafts.",
+            )
+        )
+    if followup_packet.get("operator_decision_required") is not True:
+        findings.append(
+            executor_report_finding(
+                code="analysis_report_followup_packet_operator_decision_not_required",
+                field="followup_packet.operator_decision_required",
+                message="Analysis report follow-up packet must require an operator decision.",
+            )
+        )
+    if followup_packet.get("followup_packet_is_authority") is not False:
+        findings.append(
+            executor_report_finding(
+                code="analysis_report_followup_packet_is_authority",
+                field="followup_packet.followup_packet_is_authority",
+                message="Analysis report follow-up packet must not be authority.",
+            )
+        )
+    return {
+        "valid": not findings,
+        "findings": findings,
+        "normalized": {
+            "status": status,
+            "packet_state": packet_state,
+            "report_kind": str(summary.get("report_kind", "")).strip(),
+            "next_gap": str(summary.get("next_gap", "")).strip(),
+        },
+    }
+
+
+def build_local_operator_executor_analysis_report_followup_packet(
+    outcome: dict[str, Any] | None = None,
+) -> dict[str, Any]:
+    contract = executor_analysis_report_followup_packet_contract()
+    outcome = (
+        outcome
+        if isinstance(outcome, dict)
+        else load_local_operator_executor_analysis_report_review_outcome_artifact()
+    )
+    source_outcome_present = isinstance(outcome, dict)
+    request = default_executor_analysis_report_followup_request(
+        consumer=str(contract.get("consumer", "analysis_report_followup_planner")).strip(),
+        transformation=str(
+            contract.get("transformation", "analysis_review_outcome_to_followup_packet")
+        ).strip(),
+        requested_effects=[
+            str(effect).strip()
+            for effect in contract.get("requested_effects", ["analysis_report_followup_packet"])
+            if str(effect).strip()
+        ],
+    )
+    policy_validation = validate_executor_analysis_report_followup_request(
+        request,
+        outcome=outcome if source_outcome_present else None,
+    )
+    policy_findings = policy_validation.get("findings", [])
+    policy_findings = policy_findings if isinstance(policy_findings, list) else []
+    source_validation = policy_validation.get("source_outcome_validation", {})
+    source_validation = source_validation if isinstance(source_validation, dict) else {}
+    outcome_validation = source_validation.get("outcome_validation", {})
+    outcome_validation = outcome_validation if isinstance(outcome_validation, dict) else {}
+    normalized_policy = policy_validation.get("normalized", {})
+    normalized_policy = normalized_policy if isinstance(normalized_policy, dict) else {}
+    source_outcome_valid = bool(source_outcome_present and outcome_validation.get("valid") is True)
+    authority_validation = policy_validation.get("authority_validation", {})
+    authority_validation = authority_validation if isinstance(authority_validation, dict) else {}
+    authority_boundary = copy.deepcopy(contract.get("authority_boundary", {}))
+    authority_preserved = (
+        authority_validation.get("valid") is True
+        and authority_boundary.get("executor_report_is_authority") is False
+        and authority_boundary.get("review_packet_is_authority") is False
+        and authority_boundary.get("review_outcome_is_authority") is False
+        and authority_boundary.get("followup_packet_is_authority") is False
+        and authority_boundary.get("human_or_supervisor_review_required") is True
+        and authority_boundary.get("canonical_mutations_allowed") is False
+        and authority_boundary.get("proposal_draft_candidate_allowed") is False
+        and authority_boundary.get("proposal_status_mutations_allowed") is False
+        and authority_boundary.get("proposal_registry_mutations_allowed") is False
+        and authority_boundary.get("proposal_markdown_writes_allowed") is False
+        and authority_boundary.get("gap_closure_allowed") is False
+        and authority_boundary.get("patch_application_allowed") is False
+        and authority_boundary.get("executor_invocation_allowed") is False
+        and authority_boundary.get("static_publish_of_local_packet_allowed") is False
+    )
+    source_report_kind = str(normalized_policy.get("source_report_kind", "")).strip()
+    privacy_findings: list[dict[str, str]] = []
+    if source_outcome_present:
+        privacy_findings.extend(executor_report_forbidden_key_findings(outcome))
+        privacy_findings.extend(executor_report_machine_local_path_findings(outcome))
+        privacy_findings.extend(executor_report_secret_like_value_findings(outcome))
+    checks = [
+        local_operator_smoke_check(
+            check_id="source_outcome_present",
+            status="passed" if source_outcome_present else "missing",
+            message=(
+                "Analysis report review outcome artifact is present."
+                if source_outcome_present
+                else "Analysis report review outcome artifact is missing."
+            ),
+        ),
+        local_operator_smoke_check(
+            check_id="source_outcome_valid",
+            status="passed" if source_outcome_valid else "failed",
+            message=(
+                "Analysis report review outcome is valid."
+                if source_outcome_valid
+                else "Analysis report review outcome is invalid or unavailable."
+            ),
+        ),
+        local_operator_smoke_check(
+            check_id="followup_policy_allows_packet",
+            status="passed" if policy_validation.get("valid") is True else "failed",
+            message=(
+                "Analysis report follow-up policy allows packet construction."
+                if policy_validation.get("valid") is True
+                else "Analysis report follow-up policy blocks packet construction."
+            ),
+        ),
+        local_operator_smoke_check(
+            check_id="source_report_kind_is_analysis_report",
+            status="passed" if source_report_kind == "analysis_report" else "failed",
+            message=(
+                "Source outcome carries analysis_report."
+                if source_report_kind == "analysis_report"
+                else "Source outcome does not carry analysis_report."
+            ),
+        ),
+        local_operator_smoke_check(
+            check_id="authority_boundary_preserved",
+            status="passed" if authority_preserved else "failed",
+            message=(
+                "Analysis report follow-up packet preserves the review-only boundary."
+                if authority_preserved
+                else "Analysis report follow-up packet would expand authority."
+            ),
+        ),
+        local_operator_smoke_check(
+            check_id="privacy_boundary_preserved",
+            status="passed" if not privacy_findings else "failed",
+            message=(
+                "Analysis report follow-up packet preserves the source outcome privacy boundary."
+                if not privacy_findings
+                else "Analysis report follow-up packet would expose unsafe source outcome data."
+            ),
+        ),
+        local_operator_smoke_check(
+            check_id="followup_packet_contract_valid",
+            status="passed",
+            message="Analysis report follow-up packet matches the packet contract.",
+        ),
+    ]
+    status_before_contract = local_operator_executor_analysis_report_followup_packet_status(
+        checks,
+        policy_findings=policy_findings,
+    )
+    source_outcome = outcome if source_outcome_present else {}
+    summary = source_outcome.get("summary", {}) if isinstance(source_outcome, dict) else {}
+    summary = summary if isinstance(summary, dict) else {}
+    review_outcome = (
+        source_outcome.get("analysis_review_outcome", {})
+        if isinstance(source_outcome, dict)
+        else {}
+    )
+    review_outcome = review_outcome if isinstance(review_outcome, dict) else {}
+    ready = status_before_contract == "ready_for_followup_review"
+    findings = review_outcome.get("findings", []) if ready else []
+    findings = copy.deepcopy(findings) if isinstance(findings, list) else []
+    evidence_refs = review_outcome.get("evidence_refs", []) if ready else []
+    evidence_refs = (
+        [
+            safe_ref
+            for safe_ref in (safe_executor_report_evidence_ref(ref) for ref in evidence_refs)
+            if safe_ref
+        ]
+        if isinstance(evidence_refs, list)
+        else []
+    )
+    proposed_artifacts = review_outcome.get("proposed_artifacts", []) if ready else []
+    proposed_artifacts = (
+        [
+            safe_ref
+            for safe_ref in (safe_executor_report_evidence_ref(ref) for ref in proposed_artifacts)
+            if safe_ref
+        ]
+        if isinstance(proposed_artifacts, list)
+        else []
+    )
+    decision_options = [
+        str(option).strip()
+        for option in contract.get("decision_options", [])
+        if str(option).strip()
+    ]
+    producer_kind = str(summary.get("producer_kind", "")).strip()
+    named_filters = {
+        str(name).strip(): [] for name in contract.get("named_filters", []) if str(name).strip()
+    }
+    named_filters.setdefault(status_before_contract, []).append(producer_kind or "missing_producer")
+    for key in list(named_filters):
+        named_filters[key] = sorted(set(named_filters[key]))
+    packet = {
+        "artifact_kind": LOCAL_OPERATOR_EXECUTOR_ANALYSIS_REPORT_FOLLOWUP_PACKET_ARTIFACT_KIND,
+        "schema_version": LOCAL_OPERATOR_EXECUTOR_ANALYSIS_REPORT_FOLLOWUP_PACKET_SCHEMA_VERSION,
+        "generated_at": utc_now_iso(),
+        "policy_reference": {
+            **supervisor_executor_adapter_policy_reference(),
+            "policy_section": "executor_analysis_report_followup_policy",
+            "packet_contract_section": "executor_analysis_report_followup_packet_contract",
+        },
+        "source_outcome_artifact": (
+            LOCAL_OPERATOR_EXECUTOR_ANALYSIS_REPORT_REVIEW_OUTCOME_RELATIVE_PATH
+        ),
+        "local_only": bool(contract.get("local_only", True)),
+        "packet_kind": str(contract.get("packet_kind", "analysis_report_followup")).strip(),
+        "authority_boundary": authority_boundary,
+        "privacy_boundary": copy.deepcopy(contract.get("privacy_boundary", {})),
+        "summary": {
+            "status": status_before_contract,
+            "report_kind": str(summary.get("report_kind", "")).strip(),
+            "producer_kind": producer_kind,
+            "authority_level": "review_only",
+            "human_review_required": True,
+            "canonical_mutations_allowed": False,
+            "proposal_draft_candidate_allowed": False,
+            "executor_invocation_allowed": False,
+            "next_gap": local_operator_executor_analysis_report_followup_packet_next_gap(
+                status_before_contract
+            ),
+        },
+        "followup_packet": {
+            "packet_state": "ready_for_followup_review" if ready else "blocked",
+            "source_outcome_status": str(summary.get("status", "")).strip(),
+            "source_report_kind": source_report_kind,
+            "findings": findings,
+            "evidence_refs": evidence_refs,
+            "proposed_artifacts": proposed_artifacts,
+            "decision_options": decision_options,
+            "operator_decision_required": True,
+            "followup_packet_is_authority": False,
+            "recommended_next_gap": (
+                local_operator_executor_analysis_report_followup_packet_next_gap(
+                    status_before_contract
+                )
+            ),
+        },
+        "followup_request": request,
+        "followup_policy_validation": {
+            "valid": bool(policy_validation.get("valid", False)),
+            "finding_count": len(policy_findings),
+            "findings": copy.deepcopy(policy_findings),
+            "normalized": copy.deepcopy(normalized_policy),
+        },
+        "source_outcome_validation": {
+            "valid": bool(outcome_validation.get("valid", False)),
+            "finding_count": len(outcome_validation.get("findings", [])),
+            "findings": copy.deepcopy(outcome_validation.get("findings", [])),
+            "normalized": copy.deepcopy(source_validation.get("normalized", {})),
+        },
+        "checks": checks,
+        "viewer_projection": {
+            "named_filters": named_filters,
+        },
+    }
+    packet_validation = validate_local_operator_executor_analysis_report_followup_packet(packet)
+    packet["packet_validation"] = {
+        "valid": bool(packet_validation.get("valid", False)),
+        "finding_count": len(packet_validation.get("findings", [])),
+        "findings": copy.deepcopy(packet_validation.get("findings", [])),
+        "normalized": copy.deepcopy(packet_validation.get("normalized", {})),
+    }
+    for check in checks:
+        if (
+            isinstance(check, dict)
+            and str(check.get("check_id", "")).strip() == "followup_packet_contract_valid"
+        ):
+            check["status"] = "passed" if packet_validation.get("valid") is True else "failed"
+            check["message"] = (
+                "Analysis report follow-up packet matches the packet contract."
+                if packet_validation.get("valid") is True
+                else "Analysis report follow-up packet does not match the packet contract."
+            )
+            break
+    final_status = local_operator_executor_analysis_report_followup_packet_status(
+        checks,
+        policy_findings=policy_findings,
+    )
+    final_ready = final_status == "ready_for_followup_review"
+    packet["summary"]["status"] = final_status
+    packet["summary"]["next_gap"] = (
+        local_operator_executor_analysis_report_followup_packet_next_gap(final_status)
+    )
+    packet["followup_packet"]["packet_state"] = (
+        "ready_for_followup_review" if final_ready else "blocked"
+    )
+    packet["followup_packet"]["recommended_next_gap"] = (
+        local_operator_executor_analysis_report_followup_packet_next_gap(final_status)
+    )
+    packet["viewer_projection"]["named_filters"] = {
+        key: [] for key in packet["viewer_projection"]["named_filters"]
+    }
+    packet["viewer_projection"]["named_filters"].setdefault(final_status, []).append(
+        producer_kind or "missing_producer"
+    )
+    for key in list(packet["viewer_projection"]["named_filters"]):
+        packet["viewer_projection"]["named_filters"][key] = sorted(
+            set(packet["viewer_projection"]["named_filters"][key])
+        )
+    return packet
+
+
+def write_local_operator_executor_analysis_report_followup_packet(index: dict[str, Any]) -> Path:
+    path = local_operator_executor_analysis_report_followup_packet_path()
+    with artifact_lock(path):
+        atomic_write_json(path, index)
+    return path
 
 
 def executor_report_to_proposal_draft_policy() -> dict[str, Any]:
@@ -52022,6 +52668,7 @@ def main(
     build_local_operator_executor_report_smoke_mode: bool = False,
     build_local_operator_executor_report_review_packet_mode: bool = False,
     build_local_operator_executor_analysis_report_review_outcome_mode: bool = False,
+    build_local_operator_executor_analysis_report_followup_packet_mode: bool = False,
     build_local_operator_executor_proposal_draft_candidate_mode: bool = False,
     build_local_operator_executor_proposal_promotion_packet_mode: bool = False,
     build_local_operator_executor_proposal_source_materialization_mode: bool = False,
@@ -52116,6 +52763,9 @@ def main(
         ),
         "--build-local-operator-executor-analysis-report-review-outcome": (
             build_local_operator_executor_analysis_report_review_outcome_mode
+        ),
+        "--build-local-operator-executor-analysis-report-followup-packet": (
+            build_local_operator_executor_analysis_report_followup_packet_mode
         ),
         "--build-local-operator-executor-proposal-draft-candidate": (
             build_local_operator_executor_proposal_draft_candidate_mode
@@ -53359,6 +54009,42 @@ def main(
         write_local_operator_executor_analysis_report_review_outcome(index)
         emit_supervisor_json(index, output_mode=normalized_output_mode)
         return 0 if index.get("summary", {}).get("status") == "ready_for_operator_review" else 1
+
+    if build_local_operator_executor_analysis_report_followup_packet_mode:
+        if any(
+            (
+                dry_run,
+                auto_approve,
+                loop,
+                resolve_gate,
+                decision,
+                note,
+                target_spec,
+                split_proposal,
+                apply_split_proposal,
+                operator_note,
+                mutation_budget,
+                run_authority,
+                execution_profile,
+                child_model,
+                child_timeout_seconds,
+                verbose,
+                list_stale_runtime,
+                clean_stale_runtime,
+                observe_graph_health_mode,
+                operator_request_packet_path,
+            )
+        ):
+            print(
+                "--build-local-operator-executor-analysis-report-followup-packet must be used "
+                "as a standalone command",
+                file=sys.stderr,
+            )
+            return 1
+        index = build_local_operator_executor_analysis_report_followup_packet()
+        write_local_operator_executor_analysis_report_followup_packet(index)
+        emit_supervisor_json(index, output_mode=normalized_output_mode)
+        return 0 if index.get("summary", {}).get("status") == "ready_for_followup_review" else 1
 
     if build_local_operator_executor_proposal_draft_candidate_mode:
         if any(
@@ -56934,6 +57620,14 @@ if __name__ == "__main__":
         ),
     )
     parser.add_argument(
+        "--build-local-operator-executor-analysis-report-followup-packet",
+        action="store_true",
+        help=(
+            "Build a local-only analysis report follow-up packet from a valid analysis "
+            "review outcome, without invoking executors or mutating canonical specs"
+        ),
+    )
+    parser.add_argument(
         "--build-local-operator-executor-proposal-draft-candidate",
         action="store_true",
         help=(
@@ -57326,6 +58020,9 @@ if __name__ == "__main__":
             ),
             build_local_operator_executor_analysis_report_review_outcome_mode=(
                 args.build_local_operator_executor_analysis_report_review_outcome
+            ),
+            build_local_operator_executor_analysis_report_followup_packet_mode=(
+                args.build_local_operator_executor_analysis_report_followup_packet
             ),
             build_local_operator_executor_proposal_draft_candidate_mode=(
                 args.build_local_operator_executor_proposal_draft_candidate

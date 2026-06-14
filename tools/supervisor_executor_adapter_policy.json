@@ -11,6 +11,7 @@
     "local_operator_report_artifact": "runs/local_operator_executor_report.json",
     "local_operator_report_review_packet_artifact": "runs/local_operator_executor_report_review_packet.json",
     "local_operator_analysis_report_review_outcome_artifact": "runs/local_operator_executor_analysis_report_review_outcome.json",
+    "local_operator_analysis_report_followup_packet_artifact": "runs/local_operator_executor_analysis_report_followup_packet.json",
     "local_operator_proposal_draft_candidate_artifact": "runs/local_operator_executor_proposal_draft_candidate.json",
     "local_operator_proposal_promotion_packet_artifact": "runs/local_operator_executor_proposal_promotion_packet.json",
     "local_operator_proposal_materialization_report_artifact": "runs/local_operator_executor_proposal_materialization_report.json",
@@ -717,6 +718,95 @@
       "static_publish_of_local_outcome_allowed": false
     },
     "next_gap": "build_executor_analysis_report_followup_packet"
+  },
+  "executor_analysis_report_followup_packet_contract": {
+    "artifact_kind": "local_operator_executor_analysis_report_followup_packet",
+    "schema_version": 1,
+    "source_outcome_artifact": "runs/local_operator_executor_analysis_report_review_outcome.json",
+    "source_policy_artifact_kind": "executor_analysis_report_followup_policy",
+    "local_only": true,
+    "packet_kind": "analysis_report_followup",
+    "consumer": "analysis_report_followup_planner",
+    "transformation": "analysis_review_outcome_to_followup_packet",
+    "requested_effects": [
+      "analysis_report_followup_packet"
+    ],
+    "status_values": [
+      "ready_for_followup_review",
+      "blocked_missing_review_outcome",
+      "blocked_invalid_review_outcome",
+      "blocked_followup_policy",
+      "blocked_authority_boundary",
+      "blocked_privacy_boundary",
+      "blocked_policy_contract"
+    ],
+    "decision_options": [
+      "accept",
+      "reject",
+      "defer",
+      "needs_more_evidence"
+    ],
+    "check_ids": [
+      "source_outcome_present",
+      "source_outcome_valid",
+      "followup_policy_allows_packet",
+      "source_report_kind_is_analysis_report",
+      "authority_boundary_preserved",
+      "privacy_boundary_preserved",
+      "followup_packet_contract_valid"
+    ],
+    "required_fields": [
+      "artifact_kind",
+      "schema_version",
+      "generated_at",
+      "policy_reference",
+      "source_outcome_artifact",
+      "local_only",
+      "packet_kind",
+      "authority_boundary",
+      "summary",
+      "followup_packet",
+      "followup_policy_validation",
+      "source_outcome_validation",
+      "checks",
+      "viewer_projection"
+    ],
+    "authority_boundary": {
+      "executor_report_is_authority": false,
+      "review_packet_is_authority": false,
+      "review_outcome_is_authority": false,
+      "followup_packet_is_authority": false,
+      "human_or_supervisor_review_required": true,
+      "canonical_mutations_allowed": false,
+      "proposal_draft_candidate_allowed": false,
+      "proposal_status_mutations_allowed": false,
+      "proposal_registry_mutations_allowed": false,
+      "proposal_markdown_writes_allowed": false,
+      "gap_closure_allowed": false,
+      "patch_application_allowed": false,
+      "executor_invocation_allowed": false,
+      "static_publish_of_local_packet_allowed": false
+    },
+    "privacy_boundary": {
+      "must_not_persist_absolute_paths": true,
+      "must_not_persist_raw_logs": true,
+      "must_not_persist_raw_prompt": true,
+      "must_not_persist_raw_response": true,
+      "must_not_persist_secrets": true,
+      "public_static_publish": false,
+      "canonical_mutations_allowed": false,
+      "proposal_status_mutations_allowed": false
+    },
+    "named_filters": [
+      "ready_for_followup_review",
+      "blocked_missing_review_outcome",
+      "blocked_invalid_review_outcome",
+      "blocked_followup_policy",
+      "blocked_authority_boundary",
+      "blocked_privacy_boundary",
+      "blocked_policy_contract"
+    ],
+    "next_gap": "human_review_decision_for_executor_followup"
   },
   "proposal_draft_candidate_promotion_policy": {
     "artifact_kind": "proposal_draft_candidate_promotion_policy",
