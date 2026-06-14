@@ -342,6 +342,16 @@ h3 {
   line-height: 1.42;
 }
 
+.deck-ru .old-metrics span,
+.deck-ru .pipeline-strip span,
+.deck-ru .guardrail-strip span,
+.deck-ru .anchor-row span,
+.deck-ru .optimizer-panel span {
+  padding: 0 8px;
+  line-height: 1.18;
+  overflow-wrap: anywhere;
+}
+
 .ru-points,
 .ru-note,
 .ru-mini-table {

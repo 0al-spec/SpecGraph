@@ -51,6 +51,8 @@ def test_presentation_shell_is_static_slide_deck():
     assert "fonts/glanz/Glanz.otf" in css
     assert "fonts/glanz/Glanz Italic.otf" in css
     assert 'font-family: "Glanz"' in css
+    assert ".deck-ru .anchor-row span" in css
+    assert "overflow-wrap: anywhere" in css
     assert (PRESENTATION_DIR / "fonts" / "glanz" / "Glanz.otf").is_file()
     assert (PRESENTATION_DIR / "fonts" / "glanz" / "Glanz Italic.otf").is_file()
     assert "Free for Personal and Commercial Use" in (
