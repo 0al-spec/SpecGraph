@@ -11232,6 +11232,8 @@ def test_specspace_registry_handoff_contract_is_stable_and_ready(
     assert "viewer_projection" in ready["artifact_contract"]["stable_fields"]
     assert "required_checks" in ready["artifact_contract"]["stable_fields"]
     assert "policy_required_checks_satisfied" in ready["artifact_contract"]["stable_fields"]
+    assert "redacted_local_executor_summary" in ready["artifact_contract"]["stable_fields"]
+    assert "source_artifact_refs" in ready["artifact_contract"]["stable_fields"]
     assert "show runtime enforcement posture" in " ".join(ready["expected_consumer_behavior"])
     assert "show runtime enforcement evidence status" in " ".join(
         ready["expected_consumer_behavior"]
@@ -33608,8 +33610,11 @@ def test_agent_passport_adoption_policy_declares_surface_and_gap_contract(
         "runs/agent_runtime_enforcement_evidence/"
         "supervisor-executor-adapter-redacted-local-summary.json"
     )
+    assert "0089" in redacted_smoke["source_proposal_ids"]
+    assert "0093" in redacted_smoke["source_proposal_ids"]
     assert "0124" in redacted_smoke["source_proposal_ids"]
     assert "redacted_source_refs_safe" in redacted_smoke["required_checks"]
+    assert "redacted_source_artifacts_present" in redacted_smoke["required_checks"]
     assert policy["executor_adapter_binding"]["source_artifact"] == (
         "runs/supervisor_executor_adapter_index.json"
     )
@@ -33802,11 +33807,36 @@ def agent_runtime_evidence_test_surfaces(supervisor_module: object) -> dict[str,
     }
 
 
+def write_redacted_local_executor_source_artifacts(
+    supervisor_module: object,
+    repo_fixture: Path,
+) -> None:
+    redacted_smoke = next(
+        smoke
+        for smoke in supervisor_module.agent_runtime_enforcement_evidence_smokes()
+        if smoke["evidence_kind"] == "redacted_local_summary"
+    )
+    for raw_ref in redacted_smoke["redacted_source_artifacts"]:
+        ref = supervisor_module.safe_executor_report_evidence_ref(raw_ref)
+        path = repo_fixture / ref
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text(
+            json.dumps(
+                {
+                    "artifact_kind": "local_operator_executor_test_source",
+                    "local_only": True,
+                }
+            ),
+            encoding="utf-8",
+        )
+
+
 def test_build_agent_runtime_enforcement_evidence_index_emits_passed_smoke(
     supervisor_module: object,
     repo_fixture: Path,
 ) -> None:
     surfaces = agent_runtime_evidence_test_surfaces(supervisor_module)
+    write_redacted_local_executor_source_artifacts(supervisor_module, repo_fixture)
 
     index = supervisor_module.build_agent_runtime_enforcement_evidence_index(surfaces)
 
@@ -33837,6 +33867,7 @@ def test_build_agent_runtime_enforcement_evidence_index_emits_passed_smoke(
         "supervisor-executor-adapter-redacted-local-summary.json"
     )
     assert redacted_checks["redacted_source_refs_safe"] == "passed"
+    assert redacted_checks["redacted_source_artifacts_present"] == "passed"
     assert redacted_checks["redacted_source_payloads_not_published"] == "passed"
     redacted_summary = redacted_record["redacted_local_executor_summary"]
     assert redacted_summary["source_payloads_published"] is False
@@ -33849,6 +33880,37 @@ def test_build_agent_runtime_enforcement_evidence_index_emits_passed_smoke(
         "agent_runtime_enforcement_evidence::specgraph.supervisor.executor_adapter::redacted_local_executor_summary"
     ]
     assert repo_fixture.as_posix() not in json.dumps(index, sort_keys=True)
+
+
+def test_build_agent_runtime_enforcement_evidence_blocks_missing_redacted_sources(
+    supervisor_module: object,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    surfaces = agent_runtime_evidence_test_surfaces(supervisor_module)
+    smokes = supervisor_module.agent_runtime_enforcement_evidence_smokes()
+    patched_smokes = []
+    for smoke in smokes:
+        patched = copy.deepcopy(smoke)
+        if patched["evidence_kind"] == "redacted_local_summary":
+            patched["redacted_source_artifacts"] = [
+                "runs/local_operator_executor_missing_for_test.json"
+            ]
+        patched_smokes.append(patched)
+    monkeypatch.setattr(
+        supervisor_module,
+        "agent_runtime_enforcement_evidence_smokes",
+        lambda: copy.deepcopy(patched_smokes),
+    )
+
+    index = supervisor_module.build_agent_runtime_enforcement_evidence_index(surfaces)
+
+    records_by_kind = {record["evidence_kind"]: record for record in index["_records"]}
+    redacted_record = records_by_kind["redacted_local_summary"]
+    checks = {check["check_id"]: check["status"] for check in redacted_record["evidence"]["checks"]}
+    assert redacted_record["status"] == "failed"
+    assert checks["redacted_source_refs_safe"] == "passed"
+    assert checks["redacted_source_artifacts_present"] == "failed"
+    assert checks["policy_required_checks_satisfied"] == "failed"
 
 
 def test_build_agent_runtime_enforcement_evidence_index_blocks_missing_producer(
@@ -34077,6 +34139,7 @@ def test_main_builds_agent_runtime_enforcement_evidence_artifacts(
     capsys: pytest.CaptureFixture[str],
 ) -> None:
     surfaces = agent_runtime_evidence_test_surfaces(supervisor_module)
+    write_redacted_local_executor_source_artifacts(supervisor_module, repo_fixture)
     monkeypatch.setattr(
         supervisor_module,
         "build_agent_passport_derived_surfaces",

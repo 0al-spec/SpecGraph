@@ -276,6 +276,8 @@
             "policy_required_checks_satisfied",
             "evidence_ref",
             "safe_evidence_ref",
+            "redacted_local_executor_summary",
+            "source_artifact_refs",
             "status"
           ],
           "local_only_fields_forbidden": true

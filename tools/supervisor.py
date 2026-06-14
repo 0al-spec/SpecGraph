@@ -31793,6 +31793,7 @@ def redacted_local_executor_summary_checks(smoke: dict[str, Any]) -> list[dict[s
     local_payloads_not_published = all(
         ref.startswith("runs/local_operator_executor_") for ref in safe_refs
     )
+    missing_source_refs = sorted(ref for ref in safe_refs if not (ROOT / ref).is_file())
     return [
         agent_runtime_enforcement_evidence_check(
             check_id="redacted_source_refs_safe",
@@ -31801,6 +31802,19 @@ def redacted_local_executor_summary_checks(smoke: dict[str, Any]) -> list[dict[s
                 "Redacted local executor summary source refs are safe repository-relative refs."
                 if refs and all_refs_safe
                 else "Redacted local executor summary source refs are missing or unsafe."
+            ),
+        ),
+        agent_runtime_enforcement_evidence_check(
+            check_id="redacted_source_artifacts_present",
+            status="passed" if safe_refs and not missing_source_refs else "failed",
+            message=(
+                "Redacted local executor summary source artifacts are present locally."
+                if safe_refs and not missing_source_refs
+                else (
+                    "Redacted local executor summary source artifacts are missing locally: "
+                    + ", ".join(missing_source_refs or ["<none>"])
+                    + "."
+                )
             ),
         ),
         agent_runtime_enforcement_evidence_check(

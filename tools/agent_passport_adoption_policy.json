@@ -285,7 +285,9 @@
       "source_proposal_ids": [
         "0087",
         "0088",
+        "0089",
         "0091",
+        "0093",
         "0112",
         "0121",
         "0122",
@@ -310,6 +312,7 @@
         "evidence_ref_safe",
         "no_observed_enforcement_claim",
         "redacted_source_refs_safe",
+        "redacted_source_artifacts_present",
         "redacted_source_payloads_not_published",
         "redacted_summary_no_raw_payloads"
       ],
