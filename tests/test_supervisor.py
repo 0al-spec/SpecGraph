@@ -31039,6 +31039,8 @@ def test_build_local_operator_executor_analysis_report_followup_decision_rejects
     )
     checks = {check["check_id"]: check["status"] for check in decision["checks"]}
     assert checks["source_followup_packet_present"] == "missing"
+    assert decision["human_review_decision"]["accepted_for_proposal_draft_request"] is False
+    assert decision["human_review_decision"]["decision_requires_downstream_policy"] is False
 
 
 def test_build_local_operator_executor_analysis_report_followup_decision_rejects_invalid_decision(
@@ -31082,6 +31084,54 @@ def test_validate_local_operator_executor_analysis_report_followup_decision_reje
     finding_codes = {finding["code"] for finding in validation["findings"]}
     assert "invalid_executor_followup_decision_authority_boundary" in finding_codes
     assert "executor_followup_decision_claims_canonical_authority" in finding_codes
+    assert "executor_followup_decision_summary_authority_expansion" in finding_codes
+
+
+def test_validate_local_operator_executor_analysis_report_followup_decision_rejects_mismatch(
+    supervisor_module: object,
+) -> None:
+    followup_packet = ready_analysis_report_followup_packet(supervisor_module)
+    decision = supervisor_module.build_local_operator_executor_analysis_report_followup_decision(
+        followup_packet,
+        decision="accept",
+    )
+    decision["human_review_decision"]["decision"] = "reject"
+
+    validation = (
+        supervisor_module.validate_local_operator_executor_analysis_report_followup_decision(
+            decision
+        )
+    )
+
+    assert validation["valid"] is False
+    finding_codes = {finding["code"] for finding in validation["findings"]}
+    assert "executor_followup_decision_status_mismatch" in finding_codes
+    assert "executor_followup_decision_next_gap_mismatch" in finding_codes
+    assert "executor_followup_decision_acceptance_flag_mismatch" in finding_codes
+    assert "executor_followup_decision_downstream_policy_flag_mismatch" in finding_codes
+
+
+def test_build_local_operator_executor_analysis_report_followup_decision_redacts_rationale(
+    supervisor_module: object,
+) -> None:
+    followup_packet = ready_analysis_report_followup_packet(supervisor_module)
+
+    decision = supervisor_module.build_local_operator_executor_analysis_report_followup_decision(
+        followup_packet,
+        decision="accept",
+        rationale="Reviewed /Users/egor/private; token=abc123",
+    )
+
+    assert decision["human_review_decision"]["rationale"] == "[redacted unsafe rationale]"
+    assert decision["human_review_decision"]["rationale_redacted"] is True
+    assert "/Users/egor/private" not in json.dumps(decision, sort_keys=True)
+    assert "token=abc123" not in json.dumps(decision, sort_keys=True)
+    validation = (
+        supervisor_module.validate_local_operator_executor_analysis_report_followup_decision(
+            decision
+        )
+    )
+    assert validation["valid"] is True
 
 
 def test_main_builds_local_operator_executor_analysis_report_followup_decision(
