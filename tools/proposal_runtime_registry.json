@@ -6551,7 +6551,7 @@
       },
       {
         "path": "docs/proposals/0119_ontology_canonicalization_backlog.md",
-        "pattern": "canonical `specs/imports/ontology.lock.yaml`"
+        "pattern": "write `specs/imports/ontology.lock.yaml`"
       },
       {
         "path": "docs/proposals/0119_ontology_canonicalization_backlog.md",
