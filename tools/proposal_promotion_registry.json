@@ -1610,5 +1610,18 @@
     "required_provenance_links": [
       "source_draft_ref"
     ]
+  },
+  {
+    "proposal_id": "0126",
+    "source_artifact_class": "working_draft",
+    "source_refs": [
+      "docs/archive/proposal_sources/0126_specauthor_claim_calibration_prompt_contract.md"
+    ],
+    "motivating_concern": "SpecAuthorAgent can use ontology context but still needs an explicit epistemic and ontological authoring contract so generated graph-facing claims are scoped, calibrated, and downgraded when evidence is weak.",
+    "normalized_title": "SpecAuthor Claim Calibration Prompt Contract",
+    "bounded_scope": "Define a prompt and validation contract for SpecAuthorAgent requiring active ontology/domain/context resolution, reuse of existing graph vocabulary, F/G/R calibration for strong claims, low-reliability decision downgrades, and future write-gate sequencing without changing active prompts, executing prompt agents, implementing validators, mutating canonical specs, accepting ontology terms, writing Ontology packages or lockfiles, changing Agent Passport runtime policy, or adding SpecSpace UI.",
+    "required_provenance_links": [
+      "source_draft_ref"
+    ]
   }
 ]
