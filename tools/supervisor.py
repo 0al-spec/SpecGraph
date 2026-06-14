@@ -24405,6 +24405,19 @@ def executor_analysis_report_followup_decision_status(
     }.get(decision, "blocked_invalid_decision")
 
 
+def safe_executor_analysis_report_followup_decision_rationale(
+    raw_rationale: object,
+) -> dict[str, Any]:
+    rationale = str(raw_rationale or "").strip()
+    redacted = executor_report_string_contains_machine_local_path(
+        rationale
+    ) or executor_report_string_contains_secret_like_value(rationale)
+    return {
+        "rationale": "[redacted unsafe rationale]" if redacted else rationale,
+        "rationale_redacted": redacted,
+    }
+
+
 def validate_executor_analysis_report_followup_decision_authority_boundary(
     authority_boundary: object,
 ) -> dict[str, Any]:
@@ -24546,6 +24559,20 @@ def validate_local_operator_executor_analysis_report_followup_decision(
                 message="Executor follow-up decision value is not allowed.",
             )
         )
+    summary_authority_fields = [
+        "canonical_mutations_allowed",
+        "proposal_draft_candidate_allowed",
+        "executor_invocation_allowed",
+    ]
+    for field in summary_authority_fields:
+        if summary.get(field) is not False:
+            findings.append(
+                executor_report_finding(
+                    code="executor_followup_decision_summary_authority_expansion",
+                    field=f"summary.{field}",
+                    message="Executor follow-up decision summary must not expand authority.",
+                )
+            )
     if human_decision.get("reviewer") in (None, ""):
         findings.append(
             executor_report_finding(
@@ -24581,6 +24608,51 @@ def validate_local_operator_executor_analysis_report_followup_decision(
         for check in checks
         if isinstance(check, dict)
     }
+    expected_status = executor_analysis_report_followup_decision_status(
+        checks,
+        decision=decision,
+    )
+    expected_next_gap = executor_analysis_report_followup_decision_next_gap(
+        decision,
+        expected_status,
+    )
+    expected_acceptance = (
+        status == "accepted_for_proposal_draft_request"
+        and decision == "accept"
+        and expected_status == status
+    )
+    if status in allowed_statuses and status != expected_status:
+        findings.append(
+            executor_report_finding(
+                code="executor_followup_decision_status_mismatch",
+                field="summary.status",
+                message="Executor follow-up decision status must match decision and checks.",
+            )
+        )
+    if str(summary.get("next_gap", "")).strip() != expected_next_gap:
+        findings.append(
+            executor_report_finding(
+                code="executor_followup_decision_next_gap_mismatch",
+                field="summary.next_gap",
+                message="Executor follow-up decision next_gap must match decision and status.",
+            )
+        )
+    if human_decision.get("accepted_for_proposal_draft_request") is not expected_acceptance:
+        findings.append(
+            executor_report_finding(
+                code="executor_followup_decision_acceptance_flag_mismatch",
+                field="human_review_decision.accepted_for_proposal_draft_request",
+                message="Executor follow-up acceptance flag must match the final accepted status.",
+            )
+        )
+    if human_decision.get("decision_requires_downstream_policy") is not expected_acceptance:
+        findings.append(
+            executor_report_finding(
+                code="executor_followup_decision_downstream_policy_flag_mismatch",
+                field="human_review_decision.decision_requires_downstream_policy",
+                message="Executor follow-up downstream-policy flag must match accepted status.",
+            )
+        )
     for check_id in [
         str(check_id).strip() for check_id in contract.get("check_ids", []) if str(check_id).strip()
     ]:
@@ -24725,10 +24797,15 @@ def build_local_operator_executor_analysis_report_followup_decision(
         checks,
         decision=decision_text,
     )
+    accepted_before_contract = (
+        status_before_contract == "accepted_for_proposal_draft_request"
+        and decision_text == "accept"
+    )
     next_gap = executor_analysis_report_followup_decision_next_gap(
         decision_text,
         status_before_contract,
     )
+    safe_rationale = safe_executor_analysis_report_followup_decision_rationale(rationale)
     artifact = {
         "artifact_kind": LOCAL_OPERATOR_EXECUTOR_ANALYSIS_REPORT_FOLLOWUP_DECISION_ARTIFACT_KIND,
         "schema_version": LOCAL_OPERATOR_EXECUTOR_ANALYSIS_REPORT_FOLLOWUP_DECISION_SCHEMA_VERSION,
@@ -24759,10 +24836,11 @@ def build_local_operator_executor_analysis_report_followup_decision(
         "human_review_decision": {
             "decision": decision_text,
             "reviewer": str(reviewer or "").strip(),
-            "rationale": str(rationale or "").strip(),
-            "accepted_for_proposal_draft_request": decision_text == "accept",
+            "rationale": safe_rationale["rationale"],
+            "rationale_redacted": safe_rationale["rationale_redacted"],
+            "accepted_for_proposal_draft_request": accepted_before_contract,
             "decision_is_canonical_authority": False,
-            "decision_requires_downstream_policy": decision_text == "accept",
+            "decision_requires_downstream_policy": accepted_before_contract,
         },
         "source_followup_packet_validation": {
             "valid": source_valid,
@@ -24808,6 +24886,11 @@ def build_local_operator_executor_analysis_report_followup_decision(
         decision_text,
         final_status,
     )
+    accepted_final = (
+        final_status == "accepted_for_proposal_draft_request" and decision_text == "accept"
+    )
+    artifact["human_review_decision"]["accepted_for_proposal_draft_request"] = accepted_final
+    artifact["human_review_decision"]["decision_requires_downstream_policy"] = accepted_final
     artifact["viewer_projection"]["named_filters"] = {
         key: [] for key in artifact["viewer_projection"]["named_filters"]
     }
