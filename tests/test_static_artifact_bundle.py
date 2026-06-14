@@ -166,6 +166,13 @@ def test_build_public_bundle_copies_specs_and_runs_with_manifest(
         },
     )
     write_json(
+        repo / "runs" / "local_operator_executor_followup_proposal_draft_candidate.json",
+        {
+            "artifact_kind": "executor_followup_proposal_draft_candidate",
+            "local_only": True,
+        },
+    )
+    write_json(
         repo / "runs" / "local_operator_executor_proposal_promotion_packet.json",
         {
             "artifact_kind": "proposal_draft_candidate_promotion_packet",
@@ -222,6 +229,11 @@ def test_build_public_bundle_copies_specs_and_runs_with_manifest(
     ).exists()
     assert not (
         result.output_dir / "runs" / "local_operator_executor_proposal_draft_candidate.json"
+    ).exists()
+    assert not (
+        result.output_dir
+        / "runs"
+        / "local_operator_executor_followup_proposal_draft_candidate.json"
     ).exists()
     assert not (
         result.output_dir / "runs" / "local_operator_executor_proposal_promotion_packet.json"
@@ -310,6 +322,10 @@ def test_build_public_bundle_copies_specs_and_runs_with_manifest(
     )
     assert (
         "runs/local_operator_executor_proposal_draft_candidate.json"
+        not in result.checksums_path.read_text(encoding="utf-8")
+    )
+    assert (
+        "runs/local_operator_executor_followup_proposal_draft_candidate.json"
         not in result.checksums_path.read_text(encoding="utf-8")
     )
     assert (

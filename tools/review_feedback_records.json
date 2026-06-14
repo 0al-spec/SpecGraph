@@ -521,5 +521,69 @@
     "residual_risk": "",
     "resolved_commit": "2127bd7bae4c4ec58ca3fa68f7016013bd63b13b",
     "recorded_at": "2026-05-07T22:12:00Z"
+  },
+  {
+    "feedback_id": "pr-560-followup-candidate-docc-publishing-sync",
+    "source_pr": 560,
+    "source_thread_url": "https://github.com/0al-spec/SpecGraph/pull/560#discussion_r3410085992",
+    "reviewer": "chatgpt-codex-connector",
+    "review_comment_summary": "The repository static artifact publishing guidance listed the local-only follow-up proposal draft candidate, but the corresponding DocC ArtifactPublishing page omitted that artifact and exclusion guarantee.",
+    "fix_summary": "Synchronized the DocC ArtifactPublishing page with the local-only follow-up proposal draft candidate artifact and Make target.",
+    "root_cause_class": "viewer_contract_gap",
+    "prevention_action": "documentation_rule_added",
+    "verification": [
+      "manual_contract_review",
+      "lint_or_format_check"
+    ],
+    "residual_risk": "",
+    "recorded_at": "2026-06-15T00:00:00Z"
+  },
+  {
+    "feedback_id": "pr-560-followup-candidate-privacy-boundary-validation",
+    "source_pr": 560,
+    "source_thread_url": "https://github.com/0al-spec/SpecGraph/pull/560#discussion_r3410085993",
+    "reviewer": "chatgpt-codex-connector",
+    "review_comment_summary": "The follow-up proposal draft candidate validator did not compare privacy_boundary values with the contract, so tampered local-only/public-publish flags could pass validation.",
+    "fix_summary": "Added privacy-boundary validation for follow-up proposal draft candidates and regression coverage for tampered privacy flags.",
+    "root_cause_class": "artifact_contract_validation_gap",
+    "prevention_action": "validator_added",
+    "verification": [
+      "targeted_test",
+      "lint_or_format_check"
+    ],
+    "residual_risk": "",
+    "recorded_at": "2026-06-15T00:00:00Z"
+  },
+  {
+    "feedback_id": "pr-560-followup-candidate-source-request-state-validation",
+    "source_pr": 560,
+    "source_thread_url": "https://github.com/0al-spec/SpecGraph/pull/560#discussion_r3410085994",
+    "reviewer": "chatgpt-codex-connector",
+    "review_comment_summary": "The follow-up proposal draft candidate validator checked source_request_status but not summary.source_request_state before treating a candidate as ready.",
+    "fix_summary": "Required ready candidates to preserve an allowed source_request_state and added regression coverage for blocked request state tampering.",
+    "root_cause_class": "artifact_contract_validation_gap",
+    "prevention_action": "validator_added",
+    "verification": [
+      "targeted_test",
+      "lint_or_format_check"
+    ],
+    "residual_risk": "",
+    "recorded_at": "2026-06-15T00:00:00Z"
+  },
+  {
+    "feedback_id": "pr-560-followup-candidate-promotion-write-flag-validation",
+    "source_pr": 560,
+    "source_thread_url": "https://github.com/0al-spec/SpecGraph/pull/560#discussion_r3410085995",
+    "reviewer": "chatgpt-codex-connector",
+    "review_comment_summary": "The follow-up proposal draft candidate validator did not reject tampered promotion.writes_proposal_markdown or promotion.writes_proposal_registry flags.",
+    "fix_summary": "Extended promotion boundary validation to reject proposal markdown and registry write flags, with regression coverage for both tampered fields.",
+    "root_cause_class": "artifact_contract_validation_gap",
+    "prevention_action": "validator_added",
+    "verification": [
+      "targeted_test",
+      "lint_or_format_check"
+    ],
+    "residual_risk": "",
+    "recorded_at": "2026-06-15T00:00:00Z"
   }
 ]

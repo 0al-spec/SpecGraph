@@ -6889,5 +6889,76 @@
         "pattern": "Redacted local executor summaries"
       }
     ]
+  },
+  {
+    "proposal_id": "0125",
+    "posture": "bounded_runtime_followup",
+    "runtime_surfaces": [
+      "docs/proposals/0125_build_executor_followup_proposal_draft_candidate.md",
+      "docs/archive/proposal_sources/0125_build_executor_followup_proposal_draft_candidate.md",
+      "tools/supervisor_executor_adapter_policy.json",
+      "tools/supervisor.py",
+      "tools/README.md",
+      "Makefile",
+      "tools/build_static_artifact_bundle.py",
+      "docs/static_artifact_publish.md",
+      "tests/test_supervisor.py",
+      "tests/test_static_artifact_bundle.py",
+      "runs/local_operator_executor_followup_proposal_draft_candidate.json"
+    ],
+    "runtime_markers": [
+      {
+        "path": "tools/supervisor_executor_adapter_policy.json",
+        "pattern": "executor_followup_proposal_draft_candidate_contract"
+      },
+      {
+        "path": "tools/supervisor.py",
+        "pattern": "def build_local_operator_executor_followup_proposal_draft_candidate("
+      },
+      {
+        "path": "tools/supervisor.py",
+        "pattern": "def validate_executor_followup_proposal_draft_candidate("
+      },
+      {
+        "path": "tools/supervisor.py",
+        "pattern": "--build-local-operator-executor-followup-proposal-draft-candidate"
+      },
+      {
+        "path": "Makefile",
+        "pattern": "executor-followup-proposal-draft-candidate:"
+      }
+    ],
+    "validation_markers": [
+      {
+        "path": "tests/test_supervisor.py",
+        "pattern": "def test_build_local_operator_executor_followup_proposal_draft_candidate_from_ready_request("
+      },
+      {
+        "path": "tests/test_supervisor.py",
+        "pattern": "def test_build_local_operator_executor_followup_proposal_draft_candidate_blocks_missing_request("
+      },
+      {
+        "path": "tests/test_supervisor.py",
+        "pattern": "def test_validate_executor_followup_proposal_draft_candidate_rejects_authority("
+      },
+      {
+        "path": "tests/test_static_artifact_bundle.py",
+        "pattern": "local_operator_executor_followup_proposal_draft_candidate.json"
+      }
+    ],
+    "observation_markers": [
+      {
+        "path": "docs/proposals/0125_build_executor_followup_proposal_draft_candidate.md",
+        "pattern": "define_followup_proposal_draft_candidate_promotion_policy"
+      },
+      {
+        "path": "tools/README.md",
+        "pattern": "local_operator_executor_followup_proposal_draft_candidate.json"
+      },
+      {
+        "path": "tools/build_static_artifact_bundle.py",
+        "pattern": "local_operator_executor_followup_proposal_draft_candidate.json"
+      }
+    ]
   }
 ]

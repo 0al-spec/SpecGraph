@@ -226,6 +226,9 @@ LOCAL_OPERATOR_EXECUTOR_PROPOSAL_DRAFT_REQUEST_RELATIVE_PATH = (
 LOCAL_OPERATOR_EXECUTOR_PROPOSAL_DRAFT_CANDIDATE_RELATIVE_PATH = (
     "runs/local_operator_executor_proposal_draft_candidate.json"
 )
+LOCAL_OPERATOR_EXECUTOR_FOLLOWUP_PROPOSAL_DRAFT_CANDIDATE_RELATIVE_PATH = (
+    "runs/local_operator_executor_followup_proposal_draft_candidate.json"
+)
 LOCAL_OPERATOR_EXECUTOR_PROPOSAL_PROMOTION_PACKET_RELATIVE_PATH = (
     "runs/local_operator_executor_proposal_promotion_packet.json"
 )
@@ -3267,6 +3270,13 @@ LOCAL_OPERATOR_EXECUTOR_PROPOSAL_DRAFT_CANDIDATE_FILENAME = Path(
         )
     )
 ).name
+LOCAL_OPERATOR_EXECUTOR_FOLLOWUP_PROPOSAL_DRAFT_CANDIDATE_FILENAME = Path(
+    str(
+        supervisor_executor_adapter_policy_lookup(
+            "repository_layout.local_operator_followup_proposal_draft_candidate_artifact"
+        )
+    )
+).name
 LOCAL_OPERATOR_EXECUTOR_PROPOSAL_PROMOTION_PACKET_FILENAME = Path(
     str(
         supervisor_executor_adapter_policy_lookup(
@@ -3381,6 +3391,16 @@ LOCAL_OPERATOR_EXECUTOR_PROPOSAL_DRAFT_CANDIDATE_ARTIFACT_KIND = str(
 LOCAL_OPERATOR_EXECUTOR_PROPOSAL_DRAFT_CANDIDATE_SCHEMA_VERSION = int(
     supervisor_executor_adapter_policy_lookup(
         "executor_report_to_proposal_draft_policy.proposal_draft_candidate_contract.schema_version"
+    )
+)
+LOCAL_OPERATOR_EXECUTOR_FOLLOWUP_PROPOSAL_DRAFT_CANDIDATE_ARTIFACT_KIND = str(
+    supervisor_executor_adapter_policy_lookup(
+        "executor_followup_proposal_draft_candidate_contract.artifact_kind"
+    )
+)
+LOCAL_OPERATOR_EXECUTOR_FOLLOWUP_PROPOSAL_DRAFT_CANDIDATE_SCHEMA_VERSION = int(
+    supervisor_executor_adapter_policy_lookup(
+        "executor_followup_proposal_draft_candidate_contract.schema_version"
     )
 )
 LOCAL_OPERATOR_EXECUTOR_PROPOSAL_PROMOTION_PACKET_ARTIFACT_KIND = str(
@@ -18311,6 +18331,10 @@ def local_operator_executor_proposal_draft_candidate_path() -> Path:
     return RUNS_DIR / LOCAL_OPERATOR_EXECUTOR_PROPOSAL_DRAFT_CANDIDATE_FILENAME
 
 
+def local_operator_executor_followup_proposal_draft_candidate_path() -> Path:
+    return RUNS_DIR / LOCAL_OPERATOR_EXECUTOR_FOLLOWUP_PROPOSAL_DRAFT_CANDIDATE_FILENAME
+
+
 def local_operator_executor_proposal_promotion_packet_path() -> Path:
     return RUNS_DIR / LOCAL_OPERATOR_EXECUTOR_PROPOSAL_PROMOTION_PACKET_FILENAME
 
@@ -25486,6 +25510,815 @@ def build_local_operator_executor_proposal_draft_request(
 
 def write_local_operator_executor_proposal_draft_request(index: dict[str, Any]) -> Path:
     path = local_operator_executor_proposal_draft_request_path()
+    with artifact_lock(path):
+        atomic_write_json(path, index)
+    return path
+
+
+def load_local_operator_executor_proposal_draft_request_artifact() -> dict[str, Any] | None:
+    path = local_operator_executor_proposal_draft_request_path()
+    try:
+        payload = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError):
+        return None
+    return payload if isinstance(payload, dict) else None
+
+
+def executor_followup_proposal_draft_candidate_contract() -> dict[str, Any]:
+    contract = supervisor_executor_adapter_policy_lookup(
+        "executor_followup_proposal_draft_candidate_contract"
+    )
+    return contract if isinstance(contract, dict) else {}
+
+
+def executor_followup_proposal_draft_candidate_next_gap(status: str) -> str:
+    contract = executor_followup_proposal_draft_candidate_contract()
+    if status == "ready_for_promotion_review":
+        return str(
+            contract.get(
+                "next_gap",
+                "define_followup_proposal_draft_candidate_promotion_policy",
+            )
+        ).strip()
+    return {
+        "blocked_missing_request": "run_executor_proposal_draft_request_until_ready",
+        "blocked_invalid_request": "repair_executor_proposal_draft_request",
+        "blocked_request_not_ready": "review_executor_proposal_draft_request",
+        "blocked_authority_boundary": "repair_executor_followup_proposal_draft_candidate_policy",
+        "blocked_privacy_boundary": "repair_executor_followup_proposal_draft_candidate_privacy",
+        "blocked_policy_contract": "repair_executor_followup_proposal_draft_candidate_contract",
+    }.get(status, "repair_executor_followup_proposal_draft_candidate")
+
+
+def executor_followup_proposal_draft_candidate_status(
+    checks: list[dict[str, Any]],
+) -> str:
+    status_by_id = {
+        str(check.get("check_id", "")).strip(): str(check.get("status", "")).strip()
+        for check in checks
+        if isinstance(check, dict)
+    }
+    if status_by_id.get("source_request_present") != "passed":
+        return "blocked_missing_request"
+    if status_by_id.get("source_request_valid") != "passed":
+        return "blocked_invalid_request"
+    if status_by_id.get("source_request_ready") != "passed":
+        return "blocked_request_not_ready"
+    if status_by_id.get("candidate_authority_boundary_preserved") != "passed":
+        return "blocked_authority_boundary"
+    if status_by_id.get("privacy_boundary_preserved") != "passed":
+        return "blocked_privacy_boundary"
+    if (
+        "candidate_contract_valid" in status_by_id
+        and status_by_id.get("candidate_contract_valid") != "passed"
+    ):
+        return "blocked_policy_contract"
+    return "ready_for_promotion_review"
+
+
+def validate_executor_followup_proposal_draft_candidate_authority_boundary(
+    authority_boundary: object,
+) -> dict[str, Any]:
+    contract = executor_followup_proposal_draft_candidate_contract()
+    expected = contract.get("authority_boundary", {})
+    expected = expected if isinstance(expected, dict) else {}
+    boundary = authority_boundary if isinstance(authority_boundary, dict) else {}
+    findings: list[dict[str, str]] = []
+    if not isinstance(authority_boundary, dict):
+        findings.append(
+            executor_report_finding(
+                code="followup_proposal_draft_candidate_authority_boundary_not_object",
+                field="authority_boundary",
+                message="Follow-up proposal draft candidate authority_boundary must be an object.",
+            )
+        )
+    for field in sorted(boundary):
+        if field not in expected:
+            findings.append(
+                executor_report_finding(
+                    code="unexpected_followup_proposal_draft_candidate_authority_field",
+                    field=f"authority_boundary.{field}",
+                    message="Follow-up proposal draft candidate has an extra authority field.",
+                )
+            )
+    for field, expected_value in expected.items():
+        if boundary.get(field) is not expected_value:
+            findings.append(
+                executor_report_finding(
+                    code="invalid_followup_proposal_draft_candidate_authority_boundary",
+                    field=f"authority_boundary.{field}",
+                    message=(
+                        "Follow-up proposal draft candidate must preserve its authority boundary."
+                    ),
+                )
+            )
+    return {
+        "valid": not findings,
+        "findings": findings,
+        "normalized": {field: boundary.get(field) for field in sorted(expected)},
+    }
+
+
+def validate_executor_followup_proposal_draft_candidate_privacy_boundary(
+    privacy_boundary: object,
+) -> dict[str, Any]:
+    contract = executor_followup_proposal_draft_candidate_contract()
+    expected = contract.get("privacy_boundary", {})
+    expected = expected if isinstance(expected, dict) else {}
+    boundary = privacy_boundary if isinstance(privacy_boundary, dict) else {}
+    findings: list[dict[str, str]] = []
+    if not isinstance(privacy_boundary, dict):
+        findings.append(
+            executor_report_finding(
+                code="followup_proposal_draft_candidate_privacy_boundary_not_object",
+                field="privacy_boundary",
+                message="Follow-up proposal draft candidate privacy_boundary must be an object.",
+            )
+        )
+    for field in sorted(boundary):
+        if field not in expected:
+            findings.append(
+                executor_report_finding(
+                    code="unexpected_followup_proposal_draft_candidate_privacy_field",
+                    field=f"privacy_boundary.{field}",
+                    message="Follow-up proposal draft candidate has an extra privacy field.",
+                )
+            )
+    for field, expected_value in expected.items():
+        if boundary.get(field) != expected_value:
+            findings.append(
+                executor_report_finding(
+                    code="invalid_followup_proposal_draft_candidate_privacy_boundary",
+                    field=f"privacy_boundary.{field}",
+                    message=(
+                        "Follow-up proposal draft candidate must preserve its privacy boundary."
+                    ),
+                )
+            )
+    return {
+        "valid": not findings,
+        "findings": findings,
+        "normalized": {field: boundary.get(field) for field in sorted(expected)},
+    }
+
+
+def validate_executor_followup_proposal_draft_candidate(
+    candidate: object,
+) -> dict[str, Any]:
+    contract = executor_followup_proposal_draft_candidate_contract()
+    findings: list[dict[str, str]] = []
+    if not isinstance(candidate, dict):
+        return {
+            "valid": False,
+            "findings": [
+                executor_report_finding(
+                    code="followup_proposal_draft_candidate_not_object",
+                    field="candidate",
+                    message="Follow-up proposal draft candidate must be a JSON object.",
+                )
+            ],
+            "normalized": {},
+        }
+    findings.extend(executor_report_forbidden_key_findings(candidate))
+    findings.extend(executor_report_machine_local_path_findings(candidate))
+    findings.extend(executor_report_secret_like_value_findings(candidate))
+    for field in [
+        str(field).strip() for field in contract.get("required_fields", []) if str(field).strip()
+    ]:
+        if field not in candidate:
+            findings.append(
+                executor_report_finding(
+                    code="missing_followup_proposal_draft_candidate_field",
+                    field=field,
+                    message=f"Follow-up proposal draft candidate is missing field {field}.",
+                )
+            )
+    if (
+        candidate.get("artifact_kind")
+        != LOCAL_OPERATOR_EXECUTOR_FOLLOWUP_PROPOSAL_DRAFT_CANDIDATE_ARTIFACT_KIND
+    ):
+        findings.append(
+            executor_report_finding(
+                code="invalid_followup_proposal_draft_candidate_artifact_kind",
+                field="artifact_kind",
+                message="Follow-up proposal draft candidate artifact_kind is invalid.",
+            )
+        )
+    if (
+        candidate.get("schema_version")
+        != LOCAL_OPERATOR_EXECUTOR_FOLLOWUP_PROPOSAL_DRAFT_CANDIDATE_SCHEMA_VERSION
+    ):
+        findings.append(
+            executor_report_finding(
+                code="invalid_followup_proposal_draft_candidate_schema_version",
+                field="schema_version",
+                message="Follow-up proposal draft candidate schema_version is invalid.",
+            )
+        )
+    if candidate.get("local_only") is not True:
+        findings.append(
+            executor_report_finding(
+                code="followup_proposal_draft_candidate_local_only_required",
+                field="local_only",
+                message="Follow-up proposal draft candidate must remain local-only.",
+            )
+        )
+    expected_source = str(
+        contract.get(
+            "source_request_artifact",
+            LOCAL_OPERATOR_EXECUTOR_PROPOSAL_DRAFT_REQUEST_RELATIVE_PATH,
+        )
+    ).strip()
+    if candidate.get("source_request_artifact") != expected_source:
+        findings.append(
+            executor_report_finding(
+                code="invalid_followup_proposal_draft_candidate_source_request",
+                field="source_request_artifact",
+                message="Follow-up proposal draft candidate must reference the local request.",
+            )
+        )
+    if (
+        str(candidate.get("candidate_kind", "")).strip()
+        != str(contract.get("candidate_kind", "")).strip()
+    ):
+        findings.append(
+            executor_report_finding(
+                code="invalid_followup_proposal_draft_candidate_kind",
+                field="candidate_kind",
+                message="Follow-up proposal draft candidate kind is invalid.",
+            )
+        )
+    if (
+        str(candidate.get("draft_kind", "")).strip()
+        != str(contract.get("draft_kind", "proposal_draft_candidate")).strip()
+    ):
+        findings.append(
+            executor_report_finding(
+                code="invalid_followup_proposal_draft_candidate_draft_kind",
+                field="draft_kind",
+                message="Follow-up proposal draft candidate draft_kind is invalid.",
+            )
+        )
+    if (
+        str(candidate.get("proposal_status", "")).strip()
+        != str(contract.get("proposal_status", "draft_candidate")).strip()
+    ):
+        findings.append(
+            executor_report_finding(
+                code="invalid_followup_proposal_draft_candidate_status_value",
+                field="proposal_status",
+                message="Follow-up proposal draft candidate proposal_status is invalid.",
+            )
+        )
+    summary = candidate.get("summary", {})
+    summary = summary if isinstance(summary, dict) else {}
+    if not isinstance(candidate.get("summary"), dict):
+        findings.append(
+            executor_report_finding(
+                code="followup_proposal_draft_candidate_summary_not_object",
+                field="summary",
+                message="Follow-up proposal draft candidate summary must be an object.",
+            )
+        )
+    allowed_statuses = {
+        str(status).strip() for status in contract.get("status_values", []) if str(status).strip()
+    }
+    status = str(summary.get("status", "")).strip()
+    if status not in allowed_statuses:
+        findings.append(
+            executor_report_finding(
+                code="invalid_followup_proposal_draft_candidate_status",
+                field="summary.status",
+                message="Follow-up proposal draft candidate status is not allowed.",
+            )
+        )
+    allowed_source_statuses = {
+        str(value).strip()
+        for value in contract.get("allowed_source_request_status", [])
+        if str(value).strip()
+    }
+    allowed_source_states = {
+        str(value).strip()
+        for value in contract.get("allowed_source_request_states", [])
+        if str(value).strip()
+    }
+    if (
+        status == "ready_for_promotion_review"
+        and str(summary.get("source_request_status", "")).strip() not in allowed_source_statuses
+    ):
+        findings.append(
+            executor_report_finding(
+                code="followup_proposal_draft_candidate_ready_without_ready_request",
+                field="summary.source_request_status",
+                message="Ready follow-up candidates require a ready source request.",
+            )
+        )
+    if (
+        status == "ready_for_promotion_review"
+        and str(summary.get("source_request_state", "")).strip() not in allowed_source_states
+    ):
+        findings.append(
+            executor_report_finding(
+                code="followup_proposal_draft_candidate_ready_without_ready_request_state",
+                field="summary.source_request_state",
+                message="Ready follow-up candidates require a ready source request state.",
+            )
+        )
+    for field in [
+        "canonical_mutations_allowed",
+        "proposal_markdown_writes_allowed",
+        "executor_invocation_allowed",
+    ]:
+        if summary.get(field) is not False:
+            findings.append(
+                executor_report_finding(
+                    code="followup_proposal_draft_candidate_summary_authority_expansion",
+                    field=f"summary.{field}",
+                    message="Follow-up proposal draft candidate summary must not expand authority.",
+                )
+            )
+    authority_validation = validate_executor_followup_proposal_draft_candidate_authority_boundary(
+        candidate.get("authority_boundary")
+    )
+    findings.extend(copy.deepcopy(authority_validation.get("findings", [])))
+    privacy_boundary_validation = (
+        validate_executor_followup_proposal_draft_candidate_privacy_boundary(
+            candidate.get("privacy_boundary")
+        )
+    )
+    findings.extend(copy.deepcopy(privacy_boundary_validation.get("findings", [])))
+    proposal_draft = candidate.get("proposal_draft", {})
+    proposal_draft = proposal_draft if isinstance(proposal_draft, dict) else {}
+    if not isinstance(candidate.get("proposal_draft"), dict):
+        findings.append(
+            executor_report_finding(
+                code="followup_proposal_draft_candidate_payload_not_object",
+                field="proposal_draft",
+                message="Follow-up proposal draft candidate proposal_draft must be an object.",
+            )
+        )
+    for field in [
+        str(field).strip()
+        for field in contract.get("required_proposal_draft_fields", [])
+        if str(field).strip()
+    ]:
+        if field not in proposal_draft:
+            findings.append(
+                executor_report_finding(
+                    code="missing_followup_proposal_draft_candidate_payload_field",
+                    field=f"proposal_draft.{field}",
+                    message=f"Follow-up proposal draft candidate payload is missing {field}.",
+                )
+            )
+    for field in ["title", "motivating_concern", "bounded_scope"]:
+        if (
+            status == "ready_for_promotion_review"
+            and not str(proposal_draft.get(field, "")).strip()
+        ):
+            findings.append(
+                executor_report_finding(
+                    code=f"followup_proposal_draft_candidate_{field}_missing",
+                    field=f"proposal_draft.{field}",
+                    message=f"Ready follow-up proposal draft candidate must include {field}.",
+                )
+            )
+    if proposal_draft.get("source_request_artifact") != expected_source:
+        findings.append(
+            executor_report_finding(
+                code="invalid_followup_proposal_draft_candidate_payload_source_request",
+                field="proposal_draft.source_request_artifact",
+                message="Proposal draft payload must reference the source request artifact.",
+            )
+        )
+    requested_effects = proposal_draft.get("requested_effects", [])
+    allowed_effects = {
+        str(effect).strip()
+        for effect in contract.get("requested_effects", [])
+        if str(effect).strip()
+    }
+    forbidden_effects = {
+        str(effect).strip()
+        for effect in contract.get("forbidden_effects", [])
+        if str(effect).strip()
+    }
+    normalized_effects: list[str] = []
+    if not isinstance(requested_effects, list):
+        findings.append(
+            executor_report_finding(
+                code="followup_proposal_draft_candidate_effects_not_list",
+                field="proposal_draft.requested_effects",
+                message="Follow-up proposal draft candidate effects must be a list.",
+            )
+        )
+    else:
+        normalized_effects = [
+            str(effect).strip() for effect in requested_effects if str(effect).strip()
+        ]
+        for index, effect in enumerate(normalized_effects):
+            if effect in forbidden_effects:
+                findings.append(
+                    executor_report_finding(
+                        code="forbidden_followup_proposal_draft_candidate_effect",
+                        field=f"proposal_draft.requested_effects[{index}]",
+                        message=f"Follow-up proposal draft candidate must not request {effect}.",
+                    )
+                )
+            elif effect not in allowed_effects:
+                findings.append(
+                    executor_report_finding(
+                        code="unknown_followup_proposal_draft_candidate_effect",
+                        field=f"proposal_draft.requested_effects[{index}]",
+                        message=f"Unknown follow-up candidate effect: {effect}.",
+                    )
+                )
+        if status == "ready_for_promotion_review" and set(normalized_effects) != allowed_effects:
+            findings.append(
+                executor_report_finding(
+                    code="followup_proposal_draft_candidate_effects_mismatch",
+                    field="proposal_draft.requested_effects",
+                    message="Ready follow-up candidate effects must match the contract.",
+                )
+            )
+    promotion = candidate.get("promotion", {})
+    promotion = promotion if isinstance(promotion, dict) else {}
+    if not isinstance(candidate.get("promotion"), dict):
+        findings.append(
+            executor_report_finding(
+                code="followup_proposal_draft_candidate_promotion_not_object",
+                field="promotion",
+                message="Follow-up proposal draft candidate promotion must be an object.",
+            )
+        )
+    for field in [
+        str(field).strip()
+        for field in contract.get("required_promotion_fields", [])
+        if str(field).strip()
+    ]:
+        if field not in promotion:
+            findings.append(
+                executor_report_finding(
+                    code="missing_followup_proposal_draft_candidate_promotion_field",
+                    field=f"promotion.{field}",
+                    message=f"Follow-up candidate promotion is missing {field}.",
+                )
+            )
+    expected_promotion = {
+        "requires_human_promotion": True,
+        "target_lane": "proposal_lane",
+        "canonical_mutations_allowed": False,
+        "proposal_status_mutations_allowed": False,
+        "proposal_registry_mutations_allowed": False,
+        "proposal_markdown_writes_allowed": False,
+        "writes_proposal_markdown": False,
+        "writes_proposal_registry": False,
+    }
+    for field, expected_value in expected_promotion.items():
+        if promotion.get(field) != expected_value:
+            findings.append(
+                executor_report_finding(
+                    code="invalid_followup_proposal_draft_candidate_promotion_boundary",
+                    field=f"promotion.{field}",
+                    message="Follow-up candidate promotion must preserve the review boundary.",
+                )
+            )
+    source_request_validation = candidate.get("source_request_validation", {})
+    source_request_validation = (
+        source_request_validation if isinstance(source_request_validation, dict) else {}
+    )
+    if not isinstance(candidate.get("source_request_validation"), dict):
+        findings.append(
+            executor_report_finding(
+                code="followup_proposal_draft_candidate_source_validation_not_object",
+                field="source_request_validation",
+                message="Follow-up candidate source_request_validation must be an object.",
+            )
+        )
+    if (
+        status == "ready_for_promotion_review"
+        and source_request_validation.get("valid") is not True
+    ):
+        findings.append(
+            executor_report_finding(
+                code="followup_proposal_draft_candidate_ready_with_invalid_source_request",
+                field="source_request_validation.valid",
+                message="Ready follow-up candidates require a valid source request.",
+            )
+        )
+    checks = candidate.get("checks", [])
+    if not isinstance(checks, list):
+        findings.append(
+            executor_report_finding(
+                code="followup_proposal_draft_candidate_checks_not_list",
+                field="checks",
+                message="Follow-up proposal draft candidate checks must be a list.",
+            )
+        )
+        checks = []
+    check_status_by_id = {
+        str(check.get("check_id", "")).strip(): str(check.get("status", "")).strip()
+        for check in checks
+        if isinstance(check, dict)
+    }
+    for check_id in [
+        str(check_id).strip() for check_id in contract.get("check_ids", []) if str(check_id).strip()
+    ]:
+        check_status = check_status_by_id.get(check_id, "")
+        if not check_status:
+            findings.append(
+                executor_report_finding(
+                    code="missing_followup_proposal_draft_candidate_check",
+                    field=f"checks.{check_id}",
+                    message=f"Follow-up proposal draft candidate is missing check {check_id}.",
+                )
+            )
+        elif status == "ready_for_promotion_review" and check_status != "passed":
+            findings.append(
+                executor_report_finding(
+                    code="followup_proposal_draft_candidate_ready_check_not_passed",
+                    field=f"checks.{check_id}",
+                    message="Ready follow-up proposal draft candidates require passed checks.",
+                )
+            )
+    return {
+        "valid": not findings,
+        "findings": findings,
+        "normalized": {
+            "status": status,
+            "candidate_kind": str(candidate.get("candidate_kind", "")).strip(),
+            "draft_kind": str(candidate.get("draft_kind", "")).strip(),
+            "proposal_status": str(candidate.get("proposal_status", "")).strip(),
+            "requires_human_promotion": promotion.get("requires_human_promotion"),
+        },
+    }
+
+
+def build_local_operator_executor_followup_proposal_draft_candidate(
+    request_artifact: dict[str, Any] | None = None,
+) -> dict[str, Any]:
+    contract = executor_followup_proposal_draft_candidate_contract()
+    request_artifact = (
+        request_artifact
+        if isinstance(request_artifact, dict)
+        else load_local_operator_executor_proposal_draft_request_artifact()
+    )
+    source_present = isinstance(request_artifact, dict)
+    source_validation = validate_local_operator_executor_proposal_draft_request(request_artifact)
+    source_valid = bool(source_present and source_validation.get("valid") is True)
+    source_payload = request_artifact if source_present else {}
+    source_summary = source_payload.get("summary", {}) if isinstance(source_payload, dict) else {}
+    source_summary = source_summary if isinstance(source_summary, dict) else {}
+    source_request = (
+        source_payload.get("proposal_draft_request", {}) if isinstance(source_payload, dict) else {}
+    )
+    source_request = source_request if isinstance(source_request, dict) else {}
+    source_status = str(source_summary.get("status", "")).strip()
+    source_state = str(source_request.get("request_state", "")).strip()
+    source_effects = (
+        [str(effect).strip() for effect in source_request.get("requested_effects", [])]
+        if isinstance(source_request.get("requested_effects", []), list)
+        else []
+    )
+    allowed_statuses = {
+        str(value).strip()
+        for value in contract.get("allowed_source_request_status", [])
+        if str(value).strip()
+    }
+    allowed_states = {
+        str(value).strip()
+        for value in contract.get("allowed_source_request_states", [])
+        if str(value).strip()
+    }
+    allowed_source_effects = {
+        str(effect).strip()
+        for effect in contract.get("allowed_source_request_effects", [])
+        if str(effect).strip()
+    }
+    source_ready = (
+        source_valid
+        and source_status in allowed_statuses
+        and source_state in allowed_states
+        and set(effect for effect in source_effects if effect) == allowed_source_effects
+    )
+    authority_boundary = copy.deepcopy(contract.get("authority_boundary", {}))
+    authority_validation = validate_executor_followup_proposal_draft_candidate_authority_boundary(
+        authority_boundary
+    )
+    privacy_findings: list[dict[str, str]] = []
+    if source_present:
+        privacy_findings.extend(executor_report_forbidden_key_findings(request_artifact))
+        privacy_findings.extend(executor_report_machine_local_path_findings(request_artifact))
+        privacy_findings.extend(executor_report_secret_like_value_findings(request_artifact))
+    checks = [
+        local_operator_smoke_check(
+            check_id="source_request_present",
+            status="passed" if source_present else "missing",
+            message=(
+                "Local proposal draft request is present."
+                if source_present
+                else "Local proposal draft request is missing."
+            ),
+        ),
+        local_operator_smoke_check(
+            check_id="source_request_valid",
+            status="passed" if source_valid else "failed",
+            message=(
+                "Local proposal draft request is valid."
+                if source_valid
+                else "Local proposal draft request is invalid or unavailable."
+            ),
+        ),
+        local_operator_smoke_check(
+            check_id="source_request_ready",
+            status="passed" if source_ready else "failed",
+            message=(
+                "Local proposal draft request is ready for candidate building."
+                if source_ready
+                else "Local proposal draft request is not ready for candidate building."
+            ),
+        ),
+        local_operator_smoke_check(
+            check_id="candidate_authority_boundary_preserved",
+            status="passed" if authority_validation.get("valid") is True else "failed",
+            message=(
+                "Follow-up proposal draft candidate preserves authority boundary."
+                if authority_validation.get("valid") is True
+                else "Follow-up proposal draft candidate would expand authority."
+            ),
+        ),
+        local_operator_smoke_check(
+            check_id="privacy_boundary_preserved",
+            status="passed" if not privacy_findings else "failed",
+            message=(
+                "Follow-up proposal draft candidate preserves source request privacy."
+                if not privacy_findings
+                else "Follow-up proposal draft candidate would expose unsafe source request data."
+            ),
+        ),
+    ]
+    status_before_contract = executor_followup_proposal_draft_candidate_status(checks)
+    ready = status_before_contract == "ready_for_promotion_review"
+    expected_source = str(
+        contract.get(
+            "source_request_artifact",
+            LOCAL_OPERATOR_EXECUTOR_PROPOSAL_DRAFT_REQUEST_RELATIVE_PATH,
+        )
+    ).strip()
+    source_decision_artifact = safe_repo_relative_path_text(
+        source_payload.get(
+            "source_decision_artifact",
+            LOCAL_OPERATOR_EXECUTOR_ANALYSIS_REPORT_FOLLOWUP_DECISION_RELATIVE_PATH,
+        )
+        if isinstance(source_payload, dict)
+        else LOCAL_OPERATOR_EXECUTOR_ANALYSIS_REPORT_FOLLOWUP_DECISION_RELATIVE_PATH
+    )
+    source_decision_artifact = (
+        source_decision_artifact
+        or LOCAL_OPERATOR_EXECUTOR_ANALYSIS_REPORT_FOLLOWUP_DECISION_RELATIVE_PATH
+    )
+    requested_effects = [
+        str(effect).strip()
+        for effect in contract.get("requested_effects", [])
+        if str(effect).strip()
+    ]
+    title = "Executor Follow-up Proposal Draft Candidate"
+    motivating_concern = (
+        "An accepted executor follow-up decision requested a proposal-draft workflow, "
+        "but the request must remain a local-only candidate until explicit downstream "
+        "promotion policy and human review allow any proposal-lane materialization."
+    )
+    bounded_scope = (
+        "Represent the accepted follow-up proposal draft request as a local-only draft "
+        "candidate without writing proposal markdown, mutating proposal registries or "
+        "status, changing canonical specs, applying patches, closing gaps, invoking "
+        "executors, or publishing local-only candidate state."
+    )
+    candidate = {
+        "artifact_kind": LOCAL_OPERATOR_EXECUTOR_FOLLOWUP_PROPOSAL_DRAFT_CANDIDATE_ARTIFACT_KIND,
+        "schema_version": LOCAL_OPERATOR_EXECUTOR_FOLLOWUP_PROPOSAL_DRAFT_CANDIDATE_SCHEMA_VERSION,
+        "generated_at": utc_now_iso(),
+        "policy_reference": {
+            **supervisor_executor_adapter_policy_reference(),
+            "policy_section": "executor_followup_proposal_draft_candidate_contract",
+        },
+        "source_request_artifact": expected_source,
+        "local_only": bool(contract.get("local_only", True)),
+        "candidate_kind": str(
+            contract.get("candidate_kind", "accepted_followup_proposal_draft_candidate")
+        ).strip(),
+        "draft_kind": str(contract.get("draft_kind", "proposal_draft_candidate")).strip(),
+        "proposal_status": str(contract.get("proposal_status", "draft_candidate")).strip(),
+        "authority_boundary": authority_boundary,
+        "privacy_boundary": copy.deepcopy(contract.get("privacy_boundary", {})),
+        "proposal_draft": {
+            "title": title if ready else "",
+            "motivating_concern": motivating_concern if ready else "",
+            "bounded_scope": bounded_scope if ready else "",
+            "source_request_artifact": expected_source,
+            "source_decision_artifact": source_decision_artifact,
+            "source_request_kind": str(source_payload.get("request_kind", "")).strip()
+            if isinstance(source_payload, dict)
+            else "",
+            "source_request_status": source_status,
+            "source_decision": str(source_summary.get("source_decision", "")).strip(),
+            "requested_effects": requested_effects if ready else [],
+        },
+        "promotion": {
+            "requires_human_promotion": True,
+            "target_lane": "proposal_lane",
+            "canonical_mutations_allowed": False,
+            "proposal_status_mutations_allowed": False,
+            "proposal_registry_mutations_allowed": False,
+            "proposal_markdown_writes_allowed": False,
+            "writes_proposal_markdown": False,
+            "writes_proposal_registry": False,
+        },
+        "provenance": {
+            "source_request_artifact": expected_source,
+            "source_decision_artifact": source_decision_artifact,
+            "source_request_status": source_status,
+            "source_request_state": source_state,
+            "source_decision": str(source_summary.get("source_decision", "")).strip(),
+            "requested_effects": source_effects,
+        },
+        "source_request_validation": {
+            "valid": source_valid,
+            "finding_count": len(source_validation.get("findings", [])),
+            "findings": copy.deepcopy(source_validation.get("findings", [])),
+            "normalized": copy.deepcopy(source_validation.get("normalized", {})),
+        },
+        "checks": checks,
+        "summary": {
+            "status": status_before_contract,
+            "source_request_status": source_status,
+            "source_request_state": source_state,
+            "draft_kind": str(contract.get("draft_kind", "proposal_draft_candidate")).strip(),
+            "proposal_status": str(contract.get("proposal_status", "draft_candidate")).strip(),
+            "requires_human_promotion": True,
+            "canonical_mutations_allowed": False,
+            "proposal_markdown_writes_allowed": False,
+            "executor_invocation_allowed": False,
+            "next_gap": executor_followup_proposal_draft_candidate_next_gap(status_before_contract),
+        },
+        "viewer_projection": {
+            "named_filters": {
+                str(name).strip(): []
+                for name in contract.get("named_filters", [])
+                if str(name).strip()
+            }
+        },
+    }
+    checks.append(
+        local_operator_smoke_check(
+            check_id="candidate_contract_valid",
+            status="passed",
+            message="Follow-up proposal draft candidate matches the candidate contract.",
+        )
+    )
+    candidate_validation = validate_executor_followup_proposal_draft_candidate(candidate)
+    candidate["candidate_validation"] = {
+        "valid": bool(candidate_validation.get("valid", False)),
+        "finding_count": len(candidate_validation.get("findings", [])),
+        "findings": copy.deepcopy(candidate_validation.get("findings", [])),
+        "normalized": copy.deepcopy(candidate_validation.get("normalized", {})),
+    }
+    for check in checks:
+        if (
+            isinstance(check, dict)
+            and str(check.get("check_id", "")).strip() == "candidate_contract_valid"
+        ):
+            check["status"] = "passed" if candidate_validation.get("valid") is True else "failed"
+            check["message"] = (
+                "Follow-up proposal draft candidate matches the candidate contract."
+                if candidate_validation.get("valid") is True
+                else "Follow-up proposal draft candidate does not match the candidate contract."
+            )
+            break
+    final_status = executor_followup_proposal_draft_candidate_status(checks)
+    candidate["summary"]["status"] = final_status
+    candidate["summary"]["next_gap"] = executor_followup_proposal_draft_candidate_next_gap(
+        final_status
+    )
+    if final_status != "ready_for_promotion_review":
+        candidate["proposal_draft"]["title"] = ""
+        candidate["proposal_draft"]["motivating_concern"] = ""
+        candidate["proposal_draft"]["bounded_scope"] = ""
+        candidate["proposal_draft"]["requested_effects"] = []
+    named_filters = {
+        str(name).strip(): [] for name in contract.get("named_filters", []) if str(name).strip()
+    }
+    named_filters.setdefault(final_status, []).append(
+        str(source_summary.get("source_decision", "")).strip() or "missing_request"
+    )
+    for key in list(named_filters):
+        named_filters[key] = sorted(set(named_filters[key]))
+    candidate["viewer_projection"] = {"named_filters": named_filters}
+    return candidate
+
+
+def write_local_operator_executor_followup_proposal_draft_candidate(
+    index: dict[str, Any],
+) -> Path:
+    path = local_operator_executor_followup_proposal_draft_candidate_path()
     with artifact_lock(path):
         atomic_write_json(path, index)
     return path
@@ -53939,6 +54772,7 @@ def main(
     executor_followup_reviewer: str = "local_operator",
     executor_followup_rationale: str = "",
     build_local_operator_executor_proposal_draft_request_mode: bool = False,
+    build_local_operator_executor_followup_proposal_draft_candidate_mode: bool = False,
     build_local_operator_executor_proposal_draft_candidate_mode: bool = False,
     build_local_operator_executor_proposal_promotion_packet_mode: bool = False,
     build_local_operator_executor_proposal_source_materialization_mode: bool = False,
@@ -54042,6 +54876,9 @@ def main(
         ),
         "--build-local-operator-executor-proposal-draft-request": (
             build_local_operator_executor_proposal_draft_request_mode
+        ),
+        "--build-local-operator-executor-followup-proposal-draft-candidate": (
+            build_local_operator_executor_followup_proposal_draft_candidate_mode
         ),
         "--build-local-operator-executor-proposal-draft-candidate": (
             build_local_operator_executor_proposal_draft_candidate_mode
@@ -55409,6 +56246,42 @@ def main(
         return (
             0 if index.get("summary", {}).get("status") == "ready_for_proposal_draft_request" else 1
         )
+
+    if build_local_operator_executor_followup_proposal_draft_candidate_mode:
+        if any(
+            (
+                dry_run,
+                auto_approve,
+                loop,
+                resolve_gate,
+                decision,
+                note,
+                target_spec,
+                split_proposal,
+                apply_split_proposal,
+                operator_note,
+                mutation_budget,
+                run_authority,
+                execution_profile,
+                child_model,
+                child_timeout_seconds,
+                verbose,
+                list_stale_runtime,
+                clean_stale_runtime,
+                observe_graph_health_mode,
+                operator_request_packet_path,
+            )
+        ):
+            print(
+                "--build-local-operator-executor-followup-proposal-draft-candidate must be used "
+                "as a standalone command",
+                file=sys.stderr,
+            )
+            return 1
+        index = build_local_operator_executor_followup_proposal_draft_candidate()
+        write_local_operator_executor_followup_proposal_draft_candidate(index)
+        emit_supervisor_json(index, output_mode=normalized_output_mode)
+        return 0 if index.get("summary", {}).get("status") == "ready_for_promotion_review" else 1
 
     if build_local_operator_executor_proposal_draft_candidate_mode:
         if any(
@@ -59024,6 +59897,14 @@ if __name__ == "__main__":
         ),
     )
     parser.add_argument(
+        "--build-local-operator-executor-followup-proposal-draft-candidate",
+        action="store_true",
+        help=(
+            "Build a local-only follow-up proposal draft candidate from a ready proposal "
+            "draft request, without writing proposal docs or mutating canonical specs"
+        ),
+    )
+    parser.add_argument(
         "--build-local-operator-executor-proposal-draft-candidate",
         action="store_true",
         help=(
@@ -59428,6 +60309,9 @@ if __name__ == "__main__":
             executor_followup_rationale=args.executor_followup_rationale,
             build_local_operator_executor_proposal_draft_request_mode=(
                 args.build_local_operator_executor_proposal_draft_request
+            ),
+            build_local_operator_executor_followup_proposal_draft_candidate_mode=(
+                args.build_local_operator_executor_followup_proposal_draft_candidate
             ),
             build_local_operator_executor_proposal_draft_candidate_mode=(
                 args.build_local_operator_executor_proposal_draft_candidate

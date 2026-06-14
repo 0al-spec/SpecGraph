@@ -230,6 +230,13 @@ Supervisor modes:
   proposal-draft workflow. The request does not create draft candidates, write
   proposal markdown, invoke executors, mutate registries/status, mutate
   canonical specs, apply patches, close gaps, or publish local artifacts.
+- `--build-local-operator-executor-followup-proposal-draft-candidate`: build
+  local-only
+  `runs/local_operator_executor_followup_proposal_draft_candidate.json` by
+  consuming a ready proposal draft request and producing a draft candidate that
+  still requires explicit downstream promotion policy and human review. It does
+  not write proposal markdown, invoke executors, mutate registries/status,
+  mutate canonical specs, apply patches, close gaps, or publish local artifacts.
 - `--build-local-operator-executor-proposal-draft-candidate`: build local-only
   `runs/local_operator_executor_proposal_draft_candidate.json` by consuming a
   valid `proposal_draft` review packet and the
@@ -663,6 +670,12 @@ Key derived artifacts:
   proposal markdown writes, proposal registry mutation, proposal status
   mutation, canonical mutation, patch application, gap closure, and public
   static publication
+- `runs/local_operator_executor_followup_proposal_draft_candidate.json`:
+  local-only proposal draft candidate built from a ready accepted follow-up
+  proposal draft request, requiring explicit downstream promotion policy and
+  human review while forbidding proposal markdown writes, proposal registry
+  mutation, proposal status mutation, canonical mutation, patch application,
+  gap closure, executor invocation, and public static publication
 - `runs/local_operator_executor_proposal_promotion_packet.json`: local-only
   promotion packet built from a valid proposal draft candidate and explicit
   promotion authorization, recording safe target provenance while forbidding

@@ -27478,6 +27478,32 @@ def test_supervisor_executor_adapter_policy_declares_request_report_contract() -
     assert draft_request["authority_boundary"]["executor_invocation_allowed"] is False
     assert draft_request["privacy_boundary"]["public_static_publish"] is False
     assert draft_request["next_gap"] == "build_executor_followup_proposal_draft_candidate"
+    followup_candidate = policy["executor_followup_proposal_draft_candidate_contract"]
+    assert followup_candidate["artifact_kind"] == "executor_followup_proposal_draft_candidate"
+    assert followup_candidate["artifact"] == (
+        "runs/local_operator_executor_followup_proposal_draft_candidate.json"
+    )
+    assert followup_candidate["source_request_artifact"] == (
+        "runs/local_operator_executor_proposal_draft_request.json"
+    )
+    assert followup_candidate["local_only"] is True
+    assert followup_candidate["candidate_kind"] == ("accepted_followup_proposal_draft_candidate")
+    assert followup_candidate["allowed_source_request_status"] == [
+        "ready_for_proposal_draft_request"
+    ]
+    assert followup_candidate["requested_effects"] == ["proposal_draft_candidate"]
+    assert "proposal_markdown_write" in followup_candidate["forbidden_effects"]
+    assert "executor_invocation" in followup_candidate["forbidden_effects"]
+    assert "ready_for_promotion_review" in followup_candidate["status_values"]
+    assert followup_candidate["authority_boundary"]["source_request_is_authority"] is False
+    assert followup_candidate["authority_boundary"]["candidate_is_authority"] is False
+    assert followup_candidate["authority_boundary"]["human_promotion_required"] is True
+    assert followup_candidate["authority_boundary"]["canonical_mutations_allowed"] is False
+    assert followup_candidate["authority_boundary"]["proposal_markdown_writes_allowed"] is False
+    assert followup_candidate["privacy_boundary"]["public_static_publish"] is False
+    assert followup_candidate["next_gap"] == (
+        "define_followup_proposal_draft_candidate_promotion_policy"
+    )
     promotion_policy = policy["proposal_draft_candidate_promotion_policy"]
     assert promotion_policy["artifact_kind"] == "proposal_draft_candidate_promotion_policy"
     assert promotion_policy["source_candidate_artifact"] == (
@@ -31338,6 +31364,232 @@ def test_main_builds_local_operator_executor_proposal_draft_request(
     assert path.is_file()
     written = json.loads(path.read_text(encoding="utf-8"))
     assert written["summary"]["status"] == "ready_for_proposal_draft_request"
+
+
+def ready_followup_proposal_draft_request(supervisor_module: object) -> dict[str, object]:
+    return supervisor_module.build_local_operator_executor_proposal_draft_request(
+        accepted_executor_followup_decision(supervisor_module)
+    )
+
+
+def test_build_local_operator_executor_followup_proposal_draft_candidate_from_ready_request(
+    supervisor_module: object,
+) -> None:
+    request = ready_followup_proposal_draft_request(supervisor_module)
+
+    candidate = supervisor_module.build_local_operator_executor_followup_proposal_draft_candidate(
+        request
+    )
+
+    assert candidate["artifact_kind"] == (
+        supervisor_module.LOCAL_OPERATOR_EXECUTOR_FOLLOWUP_PROPOSAL_DRAFT_CANDIDATE_ARTIFACT_KIND
+    )
+    assert candidate["local_only"] is True
+    assert candidate["source_request_artifact"] == (
+        "runs/local_operator_executor_proposal_draft_request.json"
+    )
+    assert candidate["candidate_kind"] == "accepted_followup_proposal_draft_candidate"
+    assert candidate["draft_kind"] == "proposal_draft_candidate"
+    assert candidate["proposal_status"] == "draft_candidate"
+    assert candidate["proposal_draft"]["title"] == "Executor Follow-up Proposal Draft Candidate"
+    assert candidate["proposal_draft"]["motivating_concern"]
+    assert candidate["proposal_draft"]["bounded_scope"]
+    assert candidate["proposal_draft"]["source_decision_artifact"] == (
+        "runs/local_operator_executor_analysis_report_followup_decision.json"
+    )
+    assert candidate["proposal_draft"]["requested_effects"] == ["proposal_draft_candidate"]
+    assert candidate["promotion"]["requires_human_promotion"] is True
+    assert candidate["promotion"]["target_lane"] == "proposal_lane"
+    assert candidate["promotion"]["canonical_mutations_allowed"] is False
+    assert candidate["promotion"]["proposal_status_mutations_allowed"] is False
+    assert candidate["promotion"]["proposal_registry_mutations_allowed"] is False
+    assert candidate["promotion"]["proposal_markdown_writes_allowed"] is False
+    assert candidate["source_request_validation"]["valid"] is True
+    assert candidate["summary"]["status"] == "ready_for_promotion_review"
+    assert candidate["summary"]["next_gap"] == (
+        "define_followup_proposal_draft_candidate_promotion_policy"
+    )
+    assert candidate["candidate_validation"]["valid"] is True
+    assert {check["check_id"]: check["status"] for check in candidate["checks"]} == {
+        "source_request_present": "passed",
+        "source_request_valid": "passed",
+        "source_request_ready": "passed",
+        "candidate_authority_boundary_preserved": "passed",
+        "privacy_boundary_preserved": "passed",
+        "candidate_contract_valid": "passed",
+    }
+    validation = supervisor_module.validate_executor_followup_proposal_draft_candidate(candidate)
+    assert validation["valid"] is True
+    dumped = json.dumps(candidate, sort_keys=True)
+    assert "/Users/" not in dumped
+    assert "raw_stdout" not in dumped
+    assert "raw_stderr" not in dumped
+
+
+def test_build_local_operator_executor_followup_proposal_draft_candidate_blocks_missing_request(
+    supervisor_module: object,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setattr(
+        supervisor_module,
+        "load_local_operator_executor_proposal_draft_request_artifact",
+        lambda: None,
+    )
+
+    candidate = supervisor_module.build_local_operator_executor_followup_proposal_draft_candidate()
+
+    assert candidate["summary"]["status"] == "blocked_missing_request"
+    assert candidate["summary"]["next_gap"] == "run_executor_proposal_draft_request_until_ready"
+    checks = {check["check_id"]: check["status"] for check in candidate["checks"]}
+    assert checks["source_request_present"] == "missing"
+
+
+def test_build_local_operator_executor_followup_proposal_draft_candidate_blocks_not_ready_request(
+    supervisor_module: object,
+) -> None:
+    followup_packet = ready_analysis_report_followup_packet(supervisor_module)
+    decision = supervisor_module.build_local_operator_executor_analysis_report_followup_decision(
+        followup_packet,
+        decision="needs_more_evidence",
+    )
+    request = supervisor_module.build_local_operator_executor_proposal_draft_request(decision)
+
+    candidate = supervisor_module.build_local_operator_executor_followup_proposal_draft_candidate(
+        request
+    )
+
+    assert candidate["summary"]["status"] == "blocked_request_not_ready"
+    assert candidate["source_request_validation"]["valid"] is True
+    checks = {check["check_id"]: check["status"] for check in candidate["checks"]}
+    assert checks["source_request_ready"] == "failed"
+
+
+def test_validate_executor_followup_proposal_draft_candidate_rejects_authority(
+    supervisor_module: object,
+) -> None:
+    candidate = supervisor_module.build_local_operator_executor_followup_proposal_draft_candidate(
+        ready_followup_proposal_draft_request(supervisor_module)
+    )
+    candidate["summary"]["canonical_mutations_allowed"] = True
+    candidate["authority_boundary"]["candidate_is_authority"] = True
+    candidate["promotion"]["proposal_markdown_writes_allowed"] = True
+
+    validation = supervisor_module.validate_executor_followup_proposal_draft_candidate(candidate)
+
+    assert validation["valid"] is False
+    finding_codes = {finding["code"] for finding in validation["findings"]}
+    assert "followup_proposal_draft_candidate_summary_authority_expansion" in finding_codes
+    assert "invalid_followup_proposal_draft_candidate_authority_boundary" in finding_codes
+    assert "invalid_followup_proposal_draft_candidate_promotion_boundary" in finding_codes
+
+
+def test_validate_executor_followup_proposal_draft_candidate_rejects_privacy_boundary(
+    supervisor_module: object,
+) -> None:
+    candidate = supervisor_module.build_local_operator_executor_followup_proposal_draft_candidate(
+        ready_followup_proposal_draft_request(supervisor_module)
+    )
+    candidate["privacy_boundary"]["public_static_publish"] = True
+    candidate["privacy_boundary"]["canonical_mutations_allowed"] = True
+
+    validation = supervisor_module.validate_executor_followup_proposal_draft_candidate(candidate)
+
+    assert validation["valid"] is False
+    findings_by_field = {finding["field"]: finding["code"] for finding in validation["findings"]}
+    assert (
+        findings_by_field["privacy_boundary.public_static_publish"]
+        == "invalid_followup_proposal_draft_candidate_privacy_boundary"
+    )
+    assert (
+        findings_by_field["privacy_boundary.canonical_mutations_allowed"]
+        == "invalid_followup_proposal_draft_candidate_privacy_boundary"
+    )
+
+
+def test_validate_executor_followup_proposal_draft_candidate_rejects_blocked_request_state(
+    supervisor_module: object,
+) -> None:
+    candidate = supervisor_module.build_local_operator_executor_followup_proposal_draft_candidate(
+        ready_followup_proposal_draft_request(supervisor_module)
+    )
+    candidate["summary"]["source_request_state"] = "blocked"
+
+    validation = supervisor_module.validate_executor_followup_proposal_draft_candidate(candidate)
+
+    assert validation["valid"] is False
+    assert any(
+        finding["code"] == "followup_proposal_draft_candidate_ready_without_ready_request_state"
+        and finding["field"] == "summary.source_request_state"
+        for finding in validation["findings"]
+    )
+
+
+def test_validate_executor_followup_proposal_draft_candidate_rejects_promotion_write_flags(
+    supervisor_module: object,
+) -> None:
+    candidate = supervisor_module.build_local_operator_executor_followup_proposal_draft_candidate(
+        ready_followup_proposal_draft_request(supervisor_module)
+    )
+    candidate["promotion"]["writes_proposal_markdown"] = True
+    candidate["promotion"]["writes_proposal_registry"] = True
+
+    validation = supervisor_module.validate_executor_followup_proposal_draft_candidate(candidate)
+
+    assert validation["valid"] is False
+    findings_by_field = {finding["field"]: finding["code"] for finding in validation["findings"]}
+    assert (
+        findings_by_field["promotion.writes_proposal_markdown"]
+        == "invalid_followup_proposal_draft_candidate_promotion_boundary"
+    )
+    assert (
+        findings_by_field["promotion.writes_proposal_registry"]
+        == "invalid_followup_proposal_draft_candidate_promotion_boundary"
+    )
+
+
+def test_validate_executor_followup_proposal_draft_candidate_rejects_local_paths(
+    supervisor_module: object,
+) -> None:
+    candidate = supervisor_module.build_local_operator_executor_followup_proposal_draft_candidate(
+        ready_followup_proposal_draft_request(supervisor_module)
+    )
+    candidate["proposal_draft"]["title"] = "/Users/egor/unsafe draft"
+
+    validation = supervisor_module.validate_executor_followup_proposal_draft_candidate(candidate)
+
+    assert validation["valid"] is False
+    assert any(
+        finding["code"] == "machine_local_path_persisted" for finding in validation["findings"]
+    )
+
+
+def test_main_builds_local_operator_executor_followup_proposal_draft_candidate(
+    supervisor_module: object,
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    request = ready_followup_proposal_draft_request(supervisor_module)
+    monkeypatch.setattr(supervisor_module, "RUNS_DIR", tmp_path)
+    monkeypatch.setattr(
+        supervisor_module,
+        "load_local_operator_executor_proposal_draft_request_artifact",
+        lambda: request,
+    )
+
+    exit_code = supervisor_module.main(
+        build_local_operator_executor_followup_proposal_draft_candidate_mode=True
+    )
+
+    assert exit_code == 0
+    output = json.loads(capsys.readouterr().out)
+    assert output["artifact_kind"] == (
+        supervisor_module.LOCAL_OPERATOR_EXECUTOR_FOLLOWUP_PROPOSAL_DRAFT_CANDIDATE_ARTIFACT_KIND
+    )
+    path = tmp_path / "local_operator_executor_followup_proposal_draft_candidate.json"
+    assert path.is_file()
+    written = json.loads(path.read_text(encoding="utf-8"))
+    assert written["summary"]["status"] == "ready_for_promotion_review"
 
 
 def test_validate_executor_report_to_proposal_draft_request_rejects_missing_packet(
