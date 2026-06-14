@@ -265,6 +265,15 @@ Supervisor modes:
   the proposal-draft path and rejects proposal draft candidate production,
   authority expansion, canonical mutation, patch application, gap closure,
   proposal status mutation, and public static publication.
+- `executor_analysis_report_followup_policy` in
+  `tools/supervisor_executor_adapter_policy.json`: defines the policy-only
+  boundary for consuming a valid local analysis report review outcome before a
+  future follow-up packet exists. It accepts only `ready_for_operator_review`
+  `analysis_report_review_outcome` input and allows only a future
+  `analysis_report_followup_packet` effect while rejecting executor invocation,
+  proposal draft production, proposal writes, registry/status mutation,
+  canonical mutation, patch application, gap closure, authority expansion, and
+  public static publication of local outcome state.
 - `proposal_draft_candidate_promotion_policy` in
   `tools/supervisor_executor_adapter_policy.json`: defines the policy-only
   boundary for turning a valid local-only proposal draft candidate into a future

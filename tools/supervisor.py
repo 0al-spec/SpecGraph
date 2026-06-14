@@ -23275,6 +23275,393 @@ def write_local_operator_executor_analysis_report_review_outcome(index: dict[str
     return path
 
 
+def load_local_operator_executor_analysis_report_review_outcome_artifact() -> dict[str, Any] | None:
+    path = local_operator_executor_analysis_report_review_outcome_path()
+    try:
+        payload = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError):
+        return None
+    return payload if isinstance(payload, dict) else None
+
+
+def executor_analysis_report_followup_policy() -> dict[str, Any]:
+    policy = supervisor_executor_adapter_policy_lookup("executor_analysis_report_followup_policy")
+    return policy if isinstance(policy, dict) else {}
+
+
+def executor_analysis_report_followup_values(key: str) -> set[str]:
+    policy = executor_analysis_report_followup_policy()
+    values = policy.get(key, [])
+    if not isinstance(values, list):
+        return set()
+    return {str(value).strip() for value in values if str(value).strip()}
+
+
+def default_executor_analysis_report_followup_request(
+    *,
+    consumer: str = "analysis_report_followup_planner",
+    transformation: str = "analysis_review_outcome_to_followup_packet",
+    requested_effects: list[str] | None = None,
+) -> dict[str, Any]:
+    policy = executor_analysis_report_followup_policy()
+    authority_boundary = policy.get("authority_boundary", {})
+    authority_boundary = authority_boundary if isinstance(authority_boundary, dict) else {}
+    return {
+        "source_outcome_artifact": (
+            LOCAL_OPERATOR_EXECUTOR_ANALYSIS_REPORT_REVIEW_OUTCOME_RELATIVE_PATH
+        ),
+        "consumer": consumer,
+        "transformation": transformation,
+        "requested_effects": (
+            requested_effects
+            if requested_effects is not None
+            else ["analysis_report_followup_packet"]
+        ),
+        "authority_boundary": {
+            "executor_report_is_authority": False,
+            "review_packet_is_authority": False,
+            "review_outcome_is_authority": False,
+            "followup_policy_is_authority": False,
+            "human_or_supervisor_review_required": bool(
+                authority_boundary.get("human_or_supervisor_review_required", True)
+            ),
+            "canonical_mutations_allowed": False,
+            "proposal_draft_candidate_allowed": False,
+            "proposal_status_mutations_allowed": False,
+            "proposal_registry_mutations_allowed": False,
+            "proposal_markdown_writes_allowed": False,
+            "gap_closure_allowed": False,
+            "patch_application_allowed": False,
+            "executor_invocation_allowed": False,
+            "static_publish_of_local_outcome_allowed": False,
+        },
+    }
+
+
+def validate_executor_analysis_report_followup_effects(
+    effects: object,
+) -> dict[str, Any]:
+    allowed = executor_analysis_report_followup_values("requested_effects")
+    forbidden = executor_analysis_report_followup_values("forbidden_effects")
+    findings: list[dict[str, str]] = []
+    if not isinstance(effects, list):
+        return {
+            "valid": False,
+            "effects": [],
+            "findings": [
+                executor_report_finding(
+                    code="analysis_report_followup_effects_not_list",
+                    field="requested_effects",
+                    message="Analysis report follow-up requested_effects must be a list.",
+                )
+            ],
+        }
+    normalized_effects: list[str] = []
+    if not effects:
+        findings.append(
+            executor_report_finding(
+                code="analysis_report_followup_effects_empty",
+                field="requested_effects",
+                message="Analysis report follow-up must request at least one effect.",
+            )
+        )
+    for index, raw_effect in enumerate(effects):
+        effect = str(raw_effect or "").strip()
+        if not effect:
+            findings.append(
+                executor_report_finding(
+                    code="analysis_report_followup_effect_empty",
+                    field=f"requested_effects[{index}]",
+                    message="Analysis report follow-up effects must be non-empty.",
+                )
+            )
+            continue
+        normalized_effects.append(effect)
+        if effect in forbidden:
+            findings.append(
+                executor_report_finding(
+                    code="forbidden_analysis_report_followup_effect",
+                    field=f"requested_effects[{index}]",
+                    message=f"Analysis report follow-up effect is forbidden: {effect}.",
+                )
+            )
+        elif effect not in allowed:
+            findings.append(
+                executor_report_finding(
+                    code="unknown_analysis_report_followup_effect",
+                    field=f"requested_effects[{index}]",
+                    message=f"Analysis report follow-up effect is not allowed: {effect}.",
+                )
+            )
+    return {
+        "valid": not findings,
+        "effects": normalized_effects,
+        "findings": findings,
+    }
+
+
+def validate_executor_analysis_report_followup_authority_boundary(
+    boundary: object,
+) -> dict[str, Any]:
+    policy = executor_analysis_report_followup_policy()
+    expected = policy.get("authority_boundary", {})
+    expected = expected if isinstance(expected, dict) else {}
+    boundary_payload = boundary if isinstance(boundary, dict) else {}
+    findings: list[dict[str, str]] = []
+    if not isinstance(boundary, dict):
+        findings.append(
+            executor_report_finding(
+                code="analysis_report_followup_authority_boundary_not_object",
+                field="authority_boundary",
+                message="Analysis report follow-up authority_boundary must be an object.",
+            )
+        )
+    for key in sorted(boundary_payload):
+        if key not in expected:
+            findings.append(
+                executor_report_finding(
+                    code="unexpected_analysis_report_followup_authority_boundary_field",
+                    field=f"authority_boundary.{key}",
+                    message="Analysis report follow-up authority boundary has an extra field.",
+                )
+            )
+    for key, expected_value in expected.items():
+        if boundary_payload.get(key) is not expected_value:
+            findings.append(
+                executor_report_finding(
+                    code="invalid_analysis_report_followup_authority_boundary",
+                    field=f"authority_boundary.{key}",
+                    message=(
+                        "Analysis report follow-up must preserve the review-only authority "
+                        "boundary."
+                    ),
+                )
+            )
+    return {
+        "valid": not findings,
+        "findings": findings,
+        "normalized": {key: boundary_payload.get(key) for key in sorted(expected)},
+    }
+
+
+def validate_executor_analysis_report_followup_source_outcome(
+    outcome: object,
+) -> dict[str, Any]:
+    if outcome is None:
+        return {
+            "valid": False,
+            "findings": [
+                executor_report_finding(
+                    code="analysis_report_followup_source_outcome_not_provided",
+                    field="source_outcome",
+                    message="Analysis report follow-up requires a review outcome source.",
+                )
+            ],
+            "normalized": {
+                "source_outcome_valid": None,
+                "source_outcome_status": "",
+                "source_report_kind": "",
+                "source_outcome_kind": "",
+            },
+        }
+    outcome_validation = validate_local_operator_executor_analysis_report_review_outcome(outcome)
+    outcome_findings = outcome_validation.get("findings", [])
+    outcome_findings = outcome_findings if isinstance(outcome_findings, list) else []
+    findings: list[dict[str, str]] = copy.deepcopy(outcome_findings)
+    outcome_payload = outcome if isinstance(outcome, dict) else {}
+    summary = outcome_payload.get("summary", {}) if isinstance(outcome_payload, dict) else {}
+    summary = summary if isinstance(summary, dict) else {}
+    review_outcome = (
+        outcome_payload.get("analysis_review_outcome", {})
+        if isinstance(outcome_payload, dict)
+        else {}
+    )
+    review_outcome = review_outcome if isinstance(review_outcome, dict) else {}
+    outcome_status = str(summary.get("status", "")).strip()
+    report_kind = str(summary.get("report_kind", "")).strip()
+    source_report_kind = str(review_outcome.get("source_report_kind", "")).strip()
+    outcome_kind = str(outcome_payload.get("outcome_kind", "")).strip()
+    allowed_status = executor_analysis_report_followup_values("allowed_source_outcome_status")
+    allowed_outcome_kinds = executor_analysis_report_followup_values("allowed_source_outcome_kinds")
+    allowed_report_kinds = executor_analysis_report_followup_values("allowed_source_report_kinds")
+    if outcome_status not in allowed_status:
+        findings.append(
+            executor_report_finding(
+                code="analysis_report_followup_source_outcome_status_not_allowed",
+                field="source_outcome.summary.status",
+                message="Analysis report follow-up requires a ready source outcome.",
+            )
+        )
+    if outcome_kind not in allowed_outcome_kinds:
+        findings.append(
+            executor_report_finding(
+                code="analysis_report_followup_source_outcome_kind_not_allowed",
+                field="source_outcome.outcome_kind",
+                message="Analysis report follow-up source outcome kind is not allowed.",
+            )
+        )
+    if report_kind not in allowed_report_kinds:
+        findings.append(
+            executor_report_finding(
+                code="analysis_report_followup_source_report_kind_not_allowed",
+                field="source_outcome.summary.report_kind",
+                message="Analysis report follow-up requires an analysis_report source.",
+            )
+        )
+    if source_report_kind and source_report_kind not in allowed_report_kinds:
+        findings.append(
+            executor_report_finding(
+                code="analysis_report_followup_source_payload_kind_not_allowed",
+                field="source_outcome.analysis_review_outcome.source_report_kind",
+                message="Analysis report follow-up payload source kind is not allowed.",
+            )
+        )
+    if summary.get("human_review_required") is not True:
+        findings.append(
+            executor_report_finding(
+                code="analysis_report_followup_source_human_review_not_required",
+                field="source_outcome.summary.human_review_required",
+                message="Analysis report follow-up source must require human review.",
+            )
+        )
+    if summary.get("canonical_mutations_allowed") is not False:
+        findings.append(
+            executor_report_finding(
+                code="analysis_report_followup_source_allows_canonical_mutation",
+                field="source_outcome.summary.canonical_mutations_allowed",
+                message="Analysis report follow-up source must not allow canonical mutation.",
+            )
+        )
+    if summary.get("proposal_draft_candidate_allowed") is not False:
+        findings.append(
+            executor_report_finding(
+                code="analysis_report_followup_source_allows_proposal_draft_candidate",
+                field="source_outcome.summary.proposal_draft_candidate_allowed",
+                message="Analysis report follow-up source must not allow proposal draft output.",
+            )
+        )
+    return {
+        "valid": not findings,
+        "findings": findings,
+        "outcome_validation": outcome_validation,
+        "normalized": {
+            "source_outcome_valid": outcome_validation.get("valid") is True,
+            "source_outcome_status": outcome_status,
+            "source_report_kind": report_kind,
+            "source_payload_report_kind": source_report_kind,
+            "source_outcome_kind": outcome_kind,
+            "next_gap": str(summary.get("next_gap", "")).strip(),
+        },
+    }
+
+
+def validate_executor_analysis_report_followup_request(
+    request: object,
+    *,
+    outcome: object | None = None,
+) -> dict[str, Any]:
+    policy = executor_analysis_report_followup_policy()
+    findings: list[dict[str, str]] = []
+    if not isinstance(request, dict):
+        return {
+            "valid": False,
+            "findings": [
+                executor_report_finding(
+                    code="analysis_report_followup_request_not_object",
+                    field="request",
+                    message="Analysis report follow-up request must be a JSON object.",
+                )
+            ],
+            "normalized": {},
+        }
+    for field in [
+        str(field).strip()
+        for field in policy.get("required_request_fields", [])
+        if str(field).strip()
+    ]:
+        if field not in request:
+            findings.append(
+                executor_report_finding(
+                    code="missing_analysis_report_followup_request_field",
+                    field=field,
+                    message=f"Analysis report follow-up request is missing field {field}.",
+                )
+            )
+    source_outcome_artifact = str(request.get("source_outcome_artifact", "")).strip()
+    expected_source_outcome = str(
+        policy.get(
+            "source_outcome_artifact",
+            LOCAL_OPERATOR_EXECUTOR_ANALYSIS_REPORT_REVIEW_OUTCOME_RELATIVE_PATH,
+        )
+    ).strip()
+    if source_outcome_artifact != expected_source_outcome:
+        findings.append(
+            executor_report_finding(
+                code="invalid_analysis_report_followup_source_outcome_artifact",
+                field="source_outcome_artifact",
+                message="Analysis report follow-up must reference the local review outcome.",
+            )
+        )
+    consumer = str(request.get("consumer", "")).strip()
+    expected_consumer = str(policy.get("consumer", "analysis_report_followup_planner")).strip()
+    if consumer != expected_consumer:
+        findings.append(
+            executor_report_finding(
+                code="invalid_analysis_report_followup_consumer",
+                field="consumer",
+                message="Analysis report follow-up requires the follow-up planner consumer.",
+            )
+        )
+    transformation = str(request.get("transformation", "")).strip()
+    expected_transformation = str(
+        policy.get(
+            "transformation",
+            "analysis_review_outcome_to_followup_packet",
+        )
+    ).strip()
+    if transformation != expected_transformation:
+        findings.append(
+            executor_report_finding(
+                code="invalid_analysis_report_followup_transformation",
+                field="transformation",
+                message="Analysis report follow-up transformation is not allowed.",
+            )
+        )
+    effects_validation = validate_executor_analysis_report_followup_effects(
+        request.get("requested_effects")
+    )
+    findings.extend(copy.deepcopy(effects_validation.get("findings", [])))
+    authority_validation = validate_executor_analysis_report_followup_authority_boundary(
+        request.get("authority_boundary")
+    )
+    findings.extend(copy.deepcopy(authority_validation.get("findings", [])))
+    source_validation = validate_executor_analysis_report_followup_source_outcome(outcome)
+    findings.extend(copy.deepcopy(source_validation.get("findings", [])))
+    source_normalized = source_validation.get("normalized", {})
+    source_normalized = source_normalized if isinstance(source_normalized, dict) else {}
+    return {
+        "valid": not findings,
+        "findings": findings,
+        "normalized": {
+            "source_outcome_artifact": source_outcome_artifact,
+            "consumer": consumer,
+            "transformation": transformation,
+            "requested_effects": copy.deepcopy(effects_validation.get("effects", [])),
+            "source_outcome_valid": source_normalized.get("source_outcome_valid"),
+            "source_outcome_status": source_normalized.get("source_outcome_status", ""),
+            "source_report_kind": source_normalized.get("source_report_kind", ""),
+            "source_payload_report_kind": source_normalized.get("source_payload_report_kind", ""),
+            "source_outcome_kind": source_normalized.get("source_outcome_kind", ""),
+            "next_gap": str(
+                policy.get("next_gap", "build_executor_analysis_report_followup_packet")
+            ).strip(),
+        },
+        "effects_validation": effects_validation,
+        "authority_validation": authority_validation,
+        "source_outcome_validation": source_validation,
+    }
+
+
 def executor_report_to_proposal_draft_policy() -> dict[str, Any]:
     policy = supervisor_executor_adapter_policy_lookup("executor_report_to_proposal_draft_policy")
     return policy if isinstance(policy, dict) else {}
