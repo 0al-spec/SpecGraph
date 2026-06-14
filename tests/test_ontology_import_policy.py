@@ -760,6 +760,99 @@ def test_ontology_semantic_lint_input_extracts_terms_from_proposal_output() -> N
     assert lint_input["authority_boundary"]["semantic_lint_input_is_authority"] is False
 
 
+def test_ontology_semantic_lint_input_rejects_misclassified_source_path(
+    tmp_path: Path,
+) -> None:
+    module = load_ontology_imports_module()
+    module.ROOT = tmp_path
+    fixture_path = write_temp_fixture(tmp_path, load_fixture_payload())
+    policy_path = write_temp_policy(tmp_path)
+    semantic_policy = json.loads(
+        (ROOT / "tools" / "ontology_semantic_control_policy.json").read_text()
+    )
+    semantic_policy["semantic_lint_input_sources"]["source_outputs"][0]["path"] = (
+        "runs/local-output.md"
+    )
+    semantic_policy_path = write_temp_semantic_control_policy(tmp_path, semantic_policy)
+
+    with pytest.raises(ValueError, match=r"docs/proposals"):
+        module.build_ontology_import_surfaces(
+            fixture_path,
+            policy_path=policy_path,
+            semantic_policy_path=semantic_policy_path,
+        )
+
+
+def test_ontology_semantic_lint_input_requires_standalone_term_occurrence(
+    tmp_path: Path,
+) -> None:
+    module = load_ontology_imports_module()
+    module.ROOT = tmp_path
+    fixture_path = write_temp_fixture(tmp_path, load_fixture_payload())
+    policy_path = write_temp_policy(tmp_path)
+    semantic_policy = json.loads(
+        (ROOT / "tools" / "ontology_semantic_control_policy.json").read_text()
+    )
+    source = semantic_policy["semantic_lint_input_sources"]["source_outputs"][0]
+    source["path"] = "docs/proposals/substring_only.md"
+    source["terms"] = [{"term": "Exam"}]
+    semantic_policy_path = write_temp_semantic_control_policy(tmp_path, semantic_policy)
+    substring_source = tmp_path / "docs" / "proposals" / "substring_only.md"
+    substring_source.parent.mkdir(parents=True, exist_ok=True)
+    substring_source.write_text("Only ExamPolicy appears in this output.\n", encoding="utf-8")
+
+    with pytest.raises(ValueError, match=r"term 'Exam' was not found"):
+        module.build_ontology_import_surfaces(
+            fixture_path,
+            policy_path=policy_path,
+            semantic_policy_path=semantic_policy_path,
+        )
+
+
+def test_ontology_semantic_lint_input_aggregates_duplicate_terms(tmp_path: Path) -> None:
+    module = load_ontology_imports_module()
+    semantic_policy = json.loads(
+        (ROOT / "tools" / "ontology_semantic_control_policy.json").read_text()
+    )
+    duplicate_source = json.loads(
+        json.dumps(semantic_policy["semantic_lint_input_sources"]["source_outputs"][0])
+    )
+    duplicate_source["source_id"] = "proposal-0105-duplicate-casfunction"
+    duplicate_source["terms"] = [
+        {
+            "term": "CASFunction",
+            "source_ref": "examcalc:CASFunction",
+        }
+    ]
+    semantic_policy["semantic_lint_input_sources"]["source_outputs"].append(duplicate_source)
+    semantic_policy_path = write_temp_semantic_control_policy(tmp_path, semantic_policy)
+
+    surfaces = module.build_ontology_import_surfaces(
+        FIXTURE,
+        semantic_policy_path=semantic_policy_path,
+    )
+
+    lint_input = surfaces["semantic_lint_input"]
+    assert lint_input["summary"]["source_output_count"] == 2
+    assert lint_input["summary"]["detected_term_count"] == 5
+    by_term = {entry["term"]: entry for entry in lint_input["detected_terms"]}
+    assert len(by_term["CASFunction"]["source_occurrences"]) == 2
+    assert {
+        occurrence["source_output_id"]
+        for occurrence in by_term["CASFunction"]["source_occurrences"]
+    } == {
+        "proposal-0105-semantic-lint-report",
+        "proposal-0105-duplicate-casfunction",
+    }
+
+    report = surfaces["semantic_lint_report"]
+    assert report["summary"]["finding_count"] == 5
+    report_by_term = {entry["term"]: entry for entry in report["findings"]}
+    assert len(report_by_term["CASFunction"]["source_occurrences"]) == 2
+    item_ids = [item["item_id"] for item in surfaces["semantic_review_surface"]["review_items"]]
+    assert len(item_ids) == len(set(item_ids))
+
+
 def test_ontology_semantic_lint_report_builds_review_findings() -> None:
     module = load_ontology_imports_module()
 

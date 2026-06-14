@@ -961,6 +961,7 @@ def require_semantic_control_policy(policy: dict[str, Any]) -> dict[str, Any]:
                 f"{source_context}.source_kind must be declared by source_output_kinds"
             )
         source_path = require_string(raw_source, "path", source_context)
+        validate_lint_input_source_kind_path(source_kind, source_path, source_context)
         source_path_value = Path(source_path)
         if source_path_value.is_absolute() or ".." in source_path_value.parts:
             raise ValueError(f"{source_context}.path must be a relative repository path")
@@ -2346,6 +2347,7 @@ def build_semantic_term_results(
             "source_output_kind",
             "source_path",
             "source_span",
+            "source_occurrences",
             "extraction_mode",
         ):
             if evidence_field in raw_term:
@@ -2637,6 +2639,28 @@ def resolve_repository_input_path(raw_path: str, context: str) -> Path:
     return candidate
 
 
+def validate_lint_input_source_kind_path(source_kind: str, source_path: str, context: str) -> None:
+    path = Path(source_path)
+    if source_kind == "proposal_markdown":
+        if path.suffix != ".md" or not path.is_relative_to(Path("docs/proposals")):
+            raise ValueError(f"{context}.path must be a markdown file under docs/proposals/")
+        return
+    if source_kind == "supervisor_run_summary":
+        if path.suffix not in {".json", ".md"} or not path.is_relative_to(Path("runs")):
+            raise ValueError(f"{context}.path must be a JSON or markdown file under runs/")
+        return
+    raise ValueError(f"{context}.source_kind is unsupported")
+
+
+def find_declared_term_span(text: str, term: str) -> tuple[int, int] | None:
+    escaped_term = re.escape(term)
+    pattern = re.compile(rf"(?<![A-Za-z0-9_]){escaped_term}(?![A-Za-z0-9_])")
+    match = pattern.search(text)
+    if not match:
+        return None
+    return match.start(), match.end()
+
+
 def text_position_for_offset(text: str, offset: int) -> tuple[int, int]:
     prefix = text[:offset]
     line = prefix.count("\n") + 1
@@ -2681,6 +2705,7 @@ def build_ontology_semantic_lint_input(
 
     source_outputs: list[dict[str, Any]] = []
     detected_terms: list[dict[str, Any]] = []
+    detected_terms_by_key: dict[str, dict[str, Any]] = {}
     for source_index, raw_source in enumerate(raw_source_outputs):
         if not isinstance(raw_source, dict):
             raise ValueError(
@@ -2697,6 +2722,7 @@ def build_ontology_semantic_lint_input(
                 f"{source_context}.source_kind must be declared by source_output_kinds"
             )
         source_path = require_string(raw_source, "path", source_context)
+        validate_lint_input_source_kind_path(source_kind, source_path, source_context)
         resolved_path = resolve_repository_input_path(source_path, f"{source_context}.path")
         text = resolved_path.read_text(encoding="utf-8")
         source_terms = raw_source.get("terms")
@@ -2709,27 +2735,52 @@ def build_ontology_semantic_lint_input(
             term_context = f"{source_context}.terms[{term_index}]"
             term = require_string(raw_term, "term", term_context)
             source_ref = optional_string(raw_term, "source_ref", term_context)
-            start_offset = text.find(term)
-            if start_offset < 0:
+            span = find_declared_term_span(text, term)
+            if span is None:
                 raise ValueError(f"{term_context}.term {term!r} was not found in {source_path}")
-            end_offset = start_offset + len(term)
+            start_offset, end_offset = span
             line, column = text_position_for_offset(text, start_offset)
-            detected_terms.append(
-                {
+            source_span = {
+                "line": line,
+                "column": column,
+                "start_offset": start_offset,
+                "end_offset": end_offset,
+            }
+            occurrence = {
+                "source_ref": source_ref or None,
+                "source_output_id": source_id,
+                "source_output_kind": source_kind,
+                "source_path": source_path,
+                "source_span": source_span,
+                "extraction_mode": extraction_mode,
+            }
+            normalized_term = normalize_term(term)
+            existing = detected_terms_by_key.get(normalized_term)
+            if existing is None:
+                detected_term = {
                     "term": term,
                     "source_ref": source_ref or None,
                     "source_output_id": source_id,
                     "source_output_kind": source_kind,
                     "source_path": source_path,
-                    "source_span": {
-                        "line": line,
-                        "column": column,
-                        "start_offset": start_offset,
-                        "end_offset": end_offset,
-                    },
+                    "source_span": source_span,
+                    "source_occurrences": [occurrence],
                     "extraction_mode": extraction_mode,
                 }
-            )
+                detected_terms_by_key[normalized_term] = detected_term
+                detected_terms.append(detected_term)
+            else:
+                existing_ref = str(existing.get("source_ref") or "")
+                if existing_ref and source_ref and existing_ref != source_ref:
+                    raise ValueError(
+                        f"{term_context}.source_ref conflicts with earlier declaration for {term!r}"
+                    )
+                if not existing_ref and source_ref:
+                    existing["source_ref"] = source_ref
+                occurrences = existing.setdefault("source_occurrences", [])
+                if not isinstance(occurrences, list):
+                    raise ValueError("lint input source_occurrences must be a list")
+                occurrences.append(occurrence)
             output_term_count += 1
         source_outputs.append(
             {
