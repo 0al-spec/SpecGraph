@@ -1545,5 +1545,18 @@
     "required_provenance_links": [
       "source_draft_ref"
     ]
+  },
+  {
+    "proposal_id": "0120",
+    "source_artifact_class": "working_draft",
+    "source_refs": [
+      "docs/archive/proposal_sources/0120_executor_analysis_report_followup_policy.md"
+    ],
+    "motivating_concern": "SpecGraph can build a local-only analysis report review outcome, but it lacks a policy boundary for the next follow-up packet request before any agent output can proceed toward proposal-draft or canonical workflows.",
+    "normalized_title": "Executor Analysis Report Follow-up Policy",
+    "bounded_scope": "Add a policy-only executor_analysis_report_followup_policy that accepts only valid local analysis_report review outcomes and allows only a future analysis_report_followup_packet effect while rejecting proposal draft production, executor invocation, proposal markdown writes, registry/status mutation, canonical mutation, patch application, gap closure, authority expansion, and public static publication of local outcome state.",
+    "required_provenance_links": [
+      "source_draft_ref"
+    ]
   }
 ]

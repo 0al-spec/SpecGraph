@@ -6558,5 +6558,63 @@
         "pattern": "SpecSpace mutation UI"
       }
     ]
+  },
+  {
+    "proposal_id": "0120",
+    "posture": "policy_only_followup",
+    "runtime_surfaces": [
+      "docs/proposals/0120_executor_analysis_report_followup_policy.md",
+      "docs/archive/proposal_sources/0120_executor_analysis_report_followup_policy.md",
+      "tools/supervisor_executor_adapter_policy.json",
+      "tools/supervisor.py",
+      "tools/README.md",
+      "tests/test_supervisor.py"
+    ],
+    "runtime_markers": [
+      {
+        "path": "tools/supervisor_executor_adapter_policy.json",
+        "pattern": "executor_analysis_report_followup_policy"
+      },
+      {
+        "path": "tools/supervisor.py",
+        "pattern": "def default_executor_analysis_report_followup_request("
+      },
+      {
+        "path": "tools/supervisor.py",
+        "pattern": "def validate_executor_analysis_report_followup_request("
+      },
+      {
+        "path": "tools/supervisor.py",
+        "pattern": "def validate_executor_analysis_report_followup_source_outcome("
+      }
+    ],
+    "validation_markers": [
+      {
+        "path": "tests/test_supervisor.py",
+        "pattern": "def test_validate_executor_analysis_report_followup_request_accepts_ready_outcome("
+      },
+      {
+        "path": "tests/test_supervisor.py",
+        "pattern": "def test_validate_executor_analysis_report_followup_request_rejects_forbidden_effect("
+      },
+      {
+        "path": "tests/test_supervisor.py",
+        "pattern": "def test_validate_executor_analysis_report_followup_request_rejects_authority_expansion("
+      },
+      {
+        "path": "tests/test_supervisor.py",
+        "pattern": "def test_validate_executor_analysis_report_followup_request_rejects_blocked_outcome("
+      }
+    ],
+    "observation_markers": [
+      {
+        "path": "docs/proposals/0120_executor_analysis_report_followup_policy.md",
+        "pattern": "build_executor_analysis_report_followup_packet"
+      },
+      {
+        "path": "tools/README.md",
+        "pattern": "executor_analysis_report_followup_policy"
+      }
+    ]
   }
 ]

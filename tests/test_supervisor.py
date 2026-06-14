@@ -27370,6 +27370,30 @@ def test_supervisor_executor_adapter_policy_declares_request_report_contract() -
     assert outcome_contract["authority_boundary"]["proposal_draft_candidate_allowed"] is False
     assert outcome_contract["privacy_boundary"]["public_static_publish"] is False
     assert outcome_contract["next_gap"] == "define_executor_analysis_report_followup_policy"
+    followup_policy = policy["executor_analysis_report_followup_policy"]
+    assert followup_policy["artifact_kind"] == "executor_analysis_report_followup_policy"
+    assert followup_policy["source_outcome_artifact"] == (
+        "runs/local_operator_executor_analysis_report_review_outcome.json"
+    )
+    assert followup_policy["source_outcome_artifact_kind"] == (
+        "local_operator_executor_analysis_report_review_outcome"
+    )
+    assert followup_policy["allowed_source_outcome_status"] == ["ready_for_operator_review"]
+    assert followup_policy["allowed_source_outcome_kinds"] == ["analysis_report_review_outcome"]
+    assert followup_policy["allowed_source_report_kinds"] == ["analysis_report"]
+    assert followup_policy["consumer"] == "analysis_report_followup_planner"
+    assert followup_policy["transformation"] == ("analysis_review_outcome_to_followup_packet")
+    assert followup_policy["requested_effects"] == ["analysis_report_followup_packet"]
+    assert "proposal_draft_candidate" in followup_policy["forbidden_effects"]
+    assert "executor_invocation" in followup_policy["forbidden_effects"]
+    assert "canonical_spec_mutation" in followup_policy["forbidden_effects"]
+    assert "patch_application" in followup_policy["forbidden_effects"]
+    assert followup_policy["authority_boundary"]["review_outcome_is_authority"] is False
+    assert followup_policy["authority_boundary"]["followup_policy_is_authority"] is False
+    assert followup_policy["authority_boundary"]["canonical_mutations_allowed"] is False
+    assert followup_policy["authority_boundary"]["proposal_draft_candidate_allowed"] is False
+    assert followup_policy["authority_boundary"]["executor_invocation_allowed"] is False
+    assert followup_policy["next_gap"] == "build_executor_analysis_report_followup_packet"
     promotion_policy = policy["proposal_draft_candidate_promotion_policy"]
     assert promotion_policy["artifact_kind"] == "proposal_draft_candidate_promotion_policy"
     assert promotion_policy["source_candidate_artifact"] == (
@@ -30420,6 +30444,192 @@ def test_validate_local_operator_executor_analysis_report_review_outcome_rejects
         finding["code"] == "analysis_report_review_outcome_state_mismatch"
         for finding in validation["findings"]
     )
+
+
+def test_validate_executor_analysis_report_followup_request_accepts_ready_outcome(
+    supervisor_module: object,
+) -> None:
+    packet = supervisor_module.build_local_operator_executor_report_review_packet(
+        supervisor_module.default_local_operator_executor_report_sample()
+    )
+    outcome = supervisor_module.build_local_operator_executor_analysis_report_review_outcome(packet)
+    request = supervisor_module.default_executor_analysis_report_followup_request()
+
+    validation = supervisor_module.validate_executor_analysis_report_followup_request(
+        request,
+        outcome=outcome,
+    )
+
+    assert validation["valid"] is True
+    assert validation["findings"] == []
+    assert validation["normalized"] == {
+        "source_outcome_artifact": (
+            "runs/local_operator_executor_analysis_report_review_outcome.json"
+        ),
+        "consumer": "analysis_report_followup_planner",
+        "transformation": "analysis_review_outcome_to_followup_packet",
+        "requested_effects": ["analysis_report_followup_packet"],
+        "source_outcome_valid": True,
+        "source_outcome_status": "ready_for_operator_review",
+        "source_report_kind": "analysis_report",
+        "source_payload_report_kind": "analysis_report",
+        "source_outcome_kind": "analysis_report_review_outcome",
+        "next_gap": "build_executor_analysis_report_followup_packet",
+    }
+    assert validation["source_outcome_validation"]["outcome_validation"]["valid"] is True
+
+
+def test_validate_executor_analysis_report_followup_request_rejects_missing_outcome(
+    supervisor_module: object,
+) -> None:
+    request = supervisor_module.default_executor_analysis_report_followup_request()
+
+    validation = supervisor_module.validate_executor_analysis_report_followup_request(request)
+
+    assert validation["valid"] is False
+    assert validation["normalized"]["source_outcome_valid"] is None
+    assert any(
+        finding["code"] == "analysis_report_followup_source_outcome_not_provided"
+        for finding in validation["findings"]
+    )
+
+
+def test_validate_executor_analysis_report_followup_request_rejects_forbidden_effect(
+    supervisor_module: object,
+) -> None:
+    packet = supervisor_module.build_local_operator_executor_report_review_packet(
+        supervisor_module.default_local_operator_executor_report_sample()
+    )
+    outcome = supervisor_module.build_local_operator_executor_analysis_report_review_outcome(packet)
+    request = supervisor_module.default_executor_analysis_report_followup_request(
+        requested_effects=[
+            "analysis_report_followup_packet",
+            "proposal_draft_candidate",
+        ],
+    )
+
+    validation = supervisor_module.validate_executor_analysis_report_followup_request(
+        request,
+        outcome=outcome,
+    )
+
+    assert validation["valid"] is False
+    assert any(
+        finding["code"] == "forbidden_analysis_report_followup_effect"
+        and finding["field"] == "requested_effects[1]"
+        for finding in validation["findings"]
+    )
+
+
+def test_validate_executor_analysis_report_followup_request_preserves_effect_indices(
+    supervisor_module: object,
+) -> None:
+    packet = supervisor_module.build_local_operator_executor_report_review_packet(
+        supervisor_module.default_local_operator_executor_report_sample()
+    )
+    outcome = supervisor_module.build_local_operator_executor_analysis_report_review_outcome(packet)
+    request = supervisor_module.default_executor_analysis_report_followup_request(
+        requested_effects=["analysis_report_followup_packet", "", "executor_invocation"],
+    )
+
+    validation = supervisor_module.validate_executor_analysis_report_followup_request(
+        request,
+        outcome=outcome,
+    )
+
+    assert validation["valid"] is False
+    assert any(
+        finding["code"] == "analysis_report_followup_effect_empty"
+        and finding["field"] == "requested_effects[1]"
+        for finding in validation["findings"]
+    )
+    assert any(
+        finding["code"] == "forbidden_analysis_report_followup_effect"
+        and finding["field"] == "requested_effects[2]"
+        for finding in validation["findings"]
+    )
+
+
+def test_validate_executor_analysis_report_followup_request_rejects_authority_expansion(
+    supervisor_module: object,
+) -> None:
+    packet = supervisor_module.build_local_operator_executor_report_review_packet(
+        supervisor_module.default_local_operator_executor_report_sample()
+    )
+    outcome = supervisor_module.build_local_operator_executor_analysis_report_review_outcome(packet)
+    request = supervisor_module.default_executor_analysis_report_followup_request()
+    request["authority_boundary"]["review_outcome_is_authority"] = True
+    request["authority_boundary"]["canonical_mutations_allowed"] = True
+    request["authority_boundary"]["executor_invocation_allowed"] = True
+    request["authority_boundary"]["canonical_fact_assertions_allowed"] = True
+
+    validation = supervisor_module.validate_executor_analysis_report_followup_request(
+        request,
+        outcome=outcome,
+    )
+
+    assert validation["valid"] is False
+    boundary_fields = {
+        finding["field"]
+        for finding in validation["findings"]
+        if finding["code"] == "invalid_analysis_report_followup_authority_boundary"
+    }
+    assert boundary_fields >= {
+        "authority_boundary.review_outcome_is_authority",
+        "authority_boundary.canonical_mutations_allowed",
+        "authority_boundary.executor_invocation_allowed",
+    }
+    assert any(
+        finding["code"] == "unexpected_analysis_report_followup_authority_boundary_field"
+        and finding["field"] == "authority_boundary.canonical_fact_assertions_allowed"
+        for finding in validation["findings"]
+    )
+
+
+def test_validate_executor_analysis_report_followup_request_rejects_blocked_outcome(
+    supervisor_module: object,
+) -> None:
+    packet = supervisor_module.build_local_operator_executor_report_review_packet(
+        supervisor_module.default_local_operator_executor_report_sample()
+    )
+    outcome = supervisor_module.build_local_operator_executor_analysis_report_review_outcome(packet)
+    outcome["summary"]["status"] = "blocked_missing_review_packet"
+    outcome["analysis_review_outcome"]["outcome_state"] = "blocked"
+    outcome["summary"]["next_gap"] = "run_executor_report_review_packet_until_ready"
+    request = supervisor_module.default_executor_analysis_report_followup_request()
+
+    validation = supervisor_module.validate_executor_analysis_report_followup_request(
+        request,
+        outcome=outcome,
+    )
+
+    assert validation["valid"] is False
+    assert validation["normalized"]["source_outcome_status"] == "blocked_missing_review_packet"
+    assert any(
+        finding["code"] == "analysis_report_followup_source_outcome_status_not_allowed"
+        for finding in validation["findings"]
+    )
+
+
+def test_validate_executor_analysis_report_followup_request_rejects_report_kind_spoof(
+    supervisor_module: object,
+) -> None:
+    packet = supervisor_module.build_local_operator_executor_report_review_packet(
+        supervisor_module.default_local_operator_executor_report_sample()
+    )
+    outcome = supervisor_module.build_local_operator_executor_analysis_report_review_outcome(packet)
+    outcome["summary"]["report_kind"] = "proposal_draft"
+    request = supervisor_module.default_executor_analysis_report_followup_request()
+
+    validation = supervisor_module.validate_executor_analysis_report_followup_request(
+        request,
+        outcome=outcome,
+    )
+
+    assert validation["valid"] is False
+    finding_codes = {finding["code"] for finding in validation["findings"]}
+    assert "analysis_report_review_outcome_ready_report_kind_invalid" in finding_codes
+    assert "analysis_report_followup_source_report_kind_not_allowed" in finding_codes
 
 
 def test_validate_executor_report_to_proposal_draft_request_rejects_missing_packet(
