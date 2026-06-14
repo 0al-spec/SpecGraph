@@ -1571,5 +1571,18 @@
     "required_provenance_links": [
       "source_draft_ref"
     ]
+  },
+  {
+    "proposal_id": "0122",
+    "source_artifact_class": "working_draft",
+    "source_refs": [
+      "docs/archive/proposal_sources/0122_executor_followup_human_review_decision.md"
+    ],
+    "motivating_concern": "SpecGraph can build a local-only executor analysis follow-up packet, but it lacks a typed human/operator decision artifact before an accepted follow-up can be bridged into the proposal-draft request path.",
+    "normalized_title": "Executor Follow-up Human Review Decision",
+    "bounded_scope": "Add a local-only executor analysis report follow-up decision artifact with explicit accept, reject, defer, and needs_more_evidence decisions over a valid follow-up packet, where accept only routes to the next governed request bridge and every decision rejects executor invocation, proposal draft production, proposal markdown writes, registry/status mutation, canonical mutation, patch application, gap closure, authority expansion, and public static publication.",
+    "required_provenance_links": [
+      "source_draft_ref"
+    ]
   }
 ]

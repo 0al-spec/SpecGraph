@@ -6686,5 +6686,75 @@
         "pattern": "local_operator_executor_analysis_report_followup_packet.json"
       }
     ]
+  },
+  {
+    "proposal_id": "0122",
+    "posture": "bounded_runtime_followup",
+    "runtime_surfaces": [
+      "docs/proposals/0122_executor_followup_human_review_decision.md",
+      "docs/archive/proposal_sources/0122_executor_followup_human_review_decision.md",
+      "tools/supervisor_executor_adapter_policy.json",
+      "tools/supervisor.py",
+      "tools/README.md",
+      "Makefile",
+      "tools/build_static_artifact_bundle.py",
+      "tests/test_supervisor.py",
+      "tests/test_static_artifact_bundle.py",
+      "runs/local_operator_executor_analysis_report_followup_decision.json"
+    ],
+    "runtime_markers": [
+      {
+        "path": "tools/supervisor_executor_adapter_policy.json",
+        "pattern": "executor_analysis_report_followup_decision_contract"
+      },
+      {
+        "path": "tools/supervisor.py",
+        "pattern": "def build_local_operator_executor_analysis_report_followup_decision("
+      },
+      {
+        "path": "tools/supervisor.py",
+        "pattern": "def validate_local_operator_executor_analysis_report_followup_decision("
+      },
+      {
+        "path": "tools/supervisor.py",
+        "pattern": "--build-local-operator-executor-analysis-report-followup-decision"
+      },
+      {
+        "path": "Makefile",
+        "pattern": "executor-followup-decision:"
+      }
+    ],
+    "validation_markers": [
+      {
+        "path": "tests/test_supervisor.py",
+        "pattern": "def test_build_local_operator_executor_analysis_report_followup_decision_accepts_packet("
+      },
+      {
+        "path": "tests/test_supervisor.py",
+        "pattern": "def test_build_local_operator_executor_analysis_report_followup_decision_defaults_to_evidence("
+      },
+      {
+        "path": "tests/test_supervisor.py",
+        "pattern": "def test_validate_local_operator_executor_analysis_report_followup_decision_rejects_authority("
+      },
+      {
+        "path": "tests/test_static_artifact_bundle.py",
+        "pattern": "local_operator_executor_analysis_report_followup_decision.json"
+      }
+    ],
+    "observation_markers": [
+      {
+        "path": "docs/proposals/0122_executor_followup_human_review_decision.md",
+        "pattern": "bridge_accepted_followup_to_proposal_draft_request"
+      },
+      {
+        "path": "tools/README.md",
+        "pattern": "local_operator_executor_analysis_report_followup_decision.json"
+      },
+      {
+        "path": "tools/build_static_artifact_bundle.py",
+        "pattern": "local_operator_executor_analysis_report_followup_decision.json"
+      }
+    ]
   }
 ]
