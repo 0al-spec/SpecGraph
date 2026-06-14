@@ -27,6 +27,7 @@ REQUIRED_RUN_SURFACES = (
     "agent_verification_gap_index.json",
     "agent_runtime_enforcement_evidence_index.json",
     "agent_runtime_enforcement_evidence/supervisor-executor-adapter-smoke.json",
+    "agent_runtime_enforcement_evidence/supervisor-executor-adapter-redacted-local-summary.json",
     "external_consumer_evidence_index.json",
 )
 LOCAL_ONLY_RUN_SURFACES = {
