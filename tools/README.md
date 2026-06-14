@@ -217,6 +217,13 @@ Supervisor modes:
   safe evidence refs, and governed decision options without invoking executors,
   creating proposal drafts, applying patches, mutating canonical specs,
   changing proposal status, or publishing local artifacts.
+- `--build-local-operator-executor-analysis-report-followup-decision`: build
+  local-only `runs/local_operator_executor_analysis_report_followup_decision.json`
+  by consuming a ready analysis report follow-up packet and recording an
+  explicit human/operator decision (`accept`, `reject`, `defer`, or
+  `needs_more_evidence`). Accepted decisions only authorize the next governed
+  request-building step; they do not write proposals, invoke executors, mutate
+  canonical specs, apply patches, close gaps, or publish local artifacts.
 - `--build-local-operator-executor-proposal-draft-candidate`: build local-only
   `runs/local_operator_executor_proposal_draft_candidate.json` by consuming a
   valid `proposal_draft` review packet and the
