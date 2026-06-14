@@ -3,13 +3,13 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width,initial-scale=1" />
-<title>SIB Metrics для AI-native feature pipelines</title>
+<title>SIB Metrics для ИИ-разработки</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Inter:wght@300;400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="styles.css" />
 </head>
-<body>
+<body class="deck-ru">
   <main class="deck-shell" aria-label="Презентация SpecGraph">
     <header class="deck-topbar" aria-label="Навигация презентации">
       <a class="brand" href="#slide-1" aria-label="Перейти к титульному слайду">
@@ -24,7 +24,7 @@
         <span>SpecGraph</span>
       </a>
       <div class="topbar-meta">
-        <span>10-минутный SIB deck</span>
+        <span>10 минут про SIB</span>
         <span>затем демо SpecGraph</span>
       </div>
       <nav class="deck-nav" aria-label="Навигация по слайдам">
@@ -46,9 +46,14 @@
       <article class="slide is-active" id="slide-1" data-slide aria-label="AI удешевляет артефакты">
         <div class="slide-grid two-column">
           <div class="copy-block">
-            <p class="eyebrow">01 / AI удешевляет артефакты</p>
-            <h1 class="title-long">Объём больше не сигнал.</h1>
-            <p class="lede">Новый вопрос: пережил ли intent fan-out.</p>
+            <p class="eyebrow">01 / ИИ изменил фабрику</p>
+            <h1 class="title-long">Артефакты стали дешёвыми.</h1>
+            <p class="lede">Код, тесты и документация больше не доказывают, что команда сохранила смысл задачи.</p>
+            <div class="ru-points">
+              <span>Раньше объём работы был дорогим сигналом.</span>
+              <span>Теперь одно намерение разворачивается в десятки правдоподобных файлов.</span>
+              <span>Главный вопрос: что именно мы построили?</span>
+            </div>
           </div>
           <div class="factory-comparison" aria-label="Старый ручной output и новый AI fan-out">
             <section class="factory-lane">
@@ -62,15 +67,15 @@
               <strong>Усилие -> код</strong>
             </section>
             <section class="factory-lane active-lane">
-              <span class="lane-label">AI-эра</span>
-              <div class="intent-atom">Intent Atom</div>
-              <div class="llm-node">LLM</div>
+              <span class="lane-label">ИИ-эра</span>
+              <div class="intent-atom">Атом намерения</div>
+              <div class="llm-node">модель</div>
               <div class="fanout-cloud" aria-hidden="true">
                 <span></span><span></span><span></span><span></span><span></span><span></span>
                 <span></span><span></span><span></span><span></span><span></span><span></span>
                 <span></span><span></span><span></span><span></span><span></span><span></span>
               </div>
-              <strong>Intent -> правдоподобные артефакты</strong>
+              <strong>Намерение -> поток артефактов</strong>
             </section>
           </div>
         </div>
@@ -82,27 +87,31 @@
       <article class="slide" id="slide-2" data-slide aria-label="Измеряйте пайплайн, не человека">
         <div class="slide-grid split-rule">
           <div>
-            <p class="eyebrow">02 / Измеряйте пайплайн</p>
-            <h2>Измеряйте пайплайн, не человека.</h2>
-            <p class="micro-copy">Больше активности может означать меньше уверенности.</p>
+            <p class="eyebrow">02 / Что теперь измерять</p>
+            <h2>Измеряйте производственный контур.</h2>
+            <p class="micro-copy">Фичу всё чаще делает система: человек формулирует намерение, агент производит артефакты, автопроверки собирают доказательства, владелец принимает результат.</p>
+            <div class="ru-points">
+              <span>Метрики активности показывают шум, но не сохранение смысла.</span>
+              <span>Роль человека смещается к проектированию рамок, критериев и доказательств.</span>
+            </div>
           </div>
           <div class="pipeline-ownership" aria-label="Роли человека и агента в feature pipeline">
             <div class="old-metrics">
-              <span>PRs</span>
-              <span>Lead time</span>
-              <span>Deploy frequency</span>
+              <span>пул-реквесты</span>
+              <span>время цикла</span>
+              <span>частота релизов</span>
             </div>
             <div class="pipeline-strip">
-              <span>Intent</span>
-              <span>Agent work</span>
-              <span>Evidence</span>
-              <span>Review</span>
+              <span>намерение</span>
+              <span>работа агента</span>
+              <span>доказательства</span>
+              <span>приёмка</span>
             </div>
             <div class="optimizer-panel">
               <strong>Роль человека</strong>
-              <span>scope</span>
-              <span>acceptance</span>
-              <span>evidence design</span>
+              <span>границы</span>
+              <span>критерии</span>
+              <span>дизайн доказательств</span>
             </div>
           </div>
         </div>
@@ -114,21 +123,22 @@
       <article class="slide" id="slide-3" data-slide aria-label="Capability pipeline">
         <div class="slide-grid diagram-layout">
           <div class="copy-block">
-            <p class="eyebrow">03 / Capability pipeline</p>
-            <h2>Intent проходит gates до capability.</h2>
-            <p class="micro-copy">Outcome отдельно: хороший build всё ещё может быть неверной ставкой.</p>
+            <p class="eyebrow">03 / Контур способности</p>
+            <h2>Намерение проходит через проверочные ворота.</h2>
+            <p class="micro-copy">Я отделяю внутреннюю приёмку от бизнес-эффекта: можно идеально сохранить смысл и всё равно проверить неверную продуктовую гипотезу.</p>
+            <div class="ru-note">SIB смотрит на инженерное сохранение смысла, а не заменяет продуктовые метрики.</div>
           </div>
           <div class="capability-flow" aria-label="Пайплайн от intent до outcome">
             <div class="capability-main">
-              <span>Intent</span>
+              <span>намерение</span>
               <span>Спецификация</span>
               <span>Реализация</span>
-              <span>Evidence</span>
-              <span>Internal acceptance</span>
+              <span>доказательства</span>
+              <span>внутренняя приёмка</span>
             </div>
             <div class="outcome-layer">
-              <span>Outcome</span>
-              <small>usage / business impact</small>
+              <span>эффект</span>
+              <small>использование / бизнес-результат</small>
             </div>
           </div>
         </div>
@@ -140,30 +150,31 @@
       <article class="slide dense-slide" id="slide-4" data-slide aria-label="Пять наблюдаемых величин">
         <div class="slide-grid split-rule">
           <div>
-            <p class="eyebrow">04 / Пять observable-величин</p>
+            <p class="eyebrow">04 / Пять наблюдаемых величин</p>
             <h2>Пять величин живут на пайплайне.</h2>
-            <p class="example-intent">Intent: повторить failed checkout payment без duplicate charge.</p>
+            <p class="example-intent">Пример: пользователь повторяет неудачную оплату без повторного списания.</p>
+            <div class="ru-note">Важно: «неизвестно» не считается ни хорошим, ни плохим. У каждой величины должен быть уровень уверенности.</div>
           </div>
           <div class="observables-table" aria-label="Наблюдаемые величины SIB">
             <section>
               <strong>SIB</strong>
-              <span>смысл спецификации / масса реализации</span>
+              <span>баланс смысла спецификации и объёма реализации</span>
             </section>
             <section>
-              <strong>Yield</strong>
-              <span>где задачи вытекают из пайплайна</span>
+              <strong>Выход</strong>
+              <span>на каком этапе задачи теряются</span>
             </section>
             <section>
-              <strong>Cost</strong>
-              <span>токены + review + rework + steering</span>
+              <strong>Стоимость</strong>
+              <span>токены, ревью, переделки и ручное направление</span>
             </section>
             <section>
-              <strong>Drift</strong>
-              <span>мы всё ещё решаем исходную задачу?</span>
+              <strong>Сдвиг</strong>
+              <span>строим ли мы всё ещё исходную задачу?</span>
             </section>
             <section>
               <strong>pre-SIB</strong>
-              <span>готовность до запуска агента</span>
+              <span>готовность задачи до запуска агента</span>
             </section>
           </div>
         </div>
@@ -175,9 +186,14 @@
       <article class="slide" id="slide-5" data-slide aria-label="SIB это сигнал, а не score">
         <div class="slide-grid two-column">
           <div class="copy-block">
-            <p class="eyebrow">05 / Сигнал, не score</p>
-            <h2>SIB — телескоп, а не scoreboard.</h2>
-            <p class="micro-copy">Pipeline Integrity Index — нормативный слой. SIB остаётся decomposable.</p>
+            <p class="eyebrow">05 / Сигнал, не оценка</p>
+            <h2>SIB — телескоп, а не KPI.</h2>
+            <p class="micro-copy">Он не говорит «хорошо» или «плохо». Он показывает место, где объём реализации и явный смысл перестали быть соразмерны.</p>
+            <div class="ru-points">
+              <span>Нельзя ранжировать людей по SIB.</span>
+              <span>Нельзя прятать «неизвестно» внутри красивого индекса.</span>
+              <span>Любой общий индекс должен раскладываться обратно на причины.</span>
+            </div>
           </div>
           <div class="signal-scale" aria-label="Баланс SIB как диагностический сигнал">
             <div class="scale-beam">
@@ -189,8 +205,8 @@
               </div>
             </div>
             <div class="guardrail-strip">
-              <span>decomposable</span>
-              <span>unknown виден</span>
+              <span>раскладывается</span>
+              <span>неизвестное видно</span>
               <span>не ранжировать людей</span>
             </div>
           </div>
@@ -203,28 +219,29 @@
       <article class="slide" id="slide-6" data-slide aria-label="Evidence должно доказывать intent">
         <div class="slide-grid two-column">
           <div class="copy-block">
-            <p class="eyebrow">06 / Evidence доказывает intent</p>
-            <h2>Coverage не доказывает смысл.</h2>
-            <p class="micro-copy">Разомкнуть петлю самоподтверждения агента.</p>
+            <p class="eyebrow">06 / Доказательство смысла</p>
+            <h2>Покрытие строк не доказывает намерение.</h2>
+            <p class="micro-copy">Агент может написать реализацию, тесты под неё и объяснение, почему всё хорошо. Это замкнутая петля самоподтверждения.</p>
+            <div class="ru-note">Нужно проверять не внутреннюю согласованность артефактов, а соответствие внешнему утверждению.</div>
           </div>
           <div class="evidence-chain" aria-label="Intent atom, evidence claim и judge receipt">
             <section>
-              <strong>Intent Atom</strong>
-              <span>нет duplicate charge</span>
+              <strong>Атом намерения</strong>
+              <span>нет повторного списания</span>
             </section>
             <section>
-              <strong>Evidence Claim</strong>
+              <strong>Заявка доказательства</strong>
               <span>тест + сценарий + сигнал</span>
             </section>
             <section>
-              <strong>Judge Receipt</strong>
+              <strong>Квитанция проверки</strong>
               <span>подтверждено / частично / слабо</span>
             </section>
             <div class="anchor-row">
-              <span>deterministic checks</span>
-              <span>mutation tests</span>
-              <span>human sampling</span>
-              <span>drift judge</span>
+              <span>детерминированные проверки</span>
+              <span>мутационные тесты</span>
+              <span>выборка человеком</span>
+              <span>дрейф проверяющего</span>
             </div>
           </div>
         </div>
@@ -236,21 +253,22 @@
       <article class="slide" id="slide-7" data-slide aria-label="Что нужно доказать">
         <div class="slide-grid split-rule">
           <div>
-            <p class="eyebrow">07 / Что нужно доказать</p>
+            <p class="eyebrow">07 / Исследовательская часть</p>
             <h2>Это гипотезы, не законы.</h2>
+            <p class="micro-copy">Мне важно не продать магическую формулу, а проверить, какие сигналы действительно предсказывают приёмку, переделки и регрессии.</p>
           </div>
           <div class="hypothesis-grid" aria-label="Гипотезы валидации SIB">
             <section>
               <span>H1</span>
-              <strong>pre-SIB предсказывает internal acceptance лучше, чем PR count.</strong>
+              <strong>pre-SIB предсказывает внутреннюю приёмку лучше, чем число пул-реквестов.</strong>
             </section>
             <section>
               <span>H2</span>
-              <strong>Высокий output при низкой evidence confidence предсказывает rework.</strong>
+              <strong>Много артефактов при слабых доказательствах предсказывает переделки.</strong>
             </section>
             <section>
               <span>H3</span>
-              <strong>Semantic evidence confidence предсказывает регрессии лучше coverage.</strong>
+              <strong>Уверенность в смысловом доказательстве предсказывает регрессии лучше покрытия.</strong>
             </section>
           </div>
         </div>
@@ -262,21 +280,22 @@
       <article class="slide" id="slide-8" data-slide aria-label="Финальный тезис и переход к демо">
         <div class="slide-grid two-column">
           <div class="copy-block">
-            <p class="eyebrow">08 / Тезис -> демо</p>
-            <h1 class="title-long">AI удешевляет артефакты. <span class="muted-serif">SIB следит за смыслом.</span></h1>
+            <p class="eyebrow">08 / Переход к демо</p>
+            <h1 class="title-long">ИИ удешевляет артефакты. <span class="muted-serif">SIB следит за смыслом.</span></h1>
+            <p class="lede">SpecGraph превращает это наблюдение в управляемый контур: намерение, спецификация, работа агента, доказательство и приёмка.</p>
           </div>
           <div class="demo-bridge" aria-label="Переход от тезиса SIB к демо SpecGraph">
             <div class="artifact-field compact-artifacts">
               <span>код</span>
               <span>тесты</span>
-              <span>docs</span>
-              <span>PR</span>
+              <span>доки</span>
+              <span>ревью</span>
               <strong>смысл?</strong>
             </div>
             <div class="demo-card">
               <span>Дальше</span>
               <strong>демо SpecGraph</strong>
-              <small>capability pipeline in vivo</small>
+              <small>контур способности вживую</small>
             </div>
           </div>
         </div>
@@ -288,13 +307,14 @@
       <article class="slide backup-slide" id="slide-9" data-slide aria-label="Backup про False Progress Mass">
         <div class="slide-grid two-column">
           <div class="copy-block">
-            <p class="eyebrow">Backup / False Progress Mass</p>
+            <p class="eyebrow">Запасной / Масса ложного прогресса</p>
             <h2>Ложный прогресс имеет массу.</h2>
-            <p class="micro-copy">Поздний semantic defect создаёт ретроактивные потери.</p>
+            <p class="micro-copy">Если неверная предпосылка обнаружена поздно, весь сгенерированный после неё объём превращается в ретроактивную стоимость.</p>
+            <div class="ru-note">Это важно именно в ИИ-разработке: артефакты дешёвые, но ревью и исправление неверного смысла остаются дорогими.</div>
           </div>
           <div class="fpm-timeline" aria-label="Timeline массы ложного прогресса">
             <div class="timeline-axis"><span>t1</span><span>t2</span><span>t3</span><span>t4</span><span>t5</span></div>
-            <div class="bad-premise">bad premise</div>
+            <div class="bad-premise">ложная посылка</div>
             <div class="false-mass" aria-hidden="true">
               <span></span><span></span><span></span><span></span><span></span><span></span>
               <span></span><span></span><span></span><span></span><span></span><span></span>
@@ -311,16 +331,17 @@
       <article class="slide backup-slide" id="slide-10" data-slide aria-label="Backup про Intent Yield и Cost">
         <div class="slide-grid split-rule">
           <div>
-            <p class="eyebrow">Backup / IY FC ICC</p>
-            <h2>Экономика конверсии intent.</h2>
+            <p class="eyebrow">Запасной / Экономика намерений</p>
+            <h2>Экономика конверсии намерения.</h2>
+            <p class="micro-copy">Здесь меня интересует не скорость написания кода, а цена превращения идеи в рабочую функциональность.</p>
           </div>
           <div class="conversion-triangle" aria-label="Intent Yield, Functional Cost и Intent Conversion Cost">
             <div class="triangle-node spec-node">Спецификация</div>
-            <div class="triangle-node cost-node">AI cost</div>
+            <div class="triangle-node cost-node">стоимость ИИ-вывода</div>
             <div class="triangle-node func-node">Функциональность</div>
-            <span class="edge-label label-iy">Intent Yield</span>
-            <span class="edge-label label-fc">Functional Cost</span>
-            <span class="edge-label label-icc">Conversion Cost</span>
+            <span class="edge-label label-iy">выход намерения</span>
+            <span class="edge-label label-fc">стоимость функции</span>
+            <span class="edge-label label-icc">стоимость конверсии</span>
           </div>
         </div>
         <aside class="speaker-notes" hidden>
@@ -331,16 +352,20 @@
       <article class="slide backup-slide" id="slide-11" data-slide aria-label="Backup про Probabilistic Friction Curve">
         <div class="slide-grid two-column">
           <div class="copy-block">
-            <p class="eyebrow">Backup / Стабильность генерации</p>
+            <p class="eyebrow">Запасной / Стабильность генерации</p>
             <h2>У генерации есть кривая трения.</h2>
-            <p class="micro-copy">PFI считает турбулентность. CSI измеряет стабилизацию.</p>
+            <p class="micro-copy">Если маленькое уточнение намерения вызывает лавину изменений, система ещё не стабилизировалась.</p>
+            <div class="ru-points">
+              <span>PFI считает турбулентность до стабильного состояния.</span>
+              <span>CSI показывает, насколько контрольная точка переживает уточнения.</span>
+            </div>
           </div>
           <div class="friction-chart" aria-label="Probabilistic friction curve">
             <svg viewBox="0 0 100 60" preserveAspectRatio="none" aria-hidden="true">
               <polyline points="2,10 6,52 10,18 14,45 18,8 22,50 26,21 30,42 34,26 38,38 42,30 48,34 56,33 64,32 72,32 82,32 96,32" />
               <line x1="56" y1="32" x2="96" y2="32" />
             </svg>
-            <div class="chart-labels"><span>нестабильные попытки</span><span>stable state</span></div>
+            <div class="chart-labels"><span>нестабильные попытки</span><span>стабильное состояние</span></div>
           </div>
         </div>
         <aside class="speaker-notes" hidden>
@@ -351,17 +376,18 @@
       <article class="slide backup-slide" id="slide-12" data-slide aria-label="Backup про Agent Session Passport">
         <div class="slide-grid two-column">
           <div class="copy-block">
-            <p class="eyebrow">Backup / Agent Session Passport</p>
+            <p class="eyebrow">Запасной / Паспорт запуска агента</p>
             <h2>pre-SIB проверяет заявленную работу.</h2>
-            <p class="micro-copy">Запуску агента нужны scope, permissions и expected evidence.</p>
+            <p class="micro-copy">До запуска агента нужно явно записать цель, границы, контекст, разрешения и ожидаемые доказательства.</p>
+            <div class="ru-note">Пять минут уточнения дешевле, чем ревью тысяч строк не той реализации.</div>
           </div>
-          <pre class="passport-card" aria-label="Agent Session Passport"><code>goal:
-scope:
-context:
-allowed_files:
-acceptance_criteria:
-expected_evidence:
-result:</code></pre>
+          <pre class="passport-card" aria-label="Паспорт запуска агента"><code>цель:
+границы:
+контекст:
+разрешённые файлы:
+критерии приёмки:
+ожидаемые доказательства:
+результат:</code></pre>
         </div>
         <aside class="speaker-notes" hidden>
           Backup для вопроса о том, что именно проверяет pre-SIB. Agent Session Passport делает запуск агента явным рабочим контрактом: goal, scope, context, allowed files, acceptance criteria, expected evidence и result.

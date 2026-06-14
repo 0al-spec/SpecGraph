@@ -39,13 +39,23 @@ def test_presentation_shell_is_static_slide_deck():
     assert ru_html.count("data-slide") == 12
     assert ru_html.count('class="speaker-notes"') == 12
     assert '<html lang="ru">' in ru_html
-    assert "Объём больше не сигнал." in ru_html
-    assert "Измеряйте пайплайн, не человека." in ru_html
+    assert 'class="deck-ru"' in ru_html
+    assert "Артефакты стали дешёвыми." in ru_html
+    assert "Измеряйте производственный контур." in ru_html
     assert "Пять величин живут на пайплайне." in ru_html
-    assert "SIB — телескоп, а не scoreboard." in ru_html
-    assert "Coverage не доказывает смысл." in ru_html
+    assert "SIB — телескоп, а не KPI." in ru_html
+    assert "Покрытие строк не доказывает намерение." in ru_html
     assert "демо SpecGraph" in ru_html
+    assert "Нельзя прятать «неизвестно»" in ru_html
     assert '<script src="slides.js"></script>' in ru_html
+    assert "fonts/glanz/Glanz.otf" in css
+    assert "fonts/glanz/Glanz Italic.otf" in css
+    assert 'font-family: "Glanz"' in css
+    assert (PRESENTATION_DIR / "fonts" / "glanz" / "Glanz.otf").is_file()
+    assert (PRESENTATION_DIR / "fonts" / "glanz" / "Glanz Italic.otf").is_file()
+    assert "Free for Personal and Commercial Use" in (
+        PRESENTATION_DIR / "fonts" / "glanz" / "Glanz License.txt"
+    ).read_text(encoding="utf-8")
 
 
 def test_presentation_shell_uses_specgraph_landing_visual_tokens():

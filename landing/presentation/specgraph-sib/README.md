@@ -10,7 +10,8 @@ tooling, slide transitions, autoplay, and animation so the artifact can double
 as a landing-style page and a presentation surface.
 
 Use `index_ru.html` for the Russian-language visible slide copy. It shares the
-same static CSS/JS shell and keeps the same 12-slide structure.
+same static CSS/JS shell, keeps the same 12-slide structure, and uses the local
+Glanz font files in `fonts/glanz/` for Cyrillic display headings.
 
 ## Narrative Shape
 
