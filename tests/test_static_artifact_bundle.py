@@ -85,6 +85,12 @@ def make_repo(root: Path) -> Path:
         runs_dir / "agent_runtime_enforcement_evidence" / "supervisor-executor-adapter-smoke.json",
         {"artifact_kind": "agent_runtime_enforcement_evidence"},
     )
+    write_json(
+        runs_dir
+        / "agent_runtime_enforcement_evidence"
+        / "supervisor-executor-adapter-redacted-local-summary.json",
+        {"artifact_kind": "agent_runtime_enforcement_evidence"},
+    )
     return root
 
 
@@ -246,6 +252,13 @@ def test_build_public_bundle_copies_specs_and_runs_with_manifest(
     assert (
         manifest["required_surfaces"][
             "agent_runtime_enforcement_evidence/supervisor-executor-adapter-smoke.json"
+        ]
+        is True
+    )
+    assert (
+        manifest["required_surfaces"][
+            "agent_runtime_enforcement_evidence/"
+            "supervisor-executor-adapter-redacted-local-summary.json"
         ]
         is True
     )

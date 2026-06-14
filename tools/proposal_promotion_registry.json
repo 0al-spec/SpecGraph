@@ -1597,5 +1597,18 @@
     "required_provenance_links": [
       "source_draft_ref"
     ]
+  },
+  {
+    "proposal_id": "0124",
+    "source_artifact_class": "working_draft",
+    "source_refs": [
+      "docs/archive/proposal_sources/0124_agent_runtime_redacted_evidence_summary.md"
+    ],
+    "motivating_concern": "SpecGraph has a local-only executor evidence chain through accepted follow-up proposal-draft requests, but public consumers need a safe runtime evidence summary that does not publish local executor payloads or claim observed enforcement.",
+    "normalized_title": "Agent Runtime Redacted Evidence Summary",
+    "bounded_scope": "Add a report-only redacted_local_summary runtime evidence detail for the supervisor executor adapter, carrying only safe refs to local executor artifacts while keeping source payloads, raw logs, prompts, responses, secrets, machine-local paths, observed-enforcement claims, executor invocation, canonical mutation, proposal authority, SpecSpace UI, Platform packaging, and deployment changes out of scope.",
+    "required_provenance_links": [
+      "source_draft_ref"
+    ]
   }
 ]

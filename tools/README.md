@@ -320,8 +320,9 @@ Supervisor modes:
   Passport runtime enforcement evidence artifacts and
   `runs/agent_runtime_enforcement_evidence_index.json` for current
   runtime-smoke declarations. This records safe evidence refs and the
-  supervisor executor adapter invocation-boundary smoke for review without
-  claiming observed runtime enforcement.
+  supervisor executor adapter invocation-boundary smoke plus redacted local
+  executor evidence summaries for review without claiming observed runtime
+  enforcement.
 - `--build-specpm-export-preview`: build `runs/specpm_export_preview.json`
   from the tracked `SpecPM` consumer contract and
   `tools/specpm_export_registry.json`, producing a reviewable package preview
@@ -741,7 +742,9 @@ Key derived artifacts:
   evidence detail artifacts. The initial supervisor executor adapter smoke
   proves derived adapter/passport surfaces are internally consistent, safe to
   reference, and constrained to declarative CLI executable lookup without shell
-  command persistence; it does not prove sandbox or runtime policy enforcement.
+  command persistence. Redacted local executor summaries may reference
+  local-only executor artifacts without publishing their payloads. These
+  artifacts do not prove sandbox or runtime policy enforcement.
 - `runs/specpm_export_preview.json`: reviewable `SpecPM` package preview
   artifact, including manifest preview, boundary-source preview, export
   status, and next-gap backlog for future full package emission

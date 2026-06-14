@@ -6826,5 +6826,68 @@
         "pattern": "local_operator_executor_proposal_draft_request.json"
       }
     ]
+  },
+  {
+    "proposal_id": "0124",
+    "posture": "bounded_runtime_followup",
+    "runtime_surfaces": [
+      "docs/proposals/0124_agent_runtime_redacted_evidence_summary.md",
+      "docs/archive/proposal_sources/0124_agent_runtime_redacted_evidence_summary.md",
+      "tools/agent_passport_adoption_policy.json",
+      "tools/supervisor.py",
+      "tools/external_consumers.json",
+      "tools/build_static_artifact_bundle.py",
+      "tools/README.md",
+      "docs/static_artifact_publish.md",
+      "tests/test_supervisor.py",
+      "tests/test_static_artifact_bundle.py",
+      "runs/agent_runtime_enforcement_evidence/supervisor-executor-adapter-redacted-local-summary.json"
+    ],
+    "runtime_markers": [
+      {
+        "path": "tools/agent_passport_adoption_policy.json",
+        "pattern": "redacted_local_summary"
+      },
+      {
+        "path": "tools/supervisor.py",
+        "pattern": "def redacted_local_executor_summary_checks("
+      },
+      {
+        "path": "tools/supervisor.py",
+        "pattern": "redacted_local_executor_summary"
+      },
+      {
+        "path": "tools/build_static_artifact_bundle.py",
+        "pattern": "supervisor-executor-adapter-redacted-local-summary.json"
+      },
+      {
+        "path": "tools/external_consumers.json",
+        "pattern": "supervisor-executor-adapter-redacted-local-summary.json"
+      }
+    ],
+    "validation_markers": [
+      {
+        "path": "tests/test_supervisor.py",
+        "pattern": "redacted_local_summary"
+      },
+      {
+        "path": "tests/test_static_artifact_bundle.py",
+        "pattern": "supervisor-executor-adapter-redacted-local-summary.json"
+      }
+    ],
+    "observation_markers": [
+      {
+        "path": "docs/proposals/0124_agent_runtime_redacted_evidence_summary.md",
+        "pattern": "redacted_local_summary"
+      },
+      {
+        "path": "docs/static_artifact_publish.md",
+        "pattern": "supervisor-executor-adapter-redacted-local-summary.json"
+      },
+      {
+        "path": "tools/README.md",
+        "pattern": "Redacted local executor summaries"
+      }
+    ]
   }
 ]

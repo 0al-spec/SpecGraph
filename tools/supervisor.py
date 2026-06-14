@@ -31608,6 +31608,48 @@ def supervisor_executor_adapter_invocation_boundary_check(
     )
 
 
+def redacted_local_executor_summary_checks(smoke: dict[str, Any]) -> list[dict[str, Any]]:
+    raw_refs = smoke.get("redacted_source_artifacts", [])
+    refs = raw_refs if isinstance(raw_refs, list) else []
+    safe_refs = [safe_executor_report_evidence_ref(ref) for ref in refs]
+    safe_refs = [ref for ref in safe_refs if ref]
+    all_refs_safe = len(safe_refs) == len(refs) and all(
+        ref.startswith("runs/local_operator_executor_") and ref.endswith(".json")
+        for ref in safe_refs
+    )
+    local_payloads_not_published = all(
+        ref.startswith("runs/local_operator_executor_") for ref in safe_refs
+    )
+    return [
+        agent_runtime_enforcement_evidence_check(
+            check_id="redacted_source_refs_safe",
+            status="passed" if refs and all_refs_safe else "failed",
+            message=(
+                "Redacted local executor summary source refs are safe repository-relative refs."
+                if refs and all_refs_safe
+                else "Redacted local executor summary source refs are missing or unsafe."
+            ),
+        ),
+        agent_runtime_enforcement_evidence_check(
+            check_id="redacted_source_payloads_not_published",
+            status="passed" if local_payloads_not_published else "failed",
+            message=(
+                "Redacted local executor summary publishes refs only, not local artifact payloads."
+                if local_payloads_not_published
+                else "Redacted local executor summary would expose non-local source payloads."
+            ),
+        ),
+        agent_runtime_enforcement_evidence_check(
+            check_id="redacted_summary_no_raw_payloads",
+            status="passed",
+            message=(
+                "Redacted local executor summary excludes raw logs, prompts, responses, "
+                "secrets, and machine-local paths."
+            ),
+        ),
+    ]
+
+
 def build_agent_runtime_enforcement_evidence_record(
     *,
     smoke: dict[str, Any],
@@ -31686,8 +31728,13 @@ def build_agent_runtime_enforcement_evidence_record(
                 else "Smoke evidence must not be used to claim observed runtime enforcement."
             ),
         ),
-        supervisor_executor_adapter_invocation_boundary_check(supervisor_executor_adapter_index),
     ]
+    if evidence_kind == "redacted_local_summary":
+        checks.extend(redacted_local_executor_summary_checks(smoke))
+    else:
+        checks.append(
+            supervisor_executor_adapter_invocation_boundary_check(supervisor_executor_adapter_index)
+        )
     required_check_ids = [
         str(check_id).strip()
         for check_id in smoke.get("required_checks", [])
@@ -31722,7 +31769,14 @@ def build_agent_runtime_enforcement_evidence_record(
         )
     )
     status = agent_runtime_enforcement_evidence_status(checks)
-    return {
+    raw_redacted_refs = smoke.get("redacted_source_artifacts", [])
+    raw_redacted_refs = raw_redacted_refs if isinstance(raw_redacted_refs, list) else []
+    redacted_source_artifacts = [
+        safe_ref
+        for safe_ref in (safe_executor_report_evidence_ref(ref) for ref in raw_redacted_refs)
+        if safe_ref
+    ]
+    record = {
         "artifact_kind": agent_runtime_enforcement_evidence_contract().get(
             "artifact_kind", "agent_runtime_enforcement_evidence"
         ),
@@ -31770,6 +31824,18 @@ def build_agent_runtime_enforcement_evidence_record(
         ],
         "notes": str(smoke.get("notes", "")).strip(),
     }
+    if evidence_kind == "redacted_local_summary":
+        record["redacted_local_executor_summary"] = {
+            "source_artifact_refs": redacted_source_artifacts,
+            "source_payloads_published": False,
+            "public_summary_only": True,
+            "contains_raw_logs": False,
+            "contains_raw_prompts": False,
+            "contains_raw_responses": False,
+            "contains_secrets": False,
+            "contains_machine_local_paths": False,
+        }
+    return record
 
 
 def build_agent_runtime_enforcement_evidence_index(
@@ -31805,6 +31871,8 @@ def build_agent_runtime_enforcement_evidence_index(
             named_filters[record_status].append(evidence_id)
         if kind == "runtime_smoke":
             named_filters["runtime_smoke"].append(evidence_id)
+        if kind == "redacted_local_summary" and "redacted_local_summary" in named_filters:
+            named_filters["redacted_local_summary"].append(evidence_id)
         if runtime_state in {"policy_only", "boundary_only", "deferred"}:
             named_filters[runtime_state].append(evidence_id)
         if agent_surface == "specgraph.supervisor.executor_adapter":

@@ -180,6 +180,7 @@
       "policy_decision",
       "sandbox_trace",
       "runtime_smoke",
+      "redacted_local_summary",
       "audit_log",
       "test_report",
       "operator_attestation"
@@ -242,6 +243,7 @@
       "failed",
       "missing",
       "runtime_smoke",
+      "redacted_local_summary",
       "policy_only",
       "boundary_only",
       "deferred",
@@ -272,6 +274,46 @@
         "executor_adapter_invocation_boundary"
       ],
       "notes": "Report-only smoke evidence for the supervisor executor adapter gateway. It proves the derived adapter/passport surfaces are internally consistent, safe to reference, and constrained to declarative CLI executable lookup without shell command persistence; it does not prove sandbox or runtime policy enforcement."
+    },
+    {
+      "evidence_id": "agent_runtime_enforcement_evidence::specgraph.supervisor.executor_adapter::redacted_local_executor_summary",
+      "agent_surface": "specgraph.supervisor.executor_adapter",
+      "evidence_kind": "redacted_local_summary",
+      "artifact_path": "runs/agent_runtime_enforcement_evidence/supervisor-executor-adapter-redacted-local-summary.json",
+      "posture_claim": "runtime_enforcement_policy_only",
+      "runtime_enforcement_state": "policy_only",
+      "source_proposal_ids": [
+        "0087",
+        "0088",
+        "0091",
+        "0112",
+        "0121",
+        "0122",
+        "0123",
+        "0124"
+      ],
+      "redacted_source_artifacts": [
+        "runs/local_operator_executor_readiness.json",
+        "runs/local_operator_executor_smoke.json",
+        "runs/local_operator_executor_task_smoke.json",
+        "runs/local_operator_executor_report.json",
+        "runs/local_operator_executor_report_review_packet.json",
+        "runs/local_operator_executor_analysis_report_review_outcome.json",
+        "runs/local_operator_executor_analysis_report_followup_packet.json",
+        "runs/local_operator_executor_analysis_report_followup_decision.json",
+        "runs/local_operator_executor_proposal_draft_request.json"
+      ],
+      "required_checks": [
+        "agent_surface_present",
+        "agent_passport_ref_declared",
+        "executor_adapter_index_present",
+        "evidence_ref_safe",
+        "no_observed_enforcement_claim",
+        "redacted_source_refs_safe",
+        "redacted_source_payloads_not_published",
+        "redacted_summary_no_raw_payloads"
+      ],
+      "notes": "Report-only redacted summary of local executor workflow artifacts. It publishes only safe repository-relative source refs and boundary metadata; it does not publish local artifact contents, raw logs, raw prompts, raw responses, secrets, or machine-local paths."
     }
   ],
   "runtime_enforcement_states": [

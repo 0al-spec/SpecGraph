@@ -106,6 +106,7 @@ The bundle builder fails before upload when it finds:
   - `runs/agent_verification_gap_index.json`
   - `runs/agent_runtime_enforcement_evidence_index.json`
   - `runs/agent_runtime_enforcement_evidence/supervisor-executor-adapter-smoke.json`
+  - `runs/agent_runtime_enforcement_evidence/supervisor-executor-adapter-redacted-local-summary.json`
 - missing external consumer evidence surfaces required by downstream evidence
   acceptance:
   - `runs/external_consumer_evidence_index.json`
