@@ -17,6 +17,22 @@
   --diagram-label-sm: clamp(14px, .98vw, 16px);
 }
 
+@font-face {
+  font-family: "Glanz";
+  src: url("fonts/glanz/Glanz.otf") format("opentype");
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "Glanz";
+  src: url("fonts/glanz/Glanz Italic.otf") format("opentype");
+  font-style: italic;
+  font-weight: 400;
+  font-display: swap;
+}
+
 * {
   box-sizing: border-box;
 }
@@ -34,6 +50,10 @@ body {
   min-height: 100vh;
   overflow: hidden;
   letter-spacing: 0;
+}
+
+.deck-ru {
+  --serif: "Glanz", "Inter", "Helvetica Neue", Arial, sans-serif;
 }
 
 button,
@@ -296,6 +316,91 @@ h3 {
   color: var(--muted);
   font-size: clamp(16px, 1.35vw, 20px);
   line-height: 1.35;
+}
+
+.deck-ru h1 {
+  max-width: 13ch;
+  font-size: clamp(50px, 5.7vw, 82px);
+  line-height: 1.03;
+}
+
+.deck-ru .title-long {
+  max-width: 14ch;
+  font-size: clamp(46px, 5.3vw, 76px);
+}
+
+.deck-ru h2 {
+  max-width: 14ch;
+  font-size: clamp(44px, 5.2vw, 76px);
+  line-height: 1.03;
+}
+
+.deck-ru .lede,
+.deck-ru .micro-copy {
+  max-width: 40ch;
+  font-size: clamp(17px, 1.38vw, 21px);
+  line-height: 1.42;
+}
+
+.deck-ru .old-metrics span,
+.deck-ru .pipeline-strip span,
+.deck-ru .guardrail-strip span,
+.deck-ru .anchor-row span,
+.deck-ru .optimizer-panel span {
+  padding: 0 8px;
+  line-height: 1.18;
+  overflow-wrap: anywhere;
+}
+
+.ru-points,
+.ru-note,
+.ru-mini-table {
+  margin-top: 24px;
+  border-top: 1px solid var(--rule-soft);
+}
+
+.ru-points {
+  display: grid;
+  gap: 10px;
+  padding-top: 16px;
+  color: var(--ink-2);
+  font-size: clamp(15px, 1.12vw, 17px);
+  line-height: 1.36;
+}
+
+.ru-points span {
+  display: block;
+}
+
+.ru-note {
+  padding-top: 15px;
+  color: var(--muted);
+  font-size: clamp(14px, 1.05vw, 16px);
+  line-height: 1.42;
+}
+
+.ru-mini-table {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0;
+  padding-top: 0;
+  border-left: 1px solid var(--rule-soft);
+  font-size: clamp(13px, .98vw, 15px);
+  line-height: 1.32;
+}
+
+.ru-mini-table span {
+  min-height: 62px;
+  display: grid;
+  align-content: center;
+  padding: 12px 14px;
+  border-right: 1px solid var(--rule-soft);
+  border-bottom: 1px solid var(--rule-soft);
+}
+
+.ru-mini-table b {
+  color: var(--signal-ink);
+  font-weight: 600;
 }
 
 .hero-panel,
