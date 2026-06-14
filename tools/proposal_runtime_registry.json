@@ -6447,5 +6447,70 @@
         "pattern": "build_prompt_agent_ontology_context_artifact"
       }
     ]
+  },
+  {
+    "proposal_id": "0118",
+    "posture": "bounded_runtime_followup",
+    "runtime_surfaces": [
+      "docs/proposals/0118_ontology_prompt_agent_context_artifact.md",
+      "docs/archive/proposal_sources/0118_ontology_prompt_agent_context_artifact.md",
+      "tools/ontology_semantic_control_policy.json",
+      "tools/ontology_imports.py",
+      "tools/README.md",
+      "docs/supervisor_manual.md",
+      "Sources/SpecGraph/Documentation.docc/OntologyCAdapterReport.md",
+      "tests/test_ontology_import_policy.py",
+      "runs/ontology_prompt_invocation_index.json"
+    ],
+    "runtime_markers": [
+      {
+        "path": "tools/ontology_semantic_control_policy.json",
+        "pattern": "prompt_agent_ontology_context_contract"
+      },
+      {
+        "path": "tools/ontology_imports.py",
+        "pattern": "def build_ontology_prompt_agent_context_artifact("
+      },
+      {
+        "path": "tools/ontology_imports.py",
+        "pattern": "def require_ontology_prompt_invocation_index("
+      },
+      {
+        "path": "tools/ontology_imports.py",
+        "pattern": "\"context_only_no_execution\""
+      }
+    ],
+    "validation_markers": [
+      {
+        "path": "tests/test_ontology_import_policy.py",
+        "pattern": "def test_ontology_import_governance_and_prompt_surfaces_are_derived("
+      },
+      {
+        "path": "tests/test_ontology_import_policy.py",
+        "pattern": "def test_ontology_prompt_agent_context_rejects_execution_boundary_expansion("
+      },
+      {
+        "path": "tests/test_ontology_import_policy.py",
+        "pattern": "def test_proposal_0118_runtime_registry_tracks_prompt_agent_context("
+      }
+    ],
+    "observation_markers": [
+      {
+        "path": "tools/README.md",
+        "pattern": "runs/ontology_prompt_invocation_index.json"
+      },
+      {
+        "path": "docs/supervisor_manual.md",
+        "pattern": "context-only prompt-agent ontology boundary"
+      },
+      {
+        "path": "Sources/SpecGraph/Documentation.docc/OntologyCAdapterReport.md",
+        "pattern": "typed prompt-agent context boundary"
+      },
+      {
+        "path": "docs/proposals/0118_ontology_prompt_agent_context_artifact.md",
+        "pattern": "produce_ontology_owner_decisions"
+      }
+    ]
   }
 ]

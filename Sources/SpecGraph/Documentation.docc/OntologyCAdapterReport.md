@@ -53,6 +53,7 @@ and emits deterministic review-only semantic artifacts under `runs/`:
 
 ```text
 runs/ontology_semantic_context_pack.json
+runs/ontology_prompt_invocation_index.json
 runs/ontology_semantic_lint_input.json
 runs/ontology_semantic_lint_report.json
 runs/ontology_delta_candidate_review_packet.json
@@ -69,6 +70,13 @@ runs/ontology_semantic_lint_smoke.json
 `runs/ontology_semantic_lint_input.json` is the source-backed lint input. It
 extracts declared ontology terms from tracked proposal or supervisor output
 sources, records source digests and spans, and stays read-only.
+
+`runs/ontology_prompt_invocation_index.json` is the typed prompt-agent context boundary.
+It carries package refs, accepted terms, aliases, deprecated terms,
+relation conflicts, unresolved gaps, governance evidence, prompt input/output
+refs, and failure modes as context-only grounding. It does not execute prompt
+agents, persist raw prompts or responses, write Ontology packages, update
+lockfiles, or mutate canonical specs.
 
 `runs/ontology_semantic_review_surface.json` is the SpecSpace/supervisor-facing
 surface for grounding summary, blocking findings, review-required findings,
