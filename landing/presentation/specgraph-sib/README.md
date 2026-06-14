@@ -9,6 +9,9 @@ Open `index.html` directly in a browser. The deck intentionally avoids build
 tooling, slide transitions, autoplay, and animation so the artifact can double
 as a landing-style page and a presentation surface.
 
+Use `index_ru.html` for the Russian-language visible slide copy. It shares the
+same static CSS/JS shell and keeps the same 12-slide structure.
+
 ## Narrative Shape
 
 - Slides 1-2: AI makes artifacts cheap; measure the pipeline, not the person.
