@@ -1610,5 +1610,18 @@
     "required_provenance_links": [
       "source_draft_ref"
     ]
+  },
+  {
+    "proposal_id": "0125",
+    "source_artifact_class": "working_draft",
+    "source_refs": [
+      "docs/archive/proposal_sources/0125_build_executor_followup_proposal_draft_candidate.md"
+    ],
+    "motivating_concern": "SpecGraph can build an accepted follow-up proposal-draft request, but it lacks the local-only draft candidate artifact that makes the request reviewable by downstream proposal promotion policy without granting it proposal-lane authority.",
+    "normalized_title": "Build Executor Follow-up Proposal Draft Candidate",
+    "bounded_scope": "Add a local-only follow-up proposal draft candidate artifact and Make target that consumes only a valid ready accepted follow-up proposal draft request, preserves source-request-as-input authority boundaries, requires future promotion policy and human review, and excludes the candidate from public static publish without writing proposal docs, writing source drafts, mutating proposal registries/status, mutating canonical specs, applying patches, closing gaps, or invoking executors.",
+    "required_provenance_links": [
+      "source_draft_ref"
+    ]
   }
 ]
