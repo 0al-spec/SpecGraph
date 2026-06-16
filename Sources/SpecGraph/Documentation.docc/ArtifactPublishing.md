@@ -25,7 +25,8 @@ bundle. It refreshes product-facing surfaces before packaging `specs/` and
 `runs/`, including the Agent Passport producer artifacts consumed by SpecSpace:
 executor adapter index, agent surface index, known passport index, verification
 report, verification gap index, runtime evidence index, and runtime evidence
-detail artifacts.
+detail artifacts. It also refreshes the Ontology semantic review, dashboard,
+and owner-decision preview artifacts consumed by SpecSpace utility panels.
 
 The bundle manifest and safety gate must fail closed when required public
 surfaces are missing, so a successful static-host deploy means HTTP consumers
@@ -43,6 +44,11 @@ The public bundle also includes
 `runs/external_consumer_evidence_index.json` so downstream consumer evidence
 accepted by SpecGraph is HTTP-readable alongside the handoff and Agent surface
 producer artifacts.
+
+The public bundle must include the Ontology review surfaces that SpecSpace reads
+over HTTP: `runs/ontology_semantic_review_surface.json`,
+`runs/ontology_review_dashboard.json`, and
+`runs/ontology_decision_import_preview.json`.
 
 Local-only operator diagnostics are excluded from the public bundle.
 `runs/local_operator_executor_readiness.json` may exist after

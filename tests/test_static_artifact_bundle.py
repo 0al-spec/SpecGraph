@@ -78,6 +78,13 @@ def make_repo(root: Path) -> Path:
             "entry_count": 5,
             "accepted_count": 5,
         },
+        "ontology_semantic_review_surface.json": {
+            "artifact_kind": "ontology_semantic_review_surface"
+        },
+        "ontology_review_dashboard.json": {"artifact_kind": "ontology_review_dashboard"},
+        "ontology_decision_import_preview.json": {
+            "artifact_kind": "ontology_decision_import_preview"
+        },
     }
     for name, payload in artifacts.items():
         write_json(runs_dir / name, payload)
@@ -261,6 +268,9 @@ def test_build_public_bundle_copies_specs_and_runs_with_manifest(
     assert manifest["required_surfaces"]["implementation_work_index.json"] is True
     assert manifest["required_surfaces"]["agent_runtime_enforcement_evidence_index.json"] is True
     assert manifest["required_surfaces"]["external_consumer_evidence_index.json"] is True
+    assert manifest["required_surfaces"]["ontology_semantic_review_surface.json"] is True
+    assert manifest["required_surfaces"]["ontology_review_dashboard.json"] is True
+    assert manifest["required_surfaces"]["ontology_decision_import_preview.json"] is True
     assert (
         manifest["required_surfaces"][
             "agent_runtime_enforcement_evidence/supervisor-executor-adapter-smoke.json"
@@ -484,6 +494,32 @@ def test_build_public_bundle_requires_external_consumer_evidence_surface(
         )
 
 
+@pytest.mark.parametrize(
+    "surface_name",
+    [
+        "ontology_semantic_review_surface.json",
+        "ontology_review_dashboard.json",
+        "ontology_decision_import_preview.json",
+    ],
+)
+def test_build_public_bundle_requires_ontology_review_surfaces(
+    tmp_path: Path,
+    bundle_module: object,
+    surface_name: str,
+) -> None:
+    repo = make_repo(tmp_path / "repo")
+    (repo / "runs" / surface_name).unlink()
+
+    with pytest.raises(
+        bundle_module.PublishBundleError,
+        match=surface_name,
+    ):
+        bundle_module.build_public_bundle(
+            repo_root=repo,
+            output_dir=repo / "dist" / "specgraph-public",
+        )
+
+
 def test_build_public_bundle_requires_agent_passport_cli_available(
     tmp_path: Path,
     bundle_module: object,
@@ -589,6 +625,7 @@ def test_refresh_publish_surfaces_builds_viewer_implementation_and_agent_surface
         "viewer-surfaces",
         "external-handoffs",
         "external-consumer-evidence",
+        "ontology-imports",
     ]
 
 

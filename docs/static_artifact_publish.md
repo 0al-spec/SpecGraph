@@ -84,6 +84,8 @@ The order matters and is intentionally two-pass:
    downstream handoff and evidence acceptance artifacts after the final viewer
    pass, so the published evidence index references the published handoff
    packet state.
+6. `make ontology-imports` rebuilds the Ontology semantic review, dashboard, and
+   owner-decision preview artifacts consumed by SpecSpace utility panels.
 
 ## Safety Gate
 
@@ -107,6 +109,10 @@ The bundle builder fails before upload when it finds:
   - `runs/agent_runtime_enforcement_evidence_index.json`
   - `runs/agent_runtime_enforcement_evidence/supervisor-executor-adapter-smoke.json`
   - `runs/agent_runtime_enforcement_evidence/supervisor-executor-adapter-redacted-local-summary.json`
+- missing Ontology review surfaces required by SpecSpace:
+  - `runs/ontology_semantic_review_surface.json`
+  - `runs/ontology_review_dashboard.json`
+  - `runs/ontology_decision_import_preview.json`
 - missing external consumer evidence surfaces required by downstream evidence
   acceptance:
   - `runs/external_consumer_evidence_index.json`
