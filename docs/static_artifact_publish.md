@@ -84,8 +84,12 @@ The order matters and is intentionally two-pass:
    downstream handoff and evidence acceptance artifacts after the final viewer
    pass, so the published evidence index references the published handoff
    packet state.
-6. `make ontology-imports` rebuilds the Ontology semantic review, dashboard, and
-   owner-decision preview artifacts consumed by SpecSpace utility panels.
+6. `make ontology-imports-public` rebuilds the public-safe Ontology semantic
+   review, dashboard, and owner-decision preview placeholders consumed by
+   SpecSpace utility panels. The fixture-driven `make ontology-imports` target
+   remains local smoke coverage and is not used for static publishing. Other
+   `runs/ontology*.json` support/smoke artifacts are local-only until a
+   production Ontology source has a separate publication contract.
 
 ## Safety Gate
 
@@ -113,6 +117,8 @@ The bundle builder fails before upload when it finds:
   - `runs/ontology_semantic_review_surface.json`
   - `runs/ontology_review_dashboard.json`
   - `runs/ontology_decision_import_preview.json`
+- public Ontology review surfaces that contain checked-in demo fixture terms
+  instead of a production-safe no-candidates/no-decisions placeholder;
 - missing external consumer evidence surfaces required by downstream evidence
   acceptance:
   - `runs/external_consumer_evidence_index.json`

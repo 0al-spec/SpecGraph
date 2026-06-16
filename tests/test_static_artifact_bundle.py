@@ -432,6 +432,45 @@ def test_build_public_bundle_rejects_secret_like_content(
     assert not (repo / "dist" / "specgraph-public").exists()
 
 
+def test_build_public_bundle_rejects_demo_ontology_fixture_content(
+    tmp_path: Path,
+    bundle_module: object,
+) -> None:
+    repo = make_repo(tmp_path / "repo")
+    write_json(
+        repo / "runs" / "ontology_review_dashboard.json",
+        {"artifact_kind": "ontology_review_dashboard", "term": "ExamPolicy"},
+    )
+
+    with pytest.raises(bundle_module.PublishBundleError, match="demo ontology fixture content"):
+        bundle_module.build_public_bundle(
+            repo_root=repo,
+            output_dir=repo / "dist" / "specgraph-public",
+        )
+
+    assert not (repo / "dist" / "specgraph-public").exists()
+
+
+def test_build_public_bundle_excludes_local_ontology_fixture_surfaces(
+    tmp_path: Path,
+    bundle_module: object,
+) -> None:
+    repo = make_repo(tmp_path / "repo")
+    write_json(
+        repo / "runs" / "ontology_package_index.json",
+        {"artifact_kind": "ontology_package_index", "term": "ExamPolicy"},
+    )
+
+    result = bundle_module.build_public_bundle(
+        repo_root=repo,
+        output_dir=repo / "dist" / "specgraph-public",
+    )
+
+    assert result.manifest["safety_gate"]["status"] == "passed"
+    assert not (result.output_dir / "runs" / "ontology_package_index.json").exists()
+    assert (result.output_dir / "runs" / "ontology_review_dashboard.json").is_file()
+
+
 def test_build_public_bundle_requires_core_viewer_surfaces(
     tmp_path: Path,
     bundle_module: object,
@@ -625,7 +664,7 @@ def test_refresh_publish_surfaces_builds_viewer_implementation_and_agent_surface
         "viewer-surfaces",
         "external-handoffs",
         "external-consumer-evidence",
-        "ontology-imports",
+        "ontology-imports-public",
     ]
 
 

@@ -19,7 +19,7 @@ EXECUTOR_FOLLOWUP_RATIONALE ?=
 
 PYTHON_TARGETS := viewer-surfaces dashboard backlog next-move spec-activity graph-diagnostics \
 	proposal-spec-trace proposal-tracking proposal-tracking-gate external-consumers external-handoffs \
-	external-consumer-evidence ontology-imports \
+	external-consumer-evidence ontology-imports ontology-imports-public \
 	proposal-work-claims proposal-work-claims-gate proposal-id \
 	metrics-delivery metrics-feedback metrics-source-promotion metric-signals metric-thresholds \
 	metric-packs metric-pack-drift metric-pack-adapters metric-pack-runs metric-pricing model-usage \
@@ -57,6 +57,7 @@ help:
 		'  make external-handoffs        Refresh external consumer handoff JSON' \
 			'  make external-consumer-evidence Refresh external consumer evidence JSON' \
 			'  make ontology-imports          Refresh ontology import and semantic-control surfaces' \
+			'  make ontology-imports-public   Refresh public-safe ontology review placeholders' \
 		'  make metrics-delivery         Refresh Metrics delivery workflow JSON' \
 		'  make metrics-feedback         Refresh Metrics feedback JSON' \
 		'  make metrics-source-promotion Refresh Metrics source promotion candidates JSON' \
@@ -171,6 +172,10 @@ external-consumer-evidence:
 .PHONY: ontology-imports
 ontology-imports:
 	@$(PYTHON) tools/ontology_imports.py --write
+
+.PHONY: ontology-imports-public
+ontology-imports-public:
+	@$(PYTHON) tools/ontology_imports.py --write-public-placeholder
 
 .PHONY: metrics-delivery
 metrics-delivery:

@@ -1546,6 +1546,80 @@ def test_ontology_decision_import_preview_builds_read_only_preview() -> None:
     assert preview["authority_boundary"]["ontology_decision_import_preview_is_authority"] is False
 
 
+def test_public_ontology_review_placeholders_are_specspace_safe(tmp_path: Path) -> None:
+    module = load_ontology_imports_module()
+
+    surfaces = module.build_public_ontology_review_placeholder_surfaces()
+
+    assert set(surfaces) == set(module.PUBLIC_ONTOLOGY_REVIEW_SURFACE_KEYS)
+    rendered = json.dumps(surfaces, ensure_ascii=False, sort_keys=True)
+    for marker in module.PUBLIC_FIXTURE_LEAK_MARKERS:
+        assert marker not in rendered
+
+    review_surface = module.require_ontology_semantic_review_surface(
+        surfaces["semantic_review_surface"]
+    )
+    assert review_surface["source_mode"] == "public_placeholder"
+    assert review_surface["placeholder_reason"] == "production_ontology_source_not_configured"
+    assert review_surface["summary"] == {
+        "status": "no_candidates",
+        "blocking_count": 0,
+        "review_required_count": 0,
+        "candidate_count": 0,
+        "review_item_count": 0,
+        "next_gap": "configure_production_ontology_source",
+    }
+    assert review_surface["blocking_findings"] == []
+    assert review_surface["review_required_findings"] == []
+    assert review_surface["delta_candidates"] == []
+    assert review_surface["review_items"] == []
+
+    dashboard = module.require_ontology_review_dashboard(surfaces["ontology_review_dashboard"])
+    assert dashboard["source_mode"] == "public_placeholder"
+    assert dashboard["status_summary"]["status"] == "no_candidates"
+    assert dashboard["status_summary"]["blocking_count"] == 0
+    assert dashboard["status_summary"]["review_required_count"] == 0
+    assert dashboard["status_summary"]["candidate_count"] == 0
+    assert dashboard["gate"]["gate_state"] == "clear"
+    assert dashboard["blocking_items"] == []
+    assert dashboard["review_required_items"] == []
+    assert dashboard["closed_loop_entries"] == []
+
+    preview = module.require_ontology_decision_import_preview(
+        surfaces["ontology_decision_import_preview"]
+    )
+    assert preview["source_mode"] == "public_placeholder"
+    assert preview["summary"]["status"] == "no_decisions"
+    assert preview["summary"]["preview_count"] == 0
+    assert preview["summary"]["ignored_decision_count"] == 0
+    assert preview["decision_import_previews"] == []
+    assert preview["ignored_owner_decisions"] == []
+
+    written = module.write_public_ontology_review_placeholder_surfaces(
+        surfaces,
+        out_dir=tmp_path,
+    )
+    written_paths = {path.relative_to(tmp_path).as_posix() for path in written}
+    assert written_paths == {
+        "runs/ontology_semantic_review_surface.json",
+        "runs/ontology_review_dashboard.json",
+        "runs/ontology_decision_import_preview.json",
+    }
+    written_payload = "\n".join(path.read_text(encoding="utf-8") for path in written)
+    for marker in module.PUBLIC_FIXTURE_LEAK_MARKERS:
+        assert marker not in written_payload
+
+
+def test_public_ontology_review_guard_rejects_demo_fixture_surfaces() -> None:
+    module = load_ontology_imports_module()
+
+    surfaces = module.build_ontology_import_surfaces(FIXTURE)
+    public_surfaces = {key: surfaces[key] for key in module.PUBLIC_ONTOLOGY_REVIEW_SURFACE_KEYS}
+
+    with pytest.raises(ValueError, match="demo fixture markers"):
+        module.reject_fixture_markers_in_public_surfaces(public_surfaces)
+
+
 def test_ontology_review_dashboard_keeps_blocked_gate_above_no_candidates() -> None:
     module = load_ontology_imports_module()
     semantic_policy = json.loads(

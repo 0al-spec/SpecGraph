@@ -61,6 +61,24 @@ SECRET_PATTERNS = (
     re.compile(r"(?i)(?:^|[^A-Z0-9_])(?:[A-Z0-9_]*_)?API_KEY\s*=\s*[^\s\"']+"),
     re.compile(r"(?i)\"(?:api_key|authorization|password)\"\s*:\s*\"[^\"\n]+\""),
 )
+ONTOLOGY_PUBLIC_REVIEW_SURFACES = {
+    "runs/ontology_semantic_review_surface.json",
+    "runs/ontology_review_dashboard.json",
+    "runs/ontology_decision_import_preview.json",
+}
+PUBLIC_ONTOLOGY_RUN_SURFACES = {
+    "ontology_semantic_review_surface.json",
+    "ontology_review_dashboard.json",
+    "ontology_decision_import_preview.json",
+}
+DEMO_ONTOLOGY_FIXTURE_MARKERS = (
+    "examcalc",
+    "edu.university.examcalc",
+    "ExamPolicy",
+    "CASFunction",
+    "allows policy",
+    "ontology-gap-examcalc",
+)
 
 
 @dataclass
@@ -143,7 +161,9 @@ def iter_publish_sources(repo_root: Path) -> Iterable[tuple[str, Path, PurePosix
             rel = PurePosixPath(root_name, path.relative_to(source_root).as_posix())
             if root_name == "runs":
                 run_rel = rel.relative_to("runs").as_posix()
-                if run_rel in LOCAL_ONLY_RUN_SURFACES:
+                if run_rel in LOCAL_ONLY_RUN_SURFACES or (
+                    run_rel.startswith("ontology") and run_rel not in PUBLIC_ONTOLOGY_RUN_SURFACES
+                ):
                     continue
             yield root_name, path, rel
 
@@ -172,6 +192,15 @@ def detect_secret_like_content(path: PurePosixPath, text: str) -> list[str]:
         if pattern.search(text):
             findings.append(f"secret-like content in {path}")
     return findings
+
+
+def detect_demo_ontology_fixture_content(path: PurePosixPath, text: str) -> list[str]:
+    if path.as_posix() not in ONTOLOGY_PUBLIC_REVIEW_SURFACES:
+        return []
+    leaked_markers = sorted(marker for marker in DEMO_ONTOLOGY_FIXTURE_MARKERS if marker in text)
+    if not leaked_markers:
+        return []
+    return [f"demo ontology fixture content in {path}: {', '.join(leaked_markers)}"]
 
 
 def write_text_atomic(path: Path, text: str) -> None:
@@ -355,7 +384,7 @@ def refresh_publish_surfaces(repo_root: Path) -> None:
     run_make_target(repo_root, "viewer-surfaces")
     run_make_target(repo_root, "external-handoffs")
     run_make_target(repo_root, "external-consumer-evidence")
-    run_make_target(repo_root, "ontology-imports")
+    run_make_target(repo_root, "ontology-imports-public")
 
 
 def build_public_bundle(
@@ -386,6 +415,7 @@ def build_public_bundle(
     warnings: list[str] = []
     redacted_total = 0
     secret_findings: list[str] = []
+    ontology_fixture_findings: list[str] = []
 
     for root_name, source_path, rel_path in iter_publish_sources(repo_root):
         text = load_text(source_path)
@@ -395,6 +425,9 @@ def build_public_bundle(
         redacted_text, redaction_count = redact_local_paths(text)
         redacted_total += redaction_count
         secret_findings.extend(detect_secret_like_content(rel_path, redacted_text))
+        ontology_fixture_findings.extend(
+            detect_demo_ontology_fixture_content(rel_path, redacted_text)
+        )
 
         target_path = output_dir / rel_path.as_posix()
         write_text_atomic(target_path, redacted_text)
@@ -410,6 +443,9 @@ def build_public_bundle(
     if secret_findings:
         shutil.rmtree(output_dir)
         raise PublishBundleError("; ".join(sorted(set(secret_findings))))
+    if ontology_fixture_findings:
+        shutil.rmtree(output_dir)
+        raise PublishBundleError("; ".join(sorted(set(ontology_fixture_findings))))
 
     manifest = build_manifest(
         repo_root=repo_root,

@@ -19,6 +19,21 @@ SEMANTIC_CONTROL_POLICY_PATH = Path("tools") / "ontology_semantic_control_policy
 DEFAULT_SEMANTIC_POLICY = object()
 CONCEPT_REF_PATTERN = re.compile(r"^[A-Za-z][A-Za-z0-9_]*:[A-Za-z][A-Za-z0-9_]*$")
 DIGEST_PATTERN = re.compile(r"^sha256:[0-9a-f]{64}$")
+PUBLIC_PLACEHOLDER_REASON = "production_ontology_source_not_configured"
+PUBLIC_PLACEHOLDER_NEXT_GAP = "configure_production_ontology_source"
+PUBLIC_ONTOLOGY_REVIEW_SURFACE_KEYS = (
+    "semantic_review_surface",
+    "ontology_review_dashboard",
+    "ontology_decision_import_preview",
+)
+PUBLIC_FIXTURE_LEAK_MARKERS = (
+    "examcalc",
+    "edu.university.examcalc",
+    "ExamPolicy",
+    "CASFunction",
+    "allows policy",
+    "ontology-gap-examcalc",
+)
 
 REF_CATEGORIES = {
     "classes": "class",
@@ -6045,6 +6060,262 @@ def require_ontology_decision_import_preview(
     return preview
 
 
+def resolve_semantic_policy_path(semantic_policy_path: Path | None = None) -> Path:
+    resolved = semantic_policy_path or SEMANTIC_CONTROL_POLICY_PATH
+    if not resolved.is_absolute():
+        resolved = ROOT / resolved
+    return resolved
+
+
+def public_placeholder_metadata() -> dict[str, Any]:
+    return {
+        "source_mode": "public_placeholder",
+        "placeholder_reason": PUBLIC_PLACEHOLDER_REASON,
+        "required_action": PUBLIC_PLACEHOLDER_NEXT_GAP,
+    }
+
+
+def reject_fixture_markers_in_public_surfaces(surfaces: dict[str, dict[str, Any]]) -> None:
+    rendered = json.dumps(surfaces, ensure_ascii=False, sort_keys=True)
+    leaked_markers = sorted(marker for marker in PUBLIC_FIXTURE_LEAK_MARKERS if marker in rendered)
+    if leaked_markers:
+        raise ValueError(
+            "public ontology review surfaces contain demo fixture markers: "
+            + ", ".join(leaked_markers)
+        )
+
+
+def build_public_ontology_review_placeholder_surfaces(
+    *,
+    semantic_policy_path: Path | None = None,
+) -> dict[str, dict[str, Any]]:
+    semantic_policy_path = resolve_semantic_policy_path(semantic_policy_path)
+    semantic_policy = load_json(semantic_policy_path)
+    require_semantic_control_policy(semantic_policy)
+
+    semantic_layout = require_object(
+        semantic_policy, "repository_layout", "semantic_control_policy"
+    )
+    review_surface_contract = require_object(
+        semantic_policy, "semantic_review_surface_contract", "semantic_control_policy"
+    )
+    dashboard_contract = require_object(
+        semantic_policy, "ontology_review_dashboard_contract", "semantic_control_policy"
+    )
+    decision_import_contract = require_object(
+        semantic_policy, "ontology_decision_import_preview_contract", "semantic_control_policy"
+    )
+    authority_boundary = copy_json_object(
+        require_object(semantic_policy, "authority_boundary", "semantic_control_policy")
+    )
+    source_artifacts = {
+        "production_ontology_source": "not_configured",
+    }
+    metadata = public_placeholder_metadata()
+
+    semantic_review_surface = {
+        "artifact_kind": require_string(
+            review_surface_contract,
+            "artifact_kind",
+            "semantic_control_policy.semantic_review_surface_contract",
+        ),
+        "schema_version": 1,
+        "proposal_id": "0108",
+        "policy_basis": semantic_policy["policy_basis"],
+        "source_policy": relative_path(semantic_policy_path),
+        "source_artifacts": dict(source_artifacts),
+        "target": copy_json_object(
+            require_object(
+                review_surface_contract,
+                "target",
+                "semantic_control_policy.semantic_review_surface_contract",
+            )
+        ),
+        "canonical_mutations_allowed": False,
+        "tracked_artifacts_written": False,
+        **metadata,
+        "grounding_summary": {
+            "source_context_status": "not_configured",
+            "source_lint_status": "no_candidates",
+            "source_delta_candidate_status": "no_candidates",
+            "package_count": 0,
+            "accepted_term_count": 0,
+            "accepted_relation_count": 0,
+            "alias_count": 0,
+            "deprecated_term_count": 0,
+            "relation_conflict_count": 0,
+            "unresolved_gap_count": 0,
+            "governance_evidence_count": 0,
+        },
+        "display_sections": require_string_list(
+            review_surface_contract,
+            "display_sections",
+            "semantic_control_policy.semantic_review_surface_contract",
+        ),
+        "blocking_findings": [],
+        "review_required_findings": [],
+        "delta_candidates": [],
+        "review_items": [],
+        "review_actions": [],
+        "consumer_boundary": copy_json_object(
+            require_object(
+                review_surface_contract,
+                "consumer_boundary",
+                "semantic_control_policy.semantic_review_surface_contract",
+            )
+        ),
+        "authority_boundary": copy_json_object(authority_boundary),
+        "summary": {
+            "status": "no_candidates",
+            "blocking_count": 0,
+            "review_required_count": 0,
+            "candidate_count": 0,
+            "review_item_count": 0,
+            "next_gap": PUBLIC_PLACEHOLDER_NEXT_GAP,
+        },
+        "output_artifact": require_layout_path(semantic_layout, "semantic_review_surface"),
+    }
+    require_ontology_semantic_review_surface(semantic_review_surface)
+
+    dashboard_source_artifacts = {
+        **source_artifacts,
+        "semantic_review_surface": require_surface_output_artifact(
+            semantic_review_surface, "semantic_review_surface"
+        ),
+        "supervisor_semantic_gate": "not_configured",
+        "ontology_delta_draft_intake": "not_configured",
+        "ontology_closed_loop_evidence": "not_configured",
+    }
+    ontology_review_dashboard = {
+        "artifact_kind": require_string(
+            dashboard_contract,
+            "artifact_kind",
+            "semantic_control_policy.ontology_review_dashboard_contract",
+        ),
+        "schema_version": 1,
+        "proposal_id": "0113",
+        "policy_basis": semantic_policy["policy_basis"],
+        "source_policy": relative_path(semantic_policy_path),
+        "source_artifacts": dashboard_source_artifacts,
+        "target": copy_json_object(
+            require_object(
+                dashboard_contract,
+                "target",
+                "semantic_control_policy.ontology_review_dashboard_contract",
+            )
+        ),
+        "canonical_mutations_allowed": False,
+        "tracked_artifacts_written": False,
+        **metadata,
+        "dashboard_sections": require_string_list(
+            dashboard_contract,
+            "dashboard_sections",
+            "semantic_control_policy.ontology_review_dashboard_contract",
+        ),
+        "status_summary": {
+            "status": "no_candidates",
+            "gate_state": "clear",
+            "review_surface_status": "no_candidates",
+            "intake_status": "no_candidates",
+            "closed_loop_status": "no_candidates",
+            "blocking_count": 0,
+            "review_required_count": 0,
+            "candidate_count": 0,
+            "draft_request_count": 0,
+            "evidence_entry_count": 0,
+            "pending_decision_count": 0,
+            "blocked_entry_count": 0,
+            "required_human_action": PUBLIC_PLACEHOLDER_NEXT_GAP,
+            "next_gap": PUBLIC_PLACEHOLDER_NEXT_GAP,
+        },
+        "gate": {
+            "gate_state": "clear",
+            "outcome": "no_candidates",
+            "required_human_action": PUBLIC_PLACEHOLDER_NEXT_GAP,
+            "blocking_item_ids": [],
+            "review_required_item_ids": [],
+            "candidate_item_ids": [],
+        },
+        "blocking_items": [],
+        "review_required_items": [],
+        "delta_candidates": [],
+        "draft_requests": [],
+        "closed_loop_entries": [],
+        "review_actions": [],
+        "consumer_boundary": copy_json_object(
+            require_object(
+                dashboard_contract,
+                "consumer_boundary",
+                "semantic_control_policy.ontology_review_dashboard_contract",
+            )
+        ),
+        "authority_boundary": copy_json_object(authority_boundary),
+        "output_artifact": require_layout_path(semantic_layout, "ontology_review_dashboard"),
+    }
+    require_ontology_review_dashboard(ontology_review_dashboard)
+
+    ontology_decision_import_preview = {
+        "artifact_kind": require_string(
+            decision_import_contract,
+            "artifact_kind",
+            "semantic_control_policy.ontology_decision_import_preview_contract",
+        ),
+        "schema_version": 1,
+        "proposal_id": "0115",
+        "policy_basis": semantic_policy["policy_basis"],
+        "source_policy": relative_path(semantic_policy_path),
+        "source_artifacts": {
+            **dashboard_source_artifacts,
+            "ontology_review_dashboard": require_surface_output_artifact(
+                ontology_review_dashboard, "ontology_review_dashboard"
+            ),
+            "ontology_owner_decision_report": "not_configured",
+        },
+        "target": copy_json_object(
+            require_object(
+                decision_import_contract,
+                "target",
+                "semantic_control_policy.ontology_decision_import_preview_contract",
+            )
+        ),
+        "canonical_mutations_allowed": False,
+        "tracked_artifacts_written": False,
+        **metadata,
+        "decision_import_previews": [],
+        "ignored_owner_decisions": [],
+        "consumer_boundary": copy_json_object(
+            require_object(
+                decision_import_contract,
+                "consumer_boundary",
+                "semantic_control_policy.ontology_decision_import_preview_contract",
+            )
+        ),
+        "authority_boundary": copy_json_object(authority_boundary),
+        "summary": {
+            "status": "no_decisions",
+            "preview_count": 0,
+            "accepted_count": 0,
+            "rejected_count": 0,
+            "clarification_count": 0,
+            "importable_count": 0,
+            "blocked_count": 0,
+            "unmatched_count": 0,
+            "ignored_decision_count": 0,
+            "next_gap": PUBLIC_PLACEHOLDER_NEXT_GAP,
+        },
+        "output_artifact": require_layout_path(semantic_layout, "ontology_decision_import_preview"),
+    }
+    require_ontology_decision_import_preview(ontology_decision_import_preview)
+
+    surfaces = {
+        "semantic_review_surface": semantic_review_surface,
+        "ontology_review_dashboard": ontology_review_dashboard,
+        "ontology_decision_import_preview": ontology_decision_import_preview,
+    }
+    reject_fixture_markers_in_public_surfaces(surfaces)
+    return surfaces
+
+
 def build_ontology_semantic_lint_smoke(
     semantic_policy: dict[str, Any],
     *,
@@ -6519,6 +6790,35 @@ def write_ontology_import_surfaces(
     return written
 
 
+def write_public_ontology_review_placeholder_surfaces(
+    surfaces: dict[str, dict[str, Any]],
+    *,
+    semantic_policy_path: Path | None = None,
+    out_dir: Path = ROOT,
+) -> list[Path]:
+    semantic_policy_path = resolve_semantic_policy_path(semantic_policy_path)
+    semantic_policy = load_json(semantic_policy_path)
+    require_semantic_control_policy(semantic_policy)
+    roots = allowed_output_roots(semantic_policy)
+    reject_fixture_markers_in_public_surfaces(surfaces)
+    destinations = {
+        "semantic_review_surface": require_surface_output_artifact(
+            surfaces["semantic_review_surface"], "semantic_review_surface"
+        ),
+        "ontology_review_dashboard": require_surface_output_artifact(
+            surfaces["ontology_review_dashboard"], "ontology_review_dashboard"
+        ),
+        "ontology_decision_import_preview": require_surface_output_artifact(
+            surfaces["ontology_decision_import_preview"], "ontology_decision_import_preview"
+        ),
+    }
+    written = []
+    for key in PUBLIC_ONTOLOGY_REVIEW_SURFACE_KEYS:
+        path = resolve_allowed_output_path(out_dir, destinations[key], roots)
+        written.append(write_json(path, surfaces[key]))
+    return written
+
+
 def parse_args() -> argparse.Namespace:
     policy = load_json(POLICY_PATH)
     layout = policy.get("repository_layout")
@@ -6534,6 +6834,14 @@ def parse_args() -> argparse.Namespace:
         "--write",
         action="store_true",
         help="Write derived surfaces to the paths declared in tools/ontology_import_policy.json.",
+    )
+    parser.add_argument(
+        "--write-public-placeholder",
+        action="store_true",
+        help=(
+            "Write only production-safe public Ontology review placeholder surfaces for "
+            "SpecSpace static publishing."
+        ),
     )
     parser.add_argument(
         "--adapter-report",
@@ -6565,6 +6873,24 @@ def main() -> int:
     layout = policy.get("repository_layout")
     if not isinstance(layout, dict):
         raise ValueError("policy.repository_layout must be an object")
+    if args.write and args.write_public_placeholder:
+        raise ValueError("--write and --write-public-placeholder are mutually exclusive")
+    if args.write_public_placeholder and args.no_semantic_policy:
+        raise ValueError("--write-public-placeholder requires the semantic policy")
+    if args.write_public_placeholder:
+        semantic_policy_path = (
+            Path(args.semantic_policy) if args.semantic_policy else SEMANTIC_CONTROL_POLICY_PATH
+        )
+        surfaces = build_public_ontology_review_placeholder_surfaces(
+            semantic_policy_path=semantic_policy_path
+        )
+        written = write_public_ontology_review_placeholder_surfaces(
+            surfaces,
+            semantic_policy_path=semantic_policy_path,
+        )
+        for path in written:
+            print(relative_path(path))
+        return 0
     fixture_path = Path(args.fixture)
     if not fixture_path.is_absolute():
         fixture_path = ROOT / fixture_path
