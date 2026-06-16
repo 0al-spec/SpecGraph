@@ -13,6 +13,15 @@ Use `index_ru.html` for the Russian-language visible slide copy. It shares the
 same static CSS/JS shell, keeps the same 12-slide structure, and uses the local
 Glanz font files in `fonts/glanz/` for Cyrillic display headings.
 
+Use `index_ru_v2.html` for the alternate, formula-driven Russian variant. It is
+a 10-slide academic framing of the same SIB ideas (balance framework, SIB =
+N_spec / S_impl, intent-conversion economics, pre-code diagnostics,
+friction/stability, defect anatomy, False Progress Mass, the paradigm-shift
+table, and the non-normative longitudinal radar). It reuses `styles.css`,
+`slides.js`, and the Glanz fonts, and layers a few extra diagram components
+(SIB fraction, boxed equations, defect decision tree, comparison table, and the
+isometric radar stack) in `styles_v2.css`.
+
 ## Narrative Shape
 
 - Slides 1-2: AI makes artifacts cheap; measure the pipeline, not the person.
