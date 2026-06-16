@@ -29,6 +29,9 @@ REQUIRED_RUN_SURFACES = (
     "agent_runtime_enforcement_evidence/supervisor-executor-adapter-smoke.json",
     "agent_runtime_enforcement_evidence/supervisor-executor-adapter-redacted-local-summary.json",
     "external_consumer_evidence_index.json",
+    "ontology_semantic_review_surface.json",
+    "ontology_review_dashboard.json",
+    "ontology_decision_import_preview.json",
 )
 LOCAL_ONLY_RUN_SURFACES = {
     "local_operator_executor_readiness.json",
@@ -352,6 +355,7 @@ def refresh_publish_surfaces(repo_root: Path) -> None:
     run_make_target(repo_root, "viewer-surfaces")
     run_make_target(repo_root, "external-handoffs")
     run_make_target(repo_root, "external-consumer-evidence")
+    run_make_target(repo_root, "ontology-imports")
 
 
 def build_public_bundle(
