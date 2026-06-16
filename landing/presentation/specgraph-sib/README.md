@@ -13,6 +13,26 @@ Use `index_ru.html` for the Russian-language visible slide copy. It shares the
 same static CSS/JS shell, keeps the same 12-slide structure, and uses the local
 Glanz font files in `fonts/glanz/` for Cyrillic display headings.
 
+Use `index_ru_v2.html` for the alternate 10-slide Russian variant. It carries
+the SpecGraph speaker narrative — AI makes artifacts cheap, so measure meaning,
+not volume:
+
+1. Дешёвые артефакты — AI made artifacts cheap; count is no longer a signal.
+2. Output ≠ ценность — more output does not mean more value.
+3. SIB — сигнал баланса — SIB is the descriptive Spec/Impl balance, not a score.
+4. Стоимость capability — cost per internally accepted capability.
+5. pre-SIB — readiness of the path before launching an agent.
+6. Yield — where the pipeline leaks meaning (intents → accepted).
+7. Drift — broken code vs. a semantic shift of intent.
+8. Доказательство смысла — evidence must prove intent, plus confidence/unknown.
+9. Метрики на переходах — the capability pipeline and per-transition metrics.
+10. Слои и тезис — observables/control/outcomes, measure the pipeline not people.
+
+It reuses `styles.css`, `slides.js`, and the Glanz fonts, and layers a few extra
+diagram components (SIB fraction, boxed statements, two-branch decision tree,
+transition table, and the layered stack) in `styles_v2.css`. The longer
+speaker-script narration lives in each slide's `speaker-notes`.
+
 ## Narrative Shape
 
 - Slides 1-2: AI makes artifacts cheap; measure the pipeline, not the person.
