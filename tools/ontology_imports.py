@@ -26,6 +26,26 @@ PUBLIC_ONTOLOGY_REVIEW_SURFACE_KEYS = (
     "ontology_review_dashboard",
     "ontology_decision_import_preview",
 )
+PUBLIC_RETIRED_ONTOLOGY_ARTIFACT_PATHS = (
+    "runs/ontology_binding_preview.json",
+    "runs/ontology_closed_loop_evidence.json",
+    "runs/ontology_delta_candidate_review_packet.json",
+    "runs/ontology_delta_draft_intake.json",
+    "runs/ontology_governance_evidence_index.json",
+    "runs/ontology_import_gap_index.json",
+    "runs/ontology_owner_decision_report.json",
+    "runs/ontology_package_index.json",
+    "runs/ontology_prompt_invocation_index.json",
+    "runs/ontology_semantic_context_pack.json",
+    "runs/ontology_semantic_lint_input.json",
+    "runs/ontology_semantic_lint_report.json",
+    "runs/ontology_semantic_lint_smoke.json",
+    "runs/ontology_supervisor_semantic_gate.json",
+    "runs/ontologyc_adapter_report_smoke.json",
+)
+PUBLIC_ONTOLOGY_TOMBSTONE_SURFACE_KEYS = tuple(
+    f"retired_public_ontology_artifact::{path}" for path in PUBLIC_RETIRED_ONTOLOGY_ARTIFACT_PATHS
+)
 PUBLIC_FIXTURE_LEAK_MARKERS = (
     "examcalc",
     "edu.university.examcalc",
@@ -6085,6 +6105,36 @@ def reject_fixture_markers_in_public_surfaces(surfaces: dict[str, dict[str, Any]
         )
 
 
+def build_public_retired_ontology_tombstones() -> dict[str, dict[str, Any]]:
+    return {
+        key: {
+            "artifact_kind": "retired_public_ontology_artifact",
+            "schema_version": 1,
+            "source_mode": "public_tombstone",
+            "placeholder_reason": "local_only_ontology_artifact_retired_from_public_bundle",
+            "retired_artifact": path,
+            "replacement_artifacts": [
+                "runs/ontology_semantic_review_surface.json",
+                "runs/ontology_review_dashboard.json",
+                "runs/ontology_decision_import_preview.json",
+            ],
+            "canonical_mutations_allowed": False,
+            "tracked_artifacts_written": False,
+            "summary": {
+                "status": "retired_local_only_artifact",
+                "public_payload_available": False,
+                "next_gap": PUBLIC_PLACEHOLDER_NEXT_GAP,
+            },
+            "output_artifact": path,
+        }
+        for key, path in zip(
+            PUBLIC_ONTOLOGY_TOMBSTONE_SURFACE_KEYS,
+            PUBLIC_RETIRED_ONTOLOGY_ARTIFACT_PATHS,
+            strict=True,
+        )
+    }
+
+
 def build_public_ontology_review_placeholder_surfaces(
     *,
     semantic_policy_path: Path | None = None,
@@ -6312,6 +6362,7 @@ def build_public_ontology_review_placeholder_surfaces(
         "ontology_review_dashboard": ontology_review_dashboard,
         "ontology_decision_import_preview": ontology_decision_import_preview,
     }
+    surfaces.update(build_public_retired_ontology_tombstones())
     reject_fixture_markers_in_public_surfaces(surfaces)
     return surfaces
 
@@ -6812,8 +6863,10 @@ def write_public_ontology_review_placeholder_surfaces(
             surfaces["ontology_decision_import_preview"], "ontology_decision_import_preview"
         ),
     }
+    for key in PUBLIC_ONTOLOGY_TOMBSTONE_SURFACE_KEYS:
+        destinations[key] = require_surface_output_artifact(surfaces[key], key)
     written = []
-    for key in PUBLIC_ONTOLOGY_REVIEW_SURFACE_KEYS:
+    for key in PUBLIC_ONTOLOGY_REVIEW_SURFACE_KEYS + PUBLIC_ONTOLOGY_TOMBSTONE_SURFACE_KEYS:
         path = resolve_allowed_output_path(out_dir, destinations[key], roots)
         written.append(write_json(path, surfaces[key]))
     return written

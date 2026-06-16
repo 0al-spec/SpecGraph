@@ -451,14 +451,18 @@ def test_build_public_bundle_rejects_demo_ontology_fixture_content(
     assert not (repo / "dist" / "specgraph-public").exists()
 
 
-def test_build_public_bundle_excludes_local_ontology_fixture_surfaces(
+def test_build_public_bundle_publishes_ontology_tombstones(
     tmp_path: Path,
     bundle_module: object,
 ) -> None:
     repo = make_repo(tmp_path / "repo")
     write_json(
         repo / "runs" / "ontology_package_index.json",
-        {"artifact_kind": "ontology_package_index", "term": "ExamPolicy"},
+        {
+            "artifact_kind": "retired_public_ontology_artifact",
+            "source_mode": "public_tombstone",
+            "summary": {"status": "retired_local_only_artifact"},
+        },
     )
 
     result = bundle_module.build_public_bundle(
@@ -467,7 +471,9 @@ def test_build_public_bundle_excludes_local_ontology_fixture_surfaces(
     )
 
     assert result.manifest["safety_gate"]["status"] == "passed"
-    assert not (result.output_dir / "runs" / "ontology_package_index.json").exists()
+    tombstone = result.output_dir / "runs" / "ontology_package_index.json"
+    assert tombstone.is_file()
+    assert "ExamPolicy" not in tombstone.read_text(encoding="utf-8")
     assert (result.output_dir / "runs" / "ontology_review_dashboard.json").is_file()
 
 

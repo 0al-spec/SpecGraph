@@ -1551,7 +1551,8 @@ def test_public_ontology_review_placeholders_are_specspace_safe(tmp_path: Path) 
 
     surfaces = module.build_public_ontology_review_placeholder_surfaces()
 
-    assert set(surfaces) == set(module.PUBLIC_ONTOLOGY_REVIEW_SURFACE_KEYS)
+    assert set(module.PUBLIC_ONTOLOGY_REVIEW_SURFACE_KEYS).issubset(set(surfaces))
+    assert set(module.PUBLIC_ONTOLOGY_TOMBSTONE_SURFACE_KEYS).issubset(set(surfaces))
     rendered = json.dumps(surfaces, ensure_ascii=False, sort_keys=True)
     for marker in module.PUBLIC_FIXTURE_LEAK_MARKERS:
         assert marker not in rendered
@@ -1595,16 +1596,30 @@ def test_public_ontology_review_placeholders_are_specspace_safe(tmp_path: Path) 
     assert preview["decision_import_previews"] == []
     assert preview["ignored_owner_decisions"] == []
 
+    tombstone = surfaces["retired_public_ontology_artifact::runs/ontology_package_index.json"]
+    assert tombstone["artifact_kind"] == "retired_public_ontology_artifact"
+    assert tombstone["source_mode"] == "public_tombstone"
+    assert tombstone["retired_artifact"] == "runs/ontology_package_index.json"
+    assert tombstone["summary"]["status"] == "retired_local_only_artifact"
+
     written = module.write_public_ontology_review_placeholder_surfaces(
         surfaces,
         out_dir=tmp_path,
     )
     written_paths = {path.relative_to(tmp_path).as_posix() for path in written}
-    assert written_paths == {
+    assert {
         "runs/ontology_semantic_review_surface.json",
         "runs/ontology_review_dashboard.json",
         "runs/ontology_decision_import_preview.json",
-    }
+        "runs/ontology_package_index.json",
+        "runs/ontology_semantic_lint_report.json",
+        "runs/ontology_prompt_invocation_index.json",
+        "runs/ontologyc_adapter_report_smoke.json",
+    }.issubset(written_paths)
+    assert len(written_paths) == (
+        len(module.PUBLIC_ONTOLOGY_REVIEW_SURFACE_KEYS)
+        + len(module.PUBLIC_ONTOLOGY_TOMBSTONE_SURFACE_KEYS)
+    )
     written_payload = "\n".join(path.read_text(encoding="utf-8") for path in written)
     for marker in module.PUBLIC_FIXTURE_LEAK_MARKERS:
         assert marker not in written_payload

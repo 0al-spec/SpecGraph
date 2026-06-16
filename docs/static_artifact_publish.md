@@ -87,9 +87,10 @@ The order matters and is intentionally two-pass:
 6. `make ontology-imports-public` rebuilds the public-safe Ontology semantic
    review, dashboard, and owner-decision preview placeholders consumed by
    SpecSpace utility panels. The fixture-driven `make ontology-imports` target
-   remains local smoke coverage and is not used for static publishing. Other
-   `runs/ontology*.json` support/smoke artifacts are local-only until a
-   production Ontology source has a separate publication contract.
+   remains local smoke coverage and is not used for static publishing. Retired
+   `runs/ontology*.json` support/smoke artifact URLs receive safe tombstones so
+   static hosts that do not delete old remote files cannot keep serving demo
+   fixture content.
 
 ## Safety Gate
 

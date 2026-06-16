@@ -52,9 +52,9 @@ over HTTP: `runs/ontology_semantic_review_surface.json`,
 surfaces through `make ontology-imports-public`, which emits a valid
 no-candidates/no-decisions placeholder until a production Ontology source is
 configured. The fixture-driven `make ontology-imports` smoke path is not copied
-as the public Ontology review state. Other `runs/ontology*.json` support/smoke
-artifacts are local-only until a production Ontology source has a separate
-publication contract.
+as the public Ontology review state. Retired `runs/ontology*.json`
+support/smoke artifact URLs receive safe tombstones so static hosts that do not
+delete old remote files cannot keep serving demo fixture content.
 
 Local-only operator diagnostics are excluded from the public bundle.
 `runs/local_operator_executor_readiness.json` may exist after
