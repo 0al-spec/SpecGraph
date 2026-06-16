@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width,initial-scale=1" />
-<title>SIB Framework — баланс спецификации и реализации</title>
+<title>SIB / SpecGraph — от активности к сохранению смысла</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Inter:wght@300;400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
@@ -25,8 +25,8 @@
         <span>SpecGraph</span>
       </a>
       <div class="topbar-meta">
-        <span>SIB Framework</span>
-        <span>семантический радар разработки</span>
+        <span>SIB · SpecGraph</span>
+        <span>от активности к смыслу</span>
       </div>
       <nav class="deck-nav" aria-label="Навигация по слайдам">
         <button class="icon-button" id="prevSlide" type="button" aria-label="Предыдущий слайд" title="Предыдущий слайд">
@@ -44,19 +44,19 @@
     </header>
 
     <section class="stage" aria-live="polite">
-      <article class="slide is-active" id="slide-1" data-slide aria-label="Баланс спецификации и реализации">
+      <article class="slide is-active" id="slide-1" data-slide aria-label="AI удешевил артефакты">
         <div class="slide-grid two-column">
           <div class="copy-block">
-            <p class="eyebrow">01 / Балансовый фреймворк</p>
-            <h1 class="title-long">Баланс спецификации и реализации.</h1>
-            <p class="lede">Диагностический фреймворк для AI-опосредованной разработки программного обеспечения.</p>
+            <p class="eyebrow">01 / Дешёвые артефакты</p>
+            <h1 class="title-long">Артефакты подешевели. Смысл — нет.</h1>
+            <p class="lede">ИИ резко удешевил код, тесты, документацию и PR. Пока артефакт был дорогим, его количество было сигналом. Теперь — нет.</p>
             <div class="ru-points">
-              <span>Слева — смысловая масса спецификации: намерение, критерии, инварианты.</span>
-              <span>Справа — объём реализации, который ИИ производит почти бесплатно.</span>
-              <span>SIB наблюдает за равновесием между ними, а не за скоростью.</span>
+              <span>Слева — сигнал смысла: намерение, ограничения, критерии, инварианты.</span>
+              <span>Справа — поверхность реализации, которую ИИ производит почти бесплатно.</span>
+              <span>Главный вопрос сменился: не «сколько произвели?», а «сохранили ли смысл?».</span>
             </div>
           </div>
-          <div class="signal-scale" aria-label="Весы баланса спецификации и реализации">
+          <div class="signal-scale" aria-label="Весы баланса смысла и объёма">
             <div class="scale-beam">
               <span class="blue-dot" aria-hidden="true"></span>
               <div class="fulcrum" aria-hidden="true"></div>
@@ -66,32 +66,32 @@
               </div>
             </div>
             <div class="guardrail-strip">
-              <span>спецификация</span>
+              <span>сигнал смысла</span>
               <span>баланс</span>
-              <span>реализация</span>
+              <span>объём</span>
             </div>
           </div>
         </div>
         <aside class="speaker-notes" hidden>
-          Титульный слайд. Метафора весов: на одной чаше — структурированное намерение (спецификация), на другой — объём реализации, который ИИ генерирует почти бесплатно. SIB — это наблюдаемый параметр баланса между смыслом и объёмом, а не KPI скорости.
+          Я начинаю с простого наблюдения. ИИ удешевил производство артефактов: код, тесты, документацию, PR, миграционные планы. Пока артефакт было дорого произвести, сам факт его появления был сигналом усилия. Когда артефакты дешевеют, их количество перестаёт быть надёжным сигналом. Главный вопрос меняется: не «сколько мы произвели?», а «сохранили ли мы смысл?».
         </aside>
       </article>
 
-      <article class="slide" id="slide-2" data-slide aria-label="Почему традиционные метрики потеряли смысл">
+      <article class="slide" id="slide-2" data-slide aria-label="Больше output — не больше ценности">
         <div class="slide-grid two-column">
           <div class="copy-block">
-            <p class="eyebrow">02 / Сдвиг сигнала</p>
-            <h2>Почему традиционные метрики потеряли смысл.</h2>
-            <p class="micro-copy">Когда артефакты были дорогими, их объём был честным сигналом усилия. ИИ разорвал эту связь.</p>
+            <p class="eyebrow">02 / Output ≠ ценность</p>
+            <h2>Больше output — не больше ценности.</h2>
+            <p class="micro-copy">Задачи, PR, lead time, cycle time, deploy frequency — полезные числа, но они смотрят на систему снаружи.</p>
             <div class="ru-points">
-              <span>Раньше каждая строка кода или story point подразумевали проверенное намерение.</span>
-              <span>Сегодня код — побочный продукт: ИИ дёшево генерирует огромные объёмы.</span>
-              <span>Строка реализации больше не доказывает проверяемое намерение.</span>
+              <span>Агент может ускорить эти числа и одновременно ухудшить систему.</span>
+              <span>Он способен сместить смысл задачи, расширить scope, написать тесты под собственную реализацию.</span>
+              <span>Активности стало больше, а уверенности — меньше.</span>
             </div>
           </div>
-          <div class="factory-comparison" aria-label="Рукописный код против генеративного">
+          <div class="factory-comparison" aria-label="Объём как сигнал против дешёвого fan-out">
             <section class="factory-lane">
-              <span class="lane-label">Прошлое · рукописный код</span>
+              <span class="lane-label">Раньше · объём = сигнал</span>
               <div class="keyboard-glyph" aria-hidden="true">
                 <span></span><span></span><span></span><span></span>
               </div>
@@ -101,7 +101,7 @@
               <strong>Усилие = объём</strong>
             </section>
             <section class="factory-lane active-lane">
-              <span class="lane-label">Эра ИИ · генеративный код</span>
+              <span class="lane-label">Эра ИИ · дешёвый fan-out</span>
               <div class="intent-atom">Атом намерения</div>
               <div class="llm-node">ИИ</div>
               <div class="fanout-cloud" aria-hidden="true">
@@ -109,24 +109,24 @@
                 <span></span><span></span><span></span><span></span><span></span><span></span>
                 <span></span><span></span><span></span><span></span><span></span><span></span>
               </div>
-              <strong>Объём ≠ смысл</strong>
+              <strong>Активность ≠ уверенность</strong>
             </section>
           </div>
         </div>
         <aside class="speaker-notes" hidden>
-          В рукописную эпоху объём работы прямо коррелировал с усилием и прогрессом: каждая строка кода или story point подразумевали проверяемое намерение. В эпоху ИИ код стал побочным продуктом: модель генерирует огромные объёмы дёшево, и объём реализации перестал доказывать проверенное намерение.
+          В классической разработке мы измеряем output: количество задач, PR, lead time, cycle time, deploy frequency, change failure rate. Это полезно, но смотрит на систему снаружи. ИИ может улучшить эти числа и одновременно ухудшить реальное состояние системы: быстрее писать код и PR, но незаметно сместить смысл задачи, расширить scope, написать тесты под собственную реализацию. Активности стало больше, уверенности — меньше.
         </aside>
       </article>
 
-      <article class="slide" id="slide-3" data-slide aria-label="От объёма к балансу">
+      <article class="slide" id="slide-3" data-slide aria-label="SIB — сигнал баланса">
         <div class="slide-grid split-rule">
           <div>
-            <p class="eyebrow">03 / От объёма к балансу</p>
-            <h2>Фундаментальный сдвиг: от объёма к балансу.</h2>
-            <p class="micro-copy">SIB измеряет не количество, а распределение смысловой нагрузки между намерением и его исполнением.</p>
-            <div class="ru-note">SIB — это не KPI и не цель оптимизации, а базовый наблюдаемый параметр (observable), отражающий архитектуру создания функциональности.</div>
+            <p class="eyebrow">03 / SIB — сигнал баланса</p>
+            <h2>SIB — баланс спецификации и реализации.</h2>
+            <p class="micro-copy">SIB дескриптивен. Он не говорит «хорошо» или «плохо» и не вешается на человека — он показывает, где живёт дисбаланс.</p>
+            <div class="ru-note">SIB наблюдает. Если нужен управляющий score — это отдельный слой (Pipeline Integrity Index). Диагностическую метрику нельзя превращать в KPI.</div>
           </div>
-          <div class="formula-stage" aria-label="Формула SIB и определения её частей">
+          <div class="formula-stage" aria-label="Отношение сигнала спецификации к поверхности реализации">
             <div class="sib-formula">
               <span class="lhs">SIB</span>
               <span class="eq">=</span>
@@ -138,157 +138,158 @@
             </div>
             <div class="metric-defs">
               <div class="accent">
-                <b>N<sub>spec</sub> · атомы намерения</b>
-                <p>Структурированная история, критерии приёмки и инварианты — измеримая смысловая масса.</p>
+                <b>N<sub>spec</sub> · сигнал спецификации</b>
+                <p>Намерение, ограничения, критерии приёмки, инварианты — сколько у нас смысла и структуры.</p>
               </div>
               <div>
-                <b>S<sub>impl</sub> · объём реализации</b>
-                <p>Строки кода, токены модели или AST-узлы — материальный след генерации.</p>
+                <b>S<sub>impl</sub> · поверхность реализации</b>
+                <p>Объём кода, токенов или артефактов, который мы производим.</p>
               </div>
             </div>
           </div>
         </div>
         <aside class="speaker-notes" hidden>
-          SIB = N_spec / S_impl. В числителе — атомы намерения: структурированные истории, критерии приёмки, инварианты. В знаменателе — объём реализации: строки кода, токены, AST-узлы. Показатель отражает распределение смысловой нагрузки между спецификацией и исполнением. Это observable, а не цель оптимизации.
+          SIB — это Specification–Implementation Balance: отношение сигнала спецификации к поверхности реализации. Если implementation растёт, а сигнал спецификации слабый — тревожный паттерн: много поверхности при недостатке смысла. Если спецификация огромна, а реализации почти нет — тоже сигнал. SIB не говорит «хорошо» или «плохо», он говорит «посмотри сюда, здесь дисбаланс». Управляющий композитный score — это отдельный слой, Pipeline Integrity Index, иначе диагностику превратят в KPI.
         </aside>
       </article>
 
-      <article class="slide" id="slide-4" data-slide aria-label="Анатомия конверсии намерений">
+      <article class="slide" id="slide-4" data-slide aria-label="Стоимость принятой capability">
         <div class="slide-grid diagram-layout">
           <div class="copy-block">
-            <p class="eyebrow">04 / Конверсия намерений</p>
-            <h2>Анатомия конверсии намерений.</h2>
-            <p class="micro-copy">Меня интересует не скорость письма, а цена превращения намерения в работающую функциональность.</p>
+            <p class="eyebrow">04 / Стоимость capability</p>
+            <h2>Стоимость принятой capability.</h2>
+            <p class="micro-copy">ИИ делает отдельный артефакт почти бесплатным, но полная стоимость принятой фичи может вырасти.</p>
             <div class="metric-defs">
               <div class="accent">
-                <b>IY · выход намерения</b>
-                <p>Сколько уникальных функциональных результатов рождается из одной спецификации.</p>
+                <b>Не строка и не токен</b>
+                <p>Стоимость PR, токена или одного запуска агента обманчива как метрика.</p>
               </div>
               <div>
-                <b>FC · функциональная стоимость</b>
-                <p>Стоимость ИИ-вывода на один функциональный юнит.</p>
+                <b>Полная стоимость</b>
+                <p>Токены, runtime, CI, ревью, rework, debugging, steering, rollback, документация.</p>
               </div>
               <div>
-                <b>ICC · стоимость конверсии</b>
-                <p>Затраты модели C<sub>AI</sub>, отнесённые к одному атому намерения.</p>
+                <b>Cost / accepted capability</b>
+                <p>Цена доведения intent до внутренне принятой capability.</p>
               </div>
             </div>
           </div>
-          <div class="conversion-triangle" aria-label="Intent Yield, Functional Cost и Intent Conversion Cost">
-            <div class="triangle-node spec-node">Атомы намерения · N<sub>spec</sub></div>
-            <div class="triangle-node cost-node">Стоимость ИИ · C<sub>AI</sub></div>
-            <div class="triangle-node func-node">Функциональность · N<sub>func</sub></div>
-            <span class="edge-label label-iy">выход намерения · IY</span>
-            <span class="edge-label label-fc">функциональная стоимость · FC</span>
-            <span class="edge-label label-icc">стоимость конверсии · ICC</span>
+          <div class="conversion-triangle" aria-label="От намерения к принятой capability через полную стоимость">
+            <div class="triangle-node spec-node">Intent · намерение</div>
+            <div class="triangle-node cost-node">Полная стоимость</div>
+            <div class="triangle-node func-node">Принятая capability</div>
+            <span class="edge-label label-iy">intent → capability</span>
+            <span class="edge-label label-fc">cost / accepted</span>
+            <span class="edge-label label-icc">усилие → стоимость</span>
           </div>
         </div>
         <aside class="speaker-notes" hidden>
-          Три величины связывают намерение, стоимость ИИ-вывода и рождение функциональности. Intent Yield — сколько функциональных результатов рождается из спецификации. Functional Cost — стоимость ИИ на один функциональный юнит. Intent Conversion Cost — стоимость вывода модели, отнесённая к одному атому намерения.
+          Нас интересует не стоимость строки кода, PR, токена или запуска агента, а cost per internally accepted capability. Сюда входят токены, agent runtime, CI, review time, rework, debugging, human steering, rollback, документация. ИИ может сделать артефакт почти бесплатным, но полная стоимость принятой фичи вырастает: агент быстро пишет код, а человек тратит время на ревью, уточнения и исправление semantic drift. Настоящая экономическая метрика — цена доведения intent до принятой capability.
         </aside>
       </article>
 
-      <article class="slide" id="slide-5" data-slide aria-label="Диагностика до первой строки кода">
+      <article class="slide" id="slide-5" data-slide aria-label="pre-SIB — готовность до запуска агента">
         <div class="slide-grid split-rule">
           <div>
-            <p class="eyebrow">05 / До первой строки</p>
-            <h2>Диагностика до написания первой строки кода.</h2>
-            <p class="micro-copy">Часть сигнала доступна ещё до генерации: можно оценить будущую массу реализации и проверяемость намерения.</p>
+            <p class="eyebrow">05 / pre-SIB · готовность</p>
+            <h2>Готовность до первой строки кода.</h2>
+            <p class="micro-copy">pre-SIB отвечает не на вопрос «получилось ли?», а на вопрос «готов ли этот path пройти через агентный пайплайн?».</p>
+            <div class="ru-note">Низкий pre-SIB — это не «плохая задача», а «запускать агента прямо сейчас дорого и рискованно». Пять минут на уточнение intent дешевле, чем ревью пяти тысяч строк не той реализации.</div>
           </div>
-          <div class="formula-stage" aria-label="Оценка потенциала реализации и покрытия проверяемости">
+          <div class="formula-stage" aria-label="Сигнал готовности path до запуска агента">
             <div class="formula-line">
-              <span>I*(u) = <span class="accent">α</span>B(u) + <span class="accent">β</span>M(u) + <span class="accent">γ</span>D(u) + <span class="accent">δ</span>X(u)</span>
+              <span>pre-SIB = <span class="accent">α</span>I + <span class="accent">β</span>S + <span class="accent">γ</span>C + <span class="accent">δ</span>E</span>
             </div>
             <div class="metric-defs">
               <div class="accent">
-                <b>I*(u) · ожидаемый потенциал</b>
-                <p>Прогноз массы будущей реализации до генерации: структура архитектуры (B), масштабность (M) и исключения (X).</p>
+                <b>pre-SIB · готовность пути</b>
+                <p>Ранний предупреждающий сигнал: пройдёт ли path успешно через агентный пайплайн — ещё до запуска.</p>
               </div>
               <div>
-                <b>PVC · покрытие проверяемости</b>
-                <p>Доля критериев приёмки, сводимых к проверке. Намерение, не сводимое к проверке, считается слабоопределённым.</p>
+                <b>I · S · C · E · чек-лист</b>
+                <p>Intent ясен, Scope ограничен, Context достаточен, Evidence-template задан. Плюс acceptance criteria и какие файлы можно менять.</p>
               </div>
             </div>
           </div>
         </div>
         <aside class="speaker-notes" hidden>
-          Ещё до первой строки кода можно прогнозировать ожидаемый потенциал реализации I*(u) как взвешенную сумму структуры, масштаба, зависимостей и исключений. Параллельно оценивается Predicate Verification Coverage — какая доля критериев приёмки сводится к проверке. Намерение, которое не сводится к проверке, помечается как слабоопределённое.
+          pre-SIB — ранний предупреждающий сигнал. Он отвечает не на вопрос «получилось ли?», а на вопрос «готов ли этот path к успешному прохождению через агентный пайплайн?». Перед запуском агента проверяем: понятен ли intent, есть ли acceptance criteria, ограничен ли scope, достаточен ли context, есть ли evidence template, понятно ли, какие файлы можно менять. Низкий pre-SIB значит, что запускать агента прямо сейчас дорого и рискованно. Лучше потратить пять минут на уточнение intent, чем ревьюить пять тысяч строк неправильной реализации.
         </aside>
       </article>
 
-      <article class="slide" id="slide-6" data-slide aria-label="Трение и стабильность генерации">
+      <article class="slide" id="slide-6" data-slide aria-label="Yield — где пайплайн теряет смысл">
         <div class="slide-grid two-column">
           <div class="copy-block">
-            <p class="eyebrow">06 / Трение генерации</p>
-            <h2>У генерации есть кривая трения.</h2>
-            <p class="micro-copy">Если маленькое уточнение намерения вызывает лавину изменений, система ещё не стабилизировалась.</p>
+            <p class="eyebrow">06 / Yield · утечки</p>
+            <h2>Где пайплайн теряет смысл.</h2>
+            <p class="micro-copy">Yield показывает, где пайплайн теряет смысл и энергию между этапами.</p>
             <div class="ru-points">
-              <span>PFI считает количество хаотичных итераций до выхода на стабильное состояние.</span>
-              <span>CSI показывает, насколько контрольная точка переживает последующие уточнения.</span>
+              <span>Из 100 намерений до ясной спецификации дошли 72.</span>
+              <span>До реализации — 51, до доказательства — 38, внутренне приняты — 24.</span>
+              <span>Главная утечка — между реализацией и доказательством, а не «команда медленная».</span>
             </div>
           </div>
-          <div class="friction-chart" aria-label="Probabilistic Friction Curve">
+          <div class="friction-chart" aria-label="Yield: воронка от намерений к принятым capability">
             <svg viewBox="0 0 100 60" preserveAspectRatio="none" aria-hidden="true">
-              <polyline points="2,10 6,52 10,18 14,45 18,8 22,50 26,21 30,42 34,26 38,38 42,30 48,34 56,33 64,32 72,32 82,32 96,32" />
-              <line x1="56" y1="32" x2="96" y2="32" />
+              <polyline points="2,6 20,6 20,18 40,18 40,30 60,30 60,40 80,40 80,50 98,50" />
             </svg>
-            <div class="chart-labels"><span>нестабильные итерации</span><span>стабильное состояние</span></div>
+            <div class="chart-labels"><span>100 намерений на входе</span><span>24 принятые capability</span></div>
           </div>
         </div>
         <aside class="speaker-notes" hidden>
-          Probabilistic Friction Index считает хаотичные итерации до стабилизации генерации. Checkpoint Stability Index показывает, насколько контрольная точка переживает уточнения: высокий CSI означает, что небольшое изменение намерения не вызывает лавины переписываний.
+          Yield показывает, где пайплайн теряет смысл. Например, из 100 intents до ясной спецификации дошли 72, до реализации — 51, до нормального evidence — 38, внутренне приняты — 24. Классическая метрика скажет «мы сделали 51 implementation». Yield говорит: от исходных 100 намерений до принятого результата дошли только 24, и самая большая потеря — между реализацией и доказательством. Это конкретная диагностика, а не абстрактное «команда медленно работает».
         </aside>
       </article>
 
-      <article class="slide" id="slide-7" data-slide aria-label="Анатомия дефекта">
+      <article class="slide" id="slide-7" data-slide aria-label="Drift — сдвиг смысла">
         <div class="slide-grid split-rule">
           <div>
-            <p class="eyebrow">07 / Природа дефекта</p>
-            <h2>Ошибка в коде или в смысле?</h2>
-            <p class="micro-copy">Фреймворк различает два класса отказов и отслеживает, на каком слое возникла ошибка.</p>
-            <div class="ru-note">Самые дорогие дефекты в AI-разработке возникают, когда код безупречен, но реализована неверная гипотеза.</div>
+            <p class="eyebrow">07 / Drift · сдвиг смысла</p>
+            <h2>Ошибка в коде или сдвиг смысла?</h2>
+            <p class="micro-copy">Drift — это вопрос: «мы всё ещё строим то, что собирались построить?»</p>
+            <div class="ru-note">ИИ редко падает явно. Он делает похожее на правильное — сохраняет стиль, пишет убедительный код. Чем больше автоматизации, тем важнее мерить drift по ходу пайплайна, а не в конце.</div>
           </div>
-          <div class="defect-tree" aria-label="Классификация дефекта">
-            <div class="defect-root">Обнаружен дефект</div>
+          <div class="defect-tree" aria-label="Сломанный код против сдвига смысла">
+            <div class="defect-root">Что пошло не так?</div>
             <div class="defect-branches">
               <section class="defect-branch">
-                <strong>Исполнимый дефект</strong>
-                <span>Bug / Implementation Defect — поведение кода нарушено и расходится со спецификацией.</span>
+                <strong>Сломанный код · bug</strong>
+                <span>Тест упал, тип не сошёлся, API сломан, production упал — явный отказ.</span>
               </section>
               <section class="defect-branch semantic">
-                <strong>Семантический сбой</strong>
-                <span>Value / Specification Defect — код работает идеально, но реализована неверная гипотеза.</span>
+                <strong>Сдвиг смысла · drift</strong>
+                <span>Код убедителен, тесты зелёные, но решена соседняя задача или подменены acceptance criteria.</span>
               </section>
             </div>
           </div>
         </div>
         <aside class="speaker-notes" hidden>
-          В традиционной разработке дефект — это сломанный код. В AI-опосредованной разработке самые дорогие дефекты возникают, когда код безупречен, но реализована неверная гипотеза. Фреймворк разделяет исполнимые дефекты (поведение кода нарушено) и семантические сбои (код корректен, но не та ценность) и позволяет отследить, на каком слое возникла ошибка.
+          В классической разработке мы думаем об ошибках как о баге: тест упал, тип не сошёлся, API сломан, production упал. ИИ часто ошибается иначе — делает что-то похожее на правильное: сохраняет стиль, пишет убедительный код, генерирует тесты, даёт хорошее объяснение, но смысл уже сдвинулся. Он мог решить соседнюю задачу, добавить лишнюю абстракцию, расширить scope, подменить acceptance criteria, написать тесты под свою реализацию. Drift — это вопрос «мы всё ещё строим то, что собирались?», и мерить его нужно по ходу пайплайна.
         </aside>
       </article>
 
-      <article class="slide" id="slide-8" data-slide aria-label="Иллюзия прогресса">
+      <article class="slide" id="slide-8" data-slide aria-label="Evidence должно доказывать intent">
         <div class="slide-grid split-rule">
           <div>
-            <p class="eyebrow">08 / Масса ложного прогресса</p>
-            <h2>Иллюзия прогресса имеет массу.</h2>
+            <p class="eyebrow">08 / Доказательство смысла</p>
+            <h2>Артефакты — не доказательство.</h2>
             <div class="formula-line">
-              <span>FPM = <span class="accent">Σ</span> ∫ v<sub>i</sub></span>
+              <span>Доказывать <span class="accent">намерение</span>, а не реализацию.</span>
             </div>
             <div class="metric-defs">
               <div class="accent">
-                <b>FPM · масса ложного прогресса</b>
-                <p>Объём реализации и затрат на ИИ-вывод, накопленный после неверной предпосылки до момента обнаружения.</p>
+                <b>Замкнутая петля</b>
+                <p>Агент пишет код, тесты под него и объяснение, почему всё хорошо. Снаружи аккуратно, но может быть неверно относительно intent.</p>
               </div>
               <div>
-                <b>Ретроспективная диагностика</b>
-                <p>Анализ находит точку, после которой вся последующая работа стала ложным прогрессом.</p>
+                <b>Confidence ≠ полнота</b>
+                <p>Текст, тесты, summary есть — а уверенность низкая. unknown не равен ни good, ни bad; каждая метрика несёт confidence.</p>
               </div>
             </div>
           </div>
-          <div class="fpm-timeline" aria-label="Timeline массы ложного прогресса">
+          <div class="fpm-timeline" aria-label="Накопление правдоподобных артефактов до позднего обнаружения">
             <div class="timeline-axis"><span>t1</span><span>t2</span><span>t3</span><span>t4</span><span>t5</span></div>
-            <div class="bad-premise">неверная посылка</div>
+            <div class="bad-premise">слабое доказательство</div>
             <div class="false-mass" aria-hidden="true">
               <span></span><span></span><span></span><span></span><span></span><span></span>
               <span></span><span></span><span></span><span></span><span></span><span></span>
@@ -298,77 +299,82 @@
           </div>
         </div>
         <aside class="speaker-notes" hidden>
-          False Progress Mass — это объём реализации и стоимости ИИ-вывода, накопленные после неверной фундаментальной предпосылки до момента обнаружения. Ретроспективная диагностика находит точку, после которой весь прогресс стал ложным. В AI-разработке это особенно дорого: артефакты дешёвые, но ревью и переделка неверного смысла остаются дорогими.
+          Обычный test coverage отвечает на вопрос «какие строки исполнены тестами?». Нас интересует другой: «доказывает ли evidence, что исходный intent реализован?». Агент может написать реализацию, тесты под неё и объяснение — получится замкнутая система самоподтверждения, аккуратная снаружи, но неверная относительно intent. ИИ хорошо создаёт видимость полноты: текст, тесты, summary, PR есть, а confidence низкий. Поэтому каждая метрика несёт confidence, и нельзя притворяться, что unknown равен good или bad. SpecGraph должен уметь сказать: «вижу артефакт, но не вижу достаточного доказательства».
         </aside>
       </article>
 
-      <article class="slide dense-slide" id="slide-9" data-slide aria-label="Смена парадигмы измерения">
+      <article class="slide dense-slide" id="slide-9" data-slide aria-label="Метрики живут на переходах пайплайна">
         <div class="slide-grid table-layout">
           <div>
-            <p class="eyebrow">09 / Семантический радар</p>
-            <h2>От строк кода — к семантическому радару.</h2>
-            <p class="micro-copy">Новые метрики не заменяют старые: они работают на ином уровне абстракции, между идеей и работающей системой.</p>
+            <p class="eyebrow">09 / Метрики на переходах</p>
+            <h2>Метрики живут на переходах.</h2>
+            <p class="micro-copy">Capability проходит пайплайн: intent → spec → implementation → evidence → acceptance → outcome. Метрики живут на переходах, а не только на финальном дашборде.</p>
           </div>
-          <div class="paradigm-table" aria-label="Сравнение традиционных метрик и SIB Framework">
+          <div class="paradigm-table" aria-label="Что измеряется на каждом переходе пайплайна">
             <div class="row head">
-              <span>Измерение</span>
-              <span>Традиционные метрики</span>
-              <span>SIB Framework</span>
+              <span>Переход</span>
+              <span>Что измеряем</span>
+              <span>Сигнал</span>
             </div>
             <div class="row">
-              <span class="dim">Фокус</span>
-              <span>Объём реализации · LOC</span>
-              <span class="ai">Баланс спец./реализации · SIB</span>
+              <span class="dim">Intent → Spec</span>
+              <span>Ясность, неоднозначность</span>
+              <span class="ai">Стоимость уточнения</span>
             </div>
             <div class="row">
-              <span class="dim">Продуктивность</span>
-              <span>Скорость · Velocity</span>
-              <span class="ai">Выход намерения · IY / FC</span>
+              <span class="dim">Spec → Impl</span>
+              <span>Баланс, scope drift</span>
+              <span class="ai">SIB / Drift</span>
             </div>
             <div class="row">
-              <span class="dim">Качество</span>
-              <span>Покрытие тестами</span>
-              <span class="ai">Стабильность · CSI / PVC</span>
+              <span class="dim">Impl → Evidence</span>
+              <span>Доказывает ли intent</span>
+              <span class="ai">Evidence Confidence</span>
             </div>
             <div class="row">
-              <span class="dim">Дефекты</span>
-              <span>Ошибки в логике кода</span>
-              <span class="ai">Ложный прогресс · FPM</span>
+              <span class="dim">Evidence → Accept</span>
+              <span>Принято, откат, риск</span>
+              <span class="ai">Internal Acceptance</span>
+            </div>
+            <div class="row">
+              <span class="dim">Accept → Outcome</span>
+              <span>Использование, ценность</span>
+              <span class="ai">Outcome / Usage</span>
             </div>
           </div>
         </div>
         <aside class="speaker-notes" hidden>
-          Новые метрики не заменяют старые. Они работают на ином уровне абстракции, фокусируясь на семантическом и экономическом посредничестве между идеей и работающей системой. Фокус смещается с объёма на баланс, с velocity — на выход намерения, с покрытия тестами — на стабильность и проверяемость, с логических багов — на массу ложного прогресса и ценностные дефекты.
+          Разработку я предлагаю видеть как capability pipeline: intent → specification → implementation → evidence → internal acceptance → outcome. Outcome вынесен отдельно: пайплайн может идеально сохранить intent, а продуктовая гипотеза может оказаться неверной. В SpecGraph метрики живут не только на финальном дашборде, а на переходах: Intent→Spec — clarity и стоимость уточнения; Spec→Impl — SIB и scope drift; Impl→Evidence — semantic evidence confidence; Evidence→Acceptance — acceptance и rollback; Acceptance→Outcome — usage и business impact. Когда что-то ломается, видно, где именно ломается transfer function.
         </aside>
       </article>
 
-      <article class="slide" id="slide-10" data-slide aria-label="Не-нормативный радар для инжиниринга">
+      <article class="slide" id="slide-10" data-slide aria-label="От активности к сохранению смысла">
         <div class="slide-grid two-column">
           <div class="copy-block">
-            <p class="eyebrow">10 / Не-нормативный радар</p>
-            <h2>Радар для процессов, не для людей.</h2>
-            <p class="micro-copy">Фреймворк формирует продольный (longitudinal) слой наблюдаемости — от прогноза до ретроспективы.</p>
+            <p class="eyebrow">10 / Слои и тезис</p>
+            <h2>От активности — к смыслу.</h2>
+            <p class="micro-copy">Телескоп, руль и пункт назначения нельзя смешивать. SIB наблюдает, Integrity Index управляет, outcomes проверяют, туда ли мы ехали.</p>
             <div class="critical-note">
-              <b>Критическое предупреждение</b>
-              Эти данные служат для оптимизации инженерных процессов, а не для оценки сотрудников. Радар не предназначен для ранжирования людей.
+              <b>Главное правило</b>
+              Измеряем пайплайн и вмешательства, а не людей. Никакого индивидуального ранжирования: главный риск AI-эры — не медленная разработка, а быстрая потеря смысла.
             </div>
           </div>
-          <div class="radar-stack" aria-label="Продольные слои наблюдаемости">
+          <div class="radar-stack" aria-label="Три слоя: наблюдение, управление, результат">
             <div class="radar-layers">
               <div class="radar-layer signal">
-                <span><b>Pre-implementation</b><small>прогноз · I*(u) / PVC</small></span>
+                <span><b>Observables · телескоп</b><small>SIB · Yield · Cost · Drift · pre-SIB</small></span>
               </div>
               <div class="radar-layer">
-                <span><b>Process</b><small>трение · PFI / CSI</small></span>
+                <span><b>Control · руль</b><small>Pipeline Integrity Index</small></span>
               </div>
               <div class="radar-layer">
-                <span><b>Retrospective</b><small>ретроспектива · FPM</small></span>
+                <span><b>Outcomes · цель</b><small>использование · ценность</small></span>
               </div>
             </div>
           </div>
         </div>
         <aside class="speaker-notes" hidden>
-          Фреймворк формирует продольный слой наблюдаемости из трёх горизонтов: до реализации (прогноз потенциала и проверяемости), в процессе (трение и стабильность) и ретроспективно (масса ложного прогресса). Критическое предупреждение: данные служат для оптимизации инженерных процессов, а не для оценки или ранжирования сотрудников.
+          Важно развести три слоя. Observables — это то, что мы наблюдаем: SIB, Yield, Cost, Drift, Confidence, pre-SIB. Control — продуктовый управляющий слой, Pipeline Integrity Index, с guardrails: всегда decomposable, всегда с confidence label, без маскировки unknown, аномалии ведут к аудиту, а не к наказанию. Outcomes — реальные пользовательские и бизнес-результаты. SIB — телескоп, Integrity Index — руль, outcomes — проверка, туда ли мы ехали. Измеряем пайплайн и эффект вмешательств, а не людей. Если сжать всё в одну мысль: ИИ удешевляет артефакты, SIB наблюдает, сохраняет ли реализация смысл спецификации, а SpecGraph превращает это в управляемый, проверяемый и самоулучшающийся capability pipeline. Главный риск AI-эры — не медленная разработка, а быстрая потеря смысла: SIB нужен, чтобы её увидеть, SpecGraph — чтобы исправлять.
         </aside>
       </article>
     </section>
