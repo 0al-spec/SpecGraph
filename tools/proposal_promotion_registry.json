@@ -1649,5 +1649,18 @@
     "required_provenance_links": [
       "source_draft_ref"
     ]
+  },
+  {
+    "proposal_id": "0128",
+    "source_artifact_class": "working_draft",
+    "source_refs": [
+      "docs/archive/proposal_sources/0128_ontology_term_binding_policy.md"
+    ],
+    "motivating_concern": "After SpecGraph records accepted Ontology entities as canonical type symbols in 0127, generated artifact workflows need a machine-readable policy that turns unknown terms into ontology gaps and keeps observations/topology evidence non-authoritative.",
+    "normalized_title": "Ontology Term Binding Policy",
+    "bounded_scope": "Add a review-first ontology_term_binding_policy artifact, proposal docs, tool documentation, and focused tests defining accepted entity binding, ontology gap requirements, practical observation non-authority, and topology/reference evidence separation without changing active prompts, executing agents, adding a hard write gate, accepting ontology terms, mutating canonical specs, writing Ontology packages or lockfiles, importing owner decisions, or adding SpecSpace mutation UI.",
+    "required_provenance_links": [
+      "source_draft_ref"
+    ]
   }
 ]

@@ -153,6 +153,7 @@ def test_ontology_semantic_control_policy_defines_review_only_contract() -> None
     assert policy["repository_layout"]["ontology_delta_draft_intake"] == (
         "runs/ontology_delta_draft_intake.json"
     )
+
     assert policy["repository_layout"]["ontology_closed_loop_evidence"] == (
         "runs/ontology_closed_loop_evidence.json"
     )
@@ -570,6 +571,42 @@ def test_ontology_semantic_control_policy_defines_review_only_contract() -> None
     assert boundary["prompt_agent_context_is_authority"] is False
     assert boundary["prompt_agent_execution_allowed"] is False
     assert boundary["automatic_canonical_node_update"] is False
+
+
+def test_ontology_term_binding_policy_defines_review_first_contract() -> None:
+    policy = json.loads((ROOT / "tools" / "ontology_term_binding_policy.json").read_text())
+
+    assert policy["artifact_kind"] == "ontology_term_binding_policy"
+    assert policy["proposal_id"] == "0128"
+    assert policy["source_proposal"] == "docs/proposals/0128_ontology_term_binding_policy.md"
+    boundary = policy["authority_boundary"]
+    assert boundary["may_write_ontology_package"] is False
+    assert boundary["may_write_ontology_lockfile"] is False
+    assert boundary["may_mutate_canonical_specs"] is False
+    assert boundary["may_mark_candidate_accepted"] is False
+    assert boundary["may_execute_prompt_agent"] is False
+    assert boundary["canonical_mutations_allowed"] is False
+
+    classes = policy["term_authority_classes"]
+    assert classes["accepted_ontology_entity"]["authoring_role"] == "canonical_type_symbol"
+    assert classes["practical_ontology_observation"]["can_be_marked_accepted"] is False
+    assert classes["specgraph_topology_edge"]["can_be_treated_as_semantic_relation"] is False
+    assert classes["proposal_reference"]["can_be_treated_as_semantic_relation"] is False
+
+    gap_contract = policy["ontology_gap_contract"]
+    assert "source_refs" in gap_contract["required_fields"]
+    assert gap_contract["allowed_statuses"][0] == "requires_owner_review"
+    assert "canonical_mutations_allowed" in gap_contract["required_false_flags"]
+
+    gate = policy["generated_artifact_gate"]
+    assert gate["default_mode"] == "review_warning"
+    assert gate["future_hard_gate_allowed"] is True
+    reject_ids = {entry["id"] for entry in gate["reject_if"]}
+    assert "new_term_without_gap" in reject_ids
+    assert "duplicate_accepted_entity" in reject_ids
+    assert "observation_marked_accepted" in reject_ids
+    assert "topology_edge_as_semantic_relation" in reject_ids
+    assert policy["next_gap"] == "implement_generated_artifact_term_binding_gate"
 
 
 def test_ontology_import_fixture_resolves_known_refs_and_gaps() -> None:

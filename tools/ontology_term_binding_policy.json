@@ -1,0 +1,187 @@
+{
+  "artifact_kind": "ontology_term_binding_policy",
+  "schema_version": 1,
+  "proposal_id": "0128",
+  "source_proposal": "docs/proposals/0128_ontology_term_binding_policy.md",
+  "parent_proposals": [
+    "docs/proposals/0126_specauthor_claim_calibration_prompt_contract.md",
+    "docs/proposals/0127_ontology_stdlib_type_discipline.md"
+  ],
+  "policy_status": "review_first_contract",
+  "authority_boundary": {
+    "policy_is_authority_for_ontology_acceptance": false,
+    "may_write_ontology_package": false,
+    "may_write_ontology_lockfile": false,
+    "may_mutate_canonical_specs": false,
+    "may_mark_candidate_accepted": false,
+    "may_execute_prompt_agent": false,
+    "tracked_artifacts_written": false,
+    "canonical_mutations_allowed": false
+  },
+  "term_authority_classes": {
+    "accepted_ontology_entity": {
+      "authoring_role": "canonical_type_symbol",
+      "authority_source": "Ontology owner decision and accepted package",
+      "specgraph_action": "bind_or_cite",
+      "can_be_redefined_by_specgraph": false
+    },
+    "specgraph_term_binding": {
+      "authoring_role": "usage_binding",
+      "authority_source": "SpecGraph artifact review",
+      "specgraph_action": "review_binding",
+      "can_be_redefined_by_specgraph": false
+    },
+    "practical_ontology_observation": {
+      "authoring_role": "observed_usage_evidence",
+      "authority_source": "derived SpecGraph and proposal sources",
+      "specgraph_action": "inspect_only",
+      "can_be_marked_accepted": false
+    },
+    "ontology_gap": {
+      "authoring_role": "candidate_missing_symbol",
+      "authority_source": "human or agent request pending owner review",
+      "specgraph_action": "route_to_review",
+      "can_be_marked_accepted": false
+    },
+    "specgraph_topology_edge": {
+      "authoring_role": "graph_topology_fact",
+      "authority_source": "SpecGraph spec edge fields",
+      "specgraph_action": "show_as_topology_evidence",
+      "can_be_treated_as_semantic_relation": false
+    },
+    "proposal_reference": {
+      "authoring_role": "proposal_mentions_spec_evidence",
+      "authority_source": "proposal markdown source text",
+      "specgraph_action": "show_as_reference_evidence",
+      "can_be_treated_as_semantic_relation": false
+    }
+  },
+  "binding_record_contract": {
+    "artifact_field": "term_bindings",
+    "required_fields": [
+      "generated_term",
+      "binding_state",
+      "authority_class",
+      "source_refs"
+    ],
+    "binding_states": [
+      "bound_to_accepted_entity",
+      "candidate_gap_required",
+      "deprecated_term_blocked",
+      "rejected_term_blocked",
+      "ambiguous_requires_review"
+    ],
+    "accepted_entity_required_fields": [
+      "ontology_ref",
+      "ontology_package_ref",
+      "term_ref",
+      "source_refs"
+    ],
+    "forbidden_binding_states_without_review": [
+      "accepted",
+      "canonical",
+      "approved"
+    ]
+  },
+  "ontology_gap_contract": {
+    "artifact_field": "ontology_gaps",
+    "required_fields": [
+      "proposed_term",
+      "proposed_kind",
+      "reason",
+      "source_refs",
+      "status",
+      "canonical_mutations_allowed"
+    ],
+    "allowed_proposed_kinds": [
+      "entity",
+      "relation",
+      "alias",
+      "domain",
+      "context"
+    ],
+    "allowed_statuses": [
+      "requires_owner_review",
+      "needs_more_evidence",
+      "duplicate_candidate",
+      "rejected"
+    ],
+    "required_false_flags": [
+      "canonical_mutations_allowed"
+    ]
+  },
+  "generated_artifact_gate": {
+    "target_artifact_kinds": [
+      "Proposal",
+      "ADR",
+      "RFCSection",
+      "AgentPassportDraft",
+      "HypercodeSpec",
+      "HCSConfigSpec"
+    ],
+    "default_mode": "review_warning",
+    "future_hard_gate_allowed": true,
+    "reject_if": [
+      {
+        "id": "new_term_without_gap",
+        "condition": "new_terms.count > 0 and ontology_gaps.count == 0",
+        "message": "New generated terms require ontology_gap records before graph-ready persistence."
+      },
+      {
+        "id": "duplicate_accepted_entity",
+        "condition": "accepted_ontology_match.exists and binding_state != 'bound_to_accepted_entity'",
+        "message": "Reuse the accepted ontology entity or justify a distinct ontology_gap."
+      },
+      {
+        "id": "deprecated_or_rejected_term_reused",
+        "condition": "term_match.status in ['deprecated', 'rejected'] and replacement_or_gap is missing",
+        "message": "Deprecated or rejected terms require replacement binding or ontology_gap."
+      },
+      {
+        "id": "observation_marked_accepted",
+        "condition": "authority_class == 'practical_ontology_observation' and status in ['accepted', 'canonical', 'approved']",
+        "message": "Practical ontology observations are evidence only and cannot mark terms accepted."
+      },
+      {
+        "id": "topology_edge_as_semantic_relation",
+        "condition": "authority_class == 'specgraph_topology_edge' and semantic_relation == true",
+        "message": "SpecGraph topology edges must not be treated as accepted ontology relations."
+      }
+    ],
+    "warn_if": [
+      {
+        "id": "broad_term_without_domain",
+        "condition": "term.domain_refs is empty",
+        "message": "Term binding should include active domain refs."
+      },
+      {
+        "id": "candidate_gap_without_evidence",
+        "condition": "ontology_gap.source_refs is empty",
+        "message": "Ontology gaps should cite source refs."
+      }
+    ]
+  },
+  "authoring_rules": [
+    {
+      "id": "resolve_active_ontology_first",
+      "requirement": "Resolve active ontology package refs before graph-facing generation."
+    },
+    {
+      "id": "reuse_accepted_entity",
+      "requirement": "Bind to accepted ontology entities when a suitable entity exists."
+    },
+    {
+      "id": "unknown_term_requires_gap",
+      "requirement": "Emit ontology_gap for unknown terms instead of treating them as accepted vocabulary."
+    },
+    {
+      "id": "observed_usage_not_authority",
+      "requirement": "Practical ontology observations remain derived evidence and cannot accept terms."
+    },
+    {
+      "id": "topology_not_semantic_relation",
+      "requirement": "SpecGraph topology edges and proposal references stay separate from semantic ontology relations."
+    }
+  ],
+  "next_gap": "implement_generated_artifact_term_binding_gate"
+}
