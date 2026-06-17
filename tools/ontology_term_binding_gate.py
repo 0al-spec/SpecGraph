@@ -101,6 +101,26 @@ def _has_reviewable_gap(gaps: list[Any], term: str | None = None) -> bool:
     return False
 
 
+def _accepted_bound_terms(artifact: dict[str, Any]) -> set[str]:
+    terms: set[str] = set()
+    for raw_match in _list(artifact.get("accepted_ontology_matches")):
+        match = _dict(raw_match)
+        if _text(match.get("binding_state")) == "bound_to_accepted_entity":
+            term = _text(match.get("generated_term"))
+            if term:
+                terms.add(term.casefold())
+    for raw_binding in _list(artifact.get("term_bindings")):
+        binding = _dict(raw_binding)
+        if (
+            _text(binding.get("binding_state")) == "bound_to_accepted_entity"
+            and _text(binding.get("authority_class")) == "accepted_ontology_entity"
+        ):
+            term = _text(binding.get("generated_term"))
+            if term:
+                terms.add(term.casefold())
+    return terms
+
+
 def build_term_binding_gate_report(
     artifact: dict[str, Any],
     *,
@@ -116,26 +136,39 @@ def build_term_binding_gate_report(
     warnings: list[dict[str, Any]] = []
 
     new_terms = [item for item in _list(artifact.get("new_terms")) if _text(item)]
-    if new_terms and not gaps:
+    accepted_bound_terms = _accepted_bound_terms(artifact)
+    unknown_new_terms = [term for term in new_terms if term.casefold() not in accepted_bound_terms]
+    unknown_terms_without_gaps = [
+        term for term in unknown_new_terms if not _has_reviewable_gap(gaps, term)
+    ]
+    if unknown_terms_without_gaps:
         findings.append(
             _finding(
                 finding_id="new_term_without_gap",
                 severity="review_required",
-                message="New generated terms require ontology_gap records.",
+                message="Unknown or unbound generated terms require ontology_gap records.",
                 source_ref=source_ref,
-                evidence={"new_terms": new_terms},
+                evidence={"new_terms": unknown_terms_without_gaps},
             )
         )
 
     for raw_match in _list(artifact.get("accepted_ontology_matches")):
         match = _dict(raw_match)
         binding_state = _text(match.get("binding_state"))
-        if binding_state and binding_state != "bound_to_accepted_entity":
+        generated_term = _text(match.get("generated_term"))
+        if not binding_state or binding_state == "bound_to_accepted_entity":
+            continue
+        if binding_state == "candidate_gap_required" and _has_reviewable_gap(gaps, generated_term):
+            continue
+        if binding_state:
             findings.append(
                 _finding(
                     finding_id="duplicate_accepted_entity",
                     severity="review_required",
-                    message="Accepted ontology match was not bound to the accepted entity.",
+                    message=(
+                        "Accepted ontology match was not bound to the accepted entity "
+                        "or justified by a distinct ontology gap."
+                    ),
                     source_ref=source_ref,
                     evidence=match,
                 )
@@ -220,6 +253,16 @@ def build_term_binding_gate_report(
                     evidence=gap,
                 )
             )
+        if "candidate_bindings" not in gap:
+            findings.append(
+                _finding(
+                    finding_id="candidate_gap_without_candidate_bindings",
+                    severity="review_required",
+                    message="Ontology gaps must preserve candidate bindings for owner review.",
+                    source_ref=source_ref,
+                    evidence=gap,
+                )
+            )
         if gap.get("canonical_mutations_allowed") is not False:
             findings.append(
                 _finding(
@@ -269,6 +312,7 @@ def build_term_binding_gate_report(
             "finding_count": len(findings),
             "warning_count": len(warnings),
             "new_term_count": len(new_terms),
+            "unknown_new_term_count": len(unknown_new_terms),
             "ontology_gap_count": len(gaps),
             "term_binding_count": len(_list(artifact.get("term_bindings"))),
         },

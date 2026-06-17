@@ -98,6 +98,7 @@
       "proposed_kind",
       "reason",
       "source_refs",
+      "candidate_bindings",
       "status",
       "canonical_mutations_allowed"
     ],
@@ -132,12 +133,12 @@
     "reject_if": [
       {
         "id": "new_term_without_gap",
-        "condition": "new_terms.count > 0 and ontology_gaps.count == 0",
-        "message": "New generated terms require ontology_gap records before graph-ready persistence."
+        "condition": "unknown_or_unbound_new_terms.count > 0 and matching_ontology_gaps.count == 0",
+        "message": "Unknown or unbound generated terms require ontology_gap records before graph-ready persistence."
       },
       {
         "id": "duplicate_accepted_entity",
-        "condition": "accepted_ontology_match.exists and binding_state != 'bound_to_accepted_entity'",
+        "condition": "accepted_ontology_match.exists and (binding_state not in ['bound_to_accepted_entity', 'candidate_gap_required'] or (binding_state == 'candidate_gap_required' and matching_ontology_gap is missing))",
         "message": "Reuse the accepted ontology entity or justify a distinct ontology_gap."
       },
       {

@@ -62,6 +62,7 @@ def test_term_binding_gate_reports_clear_artifact() -> None:
     artifact = {
         "artifact_kind": "generated_spec_artifact",
         "source_ref": "memory://clean",
+        "new_terms": ["Agent Passport"],
         "term_bindings": [
             {
                 "generated_term": "Agent Passport",
@@ -86,6 +87,78 @@ def test_term_binding_gate_reports_clear_artifact() -> None:
     assert report["review_state"] == "clear"
     assert report["would_reject_in_hard_gate"] is False
     assert report["findings"] == []
+    assert report["summary"]["unknown_new_term_count"] == 0
+
+
+def test_term_binding_gate_allows_justified_candidate_gap_for_accepted_match() -> None:
+    module = load_gate_module()
+    artifact = {
+        "artifact_kind": "generated_spec_artifact",
+        "source_ref": "memory://justified-gap",
+        "new_terms": ["Agent Passport Runtime"],
+        "accepted_ontology_matches": [
+            {
+                "generated_term": "Agent Passport Runtime",
+                "ontology_ref": "ontology.agent_passport.entity",
+                "binding_state": "candidate_gap_required",
+            }
+        ],
+        "ontology_gaps": [
+            {
+                "proposed_term": "Agent Passport Runtime",
+                "proposed_kind": "entity",
+                "reason": (
+                    "Generated term appears distinct from the accepted Agent Passport entity."
+                ),
+                "source_refs": ["docs/proposals/0128_ontology_term_binding_policy.md"],
+                "candidate_bindings": [
+                    {
+                        "ontology_ref": "ontology.agent_passport.entity",
+                        "reason": (
+                            "Name overlaps with Agent Passport but target runtime role differs."
+                        ),
+                    }
+                ],
+                "status": "requires_owner_review",
+                "canonical_mutations_allowed": False,
+            }
+        ],
+    }
+
+    report = module.build_term_binding_gate_report(artifact, policy=load_policy())
+
+    assert report["review_state"] == "clear"
+    assert report["would_reject_in_hard_gate"] is False
+    assert report["findings"] == []
+    assert report["summary"]["unknown_new_term_count"] == 1
+
+
+def test_term_binding_gate_preserves_candidate_bindings_in_gap_records() -> None:
+    module = load_gate_module()
+    artifact = {
+        "artifact_kind": "generated_spec_artifact",
+        "source_ref": "memory://missing-candidates",
+        "new_terms": ["Agent Passport Runtime"],
+        "ontology_gaps": [
+            {
+                "proposed_term": "Agent Passport Runtime",
+                "proposed_kind": "entity",
+                "reason": (
+                    "Generated term appears distinct from the accepted Agent Passport entity."
+                ),
+                "source_refs": ["docs/proposals/0128_ontology_term_binding_policy.md"],
+                "status": "requires_owner_review",
+                "canonical_mutations_allowed": False,
+            }
+        ],
+    }
+
+    report = module.build_term_binding_gate_report(artifact, policy=load_policy())
+
+    assert report["review_state"] == "review_required"
+    assert "candidate_gap_without_candidate_bindings" in {
+        finding["finding_id"] for finding in report["findings"]
+    }
 
 
 def test_term_binding_gate_cli_strict_exits_nonzero(tmp_path: Path) -> None:

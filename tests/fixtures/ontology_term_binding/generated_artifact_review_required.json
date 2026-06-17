@@ -51,6 +51,7 @@
       "source_refs": [
         "docs/proposals/0127_ontology_stdlib_type_discipline.md"
       ],
+      "candidate_bindings": [],
       "status": "requires_owner_review",
       "canonical_mutations_allowed": false
     }
