@@ -1,0 +1,732 @@
+/* =========================================================================
+ * Reworked vector illustrations (v3 deck).
+ * Strict monochrome + single blue accent. Scoped under .deck-v3 so the
+ * base/EN decks keep their original diagrams untouched.
+ * ====================================================================== */
+
+/* ---- slide 1 · balance scale (смысл лёгкий / объём тяжёлый) ----------- */
+.deck-v3 .balance-fig {
+  --balance-x-shift: -40px;
+  position: relative;
+  width: 100%;
+  height: 100%;
+  min-height: 300px;
+}
+
+.deck-v3 .balance-fulcrum {
+  position: absolute;
+  left: calc((13% + var(--balance-x-shift) + (100% - 17% + var(--balance-x-shift))) / 2);
+  top: 52%;
+  width: 0;
+  height: 0;
+  transform: translateX(-50%);
+  border-left: 42px solid transparent;
+  border-right: 42px solid transparent;
+  border-bottom: 72px solid var(--ink);
+}
+
+.deck-v3 .balance-beam {
+  position: absolute;
+  left: calc(13% + var(--balance-x-shift));
+  right: calc(17% - var(--balance-x-shift));
+  top: 50%;
+  height: 3px;
+  background: var(--ink);
+  transform: rotate(-7deg);
+  transform-origin: center;
+}
+
+.deck-v3 .balance-meaning {
+  position: absolute;
+  left: 0;
+  bottom: 100%;
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  background: var(--signal-ink);
+  transform: translate(-50%, -8px) rotate(7deg);
+}
+
+.deck-v3 .balance-volume {
+  position: absolute;
+  right: 0;
+  bottom: 100%;
+  display: flex;
+  flex-direction: column-reverse;
+  align-items: center;
+  gap: 4px;
+  transform: translate(50%, -8px) rotate(7deg);
+}
+
+.deck-v3 .balance-volume .vrow {
+  display: flex;
+  gap: 4px;
+}
+
+.deck-v3 .balance-volume i {
+  display: block;
+  width: 17px;
+  height: 17px;
+  border: 1.5px solid var(--ink);
+}
+
+.deck-v3 .balance-cap {
+  display: none;
+}
+
+/* ---- slide 2 · factory fan-out --------------------------------------- */
+.deck-v3 .factory-lane {
+  gap: clamp(8px, 1vw, 14px);
+  padding: clamp(44px, 5vw, 64px) clamp(14px, 2vw, 24px) clamp(14px, 2vw, 30px);
+}
+
+.deck-v3 #slide-2 .factory-lane > .lane-label:first-child {
+  position: absolute;
+  top: clamp(18px, 2.5vw, 32px);
+  left: 50%;
+  transform: translateX(-50%);
+  width: max-content;
+  max-width: calc(100% - 32px);
+  text-align: center;
+}
+
+.deck-v3 .llm-node {
+  width: 56px;
+  min-width: 56px;
+  min-height: 56px;
+  border-color: var(--rule);
+  border-radius: 0;
+  background: transparent;
+  color: var(--ink);
+}
+
+.deck-v3 .intent-atom {
+  width: 70px;
+  min-width: 70px;
+  min-height: 70px;
+  padding: 0 8px;
+  border-color: var(--signal-ink);
+  border-radius: 50%;
+  background: var(--signal-ink);
+  color: var(--paper);
+  line-height: 1.12;
+}
+
+.deck-v3 .keyboard-symbol {
+  width: clamp(96px, 8.8vw, 126px);
+  height: auto;
+  overflow: visible;
+  color: var(--ink);
+}
+
+.deck-v3 .keyboard-shell,
+.deck-v3 .keyboard-keys rect {
+  fill: none;
+  stroke: currentColor;
+  vector-effect: non-scaling-stroke;
+}
+
+.deck-v3 .keyboard-shell {
+  stroke-width: 2.4;
+}
+
+.deck-v3 .keyboard-keys rect {
+  fill: color-mix(in oklab, var(--ink) 9%, transparent);
+  stroke-width: 1.5;
+}
+
+.deck-v3 .flow-arrow {
+  width: 18px;
+  height: auto;
+  color: var(--muted);
+}
+
+.deck-v3 .flow-arrow path {
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.6;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+/* recolor the legacy "volume" squares to ink (strict monochrome) */
+.deck-v3 .artifact-row span,
+.deck-v3 .false-mass span {
+  border-color: var(--rule);
+}
+
+.deck-v3 .fanout {
+  width: 100%;
+  margin-top: 4px;
+}
+
+.deck-v3 .fanout svg {
+  width: 100%;
+  height: clamp(62px, 8vw, 92px);
+  display: block;
+}
+
+.deck-v3 .fanout .fan-lines line {
+  stroke: var(--rule-soft);
+  stroke-width: 1;
+}
+
+.deck-v3 .fanout .fan-sq rect {
+  fill: none;
+  stroke: var(--ink);
+  stroke-width: 1.4;
+}
+
+/* ---- slide 3 · code output vs shipped value funnel ------------------- */
+.deck-v3 .value-funnel-slide .copy-block {
+  justify-content: center;
+}
+
+.deck-v3 .value-funnel-slide .micro-copy {
+  max-width: 38ch;
+}
+
+.deck-v3 .value-funnel-slide .ru-points {
+  margin-top: 18px;
+}
+
+.deck-v3 .value-funnel-panel {
+  border-left: 1px solid var(--rule);
+  display: grid;
+  grid-template-rows: minmax(0, 1fr) auto;
+  align-content: center;
+  gap: clamp(22px, 3vw, 40px);
+  padding-left: clamp(34px, 5vw, 70px);
+  min-height: 0;
+}
+
+.deck-v3 .value-funnel {
+  align-self: center;
+  display: grid;
+  gap: clamp(10px, 1.2vw, 16px);
+  width: 100%;
+}
+
+.deck-v3 .funnel-row {
+  min-height: clamp(52px, 5.5vw, 72px);
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 20px;
+  padding: 0 clamp(16px, 1.8vw, 24px);
+  border: 1px solid var(--rule);
+  background: var(--paper);
+  justify-self: start;
+}
+
+.deck-v3 .funnel-row.generated {
+  width: 100%;
+  border-color: var(--signal-ink);
+  background: color-mix(in oklab, var(--signal) 18%, var(--paper));
+}
+
+.deck-v3 .funnel-row.commits {
+  width: 78%;
+}
+
+.deck-v3 .funnel-row.releases {
+  width: 58%;
+}
+
+.deck-v3 .funnel-row.product-value {
+  width: 42%;
+  border-style: dashed;
+}
+
+.deck-v3 .funnel-row span,
+.deck-v3 .funnel-row b,
+.deck-v3 .funnel-source {
+  font-family: var(--mono);
+  text-transform: uppercase;
+}
+
+.deck-v3 .funnel-row span {
+  font-size: clamp(14px, 1.08vw, 17px);
+  letter-spacing: .08em;
+}
+
+.deck-v3 .funnel-row b {
+  color: var(--signal-ink);
+  font-size: clamp(22px, 2.4vw, 36px);
+  letter-spacing: .04em;
+}
+
+.deck-v3 .funnel-thesis {
+  margin: 0;
+  color: var(--ink);
+  font-family: var(--serif);
+  font-size: clamp(32px, 3.8vw, 58px);
+  line-height: 1;
+}
+
+.deck-v3 .funnel-source {
+  max-width: 56ch;
+  margin: 22px 0 0;
+  color: var(--muted);
+  font-size: clamp(10px, .78vw, 12px);
+  letter-spacing: .04em;
+  line-height: 1.35;
+}
+
+/* ---- slide 4 · SIB transition image ---------------------------------- */
+.deck-v3 .sib-composite-slide .copy-block {
+  justify-content: center;
+  padding-right: clamp(22px, 3vw, 54px);
+}
+
+.deck-v3 .sib-composite-slide .slide-grid {
+  grid-template-columns: .9fr 1.1fr;
+}
+
+.deck-v3 .sib-image-panel {
+  align-self: center;
+  display: grid;
+  place-items: center;
+  min-height: 0;
+  margin: 0;
+  padding-left: clamp(30px, 4vw, 58px);
+  border-left: 1px solid var(--rule);
+}
+
+.deck-v3 .sib-image-panel img {
+  display: block;
+  width: min(100%, 640px);
+  max-height: min(72vh, 620px);
+  object-fit: contain;
+  border: 1px solid var(--rule);
+  background: var(--paper);
+}
+
+/* ---- slide 5 · SIB formula alignment --------------------------------- */
+.deck-v3 #slide-5 .sib-formula {
+  justify-content: center;
+  width: 100%;
+  transform: translateX(clamp(-36px, -2.5vw, -24px));
+}
+
+.deck-v3 #slide-5 .metric-defs div.accent {
+  border-left-color: var(--rule-soft);
+}
+
+.deck-v3 #slide-6 .metric-defs div.accent {
+  border-left-color: var(--rule-soft);
+}
+
+/* ---- slide 7 · pre-SIB readiness graph ------------------------------- */
+.deck-v3 #slide-7 .formula-stage {
+  gap: clamp(14px, 1.6vw, 22px);
+}
+
+.deck-v3 .pre-sib-graph {
+  width: min(520px, 100%);
+  justify-self: center;
+  align-self: end;
+  color: var(--ink);
+  overflow: visible;
+}
+
+.deck-v3 .pre-sib-graph .graph-lines path {
+  fill: none;
+  stroke: var(--rule);
+  stroke-width: 1.4;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  vector-effect: non-scaling-stroke;
+}
+
+.deck-v3 .pre-sib-graph circle {
+  vector-effect: non-scaling-stroke;
+}
+
+.deck-v3 .pre-sib-graph .graph-node-ready circle {
+  fill: var(--signal-ink);
+  stroke: var(--signal-ink);
+  stroke-width: 1.4;
+}
+
+.deck-v3 .pre-sib-graph .graph-node-ready path {
+  fill: none;
+  stroke: var(--paper);
+  stroke-width: 2.4;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.deck-v3 .pre-sib-graph .graph-node-open circle {
+  fill: var(--paper);
+  stroke: var(--rule);
+  stroke-width: 1.4;
+}
+
+.deck-v3 .pre-sib-graph .graph-node-unknown circle {
+  fill: var(--paper);
+  stroke: var(--rule);
+  stroke-width: 1.4;
+  stroke-dasharray: 5 4;
+}
+
+/* ---- slide 8 · yield step chart -------------------------------------- */
+.deck-v3 #slide-8 .friction-chart polyline {
+  stroke: var(--signal-ink);
+  stroke-width: 1.7;
+}
+
+.deck-v3 #slide-8 .yield-markers text {
+  fill: var(--muted);
+  font-family: var(--mono);
+  font-size: 3.2px;
+  letter-spacing: .04em;
+}
+
+/* ---- slide 4 · conversion triangle ----------------------------------- */
+.deck-v3 .conversion-triangle::before {
+  display: none;
+}
+
+.deck-v3 .tri-edges {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 0;
+}
+
+.deck-v3 .tri-edges .te {
+  stroke: var(--rule);
+  stroke-width: 1.4;
+  vector-effect: non-scaling-stroke;
+}
+
+.deck-v3 .triangle-node {
+  z-index: 1;
+}
+
+.deck-v3 .spec-node {
+  left: 50%;
+  top: 7%;
+  width: 128px;
+  height: 128px;
+  transform: translateX(-50%);
+  border: 1px solid var(--signal-ink);
+  border-radius: 50%;
+  background: var(--signal-ink);
+  color: var(--paper);
+  gap: 4px;
+}
+
+.deck-v3 .spec-node small {
+  font-family: var(--mono);
+  font-size: 11px;
+  letter-spacing: .04em;
+  text-transform: uppercase;
+  opacity: .82;
+}
+
+.deck-v3 .cost-node {
+  left: 8%;
+  bottom: 18%;
+}
+
+.deck-v3 .func-node {
+  right: 8%;
+  left: auto;
+  bottom: 18%;
+}
+
+.deck-v3 .conversion-triangle .edge-label {
+  padding: 2px 9px;
+  background: var(--paper);
+  color: var(--muted);
+  line-height: 1.1;
+}
+
+.deck-v3 .label-icc {
+  left: 20%;
+  top: 45%;
+  right: auto;
+  bottom: auto;
+  transform: translate(-50%, -50%);
+}
+
+.deck-v3 .label-iy {
+  right: 20%;
+  left: auto;
+  top: 45%;
+  bottom: auto;
+  transform: translate(50%, -50%);
+  color: var(--signal-ink);
+}
+
+.deck-v3 .label-fc {
+  left: 50%;
+  bottom: 5%;
+  top: auto;
+  transform: translateX(-50%);
+}
+
+/* ---- slide 8 · false progress mass timeline -------------------------- */
+.deck-v3 .fpm-timeline {
+  padding: clamp(24px, 3vw, 42px) clamp(34px, 4.4vw, 60px);
+}
+
+.deck-v3 .false-mass {
+  left: 19%;
+  right: 26%;
+  top: 23%;
+  bottom: 41%;
+  grid-template-columns: repeat(9, 1fr);
+  gap: 5px;
+  padding: 14px;
+  border: 1px solid var(--rule);
+  background: repeating-linear-gradient(
+    -45deg,
+    rgba(205, 76, 89, .24) 0 7px,
+    transparent 7px 15px
+  );
+}
+
+.deck-v3 .false-mass span {
+  border-color: var(--ink);
+}
+
+.deck-v3 .fpm-tag {
+  position: absolute;
+  left: 19%;
+  top: 14%;
+  font-family: var(--mono);
+  font-size: var(--diagram-label-sm);
+  letter-spacing: .06em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.deck-v3 .timeline-axis {
+  left: 9%;
+  right: 9%;
+  bottom: 36%;
+  border-top: 2px solid var(--rule);
+}
+
+.deck-v3 .timeline-axis span {
+  padding-top: 12px;
+  color: var(--muted);
+}
+
+.deck-v3 .axis-arrow {
+  position: absolute;
+  right: 8%;
+  bottom: 40.6%;
+  width: 0;
+  height: 0;
+  transform: translateY(50%);
+  border-top: 6px solid transparent;
+  border-bottom: 6px solid transparent;
+  border-left: 10px solid var(--rule);
+}
+
+.deck-v3 .bad-premise {
+  left: 11%;
+  bottom: 34%;
+  width: 52px;
+  height: 52px;
+  transform: translate(-50%, 50%);
+  border: 2px solid var(--signal-ink);
+  border-radius: 50%;
+  background: var(--paper);
+}
+
+.deck-v3 .bad-premise::before,
+.deck-v3 .bad-premise::after {
+  content: "";
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 24px;
+  height: 2px;
+  background: var(--signal-ink);
+}
+
+.deck-v3 .bad-premise::before {
+  transform: translate(-50%, -50%) rotate(45deg);
+}
+
+.deck-v3 .bad-premise::after {
+  transform: translate(-50%, -50%) rotate(-45deg);
+}
+
+.deck-v3 .premise-tag {
+  position: absolute;
+  left: 11%;
+  bottom: 24%;
+  width: 26%;
+  transform: translateX(-50%);
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: .04em;
+  text-transform: uppercase;
+  text-align: center;
+  line-height: 1.25;
+  color: var(--signal-ink);
+}
+
+.deck-v3 .defect-marker {
+  left: auto;
+  right: 13%;
+  top: auto;
+  bottom: 34%;
+  width: 56px;
+  height: 56px;
+  transform: translate(50%, 50%) rotate(45deg);
+  border: 2px solid var(--signal-ink);
+  clip-path: none;
+  background: var(--paper);
+  font-size: 30px;
+}
+
+.deck-v3 .defect-marker span {
+  display: block;
+  transform: rotate(-45deg);
+  color: var(--signal-ink);
+}
+
+.deck-v3 .defect-tag {
+  position: absolute;
+  right: 13%;
+  bottom: 24%;
+  transform: translateX(50%);
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: .06em;
+  text-transform: uppercase;
+  color: var(--signal-ink);
+}
+
+.deck-v3 .fpm-link {
+  position: absolute;
+  left: 11%;
+  bottom: 36%;
+  width: 8%;
+  height: 23%;
+  border-left: 1px solid var(--signal-ink);
+  border-top: 1px solid var(--signal-ink);
+}
+
+/* ---- overflow fixes on touched slides -------------------------------- */
+/* Pin the slide grid to the stage height (only on the reworked slides) so
+ * bottom-anchored diagram parts never get pushed off when the copy is tall. */
+.deck-v3 #slide-2 .slide-grid,
+.deck-v3 #slide-6 .slide-grid,
+.deck-v3 #slide-10 .slide-grid {
+  grid-template-rows: minmax(0, 1fr);
+}
+
+.deck-v3 #slide-2 .slide-grid > *,
+.deck-v3 #slide-6 .slide-grid > *,
+.deck-v3 #slide-10 .slide-grid > * {
+  min-height: 0;
+}
+
+.deck-v3 .conversion-triangle .edge-label {
+  max-width: clamp(86px, 11vw, 124px);
+  white-space: normal;
+  text-align: center;
+  line-height: 1.2;
+}
+
+.deck-v3 #slide-2 .copy-block,
+.deck-v3 #slide-6 .copy-block,
+.deck-v3 #slide-10 .split-rule > div:first-child {
+  justify-content: flex-start;
+  padding-top: clamp(14px, 3vh, 36px);
+}
+
+.deck-v3 #slide-2 .eyebrow,
+.deck-v3 #slide-6 .eyebrow,
+.deck-v3 #slide-10 .eyebrow {
+  margin-bottom: 14px;
+}
+
+.deck-v3 #slide-2 h2 {
+  font-size: clamp(34px, 3.7vw, 56px);
+  line-height: 1.0;
+}
+
+.deck-v3 #slide-2 .micro-copy,
+.deck-v3 #slide-6 .micro-copy {
+  margin-top: 14px;
+}
+
+.deck-v3 #slide-2 .ru-points {
+  margin-top: 14px;
+  padding-top: 12px;
+  gap: 7px;
+  font-size: clamp(15.5px, 1.02vw, 18px);
+  line-height: 1.32;
+}
+
+.deck-v3 #slide-6 h2 {
+  font-size: clamp(36px, 4vw, 62px);
+  line-height: 1.0;
+}
+
+.deck-v3 #slide-6 .micro-copy {
+  max-width: 32ch;
+}
+
+.deck-v3 #slide-6 .metric-defs {
+  gap: 10px;
+  margin-top: 16px;
+}
+
+.deck-v3 #slide-6 .metric-defs p {
+  line-height: 1.32;
+}
+
+.deck-v3 #slide-10 h2 {
+  font-size: clamp(36px, 4vw, 62px);
+  line-height: 1.06;
+  margin-bottom: clamp(22px, 2.4vw, 34px);
+}
+
+.deck-v3 #slide-10 .formula-line {
+  padding: clamp(14px, 1.7vw, 24px) clamp(16px, 1.9vw, 28px);
+  font-size: clamp(22px, 2.5vw, 38px);
+  margin-bottom: clamp(22px, 2.3vw, 32px);
+}
+
+.deck-v3 #slide-10 .metric-defs {
+  gap: clamp(14px, 1.4vw, 20px);
+}
+
+.deck-v3 #slide-10 .metric-defs div.accent {
+  border-left-color: var(--rule-soft);
+}
+
+.deck-v3 #slide-10 .metric-defs p {
+  line-height: 1.42;
+}
+
+.deck-v3 #slide-10 .split-rule > div:first-child {
+  justify-content: center;
+  padding-top: 0;
+  padding-bottom: clamp(8px, 2vh, 28px);
+}
+
+.deck-v3 #slide-11 .transition-arrow {
+  font-family: var(--sans);
+  font-size: 1.05em;
+  letter-spacing: 0;
+  line-height: 1;
+  padding: 0 1vw 2px;
+}
+
+/* ---- slide 9 · defect tree connector cleanup ------------------------- */
+.deck-v3 #slide-9 .defect-branches::before,
+.deck-v3 #slide-9 .defect-branch::before {
+  display: none;
+}
