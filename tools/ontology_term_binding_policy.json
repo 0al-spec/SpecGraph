@@ -3,11 +3,19 @@
   "schema_version": 1,
   "proposal_id": "0128",
   "source_proposal": "docs/proposals/0128_ontology_term_binding_policy.md",
+  "extension_proposals": [
+    "docs/proposals/0129_generated_term_binding_gate.md"
+  ],
   "parent_proposals": [
     "docs/proposals/0126_specauthor_claim_calibration_prompt_contract.md",
     "docs/proposals/0127_ontology_stdlib_type_discipline.md"
   ],
   "policy_status": "review_first_contract",
+  "repository_layout": {
+    "term_binding_gate_tool": "tools/ontology_term_binding_gate.py",
+    "term_binding_gate_report": "runs/ontology_term_binding_gate_report.json",
+    "term_binding_gate_fixture": "tests/fixtures/ontology_term_binding/generated_artifact_review_required.json"
+  },
   "authority_boundary": {
     "policy_is_authority_for_ontology_acceptance": false,
     "may_write_ontology_package": false,

@@ -579,6 +579,13 @@ def test_ontology_term_binding_policy_defines_review_first_contract() -> None:
     assert policy["artifact_kind"] == "ontology_term_binding_policy"
     assert policy["proposal_id"] == "0128"
     assert policy["source_proposal"] == "docs/proposals/0128_ontology_term_binding_policy.md"
+    assert "docs/proposals/0129_generated_term_binding_gate.md" in policy["extension_proposals"]
+    assert policy["repository_layout"]["term_binding_gate_tool"] == (
+        "tools/ontology_term_binding_gate.py"
+    )
+    assert policy["repository_layout"]["term_binding_gate_report"] == (
+        "runs/ontology_term_binding_gate_report.json"
+    )
     boundary = policy["authority_boundary"]
     assert boundary["may_write_ontology_package"] is False
     assert boundary["may_write_ontology_lockfile"] is False

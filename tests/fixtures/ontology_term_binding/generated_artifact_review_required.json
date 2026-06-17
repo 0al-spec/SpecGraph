@@ -1,0 +1,58 @@
+{
+  "artifact_kind": "generated_spec_artifact",
+  "source_ref": "tests/fixtures/ontology_term_binding/generated_artifact_review_required.json",
+  "new_terms": [
+    "OwnerDecisionReviewSurface"
+  ],
+  "term_bindings": [
+    {
+      "generated_term": "PracticalOntologyObservation",
+      "binding_state": "observed",
+      "authority_class": "practical_ontology_observation",
+      "status": "accepted",
+      "source_refs": [
+        "docs/proposals/0127_ontology_stdlib_type_discipline.md"
+      ]
+    },
+    {
+      "generated_term": "SG-SPEC-0041 refines SG-SPEC-0034",
+      "binding_state": "observed",
+      "authority_class": "specgraph_topology_edge",
+      "semantic_relation": true,
+      "source_refs": [
+        "specs/nodes/SG-SPEC-0041.yaml"
+      ]
+    }
+  ],
+  "accepted_ontology_matches": [
+    {
+      "generated_term": "Agent Passport",
+      "ontology_ref": "ontology.agent_passport.entity",
+      "binding_state": "candidate_gap_required",
+      "source_refs": [
+        "docs/proposals/0126_specauthor_claim_calibration_prompt_contract.md"
+      ]
+    }
+  ],
+  "deprecated_or_rejected_terms": [
+    {
+      "term": "ExamPolicy",
+      "status": "deprecated",
+      "source_refs": [
+        "docs/proposals/0105_ontology_semantic_lint_report.md"
+      ]
+    }
+  ],
+  "ontology_gaps": [
+    {
+      "proposed_term": "OwnerDecisionReviewSurface",
+      "proposed_kind": "entity",
+      "reason": "Needed to describe a generated review surface term.",
+      "source_refs": [
+        "docs/proposals/0127_ontology_stdlib_type_discipline.md"
+      ],
+      "status": "requires_owner_review",
+      "canonical_mutations_allowed": false
+    }
+  ]
+}
