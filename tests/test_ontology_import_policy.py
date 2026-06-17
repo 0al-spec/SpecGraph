@@ -602,17 +602,24 @@ def test_ontology_term_binding_policy_defines_review_first_contract() -> None:
 
     gap_contract = policy["ontology_gap_contract"]
     assert "source_refs" in gap_contract["required_fields"]
+    assert "candidate_bindings" in gap_contract["required_fields"]
     assert gap_contract["allowed_statuses"][0] == "requires_owner_review"
     assert "canonical_mutations_allowed" in gap_contract["required_false_flags"]
 
     gate = policy["generated_artifact_gate"]
     assert gate["default_mode"] == "review_warning"
     assert gate["future_hard_gate_allowed"] is True
-    reject_ids = {entry["id"] for entry in gate["reject_if"]}
+    reject_rules = {entry["id"]: entry for entry in gate["reject_if"]}
+    reject_ids = set(reject_rules)
     assert "new_term_without_gap" in reject_ids
     assert "duplicate_accepted_entity" in reject_ids
     assert "observation_marked_accepted" in reject_ids
     assert "topology_edge_as_semantic_relation" in reject_ids
+    assert "unknown_or_unbound_new_terms" in reject_rules["new_term_without_gap"]["condition"]
+    assert "candidate_gap_required" in reject_rules["duplicate_accepted_entity"]["condition"]
+    assert (
+        "matching_ontology_gap is missing" in reject_rules["duplicate_accepted_entity"]["condition"]
+    )
     assert policy["next_gap"] == "implement_generated_artifact_term_binding_gate"
 
 
