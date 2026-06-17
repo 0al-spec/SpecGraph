@@ -613,12 +613,32 @@ def test_ontology_term_binding_policy_defines_review_first_contract() -> None:
     reject_ids = set(reject_rules)
     assert "new_term_without_gap" in reject_ids
     assert "duplicate_accepted_entity" in reject_ids
+    assert "accepted_entity_binding_missing_refs" in reject_ids
+    assert "candidate_gap_without_candidate_bindings" in reject_ids
+    assert "ontology_gap_invalid_status" in reject_ids
     assert "observation_marked_accepted" in reject_ids
     assert "topology_edge_as_semantic_relation" in reject_ids
     assert "unknown_or_unbound_new_terms" in reject_rules["new_term_without_gap"]["condition"]
     assert "candidate_gap_required" in reject_rules["duplicate_accepted_entity"]["condition"]
     assert (
-        "matching_ontology_gap is missing" in reject_rules["duplicate_accepted_entity"]["condition"]
+        "matching_ontology_gap_with_candidate_binding is missing"
+        in reject_rules["duplicate_accepted_entity"]["condition"]
+    )
+    assert (
+        "accepted_entity_required_fields"
+        in (reject_rules["accepted_entity_binding_missing_refs"]["condition"])
+    )
+    assert (
+        "ontology_gap.candidate_bindings is missing"
+        in (reject_rules["candidate_gap_without_candidate_bindings"]["condition"])
+    )
+    assert (
+        "ontology_gap.status not in allowed_statuses"
+        in (reject_rules["ontology_gap_invalid_status"]["condition"])
+    )
+    assert (
+        "binding_state in ['accepted', 'canonical', 'approved']"
+        in (reject_rules["observation_marked_accepted"]["condition"])
     )
     assert policy["next_gap"] == "implement_generated_artifact_term_binding_gate"
 

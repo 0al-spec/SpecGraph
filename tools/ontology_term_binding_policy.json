@@ -138,8 +138,23 @@
       },
       {
         "id": "duplicate_accepted_entity",
-        "condition": "accepted_ontology_match.exists and (binding_state not in ['bound_to_accepted_entity', 'candidate_gap_required'] or (binding_state == 'candidate_gap_required' and matching_ontology_gap is missing))",
+        "condition": "accepted_ontology_match.exists and (binding_state not in ['bound_to_accepted_entity', 'candidate_gap_required'] or (binding_state == 'candidate_gap_required' and matching_ontology_gap_with_candidate_binding is missing))",
         "message": "Reuse the accepted ontology entity or justify a distinct ontology_gap."
+      },
+      {
+        "id": "accepted_entity_binding_missing_refs",
+        "condition": "authority_class == 'accepted_ontology_entity' and binding_state == 'bound_to_accepted_entity' and accepted_entity_required_fields are missing",
+        "message": "Accepted ontology bindings require ontology_ref, ontology_package_ref, term_ref, and source_refs."
+      },
+      {
+        "id": "candidate_gap_without_candidate_bindings",
+        "condition": "ontology_gap.candidate_bindings is missing",
+        "message": "Ontology gaps must preserve candidate bindings for owner review."
+      },
+      {
+        "id": "ontology_gap_invalid_status",
+        "condition": "ontology_gap.status not in allowed_statuses",
+        "message": "Ontology gaps must use owner-review statuses."
       },
       {
         "id": "deprecated_or_rejected_term_reused",
@@ -148,7 +163,7 @@
       },
       {
         "id": "observation_marked_accepted",
-        "condition": "authority_class == 'practical_ontology_observation' and status in ['accepted', 'canonical', 'approved']",
+        "condition": "authority_class == 'practical_ontology_observation' and (status in ['accepted', 'canonical', 'approved'] or binding_state in ['accepted', 'canonical', 'approved'])",
         "message": "Practical ontology observations are evidence only and cannot mark terms accepted."
       },
       {

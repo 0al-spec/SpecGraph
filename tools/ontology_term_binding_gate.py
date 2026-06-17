@@ -14,6 +14,18 @@ DEFAULT_OUTPUT_PATH = ROOT / "runs" / "ontology_term_binding_gate_report.json"
 
 ACCEPTED_STATUSES = {"accepted", "canonical", "approved"}
 REJECTED_TERM_STATUSES = {"deprecated", "rejected"}
+REVIEWABLE_GAP_STATUSES = {
+    "requires_owner_review",
+    "needs_more_evidence",
+    "duplicate_candidate",
+    "rejected",
+}
+ACCEPTED_ENTITY_REQUIRED_FIELDS = (
+    "ontology_ref",
+    "ontology_package_ref",
+    "term_ref",
+    "source_refs",
+)
 
 
 def _now_iso() -> str:
@@ -94,6 +106,8 @@ def _has_reviewable_gap(gaps: list[Any], term: str | None = None) -> bool:
         gap = _dict(raw_gap)
         if gap.get("canonical_mutations_allowed") is not False:
             continue
+        if _text(gap.get("status")) not in REVIEWABLE_GAP_STATUSES:
+            continue
         if not _text(gap.get("proposed_term")):
             continue
         if term is None or _text(gap.get("proposed_term")).lower() == term.lower():
@@ -101,11 +115,29 @@ def _has_reviewable_gap(gaps: list[Any], term: str | None = None) -> bool:
     return False
 
 
+def _missing_accepted_entity_fields(record: dict[str, Any]) -> list[str]:
+    missing: list[str] = []
+    for field in ACCEPTED_ENTITY_REQUIRED_FIELDS:
+        if field == "source_refs":
+            if not _list(record.get(field)):
+                missing.append(field)
+            continue
+        if not _text(record.get(field)):
+            missing.append(field)
+    return missing
+
+
+def _has_accepted_entity_refs(record: dict[str, Any]) -> bool:
+    return not _missing_accepted_entity_fields(record)
+
+
 def _accepted_bound_terms(artifact: dict[str, Any]) -> set[str]:
     terms: set[str] = set()
     for raw_match in _list(artifact.get("accepted_ontology_matches")):
         match = _dict(raw_match)
-        if _text(match.get("binding_state")) == "bound_to_accepted_entity":
+        if _text(
+            match.get("binding_state")
+        ) == "bound_to_accepted_entity" and _has_accepted_entity_refs(match):
             term = _text(match.get("generated_term"))
             if term:
                 terms.add(term.casefold())
@@ -114,11 +146,37 @@ def _accepted_bound_terms(artifact: dict[str, Any]) -> set[str]:
         if (
             _text(binding.get("binding_state")) == "bound_to_accepted_entity"
             and _text(binding.get("authority_class")) == "accepted_ontology_entity"
+            and _has_accepted_entity_refs(binding)
         ):
             term = _text(binding.get("generated_term"))
             if term:
                 terms.add(term.casefold())
     return terms
+
+
+def _candidate_binding_matches(match: dict[str, Any], candidate: dict[str, Any]) -> bool:
+    for field in ("ontology_ref", "ontology_package_ref", "term_ref"):
+        match_value = _text(match.get(field))
+        if match_value and _text(candidate.get(field)) != match_value:
+            return False
+    return bool(_text(match.get("ontology_ref")))
+
+
+def _has_reviewable_gap_with_candidate_binding(
+    gaps: list[Any],
+    match: dict[str, Any],
+) -> bool:
+    generated_term = _text(match.get("generated_term"))
+    for raw_gap in gaps:
+        gap = _dict(raw_gap)
+        if not _has_reviewable_gap([gap], generated_term):
+            continue
+        if any(
+            _candidate_binding_matches(match, _dict(candidate))
+            for candidate in _list(gap.get("candidate_bindings"))
+        ):
+            return True
+    return False
 
 
 def build_term_binding_gate_report(
@@ -155,24 +213,36 @@ def build_term_binding_gate_report(
     for raw_match in _list(artifact.get("accepted_ontology_matches")):
         match = _dict(raw_match)
         binding_state = _text(match.get("binding_state"))
-        generated_term = _text(match.get("generated_term"))
-        if not binding_state or binding_state == "bound_to_accepted_entity":
-            continue
-        if binding_state == "candidate_gap_required" and _has_reviewable_gap(gaps, generated_term):
-            continue
-        if binding_state:
-            findings.append(
-                _finding(
-                    finding_id="duplicate_accepted_entity",
-                    severity="review_required",
-                    message=(
-                        "Accepted ontology match was not bound to the accepted entity "
-                        "or justified by a distinct ontology gap."
-                    ),
-                    source_ref=source_ref,
-                    evidence=match,
+        if binding_state == "bound_to_accepted_entity":
+            missing_fields = _missing_accepted_entity_fields(match)
+            if missing_fields:
+                findings.append(
+                    _finding(
+                        finding_id="accepted_entity_binding_missing_refs",
+                        severity="review_required",
+                        message="Accepted ontology bindings require concrete ontology refs.",
+                        source_ref=source_ref,
+                        evidence={"missing_fields": missing_fields, "match": match},
+                    )
                 )
+            continue
+        if binding_state == "candidate_gap_required" and _has_reviewable_gap_with_candidate_binding(
+            gaps,
+            match,
+        ):
+            continue
+        findings.append(
+            _finding(
+                finding_id="duplicate_accepted_entity",
+                severity="review_required",
+                message=(
+                    "Accepted ontology match was not bound to the accepted entity "
+                    "or justified by a distinct ontology gap."
+                ),
+                source_ref=source_ref,
+                evidence=match,
             )
+        )
 
     for raw_term in _list(artifact.get("deprecated_or_rejected_terms")):
         term = _dict(raw_term)
@@ -189,7 +259,7 @@ def build_term_binding_gate_report(
                 )
             )
 
-    observation_rows = _list(artifact.get("practical_ontology_observations"))
+    observation_rows = list(_list(artifact.get("practical_ontology_observations")))
     observation_rows.extend(
         row
         for row in _list(artifact.get("term_bindings"))
@@ -197,7 +267,10 @@ def build_term_binding_gate_report(
     )
     for raw_observation in observation_rows:
         observation = _dict(raw_observation)
-        if _text(observation.get("status")) in ACCEPTED_STATUSES:
+        if (
+            _text(observation.get("status")) in ACCEPTED_STATUSES
+            or _text(observation.get("binding_state")) in ACCEPTED_STATUSES
+        ):
             findings.append(
                 _finding(
                     finding_id="observation_marked_accepted",
@@ -208,7 +281,7 @@ def build_term_binding_gate_report(
                 )
             )
 
-    topology_rows = _list(artifact.get("topology_edges"))
+    topology_rows = list(_list(artifact.get("topology_edges")))
     topology_rows.extend(
         row
         for row in _list(artifact.get("term_bindings"))
@@ -229,6 +302,21 @@ def build_term_binding_gate_report(
 
     for raw_binding in _list(artifact.get("term_bindings")):
         binding = _dict(raw_binding)
+        if (
+            _text(binding.get("authority_class")) == "accepted_ontology_entity"
+            and _text(binding.get("binding_state")) == "bound_to_accepted_entity"
+        ):
+            missing_fields = _missing_accepted_entity_fields(binding)
+            if missing_fields:
+                findings.append(
+                    _finding(
+                        finding_id="accepted_entity_binding_missing_refs",
+                        severity="review_required",
+                        message="Accepted ontology bindings require concrete ontology refs.",
+                        source_ref=source_ref,
+                        evidence={"missing_fields": missing_fields, "binding": binding},
+                    )
+                )
         if not _list(binding.get("domain_refs")):
             warnings.append(
                 _finding(
@@ -259,6 +347,16 @@ def build_term_binding_gate_report(
                     finding_id="candidate_gap_without_candidate_bindings",
                     severity="review_required",
                     message="Ontology gaps must preserve candidate bindings for owner review.",
+                    source_ref=source_ref,
+                    evidence=gap,
+                )
+            )
+        if _text(gap.get("status")) not in REVIEWABLE_GAP_STATUSES:
+            findings.append(
+                _finding(
+                    finding_id="ontology_gap_invalid_status",
+                    severity="review_required",
+                    message="Ontology gaps must use owner-review statuses.",
                     source_ref=source_ref,
                     evidence=gap,
                 )
