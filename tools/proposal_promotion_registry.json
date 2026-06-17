@@ -1662,5 +1662,18 @@
     "required_provenance_links": [
       "source_draft_ref"
     ]
+  },
+  {
+    "proposal_id": "0129",
+    "source_artifact_class": "working_draft",
+    "source_refs": [
+      "docs/archive/proposal_sources/0129_generated_term_binding_gate.md"
+    ],
+    "motivating_concern": "SpecGraph has a review-first ontology term binding policy, but generated artifact workflows still need an executable local gate report that catches unknown terms, duplicate accepted entities, deprecated or rejected terms, practical observation authority expansion, and topology-as-semantic confusion.",
+    "normalized_title": "Generated Term Binding Gate",
+    "bounded_scope": "Add a local review-mode ontology term binding gate tool, Make target, fixture, report shape, docs, and tests that emit review findings without changing active prompts, executing prompt agents, hard-blocking supervisor writes, accepting ontology terms, mutating canonical specs, writing Ontology packages or lockfiles, importing owner decisions, or adding SpecSpace mutation UI.",
+    "required_provenance_links": [
+      "source_draft_ref"
+    ]
   }
 ]

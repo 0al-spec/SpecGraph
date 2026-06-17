@@ -7097,5 +7097,54 @@
         "pattern": "tools/ontology_term_binding_policy.json"
       }
     ]
+  },
+  {
+    "proposal_id": "0129",
+    "posture": "bounded_runtime_followup",
+    "runtime_surfaces": [
+      "docs/proposals/0129_generated_term_binding_gate.md",
+      "docs/archive/proposal_sources/0129_generated_term_binding_gate.md",
+      "tools/ontology_term_binding_gate.py",
+      "tools/ontology_term_binding_policy.json",
+      "tools/README.md",
+      "Makefile",
+      "tests/test_ontology_term_binding_gate.py",
+      "tests/test_ontology_import_policy.py",
+      "tests/fixtures/ontology_term_binding/generated_artifact_review_required.json"
+    ],
+    "runtime_markers": [
+      {
+        "path": "tools/ontology_term_binding_gate.py",
+        "pattern": "ontology_term_binding_gate_report"
+      },
+      {
+        "path": "tools/ontology_term_binding_gate.py",
+        "pattern": "topology_edge_as_semantic_relation"
+      },
+      {
+        "path": "Makefile",
+        "pattern": "ontology-term-binding-gate"
+      }
+    ],
+    "validation_markers": [
+      {
+        "path": "tests/test_ontology_term_binding_gate.py",
+        "pattern": "def test_term_binding_gate_reports_review_findings"
+      },
+      {
+        "path": "tests/test_ontology_term_binding_gate.py",
+        "pattern": "def test_term_binding_gate_cli_strict_exits_nonzero"
+      }
+    ],
+    "observation_markers": [
+      {
+        "path": "docs/proposals/0129_generated_term_binding_gate.md",
+        "pattern": "would_reject_in_hard_gate"
+      },
+      {
+        "path": "tools/ontology_term_binding_policy.json",
+        "pattern": "term_binding_gate_report"
+      }
+    ]
   }
 ]

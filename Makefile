@@ -14,12 +14,15 @@ SUPERVISOR_RUN_PATH ?=
 EXECUTOR_FOLLOWUP_DECISION ?= needs_more_evidence
 EXECUTOR_FOLLOWUP_REVIEWER ?= local_operator
 EXECUTOR_FOLLOWUP_RATIONALE ?=
+ONTOLOGY_TERM_BINDING_ARTIFACT ?= tests/fixtures/ontology_term_binding/generated_artifact_review_required.json
+ONTOLOGY_TERM_BINDING_GATE_OUTPUT ?= runs/ontology_term_binding_gate_report.json
 
 .DEFAULT_GOAL := help
 
 PYTHON_TARGETS := viewer-surfaces dashboard backlog next-move spec-activity graph-diagnostics \
 	proposal-spec-trace proposal-tracking proposal-tracking-gate external-consumers external-handoffs \
 	external-consumer-evidence ontology-imports ontology-imports-public \
+	ontology-term-binding-gate \
 	proposal-work-claims proposal-work-claims-gate proposal-id \
 	metrics-delivery metrics-feedback metrics-source-promotion metric-signals metric-thresholds \
 	metric-packs metric-pack-drift metric-pack-adapters metric-pack-runs metric-pricing model-usage \
@@ -58,6 +61,7 @@ help:
 			'  make external-consumer-evidence Refresh external consumer evidence JSON' \
 			'  make ontology-imports          Refresh ontology import and semantic-control surfaces' \
 			'  make ontology-imports-public   Refresh public-safe ontology review placeholders' \
+			'  make ontology-term-binding-gate ONTOLOGY_TERM_BINDING_ARTIFACT=<json>' \
 		'  make metrics-delivery         Refresh Metrics delivery workflow JSON' \
 		'  make metrics-feedback         Refresh Metrics feedback JSON' \
 		'  make metrics-source-promotion Refresh Metrics source promotion candidates JSON' \
@@ -176,6 +180,10 @@ ontology-imports:
 .PHONY: ontology-imports-public
 ontology-imports-public:
 	@$(PYTHON) tools/ontology_imports.py --write-public-placeholder
+
+.PHONY: ontology-term-binding-gate
+ontology-term-binding-gate:
+	@$(PYTHON) tools/ontology_term_binding_gate.py --artifact "$(ONTOLOGY_TERM_BINDING_ARTIFACT)" --output "$(ONTOLOGY_TERM_BINDING_GATE_OUTPUT)"
 
 .PHONY: metrics-delivery
 metrics-delivery:
