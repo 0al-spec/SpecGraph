@@ -1636,5 +1636,18 @@
     "required_provenance_links": [
       "source_draft_ref"
     ]
+  },
+  {
+    "proposal_id": "0127",
+    "source_artifact_class": "working_draft",
+    "source_refs": [
+      "docs/archive/proposal_sources/0127_ontology_stdlib_type_discipline.md"
+    ],
+    "motivating_concern": "SpecAuthorAgent and SpecSpace practical ontology need an explicit process contract that treats accepted Ontology entities as canonical type symbols while keeping observed terms and SpecGraph topology facts non-authoritative.",
+    "normalized_title": "Ontology Standard Library Type Discipline",
+    "bounded_scope": "Define a process contract for treating accepted Ontology entities as canonical semantic type symbols, requiring generated terminology to bind to accepted entities or become ontology gaps, and separating practical ontology observations from SpecGraph topology edges without changing prompts, executing agents, adding validators, accepting ontology terms, mutating canonical specs, writing Ontology packages or lockfiles, importing owner decisions, or adding SpecSpace mutation UI.",
+    "required_provenance_links": [
+      "source_draft_ref"
+    ]
   }
 ]

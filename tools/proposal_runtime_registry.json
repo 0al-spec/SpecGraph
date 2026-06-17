@@ -7006,5 +7006,51 @@
         "pattern": "Low R -> not a decision"
       }
     ]
+  },
+  {
+    "proposal_id": "0127",
+    "posture": "deferred_until_canonicalized",
+    "runtime_surfaces": [
+      "docs/proposals/0127_ontology_stdlib_type_discipline.md",
+      "docs/archive/proposal_sources/0127_ontology_stdlib_type_discipline.md"
+    ],
+    "runtime_markers": [
+      {
+        "path": "docs/proposals/0127_ontology_stdlib_type_discipline.md",
+        "pattern": "This document defines a process contract only"
+      },
+      {
+        "path": "docs/proposals/0127_ontology_stdlib_type_discipline.md",
+        "pattern": "accepted Ontology entities as canonical semantic type symbols"
+      },
+      {
+        "path": "docs/proposals/0127_ontology_stdlib_type_discipline.md",
+        "pattern": "Practical ontology term -> observed evidence only"
+      }
+    ],
+    "validation_markers": [
+      {
+        "path": "docs/proposals/0127_ontology_stdlib_type_discipline.md",
+        "pattern": "proposal tracking gate passes"
+      },
+      {
+        "path": "docs/proposals/0127_ontology_stdlib_type_discipline.md",
+        "pattern": "This contract slice is complete"
+      }
+    ],
+    "observation_markers": [
+      {
+        "path": "docs/proposals/0127_ontology_stdlib_type_discipline.md",
+        "pattern": "Ontology accepted entity -> canonical type symbol"
+      },
+      {
+        "path": "docs/proposals/0127_ontology_stdlib_type_discipline.md",
+        "pattern": "Unknown term -> ontology_gap or candidate_term"
+      },
+      {
+        "path": "docs/proposals/0127_ontology_stdlib_type_discipline.md",
+        "pattern": "SpecGraph topology edges should keep stable IDs"
+      }
+    ]
   }
 ]
