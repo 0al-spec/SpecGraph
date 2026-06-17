@@ -7052,5 +7052,50 @@
         "pattern": "SpecGraph topology edges should keep stable IDs"
       }
     ]
+  },
+  {
+    "proposal_id": "0128",
+    "posture": "bounded_runtime_followup",
+    "runtime_surfaces": [
+      "docs/proposals/0128_ontology_term_binding_policy.md",
+      "docs/archive/proposal_sources/0128_ontology_term_binding_policy.md",
+      "tools/ontology_term_binding_policy.json",
+      "tools/README.md",
+      "tests/test_ontology_import_policy.py"
+    ],
+    "runtime_markers": [
+      {
+        "path": "tools/ontology_term_binding_policy.json",
+        "pattern": "ontology_term_binding_policy"
+      },
+      {
+        "path": "tools/ontology_term_binding_policy.json",
+        "pattern": "new_term_without_gap"
+      },
+      {
+        "path": "tools/ontology_term_binding_policy.json",
+        "pattern": "topology_edge_as_semantic_relation"
+      }
+    ],
+    "validation_markers": [
+      {
+        "path": "tests/test_ontology_import_policy.py",
+        "pattern": "def test_ontology_term_binding_policy_defines_review_first_contract"
+      },
+      {
+        "path": "docs/proposals/0128_ontology_term_binding_policy.md",
+        "pattern": "proposal tracking gate passes"
+      }
+    ],
+    "observation_markers": [
+      {
+        "path": "docs/proposals/0128_ontology_term_binding_policy.md",
+        "pattern": "unknown generated term -> ontology_gap"
+      },
+      {
+        "path": "tools/README.md",
+        "pattern": "tools/ontology_term_binding_policy.json"
+      }
+    ]
   }
 ]

@@ -156,6 +156,10 @@ Supervisor modes:
   against the imported ontology fixture. These surfaces resolve known imported
   refs and preserve unresolved refs as reviewable ontology gaps without
   mutating canonical `specs/nodes/*.yaml`.
+- `tools/ontology_term_binding_policy.json`: review-first policy for treating
+  accepted Ontology entities as canonical type symbols, requiring unknown
+  generated terms to become `ontology_gap` records, and keeping practical
+  observations, topology edges, and proposal references non-authoritative.
 - `--build-ontology-supervisor-semantic-gate`: refresh the same ontology
   semantic surfaces through the supervisor entrypoint and print a compact gate
   report for `runs/ontology_supervisor_semantic_gate.json` without running
@@ -995,6 +999,10 @@ Key derived artifacts:
 - `tools/specgraph_vocabulary.json`: shared machine-readable vocabulary layer
   for canonical terms, aliases, deprecated aliases, and cross-artifact
   ontology families
+- `tools/ontology_term_binding_policy.json`: declarative review-first contract
+  for binding generated terms to accepted ontology entities or emitting
+  `ontology_gap` records, without granting practical ontology observations or
+  SpecGraph topology edges semantic authority
 - `tools/pre_spec_semantics_policy.json`: declarative contract for pre-spec
   semantic artifacts, their axes, repository layout, and downstream lineage
   into proposal-lane or canonical review candidates
