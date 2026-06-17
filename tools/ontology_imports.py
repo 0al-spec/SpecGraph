@@ -17,6 +17,7 @@ ROOT = Path(__file__).resolve().parents[1]
 POLICY_PATH = ROOT / "tools" / "ontology_import_policy.json"
 SEMANTIC_CONTROL_POLICY_PATH = Path("tools") / "ontology_semantic_control_policy.json"
 DEFAULT_SEMANTIC_POLICY = object()
+LEGACY_SEMANTIC_FIXTURE = Path("tests/fixtures/ontology_import/examcalc/import-fixture.yaml")
 CONCEPT_REF_PATTERN = re.compile(r"^[A-Za-z][A-Za-z0-9_]*:[A-Za-z][A-Za-z0-9_]*$")
 DIGEST_PATTERN = re.compile(r"^sha256:[0-9a-f]{64}$")
 PUBLIC_PLACEHOLDER_REASON = "production_ontology_source_not_configured"
@@ -247,6 +248,10 @@ def resolve_allowed_output_path(out_dir: Path, relative: str, allowed_roots: lis
     if not path.is_relative_to(output_root):
         raise ValueError(f"output path {relative!r} must stay within the output directory")
     return path
+
+
+def fixture_matches_path(fixture_path: Path, relative: str | Path) -> bool:
+    return fixture_path.resolve() == (ROOT / relative).resolve()
 
 
 def require_layout_path(layout: dict[str, Any], key: str) -> str:
@@ -658,6 +663,103 @@ def build_ontologyc_adapter_report_smoke(
             "resolved_ref_count": len(resolved_refs),
             "gap_count": len(unresolved_refs),
             "next_gap": "review_ontology_import_gap" if unresolved_refs else "none",
+        },
+    }
+
+
+def require_string_array(value: Any, context: str) -> list[str]:
+    if not isinstance(value, list) or not all(isinstance(item, str) for item in value):
+        raise ValueError(f"{context} must be a list of strings")
+    return value
+
+
+def build_ontology_compatibility_diff_preview(
+    policy: dict[str, Any],
+    *,
+    fixture_path: Path,
+    report_path: Path,
+    fixture: dict[str, Any],
+    package: dict[str, Any],
+) -> dict[str, Any]:
+    report = load_yaml(report_path)
+    if require_string(report, "apiVersion", "compatibility_report") != (
+        "ontology.specgraph.io/v1alpha1"
+    ):
+        raise ValueError("compatibility_report.apiVersion must be ontology.specgraph.io/v1alpha1")
+    if require_string(report, "kind", "compatibility_report") != "OntologyCompatibilityReport":
+        raise ValueError("compatibility_report.kind must be OntologyCompatibilityReport")
+
+    metadata = require_object(report, "metadata", "compatibility_report")
+    from_ref = require_string(metadata, "from", "compatibility_report.metadata")
+    to_ref = require_string(metadata, "to", "compatibility_report.metadata")
+    package_ref = f"{package['package_id']}@{package['version']}"
+    if from_ref != package_ref:
+        raise ValueError("compatibility_report.metadata.from does not match fixture package")
+    if not to_ref.startswith(f"{package['package_id']}@"):
+        raise ValueError("compatibility_report.metadata.to must stay within the fixture package")
+
+    result = require_object(report, "result", "compatibility_report")
+    compatible = require_bool(result, "compatible", "compatibility_report.result")
+    required_actions = require_string_array(
+        result.get("requiredSpecGraphActions"),
+        "compatibility_report.result.requiredSpecGraphActions",
+    )
+
+    changes = require_object(report, "changes", "compatibility_report")
+    projected_changes = {
+        "added_classes": require_string_array(
+            changes.get("addedClasses"), "compatibility_report.changes.addedClasses"
+        ),
+        "removed_classes": require_string_array(
+            changes.get("removedClasses"), "compatibility_report.changes.removedClasses"
+        ),
+        "added_relations": require_string_array(
+            changes.get("addedRelations"), "compatibility_report.changes.addedRelations"
+        ),
+        "removed_relations": require_string_array(
+            changes.get("removedRelations"), "compatibility_report.changes.removedRelations"
+        ),
+        "added_fields": require_string_array(
+            changes.get("addedFields"), "compatibility_report.changes.addedFields"
+        ),
+        "removed_fields": require_string_array(
+            changes.get("removedFields"), "compatibility_report.changes.removedFields"
+        ),
+        "changed_fields": require_string_array(
+            changes.get("changedFields"), "compatibility_report.changes.changedFields"
+        ),
+        "breaking_changes": require_string_array(
+            changes.get("breakingChanges"), "compatibility_report.changes.breakingChanges"
+        ),
+    }
+
+    breaking_changes = projected_changes["breaking_changes"]
+    return {
+        "artifact_kind": "ontology_compatibility_diff_preview",
+        "schema_version": 1,
+        "proposal_id": fixture["proposal_id"],
+        "source_fixture": relative_path(fixture_path),
+        "source_report": relative_path(report_path),
+        "canonical_mutations_allowed": False,
+        "tracked_artifacts_written": False,
+        "package_ref": package_ref,
+        "from_ref": from_ref,
+        "to_ref": to_ref,
+        "compatible": compatible,
+        "required_specgraph_actions": required_actions,
+        "changes": projected_changes,
+        "authority_boundary": {
+            "report_is_authority": False,
+            "diff_report_source": "ontologyc diff",
+            "may_update_ontology_lockfile": False,
+            "may_mutate_canonical_specs": False,
+            "may_close_ontology_gap": False,
+        },
+        "summary": {
+            "status": "compatible" if compatible else "breaking_change_review_required",
+            "breaking_change_count": len(breaking_changes),
+            "added_class_count": len(projected_changes["added_classes"]),
+            "next_gap": "review_breaking_ontology_diff" if breaking_changes else "none",
         },
     }
 
@@ -6491,17 +6593,19 @@ def build_ontology_import_surfaces(
     *,
     policy_path: Path = POLICY_PATH,
     adapter_report_path: Path | None = None,
+    compatibility_report_path: Path | None = None,
     semantic_policy_path: Path | None | object = DEFAULT_SEMANTIC_POLICY,
 ) -> dict[str, dict[str, Any]]:
     policy = load_json(policy_path)
     fixture = load_yaml(fixture_path)
     validate_fixture(policy, fixture)
     import_layout = require_object(policy, "repository_layout", "ontology_import_policy")
-    default_fixture_path = ROOT / require_layout_path(import_layout, "default_fixture")
+    default_fixture_path = require_layout_path(import_layout, "default_fixture")
     if semantic_policy_path is DEFAULT_SEMANTIC_POLICY:
         semantic_policy_path = (
             SEMANTIC_CONTROL_POLICY_PATH
-            if fixture_path.resolve() == default_fixture_path.resolve()
+            if fixture_matches_path(fixture_path, default_fixture_path)
+            or fixture_matches_path(fixture_path, LEGACY_SEMANTIC_FIXTURE)
             else None
         )
 
@@ -6665,6 +6769,16 @@ def build_ontology_import_surfaces(
             resolved_refs=resolved_refs,
             unresolved_refs=unresolved_refs,
         )
+    if compatibility_report_path is not None:
+        if not compatibility_report_path.is_absolute():
+            compatibility_report_path = ROOT / compatibility_report_path
+        surfaces["compatibility_diff_preview"] = build_ontology_compatibility_diff_preview(
+            policy,
+            fixture_path=fixture_path,
+            report_path=compatibility_report_path,
+            fixture=fixture,
+            package=package,
+        )
     if semantic_policy_path is not None:
         assert isinstance(semantic_policy_path, Path)
         if not semantic_policy_path.is_absolute():
@@ -6782,6 +6896,10 @@ def write_ontology_import_surfaces(
         "binding_preview": require_layout_path(layout, "binding_preview"),
         "prompt_invocation_index": require_layout_path(layout, "prompt_invocation_index"),
     }
+    if "compatibility_diff_preview" in surfaces:
+        destinations["compatibility_diff_preview"] = require_layout_path(
+            layout, "compatibility_diff_preview"
+        )
     if "adapter_report_smoke" in surfaces:
         destinations["adapter_report_smoke"] = require_layout_path(layout, "adapter_report_smoke")
     if "ontology_delta_candidate_review_packet" in surfaces:
@@ -6905,6 +7023,14 @@ def parse_args() -> argparse.Namespace:
         ),
     )
     parser.add_argument(
+        "--compatibility-report",
+        default=None,
+        help=(
+            "Ontologyc compatibility report YAML path. Defaults to the checked-in "
+            "SpecGraph Core compatibility report only when --fixture is the default fixture."
+        ),
+    )
+    parser.add_argument(
         "--semantic-policy",
         default=None,
         help=(
@@ -6955,6 +7081,13 @@ def main() -> int:
             adapter_report_path = ROOT / adapter_report_path
     elif fixture_path.resolve() == default_fixture_path.resolve():
         adapter_report_path = ROOT / str(layout["default_adapter_report"])
+    compatibility_report_path = None
+    if args.compatibility_report:
+        compatibility_report_path = Path(args.compatibility_report)
+        if not compatibility_report_path.is_absolute():
+            compatibility_report_path = ROOT / compatibility_report_path
+    elif fixture_path.resolve() == default_fixture_path.resolve():
+        compatibility_report_path = ROOT / str(layout["default_compatibility_report"])
     if args.semantic_policy and args.no_semantic_policy:
         raise ValueError("--semantic-policy and --no-semantic-policy are mutually exclusive")
     semantic_policy_path = None
@@ -6967,6 +7100,7 @@ def main() -> int:
     surfaces = build_ontology_import_surfaces(
         fixture_path,
         adapter_report_path=adapter_report_path,
+        compatibility_report_path=compatibility_report_path,
         semantic_policy_path=semantic_policy_path,
     )
     if args.write:

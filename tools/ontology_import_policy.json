@@ -4,10 +4,12 @@
   "proposal_id": "0060",
   "source_proposal": "docs/proposals/0060_external_ontology_import_plane.md",
   "repository_layout": {
-    "default_fixture": "tests/fixtures/ontology_import/examcalc/import-fixture.yaml",
-    "default_adapter_report": "tests/fixtures/ontology_import/examcalc/ontologyc-adapter-report.yaml",
+    "default_fixture": "tests/fixtures/ontology_import/specgraph-core/import-fixture.yaml",
+    "default_adapter_report": "tests/fixtures/ontology_import/specgraph-core/ontologyc-adapter-report.yaml",
+    "default_compatibility_report": "tests/fixtures/ontology_import/specgraph-core/compatibility/compatibility-report.yaml",
     "package_index": "runs/ontology_package_index.json",
     "gap_index": "runs/ontology_import_gap_index.json",
+    "compatibility_diff_preview": "runs/ontology_compatibility_diff_preview.json",
     "governance_evidence_index": "runs/ontology_governance_evidence_index.json",
     "binding_preview": "runs/ontology_binding_preview.json",
     "prompt_invocation_index": "runs/ontology_prompt_invocation_index.json",
@@ -112,6 +114,7 @@
     "ontology_governance_evidence_index",
     "ontology_binding_preview",
     "ontology_prompt_invocation_index",
+    "ontology_compatibility_diff_preview",
     "ontologyc_adapter_report_smoke"
   ],
   "next_gap_defaults": {

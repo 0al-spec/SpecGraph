@@ -1,0 +1,45 @@
+apiVersion: specgraph.io/v1alpha1
+kind: OntologyLockfile
+metadata:
+  project: semantic-validation
+spec:
+  resolved:
+  - aliases:
+      AcceptanceCriterion: sgcore:AcceptanceCriterion
+      CodeSurface: sgcore:CodeSurface
+      Constraint: sgcore:Constraint
+      Decision: sgcore:Decision
+      DraftAuthorityBoundary: sgcore:DraftAuthorityBoundary
+      Edge: sgcore:Edge
+      Evidence: sgcore:Evidence
+      Intent: sgcore:Intent
+      Invariant: sgcore:Invariant
+      Node: sgcore:Node
+      Release: sgcore:Release
+      Requirement: sgcore:Requirement
+      Spec: sgcore:Spec
+      SpecGraph: sgcore:SpecGraph
+      SpecReviewState: sgcore:SpecReviewState
+      Test: sgcore:Test
+      codeSurfaceImplementsSpec: sgcore:codeSurfaceImplementsSpec
+      constraintAppliesToNode: sgcore:constraintAppliesToNode
+      containsEdge: sgcore:containsEdge
+      containsNode: sgcore:containsNode
+      containsSpec: sgcore:containsSpec
+      decisionConstrainsSpec: sgcore:decisionConstrainsSpec
+      definesRequirement: sgcore:definesRequirement
+      edgeRelatesNode: sgcore:edgeRelatesNode
+      evidenceSupportsCriterion: sgcore:evidenceSupportsCriterion
+      hasAcceptanceCriterion: sgcore:hasAcceptanceCriterion
+      invariantGovernsSpecGraph: sgcore:invariantGovernsSpecGraph
+      nodeConnectedByEdge: sgcore:nodeConnectedByEdge
+      refinesIntent: sgcore:refinesIntent
+      releasePackagesCodeSurface: sgcore:releasePackagesCodeSurface
+      requirementValidatedByCriterion: sgcore:requirementValidatedByCriterion
+      testValidatesRequirement: sgcore:testValidatesRequirement
+    digest: sha256:22022e3a073a951046ea1a162bf688605925397e81d32c19998780be221e4dd7
+    namespace: sgcore
+    ontology: org.0al.specgraph.core
+    registryUri: SPECS/ontology/packages/specgraph-core/domain-ontology-package.yaml
+    version: 0.1.0
+

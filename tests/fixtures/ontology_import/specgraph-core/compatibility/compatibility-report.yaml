@@ -1,0 +1,20 @@
+apiVersion: ontology.specgraph.io/v1alpha1
+changes:
+  addedClasses:
+  - sgcore:ClaimCalibration
+  addedFields: []
+  addedRelations: []
+  breakingChanges: []
+  changedFields: []
+  removedClasses: []
+  removedFields: []
+  removedRelations: []
+kind: OntologyCompatibilityReport
+metadata:
+  from: org.0al.specgraph.core@0.1.0
+  to: org.0al.specgraph.core@0.2.0
+result:
+  compatible: true
+  requiredSpecGraphActions:
+  - updateLockfile
+
