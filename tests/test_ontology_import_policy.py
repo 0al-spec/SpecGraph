@@ -14,6 +14,26 @@ FIXTURE = ROOT / "tests" / "fixtures" / "ontology_import" / "examcalc" / "import
 ADAPTER_REPORT = (
     ROOT / "tests" / "fixtures" / "ontology_import" / "examcalc" / "ontologyc-adapter-report.yaml"
 )
+SPECGRAPH_CORE_FIXTURE = (
+    ROOT / "tests" / "fixtures" / "ontology_import" / "specgraph-core" / "import-fixture.yaml"
+)
+SPECGRAPH_CORE_ADAPTER_REPORT = (
+    ROOT
+    / "tests"
+    / "fixtures"
+    / "ontology_import"
+    / "specgraph-core"
+    / "ontologyc-adapter-report.yaml"
+)
+SPECGRAPH_CORE_COMPATIBILITY_REPORT = (
+    ROOT
+    / "tests"
+    / "fixtures"
+    / "ontology_import"
+    / "specgraph-core"
+    / "compatibility"
+    / "compatibility-report.yaml"
+)
 
 
 def load_ontology_imports_module() -> object:
@@ -116,6 +136,13 @@ def test_ontology_import_policy_defines_read_only_contract() -> None:
     )
     assert "local_pseudo_concepts" in policy["package_ref_contract"]["forbidden_sources"]
     assert policy["concept_ref_contract"]["unresolved_ref_action"] == "emit_ontology_gap"
+    assert policy["repository_layout"]["default_fixture"] == (
+        "tests/fixtures/ontology_import/specgraph-core/import-fixture.yaml"
+    )
+    assert policy["repository_layout"]["compatibility_diff_preview"] == (
+        "runs/ontology_compatibility_diff_preview.json"
+    )
+    assert "ontology_compatibility_diff_preview" in policy["accepted_artifact_kinds"]
     contract = policy["ontologyc_adapter_report_contract"]
     assert contract["accepted_tool"] == "ontologyc"
     assert contract["accepted_command"] == "validate-specgraph"
@@ -683,6 +710,106 @@ def test_ontology_import_fixture_resolves_known_refs_and_gaps() -> None:
         "concept_hint": "CASFunction",
     }
     assert gap_index["gaps"][0]["recommended_route"] == "ontology_package_draft"
+
+
+def test_specgraph_core_import_fixture_projects_compiler_backed_gaps_and_diffs() -> None:
+    module = load_ontology_imports_module()
+
+    surfaces = module.build_ontology_import_surfaces(
+        SPECGRAPH_CORE_FIXTURE,
+        adapter_report_path=SPECGRAPH_CORE_ADAPTER_REPORT,
+        compatibility_report_path=SPECGRAPH_CORE_COMPATIBILITY_REPORT,
+        semantic_policy_path=None,
+    )
+
+    package_index = surfaces["package_index"]
+    package = package_index["packages"][0]
+    assert package["package_id"] == "org.0al.specgraph.core"
+    assert package["namespace"] == "sgcore"
+    assert package["version"] == "0.1.0"
+    assert package["authority_class"] == "draft_imported"
+    assert package["lock"]["package_ref"] == "org.0al.specgraph.core@0.1.0"
+    assert package_index["summary"] == {
+        "imported_package_count": 1,
+        "resolved_ref_count": 7,
+        "unresolved_ref_count": 1,
+        "next_gap": "review_ontology_import_gap",
+    }
+
+    preview = surfaces["binding_preview"]
+    resolved_refs = {entry["source_ref"]: entry for entry in preview["resolved_refs"]}
+    assert sorted(resolved_refs) == [
+        "sgcore:AcceptanceCriterion",
+        "sgcore:Evidence",
+        "sgcore:Requirement",
+        "sgcore:Spec",
+        "sgcore:SpecGraph",
+        "sgcore:definesRequirement",
+        "sgcore:hasAcceptanceCriterion",
+    ]
+    assert resolved_refs["sgcore:SpecGraph"]["kind"] == "class"
+    assert resolved_refs["sgcore:definesRequirement"]["kind"] == "relation"
+    assert preview["unresolved_refs"] == ["sgcore:ClaimCalibration"]
+
+    gap_index = surfaces["gap_index"]
+    assert gap_index["gaps"][0]["gap_id"] == "ontology-gap-sgcore-claimcalibration"
+    assert gap_index["gaps"][0]["missing_concept"] == {
+        "ref": "sgcore:ClaimCalibration",
+        "namespace_hint": "sgcore",
+        "concept_hint": "ClaimCalibration",
+    }
+    assert gap_index["gaps"][0]["subject"] == {"kind": "proposal", "id": "SG-RFC-0130"}
+
+    smoke = surfaces["adapter_report_smoke"]
+    assert smoke["source_authority"]["package_id"] == "org.0al.specgraph.core"
+    assert smoke["source_authority"]["namespace"] == "sgcore"
+    assert smoke["summary"] == {
+        "status": "passed",
+        "resolved_ref_count": 7,
+        "gap_count": 1,
+        "next_gap": "review_ontology_import_gap",
+    }
+
+    diff = surfaces["compatibility_diff_preview"]
+    assert diff["artifact_kind"] == "ontology_compatibility_diff_preview"
+    assert diff["canonical_mutations_allowed"] is False
+    assert diff["tracked_artifacts_written"] is False
+    assert diff["package_ref"] == "org.0al.specgraph.core@0.1.0"
+    assert diff["to_ref"] == "org.0al.specgraph.core@0.2.0"
+    assert diff["compatible"] is True
+    assert diff["changes"]["added_classes"] == ["sgcore:ClaimCalibration"]
+    assert diff["changes"]["breaking_changes"] == []
+    assert diff["required_specgraph_actions"] == ["updateLockfile"]
+    assert diff["authority_boundary"]["may_update_ontology_lockfile"] is False
+    assert diff["authority_boundary"]["may_mutate_canonical_specs"] is False
+    assert diff["summary"] == {
+        "status": "compatible",
+        "breaking_change_count": 0,
+        "added_class_count": 1,
+        "next_gap": "review_required_specgraph_actions",
+    }
+
+
+def test_specgraph_core_default_semantic_smoke_uses_current_fixture_namespace() -> None:
+    module = load_ontology_imports_module()
+
+    surfaces = module.build_ontology_import_surfaces(
+        SPECGRAPH_CORE_FIXTURE,
+        adapter_report_path=SPECGRAPH_CORE_ADAPTER_REPORT,
+        compatibility_report_path=SPECGRAPH_CORE_COMPATIBILITY_REPORT,
+    )
+
+    smoke = surfaces["semantic_lint_smoke"]
+    refs = {
+        entry.get("source_ref")
+        for entry in smoke["term_results"]
+        if isinstance(entry.get("source_ref"), str)
+    }
+    assert refs
+    assert all(ref.startswith("sgcore:") for ref in refs)
+    assert not any("examcalc" in json.dumps(entry) for entry in smoke["term_results"])
+    assert smoke["summary"]["classification_counts"]["accepted_term"] >= 1
+    assert smoke["summary"]["classification_counts"]["unknown_term"] >= 1
 
 
 def test_ontology_semantic_lint_smoke_classifies_terms() -> None:
@@ -2877,6 +3004,7 @@ def test_make_ontology_imports_writes_declared_surfaces() -> None:
         "runs/ontology_governance_evidence_index.json": "ontology_governance_evidence_index",
         "runs/ontology_binding_preview.json": "ontology_binding_preview",
         "runs/ontology_prompt_invocation_index.json": "ontology_prompt_invocation_index",
+        "runs/ontology_compatibility_diff_preview.json": ("ontology_compatibility_diff_preview"),
         "runs/ontologyc_adapter_report_smoke.json": "ontologyc_adapter_report_smoke",
         "runs/ontology_semantic_context_pack.json": "ontology_semantic_context_pack",
         "runs/ontology_semantic_lint_input.json": "ontology_semantic_lint_input",
@@ -3316,6 +3444,31 @@ def test_cli_custom_fixture_does_not_require_default_adapter_report(tmp_path: Pa
     assert "semantic_review_surface" not in surfaces
     assert "semantic_lint_smoke" not in surfaces
     assert surfaces["package_index"]["proposal_id"] == "custom-0060"
+
+
+def test_cli_legacy_fixture_uses_semantic_fallback_without_explicit_policy() -> None:
+    completed = subprocess.run(
+        [
+            sys.executable,
+            str(ROOT / "tools" / "ontology_imports.py"),
+            "--fixture",
+            str(FIXTURE),
+        ],
+        cwd=ROOT,
+        check=True,
+        capture_output=True,
+        text=True,
+    )
+    surfaces = json.loads(completed.stdout)
+
+    assert "semantic_lint_smoke" in surfaces
+    refs = {
+        entry.get("source_ref")
+        for entry in surfaces["semantic_lint_smoke"]["term_results"]
+        if isinstance(entry.get("source_ref"), str)
+    }
+    assert refs
+    assert all(ref.startswith("examcalc:") for ref in refs)
 
 
 def test_ontology_import_write_rejects_outputs_outside_allowed_roots(tmp_path: Path) -> None:

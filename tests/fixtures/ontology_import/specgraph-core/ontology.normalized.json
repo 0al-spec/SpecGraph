@@ -1,0 +1,482 @@
+{
+  "classes" : [
+    {
+      "aliases" : [
+
+      ],
+      "central" : false,
+      "description" : "Concrete condition used to validate whether a requirement or specification is satisfied.",
+      "extends" : "sg:DomainEntity",
+      "fqid" : "sgcore:AcceptanceCriterion",
+      "id" : "AcceptanceCriterion",
+      "implements" : [
+
+      ],
+      "kind" : "DomainEntity",
+      "uri" : "ontology://org.0al.specgraph.core/0.1.0/classes/AcceptanceCriterion"
+    },
+    {
+      "aliases" : [
+
+      ],
+      "central" : false,
+      "description" : "Derived executable or source-facing surface that implements specifications.",
+      "extends" : "sg:DomainEntity",
+      "fqid" : "sgcore:CodeSurface",
+      "id" : "CodeSurface",
+      "implements" : [
+
+      ],
+      "kind" : "DomainEntity",
+      "uri" : "ontology://org.0al.specgraph.core/0.1.0/classes/CodeSurface"
+    },
+    {
+      "aliases" : [
+
+      ],
+      "central" : false,
+      "description" : "Rule or boundary that limits valid graph, specification, or implementation behavior.",
+      "extends" : "sg:DomainEntity",
+      "fqid" : "sgcore:Constraint",
+      "id" : "Constraint",
+      "implements" : [
+
+      ],
+      "kind" : "DomainEntity",
+      "uri" : "ontology://org.0al.specgraph.core/0.1.0/classes/Constraint"
+    },
+    {
+      "aliases" : [
+
+      ],
+      "central" : false,
+      "description" : "Chosen design or product direction that constrains later specification and implementation work.",
+      "extends" : "sg:Command",
+      "fqid" : "sgcore:Decision",
+      "id" : "Decision",
+      "implements" : [
+
+      ],
+      "kind" : "Command",
+      "uri" : "ontology://org.0al.specgraph.core/0.1.0/classes/Decision"
+    },
+    {
+      "aliases" : [
+
+      ],
+      "central" : false,
+      "description" : "Directed typed relation between two nodes.",
+      "extends" : "sg:DomainEntity",
+      "fqid" : "sgcore:Edge",
+      "id" : "Edge",
+      "implements" : [
+
+      ],
+      "kind" : "DomainEntity",
+      "uri" : "ontology://org.0al.specgraph.core/0.1.0/classes/Edge"
+    },
+    {
+      "aliases" : [
+
+      ],
+      "central" : false,
+      "description" : "Traceable support for acceptance, validation, and review decisions.",
+      "extends" : "sg:DomainEntity",
+      "fqid" : "sgcore:Evidence",
+      "id" : "Evidence",
+      "implements" : [
+
+      ],
+      "kind" : "DomainEntity",
+      "uri" : "ontology://org.0al.specgraph.core/0.1.0/classes/Evidence"
+    },
+    {
+      "aliases" : [
+
+      ],
+      "central" : false,
+      "description" : "Governed representation of what the product must be and how it can be validated.",
+      "extends" : "sg:DomainEntity",
+      "fqid" : "sgcore:Intent",
+      "id" : "Intent",
+      "implements" : [
+
+      ],
+      "kind" : "DomainEntity",
+      "uri" : "ontology://org.0al.specgraph.core/0.1.0/classes/Intent"
+    },
+    {
+      "aliases" : [
+
+      ],
+      "central" : false,
+      "description" : "Condition that must remain true across valid graph evolution.",
+      "extends" : "sg:DomainEntity",
+      "fqid" : "sgcore:Invariant",
+      "id" : "Invariant",
+      "implements" : [
+
+      ],
+      "kind" : "DomainEntity",
+      "uri" : "ontology://org.0al.specgraph.core/0.1.0/classes/Invariant"
+    },
+    {
+      "aliases" : [
+
+      ],
+      "central" : false,
+      "description" : "First-class graph entity with stable identity, lifecycle, provenance, and versioned state.",
+      "extends" : "sg:DomainEntity",
+      "fqid" : "sgcore:Node",
+      "id" : "Node",
+      "implements" : [
+
+      ],
+      "kind" : "DomainEntity",
+      "uri" : "ontology://org.0al.specgraph.core/0.1.0/classes/Node"
+    },
+    {
+      "aliases" : [
+
+      ],
+      "central" : false,
+      "description" : "Packaged delivery state that contains derived code surfaces and their validation evidence.",
+      "extends" : "sg:DomainEntity",
+      "fqid" : "sgcore:Release",
+      "id" : "Release",
+      "implements" : [
+
+      ],
+      "kind" : "DomainEntity",
+      "uri" : "ontology://org.0al.specgraph.core/0.1.0/classes/Release"
+    },
+    {
+      "aliases" : [
+
+      ],
+      "central" : false,
+      "description" : "Verifiable product or system obligation that can be checked by acceptance criteria or tests.",
+      "extends" : "sg:DomainEntity",
+      "fqid" : "sgcore:Requirement",
+      "id" : "Requirement",
+      "implements" : [
+
+      ],
+      "kind" : "DomainEntity",
+      "uri" : "ontology://org.0al.specgraph.core/0.1.0/classes/Requirement"
+    },
+    {
+      "aliases" : [
+
+      ],
+      "central" : false,
+      "description" : "Versioned specification artifact that refines intent into machine-readable requirements and decisions.",
+      "extends" : "sg:DomainEntity",
+      "fqid" : "sgcore:Spec",
+      "id" : "Spec",
+      "implements" : [
+
+      ],
+      "kind" : "DomainEntity",
+      "lifecycle" : "SpecReviewState",
+      "uri" : "ontology://org.0al.specgraph.core/0.1.0/classes/Spec"
+    },
+    {
+      "aliases" : [
+
+      ],
+      "central" : true,
+      "description" : "Executable product ontology that represents intent, specifications, graph structure, and derived code surfaces.",
+      "extends" : "sg:DomainEntity",
+      "fqid" : "sgcore:SpecGraph",
+      "id" : "SpecGraph",
+      "implements" : [
+
+      ],
+      "kind" : "DomainEntity",
+      "uri" : "ontology://org.0al.specgraph.core/0.1.0/classes/SpecGraph"
+    },
+    {
+      "aliases" : [
+
+      ],
+      "central" : false,
+      "description" : "Validation artifact that checks requirements, specifications, or implementation behavior.",
+      "extends" : "sg:DomainEntity",
+      "fqid" : "sgcore:Test",
+      "id" : "Test",
+      "implements" : [
+
+      ],
+      "kind" : "DomainEntity",
+      "uri" : "ontology://org.0al.specgraph.core/0.1.0/classes/Test"
+    }
+  ],
+  "compatibility" : {
+    "major" : {
+      "requires" : [
+        "remove class",
+        "remove relation",
+        "change relation domain",
+        "change relation range",
+        "make optional field required",
+        "change meaning of central concept"
+      ]
+    },
+    "minor" : {
+      "allowed" : [
+        "add class",
+        "add relation",
+        "add optional property",
+        "add protocol"
+      ]
+    },
+    "patch" : {
+      "allowed" : [
+        "add description",
+        "add alias",
+        "add non-breaking metadata"
+      ]
+    }
+  },
+  "diagnostics" : [
+
+  ],
+  "id" : "org.0al.specgraph.core",
+  "imports" : [
+    {
+      "id" : "specgraph.foundation",
+      "namespace" : "sg",
+      "version" : "0.1.0"
+    }
+  ],
+  "namespace" : "sgcore",
+  "policies" : [
+    {
+      "appliesTo" : [
+        "sgcore:SpecGraph"
+      ],
+      "enforceability" : "manual",
+      "extends" : "sg:Policy",
+      "fqid" : "sgcore:DraftAuthorityBoundary",
+      "id" : "DraftAuthorityBoundary",
+      "text" : "SpecGraph Core v0 is a draft compiler-backed seed and does not authorize canonical SpecGraph mutations or trusted ontology publication."
+    }
+  ],
+  "protocols" : [
+
+  ],
+  "relations" : [
+    {
+      "cardinality" : {
+        "max" : "*",
+        "min" : 0
+      },
+      "description" : "A code surface implements a specification.",
+      "domain" : "sgcore:CodeSurface",
+      "fqid" : "sgcore:codeSurfaceImplementsSpec",
+      "id" : "codeSurfaceImplementsSpec",
+      "range" : "sgcore:Spec",
+      "uri" : "ontology://org.0al.specgraph.core/0.1.0/relations/codeSurfaceImplementsSpec"
+    },
+    {
+      "cardinality" : {
+        "max" : "*",
+        "min" : 0
+      },
+      "description" : "A constraint applies to graph nodes.",
+      "domain" : "sgcore:Constraint",
+      "fqid" : "sgcore:constraintAppliesToNode",
+      "id" : "constraintAppliesToNode",
+      "range" : "sgcore:Node",
+      "uri" : "ontology://org.0al.specgraph.core/0.1.0/relations/constraintAppliesToNode"
+    },
+    {
+      "cardinality" : {
+        "max" : "*",
+        "min" : 0
+      },
+      "description" : "SpecGraph contains graph edges.",
+      "domain" : "sgcore:SpecGraph",
+      "fqid" : "sgcore:containsEdge",
+      "id" : "containsEdge",
+      "range" : "sgcore:Edge",
+      "uri" : "ontology://org.0al.specgraph.core/0.1.0/relations/containsEdge"
+    },
+    {
+      "cardinality" : {
+        "max" : "*",
+        "min" : 0
+      },
+      "description" : "SpecGraph contains graph nodes.",
+      "domain" : "sgcore:SpecGraph",
+      "fqid" : "sgcore:containsNode",
+      "id" : "containsNode",
+      "range" : "sgcore:Node",
+      "uri" : "ontology://org.0al.specgraph.core/0.1.0/relations/containsNode"
+    },
+    {
+      "cardinality" : {
+        "max" : "*",
+        "min" : 0
+      },
+      "description" : "SpecGraph contains specification artifacts.",
+      "domain" : "sgcore:SpecGraph",
+      "fqid" : "sgcore:containsSpec",
+      "id" : "containsSpec",
+      "range" : "sgcore:Spec",
+      "uri" : "ontology://org.0al.specgraph.core/0.1.0/relations/containsSpec"
+    },
+    {
+      "cardinality" : {
+        "max" : "*",
+        "min" : 0
+      },
+      "description" : "A decision constrains a specification.",
+      "domain" : "sgcore:Decision",
+      "fqid" : "sgcore:decisionConstrainsSpec",
+      "id" : "decisionConstrainsSpec",
+      "range" : "sgcore:Spec",
+      "uri" : "ontology://org.0al.specgraph.core/0.1.0/relations/decisionConstrainsSpec"
+    },
+    {
+      "cardinality" : {
+        "max" : "*",
+        "min" : 0
+      },
+      "description" : "A spec defines requirements.",
+      "domain" : "sgcore:Spec",
+      "fqid" : "sgcore:definesRequirement",
+      "id" : "definesRequirement",
+      "range" : "sgcore:Requirement",
+      "uri" : "ontology://org.0al.specgraph.core/0.1.0/relations/definesRequirement"
+    },
+    {
+      "cardinality" : {
+        "max" : "*",
+        "min" : 1
+      },
+      "description" : "An edge relates one or more nodes.",
+      "domain" : "sgcore:Edge",
+      "fqid" : "sgcore:edgeRelatesNode",
+      "id" : "edgeRelatesNode",
+      "range" : "sgcore:Node",
+      "uri" : "ontology://org.0al.specgraph.core/0.1.0/relations/edgeRelatesNode"
+    },
+    {
+      "cardinality" : {
+        "max" : "*",
+        "min" : 0
+      },
+      "description" : "Evidence supports an acceptance criterion.",
+      "domain" : "sgcore:Evidence",
+      "fqid" : "sgcore:evidenceSupportsCriterion",
+      "id" : "evidenceSupportsCriterion",
+      "range" : "sgcore:AcceptanceCriterion",
+      "uri" : "ontology://org.0al.specgraph.core/0.1.0/relations/evidenceSupportsCriterion"
+    },
+    {
+      "cardinality" : {
+        "max" : "*",
+        "min" : 0
+      },
+      "description" : "A spec has acceptance criteria.",
+      "domain" : "sgcore:Spec",
+      "fqid" : "sgcore:hasAcceptanceCriterion",
+      "id" : "hasAcceptanceCriterion",
+      "range" : "sgcore:AcceptanceCriterion",
+      "uri" : "ontology://org.0al.specgraph.core/0.1.0/relations/hasAcceptanceCriterion"
+    },
+    {
+      "cardinality" : {
+        "max" : "*",
+        "min" : 0
+      },
+      "description" : "An invariant governs valid SpecGraph evolution.",
+      "domain" : "sgcore:Invariant",
+      "fqid" : "sgcore:invariantGovernsSpecGraph",
+      "id" : "invariantGovernsSpecGraph",
+      "range" : "sgcore:SpecGraph",
+      "uri" : "ontology://org.0al.specgraph.core/0.1.0/relations/invariantGovernsSpecGraph"
+    },
+    {
+      "cardinality" : {
+        "max" : "*",
+        "min" : 0
+      },
+      "description" : "A node is connected by an edge.",
+      "domain" : "sgcore:Node",
+      "fqid" : "sgcore:nodeConnectedByEdge",
+      "id" : "nodeConnectedByEdge",
+      "range" : "sgcore:Edge",
+      "uri" : "ontology://org.0al.specgraph.core/0.1.0/relations/nodeConnectedByEdge"
+    },
+    {
+      "cardinality" : {
+        "max" : "*",
+        "min" : 0
+      },
+      "description" : "A spec refines product intent.",
+      "domain" : "sgcore:Spec",
+      "fqid" : "sgcore:refinesIntent",
+      "id" : "refinesIntent",
+      "range" : "sgcore:Intent",
+      "uri" : "ontology://org.0al.specgraph.core/0.1.0/relations/refinesIntent"
+    },
+    {
+      "cardinality" : {
+        "max" : "*",
+        "min" : 0
+      },
+      "description" : "A release packages code surfaces.",
+      "domain" : "sgcore:Release",
+      "fqid" : "sgcore:releasePackagesCodeSurface",
+      "id" : "releasePackagesCodeSurface",
+      "range" : "sgcore:CodeSurface",
+      "uri" : "ontology://org.0al.specgraph.core/0.1.0/relations/releasePackagesCodeSurface"
+    },
+    {
+      "cardinality" : {
+        "max" : "*",
+        "min" : 0
+      },
+      "description" : "A requirement is validated by acceptance criteria.",
+      "domain" : "sgcore:Requirement",
+      "fqid" : "sgcore:requirementValidatedByCriterion",
+      "id" : "requirementValidatedByCriterion",
+      "range" : "sgcore:AcceptanceCriterion",
+      "uri" : "ontology://org.0al.specgraph.core/0.1.0/relations/requirementValidatedByCriterion"
+    },
+    {
+      "cardinality" : {
+        "max" : "*",
+        "min" : 0
+      },
+      "description" : "A test validates a requirement.",
+      "domain" : "sgcore:Test",
+      "fqid" : "sgcore:testValidatesRequirement",
+      "id" : "testValidatesRequirement",
+      "range" : "sgcore:Requirement",
+      "uri" : "ontology://org.0al.specgraph.core/0.1.0/relations/testValidatesRequirement"
+    }
+  ],
+  "sourceDigest" : "sha256:22022e3a073a951046ea1a162bf688605925397e81d32c19998780be221e4dd7",
+  "stateMachines" : [
+    {
+      "fqid" : "sgcore:SpecReviewState",
+      "id" : "SpecReviewState",
+      "states" : [
+        "draft",
+        "reviewed"
+      ],
+      "transitions" : [
+        {
+          "command" : "sgcore:Decision",
+          "from" : "draft",
+          "to" : "reviewed"
+        }
+      ]
+    }
+  ],
+  "version" : "0.1.0"
+}

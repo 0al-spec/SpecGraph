@@ -111,14 +111,18 @@ Supervisor modes:
   downstream repository.
 - `tools/ontology_imports.py --write`: build the proposal 0060 ontology import
   derived surfaces from `tools/ontology_import_policy.json` and the checked-in
-  examcalc normalized-IR fixture: `runs/ontology_package_index.json`,
+  SpecGraph Core normalized-IR fixture: `runs/ontology_package_index.json`,
   `runs/ontology_import_gap_index.json`,
+  `runs/ontology_compatibility_diff_preview.json`,
   `runs/ontology_governance_evidence_index.json`,
   `runs/ontology_binding_preview.json`, and
   `runs/ontology_prompt_invocation_index.json`. It also validates the
   `ontologyc_adapter_report` fixture and emits
   `runs/ontologyc_adapter_report_smoke.json`, preserving source/version/digest
-  checks for `ontologyc validate-specgraph` output. The same command consumes
+  checks for `ontologyc validate-specgraph` output. It also projects the
+  `ontologyc diff` compatibility report as a read-only preview of ontology
+  additions, removals, breaking changes, and required SpecGraph review actions
+  without updating lockfiles or canonical specs. The same command consumes
   `tools/ontology_semantic_control_policy.json` and emits
   `runs/ontology_semantic_context_pack.json`, packaging accepted terms,
   accepted relations, aliases, deprecated terms, relation conflicts, unresolved
