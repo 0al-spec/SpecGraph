@@ -50598,9 +50598,11 @@ def build_ontology_supervisor_semantic_gate_report() -> dict[str, Any]:
         raise ValueError("ontology_import_policy.repository_layout must be an object")
     default_fixture = module.ROOT / str(layout["default_fixture"])
     default_adapter_report = module.ROOT / str(layout["default_adapter_report"])
+    default_compatibility_report = module.ROOT / str(layout["default_compatibility_report"])
     surfaces = module.build_ontology_import_surfaces(
         default_fixture,
         adapter_report_path=default_adapter_report,
+        compatibility_report_path=default_compatibility_report,
     )
     written_paths = module.write_ontology_import_surfaces(surfaces)
     gate = surfaces["supervisor_semantic_gate"]

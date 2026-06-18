@@ -734,6 +734,11 @@ def build_ontology_compatibility_diff_preview(
     }
 
     breaking_changes = projected_changes["breaking_changes"]
+    next_gap = "none"
+    if breaking_changes:
+        next_gap = "review_breaking_ontology_diff"
+    elif required_actions:
+        next_gap = "review_required_specgraph_actions"
     return {
         "artifact_kind": "ontology_compatibility_diff_preview",
         "schema_version": 1,
@@ -759,7 +764,7 @@ def build_ontology_compatibility_diff_preview(
             "status": "compatible" if compatible else "breaking_change_review_required",
             "breaking_change_count": len(breaking_changes),
             "added_class_count": len(projected_changes["added_classes"]),
-            "next_gap": "review_breaking_ontology_diff" if breaking_changes else "none",
+            "next_gap": next_gap,
         },
     }
 
@@ -6469,6 +6474,59 @@ def build_public_ontology_review_placeholder_surfaces(
     return surfaces
 
 
+def smoke_fixture_for_namespace(
+    smoke_fixture: dict[str, Any],
+    *,
+    namespace: str,
+    binding_preview: dict[str, Any],
+    gap_index: dict[str, Any],
+) -> dict[str, Any]:
+    if not namespace:
+        return smoke_fixture
+    detected_terms = smoke_fixture.get("detected_terms")
+    refs = (
+        [
+            str(term.get("source_ref", "")).strip()
+            for term in detected_terms
+            if isinstance(term, dict) and str(term.get("source_ref", "")).strip()
+        ]
+        if isinstance(detected_terms, list)
+        else []
+    )
+    if not refs or all(ref.startswith(f"{namespace}:") for ref in refs):
+        return smoke_fixture
+
+    synthesized_terms: list[dict[str, str]] = []
+    for entry in binding_preview.get("resolved_refs", []):
+        if not isinstance(entry, dict):
+            continue
+        source_ref = str(entry.get("source_ref", "")).strip()
+        symbol = str(entry.get("symbol", "")).strip() or source_ref.split(":", 1)[-1]
+        if source_ref.startswith(f"{namespace}:") and symbol:
+            synthesized_terms.append({"term": symbol, "source_ref": source_ref})
+        if len(synthesized_terms) >= 2:
+            break
+    for gap in gap_index.get("gaps", []):
+        if not isinstance(gap, dict):
+            continue
+        missing = gap.get("missing_concept")
+        if not isinstance(missing, dict):
+            continue
+        source_ref = str(missing.get("ref", "")).strip()
+        concept_hint = str(missing.get("concept_hint", "")).strip() or source_ref.split(":", 1)[-1]
+        if source_ref.startswith(f"{namespace}:") and concept_hint:
+            synthesized_terms.append({"term": concept_hint, "source_ref": source_ref})
+            break
+    if not synthesized_terms:
+        return smoke_fixture
+    generated_text = " ".join(term["term"] for term in synthesized_terms)
+    return {
+        **smoke_fixture,
+        "generated_text": generated_text,
+        "detected_terms": synthesized_terms,
+    }
+
+
 def build_ontology_semantic_lint_smoke(
     semantic_policy: dict[str, Any],
     *,
@@ -6489,6 +6547,19 @@ def build_ontology_semantic_lint_smoke(
     )
     contract = require_object(semantic_policy, "semantic_lint_contract", "semantic_control_policy")
     smoke_fixture = require_object(semantic_policy, "smoke_fixture", "semantic_control_policy")
+    packages = package_index.get("packages")
+    package = (
+        packages[0]
+        if isinstance(packages, list) and packages and isinstance(packages[0], dict)
+        else {}
+    )
+    namespace = str(package.get("namespace", "")).strip()
+    smoke_fixture = smoke_fixture_for_namespace(
+        smoke_fixture,
+        namespace=namespace,
+        binding_preview=binding_preview,
+        gap_index=gap_index,
+    )
     detected_terms = smoke_fixture.get("detected_terms")
     if not isinstance(detected_terms, list) or not detected_terms:
         raise ValueError(
@@ -7090,13 +7161,13 @@ def main() -> int:
         compatibility_report_path = ROOT / str(layout["default_compatibility_report"])
     if args.semantic_policy and args.no_semantic_policy:
         raise ValueError("--semantic-policy and --no-semantic-policy are mutually exclusive")
-    semantic_policy_path = None
+    semantic_policy_path: Path | None | object = DEFAULT_SEMANTIC_POLICY
     if args.semantic_policy:
         semantic_policy_path = Path(args.semantic_policy)
         if not semantic_policy_path.is_absolute():
             semantic_policy_path = ROOT / semantic_policy_path
-    elif not args.no_semantic_policy and fixture_path.resolve() == default_fixture_path.resolve():
-        semantic_policy_path = SEMANTIC_CONTROL_POLICY_PATH
+    elif args.no_semantic_policy:
+        semantic_policy_path = None
     surfaces = build_ontology_import_surfaces(
         fixture_path,
         adapter_report_path=adapter_report_path,

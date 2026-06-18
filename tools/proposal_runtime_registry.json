@@ -2916,6 +2916,7 @@
       "runs/ontology_import_gap_index.json",
       "runs/ontology_governance_evidence_index.json",
       "runs/ontology_binding_preview.json",
+      "runs/ontology_compatibility_diff_preview.json",
       "runs/ontology_prompt_invocation_index.json",
       "runs/ontologyc_adapter_report_smoke.json"
     ],
@@ -2927,6 +2928,10 @@
       {
         "path": "tools/ontology_import_policy.json",
         "pattern": "ontology_import_policy"
+      },
+      {
+        "path": "tools/ontology_imports.py",
+        "pattern": "def build_ontology_compatibility_diff_preview("
       },
       {
         "path": "tools/ontology_imports.py",

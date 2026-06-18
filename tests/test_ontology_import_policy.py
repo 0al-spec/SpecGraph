@@ -786,8 +786,30 @@ def test_specgraph_core_import_fixture_projects_compiler_backed_gaps_and_diffs()
         "status": "compatible",
         "breaking_change_count": 0,
         "added_class_count": 1,
-        "next_gap": "none",
+        "next_gap": "review_required_specgraph_actions",
     }
+
+
+def test_specgraph_core_default_semantic_smoke_uses_current_fixture_namespace() -> None:
+    module = load_ontology_imports_module()
+
+    surfaces = module.build_ontology_import_surfaces(
+        SPECGRAPH_CORE_FIXTURE,
+        adapter_report_path=SPECGRAPH_CORE_ADAPTER_REPORT,
+        compatibility_report_path=SPECGRAPH_CORE_COMPATIBILITY_REPORT,
+    )
+
+    smoke = surfaces["semantic_lint_smoke"]
+    refs = {
+        entry.get("source_ref")
+        for entry in smoke["term_results"]
+        if isinstance(entry.get("source_ref"), str)
+    }
+    assert refs
+    assert all(ref.startswith("sgcore:") for ref in refs)
+    assert not any("examcalc" in json.dumps(entry) for entry in smoke["term_results"])
+    assert smoke["summary"]["classification_counts"]["accepted_term"] >= 1
+    assert smoke["summary"]["classification_counts"]["unknown_term"] >= 1
 
 
 def test_ontology_semantic_lint_smoke_classifies_terms() -> None:
@@ -3422,6 +3444,31 @@ def test_cli_custom_fixture_does_not_require_default_adapter_report(tmp_path: Pa
     assert "semantic_review_surface" not in surfaces
     assert "semantic_lint_smoke" not in surfaces
     assert surfaces["package_index"]["proposal_id"] == "custom-0060"
+
+
+def test_cli_legacy_fixture_uses_semantic_fallback_without_explicit_policy() -> None:
+    completed = subprocess.run(
+        [
+            sys.executable,
+            str(ROOT / "tools" / "ontology_imports.py"),
+            "--fixture",
+            str(FIXTURE),
+        ],
+        cwd=ROOT,
+        check=True,
+        capture_output=True,
+        text=True,
+    )
+    surfaces = json.loads(completed.stdout)
+
+    assert "semantic_lint_smoke" in surfaces
+    refs = {
+        entry.get("source_ref")
+        for entry in surfaces["semantic_lint_smoke"]["term_results"]
+        if isinstance(entry.get("source_ref"), str)
+    }
+    assert refs
+    assert all(ref.startswith("examcalc:") for ref in refs)
 
 
 def test_ontology_import_write_rejects_outputs_outside_allowed_roots(tmp_path: Path) -> None:
