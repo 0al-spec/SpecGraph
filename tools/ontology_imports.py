@@ -28,21 +28,11 @@ PUBLIC_ONTOLOGY_REVIEW_SURFACE_KEYS = (
     "ontology_decision_import_preview",
 )
 PUBLIC_RETIRED_ONTOLOGY_ARTIFACT_PATHS = (
-    "runs/ontology_binding_preview.json",
-    "runs/ontology_closed_loop_evidence.json",
-    "runs/ontology_delta_candidate_review_packet.json",
-    "runs/ontology_delta_draft_intake.json",
-    "runs/ontology_governance_evidence_index.json",
-    "runs/ontology_import_gap_index.json",
     "runs/ontology_owner_decision_report.json",
-    "runs/ontology_package_index.json",
     "runs/ontology_prompt_invocation_index.json",
     "runs/ontology_semantic_context_pack.json",
     "runs/ontology_semantic_lint_input.json",
     "runs/ontology_semantic_lint_report.json",
-    "runs/ontology_semantic_lint_smoke.json",
-    "runs/ontology_supervisor_semantic_gate.json",
-    "runs/ontologyc_adapter_report_smoke.json",
 )
 PUBLIC_ONTOLOGY_TOMBSTONE_SURFACE_KEYS = tuple(
     f"retired_public_ontology_artifact::{path}" for path in PUBLIC_RETIRED_ONTOLOGY_ARTIFACT_PATHS

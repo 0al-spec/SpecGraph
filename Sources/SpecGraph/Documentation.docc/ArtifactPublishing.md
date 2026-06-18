@@ -22,11 +22,12 @@ separate jobs do not delete each other's files.
 
 `make publish-bundle` is the canonical build command for the public artifact
 bundle. It refreshes product-facing surfaces before packaging `specs/` and
-`runs/`, including the Agent Passport producer artifacts consumed by SpecSpace:
-executor adapter index, agent surface index, known passport index, verification
-report, verification gap index, runtime evidence index, and runtime evidence
-detail artifacts. It also refreshes the Ontology semantic review, dashboard,
-and owner-decision preview artifacts consumed by SpecSpace utility panels.
+public-safe `runs/`, including the Agent Passport producer artifacts consumed
+by SpecSpace: executor adapter index, agent surface index, known passport
+index, verification report, verification gap index, runtime evidence index, and
+runtime evidence detail artifacts. It also refreshes the compiler-backed
+Ontology package, binding, gap, compatibility-diff, governance, and
+adapter-smoke artifacts consumed by SpecSpace.
 
 The bundle manifest and safety gate must fail closed when required public
 surfaces are missing, so a successful static-host deploy means HTTP consumers
@@ -45,16 +46,24 @@ The public bundle also includes
 accepted by SpecGraph is HTTP-readable alongside the handoff and Agent surface
 producer artifacts.
 
-The public bundle must include the Ontology review surfaces that SpecSpace reads
-over HTTP: `runs/ontology_semantic_review_surface.json`,
+The public bundle publishes `runs/*.json` by default after redaction and safety
+scanning. Local-only operator diagnostics are excluded by denylist rather than
+requiring every public artifact to be allowlisted.
+
+The public bundle must include the Ontology package and review surfaces that
+SpecSpace reads over HTTP: `runs/ontology_package_index.json`,
+`runs/ontology_binding_preview.json`, `runs/ontology_import_gap_index.json`,
+`runs/ontology_compatibility_diff_preview.json`,
+`runs/ontology_semantic_review_surface.json`,
 `runs/ontology_review_dashboard.json`, and
-`runs/ontology_decision_import_preview.json`. Static publishing refreshes those
-surfaces through `make ontology-imports-public`, which emits a valid
-no-candidates/no-decisions placeholder until a production Ontology source is
-configured. The fixture-driven `make ontology-imports` smoke path is not copied
-as the public Ontology review state. Retired `runs/ontology*.json`
-support/smoke artifact URLs receive safe tombstones so static hosts that do not
-delete old remote files cannot keep serving demo fixture content.
+`runs/ontology_decision_import_preview.json`. Static publishing runs
+`make ontology-imports` first so the compiler-backed SpecGraph Core package
+artifacts are present, then runs `make ontology-imports-public` so the
+public-unsafe review/lint-context surfaces become valid no-candidates or
+no-decisions placeholders and tombstones. When
+`runs/ontology_package_index.json` declares `packages[].materialized_ir`, the
+referenced JSON file is copied into the bundle at the same relative path and is
+listed in `artifact_manifest.json`.
 
 Local-only operator diagnostics are excluded from the public bundle.
 `runs/local_operator_executor_readiness.json` may exist after
@@ -93,7 +102,10 @@ local-only operator report and must not be uploaded to the static host. These
 diagnostics remain private operator artifacts rather than public producer
 artifacts. Static publishing must not upload candidates, promotion packets, or
 materialization reports, write proposal markdown, or mutate proposal
-registries.
+registries. The `local_operator_executor_*` prefix is treated as local-only for
+future local operator diagnostics too. `runs/ontology_term_binding_gate_report.json`
+is also local-only because it may carry review-mode generated-term evidence
+that is useful to an operator but is not a public producer artifact.
 
 The public safety gate requires:
 

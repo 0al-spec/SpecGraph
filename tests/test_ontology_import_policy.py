@@ -1794,10 +1794,15 @@ def test_public_ontology_review_placeholders_are_specspace_safe(tmp_path: Path) 
     assert preview["decision_import_previews"] == []
     assert preview["ignored_owner_decisions"] == []
 
-    tombstone = surfaces["retired_public_ontology_artifact::runs/ontology_package_index.json"]
+    package_tombstone_key = "retired_public_ontology_artifact::runs/ontology_package_index.json"
+    assert package_tombstone_key not in surfaces
+
+    tombstone = surfaces[
+        "retired_public_ontology_artifact::runs/ontology_semantic_lint_report.json"
+    ]
     assert tombstone["artifact_kind"] == "retired_public_ontology_artifact"
     assert tombstone["source_mode"] == "public_tombstone"
-    assert tombstone["retired_artifact"] == "runs/ontology_package_index.json"
+    assert tombstone["retired_artifact"] == "runs/ontology_semantic_lint_report.json"
     assert tombstone["summary"]["status"] == "retired_local_only_artifact"
 
     written = module.write_public_ontology_review_placeholder_surfaces(
@@ -1809,10 +1814,8 @@ def test_public_ontology_review_placeholders_are_specspace_safe(tmp_path: Path) 
         "runs/ontology_semantic_review_surface.json",
         "runs/ontology_review_dashboard.json",
         "runs/ontology_decision_import_preview.json",
-        "runs/ontology_package_index.json",
         "runs/ontology_semantic_lint_report.json",
         "runs/ontology_prompt_invocation_index.json",
-        "runs/ontologyc_adapter_report_smoke.json",
     }.issubset(written_paths)
     assert len(written_paths) == (
         len(module.PUBLIC_ONTOLOGY_REVIEW_SURFACE_KEYS)

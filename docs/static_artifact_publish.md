@@ -31,7 +31,8 @@ dist/specgraph-public/
 The bundle includes:
 
 - `specs/`
-- `runs/`
+- public-safe `runs/`
+- Ontology materialized IR files referenced by `runs/ontology_package_index.json`
 - `artifact_manifest.json`
 - `checksums.sha256`
 
@@ -84,13 +85,21 @@ The order matters and is intentionally two-pass:
    downstream handoff and evidence acceptance artifacts after the final viewer
    pass, so the published evidence index references the published handoff
    packet state.
-6. `make ontology-imports-public` rebuilds the public-safe Ontology semantic
-   review, dashboard, and owner-decision preview placeholders consumed by
-   SpecSpace utility panels. The fixture-driven `make ontology-imports` target
-   remains local smoke coverage and is not used for static publishing. Retired
-   `runs/ontology*.json` support/smoke artifact URLs receive safe tombstones so
+6. `make ontology-imports` builds the compiler-backed SpecGraph Core ontology
+   package, binding, gap, compatibility-diff, governance, and adapter-smoke
+   artifacts used by SpecSpace.
+7. `make ontology-imports-public` then overwrites only the public-unsafe
+   ontology review/lint-context surfaces with placeholders or tombstones so
    static hosts that do not delete old remote files cannot keep serving demo
    fixture content.
+
+The bundle publishes `runs/*.json` by default after redaction and safety
+scanning. Local-only operator diagnostics remain excluded by denylist instead of
+requiring every public artifact to be allowlisted. When
+`runs/ontology_package_index.json` declares `packages[].materialized_ir`, the
+referenced JSON file is copied into the bundle at the same relative path and is
+listed in `artifact_manifest.json`; this lets SpecSpace fetch the normalized IR
+over the same static artifact host.
 
 ## Safety Gate
 
@@ -118,6 +127,8 @@ The bundle builder fails before upload when it finds:
   - `runs/ontology_semantic_review_surface.json`
   - `runs/ontology_review_dashboard.json`
   - `runs/ontology_decision_import_preview.json`
+- unsafe or missing Ontology materialized IR paths declared by
+  `runs/ontology_package_index.json`;
 - public Ontology review surfaces that contain checked-in demo fixture terms
   instead of a production-safe no-candidates/no-decisions placeholder;
 - missing external consumer evidence surfaces required by downstream evidence
@@ -158,6 +169,10 @@ after `make executor-followup-proposal-draft-candidate`, and
 after `make executor-proposal-source-materialize`, but they are intentionally
 not uploaded to the static host because they describe the current operator
 process environment rather than public producer artifacts. The
+`local_operator_executor_*` prefix is treated as local-only for future local
+operator diagnostics too. `runs/ontology_term_binding_gate_report.json` is also
+local-only: it may carry review-mode generated-term evidence that is useful to
+an operator but is not a public producer artifact. The
 `proposal_draft_candidate_promotion_policy` defines only a local promotion
 request and promotion-packet boundary; it does not publish candidates or
 promotion packets, write proposal markdown, or mutate proposal registries
@@ -271,3 +286,8 @@ https://specgraph.tech/artifact_manifest.json
 SpecSpace should start from `artifact_manifest.json` and then fetch concrete
 paths from the published roots. It should not assume that every historical run
 artifact is present forever without checking the manifest and checksums.
+
+When SpecSpace reads `runs/ontology_package_index.json`, it may follow each
+package `materialized_ir` relative path if and only if that path appears in
+`artifact_manifest.json`. The public bundle preserves the declared path instead
+of rewriting it.

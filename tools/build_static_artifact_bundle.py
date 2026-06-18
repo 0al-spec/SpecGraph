@@ -49,7 +49,9 @@ LOCAL_ONLY_RUN_SURFACES = {
     "local_operator_executor_proposal_promotion_packet.json",
     "local_operator_executor_proposal_materialization_report.json",
     "local_operator_executor_public_proposal_materialization_report.json",
+    "ontology_term_binding_gate_report.json",
 }
+LOCAL_ONLY_RUN_PREFIXES = ("local_operator_",)
 JUNK_FILENAMES = {".DS_Store", ".gitkeep"}
 JUNK_DIRNAMES = {"__pycache__", ".pytest_cache", ".ruff_cache"}
 LOCAL_PATH_RE = re.compile(
@@ -65,26 +67,6 @@ ONTOLOGY_PUBLIC_REVIEW_SURFACES = {
     "runs/ontology_semantic_review_surface.json",
     "runs/ontology_review_dashboard.json",
     "runs/ontology_decision_import_preview.json",
-}
-PUBLIC_ONTOLOGY_RUN_SURFACES = {
-    "ontology_semantic_review_surface.json",
-    "ontology_review_dashboard.json",
-    "ontology_decision_import_preview.json",
-    "ontology_binding_preview.json",
-    "ontology_closed_loop_evidence.json",
-    "ontology_delta_candidate_review_packet.json",
-    "ontology_delta_draft_intake.json",
-    "ontology_governance_evidence_index.json",
-    "ontology_import_gap_index.json",
-    "ontology_owner_decision_report.json",
-    "ontology_package_index.json",
-    "ontology_prompt_invocation_index.json",
-    "ontology_semantic_context_pack.json",
-    "ontology_semantic_lint_input.json",
-    "ontology_semantic_lint_report.json",
-    "ontology_semantic_lint_smoke.json",
-    "ontology_supervisor_semantic_gate.json",
-    "ontologyc_adapter_report_smoke.json",
 }
 DEMO_ONTOLOGY_FIXTURE_MARKERS = (
     "examcalc",
@@ -176,11 +158,57 @@ def iter_publish_sources(repo_root: Path) -> Iterable[tuple[str, Path, PurePosix
             rel = PurePosixPath(root_name, path.relative_to(source_root).as_posix())
             if root_name == "runs":
                 run_rel = rel.relative_to("runs").as_posix()
-                if run_rel in LOCAL_ONLY_RUN_SURFACES or (
-                    run_rel.startswith("ontology") and run_rel not in PUBLIC_ONTOLOGY_RUN_SURFACES
+                if run_rel in LOCAL_ONLY_RUN_SURFACES or run_rel.startswith(
+                    LOCAL_ONLY_RUN_PREFIXES
                 ):
                     continue
             yield root_name, path, rel
+
+
+def safe_repo_relative_path(value: object, *, field: str) -> PurePosixPath:
+    if not isinstance(value, str) or not value.strip():
+        raise PublishBundleError(f"{field} must be a non-empty relative path")
+    rel = PurePosixPath(value.strip())
+    if rel.is_absolute() or ".." in rel.parts:
+        raise PublishBundleError(f"unsafe {field}: {value}")
+    if rel.as_posix() in {"", "."}:
+        raise PublishBundleError(f"unsafe {field}: {value}")
+    return rel
+
+
+def ontology_materialized_ir_refs(repo_root: Path) -> list[PurePosixPath]:
+    package_index_path = repo_root / "runs" / "ontology_package_index.json"
+    if not package_index_path.is_file():
+        return []
+    try:
+        package_index = json.loads(package_index_path.read_text(encoding="utf-8"))
+    except json.JSONDecodeError as exc:
+        raise PublishBundleError(f"malformed ontology package index: {exc}") from exc
+    if not isinstance(package_index, dict):
+        raise PublishBundleError("malformed ontology package index: expected object")
+
+    packages = package_index.get("packages")
+    if packages is None:
+        return []
+    if not isinstance(packages, list):
+        raise PublishBundleError("ontology_package_index.packages must be a list")
+
+    refs: list[PurePosixPath] = []
+    for index, package in enumerate(packages):
+        if not isinstance(package, dict):
+            raise PublishBundleError(f"ontology_package_index.packages[{index}] must be an object")
+        raw_ref = package.get("materialized_ir")
+        if raw_ref is None:
+            continue
+        rel = safe_repo_relative_path(
+            raw_ref,
+            field=f"ontology_package_index.packages[{index}].materialized_ir",
+        )
+        if rel.suffix != ".json":
+            raise PublishBundleError(f"ontology materialized IR must be JSON: {rel.as_posix()}")
+        if rel.as_posix() not in {ref.as_posix() for ref in refs}:
+            refs.append(rel)
+    return refs
 
 
 def load_text(path: Path) -> str:
@@ -338,7 +366,7 @@ def build_manifest(
         root: {"file_count": 0, "byte_count": 0} for root in PUBLISHED_ROOTS
     }
     for file_info in copied_files:
-        root_info = root_summary[file_info.root]
+        root_info = root_summary.setdefault(file_info.root, {"file_count": 0, "byte_count": 0})
         root_info["file_count"] += 1
         root_info["byte_count"] += file_info.size_bytes
 
@@ -356,7 +384,7 @@ def build_manifest(
             "sha": repo_git_value(repo_root, "rev-parse", "HEAD"),
             "ref": repo_git_value(repo_root, "rev-parse", "--abbrev-ref", "HEAD"),
         },
-        "published_roots": list(PUBLISHED_ROOTS),
+        "published_roots": list(root_summary),
         "roots": root_summary,
         "checksums_path": "checksums.sha256",
         "required_surfaces": required_surfaces,
@@ -399,6 +427,7 @@ def refresh_publish_surfaces(repo_root: Path) -> None:
     run_make_target(repo_root, "viewer-surfaces")
     run_make_target(repo_root, "external-handoffs")
     run_make_target(repo_root, "external-consumer-evidence")
+    run_make_target(repo_root, "ontology-imports")
     run_make_target(repo_root, "ontology-imports-public")
 
 
@@ -427,6 +456,7 @@ def build_public_bundle(
     output_dir.mkdir(parents=True, exist_ok=True)
 
     copied_files: list[PublishFile] = []
+    copied_paths: set[str] = set()
     warnings: list[str] = []
     redacted_total = 0
     secret_findings: list[str] = []
@@ -446,10 +476,38 @@ def build_public_bundle(
 
         target_path = output_dir / rel_path.as_posix()
         write_text_atomic(target_path, redacted_text)
+        copied_paths.add(rel_path.as_posix())
         copied_files.append(
             PublishFile(
                 path=rel_path.as_posix(),
                 root=root_name,
+                size_bytes=target_path.stat().st_size,
+                sha256=file_sha256(target_path),
+            )
+        )
+
+    for rel_path in ontology_materialized_ir_refs(repo_root):
+        if rel_path.as_posix() in copied_paths:
+            continue
+        source_path = repo_root / rel_path.as_posix()
+        if not source_path.is_file():
+            raise PublishBundleError(f"missing ontology materialized IR: {rel_path.as_posix()}")
+        if has_symlink_component(source_path, repo_root):
+            raise PublishBundleError(f"symlinked ontology materialized IR: {rel_path.as_posix()}")
+
+        text = load_text(source_path)
+        validate_json_artifact(source_path, text)
+        redacted_text, redaction_count = redact_local_paths(text)
+        redacted_total += redaction_count
+        secret_findings.extend(detect_secret_like_content(rel_path, redacted_text))
+
+        target_path = output_dir / rel_path.as_posix()
+        write_text_atomic(target_path, redacted_text)
+        copied_paths.add(rel_path.as_posix())
+        copied_files.append(
+            PublishFile(
+                path=rel_path.as_posix(),
+                root=rel_path.parts[0],
                 size_bytes=target_path.stat().st_size,
                 sha256=file_sha256(target_path),
             )
@@ -520,7 +578,7 @@ def parse_args(argv: list[str]) -> argparse.Namespace:
             "Run publish surface refresh targets before collecting specs/ and runs/: "
             "viewer-surfaces, implementation-delta, implementation-work, executor-adapters, "
             "agent-passports, agent-runtime-evidence, viewer-surfaces, external-handoffs, "
-            "then external-consumer-evidence."
+            "external-consumer-evidence, ontology-imports, then ontology-imports-public."
         ),
     )
     parser.add_argument(
