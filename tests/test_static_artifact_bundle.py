@@ -85,6 +85,10 @@ def make_repo(root: Path) -> Path:
         "ontology_decision_import_preview.json": {
             "artifact_kind": "ontology_decision_import_preview"
         },
+        "ontology_package_index.json": {
+            "artifact_kind": "ontology_package_index",
+            "packages": [],
+        },
     }
     for name, payload in artifacts.items():
         write_json(runs_dir / name, payload)
@@ -111,8 +115,24 @@ def test_build_public_bundle_copies_specs_and_runs_with_manifest(
         {"worktree_path": "/Users/egor/Development/GitHub/0AL/SpecGraph/.worktrees/x"},
     )
     write_json(
+        repo / "runs" / "custom_public_surface.json",
+        {"artifact_kind": "custom_public_surface"},
+    )
+    write_json(
+        repo / "runs" / "ontology_future_surface.json",
+        {"artifact_kind": "ontology_future_surface"},
+    )
+    write_json(
+        repo / "runs" / "ontology_term_binding_gate_report.json",
+        {"artifact_kind": "ontology_term_binding_gate_report", "term": "ExamPolicy"},
+    )
+    write_json(
         repo / "runs" / "local_operator_executor_readiness.json",
         {"artifact_kind": "local_operator_executor_readiness", "local_only": True},
+    )
+    write_json(
+        repo / "runs" / "local_operator_future_probe.json",
+        {"artifact_kind": "local_operator_future_probe", "local_only": True},
     )
     write_json(
         repo / "runs" / "local_operator_executor_smoke.json",
@@ -210,7 +230,11 @@ def test_build_public_bundle_copies_specs_and_runs_with_manifest(
 
     assert (result.output_dir / "specs" / "nodes" / "SG-SPEC-0001.yaml").is_file()
     assert (result.output_dir / "runs" / "graph_dashboard.json").is_file()
+    assert (result.output_dir / "runs" / "custom_public_surface.json").is_file()
+    assert (result.output_dir / "runs" / "ontology_future_surface.json").is_file()
+    assert not (result.output_dir / "runs" / "ontology_term_binding_gate_report.json").exists()
     assert not (result.output_dir / "runs" / "local_operator_executor_readiness.json").exists()
+    assert not (result.output_dir / "runs" / "local_operator_future_probe.json").exists()
     assert not (result.output_dir / "runs" / "local_operator_executor_smoke.json").exists()
     assert not (result.output_dir / "runs" / "local_operator_executor_task_smoke.json").exists()
     assert not (
@@ -271,6 +295,7 @@ def test_build_public_bundle_copies_specs_and_runs_with_manifest(
     assert manifest["required_surfaces"]["ontology_semantic_review_surface.json"] is True
     assert manifest["required_surfaces"]["ontology_review_dashboard.json"] is True
     assert manifest["required_surfaces"]["ontology_decision_import_preview.json"] is True
+    assert manifest["required_surfaces"]["ontology_package_index.json"] is True
     assert (
         manifest["required_surfaces"][
             "agent_runtime_enforcement_evidence/supervisor-executor-adapter-smoke.json"
@@ -288,13 +313,27 @@ def test_build_public_bundle_copies_specs_and_runs_with_manifest(
         file_info["path"] == "runs/implementation_work_index.json"
         for file_info in manifest["files"]
     )
+    assert any(
+        file_info["path"] == "runs/custom_public_surface.json" for file_info in manifest["files"]
+    )
+    assert any(
+        file_info["path"] == "runs/ontology_future_surface.json" for file_info in manifest["files"]
+    )
     assert manifest["safety_gate"]["status"] == "passed"
     assert manifest["safety_gate"]["redacted_local_path_occurrences"] == 1
     assert "artifact_manifest.json" in result.checksums_path.read_text(encoding="utf-8")
     assert "runs/implementation_work_index.json" in result.checksums_path.read_text(
         encoding="utf-8"
     )
+    assert "runs/custom_public_surface.json" in result.checksums_path.read_text(encoding="utf-8")
+    assert "runs/ontology_future_surface.json" in result.checksums_path.read_text(encoding="utf-8")
+    assert "runs/ontology_term_binding_gate_report.json" not in result.checksums_path.read_text(
+        encoding="utf-8"
+    )
     assert "runs/local_operator_executor_readiness.json" not in result.checksums_path.read_text(
+        encoding="utf-8"
+    )
+    assert "runs/local_operator_future_probe.json" not in result.checksums_path.read_text(
         encoding="utf-8"
     )
     assert "runs/local_operator_executor_smoke.json" not in result.checksums_path.read_text(
@@ -451,6 +490,26 @@ def test_build_public_bundle_rejects_demo_ontology_fixture_content(
     assert not (repo / "dist" / "specgraph-public").exists()
 
 
+def test_build_public_bundle_rejects_stale_demo_ontology_support_artifact(
+    tmp_path: Path,
+    bundle_module: object,
+) -> None:
+    repo = make_repo(tmp_path / "repo")
+    write_json(
+        repo / "runs" / "ontology_delta_candidate_review_packet.json",
+        {
+            "artifact_kind": "ontology_delta_candidate_review_packet",
+            "gap_id": "ontology-gap-examcalc",
+        },
+    )
+
+    with pytest.raises(bundle_module.PublishBundleError, match="demo ontology fixture content"):
+        bundle_module.build_public_bundle(
+            repo_root=repo,
+            output_dir=repo / "dist" / "specgraph-public",
+        )
+
+
 def test_build_public_bundle_publishes_ontology_tombstones(
     tmp_path: Path,
     bundle_module: object,
@@ -475,6 +534,170 @@ def test_build_public_bundle_publishes_ontology_tombstones(
     assert tombstone.is_file()
     assert "ExamPolicy" not in tombstone.read_text(encoding="utf-8")
     assert (result.output_dir / "runs" / "ontology_review_dashboard.json").is_file()
+
+
+def test_build_public_bundle_publishes_ontology_materialized_ir(
+    tmp_path: Path,
+    bundle_module: object,
+) -> None:
+    repo = make_repo(tmp_path / "repo")
+    ir_path = repo / "tests" / "fixtures" / "ontology_import" / "specgraph-core"
+    write_json(
+        ir_path / "ontology.normalized.json",
+        {
+            "artifact_kind": "ontology_normalized_ir",
+            "id": "org.0al.specgraph.core",
+            "classes": [{"id": "SpecGraph"}],
+            "relations": [],
+        },
+    )
+    write_json(
+        repo / "runs" / "ontology_package_index.json",
+        {
+            "artifact_kind": "ontology_package_index",
+            "packages": [
+                {
+                    "package_id": "org.0al.specgraph.core",
+                    "materialized_ir": (
+                        "tests/fixtures/ontology_import/specgraph-core/ontology.normalized.json"
+                    ),
+                }
+            ],
+        },
+    )
+
+    result = bundle_module.build_public_bundle(
+        repo_root=repo,
+        output_dir=repo / "dist" / "specgraph-public",
+    )
+
+    published_ir = (
+        result.output_dir
+        / "tests"
+        / "fixtures"
+        / "ontology_import"
+        / "specgraph-core"
+        / "ontology.normalized.json"
+    )
+    assert published_ir.is_file()
+    assert json.loads(published_ir.read_text(encoding="utf-8"))["id"] == "org.0al.specgraph.core"
+    manifest = json.loads(result.manifest_path.read_text(encoding="utf-8"))
+    assert "tests" in manifest["published_roots"]
+    assert any(
+        file_info["path"]
+        == "tests/fixtures/ontology_import/specgraph-core/ontology.normalized.json"
+        for file_info in manifest["files"]
+    )
+    assert (
+        "tests/fixtures/ontology_import/specgraph-core/ontology.normalized.json"
+        in result.checksums_path.read_text(encoding="utf-8")
+    )
+
+
+def test_build_public_bundle_rejects_unsafe_ontology_materialized_ir(
+    tmp_path: Path,
+    bundle_module: object,
+) -> None:
+    repo = make_repo(tmp_path / "repo")
+    write_json(
+        repo / "runs" / "ontology_package_index.json",
+        {
+            "artifact_kind": "ontology_package_index",
+            "packages": [{"package_id": "org.0al.specgraph.core", "materialized_ir": "../x.json"}],
+        },
+    )
+
+    with pytest.raises(bundle_module.PublishBundleError, match="unsafe .*materialized_ir"):
+        bundle_module.build_public_bundle(
+            repo_root=repo,
+            output_dir=repo / "dist" / "specgraph-public",
+        )
+
+
+def test_build_public_bundle_rejects_missing_ontology_materialized_ir(
+    tmp_path: Path,
+    bundle_module: object,
+) -> None:
+    repo = make_repo(tmp_path / "repo")
+    write_json(
+        repo / "runs" / "ontology_package_index.json",
+        {
+            "artifact_kind": "ontology_package_index",
+            "packages": [
+                {
+                    "package_id": "org.0al.specgraph.core",
+                    "materialized_ir": (
+                        "tests/fixtures/ontology_import/specgraph-core/ontology.normalized.json"
+                    ),
+                }
+            ],
+        },
+    )
+
+    with pytest.raises(bundle_module.PublishBundleError, match="missing ontology materialized IR"):
+        bundle_module.build_public_bundle(
+            repo_root=repo,
+            output_dir=repo / "dist" / "specgraph-public",
+        )
+
+
+def test_build_public_bundle_rejects_malformed_pre_copied_ontology_materialized_ir(
+    tmp_path: Path,
+    bundle_module: object,
+) -> None:
+    repo = make_repo(tmp_path / "repo")
+    ir_path = repo / "specs" / "ontology.normalized.json"
+    ir_path.write_text("{not-json", encoding="utf-8")
+    write_json(
+        repo / "runs" / "ontology_package_index.json",
+        {
+            "artifact_kind": "ontology_package_index",
+            "packages": [
+                {
+                    "package_id": "org.0al.specgraph.core",
+                    "materialized_ir": "specs/ontology.normalized.json",
+                }
+            ],
+        },
+    )
+
+    with pytest.raises(bundle_module.PublishBundleError, match="malformed JSON artifact"):
+        bundle_module.build_public_bundle(
+            repo_root=repo,
+            output_dir=repo / "dist" / "specgraph-public",
+        )
+
+
+def test_build_public_bundle_rejects_local_only_ontology_materialized_ir(
+    tmp_path: Path,
+    bundle_module: object,
+) -> None:
+    repo = make_repo(tmp_path / "repo")
+    write_json(
+        repo / "runs" / "local_operator_executor_report.json",
+        {"artifact_kind": "local_operator_executor_report", "local_only": True},
+    )
+    write_json(
+        repo / "runs" / "ontology_package_index.json",
+        {
+            "artifact_kind": "ontology_package_index",
+            "packages": [
+                {
+                    "package_id": "org.0al.specgraph.core",
+                    "materialized_ir": "runs/local_operator_executor_report.json",
+                }
+            ],
+        },
+    )
+
+    with pytest.raises(
+        bundle_module.PublishBundleError,
+        match="local-only ontology materialized IR",
+    ):
+        bundle_module.build_public_bundle(
+            repo_root=repo,
+            output_dir=repo / "dist" / "specgraph-public",
+        )
 
 
 def test_build_public_bundle_requires_core_viewer_surfaces(
@@ -559,6 +782,20 @@ def test_build_public_bundle_requires_ontology_review_surfaces(
         bundle_module.PublishBundleError,
         match=surface_name,
     ):
+        bundle_module.build_public_bundle(
+            repo_root=repo,
+            output_dir=repo / "dist" / "specgraph-public",
+        )
+
+
+def test_build_public_bundle_requires_ontology_package_index(
+    tmp_path: Path,
+    bundle_module: object,
+) -> None:
+    repo = make_repo(tmp_path / "repo")
+    (repo / "runs" / "ontology_package_index.json").unlink()
+
+    with pytest.raises(bundle_module.PublishBundleError, match="ontology_package_index"):
         bundle_module.build_public_bundle(
             repo_root=repo,
             output_dir=repo / "dist" / "specgraph-public",
@@ -670,6 +907,7 @@ def test_refresh_publish_surfaces_builds_viewer_implementation_and_agent_surface
         "viewer-surfaces",
         "external-handoffs",
         "external-consumer-evidence",
+        "ontology-imports",
         "ontology-imports-public",
     ]
 

@@ -23354,6 +23354,88 @@ def test_supervisor_output_summary_includes_ontology_gate_report(
     ]
 
 
+def test_build_ontology_supervisor_semantic_gate_report_uses_compatibility_report(
+    supervisor_module: object,
+    repo_fixture: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    tools_dir = repo_fixture / "tools"
+    tools_dir.mkdir(exist_ok=True)
+    monkeypatch.setattr(supervisor_module, "TOOLS_DIR", tools_dir)
+    (tools_dir / "ontology_imports.py").write_text(
+        "\n".join(
+            [
+                "from __future__ import annotations",
+                "import json",
+                "from pathlib import Path",
+                "ROOT = Path(__file__).resolve().parents[1]",
+                "POLICY_PATH = ROOT / 'tools' / 'ontology_import_policy.json'",
+                "def load_json(path):",
+                "    return {",
+                "        'repository_layout': {",
+                "            'default_fixture': 'fixtures/source.json',",
+                "            'default_adapter_report': 'reports/adapter.json',",
+                "            'default_compatibility_report': 'reports/compatibility.yaml',",
+                "        }",
+                "    }",
+                "def build_ontology_import_surfaces(",
+                "    fixture_path, *, adapter_report_path, compatibility_report_path=None",
+                "):",
+                "    captured_path = ROOT / 'runs' / 'captured_ontology_gate_args.json'",
+                "    captured_path.parent.mkdir(parents=True, exist_ok=True)",
+                "    captured_path.write_text(",
+                "        json.dumps(",
+                "            {",
+                "                'fixture_path': str(fixture_path),",
+                "                'adapter_report_path': str(adapter_report_path),",
+                "                'compatibility_report_path': str(compatibility_report_path),",
+                "            }",
+                "        ),",
+                "        encoding='utf-8',",
+                "    )",
+                "    return {",
+                "        'supervisor_semantic_gate': {",
+                "            'artifact_kind': 'ontology_supervisor_semantic_gate',",
+                "            'summary': {",
+                "                'status': 'blocked',",
+                "                'next_gap': 'wire_supervisor_semantic_gate_into_targeted_runs',",
+                "            },",
+                "            'gate': {",
+                "                'gate_state': 'blocked',",
+                "                'outcome': 'semantic_gate_blocked',",
+                "                'required_human_action': (",
+                "                    'resolve_blocking_ontology_semantic_findings'",
+                "                ),",
+                "            },",
+                "            'output_artifact': 'runs/ontology_supervisor_semantic_gate.json',",
+                "            'source_artifacts': {",
+                "                'compatibility_diff': (",
+                "                    'runs/ontology_compatibility_diff_preview.json'",
+                "                )",
+                "            },",
+                "        }",
+                "    }",
+                "def write_ontology_import_surfaces(surfaces):",
+                "    return [ROOT / 'runs' / 'ontology_supervisor_semantic_gate.json']",
+                "",
+            ]
+        ),
+        encoding="utf-8",
+    )
+
+    report = supervisor_module.build_ontology_supervisor_semantic_gate_report()
+
+    captured = json.loads(
+        (repo_fixture / "runs" / "captured_ontology_gate_args.json").read_text(encoding="utf-8")
+    )
+    assert captured["fixture_path"].endswith("/fixtures/source.json")
+    assert captured["adapter_report_path"].endswith("/reports/adapter.json")
+    assert captured["compatibility_report_path"].endswith("/reports/compatibility.yaml")
+    assert report["source_artifacts"]["compatibility_diff"] == (
+        "runs/ontology_compatibility_diff_preview.json"
+    )
+
+
 def test_build_graph_next_moves_prefers_metric_runtime_gap_over_draft_reference(
     supervisor_module: object,
     repo_fixture: Path,
