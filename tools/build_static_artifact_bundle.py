@@ -32,6 +32,7 @@ REQUIRED_RUN_SURFACES = (
     "ontology_semantic_review_surface.json",
     "ontology_review_dashboard.json",
     "ontology_decision_import_preview.json",
+    "ontology_package_index.json",
 )
 LOCAL_ONLY_RUN_SURFACES = {
     "local_operator_executor_readiness.json",
@@ -158,11 +159,13 @@ def iter_publish_sources(repo_root: Path) -> Iterable[tuple[str, Path, PurePosix
             rel = PurePosixPath(root_name, path.relative_to(source_root).as_posix())
             if root_name == "runs":
                 run_rel = rel.relative_to("runs").as_posix()
-                if run_rel in LOCAL_ONLY_RUN_SURFACES or run_rel.startswith(
-                    LOCAL_ONLY_RUN_PREFIXES
-                ):
+                if is_local_only_run_path(run_rel):
                     continue
             yield root_name, path, rel
+
+
+def is_local_only_run_path(run_rel: str) -> bool:
+    return run_rel in LOCAL_ONLY_RUN_SURFACES or run_rel.startswith(LOCAL_ONLY_RUN_PREFIXES)
 
 
 def safe_repo_relative_path(value: object, *, field: str) -> PurePosixPath:
@@ -238,7 +241,10 @@ def detect_secret_like_content(path: PurePosixPath, text: str) -> list[str]:
 
 
 def detect_demo_ontology_fixture_content(path: PurePosixPath, text: str) -> list[str]:
-    if path.as_posix() not in ONTOLOGY_PUBLIC_REVIEW_SURFACES:
+    rel = path.as_posix()
+    if rel not in ONTOLOGY_PUBLIC_REVIEW_SURFACES and not (
+        rel.startswith("runs/ontology") and rel.endswith(".json")
+    ):
         return []
     leaked_markers = sorted(marker for marker in DEMO_ONTOLOGY_FIXTURE_MARKERS if marker in text)
     if not leaked_markers:
@@ -487,8 +493,12 @@ def build_public_bundle(
         )
 
     for rel_path in ontology_materialized_ir_refs(repo_root):
-        if rel_path.as_posix() in copied_paths:
-            continue
+        if rel_path.parts and rel_path.parts[0] == "runs":
+            run_rel = rel_path.relative_to("runs").as_posix()
+            if is_local_only_run_path(run_rel):
+                raise PublishBundleError(
+                    f"local-only ontology materialized IR is not publishable: {rel_path.as_posix()}"
+                )
         source_path = repo_root / rel_path.as_posix()
         if not source_path.is_file():
             raise PublishBundleError(f"missing ontology materialized IR: {rel_path.as_posix()}")
@@ -500,6 +510,12 @@ def build_public_bundle(
         redacted_text, redaction_count = redact_local_paths(text)
         redacted_total += redaction_count
         secret_findings.extend(detect_secret_like_content(rel_path, redacted_text))
+        ontology_fixture_findings.extend(
+            detect_demo_ontology_fixture_content(rel_path, redacted_text)
+        )
+
+        if rel_path.as_posix() in copied_paths:
+            continue
 
         target_path = output_dir / rel_path.as_posix()
         write_text_atomic(target_path, redacted_text)
