@@ -247,7 +247,8 @@
           "0073",
           "0078",
           "0081",
-          "0124"
+          "0124",
+          "0131"
         ],
         "source_gap": "agent_executor_passport_visibility_not_projected_to_specspace",
         "artifact_contract": {
@@ -261,7 +262,12 @@
             "runs/agent_verification_gap_index.json",
             "runs/agent_runtime_enforcement_evidence_index.json",
             "runs/agent_runtime_enforcement_evidence/supervisor-executor-adapter-smoke.json",
-            "runs/agent_runtime_enforcement_evidence/supervisor-executor-adapter-redacted-local-summary.json"
+            "runs/agent_runtime_enforcement_evidence/supervisor-executor-adapter-redacted-local-summary.json",
+            "runs/ontology_package_index.json",
+            "runs/ontology_import_gap_index.json",
+            "runs/ontology_compatibility_diff_preview.json",
+            "runs/ontology_governance_evidence_index.json",
+            "tests/fixtures/ontology_import/specgraph-core/ontology.normalized.json"
           ],
           "stable_fields": [
             "artifact_kind",
@@ -278,6 +284,15 @@
             "safe_evidence_ref",
             "redacted_local_executor_summary",
             "source_artifact_refs",
+            "packages",
+            "materialized_ir",
+            "classes",
+            "relations",
+            "domains",
+            "gaps",
+            "compatibility_diff",
+            "governance_evidence",
+            "raw_artifacts",
             "status"
           ],
           "local_only_fields_forbidden": true
@@ -288,6 +303,8 @@
           "show runtime enforcement posture as policy-only, boundary-only, deferred, observed, or unknown without claiming enforcement unless observed evidence exists",
           "show runtime enforcement evidence status as passed, failed, or missing from the evidence index",
           "show verification gaps without exposing raw local paths, raw passport material, or supervisor logs",
+          "show ontology package metadata, normalized compiler IR classes, relations, and domains when producer artifacts are available",
+          "show ontology import gaps, compatibility diffs, and governance evidence as review evidence rather than accepted ontology authority",
           "show fallback state when producer artifacts are absent or draft"
         ],
         "evidence_contract": {

@@ -1675,5 +1675,18 @@
     "required_provenance_links": [
       "source_draft_ref"
     ]
+  },
+  {
+    "proposal_id": "0131",
+    "source_artifact_class": "working_draft",
+    "source_refs": [
+      "docs/archive/proposal_sources/0131_ontology_normalized_ir_viewer_surface.md"
+    ],
+    "motivating_concern": "SpecGraph now publishes public-safe ontology run artifacts and normalized Ontology compiler IR, but SpecSpace only has a generic raw artifact inspector rather than a focused read-only ontology package view.",
+    "normalized_title": "Ontology Normalized IR Viewer Surface",
+    "bounded_scope": "Define a read-only SpecSpace consumer surface contract for displaying normalized Ontology compiler IR, package metadata, classes/entities, relations, domains/namespaces, gaps, diffs, governance evidence, and raw artifact links from published public-safe artifacts without implementing UI in SpecGraph, running ontologyc, writing Ontology packages or lockfiles, mutating canonical specs, accepting terms, importing owner decisions, closing semantic gates, invoking prompt agents, or adding SpecSpace mutation UI.",
+    "required_provenance_links": [
+      "source_draft_ref"
+    ]
   }
 ]
