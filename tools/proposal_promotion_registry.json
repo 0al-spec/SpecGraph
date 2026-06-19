@@ -1714,5 +1714,18 @@
     "required_provenance_links": [
       "source_draft_ref"
     ]
+  },
+  {
+    "proposal_id": "0134",
+    "source_artifact_class": "working_draft",
+    "source_refs": [
+      "docs/archive/proposal_sources/0134_legacy_spec_ontology_binding_index.md"
+    ],
+    "motivating_concern": "SpecGraph has a canonical spec corpus that predates project-local ontology adoption, so it needs a report-only binding index before stricter ontology validation can be enabled.",
+    "normalized_title": "Legacy Spec Ontology Binding Index",
+    "bounded_scope": "Add a report-only spec ontology binding index over existing specs, mapping obvious structural facts to accepted ontology refs and surfacing unknown terminology as gaps without natural-language semantic interpretation, LLM-assisted binding suggestions, hard validation gates, canonical spec rewrites, accepting terms, or adding SpecSpace UI.",
+    "required_provenance_links": [
+      "source_draft_ref"
+    ]
   }
 ]
