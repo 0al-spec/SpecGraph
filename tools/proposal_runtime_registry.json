@@ -7151,5 +7151,51 @@
         "pattern": "term_binding_gate_report"
       }
     ]
+  },
+  {
+    "proposal_id": "0131",
+    "posture": "deferred_until_canonicalized",
+    "runtime_surfaces": [
+      "docs/proposals/0131_ontology_normalized_ir_viewer_surface.md",
+      "docs/archive/proposal_sources/0131_ontology_normalized_ir_viewer_surface.md"
+    ],
+    "runtime_markers": [
+      {
+        "path": "docs/proposals/0131_ontology_normalized_ir_viewer_surface.md",
+        "pattern": "This document defines a consumer surface contract only"
+      },
+      {
+        "path": "docs/proposals/0131_ontology_normalized_ir_viewer_surface.md",
+        "pattern": "ontology.normalized.json"
+      },
+      {
+        "path": "docs/proposals/0131_ontology_normalized_ir_viewer_surface.md",
+        "pattern": "specspace.ontology.normalized_ir_viewer.v0.1"
+      }
+    ],
+    "validation_markers": [
+      {
+        "path": "docs/proposals/0131_ontology_normalized_ir_viewer_surface.md",
+        "pattern": "proposal tracking gate passes"
+      },
+      {
+        "path": "docs/proposals/0131_ontology_normalized_ir_viewer_surface.md",
+        "pattern": "This contract slice is complete"
+      }
+    ],
+    "observation_markers": [
+      {
+        "path": "docs/proposals/0131_ontology_normalized_ir_viewer_surface.md",
+        "pattern": "canonical_mutations_allowed: false"
+      },
+      {
+        "path": "docs/proposals/0131_ontology_normalized_ir_viewer_surface.md",
+        "pattern": "classes/entities, relations, and domains/namespaces"
+      },
+      {
+        "path": "docs/proposals/0131_ontology_normalized_ir_viewer_surface.md",
+        "pattern": "build_specspace_normalized_ontology_ir_panel"
+      }
+    ]
   }
 ]
