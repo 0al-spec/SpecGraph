@@ -22,6 +22,7 @@ ONTOLOGY_TERM_BINDING_GATE_OUTPUT ?= runs/ontology_term_binding_gate_report.json
 PYTHON_TARGETS := viewer-surfaces dashboard backlog next-move spec-activity graph-diagnostics \
 	proposal-spec-trace proposal-tracking proposal-tracking-gate external-consumers external-handoffs \
 	external-consumer-evidence ontology-imports ontology-imports-public \
+	ontology-package-validate ontology-package-preview ontology-package-gaps \
 	ontology-term-binding-gate \
 	proposal-work-claims proposal-work-claims-gate proposal-id \
 	metrics-delivery metrics-feedback metrics-source-promotion metric-signals metric-thresholds \
@@ -61,6 +62,9 @@ help:
 			'  make external-consumer-evidence Refresh external consumer evidence JSON' \
 			'  make ontology-imports          Refresh ontology import and semantic-control surfaces' \
 			'  make ontology-imports-public   Refresh public-safe ontology review placeholders' \
+			'  make ontology-package-validate Validate project-local ontology package authoring state' \
+			'  make ontology-package-preview  Preview project-local ontology package refs/diffs' \
+			'  make ontology-package-gaps     Preview project-local ontology package gaps' \
 			'  make ontology-term-binding-gate ONTOLOGY_TERM_BINDING_ARTIFACT=<json>' \
 		'  make metrics-delivery         Refresh Metrics delivery workflow JSON' \
 		'  make metrics-feedback         Refresh Metrics feedback JSON' \
@@ -180,6 +184,18 @@ ontology-imports:
 .PHONY: ontology-imports-public
 ontology-imports-public:
 	@$(PYTHON) tools/ontology_imports.py --write-public-placeholder
+
+.PHONY: ontology-package-validate
+ontology-package-validate:
+	@$(PYTHON) tools/ontology_package_authoring.py --mode validate --write
+
+.PHONY: ontology-package-preview
+ontology-package-preview:
+	@$(PYTHON) tools/ontology_package_authoring.py --mode preview --write
+
+.PHONY: ontology-package-gaps
+ontology-package-gaps:
+	@$(PYTHON) tools/ontology_package_authoring.py --mode gaps --write
 
 .PHONY: ontology-term-binding-gate
 ontology-term-binding-gate:

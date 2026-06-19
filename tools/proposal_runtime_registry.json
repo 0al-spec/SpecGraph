@@ -7270,5 +7270,56 @@
         "pattern": "project_local_ontology_authoring_commands"
       }
     ]
+  },
+  {
+    "proposal_id": "0133",
+    "posture": "synchronous_runtime_slice",
+    "runtime_surfaces": [
+      "docs/proposals/0133_project_local_ontology_authoring_commands.md",
+      "docs/archive/proposal_sources/0133_project_local_ontology_authoring_commands.md",
+      "docs/ontology_spec_validation_roadmap.md",
+      "tools/ontology_package_authoring.py",
+      "Makefile",
+      "tools/README.md",
+      "tests/test_ontology_package_authoring.py"
+    ],
+    "runtime_markers": [
+      {
+        "path": "Makefile",
+        "pattern": "ontology-package-validate"
+      },
+      {
+        "path": "tools/ontology_package_authoring.py",
+        "pattern": "ontology_package_authoring_report"
+      },
+      {
+        "path": "docs/ontology_spec_validation_roadmap.md",
+        "pattern": "Five-PR Stack"
+      }
+    ],
+    "validation_markers": [
+      {
+        "path": "tests/test_ontology_package_authoring.py",
+        "pattern": "test_package_authoring_validate_reports_project_local_package"
+      },
+      {
+        "path": "tests/test_ontology_package_authoring.py",
+        "pattern": "test_package_authoring_preview_exposes_refs_and_compatibility"
+      },
+      {
+        "path": "tests/test_ontology_package_authoring.py",
+        "pattern": "test_package_authoring_gap_preview_is_review_only"
+      }
+    ],
+    "observation_markers": [
+      {
+        "path": "docs/proposals/0133_project_local_ontology_authoring_commands.md",
+        "pattern": "no accepted-term decisions"
+      },
+      {
+        "path": "docs/ontology_spec_validation_roadmap.md",
+        "pattern": "Existing specs stay canonical"
+      }
+    ]
   }
 ]

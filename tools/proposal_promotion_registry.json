@@ -1701,5 +1701,18 @@
     "required_provenance_links": [
       "source_draft_ref"
     ]
+  },
+  {
+    "proposal_id": "0133",
+    "source_artifact_class": "working_draft",
+    "source_refs": [
+      "docs/archive/proposal_sources/0133_project_local_ontology_authoring_commands.md"
+    ],
+    "motivating_concern": "SpecGraph has a project-local ontology package root, but operators need stable review-only commands for validating, previewing, and inspecting gaps in that package without confusing package authoring with canonical spec mutation or accepted-term authority.",
+    "normalized_title": "Project-Local Ontology Authoring Commands",
+    "bounded_scope": "Add review-only project-local ontology package validate, preview, and gaps commands plus typed runs artifacts, roadmap documentation, and tests without running ontologyc directly, editing package YAML interactively, mutating canonical specs, writing ontology lockfiles, accepting or rejecting terms, adding SpecSpace UI, or enforcing SpecAuthor write gates.",
+    "required_provenance_links": [
+      "source_draft_ref"
+    ]
   }
 ]
