@@ -186,6 +186,13 @@ Supervisor modes:
   artifacts. It reads `tools/ontology_term_binding_policy.json`, emits
   `runs/ontology_term_binding_gate_report.json`, and reports whether the
   artifact would fail a future hard gate without mutating canonical specs.
+- `tools/specauthor_ontology_write_gate.py`: deterministic write gate for
+  SpecAuthor-generated graph artifacts introduced by proposal 0136. Use
+  `make specauthor-ontology-write-gate
+  SPECAUTHOR_ONTOLOGY_WRITE_GATE_ARTIFACT=<json>` to require active
+  ontology/domain/context, compose with the term binding gate, require F/G/R on
+  strong claims, and emit `runs/specauthor_ontology_write_gate_report.json`
+  without mutating canonical specs or Ontology packages.
 - `--build-ontology-supervisor-semantic-gate`: refresh the same ontology
   semantic surfaces through the supervisor entrypoint and print a compact gate
   report for `runs/ontology_supervisor_semantic_gate.json` without running

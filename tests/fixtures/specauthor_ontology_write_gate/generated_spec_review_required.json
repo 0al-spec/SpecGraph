@@ -1,0 +1,30 @@
+{
+  "artifact_kind": "generated_spec_artifact",
+  "source_ref": "memory://specauthor-review-required",
+  "active_frame": {
+    "project": "SpecGraph",
+    "target_artifact": "Proposal",
+    "lifecycle_phase": "draft",
+    "ontology_refs": [],
+    "domain_refs": [],
+    "context_refs": []
+  },
+  "new_terms": ["SemanticWidget"],
+  "claims": [
+    {
+      "id": "claim.semantic-widget-is-final",
+      "type": "decision",
+      "statement": "SemanticWidget is the canonical mechanism for all ontology authoring.",
+      "calibration": {
+        "F": "F2",
+        "G": {
+          "applies_to": ["all ontology authoring"],
+          "excludes": [],
+          "assumptions": []
+        },
+        "R": "R2"
+      }
+    }
+  ],
+  "ontology_gaps": []
+}

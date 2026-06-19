@@ -1,0 +1,46 @@
+{
+  "artifact_kind": "generated_spec_artifact",
+  "source_ref": "memory://specauthor-ready",
+  "active_frame": {
+    "project": "SpecGraph",
+    "subsystem": "Application.AgentLayer.SpecificationAuthoring",
+    "agent_layer": "SpecificationAuthoring",
+    "ontology_refs": ["sgcore:Spec"],
+    "domain_refs": ["domain.specification_authoring"],
+    "context_refs": ["context.specgraph.agent_layer"],
+    "target_artifact": "Proposal",
+    "lifecycle_phase": "draft"
+  },
+  "new_terms": ["Spec"],
+  "term_bindings": [
+    {
+      "generated_term": "Spec",
+      "binding_state": "bound_to_accepted_entity",
+      "authority_class": "accepted_ontology_entity",
+      "ontology_ref": "sgcore:Spec",
+      "ontology_package_ref": "ontology/packages/specgraph-core",
+      "term_ref": "Spec",
+      "domain_refs": ["domain.specification_authoring"],
+      "source_refs": ["ontology/packages/specgraph-core/ontology.yaml"]
+    }
+  ],
+  "ontology_gaps": [],
+  "claims": [
+    {
+      "id": "claim.specauthor.write-gate-reduces-vocabulary-drift",
+      "type": "hypothesis",
+      "strength": "strong",
+      "statement": "Requiring active ontology frame and term bindings should reduce silent vocabulary drift in generated specs.",
+      "evidence_refs": ["docs/proposals/0126_specauthor_claim_calibration_prompt_contract.md"],
+      "calibration": {
+        "F": "F3",
+        "G": {
+          "applies_to": ["SpecAuthor-generated SpecGraph proposals"],
+          "excludes": ["legacy specs"],
+          "assumptions": ["The generated artifact is validated before graph persistence."]
+        },
+        "R": "R2"
+      }
+    }
+  ]
+}
