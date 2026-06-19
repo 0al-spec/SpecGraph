@@ -28,3 +28,8 @@ This work follows:
 - `0128_ontology_term_binding_policy`;
 - `0129_generated_term_binding_gate`;
 - public bundle publishing of safe `runs/*.json` and normalized ontology IR.
+
+Proposal id allocation note: candidate `0130` was already used by merged
+SpecGraph PR #573 (`codex/0130-specgraph-core-ontology-binding`) and still had
+local/remote branch refs during allocation, so the deterministic next available
+id for this source draft is `0131`.

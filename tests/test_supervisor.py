@@ -11217,7 +11217,9 @@ def test_specspace_registry_handoff_contract_is_stable_and_ready(
         "0078",
         "0081",
         "0124",
+        "0131",
     ]
+    assert "0131" in ready["source_proposal_ids"]
     assert ready["artifact_contract"]["status"] == "stable"
     assert ready["artifact_contract"]["paths"] == [
         "runs/supervisor_executor_adapter_index.json",
@@ -11228,16 +11230,24 @@ def test_specspace_registry_handoff_contract_is_stable_and_ready(
         "runs/agent_runtime_enforcement_evidence_index.json",
         "runs/agent_runtime_enforcement_evidence/supervisor-executor-adapter-smoke.json",
         "runs/agent_runtime_enforcement_evidence/supervisor-executor-adapter-redacted-local-summary.json",
+        "runs/ontology_package_index.json",
+        "runs/ontology_import_gap_index.json",
+        "runs/ontology_compatibility_diff_preview.json",
+        "runs/ontology_governance_evidence_index.json",
+        "tests/fixtures/ontology_import/specgraph-core/ontology.normalized.json",
     ]
     assert "viewer_projection" in ready["artifact_contract"]["stable_fields"]
     assert "required_checks" in ready["artifact_contract"]["stable_fields"]
     assert "policy_required_checks_satisfied" in ready["artifact_contract"]["stable_fields"]
     assert "redacted_local_executor_summary" in ready["artifact_contract"]["stable_fields"]
     assert "source_artifact_refs" in ready["artifact_contract"]["stable_fields"]
+    assert "materialized_ir" in ready["artifact_contract"]["stable_fields"]
+    assert "governance_evidence" in ready["artifact_contract"]["stable_fields"]
     assert "show runtime enforcement posture" in " ".join(ready["expected_consumer_behavior"])
     assert "show runtime enforcement evidence status" in " ".join(
         ready["expected_consumer_behavior"]
     )
+    assert "show ontology package metadata" in " ".join(ready["expected_consumer_behavior"])
     assert ready["transition_packet_validation"]["ok"] is True
     assert report["viewer_projection"]["named_filters"]["ready_for_handoff"] == ["specspace"]
     assert report["handoff_backlog"]["grouped_by_next_gap"] == {

@@ -37,6 +37,15 @@ Related proposal context:
 - `0128_ontology_term_binding_policy`
 - `0129_generated_term_binding_gate`
 
+Proposal id allocation evidence:
+
+- candidate `0130` was already used by merged SpecGraph PR #573,
+  `codex/0130-specgraph-core-ontology-binding`;
+- local and remote branch refs for `codex/0130-specgraph-core-ontology-binding`
+  were still present during allocation;
+- under the repository collision rule, this proposal uses the next deterministic
+  id, `0131`.
+
 ## Summary
 
 SpecGraph now publishes enough public-safe artifacts for SpecSpace to show a

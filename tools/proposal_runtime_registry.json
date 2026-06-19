@@ -7154,10 +7154,11 @@
   },
   {
     "proposal_id": "0131",
-    "posture": "deferred_until_canonicalized",
+    "posture": "bounded_runtime_followup",
     "runtime_surfaces": [
       "docs/proposals/0131_ontology_normalized_ir_viewer_surface.md",
-      "docs/archive/proposal_sources/0131_ontology_normalized_ir_viewer_surface.md"
+      "docs/archive/proposal_sources/0131_ontology_normalized_ir_viewer_surface.md",
+      "tools/external_consumers.json"
     ],
     "runtime_markers": [
       {
@@ -7171,6 +7172,14 @@
       {
         "path": "docs/proposals/0131_ontology_normalized_ir_viewer_surface.md",
         "pattern": "specspace.ontology.normalized_ir_viewer.v0.1"
+      },
+      {
+        "path": "tools/external_consumers.json",
+        "pattern": "\"0131\""
+      },
+      {
+        "path": "tools/external_consumers.json",
+        "pattern": "runs/ontology_package_index.json"
       }
     ],
     "validation_markers": [
@@ -7181,6 +7190,10 @@
       {
         "path": "docs/proposals/0131_ontology_normalized_ir_viewer_surface.md",
         "pattern": "This contract slice is complete"
+      },
+      {
+        "path": "tests/test_supervisor.py",
+        "pattern": "assert \"0131\" in ready[\"source_proposal_ids\"]"
       }
     ],
     "observation_markers": [
