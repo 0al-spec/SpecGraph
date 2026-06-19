@@ -173,6 +173,11 @@ Supervisor modes:
   `runs/spec_ontology_binding_index.json`, mapping obvious existing spec
   structure to current ontology refs and surfacing unknown legacy terminology as
   ontology gaps without rewriting `specs/nodes/*.yaml`.
+- `tools/spec_ontology_validation_report.py`: typed report-only validation
+  surface introduced by proposal 0135. Use `make spec-ontology-validation` to
+  emit `runs/spec_ontology_validation_report.json`, checking required structural
+  bindings, relation existence, relation domain/range compatibility, and legacy
+  terminology gaps while keeping existing specs in report-only mode.
 - `tools/ontology_term_binding_policy.json`: review-first policy for treating
   accepted Ontology entities as canonical type symbols, requiring unknown
   generated terms to become `ontology_gap` records, and keeping practical

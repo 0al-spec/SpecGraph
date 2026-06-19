@@ -23,7 +23,7 @@ PYTHON_TARGETS := viewer-surfaces dashboard backlog next-move spec-activity grap
 	proposal-spec-trace proposal-tracking proposal-tracking-gate external-consumers external-handoffs \
 	external-consumer-evidence ontology-imports ontology-imports-public \
 	ontology-package-validate ontology-package-preview ontology-package-gaps \
-	spec-ontology-bindings \
+	spec-ontology-bindings spec-ontology-validation \
 	ontology-term-binding-gate \
 	proposal-work-claims proposal-work-claims-gate proposal-id \
 	metrics-delivery metrics-feedback metrics-source-promotion metric-signals metric-thresholds \
@@ -67,6 +67,7 @@ help:
 			'  make ontology-package-preview  Preview project-local ontology package refs/diffs' \
 			'  make ontology-package-gaps     Preview project-local ontology package gaps' \
 			'  make spec-ontology-bindings    Build report-only legacy spec ontology bindings' \
+			'  make spec-ontology-validation  Build report-only spec ontology validation report' \
 			'  make ontology-term-binding-gate ONTOLOGY_TERM_BINDING_ARTIFACT=<json>' \
 		'  make metrics-delivery         Refresh Metrics delivery workflow JSON' \
 		'  make metrics-feedback         Refresh Metrics feedback JSON' \
@@ -202,6 +203,10 @@ ontology-package-gaps:
 .PHONY: spec-ontology-bindings
 spec-ontology-bindings:
 	@$(PYTHON) tools/spec_ontology_binding_index.py --write
+
+.PHONY: spec-ontology-validation
+spec-ontology-validation:
+	@$(PYTHON) tools/spec_ontology_validation_report.py --write
 
 .PHONY: ontology-term-binding-gate
 ontology-term-binding-gate:
