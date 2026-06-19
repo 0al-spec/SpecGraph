@@ -1,0 +1,44 @@
+artifact_kind: ontology_import_fixture
+kind: SemanticBindingFixture
+schema_version: 1
+proposal_id: "0060"
+metadata:
+  id: SG-RFC-0130
+package:
+  package_id: org.0al.specgraph.core
+  namespace: sgcore
+  version: 0.1.0
+  source_uri: specgraph://ontology/packages/specgraph-core/domain-ontology-package.yaml
+  source_ref: SpecGraph:ontology/packages/specgraph-core/domain-ontology-package.yaml
+  digest: sha256:22022e3a073a951046ea1a162bf688605925397e81d32c19998780be221e4dd7
+  materialized_ir: generated/ontology.normalized.json
+  authority_class: project_local_draft
+  accepted_by_proposal: SG-RFC-0130-smoke
+  governance:
+    lifecycle_state: draft
+    validation_report_ref: SpecGraph:ontology/packages/specgraph-core/ontologyc-adapter-report.yaml
+    decision_ref: SpecGraph:docs/proposals/0132_project_local_ontology_package_boundary.md
+    repeatability_report_ref: SpecGraph:tests/test_ontology_import_policy.py::test_project_local_specgraph_core_default_fixture_is_authority_source
+    trusted_registry_gate_ref: SpecGraph:ontology/packages/specgraph-core/README.md#project-local-authority
+binding:
+  artifact_kind: semantic_binding
+  schema_version: 1
+  spec:
+    ontologyImports:
+      - ontology: org.0al.specgraph.core
+        namespace: sgcore
+        version: 0.1.0
+        source: ontology/packages/specgraph-core/domain-ontology-package.yaml
+        digest: sha256:22022e3a073a951046ea1a162bf688605925397e81d32c19998780be221e4dd7
+  subject:
+    kind: proposal
+    id: SG-RFC-0130
+  refs:
+    - sgcore:SpecGraph
+    - sgcore:Spec
+    - sgcore:Requirement
+    - sgcore:AcceptanceCriterion
+    - sgcore:Evidence
+    - sgcore:definesRequirement
+    - sgcore:hasAcceptanceCriterion
+    - sgcore:ClaimCalibration

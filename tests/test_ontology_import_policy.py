@@ -14,22 +14,14 @@ FIXTURE = ROOT / "tests" / "fixtures" / "ontology_import" / "examcalc" / "import
 ADAPTER_REPORT = (
     ROOT / "tests" / "fixtures" / "ontology_import" / "examcalc" / "ontologyc-adapter-report.yaml"
 )
-SPECGRAPH_CORE_FIXTURE = (
-    ROOT / "tests" / "fixtures" / "ontology_import" / "specgraph-core" / "import-fixture.yaml"
-)
+SPECGRAPH_CORE_FIXTURE = ROOT / "ontology" / "packages" / "specgraph-core" / "import-fixture.yaml"
 SPECGRAPH_CORE_ADAPTER_REPORT = (
-    ROOT
-    / "tests"
-    / "fixtures"
-    / "ontology_import"
-    / "specgraph-core"
-    / "ontologyc-adapter-report.yaml"
+    ROOT / "ontology" / "packages" / "specgraph-core" / "ontologyc-adapter-report.yaml"
 )
 SPECGRAPH_CORE_COMPATIBILITY_REPORT = (
     ROOT
-    / "tests"
-    / "fixtures"
-    / "ontology_import"
+    / "ontology"
+    / "packages"
     / "specgraph-core"
     / "compatibility"
     / "compatibility-report.yaml"
@@ -132,12 +124,23 @@ def test_ontology_import_policy_defines_read_only_contract() -> None:
     assert policy["derived_output_contract"]["canonical_mutations_allowed"] is False
     assert policy["derived_output_contract"]["writes_canonical_specs"] is False
     assert policy["package_ref_contract"]["semantic_source"] == (
-        "ontology_normalized_ir_or_registry_materialization"
+        "project_local_ontology_package_or_external_registry_materialization"
+    )
+    assert policy["package_ref_contract"]["project_local_package_root"] == "ontology/packages/"
+    assert (
+        "ad_hoc_package_yaml_clone_without_project_authority"
+        in policy["package_ref_contract"]["forbidden_sources"]
     )
     assert "local_pseudo_concepts" in policy["package_ref_contract"]["forbidden_sources"]
     assert policy["concept_ref_contract"]["unresolved_ref_action"] == "emit_ontology_gap"
     assert policy["repository_layout"]["default_fixture"] == (
-        "tests/fixtures/ontology_import/specgraph-core/import-fixture.yaml"
+        "ontology/packages/specgraph-core/import-fixture.yaml"
+    )
+    assert policy["repository_layout"]["default_adapter_report"] == (
+        "ontology/packages/specgraph-core/ontologyc-adapter-report.yaml"
+    )
+    assert policy["repository_layout"]["default_compatibility_report"] == (
+        "ontology/packages/specgraph-core/compatibility/compatibility-report.yaml"
     )
     assert policy["repository_layout"]["compatibility_diff_preview"] == (
         "runs/ontology_compatibility_diff_preview.json"
@@ -727,7 +730,16 @@ def test_specgraph_core_import_fixture_projects_compiler_backed_gaps_and_diffs()
     assert package["package_id"] == "org.0al.specgraph.core"
     assert package["namespace"] == "sgcore"
     assert package["version"] == "0.1.0"
-    assert package["authority_class"] == "draft_imported"
+    assert package["authority_class"] == "project_local_draft"
+    assert package["source_uri"] == (
+        "specgraph://ontology/packages/specgraph-core/domain-ontology-package.yaml"
+    )
+    assert package["source_ref"] == (
+        "SpecGraph:ontology/packages/specgraph-core/domain-ontology-package.yaml"
+    )
+    assert package["materialized_ir"] == (
+        "ontology/packages/specgraph-core/generated/ontology.normalized.json"
+    )
     assert package["lock"]["package_ref"] == "org.0al.specgraph.core@0.1.0"
     assert package_index["summary"] == {
         "imported_package_count": 1,
@@ -788,6 +800,29 @@ def test_specgraph_core_import_fixture_projects_compiler_backed_gaps_and_diffs()
         "added_class_count": 1,
         "next_gap": "review_required_specgraph_actions",
     }
+
+
+def test_project_local_specgraph_core_default_fixture_is_authority_source() -> None:
+    module = load_ontology_imports_module()
+    policy = json.loads((ROOT / "tools" / "ontology_import_policy.json").read_text())
+    fixture_path = ROOT / policy["repository_layout"]["default_fixture"]
+
+    surfaces = module.build_ontology_import_surfaces(
+        fixture_path,
+        adapter_report_path=ROOT / policy["repository_layout"]["default_adapter_report"],
+        compatibility_report_path=ROOT
+        / policy["repository_layout"]["default_compatibility_report"],
+        semantic_policy_path=None,
+    )
+
+    package = surfaces["package_index"]["packages"][0]
+    assert surfaces["package_index"]["source_fixture"] == (
+        "ontology/packages/specgraph-core/import-fixture.yaml"
+    )
+    assert package["authority_class"] == "project_local_draft"
+    assert package["materialized_ir"].startswith("ontology/packages/specgraph-core/")
+    assert not package["materialized_ir"].startswith("tests/fixtures/")
+    assert package["lock"]["source_uri"].startswith("specgraph://ontology/packages/")
 
 
 def test_specgraph_core_default_semantic_smoke_uses_current_fixture_namespace() -> None:

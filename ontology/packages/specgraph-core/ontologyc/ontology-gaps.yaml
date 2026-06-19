@@ -1,0 +1,18 @@
+apiVersion: specgraph.io/v1alpha1
+kind: OntologyGapSet
+metadata:
+  source: ontology/packages/specgraph-core/import-fixture.yaml
+spec:
+  gaps:
+  - apiVersion: specgraph.io/v1alpha1
+    kind: OntologyGap
+    metadata:
+      id: gap-001
+    spec:
+      missingConcept: sgcore:ClaimCalibration
+      requestedAction:
+        type: proposeOntologyDelta
+      sourceArtifact:
+        id: SG-RFC-0130
+        kind: SemanticBindingFixture
+      targetOntology: org.0al.specgraph.core

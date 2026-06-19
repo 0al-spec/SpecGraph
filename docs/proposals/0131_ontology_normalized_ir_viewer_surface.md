@@ -91,7 +91,7 @@ The surface should use the published artifact manifest to discover and read:
 
 ```text
 runs/ontology_package_index.json
-tests/fixtures/ontology_import/specgraph-core/ontology.normalized.json
+ontology/packages/specgraph-core/generated/ontology.normalized.json
 runs/ontology_import_gap_index.json
 runs/ontology_compatibility_diff_preview.json
 runs/ontology_governance_evidence_index.json

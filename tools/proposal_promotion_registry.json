@@ -1688,5 +1688,18 @@
     "required_provenance_links": [
       "source_draft_ref"
     ]
+  },
+  {
+    "proposal_id": "0132",
+    "source_artifact_class": "working_draft",
+    "source_refs": [
+      "docs/archive/proposal_sources/0132_project_local_ontology_package_boundary.md"
+    ],
+    "motivating_concern": "Ontology PR #57 proved the compiler-backed package flow, but SpecGraph needs a project-local ontology package boundary so product ontologies live beside the owning graph rather than in the shared Ontology repository.",
+    "normalized_title": "Project-Local Ontology Package Boundary",
+    "bounded_scope": "Move the default SpecGraph Core ontology import source to ontology/packages/specgraph-core, document the Ontology repository as tooling, stdlib, schema, compiler, and example authority, update public artifact and SpecSpace handoff paths, and add regression coverage without changing ontologyc implementation, mutating canonical specs, writing lockfiles, adding SpecSpace mutation UI, or promoting project packages into the Ontology repository.",
+    "required_provenance_links": [
+      "source_draft_ref"
+    ]
   }
 ]

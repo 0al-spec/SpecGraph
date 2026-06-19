@@ -4,9 +4,9 @@
   "proposal_id": "0060",
   "source_proposal": "docs/proposals/0060_external_ontology_import_plane.md",
   "repository_layout": {
-    "default_fixture": "tests/fixtures/ontology_import/specgraph-core/import-fixture.yaml",
-    "default_adapter_report": "tests/fixtures/ontology_import/specgraph-core/ontologyc-adapter-report.yaml",
-    "default_compatibility_report": "tests/fixtures/ontology_import/specgraph-core/compatibility/compatibility-report.yaml",
+    "default_fixture": "ontology/packages/specgraph-core/import-fixture.yaml",
+    "default_adapter_report": "ontology/packages/specgraph-core/ontologyc-adapter-report.yaml",
+    "default_compatibility_report": "ontology/packages/specgraph-core/compatibility/compatibility-report.yaml",
     "package_index": "runs/ontology_package_index.json",
     "gap_index": "runs/ontology_import_gap_index.json",
     "compatibility_diff_preview": "runs/ontology_compatibility_diff_preview.json",
@@ -31,9 +31,12 @@
       "digest",
       "materialized_ir"
     ],
-    "semantic_source": "ontology_normalized_ir_or_registry_materialization",
+    "semantic_source": "project_local_ontology_package_or_external_registry_materialization",
+    "default_authority_model": "project_local_package_authority",
+    "tooling_authority": "Ontology repository provides compiler, schemas, stdlib primitives, and examples; product ontology data is project-local by default.",
+    "project_local_package_root": "ontology/packages/",
     "forbidden_sources": [
-      "domain_ontology_package_yaml_clone",
+      "ad_hoc_package_yaml_clone_without_project_authority",
       "local_pseudo_concepts"
     ]
   },
