@@ -765,6 +765,21 @@ def test_specgraph_core_import_fixture_projects_compiler_backed_gaps_and_diffs()
         "ontology/packages/specgraph-core/generated/ontology.normalized.json"
     )
     assert package["lock"]["package_ref"] == "org.0al.specgraph.core@0.1.0"
+    assert package["model_applicability"]["applies_to"]["domains"] == ["specgraph_core"]
+    assert package["model_applicability"]["applies_to"]["agentTypes"] == [
+        "SpecAuthorAgent",
+        "SpecGraphSupervisor",
+    ]
+    assert package["model_applicability_summary"] == {
+        "status": "declared",
+        "applies_to_domains": ["specgraph_core"],
+        "excluded_domains": ["unrelated_product_domain"],
+        "assumption_count": 2,
+        "invalidation_trigger_count": 2,
+        "used_layer_count": 3,
+        "used_layers": ["mechanics", "execution", "meta"],
+        "layer_counts": {"mechanics": 1, "execution": 1, "meta": 2},
+    }
     assert package_index["summary"] == {
         "imported_package_count": 1,
         "resolved_ref_count": 7,
@@ -772,6 +787,9 @@ def test_specgraph_core_import_fixture_projects_compiler_backed_gaps_and_diffs()
         "layered_entry_count": 0,
         "unlayered_entry_count": 32,
         "used_layer_count": 0,
+        "model_applicability_profile_count": 1,
+        "applicability_assumption_count": 2,
+        "applicability_invalidation_trigger_count": 2,
         "next_gap": "review_ontology_import_gap",
     }
 
@@ -819,6 +837,11 @@ def test_specgraph_core_import_fixture_projects_compiler_backed_gaps_and_diffs()
     assert diff["compatible"] is True
     assert diff["changes"]["added_classes"] == ["sgcore:ClaimCalibration"]
     assert diff["changes"]["breaking_changes"] == []
+    assert diff["change_classification"] == {
+        "structural_changes": [{"kind": "classAdded", "ref": "sgcore:ClaimCalibration"}],
+        "annotation_changes": [],
+        "applicability_changes": [],
+    }
     assert diff["layer_review"] == {
         "known_layers": [
             "objective",
@@ -841,6 +864,9 @@ def test_specgraph_core_import_fixture_projects_compiler_backed_gaps_and_diffs()
         "status": "compatible",
         "breaking_change_count": 0,
         "added_class_count": 1,
+        "structural_change_count": 1,
+        "annotation_change_count": 0,
+        "applicability_change_count": 0,
         "layered_change_count": 0,
         "unassigned_layer_change_count": 1,
         "used_layer_count": 0,
@@ -969,6 +995,67 @@ def test_ontology_gap_and_diff_surfaces_group_layer_hints(tmp_path: Path) -> Non
     assert diff["summary"]["layered_change_count"] == 1
     assert diff["summary"]["unassigned_layer_change_count"] == 0
     assert diff["summary"]["used_layer_count"] == 1
+
+
+def test_ontology_diff_preview_preserves_compiler_change_classification(
+    tmp_path: Path,
+) -> None:
+    module = load_ontology_imports_module()
+    report = yaml.safe_load(SPECGRAPH_CORE_COMPATIBILITY_REPORT.read_text(encoding="utf-8"))
+    assert isinstance(report, dict)
+    changes = report["changes"]
+    assert isinstance(changes, dict)
+    changes["changeClassification"] = {
+        "structuralChanges": [{"kind": "classAdded", "ref": "sgcore:ClaimCalibration"}],
+        "annotationChanges": [
+            {
+                "kind": "layerChanged",
+                "ref": "sgcore:Spec",
+                "targetKind": "class",
+                "before": "objective",
+                "after": "mechanics",
+                "compatibility": "compatible",
+            }
+        ],
+        "applicabilityChanges": [
+            {
+                "kind": "invalidationTriggerChanged",
+                "ref": "modelApplicability.invalidationTriggers.specgraph_core_vocabulary_changed",
+            }
+        ],
+    }
+    report_path = tmp_path / "compatibility-report.yaml"
+    report_path.write_text(yaml.safe_dump(report, sort_keys=False), encoding="utf-8")
+
+    surfaces = module.build_ontology_import_surfaces(
+        SPECGRAPH_CORE_FIXTURE,
+        compatibility_report_path=report_path,
+        semantic_policy_path=None,
+    )
+
+    diff = surfaces["compatibility_diff_preview"]
+    assert diff["change_classification"] == {
+        "structural_changes": [{"kind": "classAdded", "ref": "sgcore:ClaimCalibration"}],
+        "annotation_changes": [
+            {
+                "kind": "layerChanged",
+                "ref": "sgcore:Spec",
+                "target_kind": "class",
+                "before": "objective",
+                "after": "mechanics",
+                "compatibility": "compatible",
+            }
+        ],
+        "applicability_changes": [
+            {
+                "kind": "invalidationTriggerChanged",
+                "ref": "modelApplicability.invalidationTriggers.specgraph_core_vocabulary_changed",
+            }
+        ],
+    }
+    assert diff["summary"]["structural_change_count"] == 1
+    assert diff["summary"]["annotation_change_count"] == 1
+    assert diff["summary"]["applicability_change_count"] == 1
 
 
 def test_ontology_diff_layer_review_counts_field_and_breaking_changes(

@@ -13,6 +13,34 @@ spec:
       namespace: sg
       version: 0.1.0
 
+  modelApplicability:
+    appliesTo:
+      domains:
+        - specgraph_core
+      lifecyclePhases:
+        - draft_spec_authoring
+        - ontology_import_review
+      agentTypes:
+        - SpecAuthorAgent
+        - SpecGraphSupervisor
+    excludes:
+      domains:
+        - unrelated_product_domain
+    assumptions:
+      - id: project_local_authority
+        layer: meta
+        text: SpecGraph core ontology packages remain project-local unless an explicit governance decision publishes them elsewhere.
+      - id: human_review_required
+        layer: execution
+        text: Generated or imported ontology changes require human review before canonical SpecGraph specs are updated.
+    invalidationTriggers:
+      - id: ontology_layer_contract_changed
+        layer: meta
+        text: Re-review applicability when the ontology layer vocabulary or layer semantics change.
+      - id: specgraph_core_vocabulary_changed
+        layer: mechanics
+        text: Re-review applicability when core SpecGraph classes, relations, or validation semantics change.
+
   classes:
     SpecGraph:
       extends: sg:DomainEntity

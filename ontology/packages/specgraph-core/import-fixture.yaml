@@ -10,7 +10,7 @@ package:
   version: 0.1.0
   source_uri: specgraph://ontology/packages/specgraph-core/domain-ontology-package.yaml
   source_ref: SpecGraph:ontology/packages/specgraph-core/domain-ontology-package.yaml
-  digest: sha256:22022e3a073a951046ea1a162bf688605925397e81d32c19998780be221e4dd7
+  digest: sha256:5bfa2ff40b6174def589546ab2fea2501e1f256c4f1446f36c45c7f3fffcd929
   materialized_ir: generated/ontology.normalized.json
   authority_class: project_local_draft
   accepted_by_proposal: SG-RFC-0130-smoke
@@ -29,7 +29,7 @@ binding:
         namespace: sgcore
         version: 0.1.0
         source: ontology/packages/specgraph-core/domain-ontology-package.yaml
-        digest: sha256:22022e3a073a951046ea1a162bf688605925397e81d32c19998780be221e4dd7
+        digest: sha256:5bfa2ff40b6174def589546ab2fea2501e1f256c4f1446f36c45c7f3fffcd929
   subject:
     kind: proposal
     id: SG-RFC-0130

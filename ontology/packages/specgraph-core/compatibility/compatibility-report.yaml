@@ -5,6 +5,12 @@ changes:
   addedFields: []
   addedRelations: []
   breakingChanges: []
+  changeClassification:
+    annotationChanges: []
+    applicabilityChanges: []
+    structuralChanges:
+    - kind: classAdded
+      ref: sgcore:ClaimCalibration
   changedFields: []
   removedClasses: []
   removedFields: []
