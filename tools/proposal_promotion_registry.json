@@ -1740,5 +1740,18 @@
     "required_provenance_links": [
       "source_draft_ref"
     ]
+  },
+  {
+    "proposal_id": "0136",
+    "source_artifact_class": "working_draft",
+    "source_refs": [
+      "docs/archive/proposal_sources/0136_specauthor_ontology_write_gate.md"
+    ],
+    "motivating_concern": "New SpecAuthor-generated graph artifacts need a deterministic ontology-aware write gate so missing active context, silent term invention, and low-reliability decisions do not enter SpecGraph as graph-ready material.",
+    "normalized_title": "SpecAuthor Ontology Write Gate",
+    "bounded_scope": "Add a deterministic SpecAuthor write gate over typed generated artifact JSON, composing with the ontology term binding gate and checking active frame plus F/G/R strong claims, without running prompt agents, parsing arbitrary prose, mutating specs, accepting ontology terms, writing Ontology packages or lockfiles, or changing legacy report-only validation.",
+    "required_provenance_links": [
+      "source_draft_ref"
+    ]
   }
 ]

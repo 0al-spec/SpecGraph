@@ -29,11 +29,11 @@ as a legacy corpus. They are not bulk-rewritten when ontology support expands.
    - Add typed validation over spec artifacts against the current ontology.
    - Keep legacy specs report-only while making generated/new artifacts eligible
      for review-required gate status.
-4. `0136_specspace_ontology_compliance_review_surface`
-   - Publish a stable compliance review artifact contract for SpecSpace.
+4. `SpecSpace#247_ontology_compliance_review_surface`
+   - Consume the stable compliance review artifact contract from SpecSpace.
    - Show spec status, bindings, gaps, conflicts, and suggested owner actions in
      a read-only UI surface.
-5. `0137_specauthor_ontology_write_gate`
+5. `0136_specauthor_ontology_write_gate`
    - Gate generated spec/proposal writes on active ontology/domain/context,
      term bindings or gaps, and calibrated strong claims.
    - Reject or mark review-required outputs that invent terms silently or
@@ -49,4 +49,3 @@ as a legacy corpus. They are not bulk-rewritten when ontology support expands.
   backfilled.
 - SpecSpace remains read-only until owner-decision import and mutation contracts
   are explicitly accepted.
-

@@ -16,6 +16,8 @@ EXECUTOR_FOLLOWUP_REVIEWER ?= local_operator
 EXECUTOR_FOLLOWUP_RATIONALE ?=
 ONTOLOGY_TERM_BINDING_ARTIFACT ?= tests/fixtures/ontology_term_binding/generated_artifact_review_required.json
 ONTOLOGY_TERM_BINDING_GATE_OUTPUT ?= runs/ontology_term_binding_gate_report.json
+SPECAUTHOR_ONTOLOGY_WRITE_GATE_ARTIFACT ?= tests/fixtures/specauthor_ontology_write_gate/generated_spec_review_required.json
+SPECAUTHOR_ONTOLOGY_WRITE_GATE_OUTPUT ?= runs/specauthor_ontology_write_gate_report.json
 
 .DEFAULT_GOAL := help
 
@@ -24,7 +26,7 @@ PYTHON_TARGETS := viewer-surfaces dashboard backlog next-move spec-activity grap
 	external-consumer-evidence ontology-imports ontology-imports-public \
 	ontology-package-validate ontology-package-preview ontology-package-gaps \
 	spec-ontology-bindings spec-ontology-validation \
-	ontology-term-binding-gate \
+	ontology-term-binding-gate specauthor-ontology-write-gate \
 	proposal-work-claims proposal-work-claims-gate proposal-id \
 	metrics-delivery metrics-feedback metrics-source-promotion metric-signals metric-thresholds \
 	metric-packs metric-pack-drift metric-pack-adapters metric-pack-runs metric-pricing model-usage \
@@ -69,6 +71,7 @@ help:
 			'  make spec-ontology-bindings    Build report-only legacy spec ontology bindings' \
 			'  make spec-ontology-validation  Build report-only spec ontology validation report' \
 			'  make ontology-term-binding-gate ONTOLOGY_TERM_BINDING_ARTIFACT=<json>' \
+			'  make specauthor-ontology-write-gate SPECAUTHOR_ONTOLOGY_WRITE_GATE_ARTIFACT=<json>' \
 		'  make metrics-delivery         Refresh Metrics delivery workflow JSON' \
 		'  make metrics-feedback         Refresh Metrics feedback JSON' \
 		'  make metrics-source-promotion Refresh Metrics source promotion candidates JSON' \
@@ -211,6 +214,10 @@ spec-ontology-validation:
 .PHONY: ontology-term-binding-gate
 ontology-term-binding-gate:
 	@$(PYTHON) tools/ontology_term_binding_gate.py --artifact "$(ONTOLOGY_TERM_BINDING_ARTIFACT)" --output "$(ONTOLOGY_TERM_BINDING_GATE_OUTPUT)"
+
+.PHONY: specauthor-ontology-write-gate
+specauthor-ontology-write-gate:
+	@$(PYTHON) tools/specauthor_ontology_write_gate.py --artifact "$(SPECAUTHOR_ONTOLOGY_WRITE_GATE_ARTIFACT)" --output "$(SPECAUTHOR_ONTOLOGY_WRITE_GATE_OUTPUT)"
 
 .PHONY: metrics-delivery
 metrics-delivery:
