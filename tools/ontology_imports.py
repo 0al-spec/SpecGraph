@@ -53,6 +53,7 @@ REF_CATEGORIES = {
     "stateMachines": "state_machine",
     "protocols": "protocol",
 }
+ONTOLOGY_LAYERS = ("objective", "mechanics", "execution", "meta", "multi_agent")
 
 
 def load_json(path: Path) -> dict[str, Any]:
@@ -100,13 +101,62 @@ def ontology_ref_map(ir: dict[str, Any]) -> dict[str, dict[str, Any]]:
             fqid = item.get("fqid")
             if not isinstance(fqid, str) or ":" not in fqid:
                 continue
-            refs[fqid] = {
+            ref = {
                 "ref": fqid,
                 "kind": kind,
                 "id": item.get("id"),
                 "uri": item.get("uri"),
             }
+            layer = item.get("layer")
+            if isinstance(layer, str) and layer.strip():
+                ref["layer"] = layer.strip()
+            refs[fqid] = ref
     return refs
+
+
+def ontology_layer_summary(ir: dict[str, Any]) -> dict[str, Any]:
+    layer_counts: dict[str, int] = {layer: 0 for layer in ONTOLOGY_LAYERS}
+    by_kind: dict[str, dict[str, int]] = {}
+    invalid_layers: dict[str, list[str]] = {}
+    entry_count = 0
+    layered_entry_count = 0
+
+    for section, kind in REF_CATEGORIES.items():
+        values = ir.get(section, [])
+        if not isinstance(values, list):
+            continue
+        by_kind.setdefault(kind, {layer: 0 for layer in ONTOLOGY_LAYERS})
+        for item in values:
+            if not isinstance(item, dict):
+                continue
+            entry_count += 1
+            layer = item.get("layer")
+            if not isinstance(layer, str) or not layer.strip():
+                continue
+            layer_value = layer.strip()
+            layered_entry_count += 1
+            if layer_value not in ONTOLOGY_LAYERS:
+                invalid_layers.setdefault(layer_value, []).append(
+                    str(item.get("fqid") or "unknown")
+                )
+                continue
+            layer_counts[layer_value] += 1
+            by_kind[kind][layer_value] += 1
+
+    used_layers = [layer for layer in ONTOLOGY_LAYERS if layer_counts[layer]]
+    return {
+        "known_layers": list(ONTOLOGY_LAYERS),
+        "entry_count": entry_count,
+        "layered_entry_count": layered_entry_count,
+        "unlayered_entry_count": entry_count - layered_entry_count,
+        "used_layers": used_layers,
+        "layer_counts": {layer: layer_counts[layer] for layer in used_layers},
+        "by_kind": {
+            kind: {layer: count for layer, count in counts.items() if count}
+            for kind, counts in sorted(by_kind.items())
+        },
+        "invalid_layers": invalid_layers,
+    }
 
 
 def required_package_fields(policy: dict[str, Any]) -> set[str]:
@@ -6680,6 +6730,7 @@ def build_ontology_import_surfaces(
     ir = load_json(ir_path)
     validate_ir_metadata(ir, package)
     refs = ontology_ref_map(ir)
+    layer_summary = ontology_layer_summary(ir)
 
     requested_refs = list(binding["refs"])
     resolved_refs = [
@@ -6704,6 +6755,7 @@ def build_ontology_import_surfaces(
         "authority_class": package.get("authority_class", "imported"),
         "accepted_by_proposal": package.get("accepted_by_proposal"),
         "materialized_ir": relative_path(ir_path),
+        "ontology_layer_summary": layer_summary,
         "lock": {
             "package_ref": f"{package['package_id']}@{package['version']}",
             "namespace": package["namespace"],
@@ -6724,6 +6776,9 @@ def build_ontology_import_surfaces(
             "imported_package_count": 1,
             "resolved_ref_count": len(resolved_refs),
             "unresolved_ref_count": len(unresolved_refs),
+            "layered_entry_count": layer_summary["layered_entry_count"],
+            "unlayered_entry_count": layer_summary["unlayered_entry_count"],
+            "used_layer_count": len(layer_summary["used_layers"]),
             "next_gap": "review_ontology_import_gap" if unresolved_refs else "none",
         },
     }

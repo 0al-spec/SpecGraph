@@ -7701,5 +7701,49 @@
         "pattern": "Bulk rewriting legacy specs"
       }
     ]
+  },
+  {
+    "proposal_id": "0141",
+    "posture": "synchronous_runtime_slice",
+    "runtime_surfaces": [
+      "docs/proposals/0141_layered_ontology_import_surface.md",
+      "docs/archive/proposal_sources/0141_layered_ontology_import_surface.md",
+      "tools/ontology_imports.py",
+      "tests/test_ontology_import_policy.py"
+    ],
+    "runtime_markers": [
+      {
+        "path": "tools/ontology_imports.py",
+        "pattern": "ONTOLOGY_LAYERS"
+      },
+      {
+        "path": "tools/ontology_imports.py",
+        "pattern": "ontology_layer_summary"
+      },
+      {
+        "path": "tools/ontology_imports.py",
+        "pattern": "\"layered_entry_count\""
+      }
+    ],
+    "validation_markers": [
+      {
+        "path": "tests/test_ontology_import_policy.py",
+        "pattern": "test_ontology_import_surfaces_preserve_layered_normalized_ir"
+      },
+      {
+        "path": "tests/test_ontology_import_policy.py",
+        "pattern": "test_make_ontology_imports_writes_declared_surfaces"
+      }
+    ],
+    "observation_markers": [
+      {
+        "path": "docs/proposals/0141_layered_ontology_import_surface.md",
+        "pattern": "This proposal does not make SpecGraph an ontology authority"
+      },
+      {
+        "path": "docs/proposals/0141_layered_ontology_import_surface.md",
+        "pattern": "forward-compatible with current packages that do not yet contain layer metadata"
+      }
+    ]
   }
 ]
