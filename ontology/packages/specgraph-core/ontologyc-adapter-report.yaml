@@ -13,7 +13,7 @@ outputs:
   ontology_gaps_ref: ontologyc/ontology-gaps.yaml
   ontology_lock_ref: ontologyc/ontology.lock.yaml
 package:
-  digest: sha256:22022e3a073a951046ea1a162bf688605925397e81d32c19998780be221e4dd7
+  digest: sha256:5bfa2ff40b6174def589546ab2fea2501e1f256c4f1446f36c45c7f3fffcd929
   namespace: sgcore
   package_id: org.0al.specgraph.core
   source_ref: SpecGraph:ontology/packages/specgraph-core/domain-ontology-package.yaml

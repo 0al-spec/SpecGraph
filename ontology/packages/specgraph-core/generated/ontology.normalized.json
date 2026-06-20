@@ -250,6 +250,50 @@
       "version" : "0.1.0"
     }
   ],
+  "modelApplicability" : {
+    "appliesTo" : {
+      "agentTypes" : [
+        "SpecAuthorAgent",
+        "SpecGraphSupervisor"
+      ],
+      "domains" : [
+        "specgraph_core"
+      ],
+      "lifecyclePhases" : [
+        "draft_spec_authoring",
+        "ontology_import_review"
+      ]
+    },
+    "assumptions" : [
+      {
+        "id" : "human_review_required",
+        "layer" : "execution",
+        "text" : "Generated or imported ontology changes require human review before canonical SpecGraph specs are updated."
+      },
+      {
+        "id" : "project_local_authority",
+        "layer" : "meta",
+        "text" : "SpecGraph core ontology packages remain project-local unless an explicit governance decision publishes them elsewhere."
+      }
+    ],
+    "excludes" : {
+      "domains" : [
+        "unrelated_product_domain"
+      ]
+    },
+    "invalidationTriggers" : [
+      {
+        "id" : "ontology_layer_contract_changed",
+        "layer" : "meta",
+        "text" : "Re-review applicability when the ontology layer vocabulary or layer semantics change."
+      },
+      {
+        "id" : "specgraph_core_vocabulary_changed",
+        "layer" : "mechanics",
+        "text" : "Re-review applicability when core SpecGraph classes, relations, or validation semantics change."
+      }
+    ]
+  },
   "namespace" : "sgcore",
   "policies" : [
     {
@@ -460,7 +504,7 @@
       "uri" : "ontology://org.0al.specgraph.core/0.1.0/relations/testValidatesRequirement"
     }
   ],
-  "sourceDigest" : "sha256:22022e3a073a951046ea1a162bf688605925397e81d32c19998780be221e4dd7",
+  "sourceDigest" : "sha256:5bfa2ff40b6174def589546ab2fea2501e1f256c4f1446f36c45c7f3fffcd929",
   "stateMachines" : [
     {
       "fqid" : "sgcore:SpecReviewState",

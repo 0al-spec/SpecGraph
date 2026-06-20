@@ -1844,5 +1844,18 @@
     "required_provenance_links": [
       "source_draft_ref"
     ]
+  },
+  {
+    "proposal_id": "0144",
+    "source_artifact_class": "working_draft",
+    "source_refs": [
+      "docs/archive/proposal_sources/0144_ontology_model_applicability_import.md"
+    ],
+    "motivating_concern": "Ontology compiler reports now expose package-level model applicability and deterministic change classification, but SpecGraph import surfaces need to preserve that review data for package indexes, diff previews, and downstream SpecSpace dashboards.",
+    "normalized_title": "Ontology Model Applicability Import",
+    "bounded_scope": "Add read-only model applicability and change-classification consumption to ontology import surfaces, including project-local SpecGraph Core applicability metadata and summary counters, without inferring applicability, writing upstream Ontology repository packages or lockfiles, mutating canonical specs, accepting ontology terms, importing owner decisions, executing prompt agents, closing semantic gates, or adding SpecSpace UI.",
+    "required_provenance_links": [
+      "source_draft_ref"
+    ]
   }
 ]

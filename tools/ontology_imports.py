@@ -54,6 +54,15 @@ REF_CATEGORIES = {
     "protocols": "protocol",
 }
 ONTOLOGY_LAYERS = ("objective", "mechanics", "execution", "meta", "multi_agent")
+APPLICABILITY_SCOPE_FIELDS = (
+    "domains",
+    "lifecyclePhases",
+    "agentTypes",
+    "subsystems",
+    "runtimes",
+    "platforms",
+    "contexts",
+)
 LAYER_REVIEW_CHANGE_TYPES = (
     "added_classes",
     "removed_classes",
@@ -166,6 +175,100 @@ def ontology_layer_summary(ir: dict[str, Any]) -> dict[str, Any]:
             for kind, counts in sorted(by_kind.items())
         },
         "invalid_layers": invalid_layers,
+    }
+
+
+def normalized_applicability_scope(raw_scope: Any, context: str) -> dict[str, list[str]]:
+    if not isinstance(raw_scope, dict):
+        raise ValueError(f"{context} must be an object")
+    scope: dict[str, list[str]] = {}
+    for field in APPLICABILITY_SCOPE_FIELDS:
+        if field not in raw_scope:
+            continue
+        scope[field] = require_string_array(raw_scope.get(field), f"{context}.{field}")
+    return scope
+
+
+def normalized_applicability_records(raw_records: Any, context: str) -> list[dict[str, Any]]:
+    if not isinstance(raw_records, list):
+        raise ValueError(f"{context} must be a list")
+    records: list[dict[str, Any]] = []
+    for index, raw_record in enumerate(raw_records):
+        record_context = f"{context}[{index}]"
+        if not isinstance(raw_record, dict):
+            raise ValueError(f"{record_context} must be an object")
+        record = {
+            "id": require_string(raw_record, "id", record_context),
+            "text": require_string(raw_record, "text", record_context),
+        }
+        layer = raw_record.get("layer")
+        if isinstance(layer, str) and layer.strip():
+            record["layer"] = layer.strip()
+        records.append(record)
+    return sorted(records, key=lambda item: str(item.get("id", "")))
+
+
+def ontology_model_applicability(ir: dict[str, Any]) -> dict[str, Any] | None:
+    raw_profile = ir.get("modelApplicability")
+    if raw_profile is None:
+        return None
+    if not isinstance(raw_profile, dict):
+        raise ValueError("ontology.normalized.modelApplicability must be an object")
+
+    profile: dict[str, Any] = {}
+    if "appliesTo" in raw_profile:
+        profile["applies_to"] = normalized_applicability_scope(
+            raw_profile["appliesTo"], "ontology.normalized.modelApplicability.appliesTo"
+        )
+    if "excludes" in raw_profile:
+        profile["excludes"] = normalized_applicability_scope(
+            raw_profile["excludes"], "ontology.normalized.modelApplicability.excludes"
+        )
+    if "assumptions" in raw_profile:
+        profile["assumptions"] = normalized_applicability_records(
+            raw_profile["assumptions"], "ontology.normalized.modelApplicability.assumptions"
+        )
+    if "invalidationTriggers" in raw_profile:
+        profile["invalidation_triggers"] = normalized_applicability_records(
+            raw_profile["invalidationTriggers"],
+            "ontology.normalized.modelApplicability.invalidationTriggers",
+        )
+    return profile
+
+
+def applicability_summary(profile: dict[str, Any] | None) -> dict[str, Any]:
+    if profile is None:
+        return {
+            "status": "missing",
+            "assumption_count": 0,
+            "invalidation_trigger_count": 0,
+            "used_layer_count": 0,
+            "used_layers": [],
+            "layer_counts": {},
+        }
+
+    layer_counts: dict[str, int] = {layer: 0 for layer in ONTOLOGY_LAYERS}
+    for field in ("assumptions", "invalidation_triggers"):
+        for record in profile.get(field, []):
+            if not isinstance(record, dict):
+                continue
+            layer = record.get("layer")
+            if isinstance(layer, str) and layer in layer_counts:
+                layer_counts[layer] += 1
+    used_layers = [layer for layer in ONTOLOGY_LAYERS if layer_counts[layer]]
+    applies_to = profile.get("applies_to")
+    excludes = profile.get("excludes")
+    return {
+        "status": "declared",
+        "applies_to_domains": (
+            applies_to.get("domains", []) if isinstance(applies_to, dict) else []
+        ),
+        "excluded_domains": excludes.get("domains", []) if isinstance(excludes, dict) else [],
+        "assumption_count": len(profile.get("assumptions", [])),
+        "invalidation_trigger_count": len(profile.get("invalidation_triggers", [])),
+        "used_layer_count": len(used_layers),
+        "used_layers": used_layers,
+        "layer_counts": {layer: layer_counts[layer] for layer in used_layers},
     }
 
 
@@ -861,6 +964,77 @@ def require_string_array(value: Any, context: str) -> list[str]:
     return value
 
 
+def require_change_classification_records(value: Any, context: str) -> list[dict[str, Any]]:
+    if not isinstance(value, list):
+        raise ValueError(f"{context} must be a list")
+    records: list[dict[str, Any]] = []
+    for index, item in enumerate(value):
+        item_context = f"{context}[{index}]"
+        if not isinstance(item, dict):
+            raise ValueError(f"{item_context} must be an object")
+        record = {
+            "kind": require_string(item, "kind", item_context),
+            "ref": require_string(item, "ref", item_context),
+        }
+        for optional_field in ("targetKind", "before", "after", "compatibility"):
+            raw_value = item.get(optional_field)
+            if isinstance(raw_value, str) and raw_value.strip():
+                record[camel_to_snake(optional_field)] = raw_value.strip()
+        records.append(record)
+    return records
+
+
+def camel_to_snake(value: str) -> str:
+    return re.sub(r"(?<!^)([A-Z])", r"_\1", value).lower()
+
+
+def fallback_change_classification(projected_changes: dict[str, list[str]]) -> dict[str, Any]:
+    kind_by_change_type = {
+        "added_classes": "classAdded",
+        "removed_classes": "classRemoved",
+        "added_relations": "relationAdded",
+        "removed_relations": "relationRemoved",
+        "added_fields": "fieldAdded",
+        "removed_fields": "fieldRemoved",
+        "changed_fields": "fieldChanged",
+        "breaking_changes": "breakingChange",
+    }
+    structural_changes = []
+    for change_type, kind in kind_by_change_type.items():
+        for ref in projected_changes.get(change_type, []):
+            structural_changes.append({"kind": kind, "ref": ref})
+    return {
+        "structural_changes": structural_changes,
+        "annotation_changes": [],
+        "applicability_changes": [],
+    }
+
+
+def compatibility_change_classification(
+    changes: dict[str, Any],
+    projected_changes: dict[str, list[str]],
+) -> dict[str, Any]:
+    raw_classification = changes.get("changeClassification")
+    if raw_classification is None:
+        return fallback_change_classification(projected_changes)
+    if not isinstance(raw_classification, dict):
+        raise ValueError("compatibility_report.changes.changeClassification must be an object")
+    return {
+        "structural_changes": require_change_classification_records(
+            raw_classification.get("structuralChanges"),
+            "compatibility_report.changes.changeClassification.structuralChanges",
+        ),
+        "annotation_changes": require_change_classification_records(
+            raw_classification.get("annotationChanges"),
+            "compatibility_report.changes.changeClassification.annotationChanges",
+        ),
+        "applicability_changes": require_change_classification_records(
+            raw_classification.get("applicabilityChanges"),
+            "compatibility_report.changes.changeClassification.applicabilityChanges",
+        ),
+    }
+
+
 def build_ontology_compatibility_diff_preview(
     policy: dict[str, Any],
     *,
@@ -923,6 +1097,7 @@ def build_ontology_compatibility_diff_preview(
     }
     layer_hints = optional_layer_hint_map(changes, "layerHints", "compatibility_report.changes")
     layer_review = compatibility_change_layer_review(projected_changes, refs, layer_hints)
+    change_classification = compatibility_change_classification(changes, projected_changes)
 
     breaking_changes = projected_changes["breaking_changes"]
     next_gap = "none"
@@ -944,6 +1119,7 @@ def build_ontology_compatibility_diff_preview(
         "compatible": compatible,
         "required_specgraph_actions": required_actions,
         "changes": projected_changes,
+        "change_classification": change_classification,
         "layer_review": layer_review,
         "authority_boundary": {
             "report_is_authority": False,
@@ -956,6 +1132,9 @@ def build_ontology_compatibility_diff_preview(
             "status": "compatible" if compatible else "breaking_change_review_required",
             "breaking_change_count": len(breaking_changes),
             "added_class_count": len(projected_changes["added_classes"]),
+            "structural_change_count": len(change_classification["structural_changes"]),
+            "annotation_change_count": len(change_classification["annotation_changes"]),
+            "applicability_change_count": len(change_classification["applicability_changes"]),
             "layered_change_count": layer_review["layered_change_count"],
             "unassigned_layer_change_count": layer_review["unassigned_change_count"],
             "used_layer_count": len(layer_review["used_layers"]),
@@ -6886,6 +7065,8 @@ def build_ontology_import_surfaces(
     validate_ir_metadata(ir, package)
     refs = ontology_ref_map(ir)
     layer_summary = ontology_layer_summary(ir)
+    model_applicability = ontology_model_applicability(ir)
+    model_applicability_summary = applicability_summary(model_applicability)
     requested_layer_hints = binding_layer_hints(binding)
 
     requested_refs = list(binding["refs"])
@@ -6912,6 +7093,7 @@ def build_ontology_import_surfaces(
         "accepted_by_proposal": package.get("accepted_by_proposal"),
         "materialized_ir": relative_path(ir_path),
         "ontology_layer_summary": layer_summary,
+        "model_applicability_summary": model_applicability_summary,
         "lock": {
             "package_ref": f"{package['package_id']}@{package['version']}",
             "namespace": package["namespace"],
@@ -6919,6 +7101,8 @@ def build_ontology_import_surfaces(
             "source_uri": package["source_uri"],
         },
     }
+    if model_applicability is not None:
+        package_entry["model_applicability"] = model_applicability
 
     package_index = {
         "artifact_kind": "ontology_package_index",
@@ -6935,6 +7119,11 @@ def build_ontology_import_surfaces(
             "layered_entry_count": layer_summary["layered_entry_count"],
             "unlayered_entry_count": layer_summary["unlayered_entry_count"],
             "used_layer_count": len(layer_summary["used_layers"]),
+            "model_applicability_profile_count": 1 if model_applicability is not None else 0,
+            "applicability_assumption_count": model_applicability_summary["assumption_count"],
+            "applicability_invalidation_trigger_count": model_applicability_summary[
+                "invalidation_trigger_count"
+            ],
             "next_gap": "review_ontology_import_gap" if unresolved_refs else "none",
         },
     }
