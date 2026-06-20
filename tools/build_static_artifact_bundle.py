@@ -33,6 +33,8 @@ REQUIRED_RUN_SURFACES = (
     "ontology_review_dashboard.json",
     "ontology_decision_import_preview.json",
     "ontology_package_index.json",
+    "ontology_gap_review_workflow.json",
+    "ontology_owner_decision_import_v2.json",
     "spec_ontology_binding_index.json",
     "spec_ontology_validation_report.json",
 )
@@ -440,6 +442,7 @@ def refresh_publish_surfaces(repo_root: Path) -> None:
     run_make_target(repo_root, "spec-ontology-validation")
     run_make_target(repo_root, "ontology-gap-review")
     run_make_target(repo_root, "ontology-imports-public")
+    run_make_target(repo_root, "ontology-owner-decision-import-v2")
 
 
 def build_public_bundle(
@@ -600,7 +603,8 @@ def parse_args(argv: list[str]) -> argparse.Namespace:
             "viewer-surfaces, implementation-delta, implementation-work, executor-adapters, "
             "agent-passports, agent-runtime-evidence, viewer-surfaces, external-handoffs, "
             "external-consumer-evidence, ontology-imports, spec-ontology-bindings, "
-            "spec-ontology-validation, then ontology-imports-public."
+            "spec-ontology-validation, ontology-gap-review, "
+            "ontology-imports-public, then ontology-owner-decision-import-v2."
         ),
     )
     parser.add_argument(

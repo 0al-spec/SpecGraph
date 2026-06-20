@@ -7577,5 +7577,67 @@
         "pattern": "Owner decision import v2 remains the next separate slice"
       }
     ]
+  },
+  {
+    "proposal_id": "0139",
+    "posture": "synchronous_runtime_slice",
+    "runtime_surfaces": [
+      "docs/proposals/0139_ontology_owner_decision_import_v2.md",
+      "docs/archive/proposal_sources/0139_ontology_owner_decision_import_v2.md",
+      "tools/ontology_owner_decision_import_v2.py",
+      "tools/build_static_artifact_bundle.py",
+      "Makefile",
+      "tools/README.md",
+      "docs/ontology_spec_validation_roadmap.md",
+      "docs/static_artifact_publish.md",
+      "tests/test_ontology_owner_decision_import_v2.py",
+      "tests/test_static_artifact_bundle.py"
+    ],
+    "runtime_markers": [
+      {
+        "path": "Makefile",
+        "pattern": "ontology-owner-decision-import-v2"
+      },
+      {
+        "path": "tools/ontology_owner_decision_import_v2.py",
+        "pattern": "ontology_owner_decision_import_v2"
+      },
+      {
+        "path": "tools/ontology_owner_decision_import_v2.py",
+        "pattern": "before_semantic_status"
+      },
+      {
+        "path": "tools/build_static_artifact_bundle.py",
+        "pattern": "ontology-owner-decision-import-v2"
+      }
+    ],
+    "validation_markers": [
+      {
+        "path": "tests/test_ontology_owner_decision_import_v2.py",
+        "pattern": "test_owner_decision_import_v2_links_accepted_decision_to_gap_and_compliance"
+      },
+      {
+        "path": "tests/test_ontology_owner_decision_import_v2.py",
+        "pattern": "test_owner_decision_import_v2_keeps_rejection_ack_only"
+      },
+      {
+        "path": "tests/test_ontology_owner_decision_import_v2.py",
+        "pattern": "test_owner_decision_import_v2_cli_writes_report"
+      },
+      {
+        "path": "tests/test_static_artifact_bundle.py",
+        "pattern": "ontology-owner-decision-import-v2"
+      }
+    ],
+    "observation_markers": [
+      {
+        "path": "docs/proposals/0139_ontology_owner_decision_import_v2.md",
+        "pattern": "does not publish raw owner identity"
+      },
+      {
+        "path": "docs/proposals/0139_ontology_owner_decision_import_v2.md",
+        "pattern": "does not treat the owner decision as automatic authority"
+      }
+    ]
   }
 ]

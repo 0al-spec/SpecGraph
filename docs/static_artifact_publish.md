@@ -88,10 +88,14 @@ The order matters and is intentionally two-pass:
 6. `make ontology-imports` builds the compiler-backed SpecGraph Core ontology
    package, binding, gap, compatibility-diff, governance, and adapter-smoke
    artifacts used by SpecSpace.
-7. `make ontology-imports-public` then overwrites only the public-unsafe
+7. `make ontology-gap-review` builds the public-safe grouped gap review surface.
+8. `make ontology-imports-public` overwrites only the public-unsafe
    ontology review/lint-context surfaces with placeholders or tombstones so
    static hosts that do not delete old remote files cannot keep serving demo
    fixture content.
+9. `make ontology-owner-decision-import-v2` then builds the public-safe owner
+   decision review surface from the refreshed gap review and public-safe
+   decision preview.
 
 The bundle publishes `runs/*.json` by default after redaction and safety
 scanning. Local-only operator diagnostics remain excluded by denylist instead of

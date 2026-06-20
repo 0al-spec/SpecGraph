@@ -18,6 +18,12 @@ ONTOLOGY_TERM_BINDING_ARTIFACT ?= tests/fixtures/ontology_term_binding/generated
 ONTOLOGY_TERM_BINDING_GATE_OUTPUT ?= runs/ontology_term_binding_gate_report.json
 ONTOLOGY_GAP_REVIEW_GENERATED_ARTIFACT ?=
 ONTOLOGY_GAP_REVIEW_OUTPUT ?= runs/ontology_gap_review_workflow.json
+ONTOLOGY_OWNER_DECISION_IMPORT_V2_OUTPUT ?= runs/ontology_owner_decision_import_v2.json
+ONTOLOGY_OWNER_DECISION_IMPORT_V2_DECISION_PREVIEW ?= runs/ontology_decision_import_preview.json
+ONTOLOGY_OWNER_DECISION_IMPORT_V2_CLOSED_LOOP ?= runs/ontology_closed_loop_evidence.json
+ONTOLOGY_OWNER_DECISION_IMPORT_V2_GAP_REVIEW ?=
+ONTOLOGY_OWNER_DECISION_IMPORT_V2_VALIDATION_REPORT ?=
+ONTOLOGY_OWNER_DECISION_IMPORT_V2_WRITE_GATE_REPORT ?= runs/specauthor_ontology_write_gate_report.json
 SPECAUTHOR_GENERATED_ARTIFACT_CONTRACT_ARTIFACT ?= tests/fixtures/specauthor_generated_artifact_contract/generated_spec_ready.json
 SPECAUTHOR_GENERATED_ARTIFACT_CONTRACT_OUTPUT ?= runs/specauthor_generated_artifact_contract_report.json
 SPECAUTHOR_ONTOLOGY_WRITE_GATE_ARTIFACT ?= tests/fixtures/specauthor_ontology_write_gate/generated_spec_review_required.json
@@ -30,7 +36,7 @@ PYTHON_TARGETS := viewer-surfaces dashboard backlog next-move spec-activity grap
 	external-consumer-evidence ontology-imports ontology-imports-public \
 	ontology-package-validate ontology-package-preview ontology-package-gaps \
 	spec-ontology-bindings spec-ontology-validation \
-	ontology-term-binding-gate ontology-gap-review \
+	ontology-term-binding-gate ontology-gap-review ontology-owner-decision-import-v2 \
 	specauthor-generated-artifact-contract specauthor-ontology-write-gate \
 	proposal-work-claims proposal-work-claims-gate proposal-id \
 	metrics-delivery metrics-feedback metrics-source-promotion metric-signals metric-thresholds \
@@ -74,10 +80,11 @@ help:
 			'  make ontology-package-preview  Preview project-local ontology package refs/diffs' \
 			'  make ontology-package-gaps     Preview project-local ontology package gaps' \
 			'  make spec-ontology-bindings    Build report-only legacy spec ontology bindings' \
-			'  make spec-ontology-validation  Build report-only spec ontology validation report' \
-			'  make ontology-term-binding-gate ONTOLOGY_TERM_BINDING_ARTIFACT=<json>' \
-			'  make ontology-gap-review ONTOLOGY_GAP_REVIEW_GENERATED_ARTIFACT=<json>' \
-			'  make specauthor-generated-artifact-contract SPECAUTHOR_GENERATED_ARTIFACT_CONTRACT_ARTIFACT=<json>' \
+				'  make spec-ontology-validation  Build report-only spec ontology validation report' \
+				'  make ontology-term-binding-gate ONTOLOGY_TERM_BINDING_ARTIFACT=<json>' \
+				'  make ontology-gap-review ONTOLOGY_GAP_REVIEW_GENERATED_ARTIFACT=<json>' \
+				'  make ontology-owner-decision-import-v2 Build read-only owner decision import v2 review JSON' \
+				'  make specauthor-generated-artifact-contract SPECAUTHOR_GENERATED_ARTIFACT_CONTRACT_ARTIFACT=<json>' \
 			'  make specauthor-ontology-write-gate SPECAUTHOR_ONTOLOGY_WRITE_GATE_ARTIFACT=<json>' \
 		'  make metrics-delivery         Refresh Metrics delivery workflow JSON' \
 		'  make metrics-feedback         Refresh Metrics feedback JSON' \
@@ -225,6 +232,10 @@ ontology-term-binding-gate:
 .PHONY: ontology-gap-review
 ontology-gap-review:
 	@$(PYTHON) tools/ontology_gap_review_workflow.py --write --output "$(ONTOLOGY_GAP_REVIEW_OUTPUT)" $(if $(ONTOLOGY_GAP_REVIEW_GENERATED_ARTIFACT),--generated-artifact "$(ONTOLOGY_GAP_REVIEW_GENERATED_ARTIFACT)",)
+
+.PHONY: ontology-owner-decision-import-v2
+ontology-owner-decision-import-v2:
+	@$(PYTHON) tools/ontology_owner_decision_import_v2.py --write --output "$(ONTOLOGY_OWNER_DECISION_IMPORT_V2_OUTPUT)" --decision-import-preview "$(ONTOLOGY_OWNER_DECISION_IMPORT_V2_DECISION_PREVIEW)" --closed-loop-evidence "$(ONTOLOGY_OWNER_DECISION_IMPORT_V2_CLOSED_LOOP)" $(if $(ONTOLOGY_OWNER_DECISION_IMPORT_V2_GAP_REVIEW),--gap-review-workflow "$(ONTOLOGY_OWNER_DECISION_IMPORT_V2_GAP_REVIEW)",) $(if $(ONTOLOGY_OWNER_DECISION_IMPORT_V2_VALIDATION_REPORT),--validation-report "$(ONTOLOGY_OWNER_DECISION_IMPORT_V2_VALIDATION_REPORT)",) $(if $(ONTOLOGY_OWNER_DECISION_IMPORT_V2_WRITE_GATE_REPORT),--write-gate-report "$(ONTOLOGY_OWNER_DECISION_IMPORT_V2_WRITE_GATE_REPORT)",)
 
 .PHONY: specauthor-generated-artifact-contract
 specauthor-generated-artifact-contract:

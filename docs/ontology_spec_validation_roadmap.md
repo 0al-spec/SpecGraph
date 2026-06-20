@@ -70,3 +70,16 @@ decision import. It groups package gaps, legacy spec validation findings, and
 optional generated artifact gaps by proposed term or relation, preserving source
 specs, affected generated artifact refs, source findings, and recommended owner
 actions. Owner decision import v2 remains the next separate slice.
+
+Proposal `0139` adds that owner decision import v2 slice as a richer read-only
+review surface. It links accepted/rejected Ontology owner decisions back to
+closed-loop evidence, grouped ontology gaps, spec validation findings,
+SpecAuthor write-gate findings, affected review items, and before/after semantic
+status. It remains acknowledgement-only: no ontology package writes, lockfile
+writes, canonical spec mutations, prompt-agent execution, automatic imports, or
+semantic-gate closure.
+
+The next bounded slice after `0139` is the legacy-spec backfill plan: classify
+which current report-only findings should become package updates, aliasing,
+deprecation, or deliberate non-adoption work before enabling stricter gates for
+new/generated artifacts.

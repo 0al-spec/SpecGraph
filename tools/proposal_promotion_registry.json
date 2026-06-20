@@ -1779,5 +1779,18 @@
     "required_provenance_links": [
       "source_draft_ref"
     ]
+  },
+  {
+    "proposal_id": "0139",
+    "source_artifact_class": "working_draft",
+    "source_refs": [
+      "docs/archive/proposal_sources/0139_ontology_owner_decision_import_v2.md"
+    ],
+    "motivating_concern": "Owner decisions can be previewed, but operators need a richer review surface that links accepted/rejected decisions to closed-loop evidence, grouped ontology gaps, spec validation findings, write-gate findings, affected review items, and before/after semantic status.",
+    "normalized_title": "Ontology Owner Decision Import v2",
+    "bounded_scope": "Add a read-only ontology_owner_decision_import_v2 artifact, Make target, tests, documentation, and static publish refresh wiring that links owner decision previews to gap-review groups, compliance findings, write-gate findings, affected review items, linked evidence, and before/after semantic status without importing owner decisions, accepting terms, writing Ontology packages or lockfiles, mutating canonical specs, executing prompt agents, closing semantic gates, or adding SpecSpace UI.",
+    "required_provenance_links": [
+      "source_draft_ref"
+    ]
   }
 ]
