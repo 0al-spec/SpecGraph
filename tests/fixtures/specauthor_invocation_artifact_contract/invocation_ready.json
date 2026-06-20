@@ -1,0 +1,105 @@
+{
+  "artifact_kind": "specauthor_invocation_artifact",
+  "schema_version": 1,
+  "contract_ref": "specgraph.specauthor.invocation-artifact.v0.1",
+  "source_ref": "memory://specauthor-invocation-ready",
+  "canonical_mutations_allowed": false,
+  "tracked_artifacts_written": false,
+  "invocation": {
+    "invocation_id": "specauthor-invocation-0145-ready",
+    "agent_id": "SpecAuthorAgent",
+    "mode": "draft_authoring",
+    "prompt_contract_ref": "docs/proposals/0126_specauthor_claim_calibration_prompt_contract.md",
+    "user_intent": {
+      "text": "Draft a review-only proposal using existing SpecGraph ontology terms.",
+      "source_ref": "operator://local-intent/0145"
+    }
+  },
+  "active_frame": {
+    "project": "SpecGraph",
+    "subsystem": "Application.AgentLayer.SpecificationAuthoring",
+    "agent_layer": "SpecificationAuthoring",
+    "ontology_refs": [
+      "sgcore:Spec"
+    ],
+    "ontology_layer_refs": [
+      "meta"
+    ],
+    "model_applicability_refs": [
+      "org.0al.specgraph.core@0.1.0#modelApplicability"
+    ],
+    "domain_refs": [
+      "specgraph_core"
+    ],
+    "context_refs": [
+      "context.specgraph.agent_layer"
+    ],
+    "target_artifact": "Proposal",
+    "lifecycle_phase": "draft"
+  },
+  "model_applicability": {
+    "package_ref": "org.0al.specgraph.core@0.1.0",
+    "applies_to": {
+      "domains": [
+        "specgraph_core"
+      ],
+      "agentTypes": [
+        "SpecAuthorAgent"
+      ]
+    },
+    "assumption_refs": [
+      "modelApplicability.assumptions.project_local_authority",
+      "modelApplicability.assumptions.human_review_required"
+    ],
+    "invalidation_trigger_refs": [
+      "modelApplicability.invalidationTriggers.ontology_layer_contract_changed",
+      "modelApplicability.invalidationTriggers.specgraph_core_vocabulary_changed"
+    ]
+  },
+  "validation_chain": {
+    "generated_artifact": {
+      "artifact_kind": "generated_spec_artifact",
+      "schema_version": 1,
+      "contract_ref": "specgraph.specauthor.generated-artifact.v0.1",
+      "source_ref": "memory://specauthor-generated-ready"
+    },
+    "generated_artifact_contract_report": {
+      "artifact_kind": "specauthor_generated_artifact_contract_report",
+      "schema_version": 1,
+      "ok": true,
+      "write_gate_ready": true,
+      "would_reject_in_contract": false,
+      "summary": {
+        "finding_count": 0
+      }
+    },
+    "write_gate_report": {
+      "artifact_kind": "specauthor_ontology_write_gate_report",
+      "schema_version": 1,
+      "ok": true,
+      "write_decision": "allow_graph_write",
+      "would_reject_in_hard_gate": false,
+      "summary": {
+        "finding_count": 0
+      }
+    }
+  },
+  "operator_decision": {
+    "decision_state": "pending_review",
+    "reviewer": null,
+    "rationale": null,
+    "may_execute_prompt_agent": false,
+    "may_write_ontology_package": false,
+    "may_write_ontology_lockfile": false,
+    "may_mutate_canonical_specs": false,
+    "may_import_owner_decision": false
+  },
+  "authority_boundary": {
+    "may_execute_prompt_agent": false,
+    "may_write_ontology_package": false,
+    "may_write_ontology_lockfile": false,
+    "may_mutate_canonical_specs": false,
+    "may_mark_candidate_accepted": false,
+    "may_import_owner_decision": false
+  }
+}

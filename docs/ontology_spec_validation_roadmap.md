@@ -59,8 +59,8 @@ ontology/domain/context, target artifact metadata, draft payload, term/gap
 records, calibrated claims, and review-only materialization intent. Only then
 should the artifact be handed to the ontology write gate.
 
-The next bounded slice after `0137` is the SpecAuthor invocation wrapper: a
-typed invocation artifact that links user intent, active ontology context,
+Proposal `0145` adds the SpecAuthor invocation wrapper: a typed invocation
+artifact that links user intent, active ontology context, model applicability,
 generated artifact, contract report, write-gate report, and final operator
 decision without executing prompts inside supervisor or mutating canonical
 specs directly.

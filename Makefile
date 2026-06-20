@@ -31,6 +31,8 @@ SPECAUTHOR_GENERATED_ARTIFACT_CONTRACT_ARTIFACT ?= tests/fixtures/specauthor_gen
 SPECAUTHOR_GENERATED_ARTIFACT_CONTRACT_OUTPUT ?= runs/specauthor_generated_artifact_contract_report.json
 SPECAUTHOR_ONTOLOGY_WRITE_GATE_ARTIFACT ?= tests/fixtures/specauthor_ontology_write_gate/generated_spec_review_required.json
 SPECAUTHOR_ONTOLOGY_WRITE_GATE_OUTPUT ?= runs/specauthor_ontology_write_gate_report.json
+SPECAUTHOR_INVOCATION_ARTIFACT_CONTRACT_ARTIFACT ?= tests/fixtures/specauthor_invocation_artifact_contract/invocation_ready.json
+SPECAUTHOR_INVOCATION_ARTIFACT_CONTRACT_OUTPUT ?= runs/specauthor_invocation_artifact_contract_report.json
 
 .DEFAULT_GOAL := help
 
@@ -42,6 +44,7 @@ PYTHON_TARGETS := viewer-surfaces dashboard backlog next-move spec-activity grap
 	ontology-term-binding-gate ontology-gap-review legacy-spec-ontology-backfill-plan \
 	ontology-owner-decision-import-v2 \
 	specauthor-generated-artifact-contract specauthor-ontology-write-gate \
+	specauthor-invocation-artifact-contract \
 	proposal-work-claims proposal-work-claims-gate proposal-id \
 	metrics-delivery metrics-feedback metrics-source-promotion metric-signals metric-thresholds \
 	metric-packs metric-pack-drift metric-pack-adapters metric-pack-runs metric-pricing model-usage \
@@ -253,6 +256,10 @@ specauthor-generated-artifact-contract:
 .PHONY: specauthor-ontology-write-gate
 specauthor-ontology-write-gate:
 	@$(PYTHON) tools/specauthor_ontology_write_gate.py --artifact "$(SPECAUTHOR_ONTOLOGY_WRITE_GATE_ARTIFACT)" --output "$(SPECAUTHOR_ONTOLOGY_WRITE_GATE_OUTPUT)"
+
+.PHONY: specauthor-invocation-artifact-contract
+specauthor-invocation-artifact-contract:
+	@$(PYTHON) tools/specauthor_invocation_artifact_contract.py --artifact "$(SPECAUTHOR_INVOCATION_ARTIFACT_CONTRACT_ARTIFACT)" --output "$(SPECAUTHOR_INVOCATION_ARTIFACT_CONTRACT_OUTPUT)"
 
 .PHONY: metrics-delivery
 metrics-delivery:

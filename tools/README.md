@@ -223,6 +223,15 @@ Supervisor modes:
   ontology/domain/context, compose with the term binding gate, require F/G/R on
   strong claims, and emit `runs/specauthor_ontology_write_gate_report.json`
   without mutating canonical specs or Ontology packages.
+- `tools/specauthor_invocation_artifact_contract.py`: typed invocation boundary
+  validator introduced by proposal 0145. Use
+  `make specauthor-invocation-artifact-contract
+  SPECAUTHOR_INVOCATION_ARTIFACT_CONTRACT_ARTIFACT=<json>` to link operator
+  intent, active ontology/domain/context/layer/applicability frame,
+  generated artifact contract report, write-gate report, and operator decision
+  state without executing prompt agents or mutating canonical specs.
+  The report is written to
+  `runs/specauthor_invocation_artifact_contract_report.json`.
 - `--build-ontology-supervisor-semantic-gate`: refresh the same ontology
   semantic surfaces through the supervisor entrypoint and print a compact gate
   report for `runs/ontology_supervisor_semantic_gate.json` without running
