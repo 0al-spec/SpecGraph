@@ -18,6 +18,9 @@ ONTOLOGY_TERM_BINDING_ARTIFACT ?= tests/fixtures/ontology_term_binding/generated
 ONTOLOGY_TERM_BINDING_GATE_OUTPUT ?= runs/ontology_term_binding_gate_report.json
 ONTOLOGY_GAP_REVIEW_GENERATED_ARTIFACT ?=
 ONTOLOGY_GAP_REVIEW_OUTPUT ?= runs/ontology_gap_review_workflow.json
+LEGACY_SPEC_ONTOLOGY_BACKFILL_PLAN_OUTPUT ?= runs/legacy_spec_ontology_backfill_plan.json
+LEGACY_SPEC_ONTOLOGY_BACKFILL_PLAN_VALIDATION_REPORT ?=
+LEGACY_SPEC_ONTOLOGY_BACKFILL_PLAN_GAP_REVIEW ?=
 ONTOLOGY_OWNER_DECISION_IMPORT_V2_OUTPUT ?= runs/ontology_owner_decision_import_v2.json
 ONTOLOGY_OWNER_DECISION_IMPORT_V2_DECISION_PREVIEW ?= runs/ontology_decision_import_preview.json
 ONTOLOGY_OWNER_DECISION_IMPORT_V2_CLOSED_LOOP ?= runs/ontology_closed_loop_evidence.json
@@ -36,7 +39,8 @@ PYTHON_TARGETS := viewer-surfaces dashboard backlog next-move spec-activity grap
 	external-consumer-evidence ontology-imports ontology-imports-public \
 	ontology-package-validate ontology-package-preview ontology-package-gaps \
 	spec-ontology-bindings spec-ontology-validation \
-	ontology-term-binding-gate ontology-gap-review ontology-owner-decision-import-v2 \
+	ontology-term-binding-gate ontology-gap-review legacy-spec-ontology-backfill-plan \
+	ontology-owner-decision-import-v2 \
 	specauthor-generated-artifact-contract specauthor-ontology-write-gate \
 	proposal-work-claims proposal-work-claims-gate proposal-id \
 	metrics-delivery metrics-feedback metrics-source-promotion metric-signals metric-thresholds \
@@ -81,10 +85,11 @@ help:
 			'  make ontology-package-gaps     Preview project-local ontology package gaps' \
 			'  make spec-ontology-bindings    Build report-only legacy spec ontology bindings' \
 				'  make spec-ontology-validation  Build report-only spec ontology validation report' \
-				'  make ontology-term-binding-gate ONTOLOGY_TERM_BINDING_ARTIFACT=<json>' \
-				'  make ontology-gap-review ONTOLOGY_GAP_REVIEW_GENERATED_ARTIFACT=<json>' \
-				'  make ontology-owner-decision-import-v2 Build read-only owner decision import v2 review JSON' \
-				'  make specauthor-generated-artifact-contract SPECAUTHOR_GENERATED_ARTIFACT_CONTRACT_ARTIFACT=<json>' \
+					'  make ontology-term-binding-gate ONTOLOGY_TERM_BINDING_ARTIFACT=<json>' \
+					'  make ontology-gap-review ONTOLOGY_GAP_REVIEW_GENERATED_ARTIFACT=<json>' \
+					'  make legacy-spec-ontology-backfill-plan Build review-first legacy spec backfill plan JSON' \
+					'  make ontology-owner-decision-import-v2 Build read-only owner decision import v2 review JSON' \
+					'  make specauthor-generated-artifact-contract SPECAUTHOR_GENERATED_ARTIFACT_CONTRACT_ARTIFACT=<json>' \
 			'  make specauthor-ontology-write-gate SPECAUTHOR_ONTOLOGY_WRITE_GATE_ARTIFACT=<json>' \
 		'  make metrics-delivery         Refresh Metrics delivery workflow JSON' \
 		'  make metrics-feedback         Refresh Metrics feedback JSON' \
@@ -232,6 +237,10 @@ ontology-term-binding-gate:
 .PHONY: ontology-gap-review
 ontology-gap-review:
 	@$(PYTHON) tools/ontology_gap_review_workflow.py --write --output "$(ONTOLOGY_GAP_REVIEW_OUTPUT)" $(if $(ONTOLOGY_GAP_REVIEW_GENERATED_ARTIFACT),--generated-artifact "$(ONTOLOGY_GAP_REVIEW_GENERATED_ARTIFACT)",)
+
+.PHONY: legacy-spec-ontology-backfill-plan
+legacy-spec-ontology-backfill-plan:
+	@$(PYTHON) tools/legacy_spec_ontology_backfill_plan.py --write --output "$(LEGACY_SPEC_ONTOLOGY_BACKFILL_PLAN_OUTPUT)" $(if $(LEGACY_SPEC_ONTOLOGY_BACKFILL_PLAN_VALIDATION_REPORT),--validation-report "$(LEGACY_SPEC_ONTOLOGY_BACKFILL_PLAN_VALIDATION_REPORT)",) $(if $(LEGACY_SPEC_ONTOLOGY_BACKFILL_PLAN_GAP_REVIEW),--gap-review-workflow "$(LEGACY_SPEC_ONTOLOGY_BACKFILL_PLAN_GAP_REVIEW)",)
 
 .PHONY: ontology-owner-decision-import-v2
 ontology-owner-decision-import-v2:

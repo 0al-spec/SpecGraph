@@ -1792,5 +1792,18 @@
     "required_provenance_links": [
       "source_draft_ref"
     ]
+  },
+  {
+    "proposal_id": "0140",
+    "source_artifact_class": "working_draft",
+    "source_refs": [
+      "docs/archive/proposal_sources/0140_legacy_spec_ontology_backfill_plan.md"
+    ],
+    "motivating_concern": "SpecGraph has a legacy spec corpus that predates ontology adoption, and operators need a review-first plan that separates clean specs, warning-only specs, new-term or alias/deprecation decision needs, relation review needs, and small PR batch candidates without bulk rewriting canonical specs.",
+    "normalized_title": "Legacy Spec Ontology Backfill Plan",
+    "bounded_scope": "Add a read-only legacy_spec_ontology_backfill_plan artifact, Make target, tests, documentation, and static publish refresh wiring that classifies legacy specs by ontology validation findings and emits small reviewed PR batch candidates without writing ontology packages or lockfiles, mutating canonical specs, accepting ontology terms, importing owner decisions, executing prompt agents, closing semantic gates, or adding SpecSpace UI.",
+    "required_provenance_links": [
+      "source_draft_ref"
+    ]
   }
 ]
