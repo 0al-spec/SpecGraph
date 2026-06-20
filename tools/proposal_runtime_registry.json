@@ -7639,5 +7639,67 @@
         "pattern": "does not treat the owner decision as automatic authority"
       }
     ]
+  },
+  {
+    "proposal_id": "0140",
+    "posture": "synchronous_runtime_slice",
+    "runtime_surfaces": [
+      "docs/proposals/0140_legacy_spec_ontology_backfill_plan.md",
+      "docs/archive/proposal_sources/0140_legacy_spec_ontology_backfill_plan.md",
+      "tools/legacy_spec_ontology_backfill_plan.py",
+      "tools/build_static_artifact_bundle.py",
+      "Makefile",
+      "tools/README.md",
+      "docs/ontology_spec_validation_roadmap.md",
+      "docs/static_artifact_publish.md",
+      "tests/test_legacy_spec_ontology_backfill_plan.py",
+      "tests/test_static_artifact_bundle.py"
+    ],
+    "runtime_markers": [
+      {
+        "path": "Makefile",
+        "pattern": "legacy-spec-ontology-backfill-plan"
+      },
+      {
+        "path": "tools/legacy_spec_ontology_backfill_plan.py",
+        "pattern": "legacy_spec_ontology_backfill_plan"
+      },
+      {
+        "path": "tools/legacy_spec_ontology_backfill_plan.py",
+        "pattern": "small_pr_batches"
+      },
+      {
+        "path": "tools/build_static_artifact_bundle.py",
+        "pattern": "legacy-spec-ontology-backfill-plan"
+      }
+    ],
+    "validation_markers": [
+      {
+        "path": "tests/test_legacy_spec_ontology_backfill_plan.py",
+        "pattern": "test_legacy_spec_backfill_plan_classifies_review_lanes_and_batches"
+      },
+      {
+        "path": "tests/test_legacy_spec_ontology_backfill_plan.py",
+        "pattern": "test_legacy_spec_backfill_plan_is_clear_without_findings"
+      },
+      {
+        "path": "tests/test_legacy_spec_ontology_backfill_plan.py",
+        "pattern": "test_legacy_spec_backfill_plan_cli_writes_report"
+      },
+      {
+        "path": "tests/test_static_artifact_bundle.py",
+        "pattern": "legacy-spec-ontology-backfill-plan"
+      }
+    ],
+    "observation_markers": [
+      {
+        "path": "docs/proposals/0140_legacy_spec_ontology_backfill_plan.md",
+        "pattern": "The next step is not mutation"
+      },
+      {
+        "path": "docs/proposals/0140_legacy_spec_ontology_backfill_plan.md",
+        "pattern": "Bulk rewriting legacy specs"
+      }
+    ]
   }
 ]

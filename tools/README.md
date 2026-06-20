@@ -194,6 +194,12 @@ Supervisor modes:
   artifacts that contain `ontology_gaps`. The workflow recommends owner review
   actions but does not import decisions, write ontology packages, or mutate
   specs.
+- `tools/legacy_spec_ontology_backfill_plan.py`: review-first legacy spec
+  backfill planner introduced by proposal 0140. Use `make
+  legacy-spec-ontology-backfill-plan` to emit
+  `runs/legacy_spec_ontology_backfill_plan.json`, classifying clean specs,
+  warning-only specs, new-term/alias decision needs, relation review needs, and
+  small PR batch candidates without mutating legacy specs or ontology packages.
 - `tools/ontology_owner_decision_import_v2.py`: read-only owner-decision import
   v2 review surface introduced by proposal 0139. Use `make
   ontology-owner-decision-import-v2` to emit

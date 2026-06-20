@@ -79,7 +79,13 @@ status. It remains acknowledgement-only: no ontology package writes, lockfile
 writes, canonical spec mutations, prompt-agent execution, automatic imports, or
 semantic-gate closure.
 
-The next bounded slice after `0139` is the legacy-spec backfill plan: classify
-which current report-only findings should become package updates, aliasing,
-deprecation, or deliberate non-adoption work before enabling stricter gates for
-new/generated artifacts.
+Proposal `0140` adds that legacy-spec backfill plan. It classifies the current
+report-only legacy corpus into clean specs, warning-only specs, new-term or
+alias/deprecation decision needs, relation review needs, and small reviewed PR
+batch candidates. It remains plan-only: no bulk rewrite, package write, lockfile
+write, canonical spec mutation, or prompt-agent execution.
+
+The next bounded slice after `0140` is the SpecSpace Ontology Workbench: consume
+the package metadata, normalized IR, gaps, compliance findings, generated
+write-gate reports, owner decisions, and legacy backfill batches in one
+consolidated read-only UI surface.

@@ -92,6 +92,9 @@ def make_repo(root: Path) -> Path:
         "ontology_gap_review_workflow.json": {
             "artifact_kind": "ontology_gap_review_workflow",
         },
+        "legacy_spec_ontology_backfill_plan.json": {
+            "artifact_kind": "legacy_spec_ontology_backfill_plan",
+        },
         "ontology_owner_decision_import_v2.json": {
             "artifact_kind": "ontology_owner_decision_import_v2",
         },
@@ -922,6 +925,7 @@ def test_refresh_publish_surfaces_builds_viewer_implementation_and_agent_surface
         "spec-ontology-bindings",
         "spec-ontology-validation",
         "ontology-gap-review",
+        "legacy-spec-ontology-backfill-plan",
         "ontology-imports-public",
         "ontology-owner-decision-import-v2",
     ]

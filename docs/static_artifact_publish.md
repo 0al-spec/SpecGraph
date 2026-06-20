@@ -88,7 +88,9 @@ The order matters and is intentionally two-pass:
 6. `make ontology-imports` builds the compiler-backed SpecGraph Core ontology
    package, binding, gap, compatibility-diff, governance, and adapter-smoke
    artifacts used by SpecSpace.
-7. `make ontology-gap-review` builds the public-safe grouped gap review surface.
+7. `make ontology-gap-review` and `make legacy-spec-ontology-backfill-plan`
+   build the public-safe grouped gap review and legacy backfill planning
+   surfaces.
 8. `make ontology-imports-public` overwrites only the public-unsafe
    ontology review/lint-context surfaces with placeholders or tombstones so
    static hosts that do not delete old remote files cannot keep serving demo
