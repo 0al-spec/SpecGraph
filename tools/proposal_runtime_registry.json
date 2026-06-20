@@ -7884,5 +7884,53 @@
         "pattern": "does not infer applicability from prose"
       }
     ]
+  },
+  {
+    "proposal_id": "0145",
+    "posture": "synchronous_runtime_slice",
+    "runtime_surfaces": [
+      "docs/proposals/0145_specauthor_invocation_artifact_contract.md",
+      "docs/archive/proposal_sources/0145_specauthor_invocation_artifact_contract.md",
+      "tools/specauthor_invocation_artifact_contract.py",
+      "tests/test_specauthor_invocation_artifact_contract.py",
+      "tests/fixtures/specauthor_invocation_artifact_contract/invocation_ready.json",
+      "tests/fixtures/specauthor_invocation_artifact_contract/invocation_review_required.json",
+      "Makefile",
+      "tools/README.md"
+    ],
+    "runtime_markers": [
+      {
+        "path": "tools/specauthor_invocation_artifact_contract.py",
+        "pattern": "specauthor_invocation_artifact"
+      },
+      {
+        "path": "tools/specauthor_invocation_artifact_contract.py",
+        "pattern": "model_applicability_refs"
+      },
+      {
+        "path": "tools/specauthor_invocation_artifact_contract.py",
+        "pattern": "validation_chain"
+      }
+    ],
+    "validation_markers": [
+      {
+        "path": "tests/test_specauthor_invocation_artifact_contract.py",
+        "pattern": "test_specauthor_invocation_artifact_contract_allows_ready_invocation"
+      },
+      {
+        "path": "tests/test_specauthor_invocation_artifact_contract.py",
+        "pattern": "test_specauthor_invocation_artifact_contract_rejects_missing_applicability"
+      }
+    ],
+    "observation_markers": [
+      {
+        "path": "docs/proposals/0145_specauthor_invocation_artifact_contract.md",
+        "pattern": "This proposal does not execute prompt agents"
+      },
+      {
+        "path": "docs/proposals/0145_specauthor_invocation_artifact_contract.md",
+        "pattern": "does not infer missing ontology context or model applicability"
+      }
+    ]
   }
 ]

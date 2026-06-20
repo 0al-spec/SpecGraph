@@ -1,0 +1,92 @@
+{
+  "artifact_kind": "specauthor_invocation_artifact",
+  "schema_version": 1,
+  "contract_ref": "specgraph.specauthor.invocation-artifact.v0.1",
+  "source_ref": "memory://specauthor-invocation-review-required",
+  "canonical_mutations_allowed": false,
+  "tracked_artifacts_written": false,
+  "invocation": {
+    "invocation_id": "specauthor-invocation-0145-review-required",
+    "agent_id": "SpecAuthorAgent",
+    "mode": "draft_authoring",
+    "prompt_contract_ref": "docs/proposals/0126_specauthor_claim_calibration_prompt_contract.md",
+    "user_intent": {
+      "text": ""
+    }
+  },
+  "active_frame": {
+    "project": "SpecGraph",
+    "subsystem": "Application.AgentLayer.SpecificationAuthoring",
+    "agent_layer": "SpecificationAuthoring",
+    "ontology_refs": [
+      "sgcore:Spec"
+    ],
+    "ontology_layer_refs": [
+      "meta"
+    ],
+    "model_applicability_refs": [],
+    "domain_refs": [
+      "unrelated_product_domain"
+    ],
+    "context_refs": [
+      "context.specgraph.agent_layer"
+    ],
+    "target_artifact": "Proposal",
+    "lifecycle_phase": "draft"
+  },
+  "model_applicability": {
+    "package_ref": "org.0al.specgraph.core@0.1.0",
+    "applies_to": {
+      "domains": [
+        "specgraph_core"
+      ]
+    },
+    "assumption_refs": [],
+    "invalidation_trigger_refs": []
+  },
+  "validation_chain": {
+    "generated_artifact": {
+      "artifact_kind": "generated_spec_artifact",
+      "schema_version": 1,
+      "contract_ref": "specgraph.specauthor.generated-artifact.v0.1",
+      "source_ref": "memory://specauthor-generated-review-required"
+    },
+    "generated_artifact_contract_report": {
+      "artifact_kind": "specauthor_generated_artifact_contract_report",
+      "schema_version": 1,
+      "ok": false,
+      "write_gate_ready": false,
+      "would_reject_in_contract": true,
+      "summary": {
+        "finding_count": 1
+      }
+    },
+    "write_gate_report": {
+      "artifact_kind": "specauthor_ontology_write_gate_report",
+      "schema_version": 1,
+      "ok": false,
+      "write_decision": "reject_graph_write",
+      "would_reject_in_hard_gate": true,
+      "summary": {
+        "finding_count": 1
+      }
+    }
+  },
+  "operator_decision": {
+    "decision_state": "approved_for_materialization",
+    "reviewer": "",
+    "may_execute_prompt_agent": true,
+    "may_write_ontology_package": false,
+    "may_write_ontology_lockfile": false,
+    "may_mutate_canonical_specs": true,
+    "may_import_owner_decision": false
+  },
+  "authority_boundary": {
+    "may_execute_prompt_agent": true,
+    "may_write_ontology_package": false,
+    "may_write_ontology_lockfile": false,
+    "may_mutate_canonical_specs": false,
+    "may_mark_candidate_accepted": false,
+    "may_import_owner_decision": false
+  }
+}

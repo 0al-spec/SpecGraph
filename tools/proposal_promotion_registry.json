@@ -1857,5 +1857,18 @@
     "required_provenance_links": [
       "source_draft_ref"
     ]
+  },
+  {
+    "proposal_id": "0145",
+    "source_artifact_class": "working_draft",
+    "source_refs": [
+      "docs/archive/proposal_sources/0145_specauthor_invocation_artifact_contract.md"
+    ],
+    "motivating_concern": "SpecAuthorAgent now has generated artifact and write-gate contracts, but it still needs a typed invocation boundary that links user intent, active ontology/domain/context/layer/applicability frame, validation reports, and operator decision state without executing prompts inside the supervisor.",
+    "normalized_title": "SpecAuthor Invocation Artifact Contract",
+    "bounded_scope": "Add a deterministic specauthor_invocation_artifact contract validator, Make target, fixtures, tests, and documentation requiring SpecAuthorAgent invocation metadata, active ontology/domain/context/layer/model-applicability frame, generated artifact contract report, write-gate report, and acknowledgement-only operator decision state, without executing prompt agents, changing prompts, invoking write gates automatically, materializing specs, mutating canonical specs, accepting ontology terms, importing owner decisions, writing Ontology packages or lockfiles, closing semantic gates, or adding SpecSpace UI.",
+    "required_provenance_links": [
+      "source_draft_ref"
+    ]
   }
 ]
