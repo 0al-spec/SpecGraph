@@ -7526,5 +7526,56 @@
         "pattern": "materialization_intent"
       }
     ]
+  },
+  {
+    "proposal_id": "0138",
+    "posture": "synchronous_runtime_slice",
+    "runtime_surfaces": [
+      "docs/proposals/0138_ontology_gap_review_workflow.md",
+      "docs/archive/proposal_sources/0138_ontology_gap_review_workflow.md",
+      "tools/ontology_gap_review_workflow.py",
+      "Makefile",
+      "tools/README.md",
+      "docs/ontology_spec_validation_roadmap.md",
+      "tests/test_ontology_gap_review_workflow.py"
+    ],
+    "runtime_markers": [
+      {
+        "path": "Makefile",
+        "pattern": "ontology-gap-review"
+      },
+      {
+        "path": "tools/ontology_gap_review_workflow.py",
+        "pattern": "ontology_gap_review_workflow"
+      },
+      {
+        "path": "tools/ontology_gap_review_workflow.py",
+        "pattern": "recommended_owner_action"
+      }
+    ],
+    "validation_markers": [
+      {
+        "path": "tests/test_ontology_gap_review_workflow.py",
+        "pattern": "test_ontology_gap_review_workflow_groups_package_spec_and_generated_gaps"
+      },
+      {
+        "path": "tests/test_ontology_gap_review_workflow.py",
+        "pattern": "test_ontology_gap_review_workflow_is_clear_without_gaps"
+      },
+      {
+        "path": "tests/test_ontology_gap_review_workflow.py",
+        "pattern": "test_ontology_gap_review_workflow_cli_writes_report"
+      }
+    ],
+    "observation_markers": [
+      {
+        "path": "docs/proposals/0138_ontology_gap_review_workflow.md",
+        "pattern": "read-only or acknowledgement-only"
+      },
+      {
+        "path": "docs/proposals/0138_ontology_gap_review_workflow.md",
+        "pattern": "Owner decision import v2 remains the next separate slice"
+      }
+    ]
   }
 ]

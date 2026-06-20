@@ -1766,5 +1766,18 @@
     "required_provenance_links": [
       "source_draft_ref"
     ]
+  },
+  {
+    "proposal_id": "0138",
+    "source_artifact_class": "working_draft",
+    "source_refs": [
+      "docs/archive/proposal_sources/0138_ontology_gap_review_workflow.md"
+    ],
+    "motivating_concern": "Ontology gaps are visible across package previews, legacy spec validation, and generated artifacts, but operators need a grouped review workflow that links proposed terms or relations to source specs, affected generated artifacts, and recommended owner actions.",
+    "normalized_title": "Ontology Gap Review Workflow",
+    "bounded_scope": "Add a read-only ontology_gap_review_workflow artifact, Make target, tests, and documentation that groups package gaps, spec validation findings, and optional generated artifact ontology_gaps by proposed term or relation with source specs, affected generated artifacts, source findings, and recommended owner actions, without importing owner decisions, accepting ontology terms, writing Ontology packages or lockfiles, mutating canonical specs, executing prompt agents, or adding SpecSpace UI.",
+    "required_provenance_links": [
+      "source_draft_ref"
+    ]
   }
 ]
