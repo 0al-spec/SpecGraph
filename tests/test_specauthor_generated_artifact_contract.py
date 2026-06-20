@@ -181,6 +181,23 @@ def test_specauthor_generated_artifact_contract_rejects_claim_layer_outside_fram
     assert "strong_claim_layer_outside_active_frame" in finding_ids(report)
 
 
+def test_specauthor_generated_artifact_contract_rejects_malformed_layer_refs() -> None:
+    module = load_contract_module()
+    artifact = load_fixture(READY_FIXTURE)
+    artifact["active_frame"]["ontology_layer_refs"] = ["meta", ""]
+    artifact["claims"][0]["ontology_layer_refs"] = ["meta", 123]
+
+    report = module.build_specauthor_generated_artifact_contract_report(
+        artifact,
+        artifact_path=READY_FIXTURE,
+    )
+
+    ids = finding_ids(report)
+    assert report["ok"] is False
+    assert "active_frame_invalid_ontology_layers" in ids
+    assert "strong_claim_invalid_ontology_layers" in ids
+
+
 def test_specauthor_generated_artifact_contract_rejects_missing_producer_invocation() -> None:
     module = load_contract_module()
     artifact = load_fixture(READY_FIXTURE)

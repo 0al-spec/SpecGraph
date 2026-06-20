@@ -160,6 +160,24 @@ def test_specauthor_write_gate_rejects_claim_layer_outside_active_frame() -> Non
     assert "strong_claim_layer_outside_active_frame" in finding_ids(report)
 
 
+def test_specauthor_write_gate_rejects_malformed_ontology_layer_refs() -> None:
+    module = load_gate_module()
+    artifact = load_fixture(READY_FIXTURE)
+    artifact["active_frame"]["ontology_layer_refs"] = ["meta", ""]
+    artifact["claims"][0]["ontology_layer_refs"] = ["meta", 123]
+
+    report = module.build_specauthor_ontology_write_gate_report(
+        artifact,
+        term_policy=load_policy(),
+        artifact_path=READY_FIXTURE,
+    )
+
+    ids = finding_ids(report)
+    assert report["ok"] is False
+    assert "active_frame_invalid_ontology_layers" in ids
+    assert "strong_claim_invalid_ontology_layers" in ids
+
+
 def test_specauthor_write_gate_rejects_low_r_architectural_decision() -> None:
     module = load_gate_module()
     artifact = load_fixture(READY_FIXTURE)

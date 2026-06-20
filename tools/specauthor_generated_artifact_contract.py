@@ -84,6 +84,14 @@ def _text_list(value: Any) -> list[str]:
     return [item.strip() for item in _list(value) if isinstance(item, str) and bool(item.strip())]
 
 
+def _invalid_text_list_entries(value: Any) -> list[int]:
+    if not isinstance(value, list):
+        return []
+    return [
+        index for index, item in enumerate(value) if not isinstance(item, str) or not item.strip()
+    ]
+
+
 def _is_strong_claim(claim: dict[str, Any]) -> bool:
     claim_type = _text(claim.get("type"), "claim")
     return claim_type in STRONG_CLAIM_TYPES or _text(claim.get("strength")) == "strong"
@@ -299,7 +307,8 @@ def _validate_active_frame(
         for layer in _text_list(frame.get("ontology_layer_refs"))
         if layer not in ONTOLOGY_LAYERS
     ]
-    if invalid_layers:
+    invalid_layer_entries = _invalid_text_list_entries(frame.get("ontology_layer_refs"))
+    if invalid_layers or invalid_layer_entries:
         findings.append(
             _finding(
                 finding_id="active_frame_invalid_ontology_layers",
@@ -308,6 +317,7 @@ def _validate_active_frame(
                 source_ref=source_ref,
                 evidence={
                     "invalid_layers": invalid_layers,
+                    "invalid_entries": invalid_layer_entries,
                     "known_layers": sorted(ONTOLOGY_LAYERS),
                 },
             )
@@ -509,7 +519,12 @@ def _validate_claim_layer_context(
         claim = _dict(raw_claim)
         if not claim or not _is_strong_claim(claim):
             continue
-        claim_layers = _text_list(claim.get("ontology_layer_refs") or claim.get("layer_refs"))
+        raw_claim_layers = (
+            claim.get("ontology_layer_refs")
+            if "ontology_layer_refs" in claim
+            else claim.get("layer_refs")
+        )
+        claim_layers = _text_list(raw_claim_layers)
         claim_ref = _text(claim.get("id"), f"claim[{index}]")
         if not claim_layers:
             findings.append(
@@ -522,8 +537,9 @@ def _validate_claim_layer_context(
                 )
             )
             continue
+        invalid_entries = _invalid_text_list_entries(raw_claim_layers)
         invalid_layers = [layer for layer in claim_layers if layer not in ONTOLOGY_LAYERS]
-        if invalid_layers:
+        if invalid_layers or invalid_entries:
             findings.append(
                 _finding(
                     finding_id="strong_claim_invalid_ontology_layers",
@@ -533,6 +549,7 @@ def _validate_claim_layer_context(
                     evidence={
                         "claim": claim_ref,
                         "invalid_layers": invalid_layers,
+                        "invalid_entries": invalid_entries,
                         "known_layers": sorted(ONTOLOGY_LAYERS),
                     },
                 )
