@@ -1753,5 +1753,18 @@
     "required_provenance_links": [
       "source_draft_ref"
     ]
+  },
+  {
+    "proposal_id": "0137",
+    "source_artifact_class": "working_draft",
+    "source_refs": [
+      "docs/archive/proposal_sources/0137_specauthor_generated_artifact_contract.md"
+    ],
+    "motivating_concern": "SpecAuthorAgent output needs an explicit generated_spec_artifact producer contract before downstream ontology write-gate validation so prompt output, review material, and graph-ready material do not blur together.",
+    "normalized_title": "SpecAuthor Generated Artifact Contract",
+    "bounded_scope": "Add a deterministic producer-side generated_spec_artifact contract validator, Make target, fixtures, tests, and documentation requiring SpecAuthorAgent metadata, active ontology/domain/context, review-scoped target artifact metadata, draft payload, term/gap/claim record lists, and review-only materialization intent before downstream write-gate validation, without running prompt agents, changing prompts, parsing free-form markdown, invoking write gates automatically, materializing specs, mutating canonical specs, accepting ontology terms, or writing Ontology packages or lockfiles.",
+    "required_provenance_links": [
+      "source_draft_ref"
+    ]
   }
 ]

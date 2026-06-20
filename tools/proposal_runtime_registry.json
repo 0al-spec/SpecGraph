@@ -7473,5 +7473,58 @@
         "pattern": "does not infer semantics from prose"
       }
     ]
+  },
+  {
+    "proposal_id": "0137",
+    "posture": "synchronous_runtime_slice",
+    "runtime_surfaces": [
+      "docs/proposals/0137_specauthor_generated_artifact_contract.md",
+      "docs/archive/proposal_sources/0137_specauthor_generated_artifact_contract.md",
+      "tools/specauthor_generated_artifact_contract.py",
+      "Makefile",
+      "tools/README.md",
+      "docs/ontology_spec_validation_roadmap.md",
+      "tests/test_specauthor_generated_artifact_contract.py",
+      "tests/fixtures/specauthor_generated_artifact_contract/generated_spec_ready.json",
+      "tests/fixtures/specauthor_generated_artifact_contract/generated_spec_review_required.json"
+    ],
+    "runtime_markers": [
+      {
+        "path": "Makefile",
+        "pattern": "specauthor-generated-artifact-contract"
+      },
+      {
+        "path": "tools/specauthor_generated_artifact_contract.py",
+        "pattern": "specauthor_generated_artifact_contract_report"
+      },
+      {
+        "path": "tools/specauthor_generated_artifact_contract.py",
+        "pattern": "write_gate_ready"
+      }
+    ],
+    "validation_markers": [
+      {
+        "path": "tests/test_specauthor_generated_artifact_contract.py",
+        "pattern": "test_specauthor_generated_artifact_contract_allows_review_bound_artifact"
+      },
+      {
+        "path": "tests/test_specauthor_generated_artifact_contract.py",
+        "pattern": "test_specauthor_generated_artifact_contract_rejects_authority_expansion"
+      },
+      {
+        "path": "tests/test_specauthor_generated_artifact_contract.py",
+        "pattern": "test_specauthor_generated_artifact_contract_strict_cli_exits_nonzero"
+      }
+    ],
+    "observation_markers": [
+      {
+        "path": "docs/proposals/0137_specauthor_generated_artifact_contract.md",
+        "pattern": "precedes it"
+      },
+      {
+        "path": "docs/proposals/0137_specauthor_generated_artifact_contract.md",
+        "pattern": "materialization_intent"
+      }
+    ]
   }
 ]

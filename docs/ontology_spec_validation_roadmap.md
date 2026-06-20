@@ -49,3 +49,18 @@ as a legacy corpus. They are not bulk-rewritten when ontology support expands.
   backfilled.
 - SpecSpace remains read-only until owner-decision import and mutation contracts
   are explicitly accepted.
+
+## Next Adoption Slice
+
+Proposal `0137` adds the producer-side `generated_spec_artifact` contract for
+SpecAuthorAgent output. It sits before `0136`: the contract checks that agent
+output is a typed, review-bound artifact with producer metadata, active
+ontology/domain/context, target artifact metadata, draft payload, term/gap
+records, calibrated claims, and review-only materialization intent. Only then
+should the artifact be handed to the ontology write gate.
+
+The next bounded slice after `0137` is the SpecAuthor invocation wrapper: a
+typed invocation artifact that links user intent, active ontology context,
+generated artifact, contract report, write-gate report, and final operator
+decision without executing prompts inside supervisor or mutating canonical
+specs directly.
