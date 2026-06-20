@@ -74,6 +74,64 @@ def test_specauthor_generated_artifact_contract_rejects_authority_expansion() ->
     assert "target_artifact_incomplete" in ids
 
 
+def test_specauthor_generated_artifact_contract_rejects_nested_authority_expansion() -> None:
+    module = load_contract_module()
+    artifact = load_fixture(READY_FIXTURE)
+    artifact["authority_boundary"] = {
+        "may_execute_prompt_agent": True,
+        "may_write_ontology_package": False,
+        "may_write_ontology_lockfile": False,
+        "may_mutate_canonical_specs": True,
+        "may_mark_candidate_accepted": False,
+    }
+
+    report = module.build_specauthor_generated_artifact_contract_report(
+        artifact,
+        artifact_path=READY_FIXTURE,
+    )
+
+    assert report["ok"] is False
+    assert report["write_gate_ready"] is False
+    assert "authority_expansion" in finding_ids(report)
+
+
+def test_specauthor_generated_artifact_contract_rejects_target_artifact_conflict() -> None:
+    module = load_contract_module()
+    artifact = load_fixture(READY_FIXTURE)
+    artifact["active_frame"]["target_artifact"] = "ADR"
+    artifact["target_artifact"]["kind"] = "Proposal"
+
+    report = module.build_specauthor_generated_artifact_contract_report(
+        artifact,
+        artifact_path=READY_FIXTURE,
+    )
+
+    assert report["ok"] is False
+    assert report["write_gate_ready"] is False
+    assert "target_artifact_identity_conflict" in finding_ids(report)
+
+
+def test_specauthor_generated_artifact_contract_rejects_malformed_term_bindings() -> None:
+    module = load_contract_module()
+    artifact = load_fixture(READY_FIXTURE)
+    artifact["term_bindings"] = [
+        {
+            "generated_term": "Spec",
+            "binding_state": "bound_to_accepted_entity",
+        },
+        "sgcore:Node",
+    ]
+
+    report = module.build_specauthor_generated_artifact_contract_report(
+        artifact,
+        artifact_path=READY_FIXTURE,
+    )
+
+    assert report["ok"] is False
+    assert report["write_gate_ready"] is False
+    assert "term_binding_entries_invalid" in finding_ids(report)
+
+
 def test_specauthor_generated_artifact_contract_rejects_missing_context_and_draft() -> None:
     module = load_contract_module()
     artifact = load_fixture(READY_FIXTURE)

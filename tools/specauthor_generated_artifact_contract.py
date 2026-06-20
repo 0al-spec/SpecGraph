@@ -158,6 +158,39 @@ def _validate_root(
                     evidence={field: artifact.get(field)},
                 )
             )
+    authority_boundary = artifact.get("authority_boundary")
+    if authority_boundary is not None and not isinstance(authority_boundary, dict):
+        findings.append(
+            _finding(
+                finding_id="authority_expansion",
+                severity="review_required",
+                message="authority_boundary must not expand producer authority.",
+                source_ref=source_ref,
+                evidence={"authority_boundary": authority_boundary},
+            )
+        )
+    if isinstance(authority_boundary, dict):
+        invalid_boundary_fields = [
+            field
+            for field in (
+                "may_execute_prompt_agent",
+                "may_write_ontology_package",
+                "may_write_ontology_lockfile",
+                "may_mutate_canonical_specs",
+                "may_mark_candidate_accepted",
+            )
+            if authority_boundary.get(field) is not False
+        ]
+        if invalid_boundary_fields:
+            findings.append(
+                _finding(
+                    finding_id="authority_expansion",
+                    severity="review_required",
+                    message="authority_boundary must keep generated artifacts review-only.",
+                    source_ref=source_ref,
+                    evidence={"invalid": invalid_boundary_fields},
+                )
+            )
     return findings
 
 
@@ -263,17 +296,35 @@ def _validate_target_artifact(
         missing.append("target_artifact.intended_status")
     if target.get("canonical_write_intent") is not False:
         missing.append("target_artifact.canonical_write_intent")
-    if not missing:
-        return []
-    return [
-        _finding(
-            finding_id="target_artifact_incomplete",
-            severity="review_required",
-            message="target_artifact must be an explicitly review-scoped draft target.",
-            source_ref=source_ref,
-            evidence={"missing_or_invalid": missing},
+    findings: list[dict[str, Any]] = []
+    if missing:
+        findings.append(
+            _finding(
+                finding_id="target_artifact_incomplete",
+                severity="review_required",
+                message="target_artifact must be an explicitly review-scoped draft target.",
+                source_ref=source_ref,
+                evidence={"missing_or_invalid": missing},
+            )
         )
-    ]
+
+    frame = artifact.get("active_frame")
+    frame_target = _text(_dict(frame).get("target_artifact"))
+    metadata_target = _text(target.get("kind"))
+    if frame_target and metadata_target and frame_target != metadata_target:
+        findings.append(
+            _finding(
+                finding_id="target_artifact_identity_conflict",
+                severity="review_required",
+                message=("active_frame.target_artifact must match target_artifact.kind."),
+                source_ref=source_ref,
+                evidence={
+                    "active_frame.target_artifact": frame_target,
+                    "target_artifact.kind": metadata_target,
+                },
+            )
+        )
+    return findings
 
 
 def _validate_draft(
@@ -371,17 +422,36 @@ def _validate_record_lists(
         for field in ("new_terms", "term_bindings", "ontology_gaps", "claims")
         if not isinstance(artifact.get(field), list)
     ]
-    if not invalid:
-        return []
-    return [
-        _finding(
-            finding_id="record_lists_invalid",
-            severity="review_required",
-            message="generated_spec_artifact requires list-valued term, gap, and claim records.",
-            source_ref=source_ref,
-            evidence={"invalid": invalid},
+    findings: list[dict[str, Any]] = []
+    if invalid:
+        findings.append(
+            _finding(
+                finding_id="record_lists_invalid",
+                severity="review_required",
+                message=(
+                    "generated_spec_artifact requires list-valued term, gap, and claim records."
+                ),
+                source_ref=source_ref,
+                evidence={"invalid": invalid},
+            )
         )
+
+    malformed_term_bindings = [
+        index
+        for index, entry in enumerate(_list(artifact.get("term_bindings")))
+        if not isinstance(entry, dict)
     ]
+    if malformed_term_bindings:
+        findings.append(
+            _finding(
+                finding_id="term_binding_entries_invalid",
+                severity="review_required",
+                message="term_bindings entries must be object records.",
+                source_ref=source_ref,
+                evidence={"invalid_indices": malformed_term_bindings},
+            )
+        )
+    return findings
 
 
 def build_specauthor_generated_artifact_contract_report(
