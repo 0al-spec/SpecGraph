@@ -6,6 +6,8 @@ import subprocess
 import sys
 from pathlib import Path
 
+import pytest
+
 ROOT = Path(__file__).resolve().parents[1]
 TOOL_PATH = ROOT / "tools" / "ontology_owner_decision_import_v2.py"
 
@@ -204,6 +206,57 @@ def test_owner_decision_import_v2_links_accepted_decision_to_gap_and_compliance(
     assert review["after_semantic_status"]["mutates_canonical_specs"] is False
 
 
+def test_owner_decision_import_v2_skips_write_gate_findings_without_generated_refs() -> None:
+    module = load_import_v2_module()
+    gap_workflow = gap_review_workflow()
+    group = gap_workflow["gap_groups"][0]
+    group["affected_generated_artifacts"] = []
+
+    report = module.build_owner_decision_import_v2(
+        decision_import_preview=decision_import_preview("accepted"),
+        closed_loop_evidence=closed_loop_evidence(),
+        gap_review_workflow=gap_workflow,
+        validation_report=validation_report(),
+        write_gate_reports=[write_gate_report()],
+    )
+
+    review = report["decision_import_reviews"][0]
+    assert review["affected_review_items"]["affected_generated_artifacts"] == []
+    assert review["write_gate_findings"] == []
+    assert report["summary"]["write_gate_finding_count"] == 0
+
+
+def test_owner_decision_import_v2_surfaces_ignored_owner_decisions_as_unmatched_reviews() -> None:
+    module = load_import_v2_module()
+    preview = decision_import_preview("accepted")
+    ignored = preview["decision_import_previews"][0]
+    preview["decision_import_previews"] = []
+    preview["ignored_owner_decisions"] = [
+        {
+            **ignored,
+            "reason": "missing_closed_loop_evidence",
+        }
+    ]
+
+    report = module.build_owner_decision_import_v2(
+        decision_import_preview=preview,
+        closed_loop_evidence={},
+        gap_review_workflow={"artifact_kind": "ontology_gap_review_workflow", "gap_groups": []},
+        validation_report={"artifact_kind": "spec_ontology_validation_report", "entries": []},
+    )
+
+    assert report["status"] == "unmatched_decisions"
+    assert report["summary"]["review_count"] == 1
+    assert report["summary"]["unmatched_decision_count"] == 1
+    review = report["decision_import_reviews"][0]
+    assert review["decision_state"] == "accepted"
+    assert review["preview_state"] == "unmatched_decision"
+    assert "decided_by" not in review
+    assert "reason" not in review
+    assert review["after_semantic_status"]["status"] == "owner_decision_without_matching_evidence"
+    assert review["required_operator_action"] == "review_unmatched_owner_decision"
+
+
 def test_owner_decision_import_v2_keeps_rejection_ack_only() -> None:
     module = load_import_v2_module()
 
@@ -278,3 +331,45 @@ def test_owner_decision_import_v2_cli_writes_report(tmp_path: Path) -> None:
     report = json.loads(output_path.read_text(encoding="utf-8"))
     assert report["artifact_kind"] == "ontology_owner_decision_import_v2"
     assert report["summary"]["matched_gap_group_count"] == 1
+
+
+def test_owner_decision_import_v2_cli_reuses_default_gap_review_workflow(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    module = load_import_v2_module()
+    decision_path = tmp_path / "decision-preview.json"
+    evidence_path = tmp_path / "closed-loop.json"
+    gap_path = tmp_path / "ontology-gap-review-workflow.json"
+    validation_path = tmp_path / "validation.json"
+    output_path = tmp_path / "owner-decision-import-v2.json"
+    decision_path.write_text(json.dumps(decision_import_preview()), encoding="utf-8")
+    evidence_path.write_text(json.dumps(closed_loop_evidence()), encoding="utf-8")
+    gap_path.write_text(json.dumps(gap_review_workflow()), encoding="utf-8")
+    validation_path.write_text(json.dumps(validation_report()), encoding="utf-8")
+    monkeypatch.setattr(module, "DEFAULT_GAP_REVIEW_PATH", gap_path)
+    monkeypatch.setattr(
+        sys,
+        "argv",
+        [
+            "ontology_owner_decision_import_v2.py",
+            "--decision-import-preview",
+            str(decision_path),
+            "--closed-loop-evidence",
+            str(evidence_path),
+            "--validation-report",
+            str(validation_path),
+            "--output",
+            str(output_path),
+            "--write",
+        ],
+    )
+
+    assert module.main() == 0
+
+    report = json.loads(output_path.read_text(encoding="utf-8"))
+    assert report["artifact_kind"] == "ontology_owner_decision_import_v2"
+    assert report["summary"]["matched_gap_group_count"] == 1
+    assert report["source_artifacts"]["ontology_gap_review_workflow"] == (
+        "runs/ontology_gap_review_workflow.json"
+    )

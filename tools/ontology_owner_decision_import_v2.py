@@ -88,11 +88,34 @@ def _load_optional_json(path: Path | None) -> dict[str, Any]:
 def _decision_previews(decision_import_preview: dict[str, Any]) -> list[dict[str, Any]]:
     if decision_import_preview.get("artifact_kind") != "ontology_decision_import_preview":
         return []
-    return [
+    previews = [
         entry
         for entry in _list(decision_import_preview.get("decision_import_previews"))
         if isinstance(entry, dict)
     ]
+    for raw_decision in _list(decision_import_preview.get("ignored_owner_decisions")):
+        decision = _dict(raw_decision)
+        decision_id = _text(decision.get("decision_id"))
+        candidate_id = _text(decision.get("candidate_id"))
+        if not decision_id and not candidate_id:
+            continue
+        preview_id = (
+            f"ontology-decision-import-preview-ignored-{_slug(decision_id or candidate_id)}"
+        )
+        previews.append(
+            {
+                "preview_id": preview_id,
+                "decision_id": decision.get("decision_id"),
+                "candidate_id": decision.get("candidate_id"),
+                "intake_id": decision.get("intake_id"),
+                "decision_state": decision.get("decision_state"),
+                "preview_state": "unmatched_decision",
+                "ontology_decision_ref": decision.get("ontology_decision_ref"),
+                "decided_at": decision.get("decided_at"),
+                "import_recommended": False,
+            }
+        )
+    return previews
 
 
 def _closed_loop_entries(*sources: dict[str, Any]) -> dict[tuple[str, str], dict[str, Any]]:
@@ -282,6 +305,8 @@ def _write_gate_findings(
         for artifact in _generated_artifacts(groups)
         if _text(artifact.get("source_ref"))
     }
+    if not generated_refs:
+        return []
     findings: list[dict[str, Any]] = []
     seen: set[tuple[str, str]] = set()
     for report in write_gate_reports:
@@ -331,7 +356,10 @@ def _required_operator_action(after_status: str, preview: dict[str, Any]) -> str
         return "inspect_and_acknowledge_owner_rejection"
     if after_status == "owner_clarification_requested":
         return "request_owner_clarification"
-    if after_status.endswith("without_gap_review_match"):
+    if after_status in {
+        "owner_decision_without_matching_evidence",
+        "owner_decision_without_gap_review_match",
+    }:
         return "review_unmatched_owner_decision"
     return _text(preview.get("required_human_action"), "operator_review_owner_decision")
 
@@ -654,6 +682,7 @@ def main() -> int:
     closed_loop_path = _resolve(args.closed_loop_evidence) or DEFAULT_CLOSED_LOOP_EVIDENCE_PATH
     review_dashboard_path = _resolve(args.review_dashboard)
     gap_review_path = _resolve(args.gap_review_workflow)
+    default_gap_review_path = gap_review_path or DEFAULT_GAP_REVIEW_PATH
     validation_path = _resolve(args.validation_report)
     write_gate_paths = [_resolve(path) for path in args.write_gate_report]
     if not write_gate_paths and DEFAULT_WRITE_GATE_REPORT_PATH.exists():
@@ -665,7 +694,7 @@ def main() -> int:
         decision_import_preview=_load_optional_json(decision_import_path),
         closed_loop_evidence=_load_optional_json(closed_loop_path),
         review_dashboard=_load_optional_json(review_dashboard_path),
-        gap_review_workflow=load_json(gap_review_path) if gap_review_path else None,
+        gap_review_workflow=_load_optional_json(default_gap_review_path) or None,
         validation_report=load_json(validation_path) if validation_path else None,
         write_gate_reports=[
             _load_write_gate_report(path)
@@ -676,7 +705,7 @@ def main() -> int:
             "decision_import_preview": decision_import_path,
             "closed_loop_evidence": closed_loop_path,
             "review_dashboard": review_dashboard_path,
-            "gap_review_workflow": gap_review_path or DEFAULT_GAP_REVIEW_PATH,
+            "gap_review_workflow": default_gap_review_path,
             "validation_report": validation_path or DEFAULT_VALIDATION_REPORT_PATH,
         },
     )
