@@ -705,12 +705,36 @@ def test_ontology_import_fixture_resolves_known_refs_and_gaps() -> None:
     assert gap_index["tracked_artifacts_written"] is False
     assert gap_index["summary"] == {
         "gap_count": 1,
+        "layer_review": {
+            "known_layers": [
+                "objective",
+                "mechanics",
+                "execution",
+                "meta",
+                "multi_agent",
+            ],
+            "layer_counts": {},
+            "used_layers": [],
+            "status_counts": {"unassigned": 1},
+            "unassigned_layer_count": 1,
+        },
         "next_gap": "review_ontology_import_gap",
     }
     assert gap_index["gaps"][0]["missing_concept"] == {
         "ref": "examcalc:CASFunction",
         "namespace_hint": "examcalc",
         "concept_hint": "CASFunction",
+    }
+    assert gap_index["gaps"][0]["layer_review"] == {
+        "status": "unassigned",
+        "known_layers": [
+            "objective",
+            "mechanics",
+            "execution",
+            "meta",
+            "multi_agent",
+        ],
+        "recommended_route": "assign_ontology_layer_during_gap_review",
     }
     assert gap_index["gaps"][0]["recommended_route"] == "ontology_package_draft"
 
@@ -773,6 +797,7 @@ def test_specgraph_core_import_fixture_projects_compiler_backed_gaps_and_diffs()
         "namespace_hint": "sgcore",
         "concept_hint": "ClaimCalibration",
     }
+    assert gap_index["gaps"][0]["layer_review"]["status"] == "unassigned"
     assert gap_index["gaps"][0]["subject"] == {"kind": "proposal", "id": "SG-RFC-0130"}
 
     smoke = surfaces["adapter_report_smoke"]
@@ -794,6 +819,21 @@ def test_specgraph_core_import_fixture_projects_compiler_backed_gaps_and_diffs()
     assert diff["compatible"] is True
     assert diff["changes"]["added_classes"] == ["sgcore:ClaimCalibration"]
     assert diff["changes"]["breaking_changes"] == []
+    assert diff["layer_review"] == {
+        "known_layers": [
+            "objective",
+            "mechanics",
+            "execution",
+            "meta",
+            "multi_agent",
+        ],
+        "layered_change_count": 0,
+        "unassigned_change_count": 1,
+        "used_layers": [],
+        "layer_counts": {},
+        "by_layer": {},
+        "unassigned_refs": [{"change_type": "added_classes", "ref": "sgcore:ClaimCalibration"}],
+    }
     assert diff["required_specgraph_actions"] == ["updateLockfile"]
     assert diff["authority_boundary"]["may_update_ontology_lockfile"] is False
     assert diff["authority_boundary"]["may_mutate_canonical_specs"] is False
@@ -801,6 +841,9 @@ def test_specgraph_core_import_fixture_projects_compiler_backed_gaps_and_diffs()
         "status": "compatible",
         "breaking_change_count": 0,
         "added_class_count": 1,
+        "layered_change_count": 0,
+        "unassigned_layer_change_count": 1,
+        "used_layer_count": 0,
         "next_gap": "review_required_specgraph_actions",
     }
 
@@ -866,6 +909,66 @@ def test_ontology_import_surfaces_preserve_layered_normalized_ir(tmp_path: Path)
     }
     assert resolved_refs["sgcore:Spec"]["layer"] == "objective"
     assert resolved_refs["sgcore:definesRequirement"]["layer"] == "mechanics"
+
+
+def test_ontology_gap_and_diff_surfaces_group_layer_hints(tmp_path: Path) -> None:
+    module = load_ontology_imports_module()
+    fixture = yaml.safe_load(SPECGRAPH_CORE_FIXTURE.read_text(encoding="utf-8"))
+    assert isinstance(fixture, dict)
+    binding = fixture["binding"]
+    assert isinstance(binding, dict)
+    binding["layerHints"] = {"sgcore:ClaimCalibration": "meta"}
+
+    fixture_dir = tmp_path / "ontology" / "packages" / "specgraph-core"
+    fixture_dir.mkdir(parents=True)
+    fixture_path = fixture_dir / "import-fixture.yaml"
+    fixture_path.write_text(yaml.safe_dump(fixture, sort_keys=False), encoding="utf-8")
+    source_ir_path = SPECGRAPH_CORE_FIXTURE.parent / fixture["package"]["materialized_ir"]
+    target_ir_path = fixture_dir / fixture["package"]["materialized_ir"]
+    target_ir_path.parent.mkdir(parents=True)
+    target_ir_path.write_text(source_ir_path.read_text(encoding="utf-8"), encoding="utf-8")
+
+    report = yaml.safe_load(SPECGRAPH_CORE_COMPATIBILITY_REPORT.read_text(encoding="utf-8"))
+    assert isinstance(report, dict)
+    changes = report["changes"]
+    assert isinstance(changes, dict)
+    changes["layerHints"] = {"sgcore:ClaimCalibration": "meta"}
+    report_path = tmp_path / "compatibility-report.yaml"
+    report_path.write_text(yaml.safe_dump(report, sort_keys=False), encoding="utf-8")
+
+    surfaces = module.build_ontology_import_surfaces(
+        fixture_path,
+        compatibility_report_path=report_path,
+        semantic_policy_path=None,
+    )
+
+    gap_index = surfaces["gap_index"]
+    assert gap_index["gaps"][0]["layer_review"] == {
+        "status": "assigned",
+        "layer": "meta",
+        "source": "fixture.binding.layerHints",
+        "known_layers": [
+            "objective",
+            "mechanics",
+            "execution",
+            "meta",
+            "multi_agent",
+        ],
+    }
+    assert gap_index["summary"]["layer_review"]["layer_counts"] == {"meta": 1}
+    assert gap_index["summary"]["layer_review"]["status_counts"] == {"assigned": 1}
+    assert gap_index["summary"]["layer_review"]["unassigned_layer_count"] == 0
+
+    diff = surfaces["compatibility_diff_preview"]
+    assert diff["layer_review"]["layered_change_count"] == 1
+    assert diff["layer_review"]["unassigned_change_count"] == 0
+    assert diff["layer_review"]["layer_counts"] == {"meta": 1}
+    assert diff["layer_review"]["by_layer"] == {
+        "meta": {"added_classes": ["sgcore:ClaimCalibration"]}
+    }
+    assert diff["summary"]["layered_change_count"] == 1
+    assert diff["summary"]["unassigned_layer_change_count"] == 0
+    assert diff["summary"]["used_layer_count"] == 1
 
 
 def test_project_local_specgraph_core_default_fixture_is_authority_source() -> None:
