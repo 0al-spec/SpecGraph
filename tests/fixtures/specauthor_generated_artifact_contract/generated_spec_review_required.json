@@ -1,0 +1,47 @@
+{
+  "artifact_kind": "generated_spec_artifact",
+  "schema_version": 1,
+  "contract_ref": "specgraph.specauthor.generated-artifact.v0.1",
+  "source_ref": "memory://specauthor-generated-review-required",
+  "canonical_mutations_allowed": true,
+  "tracked_artifacts_written": false,
+  "producer": {
+    "agent_id": "SpecAuthorAgent",
+    "prompt_contract_ref": "docs/proposals/0126_specauthor_claim_calibration_prompt_contract.md"
+  },
+  "active_frame": {
+    "project": "SpecGraph",
+    "subsystem": "",
+    "agent_layer": "SpecificationAuthoring",
+    "ontology_refs": [],
+    "domain_refs": [],
+    "context_refs": [],
+    "target_artifact": "Proposal",
+    "lifecycle_phase": "draft"
+  },
+  "target_artifact": {
+    "kind": "Proposal",
+    "title": "",
+    "intended_status": "draft",
+    "canonical_write_intent": true
+  },
+  "draft": {
+    "format": "markdown",
+    "content": ""
+  },
+  "materialization_intent": {
+    "mode": "auto_apply",
+    "requires_write_gate": false,
+    "write_gate": "none",
+    "may_write_ontology_package": false,
+    "may_write_ontology_lockfile": false,
+    "may_mutate_canonical_specs": true,
+    "may_mark_candidate_accepted": false
+  },
+  "new_terms": [
+    "SemanticWidget"
+  ],
+  "term_bindings": [],
+  "ontology_gaps": [],
+  "claims": []
+}

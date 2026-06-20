@@ -16,6 +16,8 @@ EXECUTOR_FOLLOWUP_REVIEWER ?= local_operator
 EXECUTOR_FOLLOWUP_RATIONALE ?=
 ONTOLOGY_TERM_BINDING_ARTIFACT ?= tests/fixtures/ontology_term_binding/generated_artifact_review_required.json
 ONTOLOGY_TERM_BINDING_GATE_OUTPUT ?= runs/ontology_term_binding_gate_report.json
+SPECAUTHOR_GENERATED_ARTIFACT_CONTRACT_ARTIFACT ?= tests/fixtures/specauthor_generated_artifact_contract/generated_spec_ready.json
+SPECAUTHOR_GENERATED_ARTIFACT_CONTRACT_OUTPUT ?= runs/specauthor_generated_artifact_contract_report.json
 SPECAUTHOR_ONTOLOGY_WRITE_GATE_ARTIFACT ?= tests/fixtures/specauthor_ontology_write_gate/generated_spec_review_required.json
 SPECAUTHOR_ONTOLOGY_WRITE_GATE_OUTPUT ?= runs/specauthor_ontology_write_gate_report.json
 
@@ -26,7 +28,7 @@ PYTHON_TARGETS := viewer-surfaces dashboard backlog next-move spec-activity grap
 	external-consumer-evidence ontology-imports ontology-imports-public \
 	ontology-package-validate ontology-package-preview ontology-package-gaps \
 	spec-ontology-bindings spec-ontology-validation \
-	ontology-term-binding-gate specauthor-ontology-write-gate \
+	ontology-term-binding-gate specauthor-generated-artifact-contract specauthor-ontology-write-gate \
 	proposal-work-claims proposal-work-claims-gate proposal-id \
 	metrics-delivery metrics-feedback metrics-source-promotion metric-signals metric-thresholds \
 	metric-packs metric-pack-drift metric-pack-adapters metric-pack-runs metric-pricing model-usage \
@@ -71,6 +73,7 @@ help:
 			'  make spec-ontology-bindings    Build report-only legacy spec ontology bindings' \
 			'  make spec-ontology-validation  Build report-only spec ontology validation report' \
 			'  make ontology-term-binding-gate ONTOLOGY_TERM_BINDING_ARTIFACT=<json>' \
+			'  make specauthor-generated-artifact-contract SPECAUTHOR_GENERATED_ARTIFACT_CONTRACT_ARTIFACT=<json>' \
 			'  make specauthor-ontology-write-gate SPECAUTHOR_ONTOLOGY_WRITE_GATE_ARTIFACT=<json>' \
 		'  make metrics-delivery         Refresh Metrics delivery workflow JSON' \
 		'  make metrics-feedback         Refresh Metrics feedback JSON' \
@@ -214,6 +217,10 @@ spec-ontology-validation:
 .PHONY: ontology-term-binding-gate
 ontology-term-binding-gate:
 	@$(PYTHON) tools/ontology_term_binding_gate.py --artifact "$(ONTOLOGY_TERM_BINDING_ARTIFACT)" --output "$(ONTOLOGY_TERM_BINDING_GATE_OUTPUT)"
+
+.PHONY: specauthor-generated-artifact-contract
+specauthor-generated-artifact-contract:
+	@$(PYTHON) tools/specauthor_generated_artifact_contract.py --artifact "$(SPECAUTHOR_GENERATED_ARTIFACT_CONTRACT_ARTIFACT)" --output "$(SPECAUTHOR_GENERATED_ARTIFACT_CONTRACT_OUTPUT)"
 
 .PHONY: specauthor-ontology-write-gate
 specauthor-ontology-write-gate:

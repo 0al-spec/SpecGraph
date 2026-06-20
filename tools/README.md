@@ -186,6 +186,15 @@ Supervisor modes:
   artifacts. It reads `tools/ontology_term_binding_policy.json`, emits
   `runs/ontology_term_binding_gate_report.json`, and reports whether the
   artifact would fail a future hard gate without mutating canonical specs.
+- `tools/specauthor_generated_artifact_contract.py`: producer-side contract
+  validator for `generated_spec_artifact` drafts introduced by proposal 0137.
+  Use `make specauthor-generated-artifact-contract
+  SPECAUTHOR_GENERATED_ARTIFACT_CONTRACT_ARTIFACT=<json>` to require
+  SpecAuthorAgent producer metadata, active ontology/domain/context, review-only
+  target artifact metadata, draft payload, and downstream write-gate
+  materialization intent before the artifact reaches the ontology write gate.
+  The report is written to
+  `runs/specauthor_generated_artifact_contract_report.json`.
 - `tools/specauthor_ontology_write_gate.py`: deterministic write gate for
   SpecAuthor-generated graph artifacts introduced by proposal 0136. Use
   `make specauthor-ontology-write-gate

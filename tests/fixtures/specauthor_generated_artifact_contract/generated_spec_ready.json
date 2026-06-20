@@ -1,0 +1,94 @@
+{
+  "artifact_kind": "generated_spec_artifact",
+  "schema_version": 1,
+  "contract_ref": "specgraph.specauthor.generated-artifact.v0.1",
+  "source_ref": "memory://specauthor-generated-ready",
+  "canonical_mutations_allowed": false,
+  "tracked_artifacts_written": false,
+  "producer": {
+    "agent_id": "SpecAuthorAgent",
+    "invocation_ref": "runs/specauthor_invocation_example.json",
+    "prompt_contract_ref": "docs/proposals/0126_specauthor_claim_calibration_prompt_contract.md"
+  },
+  "active_frame": {
+    "project": "SpecGraph",
+    "subsystem": "Application.AgentLayer.SpecificationAuthoring",
+    "agent_layer": "SpecificationAuthoring",
+    "ontology_refs": [
+      "sgcore:Spec"
+    ],
+    "domain_refs": [
+      "domain.specification_authoring"
+    ],
+    "context_refs": [
+      "context.specgraph.agent_layer"
+    ],
+    "target_artifact": "Proposal",
+    "lifecycle_phase": "draft"
+  },
+  "target_artifact": {
+    "kind": "Proposal",
+    "title": "SpecAuthor Generated Artifact Contract Example",
+    "intended_status": "draft",
+    "canonical_write_intent": false
+  },
+  "draft": {
+    "format": "markdown",
+    "content": "# Draft\n\nThis is a review-only generated proposal draft."
+  },
+  "materialization_intent": {
+    "mode": "review_required",
+    "requires_write_gate": true,
+    "write_gate": "specauthor-ontology-write-gate",
+    "may_write_ontology_package": false,
+    "may_write_ontology_lockfile": false,
+    "may_mutate_canonical_specs": false,
+    "may_mark_candidate_accepted": false
+  },
+  "new_terms": [
+    "Spec"
+  ],
+  "term_bindings": [
+    {
+      "generated_term": "Spec",
+      "binding_state": "bound_to_accepted_entity",
+      "authority_class": "accepted_ontology_entity",
+      "ontology_ref": "sgcore:Spec",
+      "ontology_package_ref": "ontology/packages/specgraph-core",
+      "term_ref": "Spec",
+      "domain_refs": [
+        "domain.specification_authoring"
+      ],
+      "source_refs": [
+        "ontology/packages/specgraph-core/ontology.yaml"
+      ]
+    }
+  ],
+  "ontology_gaps": [],
+  "claims": [
+    {
+      "id": "claim.specauthor.generated-artifact-contract-is-review-boundary",
+      "type": "hypothesis",
+      "strength": "strong",
+      "statement": "A typed generated_spec_artifact contract should make SpecAuthor output easier to validate before graph write.",
+      "evidence_refs": [
+        "docs/proposals/0126_specauthor_claim_calibration_prompt_contract.md"
+      ],
+      "calibration": {
+        "F": "F3",
+        "G": {
+          "applies_to": [
+            "SpecAuthor-generated SpecGraph proposals"
+          ],
+          "excludes": [
+            "legacy specs"
+          ],
+          "assumptions": [
+            "The artifact is validated before write gate execution."
+          ]
+        },
+        "R": "R2"
+      }
+    }
+  ]
+}
