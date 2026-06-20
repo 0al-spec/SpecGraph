@@ -1818,5 +1818,18 @@
     "required_provenance_links": [
       "source_draft_ref"
     ]
+  },
+  {
+    "proposal_id": "0142",
+    "source_artifact_class": "working_draft",
+    "source_refs": [
+      "docs/archive/proposal_sources/0142_layer_aware_ontology_gap_diff_review.md"
+    ],
+    "motivating_concern": "Layered ontology metadata is visible at package import level, but gap and diff review surfaces still need explicit layer assignment or unassigned-layer review state so operators can distinguish objective, mechanics, execution, meta, and multi-agent ontology work.",
+    "normalized_title": "Layer-Aware Ontology Gap and Diff Review",
+    "bounded_scope": "Add read-only layer review metadata to ontology gap and compatibility diff surfaces, including optional fixture/report layer hints and unassigned-layer counts, without inferring layers for legacy specs, writing ontology packages or lockfiles, mutating canonical specs, accepting ontology terms, importing owner decisions, executing prompt agents, closing semantic gates, or adding SpecSpace UI.",
+    "required_provenance_links": [
+      "source_draft_ref"
+    ]
   }
 ]

@@ -54,6 +54,16 @@ REF_CATEGORIES = {
     "protocols": "protocol",
 }
 ONTOLOGY_LAYERS = ("objective", "mechanics", "execution", "meta", "multi_agent")
+LAYER_REVIEW_CHANGE_TYPES = (
+    "added_classes",
+    "removed_classes",
+    "added_relations",
+    "removed_relations",
+    "added_fields",
+    "removed_fields",
+    "changed_fields",
+    "breaking_changes",
+)
 
 
 def load_json(path: Path) -> dict[str, Any]:
@@ -156,6 +166,144 @@ def ontology_layer_summary(ir: dict[str, Any]) -> dict[str, Any]:
             for kind, counts in sorted(by_kind.items())
         },
         "invalid_layers": invalid_layers,
+    }
+
+
+def optional_layer_hint_map(mapping: dict[str, Any], field: str, context: str) -> dict[str, str]:
+    raw_hints = mapping.get(field)
+    if raw_hints is None:
+        return {}
+    if not isinstance(raw_hints, dict):
+        raise ValueError(f"{context}.{field} must be an object when provided")
+
+    hints: dict[str, str] = {}
+    for raw_ref, raw_layer in raw_hints.items():
+        if not isinstance(raw_ref, str) or not raw_ref.strip():
+            raise ValueError(f"{context}.{field} keys must be non-empty strings")
+        ref = raw_ref.strip()
+        if not isinstance(raw_layer, str) or not raw_layer.strip():
+            raise ValueError(f"{context}.{field}.{ref} must be a non-empty string")
+        hints[ref] = raw_layer.strip()
+    return hints
+
+
+def binding_layer_hints(binding: dict[str, Any]) -> dict[str, str]:
+    hints = optional_layer_hint_map(binding, "layer_hints", "fixture.binding")
+    hints.update(optional_layer_hint_map(binding, "layerHints", "fixture.binding"))
+    return hints
+
+
+def ref_layer_assignment(
+    ref: str,
+    refs: dict[str, dict[str, Any]],
+    layer_hints: dict[str, str],
+    *,
+    hint_source: str,
+) -> dict[str, Any]:
+    ref_metadata = refs.get(ref)
+    if isinstance(ref_metadata, dict):
+        layer = ref_metadata.get("layer")
+        if isinstance(layer, str) and layer.strip():
+            layer_value = layer.strip()
+            if layer_value in ONTOLOGY_LAYERS:
+                return {
+                    "status": "assigned",
+                    "layer": layer_value,
+                    "source": "normalized_ir",
+                    "known_layers": list(ONTOLOGY_LAYERS),
+                }
+            return {
+                "status": "unassigned",
+                "source": "normalized_ir",
+                "observed_layer": layer_value,
+                "known_layers": list(ONTOLOGY_LAYERS),
+                "recommended_route": "assign_ontology_layer_during_gap_review",
+            }
+
+    if ref in layer_hints:
+        layer_value = layer_hints[ref]
+        if layer_value in ONTOLOGY_LAYERS:
+            return {
+                "status": "assigned",
+                "layer": layer_value,
+                "source": hint_source,
+                "known_layers": list(ONTOLOGY_LAYERS),
+            }
+        return {
+            "status": "unassigned",
+            "source": hint_source,
+            "observed_layer": layer_value,
+            "known_layers": list(ONTOLOGY_LAYERS),
+            "recommended_route": "assign_ontology_layer_during_gap_review",
+        }
+
+    return {
+        "status": "unassigned",
+        "known_layers": list(ONTOLOGY_LAYERS),
+        "recommended_route": "assign_ontology_layer_during_gap_review",
+    }
+
+
+def layer_review_summary(assignments: list[dict[str, Any]]) -> dict[str, Any]:
+    status_counts: dict[str, int] = {}
+    layer_counts: dict[str, int] = {layer: 0 for layer in ONTOLOGY_LAYERS}
+    for assignment in assignments:
+        status = str(assignment.get("status") or "unknown")
+        status_counts[status] = status_counts.get(status, 0) + 1
+        layer = assignment.get("layer")
+        if isinstance(layer, str) and layer in layer_counts:
+            layer_counts[layer] += 1
+
+    used_layers = [layer for layer in ONTOLOGY_LAYERS if layer_counts[layer]]
+    return {
+        "known_layers": list(ONTOLOGY_LAYERS),
+        "layer_counts": {layer: layer_counts[layer] for layer in used_layers},
+        "used_layers": used_layers,
+        "status_counts": {
+            status: count for status, count in sorted(status_counts.items()) if count
+        },
+        "unassigned_layer_count": status_counts.get("unassigned", 0),
+    }
+
+
+def compatibility_change_layer_review(
+    projected_changes: dict[str, list[str]],
+    refs: dict[str, dict[str, Any]],
+    layer_hints: dict[str, str],
+) -> dict[str, Any]:
+    by_layer: dict[str, dict[str, list[str]]] = {}
+    layer_counts: dict[str, int] = {layer: 0 for layer in ONTOLOGY_LAYERS}
+    unassigned_refs: list[dict[str, Any]] = []
+
+    for change_type in LAYER_REVIEW_CHANGE_TYPES:
+        for ref in projected_changes.get(change_type, []):
+            assignment = ref_layer_assignment(
+                ref,
+                refs,
+                layer_hints,
+                hint_source="compatibility_report.changes.layerHints",
+            )
+            layer = assignment.get("layer")
+            if not isinstance(layer, str):
+                unassigned = {"change_type": change_type, "ref": ref}
+                if isinstance(assignment.get("observed_layer"), str):
+                    unassigned["observed_layer"] = assignment["observed_layer"]
+                if isinstance(assignment.get("source"), str):
+                    unassigned["source"] = assignment["source"]
+                unassigned_refs.append(unassigned)
+                continue
+            layer_counts[layer] += 1
+            by_layer.setdefault(layer, {}).setdefault(change_type, []).append(ref)
+
+    used_layers = [layer for layer in ONTOLOGY_LAYERS if layer_counts[layer]]
+    return {
+        "known_layers": list(ONTOLOGY_LAYERS),
+        "layered_change_count": sum(layer_counts.values()),
+        "unassigned_change_count": len(unassigned_refs),
+        "used_layers": used_layers,
+        "layer_counts": {layer: layer_counts[layer] for layer in used_layers},
+        "by_layer": {layer: by_layer[layer] for layer in ONTOLOGY_LAYERS if layer in by_layer},
+        "unassigned_refs": unassigned_refs,
     }
 
 
@@ -720,6 +868,7 @@ def build_ontology_compatibility_diff_preview(
     report_path: Path,
     fixture: dict[str, Any],
     package: dict[str, Any],
+    refs: dict[str, dict[str, Any]],
 ) -> dict[str, Any]:
     report = load_yaml(report_path)
     if require_string(report, "apiVersion", "compatibility_report") != (
@@ -772,6 +921,8 @@ def build_ontology_compatibility_diff_preview(
             changes.get("breakingChanges"), "compatibility_report.changes.breakingChanges"
         ),
     }
+    layer_hints = optional_layer_hint_map(changes, "layerHints", "compatibility_report.changes")
+    layer_review = compatibility_change_layer_review(projected_changes, refs, layer_hints)
 
     breaking_changes = projected_changes["breaking_changes"]
     next_gap = "none"
@@ -793,6 +944,7 @@ def build_ontology_compatibility_diff_preview(
         "compatible": compatible,
         "required_specgraph_actions": required_actions,
         "changes": projected_changes,
+        "layer_review": layer_review,
         "authority_boundary": {
             "report_is_authority": False,
             "diff_report_source": "ontologyc diff",
@@ -804,6 +956,9 @@ def build_ontology_compatibility_diff_preview(
             "status": "compatible" if compatible else "breaking_change_review_required",
             "breaking_change_count": len(breaking_changes),
             "added_class_count": len(projected_changes["added_classes"]),
+            "layered_change_count": layer_review["layered_change_count"],
+            "unassigned_layer_change_count": layer_review["unassigned_change_count"],
+            "used_layer_count": len(layer_review["used_layers"]),
             "next_gap": next_gap,
         },
     }
@@ -6731,6 +6886,7 @@ def build_ontology_import_surfaces(
     validate_ir_metadata(ir, package)
     refs = ontology_ref_map(ir)
     layer_summary = ontology_layer_summary(ir)
+    requested_layer_hints = binding_layer_hints(binding)
 
     requested_refs = list(binding["refs"])
     resolved_refs = [
@@ -6802,6 +6958,12 @@ def build_ontology_import_surfaces(
     gaps = []
     for ref in unresolved_refs:
         namespace_hint, _, concept_hint = ref.partition(":")
+        layer_review = ref_layer_assignment(
+            ref,
+            refs,
+            requested_layer_hints,
+            hint_source="fixture.binding.layerHints",
+        )
         gaps.append(
             {
                 "gap_id": f"ontology-gap-{symbol_slug(ref)}",
@@ -6813,10 +6975,12 @@ def build_ontology_import_surfaces(
                     "concept_hint": concept_hint,
                 },
                 "target_package": f"{package['package_id']}@{package['version']}",
+                "layer_review": layer_review,
                 "severity": "medium",
                 "recommended_route": "ontology_package_draft",
             }
         )
+    gap_layer_summary = layer_review_summary([gap["layer_review"] for gap in gaps])
 
     gap_index = {
         "artifact_kind": "ontology_import_gap_index",
@@ -6828,6 +6992,7 @@ def build_ontology_import_surfaces(
         "gaps": gaps,
         "summary": {
             "gap_count": len(gaps),
+            "layer_review": gap_layer_summary,
             "next_gap": "review_ontology_import_gap" if gaps else "none",
         },
     }
@@ -6894,6 +7059,7 @@ def build_ontology_import_surfaces(
             report_path=compatibility_report_path,
             fixture=fixture,
             package=package,
+            refs=refs,
         )
     if semantic_policy_path is not None:
         assert isinstance(semantic_policy_path, Path)
