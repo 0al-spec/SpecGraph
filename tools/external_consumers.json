@@ -248,7 +248,8 @@
           "0078",
           "0081",
           "0124",
-          "0131"
+          "0131",
+          "0132"
         ],
         "source_gap": "agent_executor_passport_visibility_not_projected_to_specspace",
         "artifact_contract": {
@@ -267,7 +268,7 @@
             "runs/ontology_import_gap_index.json",
             "runs/ontology_compatibility_diff_preview.json",
             "runs/ontology_governance_evidence_index.json",
-            "tests/fixtures/ontology_import/specgraph-core/ontology.normalized.json"
+            "ontology/packages/specgraph-core/generated/ontology.normalized.json"
           ],
           "stable_fields": [
             "artifact_kind",

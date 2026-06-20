@@ -1,0 +1,33 @@
+artifact_kind: ontologyc_adapter_report
+authority_boundary:
+  automatic_canonical_node_update: false
+  automatic_import_lock_update: false
+  digest_authority: normalized_ir_sourceDigest
+  ontology_lock_is_canonical: false
+  report_is_authority: false
+inputs:
+  binding_ref: import-fixture.yaml
+  normalized_ir_ref: generated/ontology.normalized.json
+outputs:
+  concept_refs_ref: ontologyc/concept-refs.yaml
+  ontology_gaps_ref: ontologyc/ontology-gaps.yaml
+  ontology_lock_ref: ontologyc/ontology.lock.yaml
+package:
+  digest: sha256:22022e3a073a951046ea1a162bf688605925397e81d32c19998780be221e4dd7
+  namespace: sgcore
+  package_id: org.0al.specgraph.core
+  source_ref: SpecGraph:ontology/packages/specgraph-core/domain-ontology-package.yaml
+  source_uri: specgraph://ontology/packages/specgraph-core/domain-ontology-package.yaml
+  version: 0.1.0
+producer:
+  command: validate-specgraph
+  command_contract_ref: Ontology:tooling/ontologyc#validate-specgraph
+  tool: ontologyc
+proposal_id: '0060'
+schema_version: 1
+summary:
+  canonical_mutations_allowed: false
+  gap_count: 1
+  resolved_ref_count: 7
+  status: passed
+  tracked_artifacts_written: false

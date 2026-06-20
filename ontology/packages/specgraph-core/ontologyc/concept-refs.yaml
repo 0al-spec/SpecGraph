@@ -1,0 +1,58 @@
+apiVersion: specgraph.io/v1alpha1
+kind: ConceptRefSet
+metadata:
+  namespace: sgcore
+  ontology: org.0al.specgraph.core
+  version: 0.1.0
+spec:
+  refs:
+  - alias: sgcore:AcceptanceCriterion
+    concept: AcceptanceCriterion
+    kindOfConcept: DomainEntity
+    namespace: sgcore
+    ontology: org.0al.specgraph.core
+    uri: ontology://org.0al.specgraph.core/0.1.0/classes/AcceptanceCriterion
+    version: 0.1.0
+  - alias: sgcore:Evidence
+    concept: Evidence
+    kindOfConcept: DomainEntity
+    namespace: sgcore
+    ontology: org.0al.specgraph.core
+    uri: ontology://org.0al.specgraph.core/0.1.0/classes/Evidence
+    version: 0.1.0
+  - alias: sgcore:Requirement
+    concept: Requirement
+    kindOfConcept: DomainEntity
+    namespace: sgcore
+    ontology: org.0al.specgraph.core
+    uri: ontology://org.0al.specgraph.core/0.1.0/classes/Requirement
+    version: 0.1.0
+  - alias: sgcore:Spec
+    concept: Spec
+    kindOfConcept: DomainEntity
+    namespace: sgcore
+    ontology: org.0al.specgraph.core
+    uri: ontology://org.0al.specgraph.core/0.1.0/classes/Spec
+    version: 0.1.0
+  - alias: sgcore:SpecGraph
+    concept: SpecGraph
+    kindOfConcept: DomainEntity
+    namespace: sgcore
+    ontology: org.0al.specgraph.core
+    uri: ontology://org.0al.specgraph.core/0.1.0/classes/SpecGraph
+    version: 0.1.0
+  - alias: sgcore:definesRequirement
+    concept: definesRequirement
+    kindOfConcept: Relation
+    namespace: sgcore
+    ontology: org.0al.specgraph.core
+    uri: ontology://org.0al.specgraph.core/0.1.0/relations/definesRequirement
+    version: 0.1.0
+  - alias: sgcore:hasAcceptanceCriterion
+    concept: hasAcceptanceCriterion
+    kindOfConcept: Relation
+    namespace: sgcore
+    ontology: org.0al.specgraph.core
+    uri: ontology://org.0al.specgraph.core/0.1.0/relations/hasAcceptanceCriterion
+    version: 0.1.0
+

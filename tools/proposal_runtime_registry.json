@@ -7180,6 +7180,10 @@
       {
         "path": "tools/external_consumers.json",
         "pattern": "runs/ontology_package_index.json"
+      },
+      {
+        "path": "tools/external_consumers.json",
+        "pattern": "ontology/packages/specgraph-core/generated/ontology.normalized.json"
       }
     ],
     "validation_markers": [
@@ -7208,6 +7212,62 @@
       {
         "path": "docs/proposals/0131_ontology_normalized_ir_viewer_surface.md",
         "pattern": "build_specspace_normalized_ontology_ir_panel"
+      }
+    ]
+  },
+  {
+    "proposal_id": "0132",
+    "posture": "synchronous_runtime_slice",
+    "runtime_surfaces": [
+      "docs/proposals/0132_project_local_ontology_package_boundary.md",
+      "docs/archive/proposal_sources/0132_project_local_ontology_package_boundary.md",
+      "ontology/packages/specgraph-core/README.md",
+      "ontology/packages/specgraph-core/import-fixture.yaml",
+      "ontology/packages/specgraph-core/domain-ontology-package.yaml",
+      "ontology/packages/specgraph-core/generated/ontology.normalized.json",
+      "tools/ontology_import_policy.json",
+      "tools/external_consumers.json"
+    ],
+    "runtime_markers": [
+      {
+        "path": "tools/ontology_import_policy.json",
+        "pattern": "ontology/packages/specgraph-core/import-fixture.yaml"
+      },
+      {
+        "path": "ontology/packages/specgraph-core/import-fixture.yaml",
+        "pattern": "project_local_draft"
+      },
+      {
+        "path": "ontology/packages/specgraph-core/README.md",
+        "pattern": "Project-Local Authority"
+      },
+      {
+        "path": "tools/external_consumers.json",
+        "pattern": "ontology/packages/specgraph-core/generated/ontology.normalized.json"
+      }
+    ],
+    "validation_markers": [
+      {
+        "path": "tests/test_ontology_import_policy.py",
+        "pattern": "test_project_local_specgraph_core_default_fixture_is_authority_source"
+      },
+      {
+        "path": "tests/test_static_artifact_bundle.py",
+        "pattern": "ontology/packages/specgraph-core/generated/ontology.normalized.json"
+      },
+      {
+        "path": "tests/test_supervisor.py",
+        "pattern": "assert \"0132\" in ready[\"source_proposal_ids\"]"
+      }
+    ],
+    "observation_markers": [
+      {
+        "path": "docs/proposals/0132_project_local_ontology_package_boundary.md",
+        "pattern": "The Ontology repository may be used for:"
+      },
+      {
+        "path": "docs/proposals/0132_project_local_ontology_package_boundary.md",
+        "pattern": "project_local_ontology_authoring_commands"
       }
     ]
   }

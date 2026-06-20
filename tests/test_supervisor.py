@@ -11218,8 +11218,10 @@ def test_specspace_registry_handoff_contract_is_stable_and_ready(
         "0081",
         "0124",
         "0131",
+        "0132",
     ]
     assert "0131" in ready["source_proposal_ids"]
+    assert "0132" in ready["source_proposal_ids"]
     assert ready["artifact_contract"]["status"] == "stable"
     assert ready["artifact_contract"]["paths"] == [
         "runs/supervisor_executor_adapter_index.json",
@@ -11234,7 +11236,7 @@ def test_specspace_registry_handoff_contract_is_stable_and_ready(
         "runs/ontology_import_gap_index.json",
         "runs/ontology_compatibility_diff_preview.json",
         "runs/ontology_governance_evidence_index.json",
-        "tests/fixtures/ontology_import/specgraph-core/ontology.normalized.json",
+        "ontology/packages/specgraph-core/generated/ontology.normalized.json",
     ]
     assert "viewer_projection" in ready["artifact_contract"]["stable_fields"]
     assert "required_checks" in ready["artifact_contract"]["stable_fields"]

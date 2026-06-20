@@ -133,6 +133,14 @@ The current smoke fixture requires `summary.status: passed`. Future runtime
 adapters may emit failed or blocked reports, but those reports must remain
 evidence only and must not close ontology gaps or mutate canonical specs.
 
+## Project-Local Package Boundary
+
+Project-specific ontology package data should be stored under the owning
+SpecGraph project, for example `ontology/packages/specgraph-core/`. The sibling
+Ontology repository remains the tooling, schema, compiler, stdlib primitive,
+and example authority; it is not the default storage location for every product
+ontology built with SpecGraph and SpecSpace.
+
 ## Non-Goals
 
 This contract does not:

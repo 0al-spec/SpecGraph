@@ -541,7 +541,7 @@ def test_build_public_bundle_publishes_ontology_materialized_ir(
     bundle_module: object,
 ) -> None:
     repo = make_repo(tmp_path / "repo")
-    ir_path = repo / "tests" / "fixtures" / "ontology_import" / "specgraph-core"
+    ir_path = repo / "ontology" / "packages" / "specgraph-core" / "generated"
     write_json(
         ir_path / "ontology.normalized.json",
         {
@@ -559,7 +559,7 @@ def test_build_public_bundle_publishes_ontology_materialized_ir(
                 {
                     "package_id": "org.0al.specgraph.core",
                     "materialized_ir": (
-                        "tests/fixtures/ontology_import/specgraph-core/ontology.normalized.json"
+                        "ontology/packages/specgraph-core/generated/ontology.normalized.json"
                     ),
                 }
             ],
@@ -573,23 +573,22 @@ def test_build_public_bundle_publishes_ontology_materialized_ir(
 
     published_ir = (
         result.output_dir
-        / "tests"
-        / "fixtures"
-        / "ontology_import"
+        / "ontology"
+        / "packages"
         / "specgraph-core"
+        / "generated"
         / "ontology.normalized.json"
     )
     assert published_ir.is_file()
     assert json.loads(published_ir.read_text(encoding="utf-8"))["id"] == "org.0al.specgraph.core"
     manifest = json.loads(result.manifest_path.read_text(encoding="utf-8"))
-    assert "tests" in manifest["published_roots"]
+    assert "ontology" in manifest["published_roots"]
     assert any(
-        file_info["path"]
-        == "tests/fixtures/ontology_import/specgraph-core/ontology.normalized.json"
+        file_info["path"] == "ontology/packages/specgraph-core/generated/ontology.normalized.json"
         for file_info in manifest["files"]
     )
     assert (
-        "tests/fixtures/ontology_import/specgraph-core/ontology.normalized.json"
+        "ontology/packages/specgraph-core/generated/ontology.normalized.json"
         in result.checksums_path.read_text(encoding="utf-8")
     )
 
@@ -627,7 +626,7 @@ def test_build_public_bundle_rejects_missing_ontology_materialized_ir(
                 {
                     "package_id": "org.0al.specgraph.core",
                     "materialized_ir": (
-                        "tests/fixtures/ontology_import/specgraph-core/ontology.normalized.json"
+                        "ontology/packages/specgraph-core/generated/ontology.normalized.json"
                     ),
                 }
             ],

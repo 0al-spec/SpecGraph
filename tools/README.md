@@ -110,8 +110,9 @@ Supervisor modes:
   be accepted, blocked, or marked contract-mismatched without mutating the
   downstream repository.
 - `tools/ontology_imports.py --write`: build the proposal 0060 ontology import
-  derived surfaces from `tools/ontology_import_policy.json` and the checked-in
-  SpecGraph Core normalized-IR fixture: `runs/ontology_package_index.json`,
+  derived surfaces from `tools/ontology_import_policy.json` and the
+  project-local SpecGraph Core ontology package under
+  `ontology/packages/specgraph-core/`: `runs/ontology_package_index.json`,
   `runs/ontology_import_gap_index.json`,
   `runs/ontology_compatibility_diff_preview.json`,
   `runs/ontology_governance_evidence_index.json`,

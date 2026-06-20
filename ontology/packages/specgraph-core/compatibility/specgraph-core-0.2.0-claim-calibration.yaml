@@ -1,0 +1,247 @@
+apiVersion: ontology.specgraph.io/v1alpha1
+kind: DomainOntologyPackage
+metadata:
+  id: org.0al.specgraph.core
+  namespace: sgcore
+  version: 0.2.0
+  publisher: SpecGraph
+  source: ontology/packages/specgraph-core/compatibility/specgraph-core-0.2.0-claim-calibration.yaml
+  approvalStatus: draft
+spec:
+  imports:
+    - id: specgraph.foundation
+      namespace: sg
+      version: 0.1.0
+
+  classes:
+    SpecGraph:
+      extends: sg:DomainEntity
+      description: Executable product ontology that represents intent, specifications, graph structure, and derived code surfaces.
+      central: true
+
+    Intent:
+      extends: sg:DomainEntity
+      description: Governed representation of what the product must be and how it can be validated.
+
+    Spec:
+      extends: sg:DomainEntity
+      lifecycle: SpecReviewState
+      description: Versioned specification artifact that refines intent into machine-readable requirements and decisions.
+
+    Node:
+      extends: sg:DomainEntity
+      description: First-class graph entity with stable identity, lifecycle, provenance, and versioned state.
+
+    Edge:
+      extends: sg:DomainEntity
+      description: Directed typed relation between two nodes.
+
+    Requirement:
+      extends: sg:DomainEntity
+      description: Verifiable product or system obligation that can be checked by acceptance criteria or tests.
+
+    AcceptanceCriterion:
+      extends: sg:DomainEntity
+      description: Concrete condition used to validate whether a requirement or specification is satisfied.
+
+    Decision:
+      extends: sg:Command
+      description: Chosen design or product direction that constrains later specification and implementation work.
+
+    Constraint:
+      extends: sg:DomainEntity
+      description: Rule or boundary that limits valid graph, specification, or implementation behavior.
+
+    Invariant:
+      extends: sg:DomainEntity
+      description: Condition that must remain true across valid graph evolution.
+
+    Evidence:
+      extends: sg:DomainEntity
+      description: Traceable support for acceptance, validation, and review decisions.
+
+    ClaimCalibration:
+      extends: sg:DomainEntity
+      description: Structured F/G/R calibration attached to strong specification claims.
+
+    CodeSurface:
+      extends: sg:DomainEntity
+      description: Derived executable or source-facing surface that implements specifications.
+
+    Test:
+      extends: sg:DomainEntity
+      description: Validation artifact that checks requirements, specifications, or implementation behavior.
+
+    Release:
+      extends: sg:DomainEntity
+      description: Packaged delivery state that contains derived code surfaces and their validation evidence.
+
+  protocols: {}
+
+  relations:
+    containsNode:
+      domain: SpecGraph
+      range: Node
+      cardinality:
+        min: 0
+        max: "*"
+      description: SpecGraph contains graph nodes.
+
+    containsEdge:
+      domain: SpecGraph
+      range: Edge
+      cardinality:
+        min: 0
+        max: "*"
+      description: SpecGraph contains graph edges.
+
+    containsSpec:
+      domain: SpecGraph
+      range: Spec
+      cardinality:
+        min: 0
+        max: "*"
+      description: SpecGraph contains specification artifacts.
+
+    refinesIntent:
+      domain: Spec
+      range: Intent
+      cardinality:
+        min: 0
+        max: "*"
+      description: A spec refines product intent.
+
+    definesRequirement:
+      domain: Spec
+      range: Requirement
+      cardinality:
+        min: 0
+        max: "*"
+      description: A spec defines requirements.
+
+    hasAcceptanceCriterion:
+      domain: Spec
+      range: AcceptanceCriterion
+      cardinality:
+        min: 0
+        max: "*"
+      description: A spec has acceptance criteria.
+
+    requirementValidatedByCriterion:
+      domain: Requirement
+      range: AcceptanceCriterion
+      cardinality:
+        min: 0
+        max: "*"
+      description: A requirement is validated by acceptance criteria.
+
+    nodeConnectedByEdge:
+      domain: Node
+      range: Edge
+      cardinality:
+        min: 0
+        max: "*"
+      description: A node is connected by an edge.
+
+    edgeRelatesNode:
+      domain: Edge
+      range: Node
+      cardinality:
+        min: 1
+        max: "*"
+      description: An edge relates one or more nodes.
+
+    decisionConstrainsSpec:
+      domain: Decision
+      range: Spec
+      cardinality:
+        min: 0
+        max: "*"
+      description: A decision constrains a specification.
+
+    constraintAppliesToNode:
+      domain: Constraint
+      range: Node
+      cardinality:
+        min: 0
+        max: "*"
+      description: A constraint applies to graph nodes.
+
+    invariantGovernsSpecGraph:
+      domain: Invariant
+      range: SpecGraph
+      cardinality:
+        min: 0
+        max: "*"
+      description: An invariant governs valid SpecGraph evolution.
+
+    codeSurfaceImplementsSpec:
+      domain: CodeSurface
+      range: Spec
+      cardinality:
+        min: 0
+        max: "*"
+      description: A code surface implements a specification.
+
+    testValidatesRequirement:
+      domain: Test
+      range: Requirement
+      cardinality:
+        min: 0
+        max: "*"
+      description: A test validates a requirement.
+
+    releasePackagesCodeSurface:
+      domain: Release
+      range: CodeSurface
+      cardinality:
+        min: 0
+        max: "*"
+      description: A release packages code surfaces.
+
+    evidenceSupportsCriterion:
+      domain: Evidence
+      range: AcceptanceCriterion
+      cardinality:
+        min: 0
+        max: "*"
+      description: Evidence supports an acceptance criterion.
+
+  policies:
+    DraftAuthorityBoundary:
+      extends: sg:Policy
+      enforceability: manual
+      appliesTo:
+        - SpecGraph
+      text: SpecGraph Core v0 is a draft compiler-backed seed and does not authorize canonical SpecGraph mutations or trusted ontology publication.
+
+  stateMachines:
+    SpecReviewState:
+      states:
+        - draft
+        - reviewed
+      transitions:
+        - from: draft
+          to: reviewed
+          command: Decision
+
+  compatibility:
+    patch:
+      allowed:
+        - add description
+        - add alias
+        - add non-breaking metadata
+    minor:
+      allowed:
+        - add class
+        - add relation
+        - add optional property
+        - add protocol
+    major:
+      requires:
+        - remove class
+        - remove relation
+        - change relation domain
+        - change relation range
+        - make optional field required
+        - change meaning of central concept

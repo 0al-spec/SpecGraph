@@ -99,7 +99,8 @@ requiring every public artifact to be allowlisted. When
 `runs/ontology_package_index.json` declares `packages[].materialized_ir`, the
 referenced JSON file is copied into the bundle at the same relative path and is
 listed in `artifact_manifest.json`; this lets SpecSpace fetch the normalized IR
-over the same static artifact host.
+over the same static artifact host. Project-local ontology packages should
+materialize IR below `ontology/packages/`, not below `tests/fixtures/`.
 
 ## Safety Gate
 
