@@ -42,6 +42,7 @@ def test_package_authoring_validate_reports_project_local_package() -> None:
     assert report["authority_boundary"]["writes_canonical_specs"] is False
     assert report["authority_boundary"]["updates_ontology_lockfile"] is False
     assert report["authority_boundary"]["accepts_terms"] is False
+    assert report["authority_boundary"]["prompt_agent_execution_allowed"] is False
 
 
 def test_package_authoring_preview_exposes_refs_and_compatibility() -> None:
@@ -55,6 +56,8 @@ def test_package_authoring_preview_exposes_refs_and_compatibility() -> None:
     assert len(preview["resolved_refs"]) == 7
     assert preview["unresolved_refs"] == ["sgcore:ClaimCalibration"]
     assert preview["compatibility_summary"]["status"] == "compatible"
+    assert preview["required_specgraph_actions"] == ["updateLockfile"]
+    assert preview["compatibility_changes"]["added_classes"] == ["sgcore:ClaimCalibration"]
     assert preview["authority_boundary"]["make_target"] == "ontology-package-preview"
     assert preview["authority_boundary"]["specspace_mutations_allowed"] is False
 

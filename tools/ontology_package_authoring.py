@@ -45,6 +45,7 @@ def common_authority_boundary(make_target: str) -> dict[str, Any]:
         "writes_canonical_specs": False,
         "updates_ontology_lockfile": False,
         "accepts_terms": False,
+        "prompt_agent_execution_allowed": False,
         "specspace_mutations_allowed": False,
         "allowed_output_roots": ["runs/"],
     }
@@ -128,6 +129,8 @@ def build_preview_surface(
             "gap_ids": [gap.get("gap_id") for gap in gap_index.get("gaps", [])],
         },
         "compatibility_summary": diff_preview.get("summary", {}),
+        "required_specgraph_actions": diff_preview.get("required_specgraph_actions", []),
+        "compatibility_changes": diff_preview.get("changes", {}),
         "authority_boundary": common_authority_boundary("ontology-package-preview"),
     }
 
@@ -160,6 +163,7 @@ def build_authoring_surface(mode: str, *, policy_path: Path = POLICY_PATH) -> di
     fixture_path, adapter_report_path, compatibility_report_path = default_fixture_paths(policy)
     surfaces = build_ontology_import_surfaces(
         fixture_path,
+        policy_path=policy_path,
         adapter_report_path=adapter_report_path,
         compatibility_report_path=compatibility_report_path,
         semantic_policy_path=None,
