@@ -180,6 +180,24 @@ def test_legacy_spec_backfill_plan_classifies_review_lanes_and_batches() -> None
     assert batches[0]["mutates_canonical_specs"] is False
 
 
+def test_legacy_spec_backfill_plan_caps_single_candidate_by_batch_findings() -> None:
+    module = load_backfill_module()
+
+    report = module.build_legacy_spec_ontology_backfill_plan(
+        validation_report=validation_report(),
+        gap_review_workflow=gap_review_workflow(),
+        max_findings_per_small_pr_spec=5,
+        max_specs_per_batch=5,
+        max_findings_per_batch=3,
+    )
+
+    by_spec = reviews_by_spec(report)
+    assert by_spec["SG-SPEC-0004"]["finding_count"] == 4
+    assert by_spec["SG-SPEC-0004"]["backfill_category"] == "new_term_decision_required"
+    assert report["planning_thresholds"]["effective_max_findings_per_small_pr_spec"] == 3
+    assert all(batch["finding_count"] <= 3 for batch in report["small_pr_batches"])
+
+
 def test_legacy_spec_backfill_plan_is_clear_without_findings() -> None:
     module = load_backfill_module()
 

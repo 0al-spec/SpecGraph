@@ -324,6 +324,10 @@ def build_legacy_spec_ontology_backfill_plan(
         validation_report=validation_report
     )
     source_paths = source_paths or {}
+    effective_max_findings_per_small_pr_spec = min(
+        max_findings_per_small_pr_spec,
+        max_findings_per_batch,
+    )
 
     gap_group_index = index_gap_groups(gap_review_workflow)
     entries = [
@@ -333,7 +337,7 @@ def build_legacy_spec_ontology_backfill_plan(
         build_spec_review(
             entry,
             gap_group_index=gap_group_index,
-            max_findings_per_small_pr_spec=max_findings_per_small_pr_spec,
+            max_findings_per_small_pr_spec=effective_max_findings_per_small_pr_spec,
         )
         for entry in entries
     ]
@@ -383,6 +387,7 @@ def build_legacy_spec_ontology_backfill_plan(
         },
         "planning_thresholds": {
             "max_findings_per_small_pr_spec": max_findings_per_small_pr_spec,
+            "effective_max_findings_per_small_pr_spec": (effective_max_findings_per_small_pr_spec),
             "max_specs_per_batch": max_specs_per_batch,
             "max_findings_per_batch": max_findings_per_batch,
         },
