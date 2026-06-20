@@ -971,6 +971,127 @@ def test_ontology_gap_and_diff_surfaces_group_layer_hints(tmp_path: Path) -> Non
     assert diff["summary"]["used_layer_count"] == 1
 
 
+def test_ontology_diff_layer_review_counts_field_and_breaking_changes(
+    tmp_path: Path,
+) -> None:
+    module = load_ontology_imports_module()
+    report = yaml.safe_load(SPECGRAPH_CORE_COMPATIBILITY_REPORT.read_text(encoding="utf-8"))
+    assert isinstance(report, dict)
+    changes = report["changes"]
+    assert isinstance(changes, dict)
+    changes.update(
+        {
+            "addedClasses": [],
+            "removedClasses": [],
+            "addedRelations": [],
+            "removedRelations": [],
+            "addedFields": ["sgcore:Spec.title"],
+            "removedFields": [],
+            "changedFields": ["sgcore:Spec.status"],
+            "breakingChanges": ["sgcore:Spec status narrowed"],
+        }
+    )
+    report_path = tmp_path / "compatibility-report.yaml"
+    report_path.write_text(yaml.safe_dump(report, sort_keys=False), encoding="utf-8")
+
+    surfaces = module.build_ontology_import_surfaces(
+        SPECGRAPH_CORE_FIXTURE,
+        compatibility_report_path=report_path,
+        semantic_policy_path=None,
+    )
+
+    diff = surfaces["compatibility_diff_preview"]
+    assert diff["layer_review"]["layered_change_count"] == 0
+    assert diff["layer_review"]["unassigned_change_count"] == 3
+    assert diff["layer_review"]["unassigned_refs"] == [
+        {"change_type": "added_fields", "ref": "sgcore:Spec.title"},
+        {"change_type": "changed_fields", "ref": "sgcore:Spec.status"},
+        {"change_type": "breaking_changes", "ref": "sgcore:Spec status narrowed"},
+    ]
+    assert diff["summary"]["unassigned_layer_change_count"] == 3
+
+
+def test_ontology_diff_layer_review_prefers_normalized_ir_over_report_hints(
+    tmp_path: Path,
+) -> None:
+    module = load_ontology_imports_module()
+    fixture = yaml.safe_load(SPECGRAPH_CORE_FIXTURE.read_text(encoding="utf-8"))
+    assert isinstance(fixture, dict)
+    source_ir_path = SPECGRAPH_CORE_FIXTURE.parent / fixture["package"]["materialized_ir"]
+    ir = json.loads(source_ir_path.read_text(encoding="utf-8"))
+    for entry in ir.get("classes", []):
+        if isinstance(entry, dict) and entry.get("fqid") == "sgcore:Spec":
+            entry["layer"] = "objective"
+
+    fixture["package"]["materialized_ir"] = "generated/ontology.layered.json"
+    fixture_dir = tmp_path / "ontology" / "packages" / "specgraph-core"
+    (fixture_dir / "generated").mkdir(parents=True)
+    fixture_path = fixture_dir / "import-fixture.yaml"
+    fixture_path.write_text(yaml.safe_dump(fixture, sort_keys=False), encoding="utf-8")
+    (fixture_dir / "generated" / "ontology.layered.json").write_text(
+        json.dumps(ir, indent=2, sort_keys=True),
+        encoding="utf-8",
+    )
+
+    report = yaml.safe_load(SPECGRAPH_CORE_COMPATIBILITY_REPORT.read_text(encoding="utf-8"))
+    assert isinstance(report, dict)
+    changes = report["changes"]
+    assert isinstance(changes, dict)
+    changes.update(
+        {
+            "addedClasses": [],
+            "removedClasses": ["sgcore:Spec"],
+            "addedRelations": [],
+            "removedRelations": [],
+            "layerHints": {"sgcore:Spec": "meta"},
+        }
+    )
+    report_path = tmp_path / "compatibility-report.yaml"
+    report_path.write_text(yaml.safe_dump(report, sort_keys=False), encoding="utf-8")
+
+    surfaces = module.build_ontology_import_surfaces(
+        fixture_path,
+        compatibility_report_path=report_path,
+        semantic_policy_path=None,
+    )
+
+    diff = surfaces["compatibility_diff_preview"]
+    assert diff["layer_review"]["layer_counts"] == {"objective": 1}
+    assert diff["layer_review"]["by_layer"] == {"objective": {"removed_classes": ["sgcore:Spec"]}}
+    assert diff["layer_review"]["unassigned_change_count"] == 0
+
+
+def test_ontology_diff_layer_review_keeps_unknown_hint_layers_reviewable(
+    tmp_path: Path,
+) -> None:
+    module = load_ontology_imports_module()
+    report = yaml.safe_load(SPECGRAPH_CORE_COMPATIBILITY_REPORT.read_text(encoding="utf-8"))
+    assert isinstance(report, dict)
+    changes = report["changes"]
+    assert isinstance(changes, dict)
+    changes["layerHints"] = {"sgcore:ClaimCalibration": "future_layer"}
+    report_path = tmp_path / "compatibility-report.yaml"
+    report_path.write_text(yaml.safe_dump(report, sort_keys=False), encoding="utf-8")
+
+    surfaces = module.build_ontology_import_surfaces(
+        SPECGRAPH_CORE_FIXTURE,
+        compatibility_report_path=report_path,
+        semantic_policy_path=None,
+    )
+
+    diff = surfaces["compatibility_diff_preview"]
+    assert diff["layer_review"]["layered_change_count"] == 0
+    assert diff["layer_review"]["unassigned_change_count"] == 1
+    assert diff["layer_review"]["unassigned_refs"] == [
+        {
+            "change_type": "added_classes",
+            "ref": "sgcore:ClaimCalibration",
+            "observed_layer": "future_layer",
+            "source": "compatibility_report.changes.layerHints",
+        }
+    ]
+
+
 def test_project_local_specgraph_core_default_fixture_is_authority_source() -> None:
     module = load_ontology_imports_module()
     policy = json.loads((ROOT / "tools" / "ontology_import_policy.json").read_text())

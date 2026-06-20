@@ -59,6 +59,10 @@ LAYER_REVIEW_CHANGE_TYPES = (
     "removed_classes",
     "added_relations",
     "removed_relations",
+    "added_fields",
+    "removed_fields",
+    "changed_fields",
+    "breaking_changes",
 )
 
 
@@ -177,15 +181,9 @@ def optional_layer_hint_map(mapping: dict[str, Any], field: str, context: str) -
         if not isinstance(raw_ref, str) or not raw_ref.strip():
             raise ValueError(f"{context}.{field} keys must be non-empty strings")
         ref = raw_ref.strip()
-        validate_concept_ref(ref, f"{context}.{field}.{ref}")
         if not isinstance(raw_layer, str) or not raw_layer.strip():
             raise ValueError(f"{context}.{field}.{ref} must be a non-empty string")
-        layer = raw_layer.strip()
-        if layer not in ONTOLOGY_LAYERS:
-            raise ValueError(
-                f"{context}.{field}.{ref} must be one of: {', '.join(ONTOLOGY_LAYERS)}"
-            )
-        hints[ref] = layer
+        hints[ref] = raw_layer.strip()
     return hints
 
 
@@ -202,24 +200,42 @@ def ref_layer_assignment(
     *,
     hint_source: str,
 ) -> dict[str, Any]:
-    if ref in layer_hints:
-        return {
-            "status": "assigned",
-            "layer": layer_hints[ref],
-            "source": hint_source,
-            "known_layers": list(ONTOLOGY_LAYERS),
-        }
-
     ref_metadata = refs.get(ref)
     if isinstance(ref_metadata, dict):
         layer = ref_metadata.get("layer")
-        if isinstance(layer, str) and layer in ONTOLOGY_LAYERS:
+        if isinstance(layer, str) and layer.strip():
+            layer_value = layer.strip()
+            if layer_value in ONTOLOGY_LAYERS:
+                return {
+                    "status": "assigned",
+                    "layer": layer_value,
+                    "source": "normalized_ir",
+                    "known_layers": list(ONTOLOGY_LAYERS),
+                }
+            return {
+                "status": "unassigned",
+                "source": "normalized_ir",
+                "observed_layer": layer_value,
+                "known_layers": list(ONTOLOGY_LAYERS),
+                "recommended_route": "assign_ontology_layer_during_gap_review",
+            }
+
+    if ref in layer_hints:
+        layer_value = layer_hints[ref]
+        if layer_value in ONTOLOGY_LAYERS:
             return {
                 "status": "assigned",
-                "layer": layer,
-                "source": "normalized_ir",
+                "layer": layer_value,
+                "source": hint_source,
                 "known_layers": list(ONTOLOGY_LAYERS),
             }
+        return {
+            "status": "unassigned",
+            "source": hint_source,
+            "observed_layer": layer_value,
+            "known_layers": list(ONTOLOGY_LAYERS),
+            "recommended_route": "assign_ontology_layer_during_gap_review",
+        }
 
     return {
         "status": "unassigned",
@@ -257,7 +273,7 @@ def compatibility_change_layer_review(
 ) -> dict[str, Any]:
     by_layer: dict[str, dict[str, list[str]]] = {}
     layer_counts: dict[str, int] = {layer: 0 for layer in ONTOLOGY_LAYERS}
-    unassigned_refs: list[dict[str, str]] = []
+    unassigned_refs: list[dict[str, Any]] = []
 
     for change_type in LAYER_REVIEW_CHANGE_TYPES:
         for ref in projected_changes.get(change_type, []):
@@ -269,7 +285,12 @@ def compatibility_change_layer_review(
             )
             layer = assignment.get("layer")
             if not isinstance(layer, str):
-                unassigned_refs.append({"change_type": change_type, "ref": ref})
+                unassigned = {"change_type": change_type, "ref": ref}
+                if isinstance(assignment.get("observed_layer"), str):
+                    unassigned["observed_layer"] = assignment["observed_layer"]
+                if isinstance(assignment.get("source"), str):
+                    unassigned["source"] = assignment["source"]
+                unassigned_refs.append(unassigned)
                 continue
             layer_counts[layer] += 1
             by_layer.setdefault(layer, {}).setdefault(change_type, []).append(ref)
