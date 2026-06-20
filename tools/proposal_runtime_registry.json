@@ -8025,5 +8025,50 @@
         "pattern": "do not publish raw prompts"
       }
     ]
+  },
+  {
+    "proposal_id": "0148",
+    "posture": "synchronous_runtime_slice",
+    "runtime_surfaces": [
+      "docs/proposals/0148_specauthor_agent_passport_behavior_policy.md",
+      "docs/archive/proposal_sources/0148_specauthor_agent_passport_behavior_policy.md",
+      "tools/agent_passports/specauthor-agent.passport.yaml",
+      "tools/agent_passport_adoption_policy.json",
+      "tests/test_supervisor.py"
+    ],
+    "runtime_markers": [
+      {
+        "path": "tools/agent_passports/specauthor-agent.passport.yaml",
+        "pattern": "x-behaviorPolicies"
+      },
+      {
+        "path": "tools/agent_passports/specauthor-agent.passport.yaml",
+        "pattern": "specgraph.specauthor.invocation-artifact.v0.1"
+      },
+      {
+        "path": "tools/agent_passport_adoption_policy.json",
+        "pattern": "specgraph.specauthor_agent"
+      }
+    ],
+    "validation_markers": [
+      {
+        "path": "tests/test_supervisor.py",
+        "pattern": "test_specauthor_agent_passport_declares_behavior_policy"
+      },
+      {
+        "path": "tests/test_supervisor.py",
+        "pattern": "agent-passport://specgraph/specauthor-agent/0.1.0"
+      }
+    ],
+    "observation_markers": [
+      {
+        "path": "docs/proposals/0148_specauthor_agent_passport_behavior_policy.md",
+        "pattern": "report-only"
+      },
+      {
+        "path": "docs/proposals/0148_specauthor_agent_passport_behavior_policy.md",
+        "pattern": "`x-behaviorPolicies` runtime security enforcement"
+      }
+    ]
   }
 ]

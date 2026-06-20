@@ -1,0 +1,92 @@
+passport:
+  apiVersion: "agent-passport.io/v1alpha1"
+  kind: "AgentPassport"
+  metadata:
+    name: "specauthor-agent"
+    uid: "6a8a0fef-7e6f-4fc9-8847-4f42b5d78146"
+    version: "0.1.0"
+    issueDate: "2026-01-01T00:00:00Z"
+    expiryDate: "9999-12-31T23:59:59Z"
+    issuer: "0AL Internal Draft Authority"
+  spec:
+    entity:
+      type: "LLM-agent"
+      description: "Produces review-only SpecGraph specification drafts under ontology, context, and claim-calibration constraints."
+      owner: "0AL SpecGraph"
+      contact: "https://github.com/0al-spec/SpecGraph"
+    capabilities:
+      - name: "compose_specification"
+        description: "Creates generated_spec_artifact drafts for SpecGraph proposals, ADRs, RFC sections, and related spec artifacts."
+        signature:
+          parameters:
+            - name: "operator_intent"
+              type: "string"
+              required: true
+            - name: "active_context"
+              type: "object"
+              required: true
+            - name: "available_ontologies"
+              type: "array"
+              required: true
+          returns:
+            type: "object"
+            description: "Review-only generated_spec_artifact with calibrated claims and ontology bindings."
+        accessControl:
+          - "specgraph-operators"
+          - "architecture-agents"
+    resources:
+      cpu: "1000m"
+      memory: "2Gi"
+      fileSystemAccess:
+        - path: "/workspace/specgraph"
+          permissions:
+            - "read"
+            - "write"
+    securityPolicies:
+      capabilities: []
+      networkRestrictions:
+        denyList:
+          - "0.0.0.0/0"
+      executionEnvironment:
+        isolated: true
+        privileged: false
+  x-behaviorPolicies:
+    - id: "specgraph.specauthor.behavior-policy.v0.1"
+      status: "experimental"
+      appliesTo:
+        - "compose_specification"
+      reportOnly: true
+      runtimeEnforcement: false
+      references:
+        promptContract: "specgraph.prompt-contract.claim-calibration.v0.1"
+        generatedArtifactContract: "specgraph.specauthor.generated-spec-artifact.v0.1"
+        invocationArtifactContract: "specgraph.specauthor.invocation-artifact.v0.1"
+        ontologyWriteGate: "specgraph.write_gate.claim_calibration.v0.1"
+      requires:
+        ontologyResolution: true
+        domainResolution: true
+        contextResolution: true
+        ontologyLayerResolution: true
+        modelApplicabilityResolution: true
+        claimCalibration: "FGR"
+        contextCompletionRequestWhenFrameIncomplete: true
+      rejectsOutputWhen:
+        - "missing_active_frame"
+        - "missing_ontology_refs"
+        - "missing_domain_refs"
+        - "missing_context_refs"
+        - "missing_ontology_layer_refs"
+        - "missing_model_applicability_refs"
+        - "strong_claim_without_fgr"
+        - "low_reliability_decision"
+        - "new_term_without_ontology_binding_or_gap"
+      authorityBoundary:
+        canonicalSpecMutation: false
+        ontologyPackageWrites: false
+        ownerDecisionImport: false
+        operatorDecisionRequired: true
+  signature:
+    algorithm: "EdDSA"
+    value: "ZHJhZnQtc2lnbmF0dXJl"
+    publicKeyRef: "did:example:0al:specauthor-agent:key1"
+    signedBy: "0ALInternalDraftSigner"
