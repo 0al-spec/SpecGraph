@@ -168,6 +168,11 @@ Supervisor modes:
   validation, ref/diff previews, and gap review. These commands do not mutate
   canonical specs, update ontology lockfiles, accept terms, or write to
   SpecSpace.
+- `tools/spec_ontology_binding_index.py`: report-only legacy spec binding
+  index introduced by proposal 0134. Use `make spec-ontology-bindings` to emit
+  `runs/spec_ontology_binding_index.json`, mapping obvious existing spec
+  structure to current ontology refs and surfacing unknown legacy terminology as
+  ontology gaps without rewriting `specs/nodes/*.yaml`.
 - `tools/ontology_term_binding_policy.json`: review-first policy for treating
   accepted Ontology entities as canonical type symbols, requiring unknown
   generated terms to become `ontology_gap` records, and keeping practical

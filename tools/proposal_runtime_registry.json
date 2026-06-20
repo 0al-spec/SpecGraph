@@ -7321,5 +7321,55 @@
         "pattern": "Existing specs stay canonical"
       }
     ]
+  },
+  {
+    "proposal_id": "0134",
+    "posture": "synchronous_runtime_slice",
+    "runtime_surfaces": [
+      "docs/proposals/0134_legacy_spec_ontology_binding_index.md",
+      "docs/archive/proposal_sources/0134_legacy_spec_ontology_binding_index.md",
+      "tools/spec_ontology_binding_index.py",
+      "Makefile",
+      "tools/README.md",
+      "tests/test_spec_ontology_binding_index.py"
+    ],
+    "runtime_markers": [
+      {
+        "path": "Makefile",
+        "pattern": "spec-ontology-bindings"
+      },
+      {
+        "path": "tools/spec_ontology_binding_index.py",
+        "pattern": "spec_ontology_binding_index"
+      },
+      {
+        "path": "tools/spec_ontology_binding_index.py",
+        "pattern": "legacy_report_only"
+      }
+    ],
+    "validation_markers": [
+      {
+        "path": "tests/test_spec_ontology_binding_index.py",
+        "pattern": "test_legacy_spec_binding_index_reports_existing_corpus"
+      },
+      {
+        "path": "tests/test_spec_ontology_binding_index.py",
+        "pattern": "test_legacy_spec_binding_index_maps_root_spec_structure"
+      },
+      {
+        "path": "tests/test_spec_ontology_binding_index.py",
+        "pattern": "test_legacy_spec_binding_index_write_target_is_runs_only"
+      }
+    ],
+    "observation_markers": [
+      {
+        "path": "docs/proposals/0134_legacy_spec_ontology_binding_index.md",
+        "pattern": "The index is report-only"
+      },
+      {
+        "path": "docs/proposals/0134_legacy_spec_ontology_binding_index.md",
+        "pattern": "unknown legacy terminology becomes gap evidence"
+      }
+    ]
   }
 ]
