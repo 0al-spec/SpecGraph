@@ -10,8 +10,9 @@ Intent:
 - connect decisions to closed-loop evidence, gap groups, compliance findings, and
   write-gate findings;
 - show affected review items and before/after semantic status;
-- make clean static artifact publishing generate the v2 review artifact before
-  public-unsafe owner-decision surfaces are replaced with tombstones;
+- make clean static artifact publishing generate the grouped gap review surface,
+  replace public-unsafe ontology decision surfaces with placeholders/tombstones,
+  then generate the v2 review artifact from public-safe inputs;
 - keep the action boundary read-only/acknowledgement-only.
 
 Non-goals:

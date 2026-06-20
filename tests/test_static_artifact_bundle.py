@@ -922,8 +922,8 @@ def test_refresh_publish_surfaces_builds_viewer_implementation_and_agent_surface
         "spec-ontology-bindings",
         "spec-ontology-validation",
         "ontology-gap-review",
-        "ontology-owner-decision-import-v2",
         "ontology-imports-public",
+        "ontology-owner-decision-import-v2",
     ]
 
 

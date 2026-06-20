@@ -88,9 +88,10 @@ This slice adds:
 - `make ontology-owner-decision-import-v2`;
 - focused tests for accepted decisions, rejected decisions, public tombstone/no
   decision fallback, public-safe redaction, and CLI writes;
-- static publish refresh wiring so clean CI/deploy builds generate both
-  `ontology_gap_review_workflow.json` and
-  `ontology_owner_decision_import_v2.json` before public placeholders are written;
+- static publish refresh wiring so clean CI/deploy builds generate
+  `ontology_gap_review_workflow.json`, refresh public-safe ontology placeholders,
+  then generate `ontology_owner_decision_import_v2.json` from the public-safe
+  decision preview;
 - proposal tracking metadata.
 
 The artifact is public-safe by design: it carries decision state and decision
