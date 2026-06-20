@@ -161,6 +161,13 @@ Supervisor modes:
   against the imported ontology fixture. These surfaces resolve known imported
   refs and preserve unresolved refs as reviewable ontology gaps without
   mutating canonical `specs/nodes/*.yaml`.
+- `tools/ontology_package_authoring.py`: review-only project-local ontology
+  package authoring helper introduced by proposal 0133. Use
+  `make ontology-package-validate`, `make ontology-package-preview`, and
+  `make ontology-package-gaps` to emit typed `runs/` artifacts for package
+  validation, ref/diff previews, and gap review. These commands do not mutate
+  canonical specs, update ontology lockfiles, accept terms, or write to
+  SpecSpace.
 - `tools/ontology_term_binding_policy.json`: review-first policy for treating
   accepted Ontology entities as canonical type symbols, requiring unknown
   generated terms to become `ontology_gap` records, and keeping practical
