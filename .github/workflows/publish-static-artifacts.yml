@@ -5,6 +5,7 @@ on:
   pull_request:
     paths:
       - "landing/**"
+      - "ontology/**"
       - "specs/**"
       - "tools/**"
       - "tests/**"
@@ -16,6 +17,7 @@ on:
       - master
     paths:
       - "landing/**"
+      - "ontology/**"
       - "specs/**"
       - "tools/**"
       - "Makefile"

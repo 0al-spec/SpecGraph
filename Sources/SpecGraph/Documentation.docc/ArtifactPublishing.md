@@ -65,6 +65,12 @@ no-decisions placeholders and tombstones. When
 referenced JSON file is copied into the bundle at the same relative path and is
 listed in `artifact_manifest.json`.
 
+Project-local ontology package data should materialize below the owning
+SpecGraph checkout, for example `ontology/packages/specgraph-core/`, not under
+the sibling Ontology repository or `tests/fixtures/`. The sibling Ontology
+repository remains the tooling, schema, compiler, stdlib primitive, and example
+authority rather than the default storage location for every product ontology.
+
 Local-only operator diagnostics are excluded from the public bundle.
 `runs/local_operator_executor_readiness.json` may exist after
 `make executor-readiness`, and `runs/local_operator_executor_smoke.json` may

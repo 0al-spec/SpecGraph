@@ -26,6 +26,14 @@ Ontology package, points to `concept-refs.yaml`, `ontology.lock.yaml`, and
 SpecGraph still needs proposal review before any accepted import lock, semantic
 binding, or canonical node mutation exists.
 
+## Project-Local Package Boundary
+
+Project-specific ontology package data belongs under the owning SpecGraph
+project, for example `ontology/packages/specgraph-core/`. The sibling Ontology
+repository remains the tooling, schema, compiler, stdlib primitive, and example
+authority. It is not the default storage location for every product ontology
+built with SpecGraph and SpecSpace.
+
 ## Smoke Surface
 
 `tools/ontology_imports.py --write` validates the checked-in report fixture and
