@@ -31,6 +31,7 @@ DEFAULT_OUTPUT_PATH = ROOT / "runs" / "specauthor_ontology_write_gate_report.jso
 REQUIRED_FRAME_LIST_FIELDS = ("ontology_refs", "domain_refs", "context_refs")
 REQUIRED_FRAME_TEXT_FIELDS = ("project", "target_artifact", "lifecycle_phase")
 DECISION_CLAIM_TYPES = {"decision", "invariant", "security_constraint"}
+DECISION_LIKE_CLAIM_TYPES = DECISION_CLAIM_TYPES | {"architectural_decision"}
 STRONG_CLAIM_TYPES = DECISION_CLAIM_TYPES | {
     "constraint",
     "architectural_decision",
@@ -42,6 +43,15 @@ LOW_RELIABILITY_VALUES = {"R0", "R1", "R2"}
 HIGH_RELIABILITY_VALUES = {"R3", "R4", "R5"}
 VALID_F_VALUES = {"F0", "F1", "F2", "F3", "F4", "F5"}
 VALID_R_VALUES = {"R0", "R1", "R2", "R3", "R4", "R5"}
+SUPPORTED_ARTIFACT_KINDS = {
+    "AgentPassportDraft",
+    "ADR",
+    "generated_spec_artifact",
+    "HypercodeSpec",
+    "HCSConfigSpec",
+    "Proposal",
+    "RFCSection",
+}
 
 
 def _now_iso() -> str:
@@ -97,6 +107,12 @@ def _has_nonempty_list(value: Any) -> bool:
     return isinstance(value, list) and bool(value)
 
 
+def _has_concrete_text_list(value: Any) -> bool:
+    return isinstance(value, list) and any(
+        isinstance(item, str) and bool(item.strip()) for item in value
+    )
+
+
 def _claim_id(claim: dict[str, Any], index: int) -> str:
     return _text(claim.get("id"), f"claim[{index}]")
 
@@ -144,7 +160,9 @@ def _validate_active_frame(
         field for field in REQUIRED_FRAME_TEXT_FIELDS if not _has_nonempty_text(frame.get(field))
     ]
     missing_lists = [
-        field for field in REQUIRED_FRAME_LIST_FIELDS if not _has_nonempty_list(frame.get(field))
+        field
+        for field in REQUIRED_FRAME_LIST_FIELDS
+        if not _has_concrete_text_list(frame.get(field))
     ]
     if missing_text or missing_lists:
         findings.append(
@@ -171,16 +189,38 @@ def _validate_active_frame(
             )
         )
     elif completion_request is not None:
-        warnings.append(
+        findings.append(
             _finding(
                 finding_id="context_completion_request_invalid_shape",
-                severity="warning",
+                severity="review_required",
                 message="context_completion_request should be an object when present.",
                 source_ref=source_ref,
             )
         )
 
     return findings, warnings
+
+
+def _validate_artifact_kind(
+    artifact: dict[str, Any],
+    *,
+    source_ref: str,
+) -> list[dict[str, Any]]:
+    artifact_kind = artifact.get("artifact_kind")
+    if artifact_kind in SUPPORTED_ARTIFACT_KINDS:
+        return []
+    return [
+        _finding(
+            finding_id="unsupported_artifact_kind",
+            severity="review_required",
+            message="Generated artifact kind is not supported by this write gate.",
+            source_ref=source_ref,
+            evidence={
+                "artifact_kind": artifact_kind,
+                "supported_artifact_kinds": sorted(SUPPORTED_ARTIFACT_KINDS),
+            },
+        )
+    ]
 
 
 def _validate_claims(
@@ -234,7 +274,7 @@ def _validate_claims(
             missing.append("calibration.F")
         if r_value not in VALID_R_VALUES:
             missing.append("calibration.R")
-        if not _has_nonempty_list(g_value.get("applies_to")):
+        if not _has_concrete_text_list(g_value.get("applies_to")):
             missing.append("calibration.G.applies_to")
         if missing:
             findings.append(
@@ -248,7 +288,7 @@ def _validate_claims(
             )
             continue
 
-        if _claim_type(claim) in DECISION_CLAIM_TYPES and r_value in LOW_RELIABILITY_VALUES:
+        if _claim_type(claim) in DECISION_LIKE_CLAIM_TYPES and r_value in LOW_RELIABILITY_VALUES:
             findings.append(
                 _finding(
                     finding_id="low_reliability_claim_marked_decision",
@@ -263,7 +303,7 @@ def _validate_claims(
             )
 
         evidence_refs = _list(claim.get("evidence_refs"))
-        if not evidence_refs and r_value in HIGH_RELIABILITY_VALUES:
+        if not _has_concrete_text_list(evidence_refs) and r_value in HIGH_RELIABILITY_VALUES:
             findings.append(
                 _finding(
                     finding_id="unsupported_high_reliability_claim",
@@ -296,6 +336,7 @@ def build_specauthor_ontology_write_gate_report(
     artifact_path: Path | None = None,
 ) -> dict[str, Any]:
     source_ref = _source_ref(artifact, artifact_path)
+    artifact_kind_findings = _validate_artifact_kind(artifact, source_ref=source_ref)
     active_frame_findings, active_frame_warnings = _validate_active_frame(
         artifact,
         source_ref=source_ref,
@@ -309,7 +350,7 @@ def build_specauthor_ontology_write_gate_report(
     term_findings = _list(term_report.get("findings"))
     term_warnings = _list(term_report.get("warnings"))
 
-    findings = active_frame_findings + claim_findings + term_findings
+    findings = artifact_kind_findings + active_frame_findings + claim_findings + term_findings
     warnings = active_frame_warnings + claim_warnings + term_warnings
     would_reject = bool(findings)
     context_completion_pending = any(
@@ -367,6 +408,7 @@ def build_specauthor_ontology_write_gate_report(
         "summary": {
             "finding_count": len(findings),
             "warning_count": len(warnings),
+            "artifact_kind_finding_count": len(artifact_kind_findings),
             "active_frame_finding_count": len(active_frame_findings),
             "claim_finding_count": len(claim_findings),
             "term_binding_finding_count": len(term_findings),

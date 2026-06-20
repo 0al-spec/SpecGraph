@@ -97,6 +97,101 @@ def test_specauthor_write_gate_blocks_context_completion_as_final_spec() -> None
     assert "context_completion_required" in finding_ids(report)
 
 
+def test_specauthor_write_gate_rejects_malformed_context_completion_request() -> None:
+    module = load_gate_module()
+    artifact = load_fixture(READY_FIXTURE)
+    artifact["context_completion_request"] = "missing-context"
+
+    report = module.build_specauthor_ontology_write_gate_report(
+        artifact,
+        term_policy=load_policy(),
+        artifact_path=READY_FIXTURE,
+    )
+
+    assert report["ok"] is False
+    assert "context_completion_request_invalid_shape" in finding_ids(report)
+
+
+def test_specauthor_write_gate_rejects_placeholder_active_frame_refs() -> None:
+    module = load_gate_module()
+    artifact = load_fixture(READY_FIXTURE)
+    artifact["active_frame"]["ontology_refs"] = [""]
+
+    report = module.build_specauthor_ontology_write_gate_report(
+        artifact,
+        term_policy=load_policy(),
+        artifact_path=READY_FIXTURE,
+    )
+
+    assert report["ok"] is False
+    assert "active_frame_incomplete" in finding_ids(report)
+
+
+def test_specauthor_write_gate_rejects_low_r_architectural_decision() -> None:
+    module = load_gate_module()
+    artifact = load_fixture(READY_FIXTURE)
+    artifact["claims"][0]["type"] = "architectural_decision"
+    artifact["claims"][0]["calibration"]["R"] = "R2"
+
+    report = module.build_specauthor_ontology_write_gate_report(
+        artifact,
+        term_policy=load_policy(),
+        artifact_path=READY_FIXTURE,
+    )
+
+    assert report["ok"] is False
+    assert "low_reliability_claim_marked_decision" in finding_ids(report)
+
+
+def test_specauthor_write_gate_rejects_placeholder_scope_refs() -> None:
+    module = load_gate_module()
+    artifact = load_fixture(READY_FIXTURE)
+    artifact["claims"][0]["calibration"]["R"] = "R3"
+    artifact["claims"][0]["calibration"]["G"]["applies_to"] = [""]
+
+    report = module.build_specauthor_ontology_write_gate_report(
+        artifact,
+        term_policy=load_policy(),
+        artifact_path=READY_FIXTURE,
+    )
+
+    ids = finding_ids(report)
+    assert report["ok"] is False
+    assert "strong_claim_without_fgr" in ids
+
+
+def test_specauthor_write_gate_rejects_placeholder_high_r_evidence_refs() -> None:
+    module = load_gate_module()
+    artifact = load_fixture(READY_FIXTURE)
+    artifact["claims"][0]["calibration"]["R"] = "R3"
+    artifact["claims"][0]["evidence_refs"] = [""]
+
+    report = module.build_specauthor_ontology_write_gate_report(
+        artifact,
+        term_policy=load_policy(),
+        artifact_path=READY_FIXTURE,
+    )
+
+    ids = finding_ids(report)
+    assert report["ok"] is False
+    assert "unsupported_high_reliability_claim" in ids
+
+
+def test_specauthor_write_gate_rejects_unsupported_artifact_kind() -> None:
+    module = load_gate_module()
+    artifact = load_fixture(READY_FIXTURE)
+    artifact["artifact_kind"] = "freeform_chat_response"
+
+    report = module.build_specauthor_ontology_write_gate_report(
+        artifact,
+        term_policy=load_policy(),
+        artifact_path=READY_FIXTURE,
+    )
+
+    assert report["ok"] is False
+    assert "unsupported_artifact_kind" in finding_ids(report)
+
+
 def test_specauthor_write_gate_strict_cli_exits_nonzero(tmp_path: Path) -> None:
     output_path = tmp_path / "specauthor-gate-report.json"
 
