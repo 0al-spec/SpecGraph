@@ -16,6 +16,8 @@ EXECUTOR_FOLLOWUP_REVIEWER ?= local_operator
 EXECUTOR_FOLLOWUP_RATIONALE ?=
 ONTOLOGY_TERM_BINDING_ARTIFACT ?= tests/fixtures/ontology_term_binding/generated_artifact_review_required.json
 ONTOLOGY_TERM_BINDING_GATE_OUTPUT ?= runs/ontology_term_binding_gate_report.json
+ONTOLOGY_GAP_REVIEW_GENERATED_ARTIFACT ?=
+ONTOLOGY_GAP_REVIEW_OUTPUT ?= runs/ontology_gap_review_workflow.json
 SPECAUTHOR_GENERATED_ARTIFACT_CONTRACT_ARTIFACT ?= tests/fixtures/specauthor_generated_artifact_contract/generated_spec_ready.json
 SPECAUTHOR_GENERATED_ARTIFACT_CONTRACT_OUTPUT ?= runs/specauthor_generated_artifact_contract_report.json
 SPECAUTHOR_ONTOLOGY_WRITE_GATE_ARTIFACT ?= tests/fixtures/specauthor_ontology_write_gate/generated_spec_review_required.json
@@ -28,7 +30,8 @@ PYTHON_TARGETS := viewer-surfaces dashboard backlog next-move spec-activity grap
 	external-consumer-evidence ontology-imports ontology-imports-public \
 	ontology-package-validate ontology-package-preview ontology-package-gaps \
 	spec-ontology-bindings spec-ontology-validation \
-	ontology-term-binding-gate specauthor-generated-artifact-contract specauthor-ontology-write-gate \
+	ontology-term-binding-gate ontology-gap-review \
+	specauthor-generated-artifact-contract specauthor-ontology-write-gate \
 	proposal-work-claims proposal-work-claims-gate proposal-id \
 	metrics-delivery metrics-feedback metrics-source-promotion metric-signals metric-thresholds \
 	metric-packs metric-pack-drift metric-pack-adapters metric-pack-runs metric-pricing model-usage \
@@ -73,6 +76,7 @@ help:
 			'  make spec-ontology-bindings    Build report-only legacy spec ontology bindings' \
 			'  make spec-ontology-validation  Build report-only spec ontology validation report' \
 			'  make ontology-term-binding-gate ONTOLOGY_TERM_BINDING_ARTIFACT=<json>' \
+			'  make ontology-gap-review ONTOLOGY_GAP_REVIEW_GENERATED_ARTIFACT=<json>' \
 			'  make specauthor-generated-artifact-contract SPECAUTHOR_GENERATED_ARTIFACT_CONTRACT_ARTIFACT=<json>' \
 			'  make specauthor-ontology-write-gate SPECAUTHOR_ONTOLOGY_WRITE_GATE_ARTIFACT=<json>' \
 		'  make metrics-delivery         Refresh Metrics delivery workflow JSON' \
@@ -217,6 +221,10 @@ spec-ontology-validation:
 .PHONY: ontology-term-binding-gate
 ontology-term-binding-gate:
 	@$(PYTHON) tools/ontology_term_binding_gate.py --artifact "$(ONTOLOGY_TERM_BINDING_ARTIFACT)" --output "$(ONTOLOGY_TERM_BINDING_GATE_OUTPUT)"
+
+.PHONY: ontology-gap-review
+ontology-gap-review:
+	@$(PYTHON) tools/ontology_gap_review_workflow.py --write --output "$(ONTOLOGY_GAP_REVIEW_OUTPUT)" $(if $(ONTOLOGY_GAP_REVIEW_GENERATED_ARTIFACT),--generated-artifact "$(ONTOLOGY_GAP_REVIEW_GENERATED_ARTIFACT)",)
 
 .PHONY: specauthor-generated-artifact-contract
 specauthor-generated-artifact-contract:

@@ -186,6 +186,14 @@ Supervisor modes:
   artifacts. It reads `tools/ontology_term_binding_policy.json`, emits
   `runs/ontology_term_binding_gate_report.json`, and reports whether the
   artifact would fail a future hard gate without mutating canonical specs.
+- `tools/ontology_gap_review_workflow.py`: read-only grouped review workflow for
+  ontology gaps introduced by proposal 0138. Use `make ontology-gap-review` to
+  emit `runs/ontology_gap_review_workflow.json` from package gap preview and
+  spec ontology validation findings. Pass
+  `ONTOLOGY_GAP_REVIEW_GENERATED_ARTIFACT=<json>` to attach affected generated
+  artifacts that contain `ontology_gaps`. The workflow recommends owner review
+  actions but does not import decisions, write ontology packages, or mutate
+  specs.
 - `tools/specauthor_generated_artifact_contract.py`: producer-side contract
   validator for `generated_spec_artifact` drafts introduced by proposal 0137.
   Use `make specauthor-generated-artifact-contract

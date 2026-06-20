@@ -438,6 +438,7 @@ def refresh_publish_surfaces(repo_root: Path) -> None:
     run_make_target(repo_root, "ontology-imports")
     run_make_target(repo_root, "spec-ontology-bindings")
     run_make_target(repo_root, "spec-ontology-validation")
+    run_make_target(repo_root, "ontology-gap-review")
     run_make_target(repo_root, "ontology-imports-public")
 
 

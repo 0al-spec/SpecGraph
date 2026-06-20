@@ -64,3 +64,9 @@ typed invocation artifact that links user intent, active ontology context,
 generated artifact, contract report, write-gate report, and final operator
 decision without executing prompts inside supervisor or mutating canonical
 specs directly.
+
+Proposal `0138` adds a read-only ontology gap review workflow before owner
+decision import. It groups package gaps, legacy spec validation findings, and
+optional generated artifact gaps by proposed term or relation, preserving source
+specs, affected generated artifact refs, source findings, and recommended owner
+actions. Owner decision import v2 remains the next separate slice.

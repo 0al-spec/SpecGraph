@@ -915,6 +915,7 @@ def test_refresh_publish_surfaces_builds_viewer_implementation_and_agent_surface
         "ontology-imports",
         "spec-ontology-bindings",
         "spec-ontology-validation",
+        "ontology-gap-review",
         "ontology-imports-public",
     ]
 
