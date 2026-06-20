@@ -1,6 +1,8 @@
 from __future__ import annotations
 
 import importlib.util
+import json
+import subprocess
 import sys
 from pathlib import Path
 
@@ -62,9 +64,78 @@ def test_legacy_spec_binding_index_maps_root_spec_structure() -> None:
     assert root_entry["gaps"]
 
 
+def test_legacy_spec_binding_index_matches_camelcase_ontology_ids() -> None:
+    module = load_binding_module()
+
+    index = module.build_binding_index()
+    entries = {entry["spec_id"]: entry for entry in index["entries"]}
+    executable_entry = entries["SG-SPEC-0020"]
+
+    bindings = {
+        (binding["term"], binding["ontology_ref"])
+        for binding in executable_entry["accepted_bindings"]
+    }
+    assert ("code_surface", "sgcore:CodeSurface") in bindings
+    assert all(
+        gap["gap_id"] != "ontology-gap-sg-spec-0020-code-surface"
+        for gap in executable_entry["gaps"]
+    )
+
+
+def test_legacy_spec_binding_index_does_not_emit_missing_structural_ir_refs(tmp_path: Path) -> None:
+    module = load_binding_module()
+    ir_path = tmp_path / "ontology.normalized.json"
+    ir_path.write_text(
+        json.dumps(
+            {
+                "classes": [
+                    {"id": "Node", "fqid": "sgcore:Node"},
+                ],
+                "relations": [],
+            }
+        ),
+        encoding="utf-8",
+    )
+
+    index = module.build_binding_index(ir_path=ir_path)
+    root_entry = {entry["spec_id"]: entry for entry in index["entries"]}["SG-SPEC-0001"]
+
+    ontology_refs = {binding["ontology_ref"] for binding in root_entry["accepted_bindings"]}
+    assert "sgcore:Node" in ontology_refs
+    assert "sgcore:Spec" not in ontology_refs
+    assert "sgcore:AcceptanceCriterion" not in ontology_refs
+    assert not root_entry["relation_candidates"]
+    assert any(
+        gap["classification"] == "missing_ontology_ref" and gap["term"] == "spec"
+        for gap in root_entry["gaps"]
+    )
+
+
 def test_legacy_spec_binding_index_write_target_is_runs_only() -> None:
     module = load_binding_module()
 
     assert module.relative_path(module.DEFAULT_OUTPUT_PATH) == (
         "runs/spec_ontology_binding_index.json"
     )
+    assert module.resolve_output_path("runs/custom_binding_index.json") == (
+        ROOT / "runs" / "custom_binding_index.json"
+    )
+
+
+def test_legacy_spec_binding_index_rejects_non_runs_output() -> None:
+    result = subprocess.run(
+        [
+            sys.executable,
+            str(ROOT / "tools" / "spec_ontology_binding_index.py"),
+            "--write",
+            "--output",
+            "specs/nodes/SG-SPEC-0001.yaml",
+        ],
+        cwd=ROOT,
+        text=True,
+        capture_output=True,
+        check=False,
+    )
+
+    assert result.returncode == 2
+    assert "--output must stay under runs" in result.stderr
