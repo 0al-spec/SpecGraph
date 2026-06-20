@@ -843,6 +843,12 @@ Key derived artifacts:
   command persistence. Redacted local executor summaries may reference
   local-only executor artifacts without publishing their payloads. These
   artifacts do not prove sandbox or runtime policy enforcement.
+- `runs/specauthor_invocation_artifact.json`: public-safe, review-only
+  SpecAuthor invocation artifact assembled by `make specauthor-authoring-flow`.
+- `runs/specauthor_invocation_artifact_contract_report.json`: public-safe
+  contract validation report for the SpecAuthor invocation artifact.
+- `runs/specauthor_authoring_flow_report.json`: compact public-safe summary for
+  the deterministic SpecAuthor authoring flow.
 - `runs/specpm_export_preview.json`: reviewable `SpecPM` package preview
   artifact, including manifest preview, boundary-source preview, export
   status, and next-gap backlog for future full package emission
