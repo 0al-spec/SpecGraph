@@ -89,6 +89,12 @@ def make_repo(root: Path) -> Path:
             "artifact_kind": "ontology_package_index",
             "packages": [],
         },
+        "ontology_gap_review_workflow.json": {
+            "artifact_kind": "ontology_gap_review_workflow",
+        },
+        "ontology_owner_decision_import_v2.json": {
+            "artifact_kind": "ontology_owner_decision_import_v2",
+        },
         "spec_ontology_binding_index.json": {
             "artifact_kind": "spec_ontology_binding_index",
         },
@@ -916,6 +922,7 @@ def test_refresh_publish_surfaces_builds_viewer_implementation_and_agent_surface
         "spec-ontology-bindings",
         "spec-ontology-validation",
         "ontology-gap-review",
+        "ontology-owner-decision-import-v2",
         "ontology-imports-public",
     ]
 
