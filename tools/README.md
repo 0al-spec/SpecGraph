@@ -232,6 +232,15 @@ Supervisor modes:
   state without executing prompt agents or mutating canonical specs.
   The report is written to
   `runs/specauthor_invocation_artifact_contract_report.json`.
+- `tools/specauthor_authoring_flow.py`: deterministic prompt-side authoring
+  wrapper introduced by proposal 0146. Use `make specauthor-authoring-flow` to
+  assemble an already-produced `generated_spec_artifact`, active
+  ontology/domain/context/layer/applicability data, the generated artifact
+  contract report, and the ontology write-gate report into
+  `runs/specauthor_invocation_artifact.json` and
+  `runs/specauthor_invocation_artifact_contract_report.json`. The wrapper does
+  not execute prompt agents, publish raw prompts, mutate canonical specs, or
+  write Ontology packages.
 - `--build-ontology-supervisor-semantic-gate`: refresh the same ontology
   semantic surfaces through the supervisor entrypoint and print a compact gate
   report for `runs/ontology_supervisor_semantic_gate.json` without running
