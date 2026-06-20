@@ -28,7 +28,13 @@ load_json = _TERM_GATE.load_json
 PROPOSAL_ID = "0136"
 DEFAULT_OUTPUT_PATH = ROOT / "runs" / "specauthor_ontology_write_gate_report.json"
 
-REQUIRED_FRAME_LIST_FIELDS = ("ontology_refs", "domain_refs", "context_refs")
+ONTOLOGY_LAYERS = {"objective", "mechanics", "execution", "meta", "multi_agent"}
+REQUIRED_FRAME_LIST_FIELDS = (
+    "ontology_refs",
+    "ontology_layer_refs",
+    "domain_refs",
+    "context_refs",
+)
 REQUIRED_FRAME_TEXT_FIELDS = ("project", "target_artifact", "lifecycle_phase")
 DECISION_CLAIM_TYPES = {"decision", "invariant", "security_constraint"}
 DECISION_LIKE_CLAIM_TYPES = DECISION_CLAIM_TYPES | {"architectural_decision"}
@@ -113,6 +119,10 @@ def _has_concrete_text_list(value: Any) -> bool:
     )
 
 
+def _text_list(value: Any) -> list[str]:
+    return [item.strip() for item in _list(value) if isinstance(item, str) and bool(item.strip())]
+
+
 def _claim_id(claim: dict[str, Any], index: int) -> str:
     return _text(claim.get("id"), f"claim[{index}]")
 
@@ -171,10 +181,28 @@ def _validate_active_frame(
                 severity="review_required",
                 message=(
                     "active_frame must resolve project, target artifact, lifecycle, "
-                    "ontology, domain, and context."
+                    "ontology, ontology layer, domain, and context."
                 ),
                 source_ref=source_ref,
                 evidence={"missing_text": missing_text, "missing_lists": missing_lists},
+            )
+        )
+    invalid_layers = [
+        layer
+        for layer in _text_list(frame.get("ontology_layer_refs"))
+        if layer not in ONTOLOGY_LAYERS
+    ]
+    if invalid_layers:
+        findings.append(
+            _finding(
+                finding_id="active_frame_invalid_ontology_layers",
+                severity="review_required",
+                message="active_frame.ontology_layer_refs must use known ontology layers.",
+                source_ref=source_ref,
+                evidence={
+                    "invalid_layers": invalid_layers,
+                    "known_layers": sorted(ONTOLOGY_LAYERS),
+                },
             )
         )
 
@@ -231,6 +259,7 @@ def _validate_claims(
     findings: list[dict[str, Any]] = []
     warnings: list[dict[str, Any]] = []
     claims = artifact.get("claims")
+    active_layers = set(_text_list(_dict(artifact.get("active_frame")).get("ontology_layer_refs")))
 
     if not isinstance(claims, list):
         inventory = _dict(artifact.get("claim_inventory"))
@@ -266,6 +295,48 @@ def _validate_claims(
             continue
         calibration = _dict(claim.get("calibration"))
         claim_ref = _claim_id(claim, index)
+        claim_layers = _text_list(claim.get("ontology_layer_refs") or claim.get("layer_refs"))
+        if not claim_layers:
+            findings.append(
+                _finding(
+                    finding_id="strong_claim_without_layer_context",
+                    severity="review_required",
+                    message="Strong claims must declare ontology_layer_refs.",
+                    source_ref=source_ref,
+                    evidence={"claim": claim_ref},
+                )
+            )
+        else:
+            invalid_layers = [layer for layer in claim_layers if layer not in ONTOLOGY_LAYERS]
+            if invalid_layers:
+                findings.append(
+                    _finding(
+                        finding_id="strong_claim_invalid_ontology_layers",
+                        severity="review_required",
+                        message="Strong claim ontology_layer_refs must use known ontology layers.",
+                        source_ref=source_ref,
+                        evidence={
+                            "claim": claim_ref,
+                            "invalid_layers": invalid_layers,
+                            "known_layers": sorted(ONTOLOGY_LAYERS),
+                        },
+                    )
+                )
+            outside_frame = sorted(set(claim_layers) - active_layers)
+            if active_layers and outside_frame:
+                findings.append(
+                    _finding(
+                        finding_id="strong_claim_layer_outside_active_frame",
+                        severity="review_required",
+                        message="Strong claim ontology_layer_refs must stay within active_frame.",
+                        source_ref=source_ref,
+                        evidence={
+                            "claim": claim_ref,
+                            "outside_frame": outside_frame,
+                            "active_frame_layers": sorted(active_layers),
+                        },
+                    )
+                )
         f_value = _text(calibration.get("F"))
         r_value = _text(calibration.get("R"))
         g_value = _dict(calibration.get("G"))

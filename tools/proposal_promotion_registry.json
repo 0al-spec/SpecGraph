@@ -1831,5 +1831,18 @@
     "required_provenance_links": [
       "source_draft_ref"
     ]
+  },
+  {
+    "proposal_id": "0143",
+    "source_artifact_class": "working_draft",
+    "source_refs": [
+      "docs/archive/proposal_sources/0143_specauthor_ontology_layer_context.md"
+    ],
+    "motivating_concern": "SpecAuthor-generated artifacts can now consume ontology layers in import and review surfaces, but the producer contract and write gate need explicit active ontology layer context so strong generated claims cannot stay semantically flat or drift outside the active frame.",
+    "normalized_title": "SpecAuthor Ontology Layer Context",
+    "bounded_scope": "Require ontology_layer_refs in SpecAuthor active frames and strong generated claims, validate known layers and active-frame containment in producer/write-gate tooling, without executing prompt agents, inferring layers, writing ontology packages or lockfiles, mutating canonical specs, accepting ontology terms, importing owner decisions, closing semantic gates, adding Agent Passport behavior policies, or adding SpecSpace UI.",
+    "required_provenance_links": [
+      "source_draft_ref"
+    ]
   }
 ]
