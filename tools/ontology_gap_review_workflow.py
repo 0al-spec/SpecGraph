@@ -64,6 +64,20 @@ def _gap_key(*values: Any) -> str:
     return "unknown"
 
 
+def _concept_ref(value: Any) -> str:
+    if isinstance(value, str):
+        return _text(value)
+    concept = _dict(value)
+    return _text(concept.get("ref")) or _text(concept.get("concept_hint"))
+
+
+def _concept_hint(value: Any) -> str:
+    if isinstance(value, str):
+        return _text(value).rsplit(":", 1)[-1]
+    concept = _dict(value)
+    return _text(concept.get("concept_hint")) or _text(concept.get("ref")).rsplit(":", 1)[-1]
+
+
 def _group_id(kind: str, key: str) -> str:
     return f"ontology-gap-review-{_slug(kind)}-{_slug(key)}"
 
@@ -90,7 +104,7 @@ def _ensure_group(
     recommended_owner_action: str,
     recommended_route: str,
 ) -> dict[str, Any]:
-    group_key = f"{gap_kind}:{key}"
+    group_key = key
     if group_key not in groups:
         groups[group_key] = {
             "group_id": _group_id(gap_kind, key),
@@ -158,8 +172,9 @@ def ingest_package_gap_preview(
 ) -> None:
     for raw_gap in _list(gap_preview.get("gaps")):
         gap = _dict(raw_gap)
-        missing_ref = _text(gap.get("missing_ref"))
-        proposed_term = _text(gap.get("missing_concept")) or missing_ref.rsplit(":", 1)[-1]
+        missing_concept = gap.get("missing_concept")
+        missing_ref = _text(gap.get("missing_ref")) or _concept_ref(missing_concept)
+        proposed_term = _concept_hint(missing_concept) or missing_ref.rsplit(":", 1)[-1]
         key = _gap_key(proposed_term, missing_ref, gap.get("gap_id"))
         group = _ensure_group(
             groups,

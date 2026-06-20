@@ -39,8 +39,11 @@ def package_gap_preview() -> dict[str, object]:
         "gaps": [
             {
                 "gap_id": "ontology-gap-sgcore-claimcalibration",
-                "missing_ref": "sgcore:ClaimCalibration",
-                "missing_concept": "ClaimCalibration",
+                "missing_concept": {
+                    "ref": "sgcore:ClaimCalibration",
+                    "namespace_hint": "sgcore",
+                    "concept_hint": "ClaimCalibration",
+                },
                 "recommended_route": "ontology_package_draft",
                 "source_refs": [
                     "docs/proposals/0126_specauthor_claim_calibration_prompt_contract.md"
@@ -97,7 +100,7 @@ def generated_artifact() -> dict[str, object]:
         "ontology_gaps": [
             {
                 "gap_id": "ontology-gap-ownerdecisionreviewsurface",
-                "proposed_term": "OwnerDecisionReviewSurface",
+                "proposed_term": "ClaimCalibration",
                 "proposed_kind": "entity",
                 "status": "requires_owner_review",
                 "canonical_mutations_allowed": False,
@@ -131,7 +134,7 @@ def test_ontology_gap_review_workflow_groups_package_spec_and_generated_gaps() -
     assert report["status"] == "review_required"
     assert report["canonical_mutations_allowed"] is False
     assert report["tracked_artifacts_written"] is False
-    assert report["summary"]["gap_group_count"] == 4
+    assert report["summary"]["gap_group_count"] == 3
     assert report["summary"]["source_spec_count"] == 2
     assert report["summary"]["affected_generated_artifact_count"] == 1
 
@@ -139,13 +142,11 @@ def test_ontology_gap_review_workflow_groups_package_spec_and_generated_gaps() -
     assert by_term["ClaimCalibration"]["recommended_owner_action"] == (
         "draft_project_local_ontology_package_update"
     )
-    assert by_term["Intent"]["source_specs"][0]["spec_id"] == "SG-SPEC-0001"
-    assert by_term["sgcore:ownedBy"]["gap_kind"] == "relation"
-    generated_group = by_term["OwnerDecisionReviewSurface"]
-    assert generated_group["affected_generated_artifacts"][0]["source_ref"] == (
+    assert by_term["ClaimCalibration"]["affected_generated_artifacts"][0]["source_ref"] == (
         "memory://specauthor-gap-candidate"
     )
-    assert generated_group["recommended_owner_action"] == "request_ontology_owner_decision"
+    assert by_term["Intent"]["source_specs"][0]["spec_id"] == "SG-SPEC-0001"
+    assert by_term["sgcore:ownedBy"]["gap_kind"] == "relation"
 
 
 def test_ontology_gap_review_workflow_is_clear_without_gaps() -> None:
