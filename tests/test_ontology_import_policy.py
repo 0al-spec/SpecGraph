@@ -745,6 +745,9 @@ def test_specgraph_core_import_fixture_projects_compiler_backed_gaps_and_diffs()
         "imported_package_count": 1,
         "resolved_ref_count": 7,
         "unresolved_ref_count": 1,
+        "layered_entry_count": 0,
+        "unlayered_entry_count": 32,
+        "used_layer_count": 0,
         "next_gap": "review_ontology_import_gap",
     }
 
@@ -800,6 +803,69 @@ def test_specgraph_core_import_fixture_projects_compiler_backed_gaps_and_diffs()
         "added_class_count": 1,
         "next_gap": "review_required_specgraph_actions",
     }
+
+
+def test_ontology_import_surfaces_preserve_layered_normalized_ir(tmp_path: Path) -> None:
+    module = load_ontology_imports_module()
+    fixture = yaml.safe_load(SPECGRAPH_CORE_FIXTURE.read_text(encoding="utf-8"))
+    assert isinstance(fixture, dict)
+    source_ir_path = SPECGRAPH_CORE_FIXTURE.parent / fixture["package"]["materialized_ir"]
+    ir = json.loads(source_ir_path.read_text(encoding="utf-8"))
+    layer_by_ref = {
+        "sgcore:Spec": "objective",
+        "sgcore:definesRequirement": "mechanics",
+        "sgcore:DraftAuthorityBoundary": "execution",
+        "sgcore:SpecReviewState": "meta",
+    }
+    for section in ("classes", "relations", "policies", "stateMachines"):
+        for entry in ir.get(section, []):
+            if isinstance(entry, dict) and entry.get("fqid") in layer_by_ref:
+                entry["layer"] = layer_by_ref[str(entry["fqid"])]
+
+    fixture["package"]["materialized_ir"] = "generated/ontology.layered.json"
+    fixture_dir = tmp_path / "ontology" / "packages" / "specgraph-core"
+    (fixture_dir / "generated").mkdir(parents=True)
+    fixture_path = fixture_dir / "import-fixture.yaml"
+    fixture_path.write_text(yaml.safe_dump(fixture, sort_keys=False), encoding="utf-8")
+    (fixture_dir / "generated" / "ontology.layered.json").write_text(
+        json.dumps(ir, indent=2, sort_keys=True),
+        encoding="utf-8",
+    )
+
+    surfaces = module.build_ontology_import_surfaces(fixture_path, semantic_policy_path=None)
+
+    package_index = surfaces["package_index"]
+    package = package_index["packages"][0]
+    layer_summary = package["ontology_layer_summary"]
+    assert layer_summary["known_layers"] == [
+        "objective",
+        "mechanics",
+        "execution",
+        "meta",
+        "multi_agent",
+    ]
+    assert layer_summary["layered_entry_count"] == 4
+    assert layer_summary["unlayered_entry_count"] == 28
+    assert layer_summary["used_layers"] == ["objective", "mechanics", "execution", "meta"]
+    assert layer_summary["layer_counts"] == {
+        "objective": 1,
+        "mechanics": 1,
+        "execution": 1,
+        "meta": 1,
+    }
+    assert layer_summary["by_kind"]["class"] == {"objective": 1}
+    assert layer_summary["by_kind"]["relation"] == {"mechanics": 1}
+    assert layer_summary["by_kind"]["policy"] == {"execution": 1}
+    assert layer_summary["by_kind"]["state_machine"] == {"meta": 1}
+    assert layer_summary["invalid_layers"] == {}
+    assert package_index["summary"]["layered_entry_count"] == 4
+    assert package_index["summary"]["used_layer_count"] == 4
+
+    resolved_refs = {
+        entry["source_ref"]: entry for entry in surfaces["binding_preview"]["resolved_refs"]
+    }
+    assert resolved_refs["sgcore:Spec"]["layer"] == "objective"
+    assert resolved_refs["sgcore:definesRequirement"]["layer"] == "mechanics"
 
 
 def test_project_local_specgraph_core_default_fixture_is_authority_source() -> None:

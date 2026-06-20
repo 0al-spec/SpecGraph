@@ -1805,5 +1805,18 @@
     "required_provenance_links": [
       "source_draft_ref"
     ]
+  },
+  {
+    "proposal_id": "0141",
+    "source_artifact_class": "working_draft",
+    "source_refs": [
+      "docs/archive/proposal_sources/0141_layered_ontology_import_surface.md"
+    ],
+    "motivating_concern": "Ontology now emits first-class semantic layer metadata, but SpecGraph import surfaces need a read-only way to preserve and summarize those layers for downstream dashboards, gap reports, and SpecAuthor write gates.",
+    "normalized_title": "Layered Ontology Import Surface",
+    "bounded_scope": "Add read-only layer metadata preservation to ontology import surfaces by copying normalized IR `layer` values into resolved refs and publishing package-level layer summaries, without inferring layers, writing Ontology packages or lockfiles, mutating canonical specs, accepting ontology terms, importing owner decisions, executing prompt agents, closing semantic gates, or adding SpecSpace UI.",
+    "required_provenance_links": [
+      "source_draft_ref"
+    ]
   }
 ]
