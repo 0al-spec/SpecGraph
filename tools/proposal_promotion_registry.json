@@ -1727,5 +1727,18 @@
     "required_provenance_links": [
       "source_draft_ref"
     ]
+  },
+  {
+    "proposal_id": "0135",
+    "source_artifact_class": "working_draft",
+    "source_refs": [
+      "docs/archive/proposal_sources/0135_spec_ontology_validation_report.md"
+    ],
+    "motivating_concern": "SpecGraph can build a report-only binding index over existing specs, but it needs a typed validation report that checks required bindings, relation existence, relation domain/range compatibility, and legacy terminology gaps against the current ontology.",
+    "normalized_title": "Spec Ontology Validation Report",
+    "bounded_scope": "Add a typed report-only spec ontology validation report and Make target over the current binding index without hard write gate enforcement, generated artifact persistence blocking, LLM-based semantic judgement, canonical spec rewrites, or SpecSpace UI.",
+    "required_provenance_links": [
+      "source_draft_ref"
+    ]
   }
 ]

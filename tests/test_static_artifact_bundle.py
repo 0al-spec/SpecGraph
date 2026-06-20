@@ -89,6 +89,12 @@ def make_repo(root: Path) -> Path:
             "artifact_kind": "ontology_package_index",
             "packages": [],
         },
+        "spec_ontology_binding_index.json": {
+            "artifact_kind": "spec_ontology_binding_index",
+        },
+        "spec_ontology_validation_report.json": {
+            "artifact_kind": "spec_ontology_validation_report",
+        },
     }
     for name, payload in artifacts.items():
         write_json(runs_dir / name, payload)
@@ -907,6 +913,8 @@ def test_refresh_publish_surfaces_builds_viewer_implementation_and_agent_surface
         "external-handoffs",
         "external-consumer-evidence",
         "ontology-imports",
+        "spec-ontology-bindings",
+        "spec-ontology-validation",
         "ontology-imports-public",
     ]
 

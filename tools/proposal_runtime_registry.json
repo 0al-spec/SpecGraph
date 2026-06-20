@@ -7371,5 +7371,55 @@
         "pattern": "unknown legacy terminology becomes gap evidence"
       }
     ]
+  },
+  {
+    "proposal_id": "0135",
+    "posture": "synchronous_runtime_slice",
+    "runtime_surfaces": [
+      "docs/proposals/0135_spec_ontology_validation_report.md",
+      "docs/archive/proposal_sources/0135_spec_ontology_validation_report.md",
+      "tools/spec_ontology_validation_report.py",
+      "Makefile",
+      "tools/README.md",
+      "tests/test_spec_ontology_validation_report.py"
+    ],
+    "runtime_markers": [
+      {
+        "path": "Makefile",
+        "pattern": "spec-ontology-validation"
+      },
+      {
+        "path": "tools/spec_ontology_validation_report.py",
+        "pattern": "spec_ontology_validation_report"
+      },
+      {
+        "path": "tools/spec_ontology_validation_report.py",
+        "pattern": "hard_gate_enabled"
+      }
+    ],
+    "validation_markers": [
+      {
+        "path": "tests/test_spec_ontology_validation_report.py",
+        "pattern": "test_spec_ontology_validation_report_is_report_only_for_legacy_specs"
+      },
+      {
+        "path": "tests/test_spec_ontology_validation_report.py",
+        "pattern": "test_spec_ontology_validation_report_checks_root_spec_contracts"
+      },
+      {
+        "path": "tests/test_spec_ontology_validation_report.py",
+        "pattern": "test_spec_ontology_validation_report_write_target_is_runs_only"
+      }
+    ],
+    "observation_markers": [
+      {
+        "path": "docs/proposals/0135_spec_ontology_validation_report.md",
+        "pattern": "Existing specs remain `report_only`"
+      },
+      {
+        "path": "docs/proposals/0135_spec_ontology_validation_report.md",
+        "pattern": "LLM-based semantic judgement"
+      }
+    ]
   }
 ]

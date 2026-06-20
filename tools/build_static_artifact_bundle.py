@@ -33,6 +33,8 @@ REQUIRED_RUN_SURFACES = (
     "ontology_review_dashboard.json",
     "ontology_decision_import_preview.json",
     "ontology_package_index.json",
+    "spec_ontology_binding_index.json",
+    "spec_ontology_validation_report.json",
 )
 LOCAL_ONLY_RUN_SURFACES = {
     "local_operator_executor_readiness.json",
@@ -434,6 +436,8 @@ def refresh_publish_surfaces(repo_root: Path) -> None:
     run_make_target(repo_root, "external-handoffs")
     run_make_target(repo_root, "external-consumer-evidence")
     run_make_target(repo_root, "ontology-imports")
+    run_make_target(repo_root, "spec-ontology-bindings")
+    run_make_target(repo_root, "spec-ontology-validation")
     run_make_target(repo_root, "ontology-imports-public")
 
 
@@ -594,7 +598,8 @@ def parse_args(argv: list[str]) -> argparse.Namespace:
             "Run publish surface refresh targets before collecting specs/ and runs/: "
             "viewer-surfaces, implementation-delta, implementation-work, executor-adapters, "
             "agent-passports, agent-runtime-evidence, viewer-surfaces, external-handoffs, "
-            "external-consumer-evidence, ontology-imports, then ontology-imports-public."
+            "external-consumer-evidence, ontology-imports, spec-ontology-bindings, "
+            "spec-ontology-validation, then ontology-imports-public."
         ),
     )
     parser.add_argument(
