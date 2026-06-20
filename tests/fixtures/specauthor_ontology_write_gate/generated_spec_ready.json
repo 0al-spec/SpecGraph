@@ -6,6 +6,7 @@
     "subsystem": "Application.AgentLayer.SpecificationAuthoring",
     "agent_layer": "SpecificationAuthoring",
     "ontology_refs": ["sgcore:Spec"],
+    "ontology_layer_refs": ["meta"],
     "domain_refs": ["domain.specification_authoring"],
     "context_refs": ["context.specgraph.agent_layer"],
     "target_artifact": "Proposal",
@@ -32,6 +33,7 @@
       "strength": "strong",
       "statement": "Requiring active ontology frame and term bindings should reduce silent vocabulary drift in generated specs.",
       "evidence_refs": ["docs/proposals/0126_specauthor_claim_calibration_prompt_contract.md"],
+      "ontology_layer_refs": ["meta"],
       "calibration": {
         "F": "F3",
         "G": {

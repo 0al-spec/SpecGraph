@@ -17,6 +17,9 @@
     "ontology_refs": [
       "sgcore:Spec"
     ],
+    "ontology_layer_refs": [
+      "meta"
+    ],
     "domain_refs": [
       "domain.specification_authoring"
     ],
@@ -73,6 +76,9 @@
       "statement": "A typed generated_spec_artifact contract should make SpecAuthor output easier to validate before graph write.",
       "evidence_refs": [
         "docs/proposals/0126_specauthor_claim_calibration_prompt_contract.md"
+      ],
+      "ontology_layer_refs": [
+        "meta"
       ],
       "calibration": {
         "F": "F3",

@@ -7789,5 +7789,53 @@
         "pattern": "existing consumers can ignore the new"
       }
     ]
+  },
+  {
+    "proposal_id": "0143",
+    "posture": "synchronous_runtime_slice",
+    "runtime_surfaces": [
+      "docs/proposals/0143_specauthor_ontology_layer_context.md",
+      "docs/archive/proposal_sources/0143_specauthor_ontology_layer_context.md",
+      "tools/specauthor_generated_artifact_contract.py",
+      "tools/specauthor_ontology_write_gate.py",
+      "tests/test_specauthor_generated_artifact_contract.py",
+      "tests/test_specauthor_ontology_write_gate.py",
+      "tests/fixtures/specauthor_generated_artifact_contract/generated_spec_ready.json",
+      "tests/fixtures/specauthor_ontology_write_gate/generated_spec_ready.json"
+    ],
+    "runtime_markers": [
+      {
+        "path": "tools/specauthor_generated_artifact_contract.py",
+        "pattern": "\"ontology_layer_refs\""
+      },
+      {
+        "path": "tools/specauthor_ontology_write_gate.py",
+        "pattern": "strong_claim_without_layer_context"
+      },
+      {
+        "path": "tools/specauthor_ontology_write_gate.py",
+        "pattern": "strong_claim_layer_outside_active_frame"
+      }
+    ],
+    "validation_markers": [
+      {
+        "path": "tests/test_specauthor_generated_artifact_contract.py",
+        "pattern": "test_specauthor_generated_artifact_contract_rejects_missing_layer_context"
+      },
+      {
+        "path": "tests/test_specauthor_ontology_write_gate.py",
+        "pattern": "test_specauthor_write_gate_rejects_claim_layer_outside_active_frame"
+      }
+    ],
+    "observation_markers": [
+      {
+        "path": "docs/proposals/0143_specauthor_ontology_layer_context.md",
+        "pattern": "This proposal does not make SpecGraph an ontology authority"
+      },
+      {
+        "path": "docs/proposals/0143_specauthor_ontology_layer_context.md",
+        "pattern": "no ontology layer in active frame"
+      }
+    ]
   }
 ]
