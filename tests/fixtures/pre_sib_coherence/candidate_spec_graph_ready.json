@@ -1,0 +1,109 @@
+{
+  "active_frame": {
+    "context_refs": [
+      "context.idea_to_spec"
+    ],
+    "domain_refs": [
+      "domain.calculator"
+    ],
+    "ontology_refs": [
+      "ontology://specgraph-core"
+    ],
+    "project": "DemoCalculator"
+  },
+  "artifact_kind": "candidate_spec_graph",
+  "canonical_mutations_allowed": false,
+  "contract_ref": "specgraph.idea-to-spec.candidate-spec-graph.v0.1",
+  "edges": [
+    {
+      "from": "candidate-spec.calculator-product",
+      "id": "edge.product.input",
+      "relation": "decomposes_to",
+      "to": "candidate-spec.numeric-input"
+    }
+  ],
+  "nodes": [
+    {
+      "acceptance_criteria": [
+        {
+          "id": "ac.product.result-visible",
+          "statement": "The result is visible after operation selection."
+        }
+      ],
+      "claims": [
+        {
+          "calibration": {
+            "F": "F3",
+            "G": {
+              "applies_to": [
+                "Demo calculator candidate graph"
+              ]
+            },
+            "R": "R3"
+          },
+          "evidence_refs": [
+            "runs/candidate_spec_graph.json#candidate-spec.calculator-product"
+          ],
+          "id": "claim.product.reviewable-before-code",
+          "statement": "This candidate graph can be reviewed before code generation.",
+          "type": "product_claim"
+        }
+      ],
+      "description": "Defines the product boundary.",
+      "gaps": [
+        {
+          "id": "gap.operation-model",
+          "statement": "Confirm Operation terminology."
+        }
+      ],
+      "id": "candidate-spec.calculator-product",
+      "kind": "product_boundary",
+      "ontology_refs": [
+        "ontology://specgraph-core#Spec"
+      ],
+      "requirements": [
+        {
+          "acceptance_criteria_refs": [
+            "ac.product.result-visible"
+          ],
+          "id": "req.product.basic",
+          "statement": "The product must display a result."
+        }
+      ],
+      "title": "Calculator Product"
+    },
+    {
+      "acceptance_criteria": [
+        {
+          "id": "ac.input.digits",
+          "statement": "Digits update the pending operand."
+        }
+      ],
+      "claims": [],
+      "description": "Captures numeric input.",
+      "gaps": [],
+      "id": "candidate-spec.numeric-input",
+      "kind": "feature",
+      "ontology_refs": [
+        "ontology://specgraph-core#Requirement"
+      ],
+      "requirements": [
+        {
+          "acceptance_criteria_refs": [
+            "ac.input.digits"
+          ],
+          "id": "req.input.digits",
+          "statement": "The product must accept digit input."
+        }
+      ],
+      "title": "Numeric Input"
+    }
+  ],
+  "pre_sib_readiness": {
+    "ready": true,
+    "review_state": "ready_for_pre_sib"
+  },
+  "schema_version": 1,
+  "source_ref": "operator://demo-calculator-candidate",
+  "tracked_artifacts_written": false
+}

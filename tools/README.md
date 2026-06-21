@@ -260,6 +260,13 @@ Supervisor modes:
   refs, and F/G/R calibration for strong candidate claims without mutating
   canonical specs, running pre-SIB metrics, writing Ontology packages, or
   creating Git branches.
+- `tools/pre_sib_coherence_report.py`: deterministic pre-SIB/coherence report
+  builder introduced by proposal 0151. Use `make pre-sib-coherence
+  PRE_SIB_COHERENCE_CANDIDATE_GRAPH=<json>` to compute candidate graph counts,
+  acceptance-criteria coverage, ontology coverage, orphan-node findings,
+  duplicate-title warnings, unresolved-gap warnings, and unsupported
+  strong-claim warnings without defining final SIB formulas, mutating candidate
+  artifacts, mutating canonical specs, or creating Git branches.
 - `--build-ontology-supervisor-semantic-gate`: refresh the same ontology
   semantic surfaces through the supervisor entrypoint and print a compact gate
   report for `runs/ontology_supervisor_semantic_gate.json` without running
@@ -874,6 +881,9 @@ Key derived artifacts:
 - `runs/candidate_spec_graph.json`: review-only candidate specification graph
   artifact containing candidate nodes, edges, requirements, acceptance
   criteria, claims, gaps, source-intake refs, and pre-SIB readiness state.
+- `runs/pre_sib_coherence_report.json`: review-only metric and coherence report
+  over a candidate graph, including structural counts, coverage ratios,
+  findings, warnings, and readiness for the future repair loop.
 - `runs/specpm_export_preview.json`: reviewable `SpecPM` package preview
   artifact, including manifest preview, boundary-source preview, export
   status, and next-gap backlog for future full package emission

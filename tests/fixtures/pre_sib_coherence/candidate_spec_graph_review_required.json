@@ -1,0 +1,14 @@
+{
+  "artifact_kind": "candidate_spec_graph",
+  "schema_version": 1,
+  "contract_ref": "specgraph.idea-to-spec.candidate-spec-graph.v0.1",
+  "source_ref": "operator://review-required-candidate",
+  "canonical_mutations_allowed": false,
+  "tracked_artifacts_written": false,
+  "pre_sib_readiness": {
+    "ready": false,
+    "review_state": "candidate_graph_review_required"
+  },
+  "nodes": [],
+  "edges": []
+}

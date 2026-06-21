@@ -8173,5 +8173,54 @@
         "pattern": "Status: implemented in proposal `0150`"
       }
     ]
+  },
+  {
+    "proposal_id": "0151",
+    "posture": "synchronous_runtime_slice",
+    "runtime_surfaces": [
+      "docs/proposals/0151_pre_sib_coherence_report.md",
+      "docs/archive/proposal_sources/0151_pre_sib_coherence_report.md",
+      "docs/product_workspace_graph_versioning_roadmap.md",
+      "tools/pre_sib_coherence_report.py",
+      "tests/test_pre_sib_coherence_report.py",
+      "tests/fixtures/pre_sib_coherence/candidate_spec_graph_ready.json",
+      "tests/fixtures/pre_sib_coherence/candidate_spec_graph_review_required.json",
+      "Makefile",
+      "tools/README.md"
+    ],
+    "runtime_markers": [
+      {
+        "path": "tools/pre_sib_coherence_report.py",
+        "pattern": "pre_sib_coherence_report"
+      },
+      {
+        "path": "tools/pre_sib_coherence_report.py",
+        "pattern": "acceptance_criteria_coverage_ratio"
+      },
+      {
+        "path": "tools/pre_sib_coherence_report.py",
+        "pattern": "unsupported_strong_claim_count"
+      }
+    ],
+    "validation_markers": [
+      {
+        "path": "tests/test_pre_sib_coherence_report.py",
+        "pattern": "test_pre_sib_coherence_report_builds_ready_report"
+      },
+      {
+        "path": "tests/test_pre_sib_coherence_report.py",
+        "pattern": "test_pre_sib_coherence_report_warns_on_unsupported_strong_claim"
+      }
+    ],
+    "observation_markers": [
+      {
+        "path": "docs/proposals/0151_pre_sib_coherence_report.md",
+        "pattern": "does not grant write authority"
+      },
+      {
+        "path": "docs/product_workspace_graph_versioning_roadmap.md",
+        "pattern": "Status: implemented in proposal `0151`"
+      }
+    ]
   }
 ]

@@ -43,6 +43,8 @@ IDEA_EVENT_STORMING_INTAKE_OUTPUT ?= runs/idea_event_storming_intake.json
 CANDIDATE_SPEC_GRAPH_INTAKE ?= tests/fixtures/candidate_spec_graph/idea_event_storming_intake_ready.json
 CANDIDATE_SPEC_GRAPH_SEED ?= tests/fixtures/candidate_spec_graph/candidate_ready.json
 CANDIDATE_SPEC_GRAPH_OUTPUT ?= runs/candidate_spec_graph.json
+PRE_SIB_COHERENCE_CANDIDATE_GRAPH ?= tests/fixtures/pre_sib_coherence/candidate_spec_graph_ready.json
+PRE_SIB_COHERENCE_OUTPUT ?= runs/pre_sib_coherence_report.json
 
 .DEFAULT_GOAL := help
 
@@ -55,7 +57,7 @@ PYTHON_TARGETS := viewer-surfaces dashboard backlog next-move spec-activity grap
 	ontology-owner-decision-import-v2 \
 	specauthor-generated-artifact-contract specauthor-ontology-write-gate \
 	specauthor-invocation-artifact-contract specauthor-authoring-flow \
-	idea-event-storming-intake candidate-spec-graph \
+	idea-event-storming-intake candidate-spec-graph pre-sib-coherence \
 	proposal-work-claims proposal-work-claims-gate proposal-id \
 	metrics-delivery metrics-feedback metrics-source-promotion metric-signals metric-thresholds \
 	metric-packs metric-pack-drift metric-pack-adapters metric-pack-runs metric-pricing model-usage \
@@ -107,6 +109,7 @@ help:
 			'  make specauthor-ontology-write-gate SPECAUTHOR_ONTOLOGY_WRITE_GATE_ARTIFACT=<json>' \
 			'  make idea-event-storming-intake IDEA_EVENT_STORMING_INTAKE_SOURCE=<json>' \
 			'  make candidate-spec-graph CANDIDATE_SPEC_GRAPH_INTAKE=<json> CANDIDATE_SPEC_GRAPH_SEED=<json>' \
+			'  make pre-sib-coherence PRE_SIB_COHERENCE_CANDIDATE_GRAPH=<json>' \
 		'  make metrics-delivery         Refresh Metrics delivery workflow JSON' \
 		'  make metrics-feedback         Refresh Metrics feedback JSON' \
 		'  make metrics-source-promotion Refresh Metrics source promotion candidates JSON' \
@@ -285,6 +288,10 @@ idea-event-storming-intake:
 .PHONY: candidate-spec-graph
 candidate-spec-graph:
 	@$(PYTHON) tools/candidate_spec_graph.py --intake "$(CANDIDATE_SPEC_GRAPH_INTAKE)" --candidate-seed "$(CANDIDATE_SPEC_GRAPH_SEED)" --output "$(CANDIDATE_SPEC_GRAPH_OUTPUT)"
+
+.PHONY: pre-sib-coherence
+pre-sib-coherence:
+	@$(PYTHON) tools/pre_sib_coherence_report.py --candidate-graph "$(PRE_SIB_COHERENCE_CANDIDATE_GRAPH)" --output "$(PRE_SIB_COHERENCE_OUTPUT)"
 
 .PHONY: metrics-delivery
 metrics-delivery:
