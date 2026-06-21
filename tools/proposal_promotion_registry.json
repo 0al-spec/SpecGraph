@@ -1974,5 +1974,18 @@
     "required_provenance_links": [
       "source_draft_ref"
     ]
+  },
+  {
+    "proposal_id": "0154",
+    "source_artifact_class": "working_draft",
+    "source_refs": [
+      "docs/archive/proposal_sources/0154_idea_to_spec_promotion_gate.md"
+    ],
+    "motivating_concern": "Candidate materialization exposes Platform promotion paths, but the autonomous idea-to-spec flow still needs one final pre-SIB/repair/materialization go/no-go gate before repository promotion.",
+    "normalized_title": "Idea-to-Spec Promotion Gate",
+    "bounded_scope": "Add a deterministic review-only idea_to_spec_promotion_gate builder, Make target, tests, and documentation that consume pre_sib_coherence_report, candidate_repair_loop_report, and candidate_spec_materialization_report, block unresolved context and unsafe promotion paths, and expose Platform promotion-request paths only when the handoff is ready, without executing prompt agents, mutating candidate source artifacts, mutating canonical specs, writing ontology packages or lockfiles, accepting ontology terms, creating Git branches or commits, opening pull requests, publishing read models, merging, or adding SpecSpace mutation UI.",
+    "required_provenance_links": [
+      "source_draft_ref"
+    ]
   }
 ]
