@@ -1870,5 +1870,18 @@
     "required_provenance_links": [
       "source_draft_ref"
     ]
+  },
+  {
+    "proposal_id": "0146",
+    "source_artifact_class": "working_draft",
+    "source_refs": [
+      "docs/archive/proposal_sources/0146_specauthor_prompt_side_authoring_flow.md"
+    ],
+    "motivating_concern": "SpecAuthorAgent has generated artifact and invocation contracts, but the prompt-side authoring flow needs a deterministic review-only builder that assembles operator intent, active ontology context, generated draft validation, and write-gate validation into one typed invocation artifact.",
+    "normalized_title": "SpecAuthor Prompt-Side Authoring Flow",
+    "bounded_scope": "Add a deterministic SpecAuthor authoring-flow builder, policy artifact, Make target, tests, and invocation report outputs that require active ontology/domain/context/layer/model-applicability frames and preserve review-only authority, without executing prompt agents, mutating canonical specs, writing ontology packages or lockfiles, accepting ontology terms, importing owner decisions, or adding SpecSpace UI.",
+    "required_provenance_links": [
+      "source_draft_ref"
+    ]
   }
 ]

@@ -33,6 +33,11 @@ SPECAUTHOR_ONTOLOGY_WRITE_GATE_ARTIFACT ?= tests/fixtures/specauthor_ontology_wr
 SPECAUTHOR_ONTOLOGY_WRITE_GATE_OUTPUT ?= runs/specauthor_ontology_write_gate_report.json
 SPECAUTHOR_INVOCATION_ARTIFACT_CONTRACT_ARTIFACT ?= tests/fixtures/specauthor_invocation_artifact_contract/invocation_ready.json
 SPECAUTHOR_INVOCATION_ARTIFACT_CONTRACT_OUTPUT ?= runs/specauthor_invocation_artifact_contract_report.json
+SPECAUTHOR_AUTHORING_FLOW_CONTEXT ?= tests/fixtures/specauthor_authoring_flow/active_context_ready.json
+SPECAUTHOR_AUTHORING_FLOW_GENERATED_ARTIFACT ?= tests/fixtures/specauthor_generated_artifact_contract/generated_spec_ready.json
+SPECAUTHOR_AUTHORING_FLOW_INVOCATION_OUTPUT ?= runs/specauthor_invocation_artifact.json
+SPECAUTHOR_AUTHORING_FLOW_CONTRACT_OUTPUT ?= runs/specauthor_invocation_artifact_contract_report.json
+SPECAUTHOR_AUTHORING_FLOW_REPORT_OUTPUT ?= runs/specauthor_authoring_flow_report.json
 
 .DEFAULT_GOAL := help
 
@@ -44,7 +49,7 @@ PYTHON_TARGETS := viewer-surfaces dashboard backlog next-move spec-activity grap
 	ontology-term-binding-gate ontology-gap-review legacy-spec-ontology-backfill-plan \
 	ontology-owner-decision-import-v2 \
 	specauthor-generated-artifact-contract specauthor-ontology-write-gate \
-	specauthor-invocation-artifact-contract \
+	specauthor-invocation-artifact-contract specauthor-authoring-flow \
 	proposal-work-claims proposal-work-claims-gate proposal-id \
 	metrics-delivery metrics-feedback metrics-source-promotion metric-signals metric-thresholds \
 	metric-packs metric-pack-drift metric-pack-adapters metric-pack-runs metric-pricing model-usage \
@@ -260,6 +265,10 @@ specauthor-ontology-write-gate:
 .PHONY: specauthor-invocation-artifact-contract
 specauthor-invocation-artifact-contract:
 	@$(PYTHON) tools/specauthor_invocation_artifact_contract.py --artifact "$(SPECAUTHOR_INVOCATION_ARTIFACT_CONTRACT_ARTIFACT)" --output "$(SPECAUTHOR_INVOCATION_ARTIFACT_CONTRACT_OUTPUT)"
+
+.PHONY: specauthor-authoring-flow
+specauthor-authoring-flow:
+	@$(PYTHON) tools/specauthor_authoring_flow.py --context "$(SPECAUTHOR_AUTHORING_FLOW_CONTEXT)" --generated-artifact "$(SPECAUTHOR_AUTHORING_FLOW_GENERATED_ARTIFACT)" --invocation-output "$(SPECAUTHOR_AUTHORING_FLOW_INVOCATION_OUTPUT)" --contract-output "$(SPECAUTHOR_AUTHORING_FLOW_CONTRACT_OUTPUT)" --flow-report-output "$(SPECAUTHOR_AUTHORING_FLOW_REPORT_OUTPUT)"
 
 .PHONY: metrics-delivery
 metrics-delivery:

@@ -1,0 +1,40 @@
+{
+  "artifact_kind": "specauthor_prompt_side_authoring_policy",
+  "schema_version": 1,
+  "policy_id": "specgraph.specauthor.prompt-side-authoring.v0.1",
+  "proposal_id": "0146",
+  "target_agent": "SpecAuthorAgent",
+  "prompt_contract_ref": "docs/proposals/0126_specauthor_claim_calibration_prompt_contract.md",
+  "requires": {
+    "active_frame": true,
+    "ontology_refs": true,
+    "domain_refs": true,
+    "context_refs": true,
+    "ontology_layer_refs": true,
+    "model_applicability_refs": true,
+    "strong_claim_fgr": true,
+    "context_completion_request_when_frame_missing": true
+  },
+  "validation_chain": {
+    "generated_artifact_contract": "specgraph.specauthor.generated-artifact.v0.1",
+    "generated_artifact_contract_report": "runs/specauthor_generated_artifact_contract_report.json",
+    "write_gate": "specauthor-ontology-write-gate",
+    "write_gate_report": "runs/specauthor_ontology_write_gate_report.json",
+    "invocation_artifact_contract": "specgraph.specauthor.invocation-artifact.v0.1",
+    "invocation_artifact_contract_report": "runs/specauthor_invocation_artifact_contract_report.json"
+  },
+  "privacy_boundary": {
+    "may_publish_raw_prompt": false,
+    "may_publish_raw_model_output": false,
+    "may_publish_secrets": false,
+    "may_publish_local_private_paths": false
+  },
+  "authority_boundary": {
+    "may_execute_prompt_agent": false,
+    "may_write_ontology_package": false,
+    "may_write_ontology_lockfile": false,
+    "may_mutate_canonical_specs": false,
+    "may_mark_candidate_accepted": false,
+    "may_import_owner_decision": false
+  }
+}

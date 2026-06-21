@@ -1,0 +1,50 @@
+{
+  "source_ref": "memory://specauthor-authoring-flow-ready",
+  "invocation_id": "specauthor-invocation-0146-ready",
+  "mode": "draft_authoring",
+  "user_intent": {
+    "text": "Draft a review-only proposal using existing SpecGraph ontology terms.",
+    "source_ref": "operator://local-intent/0146"
+  },
+  "active_frame": {
+    "project": "SpecGraph",
+    "subsystem": "Application.AgentLayer.SpecificationAuthoring",
+    "agent_layer": "SpecificationAuthoring",
+    "ontology_refs": [
+      "sgcore:Spec"
+    ],
+    "ontology_layer_refs": [
+      "meta"
+    ],
+    "model_applicability_refs": [
+      "org.0al.specgraph.core@0.1.0#modelApplicability"
+    ],
+    "domain_refs": [
+      "domain.specification_authoring"
+    ],
+    "context_refs": [
+      "context.specgraph.agent_layer"
+    ],
+    "target_artifact": "Proposal",
+    "lifecycle_phase": "draft"
+  },
+  "model_applicability": {
+    "package_ref": "org.0al.specgraph.core@0.1.0",
+    "applies_to": {
+      "domains": [
+        "domain.specification_authoring"
+      ],
+      "agentTypes": [
+        "SpecAuthorAgent"
+      ]
+    },
+    "assumption_refs": [
+      "modelApplicability.assumptions.project_local_authority",
+      "modelApplicability.assumptions.human_review_required"
+    ],
+    "invalidation_trigger_refs": [
+      "modelApplicability.invalidationTriggers.ontology_layer_contract_changed",
+      "modelApplicability.invalidationTriggers.specgraph_core_vocabulary_changed"
+    ]
+  }
+}

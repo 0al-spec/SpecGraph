@@ -7932,5 +7932,53 @@
         "pattern": "does not infer missing ontology context or model applicability"
       }
     ]
+  },
+  {
+    "proposal_id": "0146",
+    "posture": "synchronous_runtime_slice",
+    "runtime_surfaces": [
+      "docs/proposals/0146_specauthor_prompt_side_authoring_flow.md",
+      "docs/archive/proposal_sources/0146_specauthor_prompt_side_authoring_flow.md",
+      "tools/specauthor_prompt_side_authoring_policy.json",
+      "tools/specauthor_authoring_flow.py",
+      "tests/test_specauthor_authoring_flow.py",
+      "tests/fixtures/specauthor_authoring_flow/active_context_ready.json",
+      "Makefile",
+      "tools/README.md"
+    ],
+    "runtime_markers": [
+      {
+        "path": "tools/specauthor_authoring_flow.py",
+        "pattern": "specauthor_invocation_artifact.json"
+      },
+      {
+        "path": "tools/specauthor_authoring_flow.py",
+        "pattern": "build_specauthor_authoring_flow_report"
+      },
+      {
+        "path": "tools/specauthor_prompt_side_authoring_policy.json",
+        "pattern": "specgraph.specauthor.prompt-side-authoring.v0.1"
+      }
+    ],
+    "validation_markers": [
+      {
+        "path": "tests/test_specauthor_authoring_flow.py",
+        "pattern": "test_specauthor_authoring_flow_builds_ready_invocation_artifact"
+      },
+      {
+        "path": "tests/test_specauthor_authoring_flow.py",
+        "pattern": "test_specauthor_authoring_flow_blocks_low_r_decision_from_write_gate"
+      }
+    ],
+    "observation_markers": [
+      {
+        "path": "docs/proposals/0146_specauthor_prompt_side_authoring_flow.md",
+        "pattern": "does not execute an LLM"
+      },
+      {
+        "path": "docs/proposals/0146_specauthor_prompt_side_authoring_flow.md",
+        "pattern": "does not grant new authority"
+      }
+    ]
   }
 ]
