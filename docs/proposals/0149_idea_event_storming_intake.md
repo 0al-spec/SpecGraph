@@ -18,6 +18,8 @@ event-storming surface:
 - policies;
 - external systems;
 - constraints;
+- risks;
+- assumptions;
 - vocabulary questions;
 - active ontology/domain/context frame;
 - context-completion questions when required inputs are missing.
@@ -34,7 +36,9 @@ This slice adds:
 - `make idea-event-storming-intake`;
 - ready and review-required fixtures;
 - regression tests for ready intake, missing frame/category findings, unknown
-  relationship refs, string-entry normalization, and CLI strict mode.
+  relationship refs, raw trace filtering, duplicate ids, seed contract metadata,
+  malformed relationship lists, singleton optional context normalization, and CLI
+  strict mode.
 
 The tool accepts a structured `idea_event_storming_seed` JSON file and emits an
 `idea_event_storming_intake` artifact. It digests raw intent text and publishes
@@ -61,6 +65,11 @@ It does not:
 - `tests/test_idea_event_storming_intake.py::test_idea_event_storming_intake_builds_ready_artifact`
 - `tests/test_idea_event_storming_intake.py::test_idea_event_storming_intake_requires_frame_and_core_categories`
 - `tests/test_idea_event_storming_intake.py::test_idea_event_storming_intake_rejects_unknown_relationship_refs`
+- `tests/test_idea_event_storming_intake.py::test_idea_event_storming_intake_filters_raw_entry_trace_fields`
+- `tests/test_idea_event_storming_intake.py::test_idea_event_storming_intake_rejects_duplicate_entry_ids`
+- `tests/test_idea_event_storming_intake.py::test_idea_event_storming_intake_validates_seed_contract_metadata`
+- `tests/test_idea_event_storming_intake.py::test_idea_event_storming_intake_rejects_malformed_relationship_lists`
+- `tests/test_idea_event_storming_intake.py::test_idea_event_storming_intake_preserves_singleton_optional_context`
 - `tests/test_idea_event_storming_intake.py::test_idea_event_storming_intake_cli_writes_output`
 
 ## Follow-ups

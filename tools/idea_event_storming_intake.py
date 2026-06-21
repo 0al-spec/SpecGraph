@@ -40,11 +40,15 @@ ALL_CATEGORIES = (
     "policies",
     "external_systems",
     "constraints",
+    "risks",
+    "assumptions",
     "vocabulary_questions",
 )
 CATEGORY_ALIASES = {
     "domain_events": ("events",),
     "external_systems": ("external_dependencies", "systems"),
+    "risks": ("open_risks",),
+    "assumptions": ("open_assumptions",),
     "vocabulary_questions": ("questions", "vocabulary_gaps"),
 }
 CATEGORY_LABEL_FIELDS = {
@@ -54,6 +58,8 @@ CATEGORY_LABEL_FIELDS = {
     "policies": ("name",),
     "external_systems": ("name",),
     "constraints": ("statement", "name"),
+    "risks": ("statement", "name"),
+    "assumptions": ("statement", "name"),
     "vocabulary_questions": ("question", "term", "name"),
 }
 LIST_FIELDS = {
@@ -66,6 +72,14 @@ LIST_FIELDS = {
     "command_refs",
     "candidate_refs",
     "assumptions",
+}
+RAW_TRACE_FIELDS = {
+    "raw_intent",
+    "raw_intent_text",
+    "raw_model_output",
+    "raw_prompt",
+    "raw_response",
+    "raw_text",
 }
 
 
@@ -159,13 +173,111 @@ def _active_frame(seed: dict[str, Any]) -> dict[str, Any]:
     return normalized
 
 
-def _category_items(event_storming: dict[str, Any], category: str) -> list[Any]:
+def _category_items(
+    event_storming: dict[str, Any],
+    category: str,
+) -> tuple[list[Any], dict[str, Any] | None]:
+    source_key = ""
     if category in event_storming:
-        return _list(event_storming.get(category))
-    for alias in CATEGORY_ALIASES.get(category, ()):
-        if alias in event_storming:
-            return _list(event_storming.get(alias))
-    return []
+        source_key = category
+    else:
+        for alias in CATEGORY_ALIASES.get(category, ()):
+            if alias in event_storming:
+                source_key = alias
+                break
+    if not source_key:
+        return [], None
+    raw_items = event_storming.get(source_key)
+    if isinstance(raw_items, list):
+        return raw_items, None
+    if isinstance(raw_items, (dict, str)):
+        return [raw_items], None
+    return [], _finding(
+        finding_id="event_storming_category_malformed",
+        severity="review_required",
+        message="Event-storming categories must be arrays, objects, or non-empty strings.",
+        evidence={
+            "category": category,
+            "source_key": source_key,
+            "value_type": type(raw_items).__name__,
+        },
+    )
+
+
+def _normalize_list_field(
+    value: Any,
+    *,
+    category: str,
+    entry_id: str,
+    field: str,
+    index: int,
+) -> tuple[list[str], dict[str, Any] | None]:
+    if not isinstance(value, list):
+        return [], _finding(
+            finding_id="event_storming_list_field_malformed",
+            severity="review_required",
+            message=(
+                "Event-storming list-valued relationship fields must be arrays "
+                "of non-empty strings."
+            ),
+            evidence={
+                "category": category,
+                "entry_id": entry_id,
+                "field": field,
+                "index": index,
+                "value_type": type(value).__name__,
+            },
+        )
+    values = _text_list(value)
+    if len(values) != len(value):
+        return values, _finding(
+            finding_id="event_storming_list_field_malformed",
+            severity="review_required",
+            message=(
+                "Event-storming list-valued relationship fields must be arrays "
+                "of non-empty strings."
+            ),
+            evidence={
+                "category": category,
+                "entry_id": entry_id,
+                "field": field,
+                "index": index,
+                "value_type": "list",
+            },
+        )
+    return values, None
+
+
+def _seed_contract_findings(seed: dict[str, Any]) -> list[dict[str, Any]]:
+    invalid: list[str] = []
+    if seed.get("artifact_kind") != "idea_event_storming_seed":
+        invalid.append("artifact_kind")
+    if seed.get("schema_version") != SCHEMA_VERSION:
+        invalid.append("schema_version")
+    if seed.get("contract_ref") != SEED_CONTRACT_REF:
+        invalid.append("contract_ref")
+    if not invalid:
+        return []
+    return [
+        _finding(
+            finding_id="idea_event_storming_seed_contract_invalid",
+            severity="review_required",
+            message="Idea event-storming intake requires a valid seed contract.",
+            evidence={
+                "invalid_fields": invalid,
+                "expected": {
+                    "artifact_kind": "idea_event_storming_seed",
+                    "schema_version": SCHEMA_VERSION,
+                    "contract_ref": SEED_CONTRACT_REF,
+                },
+                "actual": {
+                    "artifact_kind": seed.get("artifact_kind"),
+                    "schema_version": seed.get("schema_version"),
+                    "contract_ref": seed.get("contract_ref"),
+                },
+            },
+        )
+    ]
 
 
 def _label_for_entry(entry: dict[str, Any], category: str) -> str:
@@ -178,36 +290,49 @@ def _label_for_entry(entry: dict[str, Any], category: str) -> str:
 
 def _normalize_entry(
     value: Any, category: str, index: int
-) -> tuple[dict[str, Any] | None, dict[str, Any] | None]:
+) -> tuple[dict[str, Any] | None, list[dict[str, Any]]]:
     if isinstance(value, str):
         fields = CATEGORY_LABEL_FIELDS[category]
         entry: dict[str, Any] = {fields[0]: value}
     elif isinstance(value, dict):
         entry = dict(value)
     else:
-        return None, _finding(
-            finding_id="event_storming_entry_invalid",
-            severity="review_required",
-            message="Event-storming entries must be objects or non-empty strings.",
-            evidence={"category": category, "index": index},
-        )
+        return None, [
+            _finding(
+                finding_id="event_storming_entry_invalid",
+                severity="review_required",
+                message="Event-storming entries must be objects or non-empty strings.",
+                evidence={"category": category, "index": index},
+            )
+        ]
 
     label = _label_for_entry(entry, category)
     if not label:
-        return None, _finding(
-            finding_id="event_storming_entry_missing_label",
-            severity="review_required",
-            message="Event-storming entries require a name, statement, term, or question.",
-            evidence={"category": category, "index": index},
-        )
+        return None, [
+            _finding(
+                finding_id="event_storming_entry_missing_label",
+                severity="review_required",
+                message="Event-storming entries require a name, statement, term, or question.",
+                evidence={"category": category, "index": index},
+            )
+        ]
 
     entry_id = _text(entry.get("id"), f"{category}.{_slug(label, str(index + 1))}")
     normalized: dict[str, Any] = {"id": entry_id}
+    findings: list[dict[str, Any]] = []
     for key, item in entry.items():
-        if key == "id":
+        if key == "id" or key in RAW_TRACE_FIELDS:
             continue
         if key in LIST_FIELDS:
-            normalized[key] = _text_list(item)
+            normalized[key], finding = _normalize_list_field(
+                item,
+                category=category,
+                entry_id=entry_id,
+                field=key,
+                index=index,
+            )
+            if finding:
+                findings.append(finding)
         elif isinstance(item, str):
             item_text = item.strip()
             if item_text:
@@ -218,7 +343,7 @@ def _normalize_entry(
             normalized[key] = item
         elif isinstance(item, dict):
             normalized[key] = item
-    return normalized, None
+    return normalized, findings
 
 
 def _event_storming(
@@ -229,11 +354,31 @@ def _event_storming(
     normalized: dict[str, list[dict[str, Any]]] = {}
     for category in ALL_CATEGORIES:
         entries: list[dict[str, Any]] = []
-        for index, value in enumerate(_category_items(event_storming, category)):
-            entry, finding = _normalize_entry(value, category, index)
-            if finding:
-                findings.append(finding)
+        seen_ids: dict[str, int] = {}
+        category_items, category_finding = _category_items(event_storming, category)
+        if category_finding:
+            findings.append(category_finding)
+        for index, value in enumerate(category_items):
+            entry, entry_findings = _normalize_entry(value, category, index)
+            findings.extend(entry_findings)
             if entry:
+                entry_id = _text(entry.get("id"))
+                if entry_id in seen_ids:
+                    findings.append(
+                        _finding(
+                            finding_id="event_storming_duplicate_id",
+                            severity="review_required",
+                            message="Event-storming entry ids must be unique within a category.",
+                            evidence={
+                                "category": category,
+                                "entry_id": entry_id,
+                                "first_index": seen_ids[entry_id],
+                                "duplicate_index": index,
+                            },
+                        )
+                    )
+                else:
+                    seen_ids[entry_id] = index
                 entries.append(entry)
         normalized[category] = entries
         if category in REQUIRED_CATEGORIES and not entries:
@@ -415,7 +560,8 @@ def build_idea_event_storming_intake(
     active_frame = _active_frame(seed)
     event_storming, event_findings = _event_storming(seed)
     findings = (
-        _intent_findings(seed)
+        _seed_contract_findings(seed)
+        + _intent_findings(seed)
         + _frame_findings(active_frame)
         + event_findings
         + _relationship_findings(event_storming)
@@ -464,6 +610,8 @@ def build_idea_event_storming_intake(
             "policy_count": len(event_storming["policies"]),
             "external_system_count": len(event_storming["external_systems"]),
             "constraint_count": len(event_storming["constraints"]),
+            "risk_count": len(event_storming["risks"]),
+            "assumption_count": len(event_storming["assumptions"]),
             "vocabulary_question_count": len(event_storming["vocabulary_questions"]),
             "finding_count": len(blocking_findings),
             "warning_count": len(warnings),

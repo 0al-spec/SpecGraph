@@ -95,6 +95,74 @@ def test_idea_event_storming_intake_rejects_unknown_relationship_refs() -> None:
     assert intake["findings"][0]["evidence"]["unknown_refs"] == ["event.missing"]
 
 
+def test_idea_event_storming_intake_filters_raw_entry_trace_fields() -> None:
+    module = load_module()
+    seed = load_json(READY_FIXTURE)
+    event_storming = seed["event_storming"]
+    assert isinstance(event_storming, dict)
+    actors = event_storming["actors"]
+    assert isinstance(actors, list)
+    actors[0]["raw_prompt"] = "secret prompt"
+    actors[0]["raw_model_output"] = "secret model output"
+    actors[0]["raw_intent_text"] = "secret intent"
+
+    intake = module.build_idea_event_storming_intake(seed, source_path=READY_FIXTURE)
+
+    actor = intake["event_storming"]["actors"][0]
+    assert "raw_prompt" not in actor
+    assert "raw_model_output" not in actor
+    assert "raw_intent_text" not in actor
+    assert "secret prompt" not in json.dumps(intake)
+    assert intake["privacy_boundary"]["raw_prompt_published"] is False
+    assert intake["privacy_boundary"]["raw_model_output_published"] is False
+
+
+def test_idea_event_storming_intake_rejects_duplicate_entry_ids() -> None:
+    module = load_module()
+    seed = load_json(READY_FIXTURE)
+    event_storming = seed["event_storming"]
+    assert isinstance(event_storming, dict)
+    actors = event_storming["actors"]
+    assert isinstance(actors, list)
+    actors.append({"id": "actor.user", "name": "Duplicate Calculator User"})
+
+    intake = module.build_idea_event_storming_intake(seed, source_path=READY_FIXTURE)
+
+    ids = finding_ids(intake)
+    assert intake["candidate_graph_readiness"]["ready"] is False
+    assert "event_storming_duplicate_id" in ids
+
+
+def test_idea_event_storming_intake_validates_seed_contract_metadata() -> None:
+    module = load_module()
+    seed = load_json(READY_FIXTURE)
+    seed["artifact_kind"] = "candidate_spec_graph"
+    seed.pop("contract_ref", None)
+
+    intake = module.build_idea_event_storming_intake(seed, source_path=READY_FIXTURE)
+
+    ids = finding_ids(intake)
+    assert intake["candidate_graph_readiness"]["ready"] is False
+    assert "idea_event_storming_seed_contract_invalid" in ids
+
+
+def test_idea_event_storming_intake_rejects_malformed_relationship_lists() -> None:
+    module = load_module()
+    seed = load_json(READY_FIXTURE)
+    event_storming = seed["event_storming"]
+    assert isinstance(event_storming, dict)
+    commands = event_storming["commands"]
+    assert isinstance(commands, list)
+    commands[0]["actor_refs"] = "actor.user"
+
+    intake = module.build_idea_event_storming_intake(seed, source_path=READY_FIXTURE)
+
+    ids = finding_ids(intake)
+    assert intake["candidate_graph_readiness"]["ready"] is False
+    assert "event_storming_list_field_malformed" in ids
+    assert intake["findings"][0]["evidence"]["field"] == "actor_refs"
+
+
 def test_idea_event_storming_intake_normalizes_string_entries_and_aliases() -> None:
     module = load_module()
     seed = load_json(READY_FIXTURE)
@@ -117,6 +185,33 @@ def test_idea_event_storming_intake_normalizes_string_entries_and_aliases() -> N
     assert intake["event_storming"]["actors"][0]["id"] == "actors.admin-user"
     domain_event_id = intake["event_storming"]["domain_events"][0]["id"]
     assert domain_event_id == "domain_events.workspace-created"
+
+
+def test_idea_event_storming_intake_preserves_singleton_optional_context() -> None:
+    module = load_module()
+    seed = load_json(READY_FIXTURE)
+    event_storming = seed["event_storming"]
+    assert isinstance(event_storming, dict)
+    event_storming["policies"] = {
+        "id": "policy.review_before_write",
+        "name": "Review Before Write",
+    }
+    event_storming["risks"] = {
+        "id": "risk.term_drift",
+        "statement": "Terms may drift before the ontology frame is confirmed.",
+    }
+    event_storming["assumptions"] = [
+        "The user accepts a review-only candidate graph before canonical write."
+    ]
+
+    intake = module.build_idea_event_storming_intake(seed, source_path=READY_FIXTURE)
+
+    assert intake["candidate_graph_readiness"]["ready"] is True
+    assert intake["event_storming"]["policies"][0]["id"] == "policy.review_before_write"
+    assert intake["event_storming"]["risks"][0]["id"] == "risk.term_drift"
+    assert intake["event_storming"]["assumptions"][0]["id"].startswith("assumptions.")
+    assert intake["summary"]["risk_count"] == 1
+    assert intake["summary"]["assumption_count"] == 1
 
 
 def test_idea_event_storming_intake_cli_writes_output(tmp_path: Path) -> None:

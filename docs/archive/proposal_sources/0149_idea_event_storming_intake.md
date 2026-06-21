@@ -11,6 +11,6 @@ node.
 This first slice is deliberately deterministic. It normalizes raw intent refs
 and structured event-storming seed data into a typed intake artifact containing
 actors, domain events, commands, policies, external systems, constraints, and
-vocabulary questions. It does not infer missing concepts with an LLM, execute a
-prompt agent, create a candidate graph, write canonical specs, write Ontology
-packages, create Git branches, or publish raw intent text.
+risks, assumptions, and vocabulary questions. It does not infer missing concepts
+with an LLM, execute a prompt agent, create a candidate graph, write canonical
+specs, write Ontology packages, create Git branches, or publish raw intent text.
