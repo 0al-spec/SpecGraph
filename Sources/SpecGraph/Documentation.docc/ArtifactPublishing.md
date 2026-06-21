@@ -65,6 +65,15 @@ no-decisions placeholders and tombstones. When
 referenced JSON file is copied into the bundle at the same relative path and is
 listed in `artifact_manifest.json`.
 
+The public bundle also includes the review-only SpecAuthor invocation surfaces
+produced by `make specauthor-authoring-flow`:
+`runs/specauthor_invocation_artifact.json`,
+`runs/specauthor_invocation_artifact_contract_report.json`, and
+`runs/specauthor_authoring_flow_report.json`. These artifacts publish sanitized
+refs, validation status, findings, warnings, and authority boundaries for the
+authoring invocation chain. They must not publish raw prompts, raw model output,
+canonical spec mutations, ontology package writes, or owner-decision imports.
+
 Project-local ontology package data should materialize below the owning
 SpecGraph checkout, for example `ontology/packages/specgraph-core/`, not under
 the sibling Ontology repository or `tests/fixtures/`. The sibling Ontology
