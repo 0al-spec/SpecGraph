@@ -251,6 +251,15 @@ Supervisor modes:
   not execute prompt agents, infer missing concepts with an LLM, create a
   candidate graph, mutate canonical specs, write Ontology packages, or create
   Git branches.
+- `tools/candidate_spec_graph.py`: deterministic candidate graph contract
+  builder introduced by proposal 0150. Use `make candidate-spec-graph
+  CANDIDATE_SPEC_GRAPH_INTAKE=<json> CANDIDATE_SPEC_GRAPH_SEED=<json>` to
+  normalize review-only candidate nodes, edges, requirements, acceptance
+  criteria, claims, and gaps from an event-storming intake. The builder
+  validates intake readiness, node/edge refs, requirement-to-acceptance-criteria
+  refs, and F/G/R calibration for strong candidate claims without mutating
+  canonical specs, running pre-SIB metrics, writing Ontology packages, or
+  creating Git branches.
 - `--build-ontology-supervisor-semantic-gate`: refresh the same ontology
   semantic surfaces through the supervisor entrypoint and print a compact gate
   report for `runs/ontology_supervisor_semantic_gate.json` without running
@@ -862,6 +871,9 @@ Key derived artifacts:
 - `runs/idea_event_storming_intake.json`: review-only idea-to-spec intake
   artifact containing structured event-storming context and candidate-graph
   readiness state without raw intent text or canonical graph mutation.
+- `runs/candidate_spec_graph.json`: review-only candidate specification graph
+  artifact containing candidate nodes, edges, requirements, acceptance
+  criteria, claims, gaps, source-intake refs, and pre-SIB readiness state.
 - `runs/specpm_export_preview.json`: reviewable `SpecPM` package preview
   artifact, including manifest preview, boundary-source preview, export
   status, and next-gap backlog for future full package emission

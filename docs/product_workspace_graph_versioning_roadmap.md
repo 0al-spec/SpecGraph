@@ -73,6 +73,8 @@ context resolution without creating canonical specs.
 
 ### 2. Candidate Spec Graph Contract
 
+Status: implemented in proposal `0150`.
+
 Define a full candidate graph artifact that can contain proposed specs, edges,
 requirements, acceptance criteria, claims, ontology refs, and unresolved gaps.
 

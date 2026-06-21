@@ -8123,5 +8123,55 @@
         "pattern": "Status: implemented in proposal `0149`"
       }
     ]
+  },
+  {
+    "proposal_id": "0150",
+    "posture": "synchronous_runtime_slice",
+    "runtime_surfaces": [
+      "docs/proposals/0150_candidate_spec_graph_contract.md",
+      "docs/archive/proposal_sources/0150_candidate_spec_graph_contract.md",
+      "docs/product_workspace_graph_versioning_roadmap.md",
+      "tools/candidate_spec_graph.py",
+      "tests/test_candidate_spec_graph.py",
+      "tests/fixtures/candidate_spec_graph/idea_event_storming_intake_ready.json",
+      "tests/fixtures/candidate_spec_graph/candidate_ready.json",
+      "tests/fixtures/candidate_spec_graph/intake_review_required.json",
+      "Makefile",
+      "tools/README.md"
+    ],
+    "runtime_markers": [
+      {
+        "path": "tools/candidate_spec_graph.py",
+        "pattern": "candidate_spec_graph"
+      },
+      {
+        "path": "tools/candidate_spec_graph.py",
+        "pattern": "pre_sib_readiness"
+      },
+      {
+        "path": "tools/candidate_spec_graph.py",
+        "pattern": "candidate_strong_claim_without_fgr"
+      }
+    ],
+    "validation_markers": [
+      {
+        "path": "tests/test_candidate_spec_graph.py",
+        "pattern": "test_candidate_spec_graph_builds_ready_graph"
+      },
+      {
+        "path": "tests/test_candidate_spec_graph.py",
+        "pattern": "test_candidate_spec_graph_rejects_strong_claim_without_fgr"
+      }
+    ],
+    "observation_markers": [
+      {
+        "path": "docs/proposals/0150_candidate_spec_graph_contract.md",
+        "pattern": "does not grant write authority"
+      },
+      {
+        "path": "docs/product_workspace_graph_versioning_roadmap.md",
+        "pattern": "Status: implemented in proposal `0150`"
+      }
+    ]
   }
 ]
