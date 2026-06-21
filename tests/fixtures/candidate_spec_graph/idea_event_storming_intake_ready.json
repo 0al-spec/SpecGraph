@@ -1,0 +1,155 @@
+{
+  "active_frame": {
+    "context_refs": [
+      "context.idea_to_spec"
+    ],
+    "domain_refs": [
+      "domain.calculator"
+    ],
+    "lifecycle_phase": "idea_intake",
+    "model_applicability_refs": [
+      "model-applicability://specgraph-core/product-spec-mvp"
+    ],
+    "ontology_layer_refs": [
+      "objective",
+      "mechanics"
+    ],
+    "ontology_refs": [
+      "ontology://specgraph-core"
+    ],
+    "project": "DemoCalculator",
+    "subsystem": "product_specification"
+  },
+  "artifact_kind": "idea_event_storming_intake",
+  "authority_boundary": {
+    "may_create_branch_or_commit": false,
+    "may_execute_prompt_agent": false,
+    "may_mark_candidate_graph_accepted": false,
+    "may_mutate_canonical_specs": false,
+    "may_write_ontology_lockfile": false,
+    "may_write_ontology_package": false
+  },
+  "candidate_graph_readiness": {
+    "blocked_by": [],
+    "next_artifact": "runs/candidate_spec_graph.json",
+    "ready": true,
+    "review_state": "ready_for_candidate_graph"
+  },
+  "canonical_mutations_allowed": false,
+  "context_completion_questions": [],
+  "contract_ref": "specgraph.idea-to-spec.event-storming-intake.v0.1",
+  "event_storming": {
+    "actors": [
+      {
+        "id": "actor.user",
+        "name": "Calculator User",
+        "role": "primary_user"
+      }
+    ],
+    "commands": [
+      {
+        "actor_refs": [
+          "actor.user"
+        ],
+        "id": "command.enter_number",
+        "name": "Enter Number",
+        "produces_event_refs": [
+          "event.number_entered"
+        ]
+      },
+      {
+        "actor_refs": [
+          "actor.user"
+        ],
+        "id": "command.select_operation",
+        "name": "Select Operation",
+        "produces_event_refs": [
+          "event.operation_selected",
+          "event.result_displayed"
+        ]
+      }
+    ],
+    "constraints": [
+      {
+        "id": "constraint.no_canonical_write",
+        "kind": "process",
+        "statement": "Initial intake must remain pre-canonical until candidate graph validation passes."
+      }
+    ],
+    "domain_events": [
+      {
+        "actor_refs": [
+          "actor.user"
+        ],
+        "id": "event.number_entered",
+        "name": "Number Entered"
+      },
+      {
+        "actor_refs": [
+          "actor.user"
+        ],
+        "id": "event.operation_selected",
+        "name": "Operation Selected"
+      },
+      {
+        "actor_refs": [
+          "actor.user"
+        ],
+        "id": "event.result_displayed",
+        "name": "Result Displayed"
+      }
+    ],
+    "external_systems": [],
+    "policies": [
+      {
+        "command_refs": [
+          "command.select_operation"
+        ],
+        "id": "policy.divide_by_zero",
+        "name": "Reject Divide By Zero",
+        "trigger_event_refs": [
+          "event.operation_selected"
+        ]
+      }
+    ],
+    "vocabulary_questions": [
+      {
+        "id": "question.operation_model",
+        "question": "Should operations be modeled as buttons, commands, or domain entities?",
+        "reason": "The candidate graph needs stable terminology before spec generation.",
+        "term": "Operation"
+      }
+    ]
+  },
+  "findings": [],
+  "generated_at": "2026-06-21T00:00:00+00:00",
+  "privacy_boundary": {
+    "raw_intent_text_published": false,
+    "raw_model_output_published": false,
+    "raw_prompt_published": false
+  },
+  "proposal_id": "0149",
+  "root_intent": {
+    "raw_text_published": false,
+    "source_ref": "operator://demo-calculator-idea",
+    "summary": "Build a calculator app with numeric input, operations, result display, and history.",
+    "text_sha256": "c2c50b169bb7215260d4f79f9245cb305806f3c2804884ec8dbac540c5a68627"
+  },
+  "schema_version": 1,
+  "seed_contract_ref": "specgraph.idea-to-spec.event-storming-seed.v0.1",
+  "source_ref": "operator://demo-calculator-idea",
+  "summary": {
+    "actor_count": 1,
+    "command_count": 2,
+    "constraint_count": 1,
+    "domain_event_count": 3,
+    "external_system_count": 0,
+    "finding_count": 0,
+    "policy_count": 1,
+    "status": "ready_for_candidate_graph",
+    "vocabulary_question_count": 1,
+    "warning_count": 0
+  },
+  "tracked_artifacts_written": false,
+  "warnings": []
+}

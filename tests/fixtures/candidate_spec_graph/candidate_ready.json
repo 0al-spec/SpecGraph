@@ -1,0 +1,137 @@
+{
+  "artifact_kind": "candidate_spec_graph_seed",
+  "schema_version": 1,
+  "contract_ref": "specgraph.idea-to-spec.candidate-spec-graph-seed.v0.1",
+  "source_ref": "operator://demo-calculator-candidate",
+  "candidate_graph": {
+    "nodes": [
+      {
+        "id": "candidate-spec.calculator-product",
+        "title": "Calculator Product",
+        "kind": "product_boundary",
+        "description": "Defines the calculator product boundary and user-visible value.",
+        "source_event_refs": [
+          "event.number_entered",
+          "event.operation_selected",
+          "event.result_displayed"
+        ],
+        "ontology_refs": [
+          "ontology://specgraph-core#Spec"
+        ],
+        "requirements": [
+          {
+            "id": "req.calculator-product.basic-calculation",
+            "statement": "The calculator must let a user enter numbers, choose an operation, and see the result.",
+            "acceptance_criteria_refs": [
+              "ac.calculator-product.result-visible"
+            ]
+          }
+        ],
+        "acceptance_criteria": [
+          {
+            "id": "ac.calculator-product.result-visible",
+            "statement": "Given entered operands and a selected supported operation, the result is displayed."
+          }
+        ],
+        "claims": [
+          {
+            "id": "claim.calculator-product.pre-sib-ready",
+            "type": "product_claim",
+            "statement": "A bounded candidate graph can be reviewed with pre-SIB metrics before code generation.",
+            "calibration": {
+              "F": "F3",
+              "G": {
+                "applies_to": [
+                  "Demo calculator MVP candidate graph"
+                ],
+                "assumptions": [
+                  "The intake frame remains valid."
+                ]
+              },
+              "R": "R2"
+            }
+          }
+        ],
+        "gaps": [
+          {
+            "id": "gap.operation-model",
+            "kind": "vocabulary_question",
+            "statement": "Confirm whether Operation is a domain entity or command label."
+          }
+        ]
+      },
+      {
+        "id": "candidate-spec.numeric-input",
+        "title": "Numeric Input",
+        "kind": "feature",
+        "description": "Captures entering and editing calculator operands.",
+        "source_event_refs": [
+          "event.number_entered"
+        ],
+        "ontology_refs": [
+          "ontology://specgraph-core#Requirement"
+        ],
+        "requirements": [
+          {
+            "id": "req.numeric-input.accept-digits",
+            "statement": "The product must accept digit input from the user.",
+            "acceptance_criteria_refs": [
+              "ac.numeric-input.digits-accepted"
+            ]
+          }
+        ],
+        "acceptance_criteria": [
+          {
+            "id": "ac.numeric-input.digits-accepted",
+            "statement": "Given a user selects a digit, the pending operand updates."
+          }
+        ],
+        "claims": [],
+        "gaps": []
+      },
+      {
+        "id": "candidate-spec.operation-model",
+        "title": "Operation Model",
+        "kind": "domain_rule",
+        "description": "Defines supported operations and exceptional cases.",
+        "source_event_refs": [
+          "event.operation_selected"
+        ],
+        "ontology_refs": [
+          "ontology://specgraph-core#Requirement"
+        ],
+        "requirements": [
+          {
+            "id": "req.operation-model.divide-by-zero",
+            "statement": "The operation model must reject divide by zero as a user-visible error.",
+            "acceptance_criteria_refs": [
+              "ac.operation-model.divide-by-zero-rejected"
+            ]
+          }
+        ],
+        "acceptance_criteria": [
+          {
+            "id": "ac.operation-model.divide-by-zero-rejected",
+            "statement": "Given division by zero is requested, the product shows an error instead of a numeric result."
+          }
+        ],
+        "claims": [],
+        "gaps": []
+      }
+    ],
+    "edges": [
+      {
+        "id": "edge.calculator-product.numeric-input",
+        "from": "candidate-spec.calculator-product",
+        "to": "candidate-spec.numeric-input",
+        "relation": "decomposes_to"
+      },
+      {
+        "id": "edge.calculator-product.operation-model",
+        "from": "candidate-spec.calculator-product",
+        "to": "candidate-spec.operation-model",
+        "relation": "decomposes_to"
+      }
+    ]
+  }
+}

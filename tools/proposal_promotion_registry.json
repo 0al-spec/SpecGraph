@@ -1922,5 +1922,18 @@
     "required_provenance_links": [
       "source_draft_ref"
     ]
+  },
+  {
+    "proposal_id": "0150",
+    "source_artifact_class": "working_draft",
+    "source_refs": [
+      "docs/archive/proposal_sources/0150_candidate_spec_graph_contract.md"
+    ],
+    "motivating_concern": "The idea-to-spec loop has a structured event-storming intake, but downstream pre-SIB metrics and repair loops need a typed candidate graph artifact with nodes, edges, requirements, acceptance criteria, claims, gaps, and source-intake refs.",
+    "normalized_title": "Candidate Spec Graph Contract",
+    "bounded_scope": "Add a deterministic review-only candidate_spec_graph builder, Make target, fixtures, tests, and documentation that normalize candidate nodes, edges, requirements, acceptance criteria, calibrated claims, gaps, source-intake refs, and pre-SIB readiness from an idea_event_storming_intake, without executing prompt agents, generating graph content from raw intent, running pre-SIB scoring, running repair loops, mutating canonical specs, writing ontology packages or lockfiles, accepting ontology terms, creating Git branches or commits, or adding SpecSpace UI.",
+    "required_provenance_links": [
+      "source_draft_ref"
+    ]
   }
 ]

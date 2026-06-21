@@ -1,0 +1,33 @@
+{
+  "artifact_kind": "idea_event_storming_intake",
+  "schema_version": 1,
+  "contract_ref": "specgraph.idea-to-spec.event-storming-intake.v0.1",
+  "source_ref": "operator://underspecified-idea",
+  "canonical_mutations_allowed": false,
+  "tracked_artifacts_written": false,
+  "root_intent": {
+    "source_ref": "operator://underspecified-idea",
+    "text_sha256": "missing",
+    "summary": "Underspecified idea.",
+    "raw_text_published": false
+  },
+  "active_frame": {},
+  "event_storming": {
+    "actors": [],
+    "domain_events": [],
+    "commands": [],
+    "policies": [],
+    "external_systems": [],
+    "constraints": [],
+    "vocabulary_questions": []
+  },
+  "candidate_graph_readiness": {
+    "ready": false,
+    "review_state": "context_completion_required",
+    "blocked_by": [
+      "active_frame_incomplete"
+    ]
+  },
+  "findings": [],
+  "warnings": []
+}
