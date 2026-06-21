@@ -1,0 +1,184 @@
+from __future__ import annotations
+
+import importlib.util
+import json
+import subprocess
+import sys
+from pathlib import Path
+
+import yaml
+
+ROOT = Path(__file__).resolve().parents[1]
+TOOL_PATH = ROOT / "tools" / "candidate_spec_materialization.py"
+REPAIR_TOOL_PATH = ROOT / "tools" / "candidate_repair_loop.py"
+FIXTURE_DIR = ROOT / "tests" / "fixtures" / "candidate_repair_loop"
+CANDIDATE_REPAIRABLE = FIXTURE_DIR / "candidate_graph_repairable.json"
+PRE_SIB_REPAIR_REQUIRED = FIXTURE_DIR / "pre_sib_repair_required.json"
+
+
+def load_module() -> object:
+    spec = importlib.util.spec_from_file_location(
+        "candidate_spec_materialization_under_test",
+        TOOL_PATH,
+    )
+    assert spec and spec.loader
+    module = importlib.util.module_from_spec(spec)
+    sys.modules[spec.name] = module
+    spec.loader.exec_module(module)
+    return module
+
+
+def load_repair_module() -> object:
+    spec = importlib.util.spec_from_file_location(
+        "candidate_repair_loop_for_materialization_test",
+        REPAIR_TOOL_PATH,
+    )
+    assert spec and spec.loader
+    module = importlib.util.module_from_spec(spec)
+    sys.modules[spec.name] = module
+    spec.loader.exec_module(module)
+    return module
+
+
+def load_json(path: Path) -> dict[str, object]:
+    return json.loads(path.read_text(encoding="utf-8"))
+
+
+def build_repair_report() -> dict[str, object]:
+    module = load_repair_module()
+    return module.build_candidate_repair_loop_report(
+        candidate_graph=load_json(CANDIDATE_REPAIRABLE),
+        pre_sib_report=load_json(PRE_SIB_REPAIR_REQUIRED),
+        candidate_graph_path=CANDIDATE_REPAIRABLE,
+        pre_sib_report_path=PRE_SIB_REPAIR_REQUIRED,
+    )
+
+
+def finding_ids(report: dict[str, object]) -> set[str]:
+    findings = report["findings"]
+    assert isinstance(findings, list)
+    return {finding["finding_id"] for finding in findings if isinstance(finding, dict)}
+
+
+def test_candidate_spec_materialization_writes_review_yaml(tmp_path: Path) -> None:
+    module = load_module()
+    output_dir = tmp_path / "materialized"
+
+    report = module.build_candidate_spec_materialization_report(
+        candidate_graph=load_json(CANDIDATE_REPAIRABLE),
+        repair_loop=build_repair_report(),
+        candidate_graph_path=CANDIDATE_REPAIRABLE,
+        repair_loop_path=tmp_path / "candidate_repair_loop_report.json",
+        output_dir=output_dir,
+    )
+
+    assert report["artifact_kind"] == "candidate_spec_materialization_report"
+    assert report["proposal_id"] == "0153"
+    assert report["canonical_mutations_allowed"] is False
+    assert report["tracked_artifacts_written"] is False
+    assert report["readiness"]["ready"] is True
+    assert report["readiness"]["review_state"] == "materialized_candidate_review_ready"
+    assert report["materialization_source"] == "repair_loop_preview"
+    assert report["summary"]["materialized_file_count"] == 2
+    assert report["authority_boundary"]["may_create_branch_or_commit"] is False
+    assert report["promotion_request"]["paths"] == [
+        item["promotion_path"] for item in report["materialized_files"]
+    ]
+
+    first_file = report["materialized_files"][0]
+    assert isinstance(first_file, dict)
+    materialized_path = ROOT / first_file["path"]
+    if not materialized_path.exists():
+        materialized_path = output_dir / Path(first_file["path"]).name
+    parsed = yaml.safe_load(materialized_path.read_text(encoding="utf-8"))
+    assert parsed["id"].startswith("CANDIDATE-CANDIDATE-SPEC-")
+    assert parsed["kind"] == "spec"
+    assert parsed["gate_state"] == "review_pending"
+    assert parsed["specification"]["materialization_mode"] == "candidate_review_preview"
+    assert parsed["specification"]["requirements"]
+
+
+def test_candidate_spec_materialization_rejects_authority_expansion(
+    tmp_path: Path,
+) -> None:
+    module = load_module()
+    candidate_graph = load_json(CANDIDATE_REPAIRABLE)
+    candidate_graph["tracked_artifacts_written"] = True
+
+    report = module.build_candidate_spec_materialization_report(
+        candidate_graph=candidate_graph,
+        output_dir=tmp_path / "materialized",
+    )
+
+    assert report["readiness"]["ready"] is False
+    assert "candidate_graph_authority_expanded" in finding_ids(report)
+    assert report["materialized_files"] == []
+    assert report["local_files_written"] == []
+
+
+def test_candidate_spec_materialization_cli_writes_report_and_files(
+    tmp_path: Path,
+) -> None:
+    repair_report = tmp_path / "candidate_repair_loop_report.json"
+    repair_report.write_text(json.dumps(build_repair_report()), encoding="utf-8")
+    output_dir = tmp_path / "materialized"
+    output = tmp_path / "candidate_spec_materialization_report.json"
+
+    result = subprocess.run(
+        [
+            sys.executable,
+            str(TOOL_PATH),
+            "--candidate-graph",
+            str(CANDIDATE_REPAIRABLE),
+            "--repair-loop",
+            str(repair_report),
+            "--output-dir",
+            str(output_dir),
+            "--output",
+            str(output),
+            "--strict",
+        ],
+        cwd=ROOT,
+        check=False,
+        capture_output=True,
+        text=True,
+    )
+
+    assert result.returncode == 0
+    report = load_json(output)
+    assert report["readiness"]["ready"] is True
+    assert len(report["materialized_files"]) == 2
+    assert len(list(output_dir.glob("*.yaml"))) == 2
+
+
+def test_candidate_spec_materialization_strict_cli_exits_nonzero(
+    tmp_path: Path,
+) -> None:
+    candidate_graph = load_json(CANDIDATE_REPAIRABLE)
+    candidate_graph["artifact_kind"] = "wrong"
+    candidate_path = tmp_path / "candidate_graph.json"
+    candidate_path.write_text(json.dumps(candidate_graph), encoding="utf-8")
+    output = tmp_path / "candidate_spec_materialization_report.json"
+
+    result = subprocess.run(
+        [
+            sys.executable,
+            str(TOOL_PATH),
+            "--candidate-graph",
+            str(candidate_path),
+            "--output-dir",
+            str(tmp_path / "materialized"),
+            "--output",
+            str(output),
+            "--strict",
+        ],
+        cwd=ROOT,
+        check=False,
+        capture_output=True,
+        text=True,
+    )
+
+    assert result.returncode == 1
+    report = load_json(output)
+    assert report["readiness"]["ready"] is False
+    assert "candidate_graph_wrong_artifact_kind" in finding_ids(report)

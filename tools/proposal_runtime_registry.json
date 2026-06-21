@@ -8272,5 +8272,52 @@
         "pattern": "Status: implemented in proposal `0152`"
       }
     ]
+  },
+  {
+    "proposal_id": "0153",
+    "posture": "synchronous_runtime_slice",
+    "runtime_surfaces": [
+      "docs/proposals/0153_candidate_spec_materialization_preview.md",
+      "docs/archive/proposal_sources/0153_candidate_spec_materialization_preview.md",
+      "docs/product_workspace_graph_versioning_roadmap.md",
+      "tools/candidate_spec_materialization.py",
+      "tests/test_candidate_spec_materialization.py",
+      "Makefile",
+      "tools/README.md"
+    ],
+    "runtime_markers": [
+      {
+        "path": "tools/candidate_spec_materialization.py",
+        "pattern": "candidate_spec_materialization_report"
+      },
+      {
+        "path": "tools/candidate_spec_materialization.py",
+        "pattern": "materialized_candidate_specs"
+      },
+      {
+        "path": "tools/candidate_spec_materialization.py",
+        "pattern": "platform_graph_repository_promotion_request"
+      }
+    ],
+    "validation_markers": [
+      {
+        "path": "tests/test_candidate_spec_materialization.py",
+        "pattern": "test_candidate_spec_materialization_writes_review_yaml"
+      },
+      {
+        "path": "tests/test_candidate_spec_materialization.py",
+        "pattern": "test_candidate_spec_materialization_strict_cli_exits_nonzero"
+      }
+    ],
+    "observation_markers": [
+      {
+        "path": "docs/proposals/0153_candidate_spec_materialization_preview.md",
+        "pattern": "does not grant write authority"
+      },
+      {
+        "path": "docs/product_workspace_graph_versioning_roadmap.md",
+        "pattern": "proposal `0153`"
+      }
+    ]
   }
 ]

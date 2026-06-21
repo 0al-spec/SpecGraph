@@ -48,6 +48,10 @@ PRE_SIB_COHERENCE_OUTPUT ?= runs/pre_sib_coherence_report.json
 CANDIDATE_REPAIR_LOOP_CANDIDATE_GRAPH ?= tests/fixtures/candidate_repair_loop/candidate_graph_repairable.json
 CANDIDATE_REPAIR_LOOP_PRE_SIB_REPORT ?= tests/fixtures/candidate_repair_loop/pre_sib_repair_required.json
 CANDIDATE_REPAIR_LOOP_OUTPUT ?= runs/candidate_repair_loop_report.json
+CANDIDATE_SPEC_MATERIALIZATION_CANDIDATE_GRAPH ?= tests/fixtures/candidate_repair_loop/candidate_graph_repairable.json
+CANDIDATE_SPEC_MATERIALIZATION_REPAIR_LOOP ?= runs/candidate_repair_loop_report.json
+CANDIDATE_SPEC_MATERIALIZATION_OUTPUT_DIR ?= runs/materialized_candidate_specs
+CANDIDATE_SPEC_MATERIALIZATION_OUTPUT ?= runs/candidate_spec_materialization_report.json
 
 .DEFAULT_GOAL := help
 
@@ -61,6 +65,7 @@ PYTHON_TARGETS := viewer-surfaces dashboard backlog next-move spec-activity grap
 	specauthor-generated-artifact-contract specauthor-ontology-write-gate \
 	specauthor-invocation-artifact-contract specauthor-authoring-flow \
 	idea-event-storming-intake candidate-spec-graph pre-sib-coherence candidate-repair-loop \
+	candidate-spec-materialization \
 	proposal-work-claims proposal-work-claims-gate proposal-id \
 	metrics-delivery metrics-feedback metrics-source-promotion metric-signals metric-thresholds \
 	metric-packs metric-pack-drift metric-pack-adapters metric-pack-runs metric-pricing model-usage \
@@ -153,6 +158,7 @@ help:
 			'  make executor-proposal-promotion-packet Build local operator proposal promotion packet' \
 			'  make executor-proposal-source-materialize Materialize local proposal source draft' \
 			'  make executor-public-proposal-doc-materialize Materialize local public proposal doc' \
+			'  make candidate-spec-materialization Build review-only candidate spec YAML previews' \
 			'  make agent-passports          Refresh Agent Passport derived surfaces' \
 			'  make agent-runtime-evidence   Refresh Agent Passport runtime evidence JSON' \
 			'  make check-python             Verify selected Python runtime is supported' \
@@ -300,6 +306,10 @@ pre-sib-coherence:
 .PHONY: candidate-repair-loop
 candidate-repair-loop:
 	@$(PYTHON) tools/candidate_repair_loop.py --candidate-graph "$(CANDIDATE_REPAIR_LOOP_CANDIDATE_GRAPH)" --pre-sib-report "$(CANDIDATE_REPAIR_LOOP_PRE_SIB_REPORT)" --output "$(CANDIDATE_REPAIR_LOOP_OUTPUT)"
+
+.PHONY: candidate-spec-materialization
+candidate-spec-materialization:
+	@$(PYTHON) tools/candidate_spec_materialization.py --candidate-graph "$(CANDIDATE_SPEC_MATERIALIZATION_CANDIDATE_GRAPH)" --repair-loop "$(CANDIDATE_SPEC_MATERIALIZATION_REPAIR_LOOP)" --output-dir "$(CANDIDATE_SPEC_MATERIALIZATION_OUTPUT_DIR)" --output "$(CANDIDATE_SPEC_MATERIALIZATION_OUTPUT)"
 
 .PHONY: metrics-delivery
 metrics-delivery:

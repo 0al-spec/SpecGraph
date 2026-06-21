@@ -127,6 +127,10 @@ or Ontology packages directly.
 
 ### 5. Graph Repository Service Contract
 
+Status: Platform contract and report-only promotion request handoff are
+implemented; SpecGraph materialized candidate spec previews are implemented in
+proposal `0153`.
+
 Define the first service/CLI boundary over Git:
 
 - `create_workspace`;
@@ -141,6 +145,13 @@ The first implementation can be local and CLI-backed. Production deployments can
 later replace the storage backend with a hosted Git provider, object storage,
 queue-backed workers, or a workspace manager without changing the authority
 model.
+
+SpecGraph owns the candidate materialization preview before Platform creates a
+branch. `0153` writes review-only YAML previews under
+`runs/materialized_candidate_specs/` plus
+`runs/candidate_spec_materialization_report.json`; Platform consumes the
+reported paths through `graph-repository promotion-request` before any executor
+step creates a branch, commit, or pull request.
 
 ### 6. SpecSpace Review And Publish Surface
 
