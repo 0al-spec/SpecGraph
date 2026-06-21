@@ -41,6 +41,12 @@ REQUIRED_RUN_SURFACES = (
     "specauthor_invocation_artifact.json",
     "specauthor_invocation_artifact_contract_report.json",
     "specauthor_authoring_flow_report.json",
+    "candidate_spec_materialization_report.json",
+    "idea_to_spec_promotion_gate.json",
+)
+PLATFORM_HANDOFF_RUN_SURFACES = (
+    "candidate_spec_materialization_report.json",
+    "idea_to_spec_promotion_gate.json",
 )
 LOCAL_ONLY_RUN_SURFACES = {
     "local_operator_executor_readiness.json",
@@ -385,6 +391,13 @@ def build_manifest(
         root_info["byte_count"] += file_info.size_bytes
 
     required_surfaces = ensure_required_surfaces(output_dir)
+    platform_handoff_surfaces = {
+        surface: {
+            "path": f"runs/{surface}",
+            "present": required_surfaces.get(surface) is True,
+        }
+        for surface in PLATFORM_HANDOFF_RUN_SURFACES
+    }
     missing_required = [path for path, present in required_surfaces.items() if not present]
     safety_status = "passed" if not missing_required else "failed"
     if missing_required:
@@ -402,6 +415,7 @@ def build_manifest(
         "roots": root_summary,
         "checksums_path": "checksums.sha256",
         "required_surfaces": required_surfaces,
+        "platform_handoff_surfaces": platform_handoff_surfaces,
         "safety_gate": {
             "status": safety_status,
             "redacted_local_path_occurrences": redacted_local_path_occurrences,
@@ -449,6 +463,8 @@ def refresh_publish_surfaces(repo_root: Path) -> None:
     run_make_target(repo_root, "ontology-imports-public")
     run_make_target(repo_root, "ontology-owner-decision-import-v2")
     run_make_target(repo_root, "specauthor-authoring-flow")
+    run_make_target(repo_root, "candidate-spec-materialization")
+    run_make_target(repo_root, "idea-to-spec-promotion-gate")
 
 
 def build_public_bundle(
@@ -611,7 +627,8 @@ def parse_args(argv: list[str]) -> argparse.Namespace:
             "external-consumer-evidence, ontology-imports, spec-ontology-bindings, "
             "spec-ontology-validation, ontology-gap-review, "
             "legacy-spec-ontology-backfill-plan, ontology-imports-public, "
-            "then ontology-owner-decision-import-v2."
+            "ontology-owner-decision-import-v2, specauthor-authoring-flow, "
+            "candidate-spec-materialization, then idea-to-spec-promotion-gate."
         ),
     )
     parser.add_argument(

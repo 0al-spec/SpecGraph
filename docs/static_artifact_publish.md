@@ -98,6 +98,11 @@ The order matters and is intentionally two-pass:
 9. `make ontology-owner-decision-import-v2` then builds the public-safe owner
    decision review surface from the refreshed gap review and public-safe
    decision preview.
+10. `make specauthor-authoring-flow` refreshes the prompt-side SpecAuthor
+    invocation artifact chain used by the authoring review surface.
+11. `make candidate-spec-materialization` and
+    `make idea-to-spec-promotion-gate` rebuild the stable Platform Git Service
+    handoff surfaces for review-only candidate promotion.
 
 The bundle publishes `runs/*.json` by default after redaction and safety
 scanning. Local-only operator diagnostics remain excluded by denylist instead of
@@ -107,6 +112,10 @@ referenced JSON file is copied into the bundle at the same relative path and is
 listed in `artifact_manifest.json`; this lets SpecSpace fetch the normalized IR
 over the same static artifact host. Project-local ontology packages should
 materialize IR below `ontology/packages/`, not below `tests/fixtures/`.
+The manifest also exposes stable Platform handoff names under
+`platform_handoff_surfaces`:
+`runs/candidate_spec_materialization_report.json` and
+`runs/idea_to_spec_promotion_gate.json`.
 
 ## Safety Gate
 
@@ -134,6 +143,9 @@ The bundle builder fails before upload when it finds:
   - `runs/ontology_semantic_review_surface.json`
   - `runs/ontology_review_dashboard.json`
   - `runs/ontology_decision_import_preview.json`
+- missing Platform Git Service handoff surfaces required by SpecSpace:
+  - `runs/candidate_spec_materialization_report.json`
+  - `runs/idea_to_spec_promotion_gate.json`
 - unsafe or missing Ontology materialized IR paths declared by
   `runs/ontology_package_index.json`;
 - public Ontology review surfaces that contain checked-in demo fixture terms
