@@ -32,6 +32,7 @@ The canonical source files remain in the repository:
 - `CONTRIBUTING.md`
 - `AGENTS.md`
 - `docs/static_artifact_publish.md`
+- `docs/product_workspace_graph_versioning_roadmap.md`
 - `docs/proposals/*.md`
 - `tools/README.md`
 

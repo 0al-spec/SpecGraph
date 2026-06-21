@@ -56,6 +56,9 @@ supervisor:
   as locked core roots in product mode.
 - Do not route customer project review feedback directly into SpecGraph core.
 - Export upstream SpecGraph issues or proposals only by explicit human action.
+- Treat Git as the canonical version substrate, but put production writes behind
+  a managed graph repository boundary instead of letting UI code mutate a local
+  checkout directly.
 
 ## Expected Supervisor Behavior
 
@@ -80,6 +83,22 @@ The important viewer-facing fields are:
 - `viewer_projection.enforcement_summary`;
 - `graph_next_moves.source_facts.project_environment`;
 - `graph_next_moves.blocked_moves[].governance_block`.
+
+## Graph Storage And Versioning Direction
+
+Product workspaces should eventually use a Git-backed graph repository service:
+
+```text
+candidate graph -> validation gates -> branch/commit -> review/merge -> read model
+```
+
+The repository service owns candidate workspace allocation, validation,
+branch/commit creation, review policy, and artifact publication. SpecSpace
+should consume the published read model and repository status rather than
+writing directly into `specs/` or `runs/`.
+
+The detailed roadmap is documented in
+[`product_workspace_graph_versioning_roadmap.md`](product_workspace_graph_versioning_roadmap.md).
 
 ## Smoke Scenario
 
