@@ -1,0 +1,91 @@
+{
+  "artifact_kind": "candidate_spec_graph",
+  "schema_version": 1,
+  "contract_ref": "specgraph.idea-to-spec.candidate-spec-graph.v0.1",
+  "source_ref": "operator://repairable-candidate",
+  "canonical_mutations_allowed": false,
+  "tracked_artifacts_written": false,
+  "active_frame": {
+    "project": "DemoCalculator",
+    "ontology_refs": [
+      "ontology://specgraph-core"
+    ],
+    "domain_refs": [
+      "domain.calculator"
+    ],
+    "context_refs": [
+      "context.idea_to_spec"
+    ]
+  },
+  "pre_sib_readiness": {
+    "ready": true,
+    "review_state": "ready_for_pre_sib"
+  },
+  "nodes": [
+    {
+      "id": "candidate-spec.calculator-product",
+      "title": "Calculator Product",
+      "kind": "product_boundary",
+      "description": "Defines the product boundary.",
+      "ontology_refs": [
+        "ontology://specgraph-core#Spec"
+      ],
+      "requirements": [
+        {
+          "id": "req.product.result",
+          "statement": "The product must show calculation results.",
+          "acceptance_criteria_refs": [
+            "ac.product.result"
+          ]
+        }
+      ],
+      "acceptance_criteria": [
+        {
+          "id": "ac.product.result",
+          "statement": "Results are visible after an operation."
+        }
+      ],
+      "claims": [
+        {
+          "id": "claim.product.always-correct",
+          "type": "product_claim",
+          "statement": "The calculator always produces correct results.",
+          "calibration": {
+            "F": "F2",
+            "G": {
+              "applies_to": [
+                "Demo calculator MVP"
+              ]
+            },
+            "R": "R2"
+          },
+          "evidence_refs": []
+        }
+      ],
+      "gaps": []
+    },
+    {
+      "id": "candidate-spec.numeric-input",
+      "title": "Numeric Input",
+      "kind": "feature",
+      "description": "Captures numeric input.",
+      "ontology_refs": [],
+      "requirements": [
+        {
+          "id": "req.input.digits",
+          "statement": "The product must accept digit input.",
+          "acceptance_criteria_refs": []
+        }
+      ],
+      "acceptance_criteria": [],
+      "claims": [],
+      "gaps": [
+        {
+          "id": "gap.input-format",
+          "statement": "Confirm decimal separator behavior."
+        }
+      ]
+    }
+  ],
+  "edges": []
+}

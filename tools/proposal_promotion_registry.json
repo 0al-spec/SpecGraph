@@ -1948,5 +1948,18 @@
     "required_provenance_links": [
       "source_draft_ref"
     ]
+  },
+  {
+    "proposal_id": "0152",
+    "source_artifact_class": "working_draft",
+    "source_refs": [
+      "docs/archive/proposal_sources/0152_candidate_repair_loop.md"
+    ],
+    "motivating_concern": "Candidate spec graphs have pre-SIB/coherence reports, but the idea-to-spec loop needs a deterministic review-only repair preview before SpecSpace visualization or repository materialization.",
+    "normalized_title": "Candidate Repair Loop",
+    "bounded_scope": "Add a deterministic review-only candidate_repair_loop_report builder, Make target, fixtures, tests, and documentation that consume a candidate_spec_graph plus pre_sib_coherence_report, emit repair actions, apply safe repairs to a preview graph, project metric deltas, and mark ontology/context-dependent work as review-required, without executing prompt agents, mutating candidate source artifacts, mutating canonical specs, writing ontology packages or lockfiles, accepting ontology terms, creating Git branches or commits, or adding SpecSpace UI.",
+    "required_provenance_links": [
+      "source_draft_ref"
+    ]
   }
 ]
