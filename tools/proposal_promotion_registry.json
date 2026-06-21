@@ -1883,5 +1883,18 @@
     "required_provenance_links": [
       "source_draft_ref"
     ]
+  },
+  {
+    "proposal_id": "0147",
+    "source_artifact_class": "working_draft",
+    "source_refs": [
+      "docs/archive/proposal_sources/0147_publish_specauthor_invocation_artifacts.md"
+    ],
+    "motivating_concern": "SpecAuthor authoring-flow outputs are useful only if downstream consumers can discover them through the same public-safe static artifact bundle as other review surfaces.",
+    "normalized_title": "Publish SpecAuthor Invocation Artifacts",
+    "bounded_scope": "Publish the review-only SpecAuthor invocation artifact, invocation contract report, and authoring-flow report through the public-safe static artifact bundle and documentation, without publishing raw prompts, raw model output, local operator diagnostics, canonical spec mutations, ontology package writes, or owner-decision imports.",
+    "required_provenance_links": [
+      "source_draft_ref"
+    ]
   }
 ]
