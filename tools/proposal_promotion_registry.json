@@ -1909,5 +1909,18 @@
     "required_provenance_links": [
       "source_draft_ref"
     ]
+  },
+  {
+    "proposal_id": "0149",
+    "source_artifact_class": "working_draft",
+    "source_refs": [
+      "docs/archive/proposal_sources/0149_idea_event_storming_intake.md"
+    ],
+    "motivating_concern": "The autonomous idea-to-spec loop needs a structured first artifact that captures event-storming context from a raw product idea before candidate graph generation, metrics, repair loops, or repository materialization can safely run.",
+    "normalized_title": "Idea Event-Storming Intake Artifact",
+    "bounded_scope": "Add a deterministic review-only idea_event_storming_intake builder, Make target, fixtures, tests, and documentation that normalize structured event-storming seed data into actors, domain events, commands, policies, external systems, constraints, vocabulary questions, active ontology/domain/context frame, and context-completion questions, without executing prompt agents, inferring missing concepts with an LLM, publishing raw intent text, creating candidate graphs, mutating canonical specs, writing ontology packages or lockfiles, accepting ontology terms, creating Git branches or commits, or adding SpecSpace UI.",
+    "required_provenance_links": [
+      "source_draft_ref"
+    ]
   }
 ]

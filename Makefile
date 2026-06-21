@@ -38,6 +38,8 @@ SPECAUTHOR_AUTHORING_FLOW_GENERATED_ARTIFACT ?= tests/fixtures/specauthor_genera
 SPECAUTHOR_AUTHORING_FLOW_INVOCATION_OUTPUT ?= runs/specauthor_invocation_artifact.json
 SPECAUTHOR_AUTHORING_FLOW_CONTRACT_OUTPUT ?= runs/specauthor_invocation_artifact_contract_report.json
 SPECAUTHOR_AUTHORING_FLOW_REPORT_OUTPUT ?= runs/specauthor_authoring_flow_report.json
+IDEA_EVENT_STORMING_INTAKE_SOURCE ?= tests/fixtures/idea_event_storming_intake/idea_ready.json
+IDEA_EVENT_STORMING_INTAKE_OUTPUT ?= runs/idea_event_storming_intake.json
 
 .DEFAULT_GOAL := help
 
@@ -50,6 +52,7 @@ PYTHON_TARGETS := viewer-surfaces dashboard backlog next-move spec-activity grap
 	ontology-owner-decision-import-v2 \
 	specauthor-generated-artifact-contract specauthor-ontology-write-gate \
 	specauthor-invocation-artifact-contract specauthor-authoring-flow \
+	idea-event-storming-intake \
 	proposal-work-claims proposal-work-claims-gate proposal-id \
 	metrics-delivery metrics-feedback metrics-source-promotion metric-signals metric-thresholds \
 	metric-packs metric-pack-drift metric-pack-adapters metric-pack-runs metric-pricing model-usage \
@@ -99,6 +102,7 @@ help:
 					'  make ontology-owner-decision-import-v2 Build read-only owner decision import v2 review JSON' \
 					'  make specauthor-generated-artifact-contract SPECAUTHOR_GENERATED_ARTIFACT_CONTRACT_ARTIFACT=<json>' \
 			'  make specauthor-ontology-write-gate SPECAUTHOR_ONTOLOGY_WRITE_GATE_ARTIFACT=<json>' \
+			'  make idea-event-storming-intake IDEA_EVENT_STORMING_INTAKE_SOURCE=<json>' \
 		'  make metrics-delivery         Refresh Metrics delivery workflow JSON' \
 		'  make metrics-feedback         Refresh Metrics feedback JSON' \
 		'  make metrics-source-promotion Refresh Metrics source promotion candidates JSON' \
@@ -269,6 +273,10 @@ specauthor-invocation-artifact-contract:
 .PHONY: specauthor-authoring-flow
 specauthor-authoring-flow:
 	@$(PYTHON) tools/specauthor_authoring_flow.py --context "$(SPECAUTHOR_AUTHORING_FLOW_CONTEXT)" --generated-artifact "$(SPECAUTHOR_AUTHORING_FLOW_GENERATED_ARTIFACT)" --invocation-output "$(SPECAUTHOR_AUTHORING_FLOW_INVOCATION_OUTPUT)" --contract-output "$(SPECAUTHOR_AUTHORING_FLOW_CONTRACT_OUTPUT)" --flow-report-output "$(SPECAUTHOR_AUTHORING_FLOW_REPORT_OUTPUT)"
+
+.PHONY: idea-event-storming-intake
+idea-event-storming-intake:
+	@$(PYTHON) tools/idea_event_storming_intake.py --input "$(IDEA_EVENT_STORMING_INTAKE_SOURCE)" --output "$(IDEA_EVENT_STORMING_INTAKE_OUTPUT)"
 
 .PHONY: metrics-delivery
 metrics-delivery:

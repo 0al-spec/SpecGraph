@@ -1,0 +1,17 @@
+{
+  "artifact_kind": "idea_event_storming_seed",
+  "schema_version": 1,
+  "source_ref": "operator://underspecified-idea",
+  "intent": {
+    "text": "Make a useful product."
+  },
+  "active_frame": {
+    "project": "UnknownProduct"
+  },
+  "event_storming": {
+    "actors": [],
+    "domain_events": [],
+    "commands": [],
+    "constraints": []
+  }
+}
