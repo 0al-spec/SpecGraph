@@ -74,6 +74,16 @@ refs, validation status, findings, warnings, and authority boundaries for the
 authoring invocation chain. They must not publish raw prompts, raw model output,
 canonical spec mutations, ontology package writes, or owner-decision imports.
 
+The public bundle exposes stable Platform Git Service handoff names through
+`artifact_manifest.json` under `platform_handoff_surfaces`:
+`runs/candidate_spec_materialization_report.json` and
+`runs/idea_to_spec_promotion_gate.json`. Until a real idea-to-spec candidate
+publish source exists, static publishing writes public-safe placeholders with
+`source_mode: public_placeholder` and `placeholder_reason: no_active_candidate`.
+Those placeholders preserve the HTTP contract without publishing fixture-based
+promotion paths, materialized files, branches, commits, pull requests, or
+canonical spec mutations.
+
 Project-local ontology package data should materialize below the owning
 SpecGraph checkout, for example `ontology/packages/specgraph-core/`, not under
 the sibling Ontology repository or `tests/fixtures/`. The sibling Ontology

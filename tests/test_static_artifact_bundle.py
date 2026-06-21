@@ -984,11 +984,23 @@ def test_refresh_publish_surfaces_builds_viewer_implementation_and_agent_surface
         "ontology-imports-public",
         "ontology-owner-decision-import-v2",
         "specauthor-authoring-flow",
-        "pre-sib-coherence",
-        "candidate-repair-loop",
-        "candidate-spec-materialization",
-        "idea-to-spec-promotion-gate",
     ]
+    materialization = json.loads(
+        (tmp_path / "runs" / "candidate_spec_materialization_report.json").read_text(
+            encoding="utf-8"
+        )
+    )
+    promotion_gate = json.loads(
+        (tmp_path / "runs" / "idea_to_spec_promotion_gate.json").read_text(encoding="utf-8")
+    )
+    assert materialization["source_mode"] == "public_placeholder"
+    assert materialization["placeholder_reason"] == "no_active_candidate"
+    assert materialization["promotion_request"]["paths"] == []
+    assert materialization["summary"]["materialized_file_count"] == 0
+    assert promotion_gate["source_mode"] == "public_placeholder"
+    assert promotion_gate["placeholder_reason"] == "no_active_candidate"
+    assert promotion_gate["promotion_request"]["paths"] == []
+    assert promotion_gate["summary"]["promotion_path_count"] == 0
 
 
 def test_main_prints_compact_summary(

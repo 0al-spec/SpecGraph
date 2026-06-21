@@ -48,6 +48,11 @@ PLATFORM_HANDOFF_RUN_SURFACES = (
     "candidate_spec_materialization_report.json",
     "idea_to_spec_promotion_gate.json",
 )
+PLATFORM_HANDOFF_PLACEHOLDER_REASON = "no_active_candidate"
+PLATFORM_HANDOFF_MATERIALIZATION_CONTRACT_REF = (
+    "specgraph.idea-to-spec.candidate-spec-materialization.v0.1"
+)
+PLATFORM_HANDOFF_PROMOTION_GATE_CONTRACT_REF = "specgraph.idea-to-spec.promotion-gate.v0.1"
 LOCAL_ONLY_RUN_SURFACES = {
     "local_operator_executor_readiness.json",
     "local_operator_executor_smoke.json",
@@ -273,6 +278,10 @@ def write_text_atomic(path: Path, text: str) -> None:
     tmp_path.replace(path)
 
 
+def write_json_artifact(path: Path, payload: dict[str, object]) -> None:
+    write_text_atomic(path, json.dumps(payload, indent=2, sort_keys=True) + "\n")
+
+
 def file_sha256(path: Path) -> str:
     digest = hashlib.sha256()
     with path.open("rb") as file_obj:
@@ -445,6 +454,136 @@ def run_make_target(repo_root: Path, target: str) -> None:
         raise PublishBundleError(f"make {target} failed")
 
 
+def platform_handoff_authority_boundary() -> dict[str, bool]:
+    return {
+        "may_create_branch_or_commit": False,
+        "may_execute_prompt_agent": False,
+        "may_mark_candidate_graph_accepted": False,
+        "may_mutate_candidate_source_artifacts": False,
+        "may_mutate_canonical_specs": False,
+        "may_open_pull_request": False,
+        "may_publish_read_model": False,
+        "may_write_ontology_lockfile": False,
+        "may_write_ontology_package": False,
+    }
+
+
+def platform_handoff_privacy_boundary() -> dict[str, bool]:
+    return {
+        "raw_intent_text_published": False,
+        "raw_model_output_published": False,
+        "raw_prompt_published": False,
+    }
+
+
+def platform_handoff_placeholder_finding() -> dict[str, object]:
+    return {
+        "finding_id": PLATFORM_HANDOFF_PLACEHOLDER_REASON,
+        "severity": "review_required",
+        "source": "static_artifact_publish",
+        "message": (
+            "No active idea-to-spec candidate is configured for public Platform handoff publishing."
+        ),
+    }
+
+
+def platform_handoff_placeholder_readiness() -> dict[str, object]:
+    return {
+        "ready": False,
+        "review_state": PLATFORM_HANDOFF_PLACEHOLDER_REASON,
+        "blocked_by": [PLATFORM_HANDOFF_PLACEHOLDER_REASON],
+        "next_artifact": "run idea-to-spec authoring flow with an active candidate",
+    }
+
+
+def build_platform_handoff_placeholder_surfaces(
+    *,
+    generated_at: str | None = None,
+) -> dict[str, dict[str, object]]:
+    generated = generated_at or datetime.now(tz=timezone.utc).isoformat()
+    readiness = platform_handoff_placeholder_readiness()
+    finding = platform_handoff_placeholder_finding()
+    materialization = {
+        "artifact_kind": "candidate_spec_materialization_report",
+        "schema_version": 1,
+        "contract_ref": PLATFORM_HANDOFF_MATERIALIZATION_CONTRACT_REF,
+        "proposal_id": "0153",
+        "source_mode": "public_placeholder",
+        "placeholder_reason": PLATFORM_HANDOFF_PLACEHOLDER_REASON,
+        "generated_at": generated,
+        "canonical_mutations_allowed": False,
+        "tracked_artifacts_written": False,
+        "materialization_source": PLATFORM_HANDOFF_PLACEHOLDER_REASON,
+        "readiness": readiness,
+        "authority_boundary": platform_handoff_authority_boundary(),
+        "privacy_boundary": platform_handoff_privacy_boundary(),
+        "findings": [finding],
+        "warnings": [],
+        "local_files_written": [],
+        "materialized_files": [],
+        "promotion_request": {
+            "platform_artifact_kind": "platform_graph_repository_promotion_request",
+            "path_argument": "--path",
+            "paths": [],
+        },
+        "summary": {
+            "status": PLATFORM_HANDOFF_PLACEHOLDER_REASON,
+            "candidate_node_count": 0,
+            "materialized_file_count": 0,
+            "finding_count": 1,
+        },
+    }
+    promotion_gate = {
+        "artifact_kind": "idea_to_spec_promotion_gate",
+        "schema_version": 1,
+        "contract_ref": PLATFORM_HANDOFF_PROMOTION_GATE_CONTRACT_REF,
+        "proposal_id": "0154",
+        "source_mode": "public_placeholder",
+        "placeholder_reason": PLATFORM_HANDOFF_PLACEHOLDER_REASON,
+        "generated_at": generated,
+        "canonical_mutations_allowed": False,
+        "tracked_artifacts_written": False,
+        "readiness": readiness,
+        "authority_boundary": platform_handoff_authority_boundary(),
+        "privacy_boundary": platform_handoff_privacy_boundary(),
+        "findings": [finding],
+        "warnings": [],
+        "metric_snapshot": {},
+        "promotion_request": {
+            "platform_artifact_kind": "platform_graph_repository_promotion_request",
+            "next_command": "platform.py graph-repository promotion-request",
+            "path_argument": "--path",
+            "paths": [],
+        },
+        "source_artifacts": {
+            "materialization": {
+                "artifact_kind": "candidate_spec_materialization_report",
+                "contract_ref": PLATFORM_HANDOFF_MATERIALIZATION_CONTRACT_REF,
+                "proposal_id": "0153",
+                "source_ref": "runs/candidate_spec_materialization_report.json",
+                "readiness": readiness,
+            }
+        },
+        "summary": {
+            "status": PLATFORM_HANDOFF_PLACEHOLDER_REASON,
+            "finding_count": 1,
+            "warning_count": 0,
+            "promotion_path_count": 0,
+            "materialized_file_count": 0,
+        },
+    }
+    return {
+        "candidate_spec_materialization_report.json": materialization,
+        "idea_to_spec_promotion_gate.json": promotion_gate,
+    }
+
+
+def write_public_platform_handoff_placeholders(repo_root: Path) -> None:
+    runs_dir = repo_root / "runs"
+    for name, payload in build_platform_handoff_placeholder_surfaces().items():
+        write_json_artifact(runs_dir / name, payload)
+
+
 def refresh_publish_surfaces(repo_root: Path) -> None:
     run_make_target(repo_root, "viewer-surfaces")
     run_make_target(repo_root, "implementation-delta")
@@ -463,10 +602,7 @@ def refresh_publish_surfaces(repo_root: Path) -> None:
     run_make_target(repo_root, "ontology-imports-public")
     run_make_target(repo_root, "ontology-owner-decision-import-v2")
     run_make_target(repo_root, "specauthor-authoring-flow")
-    run_make_target(repo_root, "pre-sib-coherence")
-    run_make_target(repo_root, "candidate-repair-loop")
-    run_make_target(repo_root, "candidate-spec-materialization")
-    run_make_target(repo_root, "idea-to-spec-promotion-gate")
+    write_public_platform_handoff_placeholders(repo_root)
 
 
 def build_public_bundle(
@@ -630,8 +766,7 @@ def parse_args(argv: list[str]) -> argparse.Namespace:
             "spec-ontology-validation, ontology-gap-review, "
             "legacy-spec-ontology-backfill-plan, ontology-imports-public, "
             "ontology-owner-decision-import-v2, specauthor-authoring-flow, "
-            "pre-sib-coherence, candidate-repair-loop, "
-            "candidate-spec-materialization, then idea-to-spec-promotion-gate."
+            "then public Platform handoff placeholders."
         ),
     )
     parser.add_argument(

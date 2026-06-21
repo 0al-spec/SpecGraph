@@ -100,10 +100,10 @@ The order matters and is intentionally two-pass:
    decision preview.
 10. `make specauthor-authoring-flow` refreshes the prompt-side SpecAuthor
     invocation artifact chain used by the authoring review surface.
-11. `make pre-sib-coherence`, `make candidate-repair-loop`,
-    `make candidate-spec-materialization`, and
-    `make idea-to-spec-promotion-gate` rebuild the stable Platform Git Service
-    handoff chain for review-only candidate promotion.
+11. The bundle builder writes public-safe Platform Git Service handoff
+    placeholders for review-only candidate promotion when no active candidate
+    source is configured. These placeholders keep stable HTTP artifact names
+    without publishing fixture-derived promotion paths.
 
 The bundle publishes `runs/*.json` by default after redaction and safety
 scanning. Local-only operator diagnostics remain excluded by denylist instead of
@@ -116,7 +116,9 @@ materialize IR below `ontology/packages/`, not below `tests/fixtures/`.
 The manifest also exposes stable Platform handoff names under
 `platform_handoff_surfaces`:
 `runs/candidate_spec_materialization_report.json` and
-`runs/idea_to_spec_promotion_gate.json`.
+`runs/idea_to_spec_promotion_gate.json`. During public publishing these surfaces
+use `source_mode: public_placeholder` and `placeholder_reason:
+no_active_candidate` until a real idea-to-spec candidate publish source exists.
 
 ## Safety Gate
 
