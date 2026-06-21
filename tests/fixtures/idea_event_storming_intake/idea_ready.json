@@ -1,0 +1,114 @@
+{
+  "artifact_kind": "idea_event_storming_seed",
+  "schema_version": 1,
+  "contract_ref": "specgraph.idea-to-spec.event-storming-seed.v0.1",
+  "source_ref": "operator://demo-calculator-idea",
+  "intent": {
+    "text": "Build a calculator app that lets users enter numbers, choose operations, and inspect calculation history.",
+    "summary": "Build a calculator app with numeric input, operations, result display, and history."
+  },
+  "active_frame": {
+    "project": "DemoCalculator",
+    "subsystem": "product_specification",
+    "lifecycle_phase": "idea_intake",
+    "ontology_refs": [
+      "ontology://specgraph-core"
+    ],
+    "ontology_layer_refs": [
+      "objective",
+      "mechanics"
+    ],
+    "domain_refs": [
+      "domain.calculator"
+    ],
+    "context_refs": [
+      "context.idea_to_spec"
+    ],
+    "model_applicability_refs": [
+      "model-applicability://specgraph-core/product-spec-mvp"
+    ]
+  },
+  "event_storming": {
+    "actors": [
+      {
+        "id": "actor.user",
+        "name": "Calculator User",
+        "role": "primary_user"
+      }
+    ],
+    "domain_events": [
+      {
+        "id": "event.number_entered",
+        "name": "Number Entered",
+        "actor_refs": [
+          "actor.user"
+        ]
+      },
+      {
+        "id": "event.operation_selected",
+        "name": "Operation Selected",
+        "actor_refs": [
+          "actor.user"
+        ]
+      },
+      {
+        "id": "event.result_displayed",
+        "name": "Result Displayed",
+        "actor_refs": [
+          "actor.user"
+        ]
+      }
+    ],
+    "commands": [
+      {
+        "id": "command.enter_number",
+        "name": "Enter Number",
+        "actor_refs": [
+          "actor.user"
+        ],
+        "produces_event_refs": [
+          "event.number_entered"
+        ]
+      },
+      {
+        "id": "command.select_operation",
+        "name": "Select Operation",
+        "actor_refs": [
+          "actor.user"
+        ],
+        "produces_event_refs": [
+          "event.operation_selected",
+          "event.result_displayed"
+        ]
+      }
+    ],
+    "policies": [
+      {
+        "id": "policy.divide_by_zero",
+        "name": "Reject Divide By Zero",
+        "trigger_event_refs": [
+          "event.operation_selected"
+        ],
+        "command_refs": [
+          "command.select_operation"
+        ]
+      }
+    ],
+    "external_systems": [],
+    "constraints": [
+      {
+        "id": "constraint.no_canonical_write",
+        "kind": "process",
+        "statement": "Initial intake must remain pre-canonical until candidate graph validation passes."
+      }
+    ],
+    "vocabulary_questions": [
+      {
+        "id": "question.operation_model",
+        "term": "Operation",
+        "question": "Should operations be modeled as buttons, commands, or domain entities?",
+        "reason": "The candidate graph needs stable terminology before spec generation."
+      }
+    ]
+  }
+}

@@ -241,6 +241,16 @@ Supervisor modes:
   `runs/specauthor_invocation_artifact_contract_report.json`. The wrapper does
   not execute prompt agents, publish raw prompts, mutate canonical specs, or
   write Ontology packages.
+- `tools/idea_event_storming_intake.py`: deterministic idea-to-spec intake
+  builder introduced by proposal 0149. Use `make idea-event-storming-intake
+  IDEA_EVENT_STORMING_INTAKE_SOURCE=<json>` to normalize structured
+  event-storming seed data into `runs/idea_event_storming_intake.json` with
+  actors, domain events, commands, policies, external systems, constraints,
+  vocabulary questions, active ontology/domain/context frame, and
+  context-completion questions. The builder digests raw intent text and does
+  not execute prompt agents, infer missing concepts with an LLM, create a
+  candidate graph, mutate canonical specs, write Ontology packages, or create
+  Git branches.
 - `--build-ontology-supervisor-semantic-gate`: refresh the same ontology
   semantic surfaces through the supervisor entrypoint and print a compact gate
   report for `runs/ontology_supervisor_semantic_gate.json` without running
@@ -849,6 +859,9 @@ Key derived artifacts:
   contract validation report for the SpecAuthor invocation artifact.
 - `runs/specauthor_authoring_flow_report.json`: compact public-safe summary for
   the deterministic SpecAuthor authoring flow.
+- `runs/idea_event_storming_intake.json`: review-only idea-to-spec intake
+  artifact containing structured event-storming context and candidate-graph
+  readiness state without raw intent text or canonical graph mutation.
 - `runs/specpm_export_preview.json`: reviewable `SpecPM` package preview
   artifact, including manifest preview, boundary-source preview, export
   status, and next-gap backlog for future full package emission

@@ -55,6 +55,8 @@ Not allowed in the MVP:
 
 ### 1. Event-Storming Intake Artifact
 
+Status: implemented in proposal `0149`.
+
 Capture raw product intent as structured pre-canonical input:
 
 - actors;

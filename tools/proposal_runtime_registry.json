@@ -8070,5 +8070,58 @@
         "pattern": "`x-behaviorPolicies` runtime security enforcement"
       }
     ]
+  },
+  {
+    "proposal_id": "0149",
+    "posture": "synchronous_runtime_slice",
+    "runtime_surfaces": [
+      "docs/proposals/0149_idea_event_storming_intake.md",
+      "docs/archive/proposal_sources/0149_idea_event_storming_intake.md",
+      "docs/product_workspace_graph_versioning_roadmap.md",
+      "tools/idea_event_storming_intake.py",
+      "tests/test_idea_event_storming_intake.py",
+      "tests/fixtures/idea_event_storming_intake/idea_ready.json",
+      "tests/fixtures/idea_event_storming_intake/idea_review_required.json",
+      "Makefile",
+      "tools/README.md"
+    ],
+    "runtime_markers": [
+      {
+        "path": "tools/idea_event_storming_intake.py",
+        "pattern": "idea_event_storming_intake"
+      },
+      {
+        "path": "tools/idea_event_storming_intake.py",
+        "pattern": "context_completion_questions"
+      },
+      {
+        "path": "tools/idea_event_storming_intake.py",
+        "pattern": "candidate_graph_readiness"
+      }
+    ],
+    "validation_markers": [
+      {
+        "path": "tests/test_idea_event_storming_intake.py",
+        "pattern": "test_idea_event_storming_intake_builds_ready_artifact"
+      },
+      {
+        "path": "tests/test_idea_event_storming_intake.py",
+        "pattern": "test_idea_event_storming_intake_rejects_unknown_relationship_refs"
+      }
+    ],
+    "observation_markers": [
+      {
+        "path": "docs/proposals/0149_idea_event_storming_intake.md",
+        "pattern": "does not grant write authority"
+      },
+      {
+        "path": "docs/proposals/0149_idea_event_storming_intake.md",
+        "pattern": "does not execute prompt agents"
+      },
+      {
+        "path": "docs/product_workspace_graph_versioning_roadmap.md",
+        "pattern": "Status: implemented in proposal `0149`"
+      }
+    ]
   }
 ]
