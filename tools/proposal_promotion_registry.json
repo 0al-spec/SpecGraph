@@ -1961,5 +1961,18 @@
     "required_provenance_links": [
       "source_draft_ref"
     ]
+  },
+  {
+    "proposal_id": "0153",
+    "source_artifact_class": "working_draft",
+    "source_refs": [
+      "docs/archive/proposal_sources/0153_candidate_spec_materialization_preview.md"
+    ],
+    "motivating_concern": "Candidate graphs and repair previews are inspectable, but Platform promotion requests need deterministic materialized candidate spec paths without hand-authored YAML or direct canonical mutation.",
+    "normalized_title": "Candidate Spec Materialization Preview",
+    "bounded_scope": "Add a deterministic review-only candidate_spec_materialization_report builder, Make target, tests, and documentation that consume a candidate_spec_graph plus optional candidate_repair_loop_report, write local YAML previews under runs/materialized_candidate_specs, and expose Platform promotion-request paths without executing prompt agents, mutating candidate source artifacts, mutating canonical specs, writing ontology packages or lockfiles, accepting ontology terms, creating Git branches or commits, opening pull requests, or adding SpecSpace mutation UI.",
+    "required_provenance_links": [
+      "source_draft_ref"
+    ]
   }
 ]

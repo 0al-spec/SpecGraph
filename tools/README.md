@@ -276,6 +276,16 @@ Supervisor modes:
   deterministic changes to the preview and records ontology/context-dependent
   work as review-required actions; it does not execute prompt agents, mutate
   canonical specs, write Ontology packages, create branches, or create commits.
+- `tools/candidate_spec_materialization.py`: deterministic candidate spec YAML
+  preview materializer introduced by proposal 0153. Use
+  `make candidate-spec-materialization
+  CANDIDATE_SPEC_MATERIALIZATION_CANDIDATE_GRAPH=<json>
+  CANDIDATE_SPEC_MATERIALIZATION_REPAIR_LOOP=<json>` to write review-only spec
+  shaped YAML files under `runs/materialized_candidate_specs/` and
+  `runs/candidate_spec_materialization_report.json`. The report exposes paths
+  that Platform can pass to `graph-repository promotion-request` while keeping
+  canonical spec mutation, branches, commits, PRs, and Ontology writes outside
+  this tool's authority.
 - `--build-ontology-supervisor-semantic-gate`: refresh the same ontology
   semantic surfaces through the supervisor entrypoint and print a compact gate
   report for `runs/ontology_supervisor_semantic_gate.json` without running
@@ -893,6 +903,10 @@ Key derived artifacts:
 - `runs/pre_sib_coherence_report.json`: review-only metric and coherence report
   over a candidate graph, including structural counts, coverage ratios,
   findings, warnings, and readiness for the future repair loop.
+- `runs/candidate_spec_materialization_report.json`: review-only report for
+  local candidate spec YAML previews under `runs/materialized_candidate_specs/`,
+  including materialized paths for Platform promotion-request handoff without
+  canonical spec mutation.
 - `runs/specpm_export_preview.json`: reviewable `SpecPM` package preview
   artifact, including manifest preview, boundary-source preview, export
   status, and next-gap backlog for future full package emission
