@@ -41,6 +41,8 @@ passport:
         - path: "/workspace/specgraph"
           permissions:
             - "read"
+        - path: "/workspace/specgraph/runs"
+          permissions:
             - "write"
     securityPolicies:
       capabilities: []
@@ -78,7 +80,7 @@ passport:
         - "missing_ontology_layer_refs"
         - "missing_model_applicability_refs"
         - "strong_claim_without_fgr"
-        - "low_reliability_decision"
+        - "low_reliability_claim_marked_decision"
         - "new_term_without_ontology_binding_or_gap"
       authorityBoundary:
         canonicalSpecMutation: false

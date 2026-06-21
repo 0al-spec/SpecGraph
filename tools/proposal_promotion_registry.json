@@ -1896,5 +1896,18 @@
     "required_provenance_links": [
       "source_draft_ref"
     ]
+  },
+  {
+    "proposal_id": "0148",
+    "source_artifact_class": "working_draft",
+    "source_refs": [
+      "docs/archive/proposal_sources/0148_specauthor_agent_passport_behavior_policy.md"
+    ],
+    "motivating_concern": "SpecAuthorAgent has deterministic authoring-flow, generated artifact, invocation artifact, and ontology write-gate contracts, but the agent surface still needs a report-only Agent Passport declaration that exposes those semantic behavior constraints to passport consumers.",
+    "normalized_title": "SpecAuthorAgent Agent Passport Behavior Policy",
+    "bounded_scope": "Add a local SpecAuthorAgent Agent Passport with experimental report-only x-behaviorPolicies and register it in the graph-side passport adoption policy, without treating behavior policies as runtime security enforcement, executing prompt agents, mutating canonical specs, writing ontology packages or lockfiles, accepting ontology terms, importing owner decisions, or changing upstream Agent Passport core schema.",
+    "required_provenance_links": [
+      "source_draft_ref"
+    ]
   }
 ]

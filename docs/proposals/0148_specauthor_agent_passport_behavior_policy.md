@@ -11,7 +11,7 @@ SpecAuthorAgent now has a local Agent Passport draft with an experimental
 
 The declaration links the agent's `compose_specification` capability to the
 SpecGraph authoring contracts introduced by `0126`, `0136`, `0137`, `0143`,
-`0145`, and `0146`:
+`0144`, `0145`, and `0146`:
 
 - prompt contract: `specgraph.prompt-contract.claim-calibration.v0.1`;
 - generated artifact contract: `specgraph.specauthor.generated-spec-artifact.v0.1`;

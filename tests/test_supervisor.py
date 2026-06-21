@@ -33994,6 +33994,7 @@ def test_specauthor_agent_passport_declares_behavior_policy(
         "agent-passport://specgraph/specauthor-agent/0.1.0"
     )
     assert specauthor_surface["runtime_enforcement_state"] == "policy_only"
+    assert "0144" in specauthor_surface["source_proposal_ids"]
     assert "0148" in specauthor_surface["source_proposal_ids"]
 
     registry = supervisor_module.agent_passport_ref_registry()
@@ -34021,7 +34022,7 @@ def test_specauthor_agent_passport_declares_behavior_policy(
     }
     assert behavior_policy["requires"]["ontologyLayerResolution"] is True
     assert behavior_policy["requires"]["modelApplicabilityResolution"] is True
-    assert "low_reliability_decision" in behavior_policy["rejectsOutputWhen"]
+    assert "low_reliability_claim_marked_decision" in behavior_policy["rejectsOutputWhen"]
     assert behavior_policy["authorityBoundary"] == {
         "canonicalSpecMutation": False,
         "ontologyPackageWrites": False,
