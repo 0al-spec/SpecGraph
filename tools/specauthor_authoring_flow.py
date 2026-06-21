@@ -120,6 +120,107 @@ def _authority_boundary() -> dict[str, bool]:
     }
 
 
+def _sanitized_operator_decision(value: Any) -> dict[str, Any]:
+    decision = _dict(value) or _default_operator_decision()
+    sanitized = {
+        **decision,
+        "may_execute_prompt_agent": False,
+        "may_write_ontology_package": False,
+        "may_write_ontology_lockfile": False,
+        "may_mutate_canonical_specs": False,
+        "may_mark_candidate_accepted": False,
+        "may_import_owner_decision": False,
+    }
+    if not _text(sanitized.get("decision_state")):
+        sanitized["decision_state"] = "pending_review"
+    return sanitized
+
+
+def _finding(
+    *,
+    finding_id: str,
+    severity: str,
+    message: str,
+    evidence: dict[str, Any] | None = None,
+) -> dict[str, Any]:
+    finding: dict[str, Any] = {
+        "finding_id": finding_id,
+        "severity": severity,
+        "message": message,
+        "source": "specauthor_authoring_flow",
+    }
+    if evidence:
+        finding["evidence"] = evidence
+    return finding
+
+
+def _frame_mismatch_findings(
+    *,
+    context_frame: dict[str, Any],
+    generated_frame: dict[str, Any],
+) -> list[dict[str, Any]]:
+    if not context_frame or not generated_frame:
+        return []
+    scalar_fields = (
+        "project",
+        "subsystem",
+        "agent_layer",
+        "target_artifact",
+        "lifecycle_phase",
+    )
+    list_fields = (
+        "ontology_refs",
+        "ontology_layer_refs",
+        "domain_refs",
+        "context_refs",
+    )
+    mismatches: list[dict[str, Any]] = []
+    for field in scalar_fields:
+        context_value = _text(context_frame.get(field))
+        generated_value = _text(generated_frame.get(field))
+        if context_value and generated_value and context_value != generated_value:
+            mismatches.append(
+                {
+                    "field": field,
+                    "context_value": context_value,
+                    "generated_artifact_value": generated_value,
+                }
+            )
+    for field in list_fields:
+        context_values = sorted(_text_list(context_frame.get(field)))
+        generated_values = sorted(_text_list(generated_frame.get(field)))
+        if context_values and generated_values and context_values != generated_values:
+            mismatches.append(
+                {
+                    "field": field,
+                    "context_value": context_values,
+                    "generated_artifact_value": generated_values,
+                }
+            )
+    if not mismatches:
+        return []
+    return [
+        _finding(
+            finding_id="active_frame_mismatch",
+            severity="review_required",
+            message=(
+                "SpecAuthor authoring flow context active_frame must match the generated "
+                "artifact active_frame before invocation review can become ready."
+            ),
+            evidence={"mismatches": mismatches},
+        )
+    ]
+
+
+def _validator_warnings(*reports: dict[str, Any]) -> list[dict[str, Any]]:
+    warnings: list[dict[str, Any]] = []
+    for report in reports:
+        for warning in report.get("warnings", []):
+            if isinstance(warning, dict):
+                warnings.append(warning)
+    return warnings
+
+
 def build_specauthor_invocation_artifact(
     *,
     context: dict[str, Any],
@@ -138,7 +239,7 @@ def build_specauthor_invocation_artifact(
         _text(context.get("invocation_id"), "specauthor-invocation-0146-local"),
     )
     model_applicability = _dict(context.get("model_applicability"))
-    operator_decision = _dict(context.get("operator_decision")) or _default_operator_decision()
+    operator_decision = _sanitized_operator_decision(context.get("operator_decision"))
     return {
         "artifact_kind": "specauthor_invocation_artifact",
         "schema_version": SCHEMA_VERSION,
@@ -227,7 +328,24 @@ def build_specauthor_authoring_flow_report(
             artifact_path=invocation_output_path,
         )
     )
-    flow_ok = invocation_contract_report.get("ok") is True
+    context_frame = _dict(context.get("active_frame"))
+    generated_frame = _dict(generated_artifact.get("active_frame"))
+    flow_findings = _frame_mismatch_findings(
+        context_frame=context_frame,
+        generated_frame=generated_frame,
+    )
+    invocation_findings = [
+        finding
+        for finding in invocation_contract_report.get("findings", [])
+        if isinstance(finding, dict)
+    ]
+    warnings = _validator_warnings(
+        generated_report,
+        write_gate_report,
+        invocation_contract_report,
+    )
+    findings = invocation_findings + flow_findings
+    flow_ok = invocation_contract_report.get("ok") is True and not flow_findings
     flow_report = {
         "artifact_kind": "specauthor_authoring_flow_report",
         "schema_version": SCHEMA_VERSION,
@@ -271,11 +389,11 @@ def build_specauthor_authoring_flow_report(
             "raw_prompt_published": False,
             "raw_model_output_published": False,
         },
-        "findings": invocation_contract_report.get("findings", []),
-        "warnings": [],
+        "findings": findings,
+        "warnings": warnings,
         "summary": {
-            "finding_count": len(invocation_contract_report.get("findings", [])),
-            "warning_count": 0,
+            "finding_count": len(findings),
+            "warning_count": len(warnings),
         },
     }
     return invocation_artifact, invocation_contract_report, flow_report

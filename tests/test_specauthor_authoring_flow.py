@@ -76,6 +76,25 @@ def test_specauthor_authoring_flow_builds_ready_invocation_artifact(tmp_path: Pa
     assert flow_report["privacy_boundary"]["raw_prompt_published"] is False
 
 
+def test_specauthor_authoring_flow_rejects_mismatched_active_frames(tmp_path: Path) -> None:
+    module = load_module()
+    generated_artifact = load_json(GENERATED_READY)
+    generated_artifact["active_frame"]["project"] = "OtherProject"
+
+    _, contract_report, flow_report = module.build_specauthor_authoring_flow_report(
+        context=load_json(CONTEXT_PATH),
+        generated_artifact=generated_artifact,
+        generated_artifact_path=GENERATED_READY,
+        term_policy=load_json(TERM_POLICY),
+        invocation_output_path=tmp_path / "specauthor_invocation_artifact.json",
+        contract_output_path=tmp_path / "specauthor_invocation_artifact_contract_report.json",
+    )
+
+    assert contract_report["ok"] is True
+    assert flow_report["ok"] is False
+    assert "active_frame_mismatch" in finding_ids(flow_report)
+
+
 def test_specauthor_authoring_flow_blocks_missing_frame_and_applicability(tmp_path: Path) -> None:
     module = load_module()
     context = load_json(CONTEXT_PATH)
@@ -117,6 +136,66 @@ def test_specauthor_authoring_flow_blocks_low_r_decision_from_write_gate(tmp_pat
     assert flow_report["ok"] is False
     assert "generated_artifact_contract_failed" in ids
     assert "write_gate_not_clear" in ids
+
+
+def test_specauthor_authoring_flow_sanitizes_operator_decision_authority(
+    tmp_path: Path,
+) -> None:
+    module = load_module()
+    context = load_json(CONTEXT_PATH)
+    context["operator_decision"] = {
+        "decision_state": "pending_review",
+        "may_execute_prompt_agent": True,
+        "may_write_ontology_package": True,
+        "may_write_ontology_lockfile": True,
+        "may_mutate_canonical_specs": True,
+        "may_mark_candidate_accepted": True,
+        "may_import_owner_decision": True,
+    }
+
+    invocation, contract_report, flow_report = module.build_specauthor_authoring_flow_report(
+        context=context,
+        generated_artifact=load_json(GENERATED_READY),
+        generated_artifact_path=GENERATED_READY,
+        term_policy=load_json(TERM_POLICY),
+        invocation_output_path=tmp_path / "specauthor_invocation_artifact.json",
+        contract_output_path=tmp_path / "specauthor_invocation_artifact_contract_report.json",
+    )
+
+    assert contract_report["ok"] is True
+    assert flow_report["ok"] is True
+    assert invocation["operator_decision"]["may_execute_prompt_agent"] is False
+    assert invocation["operator_decision"]["may_write_ontology_package"] is False
+    assert invocation["operator_decision"]["may_write_ontology_lockfile"] is False
+    assert invocation["operator_decision"]["may_mutate_canonical_specs"] is False
+    assert invocation["operator_decision"]["may_mark_candidate_accepted"] is False
+    assert invocation["operator_decision"]["may_import_owner_decision"] is False
+
+
+def test_specauthor_authoring_flow_promotes_validator_warnings(
+    tmp_path: Path,
+) -> None:
+    module = load_module()
+    generated_artifact = load_json(GENERATED_READY)
+    generated_artifact["claims"][0]["calibration"]["G"]["assumptions"] = []
+
+    _, _, flow_report = module.build_specauthor_authoring_flow_report(
+        context=load_json(CONTEXT_PATH),
+        generated_artifact=generated_artifact,
+        generated_artifact_path=GENERATED_READY,
+        term_policy=load_json(TERM_POLICY),
+        invocation_output_path=tmp_path / "specauthor_invocation_artifact.json",
+        contract_output_path=tmp_path / "specauthor_invocation_artifact_contract_report.json",
+    )
+
+    warning_ids = {
+        warning["finding_id"]
+        for warning in flow_report["warnings"]
+        if isinstance(warning, dict) and isinstance(warning.get("finding_id"), str)
+    }
+    assert flow_report["ok"] is True
+    assert flow_report["summary"]["warning_count"] == 1
+    assert "strong_claim_without_assumptions" in warning_ids
 
 
 def test_specauthor_authoring_flow_cli_writes_invocation_and_contract(tmp_path: Path) -> None:
