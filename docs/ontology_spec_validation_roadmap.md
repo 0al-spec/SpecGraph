@@ -50,42 +50,24 @@ as a legacy corpus. They are not bulk-rewritten when ontology support expands.
 - SpecSpace remains read-only until owner-decision import and mutation contracts
   are explicitly accepted.
 
-## Next Adoption Slice
+## Current State
 
-Proposal `0137` adds the producer-side `generated_spec_artifact` contract for
-SpecAuthorAgent output. It sits before `0136`: the contract checks that agent
-output is a typed, review-bound artifact with producer metadata, active
-ontology/domain/context, target artifact metadata, draft payload, term/gap
-records, calibrated claims, and review-only materialization intent. Only then
-should the artifact be handed to the ontology write gate.
+The original five-PR validation stack has expanded into a broader SpecAuthor
+line:
 
-Proposal `0145` adds the SpecAuthor invocation wrapper: a typed invocation
-artifact that links user intent, active ontology context, model applicability,
-generated artifact, contract report, write-gate report, and final operator
-decision without executing prompts inside supervisor or mutating canonical
-specs directly.
+- `0137` defines the producer-side `generated_spec_artifact` contract.
+- `0138` and `0139` define read-only gap and owner-decision review surfaces.
+- `0140` defines legacy-spec ontology backfill planning.
+- `0141` through `0143` add layer-aware import, gap/diff review, and SpecAuthor
+  write-gate context.
+- `0146` through `0148` add the deterministic SpecAuthor authoring flow,
+  public-safe invocation artifacts, and report-only Agent Passport
+  `x-behaviorPolicies`.
 
-Proposal `0138` adds a read-only ontology gap review workflow before owner
-decision import. It groups package gaps, legacy spec validation findings, and
-optional generated artifact gaps by proposed term or relation, preserving source
-specs, affected generated artifact refs, source findings, and recommended owner
-actions. Owner decision import v2 remains the next separate slice.
+The next adjacent work is no longer another standalone ontology review panel.
+Ontology validation should become part of the product workspace authoring loop:
+raw idea intake, candidate graph generation, pre-SIB/coherence metrics,
+autonomous repair, and repository-backed materialization.
 
-Proposal `0139` adds that owner decision import v2 slice as a richer read-only
-review surface. It links accepted/rejected Ontology owner decisions back to
-closed-loop evidence, grouped ontology gaps, spec validation findings,
-SpecAuthor write-gate findings, affected review items, and before/after semantic
-status. It remains acknowledgement-only: no ontology package writes, lockfile
-writes, canonical spec mutations, prompt-agent execution, automatic imports, or
-semantic-gate closure.
-
-Proposal `0140` adds that legacy-spec backfill plan. It classifies the current
-report-only legacy corpus into clean specs, warning-only specs, new-term or
-alias/deprecation decision needs, relation review needs, and small reviewed PR
-batch candidates. It remains plan-only: no bulk rewrite, package write, lockfile
-write, canonical spec mutation, or prompt-agent execution.
-
-The next bounded slice after `0140` is the SpecSpace Ontology Workbench: consume
-the package metadata, normalized IR, gaps, compliance findings, generated
-write-gate reports, owner decisions, and legacy backfill batches in one
-consolidated read-only UI surface.
+Graph versioning and production write boundaries are tracked in
+[`product_workspace_graph_versioning_roadmap.md`](product_workspace_graph_versioning_roadmap.md).
