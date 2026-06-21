@@ -7980,5 +7980,50 @@
         "pattern": "does not grant new authority"
       }
     ]
+  },
+  {
+    "proposal_id": "0147",
+    "posture": "synchronous_runtime_slice",
+    "runtime_surfaces": [
+      "docs/proposals/0147_publish_specauthor_invocation_artifacts.md",
+      "docs/archive/proposal_sources/0147_publish_specauthor_invocation_artifacts.md",
+      "tools/build_static_artifact_bundle.py",
+      "tests/test_static_artifact_bundle.py",
+      "tools/README.md"
+    ],
+    "runtime_markers": [
+      {
+        "path": "tools/build_static_artifact_bundle.py",
+        "pattern": "\"specauthor_invocation_artifact.json\""
+      },
+      {
+        "path": "tools/build_static_artifact_bundle.py",
+        "pattern": "\"specauthor-authoring-flow\""
+      },
+      {
+        "path": "tools/README.md",
+        "pattern": "runs/specauthor_authoring_flow_report.json"
+      }
+    ],
+    "validation_markers": [
+      {
+        "path": "tests/test_static_artifact_bundle.py",
+        "pattern": "\"specauthor_invocation_artifact_contract_report.json\""
+      },
+      {
+        "path": "tests/test_static_artifact_bundle.py",
+        "pattern": "\"specauthor-authoring-flow\""
+      }
+    ],
+    "observation_markers": [
+      {
+        "path": "docs/proposals/0147_publish_specauthor_invocation_artifacts.md",
+        "pattern": "public-safe `runs/` surfaces"
+      },
+      {
+        "path": "docs/proposals/0147_publish_specauthor_invocation_artifacts.md",
+        "pattern": "do not publish raw prompts"
+      }
+    ]
   }
 ]

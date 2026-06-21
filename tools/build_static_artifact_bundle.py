@@ -38,6 +38,9 @@ REQUIRED_RUN_SURFACES = (
     "ontology_owner_decision_import_v2.json",
     "spec_ontology_binding_index.json",
     "spec_ontology_validation_report.json",
+    "specauthor_invocation_artifact.json",
+    "specauthor_invocation_artifact_contract_report.json",
+    "specauthor_authoring_flow_report.json",
 )
 LOCAL_ONLY_RUN_SURFACES = {
     "local_operator_executor_readiness.json",
@@ -445,6 +448,7 @@ def refresh_publish_surfaces(repo_root: Path) -> None:
     run_make_target(repo_root, "legacy-spec-ontology-backfill-plan")
     run_make_target(repo_root, "ontology-imports-public")
     run_make_target(repo_root, "ontology-owner-decision-import-v2")
+    run_make_target(repo_root, "specauthor-authoring-flow")
 
 
 def build_public_bundle(

@@ -104,6 +104,15 @@ def make_repo(root: Path) -> Path:
         "spec_ontology_validation_report.json": {
             "artifact_kind": "spec_ontology_validation_report",
         },
+        "specauthor_invocation_artifact.json": {
+            "artifact_kind": "specauthor_invocation_artifact",
+        },
+        "specauthor_invocation_artifact_contract_report.json": {
+            "artifact_kind": "specauthor_invocation_artifact_contract_report",
+        },
+        "specauthor_authoring_flow_report.json": {
+            "artifact_kind": "specauthor_authoring_flow_report",
+        },
     }
     for name, payload in artifacts.items():
         write_json(runs_dir / name, payload)
@@ -311,6 +320,11 @@ def test_build_public_bundle_copies_specs_and_runs_with_manifest(
     assert manifest["required_surfaces"]["ontology_review_dashboard.json"] is True
     assert manifest["required_surfaces"]["ontology_decision_import_preview.json"] is True
     assert manifest["required_surfaces"]["ontology_package_index.json"] is True
+    assert manifest["required_surfaces"]["specauthor_invocation_artifact.json"] is True
+    assert (
+        manifest["required_surfaces"]["specauthor_invocation_artifact_contract_report.json"] is True
+    )
+    assert manifest["required_surfaces"]["specauthor_authoring_flow_report.json"] is True
     assert (
         manifest["required_surfaces"][
             "agent_runtime_enforcement_evidence/supervisor-executor-adapter-smoke.json"
@@ -333,6 +347,18 @@ def test_build_public_bundle_copies_specs_and_runs_with_manifest(
     )
     assert any(
         file_info["path"] == "runs/ontology_future_surface.json" for file_info in manifest["files"]
+    )
+    assert any(
+        file_info["path"] == "runs/specauthor_invocation_artifact.json"
+        for file_info in manifest["files"]
+    )
+    assert any(
+        file_info["path"] == "runs/specauthor_invocation_artifact_contract_report.json"
+        for file_info in manifest["files"]
+    )
+    assert any(
+        file_info["path"] == "runs/specauthor_authoring_flow_report.json"
+        for file_info in manifest["files"]
     )
     assert manifest["safety_gate"]["status"] == "passed"
     assert manifest["safety_gate"]["redacted_local_path_occurrences"] == 1
@@ -928,6 +954,7 @@ def test_refresh_publish_surfaces_builds_viewer_implementation_and_agent_surface
         "legacy-spec-ontology-backfill-plan",
         "ontology-imports-public",
         "ontology-owner-decision-import-v2",
+        "specauthor-authoring-flow",
     ]
 
 
