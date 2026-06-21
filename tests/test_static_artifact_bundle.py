@@ -984,6 +984,8 @@ def test_refresh_publish_surfaces_builds_viewer_implementation_and_agent_surface
         "ontology-imports-public",
         "ontology-owner-decision-import-v2",
         "specauthor-authoring-flow",
+        "pre-sib-coherence",
+        "candidate-repair-loop",
         "candidate-spec-materialization",
         "idea-to-spec-promotion-gate",
     ]

@@ -463,6 +463,8 @@ def refresh_publish_surfaces(repo_root: Path) -> None:
     run_make_target(repo_root, "ontology-imports-public")
     run_make_target(repo_root, "ontology-owner-decision-import-v2")
     run_make_target(repo_root, "specauthor-authoring-flow")
+    run_make_target(repo_root, "pre-sib-coherence")
+    run_make_target(repo_root, "candidate-repair-loop")
     run_make_target(repo_root, "candidate-spec-materialization")
     run_make_target(repo_root, "idea-to-spec-promotion-gate")
 
@@ -628,6 +630,7 @@ def parse_args(argv: list[str]) -> argparse.Namespace:
             "spec-ontology-validation, ontology-gap-review, "
             "legacy-spec-ontology-backfill-plan, ontology-imports-public, "
             "ontology-owner-decision-import-v2, specauthor-authoring-flow, "
+            "pre-sib-coherence, candidate-repair-loop, "
             "candidate-spec-materialization, then idea-to-spec-promotion-gate."
         ),
     )

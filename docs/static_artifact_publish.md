@@ -100,9 +100,10 @@ The order matters and is intentionally two-pass:
    decision preview.
 10. `make specauthor-authoring-flow` refreshes the prompt-side SpecAuthor
     invocation artifact chain used by the authoring review surface.
-11. `make candidate-spec-materialization` and
+11. `make pre-sib-coherence`, `make candidate-repair-loop`,
+    `make candidate-spec-materialization`, and
     `make idea-to-spec-promotion-gate` rebuild the stable Platform Git Service
-    handoff surfaces for review-only candidate promotion.
+    handoff chain for review-only candidate promotion.
 
 The bundle publishes `runs/*.json` by default after redaction and safety
 scanning. Local-only operator diagnostics remain excluded by denylist instead of
