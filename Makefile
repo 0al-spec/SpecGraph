@@ -45,6 +45,9 @@ CANDIDATE_SPEC_GRAPH_SEED ?= tests/fixtures/candidate_spec_graph/candidate_ready
 CANDIDATE_SPEC_GRAPH_OUTPUT ?= runs/candidate_spec_graph.json
 PRE_SIB_COHERENCE_CANDIDATE_GRAPH ?= tests/fixtures/pre_sib_coherence/candidate_spec_graph_ready.json
 PRE_SIB_COHERENCE_OUTPUT ?= runs/pre_sib_coherence_report.json
+CANDIDATE_REPAIR_LOOP_CANDIDATE_GRAPH ?= tests/fixtures/candidate_repair_loop/candidate_graph_repairable.json
+CANDIDATE_REPAIR_LOOP_PRE_SIB_REPORT ?= tests/fixtures/candidate_repair_loop/pre_sib_repair_required.json
+CANDIDATE_REPAIR_LOOP_OUTPUT ?= runs/candidate_repair_loop_report.json
 
 .DEFAULT_GOAL := help
 
@@ -57,7 +60,7 @@ PYTHON_TARGETS := viewer-surfaces dashboard backlog next-move spec-activity grap
 	ontology-owner-decision-import-v2 \
 	specauthor-generated-artifact-contract specauthor-ontology-write-gate \
 	specauthor-invocation-artifact-contract specauthor-authoring-flow \
-	idea-event-storming-intake candidate-spec-graph pre-sib-coherence \
+	idea-event-storming-intake candidate-spec-graph pre-sib-coherence candidate-repair-loop \
 	proposal-work-claims proposal-work-claims-gate proposal-id \
 	metrics-delivery metrics-feedback metrics-source-promotion metric-signals metric-thresholds \
 	metric-packs metric-pack-drift metric-pack-adapters metric-pack-runs metric-pricing model-usage \
@@ -110,6 +113,7 @@ help:
 			'  make idea-event-storming-intake IDEA_EVENT_STORMING_INTAKE_SOURCE=<json>' \
 			'  make candidate-spec-graph CANDIDATE_SPEC_GRAPH_INTAKE=<json> CANDIDATE_SPEC_GRAPH_SEED=<json>' \
 			'  make pre-sib-coherence PRE_SIB_COHERENCE_CANDIDATE_GRAPH=<json>' \
+			'  make candidate-repair-loop CANDIDATE_REPAIR_LOOP_CANDIDATE_GRAPH=<json> CANDIDATE_REPAIR_LOOP_PRE_SIB_REPORT=<json>' \
 		'  make metrics-delivery         Refresh Metrics delivery workflow JSON' \
 		'  make metrics-feedback         Refresh Metrics feedback JSON' \
 		'  make metrics-source-promotion Refresh Metrics source promotion candidates JSON' \
@@ -292,6 +296,10 @@ candidate-spec-graph:
 .PHONY: pre-sib-coherence
 pre-sib-coherence:
 	@$(PYTHON) tools/pre_sib_coherence_report.py --candidate-graph "$(PRE_SIB_COHERENCE_CANDIDATE_GRAPH)" --output "$(PRE_SIB_COHERENCE_OUTPUT)"
+
+.PHONY: candidate-repair-loop
+candidate-repair-loop:
+	@$(PYTHON) tools/candidate_repair_loop.py --candidate-graph "$(CANDIDATE_REPAIR_LOOP_CANDIDATE_GRAPH)" --pre-sib-report "$(CANDIDATE_REPAIR_LOOP_PRE_SIB_REPORT)" --output "$(CANDIDATE_REPAIR_LOOP_OUTPUT)"
 
 .PHONY: metrics-delivery
 metrics-delivery:

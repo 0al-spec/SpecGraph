@@ -267,6 +267,15 @@ Supervisor modes:
   duplicate-title warnings, unresolved-gap warnings, and unsupported
   strong-claim warnings without defining final SIB formulas, mutating candidate
   artifacts, mutating canonical specs, or creating Git branches.
+- `tools/candidate_repair_loop.py`: deterministic candidate repair loop
+  preview introduced by proposal 0152. Use `make candidate-repair-loop
+  CANDIDATE_REPAIR_LOOP_CANDIDATE_GRAPH=<json>
+  CANDIDATE_REPAIR_LOOP_PRE_SIB_REPORT=<json>` to build review-only repair
+  actions, a revised candidate graph preview, and metric delta projections from
+  a candidate graph plus pre-SIB/coherence report. The loop only applies safe
+  deterministic changes to the preview and records ontology/context-dependent
+  work as review-required actions; it does not execute prompt agents, mutate
+  canonical specs, write Ontology packages, create branches, or create commits.
 - `--build-ontology-supervisor-semantic-gate`: refresh the same ontology
   semantic surfaces through the supervisor entrypoint and print a compact gate
   report for `runs/ontology_supervisor_semantic_gate.json` without running

@@ -110,6 +110,8 @@ The metrics are review and repair inputs, not product-quality guarantees.
 
 ### 4. Autonomous Candidate Repair Loop
 
+Status: implemented in proposal `0152`.
+
 Let the agent repair candidate graph state before human review:
 
 ```text

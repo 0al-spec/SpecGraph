@@ -1,0 +1,14 @@
+{
+  "artifact_kind": "pre_sib_coherence_report",
+  "schema_version": 1,
+  "contract_ref": "wrong.contract",
+  "source_ref": "operator://repairable-candidate",
+  "canonical_mutations_allowed": false,
+  "tracked_artifacts_written": false,
+  "readiness": {
+    "ready": false,
+    "review_state": "pre_sib_review_required"
+  },
+  "findings": [],
+  "warnings": []
+}

@@ -8222,5 +8222,55 @@
         "pattern": "Status: implemented in proposal `0151`"
       }
     ]
+  },
+  {
+    "proposal_id": "0152",
+    "posture": "synchronous_runtime_slice",
+    "runtime_surfaces": [
+      "docs/proposals/0152_candidate_repair_loop.md",
+      "docs/archive/proposal_sources/0152_candidate_repair_loop.md",
+      "docs/product_workspace_graph_versioning_roadmap.md",
+      "tools/candidate_repair_loop.py",
+      "tests/test_candidate_repair_loop.py",
+      "tests/fixtures/candidate_repair_loop/candidate_graph_repairable.json",
+      "tests/fixtures/candidate_repair_loop/pre_sib_repair_required.json",
+      "tests/fixtures/candidate_repair_loop/pre_sib_wrong_contract.json",
+      "Makefile",
+      "tools/README.md"
+    ],
+    "runtime_markers": [
+      {
+        "path": "tools/candidate_repair_loop.py",
+        "pattern": "candidate_repair_loop_report"
+      },
+      {
+        "path": "tools/candidate_repair_loop.py",
+        "pattern": "metric_delta_projection"
+      },
+      {
+        "path": "tools/candidate_repair_loop.py",
+        "pattern": "requires_context"
+      }
+    ],
+    "validation_markers": [
+      {
+        "path": "tests/test_candidate_repair_loop.py",
+        "pattern": "test_candidate_repair_loop_builds_repair_preview"
+      },
+      {
+        "path": "tests/test_candidate_repair_loop.py",
+        "pattern": "test_candidate_repair_loop_rejects_wrong_pre_sib_contract"
+      }
+    ],
+    "observation_markers": [
+      {
+        "path": "docs/proposals/0152_candidate_repair_loop.md",
+        "pattern": "does not grant write authority"
+      },
+      {
+        "path": "docs/product_workspace_graph_versioning_roadmap.md",
+        "pattern": "Status: implemented in proposal `0152`"
+      }
+    ]
   }
 ]

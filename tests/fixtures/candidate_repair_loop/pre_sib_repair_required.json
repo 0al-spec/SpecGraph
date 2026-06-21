@@ -1,0 +1,85 @@
+{
+  "artifact_kind": "pre_sib_coherence_report",
+  "schema_version": 1,
+  "proposal_id": "0151",
+  "contract_ref": "specgraph.idea-to-spec.pre-sib-coherence-report.v0.1",
+  "source_ref": "operator://repairable-candidate",
+  "canonical_mutations_allowed": false,
+  "tracked_artifacts_written": false,
+  "source_candidate_graph": {
+    "artifact_kind": "candidate_spec_graph",
+    "contract_ref": "specgraph.idea-to-spec.candidate-spec-graph.v0.1",
+    "source_ref": "operator://repairable-candidate",
+    "pre_sib_readiness": "ready_for_pre_sib"
+  },
+  "readiness": {
+    "ready": false,
+    "review_state": "pre_sib_review_required",
+    "blocked_by": [
+      "pre_sib_orphan_nodes",
+      "pre_sib_acceptance_criteria_gap",
+      "pre_sib_ontology_coverage_gap"
+    ]
+  },
+  "metrics": {
+    "node_count": 2,
+    "edge_count": 0,
+    "requirement_count": 2,
+    "acceptance_criteria_count": 1,
+    "claim_count": 1,
+    "gap_count": 1,
+    "orphan_node_count": 2,
+    "ontology_coverage_ratio": 0.5,
+    "connected_node_ratio": 0.0,
+    "unsupported_strong_claim_count": 1
+  },
+  "findings": [
+    {
+      "finding_id": "pre_sib_orphan_nodes",
+      "severity": "review_required",
+      "message": "Candidate graph contains nodes with no candidate edges.",
+      "source": "pre_sib_coherence_report",
+      "evidence": {
+        "orphan_node_count": 2
+      }
+    },
+    {
+      "finding_id": "pre_sib_acceptance_criteria_gap",
+      "severity": "review_required",
+      "message": "Every requirement should have acceptance criteria coverage.",
+      "source": "pre_sib_coherence_report",
+      "evidence": {
+        "acceptance_criteria_coverage_ratio": 0.5
+      }
+    },
+    {
+      "finding_id": "pre_sib_ontology_coverage_gap",
+      "severity": "review_required",
+      "message": "Every candidate node should carry ontology refs.",
+      "source": "pre_sib_coherence_report",
+      "evidence": {
+        "ontology_coverage_ratio": 0.5
+      }
+    }
+  ],
+  "warnings": [
+    {
+      "finding_id": "pre_sib_unresolved_gaps",
+      "severity": "warning",
+      "message": "Candidate graph still contains unresolved gaps.",
+      "source": "pre_sib_coherence_report",
+      "evidence": {
+        "gap_count": 1
+      }
+    },
+    {
+      "finding_id": "pre_sib_unsupported_strong_claims",
+      "severity": "warning",
+      "message": "Some strong claims have low reliability and no evidence refs.",
+      "source": "pre_sib_coherence_report",
+      "evidence": {
+        "unsupported_strong_claim_count": 1
+      }
+    }
+  ]
+}
