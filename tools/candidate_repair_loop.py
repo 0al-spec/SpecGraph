@@ -150,6 +150,25 @@ def _validate_inputs(
                 evidence={"contract_ref": pre_sib_report.get("contract_ref")},
             )
         )
+    candidate_source_ref = _text(candidate_graph.get("source_ref"))
+    report_candidate = _dict(pre_sib_report.get("source_candidate_graph"))
+    report_candidate_source_ref = _text(report_candidate.get("source_ref"))
+    if (
+        candidate_source_ref
+        and report_candidate_source_ref
+        and candidate_source_ref != report_candidate_source_ref
+    ):
+        findings.append(
+            _finding(
+                finding_id="pre_sib_candidate_graph_mismatch",
+                severity="review_required",
+                message="pre-SIB report source_candidate_graph must match candidate graph input.",
+                evidence={
+                    "candidate_graph_source_ref": candidate_source_ref,
+                    "pre_sib_source_candidate_graph_ref": report_candidate_source_ref,
+                },
+            )
+        )
     for artifact_name, artifact in (
         ("candidate_graph", candidate_graph),
         ("pre_sib_report", pre_sib_report),
@@ -200,12 +219,20 @@ def _metric_counts(candidate_graph: dict[str, Any]) -> dict[str, Any]:
     node_count = len(nodes)
     connected_count = sum(1 for degree in degrees.values() if degree > 0)
     ontology_covered = sum(1 for node in nodes if _text_list(node.get("ontology_refs")))
+    unsupported_strong_claims = sum(
+        1
+        for claim in claims
+        if _is_strong_claim(claim)
+        and (_claim_reliability(claim) or 0) <= 2
+        and not _text_list(claim.get("evidence_refs"))
+    )
     return {
         "node_count": node_count,
         "edge_count": len(edges),
         "requirement_count": len(requirements),
         "acceptance_criteria_count": len(acceptance_criteria),
         "claim_count": len(claims),
+        "unsupported_strong_claim_count": unsupported_strong_claims,
         "gap_count": len(gaps),
         "orphan_node_count": sum(1 for degree in degrees.values() if degree == 0),
         "ontology_coverage_ratio": round(ontology_covered / node_count, 4) if node_count else 0.0,
@@ -443,10 +470,13 @@ def _node_by_id(candidate_graph: dict[str, Any], node_id: str) -> dict[str, Any]
 
 
 def _apply_preview_actions(
-    candidate_graph: dict[str, Any], actions: list[dict[str, Any]]
+    candidate_graph: dict[str, Any],
+    actions: list[dict[str, Any]],
+    *,
+    preview_source_ref: str,
 ) -> dict[str, Any]:
     preview = copy.deepcopy(candidate_graph)
-    preview["source_ref"] = "runs/candidate_repair_loop_report.json#revised_candidate_graph_preview"
+    preview["source_ref"] = preview_source_ref
     preview["canonical_mutations_allowed"] = False
     preview["tracked_artifacts_written"] = False
     preview["repair_preview"] = {
@@ -484,8 +514,47 @@ def _apply_preview_actions(
                     operation.get("claim_id")
                 ):
                     claim["type"] = operation["value"]
+                    if _text(claim.get("strength")) == "strong":
+                        claim["strength"] = operation["value"]
                     claim["repair_generated_type_change"] = True
     return preview
+
+
+def _preview_source_ref(output_path: Path | None) -> str:
+    path = output_path or DEFAULT_OUTPUT_PATH
+    return f"{_relative_ref(path)}#revised_candidate_graph_preview"
+
+
+def _unhandled_pre_sib_findings(
+    pre_sib_report: dict[str, Any],
+    actions: list[dict[str, Any]],
+) -> list[dict[str, Any]]:
+    blocked_by = set(_text_list(_dict(pre_sib_report.get("readiness")).get("blocked_by")))
+    if not blocked_by:
+        return []
+    handled = {
+        finding_id for action in actions for finding_id in _text_list(action.get("source_findings"))
+    }
+    unhandled = blocked_by - handled
+    if not unhandled:
+        return []
+    findings: list[dict[str, Any]] = []
+    for finding in _list(pre_sib_report.get("findings")):
+        finding_mapping = _dict(finding)
+        finding_id = _text(finding_mapping.get("finding_id"))
+        if finding_id in unhandled:
+            preserved = copy.deepcopy(finding_mapping)
+            preserved["source"] = "candidate_repair_loop"
+            findings.append(preserved)
+    for finding_id in sorted(unhandled - {finding.get("finding_id") for finding in findings}):
+        findings.append(
+            _finding(
+                finding_id=finding_id,
+                severity="review_required",
+                message="pre-SIB blocking finding was not handled by the repair loop.",
+            )
+        )
+    return findings
 
 
 def _delta(before: dict[str, Any], after: dict[str, Any]) -> dict[str, Any]:
@@ -508,10 +577,18 @@ def build_candidate_repair_loop_report(
     pre_sib_report: dict[str, Any],
     candidate_graph_path: Path | None = None,
     pre_sib_report_path: Path | None = None,
+    output_path: Path | None = None,
 ) -> dict[str, Any]:
     input_findings = _validate_inputs(candidate_graph, pre_sib_report)
     actions = [] if input_findings else _build_repair_actions(candidate_graph, pre_sib_report)
-    preview = _apply_preview_actions(candidate_graph, actions)
+    pre_sib_findings = (
+        [] if input_findings else _unhandled_pre_sib_findings(pre_sib_report, actions)
+    )
+    preview = _apply_preview_actions(
+        candidate_graph,
+        actions,
+        preview_source_ref=_preview_source_ref(output_path),
+    )
     applied_count = sum(1 for action in actions if action["status"] == "applied_to_preview")
     context_required_count = sum(1 for action in actions if action["status"] == "requires_context")
     source_ref = _text(candidate_graph.get("source_ref"))
@@ -520,7 +597,7 @@ def build_candidate_repair_loop_report(
     pre_sib_ref = _text(pre_sib_report.get("source_ref"))
     if not pre_sib_ref and pre_sib_report_path is not None:
         pre_sib_ref = _relative_ref(pre_sib_report_path)
-    findings = input_findings
+    findings = input_findings + pre_sib_findings
     ready = not findings and applied_count > 0
     return {
         "artifact_kind": "candidate_repair_loop_report",
@@ -603,6 +680,7 @@ def main(argv: list[str] | None = None) -> int:
         pre_sib_report=pre_sib_report,
         candidate_graph_path=args.candidate_graph,
         pre_sib_report_path=args.pre_sib_report,
+        output_path=args.output,
     )
     write_json(report, args.output)
     print(json.dumps(report, indent=2, sort_keys=True))

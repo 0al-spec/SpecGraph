@@ -34,7 +34,9 @@ This slice adds:
 - `make candidate-repair-loop`;
 - repairable and invalid-input fixtures;
 - regression tests for repair action generation, preview application, metric
-  delta projection, input-contract rejection, and CLI strict mode.
+  delta projection, mismatched pre-SIB report rejection, unhandled blocker
+  preservation, output-scoped preview refs, input-contract rejection, and CLI
+  strict mode.
 
 The deterministic repair preview can:
 
@@ -61,8 +63,12 @@ It does not:
 
 - `tests/test_candidate_repair_loop.py::test_candidate_repair_loop_builds_repair_preview`
 - `tests/test_candidate_repair_loop.py::test_candidate_repair_loop_preview_applies_safe_repairs`
+- `tests/test_candidate_repair_loop.py::test_candidate_repair_loop_downgrades_strength_marker`
 - `tests/test_candidate_repair_loop.py::test_candidate_repair_loop_projects_metric_delta`
+- `tests/test_candidate_repair_loop.py::test_candidate_repair_loop_rejects_mismatched_pre_sib_report`
+- `tests/test_candidate_repair_loop.py::test_candidate_repair_loop_preserves_unhandled_pre_sib_blockers`
 - `tests/test_candidate_repair_loop.py::test_candidate_repair_loop_rejects_wrong_pre_sib_contract`
+- `tests/test_candidate_repair_loop.py::test_candidate_repair_loop_preview_ref_uses_output_path`
 - `tests/test_candidate_repair_loop.py::test_candidate_repair_loop_cli_writes_output`
 
 ## Follow-ups

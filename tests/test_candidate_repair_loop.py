@@ -96,6 +96,31 @@ def test_candidate_repair_loop_preview_applies_safe_repairs() -> None:
     assert product["claims"][0]["repair_generated_type_change"] is True
 
 
+def test_candidate_repair_loop_downgrades_strength_marker() -> None:
+    module = load_module()
+    candidate_graph = load_json(CANDIDATE_REPAIRABLE)
+    nodes = candidate_graph["nodes"]
+    assert isinstance(nodes, list)
+    product = next(node for node in nodes if node["id"] == "candidate-spec.calculator-product")
+    claim = product["claims"][0]
+    claim["type"] = "claim"
+    claim["strength"] = "strong"
+
+    report = module.build_candidate_repair_loop_report(
+        candidate_graph=candidate_graph,
+        pre_sib_report=load_json(PRE_SIB_REPAIR_REQUIRED),
+        candidate_graph_path=CANDIDATE_REPAIRABLE,
+        pre_sib_report_path=PRE_SIB_REPAIR_REQUIRED,
+    )
+
+    preview = report["revised_candidate_graph_preview"]
+    preview_product = next(
+        node for node in preview["nodes"] if node["id"] == "candidate-spec.calculator-product"
+    )
+    assert preview_product["claims"][0]["type"] == "hypothesis"
+    assert preview_product["claims"][0]["strength"] == "hypothesis"
+
+
 def test_candidate_repair_loop_projects_metric_delta() -> None:
     report = build_repair_report()
     delta = report["metric_delta_projection"]["delta"]
@@ -103,6 +128,50 @@ def test_candidate_repair_loop_projects_metric_delta() -> None:
     assert delta["edge_count"] == 1
     assert delta["acceptance_criteria_count"] == 1
     assert delta["orphan_node_count"] == -2
+    assert delta["unsupported_strong_claim_count"] == -1
+
+
+def test_candidate_repair_loop_rejects_mismatched_pre_sib_report() -> None:
+    module = load_module()
+    pre_sib_report = load_json(PRE_SIB_REPAIR_REQUIRED)
+    pre_sib_report["source_candidate_graph"]["source_ref"] = "operator://other-candidate"
+
+    report = module.build_candidate_repair_loop_report(
+        candidate_graph=load_json(CANDIDATE_REPAIRABLE),
+        pre_sib_report=pre_sib_report,
+        candidate_graph_path=CANDIDATE_REPAIRABLE,
+        pre_sib_report_path=PRE_SIB_REPAIR_REQUIRED,
+    )
+
+    assert report["readiness"]["ready"] is False
+    assert "pre_sib_candidate_graph_mismatch" in finding_ids(report)
+    assert report["repair_actions"] == []
+
+
+def test_candidate_repair_loop_preserves_unhandled_pre_sib_blockers() -> None:
+    module = load_module()
+    pre_sib_report = load_json(PRE_SIB_REPAIR_REQUIRED)
+    pre_sib_report["readiness"]["blocked_by"].append("candidate_graph_not_ready")
+    pre_sib_report["findings"].append(
+        {
+            "finding_id": "candidate_graph_not_ready",
+            "severity": "review_required",
+            "message": "Candidate graph is not ready for repair.",
+            "source": "pre_sib_coherence_report",
+            "evidence": {},
+        }
+    )
+
+    report = module.build_candidate_repair_loop_report(
+        candidate_graph=load_json(CANDIDATE_REPAIRABLE),
+        pre_sib_report=pre_sib_report,
+        candidate_graph_path=CANDIDATE_REPAIRABLE,
+        pre_sib_report_path=PRE_SIB_REPAIR_REQUIRED,
+    )
+
+    assert report["readiness"]["ready"] is False
+    assert "candidate_graph_not_ready" in finding_ids(report)
+    assert report["summary"]["applied_action_count"] == 3
 
 
 def test_candidate_repair_loop_rejects_wrong_pre_sib_contract() -> None:
@@ -118,6 +187,35 @@ def test_candidate_repair_loop_rejects_wrong_pre_sib_contract() -> None:
     assert report["readiness"]["ready"] is False
     assert "pre_sib_contract_ref_unsupported" in finding_ids(report)
     assert report["repair_actions"] == []
+
+
+def test_candidate_repair_loop_preview_ref_uses_output_path(tmp_path: Path) -> None:
+    output = tmp_path / "custom-repair-report.json"
+
+    result = subprocess.run(
+        [
+            sys.executable,
+            str(TOOL_PATH),
+            "--candidate-graph",
+            str(CANDIDATE_REPAIRABLE),
+            "--pre-sib-report",
+            str(PRE_SIB_REPAIR_REQUIRED),
+            "--output",
+            str(output),
+            "--strict",
+        ],
+        cwd=ROOT,
+        check=False,
+        capture_output=True,
+        text=True,
+    )
+
+    assert result.returncode == 0
+    report = load_json(output)
+    assert (
+        report["revised_candidate_graph_preview"]["source_ref"]
+        == f"{output.as_posix()}#revised_candidate_graph_preview"
+    )
 
 
 def test_candidate_repair_loop_cli_writes_output(tmp_path: Path) -> None:
