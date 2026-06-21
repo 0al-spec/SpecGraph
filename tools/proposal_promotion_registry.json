@@ -1935,5 +1935,18 @@
     "required_provenance_links": [
       "source_draft_ref"
     ]
+  },
+  {
+    "proposal_id": "0151",
+    "source_artifact_class": "working_draft",
+    "source_refs": [
+      "docs/archive/proposal_sources/0151_pre_sib_coherence_report.md"
+    ],
+    "motivating_concern": "Candidate spec graphs need measurable pre-implementation quality signals before autonomous repair, SpecSpace visualization, or repository materialization can safely proceed.",
+    "normalized_title": "Pre-SIB Coherence Report",
+    "bounded_scope": "Add a deterministic review-only pre_sib_coherence_report builder, Make target, fixtures, tests, and documentation that compute candidate graph structural counts, acceptance-criteria coverage, ontology coverage, orphan-node findings, duplicate-title warnings, unresolved-gap warnings, unsupported strong-claim warnings, and repair-loop readiness, without defining final SIB formulas, executing prompt agents, mutating candidate graph artifacts, running repair loops, mutating canonical specs, writing ontology packages or lockfiles, accepting ontology terms, creating Git branches or commits, or adding SpecSpace UI.",
+    "required_provenance_links": [
+      "source_draft_ref"
+    ]
   }
 ]

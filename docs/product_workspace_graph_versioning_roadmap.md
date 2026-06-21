@@ -89,6 +89,8 @@ The candidate graph must declare:
 
 ### 3. Pre-SIB And Coherence Metrics
 
+Status: implemented in proposal `0151`.
+
 Add a pre-implementation metric layer that scores whether the candidate graph is
 ready for canonical review.
 
