@@ -32,8 +32,10 @@ This slice adds:
 - `tools/candidate_spec_graph.py`;
 - `make candidate-spec-graph`;
 - ready and review-required fixtures;
-- regression tests for ready graphs, unready intake, unknown refs, strong claims
-  without F/G/R, requirement-to-acceptance-criteria refs, and CLI strict mode.
+- regression tests for ready graphs, unready intake, unknown refs, raw trace
+  filtering, duplicate node ids, requirement and acceptance text,
+  source-intake provenance, bounded F/G/R levels, seed contract metadata,
+  requirement-to-acceptance-criteria refs, and CLI strict mode.
 
 ## Authority Boundary
 
@@ -56,7 +58,14 @@ It does not:
 - `tests/test_candidate_spec_graph.py::test_candidate_spec_graph_builds_ready_graph`
 - `tests/test_candidate_spec_graph.py::test_candidate_spec_graph_blocks_unready_intake`
 - `tests/test_candidate_spec_graph.py::test_candidate_spec_graph_rejects_unknown_refs`
+- `tests/test_candidate_spec_graph.py::test_candidate_spec_graph_filters_raw_seed_fields`
+- `tests/test_candidate_spec_graph.py::test_candidate_spec_graph_rejects_duplicate_node_ids`
+- `tests/test_candidate_spec_graph.py::test_candidate_spec_graph_requires_real_requirement_and_ac_text`
+- `tests/test_candidate_spec_graph.py::test_candidate_spec_graph_requires_requirement_ac_refs`
+- `tests/test_candidate_spec_graph.py::test_candidate_spec_graph_requires_source_event_refs`
 - `tests/test_candidate_spec_graph.py::test_candidate_spec_graph_rejects_strong_claim_without_fgr`
+- `tests/test_candidate_spec_graph.py::test_candidate_spec_graph_rejects_invalid_fgr_levels`
+- `tests/test_candidate_spec_graph.py::test_candidate_spec_graph_validates_seed_contract_metadata`
 - `tests/test_candidate_spec_graph.py::test_candidate_spec_graph_cli_writes_output`
 
 ## Follow-ups

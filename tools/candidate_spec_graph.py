@@ -43,6 +43,17 @@ GRAPH_ENTRY_LIST_FIELDS = {
     "evidence_refs",
     "assumptions",
 }
+F_LEVELS = {f"F{index}" for index in range(6)}
+R_LEVELS = {f"R{index}" for index in range(6)}
+RAW_TRACE_FIELDS = {
+    "intent_text",
+    "raw_intent",
+    "raw_intent_text",
+    "raw_model_output",
+    "raw_prompt",
+    "raw_response",
+    "raw_text",
+}
 
 
 def _now_iso() -> str:
@@ -116,28 +127,109 @@ def _authority_boundary() -> dict[str, bool]:
     }
 
 
+def _normalize_list_field(
+    value: Any,
+    *,
+    category: str,
+    entry_id: str,
+    field: str,
+    index: int,
+) -> tuple[list[str], dict[str, Any] | None]:
+    if not isinstance(value, list):
+        return [], _finding(
+            finding_id="candidate_graph_list_field_malformed",
+            severity="review_required",
+            message="Candidate graph list-valued fields must be arrays of non-empty strings.",
+            evidence={
+                "category": category,
+                "entry_id": entry_id,
+                "field": field,
+                "index": index,
+                "value_type": type(value).__name__,
+            },
+        )
+    values = _text_list(value)
+    if len(values) != len(value):
+        return values, _finding(
+            finding_id="candidate_graph_list_field_malformed",
+            severity="review_required",
+            message="Candidate graph list-valued fields must be arrays of non-empty strings.",
+            evidence={
+                "category": category,
+                "entry_id": entry_id,
+                "field": field,
+                "index": index,
+                "value_type": "list",
+            },
+        )
+    return values, None
+
+
+def _seed_contract_findings(seed: dict[str, Any]) -> list[dict[str, Any]]:
+    invalid: list[str] = []
+    if seed.get("artifact_kind") != "candidate_spec_graph_seed":
+        invalid.append("artifact_kind")
+    if seed.get("schema_version") != SCHEMA_VERSION:
+        invalid.append("schema_version")
+    if seed.get("contract_ref") != SEED_CONTRACT_REF:
+        invalid.append("contract_ref")
+    if not invalid:
+        return []
+    return [
+        _finding(
+            finding_id="candidate_graph_seed_contract_invalid",
+            severity="review_required",
+            message="Candidate spec graph requires a valid seed contract.",
+            evidence={
+                "invalid_fields": invalid,
+                "expected": {
+                    "artifact_kind": "candidate_spec_graph_seed",
+                    "schema_version": SCHEMA_VERSION,
+                    "contract_ref": SEED_CONTRACT_REF,
+                },
+                "actual": {
+                    "artifact_kind": seed.get("artifact_kind"),
+                    "schema_version": seed.get("schema_version"),
+                    "contract_ref": seed.get("contract_ref"),
+                },
+            },
+        )
+    ]
+
+
 def _normalize_entry(
     value: Any,
     *,
     category: str,
     index: int,
-) -> tuple[dict[str, Any] | None, dict[str, Any] | None]:
+) -> tuple[dict[str, Any] | None, list[dict[str, Any]]]:
     if not isinstance(value, dict):
-        return None, _finding(
-            finding_id="candidate_graph_entry_invalid",
-            severity="review_required",
-            message="Candidate graph entries must be objects.",
-            evidence={"category": category, "index": index},
-        )
+        return None, [
+            _finding(
+                finding_id="candidate_graph_entry_invalid",
+                severity="review_required",
+                message="Candidate graph entries must be objects.",
+                evidence={"category": category, "index": index},
+            )
+        ]
     entry = dict(value)
     title = _text(entry.get("title"), _text(entry.get("name"), _text(entry.get("statement"))))
     entry_id = _text(entry.get("id"), f"{category}.{_slug(title, str(index + 1))}")
     normalized: dict[str, Any] = {"id": entry_id}
+    findings: list[dict[str, Any]] = []
     for key, item in entry.items():
-        if key == "id":
+        if key == "id" or key in RAW_TRACE_FIELDS:
             continue
         if key in GRAPH_ENTRY_LIST_FIELDS:
-            normalized[key] = _text_list(item)
+            normalized[key], finding = _normalize_list_field(
+                item,
+                category=category,
+                entry_id=entry_id,
+                field=key,
+                index=index,
+            )
+            if finding:
+                findings.append(finding)
         elif isinstance(item, str):
             item_text = item.strip()
             if item_text:
@@ -148,7 +240,7 @@ def _normalize_entry(
             normalized[key] = item
         elif isinstance(item, dict):
             normalized[key] = item
-    return normalized, None
+    return normalized, findings
 
 
 def _candidate_seed_graph(seed: dict[str, Any]) -> dict[str, Any]:
@@ -170,8 +262,8 @@ def _normalize_nested_list(
     normalized: list[dict[str, Any]] = []
     findings: list[dict[str, Any]] = []
     for index, value in enumerate(_list(values)):
-        entry, finding = _normalize_entry(value, category=category, index=index)
-        if finding:
+        entry, entry_findings = _normalize_entry(value, category=category, index=index)
+        for finding in entry_findings:
             finding["evidence"]["parent_id"] = parent_id
             findings.append(finding)
         if entry:
@@ -183,13 +275,34 @@ def _normalize_nodes(seed: dict[str, Any]) -> tuple[list[dict[str, Any]], list[d
     graph = _candidate_seed_graph(seed)
     nodes: list[dict[str, Any]] = []
     findings: list[dict[str, Any]] = []
+    seen_node_ids: dict[str, int] = {}
     for index, value in enumerate(_list(graph.get("nodes"))):
-        node, finding = _normalize_entry(value, category="candidate_node", index=index)
-        if finding:
-            findings.append(finding)
+        node, entry_findings = _normalize_entry(
+            value,
+            category="candidate_node",
+            index=index,
+        )
+        if entry_findings:
+            findings.extend(entry_findings)
             continue
         if node is None:
             continue
+        node_id = _text(node.get("id"))
+        if node_id in seen_node_ids:
+            findings.append(
+                _finding(
+                    finding_id="candidate_node_duplicate_id",
+                    severity="review_required",
+                    message="Candidate graph node ids must be unique.",
+                    evidence={
+                        "node_id": node_id,
+                        "first_index": seen_node_ids[node_id],
+                        "duplicate_index": index,
+                    },
+                )
+            )
+        else:
+            seen_node_ids[node_id] = index
         requirements, requirement_findings = _normalize_nested_list(
             node.get("requirements"),
             category="requirement",
@@ -232,9 +345,13 @@ def _normalize_edges(seed: dict[str, Any]) -> tuple[list[dict[str, Any]], list[d
     edges: list[dict[str, Any]] = []
     findings: list[dict[str, Any]] = []
     for index, value in enumerate(_list(graph.get("edges"))):
-        edge, finding = _normalize_entry(value, category="candidate_edge", index=index)
-        if finding:
-            findings.append(finding)
+        edge, entry_findings = _normalize_entry(
+            value,
+            category="candidate_edge",
+            index=index,
+        )
+        if entry_findings:
+            findings.extend(entry_findings)
             continue
         if edge is not None:
             edges.append(edge)
@@ -331,6 +448,45 @@ def _validate_node_shape(nodes: list[dict[str, Any]]) -> list[dict[str, Any]]:
     return findings
 
 
+def _nested_statement(entry: dict[str, Any]) -> str:
+    return _text(
+        entry.get("statement"),
+        _text(entry.get("description"), _text(entry.get("title"), _text(entry.get("name")))),
+    )
+
+
+def _validate_nested_spec_text(nodes: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    findings: list[dict[str, Any]] = []
+    for node in nodes:
+        for requirement in node.get("requirements", []):
+            if not _nested_statement(requirement):
+                findings.append(
+                    _finding(
+                        finding_id="candidate_requirement_statement_missing",
+                        severity="review_required",
+                        message="Candidate requirements require real statement text.",
+                        evidence={
+                            "node_id": node.get("id"),
+                            "requirement_id": requirement.get("id"),
+                        },
+                    )
+                )
+        for criterion in node.get("acceptance_criteria", []):
+            if not _nested_statement(criterion):
+                findings.append(
+                    _finding(
+                        finding_id="candidate_acceptance_criterion_statement_missing",
+                        severity="review_required",
+                        message="Candidate acceptance criteria require real statement text.",
+                        evidence={
+                            "node_id": node.get("id"),
+                            "acceptance_criterion_id": criterion.get("id"),
+                        },
+                    )
+                )
+    return findings
+
+
 def _validate_edge_refs(edges: list[dict[str, Any]], node_ids: set[str]) -> list[dict[str, Any]]:
     findings: list[dict[str, Any]] = []
     for edge in edges:
@@ -362,9 +518,17 @@ def _validate_source_refs(
 ) -> list[dict[str, Any]]:
     findings: list[dict[str, Any]] = []
     for node in nodes:
-        unknown = [
-            ref for ref in _text_list(node.get("source_event_refs")) if ref not in intake_refs
-        ]
+        source_event_refs = _text_list(node.get("source_event_refs"))
+        if not source_event_refs:
+            findings.append(
+                _finding(
+                    finding_id="candidate_node_source_event_refs_missing",
+                    severity="review_required",
+                    message="Candidate graph nodes require source_event_refs provenance.",
+                    evidence={"node_id": node.get("id")},
+                )
+            )
+        unknown = [ref for ref in source_event_refs if ref not in intake_refs]
         if unknown:
             findings.append(
                 _finding(
@@ -382,11 +546,20 @@ def _validate_requirement_refs(nodes: list[dict[str, Any]]) -> list[dict[str, An
     for node in nodes:
         ac_ids = {entry["id"] for entry in node.get("acceptance_criteria", [])}
         for requirement in node.get("requirements", []):
-            unknown = [
-                ref
-                for ref in _text_list(requirement.get("acceptance_criteria_refs"))
-                if ref not in ac_ids
-            ]
+            refs = _text_list(requirement.get("acceptance_criteria_refs"))
+            if not refs:
+                findings.append(
+                    _finding(
+                        finding_id="candidate_requirement_ac_refs_missing",
+                        severity="review_required",
+                        message="Requirements require acceptance_criteria_refs.",
+                        evidence={
+                            "node_id": node.get("id"),
+                            "requirement_id": requirement.get("id"),
+                        },
+                    )
+                )
+            unknown = [ref for ref in refs if ref not in ac_ids]
             if unknown:
                 findings.append(
                     _finding(
@@ -415,8 +588,8 @@ def _claim_has_calibration(claim: dict[str, Any]) -> bool:
     calibration = _dict(claim.get("calibration"))
     scope = _dict(calibration.get("G"))
     return (
-        bool(_text(calibration.get("F")))
-        and bool(_text(calibration.get("R")))
+        _text(calibration.get("F")) in F_LEVELS
+        and _text(calibration.get("R")) in R_LEVELS
         and bool(_text_list(scope.get("applies_to")))
     )
 
@@ -426,6 +599,7 @@ def _validate_claims(nodes: list[dict[str, Any]]) -> list[dict[str, Any]]:
     for node in nodes:
         for claim in node.get("claims", []):
             if _is_strong_claim(claim) and not _claim_has_calibration(claim):
+                calibration = _dict(claim.get("calibration"))
                 findings.append(
                     _finding(
                         finding_id="candidate_strong_claim_without_fgr",
@@ -434,7 +608,12 @@ def _validate_claims(nodes: list[dict[str, Any]]) -> list[dict[str, Any]]:
                             "Strong candidate graph claims require F/G/R calibration "
                             "before pre-SIB review."
                         ),
-                        evidence={"node_id": node.get("id"), "claim_id": claim.get("id")},
+                        evidence={
+                            "node_id": node.get("id"),
+                            "claim_id": claim.get("id"),
+                            "F": calibration.get("F"),
+                            "R": calibration.get("R"),
+                        },
                     )
                 )
     return findings
@@ -451,10 +630,12 @@ def build_candidate_spec_graph(
     edges, edge_findings = _normalize_edges(seed)
     node_ids = {node["id"] for node in nodes}
     findings = (
-        _validate_intake(intake)
+        _seed_contract_findings(seed)
+        + _validate_intake(intake)
         + node_findings
         + edge_findings
         + _validate_node_shape(nodes)
+        + _validate_nested_spec_text(nodes)
         + _validate_edge_refs(edges, node_ids)
         + _validate_source_refs(nodes, _intake_known_refs(intake))
         + _validate_requirement_refs(nodes)

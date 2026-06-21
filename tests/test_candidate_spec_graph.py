@@ -105,6 +105,120 @@ def test_candidate_spec_graph_rejects_unknown_refs() -> None:
     assert "candidate_edge_invalid" in ids
 
 
+def test_candidate_spec_graph_filters_raw_seed_fields() -> None:
+    module = load_module()
+    seed = load_json(CANDIDATE_READY)
+    candidate_graph = seed["candidate_graph"]
+    assert isinstance(candidate_graph, dict)
+    nodes = candidate_graph["nodes"]
+    assert isinstance(nodes, list)
+    nodes[0]["raw_prompt"] = "secret prompt"
+    nodes[0]["raw_model_output"] = "secret model output"
+    nodes[0]["intent_text"] = "secret intent"
+
+    graph = module.build_candidate_spec_graph(
+        intake=load_json(INTAKE_READY),
+        seed=seed,
+        intake_path=INTAKE_READY,
+        seed_path=CANDIDATE_READY,
+    )
+
+    node = graph["nodes"][0]
+    assert "raw_prompt" not in node
+    assert "raw_model_output" not in node
+    assert "intent_text" not in node
+    assert "secret prompt" not in json.dumps(graph)
+    assert graph["privacy_boundary"]["raw_prompt_published"] is False
+    assert graph["privacy_boundary"]["raw_model_output_published"] is False
+
+
+def test_candidate_spec_graph_rejects_duplicate_node_ids() -> None:
+    module = load_module()
+    seed = load_json(CANDIDATE_READY)
+    candidate_graph = seed["candidate_graph"]
+    assert isinstance(candidate_graph, dict)
+    nodes = candidate_graph["nodes"]
+    assert isinstance(nodes, list)
+    duplicate = dict(nodes[0])
+    duplicate["title"] = "Duplicate Calculator Product"
+    nodes.append(duplicate)
+
+    graph = module.build_candidate_spec_graph(
+        intake=load_json(INTAKE_READY),
+        seed=seed,
+        intake_path=INTAKE_READY,
+        seed_path=CANDIDATE_READY,
+    )
+
+    assert graph["pre_sib_readiness"]["ready"] is False
+    assert "candidate_node_duplicate_id" in finding_ids(graph)
+
+
+def test_candidate_spec_graph_requires_real_requirement_and_ac_text() -> None:
+    module = load_module()
+    seed = load_json(CANDIDATE_READY)
+    candidate_graph = seed["candidate_graph"]
+    assert isinstance(candidate_graph, dict)
+    nodes = candidate_graph["nodes"]
+    assert isinstance(nodes, list)
+    nodes[0]["requirements"] = [{"id": "req.placeholder"}]
+    nodes[0]["acceptance_criteria"] = [{"id": "ac.placeholder"}]
+
+    graph = module.build_candidate_spec_graph(
+        intake=load_json(INTAKE_READY),
+        seed=seed,
+        intake_path=INTAKE_READY,
+        seed_path=CANDIDATE_READY,
+    )
+
+    ids = finding_ids(graph)
+    assert graph["pre_sib_readiness"]["ready"] is False
+    assert "candidate_requirement_statement_missing" in ids
+    assert "candidate_acceptance_criterion_statement_missing" in ids
+
+
+def test_candidate_spec_graph_requires_requirement_ac_refs() -> None:
+    module = load_module()
+    seed = load_json(CANDIDATE_READY)
+    candidate_graph = seed["candidate_graph"]
+    assert isinstance(candidate_graph, dict)
+    nodes = candidate_graph["nodes"]
+    assert isinstance(nodes, list)
+    requirements = nodes[0]["requirements"]
+    assert isinstance(requirements, list)
+    requirements[0].pop("acceptance_criteria_refs")
+
+    graph = module.build_candidate_spec_graph(
+        intake=load_json(INTAKE_READY),
+        seed=seed,
+        intake_path=INTAKE_READY,
+        seed_path=CANDIDATE_READY,
+    )
+
+    assert graph["pre_sib_readiness"]["ready"] is False
+    assert "candidate_requirement_ac_refs_missing" in finding_ids(graph)
+
+
+def test_candidate_spec_graph_requires_source_event_refs() -> None:
+    module = load_module()
+    seed = load_json(CANDIDATE_READY)
+    candidate_graph = seed["candidate_graph"]
+    assert isinstance(candidate_graph, dict)
+    nodes = candidate_graph["nodes"]
+    assert isinstance(nodes, list)
+    nodes[0].pop("source_event_refs")
+
+    graph = module.build_candidate_spec_graph(
+        intake=load_json(INTAKE_READY),
+        seed=seed,
+        intake_path=INTAKE_READY,
+        seed_path=CANDIDATE_READY,
+    )
+
+    assert graph["pre_sib_readiness"]["ready"] is False
+    assert "candidate_node_source_event_refs_missing" in finding_ids(graph)
+
+
 def test_candidate_spec_graph_rejects_strong_claim_without_fgr() -> None:
     module = load_module()
     seed = load_json(CANDIDATE_READY)
@@ -125,6 +239,46 @@ def test_candidate_spec_graph_rejects_strong_claim_without_fgr() -> None:
 
     assert graph["pre_sib_readiness"]["ready"] is False
     assert "candidate_strong_claim_without_fgr" in finding_ids(graph)
+
+
+def test_candidate_spec_graph_rejects_invalid_fgr_levels() -> None:
+    module = load_module()
+    seed = load_json(CANDIDATE_READY)
+    candidate_graph = seed["candidate_graph"]
+    assert isinstance(candidate_graph, dict)
+    nodes = candidate_graph["nodes"]
+    assert isinstance(nodes, list)
+    claims = nodes[0]["claims"]
+    assert isinstance(claims, list)
+    claims[0]["calibration"]["F"] = "formal"
+    claims[0]["calibration"]["R"] = "reliable"
+
+    graph = module.build_candidate_spec_graph(
+        intake=load_json(INTAKE_READY),
+        seed=seed,
+        intake_path=INTAKE_READY,
+        seed_path=CANDIDATE_READY,
+    )
+
+    assert graph["pre_sib_readiness"]["ready"] is False
+    assert "candidate_strong_claim_without_fgr" in finding_ids(graph)
+
+
+def test_candidate_spec_graph_validates_seed_contract_metadata() -> None:
+    module = load_module()
+    seed = load_json(CANDIDATE_READY)
+    seed["artifact_kind"] = "idea_event_storming_seed"
+    seed.pop("contract_ref", None)
+
+    graph = module.build_candidate_spec_graph(
+        intake=load_json(INTAKE_READY),
+        seed=seed,
+        intake_path=INTAKE_READY,
+        seed_path=CANDIDATE_READY,
+    )
+
+    assert graph["pre_sib_readiness"]["ready"] is False
+    assert "candidate_graph_seed_contract_invalid" in finding_ids(graph)
 
 
 def test_candidate_spec_graph_rejects_requirement_without_known_ac() -> None:
