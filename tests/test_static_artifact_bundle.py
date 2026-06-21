@@ -113,6 +113,18 @@ def make_repo(root: Path) -> Path:
         "specauthor_authoring_flow_report.json": {
             "artifact_kind": "specauthor_authoring_flow_report",
         },
+        "candidate_spec_materialization_report.json": {
+            "artifact_kind": "candidate_spec_materialization_report",
+            "canonical_mutations_allowed": False,
+            "tracked_artifacts_written": False,
+            "readiness": {"ready": True},
+        },
+        "idea_to_spec_promotion_gate.json": {
+            "artifact_kind": "idea_to_spec_promotion_gate",
+            "canonical_mutations_allowed": False,
+            "tracked_artifacts_written": False,
+            "readiness": {"ready": True},
+        },
     }
     for name, payload in artifacts.items():
         write_json(runs_dir / name, payload)
@@ -325,6 +337,15 @@ def test_build_public_bundle_copies_specs_and_runs_with_manifest(
         manifest["required_surfaces"]["specauthor_invocation_artifact_contract_report.json"] is True
     )
     assert manifest["required_surfaces"]["specauthor_authoring_flow_report.json"] is True
+    assert manifest["required_surfaces"]["candidate_spec_materialization_report.json"] is True
+    assert manifest["required_surfaces"]["idea_to_spec_promotion_gate.json"] is True
+    assert (
+        manifest["platform_handoff_surfaces"]["candidate_spec_materialization_report.json"]["path"]
+        == "runs/candidate_spec_materialization_report.json"
+    )
+    assert (
+        manifest["platform_handoff_surfaces"]["idea_to_spec_promotion_gate.json"]["present"] is True
+    )
     assert (
         manifest["required_surfaces"][
             "agent_runtime_enforcement_evidence/supervisor-executor-adapter-smoke.json"
@@ -358,6 +379,14 @@ def test_build_public_bundle_copies_specs_and_runs_with_manifest(
     )
     assert any(
         file_info["path"] == "runs/specauthor_authoring_flow_report.json"
+        for file_info in manifest["files"]
+    )
+    assert any(
+        file_info["path"] == "runs/candidate_spec_materialization_report.json"
+        for file_info in manifest["files"]
+    )
+    assert any(
+        file_info["path"] == "runs/idea_to_spec_promotion_gate.json"
         for file_info in manifest["files"]
     )
     assert manifest["safety_gate"]["status"] == "passed"
@@ -956,6 +985,22 @@ def test_refresh_publish_surfaces_builds_viewer_implementation_and_agent_surface
         "ontology-owner-decision-import-v2",
         "specauthor-authoring-flow",
     ]
+    materialization = json.loads(
+        (tmp_path / "runs" / "candidate_spec_materialization_report.json").read_text(
+            encoding="utf-8"
+        )
+    )
+    promotion_gate = json.loads(
+        (tmp_path / "runs" / "idea_to_spec_promotion_gate.json").read_text(encoding="utf-8")
+    )
+    assert materialization["source_mode"] == "public_placeholder"
+    assert materialization["placeholder_reason"] == "no_active_candidate"
+    assert materialization["promotion_request"]["paths"] == []
+    assert materialization["summary"]["materialized_file_count"] == 0
+    assert promotion_gate["source_mode"] == "public_placeholder"
+    assert promotion_gate["placeholder_reason"] == "no_active_candidate"
+    assert promotion_gate["promotion_request"]["paths"] == []
+    assert promotion_gate["summary"]["promotion_path_count"] == 0
 
 
 def test_main_prints_compact_summary(
