@@ -8319,5 +8319,52 @@
         "pattern": "proposal `0153`"
       }
     ]
+  },
+  {
+    "proposal_id": "0154",
+    "posture": "synchronous_runtime_slice",
+    "runtime_surfaces": [
+      "docs/proposals/0154_idea_to_spec_promotion_gate.md",
+      "docs/archive/proposal_sources/0154_idea_to_spec_promotion_gate.md",
+      "docs/product_workspace_graph_versioning_roadmap.md",
+      "tools/idea_to_spec_promotion_gate.py",
+      "tests/test_idea_to_spec_promotion_gate.py",
+      "Makefile",
+      "tools/README.md"
+    ],
+    "runtime_markers": [
+      {
+        "path": "tools/idea_to_spec_promotion_gate.py",
+        "pattern": "idea_to_spec_promotion_gate"
+      },
+      {
+        "path": "tools/idea_to_spec_promotion_gate.py",
+        "pattern": "ready_for_platform_promotion_request"
+      },
+      {
+        "path": "tools/idea_to_spec_promotion_gate.py",
+        "pattern": "platform_graph_repository_promotion_request"
+      }
+    ],
+    "validation_markers": [
+      {
+        "path": "tests/test_idea_to_spec_promotion_gate.py",
+        "pattern": "test_promotion_gate_allows_resolved_repair_preview"
+      },
+      {
+        "path": "tests/test_idea_to_spec_promotion_gate.py",
+        "pattern": "test_promotion_gate_blocks_unresolved_context"
+      }
+    ],
+    "observation_markers": [
+      {
+        "path": "docs/proposals/0154_idea_to_spec_promotion_gate.md",
+        "pattern": "does not grant write authority"
+      },
+      {
+        "path": "docs/product_workspace_graph_versioning_roadmap.md",
+        "pattern": "proposal `0154`"
+      }
+    ]
   }
 ]

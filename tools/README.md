@@ -286,6 +286,13 @@ Supervisor modes:
   that Platform can pass to `graph-repository promotion-request` while keeping
   canonical spec mutation, branches, commits, PRs, and Ontology writes outside
   this tool's authority.
+- `tools/idea_to_spec_promotion_gate.py`: final deterministic idea-to-spec
+  promotion gate introduced by proposal 0154. Use
+  `make idea-to-spec-promotion-gate` after pre-SIB, repair-loop, and
+  materialization artifacts exist. The gate writes
+  `runs/idea_to_spec_promotion_gate.json` and exposes Platform promotion paths
+  only when repair context is resolved, materialization is ready, and paths are
+  safe.
 - `--build-ontology-supervisor-semantic-gate`: refresh the same ontology
   semantic surfaces through the supervisor entrypoint and print a compact gate
   report for `runs/ontology_supervisor_semantic_gate.json` without running
@@ -907,6 +914,10 @@ Key derived artifacts:
   local candidate spec YAML previews under `runs/materialized_candidate_specs/`,
   including materialized paths for Platform promotion-request handoff without
   canonical spec mutation.
+- `runs/idea_to_spec_promotion_gate.json`: final review-only go/no-go surface
+  before Platform promotion-request handoff, aggregating pre-SIB findings,
+  repair-loop context requirements, materialization readiness, and promotion
+  paths.
 - `runs/specpm_export_preview.json`: reviewable `SpecPM` package preview
   artifact, including manifest preview, boundary-source preview, export
   status, and next-gap backlog for future full package emission

@@ -129,7 +129,8 @@ or Ontology packages directly.
 
 Status: Platform contract and report-only promotion request handoff are
 implemented; SpecGraph materialized candidate spec previews are implemented in
-proposal `0153`.
+proposal `0153`, and the final idea-to-spec promotion gate is implemented in
+proposal `0154`.
 
 Define the first service/CLI boundary over Git:
 
@@ -152,6 +153,11 @@ branch. `0153` writes review-only YAML previews under
 `runs/candidate_spec_materialization_report.json`; Platform consumes the
 reported paths through `graph-repository promotion-request` before any executor
 step creates a branch, commit, or pull request.
+
+`0154` adds `runs/idea_to_spec_promotion_gate.json` as the final read-only
+handoff check. It aggregates pre-SIB metrics, repair-loop context requirements,
+materialization readiness, and promotion paths so the autonomous idea-to-spec
+flow has one explicit go/no-go surface before Platform promotion.
 
 ### 6. SpecSpace Review And Publish Surface
 

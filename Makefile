@@ -52,6 +52,10 @@ CANDIDATE_SPEC_MATERIALIZATION_CANDIDATE_GRAPH ?= tests/fixtures/candidate_repai
 CANDIDATE_SPEC_MATERIALIZATION_REPAIR_LOOP ?= runs/candidate_repair_loop_report.json
 CANDIDATE_SPEC_MATERIALIZATION_OUTPUT_DIR ?= runs/materialized_candidate_specs
 CANDIDATE_SPEC_MATERIALIZATION_OUTPUT ?= runs/candidate_spec_materialization_report.json
+IDEA_TO_SPEC_PROMOTION_GATE_PRE_SIB ?= runs/pre_sib_coherence_report.json
+IDEA_TO_SPEC_PROMOTION_GATE_REPAIR_LOOP ?= runs/candidate_repair_loop_report.json
+IDEA_TO_SPEC_PROMOTION_GATE_MATERIALIZATION ?= runs/candidate_spec_materialization_report.json
+IDEA_TO_SPEC_PROMOTION_GATE_OUTPUT ?= runs/idea_to_spec_promotion_gate.json
 
 .DEFAULT_GOAL := help
 
@@ -65,7 +69,7 @@ PYTHON_TARGETS := viewer-surfaces dashboard backlog next-move spec-activity grap
 	specauthor-generated-artifact-contract specauthor-ontology-write-gate \
 	specauthor-invocation-artifact-contract specauthor-authoring-flow \
 	idea-event-storming-intake candidate-spec-graph pre-sib-coherence candidate-repair-loop \
-	candidate-spec-materialization \
+	candidate-spec-materialization idea-to-spec-promotion-gate \
 	proposal-work-claims proposal-work-claims-gate proposal-id \
 	metrics-delivery metrics-feedback metrics-source-promotion metric-signals metric-thresholds \
 	metric-packs metric-pack-drift metric-pack-adapters metric-pack-runs metric-pricing model-usage \
@@ -159,6 +163,7 @@ help:
 			'  make executor-proposal-source-materialize Materialize local proposal source draft' \
 			'  make executor-public-proposal-doc-materialize Materialize local public proposal doc' \
 			'  make candidate-spec-materialization Build review-only candidate spec YAML previews' \
+			'  make idea-to-spec-promotion-gate Build final idea-to-spec Platform handoff gate' \
 			'  make agent-passports          Refresh Agent Passport derived surfaces' \
 			'  make agent-runtime-evidence   Refresh Agent Passport runtime evidence JSON' \
 			'  make check-python             Verify selected Python runtime is supported' \
@@ -310,6 +315,10 @@ candidate-repair-loop:
 .PHONY: candidate-spec-materialization
 candidate-spec-materialization:
 	@$(PYTHON) tools/candidate_spec_materialization.py --candidate-graph "$(CANDIDATE_SPEC_MATERIALIZATION_CANDIDATE_GRAPH)" --repair-loop "$(CANDIDATE_SPEC_MATERIALIZATION_REPAIR_LOOP)" --output-dir "$(CANDIDATE_SPEC_MATERIALIZATION_OUTPUT_DIR)" --output "$(CANDIDATE_SPEC_MATERIALIZATION_OUTPUT)"
+
+.PHONY: idea-to-spec-promotion-gate
+idea-to-spec-promotion-gate:
+	@$(PYTHON) tools/idea_to_spec_promotion_gate.py --pre-sib "$(IDEA_TO_SPEC_PROMOTION_GATE_PRE_SIB)" --repair-loop "$(IDEA_TO_SPEC_PROMOTION_GATE_REPAIR_LOOP)" --materialization "$(IDEA_TO_SPEC_PROMOTION_GATE_MATERIALIZATION)" --output "$(IDEA_TO_SPEC_PROMOTION_GATE_OUTPUT)"
 
 .PHONY: metrics-delivery
 metrics-delivery:
