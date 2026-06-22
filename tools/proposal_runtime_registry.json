@@ -8402,7 +8402,7 @@
       },
       {
         "path": "Makefile",
-        "pattern": "team-decision-log-active-candidate"
+        "pattern": "product-workspace-active-candidate"
       }
     ],
     "validation_markers": [
@@ -8430,7 +8430,7 @@
       },
       {
         "path": "Sources/SpecGraph/Documentation.docc/ProductWorkspacePilots.md",
-        "pattern": "make team-decision-log-active-candidate"
+        "pattern": "make product-workspace-active-candidate"
       }
     ]
   }

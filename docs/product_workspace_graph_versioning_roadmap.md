@@ -204,9 +204,9 @@ mount a writable checkout and commit files itself.
 Status: implemented in proposal `0155` for the Team Decision Log pilot.
 
 Public handoff artifacts can intentionally publish `no_active_candidate`
-placeholders when no active source exists. The Team Decision Log pilot replaces
-those placeholders only when a validated active candidate source exists and
-proves:
+placeholders when no active source exists. The generic product workspace active
+candidate target replaces those placeholders only when a validated active
+candidate source exists and proves:
 
 - `candidate_id` and product workspace identity are stable;
 - source mode is `active_candidate`, not fixture/demo leakage;
@@ -225,7 +225,7 @@ SpecGraph specs or write ontology packages directly.
 The implemented surface is:
 
 - `tools/active_idea_to_spec_candidate_source.py`;
-- `make team-decision-log-active-candidate`;
+- `make product-workspace-active-candidate`;
 - `runs/active_idea_to_spec_candidate.json`;
 - static artifact publishing guardrails that preserve real handoff surfaces
   only when that active source is ready.

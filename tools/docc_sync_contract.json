@@ -139,13 +139,13 @@
         "no_active_candidate",
         "Active Idea-To-Spec Candidate Source",
         "proposal `0155`",
-        "make team-decision-log-active-candidate"
+        "make product-workspace-active-candidate"
       ],
       "docc_required_terms": [
         "Active Candidate Source",
         "specgraph_bootstrap",
         "Proposal `0155`",
-        "make team-decision-log-active-candidate"
+        "make product-workspace-active-candidate"
       ]
     },
     {

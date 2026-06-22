@@ -33,13 +33,14 @@ This slice adds:
 
 - `tools/active_idea_to_spec_candidate_source.py`;
 - `make active-idea-to-spec-candidate-source`;
-- `make team-decision-log-active-candidate`;
+- `make product-workspace-active-candidate`;
 - Team Decision Log event-storming and candidate graph seed fixtures;
 - static publish behavior that preserves real handoff surfaces only when the
   active source is ready;
 - regression tests for ready source publication and placeholder blocking.
 
-The Team Decision Log target runs the deterministic chain:
+The product workspace target runs the deterministic chain. Team Decision Log is
+the default fixture data for that target, not a separate system-level flow:
 
 ```text
 event-storming seed

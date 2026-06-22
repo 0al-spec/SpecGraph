@@ -5,9 +5,11 @@ from __future__ import annotations
 import argparse
 import hashlib
 import json
+import re
 from datetime import datetime, timezone
 from pathlib import Path, PurePosixPath
 from typing import Any
+from urllib.parse import unquote
 
 ROOT = Path(__file__).resolve().parents[1]
 PROPOSAL_ID = "0155"
@@ -54,6 +56,14 @@ READY_FIELD_BY_ARTIFACT = {
     "promotion_gate": "readiness",
 }
 FINAL_READY_ARTIFACTS = ("repair_loop", "materialization", "promotion_gate")
+CANDIDATE_ID_RE = re.compile(r"^[a-z0-9][a-z0-9-]{1,62}[a-z0-9]$")
+REQUIRED_CANDIDATE_VALUES = {
+    "source_mode": "active_candidate",
+    "workflow_lane": "product_idea_to_spec",
+    "governance_profile": "product_workspace",
+    "target_repository_role": "product_spec_workspace",
+    "authority_profile": "workspace_owner_controlled",
+}
 
 
 def _now_iso() -> str:
@@ -74,6 +84,14 @@ def _text(value: Any, default: str = "") -> str:
 
 def _text_list(value: Any) -> list[str]:
     return [item.strip() for item in _list(value) if isinstance(item, str) and item.strip()]
+
+
+def _slug_to_project_id(value: str) -> str:
+    return "".join(part[:1].upper() + part[1:] for part in value.split("-") if part)
+
+
+def _slug_to_domain_ref(value: str) -> str:
+    return f"domain.{value.replace('-', '_')}"
 
 
 def _relative_ref(path: Path) -> str:
@@ -171,29 +189,55 @@ def _config_findings(config: dict[str, Any]) -> list[dict[str, Any]]:
     ]
 
 
-def _candidate_metadata_findings(candidate: dict[str, Any]) -> list[dict[str, Any]]:
+def _candidate_metadata(candidate: dict[str, Any]) -> tuple[dict[str, Any], list[dict[str, Any]]]:
     findings: list[dict[str, Any]] = []
-    required = {
-        "candidate_id": "team-decision-log",
-        "source_mode": "active_candidate",
-        "workflow_lane": "product_idea_to_spec",
-        "public_route": "/team-decision-log",
-        "governance_profile": "product_workspace",
-        "target_repository_role": "product_spec_workspace",
-        "authority_profile": "workspace_owner_controlled",
-    }
-    for field, expected in required.items():
+    normalized: dict[str, Any] = {}
+    for field, expected in REQUIRED_CANDIDATE_VALUES.items():
         observed = candidate.get(field)
         if observed != expected:
             findings.append(
                 _finding(
                     finding_id=f"candidate_{field}_unsupported",
                     severity="review_required",
-                    message=f"Team Decision Log active source requires {field}={expected!r}.",
+                    message=f"Active product candidate source requires {field}={expected!r}.",
                     evidence={"expected": expected, "observed": observed},
                 )
             )
-    if not _text(candidate.get("display_name")):
+        normalized[field] = observed
+    candidate_id_raw = candidate.get("candidate_id")
+    candidate_id = _text(candidate_id_raw)
+    if not candidate_id:
+        findings.append(
+            _finding(
+                finding_id="candidate_candidate_id_missing",
+                severity="review_required",
+                message="Active product candidate source requires a candidate_id.",
+            )
+        )
+    elif candidate_id_raw != candidate_id:
+        findings.append(
+            _finding(
+                finding_id="candidate_candidate_id_not_normalized",
+                severity="review_required",
+                message="Active product candidate source candidate_id must not need trimming.",
+                evidence={"candidate_id": candidate_id_raw, "normalized": candidate_id},
+            )
+        )
+    elif not CANDIDATE_ID_RE.fullmatch(candidate_id):
+        findings.append(
+            _finding(
+                finding_id="candidate_candidate_id_invalid",
+                severity="review_required",
+                message=(
+                    "Active product candidate source candidate_id must be a stable lowercase slug."
+                ),
+                evidence={"candidate_id": candidate_id},
+            )
+        )
+    normalized["candidate_id"] = candidate_id
+    display_name_raw = candidate.get("display_name")
+    display_name = _text(display_name_raw)
+    if not display_name:
         findings.append(
             _finding(
                 finding_id="candidate_display_name_missing",
@@ -201,7 +245,81 @@ def _candidate_metadata_findings(candidate: dict[str, Any]) -> list[dict[str, An
                 message="Active candidate source requires a display name.",
             )
         )
-    return findings
+    elif display_name_raw != display_name:
+        findings.append(
+            _finding(
+                finding_id="candidate_display_name_not_normalized",
+                severity="review_required",
+                message="Active product candidate source display_name must not need trimming.",
+                evidence={"display_name": display_name_raw, "normalized": display_name},
+            )
+        )
+    normalized["display_name"] = display_name
+    public_route_raw = candidate.get("public_route")
+    public_route = _text(public_route_raw)
+    if not public_route:
+        findings.append(
+            _finding(
+                finding_id="candidate_public_route_missing",
+                severity="review_required",
+                message="Active product candidate source requires a public_route.",
+            )
+        )
+    elif public_route_raw != public_route:
+        findings.append(
+            _finding(
+                finding_id="candidate_public_route_not_normalized",
+                severity="review_required",
+                message="Active product candidate source public_route must not need trimming.",
+                evidence={"public_route": public_route_raw, "normalized": public_route},
+            )
+        )
+    elif (
+        public_route == "/"
+        or not public_route.startswith("/")
+        or "//" in public_route
+        or "?" in public_route
+        or "#" in public_route
+    ):
+        findings.append(
+            _finding(
+                finding_id="candidate_public_route_invalid",
+                severity="review_required",
+                message=(
+                    "Active product candidate source public_route must be a non-root "
+                    "absolute path without query or fragment."
+                ),
+                evidence={"public_route": public_route},
+            )
+        )
+    else:
+        route_segments = [segment for segment in public_route.split("/") if segment]
+        if any(segment in {".", ".."} for segment in route_segments):
+            findings.append(
+                _finding(
+                    finding_id="candidate_public_route_unsafe_segment",
+                    severity="review_required",
+                    message=(
+                        "Active product candidate source public_route must not contain "
+                        "dot or traversal segments."
+                    ),
+                    evidence={"public_route": public_route},
+                )
+            )
+        elif any(unquote(segment) in {".", ".."} for segment in route_segments):
+            findings.append(
+                _finding(
+                    finding_id="candidate_public_route_unsafe_segment",
+                    severity="review_required",
+                    message=(
+                        "Active product candidate source public_route must not contain "
+                        "encoded dot or traversal segments."
+                    ),
+                    evidence={"public_route": public_route},
+                )
+            )
+    normalized["public_route"] = public_route
+    return normalized, findings
 
 
 def _artifact_readiness(artifact_key: str, payload: dict[str, Any]) -> dict[str, Any]:
@@ -300,6 +418,70 @@ def _active_frame_findings(candidate_graph: dict[str, Any]) -> list[dict[str, An
     ]
 
 
+def _candidate_artifact_match_findings(
+    *,
+    candidate: dict[str, Any],
+    candidate_graph: dict[str, Any],
+) -> list[dict[str, Any]]:
+    candidate_id = _text(candidate.get("candidate_id"))
+    if not CANDIDATE_ID_RE.fullmatch(candidate_id):
+        return []
+    frame = _dict(candidate_graph.get("active_frame"))
+    expected_project = _slug_to_project_id(candidate_id)
+    observed_project = _text(frame.get("project"))
+    expected_domain_ref = _slug_to_domain_ref(candidate_id)
+    observed_domain_refs = _text_list(frame.get("domain_refs"))
+    findings: list[dict[str, Any]] = []
+    if observed_project != expected_project:
+        findings.append(
+            _finding(
+                finding_id="active_candidate_project_mismatch",
+                severity="review_required",
+                message="Candidate graph active_frame.project must match candidate_id.",
+                evidence={
+                    "candidate_id": candidate_id,
+                    "expected_project": expected_project,
+                    "observed_project": observed_project,
+                },
+            )
+        )
+    if expected_domain_ref not in observed_domain_refs:
+        findings.append(
+            _finding(
+                finding_id="active_candidate_domain_mismatch",
+                severity="review_required",
+                message="Candidate graph active_frame.domain_refs must include candidate domain.",
+                evidence={
+                    "candidate_id": candidate_id,
+                    "expected_domain_ref": expected_domain_ref,
+                    "observed_domain_refs": observed_domain_refs,
+                },
+            )
+        )
+    source_ref = _text(candidate_graph.get("source_ref"))
+    if source_ref and not source_ref.startswith(f"product://{candidate_id}/"):
+        findings.append(
+            _finding(
+                finding_id="active_candidate_source_ref_mismatch",
+                severity="review_required",
+                message="Candidate graph source_ref must belong to candidate_id.",
+                evidence={"candidate_id": candidate_id, "source_ref": source_ref},
+            )
+        )
+    source_intake = _dict(candidate_graph.get("source_intake"))
+    intake_ref = _text(source_intake.get("source_ref"))
+    if intake_ref and not intake_ref.startswith(f"product://{candidate_id}/"):
+        findings.append(
+            _finding(
+                finding_id="active_candidate_intake_ref_mismatch",
+                severity="review_required",
+                message="Candidate graph source_intake.source_ref must belong to candidate_id.",
+                evidence={"candidate_id": candidate_id, "source_ref": intake_ref},
+            )
+        )
+    return findings
+
+
 def _artifact_chain_findings(
     artifacts: dict[str, tuple[Path, dict[str, Any]]],
 ) -> tuple[list[dict[str, Any]], list[dict[str, Any]]]:
@@ -370,14 +552,19 @@ def build_active_idea_to_spec_candidate_source(
     config_path: Path | None = None,
 ) -> dict[str, Any]:
     candidate = _dict(config.get("candidate"))
+    normalized_candidate, candidate_findings = _candidate_metadata(candidate)
     artifacts, artifact_findings = _load_source_artifacts(config)
     chain_findings, chain_warnings = _artifact_chain_findings(artifacts)
     candidate_graph = artifacts.get("candidate_graph", (None, {}))[1]
     findings = (
         _config_findings(config)
-        + _candidate_metadata_findings(candidate)
+        + candidate_findings
         + artifact_findings
         + _active_frame_findings(candidate_graph)
+        + _candidate_artifact_match_findings(
+            candidate=normalized_candidate,
+            candidate_graph=candidate_graph,
+        )
         + chain_findings
     )
     ready = not findings
@@ -403,13 +590,13 @@ def build_active_idea_to_spec_candidate_source(
             "source_ref": _relative_ref(config_path) if config_path is not None else None,
         },
         "candidate": {
-            "candidate_id": candidate.get("candidate_id"),
-            "display_name": candidate.get("display_name"),
-            "workflow_lane": candidate.get("workflow_lane"),
-            "public_route": candidate.get("public_route"),
-            "governance_profile": candidate.get("governance_profile"),
-            "target_repository_role": candidate.get("target_repository_role"),
-            "authority_profile": candidate.get("authority_profile"),
+            "candidate_id": normalized_candidate.get("candidate_id"),
+            "display_name": normalized_candidate.get("display_name"),
+            "workflow_lane": normalized_candidate.get("workflow_lane"),
+            "public_route": normalized_candidate.get("public_route"),
+            "governance_profile": normalized_candidate.get("governance_profile"),
+            "target_repository_role": normalized_candidate.get("target_repository_role"),
+            "authority_profile": normalized_candidate.get("authority_profile"),
         },
         "active_frame": active_frame,
         "source_artifacts": source_artifacts,
@@ -445,8 +632,8 @@ def build_active_idea_to_spec_candidate_source(
         "warnings": chain_warnings,
         "summary": {
             "status": "active_candidate_ready" if ready else "active_candidate_review_required",
-            "candidate_id": candidate.get("candidate_id"),
-            "workspace_route": candidate.get("public_route"),
+            "candidate_id": normalized_candidate.get("candidate_id"),
+            "workspace_route": normalized_candidate.get("public_route"),
             "source_artifact_count": len(source_artifacts),
             "finding_count": len(findings),
             "warning_count": len(chain_warnings),

@@ -105,7 +105,7 @@ The order matters and is intentionally two-pass:
     source is configured. These placeholders keep stable HTTP artifact names
     without publishing fixture-derived promotion paths.
 12. When `runs/active_idea_to_spec_candidate.json` is present and ready, the
-    bundle builder preserves real Team Decision Log handoff surfaces instead of
+    bundle builder preserves real product workspace handoff surfaces instead of
     overwriting them with placeholders.
 
 The bundle publishes `runs/*.json` by default after redaction and safety
