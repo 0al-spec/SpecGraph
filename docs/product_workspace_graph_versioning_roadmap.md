@@ -30,6 +30,31 @@ The write path and read path stay separate:
 - writes go through a service or CLI contract that owns validation, branch
   creation, commit creation, review, merge, and publication.
 
+## First Product Pilot
+
+The first real `product_idea_to_spec` pilot is `Team Decision Log`.
+
+It is deliberately small, but it should not be treated as a mock or fixture. The
+pilot domain includes decisions, considered options, rationale, evidence,
+owners, review triggers, consequences, and supersession/conflict relations. That
+shape exercises the core product workflow without reusing SpecGraph's
+bootstrap/self-evolution domain as the test case.
+
+The public deployment intent is:
+
+```text
+specgraph.space/
+  -> SpecGraph bootstrap/showcase workspace
+
+specgraph.space/team-decision-log
+  -> Team Decision Log product_idea_to_spec pilot workspace
+```
+
+SpecGraph should publish separate product workspace artifacts for the pilot
+instead of treating it as a core SpecGraph graph. The pilot must keep
+`canonical_mutations_allowed: false` until the Graph Repository Service accepts
+a validated promotion request for a `product_spec_workspace` repository role.
+
 ## Authority Boundary
 
 The Graph Repository Service may prepare canonical changes, but it must not
@@ -174,6 +199,29 @@ SpecSpace should show:
 SpecSpace remains a consumer of the repository service contract. It should not
 mount a writable checkout and commit files itself.
 
+### 7. Active Idea-To-Spec Candidate Source
+
+The next implementation slice should connect a real active candidate source for
+the Team Decision Log pilot.
+
+Current public handoff artifacts can intentionally publish
+`no_active_candidate` placeholders. The pilot should replace those placeholders
+only when a validated active candidate source exists and proves:
+
+- `candidate_id` and product workspace identity are stable;
+- source mode is `active_candidate`, not fixture/demo leakage;
+- active ontology/domain/context frame is present;
+- event-storming intake, candidate graph, pre-SIB report, repair-loop state,
+  materialization report, and promotion gate refs are consistent;
+- public artifacts contain sanitized refs, digests, statuses, and findings
+  rather than raw prompt text, private operator notes, or local paths;
+- promotion requests target `product_spec_workspace` and never
+  `specgraph_bootstrap`.
+
+This slice should remain review-only. It may prepare materialized candidate
+spec previews and Git Service handoff reports, but it must not mutate canonical
+SpecGraph specs or write ontology packages directly.
+
 ## Success Criteria
 
 - A user can start with a product idea and receive a coherent candidate graph.
@@ -184,6 +232,8 @@ mount a writable checkout and commit files itself.
   graph state without confusing them.
 - Published read models remain reproducible from a Git commit and validated
   artifact bundle.
+- The Team Decision Log pilot appears as a product workspace, not as part of the
+  SpecGraph bootstrap workspace.
 
 ## Related Documents
 

@@ -47,6 +47,56 @@ supervisor:
   allow_self_evolution_proposals: false
 ```
 
+## Team Decision Log Pilot Config
+
+The first public `product_idea_to_spec` pilot should use a project-local
+workspace similar to:
+
+```yaml
+artifact_kind: specgraph_project_config
+schema_version: 1
+project_id: team-decision-log
+display_name: Team Decision Log
+governance_profile: product_workspace
+
+engine:
+  version_policy: pinned
+  mutation_policy: locked
+  allowed_core_updates: package_upgrade_only
+
+workspace:
+  specs_root: specs/
+  proposals_root: docs/proposals/
+  runs_root: runs/
+  publish_root: projects/team-decision-log/
+
+idea_to_spec:
+  workflow_lane: product_idea_to_spec
+  canonical_public_route: /team-decision-log
+  source_domain: team_decision_management
+  initial_scope:
+    - decisions
+    - considered_options
+    - rationale
+    - evidence
+    - owners
+    - review_triggers
+    - supersession_and_conflicts
+
+supervisor:
+  allow_project_spec_refinement: true
+  allow_project_proposals: true
+  allow_project_retrospectives: true
+  allow_core_policy_mutation: false
+  allow_core_tooling_mutation: false
+  allow_self_evolution_proposals: false
+```
+
+This config is a planning target, not a requirement to create a product repo
+inside the SpecGraph bootstrap checkout. The Team Decision Log artifacts should
+be published as product workspace artifacts and consumed by SpecSpace through a
+workspace route such as `specgraph.space/team-decision-log`.
+
 ## Operational Rules
 
 - Do not fork SpecGraph just to create a new product workspace.
@@ -59,6 +109,9 @@ supervisor:
 - Treat Git as the canonical version substrate, but put production writes behind
   a managed graph repository boundary instead of letting UI code mutate a local
   checkout directly.
+- Keep public product pilots, including Team Decision Log, in
+  `product_workspace` mode with `product_spec_workspace` promotion targets.
+  Do not use SpecGraph bootstrap repository roles for product pilot writes.
 
 ## Expected Supervisor Behavior
 
