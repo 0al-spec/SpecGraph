@@ -26,7 +26,13 @@ def write_json(path: Path, payload: object) -> None:
     path.write_text(json.dumps(payload, indent=2, sort_keys=True), encoding="utf-8")
 
 
-def write_ready_artifacts(root: Path) -> dict[str, str]:
+def write_ready_artifacts(
+    root: Path,
+    *,
+    candidate_id: str = "team-decision-log",
+    project: str = "TeamDecisionLog",
+    domain_ref: str = "domain.team_decision_log",
+) -> dict[str, str]:
     runs = root / "runs"
     artifacts = {
         "intake": "runs/idea_event_storming_intake.json",
@@ -52,15 +58,17 @@ def write_ready_artifacts(root: Path) -> dict[str, str]:
         {
             "active_frame": {
                 "context_refs": ["context.idea_to_spec"],
-                "domain_refs": ["domain.team_decision_log"],
+                "domain_refs": [domain_ref],
                 "ontology_refs": ["ontology://specgraph-core"],
-                "project": "TeamDecisionLog",
+                "project": project,
             },
             "artifact_kind": "candidate_spec_graph",
             "canonical_mutations_allowed": False,
             "contract_ref": "specgraph.idea-to-spec.candidate-spec-graph.v0.1",
             "pre_sib_readiness": {"ready": True, "review_state": "ready"},
             "schema_version": 1,
+            "source_intake": {"source_ref": f"product://{candidate_id}/root-intent"},
+            "source_ref": f"product://{candidate_id}/candidate-spec-graph-seed",
             "tracked_artifacts_written": False,
         },
     )
@@ -114,20 +122,27 @@ def write_ready_artifacts(root: Path) -> dict[str, str]:
     return artifacts
 
 
-def ready_config(artifacts: dict[str, str]) -> dict[str, object]:
+def ready_config(
+    artifacts: dict[str, str],
+    *,
+    candidate_overrides: dict[str, object] | None = None,
+) -> dict[str, object]:
+    candidate = {
+        "authority_profile": "workspace_owner_controlled",
+        "candidate_id": "team-decision-log",
+        "display_name": "Team Decision Log",
+        "governance_profile": "product_workspace",
+        "public_route": "/team-decision-log",
+        "source_mode": "active_candidate",
+        "target_repository_role": "product_spec_workspace",
+        "workflow_lane": "product_idea_to_spec",
+    }
+    if candidate_overrides:
+        candidate.update(candidate_overrides)
     return {
         "artifact_kind": "active_idea_to_spec_candidate_source_config",
         "artifacts": artifacts,
-        "candidate": {
-            "authority_profile": "workspace_owner_controlled",
-            "candidate_id": "team-decision-log",
-            "display_name": "Team Decision Log",
-            "governance_profile": "product_workspace",
-            "public_route": "/team-decision-log",
-            "source_mode": "active_candidate",
-            "target_repository_role": "product_spec_workspace",
-            "workflow_lane": "product_idea_to_spec",
-        },
+        "candidate": candidate,
         "contract_ref": "specgraph.idea-to-spec.active-candidate-source-config.v0.1",
         "schema_version": 1,
     }
@@ -152,6 +167,111 @@ def test_active_candidate_source_builds_ready_report(
         warning["finding_id"] for warning in report["warnings"]
     }
     assert report["source_artifacts"]["promotion_gate"]["sha256"]
+
+
+def test_active_candidate_source_accepts_different_product_candidate_from_config(
+    tmp_path: Path,
+    module: object,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setattr(module, "ROOT", tmp_path)
+    artifacts = write_ready_artifacts(
+        tmp_path,
+        candidate_id="support-triage-log",
+        project="SupportTriageLog",
+        domain_ref="domain.support_triage_log",
+    )
+    config = ready_config(
+        artifacts,
+        candidate_overrides={
+            "candidate_id": "support-triage-log",
+            "display_name": "Support Triage Log",
+            "public_route": "/support-triage-log",
+        },
+    )
+
+    report = module.build_active_idea_to_spec_candidate_source(config)
+
+    assert report["readiness"]["ready"] is True
+    assert report["candidate"]["candidate_id"] == "support-triage-log"
+    assert report["candidate"]["display_name"] == "Support Triage Log"
+    assert report["candidate"]["public_route"] == "/support-triage-log"
+    assert report["summary"]["candidate_id"] == "support-triage-log"
+
+
+def test_active_candidate_source_rejects_stale_artifacts_for_different_product(
+    tmp_path: Path,
+    module: object,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setattr(module, "ROOT", tmp_path)
+    artifacts = write_ready_artifacts(tmp_path)
+    config = ready_config(
+        artifacts,
+        candidate_overrides={
+            "candidate_id": "support-triage-log",
+            "display_name": "Support Triage Log",
+            "public_route": "/support-triage-log",
+        },
+    )
+
+    report = module.build_active_idea_to_spec_candidate_source(config)
+
+    assert report["readiness"]["ready"] is False
+    finding_ids = {finding["finding_id"] for finding in report["findings"]}
+    assert "active_candidate_project_mismatch" in finding_ids
+    assert "active_candidate_domain_mismatch" in finding_ids
+    assert "active_candidate_source_ref_mismatch" in finding_ids
+
+
+def test_active_candidate_source_rejects_unnormalized_candidate_metadata(
+    tmp_path: Path,
+    module: object,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setattr(module, "ROOT", tmp_path)
+    artifacts = write_ready_artifacts(tmp_path)
+    config = ready_config(
+        artifacts,
+        candidate_overrides={
+            "candidate_id": " team-decision-log ",
+            "display_name": " Team Decision Log ",
+            "public_route": " /team-decision-log ",
+        },
+    )
+
+    report = module.build_active_idea_to_spec_candidate_source(config)
+
+    assert report["readiness"]["ready"] is False
+    assert report["candidate"]["candidate_id"] == "team-decision-log"
+    assert report["candidate"]["display_name"] == "Team Decision Log"
+    assert report["candidate"]["public_route"] == "/team-decision-log"
+    finding_ids = {finding["finding_id"] for finding in report["findings"]}
+    assert "candidate_candidate_id_not_normalized" in finding_ids
+    assert "candidate_display_name_not_normalized" in finding_ids
+    assert "candidate_public_route_not_normalized" in finding_ids
+
+
+@pytest.mark.parametrize(
+    "public_route",
+    ["/../admin", "/foo/../bar", "/./admin", "/%2e%2e/admin", "/foo/%2E/bar"],
+)
+def test_active_candidate_source_rejects_unsafe_public_route_segments(
+    tmp_path: Path,
+    module: object,
+    monkeypatch: pytest.MonkeyPatch,
+    public_route: str,
+) -> None:
+    monkeypatch.setattr(module, "ROOT", tmp_path)
+    artifacts = write_ready_artifacts(tmp_path)
+    config = ready_config(artifacts, candidate_overrides={"public_route": public_route})
+
+    report = module.build_active_idea_to_spec_candidate_source(config)
+
+    assert report["readiness"]["ready"] is False
+    assert "candidate_public_route_unsafe_segment" in {
+        finding["finding_id"] for finding in report["findings"]
+    }
 
 
 def test_active_candidate_source_rejects_public_placeholder(

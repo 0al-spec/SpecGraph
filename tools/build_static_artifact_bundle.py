@@ -3,6 +3,7 @@ from __future__ import annotations
 import argparse
 import hashlib
 import json
+import os
 import re
 import shutil
 import subprocess
@@ -49,6 +50,7 @@ PLATFORM_HANDOFF_RUN_SURFACES = (
     "idea_to_spec_promotion_gate.json",
 )
 ACTIVE_IDEA_TO_SPEC_CANDIDATE_SURFACE = "active_idea_to_spec_candidate.json"
+PRODUCT_WORKSPACE_ACTIVE_CANDIDATE_REFRESH_ENV = "PRODUCT_WORKSPACE_ACTIVE_CANDIDATE_REFRESH"
 PLATFORM_HANDOFF_PLACEHOLDER_REASON = "no_active_candidate"
 PLATFORM_HANDOFF_MATERIALIZATION_CONTRACT_REF = (
     "specgraph.idea-to-spec.candidate-spec-materialization.v0.1"
@@ -551,6 +553,13 @@ def is_publishable_active_candidate_source(repo_root: Path) -> bool:
     return True
 
 
+def should_refresh_product_workspace_active_candidate(repo_root: Path) -> bool:
+    refresh_mode = os.environ.get(PRODUCT_WORKSPACE_ACTIVE_CANDIDATE_REFRESH_ENV, "auto")
+    if refresh_mode.strip().lower() in {"1", "true", "force", "always"}:
+        return True
+    return not is_publishable_active_candidate_source(repo_root)
+
+
 def active_candidate_source_manifest_entry(repo_root: Path) -> dict[str, object]:
     active_source = load_run_json_if_present(repo_root, ACTIVE_IDEA_TO_SPEC_CANDIDATE_SURFACE)
     if not active_source or not is_publishable_active_candidate_source(repo_root):
@@ -680,8 +689,8 @@ def refresh_publish_surfaces(repo_root: Path) -> None:
     run_make_target(repo_root, "ontology-imports-public")
     run_make_target(repo_root, "ontology-owner-decision-import-v2")
     run_make_target(repo_root, "specauthor-authoring-flow")
-    if not is_publishable_active_candidate_source(repo_root):
-        run_make_target(repo_root, "team-decision-log-active-candidate")
+    if should_refresh_product_workspace_active_candidate(repo_root):
+        run_make_target(repo_root, "product-workspace-active-candidate")
     write_public_platform_handoff_surfaces(repo_root)
 
 

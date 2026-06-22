@@ -295,8 +295,8 @@ Supervisor modes:
   safe.
 - `tools/active_idea_to_spec_candidate_source.py`: active candidate source
   builder introduced by proposal 0155. Use
-  `make team-decision-log-active-candidate` to build the first real
-  Team Decision Log `product_idea_to_spec` artifact chain and
+  `make product-workspace-active-candidate` to build the configured
+  `product_idea_to_spec` artifact chain and
   `runs/active_idea_to_spec_candidate.json`. The artifact proves that
   materialization and promotion-gate surfaces come from a product workspace
   active candidate rather than fixture/demo leakage or public placeholders.
@@ -926,9 +926,9 @@ Key derived artifacts:
   repair-loop context requirements, materialization readiness, and promotion
   paths.
 - `runs/active_idea_to_spec_candidate.json`: public-safe active candidate source
-  for the Team Decision Log pilot, linking event-storming intake, candidate
-  graph, pre-SIB report, repair-loop preview, materialization report, and
-  promotion gate under `product_spec_workspace` authority.
+  for the configured product workspace pilot, linking event-storming intake,
+  candidate graph, pre-SIB report, repair-loop preview, materialization report,
+  and promotion gate under `product_spec_workspace` authority.
 - `runs/specpm_export_preview.json`: reviewable `SpecPM` package preview
   artifact, including manifest preview, boundary-source preview, export
   status, and next-gap backlog for future full package emission

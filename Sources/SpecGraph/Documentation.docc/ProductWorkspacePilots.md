@@ -37,17 +37,19 @@ active ontology/domain/context frame, consistent event-storming intake,
 candidate graph, pre-SIB report, repair-loop state, materialization report, and
 promotion gate refs.
 
-Proposal `0155` implements the first deterministic local chain:
+Proposal `0155` implements the first deterministic local chain through the
+generic product workspace target:
 
 ```bash
-make team-decision-log-active-candidate
+make product-workspace-active-candidate
 ```
 
 The target writes `runs/active_idea_to_spec_candidate.json` after building the
 Team Decision Log event-storming intake, candidate graph, pre-SIB report,
 repair-loop preview, candidate materialization report, and promotion gate.
 Static artifact publishing keeps `no_active_candidate` placeholders unless that
-active candidate source is ready.
+active candidate source is ready. Team Decision Log is the default fixture data
+for the target, not a separate system-level flow.
 
 ## Authority Boundary
 

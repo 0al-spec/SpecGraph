@@ -1010,7 +1010,7 @@ def test_refresh_publish_surfaces_builds_viewer_implementation_and_agent_surface
         "ontology-imports-public",
         "ontology-owner-decision-import-v2",
         "specauthor-authoring-flow",
-        "team-decision-log-active-candidate",
+        "product-workspace-active-candidate",
     ]
     materialization = json.loads(
         (tmp_path / "runs" / "candidate_spec_materialization_report.json").read_text(
@@ -1054,12 +1054,33 @@ def test_refresh_publish_surfaces_preserves_ready_active_candidate_handoff(
 
     materialization = json.loads(materialization_path.read_text(encoding="utf-8"))
     assert calls[-1] == "specauthor-authoring-flow"
-    assert "team-decision-log-active-candidate" not in calls
+    assert "product-workspace-active-candidate" not in calls
     assert materialization["summary"]["status"] == "real_active_candidate"
     assert "placeholder_reason" not in materialization
 
 
-def test_refresh_publish_surfaces_builds_team_decision_log_active_candidate_before_fallback(
+def test_refresh_publish_surfaces_rebuilds_ready_candidate_when_requested(
+    tmp_path: Path,
+    bundle_module: object,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    repo = make_repo(tmp_path)
+    write_ready_active_candidate_source(repo)
+    calls: list[str] = []
+
+    def fake_run_make_target(repo_root: Path, target: str) -> None:
+        assert repo_root == repo
+        calls.append(target)
+
+    monkeypatch.setattr(bundle_module, "run_make_target", fake_run_make_target)
+    monkeypatch.setenv("PRODUCT_WORKSPACE_ACTIVE_CANDIDATE_REFRESH", "force")
+
+    bundle_module.refresh_publish_surfaces(repo)
+
+    assert calls[-1] == "product-workspace-active-candidate"
+
+
+def test_refresh_publish_surfaces_builds_product_workspace_active_candidate_before_fallback(
     tmp_path: Path,
     bundle_module: object,
     monkeypatch: pytest.MonkeyPatch,
@@ -1070,7 +1091,7 @@ def test_refresh_publish_surfaces_builds_team_decision_log_active_candidate_befo
     def fake_run_make_target(repo_root: Path, target: str) -> None:
         assert repo_root == repo
         calls.append(target)
-        if target == "team-decision-log-active-candidate":
+        if target == "product-workspace-active-candidate":
             write_ready_active_candidate_source(repo)
 
     monkeypatch.setattr(bundle_module, "run_make_target", fake_run_make_target)
@@ -1086,7 +1107,7 @@ def test_refresh_publish_surfaces_builds_team_decision_log_active_candidate_befo
     promotion_gate = json.loads(
         (repo / "runs" / "idea_to_spec_promotion_gate.json").read_text(encoding="utf-8")
     )
-    assert calls[-1] == "team-decision-log-active-candidate"
+    assert calls[-1] == "product-workspace-active-candidate"
     assert active_source["source_mode"] == "active_candidate"
     assert active_source["readiness"]["ready"] is True
     assert "placeholder_reason" not in materialization
