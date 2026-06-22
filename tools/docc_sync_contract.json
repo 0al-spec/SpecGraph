@@ -118,6 +118,53 @@
         "AGENTS.md",
         "tools/README.md"
       ]
+    },
+    {
+      "id": "product-workspace-graph-versioning-pilot",
+      "description": "Product workspace graph-versioning pilot guidance must stay aligned between repository docs and DocC.",
+      "docs": [
+        "docs/product_workspace_graph_versioning_roadmap.md"
+      ],
+      "docc": [
+        "Sources/SpecGraph/Documentation.docc/ProductWorkspacePilots.md"
+      ],
+      "required_terms": [
+        "Team Decision Log",
+        "product_idea_to_spec",
+        "specgraph.space/team-decision-log",
+        "product_spec_workspace",
+        "canonical_mutations_allowed"
+      ],
+      "docs_required_terms": [
+        "no_active_candidate",
+        "Active Idea-To-Spec Candidate Source"
+      ],
+      "docc_required_terms": [
+        "Active Candidate Source",
+        "specgraph_bootstrap"
+      ]
+    },
+    {
+      "id": "product-workspace-stable-mode-pilot",
+      "description": "Product workspace stable-mode pilot guidance must stay aligned between repository docs and DocC.",
+      "docs": [
+        "docs/product_workspace_stable_mode_guide.md"
+      ],
+      "docc": [
+        "Sources/SpecGraph/Documentation.docc/ProductWorkspacePilots.md"
+      ],
+      "required_terms": [
+        "Team Decision Log",
+        "product_workspace",
+        "specgraph.space/team-decision-log",
+        "product_spec_workspace"
+      ],
+      "docs_required_terms": [
+        "Team Decision Log Pilot Config"
+      ],
+      "docc_required_terms": [
+        "Canonical Sources"
+      ]
     }
   ]
 }

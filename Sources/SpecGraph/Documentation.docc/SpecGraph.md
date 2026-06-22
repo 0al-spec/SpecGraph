@@ -33,6 +33,7 @@ The canonical source files remain in the repository:
 - `AGENTS.md`
 - `docs/static_artifact_publish.md`
 - `docs/product_workspace_graph_versioning_roadmap.md`
+- `docs/product_workspace_stable_mode_guide.md`
 - `docs/proposals/*.md`
 - `tools/README.md`
 
@@ -45,3 +46,4 @@ The canonical source files remain in the repository:
 - <doc:ExecutorAdapterGateway>
 - <doc:OntologyCAdapterReport>
 - <doc:ProposalsAndRuntime>
+- <doc:ProductWorkspacePilots>
