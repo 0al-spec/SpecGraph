@@ -680,6 +680,8 @@ def refresh_publish_surfaces(repo_root: Path) -> None:
     run_make_target(repo_root, "ontology-imports-public")
     run_make_target(repo_root, "ontology-owner-decision-import-v2")
     run_make_target(repo_root, "specauthor-authoring-flow")
+    if not is_publishable_active_candidate_source(repo_root):
+        run_make_target(repo_root, "team-decision-log-active-candidate")
     write_public_platform_handoff_surfaces(repo_root)
 
 
