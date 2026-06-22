@@ -17,7 +17,11 @@ SCHEMA_VERSION = 1
 CONTRACT_REF = "specgraph.idea-to-spec.active-candidate-source.v0.1"
 CONFIG_CONTRACT_REF = "specgraph.idea-to-spec.active-candidate-source-config.v0.1"
 DEFAULT_CONFIG_PATH = (
-    ROOT / "tests" / "fixtures" / "team_decision_log" / ("active_candidate_source.json")
+    ROOT
+    / "tests"
+    / "fixtures"
+    / "product_workspace_active_candidate"
+    / "active_candidate_source.json"
 )
 DEFAULT_OUTPUT_PATH = ROOT / "runs" / "active_idea_to_spec_candidate.json"
 

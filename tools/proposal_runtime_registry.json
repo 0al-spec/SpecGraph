@@ -8371,8 +8371,8 @@
     "proposal_id": "0155",
     "posture": "synchronous_runtime_slice",
     "runtime_surfaces": [
-      "docs/proposals/0155_team_decision_log_active_candidate_source.md",
-      "docs/archive/proposal_sources/0155_team_decision_log_active_candidate_source.md",
+      "docs/proposals/0155_product_workspace_active_candidate_source.md",
+      "docs/archive/proposal_sources/0155_product_workspace_active_candidate_source.md",
       "docs/product_workspace_graph_versioning_roadmap.md",
       "docs/product_workspace_stable_mode_guide.md",
       "docs/static_artifact_publish.md",
@@ -8382,9 +8382,9 @@
       "tools/README.md",
       "tests/test_active_idea_to_spec_candidate_source.py",
       "tests/test_static_artifact_bundle.py",
-      "tests/fixtures/team_decision_log/active_candidate_source.json",
-      "tests/fixtures/team_decision_log/candidate_spec_graph_seed.json",
-      "tests/fixtures/team_decision_log/idea_event_storming_seed.json",
+      "tests/fixtures/product_workspace_active_candidate/active_candidate_source.json",
+      "tests/fixtures/product_workspace_active_candidate/candidate_spec_graph_seed.json",
+      "tests/fixtures/product_workspace_active_candidate/idea_event_storming_seed.json",
       "Makefile"
     ],
     "runtime_markers": [
@@ -8421,7 +8421,7 @@
     ],
     "observation_markers": [
       {
-        "path": "docs/proposals/0155_team_decision_log_active_candidate_source.md",
+        "path": "docs/proposals/0155_product_workspace_active_candidate_source.md",
         "pattern": "does not grant write authority"
       },
       {

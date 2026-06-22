@@ -1,13 +1,13 @@
-# 0155 Team Decision Log Active Candidate Source
+# 0155 Product Workspace Active Candidate Source
 
-Operator intent: make Team Decision Log the first real product idea-to-spec
-pilot by connecting an active candidate source to existing deterministic
-idea-to-spec artifacts.
+Operator intent: make the product idea-to-spec active candidate source generic
+so Team Decision Log remains the first pilot carried by data, not a
+pilot-specific system flow.
 
 Bounded scope:
 
 - add a review-only active candidate source artifact;
-- prove candidate/workspace identity for `team-decision-log`;
+- prove candidate/workspace identity from the active candidate config;
 - require `product_workspace` governance and `product_spec_workspace` target
   repository role;
 - link event-storming intake, candidate graph, pre-SIB report, repair loop,
