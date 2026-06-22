@@ -137,11 +137,15 @@
       ],
       "docs_required_terms": [
         "no_active_candidate",
-        "Active Idea-To-Spec Candidate Source"
+        "Active Idea-To-Spec Candidate Source",
+        "proposal `0155`",
+        "make team-decision-log-active-candidate"
       ],
       "docc_required_terms": [
         "Active Candidate Source",
-        "specgraph_bootstrap"
+        "specgraph_bootstrap",
+        "Proposal `0155`",
+        "make team-decision-log-active-candidate"
       ]
     },
     {

@@ -1,0 +1,123 @@
+{
+  "artifact_kind": "candidate_spec_graph_seed",
+  "candidate_graph": {
+    "edges": [],
+    "nodes": [
+      {
+        "acceptance_criteria": [
+          {
+            "id": "ac.product.record-reviewable-decision",
+            "statement": "Given required fields are present, the decision can be reviewed as a candidate record."
+          }
+        ],
+        "claims": [
+          {
+            "calibration": {
+              "F": "F3",
+              "G": {
+                "applies_to": [
+                  "Team Decision Log MVP candidate graph"
+                ],
+                "assumptions": [
+                  "The product remains a specification-only pilot before code generation."
+                ]
+              },
+              "R": "R2"
+            },
+            "evidence_refs": [],
+            "id": "claim.product.reduces-context-loss",
+            "statement": "Recording options, rationale, and evidence should reduce team context loss around accepted decisions.",
+            "type": "product_claim"
+          }
+        ],
+        "description": "Defines the product boundary for a team decision log.",
+        "gaps": [],
+        "id": "candidate-spec.team-decision-log-product",
+        "kind": "product_boundary",
+        "ontology_refs": [
+          "ontology://specgraph-core#Spec"
+        ],
+        "requirements": [
+          {
+            "acceptance_criteria_refs": [
+              "ac.product.record-reviewable-decision"
+            ],
+            "id": "req.product.record-decision",
+            "statement": "The product must capture a decision with title, context, owner, status, rationale, considered options, and evidence references."
+          }
+        ],
+        "source_event_refs": [
+          "event.decision-recorded",
+          "event.option-considered",
+          "event.evidence-attached"
+        ],
+        "title": "Team Decision Log Product"
+      },
+      {
+        "acceptance_criteria": [
+          {
+            "id": "ac.decision-record.owner-rationale-evidence",
+            "statement": "Given a decision is accepted, owner, rationale, and at least one evidence reference are present."
+          }
+        ],
+        "claims": [],
+        "description": "Defines the minimum structure of a decision record.",
+        "gaps": [],
+        "id": "candidate-spec.decision-record",
+        "kind": "domain_entity",
+        "ontology_refs": [
+          "ontology://specgraph-core#Node",
+          "ontology://specgraph-core#Requirement"
+        ],
+        "requirements": [
+          {
+            "acceptance_criteria_refs": [
+              "ac.decision-record.owner-rationale-evidence"
+            ],
+            "id": "req.decision-record.required-fields",
+            "statement": "An accepted decision record must include owner, rationale, evidence refs, and current status."
+          }
+        ],
+        "source_event_refs": [
+          "event.decision-recorded",
+          "event.decision-accepted"
+        ],
+        "title": "Decision Record"
+      },
+      {
+        "acceptance_criteria": [
+          {
+            "id": "ac.evidence-rationale.linked",
+            "statement": "Given rationale is added, it can be linked to one or more evidence references."
+          }
+        ],
+        "claims": [],
+        "description": "Captures evidence and rationale that support a decision.",
+        "gaps": [],
+        "id": "candidate-spec.evidence-and-rationale",
+        "kind": "supporting_context",
+        "ontology_refs": [
+          "ontology://specgraph-core#AcceptanceCriteria",
+          "ontology://specgraph-core#Requirement"
+        ],
+        "requirements": [
+          {
+            "acceptance_criteria_refs": [
+              "ac.evidence-rationale.linked"
+            ],
+            "id": "req.evidence-rationale.linked",
+            "statement": "The product must let users attach evidence refs and rationale to a decision."
+          }
+        ],
+        "source_event_refs": [
+          "event.evidence-attached",
+          "event.option-considered"
+        ],
+        "title": "Evidence And Rationale"
+      }
+    ]
+  },
+  "contract_ref": "specgraph.idea-to-spec.candidate-spec-graph-seed.v0.1",
+  "schema_version": 1,
+  "source_ref": "product://team-decision-log/candidate-spec-graph-seed"
+}

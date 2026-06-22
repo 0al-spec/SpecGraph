@@ -48,11 +48,13 @@ PLATFORM_HANDOFF_RUN_SURFACES = (
     "candidate_spec_materialization_report.json",
     "idea_to_spec_promotion_gate.json",
 )
+ACTIVE_IDEA_TO_SPEC_CANDIDATE_SURFACE = "active_idea_to_spec_candidate.json"
 PLATFORM_HANDOFF_PLACEHOLDER_REASON = "no_active_candidate"
 PLATFORM_HANDOFF_MATERIALIZATION_CONTRACT_REF = (
     "specgraph.idea-to-spec.candidate-spec-materialization.v0.1"
 )
 PLATFORM_HANDOFF_PROMOTION_GATE_CONTRACT_REF = "specgraph.idea-to-spec.promotion-gate.v0.1"
+ACTIVE_IDEA_TO_SPEC_CANDIDATE_CONTRACT_REF = "specgraph.idea-to-spec.active-candidate-source.v0.1"
 LOCAL_ONLY_RUN_SURFACES = {
     "local_operator_executor_readiness.json",
     "local_operator_executor_smoke.json",
@@ -164,6 +166,7 @@ def has_symlink_component(path: Path, stop_at: Path) -> bool:
 
 
 def iter_publish_sources(repo_root: Path) -> Iterable[tuple[str, Path, PurePosixPath]]:
+    active_candidate_ready = is_publishable_active_candidate_source(repo_root)
     for root_name in PUBLISHED_ROOTS:
         source_root = repo_root / root_name
         if not source_root.exists():
@@ -179,6 +182,8 @@ def iter_publish_sources(repo_root: Path) -> Iterable[tuple[str, Path, PurePosix
             if root_name == "runs":
                 run_rel = rel.relative_to("runs").as_posix()
                 if is_local_only_run_path(run_rel):
+                    continue
+                if run_rel == ACTIVE_IDEA_TO_SPEC_CANDIDATE_SURFACE and not active_candidate_ready:
                     continue
             yield root_name, path, rel
 
@@ -313,6 +318,17 @@ def load_published_run_json(output_dir: Path, relative_path: str) -> dict[str, o
     return data
 
 
+def load_run_json_if_present(repo_root: Path, relative_path: str) -> dict[str, object] | None:
+    path = repo_root / "runs" / relative_path
+    if not path.is_file():
+        return None
+    try:
+        payload = json.loads(path.read_text(encoding="utf-8"))
+    except json.JSONDecodeError:
+        return None
+    return payload if isinstance(payload, dict) else None
+
+
 def require_summary_value(
     *,
     summary: dict[str, object],
@@ -400,6 +416,7 @@ def build_manifest(
         root_info["byte_count"] += file_info.size_bytes
 
     required_surfaces = ensure_required_surfaces(output_dir)
+    active_candidate_source = active_candidate_source_manifest_entry(repo_root)
     platform_handoff_surfaces = {
         surface: {
             "path": f"runs/{surface}",
@@ -407,6 +424,7 @@ def build_manifest(
         }
         for surface in PLATFORM_HANDOFF_RUN_SURFACES
     }
+    platform_handoff_surfaces[ACTIVE_IDEA_TO_SPEC_CANDIDATE_SURFACE] = active_candidate_source
     missing_required = [path for path, present in required_surfaces.items() if not present]
     safety_status = "passed" if not missing_required else "failed"
     if missing_required:
@@ -496,6 +514,64 @@ def platform_handoff_placeholder_readiness() -> dict[str, object]:
     }
 
 
+def is_publishable_active_candidate_source(repo_root: Path) -> bool:
+    active_source = load_run_json_if_present(repo_root, ACTIVE_IDEA_TO_SPEC_CANDIDATE_SURFACE)
+    if not active_source:
+        return False
+    readiness = active_source.get("readiness")
+    if not isinstance(readiness, dict) or readiness.get("ready") is not True:
+        return False
+    if active_source.get("artifact_kind") != "active_idea_to_spec_candidate":
+        return False
+    if active_source.get("contract_ref") != ACTIVE_IDEA_TO_SPEC_CANDIDATE_CONTRACT_REF:
+        return False
+    if active_source.get("source_mode") != "active_candidate":
+        return False
+    candidate = active_source.get("candidate")
+    if not isinstance(candidate, dict):
+        return False
+    if candidate.get("target_repository_role") != "product_spec_workspace":
+        return False
+    if candidate.get("governance_profile") != "product_workspace":
+        return False
+    materialization = load_run_json_if_present(
+        repo_root, "candidate_spec_materialization_report.json"
+    )
+    promotion_gate = load_run_json_if_present(repo_root, "idea_to_spec_promotion_gate.json")
+    for artifact in (materialization, promotion_gate):
+        if not isinstance(artifact, dict):
+            return False
+        readiness = artifact.get("readiness")
+        if not isinstance(readiness, dict) or readiness.get("ready") is not True:
+            return False
+        if artifact.get("source_mode") == "public_placeholder" or artifact.get(
+            "placeholder_reason"
+        ):
+            return False
+    return True
+
+
+def active_candidate_source_manifest_entry(repo_root: Path) -> dict[str, object]:
+    active_source = load_run_json_if_present(repo_root, ACTIVE_IDEA_TO_SPEC_CANDIDATE_SURFACE)
+    if not active_source or not is_publishable_active_candidate_source(repo_root):
+        return {
+            "path": f"runs/{ACTIVE_IDEA_TO_SPEC_CANDIDATE_SURFACE}",
+            "present": False,
+            "source_mode": "not_configured",
+            "ready": False,
+        }
+    candidate = active_source.get("candidate")
+    summary = active_source.get("summary")
+    return {
+        "path": f"runs/{ACTIVE_IDEA_TO_SPEC_CANDIDATE_SURFACE}",
+        "present": True,
+        "source_mode": "active_candidate",
+        "ready": True,
+        "candidate": candidate if isinstance(candidate, dict) else {},
+        "summary": summary if isinstance(summary, dict) else {},
+    }
+
+
 def build_platform_handoff_placeholder_surfaces(
     *,
     generated_at: str | None = None,
@@ -578,7 +654,9 @@ def build_platform_handoff_placeholder_surfaces(
     }
 
 
-def write_public_platform_handoff_placeholders(repo_root: Path) -> None:
+def write_public_platform_handoff_surfaces(repo_root: Path) -> None:
+    if is_publishable_active_candidate_source(repo_root):
+        return
     runs_dir = repo_root / "runs"
     for name, payload in build_platform_handoff_placeholder_surfaces().items():
         write_json_artifact(runs_dir / name, payload)
@@ -602,7 +680,7 @@ def refresh_publish_surfaces(repo_root: Path) -> None:
     run_make_target(repo_root, "ontology-imports-public")
     run_make_target(repo_root, "ontology-owner-decision-import-v2")
     run_make_target(repo_root, "specauthor-authoring-flow")
-    write_public_platform_handoff_placeholders(repo_root)
+    write_public_platform_handoff_surfaces(repo_root)
 
 
 def build_public_bundle(

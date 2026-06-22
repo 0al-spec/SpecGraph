@@ -37,6 +37,18 @@ active ontology/domain/context frame, consistent event-storming intake,
 candidate graph, pre-SIB report, repair-loop state, materialization report, and
 promotion gate refs.
 
+Proposal `0155` implements the first deterministic local chain:
+
+```bash
+make team-decision-log-active-candidate
+```
+
+The target writes `runs/active_idea_to_spec_candidate.json` after building the
+Team Decision Log event-storming intake, candidate graph, pre-SIB report,
+repair-loop preview, candidate materialization report, and promotion gate.
+Static artifact publishing keeps `no_active_candidate` placeholders unless that
+active candidate source is ready.
+
 ## Authority Boundary
 
 Team Decision Log remains non-canonical until a repository service accepts a
