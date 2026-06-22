@@ -1,0 +1,23 @@
+{
+  "artifact_kind": "active_idea_to_spec_candidate_source_config",
+  "artifacts": {
+    "candidate_graph": "runs/candidate_spec_graph.json",
+    "intake": "runs/idea_event_storming_intake.json",
+    "materialization": "runs/candidate_spec_materialization_report.json",
+    "pre_sib": "runs/pre_sib_coherence_report.json",
+    "promotion_gate": "runs/idea_to_spec_promotion_gate.json",
+    "repair_loop": "runs/candidate_repair_loop_report.json"
+  },
+  "candidate": {
+    "authority_profile": "workspace_owner_controlled",
+    "candidate_id": "team-decision-log",
+    "display_name": "Team Decision Log",
+    "governance_profile": "product_workspace",
+    "public_route": "/team-decision-log",
+    "source_mode": "active_candidate",
+    "target_repository_role": "product_spec_workspace",
+    "workflow_lane": "product_idea_to_spec"
+  },
+  "contract_ref": "specgraph.idea-to-spec.active-candidate-source-config.v0.1",
+  "schema_version": 1
+}

@@ -104,6 +104,9 @@ The order matters and is intentionally two-pass:
     placeholders for review-only candidate promotion when no active candidate
     source is configured. These placeholders keep stable HTTP artifact names
     without publishing fixture-derived promotion paths.
+12. When `runs/active_idea_to_spec_candidate.json` is present and ready, the
+    bundle builder preserves real Team Decision Log handoff surfaces instead of
+    overwriting them with placeholders.
 
 The bundle publishes `runs/*.json` by default after redaction and safety
 scanning. Local-only operator diagnostics remain excluded by denylist instead of
@@ -116,9 +119,12 @@ materialize IR below `ontology/packages/`, not below `tests/fixtures/`.
 The manifest also exposes stable Platform handoff names under
 `platform_handoff_surfaces`:
 `runs/candidate_spec_materialization_report.json` and
-`runs/idea_to_spec_promotion_gate.json`. During public publishing these surfaces
-use `source_mode: public_placeholder` and `placeholder_reason:
+`runs/idea_to_spec_promotion_gate.json`. During public publishing these
+surfaces use `source_mode: public_placeholder` and `placeholder_reason:
 no_active_candidate` until a real idea-to-spec candidate publish source exists.
+When `runs/active_idea_to_spec_candidate.json` is ready, the manifest also
+reports that active source and the publisher leaves the real materialization and
+promotion gate artifacts intact.
 
 ## Safety Gate
 

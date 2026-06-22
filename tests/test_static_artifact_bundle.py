@@ -141,6 +141,32 @@ def make_repo(root: Path) -> Path:
     return root
 
 
+def write_ready_active_candidate_source(repo: Path) -> None:
+    write_json(
+        repo / "runs" / "active_idea_to_spec_candidate.json",
+        {
+            "artifact_kind": "active_idea_to_spec_candidate",
+            "candidate": {
+                "candidate_id": "team-decision-log",
+                "display_name": "Team Decision Log",
+                "governance_profile": "product_workspace",
+                "public_route": "/team-decision-log",
+                "target_repository_role": "product_spec_workspace",
+                "workflow_lane": "product_idea_to_spec",
+            },
+            "contract_ref": "specgraph.idea-to-spec.active-candidate-source.v0.1",
+            "readiness": {"ready": True, "review_state": "active_candidate_ready"},
+            "schema_version": 1,
+            "source_mode": "active_candidate",
+            "summary": {
+                "candidate_id": "team-decision-log",
+                "promotion_path_count": 2,
+                "status": "active_candidate_ready",
+            },
+        },
+    )
+
+
 def test_build_public_bundle_copies_specs_and_runs_with_manifest(
     tmp_path: Path,
     bundle_module: object,
@@ -1001,6 +1027,83 @@ def test_refresh_publish_surfaces_builds_viewer_implementation_and_agent_surface
     assert promotion_gate["placeholder_reason"] == "no_active_candidate"
     assert promotion_gate["promotion_request"]["paths"] == []
     assert promotion_gate["summary"]["promotion_path_count"] == 0
+
+
+def test_refresh_publish_surfaces_preserves_ready_active_candidate_handoff(
+    tmp_path: Path,
+    bundle_module: object,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    repo = make_repo(tmp_path)
+    write_ready_active_candidate_source(repo)
+    materialization_path = repo / "runs" / "candidate_spec_materialization_report.json"
+    materialization = json.loads(materialization_path.read_text(encoding="utf-8"))
+    materialization["summary"] = {}
+    materialization["summary"]["status"] = "real_active_candidate"
+    write_json(materialization_path, materialization)
+    calls: list[str] = []
+
+    def fake_run_make_target(repo_root: Path, target: str) -> None:
+        assert repo_root == repo
+        calls.append(target)
+
+    monkeypatch.setattr(bundle_module, "run_make_target", fake_run_make_target)
+
+    bundle_module.refresh_publish_surfaces(repo)
+
+    materialization = json.loads(materialization_path.read_text(encoding="utf-8"))
+    assert calls[-1] == "specauthor-authoring-flow"
+    assert materialization["summary"]["status"] == "real_active_candidate"
+    assert "placeholder_reason" not in materialization
+
+
+def test_build_public_bundle_publishes_ready_active_candidate_source(
+    tmp_path: Path,
+    bundle_module: object,
+) -> None:
+    repo = make_repo(tmp_path / "repo")
+    write_ready_active_candidate_source(repo)
+
+    result = bundle_module.build_public_bundle(
+        repo_root=repo,
+        output_dir=repo / "dist" / "specgraph-public",
+        require_verified_agent_passports=False,
+    )
+
+    active_source = result.output_dir / "runs" / "active_idea_to_spec_candidate.json"
+    assert active_source.is_file()
+    assert (
+        result.manifest["platform_handoff_surfaces"]["active_idea_to_spec_candidate.json"][
+            "present"
+        ]
+        is True
+    )
+
+
+def test_build_public_bundle_skips_unready_active_candidate_source(
+    tmp_path: Path,
+    bundle_module: object,
+) -> None:
+    repo = make_repo(tmp_path / "repo")
+    write_ready_active_candidate_source(repo)
+    active_source_path = repo / "runs" / "active_idea_to_spec_candidate.json"
+    active_source = json.loads(active_source_path.read_text(encoding="utf-8"))
+    active_source["readiness"]["ready"] = False
+    write_json(active_source_path, active_source)
+
+    result = bundle_module.build_public_bundle(
+        repo_root=repo,
+        output_dir=repo / "dist" / "specgraph-public",
+        require_verified_agent_passports=False,
+    )
+
+    assert not (result.output_dir / "runs" / "active_idea_to_spec_candidate.json").exists()
+    assert (
+        result.manifest["platform_handoff_surfaces"]["active_idea_to_spec_candidate.json"][
+            "present"
+        ]
+        is False
+    )
 
 
 def test_main_prints_compact_summary(

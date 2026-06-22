@@ -97,6 +97,16 @@ inside the SpecGraph bootstrap checkout. The Team Decision Log artifacts should
 be published as product workspace artifacts and consumed by SpecSpace through a
 workspace route such as `specgraph.space/team-decision-log`.
 
+The deterministic local pilot chain is:
+
+```bash
+make team-decision-log-active-candidate
+```
+
+It builds event-storming intake, candidate graph, pre-SIB report, repair-loop
+preview, materialization report, promotion gate, and
+`runs/active_idea_to_spec_candidate.json` without canonical spec mutation.
+
 ## Operational Rules
 
 - Do not fork SpecGraph just to create a new product workspace.

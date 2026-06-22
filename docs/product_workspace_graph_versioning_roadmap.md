@@ -201,12 +201,12 @@ mount a writable checkout and commit files itself.
 
 ### 7. Active Idea-To-Spec Candidate Source
 
-The next implementation slice should connect a real active candidate source for
-the Team Decision Log pilot.
+Status: implemented in proposal `0155` for the Team Decision Log pilot.
 
-Current public handoff artifacts can intentionally publish
-`no_active_candidate` placeholders. The pilot should replace those placeholders
-only when a validated active candidate source exists and proves:
+Public handoff artifacts can intentionally publish `no_active_candidate`
+placeholders when no active source exists. The Team Decision Log pilot replaces
+those placeholders only when a validated active candidate source exists and
+proves:
 
 - `candidate_id` and product workspace identity are stable;
 - source mode is `active_candidate`, not fixture/demo leakage;
@@ -221,6 +221,14 @@ only when a validated active candidate source exists and proves:
 This slice should remain review-only. It may prepare materialized candidate
 spec previews and Git Service handoff reports, but it must not mutate canonical
 SpecGraph specs or write ontology packages directly.
+
+The implemented surface is:
+
+- `tools/active_idea_to_spec_candidate_source.py`;
+- `make team-decision-log-active-candidate`;
+- `runs/active_idea_to_spec_candidate.json`;
+- static artifact publishing guardrails that preserve real handoff surfaces
+  only when that active source is ready.
 
 ## Success Criteria
 

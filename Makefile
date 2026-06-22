@@ -56,6 +56,10 @@ IDEA_TO_SPEC_PROMOTION_GATE_PRE_SIB ?= runs/pre_sib_coherence_report.json
 IDEA_TO_SPEC_PROMOTION_GATE_REPAIR_LOOP ?= runs/candidate_repair_loop_report.json
 IDEA_TO_SPEC_PROMOTION_GATE_MATERIALIZATION ?= runs/candidate_spec_materialization_report.json
 IDEA_TO_SPEC_PROMOTION_GATE_OUTPUT ?= runs/idea_to_spec_promotion_gate.json
+ACTIVE_IDEA_TO_SPEC_CANDIDATE_CONFIG ?= tests/fixtures/team_decision_log/active_candidate_source.json
+ACTIVE_IDEA_TO_SPEC_CANDIDATE_OUTPUT ?= runs/active_idea_to_spec_candidate.json
+TEAM_DECISION_LOG_INTAKE_SOURCE ?= tests/fixtures/team_decision_log/idea_event_storming_seed.json
+TEAM_DECISION_LOG_CANDIDATE_SEED ?= tests/fixtures/team_decision_log/candidate_spec_graph_seed.json
 
 .DEFAULT_GOAL := help
 
@@ -70,6 +74,7 @@ PYTHON_TARGETS := viewer-surfaces dashboard backlog next-move spec-activity grap
 	specauthor-invocation-artifact-contract specauthor-authoring-flow \
 	idea-event-storming-intake candidate-spec-graph pre-sib-coherence candidate-repair-loop \
 	candidate-spec-materialization idea-to-spec-promotion-gate \
+	active-idea-to-spec-candidate-source team-decision-log-active-candidate \
 	proposal-work-claims proposal-work-claims-gate proposal-id \
 	metrics-delivery metrics-feedback metrics-source-promotion metric-signals metric-thresholds \
 	metric-packs metric-pack-drift metric-pack-adapters metric-pack-runs metric-pricing model-usage \
@@ -164,6 +169,8 @@ help:
 			'  make executor-public-proposal-doc-materialize Materialize local public proposal doc' \
 			'  make candidate-spec-materialization Build review-only candidate spec YAML previews' \
 			'  make idea-to-spec-promotion-gate Build final idea-to-spec Platform handoff gate' \
+			'  make active-idea-to-spec-candidate-source Build active product candidate source' \
+			'  make team-decision-log-active-candidate Build Team Decision Log pilot artifacts' \
 			'  make agent-passports          Refresh Agent Passport derived surfaces' \
 			'  make agent-runtime-evidence   Refresh Agent Passport runtime evidence JSON' \
 			'  make check-python             Verify selected Python runtime is supported' \
@@ -319,6 +326,20 @@ candidate-spec-materialization:
 .PHONY: idea-to-spec-promotion-gate
 idea-to-spec-promotion-gate:
 	@$(PYTHON) tools/idea_to_spec_promotion_gate.py --pre-sib "$(IDEA_TO_SPEC_PROMOTION_GATE_PRE_SIB)" --repair-loop "$(IDEA_TO_SPEC_PROMOTION_GATE_REPAIR_LOOP)" --materialization "$(IDEA_TO_SPEC_PROMOTION_GATE_MATERIALIZATION)" --output "$(IDEA_TO_SPEC_PROMOTION_GATE_OUTPUT)"
+
+.PHONY: active-idea-to-spec-candidate-source
+active-idea-to-spec-candidate-source:
+	@$(PYTHON) tools/active_idea_to_spec_candidate_source.py --config "$(ACTIVE_IDEA_TO_SPEC_CANDIDATE_CONFIG)" --output "$(ACTIVE_IDEA_TO_SPEC_CANDIDATE_OUTPUT)"
+
+.PHONY: team-decision-log-active-candidate
+team-decision-log-active-candidate:
+	@$(PYTHON) tools/idea_event_storming_intake.py --input "$(TEAM_DECISION_LOG_INTAKE_SOURCE)" --output "$(IDEA_EVENT_STORMING_INTAKE_OUTPUT)"
+	@$(PYTHON) tools/candidate_spec_graph.py --intake "$(IDEA_EVENT_STORMING_INTAKE_OUTPUT)" --candidate-seed "$(TEAM_DECISION_LOG_CANDIDATE_SEED)" --output "$(CANDIDATE_SPEC_GRAPH_OUTPUT)"
+	@$(PYTHON) tools/pre_sib_coherence_report.py --candidate-graph "$(CANDIDATE_SPEC_GRAPH_OUTPUT)" --output "$(PRE_SIB_COHERENCE_OUTPUT)"
+	@$(PYTHON) tools/candidate_repair_loop.py --candidate-graph "$(CANDIDATE_SPEC_GRAPH_OUTPUT)" --pre-sib-report "$(PRE_SIB_COHERENCE_OUTPUT)" --output "$(CANDIDATE_REPAIR_LOOP_OUTPUT)"
+	@$(PYTHON) tools/candidate_spec_materialization.py --candidate-graph "$(CANDIDATE_SPEC_GRAPH_OUTPUT)" --repair-loop "$(CANDIDATE_REPAIR_LOOP_OUTPUT)" --output-dir "$(CANDIDATE_SPEC_MATERIALIZATION_OUTPUT_DIR)" --output "$(CANDIDATE_SPEC_MATERIALIZATION_OUTPUT)"
+	@$(PYTHON) tools/idea_to_spec_promotion_gate.py --pre-sib "$(PRE_SIB_COHERENCE_OUTPUT)" --repair-loop "$(CANDIDATE_REPAIR_LOOP_OUTPUT)" --materialization "$(CANDIDATE_SPEC_MATERIALIZATION_OUTPUT)" --output "$(IDEA_TO_SPEC_PROMOTION_GATE_OUTPUT)"
+	@$(PYTHON) tools/active_idea_to_spec_candidate_source.py --config "$(ACTIVE_IDEA_TO_SPEC_CANDIDATE_CONFIG)" --output "$(ACTIVE_IDEA_TO_SPEC_CANDIDATE_OUTPUT)"
 
 .PHONY: metrics-delivery
 metrics-delivery:

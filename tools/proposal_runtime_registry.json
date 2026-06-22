@@ -8366,5 +8366,72 @@
         "pattern": "proposal `0154`"
       }
     ]
+  },
+  {
+    "proposal_id": "0155",
+    "posture": "synchronous_runtime_slice",
+    "runtime_surfaces": [
+      "docs/proposals/0155_team_decision_log_active_candidate_source.md",
+      "docs/archive/proposal_sources/0155_team_decision_log_active_candidate_source.md",
+      "docs/product_workspace_graph_versioning_roadmap.md",
+      "docs/product_workspace_stable_mode_guide.md",
+      "docs/static_artifact_publish.md",
+      "Sources/SpecGraph/Documentation.docc/ProductWorkspacePilots.md",
+      "tools/active_idea_to_spec_candidate_source.py",
+      "tools/build_static_artifact_bundle.py",
+      "tools/README.md",
+      "tests/test_active_idea_to_spec_candidate_source.py",
+      "tests/test_static_artifact_bundle.py",
+      "tests/fixtures/team_decision_log/active_candidate_source.json",
+      "tests/fixtures/team_decision_log/candidate_spec_graph_seed.json",
+      "tests/fixtures/team_decision_log/idea_event_storming_seed.json",
+      "Makefile"
+    ],
+    "runtime_markers": [
+      {
+        "path": "tools/active_idea_to_spec_candidate_source.py",
+        "pattern": "active_idea_to_spec_candidate"
+      },
+      {
+        "path": "tools/active_idea_to_spec_candidate_source.py",
+        "pattern": "product_spec_workspace"
+      },
+      {
+        "path": "tools/build_static_artifact_bundle.py",
+        "pattern": "ACTIVE_IDEA_TO_SPEC_CANDIDATE_SURFACE"
+      },
+      {
+        "path": "Makefile",
+        "pattern": "team-decision-log-active-candidate"
+      }
+    ],
+    "validation_markers": [
+      {
+        "path": "tests/test_active_idea_to_spec_candidate_source.py",
+        "pattern": "test_active_candidate_source_builds_ready_report"
+      },
+      {
+        "path": "tests/test_active_idea_to_spec_candidate_source.py",
+        "pattern": "test_active_candidate_source_rejects_public_placeholder"
+      },
+      {
+        "path": "tests/test_static_artifact_bundle.py",
+        "pattern": "test_refresh_publish_surfaces_preserves_ready_active_candidate_handoff"
+      }
+    ],
+    "observation_markers": [
+      {
+        "path": "docs/proposals/0155_team_decision_log_active_candidate_source.md",
+        "pattern": "does not grant write authority"
+      },
+      {
+        "path": "docs/product_workspace_graph_versioning_roadmap.md",
+        "pattern": "Status: implemented in proposal `0155`"
+      },
+      {
+        "path": "Sources/SpecGraph/Documentation.docc/ProductWorkspacePilots.md",
+        "pattern": "make team-decision-log-active-candidate"
+      }
+    ]
   }
 ]
