@@ -1,0 +1,87 @@
+{
+  "artifact_kind": "user_idea_intake_source",
+  "contract_ref": "specgraph.idea-to-spec.user-idea-intake-source.v0.1",
+  "event_storming_hints": {
+    "actors": [
+      {
+        "id": "actor.support-agent",
+        "name": "Support Agent",
+        "raw_prompt": "private prompt trace",
+        "role": "primary_operator"
+      },
+      {
+        "id": "actor.team-lead",
+        "name": "Team Lead",
+        "role": "reviewer"
+      }
+    ],
+    "commands": [
+      {
+        "actor_refs": [
+          "actor.support-agent"
+        ],
+        "id": "command.record-triage-note",
+        "name": "Record Triage Note",
+        "produces_event_refs": [
+          "event.triage-note-recorded"
+        ]
+      },
+      {
+        "actor_refs": [
+          "actor.team-lead"
+        ],
+        "id": "command.escalate-case",
+        "name": "Escalate Case",
+        "produces_event_refs": [
+          "event.case-escalated"
+        ]
+      }
+    ],
+    "constraints": [
+      {
+        "id": "constraint.case-owner-required",
+        "kind": "domain_rule",
+        "statement": "An escalated case needs an owner and a next review date."
+      }
+    ],
+    "domain_events": [
+      {
+        "actor_refs": [
+          "actor.support-agent"
+        ],
+        "id": "event.triage-note-recorded",
+        "name": "Triage Note Recorded"
+      },
+      {
+        "actor_refs": [
+          "actor.team-lead"
+        ],
+        "id": "event.case-escalated",
+        "name": "Case Escalated"
+      }
+    ],
+    "risks": [
+      {
+        "id": "risk.unowned-escalation",
+        "statement": "Escalations without owners can remain unresolved."
+      }
+    ],
+    "vocabulary_questions": [
+      {
+        "id": "question.ticket-vs-case",
+        "question": "Should Ticket and Case be separate ontology terms?",
+        "term": "SupportCase"
+      }
+    ]
+  },
+  "intent": {
+    "summary": "Build a support triage log that records cases, owners, escalations, and review dates.",
+    "text": "Support teams need a lightweight triage log so recurring customer cases keep owners, escalation state, evidence, and review dates."
+  },
+  "schema_version": 1,
+  "workspace": {
+    "candidate_id": "support-triage-log",
+    "display_name": "Support Triage Log",
+    "public_route": "/support-triage-log"
+  }
+}

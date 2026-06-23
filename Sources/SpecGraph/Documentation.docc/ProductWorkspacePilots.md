@@ -87,15 +87,16 @@ showcase and read the candidate graph, pre-SIB report, repair loop, promotion
 gate, Platform promotion request, and Git Service execution report without
 granting write authority.
 
-The next product workspace slice is a derived workflow lane over those artifacts:
-stage status, blocker summary, and the next operator handoff. Git Service
-post-review status and read-model publication should become explicit service
-operations before any product write UX is treated as production-ready.
+Proposal `0158` adds the generic idea intake entry point. A
+`user_idea_intake_source` now becomes `runs/idea_event_storming_seed.json` and
+then the existing `runs/idea_event_storming_intake.json` through
+`make generic-idea-intake`. Team Decision Log stays data; another product idea
+can replace it at the intake-source boundary without new product-specific
+scripts.
 
-After that, the product flow needs a generic idea intake entry point where a raw
-idea becomes structured event-storming input: actors, events, commands,
-policies, constraints, risks, vocabulary questions, context-completion
-questions, and ontology/domain/context hints.
+The next product workspace slice is generic candidate graph seed generation
+from approved intake data. Git Service post-review status and read-model
+publication remain service operations outside SpecSpace write authority.
 
 ## Authority Boundary
 
@@ -113,11 +114,10 @@ The product pilot must not:
 
 ## Current Execution Order
 
-1. Add the SpecSpace workflow lane over the product workspace chain, including
-   candidate approval state.
+1. Generic candidate graph seed generation from approved intake data.
 2. Extend Platform Git Service orchestration through review status and
    read-model publication.
-3. Add the generic idea intake / event-storming entry point.
+3. Refine product workspace workflow lane metrics and blocker copy.
 4. Refine ontology applicability and layer-aware review as compiler support
    matures.
 

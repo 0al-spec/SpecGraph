@@ -1,0 +1,13 @@
+{
+  "artifact_kind": "user_idea_intake_source",
+  "contract_ref": "specgraph.idea-to-spec.user-idea-intake-source.v0.1",
+  "intent": {
+    "summary": "Build a useful shared team workspace."
+  },
+  "schema_version": 1,
+  "workspace": {
+    "candidate_id": "shared-workspace",
+    "display_name": "Shared Workspace",
+    "public_route": "/shared-workspace"
+  }
+}
