@@ -8562,5 +8562,77 @@
         "pattern": "Proposal `0157`"
       }
     ]
+  },
+  {
+    "proposal_id": "0158",
+    "posture": "synchronous_runtime_slice",
+    "runtime_surfaces": [
+      "docs/proposals/0158_generic_user_idea_intake_source.md",
+      "docs/archive/proposal_sources/0158_generic_user_idea_intake_source.md",
+      "docs/product_workspace_graph_versioning_roadmap.md",
+      "Sources/SpecGraph/Documentation.docc/ProductWorkspacePilots.md",
+      "tools/user_idea_intake_source.py",
+      "tools/idea_event_storming_intake.py",
+      "tools/README.md",
+      "tools/docc_sync_contract.json",
+      "tests/test_user_idea_intake_source.py",
+      "tests/fixtures/user_idea_intake/source_ready.json",
+      "tests/fixtures/user_idea_intake/source_review_required.json",
+      "Makefile"
+    ],
+    "runtime_markers": [
+      {
+        "path": "tools/user_idea_intake_source.py",
+        "pattern": "SOURCE_CONTRACT_REF = \"specgraph.idea-to-spec.user-idea-intake-source.v0.1\""
+      },
+      {
+        "path": "tools/user_idea_intake_source.py",
+        "pattern": "def build_user_idea_event_storming_seed("
+      },
+      {
+        "path": "tools/idea_event_storming_intake.py",
+        "pattern": "def _source_intake_findings("
+      },
+      {
+        "path": "Makefile",
+        "pattern": "generic-idea-intake"
+      }
+    ],
+    "validation_markers": [
+      {
+        "path": "tests/test_user_idea_intake_source.py",
+        "pattern": "test_user_idea_intake_source_builds_generic_event_storming_seed"
+      },
+      {
+        "path": "tests/test_user_idea_intake_source.py",
+        "pattern": "test_user_idea_intake_source_feeds_existing_intake_contract"
+      },
+      {
+        "path": "tests/test_user_idea_intake_source.py",
+        "pattern": "test_user_idea_intake_source_review_required_flows_to_context_questions"
+      },
+      {
+        "path": "tests/test_user_idea_intake_source.py",
+        "pattern": "test_user_idea_intake_source_strict_cli_rejects_invalid_source"
+      },
+      {
+        "path": "tests/test_user_idea_intake_source.py",
+        "pattern": "test_user_idea_intake_source_findings_block_downstream_intake"
+      }
+    ],
+    "observation_markers": [
+      {
+        "path": "docs/proposals/0158_generic_user_idea_intake_source.md",
+        "pattern": "This proposal does not grant write authority"
+      },
+      {
+        "path": "docs/product_workspace_graph_versioning_roadmap.md",
+        "pattern": "Status: implemented in proposal `0158`"
+      },
+      {
+        "path": "Sources/SpecGraph/Documentation.docc/ProductWorkspacePilots.md",
+        "pattern": "Proposal `0158`"
+      }
+    ]
   }
 ]

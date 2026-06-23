@@ -280,6 +280,30 @@ def _seed_contract_findings(seed: dict[str, Any]) -> list[dict[str, Any]]:
     ]
 
 
+def _source_intake_findings(seed: dict[str, Any]) -> list[dict[str, Any]]:
+    source_intake = _dict(seed.get("source_intake"))
+    source_findings = [
+        finding
+        for finding in _list(source_intake.get("findings"))
+        if isinstance(finding, dict) and finding.get("severity") == "review_required"
+    ]
+    if not source_findings:
+        return []
+    return [
+        _finding(
+            finding_id="source_intake_review_required",
+            severity="review_required",
+            message="Idea event-storming seed source requires review before intake can proceed.",
+            evidence={
+                "source_finding_ids": [
+                    finding.get("finding_id", "unknown") for finding in source_findings
+                ],
+                "source_contract_ref": source_intake.get("source_contract_ref"),
+            },
+        )
+    ]
+
+
 def _label_for_entry(entry: dict[str, Any], category: str) -> str:
     for field in CATEGORY_LABEL_FIELDS[category]:
         value = _text(entry.get(field))
@@ -561,6 +585,7 @@ def build_idea_event_storming_intake(
     event_storming, event_findings = _event_storming(seed)
     findings = (
         _seed_contract_findings(seed)
+        + _source_intake_findings(seed)
         + _intent_findings(seed)
         + _frame_findings(active_frame)
         + event_findings

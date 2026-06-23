@@ -241,6 +241,15 @@ Supervisor modes:
   `runs/specauthor_invocation_artifact_contract_report.json`. The wrapper does
   not execute prompt agents, publish raw prompts, mutate canonical specs, or
   write Ontology packages.
+- `tools/user_idea_intake_source.py`: deterministic generic user-idea source
+  builder introduced by proposal 0158. Use `make user-idea-intake-source
+  USER_IDEA_INTAKE_SOURCE=<json>` to normalize product workspace identity,
+  root intent, ontology/domain/context hints, and event-storming hints into a
+  local `runs/idea_event_storming_seed.json`. Use `make generic-idea-intake` to
+  immediately feed that seed into `tools/idea_event_storming_intake.py`. The
+  builder keeps Team Decision Log as data, not code, and does not execute
+  prompt agents, infer missing domain models, mutate canonical specs, write
+  Ontology packages, create branches, or publish raw prompt/model traces.
 - `tools/idea_event_storming_intake.py`: deterministic idea-to-spec intake
   builder introduced by proposal 0149. Use `make idea-event-storming-intake
   IDEA_EVENT_STORMING_INTAKE_SOURCE=<json>` to normalize structured

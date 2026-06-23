@@ -142,8 +142,11 @@
         "proposal `0155`",
         "proposal `0156`",
         "proposal `0157`",
+        "proposal `0158`",
         "CLI Candidate Approval Flow",
         "candidate_approval_decision",
+        "make generic-idea-intake",
+        "user_idea_intake_source",
         "make product-workspace-active-candidate"
       ],
       "docc_required_terms": [
@@ -152,8 +155,11 @@
         "Proposal `0155`",
         "Proposal `0156`",
         "Proposal `0157`",
+        "Proposal `0158`",
         "CLI Candidate Approval Flow",
         "candidate_approval_decision",
+        "make generic-idea-intake",
+        "user_idea_intake_source",
         "make product-workspace-active-candidate"
       ]
     },

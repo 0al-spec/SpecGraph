@@ -38,6 +38,8 @@ SPECAUTHOR_AUTHORING_FLOW_GENERATED_ARTIFACT ?= tests/fixtures/specauthor_genera
 SPECAUTHOR_AUTHORING_FLOW_INVOCATION_OUTPUT ?= runs/specauthor_invocation_artifact.json
 SPECAUTHOR_AUTHORING_FLOW_CONTRACT_OUTPUT ?= runs/specauthor_invocation_artifact_contract_report.json
 SPECAUTHOR_AUTHORING_FLOW_REPORT_OUTPUT ?= runs/specauthor_authoring_flow_report.json
+USER_IDEA_INTAKE_SOURCE ?= tests/fixtures/user_idea_intake/source_ready.json
+USER_IDEA_EVENT_STORMING_SEED_OUTPUT ?= runs/idea_event_storming_seed.json
 IDEA_EVENT_STORMING_INTAKE_SOURCE ?= tests/fixtures/idea_event_storming_intake/idea_ready.json
 IDEA_EVENT_STORMING_INTAKE_OUTPUT ?= runs/idea_event_storming_intake.json
 CANDIDATE_SPEC_GRAPH_INTAKE ?= tests/fixtures/candidate_spec_graph/idea_event_storming_intake_ready.json
@@ -81,6 +83,7 @@ PYTHON_TARGETS := viewer-surfaces dashboard backlog next-move spec-activity grap
 	ontology-owner-decision-import-v2 \
 	specauthor-generated-artifact-contract specauthor-ontology-write-gate \
 	specauthor-invocation-artifact-contract specauthor-authoring-flow \
+	user-idea-intake-source generic-idea-intake \
 	idea-event-storming-intake candidate-spec-graph pre-sib-coherence candidate-repair-loop \
 	candidate-spec-materialization idea-to-spec-promotion-gate \
 	active-idea-to-spec-candidate-source candidate-approval-decision \
@@ -132,8 +135,10 @@ help:
 					'  make ontology-gap-review ONTOLOGY_GAP_REVIEW_GENERATED_ARTIFACT=<json>' \
 					'  make legacy-spec-ontology-backfill-plan Build review-first legacy spec backfill plan JSON' \
 					'  make ontology-owner-decision-import-v2 Build read-only owner decision import v2 review JSON' \
-					'  make specauthor-generated-artifact-contract SPECAUTHOR_GENERATED_ARTIFACT_CONTRACT_ARTIFACT=<json>' \
+			'  make specauthor-generated-artifact-contract SPECAUTHOR_GENERATED_ARTIFACT_CONTRACT_ARTIFACT=<json>' \
 			'  make specauthor-ontology-write-gate SPECAUTHOR_ONTOLOGY_WRITE_GATE_ARTIFACT=<json>' \
+			'  make user-idea-intake-source USER_IDEA_INTAKE_SOURCE=<json>' \
+			'  make generic-idea-intake USER_IDEA_INTAKE_SOURCE=<json>' \
 			'  make idea-event-storming-intake IDEA_EVENT_STORMING_INTAKE_SOURCE=<json>' \
 			'  make candidate-spec-graph CANDIDATE_SPEC_GRAPH_INTAKE=<json> CANDIDATE_SPEC_GRAPH_SEED=<json>' \
 			'  make pre-sib-coherence PRE_SIB_COHERENCE_CANDIDATE_GRAPH=<json>' \
@@ -317,6 +322,14 @@ specauthor-authoring-flow:
 .PHONY: idea-event-storming-intake
 idea-event-storming-intake:
 	@$(PYTHON) tools/idea_event_storming_intake.py --input "$(IDEA_EVENT_STORMING_INTAKE_SOURCE)" --output "$(IDEA_EVENT_STORMING_INTAKE_OUTPUT)"
+
+.PHONY: user-idea-intake-source
+user-idea-intake-source:
+	@$(PYTHON) tools/user_idea_intake_source.py --input "$(USER_IDEA_INTAKE_SOURCE)" --output "$(USER_IDEA_EVENT_STORMING_SEED_OUTPUT)"
+
+.PHONY: generic-idea-intake
+generic-idea-intake: user-idea-intake-source
+	@$(PYTHON) tools/idea_event_storming_intake.py --input "$(USER_IDEA_EVENT_STORMING_SEED_OUTPUT)" --output "$(IDEA_EVENT_STORMING_INTAKE_OUTPUT)"
 
 .PHONY: candidate-spec-graph
 candidate-spec-graph:

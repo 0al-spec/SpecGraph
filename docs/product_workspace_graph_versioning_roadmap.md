@@ -301,24 +301,44 @@ workspace handoff:
 
 This is still a service boundary, not a SpecSpace write feature.
 
-### 10. Real Idea Intake Entry Point
+### 10. Generic User Idea Intake Source
 
-Status: event-storming intake artifacts exist, but the current pilot source is
-deterministic. The product UX still needs a generic entry point where a user
-idea becomes structured intake data before candidate graph generation.
+Status: implemented in proposal `0158`.
 
-The first entry point should capture:
+The product UX now has a generic entry point where a user idea can become
+structured intake data before candidate graph generation. The source artifact is
+`user_idea_intake_source`; it captures:
 
-- product goal and excluded scope;
+- product workspace identity;
+- product goal and excluded scope through root intent text/summary;
 - actors and external systems;
 - domain events and commands;
 - policies, constraints, risks, and assumptions;
 - vocabulary questions and context-completion questions;
-- active ontology/domain/context hints.
+- active ontology/domain/context hints;
+- ontology layer and model applicability defaults.
 
-The output remains candidate state. It may trigger downstream candidate graph
-generation only after the intake artifact passes the same non-canonical
-authority boundary as the current deterministic pilot.
+The implemented surface is:
+
+- `tools/user_idea_intake_source.py`;
+- `make user-idea-intake-source`;
+- `make generic-idea-intake`;
+- `runs/idea_event_storming_seed.json`;
+- the existing downstream `runs/idea_event_storming_intake.json`.
+
+The deterministic chain is:
+
+```text
+user_idea_intake_source
+  -> idea_event_storming_seed
+  -> idea_event_storming_intake
+```
+
+Team Decision Log remains data. A new product idea can replace it at the intake
+source boundary without adding product-specific scripts or Make targets. The
+next remaining genericization step is candidate graph seed generation; proposal
+`0158` intentionally stops before candidate spec graph authoring, prompt-agent
+execution, Git Service calls, canonical spec mutation, or Ontology writes.
 
 ## Success Criteria
 
@@ -343,7 +363,7 @@ The active stack after production workspace isolation is:
    candidate approval state.
 2. Platform Git Service post-review status and read-model publication
    orchestration.
-3. Generic idea intake / event-storming entry point.
+3. Generic candidate graph seed generation from approved intake.
 4. Ontology applicability and layer-aware review refinement as compiler support
    matures.
 
