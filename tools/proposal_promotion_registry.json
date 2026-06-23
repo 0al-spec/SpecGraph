@@ -2000,5 +2000,18 @@
     "required_provenance_links": [
       "source_draft_ref"
     ]
+  },
+  {
+    "proposal_id": "0156",
+    "source_artifact_class": "working_draft",
+    "source_refs": [
+      "docs/archive/proposal_sources/0156_cli_candidate_approval_flow.md"
+    ],
+    "motivating_concern": "The idea-to-spec flow has an active candidate source and promotion gate, but CLI and agent-mediated operation still needs an explicit operator approval boundary before any Git Service promotion attempt.",
+    "normalized_title": "CLI Candidate Approval Flow",
+    "bounded_scope": "Define a proposal-only CLI approval contract and future candidate_approval_decision artifact that separates agent recommendation, operator approval, Git Service execution, repository review, merge, and read-model publication, without adding runtime commands, mutating candidate artifacts, mutating canonical specs, writing ontology packages or lockfiles, accepting ontology terms, creating Git branches or commits, opening pull requests, merging, publishing read models, or adding SpecSpace mutation UI.",
+    "required_provenance_links": [
+      "source_draft_ref"
+    ]
   }
 ]
