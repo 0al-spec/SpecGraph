@@ -236,10 +236,11 @@ policy, or read-model publication policy.
 
 ## Future Implementation Slices
 
-1. Add `tools/candidate_approval_decision.py` and a read-only Make target that
-   writes `runs/candidate_approval_decision.json`.
-2. Add a contract test that rejects approval when the active candidate source or
-   promotion gate is missing or unready.
+1. Implemented in proposal `0157`: add `tools/candidate_approval_decision.py`
+   and a read-only Make target that writes
+   `runs/candidate_approval_decision.json`.
+2. Implemented in proposal `0157`: add a contract test that rejects approval
+   when the active candidate source or promotion gate is missing or unready.
 3. Teach Platform promotion-request generation to require or accept the approval
    artifact before Git Service execution.
 4. Show the approval state in SpecSpace product workspace workflow lanes.
@@ -256,4 +257,3 @@ This contract slice is complete when:
 - `docs/product_workspace_graph_versioning_roadmap.md` and DocC mention the CLI
   candidate approval flow;
 - proposal tracking gate passes.
-

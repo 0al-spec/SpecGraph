@@ -8485,5 +8485,68 @@
         "pattern": "Proposal `0156`"
       }
     ]
+  },
+  {
+    "proposal_id": "0157",
+    "posture": "synchronous_runtime_slice",
+    "runtime_surfaces": [
+      "docs/proposals/0157_candidate_approval_decision_artifact.md",
+      "docs/archive/proposal_sources/0157_candidate_approval_decision_artifact.md",
+      "docs/proposals/0156_cli_candidate_approval_flow.md",
+      "docs/product_workspace_graph_versioning_roadmap.md",
+      "docs/static_artifact_publish.md",
+      "Sources/SpecGraph/Documentation.docc/ProductWorkspacePilots.md",
+      "Sources/SpecGraph/Documentation.docc/ArtifactPublishing.md",
+      "tools/candidate_approval_decision.py",
+      "tools/README.md",
+      "tests/test_candidate_approval_decision.py",
+      "Makefile"
+    ],
+    "runtime_markers": [
+      {
+        "path": "tools/candidate_approval_decision.py",
+        "pattern": "candidate_approval_decision"
+      },
+      {
+        "path": "tools/candidate_approval_decision.py",
+        "pattern": "DECISION_STATES = (\"approved\", \"rejected\", \"needs_context\", \"superseded\")"
+      },
+      {
+        "path": "tools/candidate_approval_decision.py",
+        "pattern": "agent_may_approve"
+      },
+      {
+        "path": "Makefile",
+        "pattern": "candidate-approval-decision"
+      }
+    ],
+    "validation_markers": [
+      {
+        "path": "tests/test_candidate_approval_decision.py",
+        "pattern": "test_candidate_approval_decision_approves_ready_handoff"
+      },
+      {
+        "path": "tests/test_candidate_approval_decision.py",
+        "pattern": "test_candidate_approval_decision_downgrades_unready_approval"
+      },
+      {
+        "path": "tests/test_candidate_approval_decision.py",
+        "pattern": "test_candidate_approval_decision_cli_strict_fails_without_approval"
+      }
+    ],
+    "observation_markers": [
+      {
+        "path": "docs/proposals/0157_candidate_approval_decision_artifact.md",
+        "pattern": "This proposal does not grant write authority"
+      },
+      {
+        "path": "docs/product_workspace_graph_versioning_roadmap.md",
+        "pattern": "implemented in proposal `0157`"
+      },
+      {
+        "path": "Sources/SpecGraph/Documentation.docc/ProductWorkspacePilots.md",
+        "pattern": "Proposal `0157`"
+      }
+    ]
   }
 ]

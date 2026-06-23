@@ -84,6 +84,13 @@ Those placeholders preserve the HTTP contract without publishing fixture-based
 promotion paths, materialized files, branches, commits, pull requests, or
 canonical spec mutations.
 
+When `runs/candidate_approval_decision.json` exists, it is published as an
+ordinary public-safe run artifact. It is not generated as a placeholder:
+absence means no explicit operator approval has been recorded. The artifact
+records refs, digests, decision state, findings, and authority metadata without
+publishing raw prompts, private operator notes, branches, commits, pull
+requests, merges, read models, canonical spec mutations, or Ontology writes.
+
 Project-local ontology package data should materialize below the owning
 SpecGraph checkout, for example `ontology/packages/specgraph-core/`, not under
 the sibling Ontology repository or `tests/fixtures/`. The sibling Ontology
