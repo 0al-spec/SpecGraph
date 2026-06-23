@@ -260,15 +260,34 @@ Supervisor modes:
   not execute prompt agents, infer missing concepts with an LLM, create a
   candidate graph, mutate canonical specs, write Ontology packages, or create
   Git branches.
+- `tools/ontology_bound_candidate_graph_seed.py`: deterministic ontology-bound
+  candidate graph seed builder introduced by proposal 0159. Use `make
+  ontology-bound-candidate-graph-seed ONTOLOGY_BOUND_CANDIDATE_SEED_INTAKE=<json>`
+  to read approved event-storming intake plus the normalized project-local
+  SpecGraph core ontology IR, then write `runs/candidate_spec_graph_seed.json`.
+  The builder requires ontology/domain/context refs, ontology layer refs, and
+  model applicability refs; binds generated structural nodes to core ontology
+  classes such as `Spec`, `Node`, `Requirement`, `AcceptanceCriterion`, and
+  `Constraint`; and emits product-domain terms as ontology gaps instead of
+  accepting them into the ontology. It does not execute prompt agents, mutate
+  canonical specs, write Ontology packages, accept ontology terms, or create
+  Git branches.
+  `make product-workspace-active-candidate` generates this seed to
+  `PRODUCT_WORKSPACE_CANDIDATE_SEED_OUTPUT` by default. To provide a prebuilt
+  seed without overwriting it, set `PRODUCT_WORKSPACE_CANDIDATE_SEED_INPUT=<json>`
+  or the legacy explicit `PRODUCT_WORKSPACE_CANDIDATE_SEED=<json>` input.
+  The standalone `make ontology-bound-candidate-graph-seed` target builds the
+  default generic event-storming intake first when it reads from
+  `runs/idea_event_storming_intake.json`.
 - `tools/candidate_spec_graph.py`: deterministic candidate graph contract
   builder introduced by proposal 0150. Use `make candidate-spec-graph
   CANDIDATE_SPEC_GRAPH_INTAKE=<json> CANDIDATE_SPEC_GRAPH_SEED=<json>` to
   normalize review-only candidate nodes, edges, requirements, acceptance
   criteria, claims, and gaps from an event-storming intake. The builder
-  validates intake readiness, node/edge refs, requirement-to-acceptance-criteria
-  refs, and F/G/R calibration for strong candidate claims without mutating
-  canonical specs, running pre-SIB metrics, writing Ontology packages, or
-  creating Git branches.
+  validates intake readiness, seed generation findings, node/edge refs,
+  requirement-to-acceptance-criteria refs, and F/G/R calibration for strong
+  candidate claims without mutating canonical specs, running pre-SIB metrics,
+  writing Ontology packages, or creating Git branches.
 - `tools/pre_sib_coherence_report.py`: deterministic pre-SIB/coherence report
   builder introduced by proposal 0151. Use `make pre-sib-coherence
   PRE_SIB_COHERENCE_CANDIDATE_GRAPH=<json>` to compute candidate graph counts,
@@ -928,6 +947,9 @@ Key derived artifacts:
 - `runs/idea_event_storming_intake.json`: review-only idea-to-spec intake
   artifact containing structured event-storming context and candidate-graph
   readiness state without raw intent text or canonical graph mutation.
+- `runs/candidate_spec_graph_seed.json`: review-only ontology-bound seed for
+  candidate graph generation, including core ontology bindings, product-domain
+  ontology gaps, source-generation status, and no canonical write authority.
 - `runs/candidate_spec_graph.json`: review-only candidate specification graph
   artifact containing candidate nodes, edges, requirements, acceptance
   criteria, claims, gaps, source-intake refs, and pre-SIB readiness state.

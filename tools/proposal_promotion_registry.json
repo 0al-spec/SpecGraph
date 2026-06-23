@@ -2039,5 +2039,18 @@
     "required_provenance_links": [
       "source_draft_ref"
     ]
+  },
+  {
+    "proposal_id": "0159",
+    "source_artifact_class": "working_draft",
+    "source_refs": [
+      "docs/archive/proposal_sources/0159_ontology_bound_candidate_graph_seed.md"
+    ],
+    "motivating_concern": "The product idea-to-spec flow has a generic user idea intake source, but candidate graph seed generation still needs to be generic and ontology-bound so Ontology is a foundation of specifications rather than an optional review panel.",
+    "normalized_title": "Ontology-Bound Candidate Graph Seed",
+    "bounded_scope": "Add a deterministic review-only ontology_bound_candidate_graph_seed builder, Make target, tests, product workspace pipeline integration, and documentation that consume ready event-storming intake plus normalized SpecGraph core ontology IR, require ontology/domain/context/layer/applicability refs, bind structural candidate nodes to core ontology classes, emit product-domain terms as ontology gaps, and make candidate_spec_graph block source-generation review findings, without executing prompt agents, inferring domain models with an LLM, mutating canonical specs, writing Ontology packages or lockfiles, accepting ontology terms, creating Git branches or commits, opening pull requests, publishing read models, or adding SpecSpace mutation UI.",
+    "required_provenance_links": [
+      "source_draft_ref"
+    ]
   }
 ]

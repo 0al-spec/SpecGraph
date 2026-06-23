@@ -281,6 +281,29 @@ def test_candidate_spec_graph_validates_seed_contract_metadata() -> None:
     assert "candidate_graph_seed_contract_invalid" in finding_ids(graph)
 
 
+def test_candidate_spec_graph_blocks_unready_seed_generation_without_findings() -> None:
+    module = load_module()
+    seed = load_json(CANDIDATE_READY)
+    seed["source_generation"] = {
+        "contract_ref": "specgraph.idea-to-spec.ontology-bound-candidate-graph-seed.v0.1",
+        "findings": [],
+        "readiness": {
+            "ready": False,
+            "blocked_by": ["active_frame_ontology_context_missing"],
+        },
+    }
+
+    graph = module.build_candidate_spec_graph(
+        intake=load_json(INTAKE_READY),
+        seed=seed,
+        intake_path=INTAKE_READY,
+        seed_path=CANDIDATE_READY,
+    )
+
+    assert graph["pre_sib_readiness"]["ready"] is False
+    assert "candidate_graph_seed_source_generation_review_required" in finding_ids(graph)
+
+
 def test_candidate_spec_graph_rejects_requirement_without_known_ac() -> None:
     module = load_module()
     seed = load_json(CANDIDATE_READY)
