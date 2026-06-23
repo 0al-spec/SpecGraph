@@ -18,6 +18,10 @@ optional event-storming hints. It should filter raw prompt/model/operator trace
 fields from event-storming hints and leave raw intent publication policy to the
 existing intake builder, which already digests raw intent text.
 
+The existing intake builder must treat source-review findings as blocking.
+Otherwise an invalid source contract with complete event-storming hints could
+become ready for candidate graph generation.
+
 The slice must remain review-only: no canonical spec mutation, no Ontology
 package writes, no Git Service calls, no branches, no pull requests, and no
 SpecSpace mutation UI.

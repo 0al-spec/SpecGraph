@@ -43,6 +43,12 @@ The default fixture uses `support-triage-log` to prove the entry point is not
 hardcoded to Team Decision Log. A different product idea can replace the source
 JSON without a new tool or Make target.
 
+The downstream `idea_event_storming_intake` builder also blocks seeds whose
+`source_intake.findings` contain `review_required` entries. This prevents an
+invalid source contract or invalid workspace metadata from becoming
+`ready_for_candidate_graph` merely because the event-storming hints are
+otherwise complete.
+
 The deterministic chain is:
 
 ```text
@@ -82,6 +88,7 @@ are filtered from event-storming hints.
 - `tests/test_user_idea_intake_source.py::test_user_idea_intake_source_feeds_existing_intake_contract`
 - `tests/test_user_idea_intake_source.py::test_user_idea_intake_source_review_required_flows_to_context_questions`
 - `tests/test_user_idea_intake_source.py::test_user_idea_intake_source_strict_cli_rejects_invalid_source`
+- `tests/test_user_idea_intake_source.py::test_user_idea_intake_source_findings_block_downstream_intake`
 - `tests/test_user_idea_intake_source.py::test_user_idea_intake_source_cli_writes_seed`
 
 ## Follow-ups

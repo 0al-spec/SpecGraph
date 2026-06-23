@@ -124,6 +124,28 @@ def test_user_idea_intake_source_strict_cli_rejects_invalid_source(
     assert findings[0]["finding_id"] == "user_idea_source_contract_invalid"
 
 
+def test_user_idea_intake_source_findings_block_downstream_intake() -> None:
+    source_module = load_module(TOOL_PATH, "user_idea_intake_source_invalid_downstream")
+    intake_module = load_module(INTAKE_TOOL_PATH, "idea_event_storming_invalid_source")
+    source = load_json(READY_FIXTURE)
+    source["contract_ref"] = "wrong"
+    seed = source_module.build_user_idea_event_storming_seed(
+        source,
+        source_path=READY_FIXTURE,
+    )
+
+    intake = intake_module.build_idea_event_storming_intake(
+        seed,
+        source_path=READY_FIXTURE,
+    )
+
+    assert intake["candidate_graph_readiness"]["ready"] is False
+    assert intake["candidate_graph_readiness"]["review_state"] == "context_completion_required"
+    assert "source_intake_review_required" in {
+        finding["finding_id"] for finding in intake["findings"]
+    }
+
+
 def test_user_idea_intake_source_cli_writes_seed(tmp_path: Path) -> None:
     output = tmp_path / "idea_event_storming_seed.json"
 
