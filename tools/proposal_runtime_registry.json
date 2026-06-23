@@ -8433,5 +8433,57 @@
         "pattern": "make product-workspace-active-candidate"
       }
     ]
+  },
+  {
+    "proposal_id": "0156",
+    "posture": "deferred_until_canonicalized",
+    "runtime_surfaces": [
+      "docs/proposals/0156_cli_candidate_approval_flow.md",
+      "docs/archive/proposal_sources/0156_cli_candidate_approval_flow.md",
+      "docs/product_workspace_graph_versioning_roadmap.md",
+      "Sources/SpecGraph/Documentation.docc/ProductWorkspacePilots.md"
+    ],
+    "runtime_markers": [
+      {
+        "path": "docs/proposals/0156_cli_candidate_approval_flow.md",
+        "pattern": "This document defines a CLI approval contract only"
+      },
+      {
+        "path": "docs/proposals/0156_cli_candidate_approval_flow.md",
+        "pattern": "candidate_approval_decision"
+      },
+      {
+        "path": "docs/proposals/0156_cli_candidate_approval_flow.md",
+        "pattern": "No user/operator approval -> no Git Service execution"
+      }
+    ],
+    "validation_markers": [
+      {
+        "path": "docs/proposals/0156_cli_candidate_approval_flow.md",
+        "pattern": "proposal tracking gate passes"
+      },
+      {
+        "path": "docs/proposals/0156_cli_candidate_approval_flow.md",
+        "pattern": "This contract slice is complete"
+      }
+    ],
+    "observation_markers": [
+      {
+        "path": "docs/proposals/0156_cli_candidate_approval_flow.md",
+        "pattern": "canonical_mutations_allowed: false"
+      },
+      {
+        "path": "docs/proposals/0156_cli_candidate_approval_flow.md",
+        "pattern": "Git Service execution remains a separate authority step"
+      },
+      {
+        "path": "docs/product_workspace_graph_versioning_roadmap.md",
+        "pattern": "proposal `0156`"
+      },
+      {
+        "path": "Sources/SpecGraph/Documentation.docc/ProductWorkspacePilots.md",
+        "pattern": "Proposal `0156`"
+      }
+    ]
   }
 ]

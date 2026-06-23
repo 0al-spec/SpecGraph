@@ -139,12 +139,16 @@
         "no_active_candidate",
         "Active Idea-To-Spec Candidate Source",
         "proposal `0155`",
+        "proposal `0156`",
+        "CLI Candidate Approval Flow",
         "make product-workspace-active-candidate"
       ],
       "docc_required_terms": [
         "Active Candidate Source",
         "specgraph_bootstrap",
         "Proposal `0155`",
+        "Proposal `0156`",
+        "CLI Candidate Approval Flow",
         "make product-workspace-active-candidate"
       ]
     },

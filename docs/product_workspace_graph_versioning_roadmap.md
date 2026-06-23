@@ -247,7 +247,36 @@ The implemented surface is:
 - static artifact publishing guardrails that preserve real handoff surfaces
   only when that active source is ready.
 
-### 8. Git Service Post-Review And Read-Model Closure
+### 8. CLI Candidate Approval Flow
+
+Status: proposed in proposal `0156`.
+
+The CLI and agent-mediated product workflow needs an explicit operator decision
+between a review-ready candidate and any Git Service promotion attempt. The
+agent may recommend the next transition, but it must not approve the candidate
+on the user's behalf.
+
+The proposed approval surface is:
+
+- `runs/candidate_approval_decision.json`;
+- public-safe refs and digests for the active candidate, promotion gate,
+  pre-SIB/coherence report, repair-loop report, and materialization report;
+- explicit decision states such as `approved`, `rejected`, `needs_context`, and
+  `superseded`;
+- authority metadata proving that approval does not create a branch, commit,
+  pull request, merge, read model, canonical spec mutation, or Ontology write.
+
+This keeps the states separate:
+
+```text
+agent recommends
+  -> operator approves promotion request attempt
+  -> Git Service executes controlled branch/commit/review steps
+  -> repository review accepts or rejects canonical changes
+  -> read model publishes only after merged review
+```
+
+### 9. Git Service Post-Review And Read-Model Closure
 
 Status: Platform has the local Git Service executor for `prepare-worktree`,
 `commit-worktree`, and `open-review`, while `review-status` and
@@ -265,7 +294,7 @@ workspace handoff:
 
 This is still a service boundary, not a SpecSpace write feature.
 
-### 9. Real Idea Intake Entry Point
+### 10. Real Idea Intake Entry Point
 
 Status: event-storming intake artifacts exist, but the current pilot source is
 deterministic. The product UX still needs a generic entry point where a user
@@ -303,11 +332,12 @@ authority boundary as the current deterministic pilot.
 
 The active stack after production workspace isolation is:
 
-1. SpecSpace workflow lane over the product workspace chain.
-2. Platform Git Service post-review status and read-model publication
+1. CLI candidate approval flow contract and future report artifact.
+2. SpecSpace workflow lane over the product workspace chain.
+3. Platform Git Service post-review status and read-model publication
    orchestration.
-3. Generic idea intake / event-storming entry point.
-4. Ontology applicability and layer-aware review refinement as compiler support
+4. Generic idea intake / event-storming entry point.
+5. Ontology applicability and layer-aware review refinement as compiler support
    matures.
 
 ## Related Documents
