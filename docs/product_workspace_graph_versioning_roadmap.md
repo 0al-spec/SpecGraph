@@ -40,6 +40,12 @@ owners, review triggers, consequences, and supersession/conflict relations. That
 shape exercises the core product workflow without reusing SpecGraph's
 bootstrap/self-evolution domain as the test case.
 
+`Team Decision Log` is product data, not a system-mode name. SpecGraph scripts,
+Make targets, promotion gates, and SpecSpace consumers should stay generic for
+`product_idea_to_spec`; the pilot may supply the active candidate source and
+artifact payloads, but tomorrow's product idea should not require a new
+product-specific flow.
+
 The public deployment intent is:
 
 ```text
@@ -186,6 +192,15 @@ flow has one explicit go/no-go surface before Platform promotion.
 
 ### 6. SpecSpace Review And Publish Surface
 
+Status: partially implemented. SpecSpace now has separate workspace routes and
+can show the Team Decision Log candidate graph, pre-SIB report, repair loop,
+promotion gate, Platform promotion request, and Git Service execution report
+without leaking SpecGraph bootstrap artifacts into the product workspace.
+
+The next UI slice is a derived workflow lane over those artifacts, not another
+raw JSON panel. It should show stage status and the next operator handoff across
+the same read-only chain.
+
 SpecSpace should show:
 
 - active workspace and graph version;
@@ -201,7 +216,9 @@ mount a writable checkout and commit files itself.
 
 ### 7. Active Idea-To-Spec Candidate Source
 
-Status: implemented in proposal `0155` for the Team Decision Log pilot.
+Status: implemented in proposal `0155` for the first Team Decision Log pilot.
+The remaining work is to keep the source shape generic enough that Team
+Decision Log stays data instead of leaking into system-level logic.
 
 Public handoff artifacts can intentionally publish `no_active_candidate`
 placeholders when no active source exists. The generic product workspace active
@@ -230,6 +247,43 @@ The implemented surface is:
 - static artifact publishing guardrails that preserve real handoff surfaces
   only when that active source is ready.
 
+### 8. Git Service Post-Review And Read-Model Closure
+
+Status: Platform has the local Git Service executor for `prepare-worktree`,
+`commit-worktree`, and `open-review`, while `review-status` and
+`publish-read-model` exist as separate Platform operations.
+
+The next service slice should make post-review state explicit in the product
+workspace handoff:
+
+- record review status as a Git Service operation result;
+- publish the read model only after a merged review status;
+- emit public-safe report refs for both steps;
+- keep SpecSpace read-only and inspect/acknowledge-only;
+- keep bootstrap/internal deployment profiles separate from product workspace
+  promotion profiles.
+
+This is still a service boundary, not a SpecSpace write feature.
+
+### 9. Real Idea Intake Entry Point
+
+Status: event-storming intake artifacts exist, but the current pilot source is
+deterministic. The product UX still needs a generic entry point where a user
+idea becomes structured intake data before candidate graph generation.
+
+The first entry point should capture:
+
+- product goal and excluded scope;
+- actors and external systems;
+- domain events and commands;
+- policies, constraints, risks, and assumptions;
+- vocabulary questions and context-completion questions;
+- active ontology/domain/context hints.
+
+The output remains candidate state. It may trigger downstream candidate graph
+generation only after the intake artifact passes the same non-canonical
+authority boundary as the current deterministic pilot.
+
 ## Success Criteria
 
 - A user can start with a product idea and receive a coherent candidate graph.
@@ -242,6 +296,19 @@ The implemented surface is:
   artifact bundle.
 - The Team Decision Log pilot appears as a product workspace, not as part of the
   SpecGraph bootstrap workspace.
+- A new product idea can replace Team Decision Log as data without adding
+  product-specific scripts or Make targets.
+
+## Current Execution Order
+
+The active stack after production workspace isolation is:
+
+1. SpecSpace workflow lane over the product workspace chain.
+2. Platform Git Service post-review status and read-model publication
+   orchestration.
+3. Generic idea intake / event-storming entry point.
+4. Ontology applicability and layer-aware review refinement as compiler support
+   matures.
 
 ## Related Documents
 
