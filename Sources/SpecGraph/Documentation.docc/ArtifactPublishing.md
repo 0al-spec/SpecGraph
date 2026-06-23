@@ -90,6 +90,9 @@ absence means no explicit operator approval has been recorded. The artifact
 records refs, digests, decision state, findings, and authority metadata without
 publishing raw prompts, private operator notes, branches, commits, pull
 requests, merges, read models, canonical spec mutations, or Ontology writes.
+Static publishing skips stale approval artifacts when the active candidate
+source is not publishable or when recorded source refs/digests no longer match
+the current active-candidate and promotion-gate artifacts.
 
 Project-local ontology package data should materialize below the owning
 SpecGraph checkout, for example `ontology/packages/specgraph-core/`, not under

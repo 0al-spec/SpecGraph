@@ -132,7 +132,10 @@ placeholder: absence means no explicit operator approval has been recorded. The
 artifact must contain refs, digests, decision state, findings, and authority
 metadata only; it must not publish raw prompts, private operator notes, local
 paths, branches, commits, pull requests, merges, read models, canonical spec
-mutations, or Ontology writes.
+mutations, or Ontology writes. Static publishing skips this artifact when the
+active candidate source is not publishable or when the approval artifact's
+recorded active-candidate or promotion-gate refs/digests no longer match the
+current run artifacts.
 
 ## Safety Gate
 

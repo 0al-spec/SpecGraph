@@ -14,6 +14,12 @@ Bounded scope:
   metadata;
 - downgrade requested approvals to `needs_context` when active candidate or
   promotion gate readiness is incomplete.
+- reject out-of-repository approval input refs, stale promotion-gate digests,
+  unsafe promotion paths, and approved decisions with default/non-explicit
+  rationale;
+- prevent static publishing from carrying a stale approval artifact when the
+  active candidate is absent, unpublishable, or no longer digest-matches the
+  approval evidence.
 
 Out of scope:
 

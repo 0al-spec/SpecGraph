@@ -167,6 +167,35 @@ def write_ready_active_candidate_source(repo: Path) -> None:
     )
 
 
+def write_candidate_approval_decision(repo: Path, bundle_module: object) -> None:
+    write_json(
+        repo / "runs" / "candidate_approval_decision.json",
+        {
+            "artifact_kind": "candidate_approval_decision",
+            "canonical_mutations_allowed": False,
+            "contract_ref": "specgraph.idea-to-spec.candidate-approval-decision.v0.1",
+            "decision": {"requested_state": "approved", "state": "approved"},
+            "readiness": {"ready": True, "review_state": "promotion_request_approved"},
+            "schema_version": 1,
+            "source_artifacts": {
+                "active_candidate": {
+                    "sha256": bundle_module.file_sha256(
+                        repo / "runs" / "active_idea_to_spec_candidate.json"
+                    ),
+                    "source_ref": "runs/active_idea_to_spec_candidate.json",
+                },
+                "promotion_gate": {
+                    "sha256": bundle_module.file_sha256(
+                        repo / "runs" / "idea_to_spec_promotion_gate.json"
+                    ),
+                    "source_ref": "runs/idea_to_spec_promotion_gate.json",
+                },
+            },
+            "tracked_artifacts_written": False,
+        },
+    )
+
+
 def test_build_public_bundle_copies_specs_and_runs_with_manifest(
     tmp_path: Path,
     bundle_module: object,
@@ -1161,6 +1190,65 @@ def test_build_public_bundle_skips_unready_active_candidate_source(
         ]
         is False
     )
+
+
+def test_build_public_bundle_publishes_current_candidate_approval_decision(
+    tmp_path: Path,
+    bundle_module: object,
+) -> None:
+    repo = make_repo(tmp_path / "repo")
+    write_ready_active_candidate_source(repo)
+    write_candidate_approval_decision(repo, bundle_module)
+
+    result = bundle_module.build_public_bundle(
+        repo_root=repo,
+        output_dir=repo / "dist" / "specgraph-public",
+        require_verified_agent_passports=False,
+    )
+
+    assert (result.output_dir / "runs" / "candidate_approval_decision.json").is_file()
+
+
+def test_build_public_bundle_skips_candidate_approval_without_publishable_active_candidate(
+    tmp_path: Path,
+    bundle_module: object,
+) -> None:
+    repo = make_repo(tmp_path / "repo")
+    write_ready_active_candidate_source(repo)
+    write_candidate_approval_decision(repo, bundle_module)
+    active_source_path = repo / "runs" / "active_idea_to_spec_candidate.json"
+    active_source = json.loads(active_source_path.read_text(encoding="utf-8"))
+    active_source["readiness"]["ready"] = False
+    write_json(active_source_path, active_source)
+
+    result = bundle_module.build_public_bundle(
+        repo_root=repo,
+        output_dir=repo / "dist" / "specgraph-public",
+        require_verified_agent_passports=False,
+    )
+
+    assert not (result.output_dir / "runs" / "candidate_approval_decision.json").exists()
+
+
+def test_build_public_bundle_skips_candidate_approval_with_stale_digest(
+    tmp_path: Path,
+    bundle_module: object,
+) -> None:
+    repo = make_repo(tmp_path / "repo")
+    write_ready_active_candidate_source(repo)
+    write_candidate_approval_decision(repo, bundle_module)
+    promotion_gate_path = repo / "runs" / "idea_to_spec_promotion_gate.json"
+    promotion_gate = json.loads(promotion_gate_path.read_text(encoding="utf-8"))
+    promotion_gate["summary"] = {"status": "regenerated_after_approval"}
+    write_json(promotion_gate_path, promotion_gate)
+
+    result = bundle_module.build_public_bundle(
+        repo_root=repo,
+        output_dir=repo / "dist" / "specgraph-public",
+        require_verified_agent_passports=False,
+    )
+
+    assert not (result.output_dir / "runs" / "candidate_approval_decision.json").exists()
 
 
 def test_main_prints_compact_summary(

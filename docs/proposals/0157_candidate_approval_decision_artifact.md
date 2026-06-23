@@ -25,7 +25,7 @@ It emits:
 - effective decision state, with unsafe approvals downgraded to
   `needs_context`;
 - promotion paths only when the decision is `approved` and all upstream
-  readiness checks pass.
+  readiness, digest, path, and public-ref checks pass.
 
 This implements the first runtime slice from proposal `0156`.
 
@@ -37,6 +37,9 @@ This slice adds:
 - `make candidate-approval-decision`;
 - regression tests for approved, rejected, unsafe, and default non-approval
   paths;
+- static publishing guards that skip stale approval artifacts when the active
+  candidate source is absent, unpublishable, or no longer matches recorded
+  source digests;
 - documentation and registry tracking for proposal/runtime provenance.
 
 The default CLI state is intentionally non-approving:
@@ -83,6 +86,10 @@ authorities.
 - `tests/test_candidate_approval_decision.py::test_candidate_approval_decision_records_explicit_rejection`
 - `tests/test_candidate_approval_decision.py::test_candidate_approval_decision_rejects_private_operator_text`
 - `tests/test_candidate_approval_decision.py::test_candidate_approval_decision_cli_strict_fails_without_approval`
+- `tests/test_candidate_approval_decision.py::test_candidate_approval_decision_rejects_stale_promotion_gate_digest`
+- `tests/test_candidate_approval_decision.py::test_candidate_approval_decision_rejects_unsafe_promotion_paths`
+- `tests/test_static_artifact_bundle.py::test_build_public_bundle_skips_candidate_approval_with_stale_digest`
+- `tests/test_static_artifact_bundle.py::test_build_public_bundle_skips_candidate_approval_without_publishable_active_candidate`
 
 ## Follow-ups
 

@@ -8498,8 +8498,10 @@
       "Sources/SpecGraph/Documentation.docc/ProductWorkspacePilots.md",
       "Sources/SpecGraph/Documentation.docc/ArtifactPublishing.md",
       "tools/candidate_approval_decision.py",
+      "tools/build_static_artifact_bundle.py",
       "tools/README.md",
       "tests/test_candidate_approval_decision.py",
+      "tests/test_static_artifact_bundle.py",
       "Makefile"
     ],
     "runtime_markers": [
@@ -8518,6 +8520,10 @@
       {
         "path": "Makefile",
         "pattern": "candidate-approval-decision"
+      },
+      {
+        "path": "tools/build_static_artifact_bundle.py",
+        "pattern": "is_publishable_candidate_approval_decision"
       }
     ],
     "validation_markers": [
@@ -8532,6 +8538,14 @@
       {
         "path": "tests/test_candidate_approval_decision.py",
         "pattern": "test_candidate_approval_decision_cli_strict_fails_without_approval"
+      },
+      {
+        "path": "tests/test_candidate_approval_decision.py",
+        "pattern": "test_candidate_approval_decision_rejects_stale_promotion_gate_digest"
+      },
+      {
+        "path": "tests/test_static_artifact_bundle.py",
+        "pattern": "test_build_public_bundle_skips_candidate_approval_with_stale_digest"
       }
     ],
     "observation_markers": [

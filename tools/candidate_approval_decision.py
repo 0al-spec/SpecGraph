@@ -19,7 +19,9 @@ PROMOTION_GATE_CONTRACT_REF = "specgraph.idea-to-spec.promotion-gate.v0.1"
 DEFAULT_ACTIVE_CANDIDATE_PATH = ROOT / "runs" / "active_idea_to_spec_candidate.json"
 DEFAULT_PROMOTION_GATE_PATH = ROOT / "runs" / "idea_to_spec_promotion_gate.json"
 DEFAULT_OUTPUT_PATH = ROOT / "runs" / "candidate_approval_decision.json"
+DEFAULT_REASON = "awaiting explicit operator approval"
 DECISION_STATES = ("approved", "rejected", "needs_context", "superseded")
+PROMOTION_PATH_PREFIXES = ("specs/", "docs/proposals/", "runs/")
 REVIEW_STATE_BY_DECISION = {
     "approved": "promotion_request_approved",
     "rejected": "candidate_promotion_rejected",
@@ -57,11 +59,11 @@ def _text(value: Any, default: str = "") -> str:
     return value.strip() if isinstance(value, str) and value.strip() else default
 
 
-def _relative_ref(path: Path) -> str:
+def _repo_ref(path: Path) -> str | None:
     try:
-        return path.resolve().relative_to(ROOT).as_posix()
+        return path.resolve().relative_to(ROOT.resolve()).as_posix()
     except ValueError:
-        return path.as_posix()
+        return None
 
 
 def _sha256(path: Path) -> str:
@@ -72,11 +74,21 @@ def _sha256(path: Path) -> str:
     return digest.hexdigest()
 
 
+def _path_sha256(path: Path) -> str | None:
+    return _sha256(path) if path.is_file() else None
+
+
 def load_json(path: Path) -> dict[str, Any]:
     payload = json.loads(path.read_text(encoding="utf-8"))
     if not isinstance(payload, dict):
         raise ValueError(f"{path} must contain a JSON object")
     return payload
+
+
+def load_json_if_present(path: Path) -> dict[str, Any]:
+    if not path.is_file():
+        return {}
+    return load_json(path)
 
 
 def write_json(payload: dict[str, Any], path: Path) -> None:
@@ -109,11 +121,56 @@ def _source_artifact(artifact: dict[str, Any], path: Path) -> dict[str, Any]:
         "artifact_kind": artifact.get("artifact_kind"),
         "contract_ref": artifact.get("contract_ref"),
         "proposal_id": artifact.get("proposal_id"),
-        "source_ref": _relative_ref(path),
-        "sha256": _sha256(path),
+        "source_ref": _repo_ref(path),
+        "sha256": _path_sha256(path),
         "readiness": _dict(artifact.get("readiness")),
         "summary": _dict(artifact.get("summary")),
     }
+
+
+def _input_path_findings(*, path: Path, field: str, label: str) -> list[dict[str, Any]]:
+    findings: list[dict[str, Any]] = []
+    repo_ref = _repo_ref(path)
+    if repo_ref is None:
+        findings.append(
+            _finding(
+                finding_id=f"{field}_path_outside_repo",
+                severity="review_required",
+                message=f"{label} path must be inside this repository before public approval.",
+                evidence={"path": "<outside-repository>"},
+            )
+        )
+    if not path.is_file():
+        findings.append(
+            _finding(
+                finding_id=f"{field}_source_file_missing",
+                severity="review_required",
+                message=f"{label} file is missing.",
+                evidence={"path": repo_ref or "<outside-repository>"},
+            )
+        )
+    return findings
+
+
+def _promotion_path_allowed(value: object) -> bool:
+    if not isinstance(value, str) or not value.strip():
+        return False
+    path = value.strip().replace("\\", "/")
+    if path.startswith("/") or "/../" in f"/{path}/" or "/./" in f"/{path}/":
+        return False
+    return any(path.startswith(prefix) for prefix in PROMOTION_PATH_PREFIXES)
+
+
+def _public_source_ref(value: object) -> str | None:
+    if not isinstance(value, str) or not value.strip():
+        return None
+    ref = value.strip().replace("\\", "/")
+    if ref.startswith("/") or "/../" in f"/{ref}/" or "/./" in f"/{ref}/":
+        return None
+    lowered = ref.lower()
+    if any(marker.lower() in lowered for marker in PRIVATE_TEXT_MARKERS):
+        return None
+    return ref
 
 
 def _authority_boundary() -> dict[str, bool]:
@@ -186,7 +243,11 @@ def _validate_active_candidate(
     *,
     active_candidate_path: Path,
 ) -> list[dict[str, Any]]:
-    findings: list[dict[str, Any]] = []
+    findings: list[dict[str, Any]] = _input_path_findings(
+        path=active_candidate_path,
+        field="active_candidate",
+        label="Active candidate source",
+    )
     if active_candidate.get("artifact_kind") != "active_idea_to_spec_candidate":
         findings.append(
             _finding(
@@ -264,15 +325,6 @@ def _validate_active_candidate(
                 message="Approval requires a stable candidate_id.",
             )
         )
-    if not active_candidate_path.is_file():
-        findings.append(
-            _finding(
-                finding_id="active_candidate_source_file_missing",
-                severity="review_required",
-                message="Active candidate source file is missing.",
-                evidence={"path": _relative_ref(active_candidate_path)},
-            )
-        )
     return findings
 
 
@@ -281,7 +333,11 @@ def _validate_promotion_gate(
     *,
     promotion_gate_path: Path,
 ) -> list[dict[str, Any]]:
-    findings: list[dict[str, Any]] = []
+    findings: list[dict[str, Any]] = _input_path_findings(
+        path=promotion_gate_path,
+        field="promotion_gate",
+        label="Promotion gate",
+    )
     if promotion_gate.get("artifact_kind") != "idea_to_spec_promotion_gate":
         findings.append(
             _finding(
@@ -348,15 +404,18 @@ def _validate_promotion_gate(
                 message="Promotion gate must expose Platform promotion paths before approval.",
             )
         )
-    if not promotion_gate_path.is_file():
-        findings.append(
-            _finding(
-                finding_id="promotion_gate_source_file_missing",
-                severity="review_required",
-                message="Promotion gate file is missing.",
-                evidence={"path": _relative_ref(promotion_gate_path)},
+    for index, path in enumerate(paths):
+        if not _promotion_path_allowed(path):
+            findings.append(
+                _finding(
+                    finding_id="promotion_gate_path_not_allowed",
+                    severity="review_required",
+                    message=(
+                        "Promotion gate path must stay inside specs/, docs/proposals/, or runs/."
+                    ),
+                    evidence={"index": index, "path": "<invalid-or-unsafe>"},
+                )
             )
-        )
     return findings
 
 
@@ -365,20 +424,37 @@ def _cross_artifact_findings(
     active_candidate: dict[str, Any],
     promotion_gate_path: Path,
 ) -> list[dict[str, Any]]:
+    findings: list[dict[str, Any]] = []
     source_artifacts = _dict(active_candidate.get("source_artifacts"))
     promotion_ref = _dict(source_artifacts.get("promotion_gate"))
-    expected_ref = _relative_ref(promotion_gate_path)
+    expected_ref = _repo_ref(promotion_gate_path)
     observed_ref = promotion_ref.get("source_ref")
     if observed_ref and observed_ref != expected_ref:
-        return [
+        findings.append(
             _finding(
                 finding_id="promotion_gate_ref_mismatch",
                 severity="review_required",
                 message="Active candidate source must reference the same promotion gate artifact.",
-                evidence={"expected": expected_ref, "observed": observed_ref},
+                evidence={
+                    "expected": expected_ref,
+                    "observed": _public_source_ref(observed_ref) or "<non-public-ref>",
+                },
             )
-        ]
-    return []
+        )
+    expected_digest = _path_sha256(promotion_gate_path)
+    observed_digest = promotion_ref.get("sha256")
+    if observed_digest and expected_digest and observed_digest != expected_digest:
+        findings.append(
+            _finding(
+                finding_id="promotion_gate_digest_mismatch",
+                severity="review_required",
+                message=(
+                    "Active candidate source promotion gate digest must match the current gate."
+                ),
+                evidence={"expected": expected_digest, "observed": observed_digest},
+            )
+        )
+    return findings
 
 
 def _evidence_refs(
@@ -401,7 +477,7 @@ def _evidence_refs(
                 "artifact_kind": artifact_ref.get("artifact_kind"),
                 "contract_ref": artifact_ref.get("contract_ref"),
                 "proposal_id": artifact_ref.get("proposal_id"),
-                "source_ref": artifact_ref.get("source_ref"),
+                "source_ref": _public_source_ref(artifact_ref.get("source_ref")),
                 "sha256": artifact_ref.get("sha256"),
                 "readiness": _dict(artifact_ref.get("readiness")),
                 "summary": _dict(artifact_ref.get("summary")),
@@ -450,8 +526,16 @@ def build_candidate_approval_decision(
                 evidence={"operator_ref": operator_ref},
             )
         )
-    reason_required = requested in {"rejected", "needs_context", "superseded"}
+    reason_required = requested in DECISION_STATES
     findings.extend(_validate_public_text("reason", normalized_reason, required=reason_required))
+    if requested == "approved" and normalized_reason == DEFAULT_REASON:
+        findings.append(
+            _finding(
+                finding_id="approval_reason_default",
+                severity="review_required",
+                message="Approved decisions require an explicit public-safe approval rationale.",
+            )
+        )
     for index, condition in enumerate(normalized_conditions):
         findings.extend(_validate_public_text(f"condition_{index}", condition))
     findings.extend(
@@ -509,8 +593,8 @@ def build_candidate_approval_decision(
         "candidate": {
             "candidate_id": candidate.get("candidate_id"),
             "display_name": candidate.get("display_name"),
-            "active_candidate_ref": _relative_ref(active_candidate_path),
-            "promotion_gate_ref": _relative_ref(promotion_gate_path),
+            "active_candidate_ref": _repo_ref(active_candidate_path),
+            "promotion_gate_ref": _repo_ref(promotion_gate_path),
         },
         "decision": {
             "requested_state": requested_state,
@@ -571,7 +655,7 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--output", default=DEFAULT_OUTPUT_PATH, type=Path)
     parser.add_argument("--decision", choices=DECISION_STATES, default="needs_context")
     parser.add_argument("--operator-ref", default="local_operator:unattributed")
-    parser.add_argument("--reason", default="awaiting explicit operator approval")
+    parser.add_argument("--reason", default=DEFAULT_REASON)
     parser.add_argument("--condition", action="append", default=[])
     parser.add_argument("--strict", action="store_true")
     return parser
@@ -579,8 +663,8 @@ def build_parser() -> argparse.ArgumentParser:
 
 def main(argv: list[str] | None = None) -> int:
     args = build_parser().parse_args(argv)
-    active_candidate = load_json(args.active_candidate)
-    promotion_gate = load_json(args.promotion_gate)
+    active_candidate = load_json_if_present(args.active_candidate)
+    promotion_gate = load_json_if_present(args.promotion_gate)
     report = build_candidate_approval_decision(
         active_candidate=active_candidate,
         promotion_gate=promotion_gate,
