@@ -10,6 +10,11 @@ small product domain, but it is not a mock or fixture: teams record decisions,
 considered options, rationale, evidence, owners, review triggers,
 consequences, and supersession or conflict relations.
 
+Team Decision Log is product data, not a system-mode name. SpecGraph scripts,
+Make targets, promotion gates, and SpecSpace consumers should stay generic for
+`product_idea_to_spec`; a later product idea should be able to replace the
+pilot payload without adding a product-specific flow.
+
 The intended public route layout keeps one SpecSpace deployment with separate
 workspaces:
 
@@ -51,6 +56,23 @@ Static artifact publishing keeps `no_active_candidate` placeholders unless that
 active candidate source is ready. Team Decision Log is the default fixture data
 for the target, not a separate system-level flow.
 
+## Review And Promotion Chain
+
+SpecSpace can now route the product workspace separately from the SpecGraph
+showcase and read the candidate graph, pre-SIB report, repair loop, promotion
+gate, Platform promotion request, and Git Service execution report without
+granting write authority.
+
+The next product workspace slice is a derived workflow lane over those artifacts:
+stage status, blocker summary, and the next operator handoff. Git Service
+post-review status and read-model publication should become explicit service
+operations before any product write UX is treated as production-ready.
+
+After that, the product flow needs a generic idea intake entry point where a raw
+idea becomes structured event-storming input: actors, events, commands,
+policies, constraints, risks, vocabulary questions, context-completion
+questions, and ontology/domain/context hints.
+
 ## Authority Boundary
 
 Team Decision Log remains non-canonical until a repository service accepts a
@@ -64,6 +86,15 @@ The product pilot must not:
 - write ontology packages directly;
 - publish raw prompts, private operator notes, or local paths;
 - use `specgraph_bootstrap` repository roles for product writes.
+
+## Current Execution Order
+
+1. Add the SpecSpace workflow lane over the product workspace chain.
+2. Extend Platform Git Service orchestration through review status and
+   read-model publication.
+3. Add the generic idea intake / event-storming entry point.
+4. Refine ontology applicability and layer-aware review as compiler support
+   matures.
 
 ## Canonical Sources
 
