@@ -1992,11 +1992,11 @@
     "proposal_id": "0155",
     "source_artifact_class": "working_draft",
     "source_refs": [
-      "docs/archive/proposal_sources/0155_team_decision_log_active_candidate_source.md"
+      "docs/archive/proposal_sources/0155_product_workspace_active_candidate_source.md"
     ],
-    "motivating_concern": "The idea-to-spec flow has materialization and promotion-gate handoff artifacts, but public publishing still needs a real active product candidate source before replacing no_active_candidate placeholders with Team Decision Log artifacts.",
-    "normalized_title": "Team Decision Log Active Candidate Source",
-    "bounded_scope": "Add a deterministic review-only active_idea_to_spec_candidate builder, Team Decision Log seed fixtures, Make targets, tests, and static publish guardrails that preserve real handoff surfaces only when the active source is ready, without executing prompt agents, mutating candidate source artifacts through SpecSpace, mutating canonical specs, writing ontology packages or lockfiles, accepting ontology terms, creating Git branches or commits, opening pull requests, publishing read models, merging, or adding SpecSpace route UI.",
+    "motivating_concern": "The idea-to-spec flow has materialization and promotion-gate handoff artifacts, but public publishing still needs a real active product candidate source before replacing no_active_candidate placeholders with product workspace artifacts.",
+    "normalized_title": "Product Workspace Active Candidate Source",
+    "bounded_scope": "Add a deterministic review-only active_idea_to_spec_candidate builder, product workspace seed fixtures, Make targets, tests, and static publish guardrails that preserve real handoff surfaces only when the active source is ready, without executing prompt agents, mutating candidate source artifacts through SpecSpace, mutating canonical specs, writing ontology packages or lockfiles, accepting ontology terms, creating Git branches or commits, opening pull requests, publishing read models, merging, or adding SpecSpace route UI.",
     "required_provenance_links": [
       "source_draft_ref"
     ]

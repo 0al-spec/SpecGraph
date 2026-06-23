@@ -1,4 +1,4 @@
-# 0155 Team Decision Log Active Candidate Source
+# 0155 Product Workspace Active Candidate Source
 
 ## Status
 
@@ -6,8 +6,9 @@ Implemented
 
 ## Summary
 
-SpecGraph now has a deterministic active candidate source for the first real
-`product_idea_to_spec` pilot: Team Decision Log.
+SpecGraph now has a deterministic active candidate source for product
+`product_idea_to_spec` workspaces. Team Decision Log is the first fixture and
+public pilot carried by the config data, not a separate system-level flow.
 
 The source links the existing idea-to-spec artifacts:
 
@@ -21,7 +22,7 @@ The source links the existing idea-to-spec artifacts:
 It emits:
 
 - `runs/active_idea_to_spec_candidate.json`;
-- stable candidate/workspace identity for `team-decision-log`;
+- stable candidate/workspace identity from the active candidate config;
 - product workspace authority metadata;
 - public-safe artifact refs and digests;
 - readiness findings when the source is incomplete, placeholder-derived, or
@@ -34,13 +35,14 @@ This slice adds:
 - `tools/active_idea_to_spec_candidate_source.py`;
 - `make active-idea-to-spec-candidate-source`;
 - `make product-workspace-active-candidate`;
-- Team Decision Log event-storming and candidate graph seed fixtures;
+- product workspace event-storming and candidate graph seed fixtures;
 - static publish behavior that preserves real handoff surfaces only when the
   active source is ready;
 - regression tests for ready source publication and placeholder blocking.
 
 The product workspace target runs the deterministic chain. Team Decision Log is
-the default fixture data for that target, not a separate system-level flow:
+the default fixture data for that target, not a separate script, Make target, or
+runtime branch:
 
 ```text
 event-storming seed
@@ -96,8 +98,7 @@ When `runs/active_idea_to_spec_candidate.json` is ready, the bundle builder:
 
 ## Follow-ups
 
-- SpecSpace should add route/workspace selection so
-  `specgraph.space/team-decision-log` reads the product workspace artifact
-  manifest rather than the SpecGraph bootstrap manifest.
-- Platform can wire deployment profile route metadata after SpecSpace consumes
-  the active candidate surface.
+- SpecSpace should keep product workspace routes generic so any safe product
+  workspace slug can read the candidate artifact surface.
+- Platform should pass product workspace artifact sources through generic
+  workspace metadata, not through pilot-specific deploy flags.
