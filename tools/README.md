@@ -300,6 +300,14 @@ Supervisor modes:
   `runs/active_idea_to_spec_candidate.json`. The artifact proves that
   materialization and promotion-gate surfaces come from a product workspace
   active candidate rather than fixture/demo leakage or public placeholders.
+- `tools/candidate_approval_decision.py`: explicit candidate approval decision
+  builder introduced by proposal 0157. Use `make candidate-approval-decision`
+  after the active candidate source and promotion gate exist. The default state
+  is `needs_context`; set `CANDIDATE_APPROVAL_DECISION_STATE=approved` only for
+  an explicit operator approval. The artifact writes
+  `runs/candidate_approval_decision.json` and does not create branches, commits,
+  pull requests, merges, read models, canonical spec mutations, or Ontology
+  writes.
 - `--build-ontology-supervisor-semantic-gate`: refresh the same ontology
   semantic surfaces through the supervisor entrypoint and print a compact gate
   report for `runs/ontology_supervisor_semantic_gate.json` without running
@@ -929,6 +937,12 @@ Key derived artifacts:
   for the configured product workspace pilot, linking event-storming intake,
   candidate graph, pre-SIB report, repair-loop preview, materialization report,
   and promotion gate under `product_spec_workspace` authority.
+- `runs/candidate_approval_decision.json`: public-safe candidate approval
+  decision artifact for CLI-mode product workspace promotion. It records the
+  requested and effective decision state, operator ref, public-safe rationale,
+  source refs, digests, findings, and authority boundary without treating the
+  decision as a Git Service execution, repository review, merge, read-model
+  publication, canonical spec mutation, or Ontology write.
 - `runs/specpm_export_preview.json`: reviewable `SpecPM` package preview
   artifact, including manifest preview, boundary-source preview, export
   status, and next-gap backlog for future full package emission

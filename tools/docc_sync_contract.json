@@ -22,7 +22,8 @@
       ],
       "docc_required_terms": [
         "Static Host",
-        "product-facing surfaces"
+        "product-facing surfaces",
+        "candidate_approval_decision"
       ]
     },
     {
@@ -140,7 +141,9 @@
         "Active Idea-To-Spec Candidate Source",
         "proposal `0155`",
         "proposal `0156`",
+        "proposal `0157`",
         "CLI Candidate Approval Flow",
+        "candidate_approval_decision",
         "make product-workspace-active-candidate"
       ],
       "docc_required_terms": [
@@ -148,7 +151,9 @@
         "specgraph_bootstrap",
         "Proposal `0155`",
         "Proposal `0156`",
+        "Proposal `0157`",
         "CLI Candidate Approval Flow",
+        "candidate_approval_decision",
         "make product-workspace-active-candidate"
       ]
     },

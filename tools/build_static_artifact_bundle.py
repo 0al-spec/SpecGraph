@@ -50,6 +50,7 @@ PLATFORM_HANDOFF_RUN_SURFACES = (
     "idea_to_spec_promotion_gate.json",
 )
 ACTIVE_IDEA_TO_SPEC_CANDIDATE_SURFACE = "active_idea_to_spec_candidate.json"
+CANDIDATE_APPROVAL_DECISION_SURFACE = "candidate_approval_decision.json"
 PRODUCT_WORKSPACE_ACTIVE_CANDIDATE_REFRESH_ENV = "PRODUCT_WORKSPACE_ACTIVE_CANDIDATE_REFRESH"
 PLATFORM_HANDOFF_PLACEHOLDER_REASON = "no_active_candidate"
 PLATFORM_HANDOFF_MATERIALIZATION_CONTRACT_REF = (
@@ -57,6 +58,7 @@ PLATFORM_HANDOFF_MATERIALIZATION_CONTRACT_REF = (
 )
 PLATFORM_HANDOFF_PROMOTION_GATE_CONTRACT_REF = "specgraph.idea-to-spec.promotion-gate.v0.1"
 ACTIVE_IDEA_TO_SPEC_CANDIDATE_CONTRACT_REF = "specgraph.idea-to-spec.active-candidate-source.v0.1"
+CANDIDATE_APPROVAL_DECISION_CONTRACT_REF = "specgraph.idea-to-spec.candidate-approval-decision.v0.1"
 LOCAL_ONLY_RUN_SURFACES = {
     "local_operator_executor_readiness.json",
     "local_operator_executor_smoke.json",
@@ -169,6 +171,7 @@ def has_symlink_component(path: Path, stop_at: Path) -> bool:
 
 def iter_publish_sources(repo_root: Path) -> Iterable[tuple[str, Path, PurePosixPath]]:
     active_candidate_ready = is_publishable_active_candidate_source(repo_root)
+    approval_ready = is_publishable_candidate_approval_decision(repo_root)
     for root_name in PUBLISHED_ROOTS:
         source_root = repo_root / root_name
         if not source_root.exists():
@@ -186,6 +189,8 @@ def iter_publish_sources(repo_root: Path) -> Iterable[tuple[str, Path, PurePosix
                 if is_local_only_run_path(run_rel):
                     continue
                 if run_rel == ACTIVE_IDEA_TO_SPEC_CANDIDATE_SURFACE and not active_candidate_ready:
+                    continue
+                if run_rel == CANDIDATE_APPROVAL_DECISION_SURFACE and not approval_ready:
                     continue
             yield root_name, path, rel
 
@@ -549,6 +554,43 @@ def is_publishable_active_candidate_source(repo_root: Path) -> bool:
         if artifact.get("source_mode") == "public_placeholder" or artifact.get(
             "placeholder_reason"
         ):
+            return False
+    return True
+
+
+def run_file_sha256_if_present(repo_root: Path, surface: str) -> str | None:
+    path = repo_root / "runs" / surface
+    return file_sha256(path) if path.is_file() else None
+
+
+def is_publishable_candidate_approval_decision(repo_root: Path) -> bool:
+    approval = load_run_json_if_present(repo_root, CANDIDATE_APPROVAL_DECISION_SURFACE)
+    if not approval:
+        return False
+    if not is_publishable_active_candidate_source(repo_root):
+        return False
+    if approval.get("artifact_kind") != "candidate_approval_decision":
+        return False
+    if approval.get("contract_ref") != CANDIDATE_APPROVAL_DECISION_CONTRACT_REF:
+        return False
+    if approval.get("canonical_mutations_allowed") is not False:
+        return False
+    if approval.get("tracked_artifacts_written") is not False:
+        return False
+    source_artifacts = approval.get("source_artifacts")
+    if not isinstance(source_artifacts, dict):
+        return False
+    expected_surfaces = {
+        "active_candidate": ACTIVE_IDEA_TO_SPEC_CANDIDATE_SURFACE,
+        "promotion_gate": "idea_to_spec_promotion_gate.json",
+    }
+    for key, surface in expected_surfaces.items():
+        source = source_artifacts.get(key)
+        if not isinstance(source, dict):
+            return False
+        if source.get("source_ref") != f"runs/{surface}":
+            return False
+        if source.get("sha256") != run_file_sha256_if_present(repo_root, surface):
             return False
     return True
 

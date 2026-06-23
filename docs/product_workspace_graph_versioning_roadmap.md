@@ -249,7 +249,8 @@ The implemented surface is:
 
 ### 8. CLI Candidate Approval Flow
 
-Status: proposed in proposal `0156`.
+Status: contract proposed in proposal `0156`; first deterministic artifact
+implemented in proposal `0157`.
 
 The CLI and agent-mediated product workflow needs an explicit operator decision
 between a review-ready candidate and any Git Service promotion attempt. The
@@ -275,6 +276,12 @@ agent recommends
   -> repository review accepts or rejects canonical changes
   -> read model publishes only after merged review
 ```
+
+The implemented `make candidate-approval-decision` target reads the active
+candidate source and promotion gate, defaults to `needs_context`, and emits
+`approved` only when the operator explicitly requests approval and all upstream
+readiness checks pass. The artifact stays review-only and carries
+`canonical_mutations_allowed: false`.
 
 ### 9. Git Service Post-Review And Read-Model Closure
 
@@ -332,12 +339,12 @@ authority boundary as the current deterministic pilot.
 
 The active stack after production workspace isolation is:
 
-1. CLI candidate approval flow contract and future report artifact.
-2. SpecSpace workflow lane over the product workspace chain.
-3. Platform Git Service post-review status and read-model publication
+1. SpecSpace workflow lane over the product workspace chain, including
+   candidate approval state.
+2. Platform Git Service post-review status and read-model publication
    orchestration.
-4. Generic idea intake / event-storming entry point.
-5. Ontology applicability and layer-aware review refinement as compiler support
+3. Generic idea intake / event-storming entry point.
+4. Ontology applicability and layer-aware review refinement as compiler support
    matures.
 
 ## Related Documents

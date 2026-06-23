@@ -58,6 +58,12 @@ IDEA_TO_SPEC_PROMOTION_GATE_MATERIALIZATION ?= runs/candidate_spec_materializati
 IDEA_TO_SPEC_PROMOTION_GATE_OUTPUT ?= runs/idea_to_spec_promotion_gate.json
 ACTIVE_IDEA_TO_SPEC_CANDIDATE_CONFIG ?= tests/fixtures/product_workspace_active_candidate/active_candidate_source.json
 ACTIVE_IDEA_TO_SPEC_CANDIDATE_OUTPUT ?= runs/active_idea_to_spec_candidate.json
+CANDIDATE_APPROVAL_ACTIVE_CANDIDATE ?= runs/active_idea_to_spec_candidate.json
+CANDIDATE_APPROVAL_PROMOTION_GATE ?= runs/idea_to_spec_promotion_gate.json
+CANDIDATE_APPROVAL_OUTPUT ?= runs/candidate_approval_decision.json
+CANDIDATE_APPROVAL_DECISION_STATE ?= needs_context
+CANDIDATE_APPROVAL_OPERATOR_REF ?= local_operator:unattributed
+CANDIDATE_APPROVAL_REASON ?= awaiting explicit operator approval
 PRODUCT_WORKSPACE_INTAKE_SOURCE ?= tests/fixtures/product_workspace_active_candidate/idea_event_storming_seed.json
 PRODUCT_WORKSPACE_CANDIDATE_SEED ?= tests/fixtures/product_workspace_active_candidate/candidate_spec_graph_seed.json
 PRODUCT_WORKSPACE_ACTIVE_CANDIDATE_CONFIG ?= $(ACTIVE_IDEA_TO_SPEC_CANDIDATE_CONFIG)
@@ -77,7 +83,8 @@ PYTHON_TARGETS := viewer-surfaces dashboard backlog next-move spec-activity grap
 	specauthor-invocation-artifact-contract specauthor-authoring-flow \
 	idea-event-storming-intake candidate-spec-graph pre-sib-coherence candidate-repair-loop \
 	candidate-spec-materialization idea-to-spec-promotion-gate \
-	active-idea-to-spec-candidate-source product-workspace-active-candidate \
+	active-idea-to-spec-candidate-source candidate-approval-decision \
+	product-workspace-active-candidate \
 	proposal-work-claims proposal-work-claims-gate proposal-id \
 	metrics-delivery metrics-feedback metrics-source-promotion metric-signals metric-thresholds \
 	metric-packs metric-pack-drift metric-pack-adapters metric-pack-runs metric-pricing model-usage \
@@ -173,6 +180,7 @@ help:
 			'  make candidate-spec-materialization Build review-only candidate spec YAML previews' \
 			'  make idea-to-spec-promotion-gate Build final idea-to-spec Platform handoff gate' \
 			'  make active-idea-to-spec-candidate-source Build active product candidate source' \
+			'  make candidate-approval-decision Build explicit candidate approval decision' \
 			'  make product-workspace-active-candidate Build active product workspace candidate artifacts' \
 			'  make agent-passports          Refresh Agent Passport derived surfaces' \
 			'  make agent-runtime-evidence   Refresh Agent Passport runtime evidence JSON' \
@@ -333,6 +341,10 @@ idea-to-spec-promotion-gate:
 .PHONY: active-idea-to-spec-candidate-source
 active-idea-to-spec-candidate-source:
 	@$(PYTHON) tools/active_idea_to_spec_candidate_source.py --config "$(ACTIVE_IDEA_TO_SPEC_CANDIDATE_CONFIG)" --output "$(ACTIVE_IDEA_TO_SPEC_CANDIDATE_OUTPUT)"
+
+.PHONY: candidate-approval-decision
+candidate-approval-decision:
+	@$(PYTHON) tools/candidate_approval_decision.py --active-candidate "$(CANDIDATE_APPROVAL_ACTIVE_CANDIDATE)" --promotion-gate "$(CANDIDATE_APPROVAL_PROMOTION_GATE)" --decision "$(CANDIDATE_APPROVAL_DECISION_STATE)" --operator-ref "$(CANDIDATE_APPROVAL_OPERATOR_REF)" --reason "$(CANDIDATE_APPROVAL_REASON)" --output "$(CANDIDATE_APPROVAL_OUTPUT)"
 
 .PHONY: product-workspace-active-candidate
 product-workspace-active-candidate:

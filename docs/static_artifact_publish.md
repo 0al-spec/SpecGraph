@@ -126,6 +126,17 @@ When `runs/active_idea_to_spec_candidate.json` is ready, the manifest also
 reports that active source and the publisher leaves the real materialization and
 promotion gate artifacts intact.
 
+When present, `runs/candidate_approval_decision.json` is published as an
+ordinary public-safe run artifact. It is intentionally not generated as a public
+placeholder: absence means no explicit operator approval has been recorded. The
+artifact must contain refs, digests, decision state, findings, and authority
+metadata only; it must not publish raw prompts, private operator notes, local
+paths, branches, commits, pull requests, merges, read models, canonical spec
+mutations, or Ontology writes. Static publishing skips this artifact when the
+active candidate source is not publishable or when the approval artifact's
+recorded active-candidate or promotion-gate refs/digests no longer match the
+current run artifacts.
+
 ## Safety Gate
 
 The bundle builder fails before upload when it finds:

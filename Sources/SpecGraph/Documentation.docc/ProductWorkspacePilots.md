@@ -69,6 +69,17 @@ for the transition from `candidate_review_requested` to
 `promotion_request_approved`. It must not create branches, commits, pull
 requests, merges, read models, canonical spec mutations, or Ontology writes.
 
+Proposal `0157` implements the first deterministic local approval artifact:
+
+```bash
+make candidate-approval-decision
+```
+
+The target writes `runs/candidate_approval_decision.json`. Its default decision
+state is `needs_context`; approval requires an explicit
+`CANDIDATE_APPROVAL_DECISION_STATE=approved` and ready upstream candidate/gate
+artifacts.
+
 ## Review And Promotion Chain
 
 SpecSpace can now route the product workspace separately from the SpecGraph
@@ -102,12 +113,12 @@ The product pilot must not:
 
 ## Current Execution Order
 
-1. Define the CLI candidate approval flow and future report artifact.
-2. Add the SpecSpace workflow lane over the product workspace chain.
-3. Extend Platform Git Service orchestration through review status and
+1. Add the SpecSpace workflow lane over the product workspace chain, including
+   candidate approval state.
+2. Extend Platform Git Service orchestration through review status and
    read-model publication.
-4. Add the generic idea intake / event-storming entry point.
-5. Refine ontology applicability and layer-aware review as compiler support
+3. Add the generic idea intake / event-storming entry point.
+4. Refine ontology applicability and layer-aware review as compiler support
    matures.
 
 ## Canonical Sources
