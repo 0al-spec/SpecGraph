@@ -78,6 +78,10 @@ IDEA_TO_SPEC_CLARIFICATION_ANSWERS_INPUT ?= tests/fixtures/idea_to_spec_clarific
 IDEA_TO_SPEC_CLARIFICATION_ANSWERS_OUTPUT ?= runs/idea_to_spec_clarification_answers.json
 IDEA_TO_SPEC_ANSWER_RERUN_INPUT_ANSWERS ?= runs/idea_to_spec_clarification_answers.json
 IDEA_TO_SPEC_ANSWER_RERUN_INPUT_OUTPUT ?= runs/idea_to_spec_answer_rerun_input.json
+IDEA_TO_SPEC_RERUN_PREVIEW_INPUT ?= runs/idea_to_spec_answer_rerun_input.json
+IDEA_TO_SPEC_RERUN_PREVIEW_INTAKE ?= runs/idea_event_storming_intake.json
+IDEA_TO_SPEC_RERUN_PREVIEW_CANDIDATE_GRAPH ?= runs/candidate_spec_graph.json
+IDEA_TO_SPEC_RERUN_PREVIEW_OUTPUT ?= runs/idea_to_spec_rerun_preview.json
 CANDIDATE_SPEC_MATERIALIZATION_CANDIDATE_GRAPH ?= tests/fixtures/candidate_repair_loop/candidate_graph_repairable.json
 CANDIDATE_SPEC_MATERIALIZATION_REPAIR_LOOP ?= runs/candidate_repair_loop_report.json
 CANDIDATE_SPEC_MATERIALIZATION_OUTPUT_DIR ?= runs/materialized_candidate_specs
@@ -149,6 +153,7 @@ PYTHON_TARGETS := viewer-surfaces dashboard backlog next-move spec-activity grap
 	idea-to-spec-clarification-requests \
 	idea-to-spec-clarification-answers \
 	idea-to-spec-answer-rerun-input \
+	idea-to-spec-rerun-preview \
 	candidate-spec-materialization idea-to-spec-promotion-gate \
 	active-idea-to-spec-candidate-source candidate-approval-decision \
 	product-workspace-active-candidate \
@@ -214,6 +219,7 @@ help:
 			'  make idea-to-spec-clarification-requests IDEA_TO_SPEC_CLARIFICATION_SESSION=<json>' \
 			'  make idea-to-spec-clarification-answers IDEA_TO_SPEC_CLARIFICATION_ANSWERS_INPUT=<json>' \
 			'  make idea-to-spec-answer-rerun-input IDEA_TO_SPEC_ANSWER_RERUN_INPUT_ANSWERS=<json>' \
+			'  make idea-to-spec-rerun-preview IDEA_TO_SPEC_RERUN_PREVIEW_INPUT=<json>' \
 		'  make metrics-delivery         Refresh Metrics delivery workflow JSON' \
 		'  make metrics-feedback         Refresh Metrics feedback JSON' \
 		'  make metrics-source-promotion Refresh Metrics source promotion candidates JSON' \
@@ -442,6 +448,10 @@ idea-to-spec-clarification-answers:
 .PHONY: idea-to-spec-answer-rerun-input
 idea-to-spec-answer-rerun-input:
 	@$(PYTHON) tools/idea_to_spec_answer_rerun_input.py --answers "$(IDEA_TO_SPEC_ANSWER_RERUN_INPUT_ANSWERS)" --output "$(IDEA_TO_SPEC_ANSWER_RERUN_INPUT_OUTPUT)"
+
+.PHONY: idea-to-spec-rerun-preview
+idea-to-spec-rerun-preview:
+	@$(PYTHON) tools/idea_to_spec_rerun_preview.py --rerun-input "$(IDEA_TO_SPEC_RERUN_PREVIEW_INPUT)" --intake "$(IDEA_TO_SPEC_RERUN_PREVIEW_INTAKE)" --candidate-graph "$(IDEA_TO_SPEC_RERUN_PREVIEW_CANDIDATE_GRAPH)" --output "$(IDEA_TO_SPEC_RERUN_PREVIEW_OUTPUT)"
 
 .PHONY: candidate-spec-materialization
 candidate-spec-materialization:

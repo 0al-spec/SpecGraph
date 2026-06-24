@@ -2130,5 +2130,18 @@
     "required_provenance_links": [
       "source_draft_ref"
     ]
+  },
+  {
+    "proposal_id": "0166",
+    "source_artifact_class": "working_draft",
+    "source_refs": [
+      "docs/archive/proposal_sources/0166_idea_to_spec_rerun_preview.md"
+    ],
+    "motivating_concern": "The idea-to-spec flow can produce a ready accepted-answer rerun input overlay, but users and agents still need a deterministic preview of how those answers affect current intake and candidate graph state before any future materializing rerun.",
+    "normalized_title": "Idea-To-Spec Rerun Preview",
+    "bounded_scope": "Add a deterministic review-only idea_to_spec_rerun_preview builder, Make target, tests, proposal docs, roadmap, and DocC updates that consume a ready idea_to_spec_answer_rerun_input plus current event-storming intake and candidate graph, preview active-frame and event-storming hint effects, preview ontology gap resolutions, and expose candidate review hints, without executing prompt agents, applying answers to source artifacts, mutating candidate artifacts, mutating canonical specs, writing Ontology packages or lockfiles, accepting ontology terms, approving candidate graphs, creating Git branches or commits, opening pull requests, publishing read models, or adding SpecSpace mutation UI.",
+    "required_provenance_links": [
+      "source_draft_ref"
+    ]
   }
 ]
