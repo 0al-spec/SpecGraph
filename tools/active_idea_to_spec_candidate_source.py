@@ -61,6 +61,9 @@ READY_FIELD_BY_ARTIFACT = {
 }
 FINAL_READY_ARTIFACTS = ("repair_loop", "materialization", "promotion_gate")
 CANDIDATE_ID_RE = re.compile(r"^[a-z0-9][a-z0-9-]{1,62}[a-z0-9]$")
+PRODUCT_SOURCE_REF_RE = re.compile(
+    r"^product://(?P<candidate_id>[a-z0-9][a-z0-9-]{1,62}[a-z0-9])(?:/|$)"
+)
 REQUIRED_CANDIDATE_VALUES = {
     "source_mode": "active_candidate",
     "workflow_lane": "product_idea_to_spec",
@@ -92,6 +95,10 @@ def _text_list(value: Any) -> list[str]:
 
 def _slug_to_project_id(value: str) -> str:
     return "".join(part[:1].upper() + part[1:] for part in value.split("-") if part)
+
+
+def _slug_to_display_name(value: str) -> str:
+    return " ".join(part[:1].upper() + part[1:] for part in value.split("-") if part)
 
 
 def _slug_to_domain_ref(value: str) -> str:
@@ -329,11 +336,18 @@ def _candidate_metadata(candidate: dict[str, Any]) -> tuple[dict[str, Any], list
 def _candidate_from_intake_artifact(intake: dict[str, Any]) -> dict[str, Any]:
     source_intake = _dict(intake.get("source_intake"))
     workspace = _dict(source_intake.get("workspace"))
+    source_ref = _text(intake.get("source_ref"))
+    source_match = PRODUCT_SOURCE_REF_RE.match(source_ref)
+    source_candidate_id = source_match.group("candidate_id") if source_match else ""
+    candidate_id = _text(workspace.get("candidate_id"), source_candidate_id)
     return {
         **REQUIRED_CANDIDATE_VALUES,
-        "candidate_id": _text(workspace.get("candidate_id")),
-        "display_name": _text(workspace.get("display_name")),
-        "public_route": _text(workspace.get("public_route")),
+        "candidate_id": candidate_id,
+        "display_name": _text(workspace.get("display_name"), _slug_to_display_name(candidate_id)),
+        "public_route": _text(
+            workspace.get("public_route"),
+            f"/{candidate_id}" if candidate_id else "",
+        ),
     }
 
 

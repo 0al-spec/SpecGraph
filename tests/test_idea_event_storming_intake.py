@@ -74,7 +74,12 @@ def test_idea_event_storming_intake_preserves_source_intake_workspace() -> None:
             "display_name": "Support Triage Log",
             "public_route": "/support-triage-log",
         },
-        "summary": {"status": "ready_for_event_storming_intake"},
+        "summary": {
+            "status": "ready_for_event_storming_intake",
+            "raw_prompt": "secret prompt",
+            "operator_note": "private operator note",
+            "nested": {"raw_model_output": "secret model output", "safe": "kept"},
+        },
     }
 
     intake = module.build_idea_event_storming_intake(seed, source_path=READY_FIXTURE)
@@ -85,7 +90,13 @@ def test_idea_event_storming_intake_preserves_source_intake_workspace() -> None:
         "display_name": "Support Triage Log",
         "public_route": "/support-triage-log",
     }
-    assert intake["source_intake"]["summary"] == {"status": "ready_for_event_storming_intake"}
+    assert intake["source_intake"]["summary"] == {
+        "nested": {"safe": "kept"},
+        "status": "ready_for_event_storming_intake",
+    }
+    assert "secret prompt" not in json.dumps(intake)
+    assert "private operator note" not in json.dumps(intake)
+    assert "secret model output" not in json.dumps(intake)
 
 
 def test_idea_event_storming_intake_requires_frame_and_core_categories() -> None:

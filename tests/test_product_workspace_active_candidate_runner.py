@@ -134,3 +134,76 @@ def test_product_workspace_active_candidate_runs_from_generic_user_idea_source()
     finally:
         if RUN_DIR.exists():
             shutil.rmtree(RUN_DIR)
+
+
+def test_product_workspace_active_candidate_preserves_legacy_prepared_seed_path() -> None:
+    run_dir = RUN_DIR / "legacy_prepared_seed"
+    if run_dir.exists():
+        shutil.rmtree(run_dir)
+    try:
+        intake = run_dir / "idea_event_storming_intake.json"
+        candidate_seed = run_dir / "candidate_spec_graph_seed.json"
+        candidate_graph = run_dir / "candidate_spec_graph.json"
+        pre_sib = run_dir / "pre_sib_coherence_report.json"
+        repair_loop = run_dir / "candidate_repair_loop_report.json"
+        materialized_dir = run_dir / "materialized_candidate_specs"
+        materialization = run_dir / "candidate_spec_materialization_report.json"
+        promotion_gate = run_dir / "idea_to_spec_promotion_gate.json"
+        active_candidate = run_dir / "active_idea_to_spec_candidate.json"
+        config = run_dir / "active_candidate_source_generic.json"
+        write_json(
+            config,
+            {
+                "artifact_kind": "active_idea_to_spec_candidate_source_config",
+                "artifacts": {
+                    "candidate_graph": candidate_graph.relative_to(ROOT).as_posix(),
+                    "intake": intake.relative_to(ROOT).as_posix(),
+                    "materialization": materialization.relative_to(ROOT).as_posix(),
+                    "pre_sib": pre_sib.relative_to(ROOT).as_posix(),
+                    "promotion_gate": promotion_gate.relative_to(ROOT).as_posix(),
+                    "repair_loop": repair_loop.relative_to(ROOT).as_posix(),
+                },
+                "contract_ref": "specgraph.idea-to-spec.active-candidate-source-config.v0.1",
+                "schema_version": 1,
+            },
+        )
+
+        result = subprocess.run(
+            [
+                "make",
+                "product-workspace-active-candidate",
+                f"PYTHON={supported_python()}",
+                "PRODUCT_WORKSPACE_INTAKE_SOURCE="
+                "tests/fixtures/product_workspace_active_candidate/idea_event_storming_seed.json",
+                f"IDEA_EVENT_STORMING_INTAKE_OUTPUT={intake.relative_to(ROOT).as_posix()}",
+                "PRODUCT_WORKSPACE_CANDIDATE_SEED_OUTPUT="
+                f"{candidate_seed.relative_to(ROOT).as_posix()}",
+                f"CANDIDATE_SPEC_GRAPH_OUTPUT={candidate_graph.relative_to(ROOT).as_posix()}",
+                f"PRE_SIB_COHERENCE_OUTPUT={pre_sib.relative_to(ROOT).as_posix()}",
+                f"CANDIDATE_REPAIR_LOOP_OUTPUT={repair_loop.relative_to(ROOT).as_posix()}",
+                "CANDIDATE_SPEC_MATERIALIZATION_OUTPUT_DIR="
+                f"{materialized_dir.relative_to(ROOT).as_posix()}",
+                "CANDIDATE_SPEC_MATERIALIZATION_OUTPUT="
+                f"{materialization.relative_to(ROOT).as_posix()}",
+                f"IDEA_TO_SPEC_PROMOTION_GATE_OUTPUT={promotion_gate.relative_to(ROOT).as_posix()}",
+                "ACTIVE_IDEA_TO_SPEC_CANDIDATE_OUTPUT="
+                f"{active_candidate.relative_to(ROOT).as_posix()}",
+                f"PRODUCT_WORKSPACE_ACTIVE_CANDIDATE_CONFIG={config.relative_to(ROOT).as_posix()}",
+            ],
+            cwd=ROOT,
+            check=False,
+            capture_output=True,
+            text=True,
+        )
+
+        assert result.returncode == 0, result.stderr
+        intake_payload = load_json(intake)
+        assert "source_intake" not in intake_payload
+        active = load_json(active_candidate)
+        assert active["artifact_kind"] == "active_idea_to_spec_candidate"
+        assert active["candidate"]["candidate_id"] == "team-decision-log"
+        assert active["candidate"]["display_name"] == "Team Decision Log"
+        assert active["candidate"]["public_route"] == "/team-decision-log"
+    finally:
+        if run_dir.exists():
+            shutil.rmtree(run_dir)
