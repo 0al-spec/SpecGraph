@@ -213,6 +213,21 @@ does not apply answers to source artifacts, mutate candidate graphs, accept
 ontology terms, write ontology packages, approve candidates, create Git
 branches, or publish read models.
 
+Proposal `0167` adds `idea_to_spec_rerun_materialization`:
+
+```bash
+make idea-to-spec-rerun-materialization
+```
+
+The materialization report consumes a ready rerun preview and current candidate
+graph, then nests a materialized candidate graph preview inside
+`runs/idea_to_spec_rerun_materialization.json`. Preview-resolved ontology gaps
+are removed from node `gaps` and preserved as explicit
+`ontology_gap_resolutions`; unresolved ontology gaps remain visible. The report
+does not rewrite `runs/candidate_spec_graph.json`, accept ontology terms, write
+ontology packages, approve candidates, mutate canonical specs, create Git
+branches, or publish read models.
+
 ## Authority Boundary
 
 Team Decision Log remains non-canonical until a repository service accepts a
@@ -229,8 +244,8 @@ The product pilot must not:
 
 ## Current Execution Order
 
-1. Deterministic intake or candidate rerun materializer for
-   `idea_to_spec_rerun_preview`.
+1. Controlled candidate rerun source selection from
+   `idea_to_spec_rerun_materialization`.
 2. Prompt-side enrichment for richer candidate graph authoring under the same
    ontology-bound seed contract.
 3. CLI or agent conversation wrapper that fills `user_idea_raw_input` from a
