@@ -427,6 +427,32 @@ The runner may still emit `active_candidate_review_required` when pre-SIB,
 repair-loop, ontology-gap, or promotion-gate checks require owner context. That
 blocked state is the expected pre-SIB control behavior, not a runner failure.
 
+### 13. Artifact-Derived Active Candidate Source Defaults
+
+Status: implemented in proposal `0161`.
+
+The active candidate source no longer requires a config fixture in the standard
+generated flow. The builder now reads the standard artifact chain directly:
+
+```text
+runs/idea_event_storming_intake.json
+  -> runs/candidate_spec_graph.json
+  -> runs/pre_sib_coherence_report.json
+  -> runs/candidate_repair_loop_report.json
+  -> runs/candidate_spec_materialization_report.json
+  -> runs/idea_to_spec_promotion_gate.json
+  -> runs/active_idea_to_spec_candidate.json
+```
+
+`runs/active_idea_to_spec_candidate.json` records `config_source.required=false`
+and a `source_derivation` block that shows whether identity came from
+`intake.source_intake.workspace`, whether artifact paths came from defaults or
+an explicit override, and which standard artifact refs were used.
+
+Config remains supported for nonstandard artifact paths, tests, and legacy
+prepared-seed compatibility. It is not part of the normal product
+`product_idea_to_spec` happy path.
+
 ## Success Criteria
 
 - A user can start with a product idea and receive a coherent candidate graph.
@@ -440,7 +466,7 @@ blocked state is the expected pre-SIB control behavior, not a runner failure.
 - The Team Decision Log pilot appears as a product workspace, not as part of the
   SpecGraph bootstrap workspace.
 - A new product idea can replace Team Decision Log as data without adding
-  product-specific scripts or Make targets.
+  product-specific scripts, Make targets, or active-candidate config fixtures.
 
 ## Current Execution Order
 

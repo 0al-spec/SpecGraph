@@ -322,22 +322,23 @@ Supervisor modes:
   only when repair context is resolved, materialization is ready, and paths are
   safe.
 - `tools/active_idea_to_spec_candidate_source.py`: active candidate source
-  builder introduced by proposal 0155 and made generic by proposal 0160. Use
+  builder introduced by proposal 0155, made generic by proposal 0160, and made
+  artifact-derived by default in proposal 0161. Use
   `make product-workspace-active-candidate
   PRODUCT_WORKSPACE_IDEA_SOURCE=<json>` to build the `product_idea_to_spec`
   artifact chain from a generic `user_idea_intake_source` and
   `runs/active_idea_to_spec_candidate.json`. The artifact proves that
   materialization and promotion-gate surfaces come from a product workspace
   active candidate rather than fixture/demo leakage or public placeholders.
-  The active candidate config may contain only artifact refs; candidate id,
-  display name, and route derive from `idea_event_storming_intake.source_intake`,
-  while governance fields use the standard active product workspace defaults.
-  The default `PRODUCT_WORKSPACE_IDEA_SOURCE` is Team Decision Log as data for
-  the public product pilot, while tests can pass other source JSON files through
-  the same target.
-  To keep the old prepared-seed input mode, pass
-  `PRODUCT_WORKSPACE_INTAKE_SOURCE=<seed.json>` together with an explicit active
-  candidate config when that seed does not include `source_intake.workspace`.
+  By default the builder reads the standard generated `runs/*` artifacts,
+  derives candidate id, display name, and route from
+  `idea_event_storming_intake.source_intake`, and uses the standard active
+  product workspace governance defaults. An explicit active candidate config is
+  now optional and should be treated as a compatibility/debug override for
+  nonstandard artifact paths or legacy prepared-seed flows. The default
+  `PRODUCT_WORKSPACE_IDEA_SOURCE` is Team Decision Log as data for the public
+  product pilot, while tests can pass other source JSON files through the same
+  target.
 - `tools/candidate_approval_decision.py`: explicit candidate approval decision
   builder introduced by proposal 0157. Use `make candidate-approval-decision`
   after the active candidate source and promotion gate exist. The default state
@@ -979,9 +980,10 @@ Key derived artifacts:
   for the configured product workspace, linking event-storming intake,
   candidate graph, pre-SIB report, repair-loop preview, materialization report,
   and promotion gate under `product_spec_workspace` authority. In the generic
-  active path, candidate identity derives from the intake source and readiness
-  can be `active_candidate_review_required` when pre-SIB or promotion-gate
-  blockers remain.
+  active path, candidate identity derives from the intake source, standard
+  artifact refs derive from the generated `runs/*` chain, and readiness can be
+  `active_candidate_review_required` when pre-SIB or promotion-gate blockers
+  remain.
 - `runs/candidate_approval_decision.json`: public-safe candidate approval
   decision artifact for CLI-mode product workspace promotion. It records the
   requested and effective decision state, operator ref, public-safe rationale,

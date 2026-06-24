@@ -16,14 +16,15 @@ PROPOSAL_ID = "0155"
 SCHEMA_VERSION = 1
 CONTRACT_REF = "specgraph.idea-to-spec.active-candidate-source.v0.1"
 CONFIG_CONTRACT_REF = "specgraph.idea-to-spec.active-candidate-source-config.v0.1"
-DEFAULT_CONFIG_PATH = (
-    ROOT
-    / "tests"
-    / "fixtures"
-    / "product_workspace_active_candidate"
-    / "active_candidate_source.json"
-)
 DEFAULT_OUTPUT_PATH = ROOT / "runs" / "active_idea_to_spec_candidate.json"
+DEFAULT_ARTIFACT_REFS = {
+    "intake": "runs/idea_event_storming_intake.json",
+    "candidate_graph": "runs/candidate_spec_graph.json",
+    "pre_sib": "runs/pre_sib_coherence_report.json",
+    "repair_loop": "runs/candidate_repair_loop_report.json",
+    "materialization": "runs/candidate_spec_materialization_report.json",
+    "promotion_gate": "runs/idea_to_spec_promotion_gate.json",
+}
 
 EXPECTED_ARTIFACTS = {
     "intake": (
@@ -180,7 +181,17 @@ def _privacy_boundary() -> dict[str, bool]:
     }
 
 
-def _config_findings(config: dict[str, Any]) -> list[dict[str, Any]]:
+def _default_config() -> dict[str, Any]:
+    return {
+        "artifact_kind": "active_idea_to_spec_candidate_source_config",
+        "schema_version": SCHEMA_VERSION,
+        "contract_ref": CONFIG_CONTRACT_REF,
+    }
+
+
+def _config_findings(config: dict[str, Any], *, config_provided: bool) -> list[dict[str, Any]]:
+    if not config_provided:
+        return []
     invalid = []
     if config.get("artifact_kind") != "active_idea_to_spec_candidate_source_config":
         invalid.append("artifact_kind")
@@ -333,32 +344,48 @@ def _candidate_metadata(candidate: dict[str, Any]) -> tuple[dict[str, Any], list
     return normalized, findings
 
 
-def _candidate_from_intake_artifact(intake: dict[str, Any]) -> dict[str, Any]:
+def _candidate_from_intake_artifact(intake: dict[str, Any]) -> tuple[dict[str, Any], str]:
     source_intake = _dict(intake.get("source_intake"))
     workspace = _dict(source_intake.get("workspace"))
     source_ref = _text(intake.get("source_ref"))
     source_match = PRODUCT_SOURCE_REF_RE.match(source_ref)
     source_candidate_id = source_match.group("candidate_id") if source_match else ""
     candidate_id = _text(workspace.get("candidate_id"), source_candidate_id)
-    return {
-        **REQUIRED_CANDIDATE_VALUES,
-        "candidate_id": candidate_id,
-        "display_name": _text(workspace.get("display_name"), _slug_to_display_name(candidate_id)),
-        "public_route": _text(
-            workspace.get("public_route"),
-            f"/{candidate_id}" if candidate_id else "",
-        ),
-    }
+    if _text(workspace.get("candidate_id")):
+        identity_source = "intake.source_intake.workspace"
+    elif source_candidate_id:
+        identity_source = "intake.source_ref"
+    else:
+        identity_source = "unresolved"
+    return (
+        {
+            **REQUIRED_CANDIDATE_VALUES,
+            "candidate_id": candidate_id,
+            "display_name": _text(
+                workspace.get("display_name"),
+                _slug_to_display_name(candidate_id),
+            ),
+            "public_route": _text(
+                workspace.get("public_route"),
+                f"/{candidate_id}" if candidate_id else "",
+            ),
+        },
+        identity_source,
+    )
 
 
 def _candidate_for_config(
     *,
     config: dict[str, Any],
     artifacts: dict[str, tuple[Path, dict[str, Any]]],
-) -> dict[str, Any]:
-    derived = _candidate_from_intake_artifact(artifacts.get("intake", (None, {}))[1])
+) -> tuple[dict[str, Any], str]:
+    derived, identity_source = _candidate_from_intake_artifact(
+        artifacts.get("intake", (None, {}))[1]
+    )
     explicit = _dict(config.get("candidate"))
-    return {**derived, **explicit}
+    if explicit:
+        identity_source = "config_override"
+    return {**derived, **explicit}, identity_source
 
 
 def _artifact_readiness(artifact_key: str, payload: dict[str, Any]) -> dict[str, Any]:
@@ -384,15 +411,22 @@ def _source_artifact(
     }
 
 
+def _artifact_refs_for_config(config: dict[str, Any]) -> tuple[dict[str, Any], str]:
+    raw_artifacts = _dict(config.get("artifacts"))
+    if raw_artifacts:
+        return {**DEFAULT_ARTIFACT_REFS, **raw_artifacts}, "config"
+    return dict(DEFAULT_ARTIFACT_REFS), "defaults"
+
+
 def _load_source_artifacts(
     config: dict[str, Any],
 ) -> tuple[dict[str, tuple[Path, dict[str, Any]]], list[dict[str, Any]]]:
     artifacts: dict[str, tuple[Path, dict[str, Any]]] = {}
     findings: list[dict[str, Any]] = []
-    raw_artifacts = _dict(config.get("artifacts"))
+    artifact_refs, _artifact_paths_source = _artifact_refs_for_config(config)
     for artifact_key, (expected_kind, expected_contract) in EXPECTED_ARTIFACTS.items():
         try:
-            path = _repo_path(raw_artifacts.get(artifact_key), field=f"artifacts.{artifact_key}")
+            path = _repo_path(artifact_refs.get(artifact_key), field=f"artifacts.{artifact_key}")
             payload = load_json(path)
         except (OSError, ValueError, json.JSONDecodeError) as exc:
             findings.append(
@@ -586,17 +620,20 @@ def _artifact_chain_findings(
 
 
 def build_active_idea_to_spec_candidate_source(
-    config: dict[str, Any],
+    config: dict[str, Any] | None = None,
     *,
     config_path: Path | None = None,
 ) -> dict[str, Any]:
+    config_provided = config is not None
+    config = config if config is not None else _default_config()
+    artifact_paths_source = _artifact_refs_for_config(config)[1]
     artifacts, artifact_findings = _load_source_artifacts(config)
-    candidate = _candidate_for_config(config=config, artifacts=artifacts)
+    candidate, identity_source = _candidate_for_config(config=config, artifacts=artifacts)
     normalized_candidate, candidate_findings = _candidate_metadata(candidate)
     chain_findings, chain_warnings = _artifact_chain_findings(artifacts)
     candidate_graph = artifacts.get("candidate_graph", (None, {}))[1]
     findings = (
-        _config_findings(config)
+        _config_findings(config, config_provided=config_provided)
         + candidate_findings
         + artifact_findings
         + _active_frame_findings(candidate_graph)
@@ -627,6 +664,14 @@ def build_active_idea_to_spec_candidate_source(
             "artifact_kind": config.get("artifact_kind"),
             "contract_ref": config.get("contract_ref"),
             "source_ref": _relative_ref(config_path) if config_path is not None else None,
+            "required": False,
+            "mode": "config" if config_provided else "artifact_defaults",
+        },
+        "source_derivation": {
+            "identity_source": identity_source,
+            "artifact_paths_source": artifact_paths_source,
+            "config_required": False,
+            "standard_artifact_paths": dict(DEFAULT_ARTIFACT_REFS),
         },
         "candidate": {
             "candidate_id": normalized_candidate.get("candidate_id"),
@@ -684,7 +729,7 @@ def build_active_idea_to_spec_candidate_source(
 
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--config", default=DEFAULT_CONFIG_PATH, type=Path)
+    parser.add_argument("--config", default=None, type=Path)
     parser.add_argument("--output", default=DEFAULT_OUTPUT_PATH, type=Path)
     parser.add_argument("--strict", action="store_true")
     return parser
@@ -692,7 +737,7 @@ def build_parser() -> argparse.ArgumentParser:
 
 def main(argv: list[str] | None = None) -> int:
     args = build_parser().parse_args(argv)
-    config = load_json(args.config)
+    config = load_json(args.config) if args.config is not None else None
     artifact = build_active_idea_to_spec_candidate_source(config, config_path=args.config)
     write_json(artifact, args.output)
     print(

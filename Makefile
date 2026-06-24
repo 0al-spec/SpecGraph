@@ -61,7 +61,8 @@ IDEA_TO_SPEC_PROMOTION_GATE_PRE_SIB ?= runs/pre_sib_coherence_report.json
 IDEA_TO_SPEC_PROMOTION_GATE_REPAIR_LOOP ?= runs/candidate_repair_loop_report.json
 IDEA_TO_SPEC_PROMOTION_GATE_MATERIALIZATION ?= runs/candidate_spec_materialization_report.json
 IDEA_TO_SPEC_PROMOTION_GATE_OUTPUT ?= runs/idea_to_spec_promotion_gate.json
-ACTIVE_IDEA_TO_SPEC_CANDIDATE_CONFIG ?= tests/fixtures/product_workspace_active_candidate/active_candidate_source_generic.json
+ACTIVE_IDEA_TO_SPEC_CANDIDATE_CONFIG ?=
+ACTIVE_IDEA_TO_SPEC_CANDIDATE_CONFIG_ARGS := $(if $(strip $(ACTIVE_IDEA_TO_SPEC_CANDIDATE_CONFIG)),--config "$(ACTIVE_IDEA_TO_SPEC_CANDIDATE_CONFIG)",)
 ACTIVE_IDEA_TO_SPEC_CANDIDATE_OUTPUT ?= runs/active_idea_to_spec_candidate.json
 CANDIDATE_APPROVAL_ACTIVE_CANDIDATE ?= runs/active_idea_to_spec_candidate.json
 CANDIDATE_APPROVAL_PROMOTION_GATE ?= runs/idea_to_spec_promotion_gate.json
@@ -79,6 +80,7 @@ PRODUCT_WORKSPACE_CANDIDATE_SEED ?= $(PRODUCT_WORKSPACE_CANDIDATE_SEED_OUTPUT)
 PRODUCT_WORKSPACE_CANDIDATE_SEED_MODE := $(if $(strip $(PRODUCT_WORKSPACE_CANDIDATE_SEED_INPUT)),input,$(if $(filter-out $(PRODUCT_WORKSPACE_CANDIDATE_SEED_OUTPUT),$(strip $(PRODUCT_WORKSPACE_CANDIDATE_SEED))),input,generate))
 PRODUCT_WORKSPACE_CANDIDATE_SEED_EFFECTIVE := $(if $(strip $(PRODUCT_WORKSPACE_CANDIDATE_SEED_INPUT)),$(PRODUCT_WORKSPACE_CANDIDATE_SEED_INPUT),$(PRODUCT_WORKSPACE_CANDIDATE_SEED))
 PRODUCT_WORKSPACE_ACTIVE_CANDIDATE_CONFIG ?= $(ACTIVE_IDEA_TO_SPEC_CANDIDATE_CONFIG)
+PRODUCT_WORKSPACE_ACTIVE_CANDIDATE_CONFIG_ARGS := $(if $(strip $(PRODUCT_WORKSPACE_ACTIVE_CANDIDATE_CONFIG)),--config "$(PRODUCT_WORKSPACE_ACTIVE_CANDIDATE_CONFIG)",)
 PRODUCT_WORKSPACE_ACTIVE_CANDIDATE_REFRESH_VARS := \
 	ACTIVE_IDEA_TO_SPEC_CANDIDATE_CONFIG \
 	PRODUCT_WORKSPACE_IDEA_SOURCE \
@@ -383,7 +385,7 @@ idea-to-spec-promotion-gate:
 
 .PHONY: active-idea-to-spec-candidate-source
 active-idea-to-spec-candidate-source:
-	@$(PYTHON) tools/active_idea_to_spec_candidate_source.py --config "$(ACTIVE_IDEA_TO_SPEC_CANDIDATE_CONFIG)" --output "$(ACTIVE_IDEA_TO_SPEC_CANDIDATE_OUTPUT)"
+	@$(PYTHON) tools/active_idea_to_spec_candidate_source.py $(ACTIVE_IDEA_TO_SPEC_CANDIDATE_CONFIG_ARGS) --output "$(ACTIVE_IDEA_TO_SPEC_CANDIDATE_OUTPUT)"
 
 .PHONY: candidate-approval-decision
 candidate-approval-decision:
@@ -403,7 +405,7 @@ endif
 	@$(PYTHON) tools/candidate_repair_loop.py --candidate-graph "$(CANDIDATE_SPEC_GRAPH_OUTPUT)" --pre-sib-report "$(PRE_SIB_COHERENCE_OUTPUT)" --output "$(CANDIDATE_REPAIR_LOOP_OUTPUT)"
 	@$(PYTHON) tools/candidate_spec_materialization.py --candidate-graph "$(CANDIDATE_SPEC_GRAPH_OUTPUT)" --repair-loop "$(CANDIDATE_REPAIR_LOOP_OUTPUT)" --output-dir "$(CANDIDATE_SPEC_MATERIALIZATION_OUTPUT_DIR)" --output "$(CANDIDATE_SPEC_MATERIALIZATION_OUTPUT)"
 	@$(PYTHON) tools/idea_to_spec_promotion_gate.py --pre-sib "$(PRE_SIB_COHERENCE_OUTPUT)" --repair-loop "$(CANDIDATE_REPAIR_LOOP_OUTPUT)" --materialization "$(CANDIDATE_SPEC_MATERIALIZATION_OUTPUT)" --output "$(IDEA_TO_SPEC_PROMOTION_GATE_OUTPUT)"
-	@$(PYTHON) tools/active_idea_to_spec_candidate_source.py --config "$(PRODUCT_WORKSPACE_ACTIVE_CANDIDATE_CONFIG)" --output "$(ACTIVE_IDEA_TO_SPEC_CANDIDATE_OUTPUT)"
+	@$(PYTHON) tools/active_idea_to_spec_candidate_source.py $(PRODUCT_WORKSPACE_ACTIVE_CANDIDATE_CONFIG_ARGS) --output "$(ACTIVE_IDEA_TO_SPEC_CANDIDATE_OUTPUT)"
 
 .PHONY: metrics-delivery
 metrics-delivery:

@@ -132,6 +132,15 @@ system flow. Passing `PRODUCT_WORKSPACE_INTAKE_SOURCE=<seed.json>` keeps the old
 prepared-seed input mode for backcompat; prepared seeds without
 `source_intake.workspace` need an explicit active candidate config.
 
+Proposal `0161` makes the active candidate source artifact-derived by default.
+The standard `make product-workspace-active-candidate` flow no longer needs an
+active candidate config fixture: `runs/active_idea_to_spec_candidate.json`
+reads the generated intake, candidate graph, pre-SIB report, repair loop,
+materialization report, and promotion gate from their standard `runs/*` paths.
+The artifact records `config_source.required=false` and `source_derivation` so
+downstream consumers can see whether artifact paths came from defaults or from
+an explicit compatibility/debug override.
+
 ## Authority Boundary
 
 Team Decision Log remains non-canonical until a repository service accepts a

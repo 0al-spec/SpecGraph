@@ -10,6 +10,18 @@ import pytest
 
 ROOT = Path(__file__).resolve().parents[1]
 RUN_DIR = ROOT / "runs" / "test_product_workspace_active_candidate_runner"
+DEFAULT_RUN_ARTIFACTS = (
+    ROOT / "runs" / "idea_event_storming_seed.json",
+    ROOT / "runs" / "idea_event_storming_intake.json",
+    ROOT / "runs" / "candidate_spec_graph_seed.json",
+    ROOT / "runs" / "candidate_spec_graph.json",
+    ROOT / "runs" / "pre_sib_coherence_report.json",
+    ROOT / "runs" / "candidate_repair_loop_report.json",
+    ROOT / "runs" / "materialized_candidate_specs",
+    ROOT / "runs" / "candidate_spec_materialization_report.json",
+    ROOT / "runs" / "idea_to_spec_promotion_gate.json",
+    ROOT / "runs" / "active_idea_to_spec_candidate.json",
+)
 
 
 def write_json(path: Path, payload: object) -> None:
@@ -19,6 +31,43 @@ def write_json(path: Path, payload: object) -> None:
 
 def load_json(path: Path) -> dict[str, object]:
     return json.loads(path.read_text(encoding="utf-8"))
+
+
+def backup_paths(paths: tuple[Path, ...], backup_dir: Path) -> None:
+    if backup_dir.exists():
+        shutil.rmtree(backup_dir)
+    backup_dir.mkdir(parents=True)
+    for path in paths:
+        if not path.exists():
+            continue
+        destination = backup_dir / path.relative_to(ROOT)
+        destination.parent.mkdir(parents=True, exist_ok=True)
+        if path.is_dir():
+            shutil.copytree(path, destination)
+        else:
+            shutil.copy2(path, destination)
+
+
+def restore_paths(paths: tuple[Path, ...], backup_dir: Path) -> None:
+    for path in paths:
+        if path.is_dir():
+            shutil.rmtree(path)
+        elif path.exists():
+            path.unlink()
+    for backup_path in sorted(backup_dir.rglob("*")):
+        if backup_path.is_dir():
+            continue
+        destination = ROOT / backup_path.relative_to(backup_dir)
+        destination.parent.mkdir(parents=True, exist_ok=True)
+        shutil.copy2(backup_path, destination)
+    for backup_path in sorted(
+        (path for path in backup_dir.rglob("*") if path.is_dir()),
+        key=lambda path: len(path.parts),
+    ):
+        destination = ROOT / backup_path.relative_to(backup_dir)
+        destination.mkdir(parents=True, exist_ok=True)
+    if backup_dir.exists():
+        shutil.rmtree(backup_dir)
 
 
 def supported_python() -> str:
@@ -53,6 +102,34 @@ def supported_python() -> str:
         if result.returncode == 0 and yaml_result.returncode == 0:
             return candidate
     pytest.skip("No Python >=3.10 interpreter with PyYAML available for Makefile integration test")
+
+
+def test_product_workspace_active_candidate_default_paths_do_not_require_config() -> None:
+    backup_dir = RUN_DIR / "default_path_backup"
+    backup_paths(DEFAULT_RUN_ARTIFACTS, backup_dir)
+    try:
+        result = subprocess.run(
+            [
+                "make",
+                "product-workspace-active-candidate",
+                f"PYTHON={supported_python()}",
+            ],
+            cwd=ROOT,
+            check=False,
+            capture_output=True,
+            text=True,
+        )
+
+        assert result.returncode == 0, result.stderr
+        active = load_json(ROOT / "runs" / "active_idea_to_spec_candidate.json")
+        assert active["artifact_kind"] == "active_idea_to_spec_candidate"
+        assert active["candidate"]["candidate_id"] == "team-decision-log"
+        assert active["config_source"]["mode"] == "artifact_defaults"
+        assert active["config_source"]["required"] is False
+        assert active["source_derivation"]["artifact_paths_source"] == "defaults"
+        assert active["source_derivation"]["config_required"] is False
+    finally:
+        restore_paths(DEFAULT_RUN_ARTIFACTS, backup_dir)
 
 
 def test_product_workspace_active_candidate_runs_from_generic_user_idea_source() -> None:
