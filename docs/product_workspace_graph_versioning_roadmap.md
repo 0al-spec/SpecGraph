@@ -453,6 +453,50 @@ Config remains supported for nonstandard artifact paths, tests, and legacy
 prepared-seed compatibility. It is not part of the normal product
 `product_idea_to_spec` happy path.
 
+### 14. Generic User Idea Intake Session
+
+Status: implemented in proposal `0162`.
+
+The normal product-workspace runner now starts from a raw idea intake session
+before it creates a prepared `user_idea_intake_source`.
+
+The implemented surface is:
+
+- `tools/user_idea_intake_session.py`;
+- `make user-idea-intake-session`;
+- `make generic-idea-intake-session`;
+- `runs/user_idea_intake_session.json`;
+- `runs/user_idea_intake_source.json` when the session is ready;
+- `make product-workspace-active-candidate`, which runs the session step before
+  the existing `user_idea_intake_source` builder in generated mode.
+
+The deterministic chain is now:
+
+```text
+user_idea_raw_input
+  -> user_idea_intake_session
+  -> user_idea_intake_source
+  -> idea_event_storming_seed
+  -> idea_event_storming_intake
+  -> ontology_bound_candidate_graph_seed
+  -> candidate_spec_graph
+  -> pre-SIB/coherence report
+  -> candidate_repair_loop_report
+  -> candidate_spec_materialization_report
+  -> idea_to_spec_promotion_gate
+  -> active_idea_to_spec_candidate
+```
+
+If the raw idea lacks ontology refs, ontology layer refs, domain refs, context
+refs, model applicability refs, actors, domain events, commands, or constraints,
+the session emits `needs_clarification` with public-safe
+`clarification_questions` and does not write a prepared source artifact. This
+keeps the first user-facing step generic while preventing under-specified ideas
+from entering the candidate graph path as if they were ready.
+
+Prepared `user_idea_intake_source` inputs remain supported for compatibility
+and tests, but they are no longer the only normal entry point.
+
 ## Success Criteria
 
 - A user can start with a product idea and receive a coherent candidate graph.
@@ -467,18 +511,22 @@ prepared-seed compatibility. It is not part of the normal product
   SpecGraph bootstrap workspace.
 - A new product idea can replace Team Decision Log as data without adding
   product-specific scripts, Make targets, or active-candidate config fixtures.
+- A raw product idea can produce a reviewable intake session that either writes
+  a prepared intake source or asks concrete clarification questions.
 
 ## Current Execution Order
 
 The active stack after production workspace isolation is:
 
-1. Prompt-side enrichment that can propose richer product-domain graph nodes
+1. CLI or agent conversation wrapper that fills `user_idea_raw_input` from a
+   real operator interview.
+2. Prompt-side enrichment that can propose richer product-domain graph nodes
    while preserving ontology gaps for unaccepted terms.
-2. SpecSpace workflow lane refinement for active candidate blockers, repair
+3. SpecSpace workflow lane refinement for active candidate blockers, repair
    suggestions, and approval state.
-3. Platform Git Service post-review status and read-model publication
+4. Platform Git Service post-review status and read-model publication
    orchestration.
-4. Ontology applicability and layer-aware review refinement as compiler support
+5. Ontology applicability and layer-aware review refinement as compiler support
    matures.
 
 ## Related Documents

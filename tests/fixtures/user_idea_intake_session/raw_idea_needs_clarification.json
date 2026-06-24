@@ -1,0 +1,8 @@
+{
+  "artifact_kind": "user_idea_raw_input",
+  "contract_ref": "specgraph.idea-to-spec.user-idea-raw-input.v0.1",
+  "idea": {
+    "text": "I want a small tool for team decisions."
+  },
+  "schema_version": 1
+}

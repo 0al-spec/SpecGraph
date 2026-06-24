@@ -22,8 +22,8 @@
     "project": "TeamDecisionLog",
     "subsystem": "product_specification"
   },
-  "artifact_kind": "user_idea_intake_source",
-  "contract_ref": "specgraph.idea-to-spec.user-idea-intake-source.v0.1",
+  "artifact_kind": "user_idea_raw_input",
+  "contract_ref": "specgraph.idea-to-spec.user-idea-raw-input.v0.1",
   "event_storming_hints": {
     "actors": [
       {
@@ -139,7 +139,7 @@
       }
     ]
   },
-  "intent": {
+  "idea": {
     "summary": "Build a Team Decision Log that records decisions, options, rationale, evidence, owners, review triggers, and supersession/conflict relations.",
     "text": "Teams need a lightweight decision log so important decisions preserve context, evidence, owners, considered options, and future review triggers."
   },
