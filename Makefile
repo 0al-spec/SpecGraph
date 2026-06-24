@@ -64,6 +64,15 @@ CANDIDATE_REPAIR_LOOP_CANDIDATE_GRAPH ?= tests/fixtures/candidate_repair_loop/ca
 CANDIDATE_REPAIR_LOOP_PRE_SIB_REPORT ?= tests/fixtures/candidate_repair_loop/pre_sib_repair_required.json
 CANDIDATE_REPAIR_LOOP_OUTPUT_DEFAULT := runs/candidate_repair_loop_report.json
 CANDIDATE_REPAIR_LOOP_OUTPUT ?= $(CANDIDATE_REPAIR_LOOP_OUTPUT_DEFAULT)
+IDEA_TO_SPEC_CLARIFICATION_SESSION ?= runs/user_idea_intake_session.json
+IDEA_TO_SPEC_CLARIFICATION_INTAKE ?= runs/idea_event_storming_intake.json
+IDEA_TO_SPEC_CLARIFICATION_CANDIDATE_GRAPH ?= runs/candidate_spec_graph.json
+IDEA_TO_SPEC_CLARIFICATION_PRE_SIB ?= runs/pre_sib_coherence_report.json
+IDEA_TO_SPEC_CLARIFICATION_REPAIR_LOOP ?= runs/candidate_repair_loop_report.json
+IDEA_TO_SPEC_CLARIFICATION_ONTOLOGY_GAP_REVIEW ?=
+IDEA_TO_SPEC_CLARIFICATION_ONTOLOGY_GAP_REVIEW_ARG := $(if $(strip $(IDEA_TO_SPEC_CLARIFICATION_ONTOLOGY_GAP_REVIEW)),--ontology-gap-review "$(IDEA_TO_SPEC_CLARIFICATION_ONTOLOGY_GAP_REVIEW)",)
+IDEA_TO_SPEC_CLARIFICATION_OUTPUT_DEFAULT := runs/idea_to_spec_clarification_requests.json
+IDEA_TO_SPEC_CLARIFICATION_OUTPUT ?= $(IDEA_TO_SPEC_CLARIFICATION_OUTPUT_DEFAULT)
 CANDIDATE_SPEC_MATERIALIZATION_CANDIDATE_GRAPH ?= tests/fixtures/candidate_repair_loop/candidate_graph_repairable.json
 CANDIDATE_SPEC_MATERIALIZATION_REPAIR_LOOP ?= runs/candidate_repair_loop_report.json
 CANDIDATE_SPEC_MATERIALIZATION_OUTPUT_DIR ?= runs/materialized_candidate_specs
@@ -131,6 +140,7 @@ PYTHON_TARGETS := viewer-surfaces dashboard backlog next-move spec-activity grap
 	generic-idea-intake-session \
 	idea-event-storming-intake ontology-bound-candidate-graph-seed \
 	candidate-spec-graph pre-sib-coherence candidate-repair-loop \
+	idea-to-spec-clarification-requests \
 	candidate-spec-materialization idea-to-spec-promotion-gate \
 	active-idea-to-spec-candidate-source candidate-approval-decision \
 	product-workspace-active-candidate \
@@ -193,6 +203,7 @@ help:
 			'  make candidate-spec-graph CANDIDATE_SPEC_GRAPH_INTAKE=<json> CANDIDATE_SPEC_GRAPH_SEED=<json>' \
 			'  make pre-sib-coherence PRE_SIB_COHERENCE_CANDIDATE_GRAPH=<json>' \
 			'  make candidate-repair-loop CANDIDATE_REPAIR_LOOP_CANDIDATE_GRAPH=<json> CANDIDATE_REPAIR_LOOP_PRE_SIB_REPORT=<json>' \
+			'  make idea-to-spec-clarification-requests IDEA_TO_SPEC_CLARIFICATION_SESSION=<json>' \
 		'  make metrics-delivery         Refresh Metrics delivery workflow JSON' \
 		'  make metrics-feedback         Refresh Metrics feedback JSON' \
 		'  make metrics-source-promotion Refresh Metrics source promotion candidates JSON' \
@@ -410,6 +421,10 @@ pre-sib-coherence:
 candidate-repair-loop:
 	@$(PYTHON) tools/candidate_repair_loop.py --candidate-graph "$(CANDIDATE_REPAIR_LOOP_CANDIDATE_GRAPH)" --pre-sib-report "$(CANDIDATE_REPAIR_LOOP_PRE_SIB_REPORT)" --output "$(CANDIDATE_REPAIR_LOOP_OUTPUT)"
 
+.PHONY: idea-to-spec-clarification-requests
+idea-to-spec-clarification-requests:
+	@$(PYTHON) tools/idea_to_spec_clarification_requests.py --session "$(IDEA_TO_SPEC_CLARIFICATION_SESSION)" --intake "$(IDEA_TO_SPEC_CLARIFICATION_INTAKE)" --candidate-graph "$(IDEA_TO_SPEC_CLARIFICATION_CANDIDATE_GRAPH)" --pre-sib "$(IDEA_TO_SPEC_CLARIFICATION_PRE_SIB)" --repair-loop "$(IDEA_TO_SPEC_CLARIFICATION_REPAIR_LOOP)" $(IDEA_TO_SPEC_CLARIFICATION_ONTOLOGY_GAP_REVIEW_ARG) --output "$(IDEA_TO_SPEC_CLARIFICATION_OUTPUT)"
+
 .PHONY: candidate-spec-materialization
 candidate-spec-materialization:
 	@$(PYTHON) tools/candidate_spec_materialization.py --candidate-graph "$(CANDIDATE_SPEC_MATERIALIZATION_CANDIDATE_GRAPH)" --repair-loop "$(CANDIDATE_SPEC_MATERIALIZATION_REPAIR_LOOP)" --output-dir "$(CANDIDATE_SPEC_MATERIALIZATION_OUTPUT_DIR)" --output "$(CANDIDATE_SPEC_MATERIALIZATION_OUTPUT)"
@@ -439,6 +454,7 @@ endif
 	@$(PYTHON) tools/candidate_spec_graph.py --intake "$(IDEA_EVENT_STORMING_INTAKE_OUTPUT)" --candidate-seed "$(PRODUCT_WORKSPACE_CANDIDATE_SEED_EFFECTIVE)" --output "$(CANDIDATE_SPEC_GRAPH_OUTPUT)"
 	@$(PYTHON) tools/pre_sib_coherence_report.py --candidate-graph "$(CANDIDATE_SPEC_GRAPH_OUTPUT)" --output "$(PRE_SIB_COHERENCE_OUTPUT)"
 	@$(PYTHON) tools/candidate_repair_loop.py --candidate-graph "$(CANDIDATE_SPEC_GRAPH_OUTPUT)" --pre-sib-report "$(PRE_SIB_COHERENCE_OUTPUT)" --output "$(CANDIDATE_REPAIR_LOOP_OUTPUT)"
+	@$(PYTHON) tools/idea_to_spec_clarification_requests.py --session "$(USER_IDEA_INTAKE_SESSION_OUTPUT)" --intake "$(IDEA_EVENT_STORMING_INTAKE_OUTPUT)" --candidate-graph "$(CANDIDATE_SPEC_GRAPH_OUTPUT)" --pre-sib "$(PRE_SIB_COHERENCE_OUTPUT)" --repair-loop "$(CANDIDATE_REPAIR_LOOP_OUTPUT)" $(IDEA_TO_SPEC_CLARIFICATION_ONTOLOGY_GAP_REVIEW_ARG) --output "$(IDEA_TO_SPEC_CLARIFICATION_OUTPUT)"
 	@$(PYTHON) tools/candidate_spec_materialization.py --candidate-graph "$(CANDIDATE_SPEC_GRAPH_OUTPUT)" --repair-loop "$(CANDIDATE_REPAIR_LOOP_OUTPUT)" --output-dir "$(CANDIDATE_SPEC_MATERIALIZATION_OUTPUT_DIR)" --output "$(CANDIDATE_SPEC_MATERIALIZATION_OUTPUT)"
 	@$(PYTHON) tools/idea_to_spec_promotion_gate.py --pre-sib "$(PRE_SIB_COHERENCE_OUTPUT)" --repair-loop "$(CANDIDATE_REPAIR_LOOP_OUTPUT)" --materialization "$(CANDIDATE_SPEC_MATERIALIZATION_OUTPUT)" --output "$(IDEA_TO_SPEC_PROMOTION_GATE_OUTPUT)"
 	@$(PYTHON) tools/active_idea_to_spec_candidate_source.py $(PRODUCT_WORKSPACE_ACTIVE_CANDIDATE_CONFIG_ARGS) $(PRODUCT_WORKSPACE_ACTIVE_CANDIDATE_ARTIFACT_ARGS) --output "$(ACTIVE_IDEA_TO_SPEC_CANDIDATE_OUTPUT)"

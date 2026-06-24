@@ -8938,5 +8938,74 @@
         "pattern": "proposal 0162"
       }
     ]
+  },
+  {
+    "proposal_id": "0163",
+    "posture": "synchronous_runtime_slice",
+    "runtime_surfaces": [
+      "docs/proposals/0163_idea_to_spec_clarification_requests.md",
+      "docs/archive/proposal_sources/0163_idea_to_spec_clarification_requests.md",
+      "docs/product_workspace_graph_versioning_roadmap.md",
+      "Sources/SpecGraph/Documentation.docc/ProductWorkspacePilots.md",
+      "tools/idea_to_spec_clarification_requests.py",
+      "tools/README.md",
+      "tools/docc_sync_contract.json",
+      "tests/test_idea_to_spec_clarification_requests.py",
+      "Makefile"
+    ],
+    "runtime_markers": [
+      {
+        "path": "tools/idea_to_spec_clarification_requests.py",
+        "pattern": "CONTRACT_REF = \"specgraph.idea-to-spec.clarification-requests.v0.1\""
+      },
+      {
+        "path": "tools/idea_to_spec_clarification_requests.py",
+        "pattern": "def build_idea_to_spec_clarification_requests("
+      },
+      {
+        "path": "tools/idea_to_spec_clarification_requests.py",
+        "pattern": "\"clarification_requests\""
+      },
+      {
+        "path": "Makefile",
+        "pattern": "idea-to-spec-clarification-requests"
+      },
+      {
+        "path": "Makefile",
+        "pattern": "tools/idea_to_spec_clarification_requests.py --session \"$(USER_IDEA_INTAKE_SESSION_OUTPUT)\""
+      }
+    ],
+    "validation_markers": [
+      {
+        "path": "tests/test_idea_to_spec_clarification_requests.py",
+        "pattern": "test_clarification_requests_collects_intake_session_questions"
+      },
+      {
+        "path": "tests/test_idea_to_spec_clarification_requests.py",
+        "pattern": "test_clarification_requests_project_repair_context_actions"
+      },
+      {
+        "path": "tests/test_idea_to_spec_clarification_requests.py",
+        "pattern": "test_clarification_requests_cli_writes_output"
+      }
+    ],
+    "observation_markers": [
+      {
+        "path": "docs/proposals/0163_idea_to_spec_clarification_requests.md",
+        "pattern": "does not grant write authority"
+      },
+      {
+        "path": "docs/product_workspace_graph_versioning_roadmap.md",
+        "pattern": "Status: implemented in proposal `0163`"
+      },
+      {
+        "path": "Sources/SpecGraph/Documentation.docc/ProductWorkspacePilots.md",
+        "pattern": "Proposal `0163`"
+      },
+      {
+        "path": "tools/README.md",
+        "pattern": "proposal 0163"
+      }
+    ]
   }
 ]

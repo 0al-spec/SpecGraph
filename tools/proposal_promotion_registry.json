@@ -2091,5 +2091,18 @@
     "required_provenance_links": [
       "source_draft_ref"
     ]
+  },
+  {
+    "proposal_id": "0163",
+    "source_artifact_class": "working_draft",
+    "source_refs": [
+      "docs/archive/proposal_sources/0163_idea_to_spec_clarification_requests.md"
+    ],
+    "motivating_concern": "The deterministic product idea-to-spec flow can emit intake questions, pre-SIB findings, repair actions, candidate gaps, and ontology gap groups, but downstream users and agents still need one stable request surface that states the next question or action.",
+    "normalized_title": "Idea-To-Spec Clarification Requests",
+    "bounded_scope": "Add a deterministic review-only idea_to_spec_clarification_requests builder, Make target, product-workspace runner integration, tests, proposal docs, roadmap, and DocC updates that aggregate available intake, candidate graph, pre-SIB, repair-loop, and ontology gap review artifacts into stable typed requests with source findings, target refs, suggested answer shapes, and suggested actions, without executing prompt agents, accepting answers, inferring missing product semantics with an LLM, mutating candidate artifacts through SpecSpace, mutating canonical specs, writing Ontology packages or lockfiles, accepting ontology terms, approving candidate graphs, creating Git branches or commits, opening pull requests, publishing read models, or adding SpecSpace mutation UI.",
+    "required_provenance_links": [
+      "source_draft_ref"
+    ]
   }
 ]
