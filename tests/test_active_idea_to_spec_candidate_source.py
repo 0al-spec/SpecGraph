@@ -30,6 +30,7 @@ def write_ready_artifacts(
     root: Path,
     *,
     candidate_id: str = "team-decision-log",
+    include_source_intake: bool = True,
     project: str = "TeamDecisionLog",
     domain_ref: str = "domain.team_decision_log",
 ) -> dict[str, str]:
@@ -50,6 +51,22 @@ def write_ready_artifacts(
             "contract_ref": "specgraph.idea-to-spec.event-storming-intake.v0.1",
             "candidate_graph_readiness": {"ready": True, "review_state": "ready"},
             "schema_version": 1,
+            **(
+                {
+                    "source_intake": {
+                        "workspace": {
+                            "candidate_id": candidate_id,
+                            "display_name": "".join(
+                                part[:1].upper() + part[1:] for part in candidate_id.split("-")
+                            ),
+                            "public_route": f"/{candidate_id}",
+                        }
+                    },
+                }
+                if include_source_intake
+                else {}
+            ),
+            "source_ref": f"product://{candidate_id}/root-intent",
             "tracked_artifacts_written": False,
         },
     )
@@ -197,6 +214,68 @@ def test_active_candidate_source_accepts_different_product_candidate_from_config
     assert report["candidate"]["display_name"] == "Support Triage Log"
     assert report["candidate"]["public_route"] == "/support-triage-log"
     assert report["summary"]["candidate_id"] == "support-triage-log"
+
+
+def test_active_candidate_source_derives_candidate_metadata_from_intake(
+    tmp_path: Path,
+    module: object,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setattr(module, "ROOT", tmp_path)
+    artifacts = write_ready_artifacts(
+        tmp_path,
+        candidate_id="support-triage-log",
+        project="SupportTriageLog",
+        domain_ref="domain.support_triage_log",
+    )
+    config = ready_config(artifacts)
+    config.pop("candidate")
+
+    report = module.build_active_idea_to_spec_candidate_source(config)
+
+    assert report["readiness"]["ready"] is True
+    assert report["source_mode"] == "active_candidate"
+    assert {finding["finding_id"] for finding in report["findings"]}.isdisjoint(
+        {
+            "candidate_source_mode_unsupported",
+            "candidate_workflow_lane_unsupported",
+            "candidate_governance_profile_unsupported",
+            "candidate_target_repository_role_unsupported",
+            "candidate_authority_profile_unsupported",
+        }
+    )
+    assert report["candidate"]["candidate_id"] == "support-triage-log"
+    assert report["candidate"]["display_name"] == "SupportTriageLog"
+    assert report["candidate"]["public_route"] == "/support-triage-log"
+    assert report["candidate"]["governance_profile"] == "product_workspace"
+    assert report["candidate"]["target_repository_role"] == "product_spec_workspace"
+    assert report["candidate"]["authority_profile"] == "workspace_owner_controlled"
+    assert report["summary"]["candidate_id"] == "support-triage-log"
+
+
+def test_active_candidate_source_derives_candidate_metadata_from_legacy_intake_source_ref(
+    tmp_path: Path,
+    module: object,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setattr(module, "ROOT", tmp_path)
+    artifacts = write_ready_artifacts(
+        tmp_path,
+        candidate_id="support-triage-log",
+        include_source_intake=False,
+        project="SupportTriageLog",
+        domain_ref="domain.support_triage_log",
+    )
+    config = ready_config(artifacts)
+    config.pop("candidate")
+
+    report = module.build_active_idea_to_spec_candidate_source(config)
+
+    assert report["readiness"]["ready"] is True
+    assert report["candidate"]["candidate_id"] == "support-triage-log"
+    assert report["candidate"]["display_name"] == "Support Triage Log"
+    assert report["candidate"]["public_route"] == "/support-triage-log"
+    assert report["candidate"]["target_repository_role"] == "product_spec_workspace"
 
 
 def test_active_candidate_source_rejects_stale_artifacts_for_different_product(

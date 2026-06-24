@@ -105,9 +105,9 @@ make product-workspace-active-candidate
 
 It builds event-storming intake, candidate graph, pre-SIB report, repair-loop
 preview, materialization report, promotion gate, and
-`runs/active_idea_to_spec_candidate.json` without canonical spec mutation. Team
-Decision Log is the default fixture data for this target, not a separate
-system-level flow.
+`runs/active_idea_to_spec_candidate.json` without canonical spec mutation. The
+target now starts from generic `PRODUCT_WORKSPACE_IDEA_SOURCE` data by default;
+Team Decision Log is an example workspace, not a separate system-level flow.
 
 ## Operational Rules
 

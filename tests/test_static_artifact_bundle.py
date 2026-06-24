@@ -210,6 +210,20 @@ def test_build_public_bundle_copies_specs_and_runs_with_manifest(
         {"artifact_kind": "custom_public_surface"},
     )
     write_json(
+        repo / "runs" / "idea_event_storming_seed.json",
+        {
+            "artifact_kind": "idea_event_storming_seed",
+            "intent": {"text": "private customer idea"},
+        },
+    )
+    write_json(
+        repo / "runs" / "idea_event_storming_seed_custom.json",
+        {
+            "artifact_kind": "idea_event_storming_seed",
+            "intent": {"text": "private custom customer idea"},
+        },
+    )
+    write_json(
         repo / "runs" / "ontology_future_surface.json",
         {"artifact_kind": "ontology_future_surface"},
     )
@@ -323,6 +337,8 @@ def test_build_public_bundle_copies_specs_and_runs_with_manifest(
     assert (result.output_dir / "runs" / "graph_dashboard.json").is_file()
     assert (result.output_dir / "runs" / "custom_public_surface.json").is_file()
     assert (result.output_dir / "runs" / "ontology_future_surface.json").is_file()
+    assert not (result.output_dir / "runs" / "idea_event_storming_seed.json").exists()
+    assert not (result.output_dir / "runs" / "idea_event_storming_seed_custom.json").exists()
     assert not (result.output_dir / "runs" / "ontology_term_binding_gate_report.json").exists()
     assert not (result.output_dir / "runs" / "local_operator_executor_readiness.json").exists()
     assert not (result.output_dir / "runs" / "local_operator_future_probe.json").exists()
@@ -376,6 +392,9 @@ def test_build_public_bundle_copies_specs_and_runs_with_manifest(
     assert "/Users/egor" not in (result.output_dir / "runs" / "raw_run.json").read_text(
         encoding="utf-8"
     )
+    checksums_text = result.checksums_path.read_text(encoding="utf-8")
+    assert "runs/idea_event_storming_seed.json" not in checksums_text
+    assert "runs/idea_event_storming_seed_custom.json" not in checksums_text
 
     manifest = json.loads(result.manifest_path.read_text(encoding="utf-8"))
     assert manifest["artifact_kind"] == "specgraph_static_artifact_manifest"

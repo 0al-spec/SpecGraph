@@ -114,6 +114,24 @@ before building `runs/candidate_spec_graph.json`. Git Service post-review status
 and read-model publication remain service operations outside SpecSpace write
 authority.
 
+Proposal `0160` makes the full active runner generic:
+
+```bash
+make product-workspace-active-candidate
+```
+
+The target now starts from `PRODUCT_WORKSPACE_IDEA_SOURCE`, writes
+`runs/idea_event_storming_seed.json`, and carries public-safe workspace identity
+through `runs/idea_event_storming_intake.json` into
+`runs/active_idea_to_spec_candidate.json`. The active candidate config can now
+contain only artifact refs; candidate id, display name, and route derive from
+the generated intake, while governance fields use the standard active product
+workspace defaults. Team Decision Log is the default
+`PRODUCT_WORKSPACE_IDEA_SOURCE` fixture for the product pilot, not a separate
+system flow. Passing `PRODUCT_WORKSPACE_INTAKE_SOURCE=<seed.json>` keeps the old
+prepared-seed input mode for backcompat; prepared seeds without
+`source_intake.workspace` need an explicit active candidate config.
+
 ## Authority Boundary
 
 Team Decision Log remains non-canonical until a repository service accepts a
@@ -130,9 +148,10 @@ The product pilot must not:
 
 ## Current Execution Order
 
-1. SpecSpace workflow lane over candidate approval and ontology seed gaps.
-2. Prompt-side enrichment for richer candidate graph authoring under the same
+1. Prompt-side enrichment for richer candidate graph authoring under the same
    ontology-bound seed contract.
+2. SpecSpace workflow lane refinement for clearer active candidate blockers and
+   repair suggestions.
 3. Extend Platform Git Service orchestration through review status and
    read-model publication.
 4. Refine product workspace workflow lane metrics and blocker copy.

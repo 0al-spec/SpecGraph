@@ -2052,5 +2052,18 @@
     "required_provenance_links": [
       "source_draft_ref"
     ]
+  },
+  {
+    "proposal_id": "0160",
+    "source_artifact_class": "working_draft",
+    "source_refs": [
+      "docs/archive/proposal_sources/0160_generic_active_idea_to_spec_runner.md"
+    ],
+    "motivating_concern": "The product idea-to-spec flow can build generic intake and ontology-bound candidate graph seeds, but the active product workspace runner still needs to start from generic user idea data and derive candidate identity from generated artifacts instead of product-specific config.",
+    "normalized_title": "Generic Active Idea-To-Spec Runner",
+    "bounded_scope": "Make the deterministic review-only product-workspace-active-candidate target start from PRODUCT_WORKSPACE_IDEA_SOURCE by default, preserve prepared-seed backcompat through PRODUCT_WORKSPACE_INTAKE_SOURCE, carry public-safe workspace metadata through idea_event_storming_intake, derive active candidate metadata from generated intake, add a generic artifact-ref-only active candidate config fixture, Team Decision Log as a user_idea_intake_source data fixture, tests, proposal docs, and documentation updates, without executing prompt agents, inferring domain models with an LLM, mutating canonical specs, writing Ontology packages or lockfiles, accepting ontology terms, approving candidate graphs, creating Git branches or commits, opening pull requests, publishing read models, or adding SpecSpace mutation UI.",
+    "required_provenance_links": [
+      "source_draft_ref"
+    ]
   }
 ]

@@ -8724,5 +8724,74 @@
         "pattern": "proposal 0159"
       }
     ]
+  },
+  {
+    "proposal_id": "0160",
+    "posture": "synchronous_runtime_slice",
+    "runtime_surfaces": [
+      "docs/proposals/0160_generic_active_idea_to_spec_runner.md",
+      "docs/archive/proposal_sources/0160_generic_active_idea_to_spec_runner.md",
+      "docs/product_workspace_graph_versioning_roadmap.md",
+      "Sources/SpecGraph/Documentation.docc/ProductWorkspacePilots.md",
+      "tools/active_idea_to_spec_candidate_source.py",
+      "tools/idea_event_storming_intake.py",
+      "tools/README.md",
+      "tools/docc_sync_contract.json",
+      "tests/test_active_idea_to_spec_candidate_source.py",
+      "tests/test_product_workspace_active_candidate_runner.py",
+      "tests/fixtures/product_workspace_active_candidate/active_candidate_source_generic.json",
+      "tests/fixtures/product_workspace_active_candidate/user_idea_source.json",
+      "Makefile"
+    ],
+    "runtime_markers": [
+      {
+        "path": "Makefile",
+        "pattern": "PRODUCT_WORKSPACE_IDEA_SOURCE"
+      },
+      {
+        "path": "Makefile",
+        "pattern": "tools/user_idea_intake_source.py --input \"$(PRODUCT_WORKSPACE_IDEA_SOURCE)\""
+      },
+      {
+        "path": "tools/idea_event_storming_intake.py",
+        "pattern": "def _source_intake("
+      },
+      {
+        "path": "tools/active_idea_to_spec_candidate_source.py",
+        "pattern": "def _candidate_from_intake_artifact("
+      },
+      {
+        "path": "tools/active_idea_to_spec_candidate_source.py",
+        "pattern": "def _candidate_for_config("
+      }
+    ],
+    "validation_markers": [
+      {
+        "path": "tests/test_active_idea_to_spec_candidate_source.py",
+        "pattern": "test_active_candidate_source_derives_candidate_metadata_from_intake"
+      },
+      {
+        "path": "tests/test_product_workspace_active_candidate_runner.py",
+        "pattern": "test_product_workspace_active_candidate_runs_from_generic_user_idea_source"
+      }
+    ],
+    "observation_markers": [
+      {
+        "path": "docs/proposals/0160_generic_active_idea_to_spec_runner.md",
+        "pattern": "does not grant write authority"
+      },
+      {
+        "path": "docs/product_workspace_graph_versioning_roadmap.md",
+        "pattern": "Status: implemented in proposal `0160`"
+      },
+      {
+        "path": "Sources/SpecGraph/Documentation.docc/ProductWorkspacePilots.md",
+        "pattern": "Proposal `0160`"
+      },
+      {
+        "path": "tools/README.md",
+        "pattern": "proposal 0160"
+      }
+    ]
   }
 ]

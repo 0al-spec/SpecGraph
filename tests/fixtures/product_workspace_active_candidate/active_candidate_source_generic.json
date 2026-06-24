@@ -1,0 +1,13 @@
+{
+  "artifact_kind": "active_idea_to_spec_candidate_source_config",
+  "artifacts": {
+    "candidate_graph": "runs/candidate_spec_graph.json",
+    "intake": "runs/idea_event_storming_intake.json",
+    "materialization": "runs/candidate_spec_materialization_report.json",
+    "pre_sib": "runs/pre_sib_coherence_report.json",
+    "promotion_gate": "runs/idea_to_spec_promotion_gate.json",
+    "repair_loop": "runs/candidate_repair_loop_report.json"
+  },
+  "contract_ref": "specgraph.idea-to-spec.active-candidate-source-config.v0.1",
+  "schema_version": 1
+}

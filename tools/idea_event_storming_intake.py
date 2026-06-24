@@ -77,10 +77,12 @@ RAW_TRACE_FIELDS = {
     "raw_intent",
     "raw_intent_text",
     "raw_model_output",
+    "raw_operator_note",
     "raw_prompt",
     "raw_response",
     "raw_text",
 }
+PRIVATE_TRACE_FIELDS = RAW_TRACE_FIELDS | {"operator_note", "operator_notes"}
 
 
 def _now_iso() -> str:
@@ -97,6 +99,25 @@ def _list(value: Any) -> list[Any]:
 
 def _text(value: Any, default: str = "") -> str:
     return value.strip() if isinstance(value, str) and value.strip() else default
+
+
+def _public_safe_value(value: Any) -> Any:
+    if isinstance(value, dict):
+        return {
+            key: _public_safe_value(item)
+            for key, item in value.items()
+            if isinstance(key, str)
+            and key not in PRIVATE_TRACE_FIELDS
+            and not key.startswith("raw_")
+        }
+    if isinstance(value, list):
+        return [_public_safe_value(item) for item in value]
+    return value
+
+
+def _public_safe_summary(value: Any) -> dict[str, Any]:
+    safe_value = _public_safe_value(_dict(value))
+    return safe_value if isinstance(safe_value, dict) else {}
 
 
 def _text_list(value: Any) -> list[str]:
@@ -576,6 +597,26 @@ def _authority_boundary() -> dict[str, bool]:
     }
 
 
+def _source_intake(seed: dict[str, Any]) -> dict[str, Any] | None:
+    raw_source_intake = seed.get("source_intake")
+    if not isinstance(raw_source_intake, dict):
+        return None
+    source_intake = _dict(raw_source_intake)
+    workspace = _dict(source_intake.get("workspace"))
+    return {
+        "artifact_kind": source_intake.get("artifact_kind"),
+        "contract_ref": source_intake.get("contract_ref"),
+        "source_contract_ref": source_intake.get("source_contract_ref"),
+        "source_ref": source_intake.get("source_ref"),
+        "workspace": {
+            "candidate_id": _text(workspace.get("candidate_id")),
+            "display_name": _text(workspace.get("display_name")),
+            "public_route": _text(workspace.get("public_route")),
+        },
+        "summary": _public_safe_summary(source_intake.get("summary")),
+    }
+
+
 def build_idea_event_storming_intake(
     seed: dict[str, Any],
     *,
@@ -599,7 +640,8 @@ def build_idea_event_storming_intake(
     source_ref = _text(seed.get("source_ref"))
     if not source_ref and source_path is not None:
         source_ref = _relative_ref(source_path)
-    return {
+    source_intake = _source_intake(seed)
+    intake = {
         "artifact_kind": "idea_event_storming_intake",
         "schema_version": SCHEMA_VERSION,
         "proposal_id": PROPOSAL_ID,
@@ -642,6 +684,9 @@ def build_idea_event_storming_intake(
             "warning_count": len(warnings),
         },
     }
+    if source_intake is not None:
+        intake["source_intake"] = source_intake
+    return intake
 
 
 def build_parser() -> argparse.ArgumentParser:

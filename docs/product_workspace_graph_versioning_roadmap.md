@@ -380,6 +380,53 @@ The downstream `candidate_spec_graph` builder blocks seeds whose
 frame, missing ontology layer/applicability refs, or missing required core
 ontology classes from passing into pre-SIB readiness.
 
+### 12. Generic Active Idea-To-Spec Runner
+
+Status: implemented in proposal `0160`.
+
+The full active product workspace target now starts from generic user idea data,
+not a prepared Team Decision Log seed.
+
+The implemented surface is:
+
+- `PRODUCT_WORKSPACE_IDEA_SOURCE`;
+- generated `runs/idea_event_storming_seed.json` inside
+  `make product-workspace-active-candidate`;
+- public-safe `source_intake.workspace` metadata on
+  `runs/idea_event_storming_intake.json`;
+- a generic active candidate config fixture with artifact refs only;
+- active candidate metadata derivation from the intake artifact.
+
+The deterministic chain is now:
+
+```text
+user_idea_intake_source
+  -> idea_event_storming_seed
+  -> idea_event_storming_intake
+  -> ontology_bound_candidate_graph_seed
+  -> candidate_spec_graph
+  -> pre-SIB/coherence report
+  -> candidate_repair_loop_report
+  -> candidate_spec_materialization_report
+  -> idea_to_spec_promotion_gate
+  -> active_idea_to_spec_candidate
+```
+
+Team Decision Log remains the default example workspace data for the product
+pilot. A new product idea can replace it by passing a different
+`PRODUCT_WORKSPACE_IDEA_SOURCE`, without adding a new tool, Make target, or
+product-specific active candidate config. The old prepared seed path remains
+available through `PRODUCT_WORKSPACE_INTAKE_SOURCE=<seed.json>`, but a prepared
+seed without `source_intake.workspace` needs an explicit active candidate config
+because the generic artifact-refs-only config has no product identity to derive.
+In artifact-refs-only mode, governance fields use the standard active product
+workspace defaults: `product_idea_to_spec`, `product_workspace`,
+`product_spec_workspace`, and `workspace_owner_controlled`.
+
+The runner may still emit `active_candidate_review_required` when pre-SIB,
+repair-loop, ontology-gap, or promotion-gate checks require owner context. That
+blocked state is the expected pre-SIB control behavior, not a runner failure.
+
 ## Success Criteria
 
 - A user can start with a product idea and receive a coherent candidate graph.
@@ -399,14 +446,13 @@ ontology classes from passing into pre-SIB readiness.
 
 The active stack after production workspace isolation is:
 
-1. SpecSpace workflow lane over the product workspace chain, including
-   candidate approval state.
-2. Ontology binding/gap review lane for generated candidate graph seeds.
-3. Prompt-side enrichment that can propose richer product-domain graph nodes
+1. Prompt-side enrichment that can propose richer product-domain graph nodes
    while preserving ontology gaps for unaccepted terms.
-4. Platform Git Service post-review status and read-model publication
+2. SpecSpace workflow lane refinement for active candidate blockers, repair
+   suggestions, and approval state.
+3. Platform Git Service post-review status and read-model publication
    orchestration.
-5. Ontology applicability and layer-aware review refinement as compiler support
+4. Ontology applicability and layer-aware review refinement as compiler support
    matures.
 
 ## Related Documents
