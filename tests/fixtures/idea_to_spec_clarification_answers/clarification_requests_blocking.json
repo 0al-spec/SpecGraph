@@ -1,0 +1,79 @@
+{
+  "artifact_kind": "idea_to_spec_clarification_requests",
+  "canonical_mutations_allowed": false,
+  "clarification_requests": [
+    {
+      "blocks": [
+        "pre_sib_unresolved_gaps"
+      ],
+      "id": "clarification.repair.repair-review-unresolved-gaps",
+      "kind": "ontology_gap",
+      "question": "How should ontology context be resolved for candidate_graph.gaps?",
+      "severity": "blocking",
+      "source_findings": [
+        {
+          "finding_id": "pre_sib_unresolved_gaps",
+          "source_artifact": "candidate_repair_loop_report"
+        }
+      ],
+      "status": "open",
+      "suggested_actions": [
+        "bind_existing_term",
+        "alias",
+        "propose_project_local_term",
+        "reject",
+        "defer"
+      ],
+      "suggested_answer_shape": "bind_existing_term | alias | propose_project_local_term | reject | defer",
+      "target_artifact": "runs/candidate_repair_loop_report.json",
+      "target_ref": "candidate_graph.gaps"
+    },
+    {
+      "blocks": [
+        "ontology-gap.decision-owner"
+      ],
+      "id": "clarification.candidate-gap.ontology-gap-decision-owner",
+      "kind": "ontology_gap",
+      "question": "Confirm whether `Decision Owner` should bind to an existing ontology term or remain a project-local domain term.",
+      "severity": "review_required",
+      "source_findings": [],
+      "status": "open",
+      "suggested_actions": [
+        "bind_existing_term",
+        "alias",
+        "propose_project_local_term",
+        "reject",
+        "defer"
+      ],
+      "suggested_answer_shape": "bind_existing_term | alias | propose_project_local_term | reject | defer",
+      "target_artifact": "runs/candidate_spec_graph.json",
+      "target_ref": "ontology-gap.decision-owner"
+    }
+  ],
+  "contract_ref": "specgraph.idea-to-spec.clarification-requests.v0.1",
+  "generated_at": "2026-06-24T00:00:00+00:00",
+  "proposal_id": "0163",
+  "readiness": {
+    "blocked_by": [
+      "clarification.repair.repair-review-unresolved-gaps"
+    ],
+    "next_artifact": "runs/idea_to_spec_clarification_answers.json",
+    "ready": false,
+    "review_state": "clarification_required"
+  },
+  "request_counts": {
+    "by_kind": {
+      "ontology_gap": 2
+    },
+    "by_severity": {
+      "blocking": 1,
+      "review_required": 1
+    },
+    "by_status": {
+      "open": 2
+    },
+    "total": 2
+  },
+  "schema_version": 1,
+  "tracked_artifacts_written": false
+}

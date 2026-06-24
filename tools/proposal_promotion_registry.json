@@ -2104,5 +2104,18 @@
     "required_provenance_links": [
       "source_draft_ref"
     ]
+  },
+  {
+    "proposal_id": "0164",
+    "source_artifact_class": "working_draft",
+    "source_refs": [
+      "docs/archive/proposal_sources/0164_idea_to_spec_clarification_answers.md"
+    ],
+    "motivating_concern": "The idea-to-spec flow can emit stable clarification request ids, but operator or agent answers need a typed validation boundary before any later deterministic rerun can consume them.",
+    "normalized_title": "Idea-To-Spec Clarification Answers",
+    "bounded_scope": "Add a deterministic review-only idea_to_spec_clarification_answers validator, Make target, fixtures, tests, proposal docs, roadmap, and DocC updates that validate answer sets against clarification request ids, allowed answer kinds, explicit authority, duplicate answers, and unresolved blocking requests, without executing prompt agents, applying answers to candidate artifacts, inferring product semantics with an LLM, mutating canonical specs, writing Ontology packages or lockfiles, accepting ontology terms, approving candidate graphs, creating Git branches or commits, opening pull requests, publishing read models, or adding SpecSpace mutation UI.",
+    "required_provenance_links": [
+      "source_draft_ref"
+    ]
   }
 ]

@@ -530,8 +530,40 @@ graph_repair -> accept preview edge, reject it, or propose another relation
 
 The artifact remains review-only. It does not accept answers, write ontology
 packages, mutate canonical specs, approve candidates, or create Git branches.
-Proposal `0164` is the next planned slice for
-`idea_to_spec_clarification_answers`.
+Proposal `0164` implements the answer validation surface.
+
+### 16. Idea-To-Spec Clarification Answers
+
+Status: implemented in proposal `0164`.
+
+Clarification requests now have a typed answer validation surface:
+
+```bash
+make idea-to-spec-clarification-answers
+```
+
+The output is:
+
+```text
+runs/idea_to_spec_clarification_answers.json
+```
+
+The report validates an `idea_to_spec_clarification_answer_set` against the
+request ids emitted by proposal `0163`. Each answer must reference an existing
+request, use one of the request's `suggested_actions`, and declare authority
+such as `operator_approved` or `owner_approved`.
+
+Blocking requests are resolved only by accepted answers:
+
+```text
+accepted_for_candidate
+accepted_for_review
+```
+
+`proposed`, `rejected`, and `deferred` answers remain visible records, but they
+do not make the candidate ready for rerun. This keeps answer collection explicit
+without silently mutating intake artifacts, candidate graphs, specs, or ontology
+packages.
 
 ## Success Criteria
 
@@ -552,13 +584,15 @@ Proposal `0164` is the next planned slice for
 - Blocking intake, ontology, pre-SIB, and repair issues become stable
   clarification request ids that a future answer contract and SpecSpace product
   workspace lane can reference.
+- User or agent answers can be validated against clarification request ids
+  without applying candidate or ontology mutations.
 
 ## Current Execution Order
 
 The active stack after production workspace isolation is:
 
-1. `idea_to_spec_clarification_answers` for operator or agent answers that feed
-   a subsequent deterministic pipeline rerun.
+1. Deterministic application of accepted clarification answers into a rerun
+   input artifact.
 2. CLI or agent conversation wrapper that fills `user_idea_raw_input` from a
    real operator interview and can consume clarification requests.
 3. Prompt-side enrichment that can propose richer product-domain graph nodes

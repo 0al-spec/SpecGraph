@@ -171,7 +171,18 @@ gaps, and ontology gap groups become stable request ids with suggested answer
 shapes such as `bind_existing_term`, `alias`, `propose_project_local_term`,
 `reject`, or `defer`. The artifact does not accept answers, mutate canonical
 specs, write ontology packages, approve candidates, or create Git branches.
-Proposal `0164` is reserved for `idea_to_spec_clarification_answers`.
+Proposal `0164` adds `idea_to_spec_clarification_answers`:
+
+```bash
+make idea-to-spec-clarification-answers
+```
+
+The answer report validates an `idea_to_spec_clarification_answer_set` against
+the request ids from proposal `0163`. Accepted answers can make blocking
+requests ready for a future deterministic rerun, while `proposed`, `rejected`,
+and `deferred` records remain review evidence. The report does not apply
+answers to intake artifacts, mutate candidate graphs, write ontology packages,
+approve candidates, or create Git branches.
 
 ## Authority Boundary
 
@@ -189,8 +200,8 @@ The product pilot must not:
 
 ## Current Execution Order
 
-1. `idea_to_spec_clarification_answers` for operator or agent answers that feed
-   a subsequent deterministic pipeline rerun.
+1. Deterministic application of accepted clarification answers into a rerun
+   input artifact.
 2. Prompt-side enrichment for richer candidate graph authoring under the same
    ontology-bound seed contract.
 3. CLI or agent conversation wrapper that fills `user_idea_raw_input` from a
