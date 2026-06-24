@@ -8750,7 +8750,7 @@
       },
       {
         "path": "Makefile",
-        "pattern": "tools/user_idea_intake_source.py --input \"$(PRODUCT_WORKSPACE_IDEA_SOURCE)\""
+        "pattern": "tools/user_idea_intake_session.py --input \"$(PRODUCT_WORKSPACE_IDEA_SOURCE)\""
       },
       {
         "path": "tools/idea_event_storming_intake.py",
@@ -8858,6 +8858,84 @@
       {
         "path": "tools/README.md",
         "pattern": "proposal 0161"
+      }
+    ]
+  },
+  {
+    "proposal_id": "0162",
+    "posture": "synchronous_runtime_slice",
+    "runtime_surfaces": [
+      "docs/proposals/0162_generic_user_idea_intake_session.md",
+      "docs/archive/proposal_sources/0162_generic_user_idea_intake_session.md",
+      "docs/product_workspace_graph_versioning_roadmap.md",
+      "docs/product_workspace_stable_mode_guide.md",
+      "Sources/SpecGraph/Documentation.docc/ProductWorkspacePilots.md",
+      "tools/user_idea_intake_session.py",
+      "tools/README.md",
+      "tools/docc_sync_contract.json",
+      "tests/test_user_idea_intake_session.py",
+      "tests/test_product_workspace_active_candidate_runner.py",
+      "tests/fixtures/user_idea_intake_session/raw_idea_ready.json",
+      "tests/fixtures/user_idea_intake_session/raw_idea_needs_clarification.json",
+      "tests/fixtures/product_workspace_active_candidate/raw_idea_source.json",
+      "Makefile"
+    ],
+    "runtime_markers": [
+      {
+        "path": "tools/user_idea_intake_session.py",
+        "pattern": "SESSION_CONTRACT_REF = \"specgraph.idea-to-spec.user-idea-intake-session.v0.1\""
+      },
+      {
+        "path": "tools/user_idea_intake_session.py",
+        "pattern": "def build_user_idea_intake_session("
+      },
+      {
+        "path": "tools/user_idea_intake_session.py",
+        "pattern": "\"clarification_questions\""
+      },
+      {
+        "path": "Makefile",
+        "pattern": "user-idea-intake-session"
+      },
+      {
+        "path": "Makefile",
+        "pattern": "tools/user_idea_intake_session.py --input \"$(PRODUCT_WORKSPACE_IDEA_SOURCE)\""
+      }
+    ],
+    "validation_markers": [
+      {
+        "path": "tests/test_user_idea_intake_session.py",
+        "pattern": "test_user_idea_intake_session_writes_ready_source_contract"
+      },
+      {
+        "path": "tests/test_user_idea_intake_session.py",
+        "pattern": "test_user_idea_intake_session_source_feeds_existing_intake_chain"
+      },
+      {
+        "path": "tests/test_user_idea_intake_session.py",
+        "pattern": "test_user_idea_intake_session_make_target_writes_custom_outputs"
+      },
+      {
+        "path": "tests/test_product_workspace_active_candidate_runner.py",
+        "pattern": "test_product_workspace_active_candidate_default_paths_do_not_require_config"
+      }
+    ],
+    "observation_markers": [
+      {
+        "path": "docs/proposals/0162_generic_user_idea_intake_session.md",
+        "pattern": "does not grant write authority"
+      },
+      {
+        "path": "docs/product_workspace_graph_versioning_roadmap.md",
+        "pattern": "Status: implemented in proposal `0162`"
+      },
+      {
+        "path": "Sources/SpecGraph/Documentation.docc/ProductWorkspacePilots.md",
+        "pattern": "Proposal `0162`"
+      },
+      {
+        "path": "tools/README.md",
+        "pattern": "proposal 0162"
       }
     ]
   }

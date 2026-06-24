@@ -141,6 +141,22 @@ The artifact records `config_source.required=false` and `source_derivation` so
 downstream consumers can see whether artifact paths came from defaults or from
 an explicit compatibility/debug override.
 
+Proposal `0162` adds `user_idea_intake_session` as the first deterministic
+raw/session intake boundary:
+
+```bash
+make user-idea-intake-session
+make generic-idea-intake-session
+```
+
+The session writes `runs/user_idea_intake_session.json` and, when it has enough
+ontology/domain/context/layer/applicability and event-storming context,
+`runs/user_idea_intake_source.json`. Missing context becomes public-safe
+clarification questions instead of silently entering the candidate graph path.
+`make product-workspace-active-candidate` now runs this session step before the
+existing intake-source builder in generated mode. Prepared
+`user_idea_intake_source` inputs remain supported for compatibility and tests.
+
 ## Authority Boundary
 
 Team Decision Log remains non-canonical until a repository service accepts a
@@ -159,12 +175,14 @@ The product pilot must not:
 
 1. Prompt-side enrichment for richer candidate graph authoring under the same
    ontology-bound seed contract.
-2. SpecSpace workflow lane refinement for clearer active candidate blockers and
+2. CLI or agent conversation wrapper that fills `user_idea_raw_input` from a
+   real operator interview.
+3. SpecSpace workflow lane refinement for clearer active candidate blockers and
    repair suggestions.
-3. Extend Platform Git Service orchestration through review status and
+4. Extend Platform Git Service orchestration through review status and
    read-model publication.
-4. Refine product workspace workflow lane metrics and blocker copy.
-5. Refine ontology applicability and layer-aware review as compiler support
+5. Refine product workspace workflow lane metrics and blocker copy.
+6. Refine ontology applicability and layer-aware review as compiler support
    matures.
 
 ## Canonical Sources

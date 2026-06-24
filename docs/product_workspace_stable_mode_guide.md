@@ -106,8 +106,11 @@ make product-workspace-active-candidate
 It builds event-storming intake, candidate graph, pre-SIB report, repair-loop
 preview, materialization report, promotion gate, and
 `runs/active_idea_to_spec_candidate.json` without canonical spec mutation. The
-target now starts from generic `PRODUCT_WORKSPACE_IDEA_SOURCE` data by default;
-Team Decision Log is an example workspace, not a separate system-level flow.
+target now starts from generic `PRODUCT_WORKSPACE_IDEA_SOURCE` raw/session data
+by default; Team Decision Log is an example workspace, not a separate
+system-level flow. The first generated surfaces are
+`runs/user_idea_intake_session.json` and, when the session has enough context,
+`runs/user_idea_intake_source.json`.
 The active candidate source reads the standard generated `runs/*` artifact
 chain by default; an explicit active candidate config is only a compatibility
 or debug override.

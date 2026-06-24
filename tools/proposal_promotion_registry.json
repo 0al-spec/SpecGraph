@@ -2078,5 +2078,18 @@
     "required_provenance_links": [
       "source_draft_ref"
     ]
+  },
+  {
+    "proposal_id": "0162",
+    "source_artifact_class": "working_draft",
+    "source_refs": [
+      "docs/archive/proposal_sources/0162_generic_user_idea_intake_session.md"
+    ],
+    "motivating_concern": "The generic product idea-to-spec flow can run from a prepared user_idea_intake_source, but the first user-facing input still needs a deterministic intake session that starts from raw idea data and either emits a valid source or asks concrete clarification questions.",
+    "normalized_title": "Generic User Idea Intake Session",
+    "bounded_scope": "Add a deterministic review-only user_idea_intake_session builder, Make targets, raw idea fixtures, tests, product-workspace runner integration, proposal docs, roadmap, and DocC updates that accept raw idea/session data, require active ontology/domain/context/layer/applicability plus core event-storming categories, write user_idea_intake_source only when ready, and otherwise emit clarification questions, without executing prompt agents, inferring domain models with an LLM, mutating candidate artifacts through SpecSpace, mutating canonical specs, writing Ontology packages or lockfiles, accepting ontology terms, approving candidate graphs, creating Git branches or commits, opening pull requests, publishing read models, or adding SpecSpace mutation UI.",
+    "required_provenance_links": [
+      "source_draft_ref"
+    ]
   }
 ]

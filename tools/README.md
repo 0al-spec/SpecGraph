@@ -241,6 +241,17 @@ Supervisor modes:
   `runs/specauthor_invocation_artifact_contract_report.json`. The wrapper does
   not execute prompt agents, publish raw prompts, mutate canonical specs, or
   write Ontology packages.
+- `tools/user_idea_intake_session.py`: deterministic generic user-idea intake
+  session builder introduced by proposal 0162. Use
+  `make user-idea-intake-session USER_IDEA_INTAKE_SESSION_INPUT=<json>` to turn
+  raw idea/session data into `runs/user_idea_intake_session.json` and, when
+  enough ontology/domain/context/layer/applicability and event-storming context
+  exists, `runs/user_idea_intake_source.json`. Use
+  `make generic-idea-intake-session` to feed the ready source into the existing
+  event-storming intake chain. Missing context becomes clarification questions;
+  the builder does not execute prompt agents, infer missing domain models,
+  mutate canonical specs, write Ontology packages, create branches, or publish
+  read models.
 - `tools/user_idea_intake_source.py`: deterministic generic user-idea source
   builder introduced by proposal 0158. Use `make user-idea-intake-source
   USER_IDEA_INTAKE_SOURCE=<json>` to normalize product workspace identity,
@@ -323,10 +334,12 @@ Supervisor modes:
   safe.
 - `tools/active_idea_to_spec_candidate_source.py`: active candidate source
   builder introduced by proposal 0155, made generic by proposal 0160, and made
-  artifact-derived by default in proposal 0161. Use
+  artifact-derived by default in proposal 0161. Proposal 0162 moves the normal
+  product runner entry point one step earlier through
+  `user_idea_intake_session`. Use
   `make product-workspace-active-candidate
   PRODUCT_WORKSPACE_IDEA_SOURCE=<json>` to build the `product_idea_to_spec`
-  artifact chain from a generic `user_idea_intake_source` and
+  artifact chain from generic raw/session idea data and
   `runs/active_idea_to_spec_candidate.json`. The artifact proves that
   materialization and promotion-gate surfaces come from a product workspace
   active candidate rather than fixture/demo leakage or public placeholders.

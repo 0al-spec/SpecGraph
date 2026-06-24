@@ -38,6 +38,11 @@ SPECAUTHOR_AUTHORING_FLOW_GENERATED_ARTIFACT ?= tests/fixtures/specauthor_genera
 SPECAUTHOR_AUTHORING_FLOW_INVOCATION_OUTPUT ?= runs/specauthor_invocation_artifact.json
 SPECAUTHOR_AUTHORING_FLOW_CONTRACT_OUTPUT ?= runs/specauthor_invocation_artifact_contract_report.json
 SPECAUTHOR_AUTHORING_FLOW_REPORT_OUTPUT ?= runs/specauthor_authoring_flow_report.json
+USER_IDEA_INTAKE_SESSION_INPUT ?= tests/fixtures/user_idea_intake_session/raw_idea_ready.json
+USER_IDEA_INTAKE_SESSION_OUTPUT_DEFAULT := runs/user_idea_intake_session.json
+USER_IDEA_INTAKE_SESSION_OUTPUT ?= $(USER_IDEA_INTAKE_SESSION_OUTPUT_DEFAULT)
+USER_IDEA_INTAKE_SESSION_SOURCE_OUTPUT_DEFAULT := runs/user_idea_intake_source.json
+USER_IDEA_INTAKE_SESSION_SOURCE_OUTPUT ?= $(USER_IDEA_INTAKE_SESSION_SOURCE_OUTPUT_DEFAULT)
 USER_IDEA_INTAKE_SOURCE ?= tests/fixtures/user_idea_intake/source_ready.json
 USER_IDEA_EVENT_STORMING_SEED_OUTPUT_DEFAULT := runs/idea_event_storming_seed.json
 USER_IDEA_EVENT_STORMING_SEED_OUTPUT ?= $(USER_IDEA_EVENT_STORMING_SEED_OUTPUT_DEFAULT)
@@ -79,7 +84,7 @@ CANDIDATE_APPROVAL_OUTPUT ?= runs/candidate_approval_decision.json
 CANDIDATE_APPROVAL_DECISION_STATE ?= needs_context
 CANDIDATE_APPROVAL_OPERATOR_REF ?= local_operator:unattributed
 CANDIDATE_APPROVAL_REASON ?= awaiting explicit operator approval
-PRODUCT_WORKSPACE_IDEA_SOURCE ?= tests/fixtures/product_workspace_active_candidate/user_idea_source.json
+PRODUCT_WORKSPACE_IDEA_SOURCE ?= tests/fixtures/product_workspace_active_candidate/raw_idea_source.json
 PRODUCT_WORKSPACE_INTAKE_SOURCE_DEFAULT ?= $(USER_IDEA_EVENT_STORMING_SEED_OUTPUT)
 PRODUCT_WORKSPACE_INTAKE_SOURCE ?= $(PRODUCT_WORKSPACE_INTAKE_SOURCE_DEFAULT)
 PRODUCT_WORKSPACE_INTAKE_SOURCE_MODE := $(if $(filter-out $(PRODUCT_WORKSPACE_INTAKE_SOURCE_DEFAULT),$(strip $(PRODUCT_WORKSPACE_INTAKE_SOURCE))),input,generate)
@@ -122,7 +127,8 @@ PYTHON_TARGETS := viewer-surfaces dashboard backlog next-move spec-activity grap
 	ontology-owner-decision-import-v2 \
 	specauthor-generated-artifact-contract specauthor-ontology-write-gate \
 	specauthor-invocation-artifact-contract specauthor-authoring-flow \
-	user-idea-intake-source generic-idea-intake \
+	user-idea-intake-session user-idea-intake-source generic-idea-intake \
+	generic-idea-intake-session \
 	idea-event-storming-intake ontology-bound-candidate-graph-seed \
 	candidate-spec-graph pre-sib-coherence candidate-repair-loop \
 	candidate-spec-materialization idea-to-spec-promotion-gate \
@@ -177,7 +183,9 @@ help:
 					'  make ontology-owner-decision-import-v2 Build read-only owner decision import v2 review JSON' \
 			'  make specauthor-generated-artifact-contract SPECAUTHOR_GENERATED_ARTIFACT_CONTRACT_ARTIFACT=<json>' \
 			'  make specauthor-ontology-write-gate SPECAUTHOR_ONTOLOGY_WRITE_GATE_ARTIFACT=<json>' \
+			'  make user-idea-intake-session USER_IDEA_INTAKE_SESSION_INPUT=<json>' \
 			'  make user-idea-intake-source USER_IDEA_INTAKE_SOURCE=<json>' \
+			'  make generic-idea-intake-session USER_IDEA_INTAKE_SESSION_INPUT=<json>' \
 			'  make generic-idea-intake USER_IDEA_INTAKE_SOURCE=<json>' \
 			'  make idea-event-storming-intake IDEA_EVENT_STORMING_INTAKE_SOURCE=<json>' \
 			'  make ontology-bound-candidate-graph-seed ONTOLOGY_BOUND_CANDIDATE_SEED_INTAKE=<json>' \
@@ -369,8 +377,17 @@ idea-event-storming-intake:
 user-idea-intake-source:
 	@$(PYTHON) tools/user_idea_intake_source.py --input "$(USER_IDEA_INTAKE_SOURCE)" --output "$(USER_IDEA_EVENT_STORMING_SEED_OUTPUT)"
 
+.PHONY: user-idea-intake-session
+user-idea-intake-session:
+	@$(PYTHON) tools/user_idea_intake_session.py --input "$(USER_IDEA_INTAKE_SESSION_INPUT)" --session-output "$(USER_IDEA_INTAKE_SESSION_OUTPUT)" --source-output "$(USER_IDEA_INTAKE_SESSION_SOURCE_OUTPUT)"
+
 .PHONY: generic-idea-intake
 generic-idea-intake: user-idea-intake-source
+	@$(PYTHON) tools/idea_event_storming_intake.py --input "$(USER_IDEA_EVENT_STORMING_SEED_OUTPUT)" --output "$(IDEA_EVENT_STORMING_INTAKE_OUTPUT)"
+
+.PHONY: generic-idea-intake-session
+generic-idea-intake-session: user-idea-intake-session
+	@$(PYTHON) tools/user_idea_intake_source.py --input "$(USER_IDEA_INTAKE_SESSION_SOURCE_OUTPUT)" --output "$(USER_IDEA_EVENT_STORMING_SEED_OUTPUT)"
 	@$(PYTHON) tools/idea_event_storming_intake.py --input "$(USER_IDEA_EVENT_STORMING_SEED_OUTPUT)" --output "$(IDEA_EVENT_STORMING_INTAKE_OUTPUT)"
 
 .PHONY: candidate-spec-graph
@@ -411,7 +428,8 @@ candidate-approval-decision:
 .PHONY: product-workspace-active-candidate
 product-workspace-active-candidate:
 ifeq ($(PRODUCT_WORKSPACE_INTAKE_SOURCE_MODE),generate)
-	@$(PYTHON) tools/user_idea_intake_source.py --input "$(PRODUCT_WORKSPACE_IDEA_SOURCE)" --output "$(PRODUCT_WORKSPACE_INTAKE_SOURCE)"
+	@$(PYTHON) tools/user_idea_intake_session.py --input "$(PRODUCT_WORKSPACE_IDEA_SOURCE)" --session-output "$(USER_IDEA_INTAKE_SESSION_OUTPUT)" --source-output "$(USER_IDEA_INTAKE_SESSION_SOURCE_OUTPUT)" --strict
+	@$(PYTHON) tools/user_idea_intake_source.py --input "$(USER_IDEA_INTAKE_SESSION_SOURCE_OUTPUT)" --output "$(PRODUCT_WORKSPACE_INTAKE_SOURCE)"
 endif
 	@$(PYTHON) tools/idea_event_storming_intake.py --input "$(PRODUCT_WORKSPACE_INTAKE_SOURCE)" --output "$(IDEA_EVENT_STORMING_INTAKE_OUTPUT)"
 ifeq ($(PRODUCT_WORKSPACE_CANDIDATE_SEED_MODE),generate)
