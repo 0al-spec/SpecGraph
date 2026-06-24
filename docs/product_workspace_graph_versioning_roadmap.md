@@ -630,6 +630,37 @@ ontology gap in preview state, but the tool does not accept ontology terms,
 write ontology packages, mutate candidate graphs, approve candidates, or create
 Git branches.
 
+### 19. Idea-To-Spec Rerun Materialization
+
+Status: implemented in proposal `0167`.
+
+Ready rerun previews can now produce a materialized candidate graph preview:
+
+```bash
+make idea-to-spec-rerun-materialization
+```
+
+The output is:
+
+```text
+runs/idea_to_spec_rerun_materialization.json
+```
+
+The report contains:
+
+```text
+candidate graph preview
+removed ontology gap ids
+still-unresolved ontology gap ids
+per-node ontology_gap_resolutions
+review delta summary
+```
+
+The materialized candidate graph remains nested inside the report. The tool does
+not rewrite `runs/candidate_spec_graph.json`, accept ontology terms, write
+ontology packages, approve candidates, mutate canonical specs, or create Git
+branches.
+
 ## Success Criteria
 
 - A user can start with a product idea and receive a coherent candidate graph.
@@ -657,13 +688,16 @@ Git branches.
 - Accepted-answer overlays can be previewed against current intake and
   candidate graph state, including ontology gap resolution effects, without
   applying mutations.
+- Ready rerun previews can materialize a review-only candidate graph preview
+  and explicit delta without rewriting candidate source artifacts or granting
+  promotion authority.
 
 ## Current Execution Order
 
 The active stack after production workspace isolation is:
 
-1. Deterministic intake or candidate rerun materializer for a ready
-   `idea_to_spec_rerun_preview` emitted by proposal `0166`.
+1. Controlled candidate rerun source selection from a ready
+   `idea_to_spec_rerun_materialization` report emitted by proposal `0167`.
 2. CLI or agent conversation wrapper that fills `user_idea_raw_input` from a
    real operator interview and can consume clarification requests.
 3. Prompt-side enrichment that can propose richer product-domain graph nodes

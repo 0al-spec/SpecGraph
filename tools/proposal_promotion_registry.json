@@ -2143,5 +2143,18 @@
     "required_provenance_links": [
       "source_draft_ref"
     ]
+  },
+  {
+    "proposal_id": "0167",
+    "source_artifact_class": "working_draft",
+    "source_refs": [
+      "docs/archive/proposal_sources/0167_idea_to_spec_rerun_materialization.md"
+    ],
+    "motivating_concern": "The idea-to-spec flow can preview accepted-answer effects, but downstream review still needs a concrete materialized candidate graph preview and delta before any controlled rerun or promotion source selection.",
+    "normalized_title": "Idea-To-Spec Rerun Materialization",
+    "bounded_scope": "Add a deterministic review-only idea_to_spec_rerun_materialization builder, Make target, tests, proposal docs, roadmap, and DocC updates that consume a ready idea_to_spec_rerun_preview plus current candidate graph, nest a materialized candidate graph preview with preview-resolved ontology gaps moved into ontology_gap_resolutions, and report removed/unresolved gap deltas, without executing prompt agents, applying answers to source artifacts, mutating candidate artifacts, mutating canonical specs, writing Ontology packages or lockfiles, accepting ontology terms, approving candidate graphs, creating Git branches or commits, opening pull requests, publishing read models, or adding SpecSpace mutation UI.",
+    "required_provenance_links": [
+      "source_draft_ref"
+    ]
   }
 ]
