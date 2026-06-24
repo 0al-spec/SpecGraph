@@ -125,6 +125,7 @@ def test_rerun_materialization_removes_resolved_gap_in_preview() -> None:
     preview = report["materialization_preview"]["candidate_graph_preview"]
     node = preview["nodes"][0]
     assert [gap["id"] for gap in node["gaps"]] == ["ontology-gap.record-decision"]
+    assert preview["summary"]["gap_count"] == 1
     assert node["ontology_gap_resolutions"][0]["gap_id"] == "ontology-gap.decision-owner"
     assert (
         node["ontology_gap_resolutions"][0]["resolution_preview"]["decision"]
@@ -132,6 +133,81 @@ def test_rerun_materialization_removes_resolved_gap_in_preview() -> None:
     )
     dumped = json.dumps(report)
     assert "private prompt trace" not in dumped
+
+
+def test_rerun_materialization_source_ref_uses_output_path(tmp_path: Path) -> None:
+    module = load_module()
+    output = tmp_path / "custom_materialization.json"
+
+    report = module.build_idea_to_spec_rerun_materialization(
+        rerun_preview=rerun_preview_artifact(),
+        candidate_graph=candidate_graph_artifact(),
+        output_path=output,
+    )
+
+    preview = report["materialization_preview"]["candidate_graph_preview"]
+    assert preview["source_ref"] == f"{output}#candidate_graph_preview"
+
+
+def test_rerun_materialization_blocks_candidate_graph_mismatch(tmp_path: Path) -> None:
+    module = load_module()
+    rerun_preview = copy.deepcopy(rerun_preview_artifact())
+    rerun_preview["source_artifacts"] = {
+        "candidate_graph": {
+            "source_ref": "runs/different_candidate_graph.json",
+        }
+    }
+    candidate_graph_path = tmp_path / "candidate_spec_graph.json"
+
+    report = module.build_idea_to_spec_rerun_materialization(
+        rerun_preview=rerun_preview,
+        candidate_graph=candidate_graph_artifact(),
+        candidate_graph_path=candidate_graph_path,
+    )
+
+    assert report["readiness"]["ready"] is False
+    assert "rerun_preview_candidate_graph_mismatch" in finding_ids(report)
+    preview = report["materialization_preview"]["candidate_graph_preview"]
+    assert [gap["id"] for gap in preview["nodes"][0]["gaps"]] == [
+        "ontology-gap.decision-owner",
+        "ontology-gap.record-decision",
+    ]
+
+
+def test_rerun_materialization_only_removes_matching_ontology_gaps() -> None:
+    module = load_module()
+    candidate_graph = candidate_graph_artifact()
+    candidate_graph["nodes"][0]["gaps"][0]["kind"] = "implementation_gap"
+
+    report = module.build_idea_to_spec_rerun_materialization(
+        rerun_preview=rerun_preview_artifact(),
+        candidate_graph=candidate_graph,
+    )
+
+    preview = report["materialization_preview"]["candidate_graph_preview"]
+    assert [gap["id"] for gap in preview["nodes"][0]["gaps"]] == [
+        "ontology-gap.decision-owner",
+        "ontology-gap.record-decision",
+    ]
+    assert report["summary"]["removed_gap_count"] == 0
+
+
+def test_rerun_materialization_blocks_failed_candidate_graph_readiness() -> None:
+    module = load_module()
+    candidate_graph = candidate_graph_artifact()
+    candidate_graph["pre_sib_readiness"] = {
+        "ready": False,
+        "review_state": "pre_sib_review_required",
+        "blocked_by": ["pre_sib_unresolved_gaps"],
+    }
+
+    report = module.build_idea_to_spec_rerun_materialization(
+        rerun_preview=rerun_preview_artifact(),
+        candidate_graph=candidate_graph,
+    )
+
+    assert report["readiness"]["ready"] is False
+    assert "candidate_graph_not_ready_for_materialization" in finding_ids(report)
 
 
 def test_rerun_materialization_blocks_unready_preview() -> None:

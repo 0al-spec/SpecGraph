@@ -116,6 +116,7 @@ def _validate_inputs(
     *,
     rerun_preview: dict[str, Any],
     candidate_graph: dict[str, Any],
+    candidate_graph_path: Path | None = None,
 ) -> list[dict[str, Any]]:
     findings: list[dict[str, Any]] = []
     expected = (
@@ -180,6 +181,36 @@ def _validate_inputs(
                 evidence={"readiness": readiness},
             )
         )
+    candidate_readiness = _dict(candidate_graph.get("pre_sib_readiness"))
+    if candidate_readiness and candidate_readiness.get("ready") is not True:
+        findings.append(
+            _finding(
+                finding_id="candidate_graph_not_ready_for_materialization",
+                severity="review_required",
+                message="Rerun materialization requires candidate graph pre-SIB readiness.",
+                evidence={"pre_sib_readiness": candidate_readiness},
+            )
+        )
+    preview_candidate_source = _text(
+        _dict(_dict(rerun_preview.get("source_artifacts")).get("candidate_graph")).get("source_ref")
+    )
+    expected_candidate_source = (
+        _relative_ref(candidate_graph_path)
+        if candidate_graph_path
+        else "inline:candidate_spec_graph"
+    )
+    if preview_candidate_source and preview_candidate_source != expected_candidate_source:
+        findings.append(
+            _finding(
+                finding_id="rerun_preview_candidate_graph_mismatch",
+                severity="review_required",
+                message="Rerun preview must be built from the same candidate graph input.",
+                evidence={
+                    "rerun_preview_candidate_graph_source_ref": preview_candidate_source,
+                    "candidate_graph_source_ref": expected_candidate_source,
+                },
+            )
+        )
     return findings
 
 
@@ -194,10 +225,67 @@ def _resolved_gap_index(rerun_preview: dict[str, Any]) -> dict[str, dict[str, An
     return index
 
 
+def _resolved_gap_matches(
+    resolved: dict[str, Any],
+    *,
+    node_id: str,
+    gap: dict[str, Any],
+) -> bool:
+    if _text(gap.get("kind")) != "ontology_gap":
+        return False
+    if _text(resolved.get("node_id")) and _text(resolved.get("node_id")) != node_id:
+        return False
+    if _text(resolved.get("term")) and _text(resolved.get("term")) != _text(gap.get("term")):
+        return False
+    if _text(resolved.get("source_ref")) and _text(resolved.get("source_ref")) != _text(
+        gap.get("source_ref")
+    ):
+        return False
+    return True
+
+
+def _candidate_graph_counts(candidate_graph: dict[str, Any]) -> dict[str, int]:
+    nodes = [_dict(item) for item in _list(candidate_graph.get("nodes"))]
+    return {
+        "node_count": len(nodes),
+        "edge_count": len(_list(candidate_graph.get("edges"))),
+        "gap_count": sum(len(_list(node.get("gaps"))) for node in nodes),
+        "requirement_count": sum(len(_list(node.get("requirements"))) for node in nodes),
+        "acceptance_criteria_count": sum(
+            len(_list(node.get("acceptance_criteria"))) for node in nodes
+        ),
+        "claim_count": sum(len(_list(node.get("claims"))) for node in nodes),
+    }
+
+
+def _refresh_candidate_graph_summary(candidate_graph: dict[str, Any]) -> None:
+    summary = dict(_dict(candidate_graph.get("summary")))
+    summary.update(_candidate_graph_counts(candidate_graph))
+    candidate_graph["summary"] = summary
+
+
+def _empty_delta(candidate_graph: dict[str, Any]) -> dict[str, Any]:
+    unresolved_gap_ids: list[str] = []
+    for raw_node in _list(candidate_graph.get("nodes")):
+        node = _dict(raw_node)
+        for raw_gap in _list(node.get("gaps")):
+            gap = _dict(raw_gap)
+            if _text(gap.get("kind")) == "ontology_gap" and _text(gap.get("id")):
+                unresolved_gap_ids.append(_text(gap.get("id")))
+    return {
+        "removed_gap_ids": [],
+        "unresolved_ontology_gap_ids": unresolved_gap_ids,
+        "resolved_ontology_gap_count": 0,
+        "unresolved_ontology_gap_count": len(unresolved_gap_ids),
+        "resolution_records": [],
+    }
+
+
 def _materialize_candidate_graph_preview(
     *,
     rerun_preview: dict[str, Any],
     candidate_graph: dict[str, Any],
+    candidate_graph_preview_ref: str,
 ) -> tuple[dict[str, Any], dict[str, Any]]:
     resolved_index = _resolved_gap_index(rerun_preview)
     preview = copy.deepcopy(candidate_graph)
@@ -208,11 +296,12 @@ def _materialize_candidate_graph_preview(
         node = _dict(raw_node)
         remaining_gaps: list[Any] = []
         node_resolutions: list[dict[str, Any]] = []
+        node_id = _text(node.get("id"))
         for raw_gap in _list(node.get("gaps")):
             gap = _dict(raw_gap)
             gap_id = _text(gap.get("id"))
             resolved = resolved_index.get(gap_id)
-            if resolved:
+            if resolved and _resolved_gap_matches(resolved, node_id=node_id, gap=gap):
                 record = {
                     "gap_id": gap_id,
                     "term": _text(gap.get("term")),
@@ -220,7 +309,7 @@ def _materialize_candidate_graph_preview(
                     "resolution_preview": _public_safe(_dict(resolved.get("resolution_preview"))),
                 }
                 node_resolutions.append(record)
-                resolution_records.append({"node_id": _text(node.get("id")), **record})
+                resolution_records.append({"node_id": node_id, **record})
                 removed_gap_ids.append(gap_id)
             else:
                 remaining_gaps.append(raw_gap)
@@ -234,7 +323,8 @@ def _materialize_candidate_graph_preview(
                 if isinstance(item, dict)
             ]
             node["ontology_gap_resolutions"] = existing_resolutions + node_resolutions
-    preview["source_ref"] = "runs/idea_to_spec_rerun_materialization.json#candidate_graph_preview"
+    preview["source_ref"] = candidate_graph_preview_ref
+    _refresh_candidate_graph_summary(preview)
     preview["rerun_materialization"] = {
         "proposal_id": PROPOSAL_ID,
         "contract_ref": CONTRACT_REF,
@@ -258,15 +348,29 @@ def build_idea_to_spec_rerun_materialization(
     candidate_graph: dict[str, Any],
     rerun_preview_path: Path | None = None,
     candidate_graph_path: Path | None = None,
+    output_path: Path | None = None,
 ) -> dict[str, Any]:
     findings = _validate_inputs(
         rerun_preview=rerun_preview,
         candidate_graph=candidate_graph,
+        candidate_graph_path=candidate_graph_path,
     )
-    candidate_graph_preview, delta = _materialize_candidate_graph_preview(
-        rerun_preview=rerun_preview,
-        candidate_graph=candidate_graph,
+    candidate_graph_preview_ref = (
+        f"{_relative_ref(output_path)}#candidate_graph_preview"
+        if output_path
+        else "inline:idea_to_spec_rerun_materialization#candidate_graph_preview"
     )
+    if findings:
+        candidate_graph_preview = copy.deepcopy(candidate_graph)
+        candidate_graph_preview["source_ref"] = candidate_graph_preview_ref
+        _refresh_candidate_graph_summary(candidate_graph_preview)
+        delta = _empty_delta(candidate_graph_preview)
+    else:
+        candidate_graph_preview, delta = _materialize_candidate_graph_preview(
+            rerun_preview=rerun_preview,
+            candidate_graph=candidate_graph,
+            candidate_graph_preview_ref=candidate_graph_preview_ref,
+        )
     ready = not findings
     return {
         "artifact_kind": "idea_to_spec_rerun_materialization",
@@ -344,6 +448,7 @@ def main(argv: list[str] | None = None) -> int:
         candidate_graph=load_json(args.candidate_graph),
         rerun_preview_path=args.rerun_preview,
         candidate_graph_path=args.candidate_graph,
+        output_path=args.output,
     )
     write_json(report, args.output)
     summary = _dict(report.get("summary"))
