@@ -45,6 +45,9 @@ IDEA_EVENT_STORMING_INTAKE_OUTPUT ?= runs/idea_event_storming_intake.json
 CANDIDATE_SPEC_GRAPH_INTAKE ?= tests/fixtures/candidate_spec_graph/idea_event_storming_intake_ready.json
 CANDIDATE_SPEC_GRAPH_SEED ?= tests/fixtures/candidate_spec_graph/candidate_ready.json
 CANDIDATE_SPEC_GRAPH_OUTPUT ?= runs/candidate_spec_graph.json
+ONTOLOGY_BOUND_CANDIDATE_SEED_INTAKE ?= runs/idea_event_storming_intake.json
+ONTOLOGY_BOUND_CANDIDATE_SEED_ONTOLOGY_IR ?= ontology/packages/specgraph-core/generated/ontology.normalized.json
+ONTOLOGY_BOUND_CANDIDATE_SEED_OUTPUT ?= runs/candidate_spec_graph_seed.json
 PRE_SIB_COHERENCE_CANDIDATE_GRAPH ?= tests/fixtures/pre_sib_coherence/candidate_spec_graph_ready.json
 PRE_SIB_COHERENCE_OUTPUT ?= runs/pre_sib_coherence_report.json
 CANDIDATE_REPAIR_LOOP_CANDIDATE_GRAPH ?= tests/fixtures/candidate_repair_loop/candidate_graph_repairable.json
@@ -67,9 +70,13 @@ CANDIDATE_APPROVAL_DECISION_STATE ?= needs_context
 CANDIDATE_APPROVAL_OPERATOR_REF ?= local_operator:unattributed
 CANDIDATE_APPROVAL_REASON ?= awaiting explicit operator approval
 PRODUCT_WORKSPACE_INTAKE_SOURCE ?= tests/fixtures/product_workspace_active_candidate/idea_event_storming_seed.json
-PRODUCT_WORKSPACE_CANDIDATE_SEED ?= tests/fixtures/product_workspace_active_candidate/candidate_spec_graph_seed.json
+PRODUCT_WORKSPACE_CANDIDATE_SEED_OUTPUT ?= $(ONTOLOGY_BOUND_CANDIDATE_SEED_OUTPUT)
+PRODUCT_WORKSPACE_CANDIDATE_SEED_INPUT ?=
+PRODUCT_WORKSPACE_CANDIDATE_SEED ?= $(PRODUCT_WORKSPACE_CANDIDATE_SEED_OUTPUT)
+PRODUCT_WORKSPACE_CANDIDATE_SEED_MODE := $(if $(strip $(PRODUCT_WORKSPACE_CANDIDATE_SEED_INPUT)),input,$(if $(filter-out $(PRODUCT_WORKSPACE_CANDIDATE_SEED_OUTPUT),$(strip $(PRODUCT_WORKSPACE_CANDIDATE_SEED))),input,generate))
+PRODUCT_WORKSPACE_CANDIDATE_SEED_EFFECTIVE := $(if $(strip $(PRODUCT_WORKSPACE_CANDIDATE_SEED_INPUT)),$(PRODUCT_WORKSPACE_CANDIDATE_SEED_INPUT),$(PRODUCT_WORKSPACE_CANDIDATE_SEED))
 PRODUCT_WORKSPACE_ACTIVE_CANDIDATE_CONFIG ?= $(ACTIVE_IDEA_TO_SPEC_CANDIDATE_CONFIG)
-PRODUCT_WORKSPACE_ACTIVE_CANDIDATE_REFRESH_AUTO := $(if $(findstring command line,$(origin ACTIVE_IDEA_TO_SPEC_CANDIDATE_CONFIG)),force,$(if $(findstring environment,$(origin ACTIVE_IDEA_TO_SPEC_CANDIDATE_CONFIG)),force,$(if $(findstring command line,$(origin PRODUCT_WORKSPACE_INTAKE_SOURCE)),force,$(if $(findstring environment,$(origin PRODUCT_WORKSPACE_INTAKE_SOURCE)),force,$(if $(findstring command line,$(origin PRODUCT_WORKSPACE_CANDIDATE_SEED)),force,$(if $(findstring environment,$(origin PRODUCT_WORKSPACE_CANDIDATE_SEED)),force,$(if $(findstring command line,$(origin PRODUCT_WORKSPACE_ACTIVE_CANDIDATE_CONFIG)),force,$(if $(findstring environment,$(origin PRODUCT_WORKSPACE_ACTIVE_CANDIDATE_CONFIG)),force,auto))))))))
+PRODUCT_WORKSPACE_ACTIVE_CANDIDATE_REFRESH_AUTO := $(if $(findstring command line,$(origin ACTIVE_IDEA_TO_SPEC_CANDIDATE_CONFIG)),force,$(if $(findstring environment,$(origin ACTIVE_IDEA_TO_SPEC_CANDIDATE_CONFIG)),force,$(if $(findstring command line,$(origin PRODUCT_WORKSPACE_INTAKE_SOURCE)),force,$(if $(findstring environment,$(origin PRODUCT_WORKSPACE_INTAKE_SOURCE)),force,$(if $(findstring command line,$(origin PRODUCT_WORKSPACE_CANDIDATE_SEED)),force,$(if $(findstring environment,$(origin PRODUCT_WORKSPACE_CANDIDATE_SEED)),force,$(if $(findstring command line,$(origin PRODUCT_WORKSPACE_CANDIDATE_SEED_INPUT)),force,$(if $(findstring environment,$(origin PRODUCT_WORKSPACE_CANDIDATE_SEED_INPUT)),force,$(if $(findstring command line,$(origin PRODUCT_WORKSPACE_CANDIDATE_SEED_OUTPUT)),force,$(if $(findstring environment,$(origin PRODUCT_WORKSPACE_CANDIDATE_SEED_OUTPUT)),force,$(if $(findstring command line,$(origin PRODUCT_WORKSPACE_ACTIVE_CANDIDATE_CONFIG)),force,$(if $(findstring environment,$(origin PRODUCT_WORKSPACE_ACTIVE_CANDIDATE_CONFIG)),force,auto))))))))))))
 PRODUCT_WORKSPACE_ACTIVE_CANDIDATE_REFRESH ?= $(PRODUCT_WORKSPACE_ACTIVE_CANDIDATE_REFRESH_AUTO)
 
 .DEFAULT_GOAL := help
@@ -84,7 +91,8 @@ PYTHON_TARGETS := viewer-surfaces dashboard backlog next-move spec-activity grap
 	specauthor-generated-artifact-contract specauthor-ontology-write-gate \
 	specauthor-invocation-artifact-contract specauthor-authoring-flow \
 	user-idea-intake-source generic-idea-intake \
-	idea-event-storming-intake candidate-spec-graph pre-sib-coherence candidate-repair-loop \
+	idea-event-storming-intake ontology-bound-candidate-graph-seed \
+	candidate-spec-graph pre-sib-coherence candidate-repair-loop \
 	candidate-spec-materialization idea-to-spec-promotion-gate \
 	active-idea-to-spec-candidate-source candidate-approval-decision \
 	product-workspace-active-candidate \
@@ -140,6 +148,8 @@ help:
 			'  make user-idea-intake-source USER_IDEA_INTAKE_SOURCE=<json>' \
 			'  make generic-idea-intake USER_IDEA_INTAKE_SOURCE=<json>' \
 			'  make idea-event-storming-intake IDEA_EVENT_STORMING_INTAKE_SOURCE=<json>' \
+			'  make ontology-bound-candidate-graph-seed ONTOLOGY_BOUND_CANDIDATE_SEED_INTAKE=<json>' \
+			'  make product-workspace-active-candidate PRODUCT_WORKSPACE_CANDIDATE_SEED_INPUT=<json>' \
 			'  make candidate-spec-graph CANDIDATE_SPEC_GRAPH_INTAKE=<json> CANDIDATE_SPEC_GRAPH_SEED=<json>' \
 			'  make pre-sib-coherence PRE_SIB_COHERENCE_CANDIDATE_GRAPH=<json>' \
 			'  make candidate-repair-loop CANDIDATE_REPAIR_LOOP_CANDIDATE_GRAPH=<json> CANDIDATE_REPAIR_LOOP_PRE_SIB_REPORT=<json>' \
@@ -335,6 +345,13 @@ generic-idea-intake: user-idea-intake-source
 candidate-spec-graph:
 	@$(PYTHON) tools/candidate_spec_graph.py --intake "$(CANDIDATE_SPEC_GRAPH_INTAKE)" --candidate-seed "$(CANDIDATE_SPEC_GRAPH_SEED)" --output "$(CANDIDATE_SPEC_GRAPH_OUTPUT)"
 
+.PHONY: ontology-bound-candidate-graph-seed
+ifeq ($(strip $(ONTOLOGY_BOUND_CANDIDATE_SEED_INTAKE)),$(strip $(IDEA_EVENT_STORMING_INTAKE_OUTPUT)))
+ontology-bound-candidate-graph-seed: generic-idea-intake
+endif
+ontology-bound-candidate-graph-seed:
+	@$(PYTHON) tools/ontology_bound_candidate_graph_seed.py --intake "$(ONTOLOGY_BOUND_CANDIDATE_SEED_INTAKE)" --ontology-ir "$(ONTOLOGY_BOUND_CANDIDATE_SEED_ONTOLOGY_IR)" --output "$(ONTOLOGY_BOUND_CANDIDATE_SEED_OUTPUT)"
+
 .PHONY: pre-sib-coherence
 pre-sib-coherence:
 	@$(PYTHON) tools/pre_sib_coherence_report.py --candidate-graph "$(PRE_SIB_COHERENCE_CANDIDATE_GRAPH)" --output "$(PRE_SIB_COHERENCE_OUTPUT)"
@@ -362,7 +379,10 @@ candidate-approval-decision:
 .PHONY: product-workspace-active-candidate
 product-workspace-active-candidate:
 	@$(PYTHON) tools/idea_event_storming_intake.py --input "$(PRODUCT_WORKSPACE_INTAKE_SOURCE)" --output "$(IDEA_EVENT_STORMING_INTAKE_OUTPUT)"
-	@$(PYTHON) tools/candidate_spec_graph.py --intake "$(IDEA_EVENT_STORMING_INTAKE_OUTPUT)" --candidate-seed "$(PRODUCT_WORKSPACE_CANDIDATE_SEED)" --output "$(CANDIDATE_SPEC_GRAPH_OUTPUT)"
+ifeq ($(PRODUCT_WORKSPACE_CANDIDATE_SEED_MODE),generate)
+	@$(PYTHON) tools/ontology_bound_candidate_graph_seed.py --intake "$(IDEA_EVENT_STORMING_INTAKE_OUTPUT)" --ontology-ir "$(ONTOLOGY_BOUND_CANDIDATE_SEED_ONTOLOGY_IR)" --output "$(PRODUCT_WORKSPACE_CANDIDATE_SEED_OUTPUT)"
+endif
+	@$(PYTHON) tools/candidate_spec_graph.py --intake "$(IDEA_EVENT_STORMING_INTAKE_OUTPUT)" --candidate-seed "$(PRODUCT_WORKSPACE_CANDIDATE_SEED_EFFECTIVE)" --output "$(CANDIDATE_SPEC_GRAPH_OUTPUT)"
 	@$(PYTHON) tools/pre_sib_coherence_report.py --candidate-graph "$(CANDIDATE_SPEC_GRAPH_OUTPUT)" --output "$(PRE_SIB_COHERENCE_OUTPUT)"
 	@$(PYTHON) tools/candidate_repair_loop.py --candidate-graph "$(CANDIDATE_SPEC_GRAPH_OUTPUT)" --pre-sib-report "$(PRE_SIB_COHERENCE_OUTPUT)" --output "$(CANDIDATE_REPAIR_LOOP_OUTPUT)"
 	@$(PYTHON) tools/candidate_spec_materialization.py --candidate-graph "$(CANDIDATE_SPEC_GRAPH_OUTPUT)" --repair-loop "$(CANDIDATE_REPAIR_LOOP_OUTPUT)" --output-dir "$(CANDIDATE_SPEC_MATERIALIZATION_OUTPUT_DIR)" --output "$(CANDIDATE_SPEC_MATERIALIZATION_OUTPUT)"
@@ -548,7 +568,7 @@ docc-sync:
 
 .PHONY: publish-bundle
 publish-bundle:
-	@PRODUCT_WORKSPACE_INTAKE_SOURCE="$(PRODUCT_WORKSPACE_INTAKE_SOURCE)" PRODUCT_WORKSPACE_CANDIDATE_SEED="$(PRODUCT_WORKSPACE_CANDIDATE_SEED)" PRODUCT_WORKSPACE_ACTIVE_CANDIDATE_CONFIG="$(PRODUCT_WORKSPACE_ACTIVE_CANDIDATE_CONFIG)" PRODUCT_WORKSPACE_ACTIVE_CANDIDATE_REFRESH="$(PRODUCT_WORKSPACE_ACTIVE_CANDIDATE_REFRESH)" $(PYTHON) tools/build_static_artifact_bundle.py --refresh-publish-surfaces $(PUBLISH_BUNDLE_FLAGS)
+	@PRODUCT_WORKSPACE_INTAKE_SOURCE="$(PRODUCT_WORKSPACE_INTAKE_SOURCE)" PRODUCT_WORKSPACE_CANDIDATE_SEED="$(PRODUCT_WORKSPACE_CANDIDATE_SEED)" PRODUCT_WORKSPACE_CANDIDATE_SEED_INPUT="$(PRODUCT_WORKSPACE_CANDIDATE_SEED_INPUT)" PRODUCT_WORKSPACE_CANDIDATE_SEED_OUTPUT="$(PRODUCT_WORKSPACE_CANDIDATE_SEED_OUTPUT)" PRODUCT_WORKSPACE_ACTIVE_CANDIDATE_CONFIG="$(PRODUCT_WORKSPACE_ACTIVE_CANDIDATE_CONFIG)" PRODUCT_WORKSPACE_ACTIVE_CANDIDATE_REFRESH="$(PRODUCT_WORKSPACE_ACTIVE_CANDIDATE_REFRESH)" $(PYTHON) tools/build_static_artifact_bundle.py --refresh-publish-surfaces $(PUBLISH_BUNDLE_FLAGS)
 
 .PHONY: test
 test:

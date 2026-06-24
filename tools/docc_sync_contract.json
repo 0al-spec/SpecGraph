@@ -143,10 +143,13 @@
         "proposal `0156`",
         "proposal `0157`",
         "proposal `0158`",
+        "proposal `0159`",
         "CLI Candidate Approval Flow",
         "candidate_approval_decision",
         "make generic-idea-intake",
         "user_idea_intake_source",
+        "ontology_bound_candidate_graph_seed",
+        "make ontology-bound-candidate-graph-seed",
         "make product-workspace-active-candidate"
       ],
       "docc_required_terms": [
@@ -156,10 +159,13 @@
         "Proposal `0156`",
         "Proposal `0157`",
         "Proposal `0158`",
+        "Proposal `0159`",
         "CLI Candidate Approval Flow",
         "candidate_approval_decision",
         "make generic-idea-intake",
         "user_idea_intake_source",
+        "ontology_bound_candidate_graph_seed",
+        "make ontology-bound-candidate-graph-seed",
         "make product-workspace-active-candidate"
       ]
     },

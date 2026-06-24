@@ -94,9 +94,25 @@ then the existing `runs/idea_event_storming_intake.json` through
 can replace it at the intake-source boundary without new product-specific
 scripts.
 
-The next product workspace slice is generic candidate graph seed generation
-from approved intake data. Git Service post-review status and read-model
-publication remain service operations outside SpecSpace write authority.
+Proposal `0159` adds generic ontology-bound candidate graph seed generation
+from approved intake data:
+
+```bash
+make ontology-bound-candidate-graph-seed
+```
+
+The `ontology_bound_candidate_graph_seed` generator reads the normalized
+project-local SpecGraph core ontology IR and writes
+`runs/candidate_spec_graph_seed.json`. It requires active ontology/domain/context
+refs, ontology layer refs, and model applicability refs. Generated structural
+candidate nodes bind to ontology classes such as `Spec`, `Node`, `Requirement`,
+`AcceptanceCriterion`, and `Constraint`, while product-domain terms remain
+ontology gaps until an owner explicitly accepts, rejects, or aliases them.
+
+`make product-workspace-active-candidate` now runs the ontology-bound seed step
+before building `runs/candidate_spec_graph.json`. Git Service post-review status
+and read-model publication remain service operations outside SpecSpace write
+authority.
 
 ## Authority Boundary
 
@@ -114,11 +130,13 @@ The product pilot must not:
 
 ## Current Execution Order
 
-1. Generic candidate graph seed generation from approved intake data.
-2. Extend Platform Git Service orchestration through review status and
+1. SpecSpace workflow lane over candidate approval and ontology seed gaps.
+2. Prompt-side enrichment for richer candidate graph authoring under the same
+   ontology-bound seed contract.
+3. Extend Platform Git Service orchestration through review status and
    read-model publication.
-3. Refine product workspace workflow lane metrics and blocker copy.
-4. Refine ontology applicability and layer-aware review as compiler support
+4. Refine product workspace workflow lane metrics and blocker copy.
+5. Refine ontology applicability and layer-aware review as compiler support
    matures.
 
 ## Canonical Sources

@@ -335,10 +335,50 @@ user_idea_intake_source
 ```
 
 Team Decision Log remains data. A new product idea can replace it at the intake
-source boundary without adding product-specific scripts or Make targets. The
-next remaining genericization step is candidate graph seed generation; proposal
-`0158` intentionally stops before candidate spec graph authoring, prompt-agent
-execution, Git Service calls, canonical spec mutation, or Ontology writes.
+source boundary without adding product-specific scripts or Make targets.
+Proposal `0158` intentionally stops before candidate spec graph authoring,
+prompt-agent execution, Git Service calls, canonical spec mutation, or Ontology
+writes.
+
+### 11. Ontology-Bound Candidate Graph Seed
+
+Status: implemented in proposal `0159`.
+
+The candidate graph seed is now generated generically from approved
+event-storming intake and the project-local SpecGraph core ontology IR.
+
+This step makes Ontology foundational for the product idea-to-spec path:
+
+- active ontology/domain/context refs are required;
+- ontology layer refs are required;
+- model applicability refs are required;
+- generated structural nodes bind to core ontology classes such as `Spec`,
+  `Node`, `Requirement`, `AcceptanceCriterion`, and `Constraint`;
+- product-domain terms are emitted as ontology gaps rather than silently
+  accepted into the ontology.
+
+The implemented surface is:
+
+- `tools/ontology_bound_candidate_graph_seed.py`;
+- `make ontology-bound-candidate-graph-seed`;
+- `runs/candidate_spec_graph_seed.json`;
+- `make product-workspace-active-candidate`, which now generates the seed before
+  building `runs/candidate_spec_graph.json`.
+
+The deterministic chain is:
+
+```text
+user_idea_intake_source
+  -> idea_event_storming_seed
+  -> idea_event_storming_intake
+  -> ontology_bound_candidate_graph_seed
+  -> candidate_spec_graph
+```
+
+The downstream `candidate_spec_graph` builder blocks seeds whose
+`source_generation.findings` require review. This prevents missing ontology
+frame, missing ontology layer/applicability refs, or missing required core
+ontology classes from passing into pre-SIB readiness.
 
 ## Success Criteria
 
@@ -361,10 +401,12 @@ The active stack after production workspace isolation is:
 
 1. SpecSpace workflow lane over the product workspace chain, including
    candidate approval state.
-2. Platform Git Service post-review status and read-model publication
+2. Ontology binding/gap review lane for generated candidate graph seeds.
+3. Prompt-side enrichment that can propose richer product-domain graph nodes
+   while preserving ontology gaps for unaccepted terms.
+4. Platform Git Service post-review status and read-model publication
    orchestration.
-3. Generic candidate graph seed generation from approved intake.
-4. Ontology applicability and layer-aware review refinement as compiler support
+5. Ontology applicability and layer-aware review refinement as compiler support
    matures.
 
 ## Related Documents

@@ -197,6 +197,37 @@ def _seed_contract_findings(seed: dict[str, Any]) -> list[dict[str, Any]]:
     ]
 
 
+def _seed_source_generation_findings(seed: dict[str, Any]) -> list[dict[str, Any]]:
+    source_generation = _dict(seed.get("source_generation"))
+    readiness = _dict(source_generation.get("readiness"))
+    source_findings = [
+        finding
+        for finding in _list(source_generation.get("findings"))
+        if isinstance(finding, dict) and finding.get("severity") == "review_required"
+    ]
+    blocked_by = _text_list(readiness.get("blocked_by"))
+    readiness_requires_review = bool(readiness) and (
+        readiness.get("ready") is False or bool(blocked_by)
+    )
+    if not source_findings and not readiness_requires_review:
+        return []
+    return [
+        _finding(
+            finding_id="candidate_graph_seed_source_generation_review_required",
+            severity="review_required",
+            message="Candidate graph seed generation requires review before pre-SIB can proceed.",
+            evidence={
+                "source_finding_ids": [
+                    finding.get("finding_id", "unknown") for finding in source_findings
+                ],
+                "source_contract_ref": source_generation.get("contract_ref"),
+                "source_readiness_ready": readiness.get("ready"),
+                "source_readiness_blocked_by": blocked_by,
+            },
+        )
+    ]
+
+
 def _normalize_entry(
     value: Any,
     *,
@@ -631,6 +662,7 @@ def build_candidate_spec_graph(
     node_ids = {node["id"] for node in nodes}
     findings = (
         _seed_contract_findings(seed)
+        + _seed_source_generation_findings(seed)
         + _validate_intake(intake)
         + node_findings
         + edge_findings
