@@ -151,6 +151,14 @@ def test_rerun_preview_blocks_unready_rerun_input() -> None:
     )
     rerun_input = copy.deepcopy(ready_rerun_input())
     rerun_input["readiness"]["ready"] = False
+    rerun_input["rerun_input_overlay"]["ontology_review_hints"]["project_local_terms"] = [
+        {
+            "term": "Record Decision",
+            "answer_kind": "propose_project_local_term",
+            "request_id": "clarification.test",
+            "target_ref": "candidate_graph.gaps",
+        }
+    ]
 
     report = module.build_idea_to_spec_rerun_preview(
         rerun_input=rerun_input,
@@ -160,6 +168,39 @@ def test_rerun_preview_blocks_unready_rerun_input() -> None:
 
     assert report["readiness"]["ready"] is False
     assert "rerun_input_not_ready" in finding_ids(report)
+    gap_preview = report["rerun_preview"]["ontology_gap_preview"]
+    assert gap_preview["decision_count"] == 0
+    assert gap_preview["resolved_ontology_gap_count"] == 0
+
+
+def test_rerun_preview_matches_aggregate_reject_to_ontology_gaps() -> None:
+    module = load_module(
+        PREVIEW_TOOL_PATH,
+        "idea_to_spec_rerun_preview_aggregate_reject_test",
+    )
+    rerun_input = copy.deepcopy(ready_rerun_input())
+    ontology_hints = rerun_input["rerun_input_overlay"]["ontology_review_hints"]
+    ontology_hints["project_local_terms"] = []
+    ontology_hints["rejected_terms"] = [
+        {
+            "answer_kind": "reject",
+            "request_id": "clarification.repair.review-unresolved-gaps",
+            "target_ref": "candidate_graph.gaps",
+        }
+    ]
+
+    report = module.build_idea_to_spec_rerun_preview(
+        rerun_input=rerun_input,
+        intake=intake_artifact(),
+        candidate_graph=candidate_graph_artifact(),
+    )
+
+    gap_preview = report["rerun_preview"]["ontology_gap_preview"]
+    assert gap_preview["decision_count"] == 1
+    assert gap_preview["resolved_ontology_gap_count"] == 2
+    assert {
+        item["resolution_preview"]["decision"] for item in gap_preview["resolved_ontology_gaps"]
+    } == {"reject"}
 
 
 def test_rerun_preview_merges_active_frame_and_strips_raw_trace() -> None:
@@ -191,6 +232,31 @@ def test_rerun_preview_merges_active_frame_and_strips_raw_trace() -> None:
     assert frame["context_refs"] == ["context.idea_to_spec", "context.review"]
     dumped = json.dumps(report)
     assert "private prompt trace" not in dumped
+
+
+def test_rerun_preview_sanitizes_base_event_storming_entries() -> None:
+    module = load_module(
+        PREVIEW_TOOL_PATH,
+        "idea_to_spec_rerun_preview_base_event_sanitized_test",
+    )
+    intake = intake_artifact()
+    intake["event_storming"]["actors"] = [
+        {
+            "id": "actor.owner",
+            "name": "Owner",
+            "raw_prompt": "private prompt trace",
+        }
+    ]
+
+    report = module.build_idea_to_spec_rerun_preview(
+        rerun_input=ready_rerun_input(),
+        intake=intake,
+        candidate_graph=candidate_graph_artifact(),
+    )
+
+    actors = report["rerun_preview"]["event_storming_preview"]["event_storming"]["actors"]
+    assert actors == [{"id": "actor.owner", "name": "Owner"}]
+    assert "private prompt trace" not in json.dumps(report)
 
 
 def test_rerun_preview_cli_writes_output(tmp_path: Path) -> None:

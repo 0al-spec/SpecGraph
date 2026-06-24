@@ -231,7 +231,7 @@ def _merge_active_frame(
     intake: dict[str, Any],
     overlay: dict[str, Any],
 ) -> dict[str, Any]:
-    preview = dict(_dict(intake.get("active_frame")))
+    preview = _dict(_public_safe(_dict(intake.get("active_frame"))))
     applied_hints: list[dict[str, Any]] = []
     for raw_hint in _list(_dict(overlay.get("intake_overlay")).get("active_frame_hints")):
         hint = _dict(raw_hint)
@@ -266,7 +266,7 @@ def _merge_event_storming(
     overlay: dict[str, Any],
 ) -> dict[str, Any]:
     preview = {
-        category: list(_list(_dict(intake.get("event_storming")).get(category)))
+        category: _public_safe(_list(_dict(intake.get("event_storming")).get(category)))
         for category in EVENT_STORMING_CATEGORIES
     }
     applied_hints: list[dict[str, Any]] = []
@@ -365,9 +365,14 @@ def _ontology_decisions(overlay: dict[str, Any]) -> list[dict[str, Any]]:
 
 def _matches_gap(decision: dict[str, Any], gap_item: dict[str, Any]) -> bool:
     target_ref = _text(decision.get("target_ref"))
+    decision_kind = _text(decision.get("decision"))
+    if target_ref == "candidate_graph.gaps" and decision_kind in {"reject", "defer"}:
+        return True
+    node_gap_ref = f"{_text(gap_item.get('node_id'))}.gaps.{_text(gap_item.get('gap_id'))}"
     if target_ref and target_ref in {
         _text(gap_item.get("gap_id")),
         _text(gap_item.get("source_ref")),
+        node_gap_ref,
     }:
         return True
     term_key = _text(decision.get("term_key"))
@@ -446,7 +451,7 @@ def build_idea_to_spec_rerun_preview(
         intake=intake,
         candidate_graph=candidate_graph,
     )
-    overlay = _dict(rerun_input.get("rerun_input_overlay"))
+    overlay = _dict(rerun_input.get("rerun_input_overlay")) if not findings else {}
     active_frame_preview = _merge_active_frame(intake=intake, overlay=overlay)
     event_storming_preview = _merge_event_storming(intake=intake, overlay=overlay)
     ontology_gap_preview = _ontology_gap_preview(
