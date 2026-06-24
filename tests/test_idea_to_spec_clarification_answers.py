@@ -57,6 +57,15 @@ def test_clarification_answers_accepts_blocking_request_answer() -> None:
     assert report["unresolved_blocking_requests"] == []
 
 
+def test_clarification_answers_default_requests_input_uses_current_run_artifact() -> None:
+    makefile = (ROOT / "Makefile").read_text(encoding="utf-8")
+
+    assert (
+        "IDEA_TO_SPEC_CLARIFICATION_ANSWERS_REQUESTS ?= $(IDEA_TO_SPEC_CLARIFICATION_OUTPUT)"
+        in makefile
+    )
+
+
 def test_clarification_answers_blocks_unknown_request() -> None:
     module = load_module()
     answers = copy.deepcopy(load_json(ANSWERS_READY_FIXTURE))
@@ -84,6 +93,60 @@ def test_clarification_answers_rejects_disallowed_answer_kind() -> None:
 
     assert report["readiness"]["ready"] is False
     assert "answer_kind_not_allowed" in finding_ids(report)
+
+
+def test_clarification_answers_rejects_request_without_allowed_actions() -> None:
+    module = load_module()
+    requests = copy.deepcopy(load_json(REQUESTS_FIXTURE))
+    requests["clarification_requests"][0]["suggested_actions"] = []
+
+    report = module.build_idea_to_spec_clarification_answers(
+        clarification_requests=requests,
+        answer_set=load_json(ANSWERS_READY_FIXTURE),
+    )
+
+    assert report["readiness"]["ready"] is False
+    assert "request_suggested_actions_missing" in finding_ids(report)
+
+
+def test_clarification_answers_preserves_scalar_values_and_redacts_rationale() -> None:
+    module = load_module()
+    answers = copy.deepcopy(load_json(ANSWERS_READY_FIXTURE))
+    answers["answers"][0]["value"] = "Decision Owner"
+    answers["answers"][0]["rationale"] = "Reviewed /Users/egor/private; token=abc123"
+
+    report = module.build_idea_to_spec_clarification_answers(
+        clarification_requests=load_json(REQUESTS_FIXTURE),
+        answer_set=answers,
+    )
+
+    answer = report["answers"][0]
+    assert answer["value"] == "Decision Owner"
+    assert answer["rationale"] == "[redacted unsafe rationale]"
+    assert answer["rationale_redacted"] is True
+    dumped = json.dumps(report, sort_keys=True)
+    assert "/Users/egor/private" not in dumped
+    assert "token=abc123" not in dumped
+
+
+def test_clarification_answers_defer_does_not_resolve_blocking_request() -> None:
+    module = load_module()
+    answers = copy.deepcopy(load_json(ANSWERS_READY_FIXTURE))
+    answers["answers"][0]["answer_kind"] = "defer"
+    answers["answers"][0]["status"] = "accepted_for_review"
+    answers["answers"][0]["authority"] = "deferred_by_operator"
+
+    report = module.build_idea_to_spec_clarification_answers(
+        clarification_requests=load_json(REQUESTS_FIXTURE),
+        answer_set=answers,
+    )
+
+    assert report["summary"]["accepted_answer_count"] == 1
+    assert report["summary"]["unresolved_blocking_count"] == 1
+    assert report["readiness"]["ready"] is False
+    assert report["unresolved_blocking_requests"][0]["request_id"] == (
+        "clarification.repair.repair-review-unresolved-gaps"
+    )
 
 
 def test_clarification_answers_requires_authority() -> None:

@@ -27,6 +27,7 @@ DEFAULT_ANSWER_SET_PATH = (
 DEFAULT_OUTPUT_PATH = ROOT / "runs" / "idea_to_spec_clarification_answers.json"
 
 ACCEPTED_STATUSES = {"accepted_for_candidate", "accepted_for_review"}
+NON_RESOLVING_ANSWER_KINDS = {"defer", "defer_candidate"}
 ANSWER_AUTHORITIES = {
     "operator_approved",
     "owner_approved",
@@ -45,6 +46,19 @@ RAW_TRACE_FIELDS = {
     "raw_response",
     "raw_text",
 }
+PRIVATE_TEXT_MARKERS = (
+    "/Users/",
+    "/home/",
+    "/private/",
+    "/tmp/",
+    "\\",
+    "-----BEGIN",
+    "api_key",
+    "authorization",
+    "password",
+    "secret",
+    "token=",
+)
 
 
 def _now_iso() -> str:
@@ -84,6 +98,16 @@ def _public_safe(value: Any) -> Any:
     if isinstance(value, list):
         return [_public_safe(item) for item in value]
     return value
+
+
+def _safe_rationale(value: Any) -> dict[str, Any]:
+    rationale = _text(value)
+    lowered = rationale.lower()
+    redacted = bool(rationale) and any(marker.lower() in lowered for marker in PRIVATE_TEXT_MARKERS)
+    return {
+        "rationale": "[redacted unsafe rationale]" if redacted else rationale,
+        "rationale_redacted": redacted,
+    }
 
 
 def load_json(path: Path) -> dict[str, Any]:
@@ -226,7 +250,16 @@ def _normalize_answer(
             )
         )
     allowed_actions = _text_list(_dict(request or {}).get("suggested_actions"))
-    if answer_kind and allowed_actions and answer_kind not in allowed_actions:
+    if request is not None and not allowed_actions:
+        findings.append(
+            _finding(
+                finding_id="request_suggested_actions_missing",
+                severity="review_required",
+                message="Clarification request must declare allowed suggested_actions.",
+                evidence={"request_id": request_id, "index": index},
+            )
+        )
+    elif answer_kind and allowed_actions and answer_kind not in allowed_actions:
         findings.append(
             _finding(
                 finding_id="answer_kind_not_allowed",
@@ -270,13 +303,15 @@ def _normalize_answer(
                 evidence={"request_id": request_id, "status": status},
             )
         )
+    safe_rationale = _safe_rationale(answer.get("rationale"))
     normalized = {
         "request_id": request_id,
         "answer_kind": answer_kind,
         "status": status,
         "authority": authority,
-        "value": _public_safe(_dict(answer.get("value"))),
-        "rationale": _text(answer.get("rationale")),
+        "value": _public_safe(answer.get("value")),
+        "rationale": safe_rationale["rationale"],
+        "rationale_redacted": safe_rationale["rationale_redacted"],
         "request_snapshot": {
             "kind": _dict(request or {}).get("kind"),
             "severity": _dict(request or {}).get("severity"),
@@ -334,7 +369,9 @@ def build_idea_to_spec_clarification_answers(
     answers_by_request = {
         answer["request_id"]: answer
         for answer in normalized_answers
-        if _text(answer.get("request_id")) and answer.get("status") in ACCEPTED_STATUSES
+        if _text(answer.get("request_id"))
+        and answer.get("status") in ACCEPTED_STATUSES
+        and _text(answer.get("answer_kind")) not in NON_RESOLVING_ANSWER_KINDS
     }
     blocking_requests = [
         request
