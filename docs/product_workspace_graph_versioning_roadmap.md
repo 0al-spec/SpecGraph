@@ -497,6 +497,42 @@ from entering the candidate graph path as if they were ready.
 Prepared `user_idea_intake_source` inputs remain supported for compatibility
 and tests, but they are no longer the only normal entry point.
 
+### 15. Idea-To-Spec Clarification Requests
+
+Status: implemented in proposal `0163`.
+
+The product-workspace flow now writes a unified clarification request artifact:
+
+```text
+runs/idea_to_spec_clarification_requests.json
+```
+
+It can be refreshed directly with:
+
+```bash
+make idea-to-spec-clarification-requests
+```
+
+The artifact turns scattered intake questions, pre-SIB findings, repair-loop
+actions, candidate graph gaps, and ontology gap review groups into stable typed
+requests. Each request carries an id, kind, severity, target artifact, target
+ref, blocking source findings, suggested answer shape, and suggested actions.
+
+This keeps the next user/agent step explicit:
+
+```text
+missing_context -> answer active ontology/domain/context frame
+ontology_gap -> bind, alias, propose project-local term, reject, or defer
+weak_claim -> accept downgrade, add evidence, narrow scope, or reject
+missing_acceptance_criteria -> accept preview criterion or provide one
+graph_repair -> accept preview edge, reject it, or propose another relation
+```
+
+The artifact remains review-only. It does not accept answers, write ontology
+packages, mutate canonical specs, approve candidates, or create Git branches.
+Proposal `0164` is the next planned slice for
+`idea_to_spec_clarification_answers`.
+
 ## Success Criteria
 
 - A user can start with a product idea and receive a coherent candidate graph.
@@ -513,20 +549,25 @@ and tests, but they are no longer the only normal entry point.
   product-specific scripts, Make targets, or active-candidate config fixtures.
 - A raw product idea can produce a reviewable intake session that either writes
   a prepared intake source or asks concrete clarification questions.
+- Blocking intake, ontology, pre-SIB, and repair issues become stable
+  clarification request ids that a future answer contract and SpecSpace product
+  workspace lane can reference.
 
 ## Current Execution Order
 
 The active stack after production workspace isolation is:
 
-1. CLI or agent conversation wrapper that fills `user_idea_raw_input` from a
-   real operator interview.
-2. Prompt-side enrichment that can propose richer product-domain graph nodes
+1. `idea_to_spec_clarification_answers` for operator or agent answers that feed
+   a subsequent deterministic pipeline rerun.
+2. CLI or agent conversation wrapper that fills `user_idea_raw_input` from a
+   real operator interview and can consume clarification requests.
+3. Prompt-side enrichment that can propose richer product-domain graph nodes
    while preserving ontology gaps for unaccepted terms.
-3. SpecSpace workflow lane refinement for active candidate blockers, repair
+4. SpecSpace workflow lane refinement for active candidate blockers, repair
    suggestions, and approval state.
-4. Platform Git Service post-review status and read-model publication
+5. Platform Git Service post-review status and read-model publication
    orchestration.
-5. Ontology applicability and layer-aware review refinement as compiler support
+6. Ontology applicability and layer-aware review refinement as compiler support
    matures.
 
 ## Related Documents

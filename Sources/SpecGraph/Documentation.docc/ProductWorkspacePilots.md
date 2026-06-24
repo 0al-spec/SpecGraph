@@ -157,6 +157,22 @@ clarification questions instead of silently entering the candidate graph path.
 existing intake-source builder in generated mode. Prepared
 `user_idea_intake_source` inputs remain supported for compatibility and tests.
 
+Proposal `0163` adds `idea_to_spec_clarification_requests` as the unified
+read-only question/action surface:
+
+```bash
+make idea-to-spec-clarification-requests
+```
+
+The standard product-workspace runner writes
+`runs/idea_to_spec_clarification_requests.json` after the repair loop. Intake
+questions, pre-SIB findings, repair-loop context requirements, candidate graph
+gaps, and ontology gap groups become stable request ids with suggested answer
+shapes such as `bind_existing_term`, `alias`, `propose_project_local_term`,
+`reject`, or `defer`. The artifact does not accept answers, mutate canonical
+specs, write ontology packages, approve candidates, or create Git branches.
+Proposal `0164` is reserved for `idea_to_spec_clarification_answers`.
+
 ## Authority Boundary
 
 Team Decision Log remains non-canonical until a repository service accepts a
@@ -173,16 +189,18 @@ The product pilot must not:
 
 ## Current Execution Order
 
-1. Prompt-side enrichment for richer candidate graph authoring under the same
+1. `idea_to_spec_clarification_answers` for operator or agent answers that feed
+   a subsequent deterministic pipeline rerun.
+2. Prompt-side enrichment for richer candidate graph authoring under the same
    ontology-bound seed contract.
-2. CLI or agent conversation wrapper that fills `user_idea_raw_input` from a
+3. CLI or agent conversation wrapper that fills `user_idea_raw_input` from a
    real operator interview.
-3. SpecSpace workflow lane refinement for clearer active candidate blockers and
+4. SpecSpace workflow lane refinement for clearer active candidate blockers and
    repair suggestions.
-4. Extend Platform Git Service orchestration through review status and
+5. Extend Platform Git Service orchestration through review status and
    read-model publication.
-5. Refine product workspace workflow lane metrics and blocker copy.
-6. Refine ontology applicability and layer-aware review as compiler support
+6. Refine product workspace workflow lane metrics and blocker copy.
+7. Refine ontology applicability and layer-aware review as compiler support
    matures.
 
 ## Canonical Sources

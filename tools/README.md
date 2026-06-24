@@ -315,6 +315,17 @@ Supervisor modes:
   deterministic changes to the preview and records ontology/context-dependent
   work as review-required actions; it does not execute prompt agents, mutate
   canonical specs, write Ontology packages, create branches, or create commits.
+- `tools/idea_to_spec_clarification_requests.py`: unified read-only
+  clarification request builder introduced by proposal 0163. Use
+  `make idea-to-spec-clarification-requests` to aggregate available
+  idea-to-spec intake, candidate graph, pre-SIB, repair-loop, and explicitly
+  supplied ontology-gap review artifacts into
+  `runs/idea_to_spec_clarification_requests.json`.
+  Requests expose stable ids, target refs, source findings, suggested answer
+  shapes, and suggested actions for future user/agent answers. The builder does
+  not execute prompt agents, accept answers, mutate canonical specs, write
+  Ontology packages, approve candidates, create branches, or publish read
+  models.
 - `tools/candidate_spec_materialization.py`: deterministic candidate spec YAML
   preview materializer introduced by proposal 0153. Use
   `make candidate-spec-materialization
@@ -981,6 +992,11 @@ Key derived artifacts:
 - `runs/pre_sib_coherence_report.json`: review-only metric and coherence report
   over a candidate graph, including structural counts, coverage ratios,
   findings, warnings, and readiness for the future repair loop.
+- `runs/idea_to_spec_clarification_requests.json`: public-safe, review-only
+  request surface over intake questions, candidate graph gaps, pre-SIB findings,
+  repair-loop actions, and ontology gap review groups. It carries stable request
+  ids for the future clarification answer contract without granting mutation
+  authority.
 - `runs/candidate_spec_materialization_report.json`: review-only report for
   local candidate spec YAML previews under `runs/materialized_candidate_specs/`,
   including materialized paths for Platform promotion-request handoff without
