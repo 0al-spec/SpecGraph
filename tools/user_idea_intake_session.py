@@ -24,6 +24,8 @@ DEFAULT_SOURCE_OUTPUT_PATH = ROOT / "runs" / "user_idea_intake_source.json"
 
 CANDIDATE_ID_RE = re.compile(r"^[a-z0-9][a-z0-9-]{1,62}[a-z0-9]$")
 RAW_TRACE_FIELDS = {
+    "operator_note",
+    "operator_notes",
     "private_note",
     "raw_intent",
     "raw_intent_text",
@@ -33,6 +35,7 @@ RAW_TRACE_FIELDS = {
     "raw_response",
     "raw_text",
 }
+PRIVATE_TRACE_FIELDS = RAW_TRACE_FIELDS | {"operator_note", "operator_notes"}
 REQUIRED_EVENT_STORMING_CATEGORIES = (
     "actors",
     "domain_events",
@@ -56,6 +59,17 @@ CATEGORY_ALIASES = {
     "risks": ("open_risks",),
     "assumptions": ("open_assumptions",),
     "vocabulary_questions": ("questions", "vocabulary_gaps"),
+}
+CATEGORY_LABEL_FIELDS = {
+    "actors": ("name",),
+    "domain_events": ("name",),
+    "commands": ("name",),
+    "policies": ("name",),
+    "external_systems": ("name",),
+    "constraints": ("statement", "name"),
+    "risks": ("statement", "name"),
+    "assumptions": ("statement", "name"),
+    "vocabulary_questions": ("question", "term", "name"),
 }
 
 
@@ -154,7 +168,11 @@ def _question(
 def _clean_entry(value: Any) -> Any:
     if isinstance(value, dict):
         return {
-            key: _clean_entry(item) for key, item in value.items() if key not in RAW_TRACE_FIELDS
+            key: _clean_entry(item)
+            for key, item in value.items()
+            if isinstance(key, str)
+            and key not in PRIVATE_TRACE_FIELDS
+            and not key.startswith("raw_")
         }
     if isinstance(value, list):
         return [_clean_entry(item) for item in value]
@@ -165,8 +183,28 @@ def _input_contract_findings(raw_input: dict[str, Any]) -> list[dict[str, Any]]:
     invalid: list[str] = []
     artifact_kind = raw_input.get("artifact_kind")
     contract_ref = raw_input.get("contract_ref")
-    if artifact_kind == "user_idea_intake_source" and contract_ref == SOURCE_CONTRACT_REF:
-        return []
+    if artifact_kind == "user_idea_intake_source":
+        if raw_input.get("schema_version") != SCHEMA_VERSION:
+            invalid.append("schema_version")
+        if contract_ref != SOURCE_CONTRACT_REF:
+            invalid.append("contract_ref")
+        if not invalid:
+            return []
+        return [
+            _finding(
+                finding_id="user_idea_prepared_source_contract_invalid",
+                severity="review_required",
+                message="Prepared user idea intake source requires a supported source contract.",
+                evidence={
+                    "invalid_fields": invalid,
+                    "expected": {
+                        "artifact_kind": "user_idea_intake_source",
+                        "schema_version": SCHEMA_VERSION,
+                        "contract_ref": SOURCE_CONTRACT_REF,
+                    },
+                },
+            )
+        ]
     if artifact_kind not in {"user_idea_raw_input", "user_idea_intake_raw_input"}:
         invalid.append("artifact_kind")
     if raw_input.get("schema_version") != SCHEMA_VERSION:
@@ -196,6 +234,7 @@ def _is_prepared_source_input(raw_input: dict[str, Any]) -> bool:
     return (
         raw_input.get("artifact_kind") == "user_idea_intake_source"
         and raw_input.get("contract_ref") == SOURCE_CONTRACT_REF
+        and raw_input.get("schema_version") == SCHEMA_VERSION
     )
 
 
@@ -387,6 +426,17 @@ def _category_items(event_storming: dict[str, Any], category: str) -> list[Any]:
     return []
 
 
+def _entry_label(value: Any, category: str) -> str:
+    if isinstance(value, str):
+        return _text(value)
+    if isinstance(value, dict):
+        for field in CATEGORY_LABEL_FIELDS[category]:
+            label = _text(value.get(field))
+            if label:
+                return label
+    return ""
+
+
 def _event_storming(
     raw_input: dict[str, Any],
 ) -> tuple[dict[str, list[Any]], list[dict[str, Any]], list[dict[str, Any]]]:
@@ -408,12 +458,35 @@ def _event_storming(
         "commands": "Which user or system commands should trigger those events?",
         "constraints": "Which constraints, policies, or non-goals bound the first candidate graph?",
     }
+    invalid_entry_categories: set[str] = set()
+    for category, entries in normalized.items():
+        for index, entry in enumerate(entries):
+            if _entry_label(entry, category):
+                continue
+            invalid_entry_categories.add(category)
+            findings.append(
+                _finding(
+                    finding_id="user_idea_session_event_storming_entry_invalid",
+                    severity="review_required",
+                    message="Event-storming entries require a usable public label.",
+                    evidence={
+                        "category": category,
+                        "index": index,
+                        "value_type": type(entry).__name__,
+                    },
+                )
+            )
     for category in REQUIRED_EVENT_STORMING_CATEGORIES:
-        if normalized[category]:
+        if normalized[category] and category not in invalid_entry_categories:
             continue
+        finding_id = (
+            f"user_idea_session_{category}_entries_invalid"
+            if normalized[category]
+            else f"user_idea_session_{category}_missing"
+        )
         findings.append(
             _finding(
-                finding_id=f"user_idea_session_{category}_missing",
+                finding_id=finding_id,
                 severity="review_required",
                 message=f"Event-storming intake requires {category}.",
                 evidence={"category": category},
@@ -460,7 +533,7 @@ def _source_payload(
         "contract_ref": SOURCE_CONTRACT_REF,
         "source_ref": source_ref,
         "workspace": workspace,
-        "intent": intent,
+        "intent": {"text": "", "summary": intent["summary"]},
         "active_frame_hints": frame,
         "event_storming_hints": event_storming,
         "source_session": {

@@ -63,6 +63,9 @@ def test_user_idea_intake_session_writes_ready_source_contract(tmp_path: Path) -
         "model-applicability://specgraph-core/product-spec-mvp"
     ]
     assert source["source_session"]["proposal_id"] == "0162"
+    assert source["intent"]["text"] == ""
+    assert source["intent"]["summary"]
+    assert load_json(READY_FIXTURE)["idea"]["text"] not in json.dumps(source)
     assert "raw_prompt" not in json.dumps(source)
     assert "private prompt trace" not in json.dumps(source)
 
@@ -71,6 +74,9 @@ def test_user_idea_intake_session_redacts_raw_text_trace_fields(tmp_path: Path) 
     module = load_module(TOOL_PATH, "user_idea_intake_session_redaction")
     payload = copy.deepcopy(load_json(READY_FIXTURE))
     payload["event_storming_hints"]["actors"][0]["raw_text"] = "SECRET-RAW-TEXT-TRACE"
+    payload["event_storming_hints"]["actors"][0]["raw_debug"] = "SECRET-RAW-DEBUG"
+    payload["event_storming_hints"]["actors"][0]["operator_note"] = "SECRET-OPERATOR-NOTE"
+    payload["event_storming_hints"]["actors"][0]["operator_notes"] = ["SECRET-OPERATOR-NOTES"]
     payload["event_storming_hints"]["actors"][0]["private_note"] = "SECRET-NOTE"
 
     session, source = module.build_user_idea_intake_session(
@@ -83,8 +89,14 @@ def test_user_idea_intake_session_redacts_raw_text_trace_fields(tmp_path: Path) 
     assert source is not None
     dumped = json.dumps(source)
     assert "raw_text" not in dumped
+    assert "raw_debug" not in dumped
+    assert "operator_note" not in dumped
+    assert "operator_notes" not in dumped
     assert "private_note" not in dumped
     assert "SECRET-RAW-TEXT-TRACE" not in dumped
+    assert "SECRET-RAW-DEBUG" not in dumped
+    assert "SECRET-OPERATOR-NOTE" not in dumped
+    assert "SECRET-OPERATOR-NOTES" not in dumped
     assert "SECRET-NOTE" not in dumped
 
 
@@ -354,6 +366,79 @@ def test_prepared_source_without_constraints_remains_compatible(tmp_path: Path) 
     assert seed["event_storming"]["constraints"][0]["id"] == (
         "constraint.pre-canonical-review-boundary"
     )
+
+
+def test_prepared_source_requires_supported_contract(tmp_path: Path) -> None:
+    prepared = copy.deepcopy(load_json(PREPARED_SOURCE_FIXTURE))
+    prepared["schema_version"] = 999
+    prepared_source = tmp_path / "prepared_source_bad_schema.json"
+    session_output = tmp_path / "user_idea_intake_session.json"
+    source_output = tmp_path / "user_idea_intake_source.json"
+    write_json(prepared_source, prepared)
+
+    result = subprocess.run(
+        [
+            sys.executable,
+            str(TOOL_PATH),
+            "--input",
+            str(prepared_source),
+            "--session-output",
+            str(session_output),
+            "--source-output",
+            str(source_output),
+            "--strict",
+        ],
+        cwd=ROOT,
+        check=False,
+        capture_output=True,
+        text=True,
+    )
+
+    assert result.returncode == 1
+    assert session_output.exists()
+    assert not source_output.exists()
+    session = load_json(session_output)
+    assert session["readiness"]["ready"] is False
+    assert "user_idea_prepared_source_contract_invalid" in {
+        finding["finding_id"] for finding in session["findings"]
+    }
+
+
+def test_user_idea_intake_session_rejects_unlabeled_event_storming_entries(
+    tmp_path: Path,
+) -> None:
+    payload = copy.deepcopy(load_json(READY_FIXTURE))
+    payload["event_storming_hints"]["actors"] = [{}]
+    raw_input = tmp_path / "raw_idea_invalid_entries.json"
+    session_output = tmp_path / "user_idea_intake_session.json"
+    source_output = tmp_path / "user_idea_intake_source.json"
+    write_json(raw_input, payload)
+
+    result = subprocess.run(
+        [
+            sys.executable,
+            str(TOOL_PATH),
+            "--input",
+            str(raw_input),
+            "--session-output",
+            str(session_output),
+            "--source-output",
+            str(source_output),
+            "--strict",
+        ],
+        cwd=ROOT,
+        check=False,
+        capture_output=True,
+        text=True,
+    )
+
+    assert result.returncode == 1
+    assert session_output.exists()
+    assert not source_output.exists()
+    session = load_json(session_output)
+    finding_ids = {finding["finding_id"] for finding in session["findings"]}
+    assert "user_idea_session_event_storming_entry_invalid" in finding_ids
+    assert "user_idea_session_actors_entries_invalid" in finding_ids
 
 
 def test_user_idea_intake_session_make_target_writes_custom_outputs(tmp_path: Path) -> None:
