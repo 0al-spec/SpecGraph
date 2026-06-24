@@ -21,6 +21,25 @@ def load_json(path: Path) -> dict[str, object]:
     return json.loads(path.read_text(encoding="utf-8"))
 
 
+def copy_repo_for_make_test(tmp_path: Path) -> Path:
+    destination = tmp_path / "repo"
+    shutil.copytree(
+        ROOT,
+        destination,
+        ignore=shutil.ignore_patterns(
+            ".git",
+            ".mypy_cache",
+            ".pytest_cache",
+            ".ruff_cache",
+            ".venv",
+            "__pycache__",
+            "dist",
+            "runs",
+        ),
+    )
+    return destination
+
+
 def supported_python() -> str:
     candidates = [
         sys.executable,
@@ -55,6 +74,32 @@ def supported_python() -> str:
     pytest.skip("No Python >=3.10 interpreter with PyYAML available for Makefile integration test")
 
 
+def test_product_workspace_active_candidate_default_paths_do_not_require_config(
+    tmp_path: Path,
+) -> None:
+    repo = copy_repo_for_make_test(tmp_path)
+    result = subprocess.run(
+        [
+            "make",
+            "product-workspace-active-candidate",
+            f"PYTHON={supported_python()}",
+        ],
+        cwd=repo,
+        check=False,
+        capture_output=True,
+        text=True,
+    )
+
+    assert result.returncode == 0, result.stderr
+    active = load_json(repo / "runs" / "active_idea_to_spec_candidate.json")
+    assert active["artifact_kind"] == "active_idea_to_spec_candidate"
+    assert active["candidate"]["candidate_id"] == "team-decision-log"
+    assert active["config_source"]["mode"] == "artifact_defaults"
+    assert active["config_source"]["required"] is False
+    assert active["source_derivation"]["artifact_paths_source"] == "defaults"
+    assert active["source_derivation"]["config_required"] is False
+
+
 def test_product_workspace_active_candidate_runs_from_generic_user_idea_source() -> None:
     if RUN_DIR.exists():
         shutil.rmtree(RUN_DIR)
@@ -69,23 +114,6 @@ def test_product_workspace_active_candidate_runs_from_generic_user_idea_source()
         materialization = RUN_DIR / "candidate_spec_materialization_report.json"
         promotion_gate = RUN_DIR / "idea_to_spec_promotion_gate.json"
         active_candidate = RUN_DIR / "active_idea_to_spec_candidate.json"
-        config = RUN_DIR / "active_candidate_source_generic.json"
-        write_json(
-            config,
-            {
-                "artifact_kind": "active_idea_to_spec_candidate_source_config",
-                "artifacts": {
-                    "candidate_graph": candidate_graph.relative_to(ROOT).as_posix(),
-                    "intake": intake.relative_to(ROOT).as_posix(),
-                    "materialization": materialization.relative_to(ROOT).as_posix(),
-                    "pre_sib": pre_sib.relative_to(ROOT).as_posix(),
-                    "promotion_gate": promotion_gate.relative_to(ROOT).as_posix(),
-                    "repair_loop": repair_loop.relative_to(ROOT).as_posix(),
-                },
-                "contract_ref": "specgraph.idea-to-spec.active-candidate-source-config.v0.1",
-                "schema_version": 1,
-            },
-        )
 
         result = subprocess.run(
             [
@@ -107,7 +135,6 @@ def test_product_workspace_active_candidate_runs_from_generic_user_idea_source()
                 f"IDEA_TO_SPEC_PROMOTION_GATE_OUTPUT={promotion_gate.relative_to(ROOT).as_posix()}",
                 "ACTIVE_IDEA_TO_SPEC_CANDIDATE_OUTPUT="
                 f"{active_candidate.relative_to(ROOT).as_posix()}",
-                f"PRODUCT_WORKSPACE_ACTIVE_CANDIDATE_CONFIG={config.relative_to(ROOT).as_posix()}",
             ],
             cwd=ROOT,
             check=False,
@@ -120,6 +147,9 @@ def test_product_workspace_active_candidate_runs_from_generic_user_idea_source()
         assert active["artifact_kind"] == "active_idea_to_spec_candidate"
         assert active["candidate"]["candidate_id"] == "support-triage-log"
         assert active["candidate"]["public_route"] == "/support-triage-log"
+        assert active["config_source"]["mode"] == "artifact_arguments"
+        assert active["config_source"]["source_ref"] is None
+        assert active["source_derivation"]["artifact_paths_source"] == "arguments"
         assert active["readiness"]["ready"] is False
         assert active["readiness"]["review_state"] == "active_candidate_review_required"
         assert "promotion_gate_not_ready" in active["readiness"]["blocked_by"]

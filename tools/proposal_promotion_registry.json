@@ -2065,5 +2065,18 @@
     "required_provenance_links": [
       "source_draft_ref"
     ]
+  },
+  {
+    "proposal_id": "0161",
+    "source_artifact_class": "working_draft",
+    "source_refs": [
+      "docs/archive/proposal_sources/0161_artifact_derived_active_candidate_source_defaults.md"
+    ],
+    "motivating_concern": "The generic active product workspace runner can start from generic user idea data, but the final active candidate source still required an explicit active candidate config fixture for standard artifact paths.",
+    "normalized_title": "Artifact-Derived Active Candidate Source Defaults",
+    "bounded_scope": "Make the deterministic review-only active_idea_to_spec_candidate builder use standard generated runs/* artifact refs by default, make --config optional, update product-workspace-active-candidate and active-idea-to-spec-candidate-source Make targets to omit config args in the normal path, record config_source and source_derivation metadata, add tests, proposal docs, and documentation updates, without executing prompt agents, inferring product semantics with an LLM, mutating canonical specs, writing Ontology packages or lockfiles, accepting ontology terms, approving candidate graphs, creating Git branches or commits, opening pull requests, publishing read models, or adding SpecSpace mutation UI.",
+    "required_provenance_links": [
+      "source_draft_ref"
+    ]
   }
 ]

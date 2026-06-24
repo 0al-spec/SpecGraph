@@ -108,6 +108,9 @@ preview, materialization report, promotion gate, and
 `runs/active_idea_to_spec_candidate.json` without canonical spec mutation. The
 target now starts from generic `PRODUCT_WORKSPACE_IDEA_SOURCE` data by default;
 Team Decision Log is an example workspace, not a separate system-level flow.
+The active candidate source reads the standard generated `runs/*` artifact
+chain by default; an explicit active candidate config is only a compatibility
+or debug override.
 
 ## Operational Rules
 
