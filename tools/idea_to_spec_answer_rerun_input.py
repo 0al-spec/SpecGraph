@@ -17,6 +17,16 @@ DEFAULT_ANSWERS_PATH = ROOT / "runs" / "idea_to_spec_clarification_answers.json"
 DEFAULT_OUTPUT_PATH = ROOT / "runs" / "idea_to_spec_answer_rerun_input.json"
 
 ACCEPTED_STATUSES = {"accepted_for_candidate", "accepted_for_review"}
+ACTIVE_FRAME_FIELDS = {
+    "project",
+    "subsystem",
+    "lifecycle_phase",
+    "ontology_refs",
+    "ontology_layer_refs",
+    "domain_refs",
+    "context_refs",
+    "model_applicability_refs",
+}
 RAW_TRACE_FIELDS = {
     "operator_note",
     "operator_notes",
@@ -177,9 +187,15 @@ def _request_context(answer: dict[str, Any]) -> dict[str, str]:
     }
 
 
-def _terms_from_value(value: dict[str, Any]) -> list[str]:
-    terms = _text_list(value.get("terms"))
-    term = _text(value.get("term"))
+def _terms_from_value(value: Any) -> list[str]:
+    if isinstance(value, str):
+        term_value = _text(value)
+        return [term_value] if term_value else []
+    if isinstance(value, list):
+        return _text_list(value)
+    value_dict = _dict(value)
+    terms = _text_list(value_dict.get("terms"))
+    term = _text(value_dict.get("term"))
     if term and term not in terms:
         terms.append(term)
     return terms
@@ -189,22 +205,32 @@ def _append_project_terms(
     overlay: dict[str, Any],
     *,
     answer: dict[str, Any],
-    value: dict[str, Any],
-) -> None:
+    value: Any,
+) -> list[dict[str, Any]]:
     context = _request_context(answer)
     terms = _terms_from_value(value)
     if not terms:
-        target_ref = context["target_ref"]
-        if target_ref:
-            terms = [target_ref.rsplit(".", 1)[-1].replace("-", " ")]
+        return [
+            _finding(
+                finding_id="project_local_term_value_missing",
+                severity="review_required",
+                message="Project-local term answers must provide explicit term or terms.",
+                evidence={
+                    "request_id": context["request_id"],
+                    "target_ref": context["target_ref"],
+                },
+            )
+        ]
+    value_dict = _dict(value)
     for term in terms:
         overlay["ontology_review_hints"]["project_local_terms"].append(
             {
                 "term": term,
-                "term_scope": _text(value.get("term_scope"), "project_local"),
+                "term_scope": _text(value_dict.get("term_scope"), "project_local"),
                 **context,
             }
         )
+    return []
 
 
 def _append_binding(
@@ -249,14 +275,42 @@ def _append_decision(
     overlay["ontology_review_hints"][bucket].append(context)
 
 
+def _append_candidate_decision(
+    overlay: dict[str, Any],
+    *,
+    answer: dict[str, Any],
+    value: Any,
+) -> None:
+    context = _request_context(answer)
+    overlay["candidate_review_hints"]["other"].append({"value": _public_safe(value), **context})
+
+
+def _active_frame_from_value(answer: dict[str, Any], value: Any) -> dict[str, Any]:
+    context = _request_context(answer)
+    value_dict = _dict(value)
+    nested_frame = _dict(value_dict.get("active_frame_hints") or value_dict.get("active_frame"))
+    if nested_frame:
+        return nested_frame
+    direct_frame = {
+        field: value_dict[field] for field in ACTIVE_FRAME_FIELDS if field in value_dict
+    }
+    if direct_frame:
+        return direct_frame
+    target_ref = context["target_ref"]
+    field = target_ref.rsplit(".", 1)[-1]
+    if field in ACTIVE_FRAME_FIELDS and value not in ({}, [], "", None):
+        return {field: value}
+    return {}
+
+
 def _append_active_frame(
     overlay: dict[str, Any],
     *,
     answer: dict[str, Any],
-    value: dict[str, Any],
+    value: Any,
 ) -> None:
     context = _request_context(answer)
-    frame = _dict(value.get("active_frame_hints") or value.get("active_frame"))
+    frame = _active_frame_from_value(answer, value)
     if frame:
         overlay["intake_overlay"]["active_frame_hints"].append(
             {"value": _public_safe(frame), **context}
@@ -267,10 +321,13 @@ def _append_event_storming(
     overlay: dict[str, Any],
     *,
     answer: dict[str, Any],
-    value: dict[str, Any],
+    value: Any,
 ) -> None:
     context = _request_context(answer)
-    event_storming = _dict(value.get("event_storming_hints") or value.get("event_storming"))
+    value_dict = _dict(value)
+    event_storming = _dict(
+        value_dict.get("event_storming_hints") or value_dict.get("event_storming")
+    )
     if event_storming:
         overlay["intake_overlay"]["event_storming_hints"].append(
             {"value": _public_safe(event_storming), **context}
@@ -281,7 +338,7 @@ def _append_candidate_review(
     overlay: dict[str, Any],
     *,
     answer: dict[str, Any],
-    value: dict[str, Any],
+    value: Any,
 ) -> None:
     context = _request_context(answer)
     answer_kind = context["answer_kind"]
@@ -289,7 +346,7 @@ def _append_candidate_review(
         overlay["candidate_review_hints"]["acceptance_criteria"].append(
             {"value": _public_safe(value), **context}
         )
-    elif answer_kind in {"accept_preview_edge", "propose_relation"}:
+    elif answer_kind in {"accept_preview_edge", "reject_preview_edge", "propose_relation"}:
         overlay["candidate_review_hints"]["graph_edges"].append(
             {"value": _public_safe(value), **context}
         )
@@ -323,24 +380,34 @@ def _empty_overlay() -> dict[str, Any]:
     }
 
 
-def _apply_answer_to_overlay(overlay: dict[str, Any], answer: dict[str, Any]) -> None:
+def _apply_answer_to_overlay(
+    overlay: dict[str, Any], answer: dict[str, Any]
+) -> list[dict[str, Any]]:
     answer_kind = _text(answer.get("answer_kind"))
-    value = _dict(answer.get("value"))
+    value = answer.get("value")
+    context = _request_context(answer)
     if answer_kind == "propose_project_local_term":
-        _append_project_terms(overlay, answer=answer, value=value)
+        return _append_project_terms(overlay, answer=answer, value=value)
     elif answer_kind == "bind_existing_term":
-        _append_binding(overlay, answer=answer, value=value)
+        _append_binding(overlay, answer=answer, value=_dict(value))
     elif answer_kind == "alias":
-        _append_alias(overlay, answer=answer, value=value)
+        _append_alias(overlay, answer=answer, value=_dict(value))
     elif answer_kind == "reject":
-        _append_decision(overlay, answer=answer, bucket="rejected_terms")
+        if context["request_kind"] == "ontology_gap":
+            _append_decision(overlay, answer=answer, bucket="rejected_terms")
+        else:
+            _append_candidate_decision(overlay, answer=answer, value=value)
     elif answer_kind == "defer":
-        _append_decision(overlay, answer=answer, bucket="deferred_terms")
+        if context["request_kind"] == "ontology_gap":
+            _append_decision(overlay, answer=answer, bucket="deferred_terms")
+        else:
+            _append_candidate_decision(overlay, answer=answer, value=value)
     elif answer_kind == "answer_question":
         _append_active_frame(overlay, answer=answer, value=value)
         _append_event_storming(overlay, answer=answer, value=value)
     else:
         _append_candidate_review(overlay, answer=answer, value=value)
+    return []
 
 
 def build_idea_to_spec_answer_rerun_input(
@@ -357,7 +424,7 @@ def build_idea_to_spec_answer_rerun_input(
     ]
     if not findings:
         for answer in accepted_answers:
-            _apply_answer_to_overlay(overlay, answer)
+            findings.extend(_apply_answer_to_overlay(overlay, answer))
     source_ref = _relative_ref(answers_path) if answers_path else "inline:clarification_answers"
     ready = not findings
     return {

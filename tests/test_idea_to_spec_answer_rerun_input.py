@@ -47,6 +47,28 @@ def ready_answer_report() -> dict[str, object]:
     )
 
 
+def ready_answer_report_with_answer(
+    *,
+    answer_kind: str,
+    value: object,
+    request_kind: str,
+    target_ref: str,
+) -> dict[str, object]:
+    report = copy.deepcopy(ready_answer_report())
+    answer = report["answers"][0]
+    assert isinstance(answer, dict)
+    answer["answer_kind"] = answer_kind
+    answer["value"] = value
+    answer["request_snapshot"] = {
+        "kind": request_kind,
+        "severity": "review_required",
+        "target_artifact": "runs/candidate_spec_graph.json",
+        "target_ref": target_ref,
+        "suggested_answer_shape": "test-shape",
+    }
+    return report
+
+
 def test_answer_rerun_input_builds_project_local_term_overlay() -> None:
     module = load_module(
         RERUN_TOOL_PATH,
@@ -82,6 +104,100 @@ def test_answer_rerun_input_builds_project_local_term_overlay() -> None:
         }
     ]
     assert report["summary"]["project_local_term_count"] == 1
+
+
+def test_answer_rerun_input_captures_direct_active_frame_fields() -> None:
+    module = load_module(
+        RERUN_TOOL_PATH,
+        "idea_to_spec_answer_rerun_input_active_frame_direct_test",
+    )
+    answer_report = ready_answer_report_with_answer(
+        answer_kind="answer_question",
+        value={"domain_refs": ["domain.team_decision_log"]},
+        request_kind="missing_context",
+        target_ref="active_frame.domain_refs",
+    )
+
+    report = module.build_idea_to_spec_answer_rerun_input(
+        answers_report=answer_report,
+    )
+
+    frame_hints = report["rerun_input_overlay"]["intake_overlay"]["active_frame_hints"]
+    assert frame_hints == [
+        {
+            "answer_kind": "answer_question",
+            "request_id": "clarification.repair.repair-review-unresolved-gaps",
+            "request_kind": "missing_context",
+            "target_artifact": "runs/candidate_spec_graph.json",
+            "target_ref": "active_frame.domain_refs",
+            "value": {"domain_refs": ["domain.team_decision_log"]},
+        }
+    ]
+
+
+def test_answer_rerun_input_routes_non_ontology_reject_to_candidate_hints() -> None:
+    module = load_module(
+        RERUN_TOOL_PATH,
+        "idea_to_spec_answer_rerun_input_candidate_reject_test",
+    )
+    answer_report = ready_answer_report_with_answer(
+        answer_kind="reject",
+        value={"reason": "Not part of the first candidate."},
+        request_kind="candidate_gap",
+        target_ref="candidate-spec.product.gaps.gap.optional-flow",
+    )
+
+    report = module.build_idea_to_spec_answer_rerun_input(
+        answers_report=answer_report,
+    )
+
+    ontology_hints = report["rerun_input_overlay"]["ontology_review_hints"]
+    candidate_hints = report["rerun_input_overlay"]["candidate_review_hints"]
+    assert ontology_hints["rejected_terms"] == []
+    assert candidate_hints["other"][0]["answer_kind"] == "reject"
+    assert candidate_hints["other"][0]["request_kind"] == "candidate_gap"
+
+
+def test_answer_rerun_input_blocks_project_local_term_without_value() -> None:
+    module = load_module(
+        RERUN_TOOL_PATH,
+        "idea_to_spec_answer_rerun_input_missing_term_test",
+    )
+    answer_report = ready_answer_report_with_answer(
+        answer_kind="propose_project_local_term",
+        value={},
+        request_kind="ontology_gap",
+        target_ref="candidate-spec.product.gaps.ontology-gap.decision-owner",
+    )
+
+    report = module.build_idea_to_spec_answer_rerun_input(
+        answers_report=answer_report,
+    )
+
+    assert report["readiness"]["ready"] is False
+    assert "project_local_term_value_missing" in finding_ids(report)
+    assert report["rerun_input_overlay"]["ontology_review_hints"]["project_local_terms"] == []
+
+
+def test_answer_rerun_input_keeps_rejected_preview_edges_in_graph_hints() -> None:
+    module = load_module(
+        RERUN_TOOL_PATH,
+        "idea_to_spec_answer_rerun_input_reject_edge_test",
+    )
+    answer_report = ready_answer_report_with_answer(
+        answer_kind="reject_preview_edge",
+        value={"edge_id": "preview.edge.product-to-command"},
+        request_kind="graph_repair",
+        target_ref="candidate_graph.preview_edges.preview.edge.product-to-command",
+    )
+
+    report = module.build_idea_to_spec_answer_rerun_input(
+        answers_report=answer_report,
+    )
+
+    graph_edges = report["rerun_input_overlay"]["candidate_review_hints"]["graph_edges"]
+    assert graph_edges[0]["answer_kind"] == "reject_preview_edge"
+    assert graph_edges[0]["value"] == {"edge_id": "preview.edge.product-to-command"}
 
 
 def test_answer_rerun_input_blocks_unready_answer_report() -> None:
