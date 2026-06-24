@@ -576,6 +576,23 @@ def _authority_boundary() -> dict[str, bool]:
     }
 
 
+def _source_intake(seed: dict[str, Any]) -> dict[str, Any]:
+    source_intake = _dict(seed.get("source_intake"))
+    workspace = _dict(source_intake.get("workspace"))
+    return {
+        "artifact_kind": source_intake.get("artifact_kind"),
+        "contract_ref": source_intake.get("contract_ref"),
+        "source_contract_ref": source_intake.get("source_contract_ref"),
+        "source_ref": source_intake.get("source_ref"),
+        "workspace": {
+            "candidate_id": _text(workspace.get("candidate_id")),
+            "display_name": _text(workspace.get("display_name")),
+            "public_route": _text(workspace.get("public_route")),
+        },
+        "summary": _dict(source_intake.get("summary")),
+    }
+
+
 def build_idea_event_storming_intake(
     seed: dict[str, Any],
     *,
@@ -609,6 +626,7 @@ def build_idea_event_storming_intake(
         "generated_at": _now_iso(),
         "canonical_mutations_allowed": False,
         "tracked_artifacts_written": False,
+        "source_intake": _source_intake(seed),
         "root_intent": _raw_intent(seed),
         "active_frame": active_frame,
         "event_storming": event_storming,

@@ -322,12 +322,20 @@ Supervisor modes:
   only when repair context is resolved, materialization is ready, and paths are
   safe.
 - `tools/active_idea_to_spec_candidate_source.py`: active candidate source
-  builder introduced by proposal 0155. Use
-  `make product-workspace-active-candidate` to build the configured
-  `product_idea_to_spec` artifact chain and
+  builder introduced by proposal 0155 and made generic by proposal 0160. Use
+  `make product-workspace-active-candidate
+  PRODUCT_WORKSPACE_IDEA_SOURCE=<json>` to build the `product_idea_to_spec`
+  artifact chain from a generic `user_idea_intake_source` and
   `runs/active_idea_to_spec_candidate.json`. The artifact proves that
   materialization and promotion-gate surfaces come from a product workspace
   active candidate rather than fixture/demo leakage or public placeholders.
+  The active candidate config may contain only artifact refs; candidate id,
+  display name, and route derive from `idea_event_storming_intake.source_intake`.
+  The default `PRODUCT_WORKSPACE_IDEA_SOURCE` is Team Decision Log as data for
+  the public product pilot, while tests can pass other source JSON files through
+  the same target.
+  To keep the old prepared-seed input mode, pass
+  `PRODUCT_WORKSPACE_INTAKE_SOURCE=<seed.json>`.
 - `tools/candidate_approval_decision.py`: explicit candidate approval decision
   builder introduced by proposal 0157. Use `make candidate-approval-decision`
   after the active candidate source and promotion gate exist. The default state
@@ -945,8 +953,9 @@ Key derived artifacts:
 - `runs/specauthor_authoring_flow_report.json`: compact public-safe summary for
   the deterministic SpecAuthor authoring flow.
 - `runs/idea_event_storming_intake.json`: review-only idea-to-spec intake
-  artifact containing structured event-storming context and candidate-graph
-  readiness state without raw intent text or canonical graph mutation.
+  artifact containing structured event-storming context, public-safe source
+  workspace metadata, and candidate-graph readiness state without raw intent
+  text or canonical graph mutation.
 - `runs/candidate_spec_graph_seed.json`: review-only ontology-bound seed for
   candidate graph generation, including core ontology bindings, product-domain
   ontology gaps, source-generation status, and no canonical write authority.
@@ -965,9 +974,12 @@ Key derived artifacts:
   repair-loop context requirements, materialization readiness, and promotion
   paths.
 - `runs/active_idea_to_spec_candidate.json`: public-safe active candidate source
-  for the configured product workspace pilot, linking event-storming intake,
+  for the configured product workspace, linking event-storming intake,
   candidate graph, pre-SIB report, repair-loop preview, materialization report,
-  and promotion gate under `product_spec_workspace` authority.
+  and promotion gate under `product_spec_workspace` authority. In the generic
+  active path, candidate identity derives from the intake source and readiness
+  can be `active_candidate_review_required` when pre-SIB or promotion-gate
+  blockers remain.
 - `runs/candidate_approval_decision.json`: public-safe candidate approval
   decision artifact for CLI-mode product workspace promotion. It records the
   requested and effective decision state, operator ref, public-safe rationale,

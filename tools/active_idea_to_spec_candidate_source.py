@@ -326,6 +326,27 @@ def _candidate_metadata(candidate: dict[str, Any]) -> tuple[dict[str, Any], list
     return normalized, findings
 
 
+def _candidate_from_intake_artifact(intake: dict[str, Any]) -> dict[str, Any]:
+    source_intake = _dict(intake.get("source_intake"))
+    workspace = _dict(source_intake.get("workspace"))
+    return {
+        **REQUIRED_CANDIDATE_VALUES,
+        "candidate_id": _text(workspace.get("candidate_id")),
+        "display_name": _text(workspace.get("display_name")),
+        "public_route": _text(workspace.get("public_route")),
+    }
+
+
+def _candidate_for_config(
+    *,
+    config: dict[str, Any],
+    artifacts: dict[str, tuple[Path, dict[str, Any]]],
+) -> dict[str, Any]:
+    derived = _candidate_from_intake_artifact(artifacts.get("intake", (None, {}))[1])
+    explicit = _dict(config.get("candidate"))
+    return {**derived, **explicit}
+
+
 def _artifact_readiness(artifact_key: str, payload: dict[str, Any]) -> dict[str, Any]:
     return _dict(payload.get(READY_FIELD_BY_ARTIFACT[artifact_key]))
 
@@ -555,9 +576,9 @@ def build_active_idea_to_spec_candidate_source(
     *,
     config_path: Path | None = None,
 ) -> dict[str, Any]:
-    candidate = _dict(config.get("candidate"))
-    normalized_candidate, candidate_findings = _candidate_metadata(candidate)
     artifacts, artifact_findings = _load_source_artifacts(config)
+    candidate = _candidate_for_config(config=config, artifacts=artifacts)
+    normalized_candidate, candidate_findings = _candidate_metadata(candidate)
     chain_findings, chain_warnings = _artifact_chain_findings(artifacts)
     candidate_graph = artifacts.get("candidate_graph", (None, {}))[1]
     findings = (
@@ -584,7 +605,7 @@ def build_active_idea_to_spec_candidate_source(
         "schema_version": SCHEMA_VERSION,
         "proposal_id": PROPOSAL_ID,
         "contract_ref": CONTRACT_REF,
-        "source_mode": candidate.get("source_mode", "unknown"),
+        "source_mode": normalized_candidate.get("source_mode", "unknown"),
         "generated_at": _now_iso(),
         "canonical_mutations_allowed": False,
         "tracked_artifacts_written": False,

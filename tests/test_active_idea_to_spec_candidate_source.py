@@ -50,6 +50,15 @@ def write_ready_artifacts(
             "contract_ref": "specgraph.idea-to-spec.event-storming-intake.v0.1",
             "candidate_graph_readiness": {"ready": True, "review_state": "ready"},
             "schema_version": 1,
+            "source_intake": {
+                "workspace": {
+                    "candidate_id": candidate_id,
+                    "display_name": "".join(
+                        part[:1].upper() + part[1:] for part in candidate_id.split("-")
+                    ),
+                    "public_route": f"/{candidate_id}",
+                }
+            },
             "tracked_artifacts_written": False,
         },
     )
@@ -196,6 +205,32 @@ def test_active_candidate_source_accepts_different_product_candidate_from_config
     assert report["candidate"]["candidate_id"] == "support-triage-log"
     assert report["candidate"]["display_name"] == "Support Triage Log"
     assert report["candidate"]["public_route"] == "/support-triage-log"
+    assert report["summary"]["candidate_id"] == "support-triage-log"
+
+
+def test_active_candidate_source_derives_candidate_metadata_from_intake(
+    tmp_path: Path,
+    module: object,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setattr(module, "ROOT", tmp_path)
+    artifacts = write_ready_artifacts(
+        tmp_path,
+        candidate_id="support-triage-log",
+        project="SupportTriageLog",
+        domain_ref="domain.support_triage_log",
+    )
+    config = ready_config(artifacts)
+    config.pop("candidate")
+
+    report = module.build_active_idea_to_spec_candidate_source(config)
+
+    assert report["readiness"]["ready"] is True
+    assert report["source_mode"] == "active_candidate"
+    assert report["candidate"]["candidate_id"] == "support-triage-log"
+    assert report["candidate"]["display_name"] == "SupportTriageLog"
+    assert report["candidate"]["public_route"] == "/support-triage-log"
+    assert report["candidate"]["target_repository_role"] == "product_spec_workspace"
     assert report["summary"]["candidate_id"] == "support-triage-log"
 
 

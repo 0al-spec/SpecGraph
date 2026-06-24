@@ -1,0 +1,158 @@
+{
+  "active_frame_hints": {
+    "context_refs": [
+      "context.idea_to_spec",
+      "context.team_decision_management"
+    ],
+    "domain_refs": [
+      "domain.team_decision_log"
+    ],
+    "lifecycle_phase": "idea_intake",
+    "model_applicability_refs": [
+      "model-applicability://specgraph-core/product-spec-mvp"
+    ],
+    "ontology_layer_refs": [
+      "objective",
+      "mechanics",
+      "execution"
+    ],
+    "ontology_refs": [
+      "ontology://specgraph-core"
+    ],
+    "project": "TeamDecisionLog",
+    "subsystem": "product_specification"
+  },
+  "artifact_kind": "user_idea_intake_source",
+  "contract_ref": "specgraph.idea-to-spec.user-idea-intake-source.v0.1",
+  "event_storming_hints": {
+    "actors": [
+      {
+        "id": "actor.team-member",
+        "name": "Team Member",
+        "role": "decision_contributor"
+      },
+      {
+        "id": "actor.decision-owner",
+        "name": "Decision Owner",
+        "role": "accountable_reviewer"
+      }
+    ],
+    "commands": [
+      {
+        "actor_refs": [
+          "actor.team-member"
+        ],
+        "id": "command.record-decision",
+        "name": "Record Decision",
+        "produces_event_refs": [
+          "event.decision-recorded"
+        ]
+      },
+      {
+        "actor_refs": [
+          "actor.team-member"
+        ],
+        "id": "command.add-option",
+        "name": "Add Considered Option",
+        "produces_event_refs": [
+          "event.option-considered"
+        ]
+      },
+      {
+        "actor_refs": [
+          "actor.decision-owner"
+        ],
+        "id": "command.accept-decision",
+        "name": "Accept Decision",
+        "produces_event_refs": [
+          "event.decision-accepted"
+        ]
+      }
+    ],
+    "constraints": [
+      {
+        "id": "constraint.no-direct-canonical-write",
+        "kind": "process",
+        "statement": "The pilot must stay candidate-only until repository promotion gates pass."
+      },
+      {
+        "id": "constraint.accepted-decision-owner",
+        "kind": "domain_rule",
+        "statement": "An accepted decision needs an owner, rationale, and evidence reference."
+      }
+    ],
+    "domain_events": [
+      {
+        "actor_refs": [
+          "actor.team-member"
+        ],
+        "id": "event.decision-recorded",
+        "name": "Decision Recorded"
+      },
+      {
+        "actor_refs": [
+          "actor.team-member"
+        ],
+        "id": "event.option-considered",
+        "name": "Option Considered"
+      },
+      {
+        "actor_refs": [
+          "actor.team-member"
+        ],
+        "id": "event.evidence-attached",
+        "name": "Evidence Attached"
+      },
+      {
+        "actor_refs": [
+          "actor.decision-owner"
+        ],
+        "id": "event.decision-accepted",
+        "name": "Decision Accepted"
+      }
+    ],
+    "external_systems": [
+      {
+        "id": "external.issue-tracker",
+        "name": "Issue Tracker",
+        "role": "evidence_source"
+      }
+    ],
+    "policies": [
+      {
+        "command_refs": [
+          "command.accept-decision"
+        ],
+        "id": "policy.accepted-decision-completeness",
+        "name": "Accepted Decision Completeness",
+        "trigger_event_refs": [
+          "event.decision-accepted"
+        ]
+      }
+    ],
+    "risks": [
+      {
+        "id": "risk.decision-without-rationale",
+        "statement": "A decision without rationale can be reused later as if it were fully justified."
+      }
+    ],
+    "vocabulary_questions": [
+      {
+        "id": "question.decision-vs-option",
+        "question": "Should an option become a separate entity after rejection?",
+        "term": "DecisionOption"
+      }
+    ]
+  },
+  "intent": {
+    "summary": "Build a Team Decision Log that records decisions, options, rationale, evidence, owners, review triggers, and supersession/conflict relations.",
+    "text": "Teams need a lightweight decision log so important decisions preserve context, evidence, owners, considered options, and future review triggers."
+  },
+  "schema_version": 1,
+  "source_ref": "product://team-decision-log/root-intent",
+  "workspace": {
+    "candidate_id": "team-decision-log",
+    "display_name": "Team Decision Log",
+    "public_route": "/team-decision-log"
+  }
+}
