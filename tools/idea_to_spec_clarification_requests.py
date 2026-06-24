@@ -111,6 +111,30 @@ PRE_SIB_FINDING_KINDS = {
     },
 }
 
+ACTIVE_FRAME_ANSWER_SHAPES = {
+    "project": "text",
+    "subsystem": "text",
+    "lifecycle_phase": "text",
+    "ontology_refs": "ontology_ref[]",
+    "ontology_layer_refs": "ontology_layer_ref[]",
+    "domain_refs": "domain_ref[]",
+    "context_refs": "context_ref[]",
+    "model_applicability_refs": "model_applicability_ref[]",
+}
+
+ONTOLOGY_GAP_ANSWER_SHAPE = (
+    "bind_existing_term | alias | propose_project_local_term | reject | defer"
+)
+ONTOLOGY_GAP_ACTIONS = [
+    "bind_existing_term",
+    "alias",
+    "propose_project_local_term",
+    "reject",
+    "defer",
+]
+CANDIDATE_GAP_ANSWER_SHAPE = "answer_question | provide_candidate_context | reject | defer"
+CANDIDATE_GAP_ACTIONS = ["answer_question", "provide_candidate_context", "reject", "defer"]
+
 
 def _now_iso() -> str:
     return datetime.now(tz=timezone.utc).isoformat()
@@ -286,19 +310,21 @@ def _field_from_block(block: str) -> str:
     return block.rsplit(".", 1)[-1]
 
 
+def _fields_for_question(question: dict[str, Any]) -> set[str]:
+    fields = {_field_from_block(block) for block in _text_list(question.get("blocks"))}
+    question_id = _text(question.get("id"))
+    if question_id.startswith("context-question."):
+        fields.add(question_id.rsplit(".", 1)[-1])
+    return {field for field in fields if field}
+
+
 def _question_answer_shape(question: dict[str, Any]) -> str:
-    blocks = _text_list(question.get("blocks"))
-    fields = {_field_from_block(block) for block in blocks}
-    if "ontology_refs" in fields:
-        return "ontology_ref | ontology_package_ref"
-    if "ontology_layer_refs" in fields:
-        return "ontology_layer_ref[]"
-    if "domain_refs" in fields:
-        return "domain_ref[]"
-    if "context_refs" in fields:
-        return "context_ref[]"
-    if "model_applicability_refs" in fields:
-        return "model_applicability_ref[]"
+    fields = _fields_for_question(question)
+    active_frame_fields = fields & set(ACTIVE_FRAME_ANSWER_SHAPES)
+    if active_frame_fields:
+        if len(active_frame_fields) == 1:
+            return ACTIVE_FRAME_ANSWER_SHAPES[next(iter(active_frame_fields))]
+        return "active_frame_patch"
     if fields:
         return "event_storming_entry[]"
     return "text | structured_context"
@@ -313,7 +339,11 @@ def _matching_findings_for_question(
     for finding in findings:
         finding_id = _text(finding.get("finding_id"))
         evidence = _dict(finding.get("evidence"))
+        missing_fields = set(_text_list(evidence.get("missing")))
         if _text(evidence.get("field")) in fields or _text(evidence.get("category")) in fields:
+            matched.append(finding)
+            continue
+        if fields & missing_fields:
             matched.append(finding)
             continue
         if any(field and field in finding_id for field in fields):
@@ -321,14 +351,37 @@ def _matching_findings_for_question(
     return matched
 
 
-def _requests_from_session(session: dict[str, Any]) -> list[dict[str, Any]]:
+def _source_output_target_artifact(session: dict[str, Any], fallback: str) -> str:
+    source_output = _dict(session.get("source_output"))
+    return _text(source_output.get("path"), fallback)
+
+
+def _question_blocks(question: dict[str, Any]) -> list[str]:
+    blocks = _text_list(question.get("blocks"))
+    if blocks:
+        return blocks
+    question_id = _text(question.get("id"))
+    if question_id.startswith("context-question."):
+        field = question_id.rsplit(".", 1)[-1]
+        kind = _text(question.get("kind"))
+        prefix = "active_frame" if kind == "active_frame" else "event_storming"
+        return [f"{prefix}.{field}"]
+    return [question_id] if question_id else []
+
+
+def _requests_from_session(
+    session: dict[str, Any],
+    *,
+    target_artifact: str,
+) -> list[dict[str, Any]]:
     questions = [_dict(item) for item in _list(session.get("clarification_questions"))]
     findings = [_dict(item) for item in _list(session.get("findings"))]
     requests: list[dict[str, Any]] = []
+    source_target_artifact = _source_output_target_artifact(session, target_artifact)
     for question in questions:
         question_id = _text(question.get("id"), "question")
         matching_findings = _matching_findings_for_question(question, findings)
-        blocks = _text_list(question.get("blocks"))
+        blocks = _question_blocks(question)
         requests.append(
             _request(
                 request_id=f"clarification.intake.{_slug(question_id)}",
@@ -337,7 +390,7 @@ def _requests_from_session(session: dict[str, Any]) -> list[dict[str, Any]]:
                 else "missing_event_storming_context",
                 severity="blocking",
                 question=_text(question.get("question"), "Clarify the missing idea context."),
-                target_artifact="runs/user_idea_intake_source.json",
+                target_artifact=source_target_artifact,
                 target_ref=blocks[0] if blocks else question_id,
                 blocks=blocks or ["user_idea_intake_source"],
                 suggested_answer_shape=_question_answer_shape(question),
@@ -351,36 +404,33 @@ def _requests_from_session(session: dict[str, Any]) -> list[dict[str, Any]]:
     return requests
 
 
-def _requests_from_intake(intake: dict[str, Any]) -> list[dict[str, Any]]:
+def _requests_from_intake(intake: dict[str, Any], *, target_artifact: str) -> list[dict[str, Any]]:
     requests: list[dict[str, Any]] = []
     findings = [_dict(item) for item in _list(intake.get("findings"))]
-    readiness_blockers = _text_list(
-        _dict(intake.get("candidate_graph_readiness")).get("blocked_by")
-    )
     for raw_question in _list(intake.get("context_completion_questions")):
         question = _dict(raw_question)
         question_id = _text(question.get("id"), "context-question")
         question_kind = _text(question.get("kind"))
         if question_kind == "active_frame":
             kind = "missing_context"
-            answer_shape = "ontology_ref | domain_ref | context_ref | ontology_layer_ref"
         else:
             kind = "missing_event_storming_context"
-            answer_shape = "event_storming_entry[]"
+        blocks = _question_blocks(question)
+        matching_findings = _matching_findings_for_question(question, findings)
         requests.append(
             _request(
                 request_id=f"clarification.event-storming.{_slug(question_id)}",
                 kind=kind,
                 severity="blocking",
                 question=_text(question.get("question"), "Complete event-storming context."),
-                target_artifact="runs/idea_event_storming_intake.json",
+                target_artifact=target_artifact,
                 target_ref=question_id,
-                blocks=readiness_blockers or [question_id],
-                suggested_answer_shape=answer_shape,
+                blocks=blocks or [question_id],
+                suggested_answer_shape=_question_answer_shape(question),
                 suggested_actions=["answer_question", "defer_candidate"],
                 source_findings=[
                     _source_finding(finding, source_artifact="idea_event_storming_intake")
-                    for finding in findings
+                    for finding in matching_findings
                 ],
             )
         )
@@ -397,7 +447,7 @@ def _requests_from_intake(intake: dict[str, Any]) -> list[dict[str, Any]]:
                     finding.get("message"),
                     "Resolve event-storming intake before candidate graph generation.",
                 ),
-                target_artifact="runs/idea_event_storming_intake.json",
+                target_artifact=target_artifact,
                 target_ref=finding_id,
                 blocks=[finding_id],
                 suggested_answer_shape="event_storming_entry[] | active_frame_ref[]",
@@ -438,6 +488,8 @@ def _covered_pre_sib_state(
 def _requests_from_pre_sib(
     pre_sib: dict[str, Any],
     repair_coverage: dict[str, set[str]] | None = None,
+    *,
+    target_artifact: str,
 ) -> list[dict[str, Any]]:
     requests: list[dict[str, Any]] = []
     coverage = repair_coverage or {}
@@ -473,7 +525,7 @@ def _requests_from_pre_sib(
                     finding.get("message"),
                     "Resolve the pre-SIB finding before promotion.",
                 ),
-                target_artifact="runs/pre_sib_coherence_report.json",
+                target_artifact=target_artifact,
                 target_ref=finding_id,
                 blocks=[finding_id],
                 suggested_answer_shape=kind_info["answer_shape"],
@@ -501,7 +553,11 @@ def _repair_question(action: dict[str, Any], kind: str) -> str:
     return rationale or f"Review repair action for {target}."
 
 
-def _requests_from_repair_loop(repair_loop: dict[str, Any]) -> list[dict[str, Any]]:
+def _requests_from_repair_loop(
+    repair_loop: dict[str, Any],
+    *,
+    target_artifact: str,
+) -> list[dict[str, Any]]:
     requests: list[dict[str, Any]] = []
     for raw_action in _list(repair_loop.get("repair_actions")):
         action = _dict(raw_action)
@@ -524,7 +580,7 @@ def _requests_from_repair_loop(repair_loop: dict[str, Any]) -> list[dict[str, An
                 kind=kind_info["kind"],
                 severity=severity,
                 question=_repair_question(action, kind_info["kind"]),
-                target_artifact="runs/candidate_repair_loop_report.json",
+                target_artifact=target_artifact,
                 target_ref=_text(action.get("target_ref"), action_id),
                 blocks=_text_list(action.get("source_findings")) or [action_id],
                 suggested_answer_shape=kind_info["answer_shape"],
@@ -539,7 +595,11 @@ def _requests_from_repair_loop(repair_loop: dict[str, Any]) -> list[dict[str, An
     return requests
 
 
-def _requests_from_candidate_graph(candidate_graph: dict[str, Any]) -> list[dict[str, Any]]:
+def _requests_from_candidate_graph(
+    candidate_graph: dict[str, Any],
+    *,
+    target_artifact: str,
+) -> list[dict[str, Any]]:
     requests: list[dict[str, Any]] = []
     for raw_node in _list(candidate_graph.get("nodes")):
         node = _dict(raw_node)
@@ -547,35 +607,37 @@ def _requests_from_candidate_graph(candidate_graph: dict[str, Any]) -> list[dict
         for raw_gap in _list(node.get("gaps")):
             gap = _dict(raw_gap)
             gap_id = _text(gap.get("id"), f"gap.{node_id}")
+            target_ref = f"{node_id}.gaps.{gap_id}"
+            gap_kind = _text(gap.get("kind"))
+            is_ontology_gap = gap_kind == "ontology_gap"
             requests.append(
                 _request(
-                    request_id=f"clarification.candidate-gap.{_slug(gap_id)}",
-                    kind="ontology_gap"
-                    if _text(gap.get("kind")) == "ontology_gap"
-                    else "candidate_gap",
+                    request_id=f"clarification.candidate-gap.{_slug(target_ref)}",
+                    kind="ontology_gap" if is_ontology_gap else "candidate_gap",
                     severity="review_required",
                     question=_text(
                         gap.get("statement"),
                         f"Resolve candidate gap {gap_id}.",
                     ),
-                    target_artifact="runs/candidate_spec_graph.json",
-                    target_ref=gap_id,
-                    blocks=[gap_id],
+                    target_artifact=target_artifact,
+                    target_ref=target_ref,
+                    blocks=[target_ref],
                     suggested_answer_shape=(
-                        "bind_existing_term | alias | propose_project_local_term | reject | defer"
+                        ONTOLOGY_GAP_ANSWER_SHAPE if is_ontology_gap else CANDIDATE_GAP_ANSWER_SHAPE
                     ),
-                    suggested_actions=[
-                        "bind_existing_term",
-                        "alias",
-                        "propose_project_local_term",
-                        "reject",
-                        "defer",
-                    ],
+                    suggested_actions=(
+                        ONTOLOGY_GAP_ACTIONS if is_ontology_gap else CANDIDATE_GAP_ACTIONS
+                    ),
                     source_findings=[
                         {
                             "source_artifact": "candidate_spec_graph",
-                            "finding_id": gap_id,
+                            "finding_id": target_ref,
                             "severity": "review_required",
+                            "evidence": {
+                                "node_id": node_id,
+                                "gap_id": gap_id,
+                                "gap_kind": gap_kind,
+                            },
                         }
                     ],
                 )
@@ -592,7 +654,11 @@ def _gap_label(group: dict[str, Any]) -> str:
     )
 
 
-def _requests_from_ontology_gap_review(gap_review: dict[str, Any]) -> list[dict[str, Any]]:
+def _requests_from_ontology_gap_review(
+    gap_review: dict[str, Any],
+    *,
+    target_artifact: str,
+) -> list[dict[str, Any]]:
     requests: list[dict[str, Any]] = []
     for raw_group in _list(gap_review.get("gap_groups")):
         group = _dict(raw_group)
@@ -617,19 +683,11 @@ def _requests_from_ontology_gap_review(gap_review: dict[str, Any]) -> list[dict[
                     f"Review ontology gap '{label}': bind it, alias it, propose a "
                     "project-local term, reject it, or defer it."
                 ),
-                target_artifact="runs/ontology_gap_review_workflow.json",
+                target_artifact=target_artifact,
                 target_ref=group_id,
                 blocks=[group_id],
-                suggested_answer_shape=(
-                    "bind_existing_term | alias | propose_project_local_term | reject | defer"
-                ),
-                suggested_actions=[
-                    "bind_existing_term",
-                    "alias",
-                    "propose_project_local_term",
-                    "reject",
-                    "defer",
-                ],
+                suggested_answer_shape=ONTOLOGY_GAP_ANSWER_SHAPE,
+                suggested_actions=ONTOLOGY_GAP_ACTIONS,
                 source_findings=source_findings,
             )
         )
@@ -732,6 +790,12 @@ def build_idea_to_spec_clarification_requests(
     repair_loop: dict[str, Any] | None = None,
     ontology_gap_review: dict[str, Any] | None = None,
     source_artifacts: list[dict[str, Any]] | None = None,
+    user_idea_intake_source_target: str = "runs/user_idea_intake_source.json",
+    idea_event_storming_intake_target: str = "runs/idea_event_storming_intake.json",
+    candidate_graph_target: str = "runs/candidate_spec_graph.json",
+    pre_sib_report_target: str = "runs/pre_sib_coherence_report.json",
+    repair_loop_target: str = "runs/candidate_repair_loop_report.json",
+    ontology_gap_review_target: str = "runs/ontology_gap_review_workflow.json",
 ) -> dict[str, Any]:
     findings = _validate_inputs(
         user_idea_intake_session=user_idea_intake_session,
@@ -744,23 +808,42 @@ def build_idea_to_spec_clarification_requests(
     requests: list[dict[str, Any]] = []
     used_ids: set[str] = set()
     if user_idea_intake_session:
-        for request in _requests_from_session(user_idea_intake_session):
+        for request in _requests_from_session(
+            user_idea_intake_session,
+            target_artifact=user_idea_intake_source_target,
+        ):
             _append_request(requests, request, used_ids)
     if idea_event_storming_intake:
-        for request in _requests_from_intake(idea_event_storming_intake):
+        for request in _requests_from_intake(
+            idea_event_storming_intake,
+            target_artifact=idea_event_storming_intake_target,
+        ):
             _append_request(requests, request, used_ids)
     coverage = _repair_coverage(repair_loop)
     if candidate_graph:
-        for request in _requests_from_candidate_graph(candidate_graph):
+        for request in _requests_from_candidate_graph(
+            candidate_graph,
+            target_artifact=candidate_graph_target,
+        ):
             _append_request(requests, request, used_ids)
     if pre_sib_report:
-        for request in _requests_from_pre_sib(pre_sib_report, repair_coverage=coverage):
+        for request in _requests_from_pre_sib(
+            pre_sib_report,
+            repair_coverage=coverage,
+            target_artifact=pre_sib_report_target,
+        ):
             _append_request(requests, request, used_ids)
     if repair_loop:
-        for request in _requests_from_repair_loop(repair_loop):
+        for request in _requests_from_repair_loop(
+            repair_loop,
+            target_artifact=repair_loop_target,
+        ):
             _append_request(requests, request, used_ids)
     if ontology_gap_review:
-        for request in _requests_from_ontology_gap_review(ontology_gap_review):
+        for request in _requests_from_ontology_gap_review(
+            ontology_gap_review,
+            target_artifact=ontology_gap_review_target,
+        ):
             _append_request(requests, request, used_ids)
 
     severity_counts: dict[str, int] = {}
@@ -774,8 +857,23 @@ def build_idea_to_spec_clarification_requests(
         kind_counts[kind] = kind_counts.get(kind, 0) + 1
         status_counts[status] = status_counts.get(status, 0) + 1
 
-    blocking_count = severity_counts.get("blocking", 0)
-    ready = not findings and blocking_count == 0
+    open_requests = [request for request in requests if request.get("status") == "open"]
+    blocking_requests = [
+        request for request in open_requests if request.get("severity") == "blocking"
+    ]
+    review_required_requests = [
+        request for request in open_requests if request.get("severity") == "review_required"
+    ]
+    blocking_count = len(blocking_requests)
+    review_required_count = len(review_required_requests)
+    ready = not findings and blocking_count == 0 and review_required_count == 0
+    review_state = "clarification_clear"
+    if not ready:
+        review_state = (
+            "clarification_required"
+            if blocking_count or findings
+            else "clarification_review_required"
+        )
     return {
         "artifact_kind": "idea_to_spec_clarification_requests",
         "schema_version": SCHEMA_VERSION,
@@ -794,11 +892,10 @@ def build_idea_to_spec_clarification_requests(
         "clarification_requests": requests,
         "readiness": {
             "ready": ready,
-            "review_state": "clarification_clear" if ready else "clarification_required",
-            "blocked_by": [
-                request["id"] for request in requests if request.get("severity") == "blocking"
-            ]
+            "review_state": review_state,
+            "blocked_by": [request["id"] for request in blocking_requests]
             + [finding["finding_id"] for finding in findings],
+            "review_required_by": [request["id"] for request in review_required_requests],
             "next_artifact": "runs/idea_to_spec_clarification_answers.json",
         },
         "authority_boundary": _authority_boundary(),
@@ -810,9 +907,10 @@ def build_idea_to_spec_clarification_requests(
         },
         "findings": findings,
         "summary": {
-            "status": "clarification_clear" if ready else "clarification_required",
+            "status": review_state,
             "request_count": len(requests),
             "blocking_request_count": blocking_count,
+            "review_required_request_count": review_required_count,
             "finding_count": len(findings),
         },
     }
@@ -821,10 +919,15 @@ def build_idea_to_spec_clarification_requests(
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--session", default=DEFAULT_SESSION_PATH, type=Path)
+    parser.add_argument("--no-session", action="store_true")
     parser.add_argument("--intake", default=DEFAULT_INTAKE_PATH, type=Path)
+    parser.add_argument("--no-intake", action="store_true")
     parser.add_argument("--candidate-graph", default=DEFAULT_CANDIDATE_GRAPH_PATH, type=Path)
+    parser.add_argument("--no-candidate-graph", action="store_true")
     parser.add_argument("--pre-sib", default=DEFAULT_PRE_SIB_PATH, type=Path)
+    parser.add_argument("--no-pre-sib", action="store_true")
     parser.add_argument("--repair-loop", default=DEFAULT_REPAIR_LOOP_PATH, type=Path)
+    parser.add_argument("--no-repair-loop", action="store_true")
     parser.add_argument("--ontology-gap-review", default=None, type=Path)
     parser.add_argument("--output", default=DEFAULT_OUTPUT_PATH, type=Path)
     parser.add_argument("--strict", action="store_true")
@@ -834,11 +937,11 @@ def build_parser() -> argparse.ArgumentParser:
 def main(argv: list[str] | None = None) -> int:
     args = build_parser().parse_args(argv)
     input_specs = (
-        ("user_idea_intake_session", args.session),
-        ("idea_event_storming_intake", args.intake),
-        ("candidate_graph", args.candidate_graph),
-        ("pre_sib_report", args.pre_sib),
-        ("repair_loop", args.repair_loop),
+        ("user_idea_intake_session", None if args.no_session else args.session),
+        ("idea_event_storming_intake", None if args.no_intake else args.intake),
+        ("candidate_graph", None if args.no_candidate_graph else args.candidate_graph),
+        ("pre_sib_report", None if args.no_pre_sib else args.pre_sib),
+        ("repair_loop", None if args.no_repair_loop else args.repair_loop),
         ("ontology_gap_review", args.ontology_gap_review),
     )
     loaded: dict[str, dict[str, Any] | None] = {}
@@ -857,6 +960,19 @@ def main(argv: list[str] | None = None) -> int:
         repair_loop=loaded["repair_loop"],
         ontology_gap_review=loaded["ontology_gap_review"],
         source_artifacts=source_artifacts,
+        user_idea_intake_source_target=_source_output_target_artifact(
+            loaded["user_idea_intake_session"] or {},
+            "runs/user_idea_intake_source.json",
+        ),
+        idea_event_storming_intake_target=_relative_ref(args.intake),
+        candidate_graph_target=_relative_ref(args.candidate_graph),
+        pre_sib_report_target=_relative_ref(args.pre_sib),
+        repair_loop_target=_relative_ref(args.repair_loop),
+        ontology_gap_review_target=(
+            _relative_ref(args.ontology_gap_review)
+            if args.ontology_gap_review
+            else "runs/ontology_gap_review_workflow.json"
+        ),
     )
     write_json(report, args.output)
     summary = _dict(report.get("summary"))
