@@ -71,11 +71,6 @@
     ],
     "constraints": [
       {
-        "id": "constraint.no-direct-canonical-write",
-        "kind": "process",
-        "statement": "The pilot must stay candidate-only until repository promotion gates pass."
-      },
-      {
         "id": "constraint.accepted-decision-owner",
         "kind": "domain_rule",
         "statement": "An accepted decision needs an owner, rationale, and evidence reference."

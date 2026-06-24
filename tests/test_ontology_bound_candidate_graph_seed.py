@@ -222,6 +222,45 @@ def test_ontology_bound_candidate_seed_bounds_long_constraint_node_slugs() -> No
     assert len(node_id.removeprefix("candidate-spec.")) <= 72
 
 
+def test_ontology_bound_candidate_seed_skips_operational_boundary_constraints() -> None:
+    intake = support_triage_intake()
+    event_storming = intake["event_storming"]
+    assert isinstance(event_storming, dict)
+    constraints = event_storming["constraints"]
+    assert isinstance(constraints, list)
+    constraints.extend(
+        [
+            {
+                "id": "constraint.no-direct-canonical-write",
+                "kind": "process",
+                "statement": (
+                    "The pilot must stay candidate-only until repository promotion gates pass."
+                ),
+            },
+            {
+                "id": "constraint.pre-canonical-review-boundary",
+                "kind": "process",
+                "statement": (
+                    "The idea-to-spec intake remains pre-canonical until candidate "
+                    "graph validation and approval gates pass."
+                ),
+            },
+        ]
+    )
+
+    seed = build_seed(intake=intake)
+    graph_seed = seed["candidate_graph"]
+    assert isinstance(graph_seed, dict)
+    nodes = graph_seed["nodes"]
+    assert isinstance(nodes, list)
+    node_ids = {node["id"] for node in nodes if isinstance(node, dict)}
+
+    assert "candidate-spec.no-direct-canonical-write" not in node_ids
+    assert "candidate-spec.pre-canonical-review-boundary" not in node_ids
+    assert "no-direct-canonical-write" not in json.dumps(graph_seed)
+    assert "pre-canonical-review-boundary" not in json.dumps(graph_seed)
+
+
 def test_ontology_bound_candidate_seed_requires_ontology_frame() -> None:
     candidate_module = load_module(CANDIDATE_GRAPH_TOOL, "candidate_graph_for_bad_ontology_seed")
     intake = support_triage_intake()

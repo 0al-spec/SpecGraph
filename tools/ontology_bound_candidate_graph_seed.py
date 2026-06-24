@@ -21,6 +21,14 @@ DEFAULT_ONTOLOGY_IR_PATH = (
 )
 DEFAULT_OUTPUT_PATH = ROOT / "runs" / "candidate_spec_graph_seed.json"
 MAX_NODE_SLUG_LENGTH = 72
+OPERATIONAL_CONSTRAINT_IDS = {
+    "constraint.no-direct-canonical-write",
+    "constraint.pre-canonical-review-boundary",
+}
+OPERATIONAL_CONSTRAINT_STATEMENT_MARKERS = (
+    "stay candidate-only until repository promotion gates pass",
+    "remains pre-canonical until candidate graph validation and approval gates pass",
+)
 
 REQUIRED_ONTOLOGY_CLASSES = (
     "Spec",
@@ -157,6 +165,14 @@ def _entry_label(entry: dict[str, Any], *fields: str) -> str:
     return _text(entry.get("id"), "unnamed")
 
 
+def _is_operational_constraint(entry: dict[str, Any]) -> bool:
+    entry_id = _text(entry.get("id"))
+    if entry_id in OPERATIONAL_CONSTRAINT_IDS:
+        return True
+    statement = _text(entry.get("statement")).lower()
+    return any(marker in statement for marker in OPERATIONAL_CONSTRAINT_STATEMENT_MARKERS)
+
+
 def _event_storming(intake: dict[str, Any]) -> dict[str, list[dict[str, Any]]]:
     source = _dict(intake.get("event_storming"))
     return {
@@ -169,6 +185,8 @@ def _known_intake_refs(event_storming: dict[str, list[dict[str, Any]]]) -> set[s
     refs: set[str] = set()
     for entries in event_storming.values():
         for entry in entries:
+            if _is_operational_constraint(entry):
+                continue
             entry_id = _text(entry.get("id"))
             if entry_id:
                 refs.add(entry_id)
@@ -537,9 +555,11 @@ def _constraint_nodes(
     used_slugs: set[str],
 ) -> list[dict[str, Any]]:
     nodes: list[dict[str, Any]] = []
-    entries = [("constraint", entry) for entry in event_storming.get("constraints", [])] + [
-        ("policy", entry) for entry in event_storming.get("policies", [])
-    ]
+    entries = [
+        ("constraint", entry)
+        for entry in event_storming.get("constraints", [])
+        if not _is_operational_constraint(entry)
+    ] + [("policy", entry) for entry in event_storming.get("policies", [])]
     for index, (kind, entry) in enumerate(entries, start=1):
         title = _entry_label(entry, "name", "statement")
         entry_id = _text(entry.get("id"), f"{kind}.{_slug(title, str(index))}")
