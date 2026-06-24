@@ -326,6 +326,15 @@ Supervisor modes:
   not execute prompt agents, accept answers, mutate canonical specs, write
   Ontology packages, approve candidates, create branches, or publish read
   models.
+- `tools/idea_to_spec_clarification_answers.py`: typed clarification answer
+  validator introduced by proposal 0164. Use
+  `make idea-to-spec-clarification-answers` to validate an
+  `idea_to_spec_clarification_answer_set` against clarification request ids and
+  write `runs/idea_to_spec_clarification_answers.json`. Accepted answers can
+  resolve blocking requests for a future deterministic rerun, but the builder
+  does not apply answers, mutate candidate artifacts, mutate canonical specs,
+  write Ontology packages, approve candidates, create branches, or publish read
+  models.
 - `tools/candidate_spec_materialization.py`: deterministic candidate spec YAML
   preview materializer introduced by proposal 0153. Use
   `make candidate-spec-materialization
@@ -997,6 +1006,9 @@ Key derived artifacts:
   repair-loop actions, and ontology gap review groups. It carries stable request
   ids for the future clarification answer contract without granting mutation
   authority.
+- `runs/idea_to_spec_clarification_answers.json`: public-safe, review-only
+  answer validation report over clarification requests. It records accepted and
+  unresolved answers for future rerun input without applying mutations.
 - `runs/candidate_spec_materialization_report.json`: review-only report for
   local candidate spec YAML previews under `runs/materialized_candidate_specs/`,
   including materialized paths for Platform promotion-request handoff without

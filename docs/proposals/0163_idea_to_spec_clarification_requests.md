@@ -76,8 +76,8 @@ The artifact intentionally distinguishes:
 - review-required ontology or coherence work;
 - advisory preview repairs that are already applied to a review-only preview.
 
-It does not accept answers. Proposal `0164` is reserved for the answer contract
-that can feed a subsequent deterministic pipeline rerun.
+It does not accept answers. Proposal `0164` adds the answer validation contract
+for subsequent deterministic pipeline reruns.
 
 ## Authority Boundary
 

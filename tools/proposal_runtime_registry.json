@@ -9007,5 +9007,72 @@
         "pattern": "proposal 0163"
       }
     ]
+  },
+  {
+    "proposal_id": "0164",
+    "posture": "synchronous_runtime_slice",
+    "runtime_surfaces": [
+      "docs/proposals/0164_idea_to_spec_clarification_answers.md",
+      "docs/archive/proposal_sources/0164_idea_to_spec_clarification_answers.md",
+      "docs/product_workspace_graph_versioning_roadmap.md",
+      "Sources/SpecGraph/Documentation.docc/ProductWorkspacePilots.md",
+      "tools/idea_to_spec_clarification_answers.py",
+      "tools/README.md",
+      "tools/docc_sync_contract.json",
+      "tests/test_idea_to_spec_clarification_answers.py",
+      "tests/fixtures/idea_to_spec_clarification_answers/clarification_requests_blocking.json",
+      "tests/fixtures/idea_to_spec_clarification_answers/answers_ready.json",
+      "Makefile"
+    ],
+    "runtime_markers": [
+      {
+        "path": "tools/idea_to_spec_clarification_answers.py",
+        "pattern": "CONTRACT_REF = \"specgraph.idea-to-spec.clarification-answers.v0.1\""
+      },
+      {
+        "path": "tools/idea_to_spec_clarification_answers.py",
+        "pattern": "def build_idea_to_spec_clarification_answers("
+      },
+      {
+        "path": "tools/idea_to_spec_clarification_answers.py",
+        "pattern": "\"unresolved_blocking_requests\""
+      },
+      {
+        "path": "Makefile",
+        "pattern": "idea-to-spec-clarification-answers"
+      }
+    ],
+    "validation_markers": [
+      {
+        "path": "tests/test_idea_to_spec_clarification_answers.py",
+        "pattern": "test_clarification_answers_accepts_blocking_request_answer"
+      },
+      {
+        "path": "tests/test_idea_to_spec_clarification_answers.py",
+        "pattern": "test_clarification_answers_blocks_unknown_request"
+      },
+      {
+        "path": "tests/test_idea_to_spec_clarification_answers.py",
+        "pattern": "test_clarification_answers_rejects_disallowed_answer_kind"
+      }
+    ],
+    "observation_markers": [
+      {
+        "path": "docs/proposals/0164_idea_to_spec_clarification_answers.md",
+        "pattern": "does not grant write authority"
+      },
+      {
+        "path": "docs/product_workspace_graph_versioning_roadmap.md",
+        "pattern": "Status: implemented in proposal `0164`"
+      },
+      {
+        "path": "Sources/SpecGraph/Documentation.docc/ProductWorkspacePilots.md",
+        "pattern": "Proposal `0164`"
+      },
+      {
+        "path": "tools/README.md",
+        "pattern": "proposal 0164"
+      }
+    ]
   }
 ]

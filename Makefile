@@ -73,6 +73,9 @@ IDEA_TO_SPEC_CLARIFICATION_ONTOLOGY_GAP_REVIEW ?=
 IDEA_TO_SPEC_CLARIFICATION_ONTOLOGY_GAP_REVIEW_ARG := $(if $(strip $(IDEA_TO_SPEC_CLARIFICATION_ONTOLOGY_GAP_REVIEW)),--ontology-gap-review "$(IDEA_TO_SPEC_CLARIFICATION_ONTOLOGY_GAP_REVIEW)",)
 IDEA_TO_SPEC_CLARIFICATION_OUTPUT_DEFAULT := runs/idea_to_spec_clarification_requests.json
 IDEA_TO_SPEC_CLARIFICATION_OUTPUT ?= $(IDEA_TO_SPEC_CLARIFICATION_OUTPUT_DEFAULT)
+IDEA_TO_SPEC_CLARIFICATION_ANSWERS_REQUESTS ?= tests/fixtures/idea_to_spec_clarification_answers/clarification_requests_blocking.json
+IDEA_TO_SPEC_CLARIFICATION_ANSWERS_INPUT ?= tests/fixtures/idea_to_spec_clarification_answers/answers_ready.json
+IDEA_TO_SPEC_CLARIFICATION_ANSWERS_OUTPUT ?= runs/idea_to_spec_clarification_answers.json
 CANDIDATE_SPEC_MATERIALIZATION_CANDIDATE_GRAPH ?= tests/fixtures/candidate_repair_loop/candidate_graph_repairable.json
 CANDIDATE_SPEC_MATERIALIZATION_REPAIR_LOOP ?= runs/candidate_repair_loop_report.json
 CANDIDATE_SPEC_MATERIALIZATION_OUTPUT_DIR ?= runs/materialized_candidate_specs
@@ -142,6 +145,7 @@ PYTHON_TARGETS := viewer-surfaces dashboard backlog next-move spec-activity grap
 	idea-event-storming-intake ontology-bound-candidate-graph-seed \
 	candidate-spec-graph pre-sib-coherence candidate-repair-loop \
 	idea-to-spec-clarification-requests \
+	idea-to-spec-clarification-answers \
 	candidate-spec-materialization idea-to-spec-promotion-gate \
 	active-idea-to-spec-candidate-source candidate-approval-decision \
 	product-workspace-active-candidate \
@@ -205,6 +209,7 @@ help:
 			'  make pre-sib-coherence PRE_SIB_COHERENCE_CANDIDATE_GRAPH=<json>' \
 			'  make candidate-repair-loop CANDIDATE_REPAIR_LOOP_CANDIDATE_GRAPH=<json> CANDIDATE_REPAIR_LOOP_PRE_SIB_REPORT=<json>' \
 			'  make idea-to-spec-clarification-requests IDEA_TO_SPEC_CLARIFICATION_SESSION=<json>' \
+			'  make idea-to-spec-clarification-answers IDEA_TO_SPEC_CLARIFICATION_ANSWERS_INPUT=<json>' \
 		'  make metrics-delivery         Refresh Metrics delivery workflow JSON' \
 		'  make metrics-feedback         Refresh Metrics feedback JSON' \
 		'  make metrics-source-promotion Refresh Metrics source promotion candidates JSON' \
@@ -425,6 +430,10 @@ candidate-repair-loop:
 .PHONY: idea-to-spec-clarification-requests
 idea-to-spec-clarification-requests:
 	@$(PYTHON) tools/idea_to_spec_clarification_requests.py --session "$(IDEA_TO_SPEC_CLARIFICATION_SESSION)" --intake "$(IDEA_TO_SPEC_CLARIFICATION_INTAKE)" --candidate-graph "$(IDEA_TO_SPEC_CLARIFICATION_CANDIDATE_GRAPH)" --pre-sib "$(IDEA_TO_SPEC_CLARIFICATION_PRE_SIB)" --repair-loop "$(IDEA_TO_SPEC_CLARIFICATION_REPAIR_LOOP)" $(IDEA_TO_SPEC_CLARIFICATION_ONTOLOGY_GAP_REVIEW_ARG) --output "$(IDEA_TO_SPEC_CLARIFICATION_OUTPUT)"
+
+.PHONY: idea-to-spec-clarification-answers
+idea-to-spec-clarification-answers:
+	@$(PYTHON) tools/idea_to_spec_clarification_answers.py --requests "$(IDEA_TO_SPEC_CLARIFICATION_ANSWERS_REQUESTS)" --answers "$(IDEA_TO_SPEC_CLARIFICATION_ANSWERS_INPUT)" --output "$(IDEA_TO_SPEC_CLARIFICATION_ANSWERS_OUTPUT)"
 
 .PHONY: candidate-spec-materialization
 candidate-spec-materialization:

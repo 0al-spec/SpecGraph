@@ -1,0 +1,20 @@
+{
+  "answers": [
+    {
+      "answer_kind": "propose_project_local_term",
+      "authority": "operator_approved",
+      "rationale": "The unresolved candidate gaps are product-local terms for the next candidate rerun.",
+      "request_id": "clarification.repair.repair-review-unresolved-gaps",
+      "status": "accepted_for_candidate",
+      "value": {
+        "term_scope": "project_local",
+        "terms": [
+          "Decision Owner"
+        ]
+      }
+    }
+  ],
+  "artifact_kind": "idea_to_spec_clarification_answer_set",
+  "contract_ref": "specgraph.idea-to-spec.clarification-answer-set.v0.1",
+  "schema_version": 1
+}
