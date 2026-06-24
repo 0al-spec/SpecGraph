@@ -565,6 +565,38 @@ do not make the candidate ready for rerun. This keeps answer collection explicit
 without silently mutating intake artifacts, candidate graphs, specs, or ontology
 packages.
 
+### 17. Idea-To-Spec Answer Rerun Input
+
+Status: implemented in proposal `0165`.
+
+Accepted clarification answers can now be converted into a deterministic rerun
+input overlay:
+
+```bash
+make idea-to-spec-answer-rerun-input
+```
+
+The output is:
+
+```text
+runs/idea_to_spec_answer_rerun_input.json
+```
+
+The overlay maps accepted answers into explicit review-only hints:
+
+```text
+intake active-frame hints
+event-storming hints
+ontology term bindings, aliases, project-local terms, rejected terms, deferred terms
+candidate acceptance criteria, graph edges, claim reviews
+```
+
+The tool consumes the validated `idea_to_spec_clarification_answers` report
+from proposal `0164`. If that report is not ready, the rerun input remains
+blocked and emits review findings instead of materializing hints. The artifact
+does not apply answers, write ontology packages, mutate canonical specs, approve
+candidates, or create Git branches.
+
 ## Success Criteria
 
 - A user can start with a product idea and receive a coherent candidate graph.
@@ -586,13 +618,16 @@ packages.
   workspace lane can reference.
 - User or agent answers can be validated against clarification request ids
   without applying candidate or ontology mutations.
+- Accepted clarification answers can be transformed into a review-only rerun
+  input overlay without applying source, candidate, ontology, spec, or Git
+  mutations.
 
 ## Current Execution Order
 
 The active stack after production workspace isolation is:
 
-1. Deterministic application of accepted clarification answers into a rerun
-   input artifact.
+1. Deterministic intake or candidate rerun consumer for the accepted-answer
+   overlay emitted by proposal `0165`.
 2. CLI or agent conversation wrapper that fills `user_idea_raw_input` from a
    real operator interview and can consume clarification requests.
 3. Prompt-side enrichment that can propose richer product-domain graph nodes

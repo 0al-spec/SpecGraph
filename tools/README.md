@@ -335,6 +335,15 @@ Supervisor modes:
   does not apply answers, mutate candidate artifacts, mutate canonical specs,
   write Ontology packages, approve candidates, create branches, or publish read
   models.
+- `tools/idea_to_spec_answer_rerun_input.py`: accepted-answer rerun input
+  overlay builder introduced by proposal 0165. Use
+  `make idea-to-spec-answer-rerun-input` to convert a ready
+  `idea_to_spec_clarification_answers` report into
+  `runs/idea_to_spec_answer_rerun_input.json`. The overlay exposes
+  active-frame, event-storming, ontology review, and candidate review hints for
+  the next deterministic run without applying answers, mutating candidate
+  artifacts, mutating canonical specs, writing Ontology packages, approving
+  candidates, creating branches, or publishing read models.
 - `tools/candidate_spec_materialization.py`: deterministic candidate spec YAML
   preview materializer introduced by proposal 0153. Use
   `make candidate-spec-materialization
@@ -1009,6 +1018,10 @@ Key derived artifacts:
 - `runs/idea_to_spec_clarification_answers.json`: public-safe, review-only
   answer validation report over clarification requests. It records accepted and
   unresolved answers for future rerun input without applying mutations.
+- `runs/idea_to_spec_answer_rerun_input.json`: public-safe, review-only overlay
+  that maps accepted clarification answers into intake, ontology review, and
+  candidate review hints for a later deterministic rerun without applying
+  mutations.
 - `runs/candidate_spec_materialization_report.json`: review-only report for
   local candidate spec YAML previews under `runs/materialized_candidate_specs/`,
   including materialized paths for Platform promotion-request handoff without

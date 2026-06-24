@@ -76,6 +76,8 @@ IDEA_TO_SPEC_CLARIFICATION_OUTPUT ?= $(IDEA_TO_SPEC_CLARIFICATION_OUTPUT_DEFAULT
 IDEA_TO_SPEC_CLARIFICATION_ANSWERS_REQUESTS ?= $(IDEA_TO_SPEC_CLARIFICATION_OUTPUT)
 IDEA_TO_SPEC_CLARIFICATION_ANSWERS_INPUT ?= tests/fixtures/idea_to_spec_clarification_answers/answers_ready.json
 IDEA_TO_SPEC_CLARIFICATION_ANSWERS_OUTPUT ?= runs/idea_to_spec_clarification_answers.json
+IDEA_TO_SPEC_ANSWER_RERUN_INPUT_ANSWERS ?= runs/idea_to_spec_clarification_answers.json
+IDEA_TO_SPEC_ANSWER_RERUN_INPUT_OUTPUT ?= runs/idea_to_spec_answer_rerun_input.json
 CANDIDATE_SPEC_MATERIALIZATION_CANDIDATE_GRAPH ?= tests/fixtures/candidate_repair_loop/candidate_graph_repairable.json
 CANDIDATE_SPEC_MATERIALIZATION_REPAIR_LOOP ?= runs/candidate_repair_loop_report.json
 CANDIDATE_SPEC_MATERIALIZATION_OUTPUT_DIR ?= runs/materialized_candidate_specs
@@ -146,6 +148,7 @@ PYTHON_TARGETS := viewer-surfaces dashboard backlog next-move spec-activity grap
 	candidate-spec-graph pre-sib-coherence candidate-repair-loop \
 	idea-to-spec-clarification-requests \
 	idea-to-spec-clarification-answers \
+	idea-to-spec-answer-rerun-input \
 	candidate-spec-materialization idea-to-spec-promotion-gate \
 	active-idea-to-spec-candidate-source candidate-approval-decision \
 	product-workspace-active-candidate \
@@ -210,6 +213,7 @@ help:
 			'  make candidate-repair-loop CANDIDATE_REPAIR_LOOP_CANDIDATE_GRAPH=<json> CANDIDATE_REPAIR_LOOP_PRE_SIB_REPORT=<json>' \
 			'  make idea-to-spec-clarification-requests IDEA_TO_SPEC_CLARIFICATION_SESSION=<json>' \
 			'  make idea-to-spec-clarification-answers IDEA_TO_SPEC_CLARIFICATION_ANSWERS_INPUT=<json>' \
+			'  make idea-to-spec-answer-rerun-input IDEA_TO_SPEC_ANSWER_RERUN_INPUT_ANSWERS=<json>' \
 		'  make metrics-delivery         Refresh Metrics delivery workflow JSON' \
 		'  make metrics-feedback         Refresh Metrics feedback JSON' \
 		'  make metrics-source-promotion Refresh Metrics source promotion candidates JSON' \
@@ -434,6 +438,10 @@ idea-to-spec-clarification-requests:
 .PHONY: idea-to-spec-clarification-answers
 idea-to-spec-clarification-answers:
 	@$(PYTHON) tools/idea_to_spec_clarification_answers.py --requests "$(IDEA_TO_SPEC_CLARIFICATION_ANSWERS_REQUESTS)" --answers "$(IDEA_TO_SPEC_CLARIFICATION_ANSWERS_INPUT)" --output "$(IDEA_TO_SPEC_CLARIFICATION_ANSWERS_OUTPUT)"
+
+.PHONY: idea-to-spec-answer-rerun-input
+idea-to-spec-answer-rerun-input:
+	@$(PYTHON) tools/idea_to_spec_answer_rerun_input.py --answers "$(IDEA_TO_SPEC_ANSWER_RERUN_INPUT_ANSWERS)" --output "$(IDEA_TO_SPEC_ANSWER_RERUN_INPUT_OUTPUT)"
 
 .PHONY: candidate-spec-materialization
 candidate-spec-materialization:

@@ -2117,5 +2117,18 @@
     "required_provenance_links": [
       "source_draft_ref"
     ]
+  },
+  {
+    "proposal_id": "0165",
+    "source_artifact_class": "working_draft",
+    "source_refs": [
+      "docs/archive/proposal_sources/0165_idea_to_spec_answer_rerun_input.md"
+    ],
+    "motivating_concern": "The idea-to-spec flow can validate accepted clarification answers, but the next deterministic rerun still needs a safe input overlay instead of directly mutating intake artifacts or candidate graphs.",
+    "normalized_title": "Idea-To-Spec Answer Rerun Input",
+    "bounded_scope": "Add a deterministic review-only idea_to_spec_answer_rerun_input builder, Make target, tests, proposal docs, roadmap, and DocC updates that consume a ready idea_to_spec_clarification_answers report and map accepted answers into intake, ontology review, and candidate review hints for a later rerun, without executing prompt agents, applying answers to source artifacts, mutating candidate artifacts, mutating canonical specs, writing Ontology packages or lockfiles, accepting ontology terms, approving candidate graphs, creating Git branches or commits, opening pull requests, publishing read models, or adding SpecSpace mutation UI.",
+    "required_provenance_links": [
+      "source_draft_ref"
+    ]
   }
 ]
