@@ -23,8 +23,8 @@ def load_json(path: Path) -> dict[str, object]:
 
 def supported_python() -> str:
     candidates = [
-        str(ROOT / ".venv" / "bin" / "python"),
         sys.executable,
+        str(ROOT / ".venv" / "bin" / "python"),
         *(
             shutil.which(name) or ""
             for name in ("python3.13", "python3.12", "python3.11", "python3.10")
@@ -32,6 +32,9 @@ def supported_python() -> str:
     ]
     for candidate in candidates:
         if not candidate:
+            continue
+        candidate_path = Path(candidate)
+        if candidate_path.is_absolute() and not candidate_path.exists():
             continue
         result = subprocess.run(
             [candidate, "tools/check_python_version.py"],
