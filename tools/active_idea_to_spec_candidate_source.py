@@ -383,7 +383,7 @@ def _candidate_for_config(
         artifacts.get("intake", (None, {}))[1]
     )
     explicit = _dict(config.get("candidate"))
-    if explicit:
+    if any(field in explicit for field in ("candidate_id", "public_route")):
         identity_source = "config_override"
     return {**derived, **explicit}, identity_source
 
@@ -411,19 +411,43 @@ def _source_artifact(
     }
 
 
-def _artifact_refs_for_config(config: dict[str, Any]) -> tuple[dict[str, Any], str]:
+def _artifact_refs_for_config(
+    config: dict[str, Any],
+) -> tuple[dict[str, Any], str, list[dict[str, Any]]]:
     raw_artifacts = _dict(config.get("artifacts"))
     if raw_artifacts:
-        return {**DEFAULT_ARTIFACT_REFS, **raw_artifacts}, "config"
-    return dict(DEFAULT_ARTIFACT_REFS), "defaults"
+        expected_keys = set(EXPECTED_ARTIFACTS)
+        observed_keys = set(raw_artifacts)
+        findings = []
+        missing_keys = sorted(expected_keys - observed_keys)
+        unknown_keys = sorted(observed_keys - expected_keys)
+        if missing_keys:
+            findings.append(
+                _finding(
+                    finding_id="active_candidate_config_artifacts_incomplete",
+                    severity="review_required",
+                    message="Explicit active candidate config must list every source artifact.",
+                    evidence={"missing_keys": missing_keys},
+                )
+            )
+        if unknown_keys:
+            findings.append(
+                _finding(
+                    finding_id="active_candidate_config_artifacts_unknown",
+                    severity="review_required",
+                    message="Explicit active candidate config contains unknown artifact keys.",
+                    evidence={"unknown_keys": unknown_keys},
+                )
+            )
+        return {**DEFAULT_ARTIFACT_REFS, **raw_artifacts}, "config", findings
+    return dict(DEFAULT_ARTIFACT_REFS), "defaults", []
 
 
 def _load_source_artifacts(
-    config: dict[str, Any],
+    artifact_refs: dict[str, Any],
 ) -> tuple[dict[str, tuple[Path, dict[str, Any]]], list[dict[str, Any]]]:
     artifacts: dict[str, tuple[Path, dict[str, Any]]] = {}
     findings: list[dict[str, Any]] = []
-    artifact_refs, _artifact_paths_source = _artifact_refs_for_config(config)
     for artifact_key, (expected_kind, expected_contract) in EXPECTED_ARTIFACTS.items():
         try:
             path = _repo_path(artifact_refs.get(artifact_key), field=f"artifacts.{artifact_key}")
@@ -626,8 +650,8 @@ def build_active_idea_to_spec_candidate_source(
 ) -> dict[str, Any]:
     config_provided = config is not None
     config = config if config is not None else _default_config()
-    artifact_paths_source = _artifact_refs_for_config(config)[1]
-    artifacts, artifact_findings = _load_source_artifacts(config)
+    artifact_refs, artifact_paths_source, artifact_ref_findings = _artifact_refs_for_config(config)
+    artifacts, artifact_findings = _load_source_artifacts(artifact_refs)
     candidate, identity_source = _candidate_for_config(config=config, artifacts=artifacts)
     normalized_candidate, candidate_findings = _candidate_metadata(candidate)
     chain_findings, chain_warnings = _artifact_chain_findings(artifacts)
@@ -635,6 +659,7 @@ def build_active_idea_to_spec_candidate_source(
     findings = (
         _config_findings(config, config_provided=config_provided)
         + candidate_findings
+        + artifact_ref_findings
         + artifact_findings
         + _active_frame_findings(candidate_graph)
         + _candidate_artifact_match_findings(

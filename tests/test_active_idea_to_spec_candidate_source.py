@@ -244,6 +244,46 @@ def test_active_candidate_source_accepts_different_product_candidate_from_config
     assert report["summary"]["candidate_id"] == "support-triage-log"
 
 
+def test_active_candidate_source_display_name_override_keeps_intake_identity_source(
+    tmp_path: Path,
+    module: object,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setattr(module, "ROOT", tmp_path)
+    artifacts = write_ready_artifacts(tmp_path)
+    config = ready_config(artifacts)
+    config["candidate"] = {"display_name": "Team Decisions"}
+
+    report = module.build_active_idea_to_spec_candidate_source(config)
+
+    assert report["readiness"]["ready"] is True
+    assert report["candidate"]["candidate_id"] == "team-decision-log"
+    assert report["candidate"]["display_name"] == "Team Decisions"
+    assert report["source_derivation"]["identity_source"] == "intake.source_intake.workspace"
+
+
+def test_active_candidate_source_flags_partial_explicit_artifact_config(
+    tmp_path: Path,
+    module: object,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setattr(module, "ROOT", tmp_path)
+    artifacts = write_ready_artifacts(tmp_path)
+    config = ready_config(artifacts)
+    config["artifacts"] = {
+        key: value for key, value in artifacts.items() if key != "candidate_graph"
+    }
+    config["artifacts"]["candidat_graph"] = artifacts["candidate_graph"]
+
+    report = module.build_active_idea_to_spec_candidate_source(config)
+
+    assert report["readiness"]["ready"] is False
+    assert report["source_derivation"]["artifact_paths_source"] == "config"
+    finding_ids = {finding["finding_id"] for finding in report["findings"]}
+    assert "active_candidate_config_artifacts_incomplete" in finding_ids
+    assert "active_candidate_config_artifacts_unknown" in finding_ids
+
+
 def test_active_candidate_source_derives_candidate_metadata_from_intake(
     tmp_path: Path,
     module: object,
