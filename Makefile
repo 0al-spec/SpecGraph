@@ -39,31 +39,40 @@ SPECAUTHOR_AUTHORING_FLOW_INVOCATION_OUTPUT ?= runs/specauthor_invocation_artifa
 SPECAUTHOR_AUTHORING_FLOW_CONTRACT_OUTPUT ?= runs/specauthor_invocation_artifact_contract_report.json
 SPECAUTHOR_AUTHORING_FLOW_REPORT_OUTPUT ?= runs/specauthor_authoring_flow_report.json
 USER_IDEA_INTAKE_SOURCE ?= tests/fixtures/user_idea_intake/source_ready.json
-USER_IDEA_EVENT_STORMING_SEED_OUTPUT ?= runs/idea_event_storming_seed.json
+USER_IDEA_EVENT_STORMING_SEED_OUTPUT_DEFAULT := runs/idea_event_storming_seed.json
+USER_IDEA_EVENT_STORMING_SEED_OUTPUT ?= $(USER_IDEA_EVENT_STORMING_SEED_OUTPUT_DEFAULT)
 IDEA_EVENT_STORMING_INTAKE_SOURCE ?= tests/fixtures/idea_event_storming_intake/idea_ready.json
-IDEA_EVENT_STORMING_INTAKE_OUTPUT ?= runs/idea_event_storming_intake.json
+IDEA_EVENT_STORMING_INTAKE_OUTPUT_DEFAULT := runs/idea_event_storming_intake.json
+IDEA_EVENT_STORMING_INTAKE_OUTPUT ?= $(IDEA_EVENT_STORMING_INTAKE_OUTPUT_DEFAULT)
 CANDIDATE_SPEC_GRAPH_INTAKE ?= tests/fixtures/candidate_spec_graph/idea_event_storming_intake_ready.json
 CANDIDATE_SPEC_GRAPH_SEED ?= tests/fixtures/candidate_spec_graph/candidate_ready.json
-CANDIDATE_SPEC_GRAPH_OUTPUT ?= runs/candidate_spec_graph.json
+CANDIDATE_SPEC_GRAPH_OUTPUT_DEFAULT := runs/candidate_spec_graph.json
+CANDIDATE_SPEC_GRAPH_OUTPUT ?= $(CANDIDATE_SPEC_GRAPH_OUTPUT_DEFAULT)
 ONTOLOGY_BOUND_CANDIDATE_SEED_INTAKE ?= runs/idea_event_storming_intake.json
 ONTOLOGY_BOUND_CANDIDATE_SEED_ONTOLOGY_IR ?= ontology/packages/specgraph-core/generated/ontology.normalized.json
-ONTOLOGY_BOUND_CANDIDATE_SEED_OUTPUT ?= runs/candidate_spec_graph_seed.json
+ONTOLOGY_BOUND_CANDIDATE_SEED_OUTPUT_DEFAULT := runs/candidate_spec_graph_seed.json
+ONTOLOGY_BOUND_CANDIDATE_SEED_OUTPUT ?= $(ONTOLOGY_BOUND_CANDIDATE_SEED_OUTPUT_DEFAULT)
 PRE_SIB_COHERENCE_CANDIDATE_GRAPH ?= tests/fixtures/pre_sib_coherence/candidate_spec_graph_ready.json
-PRE_SIB_COHERENCE_OUTPUT ?= runs/pre_sib_coherence_report.json
+PRE_SIB_COHERENCE_OUTPUT_DEFAULT := runs/pre_sib_coherence_report.json
+PRE_SIB_COHERENCE_OUTPUT ?= $(PRE_SIB_COHERENCE_OUTPUT_DEFAULT)
 CANDIDATE_REPAIR_LOOP_CANDIDATE_GRAPH ?= tests/fixtures/candidate_repair_loop/candidate_graph_repairable.json
 CANDIDATE_REPAIR_LOOP_PRE_SIB_REPORT ?= tests/fixtures/candidate_repair_loop/pre_sib_repair_required.json
-CANDIDATE_REPAIR_LOOP_OUTPUT ?= runs/candidate_repair_loop_report.json
+CANDIDATE_REPAIR_LOOP_OUTPUT_DEFAULT := runs/candidate_repair_loop_report.json
+CANDIDATE_REPAIR_LOOP_OUTPUT ?= $(CANDIDATE_REPAIR_LOOP_OUTPUT_DEFAULT)
 CANDIDATE_SPEC_MATERIALIZATION_CANDIDATE_GRAPH ?= tests/fixtures/candidate_repair_loop/candidate_graph_repairable.json
 CANDIDATE_SPEC_MATERIALIZATION_REPAIR_LOOP ?= runs/candidate_repair_loop_report.json
 CANDIDATE_SPEC_MATERIALIZATION_OUTPUT_DIR ?= runs/materialized_candidate_specs
-CANDIDATE_SPEC_MATERIALIZATION_OUTPUT ?= runs/candidate_spec_materialization_report.json
+CANDIDATE_SPEC_MATERIALIZATION_OUTPUT_DEFAULT := runs/candidate_spec_materialization_report.json
+CANDIDATE_SPEC_MATERIALIZATION_OUTPUT ?= $(CANDIDATE_SPEC_MATERIALIZATION_OUTPUT_DEFAULT)
 IDEA_TO_SPEC_PROMOTION_GATE_PRE_SIB ?= runs/pre_sib_coherence_report.json
 IDEA_TO_SPEC_PROMOTION_GATE_REPAIR_LOOP ?= runs/candidate_repair_loop_report.json
 IDEA_TO_SPEC_PROMOTION_GATE_MATERIALIZATION ?= runs/candidate_spec_materialization_report.json
-IDEA_TO_SPEC_PROMOTION_GATE_OUTPUT ?= runs/idea_to_spec_promotion_gate.json
+IDEA_TO_SPEC_PROMOTION_GATE_OUTPUT_DEFAULT := runs/idea_to_spec_promotion_gate.json
+IDEA_TO_SPEC_PROMOTION_GATE_OUTPUT ?= $(IDEA_TO_SPEC_PROMOTION_GATE_OUTPUT_DEFAULT)
 ACTIVE_IDEA_TO_SPEC_CANDIDATE_CONFIG ?=
 ACTIVE_IDEA_TO_SPEC_CANDIDATE_CONFIG_ARGS := $(if $(strip $(ACTIVE_IDEA_TO_SPEC_CANDIDATE_CONFIG)),--config "$(ACTIVE_IDEA_TO_SPEC_CANDIDATE_CONFIG)",)
-ACTIVE_IDEA_TO_SPEC_CANDIDATE_OUTPUT ?= runs/active_idea_to_spec_candidate.json
+ACTIVE_IDEA_TO_SPEC_CANDIDATE_OUTPUT_DEFAULT := runs/active_idea_to_spec_candidate.json
+ACTIVE_IDEA_TO_SPEC_CANDIDATE_OUTPUT ?= $(ACTIVE_IDEA_TO_SPEC_CANDIDATE_OUTPUT_DEFAULT)
 CANDIDATE_APPROVAL_ACTIVE_CANDIDATE ?= runs/active_idea_to_spec_candidate.json
 CANDIDATE_APPROVAL_PROMOTION_GATE ?= runs/idea_to_spec_promotion_gate.json
 CANDIDATE_APPROVAL_OUTPUT ?= runs/candidate_approval_decision.json
@@ -81,6 +90,14 @@ PRODUCT_WORKSPACE_CANDIDATE_SEED_MODE := $(if $(strip $(PRODUCT_WORKSPACE_CANDID
 PRODUCT_WORKSPACE_CANDIDATE_SEED_EFFECTIVE := $(if $(strip $(PRODUCT_WORKSPACE_CANDIDATE_SEED_INPUT)),$(PRODUCT_WORKSPACE_CANDIDATE_SEED_INPUT),$(PRODUCT_WORKSPACE_CANDIDATE_SEED))
 PRODUCT_WORKSPACE_ACTIVE_CANDIDATE_CONFIG ?= $(ACTIVE_IDEA_TO_SPEC_CANDIDATE_CONFIG)
 PRODUCT_WORKSPACE_ACTIVE_CANDIDATE_CONFIG_ARGS := $(if $(strip $(PRODUCT_WORKSPACE_ACTIVE_CANDIDATE_CONFIG)),--config "$(PRODUCT_WORKSPACE_ACTIVE_CANDIDATE_CONFIG)",)
+PRODUCT_WORKSPACE_ACTIVE_CANDIDATE_ARTIFACT_REFS_CHANGED := $(strip \
+	$(if $(filter-out $(IDEA_EVENT_STORMING_INTAKE_OUTPUT_DEFAULT),$(strip $(IDEA_EVENT_STORMING_INTAKE_OUTPUT))),changed,) \
+	$(if $(filter-out $(CANDIDATE_SPEC_GRAPH_OUTPUT_DEFAULT),$(strip $(CANDIDATE_SPEC_GRAPH_OUTPUT))),changed,) \
+	$(if $(filter-out $(PRE_SIB_COHERENCE_OUTPUT_DEFAULT),$(strip $(PRE_SIB_COHERENCE_OUTPUT))),changed,) \
+	$(if $(filter-out $(CANDIDATE_REPAIR_LOOP_OUTPUT_DEFAULT),$(strip $(CANDIDATE_REPAIR_LOOP_OUTPUT))),changed,) \
+	$(if $(filter-out $(CANDIDATE_SPEC_MATERIALIZATION_OUTPUT_DEFAULT),$(strip $(CANDIDATE_SPEC_MATERIALIZATION_OUTPUT))),changed,) \
+	$(if $(filter-out $(IDEA_TO_SPEC_PROMOTION_GATE_OUTPUT_DEFAULT),$(strip $(IDEA_TO_SPEC_PROMOTION_GATE_OUTPUT))),changed,))
+PRODUCT_WORKSPACE_ACTIVE_CANDIDATE_ARTIFACT_ARGS := $(if $(strip $(PRODUCT_WORKSPACE_ACTIVE_CANDIDATE_CONFIG)),,$(if $(PRODUCT_WORKSPACE_ACTIVE_CANDIDATE_ARTIFACT_REFS_CHANGED),--intake "$(IDEA_EVENT_STORMING_INTAKE_OUTPUT)" --candidate-graph "$(CANDIDATE_SPEC_GRAPH_OUTPUT)" --pre-sib "$(PRE_SIB_COHERENCE_OUTPUT)" --repair-loop "$(CANDIDATE_REPAIR_LOOP_OUTPUT)" --materialization "$(CANDIDATE_SPEC_MATERIALIZATION_OUTPUT)" --promotion-gate "$(IDEA_TO_SPEC_PROMOTION_GATE_OUTPUT)",))
 PRODUCT_WORKSPACE_ACTIVE_CANDIDATE_REFRESH_VARS := \
 	ACTIVE_IDEA_TO_SPEC_CANDIDATE_CONFIG \
 	PRODUCT_WORKSPACE_IDEA_SOURCE \
@@ -405,7 +422,7 @@ endif
 	@$(PYTHON) tools/candidate_repair_loop.py --candidate-graph "$(CANDIDATE_SPEC_GRAPH_OUTPUT)" --pre-sib-report "$(PRE_SIB_COHERENCE_OUTPUT)" --output "$(CANDIDATE_REPAIR_LOOP_OUTPUT)"
 	@$(PYTHON) tools/candidate_spec_materialization.py --candidate-graph "$(CANDIDATE_SPEC_GRAPH_OUTPUT)" --repair-loop "$(CANDIDATE_REPAIR_LOOP_OUTPUT)" --output-dir "$(CANDIDATE_SPEC_MATERIALIZATION_OUTPUT_DIR)" --output "$(CANDIDATE_SPEC_MATERIALIZATION_OUTPUT)"
 	@$(PYTHON) tools/idea_to_spec_promotion_gate.py --pre-sib "$(PRE_SIB_COHERENCE_OUTPUT)" --repair-loop "$(CANDIDATE_REPAIR_LOOP_OUTPUT)" --materialization "$(CANDIDATE_SPEC_MATERIALIZATION_OUTPUT)" --output "$(IDEA_TO_SPEC_PROMOTION_GATE_OUTPUT)"
-	@$(PYTHON) tools/active_idea_to_spec_candidate_source.py $(PRODUCT_WORKSPACE_ACTIVE_CANDIDATE_CONFIG_ARGS) --output "$(ACTIVE_IDEA_TO_SPEC_CANDIDATE_OUTPUT)"
+	@$(PYTHON) tools/active_idea_to_spec_candidate_source.py $(PRODUCT_WORKSPACE_ACTIVE_CANDIDATE_CONFIG_ARGS) $(PRODUCT_WORKSPACE_ACTIVE_CANDIDATE_ARTIFACT_ARGS) --output "$(ACTIVE_IDEA_TO_SPEC_CANDIDATE_OUTPUT)"
 
 .PHONY: metrics-delivery
 metrics-delivery:

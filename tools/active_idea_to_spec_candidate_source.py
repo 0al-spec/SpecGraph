@@ -416,6 +416,7 @@ def _artifact_refs_for_config(
 ) -> tuple[dict[str, Any], str, list[dict[str, Any]]]:
     raw_artifacts = _dict(config.get("artifacts"))
     if raw_artifacts:
+        artifact_paths_source = _text(config.get("_artifact_paths_source"), "config")
         expected_keys = set(EXPECTED_ARTIFACTS)
         observed_keys = set(raw_artifacts)
         findings = []
@@ -439,7 +440,7 @@ def _artifact_refs_for_config(
                     evidence={"unknown_keys": unknown_keys},
                 )
             )
-        return {**DEFAULT_ARTIFACT_REFS, **raw_artifacts}, "config", findings
+        return {**DEFAULT_ARTIFACT_REFS, **raw_artifacts}, artifact_paths_source, findings
     return dict(DEFAULT_ARTIFACT_REFS), "defaults", []
 
 
@@ -690,7 +691,10 @@ def build_active_idea_to_spec_candidate_source(
             "contract_ref": config.get("contract_ref"),
             "source_ref": _relative_ref(config_path) if config_path is not None else None,
             "required": False,
-            "mode": "config" if config_provided else "artifact_defaults",
+            "mode": _text(
+                config.get("_config_source_mode"),
+                "config" if config_provided else "artifact_defaults",
+            ),
         },
         "source_derivation": {
             "identity_source": identity_source,
@@ -755,14 +759,46 @@ def build_active_idea_to_spec_candidate_source(
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--config", default=None, type=Path)
+    parser.add_argument("--intake", default=None)
+    parser.add_argument("--candidate-graph", default=None)
+    parser.add_argument("--pre-sib", default=None)
+    parser.add_argument("--repair-loop", default=None)
+    parser.add_argument("--materialization", default=None)
+    parser.add_argument("--promotion-gate", default=None)
     parser.add_argument("--output", default=DEFAULT_OUTPUT_PATH, type=Path)
     parser.add_argument("--strict", action="store_true")
     return parser
 
 
+def _artifact_args(args: argparse.Namespace) -> dict[str, str]:
+    return {
+        key: value
+        for key, value in {
+            "intake": args.intake,
+            "candidate_graph": args.candidate_graph,
+            "pre_sib": args.pre_sib,
+            "repair_loop": args.repair_loop,
+            "materialization": args.materialization,
+            "promotion_gate": args.promotion_gate,
+        }.items()
+        if value is not None
+    }
+
+
 def main(argv: list[str] | None = None) -> int:
     args = build_parser().parse_args(argv)
     config = load_json(args.config) if args.config is not None else None
+    artifact_args = _artifact_args(args)
+    if artifact_args:
+        config = config if config is not None else _default_config()
+        config = {
+            **config,
+            "artifacts": {**_dict(config.get("artifacts")), **artifact_args},
+            "_artifact_paths_source": "arguments",
+            "_config_source_mode": "artifact_arguments"
+            if args.config is None
+            else "config_with_artifact_arguments",
+        }
     artifact = build_active_idea_to_spec_candidate_source(config, config_path=args.config)
     write_json(artifact, args.output)
     print(
