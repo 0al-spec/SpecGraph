@@ -416,7 +416,12 @@ Team Decision Log remains the default example workspace data for the product
 pilot. A new product idea can replace it by passing a different
 `PRODUCT_WORKSPACE_IDEA_SOURCE`, without adding a new tool, Make target, or
 product-specific active candidate config. The old prepared seed path remains
-available through `PRODUCT_WORKSPACE_INTAKE_SOURCE=<seed.json>`.
+available through `PRODUCT_WORKSPACE_INTAKE_SOURCE=<seed.json>`, but a prepared
+seed without `source_intake.workspace` needs an explicit active candidate config
+because the generic artifact-refs-only config has no product identity to derive.
+In artifact-refs-only mode, governance fields use the standard active product
+workspace defaults: `product_idea_to_spec`, `product_workspace`,
+`product_spec_workspace`, and `workspace_owner_controlled`.
 
 The runner may still emit `active_candidate_review_required` when pre-SIB,
 repair-loop, ontology-gap, or promotion-gate checks require owner context. That

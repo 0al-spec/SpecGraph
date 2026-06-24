@@ -125,10 +125,12 @@ The target now starts from `PRODUCT_WORKSPACE_IDEA_SOURCE`, writes
 through `runs/idea_event_storming_intake.json` into
 `runs/active_idea_to_spec_candidate.json`. The active candidate config can now
 contain only artifact refs; candidate id, display name, and route derive from
-the generated intake. Team Decision Log is the default
+the generated intake, while governance fields use the standard active product
+workspace defaults. Team Decision Log is the default
 `PRODUCT_WORKSPACE_IDEA_SOURCE` fixture for the product pilot, not a separate
 system flow. Passing `PRODUCT_WORKSPACE_INTAKE_SOURCE=<seed.json>` keeps the old
-prepared-seed input mode for backcompat.
+prepared-seed input mode for backcompat; prepared seeds without
+`source_intake.workspace` need an explicit active candidate config.
 
 ## Authority Boundary
 

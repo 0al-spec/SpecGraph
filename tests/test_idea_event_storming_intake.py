@@ -57,7 +57,35 @@ def test_idea_event_storming_intake_builds_ready_artifact() -> None:
     assert intake["privacy_boundary"]["raw_intent_text_published"] is False
     assert intake["root_intent"]["raw_text_published"] is False
     assert intake["root_intent"]["summary"].startswith("Build a calculator app")
+    assert "source_intake" not in intake
     assert intake["findings"] == []
+
+
+def test_idea_event_storming_intake_preserves_source_intake_workspace() -> None:
+    module = load_module()
+    seed = load_json(READY_FIXTURE)
+    seed["source_intake"] = {
+        "artifact_kind": "user_idea_intake_source",
+        "contract_ref": "specgraph.idea-to-spec.user-idea-intake-source.v0.1",
+        "source_contract_ref": "specgraph.idea-to-spec.user-idea-source.v0.1",
+        "source_ref": "tests/fixtures/user_idea_intake/source_ready.json",
+        "workspace": {
+            "candidate_id": "support-triage-log",
+            "display_name": "Support Triage Log",
+            "public_route": "/support-triage-log",
+        },
+        "summary": {"status": "ready_for_event_storming_intake"},
+    }
+
+    intake = module.build_idea_event_storming_intake(seed, source_path=READY_FIXTURE)
+
+    assert intake["candidate_graph_readiness"]["ready"] is True
+    assert intake["source_intake"]["workspace"] == {
+        "candidate_id": "support-triage-log",
+        "display_name": "Support Triage Log",
+        "public_route": "/support-triage-log",
+    }
+    assert intake["source_intake"]["summary"] == {"status": "ready_for_event_storming_intake"}
 
 
 def test_idea_event_storming_intake_requires_frame_and_core_categories() -> None:

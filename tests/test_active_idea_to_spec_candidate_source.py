@@ -227,10 +227,21 @@ def test_active_candidate_source_derives_candidate_metadata_from_intake(
 
     assert report["readiness"]["ready"] is True
     assert report["source_mode"] == "active_candidate"
+    assert {finding["finding_id"] for finding in report["findings"]}.isdisjoint(
+        {
+            "candidate_source_mode_unsupported",
+            "candidate_workflow_lane_unsupported",
+            "candidate_governance_profile_unsupported",
+            "candidate_target_repository_role_unsupported",
+            "candidate_authority_profile_unsupported",
+        }
+    )
     assert report["candidate"]["candidate_id"] == "support-triage-log"
     assert report["candidate"]["display_name"] == "SupportTriageLog"
     assert report["candidate"]["public_route"] == "/support-triage-log"
+    assert report["candidate"]["governance_profile"] == "product_workspace"
     assert report["candidate"]["target_repository_role"] == "product_spec_workspace"
+    assert report["candidate"]["authority_profile"] == "workspace_owner_controlled"
     assert report["summary"]["candidate_id"] == "support-triage-log"
 
 

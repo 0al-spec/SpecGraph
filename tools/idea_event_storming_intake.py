@@ -576,8 +576,11 @@ def _authority_boundary() -> dict[str, bool]:
     }
 
 
-def _source_intake(seed: dict[str, Any]) -> dict[str, Any]:
-    source_intake = _dict(seed.get("source_intake"))
+def _source_intake(seed: dict[str, Any]) -> dict[str, Any] | None:
+    raw_source_intake = seed.get("source_intake")
+    if not isinstance(raw_source_intake, dict):
+        return None
+    source_intake = _dict(raw_source_intake)
     workspace = _dict(source_intake.get("workspace"))
     return {
         "artifact_kind": source_intake.get("artifact_kind"),
@@ -616,7 +619,8 @@ def build_idea_event_storming_intake(
     source_ref = _text(seed.get("source_ref"))
     if not source_ref and source_path is not None:
         source_ref = _relative_ref(source_path)
-    return {
+    source_intake = _source_intake(seed)
+    intake = {
         "artifact_kind": "idea_event_storming_intake",
         "schema_version": SCHEMA_VERSION,
         "proposal_id": PROPOSAL_ID,
@@ -626,7 +630,6 @@ def build_idea_event_storming_intake(
         "generated_at": _now_iso(),
         "canonical_mutations_allowed": False,
         "tracked_artifacts_written": False,
-        "source_intake": _source_intake(seed),
         "root_intent": _raw_intent(seed),
         "active_frame": active_frame,
         "event_storming": event_storming,
@@ -660,6 +663,9 @@ def build_idea_event_storming_intake(
             "warning_count": len(warnings),
         },
     }
+    if source_intake is not None:
+        intake["source_intake"] = source_intake
+    return intake
 
 
 def build_parser() -> argparse.ArgumentParser:

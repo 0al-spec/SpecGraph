@@ -330,12 +330,14 @@ Supervisor modes:
   materialization and promotion-gate surfaces come from a product workspace
   active candidate rather than fixture/demo leakage or public placeholders.
   The active candidate config may contain only artifact refs; candidate id,
-  display name, and route derive from `idea_event_storming_intake.source_intake`.
+  display name, and route derive from `idea_event_storming_intake.source_intake`,
+  while governance fields use the standard active product workspace defaults.
   The default `PRODUCT_WORKSPACE_IDEA_SOURCE` is Team Decision Log as data for
   the public product pilot, while tests can pass other source JSON files through
   the same target.
   To keep the old prepared-seed input mode, pass
-  `PRODUCT_WORKSPACE_INTAKE_SOURCE=<seed.json>`.
+  `PRODUCT_WORKSPACE_INTAKE_SOURCE=<seed.json>` together with an explicit active
+  candidate config when that seed does not include `source_intake.workspace`.
 - `tools/candidate_approval_decision.py`: explicit candidate approval decision
   builder introduced by proposal 0157. Use `make candidate-approval-decision`
   after the active candidate source and promotion gate exist. The default state

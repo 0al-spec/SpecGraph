@@ -53,7 +53,10 @@ This slice adds:
 
 The old seed-input path remains supported. Operators may still pass
 `PRODUCT_WORKSPACE_INTAKE_SOURCE=<seed.json>` when they already have a prepared
-event-storming seed.
+event-storming seed. Prepared seeds that do not include
+`source_intake.workspace` must be paired with an explicit active candidate
+config; artifact-refs-only active candidate configs derive identity only from
+the generated source-backed intake.
 
 ## Semantics
 
