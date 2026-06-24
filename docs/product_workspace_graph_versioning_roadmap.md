@@ -597,6 +597,39 @@ blocked and emits review findings instead of materializing hints. The artifact
 does not apply answers, write ontology packages, mutate canonical specs, approve
 candidates, or create Git branches.
 
+### 18. Idea-To-Spec Rerun Preview
+
+Status: implemented in proposal `0166`.
+
+Accepted-answer overlays can now be previewed against the current intake and
+candidate graph:
+
+```bash
+make idea-to-spec-rerun-preview
+```
+
+The output is:
+
+```text
+runs/idea_to_spec_rerun_preview.json
+```
+
+The preview shows:
+
+```text
+active-frame merge preview
+event-storming hint preview
+preview-resolved ontology gaps
+still-unresolved ontology gaps
+candidate review hints
+```
+
+This is still not an application step. Matching `bind_existing_term`, `alias`,
+`propose_project_local_term`, `reject`, or `defer` answers can close an
+ontology gap in preview state, but the tool does not accept ontology terms,
+write ontology packages, mutate candidate graphs, approve candidates, or create
+Git branches.
+
 ## Success Criteria
 
 - A user can start with a product idea and receive a coherent candidate graph.
@@ -621,13 +654,16 @@ candidates, or create Git branches.
 - Accepted clarification answers can be transformed into a review-only rerun
   input overlay without applying source, candidate, ontology, spec, or Git
   mutations.
+- Accepted-answer overlays can be previewed against current intake and
+  candidate graph state, including ontology gap resolution effects, without
+  applying mutations.
 
 ## Current Execution Order
 
 The active stack after production workspace isolation is:
 
-1. Deterministic intake or candidate rerun consumer for the accepted-answer
-   overlay emitted by proposal `0165`.
+1. Deterministic intake or candidate rerun materializer for a ready
+   `idea_to_spec_rerun_preview` emitted by proposal `0166`.
 2. CLI or agent conversation wrapper that fills `user_idea_raw_input` from a
    real operator interview and can consume clarification requests.
 3. Prompt-side enrichment that can propose richer product-domain graph nodes

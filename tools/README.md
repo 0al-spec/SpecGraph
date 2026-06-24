@@ -344,6 +344,15 @@ Supervisor modes:
   the next deterministic run without applying answers, mutating candidate
   artifacts, mutating canonical specs, writing Ontology packages, approving
   candidates, creating branches, or publishing read models.
+- `tools/idea_to_spec_rerun_preview.py`: accepted-answer rerun preview builder
+  introduced by proposal 0166. Use `make idea-to-spec-rerun-preview` to preview
+  a ready `idea_to_spec_answer_rerun_input` against the current
+  `idea_event_storming_intake` and `candidate_spec_graph`. The report shows
+  active-frame merge effects, event-storming additions, preview-resolved
+  ontology gaps, unresolved ontology gaps, and candidate review hints without
+  applying answers, mutating candidate artifacts, accepting ontology terms,
+  writing Ontology packages, approving candidates, creating branches, or
+  publishing read models.
 - `tools/candidate_spec_materialization.py`: deterministic candidate spec YAML
   preview materializer introduced by proposal 0153. Use
   `make candidate-spec-materialization
@@ -1022,6 +1031,10 @@ Key derived artifacts:
   that maps accepted clarification answers into intake, ontology review, and
   candidate review hints for a later deterministic rerun without applying
   mutations.
+- `runs/idea_to_spec_rerun_preview.json`: public-safe, review-only preview that
+  evaluates accepted-answer overlay effects against current intake and
+  candidate graph state, including ontology gap resolution previews, without
+  applying mutations.
 - `runs/candidate_spec_materialization_report.json`: review-only report for
   local candidate spec YAML previews under `runs/materialized_candidate_specs/`,
   including materialized paths for Platform promotion-request handoff without

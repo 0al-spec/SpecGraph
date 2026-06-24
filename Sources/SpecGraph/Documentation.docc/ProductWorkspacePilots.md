@@ -198,6 +198,21 @@ report is not ready, the overlay remains blocked with findings. The report does
 not apply answers to source artifacts, mutate candidate graphs, write ontology
 packages, approve candidates, create Git branches, or publish read models.
 
+Proposal `0166` adds `idea_to_spec_rerun_preview`:
+
+```bash
+make idea-to-spec-rerun-preview
+```
+
+The preview report evaluates the accepted-answer overlay against the current
+event-storming intake and candidate graph. It shows active-frame merge effects,
+event-storming additions, preview-resolved ontology gaps, still-unresolved
+ontology gaps, and candidate review hints. A project-local term, binding, alias,
+rejection, or deferral can resolve the preview state for a gap, but the report
+does not apply answers to source artifacts, mutate candidate graphs, accept
+ontology terms, write ontology packages, approve candidates, create Git
+branches, or publish read models.
+
 ## Authority Boundary
 
 Team Decision Log remains non-canonical until a repository service accepts a
@@ -214,8 +229,8 @@ The product pilot must not:
 
 ## Current Execution Order
 
-1. Deterministic intake or candidate rerun consumer for
-   `idea_to_spec_answer_rerun_input`.
+1. Deterministic intake or candidate rerun materializer for
+   `idea_to_spec_rerun_preview`.
 2. Prompt-side enrichment for richer candidate graph authoring under the same
    ontology-bound seed contract.
 3. CLI or agent conversation wrapper that fills `user_idea_raw_input` from a
