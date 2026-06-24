@@ -386,7 +386,8 @@ generic-idea-intake: user-idea-intake-source
 	@$(PYTHON) tools/idea_event_storming_intake.py --input "$(USER_IDEA_EVENT_STORMING_SEED_OUTPUT)" --output "$(IDEA_EVENT_STORMING_INTAKE_OUTPUT)"
 
 .PHONY: generic-idea-intake-session
-generic-idea-intake-session: user-idea-intake-session
+generic-idea-intake-session:
+	@$(PYTHON) tools/user_idea_intake_session.py --input "$(USER_IDEA_INTAKE_SESSION_INPUT)" --session-output "$(USER_IDEA_INTAKE_SESSION_OUTPUT)" --source-output "$(USER_IDEA_INTAKE_SESSION_SOURCE_OUTPUT)" --strict
 	@$(PYTHON) tools/user_idea_intake_source.py --input "$(USER_IDEA_INTAKE_SESSION_SOURCE_OUTPUT)" --output "$(USER_IDEA_EVENT_STORMING_SEED_OUTPUT)"
 	@$(PYTHON) tools/idea_event_storming_intake.py --input "$(USER_IDEA_EVENT_STORMING_SEED_OUTPUT)" --output "$(IDEA_EVENT_STORMING_INTAKE_OUTPUT)"
 

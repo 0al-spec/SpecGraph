@@ -31,6 +31,7 @@ RAW_TRACE_FIELDS = {
     "raw_operator_note",
     "raw_prompt",
     "raw_response",
+    "raw_text",
 }
 REQUIRED_EVENT_STORMING_CATEGORIES = (
     "actors",
@@ -191,6 +192,13 @@ def _input_contract_findings(raw_input: dict[str, Any]) -> list[dict[str, Any]]:
     ]
 
 
+def _is_prepared_source_input(raw_input: dict[str, Any]) -> bool:
+    return (
+        raw_input.get("artifact_kind") == "user_idea_intake_source"
+        and raw_input.get("contract_ref") == SOURCE_CONTRACT_REF
+    )
+
+
 def _workspace(
     raw_input: dict[str, Any],
     *,
@@ -300,10 +308,7 @@ def _frame(
 ) -> tuple[dict[str, Any], list[dict[str, Any]], list[dict[str, Any]]]:
     frame = _dict(raw_input.get("active_frame_hints")) or _dict(raw_input.get("active_frame"))
     candidate_id = workspace["candidate_id"]
-    prepared_source_input = (
-        raw_input.get("artifact_kind") == "user_idea_intake_source"
-        and raw_input.get("contract_ref") == SOURCE_CONTRACT_REF
-    )
+    prepared_source_input = _is_prepared_source_input(raw_input)
     normalized = {
         "project": _text(frame.get("project"), _slug_to_project_id(candidate_id)),
         "subsystem": _text(frame.get("subsystem"), "product_specification"),
@@ -395,6 +400,8 @@ def _event_storming(
         ]
     findings: list[dict[str, Any]] = []
     questions: list[dict[str, Any]] = []
+    if _is_prepared_source_input(raw_input):
+        return normalized, findings, questions
     question_text = {
         "actors": "Who are the primary actors or roles in this product idea?",
         "domain_events": "Which important domain events should the specification preserve?",
@@ -547,6 +554,7 @@ def build_user_idea_intake_session(
             "artifact_kind": "user_idea_intake_source",
             "contract_ref": SOURCE_CONTRACT_REF,
             "path": _relative_ref(source_output_path) if source_output_path else None,
+            "written": source_output_path is not None,
             "digest": _digest(source),
         }
         session["summary"]["source_written"] = source_output_path is not None
@@ -556,6 +564,7 @@ def build_user_idea_intake_session(
             "contract_ref": SOURCE_CONTRACT_REF,
             "path": _relative_ref(source_output_path) if source_output_path else None,
             "written": False,
+            "digest": None,
             "reason": "intake_session_needs_clarification",
         }
     return session, source
@@ -605,6 +614,8 @@ def main(argv: list[str] | None = None) -> int:
     write_json(session, args.session_output)
     if source is not None:
         write_json(source, args.source_output)
+    elif args.source_output.exists():
+        args.source_output.unlink()
     summary = _dict(session.get("summary"))
     print(
         f"{summary.get('status', 'unknown')}: "
