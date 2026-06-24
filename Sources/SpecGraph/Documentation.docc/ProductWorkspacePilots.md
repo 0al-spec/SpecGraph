@@ -184,6 +184,20 @@ and `deferred` records remain review evidence. The report does not apply
 answers to intake artifacts, mutate candidate graphs, write ontology packages,
 approve candidates, or create Git branches.
 
+Proposal `0165` adds `idea_to_spec_answer_rerun_input`:
+
+```bash
+make idea-to-spec-answer-rerun-input
+```
+
+The rerun input report converts accepted clarification answers into explicit
+review-only overlay hints for the next deterministic run: active frame updates,
+event-storming hints, ontology term bindings, aliases, project-local terms,
+candidate acceptance criteria, graph edges, and claim reviews. If the answer
+report is not ready, the overlay remains blocked with findings. The report does
+not apply answers to source artifacts, mutate candidate graphs, write ontology
+packages, approve candidates, create Git branches, or publish read models.
+
 ## Authority Boundary
 
 Team Decision Log remains non-canonical until a repository service accepts a
@@ -200,8 +214,8 @@ The product pilot must not:
 
 ## Current Execution Order
 
-1. Deterministic application of accepted clarification answers into a rerun
-   input artifact.
+1. Deterministic intake or candidate rerun consumer for
+   `idea_to_spec_answer_rerun_input`.
 2. Prompt-side enrichment for richer candidate graph authoring under the same
    ontology-bound seed contract.
 3. CLI or agent conversation wrapper that fills `user_idea_raw_input` from a
