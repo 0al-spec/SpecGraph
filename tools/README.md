@@ -393,6 +393,18 @@ Supervisor modes:
   resolved/unresolved ontology gap counts, and approval/promotion readiness
   without applying answers, accepting ontology terms, mutating candidate
   artifacts, creating branches, or publishing read models.
+- `tools/specspace_repair_draft_import_preview.py`: review-only SpecSpace
+  repair draft import preview builder introduced by proposal 0172. Use
+  `make specspace-repair-draft-import-preview` to consume
+  `runs/idea_to_spec_repair_drafts.json`,
+  `runs/idea_to_spec_repair_session.json`, and
+  `runs/idea_to_spec_clarification_requests.json`, then write
+  `runs/specspace_repair_draft_import_preview.json`. The preview validates
+  SpecSpace-owned draft state, source refs, allowed actions, answer shapes, and
+  authority flags before exposing sanitized clarification answer candidates and
+  product ontology decision candidates. It does not apply drafts, mutate
+  candidate artifacts, accept ontology terms, write Ontology packages, create
+  branches, or publish read models.
 - `tools/candidate_spec_materialization.py`: deterministic candidate spec YAML
   preview materializer introduced by proposal 0153. Use
   `make candidate-spec-materialization
