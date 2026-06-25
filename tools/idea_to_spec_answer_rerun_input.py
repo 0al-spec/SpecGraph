@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
 from datetime import datetime, timezone
 from pathlib import Path
@@ -177,7 +178,31 @@ def _validate_answers_report(answers_report: dict[str, Any]) -> list[dict[str, A
     return findings
 
 
-def _validate_ontology_decisions_report(decisions_report: dict[str, Any]) -> list[dict[str, Any]]:
+def _ontology_answer_fingerprint(answers_report: dict[str, Any]) -> str:
+    projection: list[dict[str, Any]] = []
+    for answer in [_dict(item) for item in _list(answers_report.get("answers"))]:
+        context = _request_context(answer)
+        if context["request_kind"] != "ontology_gap":
+            continue
+        projection.append(
+            {
+                "request_id": context["request_id"],
+                "answer_kind": context["answer_kind"],
+                "status": _text(answer.get("status")),
+                "target_artifact": context["target_artifact"],
+                "target_ref": context["target_ref"],
+                "value": _public_safe(answer.get("value")),
+            }
+        )
+    encoded = json.dumps(projection, sort_keys=True, separators=(",", ":")).encode("utf-8")
+    return f"sha256:{hashlib.sha256(encoded).hexdigest()}"
+
+
+def _validate_ontology_decisions_report(
+    decisions_report: dict[str, Any],
+    *,
+    answers_report: dict[str, Any],
+) -> list[dict[str, Any]]:
     findings: list[dict[str, Any]] = []
     if decisions_report.get("artifact_kind") != "product_ontology_gap_review_decisions":
         findings.append(
@@ -227,6 +252,39 @@ def _validate_ontology_decisions_report(decisions_report: dict[str, Any]) -> lis
                 severity="review_required",
                 message="Ontology decisions must be ready before building rerun input.",
                 evidence={"readiness": readiness},
+            )
+        )
+    source_answers = _dict(
+        _dict(decisions_report.get("source_artifacts")).get("clarification_answers")
+    )
+    expected_fingerprint = _ontology_answer_fingerprint(answers_report)
+    actual_fingerprint = _text(source_answers.get("ontology_answer_fingerprint"))
+    if not actual_fingerprint:
+        findings.append(
+            _finding(
+                finding_id="ontology_decisions_answer_fingerprint_missing",
+                severity="review_required",
+                message=(
+                    "Ontology decisions must declare the ontology answer "
+                    "fingerprint they were derived from."
+                ),
+                evidence={"source_ref": source_answers.get("source_ref")},
+            )
+        )
+    elif actual_fingerprint != expected_fingerprint:
+        findings.append(
+            _finding(
+                finding_id="ontology_decisions_answer_fingerprint_mismatch",
+                severity="review_required",
+                message=(
+                    "Ontology decisions must be derived from the current "
+                    "clarification answers before they can suppress ontology-gap answers."
+                ),
+                evidence={
+                    "expected": expected_fingerprint,
+                    "actual": actual_fingerprint,
+                    "source_ref": source_answers.get("source_ref"),
+                },
             )
         )
     return findings
@@ -353,6 +411,35 @@ def _append_ontology_decision(
 ) -> list[dict[str, Any]]:
     context = _decision_context(decision)
     decision_type = context["decision_type"]
+    if _text(decision.get("status")) != "accepted_for_candidate_preview":
+        return [
+            _finding(
+                finding_id="ontology_decision_status_not_preview_accepted",
+                severity="review_required",
+                message=(
+                    "Ontology decision rows must be accepted for candidate preview "
+                    "before they can enter rerun overlay hints."
+                ),
+                evidence={
+                    "decision_id": context["decision_id"],
+                    "status": decision.get("status"),
+                },
+            )
+        ]
+    if _text(decision.get("materialization_intent")) != "rerun_overlay_only":
+        return [
+            _finding(
+                finding_id="ontology_decision_materialization_intent_unsupported",
+                severity="review_required",
+                message=(
+                    "Ontology decision rows must use rerun_overlay_only materialization intent."
+                ),
+                evidence={
+                    "decision_id": context["decision_id"],
+                    "materialization_intent": decision.get("materialization_intent"),
+                },
+            )
+        ]
     if decision_type == "propose_project_local_term":
         term = _text(decision.get("term"))
         if not term:
@@ -582,24 +669,33 @@ def build_idea_to_spec_answer_rerun_input(
     answers_path: Path | None = None,
     ontology_decisions_path: Path | None = None,
 ) -> dict[str, Any]:
-    findings = _validate_answers_report(answers_report)
+    answers_findings = _validate_answers_report(answers_report)
+    findings = list(answers_findings)
+    ontology_decision_findings: list[dict[str, Any]] = []
     if ontology_decisions_report is not None:
-        findings.extend(_validate_ontology_decisions_report(ontology_decisions_report))
+        ontology_decision_findings = _validate_ontology_decisions_report(
+            ontology_decisions_report,
+            answers_report=answers_report,
+        )
+        findings.extend(ontology_decision_findings)
     overlay = _empty_overlay()
-    ontology_decisions_supplied = ontology_decisions_report is not None
+    ontology_decisions_valid_for_overlay = (
+        ontology_decisions_report is not None and not ontology_decision_findings
+    )
     accepted_answers = [
         _dict(answer)
         for answer in _list(answers_report.get("answers"))
         if _text(_dict(answer).get("status")) in ACCEPTED_STATUSES
     ]
-    if not findings:
+    if not answers_findings:
         for answer in accepted_answers:
-            if ontology_decisions_supplied and _request_context(answer)["request_kind"] == (
-                "ontology_gap"
+            if (
+                ontology_decisions_valid_for_overlay
+                and _request_context(answer)["request_kind"] == "ontology_gap"
             ):
                 continue
             findings.extend(_apply_answer_to_overlay(overlay, answer))
-        if ontology_decisions_report is not None:
+        if ontology_decisions_valid_for_overlay:
             decisions = [_dict(item) for item in _list(ontology_decisions_report.get("decisions"))]
             for decision in decisions:
                 findings.extend(_append_ontology_decision(overlay, decision=decision))

@@ -148,6 +148,71 @@ def test_answer_rerun_input_uses_product_ontology_decisions_without_duplicates()
     assert report["summary"]["ontology_decision_count"] == 1
 
 
+def test_answer_rerun_input_rejects_stale_ontology_decisions_without_suppressing_answers() -> None:
+    module = load_module(
+        RERUN_TOOL_PATH,
+        "idea_to_spec_answer_rerun_input_stale_ontology_decisions_test",
+    )
+    original_answer_report = ready_answer_report()
+    stale_ontology_decisions = ready_ontology_decisions_report(original_answer_report)
+    current_answer_report = copy.deepcopy(original_answer_report)
+    current_answer = current_answer_report["answers"][0]
+    assert isinstance(current_answer, dict)
+    current_answer["value"] = {
+        "terms": ["Current Decision Owner"],
+        "term_scope": "project_local",
+    }
+
+    report = module.build_idea_to_spec_answer_rerun_input(
+        answers_report=current_answer_report,
+        ontology_decisions_report=stale_ontology_decisions,
+    )
+
+    assert report["readiness"]["ready"] is False
+    assert "ontology_decisions_answer_fingerprint_mismatch" in finding_ids(report)
+    project_terms = report["rerun_input_overlay"]["ontology_review_hints"]["project_local_terms"]
+    assert project_terms[0]["term"] == "Current Decision Owner"
+    assert "decision_id" not in project_terms[0]
+
+
+def test_answer_rerun_input_rejects_non_preview_ontology_decision_rows() -> None:
+    module = load_module(
+        RERUN_TOOL_PATH,
+        "idea_to_spec_answer_rerun_input_non_preview_decision_test",
+    )
+    answer_report = ready_answer_report()
+    ontology_decisions = ready_ontology_decisions_report(answer_report)
+    ontology_decisions["decisions"][0]["status"] = "proposed"
+
+    report = module.build_idea_to_spec_answer_rerun_input(
+        answers_report=answer_report,
+        ontology_decisions_report=ontology_decisions,
+    )
+
+    assert report["readiness"]["ready"] is False
+    assert "ontology_decision_status_not_preview_accepted" in finding_ids(report)
+    assert report["rerun_input_overlay"]["ontology_review_hints"]["project_local_terms"] == []
+
+
+def test_answer_rerun_input_rejects_non_overlay_ontology_decision_rows() -> None:
+    module = load_module(
+        RERUN_TOOL_PATH,
+        "idea_to_spec_answer_rerun_input_non_overlay_decision_test",
+    )
+    answer_report = ready_answer_report()
+    ontology_decisions = ready_ontology_decisions_report(answer_report)
+    ontology_decisions["decisions"][0]["materialization_intent"] = "ontology_package_write"
+
+    report = module.build_idea_to_spec_answer_rerun_input(
+        answers_report=answer_report,
+        ontology_decisions_report=ontology_decisions,
+    )
+
+    assert report["readiness"]["ready"] is False
+    assert "ontology_decision_materialization_intent_unsupported" in finding_ids(report)
+    assert report["rerun_input_overlay"]["ontology_review_hints"]["project_local_terms"] == []
+
+
 def test_answer_rerun_input_blocks_unready_ontology_decisions() -> None:
     module = load_module(
         RERUN_TOOL_PATH,

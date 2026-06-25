@@ -395,17 +395,29 @@ def _ontology_gap_preview(
             None,
         )
         if matching_decision:
+            preview = {
+                key: value
+                for key, value in matching_decision.items()
+                if key != "term_key" and value not in ("", None, [], {})
+            }
+            if _text(matching_decision.get("decision")) == "defer":
+                unresolved.append(
+                    {
+                        "gap_id": gap_item["gap_id"],
+                        "node_id": gap_item["node_id"],
+                        "term": gap_item["term"],
+                        "source_ref": gap_item["source_ref"],
+                        "deferral_preview": preview,
+                    }
+                )
+                continue
             resolved.append(
                 {
                     "gap_id": gap_item["gap_id"],
                     "node_id": gap_item["node_id"],
                     "term": gap_item["term"],
                     "source_ref": gap_item["source_ref"],
-                    "resolution_preview": {
-                        key: value
-                        for key, value in matching_decision.items()
-                        if key != "term_key" and value not in ("", None, [], {})
-                    },
+                    "resolution_preview": preview,
                 }
             )
         else:
