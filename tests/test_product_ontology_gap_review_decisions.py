@@ -88,6 +88,8 @@ def test_product_ontology_gap_decisions_build_project_local_term_decision() -> N
     assert report["tracked_artifacts_written"] is False
     assert report["readiness"]["ready"] is True
     assert report["readiness"]["review_state"] == "ontology_gap_decisions_ready"
+    source_artifact = report["source_artifacts"]["clarification_answers"]
+    assert source_artifact["ontology_answer_fingerprint"].startswith("sha256:")
     boundary = report["authority_boundary"]
     assert boundary["may_write_ontology_package"] is False
     assert boundary["may_accept_ontology_terms"] is False

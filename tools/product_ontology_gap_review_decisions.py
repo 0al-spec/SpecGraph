@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
 import re
 from datetime import datetime, timezone
@@ -387,6 +388,26 @@ def _decision_counts(decisions: list[dict[str, Any]]) -> dict[str, int]:
     return counts
 
 
+def _ontology_answer_fingerprint(answers: list[dict[str, Any]]) -> str:
+    projection: list[dict[str, Any]] = []
+    for answer in answers:
+        context = _request_context(answer)
+        if context["request_kind"] != "ontology_gap":
+            continue
+        projection.append(
+            {
+                "request_id": context["request_id"],
+                "answer_kind": context["source_answer_kind"],
+                "status": context["source_answer_status"],
+                "target_artifact": context["target_artifact"],
+                "target_ref": context["target_ref"],
+                "value": _public_safe(answer.get("value")),
+            }
+        )
+    encoded = json.dumps(projection, sort_keys=True, separators=(",", ":")).encode("utf-8")
+    return f"sha256:{hashlib.sha256(encoded).hexdigest()}"
+
+
 def build_product_ontology_gap_review_decisions(
     *,
     answers_report: dict[str, Any],
@@ -395,8 +416,8 @@ def build_product_ontology_gap_review_decisions(
     findings = _validate_answers_report(answers_report)
     decisions: list[dict[str, Any]] = []
     ontology_answer_count = 0
+    answers = [_dict(item) for item in _list(answers_report.get("answers"))]
     if not findings:
-        answers = [_dict(item) for item in _list(answers_report.get("answers"))]
         for index, answer in enumerate(answers):
             context = _request_context(answer)
             if context["request_kind"] == "ontology_gap":
@@ -421,6 +442,7 @@ def build_product_ontology_gap_review_decisions(
                 "source_ref": source_ref,
                 "answer_count": len(_list(answers_report.get("answers"))),
                 "ontology_answer_count": ontology_answer_count,
+                "ontology_answer_fingerprint": _ontology_answer_fingerprint(answers),
             }
         },
         "decisions": decisions,
