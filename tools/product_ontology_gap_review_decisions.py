@@ -68,7 +68,7 @@ def _relative_ref(path: Path) -> str:
     try:
         return path.resolve().relative_to(ROOT).as_posix()
     except ValueError:
-        return path.as_posix()
+        return f"external:{path.name or 'clarification_answers'}"
 
 
 def _public_safe(value: Any) -> Any:

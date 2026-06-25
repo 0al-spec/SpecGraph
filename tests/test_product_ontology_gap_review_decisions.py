@@ -271,4 +271,7 @@ def test_product_ontology_gap_decisions_cli_writes_output(tmp_path: Path) -> Non
     report = load_json(output)
     assert report["artifact_kind"] == "product_ontology_gap_review_decisions"
     assert report["readiness"]["ready"] is True
+    source_ref = report["source_artifacts"]["clarification_answers"]["source_ref"]
+    assert source_ref == "external:idea_to_spec_clarification_answers.json"
+    assert str(tmp_path) not in json.dumps(report)
     assert "ontology_gap_decisions_ready" in result.stdout
