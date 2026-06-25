@@ -316,6 +316,28 @@ The import preview does not apply drafts, accept ontology terms, mutate
 candidate artifacts, write canonical specs, create branches, open pull
 requests, or publish read models.
 
+Proposal `0173` converts a ready repair draft import preview into the standard
+review-only rerun artifacts:
+
+```bash
+make product-workspace-repair-draft-rerun
+```
+
+The target refreshes `runs/specspace_repair_draft_import_preview.json`, then
+writes `runs/specspace_repair_draft_rerun_report.json` plus the standard
+`idea_to_spec_clarification_answers`,
+`product_ontology_gap_review_decisions`, `idea_to_spec_answer_rerun_input`,
+`idea_to_spec_rerun_preview`, `idea_to_spec_rerun_materialization`, and
+`idea_to_spec_repair_session` artifacts. It reuses the existing review-only
+builders, so ready SpecSpace drafts can be replayed into the durable repair
+session without making draft state authoritative.
+
+The draft rerun bridge does not apply drafts, accept ontology terms, mutate
+candidate artifacts, write canonical specs, create branches, open pull
+requests, or publish read models.
+Use `SPECSPACE_REPAIR_DRAFT_RERUN_IMPORT_PREVIEW` when a smoke test or local
+operator needs to replay a non-default import preview path.
+
 ## Authority Boundary
 
 Team Decision Log remains non-canonical until a repository service accepts a
@@ -334,18 +356,20 @@ The product pilot must not:
 
 1. Review-only import preview for SpecSpace-owned repair drafts from
    `specspace_repair_draft_import_preview`.
-2. Controlled candidate rerun source selection from
+2. Review-only rerun artifacts from a ready SpecSpace repair draft import
+   preview through `specspace_repair_draft_rerun_report`.
+3. Controlled candidate rerun source selection from
    `idea_to_spec_rerun_materialization`.
-3. Prompt-side enrichment for richer candidate graph authoring under the same
+4. Prompt-side enrichment for richer candidate graph authoring under the same
    ontology-bound seed contract.
-4. CLI or agent conversation wrapper that fills `user_idea_raw_input` from a
+5. CLI or agent conversation wrapper that fills `user_idea_raw_input` from a
    real operator interview.
-5. SpecSpace workflow lane refinement for clearer active candidate blockers and
+6. SpecSpace workflow lane refinement for clearer active candidate blockers and
    repair suggestions.
-6. Extend Platform Git Service orchestration through review status and
+7. Extend Platform Git Service orchestration through review status and
    read-model publication.
-7. Refine product workspace workflow lane metrics and blocker copy.
-8. Refine ontology applicability and layer-aware review as compiler support
+8. Refine product workspace workflow lane metrics and blocker copy.
+9. Refine ontology applicability and layer-aware review as compiler support
    matures.
 
 ## Canonical Sources

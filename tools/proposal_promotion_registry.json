@@ -2221,5 +2221,18 @@
     "required_provenance_links": [
       "source_draft_ref"
     ]
+  },
+  {
+    "proposal_id": "0173",
+    "source_artifact_class": "working_draft",
+    "source_refs": [
+      "docs/archive/proposal_sources/0173_specspace_repair_drafts_to_rerun_artifacts.md"
+    ],
+    "motivating_concern": "SpecSpace repair drafts can be preview-imported, but the product workflow still needs a deterministic review-only conversion from ready import preview candidates into the standard answer, ontology decision, rerun, materialization, and repair-session artifacts.",
+    "normalized_title": "SpecSpace Repair Drafts To Rerun Artifacts",
+    "bounded_scope": "Add a deterministic review-only specspace_repair_drafts_to_rerun_artifacts builder, Make target, tests, proposal docs, roadmap, DocC, and registry tracking that consumes a ready SpecSpace repair draft import preview, emits standard idea_to_spec_clarification_answers, product_ontology_gap_review_decisions, idea_to_spec_answer_rerun_input, idea_to_spec_rerun_preview, idea_to_spec_rerun_materialization, and updated idea_to_spec_repair_session artifacts plus a rerun report, without executing prompt agents, applying drafts or answers to source artifacts, mutating candidate artifacts, mutating canonical specs, writing Ontology packages or lockfiles, accepting ontology terms, approving candidate graphs, creating Git branches or commits, opening pull requests, publishing read models, or adding SpecSpace mutation authority.",
+    "required_provenance_links": [
+      "source_draft_ref"
+    ]
   }
 ]

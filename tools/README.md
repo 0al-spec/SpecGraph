@@ -405,6 +405,20 @@ Supervisor modes:
   product ontology decision candidates. It does not apply drafts, mutate
   candidate artifacts, accept ontology terms, write Ontology packages, create
   branches, or publish read models.
+- `tools/specspace_repair_drafts_to_rerun_artifacts.py`: review-only
+  SpecSpace repair draft rerun builder introduced by proposal 0173. Use
+  `make product-workspace-repair-draft-rerun` or
+  `make specspace-repair-draft-rerun` to consume a ready
+  `runs/specspace_repair_draft_import_preview.json` and write the standard
+  `idea_to_spec_clarification_answers`,
+  `product_ontology_gap_review_decisions`,
+  `idea_to_spec_answer_rerun_input`, `idea_to_spec_rerun_preview`,
+  `idea_to_spec_rerun_materialization`, and
+  `idea_to_spec_repair_session` artifacts plus
+  `runs/specspace_repair_draft_rerun_report.json`. The builder reuses existing
+  review-only artifact contracts and does not apply drafts, mutate source
+  artifacts, accept ontology terms, write canonical specs, create branches, or
+  publish read models.
 - `tools/candidate_spec_materialization.py`: deterministic candidate spec YAML
   preview materializer introduced by proposal 0153. Use
   `make candidate-spec-materialization
