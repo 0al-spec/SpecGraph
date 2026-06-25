@@ -2208,5 +2208,18 @@
     "required_provenance_links": [
       "source_draft_ref"
     ]
+  },
+  {
+    "proposal_id": "0172",
+    "source_artifact_class": "working_draft",
+    "source_refs": [
+      "docs/archive/proposal_sources/0172_specspace_repair_draft_import_preview.md"
+    ],
+    "motivating_concern": "SpecSpace can store draft repair answers and ontology-gap actions, but SpecGraph needs a deterministic review-only import preview before those drafts can become answer or ontology decision artifacts.",
+    "normalized_title": "SpecSpace Repair Draft Import Preview",
+    "bounded_scope": "Add a deterministic review-only specspace_repair_draft_import_preview builder, Make target, tests, proposal docs, roadmap, DocC, and registry tracking that validates SpecSpace-owned repair draft state against a ready repair-session journal and current clarification requests, emits sanitized clarification answer candidates and product ontology decision candidates, reports invalid/deferred/superseded drafts, and keeps all output preview-only without executing prompt agents, applying drafts, applying answers or decisions to source artifacts, mutating candidate artifacts, mutating canonical specs, writing Ontology packages or lockfiles, accepting ontology terms, approving candidate graphs, creating Git branches or commits, opening pull requests, publishing read models, or adding SpecSpace mutation authority.",
+    "required_provenance_links": [
+      "source_draft_ref"
+    ]
   }
 ]

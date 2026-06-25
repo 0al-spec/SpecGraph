@@ -770,6 +770,44 @@ answers, apply ontology decisions, accept ontology terms, mutate candidate
 artifacts, write canonical specs, create branches, open pull requests, or
 publish read models.
 
+### 24. SpecSpace Repair Draft Import Preview
+
+Status: implemented in proposal `0172`.
+
+SpecSpace-owned repair draft state can now be inspected by SpecGraph through a
+deterministic import preview:
+
+```bash
+make specspace-repair-draft-import-preview
+```
+
+The default artifact is:
+
+```text
+runs/specspace_repair_draft_import_preview.json
+```
+
+The preview reads `runs/idea_to_spec_repair_drafts.json`,
+`runs/idea_to_spec_repair_session.json`, and
+`runs/idea_to_spec_clarification_requests.json`. It validates that the draft
+state belongs to SpecSpace, that authority flags remain read-only, that draft
+source refs match the current repair session, and that each draft targets an
+existing clarification request with an allowed action.
+
+The default draft-state input can be overridden with
+`SPECSPACE_REPAIR_DRAFT_IMPORT_DRAFTS` when tests or local operators need to
+preview a SpecSpace export outside the default `runs/` path.
+
+Valid drafts become sanitized clarification answer candidates and product
+ontology decision candidates. Deferred drafts stay visible without resolving
+blocking requests. Duplicate drafts for the same request are resolved
+deterministically and reported as superseded warnings.
+
+The import preview remains read-only. It does not apply SpecSpace drafts,
+mutate candidate artifacts, accept ontology terms, write Ontology packages,
+write canonical specs, create branches, open pull requests, or publish read
+models.
+
 ## Success Criteria
 
 - A user can start with a product idea and receive a coherent candidate graph.
@@ -804,22 +842,27 @@ publish read models.
   that preserves source refs, accepted answers, ontology decisions, preview
   deltas, unresolved blockers, and promotion readiness without granting write
   authority.
+- SpecSpace-owned repair drafts can be preview-imported as sanitized answer and
+  ontology decision candidates without applying them to SpecGraph, Ontology, or
+  Git state.
 
 ## Current Execution Order
 
 The active stack after production workspace isolation is:
 
-1. Controlled candidate rerun source selection from a ready
+1. Review-only import preview for SpecSpace-owned repair drafts emitted by
+   proposal `0172`.
+2. Controlled candidate rerun source selection from a ready
    `idea_to_spec_rerun_materialization` report emitted by proposal `0167`.
-2. CLI or agent conversation wrapper that fills `user_idea_raw_input` from a
+3. CLI or agent conversation wrapper that fills `user_idea_raw_input` from a
    real operator interview and can consume clarification requests.
-3. Prompt-side enrichment that can propose richer product-domain graph nodes
+4. Prompt-side enrichment that can propose richer product-domain graph nodes
    while preserving ontology gaps for unaccepted terms.
-4. SpecSpace workflow lane refinement for active candidate blockers, repair
+5. SpecSpace workflow lane refinement for active candidate blockers, repair
    suggestions, and approval state.
-5. Platform Git Service post-review status and read-model publication
+6. Platform Git Service post-review status and read-model publication
    orchestration.
-6. Ontology applicability and layer-aware review refinement as compiler support
+7. Ontology applicability and layer-aware review refinement as compiler support
    matures.
 
 ## Related Documents
