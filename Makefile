@@ -76,6 +76,8 @@ IDEA_TO_SPEC_CLARIFICATION_OUTPUT ?= $(IDEA_TO_SPEC_CLARIFICATION_OUTPUT_DEFAULT
 IDEA_TO_SPEC_CLARIFICATION_ANSWERS_REQUESTS ?= $(IDEA_TO_SPEC_CLARIFICATION_OUTPUT)
 IDEA_TO_SPEC_CLARIFICATION_ANSWERS_INPUT ?= tests/fixtures/idea_to_spec_clarification_answers/answers_ready.json
 IDEA_TO_SPEC_CLARIFICATION_ANSWERS_OUTPUT ?= runs/idea_to_spec_clarification_answers.json
+PRODUCT_ONTOLOGY_GAP_REVIEW_DECISIONS_ANSWERS ?= runs/idea_to_spec_clarification_answers.json
+PRODUCT_ONTOLOGY_GAP_REVIEW_DECISIONS_OUTPUT ?= runs/product_ontology_gap_review_decisions.json
 IDEA_TO_SPEC_ANSWER_RERUN_INPUT_ANSWERS ?= runs/idea_to_spec_clarification_answers.json
 IDEA_TO_SPEC_ANSWER_RERUN_INPUT_OUTPUT ?= runs/idea_to_spec_answer_rerun_input.json
 IDEA_TO_SPEC_RERUN_PREVIEW_INPUT ?= runs/idea_to_spec_answer_rerun_input.json
@@ -155,6 +157,7 @@ PYTHON_TARGETS := viewer-surfaces dashboard backlog next-move spec-activity grap
 	candidate-spec-graph pre-sib-coherence candidate-repair-loop \
 	idea-to-spec-clarification-requests \
 	idea-to-spec-clarification-answers \
+	product-ontology-gap-review-decisions \
 	idea-to-spec-answer-rerun-input \
 	idea-to-spec-rerun-preview \
 	idea-to-spec-rerun-materialization \
@@ -222,6 +225,7 @@ help:
 			'  make candidate-repair-loop CANDIDATE_REPAIR_LOOP_CANDIDATE_GRAPH=<json> CANDIDATE_REPAIR_LOOP_PRE_SIB_REPORT=<json>' \
 			'  make idea-to-spec-clarification-requests IDEA_TO_SPEC_CLARIFICATION_SESSION=<json>' \
 			'  make idea-to-spec-clarification-answers IDEA_TO_SPEC_CLARIFICATION_ANSWERS_INPUT=<json>' \
+			'  make product-ontology-gap-review-decisions PRODUCT_ONTOLOGY_GAP_REVIEW_DECISIONS_ANSWERS=<json>' \
 			'  make idea-to-spec-answer-rerun-input IDEA_TO_SPEC_ANSWER_RERUN_INPUT_ANSWERS=<json>' \
 			'  make idea-to-spec-rerun-preview IDEA_TO_SPEC_RERUN_PREVIEW_INPUT=<json>' \
 			'  make idea-to-spec-rerun-materialization IDEA_TO_SPEC_RERUN_MATERIALIZATION_PREVIEW=<json>' \
@@ -449,6 +453,10 @@ idea-to-spec-clarification-requests:
 .PHONY: idea-to-spec-clarification-answers
 idea-to-spec-clarification-answers:
 	@$(PYTHON) tools/idea_to_spec_clarification_answers.py --requests "$(IDEA_TO_SPEC_CLARIFICATION_ANSWERS_REQUESTS)" --answers "$(IDEA_TO_SPEC_CLARIFICATION_ANSWERS_INPUT)" --output "$(IDEA_TO_SPEC_CLARIFICATION_ANSWERS_OUTPUT)"
+
+.PHONY: product-ontology-gap-review-decisions
+product-ontology-gap-review-decisions:
+	@$(PYTHON) tools/product_ontology_gap_review_decisions.py --answers "$(PRODUCT_ONTOLOGY_GAP_REVIEW_DECISIONS_ANSWERS)" --output "$(PRODUCT_ONTOLOGY_GAP_REVIEW_DECISIONS_OUTPUT)"
 
 .PHONY: idea-to-spec-answer-rerun-input
 idea-to-spec-answer-rerun-input:

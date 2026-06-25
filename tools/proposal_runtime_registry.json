@@ -9269,5 +9269,70 @@
         "pattern": "proposal 0167"
       }
     ]
+  },
+  {
+    "proposal_id": "0168",
+    "posture": "synchronous_runtime_slice",
+    "runtime_surfaces": [
+      "docs/proposals/0168_product_ontology_gap_review_decisions.md",
+      "docs/archive/proposal_sources/0168_product_ontology_gap_review_decisions.md",
+      "docs/product_workspace_graph_versioning_roadmap.md",
+      "Sources/SpecGraph/Documentation.docc/ProductWorkspacePilots.md",
+      "tools/product_ontology_gap_review_decisions.py",
+      "tools/README.md",
+      "tools/docc_sync_contract.json",
+      "tests/test_product_ontology_gap_review_decisions.py",
+      "Makefile"
+    ],
+    "runtime_markers": [
+      {
+        "path": "tools/product_ontology_gap_review_decisions.py",
+        "pattern": "CONTRACT_REF = \"specgraph.product-ontology.gap-review-decisions.v0.1\""
+      },
+      {
+        "path": "tools/product_ontology_gap_review_decisions.py",
+        "pattern": "def build_product_ontology_gap_review_decisions("
+      },
+      {
+        "path": "tools/product_ontology_gap_review_decisions.py",
+        "pattern": "\"materialization_intent\": \"rerun_overlay_only\""
+      },
+      {
+        "path": "Makefile",
+        "pattern": "product-ontology-gap-review-decisions"
+      }
+    ],
+    "validation_markers": [
+      {
+        "path": "tests/test_product_ontology_gap_review_decisions.py",
+        "pattern": "test_product_ontology_gap_decisions_build_project_local_term_decision"
+      },
+      {
+        "path": "tests/test_product_ontology_gap_review_decisions.py",
+        "pattern": "test_product_ontology_gap_decisions_accept_bind_alias_reject_and_defer"
+      },
+      {
+        "path": "tests/test_product_ontology_gap_review_decisions.py",
+        "pattern": "test_product_ontology_gap_decisions_cli_writes_output"
+      }
+    ],
+    "observation_markers": [
+      {
+        "path": "docs/proposals/0168_product_ontology_gap_review_decisions.md",
+        "pattern": "does not grant write authority"
+      },
+      {
+        "path": "docs/product_workspace_graph_versioning_roadmap.md",
+        "pattern": "Status: implemented in proposal `0168`"
+      },
+      {
+        "path": "Sources/SpecGraph/Documentation.docc/ProductWorkspacePilots.md",
+        "pattern": "Proposal `0168`"
+      },
+      {
+        "path": "tools/README.md",
+        "pattern": "proposal 0168"
+      }
+    ]
   }
 ]

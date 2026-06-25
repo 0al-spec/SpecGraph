@@ -228,6 +228,21 @@ does not rewrite `runs/candidate_spec_graph.json`, accept ontology terms, write
 ontology packages, approve candidates, mutate canonical specs, create Git
 branches, or publish read models.
 
+Proposal `0168` adds `product_ontology_gap_review_decisions`:
+
+```bash
+make product-ontology-gap-review-decisions
+```
+
+The decision report consumes ready `idea_to_spec_clarification_answers` and
+extracts accepted ontology-gap answers into
+`runs/product_ontology_gap_review_decisions.json`. Product ontology decisions
+can bind an existing term, alias a term, propose a project-local term, reject a
+non-domain term, or defer to owner review. The report remains review-only: it
+does not import Ontology owner decisions, accept ontology terms, write ontology
+packages, mutate candidate artifacts, approve candidates, create Git branches,
+or publish read models.
+
 ## Authority Boundary
 
 Team Decision Log remains non-canonical until a repository service accepts a
