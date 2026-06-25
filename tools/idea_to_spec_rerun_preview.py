@@ -437,6 +437,31 @@ def _candidate_review_preview(overlay: dict[str, Any]) -> dict[str, Any]:
     }
 
 
+def _candidate_quality_preview(ontology_gap_preview: dict[str, Any]) -> dict[str, Any]:
+    unresolved_count = int(ontology_gap_preview.get("unresolved_ontology_gap_count") or 0)
+    resolved_count = int(ontology_gap_preview.get("resolved_ontology_gap_count") or 0)
+    if unresolved_count == 0 and resolved_count > 0:
+        review_state = "candidate_quality_improved"
+        ontology_gap_state = "all_preview_resolved"
+    elif resolved_count > 0:
+        review_state = "candidate_quality_partially_improved"
+        ontology_gap_state = "partially_preview_resolved"
+    elif unresolved_count > 0:
+        review_state = "candidate_quality_blocked_by_ontology_gaps"
+        ontology_gap_state = "unresolved"
+    else:
+        review_state = "candidate_quality_unchanged"
+        ontology_gap_state = "no_ontology_gaps"
+    return {
+        "review_state": review_state,
+        "ontology_gap_state": ontology_gap_state,
+        "resolved_ontology_gap_count": resolved_count,
+        "unresolved_ontology_gap_count": unresolved_count,
+        "candidate_quality_metric": "ontology_gap_resolution_preview",
+        "canonical_mutations_allowed": False,
+    }
+
+
 def build_idea_to_spec_rerun_preview(
     *,
     rerun_input: dict[str, Any],
@@ -459,6 +484,7 @@ def build_idea_to_spec_rerun_preview(
         overlay=overlay,
     )
     candidate_review_preview = _candidate_review_preview(overlay)
+    candidate_quality_preview = _candidate_quality_preview(ontology_gap_preview)
     ready = not findings
     return {
         "artifact_kind": "idea_to_spec_rerun_preview",
@@ -502,6 +528,7 @@ def build_idea_to_spec_rerun_preview(
             "event_storming_preview": event_storming_preview,
             "ontology_gap_preview": ontology_gap_preview,
             "candidate_review_preview": candidate_review_preview,
+            "candidate_quality_preview": candidate_quality_preview,
         },
         "readiness": {
             "ready": ready,
@@ -524,6 +551,7 @@ def build_idea_to_spec_rerun_preview(
             "ontology_decision_count": ontology_gap_preview["decision_count"],
             "resolved_ontology_gap_count": ontology_gap_preview["resolved_ontology_gap_count"],
             "unresolved_ontology_gap_count": ontology_gap_preview["unresolved_ontology_gap_count"],
+            "candidate_quality_review_state": candidate_quality_preview["review_state"],
             "candidate_review_hint_count": candidate_review_preview["hint_count"],
             "finding_count": len(findings),
         },

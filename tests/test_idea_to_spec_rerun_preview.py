@@ -142,6 +142,11 @@ def test_rerun_preview_resolves_matching_ontology_gap() -> None:
     assert resolved["gap_id"] == "ontology-gap.decision-owner"
     assert resolved["resolution_preview"]["decision"] == "project_local_term"
     assert resolved["resolution_preview"]["term"] == "Decision Owner"
+    quality = report["rerun_preview"]["candidate_quality_preview"]
+    assert quality["candidate_quality_metric"] == "ontology_gap_resolution_preview"
+    assert quality["review_state"] == "candidate_quality_partially_improved"
+    assert quality["resolved_ontology_gap_count"] == 1
+    assert quality["unresolved_ontology_gap_count"] == 1
 
 
 def test_rerun_preview_blocks_unready_rerun_input() -> None:

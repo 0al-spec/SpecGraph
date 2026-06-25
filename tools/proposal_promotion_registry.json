@@ -2169,5 +2169,18 @@
     "required_provenance_links": [
       "source_draft_ref"
     ]
+  },
+  {
+    "proposal_id": "0169",
+    "source_artifact_class": "working_draft",
+    "source_refs": [
+      "docs/archive/proposal_sources/0169_ontology_decisions_rerun_overlay_quality.md"
+    ],
+    "motivating_concern": "The idea-to-spec flow can now emit product ontology decisions, but rerun overlays and candidate review still need to consume those typed decisions without duplicating raw ontology-gap answers.",
+    "normalized_title": "Ontology Decisions Rerun Overlay And Candidate Quality",
+    "bounded_scope": "Add optional product_ontology_gap_review_decisions consumption to idea_to_spec_answer_rerun_input, add candidate_quality_preview to idea_to_spec_rerun_preview, and update Make targets, tests, proposal docs, roadmap, and DocC so typed ontology decisions can drive rerun overlay hints and review-only ontology gap quality signals, without executing prompt agents, applying answers or decisions to source artifacts, mutating candidate artifacts, mutating canonical specs, writing Ontology packages or lockfiles, accepting ontology terms, approving candidate graphs, creating Git branches or commits, opening pull requests, publishing read models, or adding SpecSpace mutation UI.",
+    "required_provenance_links": [
+      "source_draft_ref"
+    ]
   }
 ]
