@@ -76,6 +76,28 @@ def valid_clarification_requests() -> dict[str, object]:
     }
 
 
+def valid_candidate_gap_requests() -> dict[str, object]:
+    requests = valid_clarification_requests()
+    requests["clarification_requests"] = [
+        {
+            "id": "clarification.candidate-gap.accepted-decision-owner",
+            "kind": "candidate_gap",
+            "severity": "blocking",
+            "status": "open",
+            "target_artifact": "runs/candidate_spec_graph.json",
+            "target_ref": "candidate-spec.accepted-decision-owner",
+            "question": "How should the accepted decision owner constraint be enforced?",
+            "suggested_actions": [
+                "answer_question",
+                "provide_candidate_context",
+                "defer_candidate",
+            ],
+            "suggested_answer_shape": "plain text or structured context",
+        }
+    ]
+    return requests
+
+
 def valid_repair_session() -> dict[str, object]:
     return {
         "artifact_kind": "idea_to_spec_repair_session_journal",
@@ -267,10 +289,26 @@ def test_specspace_repair_draft_import_preview_blocks_stale_draft_session_ref() 
     assert "draft_repair_session_ref_mismatch" in finding_ids(report)
 
 
+def test_specspace_repair_draft_import_preview_requires_draft_session_refs() -> None:
+    draft_state = valid_draft_state()
+    del draft_state["drafts"][0]["repair_session_ref"]
+    del draft_state["drafts"][0]["source_artifact"]
+
+    report = build_report(draft_state=draft_state)
+
+    assert report["readiness"]["ready"] is False
+    assert report["summary"]["invalid_draft_count"] == 1
+    ids = finding_ids(report)
+    assert "draft_repair_session_ref_missing" in ids
+    assert "draft_source_artifact_missing" in ids
+
+
 def test_specspace_repair_draft_import_preview_rejects_authority_expansion() -> None:
     draft_state = valid_draft_state()
     draft_state["consumer_boundary"]["may_apply_to_specgraph"] = True
+    draft_state["consumer_boundary"]["may_publish_read_model"] = True
     draft_state["drafts"][0]["applies_to_specgraph"] = True
+    draft_state["drafts"][0]["may_mark_candidate_graph_accepted"] = True
 
     report = build_report(draft_state=draft_state)
 
@@ -279,6 +317,23 @@ def test_specspace_repair_draft_import_preview_rejects_authority_expansion() -> 
     ids = finding_ids(report)
     assert "repair_draft_consumer_boundary_authority_expanded" in ids
     assert "draft_authority_expanded" in ids
+
+
+def test_specspace_repair_draft_import_preview_flags_cross_workspace_drafts() -> None:
+    draft_state = valid_draft_state()
+    draft_state["drafts"].append(
+        draft_record(
+            draft_id="specspace-repair-draft::other-workspace::decision-record",
+            workspace_id="other-workspace",
+        )
+    )
+
+    report = build_report(draft_state=draft_state)
+
+    assert report["readiness"]["ready"] is False
+    assert report["summary"]["ignored_workspace_draft_count"] == 1
+    assert report["summary"]["invalid_draft_count"] == 1
+    assert "draft_workspace_mismatch" in finding_ids(report)
 
 
 def test_specspace_repair_draft_import_preview_rejects_input_authority_expansion() -> None:
@@ -324,6 +379,50 @@ def test_specspace_repair_draft_import_preview_resolves_duplicates_deterministic
     assert report["import_preview"]["superseded_drafts"][0]["superseded_by"].endswith("::new")
 
 
+def test_specspace_repair_draft_import_preview_sorts_duplicate_timestamps_as_time() -> None:
+    lexicographically_later_but_earlier = draft_record(
+        draft_id="specspace-repair-draft::team-decision-log::early",
+        answer_value={"terms": ["Wrong Winner"], "term_scope": "project_local"},
+        updated_at="2026-06-25T10:00:00+02:00",
+    )
+    chronologically_later = draft_record(
+        draft_id="specspace-repair-draft::team-decision-log::late",
+        answer_value={"terms": ["Decision Record"], "term_scope": "project_local"},
+        updated_at="2026-06-25T08:30:00Z",
+    )
+    draft_state = valid_draft_state()
+    draft_state["drafts"] = [lexicographically_later_but_earlier, chronologically_later]
+
+    report = build_report(draft_state=draft_state)
+
+    assert report["readiness"]["ready"] is True
+    assert report["import_preview"]["ontology_decision_candidates"][0]["term"] == (
+        "Decision Record"
+    )
+    assert report["import_preview"]["superseded_drafts"][0]["superseded_by"].endswith("::late")
+
+
+def test_specspace_repair_draft_import_preview_blocks_invalid_superseded_draft() -> None:
+    older_invalid = draft_record(
+        draft_id="specspace-repair-draft::team-decision-log::old",
+        repair_session_ref="runs/stale_repair_session.json",
+        updated_at="2026-06-25T09:00:00Z",
+    )
+    newer_valid = draft_record(
+        draft_id="specspace-repair-draft::team-decision-log::new",
+        updated_at="2026-06-25T09:10:00Z",
+    )
+    draft_state = valid_draft_state()
+    draft_state["drafts"] = [newer_valid, older_invalid]
+
+    report = build_report(draft_state=draft_state)
+
+    assert report["readiness"]["ready"] is False
+    assert report["summary"]["superseded_draft_count"] == 1
+    assert report["summary"]["invalid_draft_count"] == 1
+    assert "draft_repair_session_ref_mismatch" in finding_ids(report)
+
+
 def test_specspace_repair_draft_import_preview_keeps_defer_non_resolving() -> None:
     draft_state = valid_draft_state()
     draft_state["drafts"][0]["allowed_action"] = "defer"
@@ -339,6 +438,130 @@ def test_specspace_repair_draft_import_preview_keeps_defer_non_resolving() -> No
     assert report["summary"]["would_leave_unresolved_gap_count"] == 2
     answer = report["import_preview"]["clarification_answer_candidates"][0]
     assert answer["status"] == "deferred"
+
+
+def test_specspace_repair_draft_import_preview_keeps_defer_candidate_non_resolving() -> None:
+    draft_state = valid_draft_state()
+    draft_state["drafts"][0].update(
+        {
+            "request_id": "clarification.candidate-gap.accepted-decision-owner",
+            "request_kind": "candidate_gap",
+            "target_ref": "candidate-spec.accepted-decision-owner",
+            "allowed_action": "defer_candidate",
+            "answer_value": {"reason": "needs product owner"},
+        }
+    )
+
+    report = build_report(
+        draft_state=draft_state,
+        clarification_requests=valid_candidate_gap_requests(),
+    )
+
+    assert report["readiness"]["ready"] is True
+    assert report["summary"]["accepted_for_rerun_count"] == 0
+    assert report["summary"]["deferred_count"] == 1
+    assert report["summary"]["would_resolve_blocking_request_count"] == 0
+    answer = report["import_preview"]["clarification_answer_candidates"][0]
+    assert answer["status"] == "deferred"
+    assert answer["answer_kind"] == "defer_candidate"
+
+
+def test_specspace_repair_draft_import_preview_preserves_non_object_answer_values() -> None:
+    draft_state = valid_draft_state()
+    draft_state["drafts"][0].update(
+        {
+            "request_id": "clarification.candidate-gap.accepted-decision-owner",
+            "request_kind": "candidate_gap",
+            "target_ref": "candidate-spec.accepted-decision-owner",
+            "allowed_action": "answer_question",
+            "answer_value": "Use an explicit owner field and evidence reference.",
+        }
+    )
+
+    report = build_report(
+        draft_state=draft_state,
+        clarification_requests=valid_candidate_gap_requests(),
+    )
+
+    assert report["readiness"]["ready"] is True
+    assert report["summary"]["accepted_for_rerun_count"] == 1
+    assert report["summary"]["ontology_decision_candidate_count"] == 0
+    answer = report["import_preview"]["clarification_answer_candidates"][0]
+    assert answer["value"] == "Use an explicit owner field and evidence reference."
+
+
+def test_specspace_repair_draft_import_preview_builds_bind_alias_and_reject_decisions() -> None:
+    cases = [
+        (
+            "bind_existing_term",
+            {
+                "term": "Decision Record",
+                "ontology_ref": "ontology://specgraph-core/classes/Spec",
+            },
+            "bind_existing_term",
+            "ontology_ref",
+        ),
+        (
+            "alias",
+            {"term": "Decision Record", "alias_of": "Decision Log Entry"},
+            "alias_existing_term",
+            "alias_of",
+        ),
+        (
+            "reject",
+            {"term": "Decision Record", "reason": "not part of this domain"},
+            "reject_non_domain_term",
+            "reason",
+        ),
+    ]
+    for action, value, decision_type, value_key in cases:
+        draft_state = valid_draft_state()
+        draft_state["drafts"][0]["allowed_action"] = action
+        draft_state["drafts"][0]["answer_value"] = value
+
+        report = build_report(draft_state=draft_state)
+
+        assert report["readiness"]["ready"] is True
+        decision = report["import_preview"]["ontology_decision_candidates"][0]
+        assert decision["decision_type"] == decision_type
+        assert decision["term"] == "Decision Record"
+        assert decision[value_key] == value[value_key]
+
+
+def test_specspace_repair_draft_import_preview_requires_bind_and_alias_terms() -> None:
+    draft_state = valid_draft_state()
+    draft_state["drafts"] = [
+        draft_record(
+            draft_id="specspace-repair-draft::team-decision-log::bind",
+            request_id=REQUEST_ID,
+            allowed_action="bind_existing_term",
+            answer_value={"ontology_ref": "ontology://specgraph-core/classes/Spec"},
+            updated_at="2026-06-25T09:01:00Z",
+        ),
+        draft_record(
+            draft_id="specspace-repair-draft::team-decision-log::alias",
+            request_id="clarification.candidate-gap.ontology-gap-decision-option",
+            target_ref="candidate-spec.decision-option.gaps.ontology-gap.decision-option",
+            allowed_action="alias",
+            answer_value={"alias_of": "Decision Option"},
+            updated_at="2026-06-25T09:02:00Z",
+        ),
+    ]
+    requests = valid_clarification_requests()
+    requests["clarification_requests"].append(
+        {
+            **requests["clarification_requests"][0],
+            "id": "clarification.candidate-gap.ontology-gap-decision-option",
+            "target_ref": "candidate-spec.decision-option.gaps.ontology-gap.decision-option",
+        }
+    )
+
+    report = build_report(draft_state=draft_state, clarification_requests=requests)
+
+    assert report["readiness"]["ready"] is False
+    ids = finding_ids(report)
+    assert "draft_bind_existing_term_value_incomplete" in ids
+    assert "draft_alias_value_incomplete" in ids
 
 
 def test_specspace_repair_draft_import_preview_cli_writes_output(tmp_path: Path) -> None:
@@ -382,6 +605,50 @@ def test_specspace_repair_draft_import_preview_cli_writes_output(tmp_path: Path)
     report = load_json(output_path)
     assert report["artifact_kind"] == "specspace_repair_draft_import_preview"
     assert report["summary"]["accepted_for_rerun_count"] == 1
+
+
+def test_specspace_repair_draft_import_preview_cli_strict_fails_when_not_ready(
+    tmp_path: Path,
+) -> None:
+    drafts_path = tmp_path / "idea_to_spec_repair_drafts.json"
+    session_path = tmp_path / "idea_to_spec_repair_session.json"
+    requests_path = tmp_path / "idea_to_spec_clarification_requests.json"
+    output_path = tmp_path / "specspace_repair_draft_import_preview.json"
+    draft_state = valid_draft_state()
+    draft_state["source_artifacts"]["idea_to_spec_repair_session"] = session_path.as_posix()
+    draft_state["drafts"][0]["repair_session_ref"] = "runs/stale_repair_session.json"
+    draft_state["drafts"][0]["source_artifact"] = session_path.as_posix()
+    repair_session = valid_repair_session()
+    repair_session["source_artifacts"]["clarification_requests"]["source_ref"] = (
+        requests_path.as_posix()
+    )
+    write_json(drafts_path, draft_state)
+    write_json(session_path, repair_session)
+    write_json(requests_path, valid_clarification_requests())
+
+    result = subprocess.run(
+        [
+            sys.executable,
+            str(TOOL_PATH),
+            "--drafts",
+            str(drafts_path),
+            "--repair-session",
+            str(session_path),
+            "--clarification-requests",
+            str(requests_path),
+            "--output",
+            str(output_path),
+            "--strict",
+        ],
+        cwd=ROOT,
+        check=False,
+        capture_output=True,
+        text=True,
+    )
+
+    assert result.returncode == 1
+    report = load_json(output_path)
+    assert report["readiness"]["ready"] is False
 
 
 def test_specspace_repair_draft_import_preview_make_target_threads_paths(

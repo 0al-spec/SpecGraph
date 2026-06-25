@@ -31,15 +31,21 @@ TOP_LEVEL_FALSE_FIELDS = (
 )
 CONSUMER_FALSE_FIELDS = (
     "may_execute_prompt_agent",
+    "may_import_into_specgraph",
     "may_apply_to_specgraph",
     "may_apply_answers",
     "may_apply_decisions",
+    "may_apply_answers_to_source_artifacts",
+    "may_apply_decisions_to_source_artifacts",
     "may_mutate_candidate_source_artifacts",
     "may_mutate_canonical_specs",
     "may_write_ontology_package",
+    "may_write_ontology_lockfile",
     "may_accept_ontology_terms",
+    "may_mark_candidate_graph_accepted",
     "may_create_branch_or_commit",
     "may_open_pull_request",
+    "may_publish_read_model",
 )
 AUTHORITY_FALSE_FIELDS = (
     "repair_draft_state_is_authority",
@@ -47,6 +53,19 @@ AUTHORITY_FALSE_FIELDS = (
     "ontology_authority",
     "git_service_authority",
     "canonical_mutations_allowed",
+    "may_execute_prompt_agent",
+    "may_import_into_specgraph",
+    "may_apply_answers_to_source_artifacts",
+    "may_apply_decisions_to_source_artifacts",
+    "may_mutate_candidate_source_artifacts",
+    "may_mutate_canonical_specs",
+    "may_write_ontology_package",
+    "may_write_ontology_lockfile",
+    "may_accept_ontology_terms",
+    "may_mark_candidate_graph_accepted",
+    "may_create_branch_or_commit",
+    "may_open_pull_request",
+    "may_publish_read_model",
 )
 REPAIR_SESSION_AUTHORITY_FALSE_FIELDS = (
     "may_execute_prompt_agent",
@@ -55,28 +74,49 @@ REPAIR_SESSION_AUTHORITY_FALSE_FIELDS = (
     "may_mutate_candidate_source_artifacts",
     "may_mutate_canonical_specs",
     "may_write_ontology_package",
+    "may_write_ontology_lockfile",
     "may_accept_ontology_terms",
+    "may_mark_candidate_graph_accepted",
     "may_create_branch_or_commit",
+    "may_open_pull_request",
+    "may_publish_read_model",
 )
 CLARIFICATION_AUTHORITY_FALSE_FIELDS = (
     "may_execute_prompt_agent",
     "may_apply_answers_to_source_artifacts",
+    "may_apply_decisions_to_source_artifacts",
     "may_mutate_candidate_source_artifacts",
     "may_mutate_canonical_specs",
     "may_write_ontology_package",
+    "may_write_ontology_lockfile",
     "may_accept_ontology_terms",
+    "may_mark_candidate_graph_accepted",
     "may_create_branch_or_commit",
+    "may_open_pull_request",
+    "may_publish_read_model",
 )
 DRAFT_FALSE_FIELDS = (
     "canonical_mutations_allowed",
     "tracked_artifacts_written",
+    "may_import_into_specgraph",
+    "may_apply_answers_to_source_artifacts",
+    "may_apply_decisions_to_source_artifacts",
     "applies_to_specgraph",
     "applies_to_candidate_artifacts",
     "mutates_canonical_specs",
+    "may_mutate_candidate_source_artifacts",
+    "may_mutate_canonical_specs",
+    "may_write_ontology_package",
+    "may_write_ontology_lockfile",
     "writes_ontology_package",
+    "may_accept_ontology_terms",
     "accepts_ontology_terms",
+    "may_mark_candidate_graph_accepted",
+    "may_create_branch_or_commit",
     "creates_branch_or_commit",
+    "may_open_pull_request",
     "opens_pull_request",
+    "may_publish_read_model",
 )
 RAW_TRACE_FIELDS = {
     "operator_note",
@@ -97,6 +137,7 @@ ONTOLOGY_ACTION_TO_DECISION = {
     "reject": "reject_non_domain_term",
     "defer": "defer_requires_owner",
 }
+NON_RESOLVING_ACTIONS = {"defer", "defer_candidate"}
 
 
 def _now_iso() -> str:
@@ -120,6 +161,19 @@ def _int(value: Any, default: int = 0) -> int:
         return int(value)
     except (TypeError, ValueError):
         return default
+
+
+def _parse_timestamp(value: Any) -> datetime:
+    text = _text(value)
+    if not text:
+        return datetime.min.replace(tzinfo=timezone.utc)
+    try:
+        parsed = datetime.fromisoformat(text.replace("Z", "+00:00"))
+    except ValueError:
+        return datetime.min.replace(tzinfo=timezone.utc)
+    if parsed.tzinfo is None:
+        parsed = parsed.replace(tzinfo=timezone.utc)
+    return parsed.astimezone(timezone.utc)
 
 
 def _slug(value: str, fallback: str = "draft") -> str:
@@ -478,20 +532,14 @@ def _selected_workspace(
     return selected or "default"
 
 
-def _draft_sort_key(draft: dict[str, Any]) -> tuple[str, str, str]:
+def _draft_sort_key(draft: dict[str, Any]) -> tuple[datetime, str]:
+    effective_timestamp = _parse_timestamp(draft.get("updated_at"))
+    if effective_timestamp == datetime.min.replace(tzinfo=timezone.utc):
+        effective_timestamp = _parse_timestamp(draft.get("created_at"))
     return (
-        _text(draft.get("updated_at")),
-        _text(draft.get("created_at")),
+        effective_timestamp,
         _text(draft.get("draft_id")),
     )
-
-
-def _candidate_term_from_request(request: dict[str, Any]) -> str:
-    target_ref = _text(request.get("target_ref"))
-    if "ontology-gap." in target_ref:
-        return target_ref.split("ontology-gap.", 1)[1].replace("-", " ").strip()
-    request_id = _text(request.get("id"), "term")
-    return request_id.rsplit(".", 1)[-1].replace("-", " ").strip() or "term"
 
 
 def _answer_candidate(
@@ -520,6 +568,49 @@ def _answer_candidate(
     )
 
 
+def _decision_context(
+    *,
+    draft: dict[str, Any],
+    request: dict[str, Any],
+) -> dict[str, Any]:
+    action = _text(draft.get("allowed_action"))
+    return {
+        "request_id": draft.get("request_id"),
+        "request_kind": request.get("kind"),
+        "target_artifact": request.get("target_artifact"),
+        "target_ref": request.get("target_ref"),
+        "source_answer_kind": action,
+        "source_answer_status": "accepted_for_candidate",
+        "authority": "operator_approved",
+        "source_draft_id": draft.get("draft_id"),
+    }
+
+
+def _base_decision(
+    context: dict[str, Any],
+    *,
+    index: int,
+    decision_type: str,
+    source_value: Any,
+) -> dict[str, Any]:
+    decision_id = (
+        f"specspace-draft-ontology-decision.{_slug(_text(context.get('request_id')))}.{index}"
+    )
+    return _public_safe(
+        {
+            "id": decision_id,
+            "decision_type": decision_type,
+            "status": "accepted_for_candidate_preview",
+            "materialization_intent": "rerun_overlay_only",
+            "canonical_mutations_allowed": False,
+            "writes_ontology_package": False,
+            "accepts_ontology_term": False,
+            "source_value": source_value,
+            **context,
+        }
+    )
+
+
 def _ontology_decision_candidates(
     *,
     draft: dict[str, Any],
@@ -530,17 +621,7 @@ def _ontology_decision_candidates(
         return []
     value = _dict(draft.get("answer_value"))
     decision_type = ONTOLOGY_ACTION_TO_DECISION[action]
-    context = {
-        "request_id": draft.get("request_id"),
-        "request_kind": request.get("kind"),
-        "target_artifact": request.get("target_artifact"),
-        "target_ref": request.get("target_ref"),
-        "source_answer_kind": action,
-        "source_answer_status": "accepted_for_candidate",
-        "authority": "operator_approved",
-        "source_draft_id": draft.get("draft_id"),
-    }
-    base_id = f"specspace-draft-ontology-decision.{_slug(_text(draft.get('request_id')))}"
+    context = _decision_context(draft=draft, request=request)
     if action == "propose_project_local_term":
         terms = [
             item.strip()
@@ -550,78 +631,53 @@ def _ontology_decision_candidates(
         term = _text(value.get("term"))
         if term and term not in terms:
             terms.append(term)
-        return [
-            _public_safe(
+        decisions: list[dict[str, Any]] = []
+        for index, term_value in enumerate(terms):
+            decision = _base_decision(
+                context,
+                index=index,
+                decision_type=decision_type,
+                source_value=value,
+            )
+            decision.update(
                 {
-                    "id": f"{base_id}.{index}",
-                    "decision_type": decision_type,
-                    "status": "accepted_for_candidate_preview",
-                    "materialization_intent": "rerun_overlay_only",
-                    "canonical_mutations_allowed": False,
-                    "writes_ontology_package": False,
-                    "accepts_ontology_term": False,
                     "term": term_value,
                     "term_scope": _text(value.get("term_scope"), "project_local"),
-                    "source_value": value,
-                    **context,
                 }
             )
-            for index, term_value in enumerate(terms)
-        ]
+            decisions.append(decision)
+        return decisions
     if action == "bind_existing_term":
-        term = _text(value.get("term"), _candidate_term_from_request(request))
-        return [
-            _public_safe(
-                {
-                    "id": f"{base_id}.0",
-                    "decision_type": decision_type,
-                    "status": "accepted_for_candidate_preview",
-                    "materialization_intent": "rerun_overlay_only",
-                    "canonical_mutations_allowed": False,
-                    "writes_ontology_package": False,
-                    "accepts_ontology_term": False,
-                    "term": term,
-                    "ontology_ref": value.get("ontology_ref"),
-                    "source_value": value,
-                    **context,
-                }
-            )
-        ]
-    if action == "alias":
-        term = _text(value.get("term"), _candidate_term_from_request(request))
-        return [
-            _public_safe(
-                {
-                    "id": f"{base_id}.0",
-                    "decision_type": decision_type,
-                    "status": "accepted_for_candidate_preview",
-                    "materialization_intent": "rerun_overlay_only",
-                    "canonical_mutations_allowed": False,
-                    "writes_ontology_package": False,
-                    "accepts_ontology_term": False,
-                    "term": term,
-                    "alias_of": value.get("alias_of"),
-                    "source_value": value,
-                    **context,
-                }
-            )
-        ]
-    return [
-        _public_safe(
-            {
-                "id": f"{base_id}.0",
-                "decision_type": decision_type,
-                "status": "accepted_for_candidate_preview",
-                "materialization_intent": "rerun_overlay_only",
-                "canonical_mutations_allowed": False,
-                "writes_ontology_package": False,
-                "accepts_ontology_term": False,
-                "reason": value.get("reason"),
-                "source_value": value,
-                **context,
-            }
+        decision = _base_decision(
+            context,
+            index=0,
+            decision_type=decision_type,
+            source_value=value,
         )
-    ]
+        decision.update({"term": value.get("term"), "ontology_ref": value.get("ontology_ref")})
+        return [decision]
+    if action == "alias":
+        decision = _base_decision(
+            context,
+            index=0,
+            decision_type=decision_type,
+            source_value=value,
+        )
+        decision.update({"term": value.get("term"), "alias_of": value.get("alias_of")})
+        return [decision]
+    decision = _base_decision(
+        context,
+        index=0,
+        decision_type=decision_type,
+        source_value=value,
+    )
+    term = _text(value.get("term"))
+    reason = _text(value.get("reason"))
+    if term:
+        decision["term"] = term
+    if reason:
+        decision["reason"] = reason
+    return [decision]
 
 
 def _draft_record_findings(
@@ -739,7 +795,18 @@ def _draft_record_findings(
         ("source_artifact", _text(draft.get("source_artifact"))),
     ]
     for field, actual_ref in draft_refs:
-        if actual_ref and actual_ref != expected_session_ref:
+        if not actual_ref:
+            findings.append(
+                _finding(
+                    finding_id=f"draft_{field}_missing",
+                    severity="review_required",
+                    message=(
+                        f"SpecSpace repair draft {field} must reference imported repair session."
+                    ),
+                    evidence={"request_id": request_id, "expected": expected_session_ref},
+                )
+            )
+        elif actual_ref != expected_session_ref:
             findings.append(
                 _finding(
                     finding_id=f"draft_{field}_mismatch",
@@ -807,25 +874,36 @@ def _validate_answer_value(
     request: dict[str, Any] | None,
 ) -> list[dict[str, Any]]:
     action = _text(draft.get("allowed_action"))
-    value = _dict(draft.get("answer_value"))
+    raw_value = draft.get("answer_value")
+    value = _dict(raw_value)
     request_id = _text(draft.get("request_id"))
     findings: list[dict[str, Any]] = []
-    if action == "bind_existing_term" and not _text(value.get("ontology_ref")):
+    if action == "bind_existing_term" and (
+        not _text(value.get("term")) or not _text(value.get("ontology_ref"))
+    ):
         findings.append(
             _finding(
-                finding_id="draft_bind_existing_term_value_missing",
+                finding_id="draft_bind_existing_term_value_incomplete",
                 severity="review_required",
-                message="bind_existing_term draft requires answer_value.ontology_ref.",
-                evidence={"request_id": request_id},
+                message="bind_existing_term draft requires answer_value.term and ontology_ref.",
+                evidence={
+                    "request_id": request_id,
+                    "term": value.get("term"),
+                    "ontology_ref": value.get("ontology_ref"),
+                },
             )
         )
-    elif action == "alias" and not _text(value.get("alias_of")):
+    elif action == "alias" and (not _text(value.get("term")) or not _text(value.get("alias_of"))):
         findings.append(
             _finding(
-                finding_id="draft_alias_value_missing",
+                finding_id="draft_alias_value_incomplete",
                 severity="review_required",
-                message="alias draft requires answer_value.alias_of.",
-                evidence={"request_id": request_id},
+                message="alias draft requires answer_value.term and alias_of.",
+                evidence={
+                    "request_id": request_id,
+                    "term": value.get("term"),
+                    "alias_of": value.get("alias_of"),
+                },
             )
         )
     elif action == "propose_project_local_term":
@@ -843,7 +921,9 @@ def _validate_answer_value(
                     evidence={"request_id": request_id},
                 )
             )
-    elif action in {"reject", "defer"} and not _text(value.get("reason")):
+    elif action in {"reject", "defer", "defer_candidate"} and not (
+        _text(value.get("reason")) or _text(raw_value)
+    ):
         findings.append(
             _finding(
                 finding_id=f"draft_{action}_reason_missing",
@@ -852,7 +932,7 @@ def _validate_answer_value(
                 evidence={"request_id": request_id},
             )
         )
-    elif request is not None and not value:
+    elif request is not None and raw_value in ({}, [], "", None):
         findings.append(
             _finding(
                 finding_id="draft_answer_value_missing",
@@ -862,6 +942,31 @@ def _validate_answer_value(
             )
         )
     return findings
+
+
+def _reason_from_value(value: Any) -> str:
+    value_dict = _dict(value)
+    return _text(value_dict.get("reason")) or _text(value)
+
+
+def _draft_validation_findings(
+    *,
+    draft: dict[str, Any],
+    request_by_id: dict[str, dict[str, Any]],
+    selected_workspace_id: str,
+    session: dict[str, Any],
+    repair_session_path: Path | None,
+) -> tuple[dict[str, Any] | None, list[dict[str, Any]]]:
+    request = request_by_id.get(_text(draft.get("request_id")))
+    draft_findings = _draft_record_findings(
+        draft=draft,
+        request=request,
+        selected_workspace_id=selected_workspace_id,
+        session=session,
+        repair_session_path=repair_session_path,
+    )
+    draft_findings.extend(_validate_answer_value(draft=draft, request=request))
+    return request, draft_findings
 
 
 def _deduplicate_drafts(
@@ -932,8 +1037,12 @@ def build_specspace_repair_draft_import_preview(
     workspace_drafts = [
         draft for draft in all_drafts if _text(draft.get("workspace_id")) == selected_workspace_id
     ]
+    mismatched_workspace_drafts = [
+        draft for draft in all_drafts if _text(draft.get("workspace_id")) != selected_workspace_id
+    ]
     ignored_workspace_count = len(all_drafts) - len(workspace_drafts)
     selected_drafts, superseded_drafts, duplicate_warnings = _deduplicate_drafts(workspace_drafts)
+    selected_draft_ids = {id(draft) for draft in selected_drafts}
     warnings = duplicate_warnings
 
     valid_imports: list[dict[str, Any]] = []
@@ -942,17 +1051,60 @@ def build_specspace_repair_draft_import_preview(
     answer_candidates: list[dict[str, Any]] = []
     ontology_decision_candidates: list[dict[str, Any]] = []
     would_resolve_blocking_requests: list[str] = []
-    for draft in selected_drafts:
-        request_id = _text(draft.get("request_id"))
-        request = request_by_id.get(request_id)
-        draft_findings = _draft_record_findings(
+
+    for draft in mismatched_workspace_drafts:
+        _, draft_findings = _draft_validation_findings(
             draft=draft,
-            request=request,
+            request_by_id=request_by_id,
             selected_workspace_id=selected_workspace_id,
             session=session,
             repair_session_path=repair_session_path,
         )
-        draft_findings.extend(_validate_answer_value(draft=draft, request=request))
+        if draft_findings:
+            invalid_drafts.append(
+                _public_safe(
+                    {
+                        "draft_id": draft.get("draft_id"),
+                        "workspace_id": draft.get("workspace_id"),
+                        "request_id": draft.get("request_id"),
+                        "finding_ids": [finding["finding_id"] for finding in draft_findings],
+                    }
+                )
+            )
+            findings.extend(draft_findings)
+
+    for draft in workspace_drafts:
+        if id(draft) in selected_draft_ids:
+            continue
+        _, draft_findings = _draft_validation_findings(
+            draft=draft,
+            request_by_id=request_by_id,
+            selected_workspace_id=selected_workspace_id,
+            session=session,
+            repair_session_path=repair_session_path,
+        )
+        if draft_findings:
+            invalid_drafts.append(
+                _public_safe(
+                    {
+                        "draft_id": draft.get("draft_id"),
+                        "workspace_id": draft.get("workspace_id"),
+                        "request_id": draft.get("request_id"),
+                        "finding_ids": [finding["finding_id"] for finding in draft_findings],
+                    }
+                )
+            )
+            findings.extend(draft_findings)
+
+    for draft in selected_drafts:
+        request_id = _text(draft.get("request_id"))
+        request, draft_findings = _draft_validation_findings(
+            draft=draft,
+            request_by_id=request_by_id,
+            selected_workspace_id=selected_workspace_id,
+            session=session,
+            repair_session_path=repair_session_path,
+        )
         if draft_findings:
             invalid_drafts.append(
                 _public_safe(
@@ -967,14 +1119,14 @@ def build_specspace_repair_draft_import_preview(
             findings.extend(draft_findings)
             continue
         assert request is not None
-        if _text(draft.get("allowed_action")) == "defer":
+        if _text(draft.get("allowed_action")) in NON_RESOLVING_ACTIONS:
             deferred_drafts.append(
                 _public_safe(
                     {
                         "draft_id": draft.get("draft_id"),
                         "request_id": request_id,
                         "target_ref": draft.get("target_ref") or request.get("target_ref"),
-                        "reason": _dict(draft.get("answer_value")).get("reason"),
+                        "reason": _reason_from_value(draft.get("answer_value")),
                     }
                 )
             )
@@ -1015,6 +1167,8 @@ def build_specspace_repair_draft_import_preview(
         for candidate in ontology_decision_candidates
         if _text(candidate.get("decision_type")) != "defer_requires_owner"
     }
+    # Preview-only estimate: one resolving ontology clarification request is
+    # treated as covering one unresolved gap until a later rerun materializes the exact delta.
     would_leave_unresolved_gaps = max(
         unresolved_gaps_before - len({item for item in resolving_ontology_request_ids if item}),
         0,
