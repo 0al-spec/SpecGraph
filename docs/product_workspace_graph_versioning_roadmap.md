@@ -661,6 +661,38 @@ not rewrite `runs/candidate_spec_graph.json`, accept ontology terms, write
 ontology packages, approve candidates, mutate canonical specs, or create Git
 branches.
 
+### 20. Product Ontology Gap Review Decisions
+
+Status: implemented in proposal `0168`.
+
+Accepted ontology-gap answers can now become typed product ontology review
+decisions:
+
+```bash
+make product-ontology-gap-review-decisions
+```
+
+The output is:
+
+```text
+runs/product_ontology_gap_review_decisions.json
+```
+
+Supported decision types:
+
+```text
+bind_existing_term
+alias_existing_term
+propose_project_local_term
+reject_non_domain_term
+defer_requires_owner
+```
+
+The decision artifact is product-scoped review evidence for later rerun overlay
+and candidate-quality surfaces. It does not import Ontology owner decisions,
+accept ontology terms, write ontology packages, mutate candidate artifacts,
+approve candidates, or create Git branches.
+
 ## Success Criteria
 
 - A user can start with a product idea and receive a coherent candidate graph.

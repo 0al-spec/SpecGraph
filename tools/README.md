@@ -363,6 +363,15 @@ Supervisor modes:
   `ontology_gap_resolutions`, without rewriting `runs/candidate_spec_graph.json`,
   accepting ontology terms, writing Ontology packages, approving candidates,
   creating branches, or publishing read models.
+- `tools/product_ontology_gap_review_decisions.py`: product-scoped ontology
+  gap decision builder introduced by proposal 0168. Use
+  `make product-ontology-gap-review-decisions` to consume a ready
+  `idea_to_spec_clarification_answers` report and write
+  `runs/product_ontology_gap_review_decisions.json` with typed decisions for
+  existing-term bindings, aliases, project-local terms, rejected non-domain
+  terms, and owner-review deferrals. The report is review-only and does not
+  accept ontology terms, write Ontology packages, mutate candidate artifacts,
+  approve candidates, create branches, or publish read models.
 - `tools/candidate_spec_materialization.py`: deterministic candidate spec YAML
   preview materializer introduced by proposal 0153. Use
   `make candidate-spec-materialization
@@ -1049,6 +1058,10 @@ Key derived artifacts:
   materialization report that nests a candidate graph preview with resolved
   ontology gaps moved into explicit `ontology_gap_resolutions`, without
   rewriting candidate graph source artifacts.
+- `runs/product_ontology_gap_review_decisions.json`: public-safe, review-only
+  product ontology decision report derived from accepted ontology-gap
+  clarification answers, without accepting ontology terms or writing Ontology
+  packages.
 - `runs/candidate_spec_materialization_report.json`: review-only report for
   local candidate spec YAML previews under `runs/materialized_candidate_specs/`,
   including materialized paths for Platform promotion-request handoff without
