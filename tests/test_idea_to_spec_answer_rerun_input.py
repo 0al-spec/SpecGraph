@@ -10,6 +10,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 ANSWERS_TOOL_PATH = ROOT / "tools" / "idea_to_spec_clarification_answers.py"
 RERUN_TOOL_PATH = ROOT / "tools" / "idea_to_spec_answer_rerun_input.py"
+ONTOLOGY_DECISIONS_TOOL_PATH = ROOT / "tools" / "product_ontology_gap_review_decisions.py"
 FIXTURE_DIR = ROOT / "tests" / "fixtures" / "idea_to_spec_clarification_answers"
 REQUESTS_FIXTURE = FIXTURE_DIR / "clarification_requests_blocking.json"
 ANSWERS_READY_FIXTURE = FIXTURE_DIR / "answers_ready.json"
@@ -44,6 +45,19 @@ def ready_answer_report() -> dict[str, object]:
         answer_set=load_json(ANSWERS_READY_FIXTURE),
         requests_path=REQUESTS_FIXTURE,
         answer_set_path=ANSWERS_READY_FIXTURE,
+    )
+
+
+def ready_ontology_decisions_report(
+    answer_report: dict[str, object] | None = None,
+) -> dict[str, object]:
+    decisions_module = load_module(
+        ONTOLOGY_DECISIONS_TOOL_PATH,
+        "product_ontology_gap_review_decisions_for_rerun_input_test",
+    )
+    return decisions_module.build_product_ontology_gap_review_decisions(
+        answers_report=answer_report or ready_answer_report(),
+        answers_path=ROOT / "runs" / "idea_to_spec_clarification_answers.json",
     )
 
 
@@ -104,6 +118,117 @@ def test_answer_rerun_input_builds_project_local_term_overlay() -> None:
         }
     ]
     assert report["summary"]["project_local_term_count"] == 1
+
+
+def test_answer_rerun_input_uses_product_ontology_decisions_without_duplicates() -> None:
+    module = load_module(
+        RERUN_TOOL_PATH,
+        "idea_to_spec_answer_rerun_input_ontology_decisions_test",
+    )
+    answer_report = ready_answer_report()
+    ontology_decisions = ready_ontology_decisions_report(answer_report)
+
+    report = module.build_idea_to_spec_answer_rerun_input(
+        answers_report=answer_report,
+        ontology_decisions_report=ontology_decisions,
+        answers_path=ROOT / "runs" / "idea_to_spec_clarification_answers.json",
+        ontology_decisions_path=ROOT / "runs" / "product_ontology_gap_review_decisions.json",
+    )
+
+    assert report["readiness"]["ready"] is True
+    source_artifacts = report["source_artifacts"]
+    assert source_artifacts["product_ontology_gap_review_decisions"]["decision_count"] == 1
+    overlay = report["rerun_input_overlay"]["ontology_review_hints"]
+    assert len(overlay["project_local_terms"]) == 1
+    assert overlay["project_local_terms"][0]["decision_type"] == "propose_project_local_term"
+    assert overlay["project_local_terms"][0]["decision_id"].startswith("product-ontology-decision.")
+    assert report["summary"]["ontology_decision_source"] == (
+        "product_ontology_gap_review_decisions"
+    )
+    assert report["summary"]["ontology_decision_count"] == 1
+
+
+def test_answer_rerun_input_rejects_stale_ontology_decisions_without_suppressing_answers() -> None:
+    module = load_module(
+        RERUN_TOOL_PATH,
+        "idea_to_spec_answer_rerun_input_stale_ontology_decisions_test",
+    )
+    original_answer_report = ready_answer_report()
+    stale_ontology_decisions = ready_ontology_decisions_report(original_answer_report)
+    current_answer_report = copy.deepcopy(original_answer_report)
+    current_answer = current_answer_report["answers"][0]
+    assert isinstance(current_answer, dict)
+    current_answer["value"] = {
+        "terms": ["Current Decision Owner"],
+        "term_scope": "project_local",
+    }
+
+    report = module.build_idea_to_spec_answer_rerun_input(
+        answers_report=current_answer_report,
+        ontology_decisions_report=stale_ontology_decisions,
+    )
+
+    assert report["readiness"]["ready"] is False
+    assert "ontology_decisions_answer_fingerprint_mismatch" in finding_ids(report)
+    project_terms = report["rerun_input_overlay"]["ontology_review_hints"]["project_local_terms"]
+    assert project_terms[0]["term"] == "Current Decision Owner"
+    assert "decision_id" not in project_terms[0]
+
+
+def test_answer_rerun_input_rejects_non_preview_ontology_decision_rows() -> None:
+    module = load_module(
+        RERUN_TOOL_PATH,
+        "idea_to_spec_answer_rerun_input_non_preview_decision_test",
+    )
+    answer_report = ready_answer_report()
+    ontology_decisions = ready_ontology_decisions_report(answer_report)
+    ontology_decisions["decisions"][0]["status"] = "proposed"
+
+    report = module.build_idea_to_spec_answer_rerun_input(
+        answers_report=answer_report,
+        ontology_decisions_report=ontology_decisions,
+    )
+
+    assert report["readiness"]["ready"] is False
+    assert "ontology_decision_status_not_preview_accepted" in finding_ids(report)
+    assert report["rerun_input_overlay"]["ontology_review_hints"]["project_local_terms"] == []
+
+
+def test_answer_rerun_input_rejects_non_overlay_ontology_decision_rows() -> None:
+    module = load_module(
+        RERUN_TOOL_PATH,
+        "idea_to_spec_answer_rerun_input_non_overlay_decision_test",
+    )
+    answer_report = ready_answer_report()
+    ontology_decisions = ready_ontology_decisions_report(answer_report)
+    ontology_decisions["decisions"][0]["materialization_intent"] = "ontology_package_write"
+
+    report = module.build_idea_to_spec_answer_rerun_input(
+        answers_report=answer_report,
+        ontology_decisions_report=ontology_decisions,
+    )
+
+    assert report["readiness"]["ready"] is False
+    assert "ontology_decision_materialization_intent_unsupported" in finding_ids(report)
+    assert report["rerun_input_overlay"]["ontology_review_hints"]["project_local_terms"] == []
+
+
+def test_answer_rerun_input_blocks_unready_ontology_decisions() -> None:
+    module = load_module(
+        RERUN_TOOL_PATH,
+        "idea_to_spec_answer_rerun_input_unready_ontology_decisions_test",
+    )
+    ontology_decisions = ready_ontology_decisions_report()
+    ontology_decisions["readiness"]["ready"] = False
+
+    report = module.build_idea_to_spec_answer_rerun_input(
+        answers_report=ready_answer_report(),
+        ontology_decisions_report=ontology_decisions,
+    )
+
+    assert report["readiness"]["ready"] is False
+    assert "ontology_decisions_not_ready_for_rerun" in finding_ids(report)
+    assert report["summary"]["ontology_decision_count"] == 1
 
 
 def test_answer_rerun_input_captures_direct_active_frame_fields() -> None:
@@ -303,3 +428,70 @@ def test_answer_rerun_input_cli_writes_output(tmp_path: Path) -> None:
     assert report["artifact_kind"] == "idea_to_spec_answer_rerun_input"
     assert report["readiness"]["ready"] is True
     assert "rerun_input_ready" in result.stdout
+
+
+def test_answer_rerun_input_cli_accepts_product_ontology_decisions(tmp_path: Path) -> None:
+    answers_report = tmp_path / "idea_to_spec_clarification_answers.json"
+    decisions_report = tmp_path / "product_ontology_gap_review_decisions.json"
+    output = tmp_path / "idea_to_spec_answer_rerun_input.json"
+
+    answer_result = subprocess.run(
+        [
+            sys.executable,
+            str(ANSWERS_TOOL_PATH),
+            "--requests",
+            str(REQUESTS_FIXTURE),
+            "--answers",
+            str(ANSWERS_READY_FIXTURE),
+            "--output",
+            str(answers_report),
+            "--strict",
+        ],
+        cwd=ROOT,
+        check=False,
+        capture_output=True,
+        text=True,
+    )
+    assert answer_result.returncode == 0
+
+    decisions_result = subprocess.run(
+        [
+            sys.executable,
+            str(ONTOLOGY_DECISIONS_TOOL_PATH),
+            "--answers",
+            str(answers_report),
+            "--output",
+            str(decisions_report),
+            "--strict",
+        ],
+        cwd=ROOT,
+        check=False,
+        capture_output=True,
+        text=True,
+    )
+    assert decisions_result.returncode == 0
+
+    result = subprocess.run(
+        [
+            sys.executable,
+            str(RERUN_TOOL_PATH),
+            "--answers",
+            str(answers_report),
+            "--ontology-decisions",
+            str(decisions_report),
+            "--output",
+            str(output),
+            "--strict",
+        ],
+        cwd=ROOT,
+        check=False,
+        capture_output=True,
+        text=True,
+    )
+
+    assert result.returncode == 0
+    report = load_json(output)
+    assert report["summary"]["ontology_decision_source"] == (
+        "product_ontology_gap_review_decisions"
+    )
+    assert report["summary"]["project_local_term_count"] == 1

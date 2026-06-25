@@ -79,6 +79,8 @@ IDEA_TO_SPEC_CLARIFICATION_ANSWERS_OUTPUT ?= runs/idea_to_spec_clarification_ans
 PRODUCT_ONTOLOGY_GAP_REVIEW_DECISIONS_ANSWERS ?= runs/idea_to_spec_clarification_answers.json
 PRODUCT_ONTOLOGY_GAP_REVIEW_DECISIONS_OUTPUT ?= runs/product_ontology_gap_review_decisions.json
 IDEA_TO_SPEC_ANSWER_RERUN_INPUT_ANSWERS ?= runs/idea_to_spec_clarification_answers.json
+IDEA_TO_SPEC_ANSWER_RERUN_INPUT_ONTOLOGY_DECISIONS ?=
+IDEA_TO_SPEC_ANSWER_RERUN_INPUT_ONTOLOGY_DECISIONS_ARG := $(if $(strip $(IDEA_TO_SPEC_ANSWER_RERUN_INPUT_ONTOLOGY_DECISIONS)),--ontology-decisions "$(IDEA_TO_SPEC_ANSWER_RERUN_INPUT_ONTOLOGY_DECISIONS)",)
 IDEA_TO_SPEC_ANSWER_RERUN_INPUT_OUTPUT ?= runs/idea_to_spec_answer_rerun_input.json
 IDEA_TO_SPEC_RERUN_PREVIEW_INPUT ?= runs/idea_to_spec_answer_rerun_input.json
 IDEA_TO_SPEC_RERUN_PREVIEW_INTAKE ?= runs/idea_event_storming_intake.json
@@ -460,7 +462,7 @@ product-ontology-gap-review-decisions:
 
 .PHONY: idea-to-spec-answer-rerun-input
 idea-to-spec-answer-rerun-input:
-	@$(PYTHON) tools/idea_to_spec_answer_rerun_input.py --answers "$(IDEA_TO_SPEC_ANSWER_RERUN_INPUT_ANSWERS)" --output "$(IDEA_TO_SPEC_ANSWER_RERUN_INPUT_OUTPUT)"
+	@$(PYTHON) tools/idea_to_spec_answer_rerun_input.py --answers "$(IDEA_TO_SPEC_ANSWER_RERUN_INPUT_ANSWERS)" $(IDEA_TO_SPEC_ANSWER_RERUN_INPUT_ONTOLOGY_DECISIONS_ARG) --output "$(IDEA_TO_SPEC_ANSWER_RERUN_INPUT_OUTPUT)"
 
 .PHONY: idea-to-spec-rerun-preview
 idea-to-spec-rerun-preview:

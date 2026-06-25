@@ -693,6 +693,28 @@ and candidate-quality surfaces. It does not import Ontology owner decisions,
 accept ontology terms, write ontology packages, mutate candidate artifacts,
 approve candidates, or create Git branches.
 
+### 21. Ontology Decisions Into Rerun Overlay And Candidate Quality
+
+Status: implemented in proposal `0169`.
+
+Rerun input can now consume the typed product ontology decision artifact:
+
+```bash
+make idea-to-spec-answer-rerun-input \
+  IDEA_TO_SPEC_ANSWER_RERUN_INPUT_ONTOLOGY_DECISIONS=runs/product_ontology_gap_review_decisions.json
+```
+
+When supplied, `product_ontology_gap_review_decisions` becomes the ontology
+review source for rerun overlay hints. This prevents duplicate ontology hints
+from raw clarification answers while preserving non-ontology answers for active
+frame, event-storming, graph repair, and claim review overlays.
+
+`idea_to_spec_rerun_preview` now emits
+`rerun_preview.candidate_quality_preview`, reporting whether ontology gap
+decisions resolve all, some, or none of the candidate ontology gaps. The signal
+is still review-only and does not mutate candidate artifacts, accept ontology
+terms, write Ontology packages, approve candidates, or create Git branches.
+
 ## Success Criteria
 
 - A user can start with a product idea and receive a coherent candidate graph.

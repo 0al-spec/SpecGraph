@@ -343,16 +343,20 @@ Supervisor modes:
   active-frame, event-storming, ontology review, and candidate review hints for
   the next deterministic run without applying answers, mutating candidate
   artifacts, mutating canonical specs, writing Ontology packages, approving
-  candidates, creating branches, or publishing read models.
+  candidates, creating branches, or publishing read models. Proposal 0169 adds
+  optional
+  `IDEA_TO_SPEC_ANSWER_RERUN_INPUT_ONTOLOGY_DECISIONS=<json>` support so typed
+  product ontology decisions can provide ontology review hints instead of raw
+  ontology-gap clarification answers.
 - `tools/idea_to_spec_rerun_preview.py`: accepted-answer rerun preview builder
   introduced by proposal 0166. Use `make idea-to-spec-rerun-preview` to preview
   a ready `idea_to_spec_answer_rerun_input` against the current
   `idea_event_storming_intake` and `candidate_spec_graph`. The report shows
   active-frame merge effects, event-storming additions, preview-resolved
-  ontology gaps, unresolved ontology gaps, and candidate review hints without
-  applying answers, mutating candidate artifacts, accepting ontology terms,
-  writing Ontology packages, approving candidates, creating branches, or
-  publishing read models.
+  ontology gaps, unresolved ontology gaps, candidate review hints, and the
+  proposal 0169 `candidate_quality_preview` without applying answers, mutating
+  candidate artifacts, accepting ontology terms, writing Ontology packages,
+  approving candidates, creating branches, or publishing read models.
 - `tools/idea_to_spec_rerun_materialization.py`: review-only rerun
   materialization builder introduced by proposal 0167. Use
   `make idea-to-spec-rerun-materialization` to consume a ready
@@ -1052,8 +1056,8 @@ Key derived artifacts:
   mutations.
 - `runs/idea_to_spec_rerun_preview.json`: public-safe, review-only preview that
   evaluates accepted-answer overlay effects against current intake and
-  candidate graph state, including ontology gap resolution previews, without
-  applying mutations.
+  candidate graph state, including ontology gap resolution previews and
+  candidate quality preview state, without applying mutations.
 - `runs/idea_to_spec_rerun_materialization.json`: public-safe, review-only
   materialization report that nests a candidate graph preview with resolved
   ontology gaps moved into explicit `ontology_gap_resolutions`, without

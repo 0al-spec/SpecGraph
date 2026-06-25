@@ -142,6 +142,11 @@ def test_rerun_preview_resolves_matching_ontology_gap() -> None:
     assert resolved["gap_id"] == "ontology-gap.decision-owner"
     assert resolved["resolution_preview"]["decision"] == "project_local_term"
     assert resolved["resolution_preview"]["term"] == "Decision Owner"
+    quality = report["rerun_preview"]["candidate_quality_preview"]
+    assert quality["candidate_quality_metric"] == "ontology_gap_resolution_preview"
+    assert quality["review_state"] == "candidate_quality_partially_improved"
+    assert quality["resolved_ontology_gap_count"] == 1
+    assert quality["unresolved_ontology_gap_count"] == 1
 
 
 def test_rerun_preview_blocks_unready_rerun_input() -> None:
@@ -201,6 +206,41 @@ def test_rerun_preview_matches_aggregate_reject_to_ontology_gaps() -> None:
     assert {
         item["resolution_preview"]["decision"] for item in gap_preview["resolved_ontology_gaps"]
     } == {"reject"}
+
+
+def test_rerun_preview_keeps_deferred_ontology_gaps_unresolved() -> None:
+    module = load_module(
+        PREVIEW_TOOL_PATH,
+        "idea_to_spec_rerun_preview_deferred_gap_test",
+    )
+    rerun_input = copy.deepcopy(ready_rerun_input())
+    ontology_hints = rerun_input["rerun_input_overlay"]["ontology_review_hints"]
+    ontology_hints["project_local_terms"] = []
+    ontology_hints["deferred_terms"] = [
+        {
+            "answer_kind": "defer",
+            "request_id": "clarification.repair.review-unresolved-gaps",
+            "target_ref": "candidate_graph.gaps",
+            "reason": "Needs ontology owner decision.",
+        }
+    ]
+
+    report = module.build_idea_to_spec_rerun_preview(
+        rerun_input=rerun_input,
+        intake=intake_artifact(),
+        candidate_graph=candidate_graph_artifact(),
+    )
+
+    gap_preview = report["rerun_preview"]["ontology_gap_preview"]
+    assert gap_preview["decision_count"] == 1
+    assert gap_preview["resolved_ontology_gap_count"] == 0
+    assert gap_preview["unresolved_ontology_gap_count"] == 2
+    assert {
+        item["deferral_preview"]["decision"] for item in gap_preview["unresolved_ontology_gaps"]
+    } == {"defer"}
+    quality = report["rerun_preview"]["candidate_quality_preview"]
+    assert quality["review_state"] == "candidate_quality_blocked_by_ontology_gaps"
+    assert quality["ontology_gap_state"] == "unresolved"
 
 
 def test_rerun_preview_merges_active_frame_and_strips_raw_trace() -> None:

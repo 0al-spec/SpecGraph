@@ -243,6 +243,22 @@ does not import Ontology owner decisions, accept ontology terms, write ontology
 packages, mutate candidate artifacts, approve candidates, create Git branches,
 or publish read models.
 
+Proposal `0169` lets `idea_to_spec_answer_rerun_input` consume those product
+ontology decisions:
+
+```bash
+make idea-to-spec-answer-rerun-input \
+  IDEA_TO_SPEC_ANSWER_RERUN_INPUT_ONTOLOGY_DECISIONS=runs/product_ontology_gap_review_decisions.json
+```
+
+When the decision artifact is supplied, it becomes the ontology review source
+for rerun overlay hints. The rerun preview also exposes
+`candidate_quality_preview`, a read-only signal showing whether ontology gap
+decisions resolved all, some, or none of the candidate ontology gaps. This does
+not apply answers to source artifacts, mutate candidate artifacts, accept
+ontology terms, write ontology packages, approve candidates, create Git
+branches, or publish read models.
+
 ## Authority Boundary
 
 Team Decision Log remains non-canonical until a repository service accepts a
