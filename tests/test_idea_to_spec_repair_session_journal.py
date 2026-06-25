@@ -57,6 +57,14 @@ def valid_artifacts() -> dict[str, dict[str, object]]:
                 "review_state": "active_candidate_review_required",
                 "blocked_by": ["promotion_gate_not_ready"],
             },
+            "source_artifacts": {
+                "promotion_gate": {"source_ref": "runs/idea_to_spec_promotion_gate.json"}
+            },
+            "platform_handoff_surfaces": {
+                "idea_to_spec_promotion_gate.json": {
+                    "source_ref": "runs/idea_to_spec_promotion_gate.json"
+                }
+            },
             "authority_boundary": {"may_mutate_canonical_specs": False},
             "summary": {
                 "status": "active_candidate_review_required",
@@ -306,6 +314,62 @@ def test_repair_session_journal_builds_durable_review_only_summary() -> None:
     assert boundary["may_create_branch_or_commit"] is False
 
 
+def test_repair_session_journal_marks_candidate_approval_possible_only_after_ready_chain() -> None:
+    artifacts = valid_artifacts()
+    artifacts["active_candidate"]["readiness"] = {
+        "ready": True,
+        "review_state": "active_candidate_ready",
+        "blocked_by": [],
+    }
+    artifacts["promotion_gate"]["readiness"] = {
+        "ready": True,
+        "review_state": "idea_to_spec_promotion_ready",
+        "blocked_by": [],
+    }
+    artifacts["promotion_gate"]["summary"]["promotion_path_count"] = 1
+    artifacts["rerun_preview"]["summary"]["resolved_ontology_gap_count"] = 3
+    artifacts["rerun_preview"]["summary"]["unresolved_ontology_gap_count"] = 0
+    artifacts["rerun_materialization"]["summary"]["resolved_ontology_gap_count"] = 3
+    artifacts["rerun_materialization"]["summary"]["unresolved_ontology_gap_count"] = 0
+
+    report = build_report(artifacts)
+
+    assert report["readiness_impact"]["blocked_by"] == []
+    assert report["summary"]["ready_for_candidate_approval"] is True
+    assert report["readiness_impact"]["ready_for_candidate_approval"] is True
+    assert report["readiness_impact"]["ready_for_platform_promotion"] is False
+    assert report["readiness_impact"]["platform_promotion_blocked_by"] == [
+        "candidate_approval_decision_missing"
+    ]
+
+
+def test_repair_session_journal_requires_ready_intermediate_artifacts_for_approval() -> None:
+    artifacts = valid_artifacts()
+    artifacts["active_candidate"]["readiness"] = {
+        "ready": True,
+        "review_state": "active_candidate_ready",
+        "blocked_by": [],
+    }
+    artifacts["promotion_gate"]["readiness"] = {
+        "ready": True,
+        "review_state": "idea_to_spec_promotion_ready",
+        "blocked_by": [],
+    }
+    artifacts["rerun_preview"]["readiness"] = {
+        "ready": False,
+        "review_state": "rerun_preview_review_required",
+        "blocked_by": ["rerun_preview_failed"],
+    }
+    artifacts["rerun_preview"]["summary"]["unresolved_ontology_gap_count"] = 0
+    artifacts["rerun_materialization"]["summary"]["unresolved_ontology_gap_count"] = 0
+
+    report = build_report(artifacts)
+
+    assert report["readiness_impact"]["ready_for_candidate_approval"] is False
+    assert "rerun_preview_not_ready" in report["readiness_impact"]["blocked_by"]
+    assert "rerun_preview_failed" in report["readiness_impact"]["blocked_by"]
+
+
 def test_repair_session_journal_strips_raw_trace_fields() -> None:
     report = build_report(valid_artifacts())
     text = json.dumps(report)
@@ -328,6 +392,16 @@ def test_repair_session_journal_rejects_authority_expansion() -> None:
     assert "ontology_decisions_authority_boundary_expanded" in finding_ids(report)
 
 
+def test_repair_session_journal_requires_explicit_authority_boundary() -> None:
+    artifacts = valid_artifacts()
+    artifacts["rerun_preview"].pop("authority_boundary")
+
+    report = build_report(artifacts)
+
+    assert report["readiness"]["ready"] is False
+    assert "rerun_preview_authority_boundary_missing" in finding_ids(report)
+
+
 def test_repair_session_journal_detects_stale_source_refs() -> None:
     artifacts = valid_artifacts()
     rerun_input = copy.deepcopy(artifacts["rerun_input"])
@@ -340,6 +414,32 @@ def test_repair_session_journal_detects_stale_source_refs() -> None:
 
     assert report["readiness"]["ready"] is False
     assert "rerun_input_ontology_decisions_source_ref_mismatch" in finding_ids(report)
+
+
+def test_repair_session_journal_detects_missing_chained_source_refs() -> None:
+    artifacts = valid_artifacts()
+    rerun_input = copy.deepcopy(artifacts["rerun_input"])
+    rerun_input["source_artifacts"]["product_ontology_gap_review_decisions"].pop("source_ref")
+    artifacts["rerun_input"] = rerun_input
+
+    report = build_report(artifacts)
+
+    assert report["readiness"]["ready"] is False
+    assert "rerun_input_ontology_decisions_source_ref_missing" in finding_ids(report)
+
+
+def test_repair_session_journal_detects_stale_active_candidate_refs() -> None:
+    artifacts = valid_artifacts()
+    active_candidate = copy.deepcopy(artifacts["active_candidate"])
+    active_candidate["source_artifacts"]["promotion_gate"]["source_ref"] = (
+        "runs/stale_idea_to_spec_promotion_gate.json"
+    )
+    artifacts["active_candidate"] = active_candidate
+
+    report = build_report(artifacts)
+
+    assert report["readiness"]["ready"] is False
+    assert "active_candidate_promotion_gate_source_ref_mismatch" in finding_ids(report)
 
 
 def test_repair_session_journal_cli_writes_output(tmp_path: Path) -> None:
@@ -389,3 +489,51 @@ def test_repair_session_journal_cli_writes_output(tmp_path: Path) -> None:
     assert report["artifact_kind"] == "idea_to_spec_repair_session_journal"
     assert report["session"]["session_id"] == "repair-session.test"
     assert report["session"]["operator_ref"] == "operator:cli-test"
+
+
+def test_repair_session_journal_cli_strict_returns_nonzero_for_review_required(
+    tmp_path: Path,
+) -> None:
+    artifacts = valid_artifacts()
+    artifacts["ontology_decisions"]["authority_boundary"] = {"may_accept_ontology_terms": True}
+    paths = {}
+    for key, artifact in artifacts.items():
+        path = tmp_path / f"{key}.json"
+        write_json(path, artifact)
+        paths[key] = path
+    output = tmp_path / "idea_to_spec_repair_session.json"
+
+    result = subprocess.run(
+        [
+            sys.executable,
+            str(TOOL_PATH),
+            "--active-candidate",
+            str(paths["active_candidate"]),
+            "--clarification-requests",
+            str(paths["clarification_requests"]),
+            "--clarification-answers",
+            str(paths["clarification_answers"]),
+            "--ontology-decisions",
+            str(paths["ontology_decisions"]),
+            "--rerun-input",
+            str(paths["rerun_input"]),
+            "--rerun-preview",
+            str(paths["rerun_preview"]),
+            "--rerun-materialization",
+            str(paths["rerun_materialization"]),
+            "--promotion-gate",
+            str(paths["promotion_gate"]),
+            "--output",
+            str(output),
+            "--strict",
+        ],
+        cwd=ROOT,
+        check=False,
+        capture_output=True,
+        text=True,
+    )
+
+    assert result.returncode == 1
+    report = load_json(output)
+    assert report["readiness"]["ready"] is False
+    assert "ontology_decisions_authority_boundary_expanded" in finding_ids(report)

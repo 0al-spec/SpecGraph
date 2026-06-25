@@ -89,6 +89,13 @@ def _text(value: Any, default: str = "") -> str:
     return value.strip() if isinstance(value, str) and value.strip() else default
 
 
+def _int(value: Any, default: int = 0) -> int:
+    try:
+        return int(value)
+    except (TypeError, ValueError):
+        return default
+
+
 def _relative_ref(path: Path) -> str:
     try:
         return path.resolve().relative_to(ROOT).as_posix()
@@ -229,7 +236,17 @@ def _validate_artifact(
                     evidence={field: artifact.get(field)},
                 )
             )
-    boundary = _dict(artifact.get("authority_boundary"))
+    boundary = artifact.get("authority_boundary")
+    if not isinstance(boundary, dict) or not boundary:
+        findings.append(
+            _finding(
+                finding_id=f"{key}_authority_boundary_missing",
+                severity="review_required",
+                message=f"{key} must declare an explicit review-only authority_boundary.",
+                evidence={"authority_boundary": boundary},
+            )
+        )
+        boundary = {}
     for boundary_field, value in boundary.items():
         if value is True:
             findings.append(
@@ -250,6 +267,16 @@ def _source_ref_mismatch_findings(
 ) -> list[dict[str, Any]]:
     expected_refs = {key: _relative_ref(path) for key, path in paths.items()}
     checks = (
+        (
+            "active_candidate",
+            ("source_artifacts", "promotion_gate", "source_ref"),
+            "promotion_gate",
+        ),
+        (
+            "active_candidate",
+            ("platform_handoff_surfaces", "idea_to_spec_promotion_gate.json", "source_ref"),
+            "promotion_gate",
+        ),
         (
             "clarification_answers",
             ("source_artifacts", "clarification_requests", "source_ref"),
@@ -288,7 +315,19 @@ def _source_ref_mismatch_findings(
             cursor = _dict(cursor).get(field)
         actual_ref = _text(cursor)
         expected_ref = expected_refs.get(expected_key)
-        if actual_ref and expected_ref and actual_ref != expected_ref:
+        if expected_ref and not actual_ref:
+            findings.append(
+                _finding(
+                    finding_id=f"{artifact_key}_{expected_key}_source_ref_missing",
+                    severity="review_required",
+                    message=(
+                        f"{artifact_key} must declare a source ref for {expected_key} "
+                        "so the journal can prove the repair chain."
+                    ),
+                    evidence={"expected": expected_ref},
+                )
+            )
+        elif actual_ref and expected_ref and actual_ref != expected_ref:
             findings.append(
                 _finding(
                     finding_id=f"{artifact_key}_{expected_key}_source_ref_mismatch",
@@ -369,11 +408,17 @@ def _readiness_impact(
     clarification_requests: dict[str, Any],
     clarification_answers: dict[str, Any],
     ontology_decisions: dict[str, Any],
+    rerun_input: dict[str, Any],
     rerun_preview: dict[str, Any],
     rerun_materialization: dict[str, Any],
     promotion_gate: dict[str, Any],
 ) -> dict[str, Any]:
     active_readiness = _dict(active_candidate.get("readiness"))
+    answers_readiness = _dict(clarification_answers.get("readiness"))
+    ontology_readiness = _dict(ontology_decisions.get("readiness"))
+    rerun_input_readiness = _dict(rerun_input.get("readiness"))
+    preview_readiness = _dict(rerun_preview.get("readiness"))
+    materialization_readiness = _dict(rerun_materialization.get("readiness"))
     promotion_readiness = _dict(promotion_gate.get("readiness"))
     requests_summary = _dict(clarification_requests.get("summary"))
     answers_summary = _dict(clarification_answers.get("summary"))
@@ -381,41 +426,63 @@ def _readiness_impact(
     preview_summary = _dict(rerun_preview.get("summary"))
     materialization_summary = _dict(rerun_materialization.get("summary"))
 
-    unresolved_ontology_gap_count = int(
+    unresolved_ontology_gap_count = _int(
         materialization_summary.get(
             "unresolved_ontology_gap_count",
             preview_summary.get("unresolved_ontology_gap_count", 0),
         )
         or 0
     )
-    resolved_ontology_gap_count = int(
+    resolved_ontology_gap_count = _int(
         materialization_summary.get(
             "resolved_ontology_gap_count",
             preview_summary.get("resolved_ontology_gap_count", 0),
         )
         or 0
     )
-    blocking_request_count = int(requests_summary.get("blocking_request_count") or 0)
-    unresolved_blocking_count = int(answers_summary.get("unresolved_blocking_count") or 0)
+    blocking_request_count = _int(requests_summary.get("blocking_request_count") or 0)
+    unresolved_blocking_count = _int(answers_summary.get("unresolved_blocking_count") or 0)
 
     blockers: list[str] = []
     blockers.extend(str(item) for item in _list(active_readiness.get("blocked_by")))
     blockers.extend(str(item) for item in _list(promotion_readiness.get("blocked_by")))
+    intermediate_readiness = {
+        "clarification_answers": answers_readiness,
+        "ontology_decisions": ontology_readiness,
+        "rerun_input": rerun_input_readiness,
+        "rerun_preview": preview_readiness,
+        "rerun_materialization": materialization_readiness,
+    }
+    for artifact_key, readiness in intermediate_readiness.items():
+        if readiness.get("ready") is not True:
+            blockers.append(f"{artifact_key}_not_ready")
+            blockers.extend(str(item) for item in _list(readiness.get("blocked_by")))
     if unresolved_ontology_gap_count:
         blockers.append("unresolved_ontology_gaps")
     if unresolved_blocking_count:
         blockers.append("unresolved_clarification_answers")
     blockers = sorted({item for item in blockers if item})
 
+    intermediate_artifacts_ready = all(
+        readiness.get("ready") is True for readiness in intermediate_readiness.values()
+    )
     ready_for_candidate_approval = (
         active_readiness.get("ready") is True
         and promotion_readiness.get("ready") is True
+        and intermediate_artifacts_ready
         and unresolved_ontology_gap_count == 0
         and unresolved_blocking_count == 0
     )
+    platform_promotion_blockers = (
+        ["candidate_approval_decision_missing"]
+        if ready_for_candidate_approval
+        else ["candidate_not_ready_for_approval"]
+    )
     return {
         "ready_for_candidate_approval": ready_for_candidate_approval,
-        "ready_for_platform_promotion": ready_for_candidate_approval,
+        "ready_for_platform_promotion": False,
+        "platform_promotion_blocked_by": platform_promotion_blockers,
+        "intermediate_artifacts_ready": intermediate_artifacts_ready,
         "blocked_by": blockers,
         "active_candidate_review_state": active_readiness.get("review_state"),
         "promotion_gate_review_state": promotion_readiness.get("review_state"),
@@ -498,6 +565,7 @@ def build_idea_to_spec_repair_session_journal(
         clarification_requests=clarification_requests,
         clarification_answers=clarification_answers,
         ontology_decisions=ontology_decisions,
+        rerun_input=rerun_input,
         rerun_preview=rerun_preview,
         rerun_materialization=rerun_materialization,
         promotion_gate=promotion_gate,
@@ -557,6 +625,8 @@ def build_idea_to_spec_repair_session_journal(
         },
         "authority_boundary": _authority_boundary(),
         "privacy_boundary": {
+            "redaction_enforced_by": "recursive_public_safe_field_filter",
+            "static_flags_are_asserted_invariants": True,
             "raw_idea_text_published": False,
             "raw_prompt_published": False,
             "raw_model_output_published": False,
