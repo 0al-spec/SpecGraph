@@ -2195,5 +2195,18 @@
     "required_provenance_links": [
       "source_draft_ref"
     ]
+  },
+  {
+    "proposal_id": "0171",
+    "source_artifact_class": "working_draft",
+    "source_refs": [
+      "docs/archive/proposal_sources/0171_idea_to_spec_repair_session_journal.md"
+    ],
+    "motivating_concern": "The idea-to-spec repair chain has clarification requests, accepted answers, typed ontology decisions, rerun overlays, preview, materialization, and promotion gate artifacts, but downstream consumers still need one durable session journal to inspect and replay the current product repair state.",
+    "normalized_title": "Idea-To-Spec Repair Session Journal",
+    "bounded_scope": "Add a deterministic review-only idea_to_spec_repair_session_journal builder, Make target, product-workspace decision-backed chain integration, tests, proposal docs, roadmap, DocC, and registry tracking that aggregates active candidate identity, clarification requests and answers, product ontology decisions, rerun input, rerun preview, rerun materialization, and promotion-gate state into one durable session artifact with source refs, readiness impact, accepted answers, ontology decisions, and unresolved blockers, without executing prompt agents, applying answers or decisions to source artifacts, mutating candidate artifacts, mutating canonical specs, writing Ontology packages or lockfiles, accepting ontology terms, approving candidate graphs, creating Git branches or commits, opening pull requests, publishing read models, or adding SpecSpace mutation UI.",
+    "required_provenance_links": [
+      "source_draft_ref"
+    ]
   }
 ]

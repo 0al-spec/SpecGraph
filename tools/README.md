@@ -383,6 +383,16 @@ Supervisor modes:
   decisions into `idea_to_spec_answer_rerun_input`, and builds rerun preview
   plus rerun materialization. The wrapper forwards custom output paths between
   steps and does not grant any additional write authority.
+- `tools/idea_to_spec_repair_session_journal.py`: durable repair-session
+  journal builder introduced by proposal 0171. Use
+  `make idea-to-spec-repair-session-journal` to aggregate active candidate,
+  clarification request/answer, product ontology decision, rerun input,
+  preview, materialization, and promotion-gate artifacts into
+  `runs/idea_to_spec_repair_session.json`. The journal records source refs,
+  digests, ordered repair stages, accepted answers, ontology decisions,
+  resolved/unresolved ontology gap counts, and approval/promotion readiness
+  without applying answers, accepting ontology terms, mutating candidate
+  artifacts, creating branches, or publishing read models.
 - `tools/candidate_spec_materialization.py`: deterministic candidate spec YAML
   preview materializer introduced by proposal 0153. Use
   `make candidate-spec-materialization

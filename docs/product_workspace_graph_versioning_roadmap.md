@@ -737,6 +737,39 @@ The target is only orchestration. It does not execute prompt agents, apply
 answers to source artifacts, accept ontology terms, mutate candidate artifacts,
 write canonical specs, create branches, or publish read models.
 
+### 23. Idea-To-Spec Repair Session Journal
+
+Status: implemented in proposal `0171`.
+
+The decision-backed repair chain now emits a durable review-only session
+journal:
+
+```bash
+make idea-to-spec-repair-session-journal
+```
+
+The default artifact is:
+
+```text
+runs/idea_to_spec_repair_session.json
+```
+
+The journal aggregates active candidate identity, clarification requests and
+answers, typed product ontology decisions, rerun overlay input, rerun preview,
+rerun materialization, and promotion-gate state into one stable audit surface.
+It records ordered repair stages, source artifact refs and digests, accepted
+answers, ontology decisions, resolved/unresolved ontology gap counts, and
+whether the candidate can move to approval or Platform promotion.
+
+`make product-workspace-decision-backed-repair-chain` writes the journal as its
+final step and forwards custom paths so smoke tests can keep the whole repair
+session isolated.
+
+The journal remains read-only. It does not execute prompt agents, apply
+answers, apply ontology decisions, accept ontology terms, mutate candidate
+artifacts, write canonical specs, create branches, open pull requests, or
+publish read models.
+
 ## Success Criteria
 
 - A user can start with a product idea and receive a coherent candidate graph.
@@ -767,6 +800,10 @@ write canonical specs, create branches, or publish read models.
 - Ready rerun previews can materialize a review-only candidate graph preview
   and explicit delta without rewriting candidate source artifacts or granting
   promotion authority.
+- The full repair session can be inspected through one durable journal artifact
+  that preserves source refs, accepted answers, ontology decisions, preview
+  deltas, unresolved blockers, and promotion readiness without granting write
+  authority.
 
 ## Current Execution Order
 
