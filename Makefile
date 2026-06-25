@@ -165,7 +165,7 @@ PYTHON_TARGETS := viewer-surfaces dashboard backlog next-move spec-activity grap
 	idea-to-spec-rerun-materialization \
 	candidate-spec-materialization idea-to-spec-promotion-gate \
 	active-idea-to-spec-candidate-source candidate-approval-decision \
-	product-workspace-active-candidate \
+	product-workspace-active-candidate product-workspace-decision-backed-repair-chain \
 	proposal-work-claims proposal-work-claims-gate proposal-id \
 	metrics-delivery metrics-feedback metrics-source-promotion metric-signals metric-thresholds \
 	metric-packs metric-pack-drift metric-pack-adapters metric-pack-runs metric-pricing model-usage \
@@ -231,6 +231,7 @@ help:
 			'  make idea-to-spec-answer-rerun-input IDEA_TO_SPEC_ANSWER_RERUN_INPUT_ANSWERS=<json>' \
 			'  make idea-to-spec-rerun-preview IDEA_TO_SPEC_RERUN_PREVIEW_INPUT=<json>' \
 			'  make idea-to-spec-rerun-materialization IDEA_TO_SPEC_RERUN_MATERIALIZATION_PREVIEW=<json>' \
+			'  make product-workspace-decision-backed-repair-chain Build product candidate + decision-backed rerun preview' \
 		'  make metrics-delivery         Refresh Metrics delivery workflow JSON' \
 		'  make metrics-feedback         Refresh Metrics feedback JSON' \
 		'  make metrics-source-promotion Refresh Metrics source promotion candidates JSON' \
@@ -275,6 +276,7 @@ help:
 			'  make active-idea-to-spec-candidate-source Build active product candidate source' \
 			'  make candidate-approval-decision Build explicit candidate approval decision' \
 			'  make product-workspace-active-candidate Build active product workspace candidate artifacts' \
+			'  make product-workspace-decision-backed-repair-chain Build product candidate + decision-backed rerun preview' \
 			'  make agent-passports          Refresh Agent Passport derived surfaces' \
 			'  make agent-runtime-evidence   Refresh Agent Passport runtime evidence JSON' \
 			'  make check-python             Verify selected Python runtime is supported' \
@@ -506,6 +508,15 @@ endif
 	@$(PYTHON) tools/candidate_spec_materialization.py --candidate-graph "$(CANDIDATE_SPEC_GRAPH_OUTPUT)" --repair-loop "$(CANDIDATE_REPAIR_LOOP_OUTPUT)" --output-dir "$(CANDIDATE_SPEC_MATERIALIZATION_OUTPUT_DIR)" --output "$(CANDIDATE_SPEC_MATERIALIZATION_OUTPUT)"
 	@$(PYTHON) tools/idea_to_spec_promotion_gate.py --pre-sib "$(PRE_SIB_COHERENCE_OUTPUT)" --repair-loop "$(CANDIDATE_REPAIR_LOOP_OUTPUT)" --materialization "$(CANDIDATE_SPEC_MATERIALIZATION_OUTPUT)" --output "$(IDEA_TO_SPEC_PROMOTION_GATE_OUTPUT)"
 	@$(PYTHON) tools/active_idea_to_spec_candidate_source.py $(PRODUCT_WORKSPACE_ACTIVE_CANDIDATE_CONFIG_ARGS) $(PRODUCT_WORKSPACE_ACTIVE_CANDIDATE_ARTIFACT_ARGS) --output "$(ACTIVE_IDEA_TO_SPEC_CANDIDATE_OUTPUT)"
+
+.PHONY: product-workspace-decision-backed-repair-chain
+product-workspace-decision-backed-repair-chain:
+	@$(MAKE) product-workspace-active-candidate
+	@$(MAKE) idea-to-spec-clarification-answers
+	@$(MAKE) product-ontology-gap-review-decisions PRODUCT_ONTOLOGY_GAP_REVIEW_DECISIONS_ANSWERS="$(IDEA_TO_SPEC_CLARIFICATION_ANSWERS_OUTPUT)"
+	@$(MAKE) idea-to-spec-answer-rerun-input IDEA_TO_SPEC_ANSWER_RERUN_INPUT_ANSWERS="$(IDEA_TO_SPEC_CLARIFICATION_ANSWERS_OUTPUT)" IDEA_TO_SPEC_ANSWER_RERUN_INPUT_ONTOLOGY_DECISIONS="$(PRODUCT_ONTOLOGY_GAP_REVIEW_DECISIONS_OUTPUT)"
+	@$(MAKE) idea-to-spec-rerun-preview IDEA_TO_SPEC_RERUN_PREVIEW_INPUT="$(IDEA_TO_SPEC_ANSWER_RERUN_INPUT_OUTPUT)" IDEA_TO_SPEC_RERUN_PREVIEW_INTAKE="$(IDEA_EVENT_STORMING_INTAKE_OUTPUT)" IDEA_TO_SPEC_RERUN_PREVIEW_CANDIDATE_GRAPH="$(CANDIDATE_SPEC_GRAPH_OUTPUT)"
+	@$(MAKE) idea-to-spec-rerun-materialization IDEA_TO_SPEC_RERUN_MATERIALIZATION_PREVIEW="$(IDEA_TO_SPEC_RERUN_PREVIEW_OUTPUT)" IDEA_TO_SPEC_RERUN_MATERIALIZATION_CANDIDATE_GRAPH="$(CANDIDATE_SPEC_GRAPH_OUTPUT)"
 
 .PHONY: metrics-delivery
 metrics-delivery:

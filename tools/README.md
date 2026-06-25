@@ -376,6 +376,13 @@ Supervisor modes:
   terms, and owner-review deferrals. The report is review-only and does not
   accept ontology terms, write Ontology packages, mutate candidate artifacts,
   approve candidates, create branches, or publish read models.
+- `make product-workspace-decision-backed-repair-chain`: convenience wrapper
+  introduced by proposal 0170. It runs the standard
+  `product-workspace-active-candidate` flow, then validates clarification
+  answers, derives `product_ontology_gap_review_decisions`, feeds those typed
+  decisions into `idea_to_spec_answer_rerun_input`, and builds rerun preview
+  plus rerun materialization. The wrapper forwards custom output paths between
+  steps and does not grant any additional write authority.
 - `tools/candidate_spec_materialization.py`: deterministic candidate spec YAML
   preview materializer introduced by proposal 0153. Use
   `make candidate-spec-materialization

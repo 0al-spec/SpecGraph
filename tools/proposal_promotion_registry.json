@@ -2182,5 +2182,18 @@
     "required_provenance_links": [
       "source_draft_ref"
     ]
+  },
+  {
+    "proposal_id": "0170",
+    "source_artifact_class": "working_draft",
+    "source_refs": [
+      "docs/archive/proposal_sources/0170_decision_backed_repair_chain_target.md"
+    ],
+    "motivating_concern": "The idea-to-spec smoke and CI paths can consume typed ontology decisions, but operators still had to remember a manual Make variable to connect product_ontology_gap_review_decisions into rerun input.",
+    "normalized_title": "Decision-Backed Repair Chain Target",
+    "bounded_scope": "Add a deterministic review-only product-workspace-decision-backed-repair-chain Make target, tests, proposal docs, roadmap, DocC, and registry tracking that runs the product workspace candidate pipeline, validates clarification answers, derives product ontology gap decisions, passes those decisions into rerun input, and builds rerun preview plus rerun materialization, without executing prompt agents, applying answers or decisions to source artifacts, mutating candidate artifacts, mutating canonical specs, writing Ontology packages or lockfiles, accepting ontology terms, approving candidate graphs, creating Git branches or commits, opening pull requests, publishing read models, or adding SpecSpace mutation UI.",
+    "required_provenance_links": [
+      "source_draft_ref"
+    ]
   }
 ]

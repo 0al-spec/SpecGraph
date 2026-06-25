@@ -166,6 +166,94 @@ def test_product_workspace_active_candidate_runs_from_generic_user_idea_source()
             shutil.rmtree(RUN_DIR)
 
 
+def test_product_workspace_decision_backed_repair_chain_threads_ontology_decisions() -> None:
+    run_dir = RUN_DIR / "decision_backed_repair_chain"
+    if run_dir.exists():
+        shutil.rmtree(run_dir)
+    try:
+        session = run_dir / "user_idea_intake_session.json"
+        source = run_dir / "user_idea_intake_source.json"
+        seed = run_dir / "idea_event_storming_seed.json"
+        intake = run_dir / "idea_event_storming_intake.json"
+        candidate_seed = run_dir / "candidate_spec_graph_seed.json"
+        candidate_graph = run_dir / "candidate_spec_graph.json"
+        pre_sib = run_dir / "pre_sib_coherence_report.json"
+        repair_loop = run_dir / "candidate_repair_loop_report.json"
+        requests = run_dir / "idea_to_spec_clarification_requests.json"
+        answers = run_dir / "idea_to_spec_clarification_answers.json"
+        ontology_decisions = run_dir / "product_ontology_gap_review_decisions.json"
+        rerun_input = run_dir / "idea_to_spec_answer_rerun_input.json"
+        rerun_preview = run_dir / "idea_to_spec_rerun_preview.json"
+        rerun_materialization = run_dir / "idea_to_spec_rerun_materialization.json"
+        materialized_dir = run_dir / "materialized_candidate_specs"
+        materialization = run_dir / "candidate_spec_materialization_report.json"
+        promotion_gate = run_dir / "idea_to_spec_promotion_gate.json"
+        active_candidate = run_dir / "active_idea_to_spec_candidate.json"
+
+        result = subprocess.run(
+            [
+                "make",
+                "product-workspace-decision-backed-repair-chain",
+                f"PYTHON={supported_python()}",
+                "PRODUCT_WORKSPACE_IDEA_SOURCE=tests/fixtures/product_workspace_active_candidate/raw_idea_source.json",
+                f"USER_IDEA_INTAKE_SESSION_OUTPUT={session.relative_to(ROOT).as_posix()}",
+                f"USER_IDEA_INTAKE_SESSION_SOURCE_OUTPUT={source.relative_to(ROOT).as_posix()}",
+                f"USER_IDEA_EVENT_STORMING_SEED_OUTPUT={seed.relative_to(ROOT).as_posix()}",
+                f"IDEA_EVENT_STORMING_INTAKE_OUTPUT={intake.relative_to(ROOT).as_posix()}",
+                "PRODUCT_WORKSPACE_CANDIDATE_SEED_OUTPUT="
+                f"{candidate_seed.relative_to(ROOT).as_posix()}",
+                f"CANDIDATE_SPEC_GRAPH_OUTPUT={candidate_graph.relative_to(ROOT).as_posix()}",
+                f"PRE_SIB_COHERENCE_OUTPUT={pre_sib.relative_to(ROOT).as_posix()}",
+                f"CANDIDATE_REPAIR_LOOP_OUTPUT={repair_loop.relative_to(ROOT).as_posix()}",
+                f"IDEA_TO_SPEC_CLARIFICATION_OUTPUT={requests.relative_to(ROOT).as_posix()}",
+                f"IDEA_TO_SPEC_CLARIFICATION_ANSWERS_OUTPUT={answers.relative_to(ROOT).as_posix()}",
+                "PRODUCT_ONTOLOGY_GAP_REVIEW_DECISIONS_OUTPUT="
+                f"{ontology_decisions.relative_to(ROOT).as_posix()}",
+                "IDEA_TO_SPEC_ANSWER_RERUN_INPUT_OUTPUT="
+                f"{rerun_input.relative_to(ROOT).as_posix()}",
+                f"IDEA_TO_SPEC_RERUN_PREVIEW_OUTPUT={rerun_preview.relative_to(ROOT).as_posix()}",
+                "IDEA_TO_SPEC_RERUN_MATERIALIZATION_OUTPUT="
+                f"{rerun_materialization.relative_to(ROOT).as_posix()}",
+                "CANDIDATE_SPEC_MATERIALIZATION_OUTPUT_DIR="
+                f"{materialized_dir.relative_to(ROOT).as_posix()}",
+                "CANDIDATE_SPEC_MATERIALIZATION_OUTPUT="
+                f"{materialization.relative_to(ROOT).as_posix()}",
+                f"IDEA_TO_SPEC_PROMOTION_GATE_OUTPUT={promotion_gate.relative_to(ROOT).as_posix()}",
+                "ACTIVE_IDEA_TO_SPEC_CANDIDATE_OUTPUT="
+                f"{active_candidate.relative_to(ROOT).as_posix()}",
+            ],
+            cwd=ROOT,
+            check=False,
+            capture_output=True,
+            text=True,
+        )
+
+        assert result.returncode == 0, result.stderr
+        assert ontology_decisions.is_file()
+        assert rerun_input.is_file()
+        assert rerun_preview.is_file()
+        assert rerun_materialization.is_file()
+        rerun_input_payload = load_json(rerun_input)
+        assert rerun_input_payload["summary"]["ontology_decision_count"] == 1
+        assert (
+            rerun_input_payload["summary"]["ontology_decision_source"]
+            == "product_ontology_gap_review_decisions"
+        )
+        assert (
+            rerun_input_payload["source_artifacts"]["product_ontology_gap_review_decisions"][
+                "source_ref"
+            ]
+            == ontology_decisions.relative_to(ROOT).as_posix()
+        )
+        preview = load_json(rerun_preview)
+        assert preview["summary"]["resolved_ontology_gap_count"] == 1
+        materialized = load_json(rerun_materialization)
+        assert materialized["summary"]["removed_gap_count"] == 1
+    finally:
+        if run_dir.exists():
+            shutil.rmtree(run_dir)
+
+
 def test_product_workspace_active_candidate_preserves_legacy_prepared_seed_path() -> None:
     run_dir = RUN_DIR / "legacy_prepared_seed"
     if run_dir.exists():
