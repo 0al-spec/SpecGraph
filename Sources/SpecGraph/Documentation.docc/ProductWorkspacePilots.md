@@ -274,6 +274,25 @@ the chained targets, so tests can keep artifacts isolated without manually
 repeating the ontology-decision variable. The target only orchestrates existing
 review-only tools and does not grant write authority.
 
+Proposal `0171` adds the durable repair-session journal:
+
+```bash
+make idea-to-spec-repair-session-journal
+```
+
+The default output is `runs/idea_to_spec_repair_session.json`. It aggregates
+the active candidate, clarification requests and answers, product ontology
+decisions, rerun overlay input, rerun preview, rerun materialization, and
+promotion gate into one read-only session artifact. The journal records source
+refs and digests, ordered repair stages, accepted answers, ontology decisions,
+resolved and unresolved ontology gap counts, and whether the candidate can move
+to approval or Platform promotion. `make product-workspace-decision-backed-repair-chain`
+writes the journal as its final step.
+
+The journal remains audit/read-model state only. It does not apply answers,
+accept ontology terms, mutate candidate artifacts, write canonical specs,
+create branches, open pull requests, or publish read models.
+
 ## Authority Boundary
 
 Team Decision Log remains non-canonical until a repository service accepts a

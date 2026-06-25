@@ -185,6 +185,7 @@ def test_product_workspace_decision_backed_repair_chain_threads_ontology_decisio
         rerun_input = run_dir / "idea_to_spec_answer_rerun_input.json"
         rerun_preview = run_dir / "idea_to_spec_rerun_preview.json"
         rerun_materialization = run_dir / "idea_to_spec_rerun_materialization.json"
+        repair_session = run_dir / "idea_to_spec_repair_session.json"
         materialized_dir = run_dir / "materialized_candidate_specs"
         materialization = run_dir / "candidate_spec_materialization_report.json"
         promotion_gate = run_dir / "idea_to_spec_promotion_gate.json"
@@ -214,6 +215,7 @@ def test_product_workspace_decision_backed_repair_chain_threads_ontology_decisio
                 f"IDEA_TO_SPEC_RERUN_PREVIEW_OUTPUT={rerun_preview.relative_to(ROOT).as_posix()}",
                 "IDEA_TO_SPEC_RERUN_MATERIALIZATION_OUTPUT="
                 f"{rerun_materialization.relative_to(ROOT).as_posix()}",
+                f"IDEA_TO_SPEC_REPAIR_SESSION_OUTPUT={repair_session.relative_to(ROOT).as_posix()}",
                 "CANDIDATE_SPEC_MATERIALIZATION_OUTPUT_DIR="
                 f"{materialized_dir.relative_to(ROOT).as_posix()}",
                 "CANDIDATE_SPEC_MATERIALIZATION_OUTPUT="
@@ -233,6 +235,7 @@ def test_product_workspace_decision_backed_repair_chain_threads_ontology_decisio
         assert rerun_input.is_file()
         assert rerun_preview.is_file()
         assert rerun_materialization.is_file()
+        assert repair_session.is_file()
         rerun_input_payload = load_json(rerun_input)
         assert rerun_input_payload["summary"]["ontology_decision_count"] == 1
         assert (
@@ -249,6 +252,14 @@ def test_product_workspace_decision_backed_repair_chain_threads_ontology_decisio
         assert preview["summary"]["resolved_ontology_gap_count"] == 1
         materialized = load_json(rerun_materialization)
         assert materialized["summary"]["removed_gap_count"] == 1
+        journal = load_json(repair_session)
+        assert journal["artifact_kind"] == "idea_to_spec_repair_session_journal"
+        assert journal["summary"]["ontology_decision_count"] == 1
+        assert journal["summary"]["unresolved_ontology_gap_count"] == 10
+        assert (
+            journal["source_artifacts"]["rerun_materialization"]["source_ref"]
+            == rerun_materialization.relative_to(ROOT).as_posix()
+        )
     finally:
         if run_dir.exists():
             shutil.rmtree(run_dir)

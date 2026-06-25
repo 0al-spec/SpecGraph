@@ -9457,5 +9457,67 @@
         "pattern": "proposal 0170"
       }
     ]
+  },
+  {
+    "proposal_id": "0171",
+    "posture": "synchronous_runtime_slice",
+    "runtime_surfaces": [
+      "docs/proposals/0171_idea_to_spec_repair_session_journal.md",
+      "docs/archive/proposal_sources/0171_idea_to_spec_repair_session_journal.md",
+      "docs/product_workspace_graph_versioning_roadmap.md",
+      "Sources/SpecGraph/Documentation.docc/ProductWorkspacePilots.md",
+      "tools/README.md",
+      "tools/docc_sync_contract.json",
+      "tools/idea_to_spec_repair_session_journal.py",
+      "tests/test_idea_to_spec_repair_session_journal.py",
+      "tests/test_product_workspace_active_candidate_runner.py",
+      "Makefile"
+    ],
+    "runtime_markers": [
+      {
+        "path": "tools/idea_to_spec_repair_session_journal.py",
+        "pattern": "CONTRACT_REF = \"specgraph.idea-to-spec.repair-session-journal.v0.1\""
+      },
+      {
+        "path": "Makefile",
+        "pattern": "idea-to-spec-repair-session-journal"
+      },
+      {
+        "path": "Makefile",
+        "pattern": "IDEA_TO_SPEC_REPAIR_SESSION_RERUN_MATERIALIZATION"
+      }
+    ],
+    "validation_markers": [
+      {
+        "path": "tests/test_idea_to_spec_repair_session_journal.py",
+        "pattern": "test_repair_session_journal_builds_durable_review_only_summary"
+      },
+      {
+        "path": "tests/test_idea_to_spec_repair_session_journal.py",
+        "pattern": "test_repair_session_journal_detects_stale_source_refs"
+      },
+      {
+        "path": "tests/test_product_workspace_active_candidate_runner.py",
+        "pattern": "idea_to_spec_repair_session.json"
+      }
+    ],
+    "observation_markers": [
+      {
+        "path": "docs/proposals/0171_idea_to_spec_repair_session_journal.md",
+        "pattern": "does not grant write authority"
+      },
+      {
+        "path": "docs/product_workspace_graph_versioning_roadmap.md",
+        "pattern": "Status: implemented in proposal `0171`"
+      },
+      {
+        "path": "Sources/SpecGraph/Documentation.docc/ProductWorkspacePilots.md",
+        "pattern": "Proposal `0171`"
+      },
+      {
+        "path": "tools/README.md",
+        "pattern": "proposal 0171"
+      }
+    ]
   }
 ]

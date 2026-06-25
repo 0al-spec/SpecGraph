@@ -89,6 +89,18 @@ IDEA_TO_SPEC_RERUN_PREVIEW_OUTPUT ?= runs/idea_to_spec_rerun_preview.json
 IDEA_TO_SPEC_RERUN_MATERIALIZATION_PREVIEW ?= runs/idea_to_spec_rerun_preview.json
 IDEA_TO_SPEC_RERUN_MATERIALIZATION_CANDIDATE_GRAPH ?= runs/candidate_spec_graph.json
 IDEA_TO_SPEC_RERUN_MATERIALIZATION_OUTPUT ?= runs/idea_to_spec_rerun_materialization.json
+IDEA_TO_SPEC_REPAIR_SESSION_ACTIVE_CANDIDATE ?= runs/active_idea_to_spec_candidate.json
+IDEA_TO_SPEC_REPAIR_SESSION_CLARIFICATION_REQUESTS ?= runs/idea_to_spec_clarification_requests.json
+IDEA_TO_SPEC_REPAIR_SESSION_CLARIFICATION_ANSWERS ?= runs/idea_to_spec_clarification_answers.json
+IDEA_TO_SPEC_REPAIR_SESSION_ONTOLOGY_DECISIONS ?= runs/product_ontology_gap_review_decisions.json
+IDEA_TO_SPEC_REPAIR_SESSION_RERUN_INPUT ?= runs/idea_to_spec_answer_rerun_input.json
+IDEA_TO_SPEC_REPAIR_SESSION_RERUN_PREVIEW ?= runs/idea_to_spec_rerun_preview.json
+IDEA_TO_SPEC_REPAIR_SESSION_RERUN_MATERIALIZATION ?= runs/idea_to_spec_rerun_materialization.json
+IDEA_TO_SPEC_REPAIR_SESSION_PROMOTION_GATE ?= runs/idea_to_spec_promotion_gate.json
+IDEA_TO_SPEC_REPAIR_SESSION_OUTPUT ?= runs/idea_to_spec_repair_session.json
+IDEA_TO_SPEC_REPAIR_SESSION_ID ?=
+IDEA_TO_SPEC_REPAIR_SESSION_ID_ARG := $(if $(strip $(IDEA_TO_SPEC_REPAIR_SESSION_ID)),--session-id "$(IDEA_TO_SPEC_REPAIR_SESSION_ID)",)
+IDEA_TO_SPEC_REPAIR_SESSION_OPERATOR_REF ?= local_operator:unattributed
 CANDIDATE_SPEC_MATERIALIZATION_CANDIDATE_GRAPH ?= tests/fixtures/candidate_repair_loop/candidate_graph_repairable.json
 CANDIDATE_SPEC_MATERIALIZATION_REPAIR_LOOP ?= runs/candidate_repair_loop_report.json
 CANDIDATE_SPEC_MATERIALIZATION_OUTPUT_DIR ?= runs/materialized_candidate_specs
@@ -163,6 +175,7 @@ PYTHON_TARGETS := viewer-surfaces dashboard backlog next-move spec-activity grap
 	idea-to-spec-answer-rerun-input \
 	idea-to-spec-rerun-preview \
 	idea-to-spec-rerun-materialization \
+	idea-to-spec-repair-session-journal \
 	candidate-spec-materialization idea-to-spec-promotion-gate \
 	active-idea-to-spec-candidate-source candidate-approval-decision \
 	product-workspace-active-candidate product-workspace-decision-backed-repair-chain \
@@ -231,6 +244,7 @@ help:
 			'  make idea-to-spec-answer-rerun-input IDEA_TO_SPEC_ANSWER_RERUN_INPUT_ANSWERS=<json>' \
 			'  make idea-to-spec-rerun-preview IDEA_TO_SPEC_RERUN_PREVIEW_INPUT=<json>' \
 			'  make idea-to-spec-rerun-materialization IDEA_TO_SPEC_RERUN_MATERIALIZATION_PREVIEW=<json>' \
+			'  make idea-to-spec-repair-session-journal IDEA_TO_SPEC_REPAIR_SESSION_OUTPUT=<json>' \
 			'  make product-workspace-decision-backed-repair-chain Build product candidate + decision-backed rerun preview' \
 		'  make metrics-delivery         Refresh Metrics delivery workflow JSON' \
 		'  make metrics-feedback         Refresh Metrics feedback JSON' \
@@ -275,6 +289,7 @@ help:
 			'  make idea-to-spec-promotion-gate Build final idea-to-spec Platform handoff gate' \
 			'  make active-idea-to-spec-candidate-source Build active product candidate source' \
 			'  make candidate-approval-decision Build explicit candidate approval decision' \
+			'  make idea-to-spec-repair-session-journal Build durable review-only repair session journal' \
 			'  make product-workspace-active-candidate Build active product workspace candidate artifacts' \
 			'  make product-workspace-decision-backed-repair-chain Build product candidate + decision-backed rerun preview' \
 			'  make agent-passports          Refresh Agent Passport derived surfaces' \
@@ -474,6 +489,10 @@ idea-to-spec-rerun-preview:
 idea-to-spec-rerun-materialization:
 	@$(PYTHON) tools/idea_to_spec_rerun_materialization.py --rerun-preview "$(IDEA_TO_SPEC_RERUN_MATERIALIZATION_PREVIEW)" --candidate-graph "$(IDEA_TO_SPEC_RERUN_MATERIALIZATION_CANDIDATE_GRAPH)" --output "$(IDEA_TO_SPEC_RERUN_MATERIALIZATION_OUTPUT)"
 
+.PHONY: idea-to-spec-repair-session-journal
+idea-to-spec-repair-session-journal:
+	@$(PYTHON) tools/idea_to_spec_repair_session_journal.py --active-candidate "$(IDEA_TO_SPEC_REPAIR_SESSION_ACTIVE_CANDIDATE)" --clarification-requests "$(IDEA_TO_SPEC_REPAIR_SESSION_CLARIFICATION_REQUESTS)" --clarification-answers "$(IDEA_TO_SPEC_REPAIR_SESSION_CLARIFICATION_ANSWERS)" --ontology-decisions "$(IDEA_TO_SPEC_REPAIR_SESSION_ONTOLOGY_DECISIONS)" --rerun-input "$(IDEA_TO_SPEC_REPAIR_SESSION_RERUN_INPUT)" --rerun-preview "$(IDEA_TO_SPEC_REPAIR_SESSION_RERUN_PREVIEW)" --rerun-materialization "$(IDEA_TO_SPEC_REPAIR_SESSION_RERUN_MATERIALIZATION)" --promotion-gate "$(IDEA_TO_SPEC_REPAIR_SESSION_PROMOTION_GATE)" --operator-ref "$(IDEA_TO_SPEC_REPAIR_SESSION_OPERATOR_REF)" $(IDEA_TO_SPEC_REPAIR_SESSION_ID_ARG) --output "$(IDEA_TO_SPEC_REPAIR_SESSION_OUTPUT)"
+
 .PHONY: candidate-spec-materialization
 candidate-spec-materialization:
 	@$(PYTHON) tools/candidate_spec_materialization.py --candidate-graph "$(CANDIDATE_SPEC_MATERIALIZATION_CANDIDATE_GRAPH)" --repair-loop "$(CANDIDATE_SPEC_MATERIALIZATION_REPAIR_LOOP)" --output-dir "$(CANDIDATE_SPEC_MATERIALIZATION_OUTPUT_DIR)" --output "$(CANDIDATE_SPEC_MATERIALIZATION_OUTPUT)"
@@ -517,6 +536,7 @@ product-workspace-decision-backed-repair-chain:
 	@$(MAKE) idea-to-spec-answer-rerun-input IDEA_TO_SPEC_ANSWER_RERUN_INPUT_ANSWERS="$(IDEA_TO_SPEC_CLARIFICATION_ANSWERS_OUTPUT)" IDEA_TO_SPEC_ANSWER_RERUN_INPUT_ONTOLOGY_DECISIONS="$(PRODUCT_ONTOLOGY_GAP_REVIEW_DECISIONS_OUTPUT)"
 	@$(MAKE) idea-to-spec-rerun-preview IDEA_TO_SPEC_RERUN_PREVIEW_INPUT="$(IDEA_TO_SPEC_ANSWER_RERUN_INPUT_OUTPUT)" IDEA_TO_SPEC_RERUN_PREVIEW_INTAKE="$(IDEA_EVENT_STORMING_INTAKE_OUTPUT)" IDEA_TO_SPEC_RERUN_PREVIEW_CANDIDATE_GRAPH="$(CANDIDATE_SPEC_GRAPH_OUTPUT)"
 	@$(MAKE) idea-to-spec-rerun-materialization IDEA_TO_SPEC_RERUN_MATERIALIZATION_PREVIEW="$(IDEA_TO_SPEC_RERUN_PREVIEW_OUTPUT)" IDEA_TO_SPEC_RERUN_MATERIALIZATION_CANDIDATE_GRAPH="$(CANDIDATE_SPEC_GRAPH_OUTPUT)"
+	@$(MAKE) idea-to-spec-repair-session-journal IDEA_TO_SPEC_REPAIR_SESSION_ACTIVE_CANDIDATE="$(ACTIVE_IDEA_TO_SPEC_CANDIDATE_OUTPUT)" IDEA_TO_SPEC_REPAIR_SESSION_CLARIFICATION_REQUESTS="$(IDEA_TO_SPEC_CLARIFICATION_OUTPUT)" IDEA_TO_SPEC_REPAIR_SESSION_CLARIFICATION_ANSWERS="$(IDEA_TO_SPEC_CLARIFICATION_ANSWERS_OUTPUT)" IDEA_TO_SPEC_REPAIR_SESSION_ONTOLOGY_DECISIONS="$(PRODUCT_ONTOLOGY_GAP_REVIEW_DECISIONS_OUTPUT)" IDEA_TO_SPEC_REPAIR_SESSION_RERUN_INPUT="$(IDEA_TO_SPEC_ANSWER_RERUN_INPUT_OUTPUT)" IDEA_TO_SPEC_REPAIR_SESSION_RERUN_PREVIEW="$(IDEA_TO_SPEC_RERUN_PREVIEW_OUTPUT)" IDEA_TO_SPEC_REPAIR_SESSION_RERUN_MATERIALIZATION="$(IDEA_TO_SPEC_RERUN_MATERIALIZATION_OUTPUT)" IDEA_TO_SPEC_REPAIR_SESSION_PROMOTION_GATE="$(IDEA_TO_SPEC_PROMOTION_GATE_OUTPUT)"
 
 .PHONY: metrics-delivery
 metrics-delivery:
