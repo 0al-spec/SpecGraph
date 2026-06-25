@@ -715,6 +715,28 @@ decisions resolve all, some, or none of the candidate ontology gaps. The signal
 is still review-only and does not mutate candidate artifacts, accept ontology
 terms, write Ontology packages, approve candidates, or create Git branches.
 
+### 22. Decision-Backed Repair Chain Target
+
+Status: implemented in proposal `0170`.
+
+Smoke and CI runs can now build the full decision-backed review chain with one
+target:
+
+```bash
+make product-workspace-decision-backed-repair-chain
+```
+
+The wrapper runs the normal product workspace candidate pipeline, validates
+clarification answers, derives `product_ontology_gap_review_decisions`, passes
+those decisions into `idea_to_spec_answer_rerun_input`, and then builds rerun
+preview plus rerun materialization. It also forwards custom output paths across
+the chained targets, so tests can keep artifacts isolated without manually
+repeating the ontology-decision variable.
+
+The target is only orchestration. It does not execute prompt agents, apply
+answers to source artifacts, accept ontology terms, mutate candidate artifacts,
+write canonical specs, create branches, or publish read models.
+
 ## Success Criteria
 
 - A user can start with a product idea and receive a coherent candidate graph.

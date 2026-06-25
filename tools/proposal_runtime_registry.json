@@ -9401,5 +9401,61 @@
         "pattern": "proposal 0169"
       }
     ]
+  },
+  {
+    "proposal_id": "0170",
+    "posture": "synchronous_runtime_slice",
+    "runtime_surfaces": [
+      "docs/proposals/0170_decision_backed_repair_chain_target.md",
+      "docs/archive/proposal_sources/0170_decision_backed_repair_chain_target.md",
+      "docs/product_workspace_graph_versioning_roadmap.md",
+      "Sources/SpecGraph/Documentation.docc/ProductWorkspacePilots.md",
+      "tools/README.md",
+      "tools/docc_sync_contract.json",
+      "tests/test_product_workspace_active_candidate_runner.py",
+      "Makefile"
+    ],
+    "runtime_markers": [
+      {
+        "path": "Makefile",
+        "pattern": "product-workspace-decision-backed-repair-chain"
+      },
+      {
+        "path": "Makefile",
+        "pattern": "IDEA_TO_SPEC_ANSWER_RERUN_INPUT_ONTOLOGY_DECISIONS=\"$(PRODUCT_ONTOLOGY_GAP_REVIEW_DECISIONS_OUTPUT)\""
+      },
+      {
+        "path": "Makefile",
+        "pattern": "PRODUCT_ONTOLOGY_GAP_REVIEW_DECISIONS_ANSWERS=\"$(IDEA_TO_SPEC_CLARIFICATION_ANSWERS_OUTPUT)\""
+      }
+    ],
+    "validation_markers": [
+      {
+        "path": "tests/test_product_workspace_active_candidate_runner.py",
+        "pattern": "test_product_workspace_decision_backed_repair_chain_threads_ontology_decisions"
+      },
+      {
+        "path": "tests/test_product_workspace_active_candidate_runner.py",
+        "pattern": "ontology_decision_source"
+      }
+    ],
+    "observation_markers": [
+      {
+        "path": "docs/proposals/0170_decision_backed_repair_chain_target.md",
+        "pattern": "does not grant write authority"
+      },
+      {
+        "path": "docs/product_workspace_graph_versioning_roadmap.md",
+        "pattern": "Status: implemented in proposal `0170`"
+      },
+      {
+        "path": "Sources/SpecGraph/Documentation.docc/ProductWorkspacePilots.md",
+        "pattern": "Proposal `0170`"
+      },
+      {
+        "path": "tools/README.md",
+        "pattern": "proposal 0170"
+      }
+    ]
   }
 ]

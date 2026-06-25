@@ -259,6 +259,21 @@ not apply answers to source artifacts, mutate candidate artifacts, accept
 ontology terms, write ontology packages, approve candidates, create Git
 branches, or publish read models.
 
+Proposal `0170` adds a single convenience target for smoke and CI runs that
+need the complete decision-backed review chain:
+
+```bash
+make product-workspace-decision-backed-repair-chain
+```
+
+The wrapper runs the normal product workspace candidate pipeline, validates
+clarification answers, derives `product_ontology_gap_review_decisions`, passes
+those decisions into `idea_to_spec_answer_rerun_input`, and then builds rerun
+preview plus rerun materialization. It also forwards custom output paths across
+the chained targets, so tests can keep artifacts isolated without manually
+repeating the ontology-decision variable. The target only orchestrates existing
+review-only tools and does not grant write authority.
+
 ## Authority Boundary
 
 Team Decision Log remains non-canonical until a repository service accepts a
