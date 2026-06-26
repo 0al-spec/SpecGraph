@@ -4,6 +4,7 @@ import importlib.util
 import json
 import subprocess
 import sys
+from copy import deepcopy
 from pathlib import Path
 
 from test_specspace_repair_drafts_to_rerun_artifacts import (
@@ -119,12 +120,17 @@ def valid_request_state(
     }
 
 
-def build_gate_report(request_state: dict[str, object] | None = None) -> dict[str, object]:
+def build_gate_report(
+    request_state: dict[str, object] | None = None,
+    *,
+    import_preview: dict[str, object] | None = None,
+    repair_session: dict[str, object] | None = None,
+) -> dict[str, object]:
     module = load_module(TOOL_PATH, "specspace_repair_rerun_request_gate_under_test")
     return module.build_specspace_repair_rerun_request_gate(
         request_state=request_state or valid_request_state(),
-        import_preview=build_import_preview(),
-        repair_session=valid_repair_session(),
+        import_preview=import_preview or build_import_preview(),
+        repair_session=repair_session or valid_repair_session(),
         request_state_path=ROOT / "runs" / "idea_to_spec_repair_rerun_requests.json",
         import_preview_path=ROOT / "runs" / "specspace_repair_draft_import_preview.json",
         repair_session_path=ROOT / "runs" / "idea_to_spec_repair_session.json",
@@ -168,6 +174,56 @@ def test_specspace_repair_rerun_request_gate_rejects_make_authority_claim() -> N
     assert "request_record_authority_expanded" in finding_ids(report)
 
 
+def test_specspace_repair_rerun_request_gate_rejects_prompt_authority_claim() -> None:
+    request_state = valid_request_state()
+    request_state["requests"][0]["may_execute_prompt_agent"] = True
+
+    report = build_gate_report(request_state)
+
+    assert report["readiness"]["ready"] is False
+    assert "request_record_authority_expanded" in finding_ids(report)
+
+
+def test_specspace_repair_rerun_request_gate_ignores_other_workspace_bad_requests() -> None:
+    request_state = valid_request_state()
+    other_request = deepcopy(request_state["requests"][0])
+    other_request.update(
+        {
+            "id": "repair-rerun-request.other-workspace",
+            "workspace_id": "other-workspace",
+            "candidate_id": "other-workspace",
+            "requested_action": "execute_specgraph",
+            "may_run_make_target": True,
+        }
+    )
+    request_state["requests"].insert(0, other_request)
+
+    report = build_gate_report(request_state)
+
+    assert report["readiness"]["ready"] is True
+    assert "request_record_action_unsupported" not in finding_ids(report)
+    assert "request_record_authority_expanded" not in finding_ids(report)
+
+
+def test_specspace_repair_rerun_request_gate_redacts_private_request_notes() -> None:
+    request_state = valid_request_state()
+    request_state["requests"][0]["operator_note"] = "do not publish"
+    request_state["requests"][0]["private_note"] = "also private"
+    request_state["requests"][0]["metadata"] = {
+        "operator_notes": ["private nested note"],
+        "public_marker": "safe",
+    }
+
+    report = build_gate_report(request_state)
+    selected = report["selected_request"]
+
+    assert report["readiness"]["ready"] is True
+    assert "operator_note" not in selected
+    assert "private_note" not in selected
+    assert "operator_notes" not in selected["metadata"]
+    assert selected["metadata"]["public_marker"] == "safe"
+
+
 def test_specspace_repair_rerun_request_gate_rejects_import_preview_ref_mismatch() -> None:
     request_state = valid_request_state(import_preview_ref="runs/stale_import_preview.json")
 
@@ -175,6 +231,39 @@ def test_specspace_repair_rerun_request_gate_rejects_import_preview_ref_mismatch
 
     assert report["readiness"]["ready"] is False
     assert "request_import_preview_ref_mismatch" in finding_ids(report)
+
+
+def test_specspace_repair_rerun_request_gate_rejects_session_id_mismatch() -> None:
+    request_state = valid_request_state()
+    request_state["requests"][0]["repair_session_id"] = "repair-session.stale"
+
+    report = build_gate_report(request_state)
+
+    assert report["readiness"]["ready"] is False
+    assert "request_repair_session_id_mismatch" in finding_ids(report)
+    assert "request_import_preview_repair_session_id_mismatch" in finding_ids(report)
+
+
+def test_specspace_repair_rerun_request_gate_rejects_preview_session_source_mismatch() -> None:
+    import_preview = build_import_preview()
+    import_preview["source_artifacts"]["idea_to_spec_repair_session"]["source_ref"] = (
+        "runs/stale_repair_session.json"
+    )
+
+    report = build_gate_report(import_preview=import_preview)
+
+    assert report["readiness"]["ready"] is False
+    assert "import_preview_idea_to_spec_repair_session_source_ref_mismatch" in finding_ids(report)
+
+
+def test_specspace_repair_rerun_request_gate_rejects_draft_state_ref_mismatch() -> None:
+    request_state = valid_request_state()
+    request_state["requests"][0]["draft_state_ref"] = "specspace-state://stale_drafts.json"
+
+    report = build_gate_report(request_state)
+
+    assert report["readiness"]["ready"] is False
+    assert "request_draft_state_ref_mismatch" in finding_ids(report)
 
 
 def test_specspace_repair_rerun_request_gate_cli_strict_fails_when_not_ready(
@@ -271,7 +360,6 @@ def test_product_workspace_requested_repair_draft_rerun_make_target_threads_path
             f"SPECSPACE_REPAIR_RERUN_REQUEST_OUTPUT={gate_path}",
             "SPECSPACE_REPAIR_RERUN_REQUEST_WORKSPACE_ID=team-decision-log",
             f"SPECSPACE_REPAIR_DRAFT_IMPORT_DRAFTS={draft_state_path}",
-            f"SPECSPACE_REPAIR_DRAFT_IMPORT_REPAIR_SESSION={repair_session_path}",
             f"SPECSPACE_REPAIR_DRAFT_IMPORT_CLARIFICATION_REQUESTS={requests_path}",
             f"SPECSPACE_REPAIR_DRAFT_IMPORT_OUTPUT={preview_path}",
             f"SPECSPACE_REPAIR_DRAFT_RERUN_REPAIR_SESSION={repair_session_path}",

@@ -60,12 +60,22 @@ AUTHORITY_FALSE_FIELDS = (
 REQUEST_FALSE_FIELDS = (
     "may_execute_specgraph",
     "may_run_make_target",
+    "may_execute_prompt_agent",
+    "may_apply_to_specgraph",
+    "may_apply_answers",
+    "may_apply_decisions",
+    "may_apply_drafts_to_source_artifacts",
+    "may_apply_answers_to_source_artifacts",
+    "may_apply_decisions_to_source_artifacts",
     "may_mutate_candidate_source_artifacts",
     "may_mutate_canonical_specs",
     "may_write_ontology_package",
+    "may_write_ontology_lockfile",
     "may_accept_ontology_terms",
+    "may_mark_candidate_graph_accepted",
     "may_create_branch_or_commit",
     "may_open_pull_request",
+    "may_publish_read_model",
     "may_execute_git_service_operation",
     "canonical_mutations_allowed",
     "tracked_artifacts_written",
@@ -87,6 +97,17 @@ REVIEW_ONLY_AUTHORITY_FIELDS = (
     "may_open_pull_request",
     "may_publish_read_model",
 )
+RAW_TRACE_FIELDS = {
+    "operator_note",
+    "operator_notes",
+    "private_note",
+    "raw_answer",
+    "raw_draft",
+    "raw_idea_text",
+    "raw_model_output",
+    "raw_operator_note",
+    "raw_prompt",
+}
 
 
 def _now_iso() -> str:
@@ -133,7 +154,7 @@ def _public_safe(value: Any) -> Any:
         return {
             key: _public_safe(item)
             for key, item in value.items()
-            if isinstance(key, str) and not key.startswith("raw_")
+            if isinstance(key, str) and key not in RAW_TRACE_FIELDS and not key.startswith("raw_")
         }
     if isinstance(value, list):
         return [_public_safe(item) for item in value]
@@ -207,6 +228,27 @@ def _safe_artifact_ref(ref: str) -> str | None:
     return path.as_posix()
 
 
+def _safe_draft_state_ref(ref: str) -> str | None:
+    if not ref:
+        return None
+    prefix = "specspace-state://"
+    if ref.startswith(prefix):
+        state_name = ref.removeprefix(prefix)
+        if not state_name or "/" in state_name or "\\" in state_name or state_name in (".", ".."):
+            return None
+        return ref
+    return _safe_artifact_ref(ref)
+
+
+def _refs_match_operator_draft_state(*, request_ref: str, preview_source_ref: str) -> bool:
+    if request_ref == preview_source_ref:
+        return True
+    prefix = "specspace-state://"
+    if request_ref.startswith(prefix):
+        return Path(preview_source_ref).name == request_ref.removeprefix(prefix)
+    return False
+
+
 def _validate_request_state_shape(request_state: dict[str, Any]) -> list[dict[str, Any]]:
     findings: list[dict[str, Any]] = []
     if request_state.get("artifact_kind") != REQUEST_STATE_KIND:
@@ -278,6 +320,8 @@ def _select_active_request(
     request_rows = [_dict(item) for item in _list(request_state.get("requests"))]
     active_requests: list[dict[str, Any]] = []
     for request in request_rows:
+        if workspace_id and _text(request.get("workspace_id")) != workspace_id:
+            continue
         field = _first_true(request, REQUEST_FALSE_FIELDS)
         if field:
             findings.append(
@@ -308,8 +352,6 @@ def _select_active_request(
                     },
                 )
             )
-            continue
-        if workspace_id and _text(request.get("workspace_id")) != workspace_id:
             continue
         active_requests.append(request)
 
@@ -350,7 +392,15 @@ def _validate_selected_request(
     if request is None:
         return []
     findings: list[dict[str, Any]] = []
-    required_fields = ("id", "workspace_id", "candidate_id", "import_preview_ref")
+    required_fields = (
+        "id",
+        "workspace_id",
+        "candidate_id",
+        "repair_session_id",
+        "repair_session_ref",
+        "draft_state_ref",
+        "import_preview_ref",
+    )
     for field in required_fields:
         if not _text(request.get(field)):
             findings.append(
@@ -364,6 +414,7 @@ def _validate_selected_request(
 
     import_preview_ref = _text(request.get("import_preview_ref"))
     repair_session_ref = _text(request.get("repair_session_ref"))
+    draft_state_ref = _text(request.get("draft_state_ref"))
     if _safe_artifact_ref(import_preview_ref) is None:
         findings.append(
             _finding(
@@ -380,6 +431,17 @@ def _validate_selected_request(
                 severity="review_required",
                 message="Request repair_session_ref must be an explicit artifact path.",
                 evidence={"repair_session_ref": repair_session_ref},
+            )
+        )
+    if draft_state_ref and _safe_draft_state_ref(draft_state_ref) is None:
+        findings.append(
+            _finding(
+                finding_id="request_draft_state_ref_unsafe",
+                severity="review_required",
+                message=(
+                    "Request draft_state_ref must be a safe SpecSpace state URI or artifact path."
+                ),
+                evidence={"draft_state_ref": draft_state_ref},
             )
         )
 
@@ -413,8 +475,10 @@ def _validate_selected_request(
 
     session = _dict(repair_session.get("session"))
     preview_session = _dict(import_preview.get("session"))
+    preview_sources = _dict(import_preview.get("source_artifacts"))
     request_workspace_id = _text(request.get("workspace_id"))
     request_candidate_id = _text(request.get("candidate_id"))
+    request_repair_session_id = _text(request.get("repair_session_id"))
     if request_candidate_id != _text(session.get("candidate_id")):
         findings.append(
             _finding(
@@ -424,6 +488,30 @@ def _validate_selected_request(
                 evidence={
                     "actual": request_candidate_id,
                     "expected": session.get("candidate_id"),
+                },
+            )
+        )
+    if request_repair_session_id != _text(session.get("session_id")):
+        findings.append(
+            _finding(
+                finding_id="request_repair_session_id_mismatch",
+                severity="review_required",
+                message="Request repair_session_id must match the selected repair session.",
+                evidence={
+                    "actual": request_repair_session_id,
+                    "expected": session.get("session_id"),
+                },
+            )
+        )
+    if request_repair_session_id != _text(preview_session.get("session_id")):
+        findings.append(
+            _finding(
+                finding_id="request_import_preview_repair_session_id_mismatch",
+                severity="review_required",
+                message="Request repair_session_id must match the import preview session.",
+                evidence={
+                    "actual": request_repair_session_id,
+                    "expected": preview_session.get("session_id"),
                 },
             )
         )
@@ -439,6 +527,44 @@ def _validate_selected_request(
                 },
             )
         )
+    preview_workspace_id = _text(preview_session.get("workspace_id"))
+    if preview_workspace_id and request_workspace_id != preview_workspace_id:
+        findings.append(
+            _finding(
+                finding_id="request_import_preview_workspace_id_mismatch",
+                severity="review_required",
+                message="Request workspace_id must match the import preview workspace.",
+                evidence={
+                    "actual": request_workspace_id,
+                    "expected": preview_workspace_id,
+                },
+            )
+        )
+    session_workspace_id = _text(session.get("workspace_id"))
+    if session_workspace_id and request_workspace_id != session_workspace_id:
+        findings.append(
+            _finding(
+                finding_id="request_repair_session_workspace_id_mismatch",
+                severity="review_required",
+                message="Request workspace_id must match the repair session workspace.",
+                evidence={
+                    "actual": request_workspace_id,
+                    "expected": session_workspace_id,
+                },
+            )
+        )
+    for field in ("workflow_lane", "governance_profile", "target_repository_role"):
+        actual = _text(preview_session.get(field))
+        expected = _text(session.get(field))
+        if actual != expected:
+            findings.append(
+                _finding(
+                    finding_id=f"import_preview_session_{field}_mismatch",
+                    severity="review_required",
+                    message=f"Import preview session {field} must match the repair session.",
+                    evidence={"actual": actual, "expected": expected},
+                )
+            )
     if request_workspace_id and not request_candidate_id:
         findings.append(
             _finding(
@@ -448,7 +574,47 @@ def _validate_selected_request(
                 evidence={"workspace_id": request_workspace_id},
             )
         )
-    if _text(request.get("draft_state_ref")) == _relative_ref(request_state_path):
+    preview_repair_session_ref = _text(
+        _dict(preview_sources.get("idea_to_spec_repair_session")).get("source_ref")
+    )
+    if preview_repair_session_ref != expected_repair_session_ref:
+        findings.append(
+            _finding(
+                finding_id="import_preview_idea_to_spec_repair_session_source_ref_mismatch",
+                severity="review_required",
+                message=(
+                    "Import preview repair-session source_ref must match the selected repair "
+                    "session input."
+                ),
+                evidence={
+                    "actual": preview_repair_session_ref,
+                    "expected": expected_repair_session_ref,
+                },
+            )
+        )
+    preview_draft_state_ref = _text(
+        _dict(preview_sources.get("specspace_repair_drafts")).get("source_ref")
+    )
+    if (
+        draft_state_ref
+        and preview_draft_state_ref
+        and not _refs_match_operator_draft_state(
+            request_ref=draft_state_ref,
+            preview_source_ref=preview_draft_state_ref,
+        )
+    ):
+        findings.append(
+            _finding(
+                finding_id="request_draft_state_ref_mismatch",
+                severity="review_required",
+                message="Request draft_state_ref must match the import preview draft-state source.",
+                evidence={
+                    "actual": draft_state_ref,
+                    "expected": preview_draft_state_ref,
+                },
+            )
+        )
+    if draft_state_ref == _relative_ref(request_state_path):
         findings.append(
             _finding(
                 finding_id="request_draft_state_ref_points_to_request_state",
