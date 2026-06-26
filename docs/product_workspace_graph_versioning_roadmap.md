@@ -808,6 +808,54 @@ mutate candidate artifacts, accept ontology terms, write Ontology packages,
 write canonical specs, create branches, open pull requests, or publish read
 models.
 
+### 25. SpecSpace Repair Drafts To Rerun Artifacts
+
+Status: implemented in proposal `0173`.
+
+A ready SpecSpace repair draft import preview can now drive the standard
+review-only rerun chain:
+
+```bash
+make product-workspace-repair-draft-rerun
+```
+
+The default orchestration report is:
+
+```text
+runs/specspace_repair_draft_rerun_report.json
+```
+
+The target first refreshes `runs/specspace_repair_draft_import_preview.json`,
+then converts ready sanitized answer and ontology decision candidates into the
+standard artifacts:
+
+```text
+runs/idea_to_spec_clarification_answers.json
+runs/product_ontology_gap_review_decisions.json
+runs/idea_to_spec_answer_rerun_input.json
+runs/idea_to_spec_rerun_preview.json
+runs/idea_to_spec_rerun_materialization.json
+runs/idea_to_spec_repair_session.json
+```
+
+The conversion is still preview-only. It validates the import preview and then
+reuses the existing answer, ontology decision, rerun input, rerun preview,
+rerun materialization, and repair-session journal builders. It does not apply
+SpecSpace drafts, accept ontology terms, mutate candidate source artifacts,
+write canonical specs, approve candidates, create branches, open pull requests,
+or publish read models.
+
+When the import preview is not ready, the target writes only
+`runs/specspace_repair_draft_rerun_report.json` and leaves existing shared
+rerun artifacts untouched. Ready reports also include draft provenance so an
+operator can trace replayed requests back to SpecSpace draft ids.
+
+The import preview input can be overridden with
+`SPECSPACE_REPAIR_DRAFT_RERUN_IMPORT_PREVIEW`. Custom output paths are
+forwarded through the existing rerun artifact variables so smoke tests and
+local operators can keep draft-derived sessions isolated from default `runs/`
+state.
+
 ## Success Criteria
 
 - A user can start with a product idea and receive a coherent candidate graph.
@@ -845,6 +893,9 @@ models.
 - SpecSpace-owned repair drafts can be preview-imported as sanitized answer and
   ontology decision candidates without applying them to SpecGraph, Ontology, or
   Git state.
+- Ready SpecSpace repair draft import previews can be converted into standard
+  review-only answer, ontology decision, rerun, materialization, and
+  repair-session artifacts without making drafts authoritative.
 
 ## Current Execution Order
 
@@ -852,17 +903,19 @@ The active stack after production workspace isolation is:
 
 1. Review-only import preview for SpecSpace-owned repair drafts emitted by
    proposal `0172`.
-2. Controlled candidate rerun source selection from a ready
+2. Review-only rerun artifacts from a ready SpecSpace repair draft import
+   preview emitted by proposal `0173`.
+3. Controlled candidate rerun source selection from a ready
    `idea_to_spec_rerun_materialization` report emitted by proposal `0167`.
-3. CLI or agent conversation wrapper that fills `user_idea_raw_input` from a
+4. CLI or agent conversation wrapper that fills `user_idea_raw_input` from a
    real operator interview and can consume clarification requests.
-4. Prompt-side enrichment that can propose richer product-domain graph nodes
+5. Prompt-side enrichment that can propose richer product-domain graph nodes
    while preserving ontology gaps for unaccepted terms.
-5. SpecSpace workflow lane refinement for active candidate blockers, repair
+6. SpecSpace workflow lane refinement for active candidate blockers, repair
    suggestions, and approval state.
-6. Platform Git Service post-review status and read-model publication
+7. Platform Git Service post-review status and read-model publication
    orchestration.
-7. Ontology applicability and layer-aware review refinement as compiler support
+8. Ontology applicability and layer-aware review refinement as compiler support
    matures.
 
 ## Related Documents
