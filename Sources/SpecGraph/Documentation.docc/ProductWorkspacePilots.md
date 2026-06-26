@@ -342,6 +342,34 @@ If the preview is not ready, the bridge writes only
 rerun artifacts untouched. Ready reports include draft provenance back to
 SpecSpace draft ids.
 
+Proposal `0174` adds a SpecSpace repair rerun request gate:
+
+```bash
+make specspace-repair-rerun-request-gate
+make product-workspace-requested-repair-draft-rerun
+```
+
+The default gate report is
+`runs/specspace_repair_rerun_request_gate.json`. It reads
+`runs/idea_to_spec_repair_rerun_requests.json`, a ready
+`runs/specspace_repair_draft_import_preview.json`, and
+`runs/idea_to_spec_repair_session.json`. The request must be SpecSpace-owned,
+must contain exactly one active `prepare_repair_draft_rerun` request for the
+selected workspace, and must keep `may_execute_specgraph`,
+`may_run_make_target`, canonical mutation, ontology write, Git, and promotion
+authority false.
+
+`make product-workspace-requested-repair-draft-rerun` refreshes the import
+preview, validates the request in strict mode, and then runs the proposal
+`0173` rerun builder. If the request is invalid, the target stops before
+writing shared rerun artifacts. The request remains explicit operator intent;
+SpecGraph does not trust `operator_command` from SpecSpace as execution
+authority. Use `SPECSPACE_REPAIR_RERUN_REQUEST_STATE`,
+`SPECSPACE_REPAIR_RERUN_REQUEST_IMPORT_PREVIEW`,
+`SPECSPACE_REPAIR_RERUN_REQUEST_REPAIR_SESSION`,
+`SPECSPACE_REPAIR_RERUN_REQUEST_WORKSPACE_ID`, and
+`SPECSPACE_REPAIR_RERUN_REQUEST_OUTPUT` to thread non-default handoff paths.
+
 ## Authority Boundary
 
 Team Decision Log remains non-canonical until a repository service accepts a
@@ -360,20 +388,22 @@ The product pilot must not:
 
 1. Review-only import preview for SpecSpace-owned repair drafts from
    `specspace_repair_draft_import_preview`.
-2. Review-only rerun artifacts from a ready SpecSpace repair draft import
+2. Request-gated repair draft rerun intent through
+   `specspace_repair_rerun_request_gate`.
+3. Review-only rerun artifacts from a ready SpecSpace repair draft import
    preview through `specspace_repair_draft_rerun_report`.
-3. Controlled candidate rerun source selection from
+4. Controlled candidate rerun source selection from
    `idea_to_spec_rerun_materialization`.
-4. Prompt-side enrichment for richer candidate graph authoring under the same
+5. Prompt-side enrichment for richer candidate graph authoring under the same
    ontology-bound seed contract.
-5. CLI or agent conversation wrapper that fills `user_idea_raw_input` from a
+6. CLI or agent conversation wrapper that fills `user_idea_raw_input` from a
    real operator interview.
-6. SpecSpace workflow lane refinement for clearer active candidate blockers and
+7. SpecSpace workflow lane refinement for clearer active candidate blockers and
    repair suggestions.
-7. Extend Platform Git Service orchestration through review status and
+8. Extend Platform Git Service orchestration through review status and
    read-model publication.
-8. Refine product workspace workflow lane metrics and blocker copy.
-9. Refine ontology applicability and layer-aware review as compiler support
+9. Refine product workspace workflow lane metrics and blocker copy.
+10. Refine ontology applicability and layer-aware review as compiler support
    matures.
 
 ## Canonical Sources

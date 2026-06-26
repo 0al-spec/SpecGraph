@@ -115,6 +115,14 @@ SPECSPACE_REPAIR_DRAFT_RERUN_INTAKE ?= runs/idea_event_storming_intake.json
 SPECSPACE_REPAIR_DRAFT_RERUN_CANDIDATE_GRAPH ?= runs/candidate_spec_graph.json
 SPECSPACE_REPAIR_DRAFT_RERUN_PROMOTION_GATE ?= runs/idea_to_spec_promotion_gate.json
 SPECSPACE_REPAIR_DRAFT_RERUN_REPORT_OUTPUT ?= runs/specspace_repair_draft_rerun_report.json
+SPECSPACE_REPAIR_RERUN_REQUEST_STATE ?= runs/idea_to_spec_repair_rerun_requests.json
+SPECSPACE_REPAIR_RERUN_REQUEST_IMPORT_PREVIEW ?= $(SPECSPACE_REPAIR_DRAFT_RERUN_IMPORT_PREVIEW)
+SPECSPACE_REPAIR_RERUN_REQUEST_REPAIR_SESSION ?= $(SPECSPACE_REPAIR_DRAFT_RERUN_REPAIR_SESSION)
+SPECSPACE_REPAIR_RERUN_REQUEST_WORKSPACE_ID ?=
+SPECSPACE_REPAIR_RERUN_REQUEST_WORKSPACE_ID_ARG := $(if $(strip $(SPECSPACE_REPAIR_RERUN_REQUEST_WORKSPACE_ID)),--workspace-id "$(SPECSPACE_REPAIR_RERUN_REQUEST_WORKSPACE_ID)",)
+SPECSPACE_REPAIR_RERUN_REQUEST_OUTPUT ?= runs/specspace_repair_rerun_request_gate.json
+SPECSPACE_REPAIR_RERUN_REQUEST_STRICT ?=
+SPECSPACE_REPAIR_RERUN_REQUEST_STRICT_ARG := $(if $(filter 1 true yes,$(strip $(SPECSPACE_REPAIR_RERUN_REQUEST_STRICT))),--strict,)
 CANDIDATE_SPEC_MATERIALIZATION_CANDIDATE_GRAPH ?= tests/fixtures/candidate_repair_loop/candidate_graph_repairable.json
 CANDIDATE_SPEC_MATERIALIZATION_REPAIR_LOOP ?= runs/candidate_repair_loop_report.json
 CANDIDATE_SPEC_MATERIALIZATION_OUTPUT_DIR ?= runs/materialized_candidate_specs
@@ -191,7 +199,10 @@ PYTHON_TARGETS := viewer-surfaces dashboard backlog next-move spec-activity grap
 	idea-to-spec-rerun-materialization \
 	idea-to-spec-repair-session-journal \
 	specspace-repair-draft-import-preview \
+	specspace-repair-rerun-request-gate \
+	specspace-repair-draft-rerun-artifacts \
 	specspace-repair-draft-rerun product-workspace-repair-draft-rerun \
+	product-workspace-requested-repair-draft-rerun \
 	candidate-spec-materialization idea-to-spec-promotion-gate \
 	active-idea-to-spec-candidate-source candidate-approval-decision \
 	product-workspace-active-candidate product-workspace-decision-backed-repair-chain \
@@ -516,10 +527,24 @@ idea-to-spec-repair-session-journal:
 specspace-repair-draft-import-preview:
 	@$(PYTHON) tools/specspace_repair_draft_import_preview.py --drafts "$(SPECSPACE_REPAIR_DRAFT_IMPORT_DRAFTS)" --repair-session "$(SPECSPACE_REPAIR_DRAFT_IMPORT_REPAIR_SESSION)" --clarification-requests "$(SPECSPACE_REPAIR_DRAFT_IMPORT_CLARIFICATION_REQUESTS)" $(SPECSPACE_REPAIR_DRAFT_IMPORT_WORKSPACE_ID_ARG) --output "$(SPECSPACE_REPAIR_DRAFT_IMPORT_OUTPUT)"
 
+.PHONY: specspace-repair-rerun-request-gate
+specspace-repair-rerun-request-gate:
+	@$(PYTHON) tools/specspace_repair_rerun_request_gate.py --request-state "$(SPECSPACE_REPAIR_RERUN_REQUEST_STATE)" --import-preview "$(SPECSPACE_REPAIR_RERUN_REQUEST_IMPORT_PREVIEW)" --repair-session "$(SPECSPACE_REPAIR_RERUN_REQUEST_REPAIR_SESSION)" $(SPECSPACE_REPAIR_RERUN_REQUEST_WORKSPACE_ID_ARG) --output "$(SPECSPACE_REPAIR_RERUN_REQUEST_OUTPUT)" $(SPECSPACE_REPAIR_RERUN_REQUEST_STRICT_ARG)
+
+.PHONY: specspace-repair-draft-rerun-artifacts
+specspace-repair-draft-rerun-artifacts:
+	@$(PYTHON) tools/specspace_repair_drafts_to_rerun_artifacts.py --import-preview "$(SPECSPACE_REPAIR_DRAFT_RERUN_IMPORT_PREVIEW)" --repair-session "$(SPECSPACE_REPAIR_DRAFT_RERUN_REPAIR_SESSION)" --clarification-requests "$(SPECSPACE_REPAIR_DRAFT_RERUN_CLARIFICATION_REQUESTS)" --active-candidate "$(SPECSPACE_REPAIR_DRAFT_RERUN_ACTIVE_CANDIDATE)" --intake "$(SPECSPACE_REPAIR_DRAFT_RERUN_INTAKE)" --candidate-graph "$(SPECSPACE_REPAIR_DRAFT_RERUN_CANDIDATE_GRAPH)" --promotion-gate "$(SPECSPACE_REPAIR_DRAFT_RERUN_PROMOTION_GATE)" --clarification-answers-output "$(IDEA_TO_SPEC_CLARIFICATION_ANSWERS_OUTPUT)" --ontology-decisions-output "$(PRODUCT_ONTOLOGY_GAP_REVIEW_DECISIONS_OUTPUT)" --rerun-input-output "$(IDEA_TO_SPEC_ANSWER_RERUN_INPUT_OUTPUT)" --rerun-preview-output "$(IDEA_TO_SPEC_RERUN_PREVIEW_OUTPUT)" --rerun-materialization-output "$(IDEA_TO_SPEC_RERUN_MATERIALIZATION_OUTPUT)" --repair-session-output "$(IDEA_TO_SPEC_REPAIR_SESSION_OUTPUT)" --report-output "$(SPECSPACE_REPAIR_DRAFT_RERUN_REPORT_OUTPUT)" --operator-ref "$(IDEA_TO_SPEC_REPAIR_SESSION_OPERATOR_REF)"
+
 .PHONY: product-workspace-repair-draft-rerun
 product-workspace-repair-draft-rerun:
 	@$(MAKE) specspace-repair-draft-import-preview SPECSPACE_REPAIR_DRAFT_IMPORT_OUTPUT="$(SPECSPACE_REPAIR_DRAFT_RERUN_IMPORT_PREVIEW)"
-	@$(PYTHON) tools/specspace_repair_drafts_to_rerun_artifacts.py --import-preview "$(SPECSPACE_REPAIR_DRAFT_RERUN_IMPORT_PREVIEW)" --repair-session "$(SPECSPACE_REPAIR_DRAFT_RERUN_REPAIR_SESSION)" --clarification-requests "$(SPECSPACE_REPAIR_DRAFT_RERUN_CLARIFICATION_REQUESTS)" --active-candidate "$(SPECSPACE_REPAIR_DRAFT_RERUN_ACTIVE_CANDIDATE)" --intake "$(SPECSPACE_REPAIR_DRAFT_RERUN_INTAKE)" --candidate-graph "$(SPECSPACE_REPAIR_DRAFT_RERUN_CANDIDATE_GRAPH)" --promotion-gate "$(SPECSPACE_REPAIR_DRAFT_RERUN_PROMOTION_GATE)" --clarification-answers-output "$(IDEA_TO_SPEC_CLARIFICATION_ANSWERS_OUTPUT)" --ontology-decisions-output "$(PRODUCT_ONTOLOGY_GAP_REVIEW_DECISIONS_OUTPUT)" --rerun-input-output "$(IDEA_TO_SPEC_ANSWER_RERUN_INPUT_OUTPUT)" --rerun-preview-output "$(IDEA_TO_SPEC_RERUN_PREVIEW_OUTPUT)" --rerun-materialization-output "$(IDEA_TO_SPEC_RERUN_MATERIALIZATION_OUTPUT)" --repair-session-output "$(IDEA_TO_SPEC_REPAIR_SESSION_OUTPUT)" --report-output "$(SPECSPACE_REPAIR_DRAFT_RERUN_REPORT_OUTPUT)" --operator-ref "$(IDEA_TO_SPEC_REPAIR_SESSION_OPERATOR_REF)"
+	@$(MAKE) specspace-repair-draft-rerun-artifacts
+
+.PHONY: product-workspace-requested-repair-draft-rerun
+product-workspace-requested-repair-draft-rerun:
+	@$(MAKE) specspace-repair-draft-import-preview SPECSPACE_REPAIR_DRAFT_IMPORT_OUTPUT="$(SPECSPACE_REPAIR_RERUN_REQUEST_IMPORT_PREVIEW)"
+	@$(MAKE) specspace-repair-rerun-request-gate SPECSPACE_REPAIR_RERUN_REQUEST_STRICT=1
+	@$(MAKE) specspace-repair-draft-rerun-artifacts SPECSPACE_REPAIR_DRAFT_RERUN_IMPORT_PREVIEW="$(SPECSPACE_REPAIR_RERUN_REQUEST_IMPORT_PREVIEW)" SPECSPACE_REPAIR_DRAFT_RERUN_REPAIR_SESSION="$(SPECSPACE_REPAIR_RERUN_REQUEST_REPAIR_SESSION)"
 
 .PHONY: specspace-repair-draft-rerun
 specspace-repair-draft-rerun: product-workspace-repair-draft-rerun
