@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import hashlib
 import importlib.util
 import json
 import subprocess
@@ -30,6 +31,10 @@ def write_json(path: Path, payload: object) -> None:
 
 def load_json(path: Path) -> dict[str, object]:
     return json.loads(path.read_text(encoding="utf-8"))
+
+
+def sha256(path: Path) -> str:
+    return hashlib.sha256(path.read_bytes()).hexdigest()
 
 
 def valid_clarification_requests() -> dict[str, object]:
@@ -194,6 +199,20 @@ def valid_draft_state() -> dict[str, object]:
     }
 
 
+def draft_state_for_repair_session_path(path: Path) -> dict[str, object]:
+    draft_state = deepcopy(valid_draft_state())
+    draft_state["source_artifacts"]["idea_to_spec_repair_session"] = path.as_posix()
+    draft_state["drafts"][0]["repair_session_ref"] = path.as_posix()
+    draft_state["drafts"][0]["source_artifact"] = path.as_posix()
+    return draft_state
+
+
+def repair_session_for_requests_path(path: Path) -> dict[str, object]:
+    session = deepcopy(valid_repair_session())
+    session["source_artifacts"]["clarification_requests"]["source_ref"] = path.as_posix()
+    return session
+
+
 def active_candidate(promotion_gate_ref: str = "runs/idea_to_spec_promotion_gate.json") -> dict:
     return {
         "artifact_kind": "active_idea_to_spec_candidate",
@@ -297,17 +316,33 @@ def promotion_gate() -> dict:
 
 
 def build_import_preview() -> dict[str, object]:
+    return build_import_preview_for_paths(
+        draft_state_path=ROOT / "runs" / "idea_to_spec_repair_drafts.json",
+        repair_session_path=ROOT / "runs" / "idea_to_spec_repair_session.json",
+        requests_path=ROOT / "runs" / "idea_to_spec_clarification_requests.json",
+    )
+
+
+def build_import_preview_for_paths(
+    *,
+    draft_state_path: Path,
+    repair_session_path: Path,
+    requests_path: Path,
+    draft_state: dict[str, object] | None = None,
+    repair_session: dict[str, object] | None = None,
+    clarification_requests: dict[str, object] | None = None,
+) -> dict[str, object]:
     module = load_module(
         IMPORT_PREVIEW_TOOL_PATH,
         "specspace_repair_draft_import_preview_for_0173_test",
     )
     return module.build_specspace_repair_draft_import_preview(
-        draft_state=valid_draft_state(),
-        repair_session=valid_repair_session(),
-        clarification_requests=valid_clarification_requests(),
-        draft_state_path=ROOT / "runs" / "idea_to_spec_repair_drafts.json",
-        repair_session_path=ROOT / "runs" / "idea_to_spec_repair_session.json",
-        clarification_requests_path=ROOT / "runs" / "idea_to_spec_clarification_requests.json",
+        draft_state=draft_state or valid_draft_state(),
+        repair_session=repair_session or valid_repair_session(),
+        clarification_requests=clarification_requests or valid_clarification_requests(),
+        draft_state_path=draft_state_path,
+        repair_session_path=repair_session_path,
+        clarification_requests_path=requests_path,
     )
 
 
@@ -348,6 +383,11 @@ def test_specspace_repair_drafts_to_rerun_builds_standard_artifacts() -> None:
     assert report["summary"]["ontology_decision_count"] == 1
     assert report["summary"]["resolved_ontology_gap_count"] == 1
     assert report["summary"]["unresolved_ontology_gap_count"] == 0
+    assert report["summary"]["draft_provenance_count"] == 1
+    assert report["draft_provenance"][0]["source_draft_id"] == (
+        "specspace-repair-draft::team-decision-log::decision-record"
+    )
+    assert report["gap_count_semantics"]["unresolved_ontology_gap_count"].startswith("Actual")
 
     answers = artifacts["clarification_answers"]
     assert answers["artifact_kind"] == "idea_to_spec_clarification_answers"
@@ -404,6 +444,44 @@ def test_specspace_repair_drafts_to_rerun_blocks_unready_import_preview() -> Non
     assert artifacts["ontology_decisions"]["readiness"]["ready"] is False
 
 
+def test_specspace_repair_drafts_to_rerun_blocks_mismatched_preview_sources() -> None:
+    import_preview = build_import_preview()
+
+    report, _ = build_rerun_report(import_preview)
+    assert report["readiness"]["ready"] is True
+
+    module = load_module(TOOL_PATH, "specspace_repair_drafts_to_rerun_mismatch_test")
+    mismatched_report, _ = module.build_specspace_repair_drafts_to_rerun_artifacts(
+        import_preview=import_preview,
+        repair_session=valid_repair_session(),
+        clarification_requests=valid_clarification_requests(),
+        active_candidate=active_candidate(),
+        intake=valid_intake(),
+        candidate_graph=valid_candidate_graph(),
+        promotion_gate=promotion_gate(),
+        import_preview_path=ROOT / "runs" / "specspace_repair_draft_import_preview.json",
+        repair_session_path=ROOT / "runs" / "stale_repair_session.json",
+        clarification_requests_path=ROOT / "runs" / "idea_to_spec_clarification_requests.json",
+        active_candidate_path=ROOT / "runs" / "active_idea_to_spec_candidate.json",
+        intake_path=ROOT / "runs" / "idea_event_storming_intake.json",
+        candidate_graph_path=ROOT / "runs" / "candidate_spec_graph.json",
+        promotion_gate_path=ROOT / "runs" / "idea_to_spec_promotion_gate.json",
+        clarification_answers_output=ROOT / "runs" / "idea_to_spec_clarification_answers.json",
+        ontology_decisions_output=ROOT / "runs" / "product_ontology_gap_review_decisions.json",
+        rerun_input_output=ROOT / "runs" / "idea_to_spec_answer_rerun_input.json",
+        rerun_preview_output=ROOT / "runs" / "idea_to_spec_rerun_preview.json",
+        rerun_materialization_output=ROOT / "runs" / "idea_to_spec_rerun_materialization.json",
+        repair_session_output=ROOT / "runs" / "idea_to_spec_repair_session.json",
+        operator_ref="operator://local-reviewer",
+    )
+
+    assert mismatched_report["readiness"]["ready"] is False
+    assert (
+        "import_preview_idea_to_spec_repair_session_source_ref_mismatch"
+        in (mismatched_report["readiness"]["blocked_by"])
+    )
+
+
 def test_specspace_repair_drafts_to_rerun_keeps_defer_non_resolving() -> None:
     preview_module = load_module(
         IMPORT_PREVIEW_TOOL_PATH,
@@ -431,6 +509,7 @@ def test_specspace_repair_drafts_to_rerun_keeps_defer_non_resolving() -> None:
 
 
 def test_specspace_repair_drafts_to_rerun_cli_writes_custom_outputs(tmp_path: Path) -> None:
+    drafts_path = tmp_path / "idea_to_spec_repair_drafts.json"
     import_preview_path = tmp_path / "specspace_repair_draft_import_preview.json"
     repair_session_path = tmp_path / "idea_to_spec_repair_session.input.json"
     requests_path = tmp_path / "idea_to_spec_clarification_requests.json"
@@ -447,8 +526,20 @@ def test_specspace_repair_drafts_to_rerun_cli_writes_custom_outputs(tmp_path: Pa
     report_output = tmp_path / "specspace_repair_draft_rerun_report.json"
 
     promotion_gate_ref = promotion_gate_path.as_posix()
-    write_json(import_preview_path, build_import_preview())
-    write_json(repair_session_path, valid_repair_session())
+    draft_state = draft_state_for_repair_session_path(repair_session_path)
+    session = repair_session_for_requests_path(requests_path)
+    write_json(drafts_path, draft_state)
+    write_json(
+        import_preview_path,
+        build_import_preview_for_paths(
+            draft_state_path=drafts_path,
+            repair_session_path=repair_session_path,
+            requests_path=requests_path,
+            draft_state=draft_state,
+            repair_session=session,
+        ),
+    )
+    write_json(repair_session_path, session)
     write_json(requests_path, valid_clarification_requests())
     write_json(active_candidate_path, active_candidate(promotion_gate_ref=promotion_gate_ref))
     write_json(intake_path, valid_intake())
@@ -508,8 +599,137 @@ def test_specspace_repair_drafts_to_rerun_cli_writes_custom_outputs(tmp_path: Pa
         assert path.is_file(), path
     report = load_json(report_output)
     assert report["readiness"]["ready"] is True
+    assert report["draft_provenance"][0]["source_draft_id"] == (
+        "specspace-repair-draft::team-decision-log::decision-record"
+    )
+    answers = load_json(clarification_answers_output)
+    assert answers["source_artifacts"]["answer_set"]["source_ref"] == "inline:answer_set"
     session = load_json(repair_session_output)
     assert session["readiness"]["ready"] is True
+    for key, path in (
+        ("clarification_answers", clarification_answers_output),
+        ("ontology_decisions", ontology_decisions_output),
+        ("rerun_input", rerun_input_output),
+        ("rerun_preview", rerun_preview_output),
+        ("rerun_materialization", rerun_materialization_output),
+    ):
+        assert session["source_artifacts"][key]["sha256"] == sha256(path)
+
+
+def test_specspace_repair_drafts_to_rerun_cli_skips_artifact_writes_when_unready(
+    tmp_path: Path,
+) -> None:
+    drafts_path = tmp_path / "idea_to_spec_repair_drafts.json"
+    import_preview_path = tmp_path / "specspace_repair_draft_import_preview.json"
+    repair_session_path = tmp_path / "idea_to_spec_repair_session.input.json"
+    requests_path = tmp_path / "idea_to_spec_clarification_requests.json"
+    active_candidate_path = tmp_path / "active_idea_to_spec_candidate.json"
+    intake_path = tmp_path / "idea_event_storming_intake.json"
+    candidate_graph_path = tmp_path / "candidate_spec_graph.json"
+    promotion_gate_path = tmp_path / "idea_to_spec_promotion_gate.json"
+    outputs = {
+        "clarification_answers": tmp_path / "idea_to_spec_clarification_answers.json",
+        "ontology_decisions": tmp_path / "product_ontology_gap_review_decisions.json",
+        "rerun_input": tmp_path / "idea_to_spec_answer_rerun_input.json",
+        "rerun_preview": tmp_path / "idea_to_spec_rerun_preview.json",
+        "rerun_materialization": tmp_path / "idea_to_spec_rerun_materialization.json",
+        "repair_session": tmp_path / "idea_to_spec_repair_session.json",
+    }
+    report_output = tmp_path / "specspace_repair_draft_rerun_report.json"
+
+    draft_state = draft_state_for_repair_session_path(repair_session_path)
+    session = repair_session_for_requests_path(requests_path)
+    import_preview = build_import_preview_for_paths(
+        draft_state_path=drafts_path,
+        repair_session_path=repair_session_path,
+        requests_path=requests_path,
+        draft_state=draft_state,
+        repair_session=session,
+    )
+    import_preview["readiness"]["ready"] = False
+    import_preview["readiness"]["review_state"] = "repair_draft_import_preview_review_required"
+    import_preview["findings"].append(
+        {
+            "finding_id": "draft_target_ref_mismatch",
+            "severity": "review_required",
+            "message": "broken draft",
+            "source": "test",
+            "evidence": {},
+        }
+    )
+
+    write_json(drafts_path, draft_state)
+    write_json(import_preview_path, import_preview)
+    write_json(repair_session_path, session)
+    write_json(requests_path, valid_clarification_requests())
+    write_json(
+        active_candidate_path,
+        active_candidate(promotion_gate_ref=promotion_gate_path.as_posix()),
+    )
+    write_json(intake_path, valid_intake())
+    write_json(candidate_graph_path, valid_candidate_graph())
+    write_json(promotion_gate_path, promotion_gate())
+    sentinel = {"sentinel": True}
+    for path in outputs.values():
+        write_json(path, sentinel)
+
+    base_args = [
+        sys.executable,
+        str(TOOL_PATH),
+        "--import-preview",
+        str(import_preview_path),
+        "--repair-session",
+        str(repair_session_path),
+        "--clarification-requests",
+        str(requests_path),
+        "--active-candidate",
+        str(active_candidate_path),
+        "--intake",
+        str(intake_path),
+        "--candidate-graph",
+        str(candidate_graph_path),
+        "--promotion-gate",
+        str(promotion_gate_path),
+        "--clarification-answers-output",
+        str(outputs["clarification_answers"]),
+        "--ontology-decisions-output",
+        str(outputs["ontology_decisions"]),
+        "--rerun-input-output",
+        str(outputs["rerun_input"]),
+        "--rerun-preview-output",
+        str(outputs["rerun_preview"]),
+        "--rerun-materialization-output",
+        str(outputs["rerun_materialization"]),
+        "--repair-session-output",
+        str(outputs["repair_session"]),
+        "--report-output",
+        str(report_output),
+    ]
+
+    result = subprocess.run(
+        base_args,
+        cwd=ROOT,
+        text=True,
+        capture_output=True,
+        check=False,
+    )
+
+    assert result.returncode == 0, result.stderr
+    assert load_json(report_output)["readiness"]["ready"] is False
+    for path in outputs.values():
+        assert load_json(path) == sentinel
+
+    strict_result = subprocess.run(
+        [*base_args, "--strict"],
+        cwd=ROOT,
+        text=True,
+        capture_output=True,
+        check=False,
+    )
+
+    assert strict_result.returncode == 1
+    for path in outputs.values():
+        assert load_json(path) == sentinel
 
 
 def test_specspace_repair_drafts_to_rerun_make_target_threads_paths(tmp_path: Path) -> None:
@@ -529,12 +749,8 @@ def test_specspace_repair_drafts_to_rerun_make_target_threads_paths(tmp_path: Pa
     repair_session_output = tmp_path / "idea_to_spec_repair_session.json"
     report_output = tmp_path / "specspace_repair_draft_rerun_report.json"
 
-    draft_state = deepcopy(valid_draft_state())
-    draft_state["source_artifacts"]["idea_to_spec_repair_session"] = repair_session_path.as_posix()
-    draft_state["drafts"][0]["repair_session_ref"] = repair_session_path.as_posix()
-    draft_state["drafts"][0]["source_artifact"] = repair_session_path.as_posix()
-    session = deepcopy(valid_repair_session())
-    session["source_artifacts"]["clarification_requests"]["source_ref"] = requests_path.as_posix()
+    draft_state = draft_state_for_repair_session_path(repair_session_path)
+    session = repair_session_for_requests_path(requests_path)
 
     write_json(drafts_path, draft_state)
     write_json(repair_session_path, session)
@@ -555,7 +771,7 @@ def test_specspace_repair_drafts_to_rerun_make_target_threads_paths(tmp_path: Pa
             f"SPECSPACE_REPAIR_DRAFT_IMPORT_DRAFTS={drafts_path}",
             f"SPECSPACE_REPAIR_DRAFT_IMPORT_REPAIR_SESSION={repair_session_path}",
             f"SPECSPACE_REPAIR_DRAFT_IMPORT_CLARIFICATION_REQUESTS={requests_path}",
-            f"SPECSPACE_REPAIR_DRAFT_IMPORT_OUTPUT={import_preview_path}",
+            f"SPECSPACE_REPAIR_DRAFT_RERUN_IMPORT_PREVIEW={import_preview_path}",
             f"SPECSPACE_REPAIR_DRAFT_RERUN_REPAIR_SESSION={repair_session_path}",
             f"SPECSPACE_REPAIR_DRAFT_RERUN_CLARIFICATION_REQUESTS={requests_path}",
             f"SPECSPACE_REPAIR_DRAFT_RERUN_ACTIVE_CANDIDATE={active_candidate_path}",

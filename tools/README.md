@@ -418,7 +418,8 @@ Supervisor modes:
   `runs/specspace_repair_draft_rerun_report.json`. The builder reuses existing
   review-only artifact contracts and does not apply drafts, mutate source
   artifacts, accept ontology terms, write canonical specs, create branches, or
-  publish read models.
+  publish read models. If the import preview is not ready, it writes only the
+  rerun report and leaves existing shared rerun artifacts untouched.
 - `tools/candidate_spec_materialization.py`: deterministic candidate spec YAML
   preview materializer introduced by proposal 0153. Use
   `make candidate-spec-materialization

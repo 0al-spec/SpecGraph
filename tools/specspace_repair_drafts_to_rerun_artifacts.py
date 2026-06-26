@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
 import sys
 from datetime import datetime, timezone
@@ -103,6 +104,16 @@ def _relative_ref(path: Path | None) -> str:
         return path.resolve().relative_to(ROOT).as_posix()
     except ValueError:
         return path.as_posix()
+
+
+def _sha256(path: Path | None) -> str | None:
+    if path is None or not path.exists():
+        return None
+    digest = hashlib.sha256()
+    with path.open("rb") as file_obj:
+        for chunk in iter(lambda: file_obj.read(1024 * 1024), b""):
+            digest.update(chunk)
+    return digest.hexdigest()
 
 
 def _public_safe(value: Any) -> Any:
@@ -234,6 +245,82 @@ def _validate_import_preview(import_preview: dict[str, Any]) -> list[dict[str, A
     return findings
 
 
+def _validate_import_preview_refs(
+    import_preview: dict[str, Any],
+    *,
+    repair_session: dict[str, Any],
+    repair_session_path: Path,
+    clarification_requests_path: Path,
+) -> list[dict[str, Any]]:
+    findings: list[dict[str, Any]] = []
+    sources = _dict(import_preview.get("source_artifacts"))
+    expected_sources = {
+        "idea_to_spec_repair_session": _relative_ref(repair_session_path),
+        "idea_to_spec_clarification_requests": _relative_ref(clarification_requests_path),
+    }
+    for key, expected_ref in expected_sources.items():
+        actual_ref = _text(_dict(sources.get(key)).get("source_ref"))
+        if actual_ref != expected_ref:
+            findings.append(
+                _finding(
+                    finding_id=f"import_preview_{key}_source_ref_mismatch",
+                    severity="review_required",
+                    message=(
+                        f"Import preview source ref for {key} must match the rerun input path."
+                    ),
+                    evidence={"actual": actual_ref, "expected": expected_ref},
+                )
+            )
+
+    preview_session = _dict(import_preview.get("session"))
+    active_session = _dict(repair_session.get("session"))
+    for field in (
+        "session_id",
+        "candidate_id",
+        "workflow_lane",
+        "governance_profile",
+        "target_repository_role",
+    ):
+        actual = _text(preview_session.get(field))
+        expected = _text(active_session.get(field))
+        if actual != expected:
+            findings.append(
+                _finding(
+                    finding_id=f"import_preview_session_{field}_mismatch",
+                    severity="review_required",
+                    message=f"Import preview session {field} must match the rerun session.",
+                    evidence={"actual": actual, "expected": expected},
+                )
+            )
+    return findings
+
+
+def _draft_provenance(import_preview: dict[str, Any]) -> list[dict[str, Any]]:
+    import_data = _dict(import_preview.get("import_preview"))
+    provenance: list[dict[str, Any]] = []
+    for candidate in [
+        _dict(item) for item in _list(import_data.get("clarification_answer_candidates"))
+    ]:
+        source_draft_id = _text(candidate.get("source_draft_id"))
+        request_id = _text(candidate.get("request_id"))
+        if not source_draft_id and not request_id:
+            continue
+        request_snapshot = _dict(candidate.get("request_snapshot"))
+        provenance.append(
+            _public_safe(
+                {
+                    "request_id": request_id,
+                    "answer_kind": candidate.get("answer_kind"),
+                    "status": candidate.get("status"),
+                    "source_draft_id": source_draft_id,
+                    "target_ref": request_snapshot.get("target_ref"),
+                    "target_artifact": request_snapshot.get("target_artifact"),
+                }
+            )
+        )
+    return provenance
+
+
 def _answer_set_from_import_preview(
     import_preview: dict[str, Any],
     *,
@@ -336,6 +423,9 @@ def _normalize_chain_source_refs(
     rerun_input_output: Path,
     rerun_preview_output: Path,
 ) -> None:
+    # The sibling builders do not all share identical external-path fallback
+    # semantics. Normalize the refs to the paths this bridge will write so the
+    # repair-session journal can prove the exact custom-output chain.
     _set_nested_source_ref(
         ontology_decisions,
         ("source_artifacts", "clarification_answers", "source_ref"),
@@ -388,6 +478,14 @@ def build_specspace_repair_drafts_to_rerun_artifacts(
     operator_ref: str = "local_operator:unattributed",
 ) -> tuple[dict[str, Any], dict[str, dict[str, Any]]]:
     import_preview_findings = _validate_import_preview(import_preview)
+    import_preview_findings.extend(
+        _validate_import_preview_refs(
+            import_preview,
+            repair_session=repair_session,
+            repair_session_path=repair_session_path,
+            clarification_requests_path=clarification_requests_path,
+        )
+    )
     answer_set = _answer_set_from_import_preview(
         import_preview,
         import_preview_findings=import_preview_findings,
@@ -398,7 +496,7 @@ def build_specspace_repair_drafts_to_rerun_artifacts(
             clarification_requests=clarification_requests,
             answer_set=answer_set,
             requests_path=clarification_requests_path,
-            answer_set_path=import_preview_path,
+            answer_set_path=None,
         )
     )
     ontology_decisions = (
@@ -495,6 +593,7 @@ def build_specspace_repair_drafts_to_rerun_artifacts(
         )
     ready = not findings
     import_data = _dict(import_preview.get("import_preview"))
+    draft_provenance = _draft_provenance(import_preview)
     report = {
         "artifact_kind": "specspace_repair_draft_rerun_report",
         "schema_version": SCHEMA_VERSION,
@@ -507,8 +606,19 @@ def build_specspace_repair_drafts_to_rerun_artifacts(
         "written_artifacts": output_refs,
         "import_preview_summary": _public_safe(_dict(import_preview.get("summary"))),
         "answer_set_summary": answer_set["summary"],
+        "draft_provenance": draft_provenance,
         "rerun_artifact_summaries": {
             key: _public_safe(_dict(artifact.get("summary"))) for key, artifact in artifacts.items()
+        },
+        "gap_count_semantics": {
+            "unresolved_ontology_gap_count": (
+                "Actual count from idea_to_spec_rerun_materialization after replaying "
+                "ready draft-derived decisions."
+            ),
+            "would_leave_unresolved_gap_count": (
+                "Preview estimate copied from specspace_repair_draft_import_preview before "
+                "materialization; use unresolved_ontology_gap_count after rerun."
+            ),
         },
         "readiness": {
             "ready": ready,
@@ -558,6 +668,7 @@ def build_specspace_repair_drafts_to_rerun_artifacts(
                 "unresolved_ontology_gap_count", 0
             ),
             "would_leave_unresolved_gap_count": import_data.get("would_leave_unresolved_gaps", 0),
+            "draft_provenance_count": len(draft_provenance),
             "finding_count": len(findings),
         },
     }
@@ -576,11 +687,24 @@ def _write_artifacts(
     repair_session_output: Path,
     report_output: Path,
 ) -> None:
+    if _dict(report.get("readiness")).get("ready") is not True:
+        write_json(report, report_output)
+        return
     write_json(artifacts["clarification_answers"], clarification_answers_output)
     write_json(artifacts["ontology_decisions"], ontology_decisions_output)
     write_json(artifacts["rerun_input"], rerun_input_output)
     write_json(artifacts["rerun_preview"], rerun_preview_output)
     write_json(artifacts["rerun_materialization"], rerun_materialization_output)
+    for key, path in (
+        ("clarification_answers", clarification_answers_output),
+        ("ontology_decisions", ontology_decisions_output),
+        ("rerun_input", rerun_input_output),
+        ("rerun_preview", rerun_preview_output),
+        ("rerun_materialization", rerun_materialization_output),
+    ):
+        source = _dict(artifacts["repair_session"].get("source_artifacts")).get(key)
+        if isinstance(source, dict):
+            source["sha256"] = _sha256(path)
     write_json(artifacts["repair_session"], repair_session_output)
     write_json(report, report_output)
 

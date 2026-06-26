@@ -845,6 +845,11 @@ SpecSpace drafts, accept ontology terms, mutate candidate source artifacts,
 write canonical specs, approve candidates, create branches, open pull requests,
 or publish read models.
 
+When the import preview is not ready, the target writes only
+`runs/specspace_repair_draft_rerun_report.json` and leaves existing shared
+rerun artifacts untouched. Ready reports also include draft provenance so an
+operator can trace replayed requests back to SpecSpace draft ids.
+
 The import preview input can be overridden with
 `SPECSPACE_REPAIR_DRAFT_RERUN_IMPORT_PREVIEW`. Custom output paths are
 forwarded through the existing rerun artifact variables so smoke tests and

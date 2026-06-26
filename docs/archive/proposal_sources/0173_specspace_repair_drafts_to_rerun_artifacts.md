@@ -45,6 +45,9 @@ runs/specspace_repair_draft_rerun_report.json
 
 The output is still review-only. It does not apply SpecSpace drafts, mutate
 SpecGraph source artifacts, accept ontology terms, or call Git Service.
+If the import preview is not ready, the command writes only
+`runs/specspace_repair_draft_rerun_report.json` and leaves the shared rerun
+chain artifacts untouched.
 
 ## Motivation
 
@@ -114,6 +117,7 @@ The report records:
 - source refs and digests for the import preview and source artifacts;
 - generated artifact refs and digests;
 - generated artifact readiness state;
+- draft provenance linking replayed requests back to SpecSpace draft ids;
 - blocking findings from preview validation or downstream builders;
 - an explicit authority boundary.
 
@@ -150,6 +154,11 @@ It does not:
 The bridge is a review-only conversion from a ready import preview to the
 standard rerun artifacts.
 
+On failure or review-required inputs, the bridge writes only its report. It
+does not overwrite existing `idea_to_spec_clarification_answers`,
+`product_ontology_gap_review_decisions`, rerun, materialization, or
+repair-session artifacts.
+
 ## Validation
 
 - `tests/test_specspace_repair_drafts_to_rerun_artifacts.py`
@@ -166,3 +175,5 @@ standard rerun artifacts.
   success from candidate approval.
 - Keep Platform Git Service promotion blocked until a separate candidate
   approval decision exists.
+- Extract common idea-to-spec JSON/public-safe helper utilities shared across
+  the 0171-0173 tool family.

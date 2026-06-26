@@ -337,6 +337,10 @@ candidate artifacts, write canonical specs, create branches, open pull
 requests, or publish read models.
 Use `SPECSPACE_REPAIR_DRAFT_RERUN_IMPORT_PREVIEW` when a smoke test or local
 operator needs to replay a non-default import preview path.
+If the preview is not ready, the bridge writes only
+`runs/specspace_repair_draft_rerun_report.json` and leaves existing shared
+rerun artifacts untouched. Ready reports include draft provenance back to
+SpecSpace draft ids.
 
 ## Authority Boundary
 
