@@ -420,6 +420,16 @@ Supervisor modes:
   artifacts, accept ontology terms, write canonical specs, create branches, or
   publish read models. If the import preview is not ready, it writes only the
   rerun report and leaves existing shared rerun artifacts untouched.
+- `tools/specspace_repair_rerun_request_gate.py`: review-only SpecSpace
+  repair rerun request gate introduced by proposal 0174. Use
+  `make specspace-repair-rerun-request-gate` to validate
+  `runs/idea_to_spec_repair_rerun_requests.json` against a ready import
+  preview and repair-session journal, or
+  `make product-workspace-requested-repair-draft-rerun` to refresh the import
+  preview, gate the request in strict mode, and then run the existing proposal
+  0173 rerun builder. The gate treats SpecSpace request state as operator
+  intent only; it rejects `may_execute_specgraph`, `may_run_make_target`,
+  ontology, Git, or canonical mutation authority claims.
 - `tools/candidate_spec_materialization.py`: deterministic candidate spec YAML
   preview materializer introduced by proposal 0153. Use
   `make candidate-spec-materialization

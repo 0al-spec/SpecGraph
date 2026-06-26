@@ -2234,5 +2234,18 @@
     "required_provenance_links": [
       "source_draft_ref"
     ]
+  },
+  {
+    "proposal_id": "0174",
+    "source_artifact_class": "working_draft",
+    "source_refs": [
+      "docs/archive/proposal_sources/0174_specspace_repair_rerun_request_gate.md"
+    ],
+    "motivating_concern": "SpecSpace can record an operator intent to prepare a repair-draft rerun, but SpecGraph still needs a deterministic gate that validates this handoff before replaying draft-derived rerun artifacts.",
+    "normalized_title": "SpecSpace Repair Rerun Request Gate",
+    "bounded_scope": "Add a deterministic review-only specspace_repair_rerun_request_gate builder, Make targets, tests, proposal docs, roadmap, DocC, and registry tracking that validates SpecSpace-owned repair rerun request state against a ready import preview and repair-session journal before running the existing repair-draft rerun chain, without trusting SpecSpace operator_command, executing prompt agents, applying drafts or answers to source artifacts, mutating candidate artifacts, mutating canonical specs, writing Ontology packages or lockfiles, accepting ontology terms, approving candidate graphs, creating Git branches or commits, opening pull requests, publishing read models, or adding SpecSpace mutation authority.",
+    "required_provenance_links": [
+      "source_draft_ref"
+    ]
   }
 ]

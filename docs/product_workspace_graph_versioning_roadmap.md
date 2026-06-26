@@ -856,6 +856,51 @@ forwarded through the existing rerun artifact variables so smoke tests and
 local operators can keep draft-derived sessions isolated from default `runs/`
 state.
 
+### 26. SpecSpace Repair Rerun Request Gate
+
+Status: implemented in proposal `0174`.
+
+SpecSpace can now store a separate operator intent to prepare a repair-draft
+rerun. SpecGraph consumes that request through an explicit read-only gate:
+
+```bash
+make specspace-repair-rerun-request-gate
+make product-workspace-requested-repair-draft-rerun
+```
+
+The default gate report is:
+
+```text
+runs/specspace_repair_rerun_request_gate.json
+```
+
+The gate reads:
+
+```text
+runs/idea_to_spec_repair_rerun_requests.json
+runs/specspace_repair_draft_import_preview.json
+runs/idea_to_spec_repair_session.json
+```
+
+It validates that the request state belongs to SpecSpace, contains exactly one
+active `prepare_repair_draft_rerun` request for the selected workspace, keeps
+`may_execute_specgraph` and `may_run_make_target` false, and points to the
+selected import preview and repair-session inputs. The request is treated as
+operator intent only; `operator_command` from SpecSpace is recorded as evidence
+but not trusted as authority.
+
+`make product-workspace-requested-repair-draft-rerun` first refreshes the
+SpecSpace repair draft import preview, then runs the gate in strict mode, then
+reuses the proposal `0173` rerun artifacts builder. If the request is invalid,
+the target stops before writing shared rerun artifacts.
+
+Custom paths can be threaded through
+`SPECSPACE_REPAIR_RERUN_REQUEST_STATE`,
+`SPECSPACE_REPAIR_RERUN_REQUEST_IMPORT_PREVIEW`,
+`SPECSPACE_REPAIR_RERUN_REQUEST_REPAIR_SESSION`,
+`SPECSPACE_REPAIR_RERUN_REQUEST_WORKSPACE_ID`, and
+`SPECSPACE_REPAIR_RERUN_REQUEST_OUTPUT`.
+
 ## Success Criteria
 
 - A user can start with a product idea and receive a coherent candidate graph.
