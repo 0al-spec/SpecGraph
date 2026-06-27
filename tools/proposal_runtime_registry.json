@@ -9725,6 +9725,10 @@
       },
       {
         "path": "tools/idea_to_spec_rerun_preview.py",
+        "pattern": "MATCH_KIND_PRECEDENCE"
+      },
+      {
+        "path": "tools/idea_to_spec_rerun_preview.py",
         "pattern": "match_kind=\"safe_phrase_match\""
       },
       {
@@ -9736,6 +9740,10 @@
       {
         "path": "tests/test_idea_to_spec_rerun_preview.py",
         "pattern": "test_rerun_preview_uses_safe_normalized_matching_without_broad_single_word_matches"
+      },
+      {
+        "path": "tests/test_idea_to_spec_rerun_preview.py",
+        "pattern": "test_rerun_preview_prefers_stronger_match_over_first_match"
       },
       {
         "path": "tests/test_idea_to_spec_rerun_materialization.py",

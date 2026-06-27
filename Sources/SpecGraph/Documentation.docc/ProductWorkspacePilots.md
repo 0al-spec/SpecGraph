@@ -269,6 +269,13 @@ preserves that evidence inside `ontology_gap_resolutions`. Safe variants such as
 `Renewal Date -> Renewal Date Updated` can resolve in preview state, while
 broad single-word terms such as `Subscription` do not automatically resolve
 event/action gaps such as `Subscription Added` or `Subscription Cancelled`.
+If several decisions match one gap, the preview chooses the strongest
+`match_kind` before falling back to source order for ties. `confidence` is a
+triage signal: exact matches are `high`, safe inflections are `medium`,
+directed phrase matches are `low`, explicit target refs are `explicit_target`,
+and aggregate gap actions are `aggregate_scope`. `safe_phrase_match` is
+directional, so the decision term must be the prefix and the gap term may only
+add a safe suffix.
 This remains review-only: no ontology terms are accepted and no candidate or
 canonical artifacts are mutated.
 

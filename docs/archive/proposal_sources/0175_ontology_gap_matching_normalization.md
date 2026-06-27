@@ -73,9 +73,25 @@ target_ref
 aggregate_target
 ```
 
-`safe_phrase_match` is deliberately narrow. It requires a multi-token decision
-term and only accepts a short allowlist of safe suffix stems such as `record`,
-`schedule`, `service`, and `update`.
+`confidence` is a triage signal, not an ontology acceptance claim:
+
+```text
+target_ref -> explicit_target
+exact / normalized_exact -> high
+safe_inflection -> medium
+safe_phrase_match -> low
+aggregate_target -> aggregate_scope
+```
+
+If more than one decision matches a gap, the preview chooses the strongest
+`match_kind` by precedence before preserving source order for ties. This keeps a
+later `exact` match from being displaced by an earlier `safe_phrase_match`.
+
+`safe_phrase_match` is deliberately narrow and directional. It requires a
+multi-token decision term, treats the decision term as the prefix of the gap
+term, and only accepts a short allowlist of safe suffix stems such as `record`,
+`schedule`, `service`, and `update`. It is not a bidirectional synonym rule and
+does not let event-like terms rewrite the base project vocabulary.
 
 ## Authority Boundary
 

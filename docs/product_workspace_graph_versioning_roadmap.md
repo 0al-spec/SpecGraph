@@ -733,6 +733,15 @@ close safe variants such as `Payment Record -> Payment Recorded`,
 `Subscription` do not automatically resolve event/action gaps such as
 `Subscription Added` or `Subscription Cancelled`.
 
+When several decisions match the same gap, the preview chooses the strongest
+`match_kind` by precedence rather than the first matching overlay item.
+`confidence` is a triage signal: exact matches are `high`, safe inflections are
+`medium`, directed phrase matches are `low`, explicit target refs are
+`explicit_target`, and aggregate gap actions are `aggregate_scope`.
+`safe_phrase_match` is directional: the decision term must be the prefix and the
+gap term may only add a safe suffix. It is not a general synonym or fuzzy match
+rule.
+
 `idea_to_spec_rerun_materialization` preserves this evidence in
 `ontology_gap_resolutions`, so downstream review surfaces can explain why a gap
 was removed from the preview graph. This does not accept ontology terms, write

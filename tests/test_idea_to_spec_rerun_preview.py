@@ -143,7 +143,7 @@ def test_rerun_preview_resolves_matching_ontology_gap() -> None:
     assert resolved["decision_id"] == "clarification.repair.repair-review-unresolved-gaps"
     assert resolved["decision_term"] == "Decision Owner"
     assert resolved["match_kind"] == "exact"
-    assert resolved["confidence"] == "review_safe"
+    assert resolved["confidence"] == "high"
     assert resolved["match"]["gap_term"] == "Decision Owner"
     assert resolved["resolution_preview"]["decision"] == "project_local_term"
     assert resolved["resolution_preview"]["term"] == "Decision Owner"
@@ -214,6 +214,9 @@ def test_rerun_preview_matches_aggregate_reject_to_ontology_gaps() -> None:
     assert {item["match_kind"] for item in gap_preview["resolved_ontology_gaps"]} == {
         "aggregate_target"
     }
+    assert {item["confidence"] for item in gap_preview["resolved_ontology_gaps"]} == {
+        "aggregate_scope"
+    }
 
 
 def test_rerun_preview_keeps_deferred_ontology_gaps_unresolved() -> None:
@@ -248,6 +251,9 @@ def test_rerun_preview_keeps_deferred_ontology_gaps_unresolved() -> None:
     } == {"defer"}
     assert {item["match_kind"] for item in gap_preview["unresolved_ontology_gaps"]} == {
         "aggregate_target"
+    }
+    assert {item["confidence"] for item in gap_preview["unresolved_ontology_gaps"]} == {
+        "aggregate_scope"
     }
     quality = report["rerun_preview"]["candidate_quality_preview"]
     assert quality["review_state"] == "candidate_quality_blocked_by_ontology_gaps"
@@ -336,11 +342,63 @@ def test_rerun_preview_uses_safe_normalized_matching_without_broad_single_word_m
     unresolved_terms = {item["term"] for item in gap_preview["unresolved_ontology_gaps"]}
     assert gap_preview["resolved_ontology_gap_count"] == 3
     assert resolved["Payment Recorded"]["match_kind"] == "safe_inflection"
+    assert resolved["Payment Recorded"]["confidence"] == "medium"
     assert resolved["Payment Recorded"]["decision_term"] == "Payment Record"
     assert resolved["Local Notification Service"]["match_kind"] == "safe_phrase_match"
+    assert resolved["Local Notification Service"]["confidence"] == "low"
     assert resolved["Renewal Date Updated"]["match_kind"] == "safe_phrase_match"
-    assert {item["confidence"] for item in resolved.values()} == {"review_safe"}
+    assert resolved["Renewal Date Updated"]["confidence"] == "low"
     assert unresolved_terms == {"Subscription Added", "Subscription Cancelled"}
+
+
+def test_rerun_preview_prefers_stronger_match_over_first_match() -> None:
+    module = load_module(
+        PREVIEW_TOOL_PATH,
+        "idea_to_spec_rerun_preview_match_precedence_test",
+    )
+    rerun_input = copy.deepcopy(ready_rerun_input())
+    ontology_hints = rerun_input["rerun_input_overlay"]["ontology_review_hints"]
+    for bucket in (
+        "term_bindings",
+        "aliases",
+        "project_local_terms",
+        "rejected_terms",
+        "deferred_terms",
+    ):
+        ontology_hints[bucket] = []
+    ontology_hints["project_local_terms"] = [
+        {
+            "term": "Local Notification",
+            "request_id": "clarification.local-notification",
+            "target_ref": "candidate_graph.gaps",
+        },
+        {
+            "term": "Local Notification Service",
+            "request_id": "clarification.local-notification-service",
+            "target_ref": "candidate_graph.gaps",
+        },
+    ]
+    candidate_graph = candidate_graph_artifact()
+    candidate_graph["nodes"][0]["gaps"] = [
+        {
+            "id": "ontology-gap.local-notification-service",
+            "kind": "ontology_gap",
+            "source_ref": "external-system.local-notification-service",
+            "term": "Local Notification Service",
+        }
+    ]
+
+    report = module.build_idea_to_spec_rerun_preview(
+        rerun_input=rerun_input,
+        intake=intake_artifact(),
+        candidate_graph=candidate_graph,
+    )
+
+    resolved = report["rerun_preview"]["ontology_gap_preview"]["resolved_ontology_gaps"]
+    assert len(resolved) == 1
+    assert resolved[0]["match_kind"] == "exact"
+    assert resolved[0]["decision_term"] == "Local Notification Service"
+    assert resolved[0]["decision_id"] == "clarification.local-notification-service"
 
 
 def test_rerun_preview_merges_active_frame_and_strips_raw_trace() -> None:

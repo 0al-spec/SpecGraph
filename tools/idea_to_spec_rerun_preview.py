@@ -71,6 +71,22 @@ SAFE_TOKEN_STEMS = {
     "updated": "update",
     "updating": "update",
 }
+MATCH_CONFIDENCE_BY_KIND = {
+    "target_ref": "explicit_target",
+    "exact": "high",
+    "normalized_exact": "high",
+    "safe_inflection": "medium",
+    "safe_phrase_match": "low",
+    "aggregate_target": "aggregate_scope",
+}
+MATCH_KIND_PRECEDENCE = {
+    "aggregate_target": 10,
+    "safe_phrase_match": 20,
+    "safe_inflection": 30,
+    "normalized_exact": 40,
+    "exact": 50,
+    "target_ref": 60,
+}
 
 
 def _now_iso() -> str:
@@ -408,7 +424,6 @@ def _match_record(
     decision: dict[str, Any],
     gap_item: dict[str, Any],
     match_kind: str,
-    confidence: str = "review_safe",
 ) -> dict[str, Any]:
     decision_term = _text(decision.get("term"))
     gap_term = _text(gap_item.get("term"))
@@ -417,7 +432,7 @@ def _match_record(
         "node_id": _text(gap_item.get("node_id")),
         "decision_id": _text(decision.get("decision_id")) or _text(decision.get("request_id")),
         "match_kind": match_kind,
-        "confidence": confidence,
+        "confidence": MATCH_CONFIDENCE_BY_KIND.get(match_kind, "unknown"),
         "gap_term": gap_term,
         "decision_term": decision_term,
         "normalized_gap_term": " ".join(_term_tokens(gap_term)),
@@ -478,6 +493,29 @@ def _gap_match(decision: dict[str, Any], gap_item: dict[str, Any]) -> dict[str, 
     return _term_match_record(decision, gap_item)
 
 
+def _match_precedence(match_record: dict[str, Any]) -> int:
+    return MATCH_KIND_PRECEDENCE.get(_text(match_record.get("match_kind")), 0)
+
+
+def _best_gap_match(
+    decisions: list[dict[str, Any]],
+    gap_item: dict[str, Any],
+) -> tuple[dict[str, Any] | None, dict[str, Any]]:
+    best_decision: dict[str, Any] | None = None
+    best_evidence: dict[str, Any] = {}
+    best_precedence = -1
+    for decision in decisions:
+        evidence = _gap_match(decision, gap_item)
+        if not evidence:
+            continue
+        precedence = _match_precedence(evidence)
+        if precedence > best_precedence:
+            best_decision = decision
+            best_evidence = evidence
+            best_precedence = precedence
+    return best_decision, best_evidence
+
+
 def _matches_gap(decision: dict[str, Any], gap_item: dict[str, Any]) -> bool:
     return bool(_gap_match(decision, gap_item))
 
@@ -493,13 +531,7 @@ def _ontology_gap_preview(
     for gap_item in _gap_items(candidate_graph):
         if gap_item["kind"] != "ontology_gap":
             continue
-        matching_decision: dict[str, Any] | None = None
-        matching_evidence: dict[str, Any] = {}
-        for decision in decisions:
-            matching_evidence = _gap_match(decision, gap_item)
-            if matching_evidence:
-                matching_decision = decision
-                break
+        matching_decision, matching_evidence = _best_gap_match(decisions, gap_item)
         if matching_decision:
             preview = {
                 key: value
