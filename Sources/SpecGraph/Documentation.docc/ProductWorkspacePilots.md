@@ -288,6 +288,26 @@ unresolved, and matching is by explicit `target_ref` only, not fuzzy text
 similarity. The repair session journal treats unresolved candidate gaps as
 candidate-approval blockers alongside unresolved ontology gaps.
 
+Proposal `0177` adds the repaired candidate promotion handoff. After
+`idea_to_spec_rerun_materialization` removes repaired gaps, run:
+
+```bash
+make repaired-candidate-promotion-handoff
+```
+
+The target writes separate `repaired_*` artifacts for the repaired candidate
+graph, pre-SIB report, repair loop preview, candidate materialization,
+promotion gate, active candidate, repair session journal, and handoff report.
+The default active-candidate and handoff outputs are
+`runs/repaired_active_idea_to_spec_candidate.json` and
+`runs/repaired_candidate_promotion_handoff_report.json`.
+It preserves the product-scoped `product://...` source ref for active candidate
+identity checks and records the rerun materialization preview as provenance.
+If only structural pre-SIB findings remain, the normal repair preview can carry
+them and the promotion gate records `pre_sib_findings_repaired_by_preview`.
+The repaired journal can become ready for candidate approval review, but
+Platform promotion stays false until a separate `candidate_approval_decision`.
+
 Proposal `0170` adds a single convenience target for smoke and CI runs that
 need the complete decision-backed review chain:
 

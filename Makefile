@@ -90,6 +90,27 @@ IDEA_TO_SPEC_RERUN_PREVIEW_OUTPUT ?= runs/idea_to_spec_rerun_preview.json
 IDEA_TO_SPEC_RERUN_MATERIALIZATION_PREVIEW ?= runs/idea_to_spec_rerun_preview.json
 IDEA_TO_SPEC_RERUN_MATERIALIZATION_CANDIDATE_GRAPH ?= runs/candidate_spec_graph.json
 IDEA_TO_SPEC_RERUN_MATERIALIZATION_OUTPUT ?= runs/idea_to_spec_rerun_materialization.json
+REPAIRED_CANDIDATE_PROMOTION_HANDOFF_INTAKE ?= runs/idea_event_storming_intake.json
+REPAIRED_CANDIDATE_PROMOTION_HANDOFF_CLARIFICATION_REQUESTS ?= runs/idea_to_spec_clarification_requests.json
+REPAIRED_CANDIDATE_PROMOTION_HANDOFF_CLARIFICATION_ANSWERS ?= runs/idea_to_spec_clarification_answers.json
+REPAIRED_CANDIDATE_PROMOTION_HANDOFF_ONTOLOGY_DECISIONS ?= runs/product_ontology_gap_review_decisions.json
+REPAIRED_CANDIDATE_PROMOTION_HANDOFF_RERUN_INPUT ?= runs/idea_to_spec_answer_rerun_input.json
+REPAIRED_CANDIDATE_PROMOTION_HANDOFF_RERUN_PREVIEW ?= runs/idea_to_spec_rerun_preview.json
+REPAIRED_CANDIDATE_PROMOTION_HANDOFF_RERUN_MATERIALIZATION ?= runs/idea_to_spec_rerun_materialization.json
+REPAIRED_CANDIDATE_PROMOTION_HANDOFF_CANDIDATE_GRAPH_OUTPUT ?= runs/repaired_candidate_spec_graph.json
+REPAIRED_CANDIDATE_PROMOTION_HANDOFF_PRE_SIB_OUTPUT ?= runs/repaired_pre_sib_coherence_report.json
+REPAIRED_CANDIDATE_PROMOTION_HANDOFF_REPAIR_LOOP_OUTPUT ?= runs/repaired_candidate_repair_loop_report.json
+REPAIRED_CANDIDATE_PROMOTION_HANDOFF_MATERIALIZATION_OUTPUT_DIR ?= runs/repaired_materialized_candidate_specs
+REPAIRED_CANDIDATE_PROMOTION_HANDOFF_MATERIALIZATION_OUTPUT ?= runs/repaired_candidate_spec_materialization_report.json
+REPAIRED_CANDIDATE_PROMOTION_HANDOFF_PROMOTION_GATE_OUTPUT ?= runs/repaired_idea_to_spec_promotion_gate.json
+REPAIRED_CANDIDATE_PROMOTION_HANDOFF_ACTIVE_CANDIDATE_OUTPUT ?= runs/repaired_active_idea_to_spec_candidate.json
+REPAIRED_CANDIDATE_PROMOTION_HANDOFF_REPAIR_SESSION_OUTPUT ?= runs/repaired_idea_to_spec_repair_session.json
+REPAIRED_CANDIDATE_PROMOTION_HANDOFF_OUTPUT ?= runs/repaired_candidate_promotion_handoff_report.json
+REPAIRED_CANDIDATE_PROMOTION_HANDOFF_SESSION_ID ?=
+REPAIRED_CANDIDATE_PROMOTION_HANDOFF_SESSION_ID_ARG := $(if $(strip $(REPAIRED_CANDIDATE_PROMOTION_HANDOFF_SESSION_ID)),--session-id "$(REPAIRED_CANDIDATE_PROMOTION_HANDOFF_SESSION_ID)",)
+REPAIRED_CANDIDATE_PROMOTION_HANDOFF_OPERATOR_REF ?= local_operator:unattributed
+REPAIRED_CANDIDATE_PROMOTION_HANDOFF_STRICT ?=
+REPAIRED_CANDIDATE_PROMOTION_HANDOFF_STRICT_ARG := $(if $(filter 1 true yes,$(strip $(REPAIRED_CANDIDATE_PROMOTION_HANDOFF_STRICT))),--strict,)
 IDEA_TO_SPEC_REPAIR_SESSION_ACTIVE_CANDIDATE ?= runs/active_idea_to_spec_candidate.json
 IDEA_TO_SPEC_REPAIR_SESSION_CLARIFICATION_REQUESTS ?= runs/idea_to_spec_clarification_requests.json
 IDEA_TO_SPEC_REPAIR_SESSION_CLARIFICATION_ANSWERS ?= runs/idea_to_spec_clarification_answers.json
@@ -198,6 +219,7 @@ PYTHON_TARGETS := viewer-surfaces dashboard backlog next-move spec-activity grap
 	idea-to-spec-answer-rerun-input \
 	idea-to-spec-rerun-preview \
 	idea-to-spec-rerun-materialization \
+	repaired-candidate-promotion-handoff \
 	idea-to-spec-repair-session-journal \
 	specspace-repair-draft-import-preview \
 	specspace-repair-rerun-request-gate \
@@ -207,6 +229,7 @@ PYTHON_TARGETS := viewer-surfaces dashboard backlog next-move spec-activity grap
 	candidate-spec-materialization idea-to-spec-promotion-gate \
 	active-idea-to-spec-candidate-source candidate-approval-decision \
 	product-workspace-active-candidate product-workspace-decision-backed-repair-chain \
+	product-workspace-repaired-promotion-handoff \
 	proposal-work-claims proposal-work-claims-gate proposal-id \
 	metrics-delivery metrics-feedback metrics-source-promotion metric-signals metric-thresholds \
 	metric-packs metric-pack-drift metric-pack-adapters metric-pack-runs metric-pricing model-usage \
@@ -272,6 +295,7 @@ help:
 			'  make idea-to-spec-answer-rerun-input IDEA_TO_SPEC_ANSWER_RERUN_INPUT_ANSWERS=<json>' \
 			'  make idea-to-spec-rerun-preview IDEA_TO_SPEC_RERUN_PREVIEW_INPUT=<json>' \
 			'  make idea-to-spec-rerun-materialization IDEA_TO_SPEC_RERUN_MATERIALIZATION_PREVIEW=<json>' \
+			'  make repaired-candidate-promotion-handoff REPAIRED_CANDIDATE_PROMOTION_HANDOFF_RERUN_MATERIALIZATION=<json>' \
 			'  make idea-to-spec-repair-session-journal IDEA_TO_SPEC_REPAIR_SESSION_OUTPUT=<json>' \
 			'  make specspace-repair-draft-import-preview SPECSPACE_REPAIR_DRAFT_IMPORT_DRAFTS=<json>' \
 			'  make product-workspace-repair-draft-rerun SPECSPACE_REPAIR_DRAFT_IMPORT_DRAFTS=<json>' \
@@ -320,6 +344,7 @@ help:
 			'  make active-idea-to-spec-candidate-source Build active product candidate source' \
 			'  make candidate-approval-decision Build explicit candidate approval decision' \
 			'  make idea-to-spec-repair-session-journal Build durable review-only repair session journal' \
+			'  make repaired-candidate-promotion-handoff Build repaired approval-ready handoff artifacts' \
 			'  make specspace-repair-draft-import-preview Build review-only SpecSpace repair draft import preview' \
 			'  make product-workspace-active-candidate Build active product workspace candidate artifacts' \
 			'  make product-workspace-decision-backed-repair-chain Build product candidate + decision-backed rerun preview' \
@@ -520,6 +545,10 @@ idea-to-spec-rerun-preview:
 idea-to-spec-rerun-materialization:
 	@$(PYTHON) tools/idea_to_spec_rerun_materialization.py --rerun-preview "$(IDEA_TO_SPEC_RERUN_MATERIALIZATION_PREVIEW)" --candidate-graph "$(IDEA_TO_SPEC_RERUN_MATERIALIZATION_CANDIDATE_GRAPH)" --output "$(IDEA_TO_SPEC_RERUN_MATERIALIZATION_OUTPUT)"
 
+.PHONY: repaired-candidate-promotion-handoff
+repaired-candidate-promotion-handoff:
+	@$(PYTHON) tools/repaired_candidate_promotion_handoff.py --intake "$(REPAIRED_CANDIDATE_PROMOTION_HANDOFF_INTAKE)" --clarification-requests "$(REPAIRED_CANDIDATE_PROMOTION_HANDOFF_CLARIFICATION_REQUESTS)" --clarification-answers "$(REPAIRED_CANDIDATE_PROMOTION_HANDOFF_CLARIFICATION_ANSWERS)" --ontology-decisions "$(REPAIRED_CANDIDATE_PROMOTION_HANDOFF_ONTOLOGY_DECISIONS)" --rerun-input "$(REPAIRED_CANDIDATE_PROMOTION_HANDOFF_RERUN_INPUT)" --rerun-preview "$(REPAIRED_CANDIDATE_PROMOTION_HANDOFF_RERUN_PREVIEW)" --rerun-materialization "$(REPAIRED_CANDIDATE_PROMOTION_HANDOFF_RERUN_MATERIALIZATION)" --repaired-candidate-graph-output "$(REPAIRED_CANDIDATE_PROMOTION_HANDOFF_CANDIDATE_GRAPH_OUTPUT)" --repaired-pre-sib-output "$(REPAIRED_CANDIDATE_PROMOTION_HANDOFF_PRE_SIB_OUTPUT)" --repaired-repair-loop-output "$(REPAIRED_CANDIDATE_PROMOTION_HANDOFF_REPAIR_LOOP_OUTPUT)" --repaired-materialization-output-dir "$(REPAIRED_CANDIDATE_PROMOTION_HANDOFF_MATERIALIZATION_OUTPUT_DIR)" --repaired-materialization-output "$(REPAIRED_CANDIDATE_PROMOTION_HANDOFF_MATERIALIZATION_OUTPUT)" --repaired-promotion-gate-output "$(REPAIRED_CANDIDATE_PROMOTION_HANDOFF_PROMOTION_GATE_OUTPUT)" --repaired-active-candidate-output "$(REPAIRED_CANDIDATE_PROMOTION_HANDOFF_ACTIVE_CANDIDATE_OUTPUT)" --repaired-repair-session-output "$(REPAIRED_CANDIDATE_PROMOTION_HANDOFF_REPAIR_SESSION_OUTPUT)" --operator-ref "$(REPAIRED_CANDIDATE_PROMOTION_HANDOFF_OPERATOR_REF)" $(REPAIRED_CANDIDATE_PROMOTION_HANDOFF_SESSION_ID_ARG) --output "$(REPAIRED_CANDIDATE_PROMOTION_HANDOFF_OUTPUT)" $(REPAIRED_CANDIDATE_PROMOTION_HANDOFF_STRICT_ARG)
+
 .PHONY: idea-to-spec-repair-session-journal
 idea-to-spec-repair-session-journal:
 	@$(PYTHON) tools/idea_to_spec_repair_session_journal.py --active-candidate "$(IDEA_TO_SPEC_REPAIR_SESSION_ACTIVE_CANDIDATE)" --clarification-requests "$(IDEA_TO_SPEC_REPAIR_SESSION_CLARIFICATION_REQUESTS)" --clarification-answers "$(IDEA_TO_SPEC_REPAIR_SESSION_CLARIFICATION_ANSWERS)" --ontology-decisions "$(IDEA_TO_SPEC_REPAIR_SESSION_ONTOLOGY_DECISIONS)" --rerun-input "$(IDEA_TO_SPEC_REPAIR_SESSION_RERUN_INPUT)" --rerun-preview "$(IDEA_TO_SPEC_REPAIR_SESSION_RERUN_PREVIEW)" --rerun-materialization "$(IDEA_TO_SPEC_REPAIR_SESSION_RERUN_MATERIALIZATION)" --promotion-gate "$(IDEA_TO_SPEC_REPAIR_SESSION_PROMOTION_GATE)" --operator-ref "$(IDEA_TO_SPEC_REPAIR_SESSION_OPERATOR_REF)" $(IDEA_TO_SPEC_REPAIR_SESSION_ID_ARG) --output "$(IDEA_TO_SPEC_REPAIR_SESSION_OUTPUT)"
@@ -594,6 +623,10 @@ product-workspace-decision-backed-repair-chain:
 	@$(MAKE) idea-to-spec-rerun-preview IDEA_TO_SPEC_RERUN_PREVIEW_INPUT="$(IDEA_TO_SPEC_ANSWER_RERUN_INPUT_OUTPUT)" IDEA_TO_SPEC_RERUN_PREVIEW_INTAKE="$(IDEA_EVENT_STORMING_INTAKE_OUTPUT)" IDEA_TO_SPEC_RERUN_PREVIEW_CANDIDATE_GRAPH="$(CANDIDATE_SPEC_GRAPH_OUTPUT)"
 	@$(MAKE) idea-to-spec-rerun-materialization IDEA_TO_SPEC_RERUN_MATERIALIZATION_PREVIEW="$(IDEA_TO_SPEC_RERUN_PREVIEW_OUTPUT)" IDEA_TO_SPEC_RERUN_MATERIALIZATION_CANDIDATE_GRAPH="$(CANDIDATE_SPEC_GRAPH_OUTPUT)"
 	@$(MAKE) idea-to-spec-repair-session-journal IDEA_TO_SPEC_REPAIR_SESSION_ACTIVE_CANDIDATE="$(ACTIVE_IDEA_TO_SPEC_CANDIDATE_OUTPUT)" IDEA_TO_SPEC_REPAIR_SESSION_CLARIFICATION_REQUESTS="$(IDEA_TO_SPEC_CLARIFICATION_OUTPUT)" IDEA_TO_SPEC_REPAIR_SESSION_CLARIFICATION_ANSWERS="$(IDEA_TO_SPEC_CLARIFICATION_ANSWERS_OUTPUT)" IDEA_TO_SPEC_REPAIR_SESSION_ONTOLOGY_DECISIONS="$(PRODUCT_ONTOLOGY_GAP_REVIEW_DECISIONS_OUTPUT)" IDEA_TO_SPEC_REPAIR_SESSION_RERUN_INPUT="$(IDEA_TO_SPEC_ANSWER_RERUN_INPUT_OUTPUT)" IDEA_TO_SPEC_REPAIR_SESSION_RERUN_PREVIEW="$(IDEA_TO_SPEC_RERUN_PREVIEW_OUTPUT)" IDEA_TO_SPEC_REPAIR_SESSION_RERUN_MATERIALIZATION="$(IDEA_TO_SPEC_RERUN_MATERIALIZATION_OUTPUT)" IDEA_TO_SPEC_REPAIR_SESSION_PROMOTION_GATE="$(IDEA_TO_SPEC_PROMOTION_GATE_OUTPUT)"
+
+.PHONY: product-workspace-repaired-promotion-handoff
+product-workspace-repaired-promotion-handoff:
+	@$(MAKE) repaired-candidate-promotion-handoff REPAIRED_CANDIDATE_PROMOTION_HANDOFF_INTAKE="$(IDEA_EVENT_STORMING_INTAKE_OUTPUT)" REPAIRED_CANDIDATE_PROMOTION_HANDOFF_CLARIFICATION_REQUESTS="$(IDEA_TO_SPEC_CLARIFICATION_OUTPUT)" REPAIRED_CANDIDATE_PROMOTION_HANDOFF_CLARIFICATION_ANSWERS="$(IDEA_TO_SPEC_CLARIFICATION_ANSWERS_OUTPUT)" REPAIRED_CANDIDATE_PROMOTION_HANDOFF_ONTOLOGY_DECISIONS="$(PRODUCT_ONTOLOGY_GAP_REVIEW_DECISIONS_OUTPUT)" REPAIRED_CANDIDATE_PROMOTION_HANDOFF_RERUN_INPUT="$(IDEA_TO_SPEC_ANSWER_RERUN_INPUT_OUTPUT)" REPAIRED_CANDIDATE_PROMOTION_HANDOFF_RERUN_PREVIEW="$(IDEA_TO_SPEC_RERUN_PREVIEW_OUTPUT)" REPAIRED_CANDIDATE_PROMOTION_HANDOFF_RERUN_MATERIALIZATION="$(IDEA_TO_SPEC_RERUN_MATERIALIZATION_OUTPUT)"
 
 .PHONY: metrics-delivery
 metrics-delivery:

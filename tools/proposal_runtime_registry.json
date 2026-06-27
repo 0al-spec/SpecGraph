@@ -9846,5 +9846,66 @@
         "pattern": "Proposal 0176"
       }
     ]
+  },
+  {
+    "proposal_id": "0177",
+    "posture": "synchronous_runtime_slice",
+    "runtime_surfaces": [
+      "docs/proposals/0177_repaired_candidate_promotion_handoff.md",
+      "docs/archive/proposal_sources/0177_repaired_candidate_promotion_handoff.md",
+      "docs/product_workspace_graph_versioning_roadmap.md",
+      "Sources/SpecGraph/Documentation.docc/ProductWorkspacePilots.md",
+      "tools/repaired_candidate_promotion_handoff.py",
+      "tools/README.md",
+      "tools/docc_sync_contract.json",
+      "tests/test_repaired_candidate_promotion_handoff.py",
+      "Makefile"
+    ],
+    "runtime_markers": [
+      {
+        "path": "tools/repaired_candidate_promotion_handoff.py",
+        "pattern": "PROPOSAL_ID = \"0177\""
+      },
+      {
+        "path": "tools/repaired_candidate_promotion_handoff.py",
+        "pattern": "def build_repaired_candidate_promotion_handoff("
+      },
+      {
+        "path": "tools/repaired_candidate_promotion_handoff.py",
+        "pattern": "ready_for_candidate_approval"
+      },
+      {
+        "path": "Makefile",
+        "pattern": "repaired-candidate-promotion-handoff"
+      }
+    ],
+    "validation_markers": [
+      {
+        "path": "tests/test_repaired_candidate_promotion_handoff.py",
+        "pattern": "test_repaired_candidate_promotion_handoff_builds_approval_ready_chain"
+      },
+      {
+        "path": "tests/test_repaired_candidate_promotion_handoff.py",
+        "pattern": "test_repaired_candidate_promotion_handoff_blocks_unresolved_repaired_gaps"
+      }
+    ],
+    "observation_markers": [
+      {
+        "path": "docs/proposals/0177_repaired_candidate_promotion_handoff.md",
+        "pattern": "ready_for_platform_promotion: false"
+      },
+      {
+        "path": "docs/product_workspace_graph_versioning_roadmap.md",
+        "pattern": "Status: implemented in proposal `0177`"
+      },
+      {
+        "path": "Sources/SpecGraph/Documentation.docc/ProductWorkspacePilots.md",
+        "pattern": "Proposal `0177`"
+      },
+      {
+        "path": "tools/README.md",
+        "pattern": "proposal 0177"
+      }
+    ]
   }
 ]
