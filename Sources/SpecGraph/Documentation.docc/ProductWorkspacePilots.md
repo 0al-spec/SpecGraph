@@ -275,7 +275,7 @@ triage signal: exact matches are `high`, safe inflections are `medium`,
 directed phrase matches are `low`, explicit target refs are `explicit_target`,
 and aggregate gap actions are `aggregate_scope`. `safe_phrase_match` is
 directional, so the decision term must be the prefix and the gap term may only
-add a safe suffix.
+add one safe suffix.
 This remains review-only: no ontology terms are accepted and no candidate or
 canonical artifacts are mutated.
 

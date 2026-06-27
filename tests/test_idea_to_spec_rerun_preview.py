@@ -312,6 +312,12 @@ def test_rerun_preview_uses_safe_normalized_matching_without_broad_single_word_m
             "term": "Local Notification Service",
         },
         {
+            "id": "ontology-gap.local-notification-service-update",
+            "kind": "ontology_gap",
+            "source_ref": "domain-event.local-notification-service-update",
+            "term": "Local Notification Service Update",
+        },
+        {
             "id": "ontology-gap.renewal-date-updated",
             "kind": "ontology_gap",
             "source_ref": "domain-event.renewal-date-updated",
@@ -348,7 +354,11 @@ def test_rerun_preview_uses_safe_normalized_matching_without_broad_single_word_m
     assert resolved["Local Notification Service"]["confidence"] == "low"
     assert resolved["Renewal Date Updated"]["match_kind"] == "safe_phrase_match"
     assert resolved["Renewal Date Updated"]["confidence"] == "low"
-    assert unresolved_terms == {"Subscription Added", "Subscription Cancelled"}
+    assert unresolved_terms == {
+        "Local Notification Service Update",
+        "Subscription Added",
+        "Subscription Cancelled",
+    }
 
 
 def test_rerun_preview_prefers_stronger_match_over_first_match() -> None:

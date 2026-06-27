@@ -361,7 +361,7 @@ Supervisor modes:
   `match_kind`, `confidence`, `gap_term`, and `decision_term` evidence for
   resolved gaps. The preview ranks matching decisions by match strength before
   falling back to source order for ties, and `safe_phrase_match` is directional
-  rather than a general fuzzy/synonym rule.
+  with exactly one safe suffix rather than a general fuzzy/synonym rule.
 - `tools/idea_to_spec_rerun_materialization.py`: review-only rerun
   materialization builder introduced by proposal 0167. Use
   `make idea-to-spec-rerun-materialization` to consume a ready

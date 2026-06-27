@@ -469,7 +469,7 @@ def _term_match_record(decision: dict[str, Any], gap_item: dict[str, Any]) -> di
 
     if len(decision_tokens) >= 2 and gap_tokens[: len(decision_tokens)] == decision_tokens:
         extra_tokens = gap_tokens[len(decision_tokens) :]
-        if extra_tokens and set(extra_tokens).issubset(SAFE_PHRASE_SUFFIX_TOKENS):
+        if len(extra_tokens) == 1 and extra_tokens[0] in SAFE_PHRASE_SUFFIX_TOKENS:
             return _match_record(
                 decision=decision,
                 gap_item=gap_item,

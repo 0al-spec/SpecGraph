@@ -739,8 +739,8 @@ When several decisions match the same gap, the preview chooses the strongest
 `medium`, directed phrase matches are `low`, explicit target refs are
 `explicit_target`, and aggregate gap actions are `aggregate_scope`.
 `safe_phrase_match` is directional: the decision term must be the prefix and the
-gap term may only add a safe suffix. It is not a general synonym or fuzzy match
-rule.
+gap term may only add one safe suffix. It is not a general synonym or fuzzy
+match rule.
 
 `idea_to_spec_rerun_materialization` preserves this evidence in
 `ontology_gap_resolutions`, so downstream review surfaces can explain why a gap

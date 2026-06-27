@@ -89,9 +89,9 @@ later `exact` match from being displaced by an earlier `safe_phrase_match`.
 
 `safe_phrase_match` is deliberately narrow and directional. It requires a
 multi-token decision term, treats the decision term as the prefix of the gap
-term, and only accepts a short allowlist of safe suffix stems such as `record`,
-`schedule`, `service`, and `update`. It is not a bidirectional synonym rule and
-does not let event-like terms rewrite the base project vocabulary.
+term, and only accepts exactly one suffix stem from a short allowlist such as
+`record`, `schedule`, `service`, and `update`. It is not a bidirectional synonym
+rule and does not let event-like terms rewrite the base project vocabulary.
 
 ## Authority Boundary
 
