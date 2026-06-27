@@ -6,6 +6,8 @@ import subprocess
 import sys
 from pathlib import Path
 
+import pytest
+
 ROOT = Path(__file__).resolve().parents[1]
 TOOL_PATH = ROOT / "tools" / "repaired_candidate_promotion_handoff.py"
 
@@ -19,8 +21,11 @@ def load_json(path: Path) -> dict[str, object]:
     return json.loads(path.read_text(encoding="utf-8"))
 
 
-def rel(path: Path) -> str:
-    return path.relative_to(ROOT).as_posix()
+def path_arg(path: Path) -> str:
+    try:
+        return path.relative_to(ROOT).as_posix()
+    except ValueError:
+        return path.as_posix()
 
 
 def finding_ids(report: dict[str, object]) -> set[str]:
@@ -44,7 +49,11 @@ def authority_boundary() -> dict[str, bool]:
     }
 
 
-def candidate_graph_preview(*, unresolved_gap: bool = False) -> dict[str, object]:
+def candidate_graph_preview(
+    *,
+    unresolved_gap: bool = False,
+    connected: bool = False,
+) -> dict[str, object]:
     gaps = (
         [
             {
@@ -67,7 +76,16 @@ def candidate_graph_preview(*, unresolved_gap: bool = False) -> dict[str, object
         "artifact_kind": "candidate_spec_graph",
         "canonical_mutations_allowed": False,
         "contract_ref": "specgraph.idea-to-spec.candidate-spec-graph.v0.1",
-        "edges": [],
+        "edges": [
+            {
+                "id": "edge.product-boundary-to-subscription-reminder",
+                "from": "candidate-spec.product-boundary",
+                "to": "candidate-spec.subscription-reminder",
+                "type": "REFINES",
+            }
+        ]
+        if connected
+        else [],
         "nodes": [
             {
                 "id": "candidate-spec.product-boundary",
@@ -121,7 +139,7 @@ def candidate_graph_preview(*, unresolved_gap: bool = False) -> dict[str, object
         "source_intake": {"source_ref": "product://local-subscription-control/root-intent"},
         "source_ref": "runs/test/repaired-preview#candidate_graph_preview",
         "summary": {
-            "edge_count": 0,
+            "edge_count": 1 if connected else 0,
             "finding_count": 0,
             "gap_count": len(gaps),
             "node_count": 2,
@@ -131,7 +149,13 @@ def candidate_graph_preview(*, unresolved_gap: bool = False) -> dict[str, object
     }
 
 
-def write_input_chain(run_dir: Path, *, unresolved_gap: bool = False) -> dict[str, Path]:
+def write_input_chain(
+    run_dir: Path,
+    *,
+    unresolved_gap: bool = False,
+    connected_graph: bool = False,
+    stale_rerun_materialization_source: bool = False,
+) -> dict[str, Path]:
     paths = {
         "intake": run_dir / "idea_event_storming_intake.json",
         "clarification_requests": run_dir / "idea_to_spec_clarification_requests.json",
@@ -186,7 +210,7 @@ def write_input_chain(run_dir: Path, *, unresolved_gap: bool = False) -> dict[st
             "canonical_mutations_allowed": False,
             "tracked_artifacts_written": False,
             "source_artifacts": {
-                "clarification_requests": {"source_ref": rel(paths["clarification_requests"])}
+                "clarification_requests": {"source_ref": path_arg(paths["clarification_requests"])}
             },
             "answers": [
                 {
@@ -218,7 +242,7 @@ def write_input_chain(run_dir: Path, *, unresolved_gap: bool = False) -> dict[st
             "canonical_mutations_allowed": False,
             "tracked_artifacts_written": False,
             "source_artifacts": {
-                "clarification_answers": {"source_ref": rel(paths["clarification_answers"])}
+                "clarification_answers": {"source_ref": path_arg(paths["clarification_answers"])}
             },
             "decisions": [],
             "readiness": {"ready": True, "review_state": "ontology_gap_decisions_ready"},
@@ -236,9 +260,9 @@ def write_input_chain(run_dir: Path, *, unresolved_gap: bool = False) -> dict[st
             "canonical_mutations_allowed": False,
             "tracked_artifacts_written": False,
             "source_artifacts": {
-                "clarification_answers": {"source_ref": rel(paths["clarification_answers"])},
+                "clarification_answers": {"source_ref": path_arg(paths["clarification_answers"])},
                 "product_ontology_gap_review_decisions": {
-                    "source_ref": rel(paths["ontology_decisions"])
+                    "source_ref": path_arg(paths["ontology_decisions"])
                 },
             },
             "readiness": {"ready": True, "review_state": "rerun_input_ready"},
@@ -255,7 +279,7 @@ def write_input_chain(run_dir: Path, *, unresolved_gap: bool = False) -> dict[st
             "contract_ref": "specgraph.idea-to-spec.rerun-preview.v0.1",
             "canonical_mutations_allowed": False,
             "tracked_artifacts_written": False,
-            "source_artifacts": {"rerun_input": {"source_ref": rel(paths["rerun_input"])}},
+            "source_artifacts": {"rerun_input": {"source_ref": path_arg(paths["rerun_input"])}},
             "readiness": {"ready": True, "review_state": "rerun_preview_ready"},
             "authority_boundary": authority_boundary(),
             "summary": {
@@ -276,9 +300,18 @@ def write_input_chain(run_dir: Path, *, unresolved_gap: bool = False) -> dict[st
             "contract_ref": "specgraph.idea-to-spec.rerun-materialization.v0.1",
             "canonical_mutations_allowed": False,
             "tracked_artifacts_written": False,
-            "source_artifacts": {"rerun_preview": {"source_ref": rel(paths["rerun_preview"])}},
+            "source_artifacts": {
+                "rerun_preview": {
+                    "source_ref": "runs/stale_rerun_preview.json"
+                    if stale_rerun_materialization_source
+                    else path_arg(paths["rerun_preview"])
+                }
+            },
             "materialization_preview": {
-                "candidate_graph_preview": candidate_graph_preview(unresolved_gap=unresolved_gap),
+                "candidate_graph_preview": candidate_graph_preview(
+                    unresolved_gap=unresolved_gap,
+                    connected=connected_graph,
+                ),
                 "delta": {
                     "resolved_candidate_gap_count": 0 if unresolved_gap else 1,
                     "resolved_ontology_gap_count": 1,
@@ -300,12 +333,25 @@ def write_input_chain(run_dir: Path, *, unresolved_gap: bool = False) -> dict[st
     return paths
 
 
-def output_paths(run_dir: Path) -> dict[str, Path]:
+@pytest.fixture()
+def repo_materialization_dir(tmp_path: Path) -> Path:
+    path = ROOT / "runs" / f"test_repaired_candidate_promotion_handoff_{tmp_path.name}"
+    if path.exists():
+        shutil.rmtree(path)
+    try:
+        yield path
+    finally:
+        if path.exists():
+            shutil.rmtree(path)
+
+
+def output_paths(run_dir: Path, *, materialization_dir: Path | None = None) -> dict[str, Path]:
     return {
         "repaired_candidate_graph": run_dir / "repaired_candidate_spec_graph.json",
         "repaired_pre_sib": run_dir / "repaired_pre_sib_coherence_report.json",
         "repaired_repair_loop": run_dir / "repaired_candidate_repair_loop_report.json",
-        "repaired_materialization_dir": run_dir / "repaired_materialized_candidate_specs",
+        "repaired_materialization_dir": materialization_dir
+        or run_dir / "repaired_materialized_candidate_specs",
         "repaired_materialization": run_dir / "repaired_candidate_spec_materialization_report.json",
         "repaired_promotion_gate": run_dir / "repaired_idea_to_spec_promotion_gate.json",
         "repaired_active_candidate": run_dir / "repaired_active_idea_to_spec_candidate.json",
@@ -314,155 +360,160 @@ def output_paths(run_dir: Path) -> dict[str, Path]:
     }
 
 
-def run_tool(run_dir: Path, *, strict: bool = True) -> subprocess.CompletedProcess[str]:
-    inputs = write_input_chain(run_dir)
-    outputs = output_paths(run_dir)
+def run_tool(
+    run_dir: Path,
+    *,
+    strict: bool = True,
+    unresolved_gap: bool = False,
+    connected_graph: bool = False,
+    stale_rerun_materialization_source: bool = False,
+    materialization_dir: Path | None = None,
+) -> subprocess.CompletedProcess[str]:
+    inputs = write_input_chain(
+        run_dir,
+        unresolved_gap=unresolved_gap,
+        connected_graph=connected_graph,
+        stale_rerun_materialization_source=stale_rerun_materialization_source,
+    )
+    outputs = output_paths(run_dir, materialization_dir=materialization_dir)
     command = [
         sys.executable,
         str(TOOL_PATH),
         "--intake",
-        rel(inputs["intake"]),
+        path_arg(inputs["intake"]),
         "--clarification-requests",
-        rel(inputs["clarification_requests"]),
+        path_arg(inputs["clarification_requests"]),
         "--clarification-answers",
-        rel(inputs["clarification_answers"]),
+        path_arg(inputs["clarification_answers"]),
         "--ontology-decisions",
-        rel(inputs["ontology_decisions"]),
+        path_arg(inputs["ontology_decisions"]),
         "--rerun-input",
-        rel(inputs["rerun_input"]),
+        path_arg(inputs["rerun_input"]),
         "--rerun-preview",
-        rel(inputs["rerun_preview"]),
+        path_arg(inputs["rerun_preview"]),
         "--rerun-materialization",
-        rel(inputs["rerun_materialization"]),
+        path_arg(inputs["rerun_materialization"]),
         "--repaired-candidate-graph-output",
-        rel(outputs["repaired_candidate_graph"]),
+        path_arg(outputs["repaired_candidate_graph"]),
         "--repaired-pre-sib-output",
-        rel(outputs["repaired_pre_sib"]),
+        path_arg(outputs["repaired_pre_sib"]),
         "--repaired-repair-loop-output",
-        rel(outputs["repaired_repair_loop"]),
+        path_arg(outputs["repaired_repair_loop"]),
         "--repaired-materialization-output-dir",
-        rel(outputs["repaired_materialization_dir"]),
+        path_arg(outputs["repaired_materialization_dir"]),
         "--repaired-materialization-output",
-        rel(outputs["repaired_materialization"]),
+        path_arg(outputs["repaired_materialization"]),
         "--repaired-promotion-gate-output",
-        rel(outputs["repaired_promotion_gate"]),
+        path_arg(outputs["repaired_promotion_gate"]),
         "--repaired-active-candidate-output",
-        rel(outputs["repaired_active_candidate"]),
+        path_arg(outputs["repaired_active_candidate"]),
         "--repaired-repair-session-output",
-        rel(outputs["repaired_repair_session"]),
+        path_arg(outputs["repaired_repair_session"]),
         "--output",
-        rel(outputs["handoff"]),
+        path_arg(outputs["handoff"]),
     ]
     if strict:
         command.append("--strict")
     return subprocess.run(command, cwd=ROOT, check=False, capture_output=True, text=True)
 
 
-def test_repaired_candidate_promotion_handoff_builds_approval_ready_chain() -> None:
-    run_dir = ROOT / "runs" / "test_repaired_candidate_promotion_handoff_ready"
-    if run_dir.exists():
-        shutil.rmtree(run_dir)
-    try:
-        result = run_tool(run_dir)
-        assert result.returncode == 0, result.stderr
-        outputs = output_paths(run_dir)
-        report = load_json(outputs["handoff"])
-        assert report["readiness"]["ready"] is True
-        assert report["summary"]["ready_for_candidate_approval"] is True
-        assert report["summary"]["ready_for_platform_promotion"] is False
+def test_repaired_candidate_promotion_handoff_builds_approval_ready_chain(
+    tmp_path: Path,
+    repo_materialization_dir: Path,
+) -> None:
+    run_dir = tmp_path / "ready"
+    result = run_tool(run_dir, materialization_dir=repo_materialization_dir)
+    assert result.returncode == 0, result.stderr
+    outputs = output_paths(run_dir, materialization_dir=repo_materialization_dir)
+    report = load_json(outputs["handoff"])
+    assert report["readiness"]["ready"] is True
+    assert report["summary"]["ready_for_candidate_approval"] is True
+    assert report["summary"]["ready_for_platform_promotion"] is False
 
-        repaired_graph = load_json(outputs["repaired_candidate_graph"])
-        assert repaired_graph["source_ref"] == "product://local-subscription-control/root-intent"
-        assert (
-            repaired_graph["repaired_candidate_promotion_handoff"][
-                "source_candidate_graph_preview_ref"
-            ]
-            == "runs/test/repaired-preview#candidate_graph_preview"
-        )
+    repaired_graph = load_json(outputs["repaired_candidate_graph"])
+    assert repaired_graph["source_ref"] == "product://local-subscription-control/root-intent"
+    assert (
+        repaired_graph["repaired_candidate_promotion_handoff"]["source_candidate_graph_preview_ref"]
+        == "runs/test/repaired-preview#candidate_graph_preview"
+    )
 
-        pre_sib = load_json(outputs["repaired_pre_sib"])
-        assert pre_sib["readiness"]["ready"] is False
-        assert "pre_sib_orphan_nodes" in {finding["finding_id"] for finding in pre_sib["findings"]}
-        repair_loop = load_json(outputs["repaired_repair_loop"])
-        assert repair_loop["readiness"]["ready"] is True
-        assert repair_loop["summary"]["context_required_count"] == 0
-        promotion_gate = load_json(outputs["repaired_promotion_gate"])
-        assert promotion_gate["readiness"]["ready"] is True
-        assert promotion_gate["warnings"][0]["finding_id"] == "pre_sib_findings_repaired_by_preview"
-        active = load_json(outputs["repaired_active_candidate"])
-        assert active["readiness"]["ready"] is True
-        session = load_json(outputs["repaired_repair_session"])
-        assert session["readiness_impact"]["ready_for_candidate_approval"] is True
-        assert session["readiness_impact"]["ready_for_platform_promotion"] is False
-    finally:
-        if run_dir.exists():
-            shutil.rmtree(run_dir)
+    pre_sib = load_json(outputs["repaired_pre_sib"])
+    assert pre_sib["readiness"]["ready"] is False
+    assert "pre_sib_orphan_nodes" in {finding["finding_id"] for finding in pre_sib["findings"]}
+    repair_loop = load_json(outputs["repaired_repair_loop"])
+    assert repair_loop["readiness"]["ready"] is True
+    assert repair_loop["summary"]["context_required_count"] == 0
+    promotion_gate = load_json(outputs["repaired_promotion_gate"])
+    assert promotion_gate["readiness"]["ready"] is True
+    assert promotion_gate["warnings"][0]["finding_id"] == "pre_sib_findings_repaired_by_preview"
+    active = load_json(outputs["repaired_active_candidate"])
+    assert active["readiness"]["ready"] is True
+    session = load_json(outputs["repaired_repair_session"])
+    assert session["readiness_impact"]["ready_for_candidate_approval"] is True
+    assert session["readiness_impact"]["ready_for_platform_promotion"] is False
 
 
-def test_repaired_candidate_promotion_handoff_blocks_unresolved_repaired_gaps() -> None:
-    run_dir = ROOT / "runs" / "test_repaired_candidate_promotion_handoff_unresolved"
-    if run_dir.exists():
-        shutil.rmtree(run_dir)
-    try:
-        write_input_chain(run_dir, unresolved_gap=True)
-        inputs = {
-            name: run_dir / filename
-            for name, filename in {
-                "intake": "idea_event_storming_intake.json",
-                "clarification_requests": "idea_to_spec_clarification_requests.json",
-                "clarification_answers": "idea_to_spec_clarification_answers.json",
-                "ontology_decisions": "product_ontology_gap_review_decisions.json",
-                "rerun_input": "idea_to_spec_answer_rerun_input.json",
-                "rerun_preview": "idea_to_spec_rerun_preview.json",
-                "rerun_materialization": "idea_to_spec_rerun_materialization.json",
-            }.items()
-        }
-        outputs = output_paths(run_dir)
-        command = [
-            sys.executable,
-            str(TOOL_PATH),
-            "--intake",
-            rel(inputs["intake"]),
-            "--clarification-requests",
-            rel(inputs["clarification_requests"]),
-            "--clarification-answers",
-            rel(inputs["clarification_answers"]),
-            "--ontology-decisions",
-            rel(inputs["ontology_decisions"]),
-            "--rerun-input",
-            rel(inputs["rerun_input"]),
-            "--rerun-preview",
-            rel(inputs["rerun_preview"]),
-            "--rerun-materialization",
-            rel(inputs["rerun_materialization"]),
-            "--repaired-candidate-graph-output",
-            rel(outputs["repaired_candidate_graph"]),
-            "--repaired-pre-sib-output",
-            rel(outputs["repaired_pre_sib"]),
-            "--repaired-repair-loop-output",
-            rel(outputs["repaired_repair_loop"]),
-            "--repaired-materialization-output-dir",
-            rel(outputs["repaired_materialization_dir"]),
-            "--repaired-materialization-output",
-            rel(outputs["repaired_materialization"]),
-            "--repaired-promotion-gate-output",
-            rel(outputs["repaired_promotion_gate"]),
-            "--repaired-active-candidate-output",
-            rel(outputs["repaired_active_candidate"]),
-            "--repaired-repair-session-output",
-            rel(outputs["repaired_repair_session"]),
-            "--output",
-            rel(outputs["handoff"]),
-            "--strict",
-        ]
-        result = subprocess.run(command, cwd=ROOT, check=False, capture_output=True, text=True)
-        assert result.returncode == 1
-        report = load_json(outputs["handoff"])
-        assert report["readiness"]["ready"] is False
-        assert "repaired_session_not_ready_for_candidate_approval" in finding_ids(report)
-        session = load_json(outputs["repaired_repair_session"])
-        assert session["readiness_impact"]["unresolved_candidate_gap_count"] == 1
-        assert session["readiness_impact"]["ready_for_candidate_approval"] is False
-    finally:
-        if run_dir.exists():
-            shutil.rmtree(run_dir)
+def test_repaired_candidate_promotion_handoff_allows_clean_noop_repair_loop(
+    tmp_path: Path,
+    repo_materialization_dir: Path,
+) -> None:
+    run_dir = tmp_path / "clean"
+    result = run_tool(
+        run_dir,
+        connected_graph=True,
+        materialization_dir=repo_materialization_dir,
+    )
+    assert result.returncode == 0, result.stderr
+    outputs = output_paths(run_dir, materialization_dir=repo_materialization_dir)
+    pre_sib = load_json(outputs["repaired_pre_sib"])
+    assert pre_sib["readiness"]["ready"] is True
+    repair_loop = load_json(outputs["repaired_repair_loop"])
+    assert repair_loop["readiness"]["ready"] is True
+    assert repair_loop["summary"]["applied_action_count"] == 0
+    assert repair_loop["summary"]["no_op_repair_loop"] is True
+    promotion_gate = load_json(outputs["repaired_promotion_gate"])
+    assert promotion_gate["readiness"]["ready"] is True
+    report = load_json(outputs["handoff"])
+    assert report["readiness"]["ready"] is True
+
+
+def test_repaired_candidate_promotion_handoff_blocks_unresolved_repaired_gaps(
+    tmp_path: Path,
+    repo_materialization_dir: Path,
+) -> None:
+    run_dir = tmp_path / "unresolved"
+    result = run_tool(
+        run_dir,
+        unresolved_gap=True,
+        materialization_dir=repo_materialization_dir,
+    )
+    assert result.returncode == 1
+    outputs = output_paths(run_dir, materialization_dir=repo_materialization_dir)
+    report = load_json(outputs["handoff"])
+    assert report["readiness"]["ready"] is False
+    assert "repaired_session_not_ready_for_candidate_approval" in finding_ids(report)
+    session = load_json(outputs["repaired_repair_session"])
+    assert session["readiness_impact"]["unresolved_candidate_gap_count"] == 1
+    assert session["readiness_impact"]["ready_for_candidate_approval"] is False
+
+
+def test_repaired_candidate_promotion_handoff_blocks_stale_repair_session_journal(
+    tmp_path: Path,
+    repo_materialization_dir: Path,
+) -> None:
+    run_dir = tmp_path / "stale"
+    result = run_tool(
+        run_dir,
+        stale_rerun_materialization_source=True,
+        materialization_dir=repo_materialization_dir,
+    )
+    assert result.returncode == 1
+    outputs = output_paths(run_dir, materialization_dir=repo_materialization_dir)
+    report = load_json(outputs["handoff"])
+    assert "repaired_session_journal_not_ready" in finding_ids(report)
+    session = load_json(outputs["repaired_repair_session"])
+    assert session["readiness"]["ready"] is False
+    assert (
+        "rerun_materialization_rerun_preview_source_ref_mismatch"
+        in session["readiness"]["blocked_by"]
+    )

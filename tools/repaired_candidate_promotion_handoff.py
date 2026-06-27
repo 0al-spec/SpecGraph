@@ -27,6 +27,16 @@ SCHEMA_VERSION = 1
 CONTRACT_REF = "specgraph.idea-to-spec.repaired-candidate-promotion-handoff.v0.1"
 RERUN_MATERIALIZATION_CONTRACT_REF = "specgraph.idea-to-spec.rerun-materialization.v0.1"
 CANDIDATE_GRAPH_CONTRACT_REF = "specgraph.idea-to-spec.candidate-spec-graph.v0.1"
+RAW_TRACE_FIELDS = {
+    "operator_note",
+    "operator_notes",
+    "private_notes",
+    "raw_intent_text",
+    "raw_idea_text",
+    "raw_model_output",
+    "raw_operator_note",
+    "raw_prompt",
+}
 
 DEFAULT_INTAKE_PATH = ROOT / "runs" / "idea_event_storming_intake.json"
 DEFAULT_CLARIFICATION_REQUESTS_PATH = ROOT / "runs" / "idea_to_spec_clarification_requests.json"
@@ -67,6 +77,18 @@ def _list(value: Any) -> list[Any]:
 
 def _text(value: Any, default: str = "") -> str:
     return value.strip() if isinstance(value, str) and value.strip() else default
+
+
+def _public_safe(value: Any) -> Any:
+    if isinstance(value, dict):
+        return {
+            key: _public_safe(item)
+            for key, item in value.items()
+            if isinstance(key, str) and key not in RAW_TRACE_FIELDS and not key.startswith("raw_")
+        }
+    if isinstance(value, list):
+        return [_public_safe(item) for item in value]
+    return value
 
 
 def _relative_ref(path: Path) -> str:
@@ -131,8 +153,8 @@ def _artifact_ref(path: Path, payload: dict[str, Any]) -> dict[str, Any]:
         "contract_ref": payload.get("contract_ref"),
         "proposal_id": payload.get("proposal_id"),
         "source_ref": _relative_ref(_repo_path(path)),
-        "readiness": _dict(payload.get("readiness")),
-        "summary": _dict(payload.get("summary")),
+        "readiness": _public_safe(_dict(payload.get("readiness"))),
+        "summary": _public_safe(_dict(payload.get("summary"))),
     }
 
 
@@ -313,6 +335,50 @@ def _active_candidate_config(
     }
 
 
+def _repair_loop_for_repaired_handoff(
+    repair_loop: dict[str, Any],
+    *,
+    pre_sib_report: dict[str, Any],
+) -> dict[str, Any]:
+    if _dict(pre_sib_report.get("readiness")).get("ready") is not True:
+        return repair_loop
+    if _dict(repair_loop.get("readiness")).get("ready") is True:
+        return repair_loop
+    if _list(repair_loop.get("findings")):
+        return repair_loop
+    summary = _dict(repair_loop.get("summary"))
+    if summary.get("applied_action_count", 0) != 0:
+        return repair_loop
+    if summary.get("context_required_count", 0) != 0:
+        return repair_loop
+
+    normalized = copy.deepcopy(repair_loop)
+    readiness = dict(_dict(normalized.get("readiness")))
+    readiness.update(
+        {
+            "ready": True,
+            "review_state": "repair_preview_ready",
+            "blocked_by": [],
+        }
+    )
+    normalized["readiness"] = readiness
+    normalized_summary = dict(summary)
+    normalized_summary.update(
+        {
+            "status": "repair_preview_ready",
+            "no_op_repair_loop": True,
+        }
+    )
+    normalized["summary"] = normalized_summary
+    normalized["repaired_candidate_promotion_handoff"] = {
+        "proposal_id": PROPOSAL_ID,
+        "contract_ref": CONTRACT_REF,
+        "state": "clean_pre_sib_pass_through",
+        "reason": "repaired pre-SIB report is already ready and no repair action is required",
+    }
+    return normalized
+
+
 def _readiness_findings(
     *,
     repaired_active_candidate: dict[str, Any],
@@ -336,6 +402,16 @@ def _readiness_findings(
                 severity="review_required",
                 message="Repaired promotion gate must be ready for promotion request handoff.",
                 evidence={"readiness": _dict(repaired_promotion_gate.get("readiness"))},
+            )
+        )
+    session_readiness = _dict(repaired_repair_session.get("readiness"))
+    if session_readiness.get("ready") is not True:
+        findings.append(
+            _finding(
+                finding_id="repaired_session_journal_not_ready",
+                severity="review_required",
+                message="Repaired repair-session journal must be ready before handoff.",
+                evidence={"readiness": session_readiness},
             )
         )
     readiness_impact = _dict(repaired_repair_session.get("readiness_impact"))
@@ -406,6 +482,9 @@ def build_repaired_candidate_promotion_handoff(
 
     generated: dict[str, dict[str, Any]] = {}
     if not findings:
+        # Downstream builders consume artifact paths, so each repaired stage is
+        # persisted before the next stage. The final handoff report is the
+        # authoritative signal that the staged outputs form a complete chain.
         write_json(repaired_graph, repaired_candidate_graph_output)
         repaired_pre_sib = pre_sib_coherence_report.build_pre_sib_coherence_report(
             repaired_graph,
@@ -418,6 +497,10 @@ def build_repaired_candidate_promotion_handoff(
             candidate_graph_path=_repo_path(repaired_candidate_graph_output),
             pre_sib_report_path=_repo_path(repaired_pre_sib_output),
             output_path=_repo_path(repaired_repair_loop_output),
+        )
+        repaired_repair_loop = _repair_loop_for_repaired_handoff(
+            repaired_repair_loop,
+            pre_sib_report=repaired_pre_sib,
         )
         write_json(repaired_repair_loop, repaired_repair_loop_output)
         repaired_materialization = (
@@ -447,9 +530,21 @@ def build_repaired_candidate_promotion_handoff(
             repaired_materialization_output=repaired_materialization_output,
             repaired_promotion_gate_output=repaired_promotion_gate_output,
         )
+        active_candidate_artifacts = {
+            "intake": (_repo_path(intake_path), intake),
+            "candidate_graph": (_repo_path(repaired_candidate_graph_output), repaired_graph),
+            "pre_sib": (_repo_path(repaired_pre_sib_output), repaired_pre_sib),
+            "repair_loop": (_repo_path(repaired_repair_loop_output), repaired_repair_loop),
+            "materialization": (
+                _repo_path(repaired_materialization_output),
+                repaired_materialization,
+            ),
+            "promotion_gate": (_repo_path(repaired_promotion_gate_output), repaired_promotion_gate),
+        }
         repaired_active_candidate = (
             active_idea_to_spec_candidate_source.build_active_idea_to_spec_candidate_source(
                 active_config,
+                loaded_artifacts=active_candidate_artifacts,
             )
         )
         write_json(repaired_active_candidate, repaired_active_candidate_output)
@@ -548,6 +643,7 @@ def build_repaired_candidate_promotion_handoff(
         },
         "authority_boundary": _authority_boundary(),
         "privacy_boundary": {
+            "redaction_enforced_by": "recursive_public_safe_field_filter",
             "raw_idea_text_published": False,
             "raw_prompt_published": False,
             "raw_model_output_published": False,
