@@ -440,6 +440,20 @@ def _readiness_impact(
         )
         or 0
     )
+    unresolved_candidate_gap_count = _int(
+        materialization_summary.get(
+            "unresolved_candidate_gap_count",
+            preview_summary.get("unresolved_candidate_gap_count", 0),
+        )
+        or 0
+    )
+    resolved_candidate_gap_count = _int(
+        materialization_summary.get(
+            "resolved_candidate_gap_count",
+            preview_summary.get("resolved_candidate_gap_count", 0),
+        )
+        or 0
+    )
     blocking_request_count = _int(requests_summary.get("blocking_request_count") or 0)
     unresolved_blocking_count = _int(answers_summary.get("unresolved_blocking_count") or 0)
 
@@ -459,6 +473,8 @@ def _readiness_impact(
             blockers.extend(str(item) for item in _list(readiness.get("blocked_by")))
     if unresolved_ontology_gap_count:
         blockers.append("unresolved_ontology_gaps")
+    if unresolved_candidate_gap_count:
+        blockers.append("unresolved_candidate_gaps")
     if unresolved_blocking_count:
         blockers.append("unresolved_clarification_answers")
     blockers = sorted({item for item in blockers if item})
@@ -471,6 +487,7 @@ def _readiness_impact(
         and promotion_readiness.get("ready") is True
         and intermediate_artifacts_ready
         and unresolved_ontology_gap_count == 0
+        and unresolved_candidate_gap_count == 0
         and unresolved_blocking_count == 0
     )
     platform_promotion_blockers = (
@@ -493,6 +510,8 @@ def _readiness_impact(
         "ontology_decision_count": ontology_summary.get("decision_count", 0),
         "resolved_ontology_gap_count": resolved_ontology_gap_count,
         "unresolved_ontology_gap_count": unresolved_ontology_gap_count,
+        "resolved_candidate_gap_count": resolved_candidate_gap_count,
+        "unresolved_candidate_gap_count": unresolved_candidate_gap_count,
         "rerun_removed_gap_count": materialization_summary.get("removed_gap_count", 0),
         "candidate_quality_review_state": preview_summary.get("candidate_quality_review_state"),
         "promotion_path_count": _dict(promotion_gate.get("summary")).get("promotion_path_count", 0),
@@ -646,6 +665,8 @@ def build_idea_to_spec_repair_session_journal(
             "ontology_decision_count": len(decisions),
             "resolved_ontology_gap_count": readiness_impact["resolved_ontology_gap_count"],
             "unresolved_ontology_gap_count": readiness_impact["unresolved_ontology_gap_count"],
+            "resolved_candidate_gap_count": readiness_impact["resolved_candidate_gap_count"],
+            "unresolved_candidate_gap_count": readiness_impact["unresolved_candidate_gap_count"],
             "ready_for_candidate_approval": readiness_impact["ready_for_candidate_approval"],
             "finding_count": len(findings),
         },

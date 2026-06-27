@@ -2260,5 +2260,18 @@
     "required_provenance_links": [
       "source_draft_ref"
     ]
+  },
+  {
+    "proposal_id": "0176",
+    "source_artifact_class": "working_draft",
+    "source_refs": [
+      "docs/archive/proposal_sources/0176_candidate_repair_answer_materialization.md"
+    ],
+    "motivating_concern": "Accepted non-ontology candidate-gap answers were preserved as candidate review hints but did not change the rerun preview or materialized candidate graph preview, leaving product/spec gaps open after the operator had answered them.",
+    "normalized_title": "Candidate Repair Answer Materialization",
+    "bounded_scope": "Materialize explicitly targeted candidate-gap answers into the existing review-only idea_to_spec answer rerun, rerun preview, rerun materialization, and repair session journal surfaces, with tests, proposal docs, roadmap, DocC, and registry tracking, so product/spec gaps can be preview-resolved and preserved as candidate_gap_resolutions without executing prompt agents, applying answers to source artifacts, mutating candidate artifacts, mutating canonical specs, writing Ontology packages or lockfiles, accepting ontology terms, approving candidate graphs, creating Git branches or commits, opening pull requests, publishing read models, or adding SpecSpace mutation authority.",
+    "required_provenance_links": [
+      "source_draft_ref"
+    ]
   }
 ]

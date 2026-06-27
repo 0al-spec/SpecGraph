@@ -214,7 +214,7 @@ def _validate_inputs(
     return findings
 
 
-def _resolved_gap_index(rerun_preview: dict[str, Any]) -> dict[str, dict[str, Any]]:
+def _resolved_ontology_gap_index(rerun_preview: dict[str, Any]) -> dict[str, dict[str, Any]]:
     gap_preview = _dict(_dict(rerun_preview.get("rerun_preview")).get("ontology_gap_preview"))
     index: dict[str, dict[str, Any]] = {}
     for raw_item in _list(gap_preview.get("resolved_ontology_gaps")):
@@ -225,7 +225,7 @@ def _resolved_gap_index(rerun_preview: dict[str, Any]) -> dict[str, dict[str, An
     return index
 
 
-def _resolved_gap_matches(
+def _resolved_ontology_gap_matches(
     resolved: dict[str, Any],
     *,
     node_id: str,
@@ -239,6 +239,48 @@ def _resolved_gap_matches(
         return False
     if _text(resolved.get("source_ref")) and _text(resolved.get("source_ref")) != _text(
         gap.get("source_ref")
+    ):
+        return False
+    return True
+
+
+def _candidate_gap_index_key(*, node_id: str, gap_id: str) -> str:
+    return f"{node_id}.gaps.{gap_id}"
+
+
+def _resolved_candidate_gap_index(rerun_preview: dict[str, Any]) -> dict[str, dict[str, Any]]:
+    gap_preview = _dict(_dict(rerun_preview.get("rerun_preview")).get("candidate_gap_preview"))
+    index: dict[str, dict[str, Any]] = {}
+    for raw_item in _list(gap_preview.get("resolved_candidate_gaps")):
+        item = _dict(raw_item)
+        node_id = _text(item.get("node_id"))
+        gap_id = _text(item.get("gap_id"))
+        if node_id and gap_id:
+            index[_candidate_gap_index_key(node_id=node_id, gap_id=gap_id)] = item
+    return index
+
+
+def _resolved_candidate_gap_matches(
+    resolved: dict[str, Any],
+    *,
+    node_id: str,
+    gap: dict[str, Any],
+) -> bool:
+    if _text(gap.get("kind")) == "ontology_gap":
+        return False
+    if _text(resolved.get("node_id")) and _text(resolved.get("node_id")) != node_id:
+        return False
+    target_ref = _text(resolved.get("target_ref"))
+    if target_ref and target_ref != f"{node_id}.gaps.{_text(gap.get('id'))}":
+        return False
+    if _text(resolved.get("kind")) and _text(resolved.get("kind")) != _text(gap.get("kind")):
+        return False
+    if _text(resolved.get("source_ref")) and _text(resolved.get("source_ref")) != _text(
+        gap.get("source_ref")
+    ):
+        return False
+    if _text(resolved.get("statement")) and _text(resolved.get("statement")) != _text(
+        gap.get("statement")
     ):
         return False
     return True
@@ -265,18 +307,29 @@ def _refresh_candidate_graph_summary(candidate_graph: dict[str, Any]) -> None:
 
 
 def _empty_delta(candidate_graph: dict[str, Any]) -> dict[str, Any]:
-    unresolved_gap_ids: list[str] = []
+    unresolved_ontology_gap_ids: list[str] = []
+    unresolved_candidate_gap_ids: list[str] = []
     for raw_node in _list(candidate_graph.get("nodes")):
         node = _dict(raw_node)
         for raw_gap in _list(node.get("gaps")):
             gap = _dict(raw_gap)
-            if _text(gap.get("kind")) == "ontology_gap" and _text(gap.get("id")):
-                unresolved_gap_ids.append(_text(gap.get("id")))
+            gap_id = _text(gap.get("id"))
+            if not gap_id:
+                continue
+            if _text(gap.get("kind")) == "ontology_gap":
+                unresolved_ontology_gap_ids.append(gap_id)
+            else:
+                unresolved_candidate_gap_ids.append(gap_id)
     return {
         "removed_gap_ids": [],
-        "unresolved_ontology_gap_ids": unresolved_gap_ids,
+        "unresolved_ontology_gap_ids": unresolved_ontology_gap_ids,
+        "unresolved_candidate_gap_ids": unresolved_candidate_gap_ids,
         "resolved_ontology_gap_count": 0,
-        "unresolved_ontology_gap_count": len(unresolved_gap_ids),
+        "unresolved_ontology_gap_count": len(unresolved_ontology_gap_ids),
+        "resolved_candidate_gap_count": 0,
+        "unresolved_candidate_gap_count": len(unresolved_candidate_gap_ids),
+        "ontology_resolution_records": [],
+        "candidate_resolution_records": [],
         "resolution_records": [],
     }
 
@@ -287,50 +340,107 @@ def _materialize_candidate_graph_preview(
     candidate_graph: dict[str, Any],
     candidate_graph_preview_ref: str,
 ) -> tuple[dict[str, Any], dict[str, Any]]:
-    resolved_index = _resolved_gap_index(rerun_preview)
+    resolved_ontology_index = _resolved_ontology_gap_index(rerun_preview)
+    resolved_candidate_index = _resolved_candidate_gap_index(rerun_preview)
     preview = copy.deepcopy(candidate_graph)
     removed_gap_ids: list[str] = []
+    ontology_resolution_records: list[dict[str, Any]] = []
+    candidate_resolution_records: list[dict[str, Any]] = []
     resolution_records: list[dict[str, Any]] = []
-    unresolved_gap_ids: list[str] = []
+    unresolved_ontology_gap_ids: list[str] = []
+    unresolved_candidate_gap_ids: list[str] = []
     for raw_node in _list(preview.get("nodes")):
         node = _dict(raw_node)
         remaining_gaps: list[Any] = []
-        node_resolutions: list[dict[str, Any]] = []
+        node_ontology_resolutions: list[dict[str, Any]] = []
+        node_candidate_resolutions: list[dict[str, Any]] = []
         node_id = _text(node.get("id"))
         for raw_gap in _list(node.get("gaps")):
             gap = _dict(raw_gap)
             gap_id = _text(gap.get("id"))
-            resolved = resolved_index.get(gap_id)
-            if resolved and _resolved_gap_matches(resolved, node_id=node_id, gap=gap):
+            gap_kind = _text(gap.get("kind"))
+            resolved_ontology = resolved_ontology_index.get(gap_id)
+            if resolved_ontology and _resolved_ontology_gap_matches(
+                resolved_ontology,
+                node_id=node_id,
+                gap=gap,
+            ):
                 record = {
                     "gap_id": gap_id,
                     "term": _text(gap.get("term")),
                     "source_ref": _text(gap.get("source_ref")),
-                    "decision_id": _text(resolved.get("decision_id")),
-                    "decision_term": _text(resolved.get("decision_term")),
-                    "match_kind": _text(resolved.get("match_kind")),
-                    "confidence": _text(resolved.get("confidence")),
-                    "match": _public_safe(_dict(resolved.get("match"))),
-                    "resolution_preview": _public_safe(_dict(resolved.get("resolution_preview"))),
+                    "decision_id": _text(resolved_ontology.get("decision_id")),
+                    "decision_term": _text(resolved_ontology.get("decision_term")),
+                    "match_kind": _text(resolved_ontology.get("match_kind")),
+                    "confidence": _text(resolved_ontology.get("confidence")),
+                    "match": _public_safe(_dict(resolved_ontology.get("match"))),
+                    "resolution_preview": _public_safe(
+                        _dict(resolved_ontology.get("resolution_preview"))
+                    ),
                 }
                 record = {
                     key: value for key, value in record.items() if value not in ("", None, [], {})
                 }
-                node_resolutions.append(record)
-                resolution_records.append({"node_id": node_id, **record})
+                node_ontology_resolutions.append(record)
+                ontology_resolution_records.append({"node_id": node_id, **record})
+                resolution_records.append(
+                    {"resolution_source": "ontology_gap_preview", "node_id": node_id, **record}
+                )
                 removed_gap_ids.append(gap_id)
-            else:
-                remaining_gaps.append(raw_gap)
-                if _text(gap.get("kind")) == "ontology_gap" and gap_id:
-                    unresolved_gap_ids.append(gap_id)
+                continue
+            resolved_candidate = resolved_candidate_index.get(
+                _candidate_gap_index_key(node_id=node_id, gap_id=gap_id)
+            )
+            if resolved_candidate and _resolved_candidate_gap_matches(
+                resolved_candidate,
+                node_id=node_id,
+                gap=gap,
+            ):
+                record = {
+                    "gap_id": gap_id,
+                    "gap_kind": gap_kind,
+                    "source_ref": _text(gap.get("source_ref")),
+                    "statement": _text(gap.get("statement")),
+                    "request_id": _text(resolved_candidate.get("request_id")),
+                    "answer_kind": _text(resolved_candidate.get("answer_kind")),
+                    "resolution_kind": _text(resolved_candidate.get("resolution_kind")),
+                    "match_kind": _text(resolved_candidate.get("match_kind")),
+                    "confidence": _text(resolved_candidate.get("confidence")),
+                    "match": _public_safe(_dict(resolved_candidate.get("match"))),
+                    "resolution_preview": _public_safe(
+                        _dict(resolved_candidate.get("resolution_preview"))
+                    ),
+                }
+                record = {
+                    key: value for key, value in record.items() if value not in ("", None, [], {})
+                }
+                node_candidate_resolutions.append(record)
+                candidate_resolution_records.append({"node_id": node_id, **record})
+                resolution_records.append(
+                    {"resolution_source": "candidate_gap_preview", "node_id": node_id, **record}
+                )
+                removed_gap_ids.append(gap_id)
+                continue
+            remaining_gaps.append(raw_gap)
+            if gap_id and gap_kind == "ontology_gap":
+                unresolved_ontology_gap_ids.append(gap_id)
+            elif gap_id:
+                unresolved_candidate_gap_ids.append(gap_id)
         node["gaps"] = remaining_gaps
-        if node_resolutions:
+        if node_ontology_resolutions:
             existing_resolutions = [
                 item
                 for item in _list(node.get("ontology_gap_resolutions"))
                 if isinstance(item, dict)
             ]
-            node["ontology_gap_resolutions"] = existing_resolutions + node_resolutions
+            node["ontology_gap_resolutions"] = existing_resolutions + node_ontology_resolutions
+        if node_candidate_resolutions:
+            existing_resolutions = [
+                item
+                for item in _list(node.get("candidate_gap_resolutions"))
+                if isinstance(item, dict)
+            ]
+            node["candidate_gap_resolutions"] = existing_resolutions + node_candidate_resolutions
     preview["source_ref"] = candidate_graph_preview_ref
     _refresh_candidate_graph_summary(preview)
     preview["rerun_materialization"] = {
@@ -339,12 +449,19 @@ def _materialize_candidate_graph_preview(
         "state": "review_only",
         "removed_gap_ids": removed_gap_ids,
         "resolution_count": len(resolution_records),
+        "ontology_resolution_count": len(ontology_resolution_records),
+        "candidate_resolution_count": len(candidate_resolution_records),
     }
     delta = {
         "removed_gap_ids": removed_gap_ids,
-        "unresolved_ontology_gap_ids": unresolved_gap_ids,
-        "resolved_ontology_gap_count": len(resolution_records),
-        "unresolved_ontology_gap_count": len(unresolved_gap_ids),
+        "unresolved_ontology_gap_ids": unresolved_ontology_gap_ids,
+        "unresolved_candidate_gap_ids": unresolved_candidate_gap_ids,
+        "resolved_ontology_gap_count": len(ontology_resolution_records),
+        "unresolved_ontology_gap_count": len(unresolved_ontology_gap_ids),
+        "resolved_candidate_gap_count": len(candidate_resolution_records),
+        "unresolved_candidate_gap_count": len(unresolved_candidate_gap_ids),
+        "ontology_resolution_records": ontology_resolution_records,
+        "candidate_resolution_records": candidate_resolution_records,
         "resolution_records": resolution_records,
     }
     return preview, delta
@@ -434,6 +551,8 @@ def build_idea_to_spec_rerun_materialization(
             ),
             "resolved_ontology_gap_count": delta["resolved_ontology_gap_count"],
             "unresolved_ontology_gap_count": delta["unresolved_ontology_gap_count"],
+            "resolved_candidate_gap_count": delta["resolved_candidate_gap_count"],
+            "unresolved_candidate_gap_count": delta["unresolved_candidate_gap_count"],
             "removed_gap_count": len(delta["removed_gap_ids"]),
             "finding_count": len(findings),
         },

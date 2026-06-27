@@ -657,6 +657,8 @@ def _apply_answer_to_overlay(
     elif answer_kind == "answer_question":
         _append_active_frame(overlay, answer=answer, value=value)
         _append_event_storming(overlay, answer=answer, value=value)
+        if context["request_kind"] == "candidate_gap":
+            _append_candidate_review(overlay, answer=answer, value=value)
     else:
         _append_candidate_review(overlay, answer=answer, value=value)
     return []

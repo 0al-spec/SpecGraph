@@ -1,4 +1,5 @@
-PYTHON ?= python3
+LOCAL_PYTHON := .venv/bin/python
+PYTHON ?= $(if $(wildcard $(LOCAL_PYTHON)),$(LOCAL_PYTHON),python3)
 SUPERVISOR ?= tools/supervisor.py
 PYTEST ?= $(PYTHON) -m pytest
 CHECK_PYTHON ?= tools/check_python_version.py

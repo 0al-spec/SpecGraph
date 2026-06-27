@@ -279,6 +279,15 @@ add one safe suffix.
 This remains review-only: no ontology terms are accepted and no candidate or
 canonical artifacts are mutated.
 
+Proposal `0176` adds candidate repair answer materialization to the same
+review-only chain. Accepted `candidate_gap` answers now produce
+`candidate_gap_preview` records, and targeted answers can remove product/spec
+gaps from the nested materialized candidate graph preview while preserving
+evidence in `candidate_gap_resolutions`. Deferred candidate answers stay
+unresolved, and matching is by explicit `target_ref` only, not fuzzy text
+similarity. The repair session journal treats unresolved candidate gaps as
+candidate-approval blockers alongside unresolved ontology gaps.
+
 Proposal `0170` adds a single convenience target for smoke and CI runs that
 need the complete decision-backed review chain:
 

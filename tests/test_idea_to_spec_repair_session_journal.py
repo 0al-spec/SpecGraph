@@ -343,6 +343,34 @@ def test_repair_session_journal_marks_candidate_approval_possible_only_after_rea
     ]
 
 
+def test_repair_session_journal_blocks_candidate_approval_on_unresolved_candidate_gaps() -> None:
+    artifacts = valid_artifacts()
+    artifacts["active_candidate"]["readiness"] = {
+        "ready": True,
+        "review_state": "active_candidate_ready",
+        "blocked_by": [],
+    }
+    artifacts["promotion_gate"]["readiness"] = {
+        "ready": True,
+        "review_state": "idea_to_spec_promotion_ready",
+        "blocked_by": [],
+    }
+    artifacts["promotion_gate"]["summary"]["promotion_path_count"] = 1
+    artifacts["rerun_preview"]["summary"]["unresolved_ontology_gap_count"] = 0
+    artifacts["rerun_preview"]["summary"]["resolved_candidate_gap_count"] = 2
+    artifacts["rerun_preview"]["summary"]["unresolved_candidate_gap_count"] = 1
+    artifacts["rerun_materialization"]["summary"]["unresolved_ontology_gap_count"] = 0
+    artifacts["rerun_materialization"]["summary"]["resolved_candidate_gap_count"] = 2
+    artifacts["rerun_materialization"]["summary"]["unresolved_candidate_gap_count"] = 1
+
+    report = build_report(artifacts)
+
+    assert report["readiness_impact"]["ready_for_candidate_approval"] is False
+    assert "unresolved_candidate_gaps" in report["readiness_impact"]["blocked_by"]
+    assert report["summary"]["resolved_candidate_gap_count"] == 2
+    assert report["summary"]["unresolved_candidate_gap_count"] == 1
+
+
 def test_repair_session_journal_requires_ready_intermediate_artifacts_for_approval() -> None:
     artifacts = valid_artifacts()
     artifacts["active_candidate"]["readiness"] = {

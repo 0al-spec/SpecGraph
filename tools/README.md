@@ -362,6 +362,10 @@ Supervisor modes:
   resolved gaps. The preview ranks matching decisions by match strength before
   falling back to source order for ties, and `safe_phrase_match` is directional
   with exactly one safe suffix rather than a general fuzzy/synonym rule.
+  Proposal 0176 adds `candidate_gap_preview`: accepted `candidate_gap` answers
+  can preview-resolve explicitly targeted product/spec gaps, while deferred
+  candidate answers remain unresolved and no fuzzy candidate-gap matching is
+  performed.
 - `tools/idea_to_spec_rerun_materialization.py`: review-only rerun
   materialization builder introduced by proposal 0167. Use
   `make idea-to-spec-rerun-materialization` to consume a ready
@@ -370,7 +374,9 @@ Supervisor modes:
   `runs/idea_to_spec_rerun_materialization.json`. Preview-resolved ontology
   gaps are removed from node `gaps` and preserved as
   `ontology_gap_resolutions`; proposal 0175 preserves matching provenance in
-  those resolution records. The tool does this without rewriting
+  those resolution records. Proposal 0176 also moves preview-resolved
+  non-ontology candidate gaps into `candidate_gap_resolutions`, so product
+  repair answers can improve the nested graph preview without rewriting
   `runs/candidate_spec_graph.json`, accepting ontology terms, writing Ontology
   packages, approving candidates, creating branches, or publishing read models.
 - `tools/product_ontology_gap_review_decisions.py`: product-scoped ontology
@@ -1118,13 +1124,16 @@ Key derived artifacts:
   evaluates accepted-answer overlay effects against current intake and
   candidate graph state, including ontology gap resolution previews and
   candidate quality preview state. Proposal 0175 adds normalized ontology gap
-  match provenance such as `match_kind` and `confidence`, without applying
-  mutations.
+  match provenance such as `match_kind` and `confidence`; proposal 0176 adds
+  `candidate_gap_preview` for explicitly targeted product/spec repair answers,
+  without applying mutations.
 - `runs/idea_to_spec_rerun_materialization.json`: public-safe, review-only
   materialization report that nests a candidate graph preview with resolved
-  ontology gaps moved into explicit `ontology_gap_resolutions`, without
-  rewriting candidate graph source artifacts. Proposal 0175 preserves ontology
-  gap matching provenance in those resolution records.
+  ontology gaps moved into explicit `ontology_gap_resolutions` and resolved
+  non-ontology product/spec gaps moved into `candidate_gap_resolutions`,
+  without rewriting candidate graph source artifacts. Proposal 0175 preserves
+  ontology gap matching provenance; proposal 0176 preserves candidate repair
+  answer evidence in those resolution records.
 - `runs/product_ontology_gap_review_decisions.json`: public-safe, review-only
   product ontology decision report derived from accepted ontology-gap
   clarification answers, without accepting ontology terms or writing Ontology
