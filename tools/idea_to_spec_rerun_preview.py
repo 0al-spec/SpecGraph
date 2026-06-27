@@ -109,6 +109,13 @@ def _text_list(value: Any) -> list[str]:
     return [item.strip() for item in _list(value) if isinstance(item, str) and item.strip()]
 
 
+def _int(value: Any, default: int = 0) -> int:
+    try:
+        return int(value)
+    except (TypeError, ValueError):
+        return default
+
+
 def _relative_ref(path: Path) -> str:
     try:
         return path.resolve().relative_to(ROOT).as_posix()
@@ -361,6 +368,7 @@ def _gap_items(candidate_graph: dict[str, Any]) -> list[dict[str, Any]]:
                     "term": _text(gap.get("term")),
                     "source_ref": _text(gap.get("source_ref")),
                     "kind": _text(gap.get("kind")),
+                    "statement": _text(gap.get("statement")),
                 }
             )
     return items
@@ -585,6 +593,190 @@ def _ontology_gap_preview(
     }
 
 
+def _candidate_hint_records(overlay: dict[str, Any]) -> list[dict[str, Any]]:
+    hints = _dict(overlay.get("candidate_review_hints"))
+    records: list[dict[str, Any]] = []
+    for bucket in ("acceptance_criteria", "graph_edges", "claim_reviews", "other"):
+        for raw_hint in _list(hints.get(bucket)):
+            hint = _dict(raw_hint)
+            record = {
+                "bucket": bucket,
+                "request_id": _text(hint.get("request_id")),
+                "answer_kind": _text(hint.get("answer_kind")),
+                "target_artifact": _text(hint.get("target_artifact")),
+                "target_ref": _text(hint.get("target_ref")),
+                "request_kind": _text(hint.get("request_kind")),
+                "value": _public_safe(hint.get("value")),
+            }
+            records.append(
+                {key: value for key, value in record.items() if value not in ("", None, [], {})}
+            )
+    return records
+
+
+def _candidate_gap_target_ref(gap_item: dict[str, Any]) -> str:
+    return f"{_text(gap_item.get('node_id'))}.gaps.{_text(gap_item.get('gap_id'))}"
+
+
+def _candidate_hint_matches_gap(
+    hint: dict[str, Any],
+    gap_item: dict[str, Any],
+) -> bool:
+    target_ref = _text(hint.get("target_ref"))
+    if not target_ref:
+        return False
+    return target_ref in {
+        _text(gap_item.get("gap_id")),
+        _text(gap_item.get("source_ref")),
+        _candidate_gap_target_ref(gap_item),
+    }
+
+
+def _candidate_hint_has_resolution_value(hint: dict[str, Any]) -> bool:
+    value = hint.get("value")
+    if isinstance(value, str):
+        return bool(_text(value))
+    if isinstance(value, list):
+        return bool(_list(value))
+    if isinstance(value, dict):
+        return bool(_public_safe(value))
+    return value not in (None, "", [], {})
+
+
+def _candidate_hint_is_deferred(hint: dict[str, Any]) -> bool:
+    return _text(hint.get("answer_kind")) in {"defer", "defer_candidate"}
+
+
+def _candidate_hint_rank(hint: dict[str, Any]) -> int:
+    if _candidate_hint_is_deferred(hint):
+        return 10
+    if _candidate_hint_has_resolution_value(hint):
+        return 20
+    return 0
+
+
+def _candidate_resolution_kind(
+    *,
+    hint: dict[str, Any],
+    gap_item: dict[str, Any],
+) -> str:
+    answer_kind = _text(hint.get("answer_kind"))
+    gap_kind = _text(gap_item.get("kind"))
+    gap_id = _text(gap_item.get("gap_id"))
+    statement = _text(gap_item.get("statement")).casefold()
+    if answer_kind in {"reject", "reject_candidate"}:
+        return "gap_rejected"
+    if "risk" in gap_kind or "risk" in gap_id:
+        return "risk_accepted"
+    if (
+        "enforcement" in gap_kind
+        or "enforcement" in gap_id
+        or "enforcement mechanism" in statement
+        or gap_kind in {"implementation_gap", "candidate_gap"}
+    ):
+        return "enforcement_mechanism_added"
+    return "candidate_context_added"
+
+
+def _candidate_match_preview(
+    *,
+    hint: dict[str, Any],
+    gap_item: dict[str, Any],
+) -> dict[str, Any]:
+    return {
+        "gap_id": _text(gap_item.get("gap_id")),
+        "node_id": _text(gap_item.get("node_id")),
+        "request_id": _text(hint.get("request_id")),
+        "answer_kind": _text(hint.get("answer_kind")),
+        "match_kind": "target_ref",
+        "confidence": MATCH_CONFIDENCE_BY_KIND["target_ref"],
+        "target_ref": _candidate_gap_target_ref(gap_item),
+    }
+
+
+def _candidate_gap_preview(
+    *,
+    candidate_graph: dict[str, Any],
+    overlay: dict[str, Any],
+) -> dict[str, Any]:
+    hints = _candidate_hint_records(overlay)
+    resolved: list[dict[str, Any]] = []
+    unresolved: list[dict[str, Any]] = []
+    for gap_item in _gap_items(candidate_graph):
+        if gap_item["kind"] == "ontology_gap":
+            continue
+        matching_hints = [
+            hint for hint in hints if _candidate_hint_matches_gap(hint=hint, gap_item=gap_item)
+        ]
+        matching_hint = max(matching_hints, key=_candidate_hint_rank) if matching_hints else None
+        base_record = {
+            "gap_id": gap_item["gap_id"],
+            "node_id": gap_item["node_id"],
+            "kind": gap_item["kind"],
+            "source_ref": gap_item["source_ref"],
+            "statement": gap_item["statement"],
+            "target_ref": _candidate_gap_target_ref(gap_item),
+        }
+        base_record = {
+            key: value for key, value in base_record.items() if value not in ("", None, [], {})
+        }
+        if not matching_hint:
+            unresolved.append(base_record)
+            continue
+        hint_preview = {
+            key: value for key, value in matching_hint.items() if value not in ("", None, [], {})
+        }
+        match_preview = _candidate_match_preview(hint=matching_hint, gap_item=gap_item)
+        if _candidate_hint_is_deferred(matching_hint):
+            unresolved.append(
+                {
+                    **base_record,
+                    "request_id": _text(matching_hint.get("request_id")),
+                    "answer_kind": _text(matching_hint.get("answer_kind")),
+                    "match_kind": "target_ref",
+                    "confidence": MATCH_CONFIDENCE_BY_KIND["target_ref"],
+                    "match": match_preview,
+                    "deferral_preview": hint_preview,
+                }
+            )
+            continue
+        if not _candidate_hint_has_resolution_value(matching_hint):
+            unresolved.append(
+                {
+                    **base_record,
+                    "request_id": _text(matching_hint.get("request_id")),
+                    "answer_kind": _text(matching_hint.get("answer_kind")),
+                    "match_kind": "target_ref",
+                    "confidence": MATCH_CONFIDENCE_BY_KIND["target_ref"],
+                    "match": match_preview,
+                    "review_preview": hint_preview,
+                }
+            )
+            continue
+        resolved.append(
+            {
+                **base_record,
+                "request_id": _text(matching_hint.get("request_id")),
+                "answer_kind": _text(matching_hint.get("answer_kind")),
+                "resolution_kind": _candidate_resolution_kind(
+                    hint=matching_hint,
+                    gap_item=gap_item,
+                ),
+                "match_kind": "target_ref",
+                "confidence": MATCH_CONFIDENCE_BY_KIND["target_ref"],
+                "match": match_preview,
+                "resolution_preview": hint_preview,
+            }
+        )
+    return {
+        "candidate_hint_count": len(hints),
+        "resolved_candidate_gaps": resolved,
+        "unresolved_candidate_gaps": unresolved,
+        "resolved_candidate_gap_count": len(resolved),
+        "unresolved_candidate_gap_count": len(unresolved),
+    }
+
+
 def _candidate_review_preview(overlay: dict[str, Any]) -> dict[str, Any]:
     hints = _dict(overlay.get("candidate_review_hints"))
     return {
@@ -596,27 +788,69 @@ def _candidate_review_preview(overlay: dict[str, Any]) -> dict[str, Any]:
     }
 
 
-def _candidate_quality_preview(ontology_gap_preview: dict[str, Any]) -> dict[str, Any]:
-    unresolved_count = int(ontology_gap_preview.get("unresolved_ontology_gap_count") or 0)
-    resolved_count = int(ontology_gap_preview.get("resolved_ontology_gap_count") or 0)
+def _candidate_quality_preview(
+    ontology_gap_preview: dict[str, Any],
+    candidate_gap_preview: dict[str, Any],
+) -> dict[str, Any]:
+    unresolved_ontology_count = _int(ontology_gap_preview.get("unresolved_ontology_gap_count"))
+    resolved_ontology_count = _int(ontology_gap_preview.get("resolved_ontology_gap_count"))
+    unresolved_candidate_count = _int(candidate_gap_preview.get("unresolved_candidate_gap_count"))
+    resolved_candidate_count = _int(candidate_gap_preview.get("resolved_candidate_gap_count"))
+    unresolved_count = unresolved_ontology_count + unresolved_candidate_count
+    resolved_count = resolved_ontology_count + resolved_candidate_count
     if unresolved_count == 0 and resolved_count > 0:
         review_state = "candidate_quality_improved"
-        ontology_gap_state = "all_preview_resolved"
+        ontology_gap_state = (
+            "all_preview_resolved" if resolved_ontology_count > 0 else "no_ontology_gaps"
+        )
+        candidate_gap_state = (
+            "all_preview_resolved" if resolved_candidate_count > 0 else "no_candidate_gaps"
+        )
     elif resolved_count > 0:
         review_state = "candidate_quality_partially_improved"
-        ontology_gap_state = "partially_preview_resolved"
-    elif unresolved_count > 0:
+        ontology_gap_state = (
+            "partially_preview_resolved"
+            if unresolved_ontology_count
+            else "all_preview_resolved"
+            if resolved_ontology_count
+            else "no_ontology_gaps"
+        )
+        candidate_gap_state = (
+            "partially_preview_resolved"
+            if unresolved_candidate_count
+            else "all_preview_resolved"
+            if resolved_candidate_count
+            else "no_candidate_gaps"
+        )
+    elif unresolved_ontology_count > 0 and unresolved_candidate_count > 0:
+        review_state = "candidate_quality_blocked_by_gaps"
+        ontology_gap_state = "unresolved"
+        candidate_gap_state = "unresolved"
+    elif unresolved_ontology_count > 0:
         review_state = "candidate_quality_blocked_by_ontology_gaps"
         ontology_gap_state = "unresolved"
+        candidate_gap_state = "no_candidate_gaps"
+    elif unresolved_candidate_count > 0:
+        review_state = "candidate_quality_blocked_by_candidate_gaps"
+        ontology_gap_state = "no_ontology_gaps"
+        candidate_gap_state = "unresolved"
     else:
         review_state = "candidate_quality_unchanged"
         ontology_gap_state = "no_ontology_gaps"
+        candidate_gap_state = "no_candidate_gaps"
     return {
         "review_state": review_state,
         "ontology_gap_state": ontology_gap_state,
-        "resolved_ontology_gap_count": resolved_count,
-        "unresolved_ontology_gap_count": unresolved_count,
-        "candidate_quality_metric": "ontology_gap_resolution_preview",
+        "candidate_gap_state": candidate_gap_state,
+        "resolved_ontology_gap_count": resolved_ontology_count,
+        "unresolved_ontology_gap_count": unresolved_ontology_count,
+        "resolved_candidate_gap_count": resolved_candidate_count,
+        "unresolved_candidate_gap_count": unresolved_candidate_count,
+        "candidate_quality_metric": (
+            "candidate_gap_resolution_preview"
+            if resolved_candidate_count or unresolved_candidate_count
+            else "ontology_gap_resolution_preview"
+        ),
         "canonical_mutations_allowed": False,
     }
 
@@ -642,8 +876,15 @@ def build_idea_to_spec_rerun_preview(
         candidate_graph=candidate_graph,
         overlay=overlay,
     )
+    candidate_gap_preview = _candidate_gap_preview(
+        candidate_graph=candidate_graph,
+        overlay=overlay,
+    )
     candidate_review_preview = _candidate_review_preview(overlay)
-    candidate_quality_preview = _candidate_quality_preview(ontology_gap_preview)
+    candidate_quality_preview = _candidate_quality_preview(
+        ontology_gap_preview,
+        candidate_gap_preview,
+    )
     ready = not findings
     return {
         "artifact_kind": "idea_to_spec_rerun_preview",
@@ -686,6 +927,7 @@ def build_idea_to_spec_rerun_preview(
             "active_frame_preview": active_frame_preview,
             "event_storming_preview": event_storming_preview,
             "ontology_gap_preview": ontology_gap_preview,
+            "candidate_gap_preview": candidate_gap_preview,
             "candidate_review_preview": candidate_review_preview,
             "candidate_quality_preview": candidate_quality_preview,
         },
@@ -710,6 +952,10 @@ def build_idea_to_spec_rerun_preview(
             "ontology_decision_count": ontology_gap_preview["decision_count"],
             "resolved_ontology_gap_count": ontology_gap_preview["resolved_ontology_gap_count"],
             "unresolved_ontology_gap_count": ontology_gap_preview["unresolved_ontology_gap_count"],
+            "resolved_candidate_gap_count": candidate_gap_preview["resolved_candidate_gap_count"],
+            "unresolved_candidate_gap_count": candidate_gap_preview[
+                "unresolved_candidate_gap_count"
+            ],
             "candidate_quality_review_state": candidate_quality_preview["review_state"],
             "candidate_review_hint_count": candidate_review_preview["hint_count"],
             "finding_count": len(findings),

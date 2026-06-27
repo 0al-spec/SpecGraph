@@ -283,6 +283,31 @@ def test_answer_rerun_input_routes_non_ontology_reject_to_candidate_hints() -> N
     assert candidate_hints["other"][0]["request_kind"] == "candidate_gap"
 
 
+def test_answer_rerun_input_routes_candidate_gap_answer_question_to_candidate_hints() -> None:
+    module = load_module(
+        RERUN_TOOL_PATH,
+        "idea_to_spec_answer_rerun_input_candidate_gap_answer_test",
+    )
+    answer_report = ready_answer_report_with_answer(
+        answer_kind="answer_question",
+        value="Store subscriptions in a local-only encrypted file.",
+        request_kind="candidate_gap",
+        target_ref="candidate-spec.local-storage.gaps.gap.local-only-storage.enforcement-mechanism",
+    )
+
+    report = module.build_idea_to_spec_answer_rerun_input(
+        answers_report=answer_report,
+    )
+
+    candidate_hints = report["rerun_input_overlay"]["candidate_review_hints"]
+    assert candidate_hints["other"][0]["answer_kind"] == "answer_question"
+    assert candidate_hints["other"][0]["request_kind"] == "candidate_gap"
+    assert candidate_hints["other"][0]["value"] == (
+        "Store subscriptions in a local-only encrypted file."
+    )
+    assert report["summary"]["candidate_review_hint_count"] == 1
+
+
 def test_answer_rerun_input_blocks_project_local_term_without_value() -> None:
     module = load_module(
         RERUN_TOOL_PATH,

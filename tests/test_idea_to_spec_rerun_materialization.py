@@ -92,6 +92,65 @@ def rerun_preview_artifact() -> dict[str, object]:
     }
 
 
+def rerun_preview_with_candidate_gap_resolutions() -> dict[str, object]:
+    preview = rerun_preview_artifact()
+    rerun_preview = preview["rerun_preview"]
+    assert isinstance(rerun_preview, dict)
+    rerun_preview["candidate_gap_preview"] = {
+        "resolved_candidate_gaps": [
+            {
+                "gap_id": "gap.local-only-storage.enforcement-mechanism",
+                "node_id": "candidate-spec.local-storage",
+                "kind": "implementation_gap",
+                "source_ref": "constraint.local-only-storage",
+                "statement": "Define the enforcement mechanism for local-only storage.",
+                "target_ref": (
+                    "candidate-spec.local-storage.gaps.gap.local-only-storage.enforcement-mechanism"
+                ),
+                "request_id": "clarification.local-storage",
+                "answer_kind": "answer_question",
+                "resolution_kind": "enforcement_mechanism_added",
+                "match_kind": "target_ref",
+                "confidence": "explicit_target",
+                "match": {
+                    "gap_id": "gap.local-only-storage.enforcement-mechanism",
+                    "node_id": "candidate-spec.local-storage",
+                    "request_id": "clarification.local-storage",
+                    "answer_kind": "answer_question",
+                    "match_kind": "target_ref",
+                    "confidence": "explicit_target",
+                    "target_ref": (
+                        "candidate-spec.local-storage.gaps."
+                        "gap.local-only-storage.enforcement-mechanism"
+                    ),
+                },
+                "resolution_preview": {
+                    "request_id": "clarification.local-storage",
+                    "answer_kind": "answer_question",
+                    "request_kind": "candidate_gap",
+                    "target_ref": (
+                        "candidate-spec.local-storage.gaps."
+                        "gap.local-only-storage.enforcement-mechanism"
+                    ),
+                    "value": "Store subscriptions in a local-only encrypted file.",
+                    "raw_prompt": "private prompt trace",
+                },
+            }
+        ],
+        "unresolved_candidate_gaps": [
+            {
+                "gap_id": "gap.required-fields.enforcement-mechanism",
+                "node_id": "candidate-spec.required-fields",
+                "kind": "implementation_gap",
+                "target_ref": (
+                    "candidate-spec.required-fields.gaps.gap.required-fields.enforcement-mechanism"
+                ),
+            }
+        ],
+    }
+    return preview
+
+
 def candidate_graph_artifact() -> dict[str, object]:
     return {
         "artifact_kind": "candidate_spec_graph",
@@ -120,6 +179,35 @@ def candidate_graph_artifact() -> dict[str, object]:
         ],
         "edges": [],
     }
+
+
+def candidate_graph_with_candidate_gaps() -> dict[str, object]:
+    graph = candidate_graph_artifact()
+    graph["nodes"] = [
+        {
+            "id": "candidate-spec.local-storage",
+            "gaps": [
+                {
+                    "id": "gap.local-only-storage.enforcement-mechanism",
+                    "kind": "implementation_gap",
+                    "source_ref": "constraint.local-only-storage",
+                    "statement": "Define the enforcement mechanism for local-only storage.",
+                }
+            ],
+        },
+        {
+            "id": "candidate-spec.required-fields",
+            "gaps": [
+                {
+                    "id": "gap.required-fields.enforcement-mechanism",
+                    "kind": "implementation_gap",
+                    "source_ref": "constraint.required-fields",
+                    "statement": "Define required fields enforcement.",
+                }
+            ],
+        },
+    ]
+    return graph
 
 
 def test_rerun_materialization_removes_resolved_gap_in_preview() -> None:
@@ -153,6 +241,43 @@ def test_rerun_materialization_removes_resolved_gap_in_preview() -> None:
     )
     dumped = json.dumps(report)
     assert "private prompt trace" not in dumped
+
+
+def test_rerun_materialization_removes_resolved_candidate_gap_in_preview() -> None:
+    module = load_module()
+
+    report = module.build_idea_to_spec_rerun_materialization(
+        rerun_preview=rerun_preview_with_candidate_gap_resolutions(),
+        candidate_graph=candidate_graph_with_candidate_gaps(),
+    )
+
+    assert report["readiness"]["ready"] is True
+    assert report["summary"]["resolved_candidate_gap_count"] == 1
+    assert report["summary"]["unresolved_candidate_gap_count"] == 1
+    assert report["summary"]["removed_gap_count"] == 1
+
+    preview = report["materialization_preview"]["candidate_graph_preview"]
+    first_node = preview["nodes"][0]
+    assert first_node["gaps"] == []
+    assert first_node["candidate_gap_resolutions"][0]["gap_id"] == (
+        "gap.local-only-storage.enforcement-mechanism"
+    )
+    assert (
+        first_node["candidate_gap_resolutions"][0]["resolution_kind"]
+        == "enforcement_mechanism_added"
+    )
+    assert (
+        first_node["candidate_gap_resolutions"][0]["resolution_preview"]["value"]
+        == "Store subscriptions in a local-only encrypted file."
+    )
+    second_node = preview["nodes"][1]
+    assert [gap["id"] for gap in second_node["gaps"]] == [
+        "gap.required-fields.enforcement-mechanism"
+    ]
+    delta = report["materialization_preview"]["delta"]
+    assert delta["candidate_resolution_records"][0]["request_id"] == "clarification.local-storage"
+    assert delta["unresolved_candidate_gap_ids"] == ["gap.required-fields.enforcement-mechanism"]
+    assert "private prompt trace" not in json.dumps(report)
 
 
 def test_rerun_materialization_source_ref_uses_output_path(tmp_path: Path) -> None:

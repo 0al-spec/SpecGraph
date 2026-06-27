@@ -748,6 +748,31 @@ was removed from the preview graph. This does not accept ontology terms, write
 Ontology packages, mutate candidate artifacts, approve candidates, or create
 Git branches.
 
+### 21B. Candidate Repair Answer Materialization
+
+Status: implemented in proposal `0176`.
+
+Non-ontology clarification answers now affect candidate quality previews. When
+an accepted `candidate_gap` answer targets a concrete candidate graph gap,
+`idea_to_spec_answer_rerun_input` preserves it as a candidate review hint,
+`idea_to_spec_rerun_preview` emits
+`rerun_preview.candidate_gap_preview`, and
+`idea_to_spec_rerun_materialization` removes the preview-resolved gap from the
+nested candidate graph preview while preserving evidence in
+`candidate_gap_resolutions`.
+
+This closes the subscription-pilot asymmetry where answers about local-only
+storage, required-field validation, stale renewal-date risk, or reminder
+enforcement were recorded but did not move the candidate graph closer to
+approval readiness. Deferred candidate answers remain unresolved, and matching
+is by explicit `target_ref` only. There is no fuzzy candidate-gap matching.
+
+The repair session journal now treats unresolved candidate gaps as
+candidate-approval blockers alongside unresolved ontology gaps. The whole path
+remains review-only: it does not apply answers to source artifacts, mutate
+candidate artifacts, mutate canonical specs, write ontology packages, accept
+ontology terms, approve candidates, create branches, or publish read models.
+
 ### 22. Decision-Backed Repair Chain Target
 
 Status: implemented in proposal `0170`.
