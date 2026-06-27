@@ -244,14 +244,19 @@ def _resolved_ontology_gap_matches(
     return True
 
 
+def _candidate_gap_index_key(*, node_id: str, gap_id: str) -> str:
+    return f"{node_id}.gaps.{gap_id}"
+
+
 def _resolved_candidate_gap_index(rerun_preview: dict[str, Any]) -> dict[str, dict[str, Any]]:
     gap_preview = _dict(_dict(rerun_preview.get("rerun_preview")).get("candidate_gap_preview"))
     index: dict[str, dict[str, Any]] = {}
     for raw_item in _list(gap_preview.get("resolved_candidate_gaps")):
         item = _dict(raw_item)
+        node_id = _text(item.get("node_id"))
         gap_id = _text(item.get("gap_id"))
-        if gap_id:
-            index[gap_id] = item
+        if node_id and gap_id:
+            index[_candidate_gap_index_key(node_id=node_id, gap_id=gap_id)] = item
     return index
 
 
@@ -269,6 +274,14 @@ def _resolved_candidate_gap_matches(
     if target_ref and target_ref != f"{node_id}.gaps.{_text(gap.get('id'))}":
         return False
     if _text(resolved.get("kind")) and _text(resolved.get("kind")) != _text(gap.get("kind")):
+        return False
+    if _text(resolved.get("source_ref")) and _text(resolved.get("source_ref")) != _text(
+        gap.get("source_ref")
+    ):
+        return False
+    if _text(resolved.get("statement")) and _text(resolved.get("statement")) != _text(
+        gap.get("statement")
+    ):
         return False
     return True
 
@@ -375,7 +388,9 @@ def _materialize_candidate_graph_preview(
                 )
                 removed_gap_ids.append(gap_id)
                 continue
-            resolved_candidate = resolved_candidate_index.get(gap_id)
+            resolved_candidate = resolved_candidate_index.get(
+                _candidate_gap_index_key(node_id=node_id, gap_id=gap_id)
+            )
             if resolved_candidate and _resolved_candidate_gap_matches(
                 resolved_candidate,
                 node_id=node_id,

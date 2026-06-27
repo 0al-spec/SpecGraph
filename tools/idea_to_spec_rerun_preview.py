@@ -622,34 +622,42 @@ def _candidate_hint_matches_gap(
     hint: dict[str, Any],
     gap_item: dict[str, Any],
 ) -> bool:
+    if _text(hint.get("request_kind")) != "candidate_gap":
+        return False
     target_ref = _text(hint.get("target_ref"))
     if not target_ref:
         return False
-    return target_ref in {
-        _text(gap_item.get("gap_id")),
-        _text(gap_item.get("source_ref")),
-        _candidate_gap_target_ref(gap_item),
-    }
+    return target_ref == _candidate_gap_target_ref(gap_item)
+
+
+def _has_substantive_public_value(value: Any) -> bool:
+    safe_value = _public_safe(value)
+    if isinstance(safe_value, str):
+        return bool(_text(safe_value))
+    if isinstance(safe_value, list):
+        return any(_has_substantive_public_value(item) for item in safe_value)
+    if isinstance(safe_value, dict):
+        return any(_has_substantive_public_value(item) for item in safe_value.values())
+    return safe_value not in (None, "", [], {})
 
 
 def _candidate_hint_has_resolution_value(hint: dict[str, Any]) -> bool:
-    value = hint.get("value")
-    if isinstance(value, str):
-        return bool(_text(value))
-    if isinstance(value, list):
-        return bool(_list(value))
-    if isinstance(value, dict):
-        return bool(_public_safe(value))
-    return value not in (None, "", [], {})
+    return _has_substantive_public_value(hint.get("value"))
 
 
 def _candidate_hint_is_deferred(hint: dict[str, Any]) -> bool:
     return _text(hint.get("answer_kind")) in {"defer", "defer_candidate"}
 
 
+def _candidate_hint_is_rejection(hint: dict[str, Any]) -> bool:
+    return _text(hint.get("answer_kind")) in {"reject", "reject_candidate"}
+
+
 def _candidate_hint_rank(hint: dict[str, Any]) -> int:
     if _candidate_hint_is_deferred(hint):
         return 10
+    if _candidate_hint_is_rejection(hint):
+        return 30
     if _candidate_hint_has_resolution_value(hint):
         return 20
     return 0
@@ -740,7 +748,9 @@ def _candidate_gap_preview(
                 }
             )
             continue
-        if not _candidate_hint_has_resolution_value(matching_hint):
+        if not _candidate_hint_is_rejection(
+            matching_hint
+        ) and not _candidate_hint_has_resolution_value(matching_hint):
             unresolved.append(
                 {
                     **base_record,

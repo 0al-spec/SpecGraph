@@ -477,6 +477,134 @@ def test_rerun_preview_resolves_targeted_candidate_gaps_without_fuzzy_matching()
     assert report["summary"]["unresolved_candidate_gap_count"] == 1
 
 
+def test_rerun_preview_resolves_explicit_candidate_reject_without_value() -> None:
+    module = load_module(
+        PREVIEW_TOOL_PATH,
+        "idea_to_spec_rerun_preview_candidate_reject_test",
+    )
+    rerun_input = copy.deepcopy(ready_rerun_input())
+    rerun_input["rerun_input_overlay"]["ontology_review_hints"]["project_local_terms"] = []
+    rerun_input["rerun_input_overlay"]["candidate_review_hints"]["other"] = [
+        {
+            "answer_kind": "reject",
+            "request_id": "clarification.local-storage",
+            "request_kind": "candidate_gap",
+            "target_ref": (
+                "candidate-spec.local-storage.gaps.gap.local-only-storage.enforcement-mechanism"
+            ),
+            "value": {},
+        }
+    ]
+
+    report = module.build_idea_to_spec_rerun_preview(
+        rerun_input=rerun_input,
+        intake=intake_artifact(),
+        candidate_graph=candidate_graph_with_candidate_gaps(),
+    )
+
+    candidate_gap_preview = report["rerun_preview"]["candidate_gap_preview"]
+    assert candidate_gap_preview["resolved_candidate_gap_count"] == 1
+    resolved = candidate_gap_preview["resolved_candidate_gaps"][0]
+    assert resolved["gap_id"] == "gap.local-only-storage.enforcement-mechanism"
+    assert resolved["resolution_kind"] == "gap_rejected"
+
+
+def test_rerun_preview_does_not_resolve_candidate_gap_from_other_hint_kind() -> None:
+    module = load_module(
+        PREVIEW_TOOL_PATH,
+        "idea_to_spec_rerun_preview_candidate_non_candidate_hint_test",
+    )
+    rerun_input = copy.deepcopy(ready_rerun_input())
+    rerun_input["rerun_input_overlay"]["ontology_review_hints"]["project_local_terms"] = []
+    rerun_input["rerun_input_overlay"]["candidate_review_hints"]["acceptance_criteria"] = [
+        {
+            "answer_kind": "provide_acceptance_criterion",
+            "request_id": "clarification.acceptance",
+            "request_kind": "graph_repair",
+            "target_ref": (
+                "candidate-spec.local-storage.gaps.gap.local-only-storage.enforcement-mechanism"
+            ),
+            "value": "Reviewer can verify local-only persistence.",
+        }
+    ]
+
+    report = module.build_idea_to_spec_rerun_preview(
+        rerun_input=rerun_input,
+        intake=intake_artifact(),
+        candidate_graph=candidate_graph_with_candidate_gaps(),
+    )
+
+    candidate_gap_preview = report["rerun_preview"]["candidate_gap_preview"]
+    assert candidate_gap_preview["resolved_candidate_gap_count"] == 0
+    assert {item["gap_id"] for item in candidate_gap_preview["unresolved_candidate_gaps"]} == {
+        "gap.local-only-storage.enforcement-mechanism",
+        "gap.risk.stale-renewal-date",
+        "gap.required-fields.enforcement-mechanism",
+    }
+
+
+def test_rerun_preview_matches_candidate_gap_only_by_node_scoped_gap_ref() -> None:
+    module = load_module(
+        PREVIEW_TOOL_PATH,
+        "idea_to_spec_rerun_preview_candidate_source_ref_test",
+    )
+    rerun_input = copy.deepcopy(ready_rerun_input())
+    rerun_input["rerun_input_overlay"]["ontology_review_hints"]["project_local_terms"] = []
+    rerun_input["rerun_input_overlay"]["candidate_review_hints"]["other"] = [
+        {
+            "answer_kind": "answer_question",
+            "request_id": "clarification.local-storage",
+            "request_kind": "candidate_gap",
+            "target_ref": "constraint.local-only-storage",
+            "value": "Store records locally.",
+        }
+    ]
+
+    report = module.build_idea_to_spec_rerun_preview(
+        rerun_input=rerun_input,
+        intake=intake_artifact(),
+        candidate_graph=candidate_graph_with_candidate_gaps(),
+    )
+
+    candidate_gap_preview = report["rerun_preview"]["candidate_gap_preview"]
+    assert candidate_gap_preview["resolved_candidate_gap_count"] == 0
+    assert candidate_gap_preview["unresolved_candidate_gap_count"] == 3
+
+
+def test_rerun_preview_requires_substantive_candidate_gap_answer_content() -> None:
+    module = load_module(
+        PREVIEW_TOOL_PATH,
+        "idea_to_spec_rerun_preview_candidate_empty_value_test",
+    )
+    rerun_input = copy.deepcopy(ready_rerun_input())
+    rerun_input["rerun_input_overlay"]["ontology_review_hints"]["project_local_terms"] = []
+    rerun_input["rerun_input_overlay"]["candidate_review_hints"]["other"] = [
+        {
+            "answer_kind": "answer_question",
+            "request_id": "clarification.local-storage",
+            "request_kind": "candidate_gap",
+            "target_ref": (
+                "candidate-spec.local-storage.gaps.gap.local-only-storage.enforcement-mechanism"
+            ),
+            "value": [{"raw_prompt": "private trace"}, ""],
+        }
+    ]
+
+    report = module.build_idea_to_spec_rerun_preview(
+        rerun_input=rerun_input,
+        intake=intake_artifact(),
+        candidate_graph=candidate_graph_with_candidate_gaps(),
+    )
+
+    candidate_gap_preview = report["rerun_preview"]["candidate_gap_preview"]
+    assert candidate_gap_preview["resolved_candidate_gap_count"] == 0
+    unresolved = {
+        item["gap_id"]: item for item in candidate_gap_preview["unresolved_candidate_gaps"]
+    }
+    local_storage = unresolved["gap.local-only-storage.enforcement-mechanism"]
+    assert local_storage["review_preview"]["value"] == [{}, ""]
+
+
 def test_rerun_preview_prefers_stronger_match_over_first_match() -> None:
     module = load_module(
         PREVIEW_TOOL_PATH,

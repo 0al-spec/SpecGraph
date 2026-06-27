@@ -280,6 +280,105 @@ def test_rerun_materialization_removes_resolved_candidate_gap_in_preview() -> No
     assert "private prompt trace" not in json.dumps(report)
 
 
+def test_rerun_materialization_preserves_node_scope_for_duplicate_candidate_gap_ids() -> None:
+    module = load_module()
+    candidate_graph = copy.deepcopy(candidate_graph_artifact())
+    candidate_graph["nodes"] = [
+        {
+            "id": "candidate-spec.local-storage",
+            "gaps": [
+                {
+                    "id": "gap.enforcement-mechanism",
+                    "kind": "implementation_gap",
+                    "source_ref": "constraint.local-storage",
+                    "statement": "Define the enforcement mechanism for local-only storage.",
+                }
+            ],
+        },
+        {
+            "id": "candidate-spec.required-fields",
+            "gaps": [
+                {
+                    "id": "gap.enforcement-mechanism",
+                    "kind": "implementation_gap",
+                    "source_ref": "constraint.required-fields",
+                    "statement": "Define required fields enforcement.",
+                }
+            ],
+        },
+    ]
+    rerun_preview = rerun_preview_artifact()
+    rerun_preview["rerun_preview"]["candidate_gap_preview"] = {
+        "resolved_candidate_gaps": [
+            {
+                "gap_id": "gap.enforcement-mechanism",
+                "node_id": "candidate-spec.local-storage",
+                "kind": "implementation_gap",
+                "source_ref": "constraint.local-storage",
+                "statement": "Define the enforcement mechanism for local-only storage.",
+                "target_ref": "candidate-spec.local-storage.gaps.gap.enforcement-mechanism",
+                "request_id": "clarification.local-storage",
+                "answer_kind": "answer_question",
+                "resolution_kind": "enforcement_mechanism_added",
+                "match_kind": "target_ref",
+                "confidence": "explicit_target",
+            },
+            {
+                "gap_id": "gap.enforcement-mechanism",
+                "node_id": "candidate-spec.required-fields",
+                "kind": "implementation_gap",
+                "source_ref": "constraint.required-fields",
+                "statement": "Define required fields enforcement.",
+                "target_ref": "candidate-spec.required-fields.gaps.gap.enforcement-mechanism",
+                "request_id": "clarification.required-fields",
+                "answer_kind": "answer_question",
+                "resolution_kind": "enforcement_mechanism_added",
+                "match_kind": "target_ref",
+                "confidence": "explicit_target",
+            },
+        ],
+        "unresolved_candidate_gaps": [],
+    }
+
+    report = module.build_idea_to_spec_rerun_materialization(
+        rerun_preview=rerun_preview,
+        candidate_graph=candidate_graph,
+    )
+
+    assert report["summary"]["resolved_candidate_gap_count"] == 2
+    assert report["summary"]["removed_gap_count"] == 2
+    preview_nodes = report["materialization_preview"]["candidate_graph_preview"]["nodes"]
+    assert [node["gaps"] for node in preview_nodes] == [[], []]
+    assert {
+        record["node_id"]
+        for record in report["materialization_preview"]["delta"]["candidate_resolution_records"]
+    } == {"candidate-spec.local-storage", "candidate-spec.required-fields"}
+
+
+def test_rerun_materialization_rechecks_candidate_gap_source_fields_before_removal() -> None:
+    module = load_module()
+
+    for field, value in (
+        ("source_ref", "constraint.local-storage.changed"),
+        ("statement", "Define a regenerated local storage enforcement mechanism."),
+    ):
+        candidate_graph = candidate_graph_with_candidate_gaps()
+        candidate_graph["nodes"][0]["gaps"][0][field] = value
+
+        report = module.build_idea_to_spec_rerun_materialization(
+            rerun_preview=rerun_preview_with_candidate_gap_resolutions(),
+            candidate_graph=candidate_graph,
+        )
+
+        assert report["summary"]["resolved_candidate_gap_count"] == 0
+        assert report["summary"]["removed_gap_count"] == 0
+        preview = report["materialization_preview"]["candidate_graph_preview"]
+        assert [gap["id"] for node in preview["nodes"] for gap in node.get("gaps", [])] == [
+            "gap.local-only-storage.enforcement-mechanism",
+            "gap.required-fields.enforcement-mechanism",
+        ]
+
+
 def test_rerun_materialization_source_ref_uses_output_path(tmp_path: Path) -> None:
     module = load_module()
     output = tmp_path / "custom_materialization.json"
