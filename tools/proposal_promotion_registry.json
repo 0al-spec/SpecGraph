@@ -2273,5 +2273,18 @@
     "required_provenance_links": [
       "source_draft_ref"
     ]
+  },
+  {
+    "proposal_id": "0177",
+    "source_artifact_class": "working_draft",
+    "source_refs": [
+      "docs/archive/proposal_sources/0177_repaired_candidate_promotion_handoff.md"
+    ],
+    "motivating_concern": "After rerun materialization removes preview-resolved ontology and product/spec gaps, the repair-session journal can still read stale active-candidate and promotion-gate artifacts built before the repaired graph preview.",
+    "normalized_title": "Repaired Candidate Promotion Handoff",
+    "bounded_scope": "Add a deterministic review-only repaired_candidate_promotion_handoff builder, Make target, tests, proposal docs, roadmap, DocC, and registry tracking that extracts the repaired candidate graph preview from idea_to_spec_rerun_materialization, rebuilds repaired pre-SIB, repair-loop, materialization, promotion-gate, active-candidate, and repair-session artifacts, and reports candidate-approval readiness without executing prompt agents, applying answers to source artifacts, mutating candidate artifacts, mutating canonical specs, writing Ontology packages or lockfiles, accepting ontology terms, approving candidates, creating Git branches or commits, opening pull requests, publishing read models, or adding SpecSpace mutation authority.",
+    "required_provenance_links": [
+      "source_draft_ref"
+    ]
   }
 ]

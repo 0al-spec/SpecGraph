@@ -773,6 +773,49 @@ remains review-only: it does not apply answers to source artifacts, mutate
 candidate artifacts, mutate canonical specs, write ontology packages, accept
 ontology terms, approve candidates, create branches, or publish read models.
 
+### 21C. Repaired Candidate Promotion Handoff
+
+Status: implemented in proposal `0177`.
+
+After `0176`, a rerun materialization can remove all ontology and product/spec
+gaps from the nested repaired candidate graph preview. The next downstream
+surfaces still need to be rebuilt from that repaired preview, otherwise the
+repair-session journal continues to see the stale active candidate and
+promotion gate that existed before rerun materialization.
+
+Proposal `0177` adds a review-only repaired handoff target:
+
+```bash
+make repaired-candidate-promotion-handoff
+```
+
+The target emits separate `repaired_*` artifacts:
+
+```text
+runs/repaired_candidate_spec_graph.json
+runs/repaired_pre_sib_coherence_report.json
+runs/repaired_candidate_repair_loop_report.json
+runs/repaired_candidate_spec_materialization_report.json
+runs/repaired_idea_to_spec_promotion_gate.json
+runs/repaired_active_idea_to_spec_candidate.json
+runs/repaired_idea_to_spec_repair_session.json
+runs/repaired_candidate_promotion_handoff_report.json
+```
+
+The repaired graph preserves the product-scoped `product://...` source ref so
+active candidate identity checks remain bound to the product workspace, while
+the rerun materialization preview source is recorded as provenance. If the
+repaired graph still needs structural pre-SIB repair, the normal
+candidate-repair-loop preview handles that and the promotion gate records
+`pre_sib_findings_repaired_by_preview`.
+
+This handoff may make the repair session ready for candidate approval review.
+It deliberately keeps `ready_for_platform_promotion: false` until an explicit
+`candidate_approval_decision` exists. It does not execute prompt agents, apply
+answers to source artifacts, mutate candidate artifacts, mutate canonical
+specs, write ontology packages, accept ontology terms, create Git branches, or
+publish read models.
+
 ### 22. Decision-Backed Repair Chain Target
 
 Status: implemented in proposal `0170`.

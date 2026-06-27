@@ -379,6 +379,16 @@ Supervisor modes:
   repair answers can improve the nested graph preview without rewriting
   `runs/candidate_spec_graph.json`, accepting ontology terms, writing Ontology
   packages, approving candidates, creating branches, or publishing read models.
+- `tools/repaired_candidate_promotion_handoff.py`: repaired promotion handoff
+  builder introduced by proposal 0177. Use
+  `make repaired-candidate-promotion-handoff` after
+  `idea_to_spec_rerun_materialization` to extract the repaired candidate graph
+  preview, recompute pre-SIB, repair-loop preview, candidate spec
+  materialization, promotion gate, active candidate, and repair-session journal
+  as separate `repaired_*` artifacts. The handoff can make the repair session
+  ready for candidate approval review while keeping Platform promotion blocked
+  until a separate `candidate_approval_decision`, and it does not mutate source
+  artifacts, canonical specs, ontology packages, Git branches, or read models.
 - `tools/product_ontology_gap_review_decisions.py`: product-scoped ontology
   gap decision builder introduced by proposal 0168. Use
   `make product-ontology-gap-review-decisions` to consume a ready

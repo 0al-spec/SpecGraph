@@ -648,11 +648,29 @@ def build_active_idea_to_spec_candidate_source(
     config: dict[str, Any] | None = None,
     *,
     config_path: Path | None = None,
+    loaded_artifacts: dict[str, tuple[Path, dict[str, Any]]] | None = None,
 ) -> dict[str, Any]:
     config_provided = config is not None
     config = config if config is not None else _default_config()
-    artifact_refs, artifact_paths_source, artifact_ref_findings = _artifact_refs_for_config(config)
-    artifacts, artifact_findings = _load_source_artifacts(artifact_refs)
+    if loaded_artifacts is None:
+        artifact_refs, artifact_paths_source, artifact_ref_findings = _artifact_refs_for_config(
+            config
+        )
+        artifacts, artifact_findings = _load_source_artifacts(artifact_refs)
+    else:
+        artifact_paths_source = _text(config.get("_artifact_paths_source"), "loaded_artifacts")
+        artifact_ref_findings = []
+        artifacts = dict(loaded_artifacts)
+        missing_artifact_keys = sorted(set(EXPECTED_ARTIFACTS) - set(artifacts))
+        artifact_findings = [
+            _finding(
+                finding_id=f"{artifact_key}_unavailable",
+                severity="review_required",
+                message=f"Active candidate source requires {artifact_key} artifact.",
+                evidence={"error": "loaded artifact missing"},
+            )
+            for artifact_key in missing_artifact_keys
+        ]
     candidate, identity_source = _candidate_for_config(config=config, artifacts=artifacts)
     normalized_candidate, candidate_findings = _candidate_metadata(candidate)
     chain_findings, chain_warnings = _artifact_chain_findings(artifacts)
