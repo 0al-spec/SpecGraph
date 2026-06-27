@@ -306,7 +306,15 @@ def _materialize_candidate_graph_preview(
                     "gap_id": gap_id,
                     "term": _text(gap.get("term")),
                     "source_ref": _text(gap.get("source_ref")),
+                    "decision_id": _text(resolved.get("decision_id")),
+                    "decision_term": _text(resolved.get("decision_term")),
+                    "match_kind": _text(resolved.get("match_kind")),
+                    "confidence": _text(resolved.get("confidence")),
+                    "match": _public_safe(_dict(resolved.get("match"))),
                     "resolution_preview": _public_safe(_dict(resolved.get("resolution_preview"))),
+                }
+                record = {
+                    key: value for key, value in record.items() if value not in ("", None, [], {})
                 }
                 node_resolutions.append(record)
                 resolution_records.append({"node_id": node_id, **record})

@@ -51,6 +51,26 @@ RAW_TRACE_FIELDS = {
     "raw_response",
     "raw_text",
 }
+SAFE_PHRASE_SUFFIX_TOKENS = {
+    "record",
+    "schedule",
+    "service",
+    "update",
+}
+SAFE_TOKEN_STEMS = {
+    "added": "add",
+    "adding": "add",
+    "canceled": "cancel",
+    "cancelled": "cancel",
+    "canceling": "cancel",
+    "cancelling": "cancel",
+    "recorded": "record",
+    "recording": "record",
+    "scheduled": "schedule",
+    "scheduling": "schedule",
+    "updated": "update",
+    "updating": "update",
+}
 
 
 def _now_iso() -> str:
@@ -95,6 +115,22 @@ def _public_safe(value: Any) -> Any:
 def _term_key(value: Any) -> str:
     text = _text(value).lower()
     return re.sub(r"[^a-z0-9]+", "", text)
+
+
+def _term_tokens(value: Any) -> list[str]:
+    return re.findall(r"[a-z0-9]+", _text(value).casefold())
+
+
+def _safe_token_stem(token: str) -> str:
+    if token in SAFE_TOKEN_STEMS:
+        return SAFE_TOKEN_STEMS[token]
+    if len(token) > 4 and token.endswith("s") and not token.endswith(("ss", "us", "is")):
+        return token[:-1]
+    return token
+
+
+def _safe_term_tokens(value: Any) -> list[str]:
+    return [_safe_token_stem(token) for token in _term_tokens(value)]
 
 
 def load_json(path: Path) -> dict[str, Any]:
@@ -324,12 +360,16 @@ def _decision_records(
     for raw_hint in _list(_dict(overlay.get("ontology_review_hints")).get(bucket)):
         hint = _dict(raw_hint)
         term = _text(hint.get("term"))
+        request_id = _text(hint.get("request_id"))
         records.append(
             {
                 "decision": decision,
+                "decision_id": _text(hint.get("decision_id"))
+                or _text(hint.get("id"))
+                or request_id,
                 "term": term,
                 "term_key": _term_key(term),
-                "request_id": _text(hint.get("request_id")),
+                "request_id": request_id,
                 "answer_kind": _text(hint.get("answer_kind")),
                 "target_ref": _text(hint.get("target_ref")),
                 "target_artifact": _text(hint.get("target_artifact")),
@@ -363,20 +403,83 @@ def _ontology_decisions(overlay: dict[str, Any]) -> list[dict[str, Any]]:
     return [record for record in records if record["term_key"] or record["target_ref"]]
 
 
-def _matches_gap(decision: dict[str, Any], gap_item: dict[str, Any]) -> bool:
+def _match_record(
+    *,
+    decision: dict[str, Any],
+    gap_item: dict[str, Any],
+    match_kind: str,
+    confidence: str = "review_safe",
+) -> dict[str, Any]:
+    decision_term = _text(decision.get("term"))
+    gap_term = _text(gap_item.get("term"))
+    return {
+        "gap_id": _text(gap_item.get("gap_id")),
+        "node_id": _text(gap_item.get("node_id")),
+        "decision_id": _text(decision.get("decision_id")) or _text(decision.get("request_id")),
+        "match_kind": match_kind,
+        "confidence": confidence,
+        "gap_term": gap_term,
+        "decision_term": decision_term,
+        "normalized_gap_term": " ".join(_term_tokens(gap_term)),
+        "normalized_decision_term": " ".join(_term_tokens(decision_term)),
+    }
+
+
+def _term_match_record(decision: dict[str, Any], gap_item: dict[str, Any]) -> dict[str, Any]:
+    decision_term = _text(decision.get("term"))
+    gap_term = _text(gap_item.get("term"))
+    if not decision_term or not gap_term:
+        return {}
+
+    if decision_term.casefold() == gap_term.casefold():
+        return _match_record(decision=decision, gap_item=gap_item, match_kind="exact")
+
+    decision_key = _term_key(decision_term)
+    gap_key = _term_key(gap_term)
+    if decision_key and decision_key == gap_key:
+        return _match_record(
+            decision=decision,
+            gap_item=gap_item,
+            match_kind="normalized_exact",
+        )
+
+    decision_tokens = _safe_term_tokens(decision_term)
+    gap_tokens = _safe_term_tokens(gap_term)
+    if decision_tokens and decision_tokens == gap_tokens:
+        return _match_record(
+            decision=decision,
+            gap_item=gap_item,
+            match_kind="safe_inflection",
+        )
+
+    if len(decision_tokens) >= 2 and gap_tokens[: len(decision_tokens)] == decision_tokens:
+        extra_tokens = gap_tokens[len(decision_tokens) :]
+        if extra_tokens and set(extra_tokens).issubset(SAFE_PHRASE_SUFFIX_TOKENS):
+            return _match_record(
+                decision=decision,
+                gap_item=gap_item,
+                match_kind="safe_phrase_match",
+            )
+    return {}
+
+
+def _gap_match(decision: dict[str, Any], gap_item: dict[str, Any]) -> dict[str, Any]:
     target_ref = _text(decision.get("target_ref"))
     decision_kind = _text(decision.get("decision"))
     if target_ref == "candidate_graph.gaps" and decision_kind in {"reject", "defer"}:
-        return True
+        return _match_record(decision=decision, gap_item=gap_item, match_kind="aggregate_target")
     node_gap_ref = f"{_text(gap_item.get('node_id'))}.gaps.{_text(gap_item.get('gap_id'))}"
     if target_ref and target_ref in {
         _text(gap_item.get("gap_id")),
         _text(gap_item.get("source_ref")),
         node_gap_ref,
     }:
-        return True
-    term_key = _text(decision.get("term_key"))
-    return bool(term_key and term_key == _term_key(gap_item.get("term")))
+        return _match_record(decision=decision, gap_item=gap_item, match_kind="target_ref")
+    return _term_match_record(decision, gap_item)
+
+
+def _matches_gap(decision: dict[str, Any], gap_item: dict[str, Any]) -> bool:
+    return bool(_gap_match(decision, gap_item))
 
 
 def _ontology_gap_preview(
@@ -390,33 +493,45 @@ def _ontology_gap_preview(
     for gap_item in _gap_items(candidate_graph):
         if gap_item["kind"] != "ontology_gap":
             continue
-        matching_decision = next(
-            (decision for decision in decisions if _matches_gap(decision, gap_item)),
-            None,
-        )
+        matching_decision: dict[str, Any] | None = None
+        matching_evidence: dict[str, Any] = {}
+        for decision in decisions:
+            matching_evidence = _gap_match(decision, gap_item)
+            if matching_evidence:
+                matching_decision = decision
+                break
         if matching_decision:
             preview = {
                 key: value
                 for key, value in matching_decision.items()
                 if key != "term_key" and value not in ("", None, [], {})
             }
+            match_preview = _public_safe(matching_evidence)
+            gap_record = {
+                "gap_id": gap_item["gap_id"],
+                "node_id": gap_item["node_id"],
+                "term": gap_item["term"],
+                "source_ref": gap_item["source_ref"],
+                "decision_id": match_preview.get("decision_id"),
+                "decision_term": match_preview.get("decision_term"),
+                "match_kind": match_preview.get("match_kind"),
+                "confidence": match_preview.get("confidence"),
+                "match": match_preview,
+            }
+            gap_record = {
+                key: value for key, value in gap_record.items() if value not in ("", None, [], {})
+            }
             if _text(matching_decision.get("decision")) == "defer":
                 unresolved.append(
                     {
-                        "gap_id": gap_item["gap_id"],
-                        "node_id": gap_item["node_id"],
-                        "term": gap_item["term"],
-                        "source_ref": gap_item["source_ref"],
+                        **gap_record,
                         "deferral_preview": preview,
                     }
                 )
                 continue
             resolved.append(
                 {
-                    "gap_id": gap_item["gap_id"],
-                    "node_id": gap_item["node_id"],
-                    "term": gap_item["term"],
-                    "source_ref": gap_item["source_ref"],
+                    **gap_record,
                     "resolution_preview": preview,
                 }
             )

@@ -715,6 +715,30 @@ decisions resolve all, some, or none of the candidate ontology gaps. The signal
 is still review-only and does not mutate candidate artifacts, accept ontology
 terms, write Ontology packages, approve candidates, or create Git branches.
 
+### 21A. Ontology Gap Matching Normalization
+
+Status: implemented in proposal `0175`.
+
+Ontology gap matching now records explicit match provenance instead of treating
+all term matches as silent literal equality. `idea_to_spec_rerun_preview`
+supports conservative `match_kind` values such as `exact`,
+`normalized_exact`, `safe_inflection`, `safe_phrase_match`, `target_ref`, and
+`aggregate_target`, and every resolved ontology gap includes `decision_id`,
+`gap_term`, `decision_term`, `match_kind`, and `confidence`.
+
+The matching policy remains intentionally narrow. Multi-token product terms can
+close safe variants such as `Payment Record -> Payment Recorded`,
+`Local Notification -> Local Notification Service`, and
+`Renewal Date -> Renewal Date Updated`, but broad single-word terms such as
+`Subscription` do not automatically resolve event/action gaps such as
+`Subscription Added` or `Subscription Cancelled`.
+
+`idea_to_spec_rerun_materialization` preserves this evidence in
+`ontology_gap_resolutions`, so downstream review surfaces can explain why a gap
+was removed from the preview graph. This does not accept ontology terms, write
+Ontology packages, mutate candidate artifacts, approve candidates, or create
+Git branches.
+
 ### 22. Decision-Backed Repair Chain Target
 
 Status: implemented in proposal `0170`.

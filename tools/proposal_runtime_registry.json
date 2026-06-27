@@ -9702,5 +9702,63 @@
         "pattern": "proposal 0174"
       }
     ]
+  },
+  {
+    "proposal_id": "0175",
+    "posture": "synchronous_runtime_slice",
+    "runtime_surfaces": [
+      "docs/proposals/0175_ontology_gap_matching_normalization.md",
+      "docs/archive/proposal_sources/0175_ontology_gap_matching_normalization.md",
+      "docs/product_workspace_graph_versioning_roadmap.md",
+      "Sources/SpecGraph/Documentation.docc/ProductWorkspacePilots.md",
+      "tools/idea_to_spec_rerun_preview.py",
+      "tools/idea_to_spec_rerun_materialization.py",
+      "tools/README.md",
+      "tools/docc_sync_contract.json",
+      "tests/test_idea_to_spec_rerun_preview.py",
+      "tests/test_idea_to_spec_rerun_materialization.py"
+    ],
+    "runtime_markers": [
+      {
+        "path": "tools/idea_to_spec_rerun_preview.py",
+        "pattern": "SAFE_PHRASE_SUFFIX_TOKENS"
+      },
+      {
+        "path": "tools/idea_to_spec_rerun_preview.py",
+        "pattern": "match_kind=\"safe_phrase_match\""
+      },
+      {
+        "path": "tools/idea_to_spec_rerun_materialization.py",
+        "pattern": "\"match\": _public_safe(_dict(resolved.get(\"match\")))"
+      }
+    ],
+    "validation_markers": [
+      {
+        "path": "tests/test_idea_to_spec_rerun_preview.py",
+        "pattern": "test_rerun_preview_uses_safe_normalized_matching_without_broad_single_word_matches"
+      },
+      {
+        "path": "tests/test_idea_to_spec_rerun_materialization.py",
+        "pattern": "normalized_gap_term"
+      }
+    ],
+    "observation_markers": [
+      {
+        "path": "docs/proposals/0175_ontology_gap_matching_normalization.md",
+        "pattern": "does not grant write authority"
+      },
+      {
+        "path": "docs/product_workspace_graph_versioning_roadmap.md",
+        "pattern": "Status: implemented in proposal `0175`"
+      },
+      {
+        "path": "Sources/SpecGraph/Documentation.docc/ProductWorkspacePilots.md",
+        "pattern": "Proposal `0175`"
+      },
+      {
+        "path": "tools/README.md",
+        "pattern": "proposal 0175"
+      }
+    ]
   }
 ]
