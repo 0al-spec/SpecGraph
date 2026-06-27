@@ -19,8 +19,9 @@ SpecGraph makes it possible to move from intent to implementation through specif
 SpecGraph tooling requires Python 3.10 or newer. CI currently runs Python 3.10,
 and `pyproject.toml` declares `requires-python = ">=3.10"`.
 
-On macOS, `python3` may still point to the Xcode/system Python 3.9 runtime. In
-that case, pass `PYTHON` explicitly or create a local virtual environment:
+On macOS, `python3` may still point to the Xcode/system Python 3.9 runtime. The
+Makefile automatically prefers `.venv/bin/python` when that local virtual
+environment exists, so the usual setup is:
 
 ```bash
 python3.10 -m venv .venv
@@ -28,9 +29,12 @@ source .venv/bin/activate
 python -m pip install --upgrade pip
 python -m pip install -e '.[dev]'
 
-make test PYTHON="$PWD/.venv/bin/python"
-make test-supervisor PYTHON="$PWD/.venv/bin/python"
+make test
+make test-supervisor
 ```
+
+For non-standard interpreter locations, pass `PYTHON=/path/to/python3.10` (or
+newer) explicitly.
 
 The Makefile runs `make check-python` before Python-backed targets and fails
 fast with a clear message when the selected interpreter is too old.
