@@ -2247,5 +2247,18 @@
     "required_provenance_links": [
       "source_draft_ref"
     ]
+  },
+  {
+    "proposal_id": "0175",
+    "source_artifact_class": "working_draft",
+    "source_refs": [
+      "docs/archive/proposal_sources/0175_ontology_gap_matching_normalization.md"
+    ],
+    "motivating_concern": "Typed product ontology decisions can drive rerun overlays, but literal-only ontology gap matching leaves safe term variants unresolved and makes the repair loop noisier than the operator intent.",
+    "normalized_title": "Ontology Gap Matching Normalization",
+    "bounded_scope": "Add conservative normalized ontology gap matching and match provenance to the existing review-only idea_to_spec_rerun_preview and idea_to_spec_rerun_materialization surfaces, with tests, proposal docs, roadmap, DocC, and registry tracking, so safe inflection and phrase variants can resolve in preview while broad single-word terms do not auto-resolve action/event gaps, without executing prompt agents, applying answers or decisions to source artifacts, mutating candidate artifacts, mutating canonical specs, writing Ontology packages or lockfiles, accepting ontology terms, approving candidate graphs, creating Git branches or commits, opening pull requests, publishing read models, or adding SpecSpace mutation authority.",
+    "required_provenance_links": [
+      "source_draft_ref"
+    ]
   }
 ]

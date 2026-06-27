@@ -259,6 +259,26 @@ not apply answers to source artifacts, mutate candidate artifacts, accept
 ontology terms, write ontology packages, approve candidates, create Git
 branches, or publish read models.
 
+Proposal `0175` adds conservative ontology gap matching normalization to the
+same review-only preview chain. Resolved ontology gaps now include
+`match_kind`, `safe_phrase_match`, `confidence`, `decision_id`, `gap_term`,
+and `decision_term` evidence, and the materialized candidate graph preview
+preserves that evidence inside `ontology_gap_resolutions`. Safe variants such as
+`Payment Record -> Payment Recorded`,
+`Local Notification -> Local Notification Service`, and
+`Renewal Date -> Renewal Date Updated` can resolve in preview state, while
+broad single-word terms such as `Subscription` do not automatically resolve
+event/action gaps such as `Subscription Added` or `Subscription Cancelled`.
+If several decisions match one gap, the preview chooses the strongest
+`match_kind` before falling back to source order for ties. `confidence` is a
+triage signal: exact matches are `high`, safe inflections are `medium`,
+directed phrase matches are `low`, explicit target refs are `explicit_target`,
+and aggregate gap actions are `aggregate_scope`. `safe_phrase_match` is
+directional, so the decision term must be the prefix and the gap term may only
+add one safe suffix.
+This remains review-only: no ontology terms are accepted and no candidate or
+canonical artifacts are mutated.
+
 Proposal `0170` adds a single convenience target for smoke and CI runs that
 need the complete decision-backed review chain:
 

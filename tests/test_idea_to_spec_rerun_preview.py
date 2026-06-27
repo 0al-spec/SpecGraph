@@ -140,6 +140,11 @@ def test_rerun_preview_resolves_matching_ontology_gap() -> None:
     assert gap_preview["unresolved_ontology_gap_count"] == 1
     resolved = gap_preview["resolved_ontology_gaps"][0]
     assert resolved["gap_id"] == "ontology-gap.decision-owner"
+    assert resolved["decision_id"] == "clarification.repair.repair-review-unresolved-gaps"
+    assert resolved["decision_term"] == "Decision Owner"
+    assert resolved["match_kind"] == "exact"
+    assert resolved["confidence"] == "high"
+    assert resolved["match"]["gap_term"] == "Decision Owner"
     assert resolved["resolution_preview"]["decision"] == "project_local_term"
     assert resolved["resolution_preview"]["term"] == "Decision Owner"
     quality = report["rerun_preview"]["candidate_quality_preview"]
@@ -206,6 +211,12 @@ def test_rerun_preview_matches_aggregate_reject_to_ontology_gaps() -> None:
     assert {
         item["resolution_preview"]["decision"] for item in gap_preview["resolved_ontology_gaps"]
     } == {"reject"}
+    assert {item["match_kind"] for item in gap_preview["resolved_ontology_gaps"]} == {
+        "aggregate_target"
+    }
+    assert {item["confidence"] for item in gap_preview["resolved_ontology_gaps"]} == {
+        "aggregate_scope"
+    }
 
 
 def test_rerun_preview_keeps_deferred_ontology_gaps_unresolved() -> None:
@@ -238,9 +249,166 @@ def test_rerun_preview_keeps_deferred_ontology_gaps_unresolved() -> None:
     assert {
         item["deferral_preview"]["decision"] for item in gap_preview["unresolved_ontology_gaps"]
     } == {"defer"}
+    assert {item["match_kind"] for item in gap_preview["unresolved_ontology_gaps"]} == {
+        "aggregate_target"
+    }
+    assert {item["confidence"] for item in gap_preview["unresolved_ontology_gaps"]} == {
+        "aggregate_scope"
+    }
     quality = report["rerun_preview"]["candidate_quality_preview"]
     assert quality["review_state"] == "candidate_quality_blocked_by_ontology_gaps"
     assert quality["ontology_gap_state"] == "unresolved"
+
+
+def test_rerun_preview_uses_safe_normalized_matching_without_broad_single_word_matches() -> None:
+    module = load_module(
+        PREVIEW_TOOL_PATH,
+        "idea_to_spec_rerun_preview_safe_matching_test",
+    )
+    rerun_input = copy.deepcopy(ready_rerun_input())
+    ontology_hints = rerun_input["rerun_input_overlay"]["ontology_review_hints"]
+    for bucket in (
+        "term_bindings",
+        "aliases",
+        "project_local_terms",
+        "rejected_terms",
+        "deferred_terms",
+    ):
+        ontology_hints[bucket] = []
+    ontology_hints["project_local_terms"] = [
+        {
+            "term": "Payment Record",
+            "request_id": "clarification.payment-record",
+            "target_ref": "candidate_graph.gaps",
+        },
+        {
+            "term": "Local Notification",
+            "request_id": "clarification.local-notification",
+            "target_ref": "candidate_graph.gaps",
+        },
+        {
+            "term": "Renewal Date",
+            "request_id": "clarification.renewal-date",
+            "target_ref": "candidate_graph.gaps",
+        },
+        {
+            "term": "Subscription",
+            "request_id": "clarification.subscription",
+            "target_ref": "candidate_graph.gaps",
+        },
+    ]
+    candidate_graph = candidate_graph_artifact()
+    candidate_graph["nodes"][0]["gaps"] = [
+        {
+            "id": "ontology-gap.payment-recorded",
+            "kind": "ontology_gap",
+            "source_ref": "domain-event.payment-recorded",
+            "term": "Payment Recorded",
+        },
+        {
+            "id": "ontology-gap.local-notification-service",
+            "kind": "ontology_gap",
+            "source_ref": "external-system.local-notification-service",
+            "term": "Local Notification Service",
+        },
+        {
+            "id": "ontology-gap.local-notification-service-update",
+            "kind": "ontology_gap",
+            "source_ref": "domain-event.local-notification-service-update",
+            "term": "Local Notification Service Update",
+        },
+        {
+            "id": "ontology-gap.renewal-date-updated",
+            "kind": "ontology_gap",
+            "source_ref": "domain-event.renewal-date-updated",
+            "term": "Renewal Date Updated",
+        },
+        {
+            "id": "ontology-gap.subscription-added",
+            "kind": "ontology_gap",
+            "source_ref": "domain-event.subscription-added",
+            "term": "Subscription Added",
+        },
+        {
+            "id": "ontology-gap.subscription-cancelled",
+            "kind": "ontology_gap",
+            "source_ref": "domain-event.subscription-cancelled",
+            "term": "Subscription Cancelled",
+        },
+    ]
+
+    report = module.build_idea_to_spec_rerun_preview(
+        rerun_input=rerun_input,
+        intake=intake_artifact(),
+        candidate_graph=candidate_graph,
+    )
+
+    gap_preview = report["rerun_preview"]["ontology_gap_preview"]
+    resolved = {item["term"]: item for item in gap_preview["resolved_ontology_gaps"]}
+    unresolved_terms = {item["term"] for item in gap_preview["unresolved_ontology_gaps"]}
+    assert gap_preview["resolved_ontology_gap_count"] == 3
+    assert resolved["Payment Recorded"]["match_kind"] == "safe_inflection"
+    assert resolved["Payment Recorded"]["confidence"] == "medium"
+    assert resolved["Payment Recorded"]["decision_term"] == "Payment Record"
+    assert resolved["Local Notification Service"]["match_kind"] == "safe_phrase_match"
+    assert resolved["Local Notification Service"]["confidence"] == "low"
+    assert resolved["Renewal Date Updated"]["match_kind"] == "safe_phrase_match"
+    assert resolved["Renewal Date Updated"]["confidence"] == "low"
+    assert unresolved_terms == {
+        "Local Notification Service Update",
+        "Subscription Added",
+        "Subscription Cancelled",
+    }
+
+
+def test_rerun_preview_prefers_stronger_match_over_first_match() -> None:
+    module = load_module(
+        PREVIEW_TOOL_PATH,
+        "idea_to_spec_rerun_preview_match_precedence_test",
+    )
+    rerun_input = copy.deepcopy(ready_rerun_input())
+    ontology_hints = rerun_input["rerun_input_overlay"]["ontology_review_hints"]
+    for bucket in (
+        "term_bindings",
+        "aliases",
+        "project_local_terms",
+        "rejected_terms",
+        "deferred_terms",
+    ):
+        ontology_hints[bucket] = []
+    ontology_hints["project_local_terms"] = [
+        {
+            "term": "Local Notification",
+            "request_id": "clarification.local-notification",
+            "target_ref": "candidate_graph.gaps",
+        },
+        {
+            "term": "Local Notification Service",
+            "request_id": "clarification.local-notification-service",
+            "target_ref": "candidate_graph.gaps",
+        },
+    ]
+    candidate_graph = candidate_graph_artifact()
+    candidate_graph["nodes"][0]["gaps"] = [
+        {
+            "id": "ontology-gap.local-notification-service",
+            "kind": "ontology_gap",
+            "source_ref": "external-system.local-notification-service",
+            "term": "Local Notification Service",
+        }
+    ]
+
+    report = module.build_idea_to_spec_rerun_preview(
+        rerun_input=rerun_input,
+        intake=intake_artifact(),
+        candidate_graph=candidate_graph,
+    )
+
+    resolved = report["rerun_preview"]["ontology_gap_preview"]["resolved_ontology_gaps"]
+    assert len(resolved) == 1
+    assert resolved[0]["match_kind"] == "exact"
+    assert resolved[0]["decision_term"] == "Local Notification Service"
+    assert resolved[0]["decision_id"] == "clarification.local-notification-service"
 
 
 def test_rerun_preview_merges_active_frame_and_strips_raw_trace() -> None:

@@ -57,6 +57,21 @@ def rerun_preview_artifact() -> dict[str, object]:
                         "node_id": "candidate-spec.product-boundary",
                         "term": "Decision Owner",
                         "source_ref": "actor.decision-owner",
+                        "decision_id": "clarification.owner",
+                        "decision_term": "Decision Owner",
+                        "match_kind": "exact",
+                        "confidence": "high",
+                        "match": {
+                            "gap_id": "ontology-gap.decision-owner",
+                            "node_id": "candidate-spec.product-boundary",
+                            "decision_id": "clarification.owner",
+                            "match_kind": "exact",
+                            "confidence": "high",
+                            "gap_term": "Decision Owner",
+                            "decision_term": "Decision Owner",
+                            "normalized_gap_term": "decision owner",
+                            "normalized_decision_term": "decision owner",
+                        },
                         "resolution_preview": {
                             "decision": "project_local_term",
                             "term": "Decision Owner",
@@ -127,6 +142,11 @@ def test_rerun_materialization_removes_resolved_gap_in_preview() -> None:
     assert [gap["id"] for gap in node["gaps"]] == ["ontology-gap.record-decision"]
     assert preview["summary"]["gap_count"] == 1
     assert node["ontology_gap_resolutions"][0]["gap_id"] == "ontology-gap.decision-owner"
+    assert node["ontology_gap_resolutions"][0]["decision_id"] == "clarification.owner"
+    assert node["ontology_gap_resolutions"][0]["decision_term"] == "Decision Owner"
+    assert node["ontology_gap_resolutions"][0]["match_kind"] == "exact"
+    assert node["ontology_gap_resolutions"][0]["confidence"] == "high"
+    assert node["ontology_gap_resolutions"][0]["match"]["normalized_gap_term"] == ("decision owner")
     assert (
         node["ontology_gap_resolutions"][0]["resolution_preview"]["decision"]
         == "project_local_term"
