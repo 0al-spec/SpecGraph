@@ -854,6 +854,22 @@ The validation target invokes the sibling Metrics CLI and writes
 owner of the RFC/schema validator while giving SpecGraph and SpecSpace a
 public-safe validation surface for the produced telemetry report.
 
+Next slices for this line are intentionally downstream-first:
+
+1. **SpecSpace consumption.** Add a Product Workspace `Idea maturity` section
+   that reads `runs/idea_maturity_metrics_report.json` and
+   `runs/idea_maturity_metrics_validation_report.json`, then shows lifecycle
+   state, validation status, blockers, ontology/candidate gap rates,
+   clarification and answer materialization, approval/promotion readiness, and
+   stale refs or failed gates.
+2. **Platform awareness.** Let Platform use the report as an explanatory
+   preflight signal before promotion. It must not become the promotion
+   authority; concrete handoff artifacts and existing gates remain the source
+   of branch/commit/PR readiness.
+3. **Demo pass.** Re-run the `local-subscription-control` pilot through the
+   product lane and verify that SpecSpace shows a compact maturity dashboard in
+   addition to repair and promotion artifacts.
+
 ### 22. Decision-Backed Repair Chain Target
 
 Status: implemented in proposal `0170`.

@@ -331,6 +331,19 @@ Metrics CLI. SpecGraph produces telemetry, but Metrics owns the RFC/schema
 validator. Public bundle refresh publishes both artifacts so SpecSpace can show
 the metrics surface and whether it passed the Metrics contract.
 
+The next slices are downstream-first:
+
+1. SpecSpace should add a Product Workspace `Idea maturity` section that reads
+   the metrics report and validation report, then shows lifecycle state,
+   validation status, blockers, ontology/candidate gap rates, clarification and
+   answer materialization, approval/promotion readiness, and stale refs or
+   failed gates.
+2. Platform may use the report as an explanatory preflight signal before
+   promotion, but not as promotion authority. Concrete handoff artifacts and
+   existing gates remain the source of branch/commit/PR readiness.
+3. A `local-subscription-control` demo pass should verify that SpecSpace shows
+   a compact maturity dashboard in addition to repair and promotion artifacts.
+
 Proposal `0170` adds a single convenience target for smoke and CI runs that
 need the complete decision-backed review chain:
 
