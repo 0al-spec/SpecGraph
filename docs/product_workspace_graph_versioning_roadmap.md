@@ -854,19 +854,44 @@ The validation target invokes the sibling Metrics CLI and writes
 owner of the RFC/schema validator while giving SpecGraph and SpecSpace a
 public-safe validation surface for the produced telemetry report.
 
-Next slices for this line are intentionally downstream-first:
+SpecSpace consumption is implemented downstream as a Product Workspace
+`Idea maturity` section. The remaining producer-side gap is that ordinary
+product review targets should leave the report and validation report behind by
+default, so deployed workspaces do not show an avoidable missing state.
 
-1. **SpecSpace consumption.** Add a Product Workspace `Idea maturity` section
-   that reads `runs/idea_maturity_metrics_report.json` and
-   `runs/idea_maturity_metrics_validation_report.json`, then shows lifecycle
-   state, validation status, blockers, ontology/candidate gap rates,
-   clarification and answer materialization, approval/promotion readiness, and
-   stale refs or failed gates.
-2. **Platform awareness.** Let Platform use the report as an explanatory
+### 21E. Product Flow Idea Maturity Artifacts
+
+Status: implemented in proposal `0179`.
+
+Proposal `0179` adds a product-lane wrapper:
+
+```bash
+make product-workspace-idea-maturity
+```
+
+The wrapper builds `runs/idea_maturity_metrics_report.json` and validates it
+through the Metrics CLI into
+`runs/idea_maturity_metrics_validation_report.json`.
+
+The wrapper now runs at the end of the dashboard-ready product review targets:
+
+```bash
+make product-workspace-decision-backed-repair-chain
+make product-workspace-repaired-promotion-handoff
+```
+
+`make product-workspace-active-candidate` intentionally remains narrow and does
+not run maturity validation. This keeps the baseline active-candidate path fast,
+while the decision-backed repair and repaired promotion handoff paths now emit
+the surfaces SpecSpace needs for the `Idea maturity` panel.
+
+The next slices for this line are:
+
+1. **Platform awareness.** Let Platform use the report as an explanatory
    preflight signal before promotion. It must not become the promotion
    authority; concrete handoff artifacts and existing gates remain the source
    of branch/commit/PR readiness.
-3. **Demo pass.** Re-run the `local-subscription-control` pilot through the
+2. **Demo pass.** Re-run the `local-subscription-control` pilot through the
    product lane and verify that SpecSpace shows a compact maturity dashboard in
    addition to repair and promotion artifacts.
 

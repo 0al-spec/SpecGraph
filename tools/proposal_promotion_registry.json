@@ -2299,5 +2299,18 @@
     "required_provenance_links": [
       "source_draft_ref"
     ]
+  },
+  {
+    "proposal_id": "0179",
+    "source_artifact_class": "working_draft",
+    "source_refs": [
+      "docs/archive/proposal_sources/0179_product_flow_idea_maturity_artifacts.md"
+    ],
+    "motivating_concern": "SpecSpace can show Idea maturity reports, but a normal product repair or repaired promotion handoff run can leave the metrics report and validation report missing unless the operator invokes metrics targets separately.",
+    "normalized_title": "Product Flow Idea Maturity Artifacts",
+    "bounded_scope": "Add product-lane Make wiring, proposal docs, roadmap, DocC, README, and registry/test coverage so product-workspace-decision-backed-repair-chain and product-workspace-repaired-promotion-handoff emit the Metrics RFC idea maturity report plus validation report by default, while product-workspace-active-candidate remains narrow and no prompt agents execute, no candidate or canonical specs mutate, no Ontology packages or lockfiles are written, no ontology terms are accepted, no candidates are approved, no Git branches, commits, pull requests, merges, or read models are created, and SpecGraph continues invoking the Metrics-owned validator instead of copying validator logic.",
+    "required_provenance_links": [
+      "source_draft_ref"
+    ]
   }
 ]

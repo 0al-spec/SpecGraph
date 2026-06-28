@@ -692,6 +692,46 @@ def test_idea_maturity_metrics_validate_make_target_invokes_metrics_cli(
     assert validation["summary"]["status"] == "ok"
 
 
+def _make_dry_run_target(target: str) -> str:
+    result = subprocess.run(
+        ["make", "-n", target],
+        cwd=ROOT,
+        check=False,
+        capture_output=True,
+        text=True,
+    )
+    assert result.returncode == 0, result.stderr
+    return result.stdout
+
+
+def test_product_workspace_idea_maturity_target_builds_and_validates_report() -> None:
+    output = _make_dry_run_target("product-workspace-idea-maturity")
+
+    metrics_index = output.index("tools/idea_maturity_metrics_report.py")
+    validation_index = output.index("validate idea-maturity")
+    assert metrics_index < validation_index
+    assert "runs/idea_maturity_metrics_report.json" in output
+    assert "runs/idea_maturity_metrics_validation_report.json" in output
+
+
+def test_decision_backed_repair_chain_emits_validated_idea_maturity() -> None:
+    output = _make_dry_run_target("product-workspace-decision-backed-repair-chain")
+
+    session_index = output.index("idea_to_spec_repair_session_journal.py")
+    metrics_index = output.index("tools/idea_maturity_metrics_report.py")
+    validation_index = output.index("validate idea-maturity")
+    assert session_index < metrics_index < validation_index
+
+
+def test_repaired_promotion_handoff_emits_validated_idea_maturity() -> None:
+    output = _make_dry_run_target("product-workspace-repaired-promotion-handoff")
+
+    handoff_index = output.index("tools/repaired_candidate_promotion_handoff.py")
+    metrics_index = output.index("tools/idea_maturity_metrics_report.py")
+    validation_index = output.index("validate idea-maturity")
+    assert handoff_index < metrics_index < validation_index
+
+
 def test_idea_maturity_metrics_report_counts_materialized_request_once(
     tmp_path: Path,
 ) -> None:
