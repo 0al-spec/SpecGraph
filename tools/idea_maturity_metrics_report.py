@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import re
 import sys
 from collections import Counter
 from datetime import datetime, timezone
@@ -17,6 +18,8 @@ CONTRACT_REF = "specgraph.idea-to-spec.maturity-metrics-report.v0.1"
 METRIC_PACK_ID = "idea_to_spec_maturity"
 METRIC_PACK_REF = "metrics.idea_to_spec_maturity.v0.1"
 METRICS_RFC_REF = "Metrics/IDEA_MATURITY_METRICS.md"
+AUTHORITY_STATE = "draft_reference"
+STALL_DWELL_SECONDS = 86_400
 
 DEFAULT_PATHS = {
     "intake": ROOT / "runs" / "idea_event_storming_intake.json",
@@ -98,6 +101,56 @@ CANDIDATE_RESOLUTION_KIND_KEYS = (
     "other",
 )
 
+SUMMARY_METRIC_KEYS = (
+    "lifecycle_state",
+    "clarification_question_count",
+    "blocking_question_count",
+    "review_required_question_count",
+    "answered_question_count",
+    "accepted_answer_count",
+    "deferred_answer_count",
+    "invalid_answer_count",
+    "materialized_answer_count",
+    "unmaterialized_answer_count",
+    "answer_materialization_rate",
+    "ontology_gap_count_initial",
+    "ontology_gap_resolved_count",
+    "ontology_gap_unresolved_count",
+    "ontology_gap_resolution_rate",
+    "candidate_gap_count_initial",
+    "candidate_gap_resolved_count",
+    "candidate_gap_unresolved_count",
+    "candidate_gap_closure_rate",
+    "candidate_node_count",
+    "promotion_path_count",
+    "remaining_blocker_count",
+    "manual_handoff_count",
+    "operator_command_count",
+    "failed_gate_count",
+    "stale_ref_count",
+    "dry_run_count",
+    "rerun_count",
+    "rerun_request_count",
+    "approval_attempt_count",
+    "time_to_first_candidate_seconds",
+    "time_to_first_materialization_seconds",
+    "time_to_approval_ready_seconds",
+    "last_progress_at",
+    "stalled_phase",
+    "candidate_approval_state",
+    "candidate_approval_intent_state",
+    "candidate_approval_decision_state",
+    "platform_promotion_state",
+    "promotion_request_state",
+    "promotion_execution_state",
+    "review_status",
+    "review_pr_number",
+    "review_merge_commit_sha",
+    "read_model_publication_state",
+    "published_file_count",
+    "published_manifest_digest",
+)
+
 SOURCE_REF_CHECKS = (
     ("clarification_answers", "clarification_requests", "clarification_requests"),
     ("ontology_decisions", "clarification_answers", "clarification_answers"),
@@ -142,6 +195,27 @@ def _text(value: Any, default: str = "") -> str:
     return value.strip() if isinstance(value, str) and value.strip() else default
 
 
+def _tokenize(value: str) -> set[str]:
+    return {token for token in re.split(r"[^a-z0-9]+", value.lower()) if token}
+
+
+def _status_has_token(status: str, token: str) -> bool:
+    tokens = _tokenize(status)
+    if not tokens:
+        return False
+    if token == "blocked" and ("unblocked" in tokens or tokens == {"not", "blocked"}):
+        return False
+    return token in tokens
+
+
+def _status_is_blocked(status: str) -> bool:
+    return _status_has_token(status, "blocked")
+
+
+def _status_is_failed(status: str) -> bool:
+    return _status_has_token(status, "failed") or _status_has_token(status, "failure")
+
+
 def _int(value: Any, default: int = 0) -> int:
     if isinstance(value, bool):
         return default
@@ -176,6 +250,25 @@ def _parse_time(value: Any) -> datetime | None:
         return datetime.fromisoformat(value.replace("Z", "+00:00"))
     except ValueError:
         return None
+
+
+def _artifact_time(artifact: dict[str, Any]) -> datetime | None:
+    summary = _dict(artifact.get("summary"))
+    candidates = (
+        artifact.get("generated_at"),
+        artifact.get("created_at"),
+        artifact.get("updated_at"),
+        artifact.get("completed_at"),
+        summary.get("generated_at"),
+        summary.get("created_at"),
+        summary.get("updated_at"),
+        summary.get("completed_at"),
+    )
+    for candidate in candidates:
+        parsed = _parse_time(candidate)
+        if parsed is not None:
+            return parsed
+    return None
 
 
 def _seconds_between(start: datetime | None, end: datetime | None) -> float | None:
@@ -318,10 +411,8 @@ def _candidate_identity(artifacts: dict[str, dict[str, Any]]) -> dict[str, Any]:
     if candidate:
         return _public_safe(
             {
-                "candidate_id": candidate.get("candidate_id"),
-                "workspace_id": candidate.get("candidate_id"),
-                "display_name": candidate.get("display_name"),
-                "workspace_route": candidate.get("public_route"),
+                "candidate_id": _text(candidate.get("candidate_id"), "unknown-candidate"),
+                "workspace_route": _text(candidate.get("public_route"), "/unknown"),
                 "workflow_lane": candidate.get("workflow_lane"),
                 "governance_profile": candidate.get("governance_profile"),
                 "target_repository_role": candidate.get("target_repository_role"),
@@ -331,9 +422,8 @@ def _candidate_identity(artifacts: dict[str, dict[str, Any]]) -> dict[str, Any]:
     if session:
         return _public_safe(
             {
-                "candidate_id": session.get("candidate_id"),
-                "workspace_id": session.get("candidate_id"),
-                "workspace_route": session.get("workspace_route"),
+                "candidate_id": _text(session.get("candidate_id"), "unknown-candidate"),
+                "workspace_route": _text(session.get("workspace_route"), "/unknown"),
                 "workflow_lane": session.get("workflow_lane"),
                 "governance_profile": session.get("governance_profile"),
                 "target_repository_role": session.get("target_repository_role"),
@@ -344,10 +434,8 @@ def _candidate_identity(artifacts: dict[str, dict[str, Any]]) -> dict[str, Any]:
     )
     return _public_safe(
         {
-            "candidate_id": intake_workspace.get("candidate_id"),
-            "workspace_id": intake_workspace.get("candidate_id"),
-            "display_name": intake_workspace.get("display_name"),
-            "workspace_route": intake_workspace.get("public_route"),
+            "candidate_id": _text(intake_workspace.get("candidate_id"), "unknown-candidate"),
+            "workspace_route": _text(intake_workspace.get("public_route"), "/unknown"),
         }
     )
 
@@ -402,8 +490,8 @@ def _dedupe_records(records: list[dict[str, Any]]) -> list[dict[str, Any]]:
     return deduped
 
 
-def _count_unique_request_ids(records: list[dict[str, Any]]) -> int:
-    request_ids = {
+def _unique_request_ids(records: list[dict[str, Any]]) -> set[str]:
+    return {
         value
         for record in records
         for value in (
@@ -413,7 +501,10 @@ def _count_unique_request_ids(records: list[dict[str, Any]]) -> int:
         )
         if isinstance(value, str) and value.strip()
     }
-    return len(request_ids)
+
+
+def _count_unique_request_ids(records: list[dict[str, Any]]) -> int:
+    return len(_unique_request_ids(records))
 
 
 def _closed_counter(keys: tuple[str, ...], observed: Counter[str]) -> dict[str, int]:
@@ -454,9 +545,10 @@ def _metrics(artifacts: dict[str, dict[str, Any]]) -> dict[str, Any]:
     candidate_initial = sum(1 for gap in initial_gaps if gap.get("kind") != "ontology_gap")
 
     ontology_records, candidate_records = _resolution_records(artifacts)
-    ontology_record_request_count = _count_unique_request_ids(ontology_records)
-    candidate_record_request_count = _count_unique_request_ids(candidate_records)
-    materialized_answer_count = ontology_record_request_count + candidate_record_request_count
+    materialized_answer_request_ids = _unique_request_ids(ontology_records) | _unique_request_ids(
+        candidate_records
+    )
+    materialized_answer_count = len(materialized_answer_request_ids)
 
     answers = [
         answer
@@ -484,7 +576,11 @@ def _metrics(artifacts: dict[str, dict[str, Any]]) -> dict[str, Any]:
     if not answered_question_count and draft_import_summary:
         answered_question_count = _int(draft_import_summary.get("draft_count"))
 
-    unmaterialized_answer_count = max(accepted_answer_count - materialized_answer_count, 0)
+    bounded_materialized_answer_count = min(materialized_answer_count, accepted_answer_count)
+    unmaterialized_answer_count = max(
+        accepted_answer_count - bounded_materialized_answer_count,
+        0,
+    )
     ontology_decision_counts = _ontology_decision_counts(artifacts)
 
     ontology_match_counter: Counter[str] = Counter()
@@ -562,20 +658,16 @@ def _metrics(artifacts: dict[str, dict[str, Any]]) -> dict[str, Any]:
         "accepted_answer_count": accepted_answer_count,
         "deferred_answer_count": deferred_answer_count,
         "invalid_answer_count": invalid_answer_count,
-        "materialized_answer_count": min(materialized_answer_count, accepted_answer_count)
-        if accepted_answer_count
-        else materialized_answer_count,
+        "materialized_answer_count": bounded_materialized_answer_count,
         "unmaterialized_answer_count": unmaterialized_answer_count,
         "answer_materialization_rate": _rate(
-            min(materialized_answer_count, accepted_answer_count)
-            if accepted_answer_count
-            else materialized_answer_count,
+            bounded_materialized_answer_count,
             accepted_answer_count,
         ),
         "candidate_review_hint_count": _summary_int(
             artifacts, "rerun_input", "candidate_review_hint_count"
         ),
-        "stale_answer_count": stale_ref_count,
+        "stale_answer_count": _stale_answer_count(artifacts),
         "ontology_gap_count_initial": ontology_initial,
         "ontology_gap_resolved_count": ontology_resolved,
         "ontology_gap_unresolved_count": ontology_unresolved,
@@ -601,7 +693,7 @@ def _metrics(artifacts: dict[str, dict[str, Any]]) -> dict[str, Any]:
         ],
         "context_supplied_count": candidate_resolution_counter["context_supplied"],
         "remaining_blocker_count": remaining_blockers,
-        "rerun_count": 1 if artifacts.get("rerun_materialization") else 0,
+        "rerun_count": _rerun_count(artifacts),
         "manual_handoff_count": _manual_handoff_count(artifacts),
         "operator_command_count": _operator_command_count(artifacts),
         "failed_gate_count": failed_gate_count,
@@ -643,20 +735,71 @@ def _remaining_blocker_count(artifacts: dict[str, dict[str, Any]]) -> int:
     return len(blocked)
 
 
+def _finding_codes(finding: dict[str, Any]) -> set[str]:
+    values = {
+        finding.get("finding_id"),
+        finding.get("kind"),
+        finding.get("code"),
+        finding.get("classification"),
+        finding.get("type"),
+    }
+    evidence = _dict(finding.get("evidence"))
+    values.update(
+        {
+            evidence.get("finding_id"),
+            evidence.get("kind"),
+            evidence.get("code"),
+            evidence.get("classification"),
+            evidence.get("type"),
+        }
+    )
+    return {_text(value).lower() for value in values if _text(value)}
+
+
+def _finding_has_stale_ref(finding: dict[str, Any]) -> bool:
+    for code in _finding_codes(finding):
+        if code == "source_ref_mismatch":
+            return True
+        tokens = _tokenize(code)
+        if "answer" in tokens:
+            continue
+        if "stale" in tokens and ("ref" in tokens or "source" in tokens):
+            return True
+    return False
+
+
+def _finding_has_stale_answer(finding: dict[str, Any]) -> bool:
+    for code in _finding_codes(finding):
+        tokens = _tokenize(code)
+        if "stale" in tokens and "answer" in tokens:
+            return True
+        if "superseded" in tokens and ("answer" in tokens or "draft" in tokens):
+            return True
+    return False
+
+
 def _stale_ref_count(artifacts: dict[str, dict[str, Any]]) -> int:
     count = 0
     for artifact in artifacts.values():
         for finding in _list(artifact.get("findings")):
             if not isinstance(finding, dict):
                 continue
-            text = json.dumps(finding, sort_keys=True).lower()
-            if "stale" in text or "source_ref_mismatch" in text:
+            if _finding_has_stale_ref(finding):
+                count += 1
+    return count
+
+
+def _stale_answer_count(artifacts: dict[str, dict[str, Any]]) -> int:
+    count = 0
+    for artifact in artifacts.values():
+        for finding in _list(artifact.get("findings")):
+            if isinstance(finding, dict) and _finding_has_stale_answer(finding):
                 count += 1
     return count
 
 
 def _failed_gate_count(artifacts: dict[str, dict[str, Any]]) -> int:
-    count = 0
+    failed_or_blocked_artifacts: set[str] = set()
     for key, artifact in artifacts.items():
         readiness = _dict(artifact.get("readiness"))
         summary = _dict(artifact.get("summary"))
@@ -669,14 +812,14 @@ def _failed_gate_count(artifacts: dict[str, dict[str, Any]]) -> int:
             readiness
             and readiness.get("ready") is False
             and _list(readiness.get("blocked_by"))
-            and ("blocked" in status or "failed" in status)
+            and (_status_is_failed(status) or _status_is_blocked(status))
         ):
-            count += 1
-        if "failed" in status or "blocked" in status:
-            count += 1
+            failed_or_blocked_artifacts.add(key)
+        if _status_is_failed(status) or _status_is_blocked(status):
+            failed_or_blocked_artifacts.add(key)
         if key.startswith("platform") and _int(summary.get("error_count")) > 0:
-            count += 1
-    return count
+            failed_or_blocked_artifacts.add(key)
+    return len(failed_or_blocked_artifacts)
 
 
 def _dry_run_count(artifacts: dict[str, dict[str, Any]]) -> int:
@@ -715,8 +858,105 @@ def _operator_command_count(artifacts: dict[str, dict[str, Any]]) -> int:
     return count
 
 
+def _phase_time(
+    artifacts: dict[str, dict[str, Any]],
+    *keys: str,
+) -> datetime | None:
+    for key in keys:
+        artifact = _dict(artifacts.get(key))
+        if not artifact:
+            continue
+        parsed = _artifact_time(artifact)
+        if parsed is not None:
+            return parsed
+    return None
+
+
+def _phase_timeline(artifacts: dict[str, dict[str, Any]]) -> list[tuple[str, datetime]]:
+    phases = [
+        ("intake_ready", _phase_time(artifacts, "intake")),
+        ("repair_required", _phase_time(artifacts, "candidate_graph", "clarification_requests")),
+        (
+            "repair_rerun_requested",
+            _phase_time(artifacts, "specspace_rerun_request", "rerun_input"),
+        ),
+        (
+            "repaired_candidate_ready",
+            _phase_time(artifacts, "repaired_repair_session", "repaired_handoff"),
+        ),
+        ("approval_materialized", _phase_time(artifacts, "approval_execution")),
+        ("promotion_requested", _phase_time(artifacts, "promotion_request")),
+        ("git_review_active", _phase_time(artifacts, "review_status", "promotion_execution")),
+        ("read_model_publication_complete", _phase_time(artifacts, "read_model_publication")),
+    ]
+    return [(phase, timestamp) for phase, timestamp in phases if timestamp is not None]
+
+
+def _phase_dwell_seconds(
+    phases: list[tuple[str, datetime]],
+    *,
+    lifecycle_state: str,
+    blocked_or_open: bool,
+) -> dict[str, float]:
+    if not phases:
+        return {}
+    dwell: dict[str, float] = {}
+    for index, (phase, timestamp) in enumerate(phases):
+        next_timestamp = phases[index + 1][1] if index + 1 < len(phases) else None
+        seconds = _seconds_between(timestamp, next_timestamp)
+        if seconds is not None:
+            dwell[phase] = seconds
+    last_phase, last_timestamp = phases[-1]
+    if blocked_or_open or last_phase == lifecycle_state:
+        now = datetime.now(tz=timezone.utc)
+        seconds = _seconds_between(last_timestamp, now)
+        if seconds is not None:
+            dwell[last_phase] = max(dwell.get(last_phase, 0), seconds)
+    return dwell
+
+
+def _stalled_phase(phase_dwell: dict[str, float], lifecycle_state: str) -> str | None:
+    if lifecycle_state not in phase_dwell:
+        return None
+    return lifecycle_state if phase_dwell[lifecycle_state] >= STALL_DWELL_SECONDS else None
+
+
+def _rerun_count(artifacts: dict[str, dict[str, Any]]) -> int:
+    explicit = (
+        _summary_int(artifacts, "repair_rerun_execution", "rerun_count")
+        or _summary_int(artifacts, "specspace_rerun_request", "request_count")
+        or _summary_int(artifacts, "specspace_rerun_request", "active_request_count")
+    )
+    if explicit:
+        return explicit
+    rerun_artifact_keys = ("rerun_input", "rerun_preview", "rerun_materialization")
+    return 1 if any(key in artifacts for key in rerun_artifact_keys) else 0
+
+
+def _lifecycle_state_from_metrics_fragment(artifacts: dict[str, dict[str, Any]]) -> str:
+    if _read_model_publication_state(artifacts) == "published":
+        return "read_model_publication_complete"
+    if _review_status(artifacts) in {"open", "merged"}:
+        return "git_review_active"
+    if _promotion_request_state(artifacts) == "requested":
+        return "promotion_requested"
+    if _candidate_approval_decision_state(artifacts) == "materialized":
+        return "approval_materialized"
+    if _candidate_approval_state(artifacts) == "ready":
+        return "approval_ready"
+    if artifacts.get("repaired_repair_session") or artifacts.get("repaired_handoff"):
+        return "repaired_candidate_ready"
+    if artifacts.get("specspace_rerun_request") or artifacts.get("rerun_input"):
+        return "repair_rerun_requested"
+    if artifacts.get("candidate_graph") or artifacts.get("clarification_requests"):
+        return "repair_required"
+    if artifacts.get("intake"):
+        return "intake_ready"
+    return "blocked"
+
+
 def _temporal_metrics(artifacts: dict[str, dict[str, Any]]) -> dict[str, Any]:
-    times = {key: _parse_time(artifact.get("generated_at")) for key, artifact in artifacts.items()}
+    times = {key: _artifact_time(artifact) for key, artifact in artifacts.items()}
     intake_time = times.get("intake")
     candidate_time = times.get("candidate_graph")
     materialization_time = times.get("rerun_materialization")
@@ -741,6 +981,22 @@ def _temporal_metrics(artifacts: dict[str, dict[str, Any]]) -> dict[str, Any]:
         }
     ]
     last_progress = max(progress_times).isoformat() if progress_times else None
+    lifecycle_state = _lifecycle_state_from_metrics_fragment(artifacts)
+    blocked_or_open = (
+        _remaining_blocker_count(artifacts) > 0
+        or _failed_gate_count(artifacts) > 0
+        or lifecycle_state
+        in {"repair_required", "repair_rerun_requested", "git_review_active", "blocked"}
+    )
+    phase_timeline = _phase_timeline(artifacts)
+    phase_dwell = _phase_dwell_seconds(
+        phase_timeline,
+        lifecycle_state=lifecycle_state,
+        blocked_or_open=blocked_or_open,
+    )
+    timeline = {f"{phase}_at": timestamp.isoformat() for phase, timestamp in phase_timeline}
+    if last_progress:
+        timeline["last_progress_at"] = last_progress
     return {
         "time_to_first_candidate_seconds": _seconds_between(intake_time, candidate_time),
         "time_to_first_materialization_seconds": _seconds_between(
@@ -748,13 +1004,15 @@ def _temporal_metrics(artifacts: dict[str, dict[str, Any]]) -> dict[str, Any]:
             materialization_time,
         ),
         "time_to_approval_ready_seconds": _seconds_between(intake_time, approval_ready_time),
-        "phase_dwell_seconds": {},
+        "phase_dwell_seconds": phase_dwell,
         "no_progress_rerun_count": 1
         if artifacts.get("rerun_materialization")
         and _summary_int(artifacts, "rerun_materialization", "removed_gap_count") == 0
         else 0,
         "last_progress_at": last_progress,
-        "stalled_phase": None,
+        "stalled_phase": _stalled_phase(phase_dwell, lifecycle_state),
+        "temporal_clock_source": "artifact_generated_at_or_event_timestamp",
+        "timeline": timeline,
     }
 
 
@@ -1177,6 +1435,118 @@ def _derived_state(
     }
 
 
+def _summary_projection(metrics: dict[str, Any], derived_state: dict[str, Any]) -> dict[str, Any]:
+    summary: dict[str, Any] = {}
+    for key in SUMMARY_METRIC_KEYS:
+        if key == "lifecycle_state":
+            summary[key] = derived_state["lifecycle_state"]
+        else:
+            summary[key] = metrics.get(key)
+    ontology_initial = _int(summary.get("ontology_gap_count_initial"))
+    ontology_resolved = min(_int(summary.get("ontology_gap_resolved_count")), ontology_initial)
+    ontology_unresolved = min(
+        _int(summary.get("ontology_gap_unresolved_count")),
+        max(ontology_initial - ontology_resolved, 0),
+    )
+    candidate_initial = _int(summary.get("candidate_gap_count_initial"))
+    candidate_resolved = min(_int(summary.get("candidate_gap_resolved_count")), candidate_initial)
+    candidate_unresolved = min(
+        _int(summary.get("candidate_gap_unresolved_count")),
+        max(candidate_initial - candidate_resolved, 0),
+    )
+    summary.update(
+        {
+            "ontology_gap_resolved_count": ontology_resolved,
+            "ontology_gap_unresolved_count": ontology_unresolved,
+            "ontology_gap_resolution_rate": _rate(ontology_resolved, ontology_initial),
+            "candidate_gap_resolved_count": candidate_resolved,
+            "candidate_gap_unresolved_count": candidate_unresolved,
+            "candidate_gap_closure_rate": _rate(candidate_resolved, candidate_initial),
+        }
+    )
+    return summary
+
+
+def _metric_groups(metrics: dict[str, Any]) -> dict[str, Any]:
+    return {
+        "clarification_load": {
+            "clarification_question_count": metrics["clarification_question_count"],
+            "blocking_question_count": metrics["blocking_question_count"],
+            "review_required_question_count": metrics["review_required_question_count"],
+        },
+        "answer_materialization": {
+            "answered_question_count": metrics["answered_question_count"],
+            "accepted_answer_count": metrics["accepted_answer_count"],
+            "deferred_answer_count": metrics["deferred_answer_count"],
+            "invalid_answer_count": metrics["invalid_answer_count"],
+            "materialized_answer_count": metrics["materialized_answer_count"],
+            "unmaterialized_answer_count": metrics["unmaterialized_answer_count"],
+            "answer_materialization_rate": metrics["answer_materialization_rate"],
+            "stale_answer_count": metrics["stale_answer_count"],
+        },
+        "ontology_grounding": {
+            "ontology_gap_count_initial": metrics["ontology_gap_count_initial"],
+            "ontology_gap_resolved_count": metrics["ontology_gap_resolved_count"],
+            "ontology_gap_unresolved_count": metrics["ontology_gap_unresolved_count"],
+            "ontology_gap_resolution_rate": metrics["ontology_gap_resolution_rate"],
+            "ontology_project_local_term_count": metrics["ontology_project_local_term_count"],
+            "ontology_rejected_term_count": metrics["ontology_rejected_term_count"],
+            "ontology_deferred_term_count": metrics["ontology_deferred_term_count"],
+            "ontology_match_kind_counts": metrics["ontology_match_kind_counts"],
+        },
+        "candidate_repair": {
+            "candidate_gap_count_initial": metrics["candidate_gap_count_initial"],
+            "candidate_gap_resolved_count": metrics["candidate_gap_resolved_count"],
+            "candidate_gap_unresolved_count": metrics["candidate_gap_unresolved_count"],
+            "candidate_gap_closure_rate": metrics["candidate_gap_closure_rate"],
+            "candidate_resolution_kind_counts": metrics["candidate_resolution_kind_counts"],
+            "risk_accepted_count": metrics["risk_accepted_count"],
+            "enforcement_mechanism_added_count": metrics["enforcement_mechanism_added_count"],
+            "context_supplied_count": metrics["context_supplied_count"],
+            "remaining_blocker_count": metrics["remaining_blocker_count"],
+        },
+        "workflow_friction": {
+            "manual_handoff_count": metrics["manual_handoff_count"],
+            "operator_command_count": metrics["operator_command_count"],
+            "failed_gate_count": metrics["failed_gate_count"],
+            "stale_ref_count": metrics["stale_ref_count"],
+            "dry_run_count": metrics["dry_run_count"],
+            "rerun_count": metrics["rerun_count"],
+            "rerun_request_count": metrics["rerun_request_count"],
+            "approval_attempt_count": metrics["approval_attempt_count"],
+        },
+        "temporal_progress": {
+            "time_to_first_candidate_seconds": metrics["time_to_first_candidate_seconds"],
+            "time_to_first_materialization_seconds": metrics[
+                "time_to_first_materialization_seconds"
+            ],
+            "time_to_approval_ready_seconds": metrics["time_to_approval_ready_seconds"],
+            "last_progress_at": metrics["last_progress_at"],
+            "stalled_phase": metrics["stalled_phase"],
+            "phase_dwell_seconds": metrics["phase_dwell_seconds"],
+            "no_progress_rerun_count": metrics["no_progress_rerun_count"],
+            "temporal_clock_source": metrics["temporal_clock_source"],
+        },
+        "promotion_readiness": {
+            "candidate_approval_state": metrics["candidate_approval_state"],
+            "candidate_approval_intent_state": metrics["candidate_approval_intent_state"],
+            "candidate_approval_decision_state": metrics["candidate_approval_decision_state"],
+            "platform_promotion_state": metrics["platform_promotion_state"],
+            "promotion_path_count": metrics["promotion_path_count"],
+            "promotion_request_state": metrics["promotion_request_state"],
+            "promotion_execution_state": metrics["promotion_execution_state"],
+        },
+        "review_publication": {
+            "review_status": metrics["review_status"],
+            "review_pr_number": metrics["review_pr_number"],
+            "review_merge_commit_sha": metrics["review_merge_commit_sha"],
+            "read_model_publication_state": metrics["read_model_publication_state"],
+            "published_file_count": metrics["published_file_count"],
+            "published_manifest_digest": metrics["published_manifest_digest"],
+        },
+    }
+
+
 def build_idea_maturity_metrics_report(
     *,
     paths: dict[str, Path],
@@ -1215,6 +1585,7 @@ def build_idea_maturity_metrics_report(
         for source in source_artifacts.values()
         if source.get("status") == "loaded" and source.get("source_ref")
     ]
+    summary = _summary_projection(metrics, derived_state)
     return {
         "artifact_kind": "idea_maturity_metrics_report",
         "schema_version": SCHEMA_VERSION,
@@ -1223,31 +1594,27 @@ def build_idea_maturity_metrics_report(
         "metric_pack_id": METRIC_PACK_ID,
         "metric_pack_ref": METRIC_PACK_REF,
         "metrics_rfc_ref": METRICS_RFC_REF,
+        "authority_state": AUTHORITY_STATE,
         "generated_at": _now_iso(),
         "status": status,
         "candidate": _candidate_identity(artifacts),
-        "source_refs": source_refs,
-        "source_artifacts": source_artifacts,
+        "source_artifacts": source_refs,
+        "source_artifact_details": source_artifacts,
         "authority_boundary": _authority_boundary(),
         "privacy_boundary": _privacy_boundary(),
+        "summary": summary,
+        "groups": _metric_groups(metrics),
+        "timeline": _dict(metrics.get("timeline")),
         "metrics": metrics,
         "derived_state": derived_state,
         "policy_findings": policy_findings,
         "invariant_findings": invariant_findings,
         "findings": findings,
-        "summary": {
+        "specgraph_summary": {
             "status": status,
-            "metric_pack_id": METRIC_PACK_ID,
-            "candidate_id": _candidate_identity(artifacts).get("candidate_id"),
-            "lifecycle_state": derived_state["lifecycle_state"],
             "finding_count": len(findings),
             "policy_finding_count": len(policy_findings),
             "invariant_finding_count": len(invariant_findings),
-            "candidate_approval_state": metrics["candidate_approval_state"],
-            "platform_promotion_state": metrics["platform_promotion_state"],
-            "remaining_blocker_count": metrics["remaining_blocker_count"],
-            "ontology_gap_unresolved_count": metrics["ontology_gap_unresolved_count"],
-            "candidate_gap_unresolved_count": metrics["candidate_gap_unresolved_count"],
         },
         "canonical_mutations_allowed": False,
         "tracked_artifacts_written": False,

@@ -421,8 +421,13 @@ def test_idea_maturity_metrics_report_builds_approval_ready_metrics(tmp_path: Pa
     assert report["proposal_id"] == "0178"
     assert report["contract_ref"] == "specgraph.idea-to-spec.maturity-metrics-report.v0.1"
     assert report["metric_pack_id"] == "idea_to_spec_maturity"
+    assert report["authority_state"] == "draft_reference"
     assert report["status"] == "ready"
     assert report["derived_state"]["lifecycle_state"] == "approval_ready"
+    assert report["summary"]["lifecycle_state"] == "approval_ready"
+    assert "candidate_id" not in report["summary"]
+    assert "status" not in report["summary"]
+    assert "display_name" not in report["candidate"]
     metrics = report["metrics"]
     assert metrics["clarification_question_count"] == 2
     assert metrics["accepted_answer_count"] == 2
@@ -431,14 +436,21 @@ def test_idea_maturity_metrics_report_builds_approval_ready_metrics(tmp_path: Pa
     assert metrics["ontology_gap_count_initial"] == 1
     assert metrics["ontology_gap_resolved_count"] == 1
     assert metrics["ontology_match_kind_counts"]["exact"] == 1
+    assert report["groups"]["ontology_grounding"]["ontology_match_kind_counts"]["exact"] == 1
     assert metrics["candidate_gap_count_initial"] == 1
     assert metrics["candidate_gap_resolved_count"] == 1
     assert metrics["candidate_resolution_kind_counts"]["risk_accepted"] == 1
+    assert (
+        report["groups"]["candidate_repair"]["candidate_resolution_kind_counts"]["risk_accepted"]
+        == 1
+    )
     assert metrics["candidate_approval_state"] == "ready"
     assert metrics["platform_promotion_state"] == "not_reached"
     assert metrics["promotion_path_count"] == 1
     assert report["authority_boundary"] == authority_boundary()
     assert report["privacy_boundary"]["join_to_identity_allowed"] is False
+    assert isinstance(report["source_artifacts"], list)
+    assert "source_artifact_details" in report
 
 
 def test_idea_maturity_metrics_report_preserves_zero_denominator_rates(
@@ -593,6 +605,117 @@ def test_idea_maturity_metrics_make_target_threads_paths(tmp_path: Path) -> None
     assert result.returncode == 0, result.stderr
     report = load_json(output)
     assert report["status"] == "ready"
-    assert report["source_artifacts"]["candidate_graph"]["source_ref"] == str(
+    assert report["source_artifact_details"]["candidate_graph"]["source_ref"] == str(
         paths["candidate_graph"]
     )
+
+
+def test_idea_maturity_metrics_report_counts_materialized_request_once(
+    tmp_path: Path,
+) -> None:
+    paths = write_ready_chain(tmp_path / "combined")
+    answers = load_json(paths["clarification_answers"])
+    answers["answers"] = [
+        {
+            "request_id": "clarification.combined",
+            "answer_kind": "provide_candidate_context",
+            "status": "accepted_for_candidate",
+        }
+    ]
+    answers["summary"]["answer_count"] = 1
+    answers["summary"]["accepted_answer_count"] = 1
+    write_json(paths["clarification_answers"], answers)
+    materialization = load_json(paths["rerun_materialization"])
+    delta = materialization["materialization_preview"]["delta"]
+    delta["ontology_resolution_records"][0]["request_id"] = "clarification.combined"
+    delta["candidate_resolution_records"][0]["request_id"] = "clarification.combined"
+    write_json(paths["rerun_materialization"], materialization)
+
+    report = build_report(paths)
+
+    assert report["metrics"]["accepted_answer_count"] == 1
+    assert report["metrics"]["materialized_answer_count"] == 1
+    assert report["summary"]["materialized_answer_count"] == 1
+    assert report["summary"]["answer_materialization_rate"] == 1.0
+
+
+def test_idea_maturity_metrics_report_uses_structured_stale_findings_only(
+    tmp_path: Path,
+) -> None:
+    paths = write_ready_chain(tmp_path / "structured-stale")
+    answers = load_json(paths["clarification_answers"])
+    answers["findings"] = [
+        {
+            "finding_id": "informational_note",
+            "severity": "low",
+            "message": "no stale refs detected in this section",
+        },
+        {
+            "finding_id": "clarification_answers_source_ref_stale",
+            "severity": "medium",
+            "message": "source ref is stale",
+        },
+        {
+            "code": "stale_answer_ref",
+            "severity": "medium",
+            "message": "answer was superseded",
+        },
+    ]
+    write_json(paths["clarification_answers"], answers)
+
+    report = build_report(paths)
+
+    assert report["metrics"]["stale_ref_count"] == 1
+    assert report["metrics"]["stale_answer_count"] == 1
+
+
+def test_idea_maturity_metrics_report_computes_stalled_phase(tmp_path: Path) -> None:
+    paths = base_paths(tmp_path / "stalled")
+    old = "2026-06-20T10:00:00+00:00"
+    write_json(
+        paths["intake"],
+        {
+            "artifact_kind": "idea_event_storming_intake",
+            "generated_at": old,
+            "source_intake": {
+                "workspace": {
+                    "candidate_id": "local-subscription-control",
+                    "public_route": "/local-subscription-control",
+                }
+            },
+            "summary": {"status": "ready_for_candidate_graph"},
+        },
+    )
+    write_json(
+        paths["candidate_graph"],
+        {
+            "artifact_kind": "candidate_spec_graph",
+            "generated_at": old,
+            "nodes": [
+                {
+                    "id": "candidate-spec.product-boundary",
+                    "gaps": [{"id": "gap.local-risk", "kind": "risk_requires_review"}],
+                }
+            ],
+            "summary": {"node_count": 1, "gap_count": 1},
+        },
+    )
+    write_json(
+        paths["clarification_requests"],
+        {
+            "artifact_kind": "idea_to_spec_clarification_requests",
+            "generated_at": old,
+            "summary": {
+                "request_count": 1,
+                "blocking_request_count": 1,
+                "review_required_request_count": 0,
+            },
+            "readiness": {"ready": False, "blocked_by": ["gap.local-risk"]},
+        },
+    )
+
+    report = build_report(paths)
+
+    assert report["status"] == "blocked"
+    assert report["summary"]["stalled_phase"] == "repair_required"
+    assert report["groups"]["temporal_progress"]["phase_dwell_seconds"]["repair_required"] >= 86_400
