@@ -887,13 +887,36 @@ the surfaces SpecSpace needs for the `Idea maturity` panel.
 
 The next slices for this line are:
 
-1. **Platform awareness.** Let Platform use the report as an explanatory
+1. **Readiness explainers.** Add typed, public-safe `readiness_explainers` to
+   the maturity report so downstream tools can show why a candidate is blocked
+   without turning maturity into a single score.
+2. **Platform awareness.** Let Platform use the report as an explanatory
    preflight signal before promotion. It must not become the promotion
    authority; concrete handoff artifacts and existing gates remain the source
    of branch/commit/PR readiness.
-2. **Demo pass.** Re-run the `local-subscription-control` pilot through the
+3. **Demo pass.** Re-run the `local-subscription-control` pilot through the
    product lane and verify that SpecSpace shows a compact maturity dashboard in
    addition to repair and promotion artifacts.
+
+### 21F. Idea Maturity Readiness Explainers
+
+Status: implemented in proposal `0180`.
+
+Proposal `0180` extends `runs/idea_maturity_metrics_report.json` with typed
+`readiness_explainers`. Each explainer identifies a concrete blocker source,
+such as a Pre-SIB finding, repair-session blocker, promotion-gate blocker,
+stale ref, policy failure, or invariant failure. Explainers include a stable
+`kind`, affected lifecycle `blocks`, public-safe `evidence_refs`, and a
+`next_action` for SpecSpace and Platform operators.
+
+The report now reads the current Pre-SIB surfaces as maturity inputs. Repaired
+Pre-SIB artifacts supersede original Pre-SIB blockers when present, so the
+report describes the current repaired candidate instead of reviving old
+pre-repair findings.
+
+This remains observability-only. Explainers do not approve candidates, promote
+branches, mutate canonical specs, write Ontology packages, accept ontology
+terms, or replace the concrete repair/approval/promotion gates.
 
 ### 22. Decision-Backed Repair Chain Target
 

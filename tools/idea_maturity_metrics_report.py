@@ -13,6 +13,7 @@ from typing import Any
 
 ROOT = Path(__file__).resolve().parents[1]
 PROPOSAL_ID = "0178"
+READINESS_EXPLAINERS_PROPOSAL_ID = "0180"
 SCHEMA_VERSION = 1
 CONTRACT_REF = "specgraph.idea-to-spec.maturity-metrics-report.v0.1"
 METRIC_PACK_ID = "idea_to_spec_maturity"
@@ -24,14 +25,18 @@ STALL_DWELL_SECONDS = 86_400
 DEFAULT_PATHS = {
     "intake": ROOT / "runs" / "idea_event_storming_intake.json",
     "candidate_graph": ROOT / "runs" / "candidate_spec_graph.json",
+    "pre_sib": ROOT / "runs" / "pre_sib_coherence_report.json",
     "clarification_requests": ROOT / "runs" / "idea_to_spec_clarification_requests.json",
     "clarification_answers": ROOT / "runs" / "idea_to_spec_clarification_answers.json",
     "ontology_decisions": ROOT / "runs" / "product_ontology_gap_review_decisions.json",
     "rerun_input": ROOT / "runs" / "idea_to_spec_answer_rerun_input.json",
     "rerun_preview": ROOT / "runs" / "idea_to_spec_rerun_preview.json",
     "rerun_materialization": ROOT / "runs" / "idea_to_spec_rerun_materialization.json",
+    "promotion_gate": ROOT / "runs" / "idea_to_spec_promotion_gate.json",
+    "repair_session": ROOT / "runs" / "idea_to_spec_repair_session.json",
     "repaired_handoff": ROOT / "runs" / "repaired_candidate_promotion_handoff_report.json",
     "repaired_candidate_graph": ROOT / "runs" / "repaired_candidate_spec_graph.json",
+    "repaired_pre_sib": ROOT / "runs" / "repaired_pre_sib_coherence_report.json",
     "repaired_active_candidate": ROOT / "runs" / "repaired_active_idea_to_spec_candidate.json",
     "repaired_promotion_gate": ROOT / "runs" / "repaired_idea_to_spec_promotion_gate.json",
     "repaired_repair_session": ROOT / "runs" / "repaired_idea_to_spec_repair_session.json",
@@ -110,6 +115,14 @@ PLATFORM_REPORT_KEYS = {
     "review_status",
     "read_model_publication",
 }
+
+SUPERSEDED_REPORT_KEYS = {
+    "pre_sib": "repaired_pre_sib",
+    "promotion_gate": "repaired_promotion_gate",
+    "repair_session": "repaired_repair_session",
+}
+
+READINESS_EXPLAINER_LIMIT = 32
 
 SUMMARY_METRIC_KEYS = (
     "lifecycle_state",
@@ -203,6 +216,19 @@ def _list(value: Any) -> list[Any]:
 
 def _text(value: Any, default: str = "") -> str:
     return value.strip() if isinstance(value, str) and value.strip() else default
+
+
+def _text_list(value: Any) -> list[str]:
+    if isinstance(value, str) and value.strip():
+        return [value.strip()]
+    if not isinstance(value, list):
+        return []
+    return [item.strip() for item in value if isinstance(item, str) and item.strip()]
+
+
+def _slug(value: str) -> str:
+    slug = re.sub(r"[^a-z0-9]+", "-", value.lower()).strip("-")
+    return slug[:96] or "unknown"
 
 
 def _tokenize(value: str) -> set[str]:
@@ -811,6 +837,9 @@ def _stale_answer_count(artifacts: dict[str, dict[str, Any]]) -> int:
 def _failed_gate_count(artifacts: dict[str, dict[str, Any]]) -> int:
     failed_or_blocked_artifacts: set[str] = set()
     for key, artifact in artifacts.items():
+        superseding_key = SUPERSEDED_REPORT_KEYS.get(key)
+        if superseding_key and superseding_key in artifacts:
+            continue
         readiness = _dict(artifact.get("readiness"))
         summary = _dict(artifact.get("summary"))
         status = (
@@ -1417,6 +1446,320 @@ def _invariant_findings(metrics: dict[str, Any]) -> list[dict[str, Any]]:
     return findings
 
 
+def _path_evidence_ref(paths: dict[str, Path], key: str, fragment: str | None = None) -> str | None:
+    if key not in paths:
+        return None
+    source_ref = _relative_ref(paths[key])
+    if not source_ref:
+        return None
+    return f"{source_ref}#{fragment}" if fragment else source_ref
+
+
+def _selected_artifact_key(
+    artifacts: dict[str, dict[str, Any]],
+    *,
+    preferred: str,
+    fallback: str,
+) -> str | None:
+    if artifacts.get(preferred):
+        return preferred
+    if artifacts.get(fallback):
+        return fallback
+    return None
+
+
+def _readiness_explainer(
+    *,
+    explainer_id: str,
+    kind: str,
+    source: str,
+    severity: str,
+    blocks: list[str],
+    message: str,
+    next_action: str,
+    evidence_refs: list[str | None] | None = None,
+    evidence: dict[str, Any] | None = None,
+) -> dict[str, Any]:
+    return {
+        "id": f"readiness-explainer.{_slug(explainer_id)}",
+        "proposal_id": READINESS_EXPLAINERS_PROPOSAL_ID,
+        "kind": kind,
+        "source": source,
+        "severity": severity,
+        "blocks": [block for block in blocks if block],
+        "message": message,
+        "next_action": next_action,
+        "evidence_refs": [ref for ref in evidence_refs or [] if ref],
+        "evidence": _public_safe(evidence or {}),
+    }
+
+
+def _dedupe_explainers(explainers: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    deduped: list[dict[str, Any]] = []
+    seen: set[str] = set()
+    for explainer in explainers:
+        explainer_id = _text(explainer.get("id"))
+        if not explainer_id or explainer_id in seen:
+            continue
+        seen.add(explainer_id)
+        deduped.append(explainer)
+        if len(deduped) >= READINESS_EXPLAINER_LIMIT:
+            break
+    return deduped
+
+
+def _finding_fragment(finding: dict[str, Any], *, collection: str) -> str:
+    finding_id = (
+        _text(finding.get("finding_id"))
+        or _text(finding.get("code"))
+        or _text(finding.get("kind"))
+        or "finding"
+    )
+    return f"{collection}.{_slug(finding_id)}"
+
+
+def _pre_sib_readiness_explainers(
+    artifacts: dict[str, dict[str, Any]],
+    paths: dict[str, Path],
+) -> list[dict[str, Any]]:
+    selected_key = _selected_artifact_key(
+        artifacts,
+        preferred="repaired_pre_sib",
+        fallback="pre_sib",
+    )
+    if selected_key is None:
+        return []
+    pre_sib = _dict(artifacts.get(selected_key))
+    readiness = _dict(pre_sib.get("readiness"))
+    findings = [
+        item
+        for item in [*_list(pre_sib.get("findings")), *_list(pre_sib.get("warnings"))]
+        if isinstance(item, dict)
+    ]
+    explainers: list[dict[str, Any]] = []
+    for finding in findings:
+        finding_id = (
+            _text(finding.get("finding_id"))
+            or _text(finding.get("code"))
+            or _text(finding.get("kind"))
+            or "pre_sib_finding"
+        )
+        severity = _text(finding.get("severity"), "review_required")
+        message = _text(
+            finding.get("message"),
+            "Pre-SIB coherence finding remains unresolved.",
+        )
+        explainers.append(
+            _readiness_explainer(
+                explainer_id=f"pre-sib-{finding_id}",
+                kind="pre_sib_finding",
+                source=selected_key,
+                severity=severity,
+                blocks=["pre_sib_review", "candidate_approval"],
+                message=message,
+                next_action=(
+                    "Inspect Pre-SIB coherence findings and close the referenced "
+                    "candidate graph condition."
+                ),
+                evidence_refs=[
+                    _path_evidence_ref(
+                        paths,
+                        selected_key,
+                        _finding_fragment(finding, collection="findings"),
+                    )
+                ],
+                evidence={
+                    "finding_id": finding_id,
+                    "review_state": readiness.get("review_state"),
+                },
+            )
+        )
+    for blocker in _text_list(readiness.get("blocked_by")):
+        explainers.append(
+            _readiness_explainer(
+                explainer_id=f"pre-sib-blocker-{blocker}",
+                kind="pre_sib_blocker",
+                source=selected_key,
+                severity="blocking",
+                blocks=["pre_sib_review", "candidate_approval"],
+                message=f"Pre-SIB readiness is blocked by {blocker}.",
+                next_action=(
+                    "Review the Pre-SIB report and run the repair loop after the "
+                    "blocker is resolved."
+                ),
+                evidence_refs=[_path_evidence_ref(paths, selected_key, "readiness.blocked_by")],
+                evidence={"blocked_by": blocker, "review_state": readiness.get("review_state")},
+            )
+        )
+    return explainers
+
+
+def _repair_session_readiness_explainers(
+    artifacts: dict[str, dict[str, Any]],
+    paths: dict[str, Path],
+) -> list[dict[str, Any]]:
+    selected_key = _selected_artifact_key(
+        artifacts,
+        preferred="repaired_repair_session",
+        fallback="repair_session",
+    )
+    if selected_key is None:
+        return []
+    session = _dict(artifacts.get(selected_key))
+    readiness = _dict(session.get("readiness"))
+    readiness_impact = _dict(session.get("readiness_impact"))
+    explainers: list[dict[str, Any]] = []
+    for blocker in _text_list(readiness_impact.get("blocked_by")) + _text_list(
+        readiness.get("blocked_by")
+    ):
+        explainers.append(
+            _readiness_explainer(
+                explainer_id=f"repair-session-{blocker}",
+                kind="repair_session_blocker",
+                source=selected_key,
+                severity="blocking",
+                blocks=["candidate_approval"],
+                message=f"Candidate approval is blocked by repair-session condition {blocker}.",
+                next_action=(
+                    "Inspect the repair session journal, answer the referenced request, "
+                    "and rerun the candidate repair preview."
+                ),
+                evidence_refs=[
+                    _path_evidence_ref(
+                        paths,
+                        selected_key,
+                        "readiness_impact.blocked_by",
+                    )
+                ],
+                evidence={"blocked_by": blocker},
+            )
+        )
+    for blocker in _text_list(readiness_impact.get("platform_promotion_blocked_by")):
+        explainers.append(
+            _readiness_explainer(
+                explainer_id=f"repair-session-platform-{blocker}",
+                kind="platform_promotion_blocker",
+                source=selected_key,
+                severity="blocking",
+                blocks=["platform_promotion"],
+                message=f"Platform promotion is blocked by repair-session condition {blocker}.",
+                next_action=(
+                    "Complete candidate approval and Platform handoff prerequisites "
+                    "before promotion."
+                ),
+                evidence_refs=[
+                    _path_evidence_ref(
+                        paths,
+                        selected_key,
+                        "readiness_impact.platform_promotion_blocked_by",
+                    )
+                ],
+                evidence={"blocked_by": blocker},
+            )
+        )
+    return explainers
+
+
+def _promotion_gate_readiness_explainers(
+    artifacts: dict[str, dict[str, Any]],
+    paths: dict[str, Path],
+) -> list[dict[str, Any]]:
+    selected_key = _selected_artifact_key(
+        artifacts,
+        preferred="repaired_promotion_gate",
+        fallback="promotion_gate",
+    )
+    if selected_key is None:
+        return []
+    gate = _dict(artifacts.get(selected_key))
+    readiness = _dict(gate.get("readiness"))
+    explainers: list[dict[str, Any]] = []
+    for blocker in _text_list(readiness.get("blocked_by")):
+        explainers.append(
+            _readiness_explainer(
+                explainer_id=f"promotion-gate-{blocker}",
+                kind="promotion_gate_blocker",
+                source=selected_key,
+                severity="blocking",
+                blocks=["platform_promotion"],
+                message=f"Promotion gate is blocked by {blocker}.",
+                next_action=(
+                    "Inspect the promotion gate report and repair the selected "
+                    "promotion path or source artifact."
+                ),
+                evidence_refs=[_path_evidence_ref(paths, selected_key, "readiness.blocked_by")],
+                evidence={"blocked_by": blocker, "review_state": readiness.get("review_state")},
+            )
+        )
+    return explainers
+
+
+def _finding_readiness_explainers(
+    findings: list[dict[str, Any]],
+    *,
+    collection: str,
+) -> list[dict[str, Any]]:
+    explainers: list[dict[str, Any]] = []
+    for finding in findings:
+        finding_id = _text(finding.get("finding_id"), "finding")
+        severity = _text(finding.get("severity"), "review_required")
+        if severity not in {"high", "medium", "blocking", "review_required"}:
+            continue
+        if finding_id.startswith("invariant_"):
+            kind = "invariant_failure"
+            blocks = ["metrics_validation", "candidate_approval"]
+            next_action = (
+                "Fix the inconsistent maturity metric inputs and rerun the Metrics "
+                "validation target."
+            )
+        elif "stale" in _tokenize(finding_id) or "source" in _tokenize(finding_id):
+            kind = "stale_ref"
+            blocks = ["candidate_approval", "platform_promotion"]
+            next_action = (
+                "Refresh the stale source artifact chain before using maturity "
+                "telemetry for review."
+            )
+        else:
+            kind = "policy_failure"
+            blocks = ["candidate_approval", "platform_promotion"]
+            next_action = (
+                "Inspect the policy finding evidence and complete the missing lifecycle handoff."
+            )
+        explainers.append(
+            _readiness_explainer(
+                explainer_id=f"{collection}-{finding_id}",
+                kind=kind,
+                source=f"idea_maturity_metrics_report.{collection}",
+                severity=severity,
+                blocks=blocks,
+                message=_text(finding.get("message"), "Maturity report finding blocks readiness."),
+                next_action=next_action,
+                evidence_refs=[
+                    f"runs/idea_maturity_metrics_report.json#{collection}.{_slug(finding_id)}"
+                ],
+                evidence=_dict(finding.get("evidence")),
+            )
+        )
+    return explainers
+
+
+def _readiness_explainers(
+    artifacts: dict[str, dict[str, Any]],
+    paths: dict[str, Path],
+    *,
+    policy_findings: list[dict[str, Any]],
+    invariant_findings: list[dict[str, Any]],
+) -> list[dict[str, Any]]:
+    explainers = [
+        *_pre_sib_readiness_explainers(artifacts, paths),
+        *_repair_session_readiness_explainers(artifacts, paths),
+        *_promotion_gate_readiness_explainers(artifacts, paths),
+        *_finding_readiness_explainers(policy_findings, collection="policy_findings"),
+        *_finding_readiness_explainers(invariant_findings, collection="invariant_findings"),
+    ]
+    return _dedupe_explainers(explainers)
+
+
 def _derived_state(
     metrics: dict[str, Any], policy_findings: list[dict[str, Any]]
 ) -> dict[str, Any]:
@@ -1592,6 +1935,12 @@ def build_idea_maturity_metrics_report(
     policy_findings = _policy_findings(artifacts, metrics, source_ref_findings)
     invariant_findings = _invariant_findings(metrics)
     findings = [*policy_findings, *invariant_findings]
+    readiness_explainers = _readiness_explainers(
+        artifacts,
+        paths,
+        policy_findings=policy_findings,
+        invariant_findings=invariant_findings,
+    )
     loaded_required = any(
         key in artifacts
         for key in (
@@ -1647,12 +1996,14 @@ def build_idea_maturity_metrics_report(
         "timeline": _dict(metrics.get("timeline")),
         "metrics": metrics,
         "derived_state": derived_state,
+        "readiness_explainers": readiness_explainers,
         "policy_findings": policy_findings,
         "invariant_findings": invariant_findings,
         "findings": findings,
         "specgraph_summary": {
             "status": status,
             "finding_count": len(findings),
+            "readiness_explainer_count": len(readiness_explainers),
             "policy_finding_count": len(policy_findings),
             "invariant_finding_count": len(invariant_findings),
         },

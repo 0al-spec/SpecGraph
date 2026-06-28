@@ -2312,5 +2312,18 @@
     "required_provenance_links": [
       "source_draft_ref"
     ]
+  },
+  {
+    "proposal_id": "0180",
+    "source_artifact_class": "working_draft",
+    "source_refs": [
+      "docs/archive/proposal_sources/0180_idea_maturity_readiness_explainers.md"
+    ],
+    "motivating_concern": "Idea Maturity reports expose lifecycle metrics and findings, but downstream operators still need to infer why a candidate is blocked by reading multiple Pre-SIB, repair-session, and promotion artifacts.",
+    "normalized_title": "Idea Maturity Readiness Explainers",
+    "bounded_scope": "Add public-safe, read-only readiness_explainers to idea_maturity_metrics_report, extend maturity inputs with current Pre-SIB and repaired Pre-SIB surfaces, add tests, proposal docs, roadmap, DocC, README, and registry tracking so SpecSpace and Platform can explain concrete readiness blockers without changing the Metrics-owned schema authority, executing prompt agents, mutating candidate or canonical specs, writing Ontology packages or lockfiles, accepting ontology terms, approving candidates, creating Git branches or commits, opening pull requests, merging pull requests, publishing read models, or adding SpecSpace mutation authority.",
+    "required_provenance_links": [
+      "source_draft_ref"
+    ]
   }
 ]

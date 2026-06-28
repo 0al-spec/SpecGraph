@@ -51,14 +51,18 @@ def base_paths(run_dir: Path) -> dict[str, Path]:
     return {
         "intake": run_dir / "idea_event_storming_intake.json",
         "candidate_graph": run_dir / "candidate_spec_graph.json",
+        "pre_sib": run_dir / "pre_sib_coherence_report.json",
         "clarification_requests": run_dir / "idea_to_spec_clarification_requests.json",
         "clarification_answers": run_dir / "idea_to_spec_clarification_answers.json",
         "ontology_decisions": run_dir / "product_ontology_gap_review_decisions.json",
         "rerun_input": run_dir / "idea_to_spec_answer_rerun_input.json",
         "rerun_preview": run_dir / "idea_to_spec_rerun_preview.json",
         "rerun_materialization": run_dir / "idea_to_spec_rerun_materialization.json",
+        "promotion_gate": run_dir / "idea_to_spec_promotion_gate.json",
+        "repair_session": run_dir / "idea_to_spec_repair_session.json",
         "repaired_handoff": run_dir / "repaired_candidate_promotion_handoff_report.json",
         "repaired_candidate_graph": run_dir / "repaired_candidate_spec_graph.json",
+        "repaired_pre_sib": run_dir / "repaired_pre_sib_coherence_report.json",
         "repaired_active_candidate": run_dir / "repaired_active_idea_to_spec_candidate.json",
         "repaired_promotion_gate": run_dir / "repaired_idea_to_spec_promotion_gate.json",
         "repaired_repair_session": run_dir / "repaired_idea_to_spec_repair_session.json",
@@ -115,6 +119,23 @@ def write_ready_chain(run_dir: Path, *, stale_rerun_ref: bool = False) -> dict[s
                 }
             ],
             "summary": {"node_count": 1, "gap_count": 2, "status": "ready_for_pre_sib"},
+            "authority_boundary": authority_boundary(),
+        },
+    )
+    write_json(
+        paths["pre_sib"],
+        {
+            "artifact_kind": "pre_sib_coherence_report",
+            "contract_ref": "specgraph.idea-to-spec.pre-sib-coherence-report.v0.1",
+            "schema_version": 1,
+            "generated_at": "2026-06-28T10:01:30+00:00",
+            "metrics": {
+                "node_count": 1,
+                "gap_count": 2,
+            },
+            "findings": [],
+            "warnings": [],
+            "readiness": {"ready": True, "review_state": "pre_sib_ready"},
             "authority_boundary": authority_boundary(),
         },
     )
@@ -298,6 +319,23 @@ def write_ready_chain(run_dir: Path, *, stale_rerun_ref: bool = False) -> dict[s
         },
     )
     write_json(
+        paths["repaired_pre_sib"],
+        {
+            "artifact_kind": "pre_sib_coherence_report",
+            "contract_ref": "specgraph.idea-to-spec.pre-sib-coherence-report.v0.1",
+            "schema_version": 1,
+            "generated_at": "2026-06-28T10:05:30+00:00",
+            "metrics": {
+                "node_count": 1,
+                "gap_count": 0,
+            },
+            "findings": [],
+            "warnings": [],
+            "readiness": {"ready": True, "review_state": "pre_sib_ready"},
+            "authority_boundary": authority_boundary(),
+        },
+    )
+    write_json(
         paths["repaired_active_candidate"],
         {
             "artifact_kind": "active_idea_to_spec_candidate",
@@ -421,6 +459,8 @@ def tool_args(paths: dict[str, Path], output: Path, *, strict: bool = False) -> 
         str(paths["intake"]),
         "--candidate-graph",
         str(paths["candidate_graph"]),
+        "--pre-sib",
+        str(paths["pre_sib"]),
         "--clarification-requests",
         str(paths["clarification_requests"]),
         "--clarification-answers",
@@ -433,10 +473,16 @@ def tool_args(paths: dict[str, Path], output: Path, *, strict: bool = False) -> 
         str(paths["rerun_preview"]),
         "--rerun-materialization",
         str(paths["rerun_materialization"]),
+        "--promotion-gate",
+        str(paths["promotion_gate"]),
+        "--repair-session",
+        str(paths["repair_session"]),
         "--repaired-handoff",
         str(paths["repaired_handoff"]),
         "--repaired-candidate-graph",
         str(paths["repaired_candidate_graph"]),
+        "--repaired-pre-sib",
+        str(paths["repaired_pre_sib"]),
         "--repaired-active-candidate",
         str(paths["repaired_active_candidate"]),
         "--repaired-promotion-gate",
@@ -492,6 +538,8 @@ def test_idea_maturity_metrics_report_builds_approval_ready_metrics(tmp_path: Pa
     assert report["privacy_boundary"]["join_to_identity_allowed"] is False
     assert isinstance(report["source_artifacts"], list)
     assert "source_artifact_details" in report
+    assert report["readiness_explainers"] == []
+    assert report["specgraph_summary"]["readiness_explainer_count"] == 0
 
 
 def test_idea_maturity_metrics_report_preserves_zero_denominator_rates(
@@ -551,6 +599,111 @@ def test_idea_maturity_metrics_report_flags_stale_source_refs_as_blocked(
     assert "rerun_materialization_rerun_preview_source_ref_stale" in {
         finding["finding_id"] for finding in report["policy_findings"]
     }
+    assert any(
+        explainer["kind"] == "stale_ref"
+        and "candidate_approval" in explainer["blocks"]
+        and explainer["next_action"]
+        for explainer in report["readiness_explainers"]
+    )
+
+
+def test_idea_maturity_metrics_report_emits_pre_sib_readiness_explainers(
+    tmp_path: Path,
+) -> None:
+    paths = write_ready_chain(tmp_path / "pre-sib-blocked")
+    paths["repaired_pre_sib"].unlink()
+    pre_sib = load_json(paths["pre_sib"])
+    pre_sib["findings"] = [
+        {
+            "finding_id": "pre_sib_ontology_coverage_gap",
+            "severity": "high",
+            "message": "Ontology coverage is incomplete for the candidate graph.",
+        }
+    ]
+    pre_sib["readiness"] = {
+        "ready": False,
+        "review_state": "pre_sib_review_required",
+        "blocked_by": ["pre_sib_ontology_coverage_gap"],
+    }
+    write_json(paths["pre_sib"], pre_sib)
+
+    report = build_report(paths)
+
+    explainers = report["readiness_explainers"]
+    pre_sib_explainer = next(item for item in explainers if item["kind"] == "pre_sib_finding")
+    assert pre_sib_explainer["source"] == "pre_sib"
+    assert pre_sib_explainer["severity"] == "high"
+    assert "candidate_approval" in pre_sib_explainer["blocks"]
+    assert pre_sib_explainer["next_action"].startswith("Inspect Pre-SIB")
+    assert pre_sib_explainer["evidence_refs"] == [
+        f"{paths['pre_sib'].as_posix()}#findings.pre-sib-ontology-coverage-gap"
+    ]
+
+
+def test_idea_maturity_metrics_report_uses_repaired_pre_sib_as_current_surface(
+    tmp_path: Path,
+) -> None:
+    paths = write_ready_chain(tmp_path / "repaired-pre-sib")
+    pre_sib = load_json(paths["pre_sib"])
+    pre_sib["findings"] = [
+        {
+            "finding_id": "pre_sib_old_gap",
+            "severity": "high",
+            "message": "Old Pre-SIB gap was present before repair.",
+        }
+    ]
+    pre_sib["readiness"] = {
+        "ready": False,
+        "review_state": "pre_sib_review_required",
+        "blocked_by": ["pre_sib_old_gap"],
+    }
+    write_json(paths["pre_sib"], pre_sib)
+
+    report = build_report(paths)
+
+    assert report["status"] == "ready"
+    assert report["metrics"]["failed_gate_count"] == 0
+    assert report["readiness_explainers"] == []
+
+
+def test_idea_maturity_metrics_report_emits_repair_and_promotion_explainers(
+    tmp_path: Path,
+) -> None:
+    paths = write_ready_chain(tmp_path / "repair-promotion-blocked")
+    repair_session = load_json(paths["repaired_repair_session"])
+    repair_session["readiness_impact"]["ready_for_candidate_approval"] = False
+    repair_session["readiness_impact"]["blocked_by"] = ["repair_context_required"]
+    repair_session["readiness_impact"]["platform_promotion_blocked_by"] = [
+        "candidate_approval_decision_missing"
+    ]
+    repair_session["summary"]["ready_for_candidate_approval"] = False
+    write_json(paths["repaired_repair_session"], repair_session)
+    promotion_gate = load_json(paths["repaired_promotion_gate"])
+    promotion_gate["readiness"] = {
+        "ready": False,
+        "review_state": "promotion_gate_blocked",
+        "blocked_by": ["promotion_path_missing"],
+    }
+    promotion_gate["summary"]["status"] = "promotion_gate_blocked"
+    write_json(paths["repaired_promotion_gate"], promotion_gate)
+
+    report = build_report(paths)
+
+    explainers = report["readiness_explainers"]
+    assert any(
+        item["kind"] == "repair_session_blocker"
+        and item["source"] == "repaired_repair_session"
+        and item["blocks"] == ["candidate_approval"]
+        for item in explainers
+    )
+    assert any(
+        item["kind"] == "platform_promotion_blocker" and item["blocks"] == ["platform_promotion"]
+        for item in explainers
+    )
+    assert any(
+        item["kind"] == "promotion_gate_blocker" and item["source"] == "repaired_promotion_gate"
+        for item in explainers
+    )
 
 
 def test_idea_maturity_metrics_report_strict_fails_on_invariant_violation(
@@ -589,14 +742,18 @@ def test_idea_maturity_metrics_make_target_threads_paths(tmp_path: Path) -> None
         "idea-maturity-metrics",
         f"IDEA_MATURITY_METRICS_INTAKE={paths['intake']}",
         f"IDEA_MATURITY_METRICS_CANDIDATE_GRAPH={paths['candidate_graph']}",
+        f"IDEA_MATURITY_METRICS_PRE_SIB={paths['pre_sib']}",
         f"IDEA_MATURITY_METRICS_CLARIFICATION_REQUESTS={paths['clarification_requests']}",
         f"IDEA_MATURITY_METRICS_CLARIFICATION_ANSWERS={paths['clarification_answers']}",
         f"IDEA_MATURITY_METRICS_ONTOLOGY_DECISIONS={paths['ontology_decisions']}",
         f"IDEA_MATURITY_METRICS_RERUN_INPUT={paths['rerun_input']}",
         f"IDEA_MATURITY_METRICS_RERUN_PREVIEW={paths['rerun_preview']}",
         f"IDEA_MATURITY_METRICS_RERUN_MATERIALIZATION={paths['rerun_materialization']}",
+        f"IDEA_MATURITY_METRICS_PROMOTION_GATE={paths['promotion_gate']}",
+        f"IDEA_MATURITY_METRICS_REPAIR_SESSION={paths['repair_session']}",
         f"IDEA_MATURITY_METRICS_REPAIRED_HANDOFF={paths['repaired_handoff']}",
         f"IDEA_MATURITY_METRICS_REPAIRED_CANDIDATE_GRAPH={paths['repaired_candidate_graph']}",
+        f"IDEA_MATURITY_METRICS_REPAIRED_PRE_SIB={paths['repaired_pre_sib']}",
         f"IDEA_MATURITY_METRICS_REPAIRED_ACTIVE_CANDIDATE={paths['repaired_active_candidate']}",
         f"IDEA_MATURITY_METRICS_REPAIRED_PROMOTION_GATE={paths['repaired_promotion_gate']}",
         f"IDEA_MATURITY_METRICS_REPAIRED_REPAIR_SESSION={paths['repaired_repair_session']}",

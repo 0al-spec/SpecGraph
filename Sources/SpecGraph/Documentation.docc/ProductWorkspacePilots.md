@@ -325,6 +325,14 @@ present. It remains observability-only: no canonical spec mutation, no Ontology
 write, no ontology term acceptance, no prompt-agent execution, no Git action,
 and no read-model publication.
 
+Proposal `0180` adds typed `readiness_explainers` to the same report. These
+explainers identify concrete lifecycle blockers such as Pre-SIB findings,
+repair-session blockers, promotion-gate blockers, stale refs, policy failures,
+and invariant failures. Each explainer carries `kind`, affected lifecycle
+`blocks`, `next_action`, and public-safe `evidence_refs` so SpecSpace and
+Platform can explain readiness without inventing a score or becoming approval
+authorities.
+
 The validation target writes
 `runs/idea_maturity_metrics_validation_report.json` by invoking the sibling
 Metrics CLI. SpecGraph produces telemetry, but Metrics owns the RFC/schema
