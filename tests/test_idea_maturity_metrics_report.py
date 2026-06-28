@@ -651,11 +651,6 @@ def test_idea_maturity_metrics_report_uses_structured_stale_findings_only(
             "message": "no stale refs detected in this section",
         },
         {
-            "finding_id": "clarification_answers_source_ref_stale",
-            "severity": "medium",
-            "message": "source ref is stale",
-        },
-        {
             "code": "stale_answer_ref",
             "severity": "medium",
             "message": "answer was superseded",
@@ -665,7 +660,7 @@ def test_idea_maturity_metrics_report_uses_structured_stale_findings_only(
 
     report = build_report(paths)
 
-    assert report["metrics"]["stale_ref_count"] == 1
+    assert report["metrics"]["stale_ref_count"] == 0
     assert report["metrics"]["stale_answer_count"] == 1
 
 

@@ -1555,7 +1555,6 @@ def build_idea_maturity_metrics_report(
     metrics = _metrics(artifacts)
     source_ref_findings = _source_ref_findings(artifacts, paths)
     metrics["stale_ref_count"] += len(source_ref_findings)
-    metrics["stale_answer_count"] = metrics["stale_ref_count"]
     policy_findings = _policy_findings(artifacts, metrics, source_ref_findings)
     invariant_findings = _invariant_findings(metrics)
     findings = [*policy_findings, *invariant_findings]
