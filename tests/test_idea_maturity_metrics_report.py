@@ -69,6 +69,7 @@ def base_paths(run_dir: Path) -> dict[str, Path]:
         "repair_rerun_publication": run_dir
         / "platform_product_repair_rerun_publication_report.json",
         "approval_execution": run_dir / "platform_candidate_approval_execution_report.json",
+        "candidate_approval_decision": run_dir / "candidate_approval_decision.json",
         "promotion_request": run_dir / "graph_repository_promotion_request.json",
         "promotion_execution": run_dir / "product_candidate_promotion_execution_report.json",
         "review_status": run_dir / "product_candidate_promotion_review_status_report.json",
@@ -412,6 +413,46 @@ def build_report(paths: dict[str, Path]) -> dict[str, object]:
     return module.build_idea_maturity_metrics_report(paths=paths)
 
 
+def tool_args(paths: dict[str, Path], output: Path, *, strict: bool = False) -> list[str]:
+    args = [
+        sys.executable,
+        str(TOOL_PATH),
+        "--intake",
+        str(paths["intake"]),
+        "--candidate-graph",
+        str(paths["candidate_graph"]),
+        "--clarification-requests",
+        str(paths["clarification_requests"]),
+        "--clarification-answers",
+        str(paths["clarification_answers"]),
+        "--ontology-decisions",
+        str(paths["ontology_decisions"]),
+        "--rerun-input",
+        str(paths["rerun_input"]),
+        "--rerun-preview",
+        str(paths["rerun_preview"]),
+        "--rerun-materialization",
+        str(paths["rerun_materialization"]),
+        "--repaired-handoff",
+        str(paths["repaired_handoff"]),
+        "--repaired-candidate-graph",
+        str(paths["repaired_candidate_graph"]),
+        "--repaired-active-candidate",
+        str(paths["repaired_active_candidate"]),
+        "--repaired-promotion-gate",
+        str(paths["repaired_promotion_gate"]),
+        "--repaired-repair-session",
+        str(paths["repaired_repair_session"]),
+        "--candidate-approval-decision",
+        str(paths["candidate_approval_decision"]),
+        "--output",
+        str(output),
+    ]
+    if strict:
+        args.append("--strict")
+    return args
+
+
 def test_idea_maturity_metrics_report_builds_approval_ready_metrics(tmp_path: Path) -> None:
     paths = write_ready_chain(tmp_path / "ready")
 
@@ -525,39 +566,7 @@ def test_idea_maturity_metrics_report_strict_fails_on_invariant_violation(
     output = tmp_path / "idea_maturity_metrics_report.json"
 
     result = subprocess.run(
-        [
-            sys.executable,
-            str(TOOL_PATH),
-            "--intake",
-            str(paths["intake"]),
-            "--candidate-graph",
-            str(paths["candidate_graph"]),
-            "--clarification-requests",
-            str(paths["clarification_requests"]),
-            "--clarification-answers",
-            str(paths["clarification_answers"]),
-            "--ontology-decisions",
-            str(paths["ontology_decisions"]),
-            "--rerun-input",
-            str(paths["rerun_input"]),
-            "--rerun-preview",
-            str(paths["rerun_preview"]),
-            "--rerun-materialization",
-            str(paths["rerun_materialization"]),
-            "--repaired-handoff",
-            str(paths["repaired_handoff"]),
-            "--repaired-candidate-graph",
-            str(paths["repaired_candidate_graph"]),
-            "--repaired-active-candidate",
-            str(paths["repaired_active_candidate"]),
-            "--repaired-promotion-gate",
-            str(paths["repaired_promotion_gate"]),
-            "--repaired-repair-session",
-            str(paths["repaired_repair_session"]),
-            "--output",
-            str(output),
-            "--strict",
-        ],
+        tool_args(paths, output, strict=True),
         cwd=ROOT,
         check=False,
         capture_output=True,
@@ -591,6 +600,7 @@ def test_idea_maturity_metrics_make_target_threads_paths(tmp_path: Path) -> None
         f"IDEA_MATURITY_METRICS_REPAIRED_ACTIVE_CANDIDATE={paths['repaired_active_candidate']}",
         f"IDEA_MATURITY_METRICS_REPAIRED_PROMOTION_GATE={paths['repaired_promotion_gate']}",
         f"IDEA_MATURITY_METRICS_REPAIRED_REPAIR_SESSION={paths['repaired_repair_session']}",
+        f"IDEA_MATURITY_METRICS_CANDIDATE_APPROVAL_DECISION={paths['candidate_approval_decision']}",
         f"IDEA_MATURITY_METRICS_OUTPUT={output}",
     ]
 
@@ -714,3 +724,112 @@ def test_idea_maturity_metrics_report_computes_stalled_phase(tmp_path: Path) -> 
     assert report["status"] == "blocked"
     assert report["summary"]["stalled_phase"] == "repair_required"
     assert report["groups"]["temporal_progress"]["phase_dwell_seconds"]["repair_required"] >= 86_400
+
+
+def test_idea_maturity_metrics_report_preserves_blocked_promotion_execution(
+    tmp_path: Path,
+) -> None:
+    paths = write_ready_chain(tmp_path / "blocked-promotion")
+    write_json(
+        paths["promotion_execution"],
+        {
+            "artifact_kind": "product_candidate_promotion_execution_report",
+            "summary": {"status": "promotion_blocked"},
+            "readiness": {"ready": False, "blocked_by": ["promotion_request_blocked"]},
+        },
+    )
+
+    report = build_report(paths)
+
+    assert report["status"] == "blocked"
+    assert report["metrics"]["promotion_execution_state"] == "blocked"
+    assert report["metrics"]["platform_promotion_state"] == "blocked"
+    assert report["metrics"]["failed_gate_count"] == 1
+
+
+def test_idea_maturity_metrics_report_counts_platform_error_inputs_by_key(
+    tmp_path: Path,
+) -> None:
+    paths = write_ready_chain(tmp_path / "platform-error")
+    write_json(
+        paths["repair_rerun_execution"],
+        {
+            "artifact_kind": "platform_product_repair_rerun_execution_report",
+            "summary": {"status": "execution_completed", "error_count": 1},
+        },
+    )
+
+    report = build_report(paths)
+
+    assert report["status"] == "blocked"
+    assert report["metrics"]["failed_gate_count"] == 1
+
+
+def test_idea_maturity_metrics_report_reads_candidate_approval_decision(
+    tmp_path: Path,
+) -> None:
+    paths = write_ready_chain(tmp_path / "approval-decision")
+    write_json(
+        paths["candidate_approval_decision"],
+        {
+            "artifact_kind": "candidate_approval_decision",
+            "contract_ref": "specgraph.idea-to-spec.candidate-approval-decision.v0.1",
+            "decision": {"state": "approved"},
+            "readiness": {"ready": True, "review_state": "promotion_request_approved"},
+            "summary": {
+                "effective_state": "approved",
+                "promotion_path_count": 1,
+                "status": "promotion_request_approved",
+            },
+        },
+    )
+
+    report = build_report(paths)
+
+    assert report["metrics"]["candidate_approval_decision_state"] == "materialized"
+    assert report["metrics"]["platform_promotion_state"] == "ready"
+    assert report["summary"]["lifecycle_state"] == "approval_materialized"
+
+
+def test_idea_maturity_metrics_report_requires_core_candidate_evidence(
+    tmp_path: Path,
+) -> None:
+    paths = base_paths(tmp_path / "intake-only")
+    write_json(
+        paths["intake"],
+        {
+            "artifact_kind": "idea_event_storming_intake",
+            "generated_at": "2026-06-28T10:00:00+00:00",
+            "source_intake": {
+                "workspace": {
+                    "candidate_id": "local-subscription-control",
+                    "public_route": "/local-subscription-control",
+                }
+            },
+            "summary": {"status": "ready_for_candidate_graph"},
+        },
+    )
+
+    report = build_report(paths)
+
+    assert report["status"] == "partial"
+    assert report["summary"]["lifecycle_state"] == "intake_ready"
+    assert report["metrics"]["candidate_node_count"] == 0
+
+
+def test_idea_maturity_metrics_strict_fails_on_blocked_report(tmp_path: Path) -> None:
+    paths = write_ready_chain(tmp_path / "strict-blocked", stale_rerun_ref=True)
+    output = tmp_path / "strict-blocked" / "idea_maturity_metrics_report.json"
+
+    result = subprocess.run(
+        tool_args(paths, output, strict=True),
+        cwd=ROOT,
+        check=False,
+        capture_output=True,
+        text=True,
+    )
+
+    assert result.returncode == 1
+    report = load_json(output)
+    assert report["status"] == "blocked"
+    assert report["metrics"]["stale_ref_count"] == 1

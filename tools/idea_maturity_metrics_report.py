@@ -43,6 +43,7 @@ DEFAULT_PATHS = {
     / "runs"
     / "platform_product_repair_rerun_publication_report.json",
     "approval_execution": ROOT / "runs" / "platform_candidate_approval_execution_report.json",
+    "candidate_approval_decision": ROOT / "runs" / "candidate_approval_decision.json",
     "promotion_request": ROOT / "runs" / "graph_repository_promotion_request.json",
     "promotion_execution": ROOT / "runs" / "product_candidate_promotion_execution_report.json",
     "review_status": ROOT / "runs" / "product_candidate_promotion_review_status_report.json",
@@ -100,6 +101,15 @@ CANDIDATE_RESOLUTION_KIND_KEYS = (
     "gap_rejected",
     "other",
 )
+
+PLATFORM_REPORT_KEYS = {
+    "repair_rerun_execution",
+    "repair_rerun_publication",
+    "approval_execution",
+    "promotion_execution",
+    "review_status",
+    "read_model_publication",
+}
 
 SUMMARY_METRIC_KEYS = (
     "lifecycle_state",
@@ -817,7 +827,7 @@ def _failed_gate_count(artifacts: dict[str, dict[str, Any]]) -> int:
             failed_or_blocked_artifacts.add(key)
         if _status_is_failed(status) or _status_is_blocked(status):
             failed_or_blocked_artifacts.add(key)
-        if key.startswith("platform") and _int(summary.get("error_count")) > 0:
+        if key in PLATFORM_REPORT_KEYS and _int(summary.get("error_count")) > 0:
             failed_or_blocked_artifacts.add(key)
     return len(failed_or_blocked_artifacts)
 
@@ -1062,6 +1072,26 @@ def _candidate_approval_decision_state(artifacts: dict[str, dict[str, Any]]) -> 
         if "failed" in status or "blocked" in status:
             return "failed" if "failed" in status else "blocked"
         return "unknown"
+    decision = _dict(artifacts.get("candidate_approval_decision"))
+    if decision:
+        summary = _summary(artifacts, "candidate_approval_decision")
+        readiness = _dict(decision.get("readiness"))
+        decision_payload = _dict(decision.get("decision"))
+        state = _text(summary.get("effective_state")) or _text(decision_payload.get("state"))
+        status = (
+            _text(summary.get("status"))
+            or _text(readiness.get("review_state"))
+            or _text(decision.get("status"))
+        )
+        if state == "approved" and readiness.get("ready") is True:
+            return "materialized"
+        if decision.get("dry_run") is True or status == "dry_run":
+            return "dry_run"
+        if _status_is_failed(status):
+            return "failed"
+        if _status_is_blocked(status) or state in {"rejected", "needs_context", "superseded"}:
+            return "blocked"
+        return "unknown"
     if _candidate_approval_intent_state(artifacts) in {"requested", "ready"}:
         return "not_available"
     return "not_reached"
@@ -1113,8 +1143,10 @@ def _promotion_execution_state(artifacts: dict[str, dict[str, Any]]) -> str:
     status = _text(summary.get("status")) or _text(execution.get("status"))
     if execution.get("dry_run") is True or status == "dry_run":
         return "dry_run"
-    if _int(summary.get("error_count")) > 0 or "failed" in status:
+    if _int(summary.get("error_count")) > 0 or _status_is_failed(status):
         return "failed"
+    if _status_is_blocked(status):
+        return "blocked"
     if summary.get("commit_created") is True or summary.get("review_opened") is True:
         return "executed"
     return "unknown"
@@ -1398,13 +1430,15 @@ def _derived_state(
         lifecycle_state = "approval_materialized"
     elif metrics["candidate_approval_state"] == "ready":
         lifecycle_state = "approval_ready"
+    elif metrics["rerun_request_count"] > 0:
+        lifecycle_state = "repair_rerun_requested"
     elif (
-        metrics["candidate_gap_unresolved_count"] == 0
+        metrics["candidate_node_count"] > 0
+        and metrics["clarification_question_count"] > 0
+        and metrics["candidate_gap_unresolved_count"] == 0
         and metrics["ontology_gap_unresolved_count"] == 0
     ):
         lifecycle_state = "repaired_candidate_ready"
-    elif metrics["rerun_request_count"] > 0:
-        lifecycle_state = "repair_rerun_requested"
     elif (
         metrics["candidate_gap_count_initial"] > 0
         or metrics["ontology_gap_count_initial"] > 0
@@ -1414,7 +1448,7 @@ def _derived_state(
     elif metrics["candidate_node_count"] > 0:
         lifecycle_state = "intake_ready"
     else:
-        lifecycle_state = "blocked" if policy_findings else "unknown"
+        lifecycle_state = "blocked" if policy_findings else "intake_ready"
 
     blockers = [
         finding["finding_id"]
@@ -1559,7 +1593,14 @@ def build_idea_maturity_metrics_report(
     invariant_findings = _invariant_findings(metrics)
     findings = [*policy_findings, *invariant_findings]
     loaded_required = any(
-        key in artifacts for key in ("intake", "candidate_graph", "repaired_repair_session")
+        key in artifacts
+        for key in (
+            "candidate_graph",
+            "repaired_candidate_graph",
+            "repaired_repair_session",
+            "repaired_handoff",
+            "candidate_approval_decision",
+        )
     )
     if any(source.get("status") == "malformed" for source in source_artifacts.values()):
         status = "invalid"
@@ -1635,7 +1676,7 @@ def main() -> int:
     report = build_idea_maturity_metrics_report(paths=paths)
     write_json(report, args.output)
     if args.strict and (
-        report["status"] == "invalid"
+        report["status"] in {"blocked", "invalid"}
         or any(finding.get("severity") == "high" for finding in report["findings"])
     ):
         print(
