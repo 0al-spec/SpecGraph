@@ -331,18 +331,25 @@ Metrics CLI. SpecGraph produces telemetry, but Metrics owns the RFC/schema
 validator. Public bundle refresh publishes both artifacts so SpecSpace can show
 the metrics surface and whether it passed the Metrics contract.
 
-The next slices are downstream-first:
+SpecSpace now consumes those artifacts in the Product Workspace `Idea maturity`
+section. Proposal `0179` adds product-lane wiring so the dashboard-ready product
+review targets also produce the maturity surfaces by default:
 
-1. SpecSpace should add a Product Workspace `Idea maturity` section that reads
-   the metrics report and validation report, then shows lifecycle state,
-   validation status, blockers, ontology/candidate gap rates, clarification and
-   answer materialization, approval/promotion readiness, and stale refs or
-   failed gates.
-2. Platform may use the report as an explanatory preflight signal before
-   promotion, but not as promotion authority. Concrete handoff artifacts and
-   existing gates remain the source of branch/commit/PR readiness.
-3. A `local-subscription-control` demo pass should verify that SpecSpace shows
-   a compact maturity dashboard in addition to repair and promotion artifacts.
+```bash
+make product-workspace-idea-maturity
+make product-workspace-decision-backed-repair-chain
+make product-workspace-repaired-promotion-handoff
+```
+
+The first target builds and validates the maturity report. The decision-backed
+repair chain and repaired promotion handoff targets run it after their normal
+review-only outputs. `make product-workspace-active-candidate` stays narrow and
+does not run metrics validation.
+
+The next slices are Platform awareness and a `local-subscription-control` demo
+pass. Platform may use the report as an explanatory preflight signal before
+promotion, but not as promotion authority. Concrete handoff artifacts and
+existing gates remain the source of branch/commit/PR readiness.
 
 Proposal `0170` adds a single convenience target for smoke and CI runs that
 need the complete decision-backed review chain:

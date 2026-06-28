@@ -1183,6 +1183,11 @@ Key derived artifacts:
   `make idea-maturity-metrics-validate`. The target invokes the Metrics
   repository CLI configured by `METRICS_CLI`/`METRICS_REPO`; SpecGraph does not
   copy the Metrics validator or become the metrics contract authority.
+  `make product-workspace-idea-maturity` runs both steps, and the
+  dashboard-ready product review targets
+  `make product-workspace-decision-backed-repair-chain` and
+  `make product-workspace-repaired-promotion-handoff` invoke that wrapper after
+  their review-only outputs.
 - `runs/specpm_export_preview.json`: reviewable `SpecPM` package preview
   artifact, including manifest preview, boundary-source preview, export
   status, and next-gap backlog for future full package emission

@@ -190,6 +190,30 @@ def test_product_workspace_decision_backed_repair_chain_threads_ontology_decisio
         materialization = run_dir / "candidate_spec_materialization_report.json"
         promotion_gate = run_dir / "idea_to_spec_promotion_gate.json"
         active_candidate = run_dir / "active_idea_to_spec_candidate.json"
+        maturity_report = run_dir / "idea_maturity_metrics_report.json"
+        maturity_validation = run_dir / "idea_maturity_metrics_validation_report.json"
+        fake_metrics_cli = run_dir / "fake_metrics_cli.py"
+        fake_metrics_cli.parent.mkdir(parents=True, exist_ok=True)
+        fake_metrics_cli.write_text(
+            "\n".join(
+                [
+                    "import json",
+                    "import sys",
+                    "from pathlib import Path",
+                    "args = sys.argv[1:]",
+                    "output = Path(args[args.index('--output') + 1])",
+                    "output.parent.mkdir(parents=True, exist_ok=True)",
+                    "output.write_text(json.dumps({",
+                    "  'artifact_kind': 'idea_maturity_metrics_validation_report',",
+                    "  'metric_pack_id': 'idea_to_spec_maturity',",
+                    "  'summary': {'status': 'ok'},",
+                    "  'reports': [{'path': args[2], 'status': 'ok', 'diagnostics': []}],",
+                    "}), encoding='utf-8')",
+                ]
+            )
+            + "\n",
+            encoding="utf-8",
+        )
 
         result = subprocess.run(
             [
@@ -223,6 +247,10 @@ def test_product_workspace_decision_backed_repair_chain_threads_ontology_decisio
                 f"IDEA_TO_SPEC_PROMOTION_GATE_OUTPUT={promotion_gate.relative_to(ROOT).as_posix()}",
                 "ACTIVE_IDEA_TO_SPEC_CANDIDATE_OUTPUT="
                 f"{active_candidate.relative_to(ROOT).as_posix()}",
+                f"IDEA_MATURITY_METRICS_OUTPUT={maturity_report.relative_to(ROOT).as_posix()}",
+                "IDEA_MATURITY_METRICS_VALIDATION_OUTPUT="
+                f"{maturity_validation.relative_to(ROOT).as_posix()}",
+                f"METRICS_CLI={sys.executable} {fake_metrics_cli.relative_to(ROOT).as_posix()}",
             ],
             cwd=ROOT,
             check=False,
@@ -236,6 +264,8 @@ def test_product_workspace_decision_backed_repair_chain_threads_ontology_decisio
         assert rerun_preview.is_file()
         assert rerun_materialization.is_file()
         assert repair_session.is_file()
+        assert maturity_report.is_file()
+        assert maturity_validation.is_file()
         rerun_input_payload = load_json(rerun_input)
         assert rerun_input_payload["summary"]["ontology_decision_count"] == 1
         assert (
@@ -256,6 +286,10 @@ def test_product_workspace_decision_backed_repair_chain_threads_ontology_decisio
         assert journal["artifact_kind"] == "idea_to_spec_repair_session_journal"
         assert journal["summary"]["ontology_decision_count"] == 1
         assert journal["summary"]["unresolved_ontology_gap_count"] == 10
+        maturity = load_json(maturity_report)
+        assert maturity["artifact_kind"] == "idea_maturity_metrics_report"
+        validation = load_json(maturity_validation)
+        assert validation["summary"]["status"] == "ok"
         assert (
             journal["source_artifacts"]["rerun_materialization"]["source_ref"]
             == rerun_materialization.relative_to(ROOT).as_posix()
