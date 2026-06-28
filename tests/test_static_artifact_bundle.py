@@ -125,6 +125,22 @@ def make_repo(root: Path) -> Path:
             "tracked_artifacts_written": False,
             "readiness": {"ready": True},
         },
+        "idea_maturity_metrics_report.json": {
+            "artifact_kind": "idea_maturity_metrics_report",
+            "metric_pack_id": "idea_to_spec_maturity",
+            "contract_ref": "specgraph.idea-to-spec.maturity-metrics-report.v0.1",
+            "authority_boundary": {
+                "may_accept_ontology_terms": False,
+                "may_create_branch_or_commit": False,
+                "may_execute_prompt_agent": False,
+                "may_merge_pull_request": False,
+                "may_mutate_canonical_specs": False,
+                "may_open_pull_request": False,
+                "may_publish_read_model": False,
+                "may_write_ontology_package": False,
+            },
+            "summary": {"status": "partial"},
+        },
     }
     for name, payload in artifacts.items():
         write_json(runs_dir / name, payload)
@@ -413,6 +429,7 @@ def test_build_public_bundle_copies_specs_and_runs_with_manifest(
     assert manifest["required_surfaces"]["specauthor_authoring_flow_report.json"] is True
     assert manifest["required_surfaces"]["candidate_spec_materialization_report.json"] is True
     assert manifest["required_surfaces"]["idea_to_spec_promotion_gate.json"] is True
+    assert manifest["required_surfaces"]["idea_maturity_metrics_report.json"] is True
     assert (
         manifest["platform_handoff_surfaces"]["candidate_spec_materialization_report.json"]["path"]
         == "runs/candidate_spec_materialization_report.json"
@@ -449,6 +466,10 @@ def test_build_public_bundle_copies_specs_and_runs_with_manifest(
     )
     assert any(
         file_info["path"] == "runs/specauthor_invocation_artifact_contract_report.json"
+        for file_info in manifest["files"]
+    )
+    assert any(
+        file_info["path"] == "runs/idea_maturity_metrics_report.json"
         for file_info in manifest["files"]
     )
     assert any(
@@ -1059,6 +1080,7 @@ def test_refresh_publish_surfaces_builds_viewer_implementation_and_agent_surface
         "ontology-owner-decision-import-v2",
         "specauthor-authoring-flow",
         "product-workspace-active-candidate",
+        "idea-maturity-metrics",
     ]
     materialization = json.loads(
         (tmp_path / "runs" / "candidate_spec_materialization_report.json").read_text(
@@ -1101,8 +1123,9 @@ def test_refresh_publish_surfaces_preserves_ready_active_candidate_handoff(
     bundle_module.refresh_publish_surfaces(repo)
 
     materialization = json.loads(materialization_path.read_text(encoding="utf-8"))
-    assert calls[-1] == "specauthor-authoring-flow"
+    assert calls[-1] == "idea-maturity-metrics"
     assert "product-workspace-active-candidate" not in calls
+    assert calls[-2] == "specauthor-authoring-flow"
     assert materialization["summary"]["status"] == "real_active_candidate"
     assert "placeholder_reason" not in materialization
 
@@ -1125,7 +1148,7 @@ def test_refresh_publish_surfaces_rebuilds_ready_candidate_when_requested(
 
     bundle_module.refresh_publish_surfaces(repo)
 
-    assert calls[-1] == "product-workspace-active-candidate"
+    assert calls[-2:] == ["product-workspace-active-candidate", "idea-maturity-metrics"]
 
 
 def test_refresh_publish_surfaces_builds_product_workspace_active_candidate_before_fallback(
@@ -1155,7 +1178,7 @@ def test_refresh_publish_surfaces_builds_product_workspace_active_candidate_befo
     promotion_gate = json.loads(
         (repo / "runs" / "idea_to_spec_promotion_gate.json").read_text(encoding="utf-8")
     )
-    assert calls[-1] == "product-workspace-active-candidate"
+    assert calls[-2:] == ["product-workspace-active-candidate", "idea-maturity-metrics"]
     assert active_source["source_mode"] == "active_candidate"
     assert active_source["readiness"]["ready"] is True
     assert "placeholder_reason" not in materialization

@@ -9912,5 +9912,79 @@
         "pattern": "proposal 0177"
       }
     ]
+  },
+  {
+    "proposal_id": "0178",
+    "posture": "synchronous_runtime_slice",
+    "runtime_surfaces": [
+      "docs/proposals/0178_idea_maturity_metrics_report.md",
+      "docs/archive/proposal_sources/0178_idea_maturity_metrics_report.md",
+      "docs/product_workspace_graph_versioning_roadmap.md",
+      "Sources/SpecGraph/Documentation.docc/ProductWorkspacePilots.md",
+      "tools/idea_maturity_metrics_report.py",
+      "tools/build_static_artifact_bundle.py",
+      "tools/README.md",
+      "tools/docc_sync_contract.json",
+      "tests/test_idea_maturity_metrics_report.py",
+      "Makefile"
+    ],
+    "runtime_markers": [
+      {
+        "path": "tools/idea_maturity_metrics_report.py",
+        "pattern": "PROPOSAL_ID = \"0178\""
+      },
+      {
+        "path": "tools/idea_maturity_metrics_report.py",
+        "pattern": "METRIC_PACK_ID = \"idea_to_spec_maturity\""
+      },
+      {
+        "path": "tools/idea_maturity_metrics_report.py",
+        "pattern": "def build_idea_maturity_metrics_report("
+      },
+      {
+        "path": "Makefile",
+        "pattern": "idea-maturity-metrics"
+      },
+      {
+        "path": "tools/build_static_artifact_bundle.py",
+        "pattern": "\"idea_maturity_metrics_report.json\""
+      }
+    ],
+    "validation_markers": [
+      {
+        "path": "tests/test_idea_maturity_metrics_report.py",
+        "pattern": "test_idea_maturity_metrics_report_builds_approval_ready_metrics"
+      },
+      {
+        "path": "tests/test_idea_maturity_metrics_report.py",
+        "pattern": "test_idea_maturity_metrics_report_flags_stale_source_refs_as_blocked"
+      },
+      {
+        "path": "tests/test_idea_maturity_metrics_report.py",
+        "pattern": "test_idea_maturity_metrics_report_strict_fails_on_invariant_violation"
+      },
+      {
+        "path": "tests/test_idea_maturity_metrics_report.py",
+        "pattern": "test_idea_maturity_metrics_make_target_threads_paths"
+      }
+    ],
+    "observation_markers": [
+      {
+        "path": "docs/proposals/0178_idea_maturity_metrics_report.md",
+        "pattern": "The metrics report can say that a candidate is approval-ready"
+      },
+      {
+        "path": "docs/product_workspace_graph_versioning_roadmap.md",
+        "pattern": "Status: implemented in proposal `0178`"
+      },
+      {
+        "path": "Sources/SpecGraph/Documentation.docc/ProductWorkspacePilots.md",
+        "pattern": "Proposal `0178`"
+      },
+      {
+        "path": "tools/README.md",
+        "pattern": "idea_maturity_metrics_report.json"
+      }
+    ]
   }
 ]

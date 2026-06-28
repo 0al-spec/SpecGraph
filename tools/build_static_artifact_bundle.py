@@ -44,6 +44,7 @@ REQUIRED_RUN_SURFACES = (
     "specauthor_authoring_flow_report.json",
     "candidate_spec_materialization_report.json",
     "idea_to_spec_promotion_gate.json",
+    "idea_maturity_metrics_report.json",
 )
 PLATFORM_HANDOFF_RUN_SURFACES = (
     "candidate_spec_materialization_report.json",
@@ -733,6 +734,7 @@ def refresh_publish_surfaces(repo_root: Path) -> None:
     run_make_target(repo_root, "specauthor-authoring-flow")
     if should_refresh_product_workspace_active_candidate(repo_root):
         run_make_target(repo_root, "product-workspace-active-candidate")
+    run_make_target(repo_root, "idea-maturity-metrics")
     write_public_platform_handoff_surfaces(repo_root)
 
 

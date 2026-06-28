@@ -308,6 +308,22 @@ them and the promotion gate records `pre_sib_findings_repaired_by_preview`.
 The repaired journal can become ready for candidate approval review, but
 Platform promotion stays false until a separate `candidate_approval_decision`.
 
+Proposal `0178` adds a Metrics RFC adapter for the product lifecycle:
+
+```bash
+make idea-maturity-metrics
+```
+
+The default output is `runs/idea_maturity_metrics_report.json`. The report uses
+`metric_pack_id: idea_to_spec_maturity` and preserves the RFC state semantics
+for `not_reached`, `not_available`, `blocked`, `ready`, `dry_run`, and related
+states. It counts clarification load, answer materialization, ontology
+grounding, candidate gap closure, workflow friction, promotion readiness, and
+optional downstream review/publication state when Platform artifacts are
+present. It remains observability-only: no canonical spec mutation, no Ontology
+write, no ontology term acceptance, no prompt-agent execution, no Git action,
+and no read-model publication.
+
 Proposal `0170` adds a single convenience target for smoke and CI runs that
 need the complete decision-backed review chain:
 

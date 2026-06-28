@@ -1170,6 +1170,14 @@ Key derived artifacts:
   source refs, digests, findings, and authority boundary without treating the
   decision as a Git Service execution, repository review, merge, read-model
   publication, canonical spec mutation, or Ontology write.
+- `runs/idea_maturity_metrics_report.json`: public-safe, read-only
+  Idea-to-Spec lifecycle telemetry report for the Metrics RFC
+  `idea_to_spec_maturity`. Build it with `make idea-maturity-metrics`. It
+  normalizes clarification load, answer materialization, ontology grounding,
+  candidate gap closure, workflow friction, promotion/readiness state, and
+  optional downstream review/publication state from the selected lifecycle
+  artifacts without granting approval, Git, ontology, prompt-agent, canonical
+  mutation, or publication authority.
 - `runs/specpm_export_preview.json`: reviewable `SpecPM` package preview
   artifact, including manifest preview, boundary-source preview, export
   status, and next-gap backlog for future full package emission
