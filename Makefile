@@ -165,6 +165,32 @@ CANDIDATE_APPROVAL_OUTPUT ?= runs/candidate_approval_decision.json
 CANDIDATE_APPROVAL_DECISION_STATE ?= needs_context
 CANDIDATE_APPROVAL_OPERATOR_REF ?= local_operator:unattributed
 CANDIDATE_APPROVAL_REASON ?= awaiting explicit operator approval
+IDEA_MATURITY_METRICS_INTAKE ?= runs/idea_event_storming_intake.json
+IDEA_MATURITY_METRICS_CANDIDATE_GRAPH ?= runs/candidate_spec_graph.json
+IDEA_MATURITY_METRICS_CLARIFICATION_REQUESTS ?= runs/idea_to_spec_clarification_requests.json
+IDEA_MATURITY_METRICS_CLARIFICATION_ANSWERS ?= runs/idea_to_spec_clarification_answers.json
+IDEA_MATURITY_METRICS_ONTOLOGY_DECISIONS ?= runs/product_ontology_gap_review_decisions.json
+IDEA_MATURITY_METRICS_RERUN_INPUT ?= runs/idea_to_spec_answer_rerun_input.json
+IDEA_MATURITY_METRICS_RERUN_PREVIEW ?= runs/idea_to_spec_rerun_preview.json
+IDEA_MATURITY_METRICS_RERUN_MATERIALIZATION ?= runs/idea_to_spec_rerun_materialization.json
+IDEA_MATURITY_METRICS_REPAIRED_HANDOFF ?= runs/repaired_candidate_promotion_handoff_report.json
+IDEA_MATURITY_METRICS_REPAIRED_CANDIDATE_GRAPH ?= runs/repaired_candidate_spec_graph.json
+IDEA_MATURITY_METRICS_REPAIRED_ACTIVE_CANDIDATE ?= runs/repaired_active_idea_to_spec_candidate.json
+IDEA_MATURITY_METRICS_REPAIRED_PROMOTION_GATE ?= runs/repaired_idea_to_spec_promotion_gate.json
+IDEA_MATURITY_METRICS_REPAIRED_REPAIR_SESSION ?= runs/repaired_idea_to_spec_repair_session.json
+IDEA_MATURITY_METRICS_SPECSPACE_DRAFT_IMPORT_PREVIEW ?= runs/specspace_repair_draft_import_preview.json
+IDEA_MATURITY_METRICS_SPECSPACE_RERUN_REQUEST ?= runs/idea_to_spec_repair_rerun_requests.json
+IDEA_MATURITY_METRICS_APPROVAL_INTENT ?= runs/idea_to_spec_candidate_approval_intents.json
+IDEA_MATURITY_METRICS_REPAIR_RERUN_EXECUTION ?= runs/platform_product_repair_rerun_execution_report.json
+IDEA_MATURITY_METRICS_REPAIR_RERUN_PUBLICATION ?= runs/platform_product_repair_rerun_publication_report.json
+IDEA_MATURITY_METRICS_APPROVAL_EXECUTION ?= runs/platform_candidate_approval_execution_report.json
+IDEA_MATURITY_METRICS_PROMOTION_REQUEST ?= runs/graph_repository_promotion_request.json
+IDEA_MATURITY_METRICS_PROMOTION_EXECUTION ?= runs/product_candidate_promotion_execution_report.json
+IDEA_MATURITY_METRICS_REVIEW_STATUS ?= runs/product_candidate_promotion_review_status_report.json
+IDEA_MATURITY_METRICS_READ_MODEL_PUBLICATION ?= runs/product_candidate_promotion_read_model_publication_report.json
+IDEA_MATURITY_METRICS_OUTPUT ?= runs/idea_maturity_metrics_report.json
+IDEA_MATURITY_METRICS_STRICT ?=
+IDEA_MATURITY_METRICS_STRICT_ARG := $(if $(filter 1 true yes,$(strip $(IDEA_MATURITY_METRICS_STRICT))),--strict,)
 PRODUCT_WORKSPACE_IDEA_SOURCE ?= tests/fixtures/product_workspace_active_candidate/raw_idea_source.json
 PRODUCT_WORKSPACE_INTAKE_SOURCE_DEFAULT ?= $(USER_IDEA_EVENT_STORMING_SEED_OUTPUT)
 PRODUCT_WORKSPACE_INTAKE_SOURCE ?= $(PRODUCT_WORKSPACE_INTAKE_SOURCE_DEFAULT)
@@ -343,6 +369,7 @@ help:
 			'  make idea-to-spec-promotion-gate Build final idea-to-spec Platform handoff gate' \
 			'  make active-idea-to-spec-candidate-source Build active product candidate source' \
 			'  make candidate-approval-decision Build explicit candidate approval decision' \
+			'  make idea-maturity-metrics   Build Idea-to-Spec maturity telemetry report' \
 			'  make idea-to-spec-repair-session-journal Build durable review-only repair session journal' \
 			'  make repaired-candidate-promotion-handoff Build repaired approval-ready handoff artifacts' \
 			'  make specspace-repair-draft-import-preview Build review-only SpecSpace repair draft import preview' \
@@ -594,6 +621,10 @@ active-idea-to-spec-candidate-source:
 .PHONY: candidate-approval-decision
 candidate-approval-decision:
 	@$(PYTHON) tools/candidate_approval_decision.py --active-candidate "$(CANDIDATE_APPROVAL_ACTIVE_CANDIDATE)" --promotion-gate "$(CANDIDATE_APPROVAL_PROMOTION_GATE)" --decision "$(CANDIDATE_APPROVAL_DECISION_STATE)" --operator-ref "$(CANDIDATE_APPROVAL_OPERATOR_REF)" --reason "$(CANDIDATE_APPROVAL_REASON)" --output "$(CANDIDATE_APPROVAL_OUTPUT)"
+
+.PHONY: idea-maturity-metrics
+idea-maturity-metrics:
+	@$(PYTHON) tools/idea_maturity_metrics_report.py --intake "$(IDEA_MATURITY_METRICS_INTAKE)" --candidate-graph "$(IDEA_MATURITY_METRICS_CANDIDATE_GRAPH)" --clarification-requests "$(IDEA_MATURITY_METRICS_CLARIFICATION_REQUESTS)" --clarification-answers "$(IDEA_MATURITY_METRICS_CLARIFICATION_ANSWERS)" --ontology-decisions "$(IDEA_MATURITY_METRICS_ONTOLOGY_DECISIONS)" --rerun-input "$(IDEA_MATURITY_METRICS_RERUN_INPUT)" --rerun-preview "$(IDEA_MATURITY_METRICS_RERUN_PREVIEW)" --rerun-materialization "$(IDEA_MATURITY_METRICS_RERUN_MATERIALIZATION)" --repaired-handoff "$(IDEA_MATURITY_METRICS_REPAIRED_HANDOFF)" --repaired-candidate-graph "$(IDEA_MATURITY_METRICS_REPAIRED_CANDIDATE_GRAPH)" --repaired-active-candidate "$(IDEA_MATURITY_METRICS_REPAIRED_ACTIVE_CANDIDATE)" --repaired-promotion-gate "$(IDEA_MATURITY_METRICS_REPAIRED_PROMOTION_GATE)" --repaired-repair-session "$(IDEA_MATURITY_METRICS_REPAIRED_REPAIR_SESSION)" --specspace-draft-import-preview "$(IDEA_MATURITY_METRICS_SPECSPACE_DRAFT_IMPORT_PREVIEW)" --specspace-rerun-request "$(IDEA_MATURITY_METRICS_SPECSPACE_RERUN_REQUEST)" --approval-intent "$(IDEA_MATURITY_METRICS_APPROVAL_INTENT)" --repair-rerun-execution "$(IDEA_MATURITY_METRICS_REPAIR_RERUN_EXECUTION)" --repair-rerun-publication "$(IDEA_MATURITY_METRICS_REPAIR_RERUN_PUBLICATION)" --approval-execution "$(IDEA_MATURITY_METRICS_APPROVAL_EXECUTION)" --promotion-request "$(IDEA_MATURITY_METRICS_PROMOTION_REQUEST)" --promotion-execution "$(IDEA_MATURITY_METRICS_PROMOTION_EXECUTION)" --review-status "$(IDEA_MATURITY_METRICS_REVIEW_STATUS)" --read-model-publication "$(IDEA_MATURITY_METRICS_READ_MODEL_PUBLICATION)" --output "$(IDEA_MATURITY_METRICS_OUTPUT)" $(IDEA_MATURITY_METRICS_STRICT_ARG)
 
 .PHONY: product-workspace-active-candidate
 product-workspace-active-candidate:

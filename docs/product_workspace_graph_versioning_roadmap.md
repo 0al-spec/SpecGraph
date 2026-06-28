@@ -816,6 +816,38 @@ answers to source artifacts, mutate candidate artifacts, mutate canonical
 specs, write ontology packages, accept ontology terms, create Git branches, or
 publish read models.
 
+### 21D. Idea-to-Spec Maturity Metrics Report
+
+Status: implemented in proposal `0178`.
+
+The repaired product lane now has enough durable evidence for a dedicated
+Metrics RFC adapter. Proposal `0178` adds:
+
+```bash
+make idea-maturity-metrics
+```
+
+The target writes:
+
+```text
+runs/idea_maturity_metrics_report.json
+```
+
+The report uses `metric_pack_id: idea_to_spec_maturity` and follows the draft
+Metrics RFC state semantics. It counts clarification load, accepted answers,
+answer materialization, ontology grounding, candidate gap closure, workflow
+friction, promotion readiness, and downstream review/publication state when
+Platform artifacts are present.
+
+The report is not a score and not an approval authority. It keeps
+`not_reached`, `not_available`, `blocked`, `ready`, `dry_run`, and related
+states distinct so SpecSpace can show why a product idea is stalled without
+recomputing policy from every `runs/*.json` artifact. Stale source refs and
+cross-field invariant failures become reviewable findings. The authority
+boundary is the closed Metrics RFC read-only set: no canonical spec mutations,
+Ontology writes, ontology term acceptance, Git actions, read-model publication,
+or prompt-agent execution.
+
 ### 22. Decision-Backed Repair Chain Target
 
 Status: implemented in proposal `0170`.
