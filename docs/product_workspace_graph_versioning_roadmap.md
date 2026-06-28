@@ -825,6 +825,7 @@ Metrics RFC adapter. Proposal `0178` adds:
 
 ```bash
 make idea-maturity-metrics
+make idea-maturity-metrics-validate
 ```
 
 The target writes:
@@ -847,6 +848,11 @@ cross-field invariant failures become reviewable findings. The authority
 boundary is the closed Metrics RFC read-only set: no canonical spec mutations,
 Ontology writes, ontology term acceptance, Git actions, read-model publication,
 or prompt-agent execution.
+
+The validation target invokes the sibling Metrics CLI and writes
+`runs/idea_maturity_metrics_validation_report.json`. This keeps Metrics as the
+owner of the RFC/schema validator while giving SpecGraph and SpecSpace a
+public-safe validation surface for the produced telemetry report.
 
 ### 22. Decision-Backed Repair Chain Target
 

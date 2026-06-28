@@ -250,6 +250,13 @@ supports `SPECGRAPH_EXTERNAL_CHECKOUT_ROOT`; when a declared absolute checkout
 hint is not available, it can resolve a sibling checkout by repository name
 under that root or under the parent directory of the SpecGraph checkout.
 
+The same external Metrics checkout owns the Idea-to-Spec maturity metrics
+validator. `make publish-bundle` builds
+`runs/idea_maturity_metrics_report.json`, then runs
+`make idea-maturity-metrics-validate` through `METRICS_CLI` and publishes
+`runs/idea_maturity_metrics_validation_report.json`. SpecGraph does not commit
+or publish the Metrics validator binary/script as its own artifact.
+
 After `.github/workflows/deploy-connection-check.yml` is present on the base
 branch, pull requests from branches in this repository also run `Check deploy
 connection` through `pull_request_target`. The check uses deploy tooling from

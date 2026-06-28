@@ -27,12 +27,19 @@ Add a deterministic, read-only metrics producer:
 
 ```bash
 make idea-maturity-metrics
+make idea-maturity-metrics-validate
 ```
 
-The target writes:
+The producer target writes:
 
 ```text
 runs/idea_maturity_metrics_report.json
+```
+
+The validation target invokes the sibling Metrics repository CLI and writes:
+
+```text
+runs/idea_maturity_metrics_validation_report.json
 ```
 
 The report carries:
@@ -58,6 +65,20 @@ The report may be partial. Missing downstream stages should become
 `not_reached` or `not_available`, not malformed output. Broken or stale source
 refs become blocked telemetry so operators can see why the lifecycle should not
 be trusted for approval.
+
+The Metrics repository remains the source of truth for the RFC, schema, and
+reference validator. SpecGraph must not copy validator logic. Instead it uses a
+configurable external command:
+
+```bash
+METRICS_CLI="python3 ../Metrics/scripts/metrics.py" \
+  make idea-maturity-metrics-validate
+```
+
+CI may point `METRICS_REPO` at a checked-out sibling such as
+`external/Metrics`. The validation report records validator identity, schema
+reference, report status, diagnostics, and the closed read-only authority
+boundary without persisting machine-local binary paths or raw private logs.
 
 ## Authority Boundary
 
@@ -89,10 +110,16 @@ perform any of those handoffs.
 - Cross-field metric invariants are checked and reported.
 - Zero-denominator rates are `null`, not `0`.
 - The report is public-safe and included in the static bundle refresh.
+- `make idea-maturity-metrics-validate` writes
+  `runs/idea_maturity_metrics_validation_report.json` by invoking the Metrics
+  CLI rather than copying validation logic into SpecGraph.
+- Static bundle refresh publishes both the metrics report and its Metrics
+  validation report.
 
 ## Validation
 
 - `tests/test_idea_maturity_metrics_report.py`
 - `make idea-maturity-metrics`
+- `make idea-maturity-metrics-validate`
 - `make proposal-tracking-gate`
 - `make publish-bundle`

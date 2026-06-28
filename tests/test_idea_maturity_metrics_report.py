@@ -620,6 +620,78 @@ def test_idea_maturity_metrics_make_target_threads_paths(tmp_path: Path) -> None
     )
 
 
+def test_idea_maturity_metrics_validate_make_target_invokes_metrics_cli(
+    tmp_path: Path,
+) -> None:
+    paths = write_ready_chain(tmp_path / "validate")
+    report_output = tmp_path / "validate" / "idea_maturity_metrics_report.json"
+    validation_output = tmp_path / "validate" / "idea_maturity_metrics_validation_report.json"
+    fake_cli = tmp_path / "fake_metrics_cli.py"
+    trace = tmp_path / "fake_metrics_cli_args.json"
+    fake_cli.write_text(
+        "\n".join(
+            [
+                "import json",
+                "import sys",
+                "from pathlib import Path",
+                f"Path({str(trace)!r}).write_text(json.dumps(sys.argv[1:]), encoding='utf-8')",
+                "args = sys.argv[1:]",
+                "output = Path(args[args.index('--output') + 1])",
+                "output.parent.mkdir(parents=True, exist_ok=True)",
+                "output.write_text(json.dumps({",
+                "  'artifact_kind': 'idea_maturity_metrics_validation_report',",
+                "  'metric_pack_id': 'idea_to_spec_maturity',",
+                "  'summary': {",
+                "    'status': 'ok',",
+                "    'report_count': 1,",
+                "    'valid_count': 1,",
+                "    'invalid_count': 0,",
+                "  },",
+                "  'reports': [{'path': args[2], 'status': 'ok', 'diagnostics': []}],",
+                "}), encoding='utf-8')",
+            ]
+        )
+        + "\n",
+        encoding="utf-8",
+    )
+
+    build_result = subprocess.run(
+        tool_args(paths, report_output),
+        cwd=ROOT,
+        check=False,
+        capture_output=True,
+        text=True,
+    )
+    assert build_result.returncode == 0, build_result.stderr
+
+    result = subprocess.run(
+        [
+            "make",
+            "idea-maturity-metrics-validate",
+            f"IDEA_MATURITY_METRICS_OUTPUT={report_output}",
+            f"IDEA_MATURITY_METRICS_VALIDATION_OUTPUT={validation_output}",
+            f"METRICS_CLI={sys.executable} {fake_cli}",
+        ],
+        cwd=ROOT,
+        check=False,
+        capture_output=True,
+        text=True,
+    )
+
+    assert result.returncode == 0, result.stderr
+    args = json.loads(trace.read_text(encoding="utf-8"))
+    assert args == [
+        "validate",
+        "idea-maturity",
+        str(report_output),
+        "--output",
+        str(validation_output),
+    ]
+    validation = load_json(validation_output)
+    assert validation["artifact_kind"] == "idea_maturity_metrics_validation_report"
+    assert validation["summary"]["status"] == "ok"
+
+
 def test_idea_maturity_metrics_report_counts_materialized_request_once(
     tmp_path: Path,
 ) -> None:

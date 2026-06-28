@@ -1178,6 +1178,11 @@ Key derived artifacts:
   optional downstream review/publication state from the selected lifecycle
   artifacts without granting approval, Git, ontology, prompt-agent, canonical
   mutation, or publication authority.
+- `runs/idea_maturity_metrics_validation_report.json`: public-safe validation
+  evidence for the maturity metrics report. Build it with
+  `make idea-maturity-metrics-validate`. The target invokes the Metrics
+  repository CLI configured by `METRICS_CLI`/`METRICS_REPO`; SpecGraph does not
+  copy the Metrics validator or become the metrics contract authority.
 - `runs/specpm_export_preview.json`: reviewable `SpecPM` package preview
   artifact, including manifest preview, boundary-source preview, export
   status, and next-gap backlog for future full package emission
