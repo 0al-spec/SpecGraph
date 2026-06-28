@@ -9946,8 +9946,16 @@
         "pattern": "idea-maturity-metrics"
       },
       {
+        "path": "Makefile",
+        "pattern": "idea-maturity-metrics-validate"
+      },
+      {
         "path": "tools/build_static_artifact_bundle.py",
         "pattern": "\"idea_maturity_metrics_report.json\""
+      },
+      {
+        "path": "tools/build_static_artifact_bundle.py",
+        "pattern": "\"idea_maturity_metrics_validation_report.json\""
       }
     ],
     "validation_markers": [
@@ -9966,6 +9974,10 @@
       {
         "path": "tests/test_idea_maturity_metrics_report.py",
         "pattern": "test_idea_maturity_metrics_make_target_threads_paths"
+      },
+      {
+        "path": "tests/test_idea_maturity_metrics_report.py",
+        "pattern": "test_idea_maturity_metrics_validate_make_target_invokes_metrics_cli"
       }
     ],
     "observation_markers": [
@@ -9984,6 +9996,10 @@
       {
         "path": "tools/README.md",
         "pattern": "idea_maturity_metrics_report.json"
+      },
+      {
+        "path": "tools/README.md",
+        "pattern": "idea_maturity_metrics_validation_report.json"
       }
     ]
   }

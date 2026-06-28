@@ -46,6 +46,14 @@ The public bundle also includes
 accepted by SpecGraph is HTTP-readable alongside the handoff and Agent surface
 producer artifacts.
 
+The public bundle also includes the Idea-to-Spec maturity metrics report and
+its Metrics-owned validation report. Bundle refresh builds
+`runs/idea_maturity_metrics_report.json`, then invokes the sibling Metrics CLI
+through `make idea-maturity-metrics-validate` to produce
+`runs/idea_maturity_metrics_validation_report.json`. The Metrics repository
+owns the RFC, schema, and validator; SpecGraph only publishes producer output
+and validation evidence.
+
 The public bundle publishes `runs/*.json` by default after redaction and safety
 scanning. Local-only operator diagnostics are excluded by denylist rather than
 requiring every public artifact to be allowlisted.

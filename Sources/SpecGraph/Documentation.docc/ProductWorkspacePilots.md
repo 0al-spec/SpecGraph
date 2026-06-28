@@ -312,6 +312,7 @@ Proposal `0178` adds a Metrics RFC adapter for the product lifecycle:
 
 ```bash
 make idea-maturity-metrics
+make idea-maturity-metrics-validate
 ```
 
 The default output is `runs/idea_maturity_metrics_report.json`. The report uses
@@ -323,6 +324,12 @@ optional downstream review/publication state when Platform artifacts are
 present. It remains observability-only: no canonical spec mutation, no Ontology
 write, no ontology term acceptance, no prompt-agent execution, no Git action,
 and no read-model publication.
+
+The validation target writes
+`runs/idea_maturity_metrics_validation_report.json` by invoking the sibling
+Metrics CLI. SpecGraph produces telemetry, but Metrics owns the RFC/schema
+validator. Public bundle refresh publishes both artifacts so SpecSpace can show
+the metrics surface and whether it passed the Metrics contract.
 
 Proposal `0170` adds a single convenience target for smoke and CI runs that
 need the complete decision-backed review chain:
