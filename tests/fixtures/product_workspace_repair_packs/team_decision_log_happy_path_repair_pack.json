@@ -169,9 +169,11 @@
     },
     {
       "request_id": "clarification.repair.repair-review-unresolved-gaps",
-      "allowed_action": "reject",
+      "allowed_action": "propose_project_local_term",
       "answer_value": {
-        "reason": "The concrete ontology gaps are resolved by node-scoped project-local term decisions in this repair pack; the aggregate candidate_graph.gaps request should not create an additional ontology term."
+        "term": "Decision Owner",
+        "term_scope": "project_local",
+        "reason": "The aggregate candidate_graph.gaps request is answered with a concrete project-local term already covered by node-scoped decisions; it must not reject the entire aggregate gap set."
       }
     }
   ],

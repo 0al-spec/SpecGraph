@@ -166,6 +166,17 @@ def _pack_record_index(pack: dict[str, Any]) -> list[dict[str, Any]]:
     return records
 
 
+def _accepted_for_rerun_count(drafts: list[dict[str, Any]]) -> int:
+    accepted_request_ids: set[str] = set()
+    for draft in drafts:
+        if _text(draft.get("allowed_action")) == "defer":
+            continue
+        request_id = _text(draft.get("request_id"))
+        if request_id:
+            accepted_request_ids.add(request_id)
+    return len(accepted_request_ids)
+
+
 def _validate_pack(pack: dict[str, Any]) -> None:
     if pack.get("artifact_kind") != PACK_KIND:
         raise ValueError(f"repair pack must use artifact_kind {PACK_KIND}")
@@ -287,6 +298,7 @@ def build_product_workspace_repair_pack_states(
         _dict(pack.get("rerun_request")).get("requested_by"),
         operator_ref,
     )
+    accepted_for_rerun_count = _accepted_for_rerun_count(drafts)
     request_state = {
         "artifact_kind": RERUN_REQUEST_STATE_KIND,
         "schema_version": SCHEMA_VERSION,
@@ -321,7 +333,7 @@ def build_product_workspace_repair_pack_states(
                     _dict(pack.get("rerun_request")).get("updated_at"), generated_at
                 ),
                 "draft_count": len(drafts),
-                "accepted_for_rerun_count": len(drafts),
+                "accepted_for_rerun_count": accepted_for_rerun_count,
                 "operator_command": (
                     "make product-workspace-requested-repair-draft-rerun "
                     f"SPECSPACE_REPAIR_RERUN_REQUEST_WORKSPACE_ID={workspace_id}"
@@ -335,6 +347,7 @@ def build_product_workspace_repair_pack_states(
             "candidate_id": candidate_id,
             "request_count": 1,
             "active_request_count": 1,
+            "accepted_for_rerun_count": accepted_for_rerun_count,
             "workspace_count": 1,
             "source": "product_workspace_repair_pack",
         },

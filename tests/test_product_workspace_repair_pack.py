@@ -178,6 +178,7 @@ def test_team_decision_log_repair_pack_materializes_specspace_owned_state() -> N
     assert all(draft["mutates_canonical_specs"] is False for draft in draft_state["drafts"])
     assert request_state["artifact_kind"] == "specspace_idea_to_spec_repair_rerun_request_state"
     assert request_state["requests"][0]["accepted_for_rerun_count"] == 15
+    assert request_state["summary"]["accepted_for_rerun_count"] == 15
     assert request_state["requests"][0]["may_run_make_target"] is False
 
 
@@ -212,6 +213,27 @@ def test_team_decision_log_repair_pack_import_preview_is_ready() -> None:
     assert preview["summary"]["accepted_for_rerun_count"] == 15
     assert preview["summary"]["invalid_draft_count"] == 0
     assert preview["summary"]["deferred_count"] == 0
+
+
+def test_repair_pack_request_state_counts_only_unique_resolving_drafts() -> None:
+    module = load_module(TOOL_PATH, "product_workspace_repair_pack_count_under_test")
+    pack = _pack()
+    duplicate = deepcopy(pack["drafts"][0])
+    deferred = deepcopy(pack["drafts"][1])
+    deferred["allowed_action"] = "defer"
+    pack["drafts"].extend([duplicate, deferred])
+
+    _, request_state = module.build_product_workspace_repair_pack_states(
+        pack=pack,
+        repair_session=_repair_session(),
+        clarification_requests=_clarification_requests(pack),
+        pack_path=PACK_PATH,
+        repair_session_path=ROOT / "runs" / "idea_to_spec_repair_session.json",
+    )
+
+    assert request_state["requests"][0]["draft_count"] == 17
+    assert request_state["requests"][0]["accepted_for_rerun_count"] == 15
+    assert request_state["summary"]["accepted_for_rerun_count"] == 15
 
 
 def test_repair_pack_rejects_stale_repair_session_identity() -> None:
