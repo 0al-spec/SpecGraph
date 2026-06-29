@@ -507,6 +507,19 @@ def test_idea_maturity_metrics_report_builds_approval_ready_metrics(tmp_path: Pa
     assert report["artifact_kind"] == "idea_maturity_metrics_report"
     assert report["proposal_id"] == "0178"
     assert report["contract_ref"] == "specgraph.idea-to-spec.maturity-metrics-report.v0.1"
+    assert report["contract"] == {
+        "schema_version": 1,
+        "schema_ref": "schemas/idea_maturity_metrics_report.schema.json",
+        "validation_report_schema_ref": (
+            "schemas/idea_maturity_metrics_validation_report.schema.json"
+        ),
+        "validator_id": "metrics.idea_maturity_metrics.validator.v0.1",
+        "validator_version": "0.1.0",
+        "compatibility_policy": "additive_v1",
+        "compatibility_policy_ref": "VALIDATOR_CONTRACT.md#compatibility-policy",
+        "metrics_rfc_ref": "Metrics/IDEA_MATURITY_METRICS.md",
+        "proposal_id": "0181",
+    }
     assert report["metric_pack_id"] == "idea_to_spec_maturity"
     assert report["authority_state"] == "draft_reference"
     assert report["status"] == "ready"

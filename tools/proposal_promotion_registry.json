@@ -2325,5 +2325,18 @@
     "required_provenance_links": [
       "source_draft_ref"
     ]
+  },
+  {
+    "proposal_id": "0181",
+    "source_artifact_class": "working_draft",
+    "source_refs": [
+      "docs/archive/proposal_sources/0181_idea_maturity_metrics_contract_consumption.md"
+    ],
+    "motivating_concern": "Metrics now publishes a versioned validator contract package for Idea Maturity, but SpecGraph's producer artifact did not identify the Metrics-owned schema, validation-report schema, validator version, or compatibility policy directly.",
+    "normalized_title": "Idea Maturity Metrics Contract Consumption",
+    "bounded_scope": "Add explicit Metrics-owned contract metadata to idea_maturity_metrics_report, update tests, proposal docs, roadmap, DocC, README, and registry tracking while preserving the existing SpecGraph contract_ref, continuing to invoke the Metrics-owned validator via METRICS_CLI, avoiding copied validator logic, and not executing prompt agents, mutating candidate or canonical specs, writing Ontology packages or lockfiles, accepting ontology terms, approving candidates, creating Git branches or commits, opening pull requests, merging pull requests, publishing read models, or adding SpecSpace mutation authority.",
+    "required_provenance_links": [
+      "source_draft_ref"
+    ]
   }
 ]
