@@ -476,6 +476,35 @@ authority. Use `SPECSPACE_REPAIR_RERUN_REQUEST_STATE`,
 `SPECSPACE_REPAIR_RERUN_REQUEST_WORKSPACE_ID`, and
 `SPECSPACE_REPAIR_RERUN_REQUEST_OUTPUT` to thread non-default handoff paths.
 
+Proposal `0182` adds a generic product workspace repair-pack materializer plus a
+curated Team Decision Log happy-path pack:
+
+```bash
+make product-workspace-repair-pack-state
+make product-workspace-happy-path-repair-pack
+```
+
+The materializer reads a `product_workspace_repair_pack` fixture and the current
+repair-session/clarification-request artifacts, then writes standard
+SpecSpace-owned `runs/idea_to_spec_repair_drafts.json` and
+`runs/idea_to_spec_repair_rerun_requests.json`. The generic happy-path target
+then reuses the same import preview, rerun request gate, repair-draft rerun,
+repaired promotion handoff, and Idea Maturity validation flow. The default
+fixture is the Team Decision Log pack, but product identity stays in pack data
+and `PRODUCT_WORKSPACE_REPAIR_PACK_WORKSPACE_ID`, not in the generic flow. The
+expected happy-path result has zero unresolved ontology gaps, zero unresolved
+candidate gaps, `ready_for_candidate_approval: true`, and Idea Maturity
+`lifecycle_state: approval_ready`.
+
+`make product-workspace-team-decision-log-happy-path-repair-pack` remains only
+as a documented demo alias for the default Team Decision Log fixture.
+
+The final maturity refresh intentionally treats approval and promotion artifacts
+as absent for the repair-pack demo so stale local Platform state cannot leak
+into the repair-pack readiness surface. Candidate approval, promotion request,
+Git execution, review status, and read-model publication remain separate
+Platform/Git Service flows.
+
 ## Authority Boundary
 
 Team Decision Log remains non-canonical until a repository service accepts a
@@ -492,24 +521,26 @@ The product pilot must not:
 
 ## Current Execution Order
 
-1. Review-only import preview for SpecSpace-owned repair drafts from
+1. Product workspace repair-pack materialization from
+   `product_workspace_repair_pack` when running the happy-path demo.
+2. Review-only import preview for SpecSpace-owned repair drafts from
    `specspace_repair_draft_import_preview`.
-2. Request-gated repair draft rerun intent through
+3. Request-gated repair draft rerun intent through
    `specspace_repair_rerun_request_gate`.
-3. Review-only rerun artifacts from a ready SpecSpace repair draft import
+4. Review-only rerun artifacts from a ready SpecSpace repair draft import
    preview through `specspace_repair_draft_rerun_report`.
-4. Controlled candidate rerun source selection from
+5. Controlled candidate rerun source selection from
    `idea_to_spec_rerun_materialization`.
-5. Prompt-side enrichment for richer candidate graph authoring under the same
+6. Prompt-side enrichment for richer candidate graph authoring under the same
    ontology-bound seed contract.
-6. CLI or agent conversation wrapper that fills `user_idea_raw_input` from a
+7. CLI or agent conversation wrapper that fills `user_idea_raw_input` from a
    real operator interview.
-7. SpecSpace workflow lane refinement for clearer active candidate blockers and
+8. SpecSpace workflow lane refinement for clearer active candidate blockers and
    repair suggestions.
-8. Extend Platform Git Service orchestration through review status and
+9. Extend Platform Git Service orchestration through review status and
    read-model publication.
-9. Refine product workspace workflow lane metrics and blocker copy.
-10. Refine ontology applicability and layer-aware review as compiler support
+10. Refine product workspace workflow lane metrics and blocker copy.
+11. Refine ontology applicability and layer-aware review as compiler support
    matures.
 
 ## Canonical Sources

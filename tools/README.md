@@ -389,6 +389,21 @@ Supervisor modes:
   ready for candidate approval review while keeping Platform promotion blocked
   until a separate `candidate_approval_decision`, and it does not mutate source
   artifacts, canonical specs, ontology packages, Git branches, or read models.
+- `tools/product_workspace_repair_pack.py`: product workspace repair-pack
+  materializer introduced by proposal 0182. Use
+  `make product-workspace-repair-pack-state` to convert a
+  `product_workspace_repair_pack` fixture plus the current repair session and
+  clarification requests into standard SpecSpace-owned
+  `runs/idea_to_spec_repair_drafts.json` and
+  `runs/idea_to_spec_repair_rerun_requests.json`. Use
+  `make product-workspace-happy-path-repair-pack` to replay the selected pack
+  through the existing import preview, rerun request gate, repair-draft rerun,
+  repaired handoff, and Idea Maturity validation chain. The default fixture is
+  Team Decision Log, and
+  `make product-workspace-team-decision-log-happy-path-repair-pack` is only a
+  documented demo alias. The pack is demo input data and does not make drafts
+  authoritative, apply answers, accept ontology terms, mutate specs, approve
+  candidates, or create Git state.
 - `tools/product_ontology_gap_review_decisions.py`: product-scoped ontology
   gap decision builder introduced by proposal 0168. Use
   `make product-ontology-gap-review-decisions` to consume a ready

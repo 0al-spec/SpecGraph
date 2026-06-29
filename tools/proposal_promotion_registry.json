@@ -2338,5 +2338,18 @@
     "required_provenance_links": [
       "source_draft_ref"
     ]
+  },
+  {
+    "proposal_id": "0182",
+    "source_artifact_class": "working_draft",
+    "source_refs": [
+      "docs/archive/proposal_sources/0182_team_decision_log_happy_path_repair_pack.md"
+    ],
+    "motivating_concern": "The Team Decision Log product idea-to-spec demo can show diagnostic blockers, but it needs a reproducible happy-path repair input that reaches candidate approval readiness without hand-editing local runs artifacts.",
+    "normalized_title": "Team Decision Log Happy-Path Repair Pack",
+    "bounded_scope": "Add a deterministic review-only product_workspace_repair_pack materializer, generic happy-path repair-pack Make target, Team Decision Log happy-path repair-pack fixture and demo alias, tests, proposal docs, roadmap, DocC, and registry tracking that materializes curated repair-pack data into SpecSpace-owned repair drafts and rerun request state, then runs the existing import preview, rerun request gate, repair-draft rerun, repaired promotion handoff, and Idea Maturity refresh so a product demo can reach candidate approval readiness without executing prompt agents, applying drafts to source artifacts, mutating candidate or canonical specs, writing Ontology packages or lockfiles, accepting ontology terms, approving candidates, creating Git branches, commits, or pull requests, merging reviews, publishing read models, or expanding SpecSpace mutation authority.",
+    "required_provenance_links": [
+      "source_draft_ref"
+    ]
   }
 ]

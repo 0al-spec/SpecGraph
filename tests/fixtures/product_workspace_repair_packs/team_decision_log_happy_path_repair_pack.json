@@ -1,0 +1,186 @@
+{
+  "artifact_kind": "product_workspace_repair_pack",
+  "schema_version": 1,
+  "contract_ref": "specgraph.idea-to-spec.product-workspace-repair-pack.v0.1",
+  "proposal_id": "0182",
+  "workspace_id": "team-decision-log",
+  "candidate_id": "team-decision-log",
+  "repair_session_id": "repair-session.team-decision-log",
+  "operator_ref": "operator://team-decision-log-demo",
+  "generated_at": "2026-06-29T00:00:00Z",
+  "canonical_mutations_allowed": false,
+  "tracked_artifacts_written": false,
+  "authority_boundary": {
+    "may_execute_prompt_agent": false,
+    "may_apply_drafts_to_source_artifacts": false,
+    "may_apply_answers_to_source_artifacts": false,
+    "may_apply_decisions_to_source_artifacts": false,
+    "may_mutate_candidate_source_artifacts": false,
+    "may_mutate_canonical_specs": false,
+    "may_write_ontology_package": false,
+    "may_write_ontology_lockfile": false,
+    "may_accept_ontology_terms": false,
+    "may_mark_candidate_graph_accepted": false,
+    "may_create_branch_or_commit": false,
+    "may_open_pull_request": false,
+    "may_publish_read_model": false
+  },
+  "rerun_request": {
+    "id": "repair-rerun-request.team-decision-log.happy-path",
+    "requested_by": "operator://team-decision-log-demo",
+    "created_at": "2026-06-29T00:00:00Z",
+    "updated_at": "2026-06-29T00:00:00Z"
+  },
+  "drafts": [
+    {
+      "request_id": "clarification.candidate-gap.candidate-spec-product-boundary-gaps-ontology-gap-team-member",
+      "allowed_action": "propose_project_local_term",
+      "answer_value": {
+        "term": "Team Member",
+        "term_scope": "project_local"
+      }
+    },
+    {
+      "request_id": "clarification.candidate-gap.candidate-spec-product-boundary-gaps-ontology-gap-decision-owner",
+      "allowed_action": "propose_project_local_term",
+      "answer_value": {
+        "term": "Decision Owner",
+        "term_scope": "project_local"
+      }
+    },
+    {
+      "request_id": "clarification.candidate-gap.candidate-spec-product-boundary-gaps-ontology-gap-decision-recorded",
+      "allowed_action": "propose_project_local_term",
+      "answer_value": {
+        "term": "Decision Recorded",
+        "term_scope": "project_local"
+      }
+    },
+    {
+      "request_id": "clarification.candidate-gap.candidate-spec-product-boundary-gaps-ontology-gap-option-considered",
+      "allowed_action": "propose_project_local_term",
+      "answer_value": {
+        "term": "Option Considered",
+        "term_scope": "project_local"
+      }
+    },
+    {
+      "request_id": "clarification.candidate-gap.candidate-spec-product-boundary-gaps-ontology-gap-evidence-attached",
+      "allowed_action": "propose_project_local_term",
+      "answer_value": {
+        "term": "Evidence Attached",
+        "term_scope": "project_local"
+      }
+    },
+    {
+      "request_id": "clarification.candidate-gap.candidate-spec-product-boundary-gaps-ontology-gap-decision-accepted",
+      "allowed_action": "propose_project_local_term",
+      "answer_value": {
+        "term": "Decision Accepted",
+        "term_scope": "project_local"
+      }
+    },
+    {
+      "request_id": "clarification.candidate-gap.candidate-spec-product-boundary-gaps-ontology-gap-record-decision",
+      "allowed_action": "propose_project_local_term",
+      "answer_value": {
+        "term": "Record Decision",
+        "term_scope": "project_local"
+      }
+    },
+    {
+      "request_id": "clarification.candidate-gap.candidate-spec-product-boundary-gaps-ontology-gap-add-considered-option",
+      "allowed_action": "propose_project_local_term",
+      "answer_value": {
+        "term": "Add Considered Option",
+        "term_scope": "project_local"
+      }
+    },
+    {
+      "request_id": "clarification.candidate-gap.candidate-spec-product-boundary-gaps-ontology-gap-accept-decision",
+      "allowed_action": "propose_project_local_term",
+      "answer_value": {
+        "term": "Accept Decision",
+        "term_scope": "project_local"
+      }
+    },
+    {
+      "request_id": "clarification.candidate-gap.candidate-spec-product-boundary-gaps-ontology-gap-accepted-decision-completeness",
+      "allowed_action": "propose_project_local_term",
+      "answer_value": {
+        "term": "Accepted Decision Completeness",
+        "term_scope": "project_local"
+      }
+    },
+    {
+      "request_id": "clarification.candidate-gap.candidate-spec-product-boundary-gaps-ontology-gap-decisionoption",
+      "allowed_action": "propose_project_local_term",
+      "answer_value": {
+        "term": "DecisionOption",
+        "term_scope": "project_local"
+      }
+    },
+    {
+      "request_id": "clarification.candidate-gap.candidate-spec-product-boundary-gaps-gap-risk-a-decision-without-rationale-can-be-reused-later-as-if-it-were-fully-justified",
+      "allowed_action": "answer_question",
+      "answer_value": {
+        "resolution": "risk_accepted",
+        "reason": "Accepted decisions require owner, rationale, and evidence references before they can be recorded. The residual risk remains visible in review but is accepted for this candidate preview.",
+        "evidence_refs": [
+          "risk.decision-without-rationale",
+          "constraint.accepted-decision-owner",
+          "policy.accepted-decision-completeness"
+        ]
+      }
+    },
+    {
+      "request_id": "clarification.candidate-gap.candidate-spec-accepted-decision-owner-gaps-gap-accepted-decision-owner-enforcement-mechanism",
+      "allowed_action": "provide_candidate_context",
+      "answer_value": {
+        "mechanism": "The accept-decision command validates owner, rationale, and evidence reference fields before Decision Accepted can be recorded.",
+        "enforces": [
+          "owner",
+          "rationale",
+          "evidence_reference"
+        ],
+        "source_refs": [
+          "constraint.accepted-decision-owner",
+          "command.accept-decision"
+        ]
+      }
+    },
+    {
+      "request_id": "clarification.candidate-gap.candidate-spec-accepted-decision-completeness-gaps-gap-accepted-decision-completeness-enforcement-mechanism",
+      "allowed_action": "provide_candidate_context",
+      "answer_value": {
+        "mechanism": "The Accepted Decision Completeness policy gates the Decision Accepted event on complete owner, rationale, evidence reference, and reviewed option context.",
+        "enforces": [
+          "accepted_decision_owner",
+          "accepted_decision_rationale",
+          "accepted_decision_evidence_reference",
+          "reviewed_option_context"
+        ],
+        "source_refs": [
+          "policy.accepted-decision-completeness",
+          "event.decision-accepted",
+          "command.accept-decision"
+        ]
+      }
+    },
+    {
+      "request_id": "clarification.repair.repair-review-unresolved-gaps",
+      "allowed_action": "propose_project_local_term",
+      "answer_value": {
+        "term": "Decision Owner",
+        "term_scope": "project_local",
+        "reason": "The aggregate candidate_graph.gaps request is answered with a concrete project-local term already covered by node-scoped decisions; it must not reject the entire aggregate gap set."
+      }
+    }
+  ],
+  "summary": {
+    "status": "repair_pack_ready",
+    "draft_count": 15,
+    "ontology_decision_count": 12,
+    "candidate_gap_answer_count": 3
+  }
+}

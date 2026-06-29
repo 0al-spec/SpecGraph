@@ -1160,27 +1160,72 @@ Custom paths can be threaded through
 - Ready SpecSpace repair draft import previews can be converted into standard
   review-only answer, ontology decision, rerun, materialization, and
   repair-session artifacts without making drafts authoritative.
+- A Team Decision Log happy-path repair pack can now be replayed through the
+  same SpecSpace-owned repair loop to reach candidate approval readiness without
+  hand-editing `runs/*.json` or granting write authority.
 
 ## Current Execution Order
 
 The active stack after production workspace isolation is:
 
-1. Review-only import preview for SpecSpace-owned repair drafts emitted by
+1. Product workspace repair-pack materialization emitted by proposal `0182`.
+2. Review-only import preview for SpecSpace-owned repair drafts emitted by
    proposal `0172`.
-2. Review-only rerun artifacts from a ready SpecSpace repair draft import
+3. Review-only rerun artifacts from a ready SpecSpace repair draft import
    preview emitted by proposal `0173`.
-3. Controlled candidate rerun source selection from a ready
+4. Controlled candidate rerun source selection from a ready
    `idea_to_spec_rerun_materialization` report emitted by proposal `0167`.
-4. CLI or agent conversation wrapper that fills `user_idea_raw_input` from a
+5. CLI or agent conversation wrapper that fills `user_idea_raw_input` from a
    real operator interview and can consume clarification requests.
-5. Prompt-side enrichment that can propose richer product-domain graph nodes
+6. Prompt-side enrichment that can propose richer product-domain graph nodes
    while preserving ontology gaps for unaccepted terms.
-6. SpecSpace workflow lane refinement for active candidate blockers, repair
+7. SpecSpace workflow lane refinement for active candidate blockers, repair
    suggestions, and approval state.
-7. Platform Git Service post-review status and read-model publication
+8. Platform Git Service post-review status and read-model publication
    orchestration.
-8. Ontology applicability and layer-aware review refinement as compiler support
+9. Ontology applicability and layer-aware review refinement as compiler support
    matures.
+
+## Team Decision Log Happy-Path Repair Pack
+
+Status: implemented in proposal `0182`.
+
+Proposal `0182` adds a generic `product_workspace_repair_pack` materializer and
+a curated Team Decision Log repair-pack fixture:
+
+```bash
+make product-workspace-happy-path-repair-pack
+```
+
+The generic target builds the current product candidate and repair session,
+materializes the selected repair pack into SpecSpace-owned
+`runs/idea_to_spec_repair_drafts.json` and
+`runs/idea_to_spec_repair_rerun_requests.json`, validates the request through
+`specspace_repair_draft_import_preview` and
+`specspace_repair_rerun_request_gate`, runs the standard repair-draft rerun, and
+then builds the repaired promotion handoff.
+
+The default fixture is Team Decision Log. The product-specific
+`product-workspace-team-decision-log-happy-path-repair-pack` target is only a
+documented demo alias for the generic target, not a new system flow.
+
+The expected demo result is:
+
+- `runs/specspace_repair_draft_import_preview.json` is ready with 15 accepted
+  drafts and no invalid drafts;
+- `runs/specspace_repair_rerun_request_gate.json` is ready for the selected
+  `team-decision-log` request;
+- `runs/specspace_repair_draft_rerun_report.json` reports zero unresolved
+  ontology gaps;
+- `runs/repaired_candidate_promotion_handoff_report.json` reports
+  `ready_for_candidate_approval: true`;
+- `runs/idea_maturity_metrics_report.json` reports `status: ready` and
+  `lifecycle_state: approval_ready` for the repair-pack demo surface.
+
+The final maturity refresh intentionally points approval/promotion inputs at
+absent demo-local paths so stale local Platform artifacts cannot make the
+repair-pack demo look blocked or promoted. Platform approval and Git Service
+promotion remain separate downstream flows.
 
 ## Related Documents
 
