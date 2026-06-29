@@ -1176,7 +1176,10 @@ Key derived artifacts:
   normalizes clarification load, answer materialization, ontology grounding,
   candidate gap closure, workflow friction, promotion/readiness state, and
   optional downstream review/publication state from the selected lifecycle
-  artifacts without granting approval, Git, ontology, prompt-agent, canonical
+  artifacts. The report also includes typed `readiness_explainers` for
+  Pre-SIB findings, repair-session blockers, promotion-gate blockers, stale
+  refs, policy failures, and invariant failures. These explain why readiness is
+  blocked without granting approval, Git, ontology, prompt-agent, canonical
   mutation, or publication authority.
 - `runs/idea_maturity_metrics_validation_report.json`: public-safe validation
   evidence for the maturity metrics report. Build it with

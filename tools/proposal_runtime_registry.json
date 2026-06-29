@@ -10066,5 +10066,72 @@
         "pattern": "make product-workspace-idea-maturity"
       }
     ]
+  },
+  {
+    "proposal_id": "0180",
+    "posture": "synchronous_runtime_slice",
+    "runtime_surfaces": [
+      "docs/proposals/0180_idea_maturity_readiness_explainers.md",
+      "docs/archive/proposal_sources/0180_idea_maturity_readiness_explainers.md",
+      "docs/product_workspace_graph_versioning_roadmap.md",
+      "docs/static_artifact_publish.md",
+      "Sources/SpecGraph/Documentation.docc/ProductWorkspacePilots.md",
+      "Sources/SpecGraph/Documentation.docc/ArtifactPublishing.md",
+      "tools/README.md",
+      "tools/docc_sync_contract.json",
+      "tools/idea_maturity_metrics_report.py",
+      "tests/test_idea_maturity_metrics_report.py",
+      "Makefile"
+    ],
+    "runtime_markers": [
+      {
+        "path": "tools/idea_maturity_metrics_report.py",
+        "pattern": "READINESS_EXPLAINERS_PROPOSAL_ID = \"0180\""
+      },
+      {
+        "path": "tools/idea_maturity_metrics_report.py",
+        "pattern": "def _readiness_explainers("
+      },
+      {
+        "path": "tools/idea_maturity_metrics_report.py",
+        "pattern": "\"readiness_explainers\": readiness_explainers"
+      },
+      {
+        "path": "Makefile",
+        "pattern": "IDEA_MATURITY_METRICS_PRE_SIB"
+      }
+    ],
+    "validation_markers": [
+      {
+        "path": "tests/test_idea_maturity_metrics_report.py",
+        "pattern": "test_idea_maturity_metrics_report_emits_pre_sib_readiness_explainers"
+      },
+      {
+        "path": "tests/test_idea_maturity_metrics_report.py",
+        "pattern": "test_idea_maturity_metrics_report_uses_repaired_pre_sib_as_current_surface"
+      },
+      {
+        "path": "tests/test_idea_maturity_metrics_report.py",
+        "pattern": "test_idea_maturity_metrics_report_emits_repair_and_promotion_explainers"
+      }
+    ],
+    "observation_markers": [
+      {
+        "path": "docs/proposals/0180_idea_maturity_readiness_explainers.md",
+        "pattern": "`readiness_explainers` array"
+      },
+      {
+        "path": "docs/product_workspace_graph_versioning_roadmap.md",
+        "pattern": "Status: implemented in proposal `0180`"
+      },
+      {
+        "path": "Sources/SpecGraph/Documentation.docc/ProductWorkspacePilots.md",
+        "pattern": "Proposal `0180`"
+      },
+      {
+        "path": "tools/README.md",
+        "pattern": "typed `readiness_explainers`"
+      }
+    ]
   }
 ]

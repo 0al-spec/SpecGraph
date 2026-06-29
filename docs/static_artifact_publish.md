@@ -256,6 +256,10 @@ validator. `make publish-bundle` builds
 `make idea-maturity-metrics-validate` through `METRICS_CLI` and publishes
 `runs/idea_maturity_metrics_validation_report.json`. SpecGraph does not commit
 or publish the Metrics validator binary/script as its own artifact.
+The maturity report includes proposal `0180` `readiness_explainers` inline, so
+SpecSpace and Platform can explain Pre-SIB, repair-session, promotion-gate,
+stale-ref, policy, and invariant blockers without fetching another artifact or
+granting write authority.
 
 After `.github/workflows/deploy-connection-check.yml` is present on the base
 branch, pull requests from branches in this repository also run `Check deploy
