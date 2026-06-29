@@ -10191,5 +10191,71 @@
         "pattern": "Metrics-owned schema refs"
       }
     ]
+  },
+  {
+    "proposal_id": "0182",
+    "posture": "synchronous_runtime_slice",
+    "runtime_surfaces": [
+      "docs/proposals/0182_team_decision_log_happy_path_repair_pack.md",
+      "docs/archive/proposal_sources/0182_team_decision_log_happy_path_repair_pack.md",
+      "docs/product_workspace_graph_versioning_roadmap.md",
+      "Sources/SpecGraph/Documentation.docc/ProductWorkspacePilots.md",
+      "tools/README.md",
+      "tools/docc_sync_contract.json",
+      "tools/product_workspace_repair_pack.py",
+      "tests/fixtures/product_workspace_repair_packs/team_decision_log_happy_path_repair_pack.json",
+      "tests/test_product_workspace_repair_pack.py",
+      "Makefile"
+    ],
+    "runtime_markers": [
+      {
+        "path": "tools/product_workspace_repair_pack.py",
+        "pattern": "PROPOSAL_ID = \"0182\""
+      },
+      {
+        "path": "tools/product_workspace_repair_pack.py",
+        "pattern": "def build_product_workspace_repair_pack_states("
+      },
+      {
+        "path": "Makefile",
+        "pattern": "product-workspace-team-decision-log-happy-path-repair-pack"
+      },
+      {
+        "path": "tests/fixtures/product_workspace_repair_packs/team_decision_log_happy_path_repair_pack.json",
+        "pattern": "\"proposal_id\": \"0182\""
+      }
+    ],
+    "validation_markers": [
+      {
+        "path": "tests/test_product_workspace_repair_pack.py",
+        "pattern": "test_team_decision_log_repair_pack_materializes_specspace_owned_state"
+      },
+      {
+        "path": "tests/test_product_workspace_repair_pack.py",
+        "pattern": "test_team_decision_log_repair_pack_import_preview_is_ready"
+      },
+      {
+        "path": "tests/test_product_workspace_repair_pack.py",
+        "pattern": "test_repair_pack_rejects_stale_repair_session_identity"
+      }
+    ],
+    "observation_markers": [
+      {
+        "path": "docs/proposals/0182_team_decision_log_happy_path_repair_pack.md",
+        "pattern": "product_workspace_repair_pack"
+      },
+      {
+        "path": "docs/product_workspace_graph_versioning_roadmap.md",
+        "pattern": "Status: implemented in proposal `0182`"
+      },
+      {
+        "path": "Sources/SpecGraph/Documentation.docc/ProductWorkspacePilots.md",
+        "pattern": "Proposal `0182`"
+      },
+      {
+        "path": "tools/README.md",
+        "pattern": "product-workspace-team-decision-log-happy-path-repair-pack"
+      }
+    ]
   }
 ]

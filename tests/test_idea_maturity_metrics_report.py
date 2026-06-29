@@ -778,6 +778,7 @@ def test_idea_maturity_metrics_report_strict_fails_on_invariant_violation(
 def test_idea_maturity_metrics_make_target_threads_paths(tmp_path: Path) -> None:
     paths = write_ready_chain(tmp_path / "make")
     output = tmp_path / "make" / "idea_maturity_metrics_report.json"
+    absent = tmp_path / "make" / "absent"
     make_args = [
         "make",
         "idea-maturity-metrics",
@@ -798,7 +799,47 @@ def test_idea_maturity_metrics_make_target_threads_paths(tmp_path: Path) -> None
         f"IDEA_MATURITY_METRICS_REPAIRED_ACTIVE_CANDIDATE={paths['repaired_active_candidate']}",
         f"IDEA_MATURITY_METRICS_REPAIRED_PROMOTION_GATE={paths['repaired_promotion_gate']}",
         f"IDEA_MATURITY_METRICS_REPAIRED_REPAIR_SESSION={paths['repaired_repair_session']}",
+        (
+            "IDEA_MATURITY_METRICS_SPECSPACE_DRAFT_IMPORT_PREVIEW="
+            f"{absent / 'specspace_repair_draft_import_preview.json'}"
+        ),
+        (
+            "IDEA_MATURITY_METRICS_SPECSPACE_RERUN_REQUEST="
+            f"{absent / 'idea_to_spec_repair_rerun_requests.json'}"
+        ),
+        (
+            "IDEA_MATURITY_METRICS_APPROVAL_INTENT="
+            f"{absent / 'idea_to_spec_candidate_approval_intents.json'}"
+        ),
+        (
+            "IDEA_MATURITY_METRICS_REPAIR_RERUN_EXECUTION="
+            f"{absent / 'platform_product_repair_rerun_execution_report.json'}"
+        ),
+        (
+            "IDEA_MATURITY_METRICS_REPAIR_RERUN_PUBLICATION="
+            f"{absent / 'platform_product_repair_rerun_publication_report.json'}"
+        ),
+        (
+            "IDEA_MATURITY_METRICS_APPROVAL_EXECUTION="
+            f"{absent / 'platform_candidate_approval_execution_report.json'}"
+        ),
         f"IDEA_MATURITY_METRICS_CANDIDATE_APPROVAL_DECISION={paths['candidate_approval_decision']}",
+        (
+            "IDEA_MATURITY_METRICS_PROMOTION_REQUEST="
+            f"{absent / 'graph_repository_promotion_request.json'}"
+        ),
+        (
+            "IDEA_MATURITY_METRICS_PROMOTION_EXECUTION="
+            f"{absent / 'product_candidate_promotion_execution_report.json'}"
+        ),
+        (
+            "IDEA_MATURITY_METRICS_REVIEW_STATUS="
+            f"{absent / 'product_candidate_promotion_review_status_report.json'}"
+        ),
+        (
+            "IDEA_MATURITY_METRICS_READ_MODEL_PUBLICATION="
+            f"{absent / 'product_candidate_promotion_read_model_publication_report.json'}"
+        ),
         f"IDEA_MATURITY_METRICS_OUTPUT={output}",
     ]
 
