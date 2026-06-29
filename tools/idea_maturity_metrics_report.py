@@ -130,6 +130,17 @@ SUPERSEDED_REPORT_KEYS = {
 }
 
 READINESS_EXPLAINER_LIMIT = 32
+READINESS_SEVERITY_VALUES = {"low", "medium", "high"}
+READINESS_SEVERITY_ALIASES = {
+    "blocking": "high",
+    "critical": "high",
+    "error": "high",
+    "review_required": "medium",
+    "warning": "medium",
+    "warn": "medium",
+    "info": "low",
+    "informational": "low",
+}
 
 SUMMARY_METRIC_KEYS = (
     "lifecycle_state",
@@ -1506,13 +1517,20 @@ def _readiness_explainer(
         "proposal_id": READINESS_EXPLAINERS_PROPOSAL_ID,
         "kind": kind,
         "source": source,
-        "severity": severity,
+        "severity": _readiness_severity(severity),
         "blocks": [block for block in blocks if block],
         "message": message,
         "next_action": next_action,
         "evidence_refs": [ref for ref in evidence_refs or [] if ref],
         "evidence": _public_safe(evidence or {}),
     }
+
+
+def _readiness_severity(value: str) -> str:
+    normalized = _slug(value).replace("-", "_")
+    if normalized in READINESS_SEVERITY_VALUES:
+        return normalized
+    return READINESS_SEVERITY_ALIASES.get(normalized, "medium")
 
 
 def _dedupe_explainers(explainers: list[dict[str, Any]]) -> list[dict[str, Any]]:

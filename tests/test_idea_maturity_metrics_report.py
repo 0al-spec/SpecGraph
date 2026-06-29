@@ -653,6 +653,34 @@ def test_idea_maturity_metrics_report_emits_pre_sib_readiness_explainers(
     ]
 
 
+def test_idea_maturity_metrics_report_normalizes_readiness_explainer_severity(
+    tmp_path: Path,
+) -> None:
+    paths = write_ready_chain(tmp_path / "severity-normalization")
+    paths["repaired_pre_sib"].unlink()
+    pre_sib = load_json(paths["pre_sib"])
+    pre_sib["findings"] = [
+        {
+            "finding_id": "pre_sib_warning_gap",
+            "severity": "warning",
+            "message": "Warning severity comes from a source report.",
+        }
+    ]
+    pre_sib["readiness"] = {
+        "ready": False,
+        "review_state": "pre_sib_review_required",
+        "blocked_by": ["pre_sib_warning_gap"],
+    }
+    write_json(paths["pre_sib"], pre_sib)
+
+    report = build_report(paths)
+
+    severities = {item["id"]: item["severity"] for item in report["readiness_explainers"]}
+    assert set(severities.values()) <= {"low", "medium", "high"}
+    assert severities["readiness-explainer.pre-sib-pre-sib-warning-gap"] == "medium"
+    assert severities["readiness-explainer.pre-sib-blocker-pre-sib-warning-gap"] == "high"
+
+
 def test_idea_maturity_metrics_report_uses_repaired_pre_sib_as_current_surface(
     tmp_path: Path,
 ) -> None:
