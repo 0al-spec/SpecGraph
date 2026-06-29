@@ -29,14 +29,20 @@ The existing SpecGraph chain then validates and consumes that state through the
 normal gates:
 
 ```bash
-make product-workspace-team-decision-log-happy-path-repair-pack
+make product-workspace-happy-path-repair-pack
 ```
 
-This target builds the ordinary Team Decision Log candidate repair session,
-materializes the pack into SpecSpace-owned draft/request state, runs the
-requested repair-draft rerun, builds the repaired candidate promotion handoff,
-and refreshes Idea Maturity with approval/promotion artifacts intentionally
-absent so stale local Platform state cannot leak into the demo.
+This generic target builds the current product candidate repair session,
+materializes the selected pack into SpecSpace-owned draft/request state, runs
+the requested repair-draft rerun, builds the repaired candidate promotion
+handoff, and refreshes Idea Maturity with approval/promotion artifacts
+intentionally absent so stale local Platform state cannot leak into the demo.
+For the default Team Decision Log fixture, the workspace id is supplied through
+`PRODUCT_WORKSPACE_REPAIR_PACK_WORKSPACE_ID=team-decision-log`.
+
+`make product-workspace-team-decision-log-happy-path-repair-pack` remains only
+as a documented demo alias for the default fixture. It is not a new product
+workspace flow.
 
 ## Authority Boundary
 
@@ -73,6 +79,6 @@ make Team Decision Log part of SpecGraph system logic.
 ## Validation
 
 - `tests/test_product_workspace_repair_pack.py`
-- `make product-workspace-team-decision-log-happy-path-repair-pack`
+- `make product-workspace-happy-path-repair-pack`
 - `make proposal-tracking-gate`
 - `make docc-sync`

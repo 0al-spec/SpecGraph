@@ -1194,16 +1194,20 @@ Proposal `0182` adds a generic `product_workspace_repair_pack` materializer and
 a curated Team Decision Log repair-pack fixture:
 
 ```bash
-make product-workspace-team-decision-log-happy-path-repair-pack
+make product-workspace-happy-path-repair-pack
 ```
 
-The target builds the ordinary Team Decision Log candidate and repair session,
-materializes the repair pack into SpecSpace-owned
+The generic target builds the current product candidate and repair session,
+materializes the selected repair pack into SpecSpace-owned
 `runs/idea_to_spec_repair_drafts.json` and
 `runs/idea_to_spec_repair_rerun_requests.json`, validates the request through
 `specspace_repair_draft_import_preview` and
 `specspace_repair_rerun_request_gate`, runs the standard repair-draft rerun, and
 then builds the repaired promotion handoff.
+
+The default fixture is Team Decision Log. The product-specific
+`product-workspace-team-decision-log-happy-path-repair-pack` target is only a
+documented demo alias for the generic target, not a new system flow.
 
 The expected demo result is:
 

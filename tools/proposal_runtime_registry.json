@@ -10218,7 +10218,7 @@
       },
       {
         "path": "Makefile",
-        "pattern": "product-workspace-team-decision-log-happy-path-repair-pack"
+        "pattern": "product-workspace-happy-path-repair-pack"
       },
       {
         "path": "tests/fixtures/product_workspace_repair_packs/team_decision_log_happy_path_repair_pack.json",
@@ -10254,7 +10254,7 @@
       },
       {
         "path": "tools/README.md",
-        "pattern": "product-workspace-team-decision-log-happy-path-repair-pack"
+        "pattern": "documented demo alias"
       }
     ]
   }

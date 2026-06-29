@@ -153,6 +153,7 @@ PRODUCT_WORKSPACE_REPAIR_PACK_REQUEST_STATE_OUTPUT ?= runs/idea_to_spec_repair_r
 PRODUCT_WORKSPACE_REPAIR_PACK_IMPORT_PREVIEW_REF ?= runs/specspace_repair_draft_import_preview.json
 PRODUCT_WORKSPACE_REPAIR_PACK_RERUN_REPORT_REF ?= runs/specspace_repair_draft_rerun_report.json
 PRODUCT_WORKSPACE_REPAIR_PACK_ABSENT_ARTIFACT_DIR ?= runs/product_workspace_repair_pack_absent
+PRODUCT_WORKSPACE_REPAIR_PACK_WORKSPACE_ID ?= team-decision-log
 CANDIDATE_SPEC_MATERIALIZATION_CANDIDATE_GRAPH ?= tests/fixtures/candidate_repair_loop/candidate_graph_repairable.json
 CANDIDATE_SPEC_MATERIALIZATION_REPAIR_LOOP ?= runs/candidate_repair_loop_report.json
 CANDIDATE_SPEC_MATERIALIZATION_OUTPUT_DIR ?= runs/materialized_candidate_specs
@@ -275,6 +276,7 @@ PYTHON_TARGETS := viewer-surfaces dashboard backlog next-move spec-activity grap
 	active-idea-to-spec-candidate-source candidate-approval-decision \
 	product-workspace-active-candidate product-workspace-decision-backed-repair-chain \
 	product-workspace-repaired-promotion-handoff \
+	product-workspace-happy-path-repair-pack \
 	product-workspace-team-decision-log-happy-path-repair-pack \
 	proposal-work-claims proposal-work-claims-gate proposal-id \
 	metrics-delivery metrics-feedback metrics-source-promotion metric-signals metric-thresholds \
@@ -347,7 +349,8 @@ help:
 			'  make product-workspace-repair-draft-rerun SPECSPACE_REPAIR_DRAFT_IMPORT_DRAFTS=<json>' \
 			'  make product-workspace-repair-pack-state PRODUCT_WORKSPACE_REPAIR_PACK=<json>' \
 			'  make product-workspace-decision-backed-repair-chain Build product candidate + decision-backed rerun preview' \
-			'  make product-workspace-team-decision-log-happy-path-repair-pack Build approval-ready Team Decision Log repair demo' \
+			'  make product-workspace-happy-path-repair-pack PRODUCT_WORKSPACE_REPAIR_PACK=<json>' \
+			'  make product-workspace-team-decision-log-happy-path-repair-pack Demo alias for the Team Decision Log fixture' \
 			'  make idea-maturity-metrics   Build Idea-to-Spec maturity telemetry report' \
 			'  make idea-maturity-metrics-validate Validate maturity telemetry with Metrics CLI' \
 		'  make metrics-delivery         Refresh Metrics delivery workflow JSON' \
@@ -631,8 +634,8 @@ product-workspace-requested-repair-draft-rerun:
 product-workspace-repair-pack-state:
 	@$(PYTHON) tools/product_workspace_repair_pack.py --pack "$(PRODUCT_WORKSPACE_REPAIR_PACK)" --repair-session "$(PRODUCT_WORKSPACE_REPAIR_PACK_REPAIR_SESSION)" --clarification-requests "$(PRODUCT_WORKSPACE_REPAIR_PACK_CLARIFICATION_REQUESTS)" --drafts-output "$(PRODUCT_WORKSPACE_REPAIR_PACK_DRAFTS_OUTPUT)" --request-state-output "$(PRODUCT_WORKSPACE_REPAIR_PACK_REQUEST_STATE_OUTPUT)" --import-preview-ref "$(PRODUCT_WORKSPACE_REPAIR_PACK_IMPORT_PREVIEW_REF)" --rerun-report-ref "$(PRODUCT_WORKSPACE_REPAIR_PACK_RERUN_REPORT_REF)"
 
-.PHONY: product-workspace-team-decision-log-happy-path-repair-pack
-product-workspace-team-decision-log-happy-path-repair-pack:
+.PHONY: product-workspace-happy-path-repair-pack
+product-workspace-happy-path-repair-pack:
 	@$(MAKE) product-workspace-decision-backed-repair-chain \
 		IDEA_MATURITY_METRICS_REPAIRED_HANDOFF="$(PRODUCT_WORKSPACE_REPAIR_PACK_ABSENT_ARTIFACT_DIR)/repaired_candidate_promotion_handoff_report.json" \
 		IDEA_MATURITY_METRICS_REPAIRED_CANDIDATE_GRAPH="$(PRODUCT_WORKSPACE_REPAIR_PACK_ABSENT_ARTIFACT_DIR)/repaired_candidate_spec_graph.json" \
@@ -652,9 +655,13 @@ product-workspace-team-decision-log-happy-path-repair-pack:
 		IDEA_MATURITY_METRICS_REVIEW_STATUS="$(PRODUCT_WORKSPACE_REPAIR_PACK_ABSENT_ARTIFACT_DIR)/product_candidate_promotion_review_status_report.json" \
 		IDEA_MATURITY_METRICS_READ_MODEL_PUBLICATION="$(PRODUCT_WORKSPACE_REPAIR_PACK_ABSENT_ARTIFACT_DIR)/product_candidate_promotion_read_model_publication_report.json"
 	@$(MAKE) product-workspace-repair-pack-state
-	@$(MAKE) product-workspace-requested-repair-draft-rerun SPECSPACE_REPAIR_RERUN_REQUEST_WORKSPACE_ID=team-decision-log
+	@$(MAKE) product-workspace-requested-repair-draft-rerun SPECSPACE_REPAIR_RERUN_REQUEST_WORKSPACE_ID="$(PRODUCT_WORKSPACE_REPAIR_PACK_WORKSPACE_ID)"
 	@$(MAKE) product-workspace-repaired-promotion-handoff
 	@$(MAKE) product-workspace-idea-maturity IDEA_MATURITY_METRICS_APPROVAL_INTENT="$(PRODUCT_WORKSPACE_REPAIR_PACK_ABSENT_ARTIFACT_DIR)/idea_to_spec_candidate_approval_intents.json" IDEA_MATURITY_METRICS_REPAIR_RERUN_EXECUTION="$(PRODUCT_WORKSPACE_REPAIR_PACK_ABSENT_ARTIFACT_DIR)/platform_product_repair_rerun_execution_report.json" IDEA_MATURITY_METRICS_REPAIR_RERUN_PUBLICATION="$(PRODUCT_WORKSPACE_REPAIR_PACK_ABSENT_ARTIFACT_DIR)/platform_product_repair_rerun_publication_report.json" IDEA_MATURITY_METRICS_APPROVAL_EXECUTION="$(PRODUCT_WORKSPACE_REPAIR_PACK_ABSENT_ARTIFACT_DIR)/platform_candidate_approval_execution_report.json" IDEA_MATURITY_METRICS_CANDIDATE_APPROVAL_DECISION="$(PRODUCT_WORKSPACE_REPAIR_PACK_ABSENT_ARTIFACT_DIR)/candidate_approval_decision.json" IDEA_MATURITY_METRICS_PROMOTION_REQUEST="$(PRODUCT_WORKSPACE_REPAIR_PACK_ABSENT_ARTIFACT_DIR)/graph_repository_promotion_request.json" IDEA_MATURITY_METRICS_PROMOTION_EXECUTION="$(PRODUCT_WORKSPACE_REPAIR_PACK_ABSENT_ARTIFACT_DIR)/product_candidate_promotion_execution_report.json" IDEA_MATURITY_METRICS_REVIEW_STATUS="$(PRODUCT_WORKSPACE_REPAIR_PACK_ABSENT_ARTIFACT_DIR)/product_candidate_promotion_review_status_report.json" IDEA_MATURITY_METRICS_READ_MODEL_PUBLICATION="$(PRODUCT_WORKSPACE_REPAIR_PACK_ABSENT_ARTIFACT_DIR)/product_candidate_promotion_read_model_publication_report.json"
+
+.PHONY: product-workspace-team-decision-log-happy-path-repair-pack
+product-workspace-team-decision-log-happy-path-repair-pack:
+	@$(MAKE) product-workspace-happy-path-repair-pack
 
 .PHONY: specspace-repair-draft-rerun
 specspace-repair-draft-rerun: product-workspace-repair-draft-rerun

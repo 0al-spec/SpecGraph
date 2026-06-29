@@ -396,10 +396,12 @@ Supervisor modes:
   clarification requests into standard SpecSpace-owned
   `runs/idea_to_spec_repair_drafts.json` and
   `runs/idea_to_spec_repair_rerun_requests.json`. Use
-  `make product-workspace-team-decision-log-happy-path-repair-pack` to replay
-  the curated Team Decision Log pack through the existing import preview, rerun
-  request gate, repair-draft rerun, repaired handoff, and Idea Maturity
-  validation chain. The pack is demo input data and does not make drafts
+  `make product-workspace-happy-path-repair-pack` to replay the selected pack
+  through the existing import preview, rerun request gate, repair-draft rerun,
+  repaired handoff, and Idea Maturity validation chain. The default fixture is
+  Team Decision Log, and
+  `make product-workspace-team-decision-log-happy-path-repair-pack` is only a
+  documented demo alias. The pack is demo input data and does not make drafts
   authoritative, apply answers, accept ontology terms, mutate specs, approve
   candidates, or create Git state.
 - `tools/product_ontology_gap_review_decisions.py`: product-scoped ontology
