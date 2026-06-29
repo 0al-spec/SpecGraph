@@ -887,9 +887,9 @@ the surfaces SpecSpace needs for the `Idea maturity` panel.
 
 The next slices for this line are:
 
-1. **Readiness explainers.** Add typed, public-safe `readiness_explainers` to
-   the maturity report so downstream tools can show why a candidate is blocked
-   without turning maturity into a single score.
+1. **Contract metadata.** Surface the Metrics-owned schema, validator, and
+   compatibility-policy metadata directly in the maturity report so SpecSpace
+   and Platform can display trusted contract evidence.
 2. **Platform awareness.** Let Platform use the report as an explanatory
    preflight signal before promotion. It must not become the promotion
    authority; concrete handoff artifacts and existing gates remain the source
@@ -917,6 +917,22 @@ pre-repair findings.
 This remains observability-only. Explainers do not approve candidates, promote
 branches, mutate canonical specs, write Ontology packages, accept ontology
 terms, or replace the concrete repair/approval/promotion gates.
+
+### 21G. Idea Maturity Metrics Contract Consumption
+
+Status: implemented in proposal `0181`.
+
+Proposal `0181` adds explicit Metrics-owned contract metadata to
+`runs/idea_maturity_metrics_report.json`. The report now carries schema refs,
+validation-report schema refs, validator id/version, compatibility-policy refs,
+and the Metrics RFC ref in a `contract` object while preserving the existing
+SpecGraph-local `contract_ref`.
+
+This keeps Metrics as the schema and validator authority while letting
+SpecSpace and Platform show which contract was used for a given product
+workspace maturity surface. The slice is metadata-only: it does not copy
+Metrics validator logic into SpecGraph, approve candidates, mutate specs, write
+Ontology packages, accept terms, or start Git promotion.
 
 ### 22. Decision-Backed Repair Chain Target
 

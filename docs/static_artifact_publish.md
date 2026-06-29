@@ -260,6 +260,10 @@ The maturity report includes proposal `0180` `readiness_explainers` inline, so
 SpecSpace and Platform can explain Pre-SIB, repair-session, promotion-gate,
 stale-ref, policy, and invariant blockers without fetching another artifact or
 granting write authority.
+Proposal `0181` also adds a `contract` object to the maturity report with the
+Metrics-owned schema refs, validation-report schema ref, validator id/version,
+and compatibility-policy ref. SpecGraph publishes that metadata as producer
+evidence; Metrics remains the RFC/schema/validator authority.
 
 After `.github/workflows/deploy-connection-check.yml` is present on the base
 branch, pull requests from branches in this repository also run `Check deploy

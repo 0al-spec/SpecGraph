@@ -56,7 +56,10 @@ and validation evidence.
 The metrics report includes proposal `0180` `readiness_explainers` inline, so
 downstream consumers can point to concrete Pre-SIB, repair-session,
 promotion-gate, stale-ref, policy, and invariant blockers without fetching an
-extra artifact or gaining write authority.
+extra artifact. Proposal `0181` adds the Metrics-owned schema, validation-report
+schema, validator id/version, and compatibility-policy refs in a `contract`
+object so consumers can show contract evidence without treating SpecGraph as the
+Metrics authority.
 
 The public bundle publishes `runs/*.json` by default after redaction and safety
 scanning. Local-only operator diagnostics are excluded by denylist rather than

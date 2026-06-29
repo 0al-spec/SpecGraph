@@ -359,6 +359,12 @@ pass. Platform may use the report as an explanatory preflight signal before
 promotion, but not as promotion authority. Concrete handoff artifacts and
 existing gates remain the source of branch/commit/PR readiness.
 
+Proposal `0181` adds explicit Metrics contract metadata to the maturity report:
+schema refs, validation-report schema refs, validator id/version, and
+compatibility-policy refs. This lets SpecSpace and Platform show which
+Metrics-owned contract was used while SpecGraph remains only the producer of the
+report and validation evidence.
+
 Proposal `0170` adds a single convenience target for smoke and CI runs that
 need the complete decision-backed review chain:
 

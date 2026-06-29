@@ -14,11 +14,18 @@ from typing import Any
 ROOT = Path(__file__).resolve().parents[1]
 PROPOSAL_ID = "0178"
 READINESS_EXPLAINERS_PROPOSAL_ID = "0180"
+METRICS_CONTRACT_PROPOSAL_ID = "0181"
 SCHEMA_VERSION = 1
 CONTRACT_REF = "specgraph.idea-to-spec.maturity-metrics-report.v0.1"
 METRIC_PACK_ID = "idea_to_spec_maturity"
 METRIC_PACK_REF = "metrics.idea_to_spec_maturity.v0.1"
 METRICS_RFC_REF = "Metrics/IDEA_MATURITY_METRICS.md"
+METRICS_SCHEMA_REF = "schemas/idea_maturity_metrics_report.schema.json"
+METRICS_VALIDATION_REPORT_SCHEMA_REF = "schemas/idea_maturity_metrics_validation_report.schema.json"
+METRICS_VALIDATOR_ID = "metrics.idea_maturity_metrics.validator.v0.1"
+METRICS_VALIDATOR_VERSION = "0.1.0"
+METRICS_COMPATIBILITY_POLICY = "additive_v1"
+METRICS_COMPATIBILITY_POLICY_REF = "VALIDATOR_CONTRACT.md#compatibility-policy"
 AUTHORITY_STATE = "draft_reference"
 STALL_DWELL_SECONDS = 86_400
 
@@ -123,6 +130,17 @@ SUPERSEDED_REPORT_KEYS = {
 }
 
 READINESS_EXPLAINER_LIMIT = 32
+READINESS_SEVERITY_VALUES = {"low", "medium", "high"}
+READINESS_SEVERITY_ALIASES = {
+    "blocking": "high",
+    "critical": "high",
+    "error": "high",
+    "review_required": "medium",
+    "warning": "medium",
+    "warn": "medium",
+    "info": "low",
+    "informational": "low",
+}
 
 SUMMARY_METRIC_KEYS = (
     "lifecycle_state",
@@ -326,6 +344,20 @@ def _privacy_boundary() -> dict[str, object]:
         "join_to_identity_allowed": False,
         "minimum_aggregation_subject": "candidate_run",
         "raw_prompt_or_operator_text_included": False,
+    }
+
+
+def _metrics_contract_metadata() -> dict[str, Any]:
+    return {
+        "schema_version": SCHEMA_VERSION,
+        "schema_ref": METRICS_SCHEMA_REF,
+        "validation_report_schema_ref": METRICS_VALIDATION_REPORT_SCHEMA_REF,
+        "validator_id": METRICS_VALIDATOR_ID,
+        "validator_version": METRICS_VALIDATOR_VERSION,
+        "compatibility_policy": METRICS_COMPATIBILITY_POLICY,
+        "compatibility_policy_ref": METRICS_COMPATIBILITY_POLICY_REF,
+        "metrics_rfc_ref": METRICS_RFC_REF,
+        "proposal_id": METRICS_CONTRACT_PROPOSAL_ID,
     }
 
 
@@ -1485,13 +1517,20 @@ def _readiness_explainer(
         "proposal_id": READINESS_EXPLAINERS_PROPOSAL_ID,
         "kind": kind,
         "source": source,
-        "severity": severity,
+        "severity": _readiness_severity(severity),
         "blocks": [block for block in blocks if block],
         "message": message,
         "next_action": next_action,
         "evidence_refs": [ref for ref in evidence_refs or [] if ref],
         "evidence": _public_safe(evidence or {}),
     }
+
+
+def _readiness_severity(value: str) -> str:
+    normalized = _slug(value).replace("-", "_")
+    if normalized in READINESS_SEVERITY_VALUES:
+        return normalized
+    return READINESS_SEVERITY_ALIASES.get(normalized, "medium")
 
 
 def _dedupe_explainers(explainers: list[dict[str, Any]]) -> list[dict[str, Any]]:
@@ -1980,6 +2019,7 @@ def build_idea_maturity_metrics_report(
         "schema_version": SCHEMA_VERSION,
         "proposal_id": PROPOSAL_ID,
         "contract_ref": CONTRACT_REF,
+        "contract": _metrics_contract_metadata(),
         "metric_pack_id": METRIC_PACK_ID,
         "metric_pack_ref": METRIC_PACK_REF,
         "metrics_rfc_ref": METRICS_RFC_REF,

@@ -1180,7 +1180,10 @@ Key derived artifacts:
   Pre-SIB findings, repair-session blockers, promotion-gate blockers, stale
   refs, policy failures, and invariant failures. These explain why readiness is
   blocked without granting approval, Git, ontology, prompt-agent, canonical
-  mutation, or publication authority.
+  mutation, or publication authority. The report also carries a `contract`
+  object with Metrics-owned schema refs, validation-report schema refs,
+  validator id/version, compatibility-policy refs, and RFC refs so downstream
+  consumers can display the exact Metrics contract evidence.
 - `runs/idea_maturity_metrics_validation_report.json`: public-safe validation
   evidence for the maturity metrics report. Build it with
   `make idea-maturity-metrics-validate`. The target invokes the Metrics

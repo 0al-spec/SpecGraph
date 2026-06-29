@@ -10133,5 +10133,63 @@
         "pattern": "typed `readiness_explainers`"
       }
     ]
+  },
+  {
+    "proposal_id": "0181",
+    "posture": "synchronous_runtime_slice",
+    "runtime_surfaces": [
+      "docs/proposals/0181_idea_maturity_metrics_contract_consumption.md",
+      "docs/archive/proposal_sources/0181_idea_maturity_metrics_contract_consumption.md",
+      "docs/product_workspace_graph_versioning_roadmap.md",
+      "docs/static_artifact_publish.md",
+      "Sources/SpecGraph/Documentation.docc/ProductWorkspacePilots.md",
+      "Sources/SpecGraph/Documentation.docc/ArtifactPublishing.md",
+      "tools/README.md",
+      "tools/docc_sync_contract.json",
+      "tools/idea_maturity_metrics_report.py",
+      "tests/test_idea_maturity_metrics_report.py"
+    ],
+    "runtime_markers": [
+      {
+        "path": "tools/idea_maturity_metrics_report.py",
+        "pattern": "METRICS_CONTRACT_PROPOSAL_ID = \"0181\""
+      },
+      {
+        "path": "tools/idea_maturity_metrics_report.py",
+        "pattern": "def _metrics_contract_metadata("
+      },
+      {
+        "path": "tools/idea_maturity_metrics_report.py",
+        "pattern": "\"contract\": _metrics_contract_metadata()"
+      }
+    ],
+    "validation_markers": [
+      {
+        "path": "tests/test_idea_maturity_metrics_report.py",
+        "pattern": "\"validation_report_schema_ref\""
+      },
+      {
+        "path": "tests/test_idea_maturity_metrics_report.py",
+        "pattern": "\"compatibility_policy\": \"additive_v1\""
+      }
+    ],
+    "observation_markers": [
+      {
+        "path": "docs/proposals/0181_idea_maturity_metrics_contract_consumption.md",
+        "pattern": "`contract` object"
+      },
+      {
+        "path": "docs/product_workspace_graph_versioning_roadmap.md",
+        "pattern": "Status: implemented in proposal `0181`"
+      },
+      {
+        "path": "Sources/SpecGraph/Documentation.docc/ProductWorkspacePilots.md",
+        "pattern": "Proposal `0181`"
+      },
+      {
+        "path": "tools/README.md",
+        "pattern": "Metrics-owned schema refs"
+      }
+    ]
   }
 ]
