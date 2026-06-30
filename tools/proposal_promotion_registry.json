@@ -2416,5 +2416,18 @@
     "required_provenance_links": [
       "source_draft_ref"
     ]
+  },
+  {
+    "proposal_id": "0188",
+    "source_artifact_class": "working_draft",
+    "source_refs": [
+      "docs/archive/proposal_sources/0188_real_idea_intake_orchestration_hardening.md"
+    ],
+    "motivating_concern": "The real-idea clarification-request Make target rebuilt real-idea-intake every time, which could silently overwrite an already materialized product-scoped intake session during staged smoke/debug runs.",
+    "normalized_title": "Real Idea Intake Orchestration Hardening",
+    "bounded_scope": "Preserve existing real-idea intake sessions when emitting clarification requests, add explicit REAL_IDEA_INTAKE_REFRESH opt-in for rebuilds, cover non-ASCII env idea text, and update proposal docs, roadmap, DocC, README, and registries without changing authority boundaries or executing prompt agents.",
+    "required_provenance_links": [
+      "source_draft_ref"
+    ]
   }
 ]

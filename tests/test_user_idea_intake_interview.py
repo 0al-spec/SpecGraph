@@ -560,3 +560,42 @@ def test_real_idea_intake_make_target_writes_custom_outputs(tmp_path: Path) -> N
         "Build a tool $(without shell execution) for team decisions."
     )
     assert report["summary"]["status"] == "intake_interview_review_required"
+
+
+def test_real_idea_intake_make_target_accepts_non_ascii_env_text(tmp_path: Path) -> None:
+    raw_output = tmp_path / "local_operator_user_idea_raw_input.json"
+    session_output = tmp_path / "user_idea_intake_session.json"
+    source_output = tmp_path / "user_idea_intake_source.json"
+    report_output = tmp_path / "user_idea_intake_interview_report.json"
+    idea_text = "Помощник по ремонту квартиры с подрядчиками и бюджетом."
+
+    result = subprocess.run(
+        [
+            "make",
+            "real-idea-intake",
+            f"PYTHON={sys.executable}",
+            "USER_IDEA_INTAKE_INTERVIEW_IDEA_SUMMARY=Помощник по ремонту квартиры.",
+            "USER_IDEA_INTAKE_INTERVIEW_CANDIDATE_ID=apartment-renovation-assistant",
+            "USER_IDEA_INTAKE_INTERVIEW_DISPLAY_NAME=Apartment Renovation Assistant",
+            "USER_IDEA_INTAKE_INTERVIEW_PUBLIC_ROUTE=/apartment-renovation-assistant",
+            f"USER_IDEA_RAW_INPUT_OUTPUT={raw_output}",
+            f"USER_IDEA_INTAKE_SESSION_OUTPUT={session_output}",
+            f"USER_IDEA_INTAKE_SESSION_SOURCE_OUTPUT={source_output}",
+            f"USER_IDEA_INTAKE_INTERVIEW_REPORT_OUTPUT={report_output}",
+        ],
+        cwd=ROOT,
+        check=False,
+        capture_output=True,
+        text=True,
+        env={**os.environ, "SPECG_USER_IDEA_INTAKE_INTERVIEW_IDEA_TEXT": idea_text},
+    )
+
+    assert result.returncode == 0, result.stderr
+    raw_input = load_json(raw_output)
+    session = load_json(session_output)
+    report = load_json(report_output)
+    assert raw_input["idea"]["text"] == idea_text
+    assert session["intent"]["summary"] == "Помощник по ремонту квартиры."
+    assert session["workspace"]["candidate_id"] == "apartment-renovation-assistant"
+    assert report["raw_input"]["local_only"] is True
+    assert idea_text not in json.dumps(report, ensure_ascii=False)

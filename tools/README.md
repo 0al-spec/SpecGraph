@@ -293,6 +293,10 @@ Supervisor modes:
   `idea_event_storming_seed` before running `product-workspace-active-candidate`.
   Passing a `user_idea_intake_source` directly to
   `product-workspace-active-candidate` now fails with an actionable message.
+- Proposal 0188 hardens `make real-idea-intake-clarification-requests`: an
+  existing `USER_IDEA_INTAKE_SESSION_OUTPUT` is preserved and used as the source
+  for clarification requests. The target still creates a session when missing;
+  use `REAL_IDEA_INTAKE_REFRESH=1` to intentionally rebuild it.
 - `tools/user_idea_intake_source.py`: deterministic generic user-idea source
   builder introduced by proposal 0158. Use `make user-idea-intake-source
   USER_IDEA_INTAKE_SOURCE=<json>` to normalize product workspace identity,

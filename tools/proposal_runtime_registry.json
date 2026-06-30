@@ -10623,5 +10623,61 @@
         "pattern": "Proposal 0187"
       }
     ]
+  },
+  {
+    "proposal_id": "0188",
+    "posture": "synchronous_runtime_slice",
+    "runtime_surfaces": [
+      "docs/proposals/0188_real_idea_intake_orchestration_hardening.md",
+      "docs/archive/proposal_sources/0188_real_idea_intake_orchestration_hardening.md",
+      "Makefile",
+      "tests/test_idea_intake_clarification_rerun.py",
+      "tests/test_user_idea_intake_interview.py",
+      "docs/product_workspace_graph_versioning_roadmap.md",
+      "Sources/SpecGraph/Documentation.docc/ProductWorkspacePilots.md",
+      "tools/README.md"
+    ],
+    "runtime_markers": [
+      {
+        "path": "Makefile",
+        "pattern": "REAL_IDEA_INTAKE_REFRESH"
+      },
+      {
+        "path": "Makefile",
+        "pattern": "test ! -f \"$(USER_IDEA_INTAKE_SESSION_OUTPUT)\""
+      },
+      {
+        "path": "Makefile",
+        "pattern": "--session \"$(USER_IDEA_INTAKE_SESSION_OUTPUT)\""
+      }
+    ],
+    "validation_markers": [
+      {
+        "path": "tests/test_idea_intake_clarification_rerun.py",
+        "pattern": "test_real_idea_intake_clarification_requests_preserves_existing_session"
+      },
+      {
+        "path": "tests/test_user_idea_intake_interview.py",
+        "pattern": "test_real_idea_intake_make_target_accepts_non_ascii_env_text"
+      }
+    ],
+    "observation_markers": [
+      {
+        "path": "docs/proposals/0188_real_idea_intake_orchestration_hardening.md",
+        "pattern": "Status: implemented."
+      },
+      {
+        "path": "docs/product_workspace_graph_versioning_roadmap.md",
+        "pattern": "Status: implemented in proposal `0188`"
+      },
+      {
+        "path": "Sources/SpecGraph/Documentation.docc/ProductWorkspacePilots.md",
+        "pattern": "Proposal `0188`"
+      },
+      {
+        "path": "tools/README.md",
+        "pattern": "Proposal 0188"
+      }
+    ]
   }
 ]

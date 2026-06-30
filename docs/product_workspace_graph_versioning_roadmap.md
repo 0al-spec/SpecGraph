@@ -1310,6 +1310,28 @@ still fail the strict candidate-source bridge and require the clarification loop
 `user_idea_intake_source` with an actionable error message, so operators do not
 debug an opaque downstream seed-contract mismatch.
 
+## Real Idea Intake Orchestration Hardening
+
+Status: implemented in proposal `0188`.
+
+Proposal `0188` hardens the staged real-idea clarification flow. The
+`real-idea-intake-clarification-requests` target now treats an existing
+`USER_IDEA_INTAKE_SESSION_OUTPUT` as authoritative and emits clarification
+requests from that session instead of rebuilding `real-idea-intake`
+implicitly.
+
+First-time convenience remains: if the session does not exist, the target still
+runs `real-idea-intake`. Operators who intentionally want to rebuild the session
+must opt in explicitly:
+
+```bash
+make real-idea-intake-clarification-requests REAL_IDEA_INTAKE_REFRESH=1
+```
+
+This prevents isolated smoke runs from accidentally replacing a scoped real
+idea session with a generic `idea-candidate` session when the follow-up Make
+invocation does not repeat every raw-idea/frame argument.
+
 ## Team Decision Log Happy-Path Repair Pack
 
 Status: implemented in proposal `0182`.

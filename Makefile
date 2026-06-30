@@ -49,6 +49,7 @@ USER_IDEA_INTAKE_INTERVIEW_CLARIFICATION_ANSWERS ?=
 USER_IDEA_RAW_INPUT_OUTPUT_DEFAULT := runs/local_operator_user_idea_raw_input.json
 USER_IDEA_RAW_INPUT_OUTPUT ?= $(USER_IDEA_RAW_INPUT_OUTPUT_DEFAULT)
 USER_IDEA_INTAKE_INTERVIEW_REPORT_OUTPUT ?= runs/user_idea_intake_interview_report.json
+REAL_IDEA_INTAKE_REFRESH ?=
 USER_IDEA_INTAKE_INTERVIEW_INPUT_ARG := $(if $(strip $(USER_IDEA_INTAKE_INTERVIEW_INPUT)),--input "$(USER_IDEA_INTAKE_INTERVIEW_INPUT)",)
 USER_IDEA_INTAKE_INTERVIEW_IDEA_SUMMARY_ARG := $(if $(strip $(USER_IDEA_INTAKE_INTERVIEW_IDEA_SUMMARY)),--idea-summary "$(USER_IDEA_INTAKE_INTERVIEW_IDEA_SUMMARY)",)
 USER_IDEA_INTAKE_INTERVIEW_CANDIDATE_ID_ARG := $(if $(strip $(USER_IDEA_INTAKE_INTERVIEW_CANDIDATE_ID)),--candidate-id "$(USER_IDEA_INTAKE_INTERVIEW_CANDIDATE_ID)",)
@@ -604,7 +605,12 @@ real-idea-intake-candidate-source: real-idea-intake
 	@$(MAKE) intake-session-candidate-source INTAKE_SESSION_CANDIDATE_SOURCE_INPUT="$(USER_IDEA_INTAKE_SESSION_OUTPUT)" INTAKE_SESSION_CANDIDATE_SOURCE_OUTPUT="$(USER_IDEA_INTAKE_SESSION_SOURCE_OUTPUT)" INTAKE_SESSION_CANDIDATE_SOURCE_STRICT=1
 
 .PHONY: real-idea-intake-clarification-requests
-real-idea-intake-clarification-requests: real-idea-intake
+real-idea-intake-clarification-requests:
+	@if test ! -f "$(USER_IDEA_INTAKE_SESSION_OUTPUT)"; then \
+		$(MAKE) real-idea-intake; \
+	elif test "$(strip $(REAL_IDEA_INTAKE_REFRESH))" = "1"; then \
+		$(MAKE) real-idea-intake; \
+	fi
 	@$(PYTHON) tools/idea_to_spec_clarification_requests.py --session "$(USER_IDEA_INTAKE_SESSION_OUTPUT)" --no-intake --no-candidate-graph --no-pre-sib --no-repair-loop --output "$(IDEA_INTAKE_CLARIFICATION_REQUESTS_OUTPUT)"
 
 .PHONY: real-idea-intake-clarification-answers

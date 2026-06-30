@@ -242,6 +242,7 @@ def test_real_idea_intake_make_targets_build_ready_candidate_source(
             "make",
             "real-idea-intake-clarification-requests",
             f"PYTHON={python}",
+            "REAL_IDEA_INTAKE_REFRESH=1",
             "SPECG_USER_IDEA_INTAKE_INTERVIEW_IDEA_TEXT=I want a small tool for team decisions.",
             "USER_IDEA_INTAKE_INTERVIEW_IDEA_SUMMARY=Track team decisions.",
             "USER_IDEA_INTAKE_INTERVIEW_CANDIDATE_ID=team-decision-log",
@@ -312,6 +313,39 @@ def test_real_idea_intake_make_targets_build_ready_candidate_source(
     assert emitted_source["workspace"]["candidate_id"] == "team-decision-log"
 
 
+def test_real_idea_intake_clarification_requests_preserves_existing_session(
+    tmp_path: Path,
+) -> None:
+    python = supported_python()
+    raw_input, session = build_incomplete_intake(tmp_path)
+    before = load_json(session)
+    requests = tmp_path / "idea_intake_clarification_requests.json"
+
+    result = subprocess.run(
+        [
+            "make",
+            "real-idea-intake-clarification-requests",
+            f"PYTHON={python}",
+            "SPECG_USER_IDEA_INTAKE_INTERVIEW_IDEA_TEXT=This text must not overwrite session.",
+            "USER_IDEA_INTAKE_INTERVIEW_CANDIDATE_ID=wrong-candidate",
+            f"USER_IDEA_RAW_INPUT_OUTPUT={raw_input}",
+            f"USER_IDEA_INTAKE_SESSION_OUTPUT={session}",
+            f"IDEA_INTAKE_CLARIFICATION_REQUESTS_OUTPUT={requests}",
+        ],
+        cwd=ROOT,
+        check=False,
+        capture_output=True,
+        text=True,
+    )
+
+    assert result.returncode == 0, result.stderr
+    after = load_json(session)
+    request_payload = load_json(requests)
+    assert after == before
+    assert after["workspace"]["candidate_id"] == "team-decision-log"
+    assert request_payload["summary"]["blocking_request_count"] == 9
+
+
 def test_real_idea_intake_active_candidate_target_builds_seed_first(
     tmp_path: Path,
 ) -> None:
@@ -347,6 +381,7 @@ def test_real_idea_intake_active_candidate_target_builds_seed_first(
         for args in (
             [
                 "real-idea-intake-clarification-requests",
+                "REAL_IDEA_INTAKE_REFRESH=1",
                 (
                     "SPECG_USER_IDEA_INTAKE_INTERVIEW_IDEA_TEXT="
                     "I want a small tool for comparing product prices by weight."
@@ -446,6 +481,7 @@ def test_product_workspace_active_candidate_rejects_direct_intake_source(
             "make",
             "real-idea-intake-clarification-requests",
             f"PYTHON={python}",
+            "REAL_IDEA_INTAKE_REFRESH=1",
             "SPECG_USER_IDEA_INTAKE_INTERVIEW_IDEA_TEXT=I want a small tool for team decisions.",
             "USER_IDEA_INTAKE_INTERVIEW_IDEA_SUMMARY=Track team decisions.",
             "USER_IDEA_INTAKE_INTERVIEW_CANDIDATE_ID=team-decision-log",
