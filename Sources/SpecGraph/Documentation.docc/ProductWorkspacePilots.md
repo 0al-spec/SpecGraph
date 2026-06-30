@@ -157,6 +157,21 @@ clarification questions instead of silently entering the candidate graph path.
 existing intake-source builder in generated mode. Prepared
 `user_idea_intake_source` inputs remain supported for compatibility and tests.
 
+Proposal `0184` adds the first operator-facing real-intake CLI wrapper:
+
+```bash
+make real-idea-intake
+```
+
+The wrapper writes a local-only
+`runs/local_operator_user_idea_raw_input.json`, runs the existing
+`user_idea_intake_session` gate, and writes a public-safe
+`runs/user_idea_intake_interview_report.json`. It can accept explicit
+ontology/domain/context/layer/applicability refs, event-storming hints, and
+accepted clarification answers. It does not execute a prompt agent or infer
+missing product semantics; under-specified input remains
+`needs_clarification`.
+
 Proposal `0163` adds `idea_to_spec_clarification_requests` as the unified
 read-only question/action surface:
 
@@ -543,16 +558,17 @@ The product pilot must not:
    preview through `specspace_repair_draft_rerun_report`.
 5. Controlled candidate rerun source selection from
    `idea_to_spec_rerun_materialization`.
-6. Prompt-side enrichment for richer candidate graph authoring under the same
+6. Real idea intake CLI wrapper through `real-idea-intake`.
+7. SpecSpace intake UI or agent conversation wrapper for the same
+   raw-input/interview contract.
+8. Prompt-side enrichment for richer candidate graph authoring under the same
    ontology-bound seed contract.
-7. CLI or agent conversation wrapper that fills `user_idea_raw_input` from a
-   real operator interview.
-8. SpecSpace workflow lane refinement for clearer active candidate blockers and
+9. SpecSpace workflow lane refinement for clearer active candidate blockers and
    repair suggestions.
-9. Extend Platform Git Service orchestration through review status and
+10. Extend Platform Git Service orchestration through review status and
    read-model publication.
-10. Refine product workspace workflow lane metrics and blocker copy.
-11. Refine ontology applicability and layer-aware review as compiler support
+11. Refine product workspace workflow lane metrics and blocker copy.
+12. Refine ontology applicability and layer-aware review as compiler support
    matures.
 
 ## Canonical Sources

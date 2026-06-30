@@ -252,6 +252,17 @@ Supervisor modes:
   the builder does not execute prompt agents, infer missing domain models,
   mutate canonical specs, write Ontology packages, create branches, or publish
   read models.
+- `tools/user_idea_intake_interview.py`: operator-facing real idea intake
+  wrapper introduced by proposal 0184. Use
+  `make real-idea-intake USER_IDEA_INTAKE_INTERVIEW_IDEA_TEXT=<text>` to write a
+  local-only `runs/local_operator_user_idea_raw_input.json`, run the existing
+  intake-session gate, and emit
+  `runs/user_idea_intake_interview_report.json`. The wrapper can also consume a
+  matching clarification request/answer-set pair and apply accepted intake
+  answers to the raw input before validation. It does not execute prompt agents,
+  infer missing product semantics, mutate candidate/canonical specs, write
+  Ontology packages, accept ontology terms, create Git branches, or publish raw
+  idea text.
 - `tools/user_idea_intake_source.py`: deterministic generic user-idea source
   builder introduced by proposal 0158. Use `make user-idea-intake-source
   USER_IDEA_INTAKE_SOURCE=<json>` to normalize product workspace identity,

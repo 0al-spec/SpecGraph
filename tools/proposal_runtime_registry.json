@@ -10314,5 +10314,74 @@
         "pattern": "dist/specgraph-public/workspaces/team-decision-log"
       }
     ]
+  },
+  {
+    "proposal_id": "0184",
+    "posture": "synchronous_runtime_slice",
+    "runtime_surfaces": [
+      "docs/proposals/0184_real_idea_intake_interview_wrapper.md",
+      "docs/archive/proposal_sources/0184_real_idea_intake_interview_wrapper.md",
+      "tools/user_idea_intake_interview.py",
+      "tests/test_user_idea_intake_interview.py",
+      "Makefile",
+      "docs/product_workspace_graph_versioning_roadmap.md",
+      "Sources/SpecGraph/Documentation.docc/ProductWorkspacePilots.md",
+      "tools/README.md",
+      "tools/docc_sync_contract.json"
+    ],
+    "runtime_markers": [
+      {
+        "path": "tools/user_idea_intake_interview.py",
+        "pattern": "REPORT_CONTRACT_REF = \"specgraph.idea-to-spec.user-idea-intake-interview.v0.1\""
+      },
+      {
+        "path": "tools/user_idea_intake_interview.py",
+        "pattern": "def build_interview("
+      },
+      {
+        "path": "Makefile",
+        "pattern": "real-idea-intake user-idea-intake-interview"
+      },
+      {
+        "path": "Makefile",
+        "pattern": "runs/local_operator_user_idea_raw_input.json"
+      }
+    ],
+    "validation_markers": [
+      {
+        "path": "tests/test_user_idea_intake_interview.py",
+        "pattern": "test_real_idea_interview_captures_incomplete_idea_without_public_raw_text"
+      },
+      {
+        "path": "tests/test_user_idea_intake_interview.py",
+        "pattern": "test_real_idea_interview_cli_hints_write_ready_source"
+      },
+      {
+        "path": "tests/test_user_idea_intake_interview.py",
+        "pattern": "test_real_idea_interview_applies_clarification_answers"
+      },
+      {
+        "path": "tests/test_user_idea_intake_interview.py",
+        "pattern": "test_real_idea_interview_blocks_authority_expansion"
+      }
+    ],
+    "observation_markers": [
+      {
+        "path": "docs/proposals/0184_real_idea_intake_interview_wrapper.md",
+        "pattern": "Status: implemented."
+      },
+      {
+        "path": "docs/product_workspace_graph_versioning_roadmap.md",
+        "pattern": "Status: implemented in proposal `0184`"
+      },
+      {
+        "path": "Sources/SpecGraph/Documentation.docc/ProductWorkspacePilots.md",
+        "pattern": "Proposal `0184`"
+      },
+      {
+        "path": "tools/README.md",
+        "pattern": "proposal 0184"
+      }
+    ]
   }
 ]

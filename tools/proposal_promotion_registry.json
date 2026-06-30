@@ -2364,5 +2364,18 @@
     "required_provenance_links": [
       "source_draft_ref"
     ]
+  },
+  {
+    "proposal_id": "0184",
+    "source_artifact_class": "working_draft",
+    "source_refs": [
+      "docs/archive/proposal_sources/0184_real_idea_intake_interview_wrapper.md"
+    ],
+    "motivating_concern": "The deterministic user_idea_intake_session gate exists, but operators still need a practical first CLI wrapper that captures raw idea text, explicit frame/event-storming hints, and accepted clarification answers without hand-authoring user_idea_raw_input JSON.",
+    "normalized_title": "Real Idea Intake Interview Wrapper",
+    "bounded_scope": "Add a deterministic review-only real idea intake wrapper, Make target, tests, proposal docs, roadmap, DocC, README, and registry tracking that writes a local-only user_idea_raw_input artifact, runs the existing intake-session gate, emits a public-safe interview report, and can apply accepted intake clarification answers, without executing prompt agents, inferring missing product semantics with an LLM, mutating candidate or canonical specs, writing Ontology packages or lockfiles, accepting ontology terms, approving candidates, creating Git branches or commits, opening pull requests, publishing read models, or adding SpecSpace mutation UI.",
+    "required_provenance_links": [
+      "source_draft_ref"
+    ]
   }
 ]
