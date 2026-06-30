@@ -172,6 +172,21 @@ accepted clarification answers. It does not execute a prompt agent or infer
 missing product semantics; under-specified input remains
 `needs_clarification`.
 
+Proposal `0185` adds a review-only bridge from a ready intake session to the
+standard candidate-source artifact:
+
+```bash
+make intake-session-candidate-source
+```
+
+The bridge reads `runs/user_idea_intake_session.json`, validates that its
+embedded `candidate_source_input` is public-safe and ready, and writes
+`runs/user_idea_intake_source.json` plus
+`runs/intake_session_candidate_source_report.json`. It rewrites source
+provenance to the intake session instead of the local raw-input artifact, so raw
+idea text remains local-only while the existing generic intake chain can start
+from a real intake session.
+
 Proposal `0163` adds `idea_to_spec_clarification_requests` as the unified
 read-only question/action surface:
 
@@ -559,16 +574,18 @@ The product pilot must not:
 5. Controlled candidate rerun source selection from
    `idea_to_spec_rerun_materialization`.
 6. Real idea intake CLI wrapper through `real-idea-intake`.
-7. SpecSpace intake UI or agent conversation wrapper for the same
+7. Intake-session candidate source bridge through
+   `intake_session_candidate_source_report`.
+8. SpecSpace intake UI or agent conversation wrapper for the same
    raw-input/interview contract.
-8. Prompt-side enrichment for richer candidate graph authoring under the same
+9. Prompt-side enrichment for richer candidate graph authoring under the same
    ontology-bound seed contract.
-9. SpecSpace workflow lane refinement for clearer active candidate blockers and
+10. SpecSpace workflow lane refinement for clearer active candidate blockers and
    repair suggestions.
-10. Extend Platform Git Service orchestration through review status and
+11. Extend Platform Git Service orchestration through review status and
    read-model publication.
-11. Refine product workspace workflow lane metrics and blocker copy.
-12. Refine ontology applicability and layer-aware review as compiler support
+12. Refine product workspace workflow lane metrics and blocker copy.
+13. Refine ontology applicability and layer-aware review as compiler support
    matures.
 
 ## Canonical Sources

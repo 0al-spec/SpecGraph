@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import argparse
 import hashlib
+import importlib.util
 import json
 import re
 from datetime import datetime, timezone
@@ -11,11 +12,30 @@ from pathlib import Path
 from typing import Any
 
 ROOT = Path(__file__).resolve().parents[1]
+
+
+def _load_contracts_module() -> Any:
+    spec = importlib.util.spec_from_file_location(
+        "idea_to_spec_contracts",
+        Path(__file__).resolve().parent / "idea_to_spec_contracts.py",
+    )
+    if spec is None or spec.loader is None:
+        raise RuntimeError("Unable to load idea-to-spec contract constants")
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
+
+
+_CONTRACTS = _load_contracts_module()
 PROPOSAL_ID = "0162"
 SCHEMA_VERSION = 1
 RAW_INPUT_CONTRACT_REF = "specgraph.idea-to-spec.user-idea-raw-input.v0.1"
 SESSION_CONTRACT_REF = "specgraph.idea-to-spec.user-idea-intake-session.v0.1"
 SOURCE_CONTRACT_REF = "specgraph.idea-to-spec.user-idea-intake-source.v0.1"
+SESSION_CANDIDATE_SOURCE_INPUT_CONTRACT_REF = (
+    _CONTRACTS.INTAKE_SESSION_CANDIDATE_SOURCE_INPUT_CONTRACT_REF
+)
+SESSION_PRIVACY_RAW_IDEA_TEXT_PUBLISHED_KEY = _CONTRACTS.SESSION_PRIVACY_RAW_IDEA_TEXT_PUBLISHED_KEY
 DEFAULT_INPUT_PATH = (
     ROOT / "tests" / "fixtures" / "user_idea_intake_session" / "raw_idea_ready.json"
 )
@@ -120,6 +140,25 @@ def _relative_ref(path: Path) -> str:
 def _digest(payload: dict[str, Any]) -> str:
     data = json.dumps(payload, sort_keys=True, separators=(",", ":")).encode("utf-8")
     return hashlib.sha256(data).hexdigest()
+
+
+def _stable_source_digest(
+    *,
+    workspace: dict[str, str],
+    intent: dict[str, str],
+    frame: dict[str, Any],
+    event_storming: dict[str, list[Any]],
+    source_ref: str,
+) -> str:
+    return _digest(
+        {
+            "workspace": workspace,
+            "intent": {"summary": intent["summary"]},
+            "active_frame_hints": frame,
+            "event_storming_hints": event_storming,
+            "source_ref": source_ref,
+        }
+    )
 
 
 def load_json(path: Path) -> dict[str, Any]:
@@ -546,6 +585,35 @@ def _source_payload(
     }
 
 
+def _candidate_source_input(
+    *,
+    workspace: dict[str, str],
+    intent: dict[str, str],
+    frame: dict[str, Any],
+    event_storming: dict[str, list[Any]],
+    source_ref: str,
+    source_digest: str,
+) -> dict[str, Any]:
+    return {
+        "artifact_kind": "intake_session_candidate_source_input",
+        "schema_version": SCHEMA_VERSION,
+        "contract_ref": SESSION_CANDIDATE_SOURCE_INPUT_CONTRACT_REF,
+        "proposal_id": PROPOSAL_ID,
+        "source_ref": source_ref,
+        "workspace": workspace,
+        "intent": {"text": "", "summary": intent["summary"]},
+        "active_frame_hints": frame,
+        "event_storming_hints": event_storming,
+        "source_digest": source_digest,
+        "privacy_boundary": {
+            "raw_idea_text_published": False,
+            "raw_prompt_published": False,
+            "raw_model_output_published": False,
+            "raw_operator_note_published": False,
+        },
+    }
+
+
 def build_user_idea_intake_session(
     raw_input: dict[str, Any],
     *,
@@ -593,7 +661,7 @@ def build_user_idea_intake_session(
         "clarification_questions": questions,
         "authority_boundary": _authority_boundary(),
         "privacy_boundary": {
-            "raw_idea_text_published_in_session": False,
+            SESSION_PRIVACY_RAW_IDEA_TEXT_PUBLISHED_KEY: False,
             "raw_prompt_published": False,
             "raw_model_output_published": False,
             "raw_operator_note_published": False,
@@ -613,7 +681,13 @@ def build_user_idea_intake_session(
     }
     source: dict[str, Any] | None = None
     if ready:
-        session_digest = _digest(session)
+        session_digest = _stable_source_digest(
+            workspace=workspace,
+            intent=intent,
+            frame=frame,
+            event_storming=event_storming,
+            source_ref=source_ref,
+        )
         source = _source_payload(
             workspace=workspace,
             intent=intent,
@@ -630,6 +704,14 @@ def build_user_idea_intake_session(
             "written": source_output_path is not None,
             "digest": _digest(source),
         }
+        session["candidate_source_input"] = _candidate_source_input(
+            workspace=workspace,
+            intent=intent,
+            frame=frame,
+            event_storming=event_storming,
+            source_ref=source_ref,
+            source_digest=_digest(source),
+        )
         session["summary"]["source_written"] = source_output_path is not None
     else:
         session["source_output"] = {
@@ -638,6 +720,13 @@ def build_user_idea_intake_session(
             "path": _relative_ref(source_output_path) if source_output_path else None,
             "written": False,
             "digest": None,
+            "reason": "intake_session_needs_clarification",
+        }
+        session["candidate_source_input"] = {
+            "artifact_kind": "intake_session_candidate_source_input",
+            "schema_version": SCHEMA_VERSION,
+            "contract_ref": SESSION_CANDIDATE_SOURCE_INPUT_CONTRACT_REF,
+            "available": False,
             "reason": "intake_session_needs_clarification",
         }
     return session, source

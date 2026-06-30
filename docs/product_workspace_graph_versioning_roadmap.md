@@ -1199,16 +1199,46 @@ The active stack after production workspace isolation is:
    `idea_to_spec_rerun_materialization` report emitted by proposal `0167`.
 5. CLI wrapper that fills `user_idea_raw_input` from real operator inputs and
    accepted clarification answers, emitted by proposal `0184`.
-6. SpecSpace intake UI or agent conversation wrapper that can drive the same
+6. Intake-session candidate source bridge that materializes
+   `user_idea_intake_source` from a ready public-safe intake session, emitted by
+   proposal `0185`.
+7. SpecSpace intake UI or agent conversation wrapper that can drive the same
    raw-input/interview contract without requiring local CLI usage.
-7. Prompt-side enrichment that can propose richer product-domain graph nodes
+8. Prompt-side enrichment that can propose richer product-domain graph nodes
    while preserving ontology gaps for unaccepted terms.
-8. SpecSpace workflow lane refinement for active candidate blockers, repair
+9. SpecSpace workflow lane refinement for active candidate blockers, repair
    suggestions, and approval state.
-9. Platform Git Service post-review status and read-model publication
+10. Platform Git Service post-review status and read-model publication
    orchestration.
-10. Ontology applicability and layer-aware review refinement as compiler support
+11. Ontology applicability and layer-aware review refinement as compiler support
    matures.
+
+## Intake Session Candidate Source Bridge
+
+Status: implemented in proposal `0185`.
+
+Proposal `0185` adds a review-only bridge from a ready
+`user_idea_intake_session` to the existing `user_idea_intake_source` contract:
+
+```bash
+make intake-session-candidate-source
+```
+
+The bridge reads `runs/user_idea_intake_session.json`, validates the session
+contract, readiness, privacy boundary, authority boundary, active frame, and
+event-storming payload, then writes:
+
+```text
+runs/user_idea_intake_source.json
+runs/intake_session_candidate_source_report.json
+```
+
+The source is materialized from the session's embedded public-safe
+`candidate_source_input`, not from `runs/local_operator_user_idea_raw_input.json`.
+This keeps raw idea text local-only while allowing the existing generic
+`user_idea_intake_source -> idea_event_storming_intake` chain to start from a
+real intake session. Invalid or not-ready sessions remove stale source output in
+strict mode and leave the candidate pipeline blocked for clarification.
 
 ## Team Decision Log Happy-Path Repair Pack
 
