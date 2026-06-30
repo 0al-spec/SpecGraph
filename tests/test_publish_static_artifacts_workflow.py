@@ -74,6 +74,24 @@ def test_deploy_upload_mirrors_bundle_contents_not_wrapper_directory() -> None:
     assert 'mirror -R --delete --verbose dist/specgraph-public "$SFTP_REMOTE_ROOT"' not in workflow
 
 
+def test_publish_workflow_builds_team_decision_log_workspace_bundle() -> None:
+    workflow = _workflow_text()
+    build_workspace_block = _step_block(
+        workflow,
+        "Build Team Decision Log product workspace bundle",
+    )
+
+    assert "make product-workspace-team-decision-log-happy-path-repair-pack" in (
+        build_workspace_block
+    )
+    assert "tools/build_static_artifact_bundle.py" in build_workspace_block
+    assert "--output-dir dist/specgraph-public/workspaces/team-decision-log" in (
+        build_workspace_block
+    )
+    upload_block = _step_block(workflow, "Upload bundle as GitHub Actions artifact")
+    assert "path: dist/specgraph-public" in upload_block
+
+
 def test_artifact_deploy_does_not_delete_webroot_content() -> None:
     workflow = _workflow_text()
     upload_bundle_block = workflow.split("      - name: Upload bundle", 1)[1].split(

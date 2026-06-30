@@ -2351,5 +2351,18 @@
     "required_provenance_links": [
       "source_draft_ref"
     ]
+  },
+  {
+    "proposal_id": "0183",
+    "source_artifact_class": "working_draft",
+    "source_refs": [
+      "docs/archive/proposal_sources/0183_team_decision_log_workspace_static_bundle.md"
+    ],
+    "motivating_concern": "SpecSpace now reads the Team Decision Log route from a workspace-specific artifact base, but SpecGraph static publishing only uploaded the bootstrap root bundle, leaving workspaces/team-decision-log/artifact_manifest.json missing in production.",
+    "normalized_title": "Team Decision Log Workspace Static Bundle",
+    "bounded_scope": "Extend the static artifact publish workflow, tests, proposal docs, roadmap, DocC, README, and registry tracking so the public bundle contains a separate Team Decision Log workspace bundle at workspaces/team-decision-log after the happy-path repair pack runs, while preserving the bootstrap root bundle and avoiding prompt-agent execution, canonical spec mutations, Ontology writes or term acceptance, candidate approval, Git branch/commit/PR creation, merge, read-model publication, or SpecSpace mutation authority expansion.",
+    "required_provenance_links": [
+      "source_draft_ref"
+    ]
   }
 ]

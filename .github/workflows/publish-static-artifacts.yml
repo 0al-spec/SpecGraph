@@ -99,6 +99,14 @@ jobs:
           SPECGRAPH_EXTERNAL_CHECKOUT_ROOT: ${{ github.workspace }}/external
         run: make publish-bundle PUBLISH_BUNDLE_FLAGS=
 
+      - name: Build Team Decision Log product workspace bundle
+        env:
+          SPECGRAPH_EXTERNAL_CHECKOUT_ROOT: ${{ github.workspace }}/external
+        run: |
+          make product-workspace-team-decision-log-happy-path-repair-pack
+          python tools/build_static_artifact_bundle.py \
+            --output-dir dist/specgraph-public/workspaces/team-decision-log
+
       - name: Upload bundle as GitHub Actions artifact
         uses: actions/upload-artifact@v7
         with:

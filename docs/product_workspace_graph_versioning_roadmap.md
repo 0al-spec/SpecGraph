@@ -1227,6 +1227,19 @@ absent demo-local paths so stale local Platform artifacts cannot make the
 repair-pack demo look blocked or promoted. Platform approval and Git Service
 promotion remain separate downstream flows.
 
+Status: implemented in proposal `0183`.
+
+The static artifact publish workflow now builds a second bundle after the
+happy-path repair pack and publishes it under:
+
+```text
+workspaces/team-decision-log/
+```
+
+That directory has its own `artifact_manifest.json` and `checksums.sha256`.
+SpecSpace production routes should read `/team-decision-log` from this
+workspace-specific artifact base instead of the bootstrap root bundle.
+
 ## Related Documents
 
 - `docs/product_workspace_stable_mode_guide.md`

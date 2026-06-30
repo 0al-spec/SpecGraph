@@ -505,6 +505,18 @@ into the repair-pack readiness surface. Candidate approval, promotion request,
 Git execution, review status, and read-model publication remain separate
 Platform/Git Service flows.
 
+Proposal `0183` publishes the Team Decision Log demo as a separate product
+workspace artifact bundle. The static publish workflow builds the ordinary
+bootstrap bundle first, then runs the Team Decision Log happy-path repair pack
+and writes a second manifest under:
+
+```text
+workspaces/team-decision-log/artifact_manifest.json
+```
+
+SpecSpace production routes should consume that workspace-specific manifest for
+`/team-decision-log` instead of the bootstrap root manifest.
+
 ## Authority Boundary
 
 Team Decision Log remains non-canonical until a repository service accepts a
