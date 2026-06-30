@@ -10383,5 +10383,75 @@
         "pattern": "proposal 0184"
       }
     ]
+  },
+  {
+    "proposal_id": "0185",
+    "posture": "synchronous_runtime_slice",
+    "runtime_surfaces": [
+      "docs/proposals/0185_intake_session_candidate_source_bridge.md",
+      "docs/archive/proposal_sources/0185_intake_session_candidate_source_bridge.md",
+      "tools/intake_session_candidate_source.py",
+      "tools/user_idea_intake_session.py",
+      "tests/test_intake_session_candidate_source.py",
+      "Makefile",
+      "docs/product_workspace_graph_versioning_roadmap.md",
+      "Sources/SpecGraph/Documentation.docc/ProductWorkspacePilots.md",
+      "tools/README.md",
+      "tools/docc_sync_contract.json"
+    ],
+    "runtime_markers": [
+      {
+        "path": "tools/intake_session_candidate_source.py",
+        "pattern": "REPORT_CONTRACT_REF = \"specgraph.idea-to-spec.intake-session-candidate-source.v0.1\""
+      },
+      {
+        "path": "tools/intake_session_candidate_source.py",
+        "pattern": "def build_intake_session_candidate_source("
+      },
+      {
+        "path": "tools/user_idea_intake_session.py",
+        "pattern": "SESSION_CANDIDATE_SOURCE_INPUT_CONTRACT_REF"
+      },
+      {
+        "path": "Makefile",
+        "pattern": "intake-session-candidate-source"
+      }
+    ],
+    "validation_markers": [
+      {
+        "path": "tests/test_intake_session_candidate_source.py",
+        "pattern": "test_intake_session_candidate_source_materializes_ready_source"
+      },
+      {
+        "path": "tests/test_intake_session_candidate_source.py",
+        "pattern": "test_intake_session_candidate_source_rejects_not_ready_session"
+      },
+      {
+        "path": "tests/test_intake_session_candidate_source.py",
+        "pattern": "test_intake_session_candidate_source_blocks_authority_expansion"
+      },
+      {
+        "path": "tests/test_intake_session_candidate_source.py",
+        "pattern": "test_intake_session_candidate_source_blocks_raw_trace_payload"
+      }
+    ],
+    "observation_markers": [
+      {
+        "path": "docs/proposals/0185_intake_session_candidate_source_bridge.md",
+        "pattern": "Status: implemented."
+      },
+      {
+        "path": "docs/product_workspace_graph_versioning_roadmap.md",
+        "pattern": "Status: implemented in proposal `0185`"
+      },
+      {
+        "path": "Sources/SpecGraph/Documentation.docc/ProductWorkspacePilots.md",
+        "pattern": "Proposal `0185`"
+      },
+      {
+        "path": "tools/README.md",
+        "pattern": "proposal 0185"
+      }
+    ]
   }
 ]

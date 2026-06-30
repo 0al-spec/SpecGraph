@@ -264,6 +264,17 @@ Supervisor modes:
   infer missing product semantics, mutate candidate/canonical specs, write
   Ontology packages, accept ontology terms, create Git branches, or publish raw
   idea text.
+- `tools/intake_session_candidate_source.py`: review-only bridge introduced by
+  proposal 0185. Use `make intake-session-candidate-source` after
+  `real-idea-intake` or `user-idea-intake-session` to validate a ready
+  `runs/user_idea_intake_session.json` and materialize the standard
+  `runs/user_idea_intake_source.json` from the session's embedded public-safe
+  `candidate_source_input`. The bridge writes
+  `runs/intake_session_candidate_source_report.json`, removes stale source output
+  when the session is not ready, rewrites source provenance to the intake
+  session rather than the local raw-input artifact, and does not execute prompt
+  agents, mutate candidate/canonical specs, write Ontology packages, accept
+  ontology terms, create Git branches, or publish raw idea text.
 - `tools/user_idea_intake_source.py`: deterministic generic user-idea source
   builder introduced by proposal 0158. Use `make user-idea-intake-source
   USER_IDEA_INTAKE_SOURCE=<json>` to normalize product workspace identity,

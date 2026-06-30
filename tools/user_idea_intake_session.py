@@ -16,6 +16,9 @@ SCHEMA_VERSION = 1
 RAW_INPUT_CONTRACT_REF = "specgraph.idea-to-spec.user-idea-raw-input.v0.1"
 SESSION_CONTRACT_REF = "specgraph.idea-to-spec.user-idea-intake-session.v0.1"
 SOURCE_CONTRACT_REF = "specgraph.idea-to-spec.user-idea-intake-source.v0.1"
+SESSION_CANDIDATE_SOURCE_INPUT_CONTRACT_REF = (
+    "specgraph.idea-to-spec.intake-session-candidate-source-input.v0.1"
+)
 DEFAULT_INPUT_PATH = (
     ROOT / "tests" / "fixtures" / "user_idea_intake_session" / "raw_idea_ready.json"
 )
@@ -546,6 +549,35 @@ def _source_payload(
     }
 
 
+def _candidate_source_input(
+    *,
+    workspace: dict[str, str],
+    intent: dict[str, str],
+    frame: dict[str, Any],
+    event_storming: dict[str, list[Any]],
+    source_ref: str,
+    source_digest: str,
+) -> dict[str, Any]:
+    return {
+        "artifact_kind": "intake_session_candidate_source_input",
+        "schema_version": SCHEMA_VERSION,
+        "contract_ref": SESSION_CANDIDATE_SOURCE_INPUT_CONTRACT_REF,
+        "proposal_id": PROPOSAL_ID,
+        "source_ref": source_ref,
+        "workspace": workspace,
+        "intent": {"text": "", "summary": intent["summary"]},
+        "active_frame_hints": frame,
+        "event_storming_hints": event_storming,
+        "source_digest": source_digest,
+        "privacy_boundary": {
+            "raw_idea_text_published": False,
+            "raw_prompt_published": False,
+            "raw_model_output_published": False,
+            "raw_operator_note_published": False,
+        },
+    }
+
+
 def build_user_idea_intake_session(
     raw_input: dict[str, Any],
     *,
@@ -630,6 +662,14 @@ def build_user_idea_intake_session(
             "written": source_output_path is not None,
             "digest": _digest(source),
         }
+        session["candidate_source_input"] = _candidate_source_input(
+            workspace=workspace,
+            intent=intent,
+            frame=frame,
+            event_storming=event_storming,
+            source_ref=source_ref,
+            source_digest=_digest(source),
+        )
         session["summary"]["source_written"] = source_output_path is not None
     else:
         session["source_output"] = {
@@ -638,6 +678,13 @@ def build_user_idea_intake_session(
             "path": _relative_ref(source_output_path) if source_output_path else None,
             "written": False,
             "digest": None,
+            "reason": "intake_session_needs_clarification",
+        }
+        session["candidate_source_input"] = {
+            "artifact_kind": "intake_session_candidate_source_input",
+            "schema_version": SCHEMA_VERSION,
+            "contract_ref": SESSION_CANDIDATE_SOURCE_INPUT_CONTRACT_REF,
+            "available": False,
             "reason": "intake_session_needs_clarification",
         }
     return session, source

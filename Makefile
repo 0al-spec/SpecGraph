@@ -61,6 +61,11 @@ USER_IDEA_INTAKE_SESSION_OUTPUT_DEFAULT := runs/user_idea_intake_session.json
 USER_IDEA_INTAKE_SESSION_OUTPUT ?= $(USER_IDEA_INTAKE_SESSION_OUTPUT_DEFAULT)
 USER_IDEA_INTAKE_SESSION_SOURCE_OUTPUT_DEFAULT := runs/user_idea_intake_source.json
 USER_IDEA_INTAKE_SESSION_SOURCE_OUTPUT ?= $(USER_IDEA_INTAKE_SESSION_SOURCE_OUTPUT_DEFAULT)
+INTAKE_SESSION_CANDIDATE_SOURCE_INPUT ?= $(USER_IDEA_INTAKE_SESSION_OUTPUT)
+INTAKE_SESSION_CANDIDATE_SOURCE_OUTPUT ?= $(USER_IDEA_INTAKE_SESSION_SOURCE_OUTPUT)
+INTAKE_SESSION_CANDIDATE_SOURCE_REPORT_OUTPUT ?= runs/intake_session_candidate_source_report.json
+INTAKE_SESSION_CANDIDATE_SOURCE_STRICT ?=
+INTAKE_SESSION_CANDIDATE_SOURCE_STRICT_ARG := $(if $(filter 1 true yes,$(strip $(INTAKE_SESSION_CANDIDATE_SOURCE_STRICT))),--strict,)
 USER_IDEA_INTAKE_SOURCE ?= tests/fixtures/user_idea_intake/source_ready.json
 USER_IDEA_EVENT_STORMING_SEED_OUTPUT_DEFAULT := runs/idea_event_storming_seed.json
 USER_IDEA_EVENT_STORMING_SEED_OUTPUT ?= $(USER_IDEA_EVENT_STORMING_SEED_OUTPUT_DEFAULT)
@@ -272,7 +277,8 @@ PYTHON_TARGETS := viewer-surfaces dashboard backlog next-move spec-activity grap
 	ontology-owner-decision-import-v2 \
 	specauthor-generated-artifact-contract specauthor-ontology-write-gate \
 	specauthor-invocation-artifact-contract specauthor-authoring-flow \
-	user-idea-intake-session user-idea-intake-source generic-idea-intake \
+	user-idea-intake-session intake-session-candidate-source \
+	real-idea-intake-candidate-source user-idea-intake-source generic-idea-intake \
 	generic-idea-intake-session \
 	idea-event-storming-intake ontology-bound-candidate-graph-seed \
 	candidate-spec-graph pre-sib-coherence candidate-repair-loop \
@@ -346,7 +352,9 @@ help:
 			'  make specauthor-generated-artifact-contract SPECAUTHOR_GENERATED_ARTIFACT_CONTRACT_ARTIFACT=<json>' \
 			'  make specauthor-ontology-write-gate SPECAUTHOR_ONTOLOGY_WRITE_GATE_ARTIFACT=<json>' \
 			'  SPECG_USER_IDEA_INTAKE_INTERVIEW_IDEA_TEXT=<text> make real-idea-intake' \
+			'  make real-idea-intake-candidate-source Build source from real intake session' \
 			'  make user-idea-intake-session USER_IDEA_INTAKE_SESSION_INPUT=<json>' \
+			'  make intake-session-candidate-source INTAKE_SESSION_CANDIDATE_SOURCE_INPUT=<json>' \
 			'  make user-idea-intake-source USER_IDEA_INTAKE_SOURCE=<json>' \
 			'  make generic-idea-intake-session USER_IDEA_INTAKE_SESSION_INPUT=<json>' \
 			'  make generic-idea-intake USER_IDEA_INTAKE_SOURCE=<json>' \
@@ -568,6 +576,14 @@ user-idea-intake-source:
 .PHONY: user-idea-intake-session
 user-idea-intake-session:
 	@$(PYTHON) tools/user_idea_intake_session.py --input "$(USER_IDEA_INTAKE_SESSION_INPUT)" --session-output "$(USER_IDEA_INTAKE_SESSION_OUTPUT)" --source-output "$(USER_IDEA_INTAKE_SESSION_SOURCE_OUTPUT)"
+
+.PHONY: intake-session-candidate-source
+intake-session-candidate-source:
+	@$(PYTHON) tools/intake_session_candidate_source.py --intake-session "$(INTAKE_SESSION_CANDIDATE_SOURCE_INPUT)" --output "$(INTAKE_SESSION_CANDIDATE_SOURCE_OUTPUT)" --report "$(INTAKE_SESSION_CANDIDATE_SOURCE_REPORT_OUTPUT)" $(INTAKE_SESSION_CANDIDATE_SOURCE_STRICT_ARG)
+
+.PHONY: real-idea-intake-candidate-source
+real-idea-intake-candidate-source: real-idea-intake
+	@$(MAKE) intake-session-candidate-source INTAKE_SESSION_CANDIDATE_SOURCE_INPUT="$(USER_IDEA_INTAKE_SESSION_OUTPUT)" INTAKE_SESSION_CANDIDATE_SOURCE_OUTPUT="$(USER_IDEA_INTAKE_SESSION_SOURCE_OUTPUT)" INTAKE_SESSION_CANDIDATE_SOURCE_STRICT=1
 
 .PHONY: generic-idea-intake
 generic-idea-intake: user-idea-intake-source
