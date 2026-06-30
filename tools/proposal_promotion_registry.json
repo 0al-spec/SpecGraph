@@ -2390,5 +2390,18 @@
     "required_provenance_links": [
       "source_draft_ref"
     ]
+  },
+  {
+    "proposal_id": "0186",
+    "source_artifact_class": "working_draft",
+    "source_refs": [
+      "docs/archive/proposal_sources/0186_real_idea_intake_clarification_loop.md"
+    ],
+    "motivating_concern": "Real idea intake can produce a not-ready intake session and a bridge can materialize a ready source, but under-specified raw ideas need a deterministic clarification loop that applies accepted answers to a clarified intake session before candidate generation.",
+    "normalized_title": "Real Idea Intake Clarification Loop",
+    "bounded_scope": "Add a deterministic review-only real-intake clarification loop, Make targets, tests, proposal docs, roadmap, DocC, README, and registry tracking that emits intake-specific clarification request/answer/rerun artifacts, writes a clarified_user_idea_intake_session, and lets the candidate-source bridge prefer the clarified session when present, without executing prompt agents, inferring missing product semantics with an LLM, silently mutating user intent, mutating candidate or canonical specs, writing Ontology packages or lockfiles, accepting ontology terms, approving candidates, creating Git branches or commits, opening pull requests, publishing read models, or adding SpecSpace mutation UI.",
+    "required_provenance_links": [
+      "source_draft_ref"
+    ]
   }
 ]

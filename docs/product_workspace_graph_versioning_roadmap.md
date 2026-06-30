@@ -1240,6 +1240,44 @@ This keeps raw idea text local-only while allowing the existing generic
 real intake session. Invalid or not-ready sessions remove stale source output in
 strict mode and leave the candidate pipeline blocked for clarification.
 
+## Real Idea Intake Clarification Loop
+
+Status: implemented in proposal `0186`.
+
+Proposal `0186` closes the controlled loop for under-specified real ideas:
+
+```text
+raw idea
+  -> user_idea_intake_session: needs_clarification
+  -> idea_intake_clarification_requests
+  -> idea_intake_clarification_answers
+  -> idea_intake_answer_rerun_input
+  -> clarified_user_idea_intake_session
+  -> user_idea_intake_source
+```
+
+The new convenience targets are:
+
+```bash
+make real-idea-intake-clarification-requests
+make real-idea-intake-clarification-answers
+make real-idea-intake-clarification-rerun
+make real-idea-intake-ready-candidate-source
+```
+
+The rerun tool writes:
+
+```text
+runs/idea_intake_answer_rerun_input.json
+runs/clarified_user_idea_intake_session.json
+runs/idea_intake_clarification_rerun_report.json
+```
+
+The bridge now supports an optional fallback session so the ready-candidate
+source target can prefer a clarified session when present and use the original
+session otherwise. Incomplete answers keep strict mode blocked, and raw idea
+text remains local-only in `local_operator_*` artifacts.
+
 ## Team Decision Log Happy-Path Repair Pack
 
 Status: implemented in proposal `0182`.

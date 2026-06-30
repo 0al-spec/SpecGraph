@@ -571,9 +571,19 @@ def build_intake_session_candidate_source(
     return source, report
 
 
+def _select_session_path(primary: Path, fallbacks: list[Path]) -> Path:
+    if primary.exists():
+        return primary
+    for fallback in fallbacks:
+        if fallback.exists():
+            return fallback
+    return primary
+
+
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--intake-session", default=DEFAULT_SESSION_PATH, type=Path)
+    parser.add_argument("--fallback-intake-session", action="append", default=[], type=Path)
     parser.add_argument("--output", default=DEFAULT_OUTPUT_PATH, type=Path)
     parser.add_argument("--report", default=DEFAULT_REPORT_OUTPUT_PATH, type=Path)
     parser.add_argument("--strict", action="store_true")
@@ -582,10 +592,11 @@ def build_parser() -> argparse.ArgumentParser:
 
 def main(argv: list[str] | None = None) -> int:
     args = build_parser().parse_args(argv)
-    session = load_json(args.intake_session)
+    selected_session = _select_session_path(args.intake_session, args.fallback_intake_session)
+    session = load_json(selected_session)
     source, report = build_intake_session_candidate_source(
         session,
-        session_path=args.intake_session,
+        session_path=selected_session,
         output_path=args.output,
     )
     if source is not None:

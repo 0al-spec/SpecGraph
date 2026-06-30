@@ -10494,5 +10494,79 @@
         "pattern": "proposal 0185"
       }
     ]
+  },
+  {
+    "proposal_id": "0186",
+    "posture": "synchronous_runtime_slice",
+    "runtime_surfaces": [
+      "docs/proposals/0186_real_idea_intake_clarification_loop.md",
+      "docs/archive/proposal_sources/0186_real_idea_intake_clarification_loop.md",
+      "tools/idea_intake_clarification_rerun.py",
+      "tools/intake_session_candidate_source.py",
+      "tests/fixtures/idea_intake_clarification/answers_ready.json",
+      "tests/test_idea_intake_clarification_rerun.py",
+      "Makefile",
+      "docs/product_workspace_graph_versioning_roadmap.md",
+      "Sources/SpecGraph/Documentation.docc/ProductWorkspacePilots.md",
+      "tools/README.md"
+    ],
+    "runtime_markers": [
+      {
+        "path": "tools/idea_intake_clarification_rerun.py",
+        "pattern": "PROPOSAL_ID = \"0186\""
+      },
+      {
+        "path": "tools/idea_intake_clarification_rerun.py",
+        "pattern": "RERUN_INPUT_CONTRACT_REF = \"specgraph.idea-to-spec.intake-answer-rerun-input.v0.1\""
+      },
+      {
+        "path": "tools/idea_intake_clarification_rerun.py",
+        "pattern": "def build_intake_clarification_rerun("
+      },
+      {
+        "path": "tools/intake_session_candidate_source.py",
+        "pattern": "--fallback-intake-session"
+      },
+      {
+        "path": "Makefile",
+        "pattern": "real-idea-intake-clarification-rerun"
+      },
+      {
+        "path": "Makefile",
+        "pattern": "real-idea-intake-ready-candidate-source"
+      }
+    ],
+    "validation_markers": [
+      {
+        "path": "tests/test_idea_intake_clarification_rerun.py",
+        "pattern": "test_idea_intake_clarification_rerun_materializes_clarified_session"
+      },
+      {
+        "path": "tests/test_idea_intake_clarification_rerun.py",
+        "pattern": "test_idea_intake_clarification_rerun_strict_blocks_incomplete_answers"
+      },
+      {
+        "path": "tests/test_idea_intake_clarification_rerun.py",
+        "pattern": "test_real_idea_intake_make_targets_build_ready_candidate_source"
+      }
+    ],
+    "observation_markers": [
+      {
+        "path": "docs/proposals/0186_real_idea_intake_clarification_loop.md",
+        "pattern": "Status: implemented."
+      },
+      {
+        "path": "docs/product_workspace_graph_versioning_roadmap.md",
+        "pattern": "Status: implemented in proposal `0186`"
+      },
+      {
+        "path": "Sources/SpecGraph/Documentation.docc/ProductWorkspacePilots.md",
+        "pattern": "Proposal `0186`"
+      },
+      {
+        "path": "tools/README.md",
+        "pattern": "proposal 0186"
+      }
+    ]
   }
 ]
