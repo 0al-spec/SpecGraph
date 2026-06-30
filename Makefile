@@ -367,11 +367,11 @@ help:
 			'  make specauthor-ontology-write-gate SPECAUTHOR_ONTOLOGY_WRITE_GATE_ARTIFACT=<json>' \
 			'  SPECG_USER_IDEA_INTAKE_INTERVIEW_IDEA_TEXT=<text> make real-idea-intake' \
 			'  make real-idea-intake-candidate-source Build source from real intake session' \
-				'  make real-idea-intake-clarification-requests Build intake-only clarification requests' \
-				'  make real-idea-intake-clarification-rerun IDEA_INTAKE_CLARIFICATION_ANSWERS_INPUT=<json>' \
-				'  make real-idea-intake-ready-candidate-source Prefer clarified session when present' \
-				'  make real-idea-intake-active-candidate Build active candidate from ready real intake' \
-				'  make user-idea-intake-session USER_IDEA_INTAKE_SESSION_INPUT=<json>' \
+			'  make real-idea-intake-clarification-requests Build intake-only clarification requests' \
+			'  make real-idea-intake-clarification-rerun IDEA_INTAKE_CLARIFICATION_ANSWERS_INPUT=<json>' \
+			'  make real-idea-intake-ready-candidate-source Prefer clarified session when present' \
+			'  make real-idea-intake-active-candidate Build active candidate from ready real intake' \
+			'  make user-idea-intake-session USER_IDEA_INTAKE_SESSION_INPUT=<json>' \
 			'  make intake-session-candidate-source INTAKE_SESSION_CANDIDATE_SOURCE_INPUT=<json>' \
 			'  make user-idea-intake-source USER_IDEA_INTAKE_SOURCE=<json>' \
 			'  make generic-idea-intake-session USER_IDEA_INTAKE_SESSION_INPUT=<json>' \
@@ -805,7 +805,8 @@ ifeq ($(PRODUCT_WORKSPACE_INTAKE_SOURCE_MODE),generate)
 	@test -f "$(USER_IDEA_INTAKE_SESSION_SOURCE_OUTPUT)" || ($(PYTHON) tools/idea_to_spec_clarification_requests.py --session "$(USER_IDEA_INTAKE_SESSION_OUTPUT)" --no-intake --no-candidate-graph --no-pre-sib --no-repair-loop $(IDEA_TO_SPEC_CLARIFICATION_ONTOLOGY_GAP_REVIEW_ARG) --output "$(IDEA_TO_SPEC_CLARIFICATION_OUTPUT)" && exit 1)
 	@$(PYTHON) tools/user_idea_intake_source.py --input "$(USER_IDEA_INTAKE_SESSION_SOURCE_OUTPUT)" --output "$(PRODUCT_WORKSPACE_INTAKE_SOURCE)"
 endif
-	@$(PYTHON) -c 'import json,sys; from pathlib import Path; p=Path(sys.argv[1]); data=json.loads(p.read_text()) if p.exists() else {}; kind=data.get("artifact_kind"); sys.exit(2 if kind=="user_idea_intake_source" else 0)' "$(PRODUCT_WORKSPACE_INTAKE_SOURCE)" || (printf '%s\n' 'PRODUCT_WORKSPACE_INTAKE_SOURCE points to user_idea_intake_source. Build an event-storming seed first with `make user-idea-intake-source USER_IDEA_INTAKE_SOURCE=<source>` or use `make real-idea-intake-active-candidate`.' >&2; exit 2)
+	@if [ -f "$(PRODUCT_WORKSPACE_INTAKE_SOURCE)" ]; then $(PYTHON) -m json.tool "$(PRODUCT_WORKSPACE_INTAKE_SOURCE)" >/dev/null || (printf '%s\n' 'PRODUCT_WORKSPACE_INTAKE_SOURCE is not valid JSON.' >&2; exit 1); fi
+	@$(PYTHON) -c 'import json,sys; from pathlib import Path; p=Path(sys.argv[1]); data=json.loads(p.read_text()) if p.exists() else {}; kind=data.get("artifact_kind") if isinstance(data, dict) else None; kind=="user_idea_intake_source" and (print("PRODUCT_WORKSPACE_INTAKE_SOURCE points to user_idea_intake_source. Build an event-storming seed first with `make user-idea-intake-source USER_IDEA_INTAKE_SOURCE=<source>` or use `make real-idea-intake-active-candidate`.", file=sys.stderr), sys.exit(2))' "$(PRODUCT_WORKSPACE_INTAKE_SOURCE)"
 	@$(PYTHON) tools/idea_event_storming_intake.py --input "$(PRODUCT_WORKSPACE_INTAKE_SOURCE)" --output "$(IDEA_EVENT_STORMING_INTAKE_OUTPUT)"
 ifeq ($(PRODUCT_WORKSPACE_CANDIDATE_SEED_MODE),generate)
 	@$(PYTHON) tools/ontology_bound_candidate_graph_seed.py --intake "$(IDEA_EVENT_STORMING_INTAKE_OUTPUT)" --ontology-ir "$(ONTOLOGY_BOUND_CANDIDATE_SEED_ONTOLOGY_IR)" --output "$(PRODUCT_WORKSPACE_CANDIDATE_SEED_OUTPUT)"

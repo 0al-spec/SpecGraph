@@ -520,6 +520,33 @@ def test_product_workspace_active_candidate_rejects_direct_intake_source(
     assert "PRODUCT_WORKSPACE_INTAKE_SOURCE points to user_idea_intake_source" in (result.stderr)
 
 
+def test_product_workspace_active_candidate_reports_invalid_intake_json(
+    tmp_path: Path,
+) -> None:
+    python = supported_python()
+    invalid_source = tmp_path / "invalid_intake_source.json"
+    invalid_source.write_text("{not-json\n", encoding="utf-8")
+
+    result = subprocess.run(
+        [
+            "make",
+            "product-workspace-active-candidate",
+            f"PYTHON={python}",
+            f"PRODUCT_WORKSPACE_INTAKE_SOURCE={invalid_source}",
+            f"IDEA_EVENT_STORMING_INTAKE_OUTPUT={tmp_path / 'intake.json'}",
+            f"PRODUCT_WORKSPACE_CANDIDATE_SEED_OUTPUT={tmp_path / 'seed.json'}",
+        ],
+        cwd=ROOT,
+        check=False,
+        capture_output=True,
+        text=True,
+    )
+
+    assert result.returncode == 2
+    assert "PRODUCT_WORKSPACE_INTAKE_SOURCE is not valid JSON." in result.stderr
+    assert "points to user_idea_intake_source" not in result.stderr
+
+
 def test_real_idea_intake_clarification_rerun_requires_explicit_answers(
     tmp_path: Path,
 ) -> None:
