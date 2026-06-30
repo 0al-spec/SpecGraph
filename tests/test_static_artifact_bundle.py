@@ -627,6 +627,43 @@ def test_build_public_bundle_redacts_linux_absolute_paths(
     assert published.count("$LOCAL_PATH") == 3
 
 
+def test_build_public_bundle_preserves_json_escapes_when_redacting_paths(
+    tmp_path: Path,
+    bundle_module: object,
+) -> None:
+    repo = make_repo(tmp_path / "repo")
+    specgraph_public = "/Users/egor/Development/GitHub/0AL/SpecGraph/dist/specgraph-public"
+    stdout_payload = json.dumps(
+        {
+            "manifest_path": f"{specgraph_public}/artifact_manifest.json",
+            "output_dir": specgraph_public,
+            "backslash_path": f"{specgraph_public}/foo\\bar/secret.txt",
+        },
+        indent=2,
+    )
+    write_json(
+        repo / "runs" / "command_report.json",
+        {
+            "artifact_kind": "command_report",
+            "command_result": {
+                "stdout": stdout_payload,
+            },
+        },
+    )
+
+    result = bundle_module.build_public_bundle(
+        repo_root=repo,
+        output_dir=repo / "dist" / "specgraph-public",
+    )
+
+    published_path = result.output_dir / "runs" / "command_report.json"
+    published = json.loads(published_path.read_text(encoding="utf-8"))
+    nested_stdout = json.loads(published["command_result"]["stdout"])
+    assert nested_stdout["manifest_path"] == "$LOCAL_PATH"
+    assert nested_stdout["output_dir"] == "$LOCAL_PATH"
+    assert nested_stdout["backslash_path"] == "$LOCAL_PATH"
+
+
 def test_build_public_bundle_rejects_malformed_runs_json(
     tmp_path: Path,
     bundle_module: object,
