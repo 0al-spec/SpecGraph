@@ -156,15 +156,18 @@ def test_idea_intake_clarification_rerun_materializes_clarified_session(
     assert result.returncode == 0, result.stderr
     rerun = load_json(rerun_input)
     session_payload = load_json(clarified_session)
-    source = load_json(clarified_source)
     rerun_report = load_json(report)
     assert rerun["artifact_kind"] == "idea_intake_answer_rerun_input"
     assert rerun["readiness"]["ready"] is True
     assert len(rerun["accepted_answer_targets"]) == 9
     assert session_payload["readiness"]["review_state"] == "ready_for_event_storming_intake"
-    assert source["workspace"]["candidate_id"] == "team-decision-log"
-    assert source["event_storming_hints"]["domain_events"][0]["name"] == "Decision Recorded"
+    assert not clarified_source.exists()
     assert rerun_report["summary"]["ready_for_candidate_source"] is True
+    assert rerun_report["summary"]["source_written"] is False
+    assert rerun_report["summary"]["source_materialization"] == (
+        "intake_session_candidate_source_bridge_required"
+    )
+    assert rerun_report["output_refs"]["clarified_intake_source"] is None
     dumped = json.dumps(rerun_report)
     assert "I want a small tool for team decisions" not in dumped
     assert "/Users/" not in dumped
@@ -234,10 +237,10 @@ def test_real_idea_intake_make_targets_build_ready_candidate_source(
     rerun_report = tmp_path / "idea_intake_clarification_rerun_report.json"
     bridge_report = tmp_path / "intake_session_candidate_source_report.json"
 
-    result = subprocess.run(
+    requests_result = subprocess.run(
         [
             "make",
-            "real-idea-intake-clarification-rerun",
+            "real-idea-intake-clarification-requests",
             f"PYTHON={python}",
             "SPECG_USER_IDEA_INTAKE_INTERVIEW_IDEA_TEXT=I want a small tool for team decisions.",
             "USER_IDEA_INTAKE_INTERVIEW_IDEA_SUMMARY=Track team decisions.",
@@ -248,6 +251,22 @@ def test_real_idea_intake_make_targets_build_ready_candidate_source(
             f"USER_IDEA_INTAKE_SESSION_OUTPUT={session}",
             f"USER_IDEA_INTAKE_SESSION_SOURCE_OUTPUT={source}",
             f"USER_IDEA_INTAKE_INTERVIEW_REPORT_OUTPUT={report}",
+            f"IDEA_INTAKE_CLARIFICATION_REQUESTS_OUTPUT={requests}",
+        ],
+        cwd=ROOT,
+        check=False,
+        capture_output=True,
+        text=True,
+    )
+
+    assert requests_result.returncode == 0, requests_result.stderr
+
+    result = subprocess.run(
+        [
+            "make",
+            "real-idea-intake-clarification-rerun",
+            f"PYTHON={python}",
+            f"USER_IDEA_RAW_INPUT_OUTPUT={raw_input}",
             f"IDEA_INTAKE_CLARIFICATION_REQUESTS_OUTPUT={requests}",
             f"IDEA_INTAKE_CLARIFICATION_ANSWERS_INPUT={ANSWERS_READY}",
             f"IDEA_INTAKE_CLARIFICATION_ANSWERS_OUTPUT={answers}",
@@ -265,6 +284,7 @@ def test_real_idea_intake_make_targets_build_ready_candidate_source(
 
     assert result.returncode == 0, result.stderr
     assert load_json(rerun_report)["summary"]["ready_for_candidate_source"] is True
+    assert not clarified_source.exists()
 
     bridge_result = subprocess.run(
         [
@@ -290,3 +310,25 @@ def test_real_idea_intake_make_targets_build_ready_candidate_source(
         "clarified_user_idea_intake_session.json"
     )
     assert emitted_source["workspace"]["candidate_id"] == "team-decision-log"
+
+
+def test_real_idea_intake_clarification_rerun_requires_explicit_answers(
+    tmp_path: Path,
+) -> None:
+    python = supported_python()
+    result = subprocess.run(
+        [
+            "make",
+            "real-idea-intake-clarification-rerun",
+            f"PYTHON={python}",
+            f"USER_IDEA_RAW_INPUT_OUTPUT={tmp_path / 'raw.json'}",
+            f"IDEA_INTAKE_CLARIFICATION_REQUESTS_OUTPUT={tmp_path / 'requests.json'}",
+        ],
+        cwd=ROOT,
+        check=False,
+        capture_output=True,
+        text=True,
+    )
+
+    assert result.returncode == 2
+    assert "IDEA_INTAKE_CLARIFICATION_ANSWERS_INPUT=<json> is required" in result.stderr

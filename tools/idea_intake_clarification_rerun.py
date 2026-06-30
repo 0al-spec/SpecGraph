@@ -328,7 +328,9 @@ def build_intake_clarification_rerun(
                 },
             )
         )
-    ready = rerun_ready and session_ready and clarified_source is not None and not report_findings
+    candidate_source_ready = (
+        rerun_ready and session_ready and clarified_source is not None and not report_findings
+    )
     report = {
         "artifact_kind": "idea_intake_clarification_rerun_report",
         "schema_version": SCHEMA_VERSION,
@@ -345,9 +347,7 @@ def build_intake_clarification_rerun(
         "output_refs": {
             "clarified_raw_input": _relative_ref(clarified_raw_output_path),
             "clarified_intake_session": _relative_ref(clarified_session_output_path),
-            "clarified_intake_source": _relative_ref(clarified_source_output_path)
-            if clarified_source is not None
-            else None,
+            "clarified_intake_source": None,
         },
         "clarification_answer_application": interview_report.get(
             "clarification_answer_application", {}
@@ -363,13 +363,13 @@ def build_intake_clarification_rerun(
             ),
         },
         "readiness": {
-            "ready": ready,
+            "ready": candidate_source_ready,
             "review_state": "intake_clarification_rerun_ready"
-            if ready
+            if candidate_source_ready
             else "intake_clarification_rerun_review_required",
             "blocked_by": [finding["finding_id"] for finding in report_findings],
             "next_artifact": "runs/user_idea_intake_source.json"
-            if ready
+            if candidate_source_ready
             else "runs/clarified_user_idea_intake_session.json",
         },
         "authority_boundary": _authority_boundary(),
@@ -381,10 +381,11 @@ def build_intake_clarification_rerun(
         "findings": report_findings,
         "summary": {
             "status": "intake_clarification_rerun_ready"
-            if ready
+            if candidate_source_ready
             else "intake_clarification_rerun_review_required",
-            "ready_for_candidate_source": ready,
-            "source_written": clarified_source is not None,
+            "ready_for_candidate_source": candidate_source_ready,
+            "source_written": False,
+            "source_materialization": "intake_session_candidate_source_bridge_required",
             "accepted_target_count": len(_list(rerun_input.get("accepted_answer_targets"))),
             "finding_count": len(report_findings),
         },
@@ -460,9 +461,7 @@ def main(argv: list[str] | None = None) -> int:
     write_json(clarified_raw, args.clarified_raw_output)
     write_json(clarified_session, args.clarified_session_output)
     write_json(report, args.report_output)
-    if clarified_source is not None:
-        write_json(clarified_source, args.clarified_source_output)
-    elif args.clarified_source_output.exists():
+    if args.clarified_source_output.exists():
         args.clarified_source_output.unlink()
     summary = _dict(report.get("summary"))
     print(

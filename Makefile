@@ -69,14 +69,14 @@ INTAKE_SESSION_CANDIDATE_SOURCE_STRICT_ARG := $(if $(filter 1 true yes,$(strip $
 INTAKE_SESSION_CANDIDATE_SOURCE_FALLBACK ?=
 INTAKE_SESSION_CANDIDATE_SOURCE_FALLBACK_ARG := $(if $(strip $(INTAKE_SESSION_CANDIDATE_SOURCE_FALLBACK)),--fallback-intake-session "$(INTAKE_SESSION_CANDIDATE_SOURCE_FALLBACK)",)
 IDEA_INTAKE_CLARIFICATION_REQUESTS_OUTPUT ?= runs/idea_intake_clarification_requests.json
-IDEA_INTAKE_CLARIFICATION_ANSWERS_INPUT ?= tests/fixtures/idea_intake_clarification/answers_ready.json
+IDEA_INTAKE_CLARIFICATION_ANSWERS_INPUT ?=
 IDEA_INTAKE_CLARIFICATION_ANSWERS_OUTPUT ?= runs/idea_intake_clarification_answers.json
 IDEA_INTAKE_ANSWER_RERUN_INPUT_OUTPUT ?= runs/idea_intake_answer_rerun_input.json
 CLARIFIED_USER_IDEA_RAW_INPUT_OUTPUT ?= runs/local_operator_clarified_user_idea_raw_input.json
 CLARIFIED_USER_IDEA_INTAKE_SESSION_OUTPUT ?= runs/clarified_user_idea_intake_session.json
 CLARIFIED_USER_IDEA_INTAKE_SOURCE_OUTPUT ?= runs/clarified_user_idea_intake_source.json
 IDEA_INTAKE_CLARIFICATION_RERUN_REPORT_OUTPUT ?= runs/idea_intake_clarification_rerun_report.json
-REAL_IDEA_INTAKE_READY_SESSION_INPUT := $(if $(wildcard $(CLARIFIED_USER_IDEA_INTAKE_SESSION_OUTPUT)),$(CLARIFIED_USER_IDEA_INTAKE_SESSION_OUTPUT),$(USER_IDEA_INTAKE_SESSION_OUTPUT))
+REAL_IDEA_INTAKE_READY_SESSION_INPUT = $(if $(wildcard $(CLARIFIED_USER_IDEA_INTAKE_SESSION_OUTPUT)),$(CLARIFIED_USER_IDEA_INTAKE_SESSION_OUTPUT),$(USER_IDEA_INTAKE_SESSION_OUTPUT))
 USER_IDEA_INTAKE_SOURCE ?= tests/fixtures/user_idea_intake/source_ready.json
 USER_IDEA_EVENT_STORMING_SEED_OUTPUT_DEFAULT := runs/idea_event_storming_seed.json
 USER_IDEA_EVENT_STORMING_SEED_OUTPUT ?= $(USER_IDEA_EVENT_STORMING_SEED_OUTPUT_DEFAULT)
@@ -606,16 +606,20 @@ real-idea-intake-clarification-requests: real-idea-intake
 	@$(PYTHON) tools/idea_to_spec_clarification_requests.py --session "$(USER_IDEA_INTAKE_SESSION_OUTPUT)" --no-intake --no-candidate-graph --no-pre-sib --no-repair-loop --output "$(IDEA_INTAKE_CLARIFICATION_REQUESTS_OUTPUT)"
 
 .PHONY: real-idea-intake-clarification-answers
-real-idea-intake-clarification-answers: real-idea-intake-clarification-requests
+real-idea-intake-clarification-answers:
+	@test -n "$(strip $(IDEA_INTAKE_CLARIFICATION_ANSWERS_INPUT))" || (printf '%s\n' 'IDEA_INTAKE_CLARIFICATION_ANSWERS_INPUT=<json> is required for real-idea intake clarification answers.' >&2; exit 2)
 	@$(PYTHON) tools/idea_to_spec_clarification_answers.py --requests "$(IDEA_INTAKE_CLARIFICATION_REQUESTS_OUTPUT)" --answers "$(IDEA_INTAKE_CLARIFICATION_ANSWERS_INPUT)" --output "$(IDEA_INTAKE_CLARIFICATION_ANSWERS_OUTPUT)" --strict
 
 .PHONY: real-idea-intake-clarification-rerun
-real-idea-intake-clarification-rerun: real-idea-intake-clarification-answers
+real-idea-intake-clarification-rerun:
+	@test -n "$(strip $(IDEA_INTAKE_CLARIFICATION_ANSWERS_INPUT))" || (printf '%s\n' 'IDEA_INTAKE_CLARIFICATION_ANSWERS_INPUT=<json> is required for real-idea intake clarification rerun.' >&2; exit 2)
 	@$(PYTHON) tools/idea_intake_clarification_rerun.py --raw-input "$(USER_IDEA_RAW_INPUT_OUTPUT)" --clarification-requests "$(IDEA_INTAKE_CLARIFICATION_REQUESTS_OUTPUT)" --answers "$(IDEA_INTAKE_CLARIFICATION_ANSWERS_INPUT)" --validated-answers-output "$(IDEA_INTAKE_CLARIFICATION_ANSWERS_OUTPUT)" --rerun-input-output "$(IDEA_INTAKE_ANSWER_RERUN_INPUT_OUTPUT)" --clarified-raw-output "$(CLARIFIED_USER_IDEA_RAW_INPUT_OUTPUT)" --clarified-session-output "$(CLARIFIED_USER_IDEA_INTAKE_SESSION_OUTPUT)" --clarified-source-output "$(CLARIFIED_USER_IDEA_INTAKE_SOURCE_OUTPUT)" --report-output "$(IDEA_INTAKE_CLARIFICATION_RERUN_REPORT_OUTPUT)" --strict
 
 .PHONY: real-idea-intake-ready-candidate-source
 real-idea-intake-ready-candidate-source:
-	@$(MAKE) intake-session-candidate-source INTAKE_SESSION_CANDIDATE_SOURCE_INPUT="$(REAL_IDEA_INTAKE_READY_SESSION_INPUT)" INTAKE_SESSION_CANDIDATE_SOURCE_FALLBACK="$(USER_IDEA_INTAKE_SESSION_OUTPUT)" INTAKE_SESSION_CANDIDATE_SOURCE_OUTPUT="$(USER_IDEA_INTAKE_SESSION_SOURCE_OUTPUT)" INTAKE_SESSION_CANDIDATE_SOURCE_STRICT=1
+	@ready_session="$(USER_IDEA_INTAKE_SESSION_OUTPUT)"; \
+	if test -f "$(CLARIFIED_USER_IDEA_INTAKE_SESSION_OUTPUT)"; then ready_session="$(CLARIFIED_USER_IDEA_INTAKE_SESSION_OUTPUT)"; fi; \
+	$(MAKE) intake-session-candidate-source INTAKE_SESSION_CANDIDATE_SOURCE_INPUT="$$ready_session" INTAKE_SESSION_CANDIDATE_SOURCE_FALLBACK="$(USER_IDEA_INTAKE_SESSION_OUTPUT)" INTAKE_SESSION_CANDIDATE_SOURCE_OUTPUT="$(USER_IDEA_INTAKE_SESSION_SOURCE_OUTPUT)" INTAKE_SESSION_CANDIDATE_SOURCE_STRICT=1
 
 .PHONY: generic-idea-intake
 generic-idea-intake: user-idea-intake-source
