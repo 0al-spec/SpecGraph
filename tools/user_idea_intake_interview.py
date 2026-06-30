@@ -3,13 +3,16 @@
 from __future__ import annotations
 
 import argparse
+import copy
 import hashlib
 import json
+import os
 import re
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
+import idea_to_spec_clarification_answers as answer_validator
 import user_idea_intake_session as session_tool
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -23,6 +26,7 @@ DEFAULT_RAW_OUTPUT_PATH = ROOT / "runs" / "local_operator_user_idea_raw_input.js
 DEFAULT_SESSION_OUTPUT_PATH = ROOT / "runs" / "user_idea_intake_session.json"
 DEFAULT_SOURCE_OUTPUT_PATH = ROOT / "runs" / "user_idea_intake_source.json"
 DEFAULT_REPORT_OUTPUT_PATH = ROOT / "runs" / "user_idea_intake_interview_report.json"
+IDEA_TEXT_ENV = "SPECG_USER_IDEA_INTAKE_INTERVIEW_IDEA_TEXT"
 
 EVENT_STORMING_CATEGORIES = (
     "actors",
@@ -59,6 +63,8 @@ RAW_TRACE_FIELDS = {
 AUTHORITY_KEYS = {
     "may_execute_prompt_agent",
     "may_infer_domain_model",
+    "may_mutate_user_intent",
+    "may_apply_clarification_answers",
     "may_mutate_candidate_source_artifacts",
     "may_mutate_canonical_specs",
     "may_write_ontology_package",
@@ -206,6 +212,13 @@ def _authority_findings(value: Any, *, source: str) -> list[dict[str, Any]]:
     return findings
 
 
+def _has_authority_finding(findings: list[dict[str, Any]]) -> bool:
+    return any(
+        finding.get("finding_id") == "user_idea_interview_authority_expanded"
+        for finding in findings
+    )
+
+
 def _entry(label: str, *, kind: str) -> dict[str, str]:
     slug = _slug(label)
     if kind == "constraints":
@@ -250,6 +263,41 @@ def _answer_target_map(clarification_requests: dict[str, Any]) -> dict[str, str]
         if request_id and target_ref:
             targets[request_id] = target_ref
     return targets
+
+
+def _public_summary_findings(raw_input: dict[str, Any]) -> list[dict[str, Any]]:
+    idea = _dict(raw_input.get("idea"))
+    workspace = _dict(raw_input.get("workspace"))
+    if not _text(idea.get("text")):
+        return []
+    missing: list[str] = []
+    if not _text(idea.get("summary")):
+        missing.append("idea.summary")
+    if not _text(workspace.get("display_name")):
+        missing.append("workspace.display_name")
+    if not missing:
+        return []
+    return [
+        _finding(
+            finding_id="user_idea_interview_public_summary_missing",
+            severity="review_required",
+            message=(
+                "Real idea intake requires public-safe idea.summary and "
+                "workspace.display_name before source generation can proceed."
+            ),
+            evidence={"missing": missing},
+        )
+    ]
+
+
+def _session_input(raw_input: dict[str, Any], *, strip_raw_text: bool) -> dict[str, Any]:
+    if not strip_raw_text:
+        return raw_input
+    safe_input = copy.deepcopy(raw_input)
+    idea = _dict(safe_input.get("idea"))
+    idea.pop("text", None)
+    safe_input["idea"] = idea
+    return safe_input
 
 
 def _apply_value(raw_input: dict[str, Any], *, target_ref: str, value: Any) -> bool:
@@ -327,10 +375,17 @@ def _apply_clarification_answers(
         )
     if findings:
         return 0, 0, findings
+    answer_report = answer_validator.build_idea_to_spec_clarification_answers(
+        clarification_requests=clarification_requests,
+        answer_set=clarification_answers,
+    )
+    validation_findings = _list(answer_report.get("findings"))
+    if validation_findings:
+        return 0, 0, [_public_safe(_dict(finding)) for finding in validation_findings]
     targets = _answer_target_map(clarification_requests)
     applied = 0
     ignored = 0
-    for raw_answer in _list(clarification_answers.get("answers")):
+    for raw_answer in _list(answer_report.get("answers")):
         answer = _dict(raw_answer)
         if _text(answer.get("status")) not in ACCEPTED_ANSWER_STATUSES:
             ignored += 1
@@ -451,10 +506,11 @@ def build_interview(
     findings.extend(
         _authority_findings(clarification_answers or {}, source="clarification_answers")
     )
+    findings.extend(_public_summary_findings(raw_input))
     applied_answers = 0
     ignored_answers = 0
     answer_findings: list[dict[str, Any]] = []
-    if not findings:
+    if not _has_authority_finding(findings):
         applied_answers, ignored_answers, answer_findings = _apply_clarification_answers(
             raw_input,
             clarification_requests=clarification_requests,
@@ -462,19 +518,24 @@ def build_interview(
         )
         findings.extend(answer_findings)
     session, source = session_tool.build_user_idea_intake_session(
-        raw_input,
+        _session_input(raw_input, strip_raw_text=bool(_public_summary_findings(raw_input))),
         source_path=raw_output_path,
         source_output_path=source_output_path,
     )
     if findings:
+        review_state = (
+            "blocked_authority_boundary"
+            if _has_authority_finding(findings)
+            else "intake_interview_review_required"
+        )
         session["readiness"]["ready"] = False
-        session["readiness"]["review_state"] = "blocked_authority_boundary"
+        session["readiness"]["review_state"] = review_state
         session["readiness"]["blocked_by"] = [
             *session["readiness"].get("blocked_by", []),
             *[finding["finding_id"] for finding in findings],
         ]
         session["findings"] = [*session.get("findings", []), *findings]
-        session["summary"]["status"] = "blocked_authority_boundary"
+        session["summary"]["status"] = review_state
         session["summary"]["finding_count"] = len(session["findings"])
         session["summary"]["source_written"] = False
         session["source_output"] = {
@@ -486,6 +547,7 @@ def build_interview(
             "reason": "intake_interview_not_trusted",
         }
         source = None
+    report_findings = [_public_safe(_dict(finding)) for finding in _list(session.get("findings"))]
     report = {
         "artifact_kind": "user_idea_intake_interview_report",
         "schema_version": SCHEMA_VERSION,
@@ -529,12 +591,12 @@ def build_interview(
             "raw_model_output_published": False,
             "raw_operator_note_published": False,
         },
-        "findings": findings,
+        "findings": report_findings,
         "summary": {
             "status": _dict(session.get("summary")).get("status", "unknown"),
             "ready_for_event_storming_intake": bool(_dict(session.get("readiness")).get("ready")),
             "source_written": source is not None,
-            "finding_count": len(findings),
+            "finding_count": len(report_findings),
             "clarification_question_count": len(_list(session.get("clarification_questions"))),
         },
     }
@@ -545,6 +607,7 @@ def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--input", type=Path, default=None)
     parser.add_argument("--idea-text", default="")
+    parser.add_argument("--idea-text-file", type=Path, default=None)
     parser.add_argument("--idea-summary", default="")
     parser.add_argument("--candidate-id", default="")
     parser.add_argument("--display-name", default="")
@@ -578,6 +641,9 @@ def build_parser() -> argparse.ArgumentParser:
 
 def main(argv: list[str] | None = None) -> int:
     args = build_parser().parse_args(argv)
+    idea_text = args.idea_text or os.environ.get(IDEA_TEXT_ENV, "")
+    if args.idea_text_file:
+        idea_text = args.idea_text_file.read_text(encoding="utf-8").strip()
     base_input = load_json(args.input) if args.input else None
     clarification_requests = (
         load_json(args.clarification_requests) if args.clarification_requests else None
@@ -588,7 +654,7 @@ def main(argv: list[str] | None = None) -> int:
     raw_input, session, report, source = build_interview(
         base_input=base_input,
         base_input_path=args.input,
-        idea_text=args.idea_text,
+        idea_text=idea_text,
         idea_summary=args.idea_summary,
         candidate_id=args.candidate_id,
         display_name=args.display_name,

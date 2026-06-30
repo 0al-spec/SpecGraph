@@ -254,8 +254,9 @@ Supervisor modes:
   read models.
 - `tools/user_idea_intake_interview.py`: operator-facing real idea intake
   wrapper introduced by proposal 0184. Use
-  `make real-idea-intake USER_IDEA_INTAKE_INTERVIEW_IDEA_TEXT=<text>` to write a
-  local-only `runs/local_operator_user_idea_raw_input.json`, run the existing
+  `SPECG_USER_IDEA_INTAKE_INTERVIEW_IDEA_TEXT=<text> make real-idea-intake` to
+  pass arbitrary raw idea text through the process environment, write a local-only
+  `runs/local_operator_user_idea_raw_input.json`, run the existing
   intake-session gate, and emit
   `runs/user_idea_intake_interview_report.json`. The wrapper can also consume a
   matching clarification request/answer-set pair and apply accepted intake

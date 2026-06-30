@@ -32,6 +32,11 @@ The wrapper can:
 - run the existing `user_idea_intake_session` builder;
 - write a public-safe `user_idea_intake_interview_report`.
 
+The CLI supports `--idea-text` for direct calls. The Make alias must receive
+arbitrary raw idea text through `SPECG_USER_IDEA_INTAKE_INTERVIEW_IDEA_TEXT`,
+not a Make command-line variable, so GNU make does not expand `$()` or other
+make syntax before Python receives the text.
+
 The default raw input path is:
 
 ```text

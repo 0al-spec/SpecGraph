@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import importlib.util
 import json
+import os
 import subprocess
 import sys
 from pathlib import Path
@@ -65,11 +66,12 @@ def test_real_idea_interview_captures_incomplete_idea_without_public_raw_text(
     session = load_json(tmp_path / "user_idea_intake_session.json")
     report = load_json(tmp_path / "user_idea_intake_interview_report.json")
     assert raw_input["idea"]["text"] == raw_text
-    assert session["readiness"]["review_state"] == "needs_clarification"
+    assert session["readiness"]["review_state"] == "intake_interview_review_required"
     assert report["summary"]["ready_for_event_storming_intake"] is False
     assert report["raw_input"]["local_only"] is True
     assert report["privacy_boundary"]["raw_idea_text_published_in_report"] is False
     assert raw_text not in json.dumps(report)
+    assert report["summary"]["finding_count"] > 0
     assert not (tmp_path / "user_idea_intake_source.json").exists()
 
 
@@ -137,7 +139,10 @@ def test_real_idea_interview_applies_clarification_answers(tmp_path: Path) -> No
         "artifact_kind": "user_idea_raw_input",
         "schema_version": 1,
         "contract_ref": "specgraph.idea-to-spec.user-idea-raw-input.v0.1",
-        "idea": {"text": "Build a small product for team decisions."},
+        "idea": {
+            "text": "Build a small product for team decisions.",
+            "summary": "Track team decisions.",
+        },
         "workspace": {
             "candidate_id": "team-decision-log",
             "display_name": "Team Decision Log",
@@ -152,21 +157,48 @@ def test_real_idea_interview_applies_clarification_answers(tmp_path: Path) -> No
             {
                 "id": "q.ontology",
                 "target_ref": "active_frame_hints.ontology_refs",
+                "suggested_actions": ["answer_question"],
             },
             {
                 "id": "q.layers",
                 "target_ref": "active_frame_hints.ontology_layer_refs",
+                "suggested_actions": ["answer_question"],
             },
-            {"id": "q.domain", "target_ref": "active_frame_hints.domain_refs"},
-            {"id": "q.context", "target_ref": "active_frame_hints.context_refs"},
+            {
+                "id": "q.domain",
+                "target_ref": "active_frame_hints.domain_refs",
+                "suggested_actions": ["answer_question"],
+            },
+            {
+                "id": "q.context",
+                "target_ref": "active_frame_hints.context_refs",
+                "suggested_actions": ["answer_question"],
+            },
             {
                 "id": "q.applicability",
                 "target_ref": "active_frame_hints.model_applicability_refs",
+                "suggested_actions": ["answer_question"],
             },
-            {"id": "q.actor", "target_ref": "event_storming_hints.actors"},
-            {"id": "q.event", "target_ref": "event_storming_hints.domain_events"},
-            {"id": "q.command", "target_ref": "event_storming_hints.commands"},
-            {"id": "q.constraint", "target_ref": "event_storming_hints.constraints"},
+            {
+                "id": "q.actor",
+                "target_ref": "event_storming_hints.actors",
+                "suggested_actions": ["answer_question"],
+            },
+            {
+                "id": "q.event",
+                "target_ref": "event_storming_hints.domain_events",
+                "suggested_actions": ["answer_question"],
+            },
+            {
+                "id": "q.command",
+                "target_ref": "event_storming_hints.commands",
+                "suggested_actions": ["answer_question"],
+            },
+            {
+                "id": "q.constraint",
+                "target_ref": "event_storming_hints.constraints",
+                "suggested_actions": ["answer_question"],
+            },
         ],
     }
     answers = {
@@ -178,54 +210,63 @@ def test_real_idea_interview_applies_clarification_answers(tmp_path: Path) -> No
                 "request_id": "q.ontology",
                 "answer_kind": "answer_question",
                 "status": "accepted_for_candidate",
+                "authority": "operator_approved",
                 "value": {"refs": ["ontology://specgraph-core"]},
             },
             {
                 "request_id": "q.layers",
                 "answer_kind": "answer_question",
                 "status": "accepted_for_candidate",
+                "authority": "operator_approved",
                 "value": {"refs": ["objective", "mechanics"]},
             },
             {
                 "request_id": "q.domain",
                 "answer_kind": "answer_question",
                 "status": "accepted_for_candidate",
+                "authority": "operator_approved",
                 "value": {"refs": ["domain.team_decision_log"]},
             },
             {
                 "request_id": "q.context",
                 "answer_kind": "answer_question",
                 "status": "accepted_for_candidate",
+                "authority": "operator_approved",
                 "value": {"refs": ["context.idea_to_spec", "context.team_decision_log"]},
             },
             {
                 "request_id": "q.applicability",
                 "answer_kind": "answer_question",
                 "status": "accepted_for_candidate",
+                "authority": "operator_approved",
                 "value": {"refs": ["model-applicability://specgraph-core/product-spec-mvp"]},
             },
             {
                 "request_id": "q.actor",
                 "answer_kind": "answer_question",
                 "status": "accepted_for_candidate",
+                "authority": "operator_approved",
                 "value": {"entries": ["Decision Maker"]},
             },
             {
                 "request_id": "q.event",
                 "answer_kind": "answer_question",
                 "status": "accepted_for_candidate",
+                "authority": "operator_approved",
                 "value": {"entries": ["Decision Recorded"]},
             },
             {
                 "request_id": "q.command",
                 "answer_kind": "answer_question",
                 "status": "accepted_for_candidate",
+                "authority": "operator_approved",
                 "value": {"entries": ["Record Decision"]},
             },
             {
                 "request_id": "q.constraint",
                 "answer_kind": "answer_question",
                 "status": "accepted_for_candidate",
+                "authority": "operator_approved",
                 "value": {"entries": ["Accepted decisions require an owner."]},
             },
         ],
@@ -305,6 +346,178 @@ def test_real_idea_interview_blocks_authority_expansion(tmp_path: Path) -> None:
     assert "may_create_branch_or_commit" not in json.dumps(raw_input)
 
 
+def test_real_idea_interview_blocks_answer_authority_expansion(tmp_path: Path) -> None:
+    base_path = tmp_path / "base.json"
+    requests_path = tmp_path / "requests.json"
+    answers_path = tmp_path / "answers.json"
+    write_json(
+        base_path,
+        {
+            "artifact_kind": "user_idea_raw_input",
+            "schema_version": 1,
+            "contract_ref": "specgraph.idea-to-spec.user-idea-raw-input.v0.1",
+            "idea": {"text": "Build a product.", "summary": "Build a product."},
+            "workspace": {"candidate_id": "product", "display_name": "Product"},
+        },
+    )
+    write_json(
+        requests_path,
+        {
+            "artifact_kind": "idea_to_spec_clarification_requests",
+            "schema_version": 1,
+            "contract_ref": "specgraph.idea-to-spec.clarification-requests.v0.1",
+            "clarification_requests": [
+                {
+                    "id": "q.actor",
+                    "target_ref": "event_storming_hints.actors",
+                    "suggested_actions": ["answer_question"],
+                }
+            ],
+        },
+    )
+    write_json(
+        answers_path,
+        {
+            "artifact_kind": "idea_to_spec_clarification_answer_set",
+            "schema_version": 1,
+            "contract_ref": "specgraph.idea-to-spec.clarification-answer-set.v0.1",
+            "answers": [
+                {
+                    "request_id": "q.actor",
+                    "answer_kind": "answer_question",
+                    "status": "accepted_for_candidate",
+                    "authority": "operator_approved",
+                    "value": {"entries": [{"name": "Owner", "may_mutate_user_intent": True}]},
+                }
+            ],
+        },
+    )
+
+    result = subprocess.run(
+        [
+            sys.executable,
+            str(TOOL_PATH),
+            "--input",
+            str(base_path),
+            "--clarification-requests",
+            str(requests_path),
+            "--clarification-answers",
+            str(answers_path),
+            *output_args(tmp_path),
+            "--strict",
+        ],
+        cwd=ROOT,
+        check=False,
+        capture_output=True,
+        text=True,
+    )
+
+    assert result.returncode == 1
+    report = load_json(tmp_path / "user_idea_intake_interview_report.json")
+    raw_input = load_json(tmp_path / "local_operator_user_idea_raw_input.json")
+    assert report["summary"]["status"] == "blocked_authority_boundary"
+    assert "user_idea_interview_authority_expanded" in {
+        finding["finding_id"] for finding in report["findings"]
+    }
+    assert "may_mutate_user_intent" not in json.dumps(raw_input)
+
+
+def test_real_idea_interview_invalid_clarification_pair_is_not_authority_block(
+    tmp_path: Path,
+) -> None:
+    answers_path = tmp_path / "answers.json"
+    write_json(
+        answers_path,
+        {
+            "artifact_kind": "idea_to_spec_clarification_answer_set",
+            "schema_version": 1,
+            "contract_ref": "specgraph.idea-to-spec.clarification-answer-set.v0.1",
+            "answers": [],
+        },
+    )
+
+    result = subprocess.run(
+        [
+            sys.executable,
+            str(TOOL_PATH),
+            "--idea-text",
+            "Build a product.",
+            "--idea-summary",
+            "Build a product.",
+            "--candidate-id",
+            "product",
+            "--display-name",
+            "Product",
+            "--clarification-answers",
+            str(answers_path),
+            *output_args(tmp_path),
+            "--strict",
+        ],
+        cwd=ROOT,
+        check=False,
+        capture_output=True,
+        text=True,
+    )
+
+    assert result.returncode == 1
+    report = load_json(tmp_path / "user_idea_intake_interview_report.json")
+    assert report["summary"]["status"] == "intake_interview_review_required"
+    assert "user_idea_interview_clarification_pair_missing" in {
+        finding["finding_id"] for finding in report["findings"]
+    }
+
+
+def test_real_idea_interview_requires_public_safe_summary_before_source(
+    tmp_path: Path,
+) -> None:
+    result = subprocess.run(
+        [
+            sys.executable,
+            str(TOOL_PATH),
+            "--idea-text",
+            "Sensitive raw operator idea should remain local.",
+            "--candidate-id",
+            "sensitive-idea",
+            "--public-route",
+            "/sensitive-idea",
+            "--ontology-ref",
+            "ontology://specgraph-core",
+            "--ontology-layer-ref",
+            "objective",
+            "--domain-ref",
+            "domain.sensitive",
+            "--context-ref",
+            "context.idea_to_spec",
+            "--model-applicability-ref",
+            "model-applicability://specgraph-core/product-spec-mvp",
+            "--actor",
+            "Owner",
+            "--domain-event",
+            "Idea Captured",
+            "--command",
+            "Capture Idea",
+            "--constraint",
+            "Keep raw text local.",
+            *output_args(tmp_path),
+            "--strict",
+        ],
+        cwd=ROOT,
+        check=False,
+        capture_output=True,
+        text=True,
+    )
+
+    assert result.returncode == 1
+    report = load_json(tmp_path / "user_idea_intake_interview_report.json")
+    session = load_json(tmp_path / "user_idea_intake_session.json")
+    assert report["summary"]["status"] == "intake_interview_review_required"
+    assert "user_idea_interview_public_summary_missing" in {
+        finding["finding_id"] for finding in report["findings"]
+    }
+    assert "Sensitive raw operator idea" not in json.dumps(session)
+    assert not (tmp_path / "user_idea_intake_source.json").exists()
+
+
 def test_real_idea_intake_make_target_writes_custom_outputs(tmp_path: Path) -> None:
     raw_output = tmp_path / "local_operator_user_idea_raw_input.json"
     session_output = tmp_path / "user_idea_intake_session.json"
@@ -316,7 +529,6 @@ def test_real_idea_intake_make_target_writes_custom_outputs(tmp_path: Path) -> N
             "make",
             "real-idea-intake",
             f"PYTHON={sys.executable}",
-            "USER_IDEA_INTAKE_INTERVIEW_IDEA_TEXT=Build a tool for team decisions.",
             "USER_IDEA_INTAKE_INTERVIEW_CANDIDATE_ID=team-decision-log",
             "USER_IDEA_INTAKE_INTERVIEW_DISPLAY_NAME=Team Decision Log",
             "USER_IDEA_INTAKE_INTERVIEW_PUBLIC_ROUTE=/team-decision-log",
@@ -329,6 +541,12 @@ def test_real_idea_intake_make_target_writes_custom_outputs(tmp_path: Path) -> N
         check=False,
         capture_output=True,
         text=True,
+        env={
+            **os.environ,
+            "SPECG_USER_IDEA_INTAKE_INTERVIEW_IDEA_TEXT": (
+                "Build a tool $(without shell execution) for team decisions."
+            ),
+        },
     )
 
     assert result.returncode == 0
@@ -336,5 +554,9 @@ def test_real_idea_intake_make_target_writes_custom_outputs(tmp_path: Path) -> N
     assert session_output.exists()
     assert report_output.exists()
     assert not source_output.exists()
+    raw_input = load_json(raw_output)
     report = load_json(report_output)
-    assert report["summary"]["status"] == "needs_clarification"
+    assert raw_input["idea"]["text"] == (
+        "Build a tool $(without shell execution) for team decisions."
+    )
+    assert report["summary"]["status"] == "intake_interview_review_required"
