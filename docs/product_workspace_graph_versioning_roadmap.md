@@ -497,7 +497,29 @@ from entering the candidate graph path as if they were ready.
 Prepared `user_idea_intake_source` inputs remain supported for compatibility
 and tests, but they are no longer the only normal entry point.
 
-### 15. Idea-To-Spec Clarification Requests
+### 15. Real Idea Intake Interview Wrapper
+
+Status: implemented in proposal `0184`.
+
+The first operator-facing real-intake wrapper is now:
+
+- `tools/user_idea_intake_interview.py`;
+- `make real-idea-intake`;
+- `runs/local_operator_user_idea_raw_input.json`;
+- `runs/user_idea_intake_interview_report.json`.
+
+The wrapper captures raw operator intent, optional workspace metadata, explicit
+ontology/domain/context/layer/applicability refs, simple event-storming entries,
+and accepted clarification answers. It then feeds the existing
+`user_idea_intake_session` gate. It does not infer missing product semantics; if
+the intake is still under-specified, the session remains `needs_clarification`.
+
+Raw idea text is local-only by default through the `local_operator_` run artifact
+prefix. The report exposes digests, readiness, findings, and clarification
+counts without publishing the raw idea text. Authority-expanding fields in the
+input or answer set block source generation.
+
+### 16. Idea-To-Spec Clarification Requests
 
 Status: implemented in proposal `0163`.
 
@@ -1175,15 +1197,17 @@ The active stack after production workspace isolation is:
    preview emitted by proposal `0173`.
 4. Controlled candidate rerun source selection from a ready
    `idea_to_spec_rerun_materialization` report emitted by proposal `0167`.
-5. CLI or agent conversation wrapper that fills `user_idea_raw_input` from a
-   real operator interview and can consume clarification requests.
-6. Prompt-side enrichment that can propose richer product-domain graph nodes
+5. CLI wrapper that fills `user_idea_raw_input` from real operator inputs and
+   accepted clarification answers, emitted by proposal `0184`.
+6. SpecSpace intake UI or agent conversation wrapper that can drive the same
+   raw-input/interview contract without requiring local CLI usage.
+7. Prompt-side enrichment that can propose richer product-domain graph nodes
    while preserving ontology gaps for unaccepted terms.
-7. SpecSpace workflow lane refinement for active candidate blockers, repair
+8. SpecSpace workflow lane refinement for active candidate blockers, repair
    suggestions, and approval state.
-8. Platform Git Service post-review status and read-model publication
+9. Platform Git Service post-review status and read-model publication
    orchestration.
-9. Ontology applicability and layer-aware review refinement as compiler support
+10. Ontology applicability and layer-aware review refinement as compiler support
    matures.
 
 ## Team Decision Log Happy-Path Repair Pack
