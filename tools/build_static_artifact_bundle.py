@@ -84,7 +84,10 @@ JUNK_FILENAMES = {".DS_Store", ".gitkeep"}
 JUNK_DIRNAMES = {"__pycache__", ".pytest_cache", ".ruff_cache"}
 LOCAL_PATH_RE = re.compile(
     r"(?P<prefix>(?:/Users/|/home/runner/|/github/workspace/|/private/var/|"
-    r"/var/folders/|/tmp/))[^\s\"'<>]+"
+    r"/var/folders/|/tmp/))[^\s\\\"'<>]+"
+)
+LOCAL_PATH_ESCAPED_BACKSLASH_SUFFIX_RE = re.compile(
+    r"(?<=\$LOCAL_PATH)(?:(?:\\\\)+(?!\")[^\s\\\"'<>]+)+"
 )
 SECRET_PATTERNS = (
     re.compile(r"-----BEGIN [A-Z ]*PRIVATE KEY-----"),
@@ -262,7 +265,9 @@ def validate_json_artifact(path: Path, text: str) -> None:
 
 
 def redact_local_paths(text: str) -> tuple[str, int]:
-    return LOCAL_PATH_RE.subn("$LOCAL_PATH", text)
+    redacted, count = LOCAL_PATH_RE.subn("$LOCAL_PATH", text)
+    redacted, suffix_count = LOCAL_PATH_ESCAPED_BACKSLASH_SUFFIX_RE.subn("", redacted)
+    return redacted, count + suffix_count
 
 
 def detect_secret_like_content(path: PurePosixPath, text: str) -> list[str]:
