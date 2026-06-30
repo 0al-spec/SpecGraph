@@ -210,6 +210,42 @@ def test_intake_session_candidate_source_rejects_empty_event_storming_lists(
     assert "intake_session_candidate_source_actors_missing" in finding_ids
 
 
+def test_intake_session_candidate_source_rejects_invalid_candidate_id(
+    tmp_path: Path,
+) -> None:
+    bridge = load_module(BRIDGE_TOOL_PATH, "intake_session_bridge_invalid_candidate")
+    session = ready_session(tmp_path)
+    session["candidate_source_input"]["workspace"]["candidate_id"] = "Bad Candidate"
+
+    source, report = bridge.build_intake_session_candidate_source(
+        session,
+        session_path=tmp_path / "user_idea_intake_session.json",
+        output_path=tmp_path / "user_idea_intake_source.json",
+    )
+
+    assert source is None
+    finding_ids = {finding["finding_id"] for finding in report["findings"]}
+    assert "intake_session_candidate_source_candidate_id_invalid" in finding_ids
+
+
+def test_intake_session_candidate_source_rejects_unlabeled_event_entry(
+    tmp_path: Path,
+) -> None:
+    bridge = load_module(BRIDGE_TOOL_PATH, "intake_session_bridge_unlabeled_entry")
+    session = ready_session(tmp_path)
+    session["candidate_source_input"]["event_storming_hints"]["actors"][0] = {"id": "actor.1"}
+
+    source, report = bridge.build_intake_session_candidate_source(
+        session,
+        session_path=tmp_path / "user_idea_intake_session.json",
+        output_path=tmp_path / "user_idea_intake_source.json",
+    )
+
+    assert source is None
+    finding_ids = {finding["finding_id"] for finding in report["findings"]}
+    assert "intake_session_candidate_source_event_storming_entry_invalid" in finding_ids
+
+
 def test_intake_session_candidate_source_blocks_authority_expansion(
     tmp_path: Path,
 ) -> None:
@@ -226,6 +262,45 @@ def test_intake_session_candidate_source_blocks_authority_expansion(
     assert source is None
     finding_ids = {finding["finding_id"] for finding in report["findings"]}
     assert "intake_session_candidate_source_authority_expanded" in finding_ids
+
+
+def test_intake_session_candidate_source_blocks_unknown_may_authority(
+    tmp_path: Path,
+) -> None:
+    bridge = load_module(BRIDGE_TOOL_PATH, "intake_session_bridge_unknown_may")
+    session = ready_session(tmp_path)
+    session["candidate_source_input"]["event_storming_hints"]["actors"][0][
+        "may_delete_production_data"
+    ] = True
+
+    source, report = bridge.build_intake_session_candidate_source(
+        session,
+        session_path=tmp_path / "user_idea_intake_session.json",
+        output_path=tmp_path / "user_idea_intake_source.json",
+    )
+
+    assert source is None
+    finding_ids = {finding["finding_id"] for finding in report["findings"]}
+    assert "intake_session_candidate_source_authority_expanded" in finding_ids
+
+
+def test_intake_session_candidate_source_redacts_authority_values(
+    tmp_path: Path,
+) -> None:
+    bridge = load_module(BRIDGE_TOOL_PATH, "intake_session_bridge_authority_redaction")
+    session = ready_session(tmp_path)
+    session["candidate_source_input"]["may_execute_prompt_agent"] = "SECRET RAW IDEA"
+
+    source, report = bridge.build_intake_session_candidate_source(
+        session,
+        session_path=tmp_path / "user_idea_intake_session.json",
+        output_path=tmp_path / "user_idea_intake_source.json",
+    )
+
+    assert source is None
+    dumped = json.dumps(report)
+    assert "SECRET RAW IDEA" not in dumped
+    assert "value_type" in dumped
 
 
 def test_intake_session_candidate_source_blocks_unsafe_privacy_boundary(
@@ -265,6 +340,47 @@ def test_intake_session_candidate_source_blocks_raw_trace_payload(
     assert "SECRET RAW IDEA" not in json.dumps(report)
     finding_ids = {finding["finding_id"] for finding in report["findings"]}
     assert "intake_session_candidate_source_raw_trace_field" in finding_ids
+
+
+def test_intake_session_candidate_source_blocks_nested_raw_trace_under_privacy_boundary(
+    tmp_path: Path,
+) -> None:
+    bridge = load_module(BRIDGE_TOOL_PATH, "intake_session_bridge_nested_privacy_raw")
+    session = ready_session(tmp_path)
+    session["candidate_source_input"]["event_storming_hints"]["actors"][0]["privacy_boundary"] = {
+        "raw_debug": "SECRET RAW IDEA"
+    }
+
+    source, report = bridge.build_intake_session_candidate_source(
+        session,
+        session_path=tmp_path / "user_idea_intake_session.json",
+        output_path=tmp_path / "user_idea_intake_source.json",
+    )
+
+    assert source is None
+    dumped = json.dumps(report)
+    assert "SECRET RAW IDEA" not in dumped
+    finding_ids = {finding["finding_id"] for finding in report["findings"]}
+    assert "intake_session_candidate_source_raw_trace_field" in finding_ids
+
+
+def test_intake_session_candidate_source_scrubs_local_raw_source_ref(
+    tmp_path: Path,
+) -> None:
+    bridge = load_module(BRIDGE_TOOL_PATH, "intake_session_bridge_local_ref")
+    session = ready_session(tmp_path)
+    session["candidate_source_input"]["source_ref"] = "runs/local_operator_user_idea_raw_input.json"
+
+    source, report = bridge.build_intake_session_candidate_source(
+        session,
+        session_path=tmp_path / "user_idea_intake_session.json",
+        output_path=tmp_path / "user_idea_intake_source.json",
+    )
+
+    assert source is not None
+    assert source["source_ref"] == "product://support-triage-log/root-intent"
+    assert "local_operator_user_idea_raw_input" not in json.dumps(source)
+    assert report["readiness"]["ready"] is True
 
 
 def test_intake_session_candidate_source_session_digest_ignores_generated_at(

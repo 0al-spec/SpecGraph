@@ -10449,6 +10449,30 @@
       },
       {
         "path": "tests/test_intake_session_candidate_source.py",
+        "pattern": "test_intake_session_candidate_source_rejects_invalid_candidate_id"
+      },
+      {
+        "path": "tests/test_intake_session_candidate_source.py",
+        "pattern": "test_intake_session_candidate_source_rejects_unlabeled_event_entry"
+      },
+      {
+        "path": "tests/test_intake_session_candidate_source.py",
+        "pattern": "test_intake_session_candidate_source_blocks_unknown_may_authority"
+      },
+      {
+        "path": "tests/test_intake_session_candidate_source.py",
+        "pattern": "test_intake_session_candidate_source_redacts_authority_values"
+      },
+      {
+        "path": "tests/test_intake_session_candidate_source.py",
+        "pattern": "test_intake_session_candidate_source_blocks_nested_raw_trace_under_privacy_boundary"
+      },
+      {
+        "path": "tests/test_intake_session_candidate_source.py",
+        "pattern": "test_intake_session_candidate_source_scrubs_local_raw_source_ref"
+      },
+      {
+        "path": "tests/test_intake_session_candidate_source.py",
         "pattern": "test_intake_session_candidate_source_session_digest_ignores_generated_at"
       }
     ],

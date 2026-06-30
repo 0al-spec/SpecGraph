@@ -6,6 +6,7 @@ import argparse
 import hashlib
 import importlib.util
 import json
+import re
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
@@ -35,6 +36,19 @@ REPORT_CONTRACT_REF = "specgraph.idea-to-spec.intake-session-candidate-source.v0
 DEFAULT_SESSION_PATH = ROOT / "runs" / "user_idea_intake_session.json"
 DEFAULT_OUTPUT_PATH = ROOT / "runs" / "user_idea_intake_source.json"
 DEFAULT_REPORT_OUTPUT_PATH = ROOT / "runs" / "intake_session_candidate_source_report.json"
+CANDIDATE_ID_RE = re.compile(r"^[a-z0-9][a-z0-9-]{1,62}[a-z0-9]$")
+LOCAL_RAW_SOURCE_REF_MARKERS = (
+    "local_operator_user_idea_raw_input",
+    "user_idea_raw_input",
+    "user_idea_intake_raw_input",
+    "raw_idea",
+)
+EVENT_STORMING_LABEL_FIELDS = {
+    "actors": ("name",),
+    "domain_events": ("name",),
+    "commands": ("name",),
+    "constraints": ("statement", "name"),
+}
 
 RAW_TRACE_FIELDS = {
     "operator_note",
@@ -83,6 +97,17 @@ def _list(value: Any) -> list[Any]:
 
 def _text(value: Any, default: str = "") -> str:
     return value.strip() if isinstance(value, str) and value.strip() else default
+
+
+def _entry_label(value: Any, category: str) -> str:
+    if isinstance(value, str):
+        return _text(value)
+    if isinstance(value, dict):
+        for field in EVENT_STORMING_LABEL_FIELDS[category]:
+            label = _text(value.get(field))
+            if label:
+                return label
+    return ""
 
 
 def _relative_ref(path: Path | None) -> str | None:
@@ -160,7 +185,10 @@ def _authority_findings(value: Any) -> list[dict[str, Any]]:
                 if not isinstance(key, str):
                     continue
                 child_path = f"{path}.{key}" if path else key
-                if key in AUTHORITY_KEYS and child is not False:
+                authority_shaped = (
+                    key in AUTHORITY_KEYS or key.startswith("may_") or key.endswith("_allowed")
+                )
+                if authority_shaped and child is not False:
                     findings.append(
                         _finding(
                             finding_id="intake_session_candidate_source_authority_expanded",
@@ -169,7 +197,7 @@ def _authority_findings(value: Any) -> list[dict[str, Any]]:
                                 "Intake-session candidate source bridge cannot accept "
                                 "execution or mutation authority."
                             ),
-                            evidence={"field": child_path, "value": child},
+                            evidence={"field": child_path, "value_type": type(child).__name__},
                         )
                     )
                 visit(child, child_path)
@@ -190,8 +218,12 @@ def _raw_trace_findings(value: Any) -> list[dict[str, Any]]:
                 if not isinstance(key, str):
                     continue
                 child_path = f"{path}.{key}" if path else key
-                in_privacy_boundary = ".privacy_boundary." in f".{child_path}."
-                if key in RAW_TRACE_FIELDS or (key.startswith("raw_") and not in_privacy_boundary):
+                top_level_privacy_flag = (
+                    path == "privacy_boundary" and key in _CONTRACTS.PUBLIC_SAFE_PRIVACY_KEYS
+                )
+                if key in RAW_TRACE_FIELDS or (
+                    key.startswith("raw_") and not top_level_privacy_flag
+                ):
                     findings.append(
                         _finding(
                             finding_id="intake_session_candidate_source_raw_trace_field",
@@ -207,6 +239,28 @@ def _raw_trace_findings(value: Any) -> list[dict[str, Any]]:
 
     visit(value, "")
     return findings
+
+
+def _local_raw_source_ref(value: str) -> bool:
+    normalized = value.replace("\\", "/")
+    return any(marker in normalized for marker in LOCAL_RAW_SOURCE_REF_MARKERS)
+
+
+def _safe_source_ref(
+    *,
+    payload: dict[str, Any],
+    session: dict[str, Any],
+    session_path: Path | None,
+) -> str:
+    raw_ref = _text(payload.get("source_ref"), _text(session.get("source_ref")))
+    if raw_ref and not _local_raw_source_ref(raw_ref):
+        return raw_ref
+    workspace = _dict(payload.get("workspace"))
+    candidate_id = _text(workspace.get("candidate_id"))
+    if candidate_id:
+        return f"product://{candidate_id}/root-intent"
+    session_ref = _relative_ref(session_path) or "unknown"
+    return f"intake-session://{session_ref}"
 
 
 def _session_contract_findings(session: dict[str, Any]) -> list[dict[str, Any]]:
@@ -330,12 +384,22 @@ def _content_findings(session: dict[str, Any], payload: dict[str, Any]) -> list[
             )
         )
     workspace = _dict(payload.get("workspace"))
-    if not _text(workspace.get("candidate_id")):
+    candidate_id = _text(workspace.get("candidate_id"))
+    if not candidate_id:
         findings.append(
             _finding(
                 finding_id="intake_session_candidate_source_workspace_missing",
                 severity="blocked",
                 message="Candidate source payload requires workspace.candidate_id.",
+            )
+        )
+    elif not CANDIDATE_ID_RE.fullmatch(candidate_id):
+        findings.append(
+            _finding(
+                finding_id="intake_session_candidate_source_candidate_id_invalid",
+                severity="blocked",
+                message="Candidate source payload requires a stable lowercase candidate id.",
+                evidence={"candidate_id": candidate_id},
             )
         )
     if not _text(workspace.get("display_name")):
@@ -381,6 +445,23 @@ def _content_findings(session: dict[str, Any], payload: dict[str, Any]) -> list[
                     message=f"Candidate source payload requires event_storming_hints.{field}.",
                 )
             )
+            continue
+        for index, entry in enumerate(entries):
+            if _entry_label(entry, field):
+                continue
+            findings.append(
+                _finding(
+                    finding_id="intake_session_candidate_source_event_storming_entry_invalid",
+                    severity="review_required",
+                    message=(
+                        "Candidate source payload event-storming entries require a public label."
+                    ),
+                    evidence={
+                        "field": f"event_storming_hints.{field}[{index}]",
+                        "value_type": type(entry).__name__,
+                    },
+                )
+            )
     return findings
 
 
@@ -394,7 +475,11 @@ def _source_from_payload(
         "artifact_kind": "user_idea_intake_source",
         "schema_version": SCHEMA_VERSION,
         "contract_ref": SOURCE_CONTRACT_REF,
-        "source_ref": _text(payload.get("source_ref"), _text(session.get("source_ref"))),
+        "source_ref": _safe_source_ref(
+            payload=payload,
+            session=session,
+            session_path=session_path,
+        ),
         "workspace": _dict(payload.get("workspace")),
         "intent": {
             "text": "",
