@@ -270,8 +270,8 @@ Supervisor modes:
   `runs/user_idea_intake_session.json` and materialize the standard
   `runs/user_idea_intake_source.json` from the session's embedded public-safe
   `candidate_source_input`. The bridge writes
-  `runs/intake_session_candidate_source_report.json`, removes stale source output
-  when the session is not ready, rewrites source provenance to the intake
+  `runs/intake_session_candidate_source_report.json`, leaves any pre-existing
+  source output untouched when the session is not ready, rewrites source provenance to the intake
   session rather than the local raw-input artifact, and does not execute prompt
   agents, mutate candidate/canonical specs, write Ontology packages, accept
   ontology terms, create Git branches, or publish raw idea text.

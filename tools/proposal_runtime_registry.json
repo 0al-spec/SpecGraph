@@ -10392,6 +10392,7 @@
       "docs/archive/proposal_sources/0185_intake_session_candidate_source_bridge.md",
       "tools/intake_session_candidate_source.py",
       "tools/user_idea_intake_session.py",
+      "tools/idea_to_spec_contracts.py",
       "tests/test_intake_session_candidate_source.py",
       "Makefile",
       "docs/product_workspace_graph_versioning_roadmap.md",
@@ -10400,6 +10401,10 @@
       "tools/docc_sync_contract.json"
     ],
     "runtime_markers": [
+      {
+        "path": "tools/idea_to_spec_contracts.py",
+        "pattern": "INTAKE_SESSION_CANDIDATE_SOURCE_INPUT_CONTRACT_REF"
+      },
       {
         "path": "tools/intake_session_candidate_source.py",
         "pattern": "REPORT_CONTRACT_REF = \"specgraph.idea-to-spec.intake-session-candidate-source.v0.1\""
@@ -10433,6 +10438,18 @@
       {
         "path": "tests/test_intake_session_candidate_source.py",
         "pattern": "test_intake_session_candidate_source_blocks_raw_trace_payload"
+      },
+      {
+        "path": "tests/test_intake_session_candidate_source.py",
+        "pattern": "test_intake_session_candidate_source_external_refs_are_unique"
+      },
+      {
+        "path": "tests/test_intake_session_candidate_source.py",
+        "pattern": "test_intake_session_candidate_source_rejects_empty_event_storming_lists"
+      },
+      {
+        "path": "tests/test_intake_session_candidate_source.py",
+        "pattern": "test_intake_session_candidate_source_session_digest_ignores_generated_at"
       }
     ],
     "observation_markers": [

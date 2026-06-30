@@ -66,11 +66,15 @@ authority-expanding fields, the bridge marks the report as
 
 - A ready intake session can materialize `runs/user_idea_intake_source.json`
   through `make intake-session-candidate-source`.
-- A not-ready session fails strict mode and removes stale source output.
+- A not-ready session fails strict mode without deleting a pre-existing source
+  artifact placed by the caller.
 - Raw idea text, raw prompt/model traces, private notes, and local operator raw
   input refs are not copied into the emitted source.
 - Authority-expanding fields block source materialization.
 - Unsafe privacy boundaries block source materialization.
+- External session refs remain deterministic and non-ambiguous without
+  publishing local absolute paths.
+- Session digests used by the bridge ignore `generated_at` timestamp drift.
 - The emitted source can feed the existing
   `user_idea_intake_source -> idea_event_storming_intake` chain.
 

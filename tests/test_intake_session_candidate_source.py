@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import importlib.util
 import json
+import re
 import subprocess
 import sys
 from pathlib import Path
@@ -69,7 +70,10 @@ def test_intake_session_candidate_source_materializes_ready_source(
     assert source["artifact_kind"] == "user_idea_intake_source"
     assert source["workspace"]["candidate_id"] == "support-triage-log"
     assert source["source_session"]["bridge_proposal_id"] == "0185"
-    assert source["source_session"]["source_ref"] == "external:user_idea_intake_session.json"
+    assert re.fullmatch(
+        r"external:[0-9a-f]{16}:user_idea_intake_session\.json",
+        source["source_session"]["source_ref"],
+    )
     assert source["intent"]["text"] == ""
     dumped = json.dumps(source)
     assert load_json(READY_FIXTURE)["idea"]["text"] not in dumped
@@ -154,11 +158,56 @@ def test_intake_session_candidate_source_rejects_not_ready_session(
     )
 
     assert result.returncode == 1
-    assert not output_path.exists()
+    assert load_json(output_path) == {"artifact_kind": "stale_source"}
     report = load_json(report_path)
     assert report["readiness"]["ready"] is False
     finding_ids = {finding["finding_id"] for finding in report["findings"]}
     assert "intake_session_candidate_source_session_not_ready" in finding_ids
+
+
+def test_intake_session_candidate_source_external_refs_are_unique(
+    tmp_path: Path,
+) -> None:
+    bridge = load_module(BRIDGE_TOOL_PATH, "intake_session_bridge_external_refs")
+    session = ready_session(tmp_path)
+    first_path = tmp_path / "a" / "user_idea_intake_session.json"
+    second_path = tmp_path / "b" / "user_idea_intake_session.json"
+
+    first_source, _ = bridge.build_intake_session_candidate_source(
+        session,
+        session_path=first_path,
+        output_path=tmp_path / "first_user_idea_intake_source.json",
+    )
+    second_source, _ = bridge.build_intake_session_candidate_source(
+        session,
+        session_path=second_path,
+        output_path=tmp_path / "second_user_idea_intake_source.json",
+    )
+
+    assert first_source is not None
+    assert second_source is not None
+    assert (
+        first_source["source_session"]["source_ref"]
+        != second_source["source_session"]["source_ref"]
+    )
+
+
+def test_intake_session_candidate_source_rejects_empty_event_storming_lists(
+    tmp_path: Path,
+) -> None:
+    bridge = load_module(BRIDGE_TOOL_PATH, "intake_session_bridge_empty_events")
+    session = ready_session(tmp_path)
+    session["candidate_source_input"]["event_storming_hints"]["actors"] = []
+
+    source, report = bridge.build_intake_session_candidate_source(
+        session,
+        session_path=tmp_path / "user_idea_intake_session.json",
+        output_path=tmp_path / "user_idea_intake_source.json",
+    )
+
+    assert source is None
+    finding_ids = {finding["finding_id"] for finding in report["findings"]}
+    assert "intake_session_candidate_source_actors_missing" in finding_ids
 
 
 def test_intake_session_candidate_source_blocks_authority_expansion(
@@ -216,6 +265,31 @@ def test_intake_session_candidate_source_blocks_raw_trace_payload(
     assert "SECRET RAW IDEA" not in json.dumps(report)
     finding_ids = {finding["finding_id"] for finding in report["findings"]}
     assert "intake_session_candidate_source_raw_trace_field" in finding_ids
+
+
+def test_intake_session_candidate_source_session_digest_ignores_generated_at(
+    tmp_path: Path,
+) -> None:
+    bridge = load_module(BRIDGE_TOOL_PATH, "intake_session_bridge_stable_digest")
+    session = ready_session(tmp_path)
+    first_source, _ = bridge.build_intake_session_candidate_source(
+        session,
+        session_path=tmp_path / "user_idea_intake_session.json",
+        output_path=tmp_path / "user_idea_intake_source.json",
+    )
+    session["generated_at"] = "2099-01-01T00:00:00+00:00"
+    second_source, _ = bridge.build_intake_session_candidate_source(
+        session,
+        session_path=tmp_path / "user_idea_intake_session.json",
+        output_path=tmp_path / "user_idea_intake_source.json",
+    )
+
+    assert first_source is not None
+    assert second_source is not None
+    assert (
+        first_source["source_session"]["session_digest"]
+        == second_source["source_session"]["session_digest"]
+    )
 
 
 def test_intake_session_candidate_source_make_target_uses_custom_outputs(

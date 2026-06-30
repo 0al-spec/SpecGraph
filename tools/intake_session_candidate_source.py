@@ -4,17 +4,33 @@ from __future__ import annotations
 
 import argparse
 import hashlib
+import importlib.util
 import json
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
 ROOT = Path(__file__).resolve().parents[1]
+
+
+def _load_contracts_module() -> Any:
+    spec = importlib.util.spec_from_file_location(
+        "idea_to_spec_contracts",
+        Path(__file__).resolve().parent / "idea_to_spec_contracts.py",
+    )
+    if spec is None or spec.loader is None:
+        raise RuntimeError("Unable to load idea-to-spec contract constants")
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
+
+
+_CONTRACTS = _load_contracts_module()
 PROPOSAL_ID = "0185"
 SCHEMA_VERSION = 1
 SESSION_CONTRACT_REF = "specgraph.idea-to-spec.user-idea-intake-session.v0.1"
 SOURCE_CONTRACT_REF = "specgraph.idea-to-spec.user-idea-intake-source.v0.1"
-INPUT_CONTRACT_REF = "specgraph.idea-to-spec.intake-session-candidate-source-input.v0.1"
+INPUT_CONTRACT_REF = _CONTRACTS.INTAKE_SESSION_CANDIDATE_SOURCE_INPUT_CONTRACT_REF
 REPORT_CONTRACT_REF = "specgraph.idea-to-spec.intake-session-candidate-source.v0.1"
 DEFAULT_SESSION_PATH = ROOT / "runs" / "user_idea_intake_session.json"
 DEFAULT_OUTPUT_PATH = ROOT / "runs" / "user_idea_intake_source.json"
@@ -72,10 +88,12 @@ def _text(value: Any, default: str = "") -> str:
 def _relative_ref(path: Path | None) -> str | None:
     if path is None:
         return None
+    resolved = path.resolve()
     try:
-        return path.resolve().relative_to(ROOT).as_posix()
+        return resolved.relative_to(ROOT).as_posix()
     except ValueError:
-        return f"external:{path.name}"
+        digest = hashlib.sha256(resolved.as_posix().encode("utf-8")).hexdigest()[:16]
+        return f"external:{digest}:{path.name}"
 
 
 def _digest(payload: dict[str, Any]) -> str:
@@ -130,12 +148,7 @@ def _authority_boundary() -> dict[str, bool]:
 
 
 def _privacy_boundary() -> dict[str, bool]:
-    return {
-        "raw_idea_text_published": False,
-        "raw_prompt_published": False,
-        "raw_model_output_published": False,
-        "raw_operator_note_published": False,
-    }
+    return {key: False for key in _CONTRACTS.PUBLIC_SAFE_PRIVACY_KEYS}
 
 
 def _authority_findings(value: Any) -> list[dict[str, Any]]:
@@ -227,12 +240,7 @@ def _privacy_findings(session: dict[str, Any], payload: dict[str, Any]) -> list[
     findings: list[dict[str, Any]] = []
     session_privacy = _dict(session.get("privacy_boundary"))
     payload_privacy = _dict(payload.get("privacy_boundary"))
-    required = {
-        "raw_idea_text_published",
-        "raw_prompt_published",
-        "raw_model_output_published",
-        "raw_operator_note_published",
-    }
+    required = set(_CONTRACTS.PUBLIC_SAFE_PRIVACY_KEYS)
     if not session_privacy:
         findings.append(
             _finding(
@@ -242,7 +250,15 @@ def _privacy_findings(session: dict[str, Any], payload: dict[str, Any]) -> list[
             )
         )
     for key in sorted(required):
-        session_key = f"{key}_in_session" if key == "raw_idea_text_published" else key
+        # The session contract keeps the raw idea text flag explicitly scoped to
+        # the session artifact, while the embedded public payload uses the
+        # generic public-artifact privacy key. Keep the mapping here so future
+        # contract renames fail in one visible place instead of drifting silently.
+        session_key = (
+            _CONTRACTS.SESSION_PRIVACY_RAW_IDEA_TEXT_PUBLISHED_KEY
+            if key == _CONTRACTS.PUBLISHED_PAYLOAD_PRIVACY_RAW_IDEA_TEXT_PUBLISHED_KEY
+            else key
+        )
         session_value = session_privacy.get(session_key, session_privacy.get(key))
         payload_value = payload_privacy.get(key)
         if session_value is not False:
@@ -356,7 +372,8 @@ def _content_findings(session: dict[str, Any], payload: dict[str, Any]) -> list[
             )
     event_storming = _dict(payload.get("event_storming_hints"))
     for field in ("actors", "domain_events", "commands", "constraints"):
-        if not isinstance(event_storming.get(field), list):
+        entries = event_storming.get(field)
+        if not isinstance(entries, list) or not entries:
             findings.append(
                 _finding(
                     finding_id=f"intake_session_candidate_source_{field}_missing",
@@ -391,7 +408,7 @@ def _source_from_payload(
             "proposal_id": session.get("proposal_id"),
             "bridge_proposal_id": PROPOSAL_ID,
             "source_ref": _relative_ref(session_path),
-            "session_digest": _digest(session),
+            "session_digest": _text(payload.get("source_digest"), _digest(payload)),
         },
         "source_materialization": {
             "artifact_kind": "intake_session_candidate_source_report",
@@ -488,8 +505,6 @@ def main(argv: list[str] | None = None) -> int:
     )
     if source is not None:
         write_json(source, args.output)
-    elif args.output.exists():
-        args.output.unlink()
     write_json(report, args.report)
     print(
         f"{report['readiness']['review_state']}: "
