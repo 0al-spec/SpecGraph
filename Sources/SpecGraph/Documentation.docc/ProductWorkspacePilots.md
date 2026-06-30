@@ -206,6 +206,27 @@ prefers the clarified session when present. It does not execute prompt agents,
 infer missing semantics with an LLM, mutate specs, write Ontology packages, or
 publish raw idea text.
 
+Proposal `0187` adds the active-candidate convenience flow for ready real-intake
+sessions:
+
+```bash
+make real-idea-intake-active-candidate
+```
+
+The target sequences the missing bridge explicitly:
+
+```text
+ready or clarified user_idea_intake_session
+  -> user_idea_intake_source
+  -> idea_event_storming_seed
+  -> product-workspace-active-candidate
+```
+
+It preserves the existing contract boundary: `product-workspace-active-candidate`
+still consumes an event-storming seed, not a raw `user_idea_intake_source`. A
+direct intake-source input now fails with an actionable operator message instead
+of a later seed-contract mismatch.
+
 Proposal `0163` adds `idea_to_spec_clarification_requests` as the unified
 read-only question/action surface:
 

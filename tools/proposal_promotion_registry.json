@@ -2403,5 +2403,18 @@
     "required_provenance_links": [
       "source_draft_ref"
     ]
+  },
+  {
+    "proposal_id": "0187",
+    "source_artifact_class": "working_draft",
+    "source_refs": [
+      "docs/archive/proposal_sources/0187_real_idea_active_candidate_flow.md"
+    ],
+    "motivating_concern": "Ready real-intake sessions can materialize user_idea_intake_source, but operators still need an obvious path from that source to product-workspace-active-candidate because the active candidate runner consumes an event-storming seed, not the source directly.",
+    "normalized_title": "Real Idea Active Candidate Flow",
+    "bounded_scope": "Add a deterministic review-only real-idea active-candidate Make target, guardrail error message, tests, proposal docs, roadmap, DocC, README, and registry tracking that sequences real-idea-intake-ready-candidate-source, user-idea-intake-source, and product-workspace-active-candidate with the correct event-storming seed handoff, without executing prompt agents, inferring missing product semantics with an LLM, mutating user intent, mutating candidate or canonical specs, writing Ontology packages or lockfiles, accepting ontology terms, approving candidates, creating Git branches or commits, opening pull requests, publishing read models, or adding SpecSpace mutation UI.",
+    "required_provenance_links": [
+      "source_draft_ref"
+    ]
   }
 ]

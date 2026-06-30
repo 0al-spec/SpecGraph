@@ -312,6 +312,241 @@ def test_real_idea_intake_make_targets_build_ready_candidate_source(
     assert emitted_source["workspace"]["candidate_id"] == "team-decision-log"
 
 
+def test_real_idea_intake_active_candidate_target_builds_seed_first(
+    tmp_path: Path,
+) -> None:
+    python = supported_python()
+    run_rel = Path("runs") / f"test_real_idea_active_candidate_{tmp_path.name}"
+    run_dir = ROOT / run_rel
+    shutil.rmtree(run_dir, ignore_errors=True)
+    try:
+        raw_input = run_rel / "local_operator_user_idea_raw_input.json"
+        session = run_rel / "user_idea_intake_session.json"
+        source = run_rel / "user_idea_intake_source.json"
+        report = run_rel / "user_idea_intake_interview_report.json"
+        requests = run_rel / "idea_intake_clarification_requests.json"
+        answers = run_rel / "idea_intake_clarification_answers.json"
+        rerun_input = run_rel / "idea_intake_answer_rerun_input.json"
+        clarified_raw = run_rel / "local_operator_clarified_user_idea_raw_input.json"
+        clarified_session = run_rel / "clarified_user_idea_intake_session.json"
+        clarified_source = run_rel / "clarified_user_idea_intake_source.json"
+        rerun_report = run_rel / "idea_intake_clarification_rerun_report.json"
+        bridge_report = run_rel / "intake_session_candidate_source_report.json"
+        event_seed = run_rel / "idea_event_storming_seed.json"
+        intake = run_rel / "idea_event_storming_intake.json"
+        candidate_seed = run_rel / "candidate_spec_graph_seed.json"
+        candidate_graph = run_rel / "candidate_spec_graph.json"
+        pre_sib = run_rel / "pre_sib_coherence_report.json"
+        repair_loop = run_rel / "candidate_repair_loop_report.json"
+        downstream_requests = run_rel / "idea_to_spec_clarification_requests.json"
+        materialized_dir = run_rel / "materialized_candidate"
+        materialization = run_rel / "candidate_spec_materialization_report.json"
+        promotion_gate = run_rel / "idea_to_spec_promotion_gate.json"
+        active_candidate = run_rel / "active_idea_to_spec_candidate.json"
+
+        for args in (
+            [
+                "real-idea-intake-clarification-requests",
+                (
+                    "SPECG_USER_IDEA_INTAKE_INTERVIEW_IDEA_TEXT="
+                    "I want a small tool for comparing product prices by weight."
+                ),
+                "USER_IDEA_INTAKE_INTERVIEW_IDEA_SUMMARY=Compare unit prices.",
+                "USER_IDEA_INTAKE_INTERVIEW_CANDIDATE_ID=store-unit-price-helper",
+                "USER_IDEA_INTAKE_INTERVIEW_DISPLAY_NAME=Store Unit Price Helper",
+                "USER_IDEA_INTAKE_INTERVIEW_PUBLIC_ROUTE=/store-unit-price-helper",
+                f"USER_IDEA_RAW_INPUT_OUTPUT={raw_input}",
+                f"USER_IDEA_INTAKE_SESSION_OUTPUT={session}",
+                f"USER_IDEA_INTAKE_SESSION_SOURCE_OUTPUT={source}",
+                f"USER_IDEA_INTAKE_INTERVIEW_REPORT_OUTPUT={report}",
+                f"IDEA_INTAKE_CLARIFICATION_REQUESTS_OUTPUT={requests}",
+            ],
+            [
+                "real-idea-intake-clarification-rerun",
+                f"USER_IDEA_RAW_INPUT_OUTPUT={raw_input}",
+                f"IDEA_INTAKE_CLARIFICATION_REQUESTS_OUTPUT={requests}",
+                f"IDEA_INTAKE_CLARIFICATION_ANSWERS_INPUT={ANSWERS_READY}",
+                f"IDEA_INTAKE_CLARIFICATION_ANSWERS_OUTPUT={answers}",
+                f"IDEA_INTAKE_ANSWER_RERUN_INPUT_OUTPUT={rerun_input}",
+                f"CLARIFIED_USER_IDEA_RAW_INPUT_OUTPUT={clarified_raw}",
+                f"CLARIFIED_USER_IDEA_INTAKE_SESSION_OUTPUT={clarified_session}",
+                f"CLARIFIED_USER_IDEA_INTAKE_SOURCE_OUTPUT={clarified_source}",
+                f"IDEA_INTAKE_CLARIFICATION_RERUN_REPORT_OUTPUT={rerun_report}",
+            ],
+        ):
+            result = subprocess.run(
+                ["make", *args, f"PYTHON={python}"],
+                cwd=ROOT,
+                check=False,
+                capture_output=True,
+                text=True,
+            )
+            assert result.returncode == 0, result.stderr
+
+        result = subprocess.run(
+            [
+                "make",
+                "real-idea-intake-active-candidate",
+                f"PYTHON={python}",
+                f"USER_IDEA_RAW_INPUT_OUTPUT={raw_input}",
+                f"USER_IDEA_INTAKE_SESSION_OUTPUT={session}",
+                f"USER_IDEA_INTAKE_SESSION_SOURCE_OUTPUT={source}",
+                f"CLARIFIED_USER_IDEA_INTAKE_SESSION_OUTPUT={clarified_session}",
+                f"INTAKE_SESSION_CANDIDATE_SOURCE_REPORT_OUTPUT={bridge_report}",
+                f"USER_IDEA_EVENT_STORMING_SEED_OUTPUT={event_seed}",
+                f"IDEA_EVENT_STORMING_INTAKE_OUTPUT={intake}",
+                f"PRODUCT_WORKSPACE_CANDIDATE_SEED_OUTPUT={candidate_seed}",
+                f"CANDIDATE_SPEC_GRAPH_OUTPUT={candidate_graph}",
+                f"PRE_SIB_COHERENCE_OUTPUT={pre_sib}",
+                f"CANDIDATE_REPAIR_LOOP_OUTPUT={repair_loop}",
+                f"IDEA_TO_SPEC_CLARIFICATION_OUTPUT={downstream_requests}",
+                f"CANDIDATE_SPEC_MATERIALIZATION_OUTPUT_DIR={materialized_dir}",
+                f"CANDIDATE_SPEC_MATERIALIZATION_OUTPUT={materialization}",
+                f"IDEA_TO_SPEC_PROMOTION_GATE_OUTPUT={promotion_gate}",
+                f"ACTIVE_IDEA_TO_SPEC_CANDIDATE_OUTPUT={active_candidate}",
+            ],
+            cwd=ROOT,
+            check=False,
+            capture_output=True,
+            text=True,
+        )
+
+        assert result.returncode == 0, result.stderr
+        assert load_json(ROOT / event_seed)["artifact_kind"] == "idea_event_storming_seed"
+        assert load_json(ROOT / intake)["summary"]["status"] == "ready_for_candidate_graph"
+        assert load_json(ROOT / candidate_graph)["summary"]["node_count"] > 0
+        active = load_json(ROOT / active_candidate)
+        assert active["summary"]["candidate_id"] == "store-unit-price-helper"
+        assert "idea_event_storming_seed_contract_invalid" not in json.dumps(
+            load_json(ROOT / intake)
+        )
+    finally:
+        shutil.rmtree(run_dir, ignore_errors=True)
+
+
+def test_product_workspace_active_candidate_rejects_direct_intake_source(
+    tmp_path: Path,
+) -> None:
+    python = supported_python()
+    raw_input = tmp_path / "local_operator_user_idea_raw_input.json"
+    session = tmp_path / "user_idea_intake_session.json"
+    source = tmp_path / "user_idea_intake_source.json"
+    report = tmp_path / "user_idea_intake_interview_report.json"
+    requests = tmp_path / "idea_intake_clarification_requests.json"
+    answers = tmp_path / "idea_intake_clarification_answers.json"
+    rerun_input = tmp_path / "idea_intake_answer_rerun_input.json"
+    clarified_raw = tmp_path / "local_operator_clarified_user_idea_raw_input.json"
+    clarified_session = tmp_path / "clarified_user_idea_intake_session.json"
+    clarified_source = tmp_path / "clarified_user_idea_intake_source.json"
+    rerun_report = tmp_path / "idea_intake_clarification_rerun_report.json"
+    bridge_report = tmp_path / "intake_session_candidate_source_report.json"
+
+    setup = subprocess.run(
+        [
+            "make",
+            "real-idea-intake-clarification-requests",
+            f"PYTHON={python}",
+            "SPECG_USER_IDEA_INTAKE_INTERVIEW_IDEA_TEXT=I want a small tool for team decisions.",
+            "USER_IDEA_INTAKE_INTERVIEW_IDEA_SUMMARY=Track team decisions.",
+            "USER_IDEA_INTAKE_INTERVIEW_CANDIDATE_ID=team-decision-log",
+            "USER_IDEA_INTAKE_INTERVIEW_DISPLAY_NAME=Team Decision Log",
+            "USER_IDEA_INTAKE_INTERVIEW_PUBLIC_ROUTE=/team-decision-log",
+            f"USER_IDEA_RAW_INPUT_OUTPUT={raw_input}",
+            f"USER_IDEA_INTAKE_SESSION_OUTPUT={session}",
+            f"USER_IDEA_INTAKE_SESSION_SOURCE_OUTPUT={source}",
+            f"USER_IDEA_INTAKE_INTERVIEW_REPORT_OUTPUT={report}",
+            f"IDEA_INTAKE_CLARIFICATION_REQUESTS_OUTPUT={requests}",
+        ],
+        cwd=ROOT,
+        check=False,
+        capture_output=True,
+        text=True,
+    )
+    assert setup.returncode == 0, setup.stderr
+    rerun = subprocess.run(
+        [
+            "make",
+            "real-idea-intake-clarification-rerun",
+            f"PYTHON={python}",
+            f"USER_IDEA_RAW_INPUT_OUTPUT={raw_input}",
+            f"IDEA_INTAKE_CLARIFICATION_REQUESTS_OUTPUT={requests}",
+            f"IDEA_INTAKE_CLARIFICATION_ANSWERS_INPUT={ANSWERS_READY}",
+            f"IDEA_INTAKE_CLARIFICATION_ANSWERS_OUTPUT={answers}",
+            f"IDEA_INTAKE_ANSWER_RERUN_INPUT_OUTPUT={rerun_input}",
+            f"CLARIFIED_USER_IDEA_RAW_INPUT_OUTPUT={clarified_raw}",
+            f"CLARIFIED_USER_IDEA_INTAKE_SESSION_OUTPUT={clarified_session}",
+            f"CLARIFIED_USER_IDEA_INTAKE_SOURCE_OUTPUT={clarified_source}",
+            f"IDEA_INTAKE_CLARIFICATION_RERUN_REPORT_OUTPUT={rerun_report}",
+        ],
+        cwd=ROOT,
+        check=False,
+        capture_output=True,
+        text=True,
+    )
+    assert rerun.returncode == 0, rerun.stderr
+    bridge = subprocess.run(
+        [
+            "make",
+            "real-idea-intake-ready-candidate-source",
+            f"PYTHON={python}",
+            f"USER_IDEA_INTAKE_SESSION_OUTPUT={session}",
+            f"USER_IDEA_INTAKE_SESSION_SOURCE_OUTPUT={source}",
+            f"CLARIFIED_USER_IDEA_INTAKE_SESSION_OUTPUT={clarified_session}",
+            f"INTAKE_SESSION_CANDIDATE_SOURCE_REPORT_OUTPUT={bridge_report}",
+        ],
+        cwd=ROOT,
+        check=False,
+        capture_output=True,
+        text=True,
+    )
+    assert bridge.returncode == 0, bridge.stderr
+
+    result = subprocess.run(
+        [
+            "make",
+            "product-workspace-active-candidate",
+            f"PYTHON={python}",
+            f"PRODUCT_WORKSPACE_INTAKE_SOURCE={source}",
+            f"IDEA_EVENT_STORMING_INTAKE_OUTPUT={tmp_path / 'intake.json'}",
+            f"PRODUCT_WORKSPACE_CANDIDATE_SEED_OUTPUT={tmp_path / 'seed.json'}",
+        ],
+        cwd=ROOT,
+        check=False,
+        capture_output=True,
+        text=True,
+    )
+
+    assert result.returncode == 2
+    assert "PRODUCT_WORKSPACE_INTAKE_SOURCE points to user_idea_intake_source" in (result.stderr)
+
+
+def test_product_workspace_active_candidate_reports_invalid_intake_json(
+    tmp_path: Path,
+) -> None:
+    python = supported_python()
+    invalid_source = tmp_path / "invalid_intake_source.json"
+    invalid_source.write_text("{not-json\n", encoding="utf-8")
+
+    result = subprocess.run(
+        [
+            "make",
+            "product-workspace-active-candidate",
+            f"PYTHON={python}",
+            f"PRODUCT_WORKSPACE_INTAKE_SOURCE={invalid_source}",
+            f"IDEA_EVENT_STORMING_INTAKE_OUTPUT={tmp_path / 'intake.json'}",
+            f"PRODUCT_WORKSPACE_CANDIDATE_SEED_OUTPUT={tmp_path / 'seed.json'}",
+        ],
+        cwd=ROOT,
+        check=False,
+        capture_output=True,
+        text=True,
+    )
+
+    assert result.returncode == 2
+    assert "PRODUCT_WORKSPACE_INTAKE_SOURCE is not valid JSON." in result.stderr
+    assert "points to user_idea_intake_source" not in result.stderr
+
+
 def test_real_idea_intake_clarification_rerun_requires_explicit_answers(
     tmp_path: Path,
 ) -> None:

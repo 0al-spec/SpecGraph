@@ -288,6 +288,11 @@ Supervisor modes:
   The loop does not execute prompt agents, infer missing semantics with an LLM,
   mutate specs, write Ontology packages, create Git branches, or publish raw idea
   text.
+- Proposal 0187 adds `make real-idea-intake-active-candidate`, which converts
+  the ready real-intake `user_idea_intake_source` into an
+  `idea_event_storming_seed` before running `product-workspace-active-candidate`.
+  Passing a `user_idea_intake_source` directly to
+  `product-workspace-active-candidate` now fails with an actionable message.
 - `tools/user_idea_intake_source.py`: deterministic generic user-idea source
   builder introduced by proposal 0158. Use `make user-idea-intake-source
   USER_IDEA_INTAKE_SOURCE=<json>` to normalize product workspace identity,
