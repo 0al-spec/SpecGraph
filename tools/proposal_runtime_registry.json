@@ -10817,5 +10817,56 @@
         "pattern": "Proposal 0190"
       }
     ]
+  },
+  {
+    "proposal_id": "0191",
+    "posture": "synchronous_runtime_slice",
+    "runtime_surfaces": [
+      "docs/proposals/0191_event_storming_candidate_topology_edges.md",
+      "docs/archive/proposal_sources/0191_event_storming_candidate_topology_edges.md",
+      "tools/ontology_bound_candidate_graph_seed.py",
+      "tests/test_ontology_bound_candidate_graph_seed.py",
+      "docs/product_workspace_graph_versioning_roadmap.md",
+      "Sources/SpecGraph/Documentation.docc/ProductWorkspacePilots.md",
+      "tools/README.md"
+    ],
+    "runtime_markers": [
+      {
+        "path": "tools/ontology_bound_candidate_graph_seed.py",
+        "pattern": "_candidate_topology_edges"
+      },
+      {
+        "path": "tools/ontology_bound_candidate_graph_seed.py",
+        "pattern": "event_storming_product_boundary_decomposition"
+      },
+      {
+        "path": "tools/ontology_bound_candidate_graph_seed.py",
+        "pattern": "decomposes_to"
+      }
+    ],
+    "validation_markers": [
+      {
+        "path": "tests/test_ontology_bound_candidate_graph_seed.py",
+        "pattern": "test_ontology_bound_candidate_seed_prevents_topology_empty_pre_sib_graph"
+      }
+    ],
+    "observation_markers": [
+      {
+        "path": "docs/proposals/0191_event_storming_candidate_topology_edges.md",
+        "pattern": "Status: implemented."
+      },
+      {
+        "path": "docs/product_workspace_graph_versioning_roadmap.md",
+        "pattern": "Status: implemented in proposal `0191`"
+      },
+      {
+        "path": "Sources/SpecGraph/Documentation.docc/ProductWorkspacePilots.md",
+        "pattern": "Proposal `0191`"
+      },
+      {
+        "path": "tools/README.md",
+        "pattern": "Proposal 0191"
+      }
+    ]
   }
 ]

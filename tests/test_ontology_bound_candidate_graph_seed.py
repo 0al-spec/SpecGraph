@@ -12,6 +12,7 @@ TOOL_PATH = ROOT / "tools" / "ontology_bound_candidate_graph_seed.py"
 USER_SOURCE_TOOL = ROOT / "tools" / "user_idea_intake_source.py"
 EVENT_INTAKE_TOOL = ROOT / "tools" / "idea_event_storming_intake.py"
 CANDIDATE_GRAPH_TOOL = ROOT / "tools" / "candidate_spec_graph.py"
+PRE_SIB_TOOL = ROOT / "tools" / "pre_sib_coherence_report.py"
 USER_SOURCE_READY = ROOT / "tests" / "fixtures" / "user_idea_intake" / "source_ready.json"
 ONTOLOGY_IR = (
     ROOT / "ontology" / "packages" / "specgraph-core" / "generated" / "ontology.normalized.json"
@@ -82,11 +83,18 @@ def test_ontology_bound_candidate_seed_builds_ready_seed_from_generic_intake() -
     graph = seed["candidate_graph"]
     assert isinstance(graph, dict)
     nodes = graph["nodes"]
+    edges = graph["edges"]
     assert isinstance(nodes, list)
+    assert isinstance(edges, list)
     product = nodes[0]
     assert "ontology://org.0al.specgraph.core/0.1.0/classes/Spec" in product["ontology_refs"]
     command_nodes = [node for node in nodes if node["kind"] == "behavior_requirement"]
     assert command_nodes
+    assert len(edges) == len(nodes) - 1
+    assert {edge["from"] for edge in edges if isinstance(edge, dict)} == {
+        "candidate-spec.product-boundary"
+    }
+    assert {edge["relation"] for edge in edges if isinstance(edge, dict)} == {"decomposes_to"}
     assert all(
         "ontology://org.0al.specgraph.core/0.1.0/classes/Requirement" in node["ontology_refs"]
         for node in command_nodes
@@ -107,9 +115,32 @@ def test_ontology_bound_candidate_seed_feeds_candidate_graph_builder() -> None:
 
     assert graph["pre_sib_readiness"]["ready"] is True
     assert graph["summary"]["node_count"] >= 4
+    assert graph["summary"]["edge_count"] == graph["summary"]["node_count"] - 1
     assert graph["summary"]["gap_count"] >= 1
     assert graph["active_frame"]["domain_refs"] == ["domain.support_triage_log"]
     assert graph["findings"] == []
+
+
+def test_ontology_bound_candidate_seed_prevents_topology_empty_pre_sib_graph() -> None:
+    candidate_module = load_module(CANDIDATE_GRAPH_TOOL, "candidate_graph_for_topology_seed")
+    pre_sib_module = load_module(PRE_SIB_TOOL, "pre_sib_for_topology_seed")
+    intake = support_triage_intake()
+    seed = build_seed(intake=intake)
+
+    graph = candidate_module.build_candidate_spec_graph(
+        intake=intake,
+        seed=seed,
+        intake_path=USER_SOURCE_READY,
+        seed_path=ROOT / "runs" / "candidate_spec_graph_seed.json",
+    )
+    report = pre_sib_module.build_pre_sib_coherence_report(
+        graph,
+        candidate_graph_path=ROOT / "runs" / "candidate_spec_graph.json",
+    )
+
+    assert report["metrics"]["edge_count"] == graph["summary"]["node_count"] - 1
+    assert report["metrics"]["orphan_node_count"] == 0
+    assert "pre_sib_orphan_nodes" not in finding_ids(report)
 
 
 def test_ontology_bound_candidate_seed_disambiguates_duplicate_node_slugs() -> None:

@@ -1376,6 +1376,24 @@ absolute paths, clears ambient active-candidate config, and writes the summary
 even when intake gates block. Smoke summaries whitelist upstream summary fields
 so raw idea text cannot leak through artifact telemetry.
 
+## Event-Storming Candidate Topology Edges
+
+Status: implemented in proposal `0191`.
+
+Proposal `0191` makes ontology-bound candidate graph seeds emit conservative
+topology edges from `candidate-spec.product-boundary` to every derived candidate
+node:
+
+```text
+candidate-spec.product-boundary --decomposes_to--> candidate-spec.<node>
+```
+
+The edge generation is intentionally limited to product-boundary decomposition.
+It does not infer command ordering, causality, ownership, lifecycle state, or
+domain semantics. The goal is to keep real idea candidate graphs from appearing
+topology-empty in pre-SIB metrics while preserving the review-only authority
+boundary.
+
 ## Team Decision Log Happy-Path Repair Pack
 
 Status: implemented in proposal `0182`.

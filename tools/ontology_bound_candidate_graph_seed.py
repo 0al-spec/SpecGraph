@@ -611,6 +611,33 @@ def _constraint_nodes(
     return nodes
 
 
+def _candidate_topology_edges(nodes: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    boundary_id = "candidate-spec.product-boundary"
+    node_ids = {_text(node.get("id")) for node in nodes}
+    if boundary_id not in node_ids:
+        return []
+    edges: list[dict[str, Any]] = []
+    for node in nodes:
+        node_id = _text(node.get("id"))
+        if not node_id or node_id == boundary_id:
+            continue
+        node_slug = node_id.removeprefix("candidate-spec.")
+        edges.append(
+            {
+                "id": f"edge.product-boundary.{node_slug}",
+                "from": boundary_id,
+                "to": node_id,
+                "relation": "decomposes_to",
+                "source_event_refs": _text_list(node.get("source_event_refs")),
+                "derivation": {
+                    "kind": "event_storming_product_boundary_decomposition",
+                    "source": "ontology_bound_candidate_graph_seed",
+                },
+            }
+        )
+    return edges
+
+
 def _risk_gaps(event_storming: dict[str, list[dict[str, Any]]]) -> list[dict[str, Any]]:
     gaps: list[dict[str, Any]] = []
     for index, risk in enumerate(event_storming.get("risks", []), start=1):
@@ -697,6 +724,7 @@ def build_ontology_bound_candidate_graph_seed(
             used_slugs=used_slugs,
         )
     )
+    edges = _candidate_topology_edges(nodes)
     return {
         "artifact_kind": "candidate_spec_graph_seed",
         "schema_version": SCHEMA_VERSION,
@@ -704,7 +732,7 @@ def build_ontology_bound_candidate_graph_seed(
         "source_ref": _candidate_source_ref(intake, intake_path),
         "candidate_graph": {
             "nodes": nodes,
-            "edges": [],
+            "edges": edges,
         },
         "source_generation": {
             "artifact_kind": "ontology_bound_candidate_graph_seed_generation",
@@ -741,7 +769,7 @@ def build_ontology_bound_candidate_graph_seed(
             "summary": {
                 "status": "ready_for_candidate_graph" if ok else "ontology_seed_review_required",
                 "node_count": len(nodes),
-                "edge_count": 0,
+                "edge_count": len(edges),
                 "ontology_binding_count": len(_ontology_bindings(classes)),
                 "ontology_gap_count": len(ontology_gaps),
                 "finding_count": len(blocking_findings),
