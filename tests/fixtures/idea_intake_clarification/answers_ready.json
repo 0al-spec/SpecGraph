@@ -1,0 +1,108 @@
+{
+  "answers": [
+    {
+      "answer_kind": "answer_question",
+      "authority": "operator_approved",
+      "request_id": "clarification.intake.question-active-frame-ontology-refs",
+      "status": "accepted_for_candidate",
+      "value": {
+        "refs": [
+          "ontology://specgraph-core"
+        ]
+      }
+    },
+    {
+      "answer_kind": "answer_question",
+      "authority": "operator_approved",
+      "request_id": "clarification.intake.question-active-frame-ontology-layer-refs",
+      "status": "accepted_for_candidate",
+      "value": {
+        "refs": [
+          "objective",
+          "mechanics"
+        ]
+      }
+    },
+    {
+      "answer_kind": "answer_question",
+      "authority": "operator_approved",
+      "request_id": "clarification.intake.question-active-frame-domain-refs",
+      "status": "accepted_for_candidate",
+      "value": {
+        "refs": [
+          "domain.team_decision_log"
+        ]
+      }
+    },
+    {
+      "answer_kind": "answer_question",
+      "authority": "operator_approved",
+      "request_id": "clarification.intake.question-active-frame-context-refs",
+      "status": "accepted_for_candidate",
+      "value": {
+        "refs": [
+          "context.idea_to_spec",
+          "context.team_decision_log"
+        ]
+      }
+    },
+    {
+      "answer_kind": "answer_question",
+      "authority": "operator_approved",
+      "request_id": "clarification.intake.question-active-frame-model-applicability-refs",
+      "status": "accepted_for_candidate",
+      "value": {
+        "refs": [
+          "model-applicability://specgraph-core/product-spec-mvp"
+        ]
+      }
+    },
+    {
+      "answer_kind": "answer_question",
+      "authority": "operator_approved",
+      "request_id": "clarification.intake.question-event-storming-actors",
+      "status": "accepted_for_candidate",
+      "value": {
+        "entries": [
+          "Decision Maker"
+        ]
+      }
+    },
+    {
+      "answer_kind": "answer_question",
+      "authority": "operator_approved",
+      "request_id": "clarification.intake.question-event-storming-domain-events",
+      "status": "accepted_for_candidate",
+      "value": {
+        "entries": [
+          "Decision Recorded"
+        ]
+      }
+    },
+    {
+      "answer_kind": "answer_question",
+      "authority": "operator_approved",
+      "request_id": "clarification.intake.question-event-storming-commands",
+      "status": "accepted_for_candidate",
+      "value": {
+        "entries": [
+          "Record Decision"
+        ]
+      }
+    },
+    {
+      "answer_kind": "answer_question",
+      "authority": "operator_approved",
+      "request_id": "clarification.intake.question-event-storming-constraints",
+      "status": "accepted_for_candidate",
+      "value": {
+        "entries": [
+          "Accepted decisions require an owner."
+        ]
+      }
+    }
+  ],
+  "artifact_kind": "idea_to_spec_clarification_answer_set",
+  "contract_ref": "specgraph.idea-to-spec.clarification-answer-set.v0.1",
+  "schema_version": 1
+}

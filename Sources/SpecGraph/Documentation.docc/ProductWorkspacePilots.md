@@ -187,6 +187,25 @@ provenance to the intake session instead of the local raw-input artifact, so raw
 idea text remains local-only while the existing generic intake chain can start
 from a real intake session.
 
+Proposal `0186` adds the real-intake clarification loop for under-specified
+ideas:
+
+```bash
+make real-idea-intake-clarification-requests
+make real-idea-intake-clarification-answers
+make real-idea-intake-clarification-rerun
+make real-idea-intake-ready-candidate-source
+```
+
+The loop writes intake-specific clarification request/answer/rerun artifacts,
+including `runs/idea_intake_answer_rerun_input.json`,
+`runs/clarified_user_idea_intake_session.json`, and
+`runs/idea_intake_clarification_rerun_report.json`. It applies accepted answers
+through the same review-only intake wrapper, then the candidate-source bridge
+prefers the clarified session when present. It does not execute prompt agents,
+infer missing semantics with an LLM, mutate specs, write Ontology packages, or
+publish raw idea text.
+
 Proposal `0163` adds `idea_to_spec_clarification_requests` as the unified
 read-only question/action surface:
 

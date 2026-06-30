@@ -66,6 +66,17 @@ INTAKE_SESSION_CANDIDATE_SOURCE_OUTPUT ?= $(USER_IDEA_INTAKE_SESSION_SOURCE_OUTP
 INTAKE_SESSION_CANDIDATE_SOURCE_REPORT_OUTPUT ?= runs/intake_session_candidate_source_report.json
 INTAKE_SESSION_CANDIDATE_SOURCE_STRICT ?=
 INTAKE_SESSION_CANDIDATE_SOURCE_STRICT_ARG := $(if $(filter 1 true yes,$(strip $(INTAKE_SESSION_CANDIDATE_SOURCE_STRICT))),--strict,)
+INTAKE_SESSION_CANDIDATE_SOURCE_FALLBACK ?=
+INTAKE_SESSION_CANDIDATE_SOURCE_FALLBACK_ARG := $(if $(strip $(INTAKE_SESSION_CANDIDATE_SOURCE_FALLBACK)),--fallback-intake-session "$(INTAKE_SESSION_CANDIDATE_SOURCE_FALLBACK)",)
+IDEA_INTAKE_CLARIFICATION_REQUESTS_OUTPUT ?= runs/idea_intake_clarification_requests.json
+IDEA_INTAKE_CLARIFICATION_ANSWERS_INPUT ?= tests/fixtures/idea_intake_clarification/answers_ready.json
+IDEA_INTAKE_CLARIFICATION_ANSWERS_OUTPUT ?= runs/idea_intake_clarification_answers.json
+IDEA_INTAKE_ANSWER_RERUN_INPUT_OUTPUT ?= runs/idea_intake_answer_rerun_input.json
+CLARIFIED_USER_IDEA_RAW_INPUT_OUTPUT ?= runs/local_operator_clarified_user_idea_raw_input.json
+CLARIFIED_USER_IDEA_INTAKE_SESSION_OUTPUT ?= runs/clarified_user_idea_intake_session.json
+CLARIFIED_USER_IDEA_INTAKE_SOURCE_OUTPUT ?= runs/clarified_user_idea_intake_source.json
+IDEA_INTAKE_CLARIFICATION_RERUN_REPORT_OUTPUT ?= runs/idea_intake_clarification_rerun_report.json
+REAL_IDEA_INTAKE_READY_SESSION_INPUT := $(if $(wildcard $(CLARIFIED_USER_IDEA_INTAKE_SESSION_OUTPUT)),$(CLARIFIED_USER_IDEA_INTAKE_SESSION_OUTPUT),$(USER_IDEA_INTAKE_SESSION_OUTPUT))
 USER_IDEA_INTAKE_SOURCE ?= tests/fixtures/user_idea_intake/source_ready.json
 USER_IDEA_EVENT_STORMING_SEED_OUTPUT_DEFAULT := runs/idea_event_storming_seed.json
 USER_IDEA_EVENT_STORMING_SEED_OUTPUT ?= $(USER_IDEA_EVENT_STORMING_SEED_OUTPUT_DEFAULT)
@@ -278,7 +289,9 @@ PYTHON_TARGETS := viewer-surfaces dashboard backlog next-move spec-activity grap
 	specauthor-generated-artifact-contract specauthor-ontology-write-gate \
 	specauthor-invocation-artifact-contract specauthor-authoring-flow \
 	user-idea-intake-session intake-session-candidate-source \
-	real-idea-intake-candidate-source user-idea-intake-source generic-idea-intake \
+	real-idea-intake-candidate-source real-idea-intake-clarification-requests \
+	real-idea-intake-clarification-answers real-idea-intake-clarification-rerun \
+	real-idea-intake-ready-candidate-source user-idea-intake-source generic-idea-intake \
 	generic-idea-intake-session \
 	idea-event-storming-intake ontology-bound-candidate-graph-seed \
 	candidate-spec-graph pre-sib-coherence candidate-repair-loop \
@@ -353,6 +366,9 @@ help:
 			'  make specauthor-ontology-write-gate SPECAUTHOR_ONTOLOGY_WRITE_GATE_ARTIFACT=<json>' \
 			'  SPECG_USER_IDEA_INTAKE_INTERVIEW_IDEA_TEXT=<text> make real-idea-intake' \
 			'  make real-idea-intake-candidate-source Build source from real intake session' \
+			'  make real-idea-intake-clarification-requests Build intake-only clarification requests' \
+			'  make real-idea-intake-clarification-rerun IDEA_INTAKE_CLARIFICATION_ANSWERS_INPUT=<json>' \
+			'  make real-idea-intake-ready-candidate-source Prefer clarified session when present' \
 			'  make user-idea-intake-session USER_IDEA_INTAKE_SESSION_INPUT=<json>' \
 			'  make intake-session-candidate-source INTAKE_SESSION_CANDIDATE_SOURCE_INPUT=<json>' \
 			'  make user-idea-intake-source USER_IDEA_INTAKE_SOURCE=<json>' \
@@ -579,11 +595,27 @@ user-idea-intake-session:
 
 .PHONY: intake-session-candidate-source
 intake-session-candidate-source:
-	@$(PYTHON) tools/intake_session_candidate_source.py --intake-session "$(INTAKE_SESSION_CANDIDATE_SOURCE_INPUT)" --output "$(INTAKE_SESSION_CANDIDATE_SOURCE_OUTPUT)" --report "$(INTAKE_SESSION_CANDIDATE_SOURCE_REPORT_OUTPUT)" $(INTAKE_SESSION_CANDIDATE_SOURCE_STRICT_ARG)
+	@$(PYTHON) tools/intake_session_candidate_source.py --intake-session "$(INTAKE_SESSION_CANDIDATE_SOURCE_INPUT)" $(INTAKE_SESSION_CANDIDATE_SOURCE_FALLBACK_ARG) --output "$(INTAKE_SESSION_CANDIDATE_SOURCE_OUTPUT)" --report "$(INTAKE_SESSION_CANDIDATE_SOURCE_REPORT_OUTPUT)" $(INTAKE_SESSION_CANDIDATE_SOURCE_STRICT_ARG)
 
 .PHONY: real-idea-intake-candidate-source
 real-idea-intake-candidate-source: real-idea-intake
 	@$(MAKE) intake-session-candidate-source INTAKE_SESSION_CANDIDATE_SOURCE_INPUT="$(USER_IDEA_INTAKE_SESSION_OUTPUT)" INTAKE_SESSION_CANDIDATE_SOURCE_OUTPUT="$(USER_IDEA_INTAKE_SESSION_SOURCE_OUTPUT)" INTAKE_SESSION_CANDIDATE_SOURCE_STRICT=1
+
+.PHONY: real-idea-intake-clarification-requests
+real-idea-intake-clarification-requests: real-idea-intake
+	@$(PYTHON) tools/idea_to_spec_clarification_requests.py --session "$(USER_IDEA_INTAKE_SESSION_OUTPUT)" --no-intake --no-candidate-graph --no-pre-sib --no-repair-loop --output "$(IDEA_INTAKE_CLARIFICATION_REQUESTS_OUTPUT)"
+
+.PHONY: real-idea-intake-clarification-answers
+real-idea-intake-clarification-answers: real-idea-intake-clarification-requests
+	@$(PYTHON) tools/idea_to_spec_clarification_answers.py --requests "$(IDEA_INTAKE_CLARIFICATION_REQUESTS_OUTPUT)" --answers "$(IDEA_INTAKE_CLARIFICATION_ANSWERS_INPUT)" --output "$(IDEA_INTAKE_CLARIFICATION_ANSWERS_OUTPUT)" --strict
+
+.PHONY: real-idea-intake-clarification-rerun
+real-idea-intake-clarification-rerun: real-idea-intake-clarification-answers
+	@$(PYTHON) tools/idea_intake_clarification_rerun.py --raw-input "$(USER_IDEA_RAW_INPUT_OUTPUT)" --clarification-requests "$(IDEA_INTAKE_CLARIFICATION_REQUESTS_OUTPUT)" --answers "$(IDEA_INTAKE_CLARIFICATION_ANSWERS_INPUT)" --validated-answers-output "$(IDEA_INTAKE_CLARIFICATION_ANSWERS_OUTPUT)" --rerun-input-output "$(IDEA_INTAKE_ANSWER_RERUN_INPUT_OUTPUT)" --clarified-raw-output "$(CLARIFIED_USER_IDEA_RAW_INPUT_OUTPUT)" --clarified-session-output "$(CLARIFIED_USER_IDEA_INTAKE_SESSION_OUTPUT)" --clarified-source-output "$(CLARIFIED_USER_IDEA_INTAKE_SOURCE_OUTPUT)" --report-output "$(IDEA_INTAKE_CLARIFICATION_RERUN_REPORT_OUTPUT)" --strict
+
+.PHONY: real-idea-intake-ready-candidate-source
+real-idea-intake-ready-candidate-source:
+	@$(MAKE) intake-session-candidate-source INTAKE_SESSION_CANDIDATE_SOURCE_INPUT="$(REAL_IDEA_INTAKE_READY_SESSION_INPUT)" INTAKE_SESSION_CANDIDATE_SOURCE_FALLBACK="$(USER_IDEA_INTAKE_SESSION_OUTPUT)" INTAKE_SESSION_CANDIDATE_SOURCE_OUTPUT="$(USER_IDEA_INTAKE_SESSION_SOURCE_OUTPUT)" INTAKE_SESSION_CANDIDATE_SOURCE_STRICT=1
 
 .PHONY: generic-idea-intake
 generic-idea-intake: user-idea-intake-source

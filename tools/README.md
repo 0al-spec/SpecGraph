@@ -275,6 +275,19 @@ Supervisor modes:
   session rather than the local raw-input artifact, and does not execute prompt
   agents, mutate candidate/canonical specs, write Ontology packages, accept
   ontology terms, create Git branches, or publish raw idea text.
+- `tools/idea_intake_clarification_rerun.py`: review-only real-intake
+  clarification rerun wrapper introduced by proposal 0186. Use
+  `make real-idea-intake-clarification-requests`, then validate answers with
+  `make real-idea-intake-clarification-answers`, then run
+  `make real-idea-intake-clarification-rerun` to produce
+  `runs/idea_intake_answer_rerun_input.json`,
+  `runs/clarified_user_idea_intake_session.json`, and
+  `runs/idea_intake_clarification_rerun_report.json`. Use
+  `make real-idea-intake-ready-candidate-source` to prefer the clarified session
+  when present and materialize the standard `runs/user_idea_intake_source.json`.
+  The loop does not execute prompt agents, infer missing semantics with an LLM,
+  mutate specs, write Ontology packages, create Git branches, or publish raw idea
+  text.
 - `tools/user_idea_intake_source.py`: deterministic generic user-idea source
   builder introduced by proposal 0158. Use `make user-idea-intake-source
   USER_IDEA_INTAKE_SOURCE=<json>` to normalize product workspace identity,
@@ -1174,6 +1187,16 @@ Key derived artifacts:
   that maps accepted clarification answers into intake, ontology review, and
   candidate review hints for a later deterministic rerun without applying
   mutations.
+- `runs/idea_intake_answer_rerun_input.json`: public-safe, review-only overlay
+  that maps accepted real-intake clarification answers onto active-frame and
+  event-storming target refs before rebuilding a clarified intake session.
+- `runs/clarified_user_idea_intake_session.json`: review-only clarified intake
+  session produced after accepted real-intake answers are applied. It can feed
+  the candidate-source bridge when ready, while raw idea text remains local-only.
+- `runs/idea_intake_clarification_rerun_report.json`: public-safe report over
+  the real-intake clarification rerun, including accepted target counts,
+  clarified session readiness, source/output refs, and explicit false authority
+  boundary flags.
 - `runs/idea_to_spec_rerun_preview.json`: public-safe, review-only preview that
   evaluates accepted-answer overlay effects against current intake and
   candidate graph state, including ontology gap resolution previews and
