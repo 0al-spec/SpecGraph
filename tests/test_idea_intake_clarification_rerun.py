@@ -349,12 +349,12 @@ def test_real_idea_intake_active_candidate_target_builds_seed_first(
                 "real-idea-intake-clarification-requests",
                 (
                     "SPECG_USER_IDEA_INTAKE_INTERVIEW_IDEA_TEXT="
-                    "I want a small tool for team decisions."
+                    "I want a small tool for comparing product prices by weight."
                 ),
-                "USER_IDEA_INTAKE_INTERVIEW_IDEA_SUMMARY=Track team decisions.",
-                "USER_IDEA_INTAKE_INTERVIEW_CANDIDATE_ID=team-decision-log",
-                "USER_IDEA_INTAKE_INTERVIEW_DISPLAY_NAME=Team Decision Log",
-                "USER_IDEA_INTAKE_INTERVIEW_PUBLIC_ROUTE=/team-decision-log",
+                "USER_IDEA_INTAKE_INTERVIEW_IDEA_SUMMARY=Compare unit prices.",
+                "USER_IDEA_INTAKE_INTERVIEW_CANDIDATE_ID=store-unit-price-helper",
+                "USER_IDEA_INTAKE_INTERVIEW_DISPLAY_NAME=Store Unit Price Helper",
+                "USER_IDEA_INTAKE_INTERVIEW_PUBLIC_ROUTE=/store-unit-price-helper",
                 f"USER_IDEA_RAW_INPUT_OUTPUT={raw_input}",
                 f"USER_IDEA_INTAKE_SESSION_OUTPUT={session}",
                 f"USER_IDEA_INTAKE_SESSION_SOURCE_OUTPUT={source}",
@@ -416,7 +416,7 @@ def test_real_idea_intake_active_candidate_target_builds_seed_first(
         assert load_json(ROOT / intake)["summary"]["status"] == "ready_for_candidate_graph"
         assert load_json(ROOT / candidate_graph)["summary"]["node_count"] > 0
         active = load_json(ROOT / active_candidate)
-        assert active["summary"]["candidate_id"] == "team-decision-log"
+        assert active["summary"]["candidate_id"] == "store-unit-price-helper"
         assert "idea_event_storming_seed_contract_invalid" not in json.dumps(
             load_json(ROOT / intake)
         )
