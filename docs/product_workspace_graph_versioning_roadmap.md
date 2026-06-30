@@ -1332,6 +1332,29 @@ This prevents isolated smoke runs from accidentally replacing a scoped real
 idea session with a generic `idea-candidate` session when the follow-up Make
 invocation does not repeat every raw-idea/frame argument.
 
+## Candidate-Local Domain Derivation
+
+Status: implemented in proposal `0189`.
+
+Proposal `0189` makes real-idea active frames carry both the broader product
+domain and the candidate-local domain expected by active candidate validation.
+For example, an apartment renovation idea can keep:
+
+```text
+domain.home_renovation_project_management
+```
+
+while also deriving:
+
+```text
+domain.apartment_renovation_assistant
+```
+
+The derived domain ref is appended when missing and existing domain refs remain
+ordered and intact. This avoids late `active_candidate_domain_mismatch` findings
+when a real idea supplies a useful bounded-context domain that is broader than
+the candidate id.
+
 ## Team Decision Log Happy-Path Repair Pack
 
 Status: implemented in proposal `0182`.

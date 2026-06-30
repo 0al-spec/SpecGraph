@@ -297,6 +297,10 @@ Supervisor modes:
   existing `USER_IDEA_INTAKE_SESSION_OUTPUT` is preserved and used as the source
   for clarification requests. The target still creates a session when missing;
   use `REAL_IDEA_INTAKE_REFRESH=1` to intentionally rebuild it.
+- Proposal 0189 appends the candidate-local domain ref derived from
+  `candidate_id` while preserving broader product domain refs, so real ideas can
+  carry both `domain.<candidate>` and contextual domain refs into the active
+  candidate pipeline.
 - `tools/user_idea_intake_source.py`: deterministic generic user-idea source
   builder introduced by proposal 0158. Use `make user-idea-intake-source
   USER_IDEA_INTAKE_SOURCE=<json>` to normalize product workspace identity,

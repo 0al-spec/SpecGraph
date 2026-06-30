@@ -125,6 +125,31 @@ def test_user_idea_intake_session_needs_clarification_without_context() -> None:
     assert session["source_output"]["digest"] is None
 
 
+def test_user_idea_intake_session_adds_candidate_local_domain_ref() -> None:
+    module = load_module(TOOL_PATH, "user_idea_intake_session_candidate_domain")
+    payload = copy.deepcopy(load_json(READY_FIXTURE))
+    payload["workspace"]["candidate_id"] = "apartment-renovation-assistant"
+    payload["workspace"]["display_name"] = "Apartment Renovation Assistant"
+    payload["active_frame_hints"]["project"] = "ApartmentRenovationAssistant"
+    payload["active_frame_hints"]["domain_refs"] = ["domain.home_renovation_project_management"]
+
+    session, source = module.build_user_idea_intake_session(
+        payload,
+        source_path=READY_FIXTURE,
+    )
+
+    assert session["readiness"]["ready"] is True
+    assert source is not None
+    assert session["active_frame_hints"]["domain_refs"] == [
+        "domain.home_renovation_project_management",
+        "domain.apartment_renovation_assistant",
+    ]
+    assert source["active_frame_hints"]["domain_refs"] == [
+        "domain.home_renovation_project_management",
+        "domain.apartment_renovation_assistant",
+    ]
+
+
 def test_user_idea_intake_session_source_feeds_existing_intake_chain(tmp_path: Path) -> None:
     session_module = load_module(TOOL_PATH, "user_idea_intake_session_chain")
     source_module = load_module(SOURCE_TOOL_PATH, "user_idea_intake_source_from_session")

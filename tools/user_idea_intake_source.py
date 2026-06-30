@@ -67,6 +67,12 @@ def _text_list(value: Any) -> list[str]:
     return [item.strip() for item in _list(value) if isinstance(item, str) and item.strip()]
 
 
+def _append_unique(items: list[str], value: str) -> list[str]:
+    if value and value not in items:
+        return [*items, value]
+    return items
+
+
 def _slug(value: str, fallback: str = "idea-candidate") -> str:
     slug = re.sub(r"[^a-z0-9]+", "-", value.lower()).strip("-")
     return slug or fallback
@@ -229,6 +235,8 @@ def _frame(
     context_refs = _text_list(frame.get("context_refs"))
     if not context_refs:
         context_refs = ["context.idea_to_spec", _slug_to_context_ref(candidate_id)]
+    domain_refs = _text_list(frame.get("domain_refs")) or [_slug_to_domain_ref(candidate_id)]
+    domain_refs = _append_unique(domain_refs, _slug_to_domain_ref(candidate_id))
     return {
         "project": _text(frame.get("project"), _slug_to_project_id(candidate_id)),
         "subsystem": _text(frame.get("subsystem"), "product_specification"),
@@ -236,7 +244,7 @@ def _frame(
         "ontology_refs": _text_list(frame.get("ontology_refs")) or ["ontology://specgraph-core"],
         "ontology_layer_refs": _text_list(frame.get("ontology_layer_refs"))
         or ["objective", "mechanics"],
-        "domain_refs": _text_list(frame.get("domain_refs")) or [_slug_to_domain_ref(candidate_id)],
+        "domain_refs": domain_refs,
         "context_refs": context_refs,
         "model_applicability_refs": _text_list(frame.get("model_applicability_refs"))
         or ["model-applicability://specgraph-core/product-spec-mvp"],

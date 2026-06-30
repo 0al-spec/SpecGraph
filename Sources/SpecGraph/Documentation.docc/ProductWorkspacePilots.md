@@ -235,6 +235,13 @@ when the operator passes `REAL_IDEA_INTAKE_REFRESH=1`. This keeps isolated
 real-idea smoke runs from accidentally replacing a product-scoped intake session
 with a generic fallback session.
 
+Proposal `0189` keeps real-idea active frames aligned with active-candidate
+validation by appending the candidate-local domain ref derived from
+`candidate_id` while preserving broader product domain refs. A renovation idea
+can therefore carry both `domain.home_renovation_project_management` and
+`domain.apartment_renovation_assistant` instead of failing later with
+`active_candidate_domain_mismatch`.
+
 Proposal `0163` adds `idea_to_spec_clarification_requests` as the unified
 read-only question/action surface:
 

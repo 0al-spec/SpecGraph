@@ -113,6 +113,12 @@ def _text_list(value: Any) -> list[str]:
     return [item.strip() for item in _list(value) if isinstance(item, str) and item.strip()]
 
 
+def _append_unique(items: list[str], value: str) -> list[str]:
+    if value and value not in items:
+        return [*items, value]
+    return items
+
+
 def _slug(value: str, fallback: str = "idea-candidate") -> str:
     slug = re.sub(r"[^a-z0-9]+", "-", value.lower()).strip("-")
     return slug or fallback
@@ -406,6 +412,10 @@ def _frame(
             normalized["ontology_layer_refs"] = ["objective", "mechanics"]
         if not normalized["domain_refs"]:
             normalized["domain_refs"] = [_slug_to_domain_ref(candidate_id)]
+        else:
+            normalized["domain_refs"] = _append_unique(
+                normalized["domain_refs"], _slug_to_domain_ref(candidate_id)
+            )
         if not normalized["context_refs"]:
             normalized["context_refs"] = [
                 "context.idea_to_spec",
@@ -453,6 +463,9 @@ def _frame(
                 blocks=[f"active_frame_hints.{field}"],
             )
         )
+    normalized["domain_refs"] = _append_unique(
+        normalized["domain_refs"], _slug_to_domain_ref(candidate_id)
+    )
     return normalized, findings, questions
 
 
