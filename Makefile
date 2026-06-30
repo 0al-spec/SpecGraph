@@ -291,7 +291,8 @@ PYTHON_TARGETS := viewer-surfaces dashboard backlog next-move spec-activity grap
 	user-idea-intake-session intake-session-candidate-source \
 	real-idea-intake-candidate-source real-idea-intake-clarification-requests \
 	real-idea-intake-clarification-answers real-idea-intake-clarification-rerun \
-	real-idea-intake-ready-candidate-source user-idea-intake-source generic-idea-intake \
+	real-idea-intake-ready-candidate-source real-idea-intake-active-candidate \
+	user-idea-intake-source generic-idea-intake \
 	generic-idea-intake-session \
 	idea-event-storming-intake ontology-bound-candidate-graph-seed \
 	candidate-spec-graph pre-sib-coherence candidate-repair-loop \
@@ -366,10 +367,11 @@ help:
 			'  make specauthor-ontology-write-gate SPECAUTHOR_ONTOLOGY_WRITE_GATE_ARTIFACT=<json>' \
 			'  SPECG_USER_IDEA_INTAKE_INTERVIEW_IDEA_TEXT=<text> make real-idea-intake' \
 			'  make real-idea-intake-candidate-source Build source from real intake session' \
-			'  make real-idea-intake-clarification-requests Build intake-only clarification requests' \
-			'  make real-idea-intake-clarification-rerun IDEA_INTAKE_CLARIFICATION_ANSWERS_INPUT=<json>' \
-			'  make real-idea-intake-ready-candidate-source Prefer clarified session when present' \
-			'  make user-idea-intake-session USER_IDEA_INTAKE_SESSION_INPUT=<json>' \
+				'  make real-idea-intake-clarification-requests Build intake-only clarification requests' \
+				'  make real-idea-intake-clarification-rerun IDEA_INTAKE_CLARIFICATION_ANSWERS_INPUT=<json>' \
+				'  make real-idea-intake-ready-candidate-source Prefer clarified session when present' \
+				'  make real-idea-intake-active-candidate Build active candidate from ready real intake' \
+				'  make user-idea-intake-session USER_IDEA_INTAKE_SESSION_INPUT=<json>' \
 			'  make intake-session-candidate-source INTAKE_SESSION_CANDIDATE_SOURCE_INPUT=<json>' \
 			'  make user-idea-intake-source USER_IDEA_INTAKE_SOURCE=<json>' \
 			'  make generic-idea-intake-session USER_IDEA_INTAKE_SESSION_INPUT=<json>' \
@@ -621,6 +623,26 @@ real-idea-intake-ready-candidate-source:
 	if test -f "$(CLARIFIED_USER_IDEA_INTAKE_SESSION_OUTPUT)"; then ready_session="$(CLARIFIED_USER_IDEA_INTAKE_SESSION_OUTPUT)"; fi; \
 	$(MAKE) intake-session-candidate-source INTAKE_SESSION_CANDIDATE_SOURCE_INPUT="$$ready_session" INTAKE_SESSION_CANDIDATE_SOURCE_FALLBACK="$(USER_IDEA_INTAKE_SESSION_OUTPUT)" INTAKE_SESSION_CANDIDATE_SOURCE_OUTPUT="$(USER_IDEA_INTAKE_SESSION_SOURCE_OUTPUT)" INTAKE_SESSION_CANDIDATE_SOURCE_STRICT=1
 
+.PHONY: real-idea-intake-active-candidate
+real-idea-intake-active-candidate:
+	@if ! test -f "$(USER_IDEA_INTAKE_SESSION_OUTPUT)" && ! test -f "$(CLARIFIED_USER_IDEA_INTAKE_SESSION_OUTPUT)"; then \
+		$(MAKE) real-idea-intake; \
+	fi
+	@$(MAKE) real-idea-intake-ready-candidate-source
+	@$(MAKE) user-idea-intake-source USER_IDEA_INTAKE_SOURCE="$(USER_IDEA_INTAKE_SESSION_SOURCE_OUTPUT)" USER_IDEA_EVENT_STORMING_SEED_OUTPUT="$(USER_IDEA_EVENT_STORMING_SEED_OUTPUT)"
+	@$(MAKE) product-workspace-active-candidate \
+		PRODUCT_WORKSPACE_INTAKE_SOURCE="$(USER_IDEA_EVENT_STORMING_SEED_OUTPUT)" \
+		IDEA_EVENT_STORMING_INTAKE_OUTPUT="$(IDEA_EVENT_STORMING_INTAKE_OUTPUT)" \
+		PRODUCT_WORKSPACE_CANDIDATE_SEED_OUTPUT="$(PRODUCT_WORKSPACE_CANDIDATE_SEED_OUTPUT)" \
+		CANDIDATE_SPEC_GRAPH_OUTPUT="$(CANDIDATE_SPEC_GRAPH_OUTPUT)" \
+		PRE_SIB_COHERENCE_OUTPUT="$(PRE_SIB_COHERENCE_OUTPUT)" \
+		CANDIDATE_REPAIR_LOOP_OUTPUT="$(CANDIDATE_REPAIR_LOOP_OUTPUT)" \
+		IDEA_TO_SPEC_CLARIFICATION_OUTPUT="$(IDEA_TO_SPEC_CLARIFICATION_OUTPUT)" \
+		CANDIDATE_SPEC_MATERIALIZATION_OUTPUT_DIR="$(CANDIDATE_SPEC_MATERIALIZATION_OUTPUT_DIR)" \
+		CANDIDATE_SPEC_MATERIALIZATION_OUTPUT="$(CANDIDATE_SPEC_MATERIALIZATION_OUTPUT)" \
+		IDEA_TO_SPEC_PROMOTION_GATE_OUTPUT="$(IDEA_TO_SPEC_PROMOTION_GATE_OUTPUT)" \
+		ACTIVE_IDEA_TO_SPEC_CANDIDATE_OUTPUT="$(ACTIVE_IDEA_TO_SPEC_CANDIDATE_OUTPUT)"
+
 .PHONY: generic-idea-intake
 generic-idea-intake: user-idea-intake-source
 	@$(PYTHON) tools/idea_event_storming_intake.py --input "$(USER_IDEA_EVENT_STORMING_SEED_OUTPUT)" --output "$(IDEA_EVENT_STORMING_INTAKE_OUTPUT)"
@@ -783,6 +805,7 @@ ifeq ($(PRODUCT_WORKSPACE_INTAKE_SOURCE_MODE),generate)
 	@test -f "$(USER_IDEA_INTAKE_SESSION_SOURCE_OUTPUT)" || ($(PYTHON) tools/idea_to_spec_clarification_requests.py --session "$(USER_IDEA_INTAKE_SESSION_OUTPUT)" --no-intake --no-candidate-graph --no-pre-sib --no-repair-loop $(IDEA_TO_SPEC_CLARIFICATION_ONTOLOGY_GAP_REVIEW_ARG) --output "$(IDEA_TO_SPEC_CLARIFICATION_OUTPUT)" && exit 1)
 	@$(PYTHON) tools/user_idea_intake_source.py --input "$(USER_IDEA_INTAKE_SESSION_SOURCE_OUTPUT)" --output "$(PRODUCT_WORKSPACE_INTAKE_SOURCE)"
 endif
+	@$(PYTHON) -c 'import json,sys; from pathlib import Path; p=Path(sys.argv[1]); data=json.loads(p.read_text()) if p.exists() else {}; kind=data.get("artifact_kind"); sys.exit(2 if kind=="user_idea_intake_source" else 0)' "$(PRODUCT_WORKSPACE_INTAKE_SOURCE)" || (printf '%s\n' 'PRODUCT_WORKSPACE_INTAKE_SOURCE points to user_idea_intake_source. Build an event-storming seed first with `make user-idea-intake-source USER_IDEA_INTAKE_SOURCE=<source>` or use `make real-idea-intake-active-candidate`.' >&2; exit 2)
 	@$(PYTHON) tools/idea_event_storming_intake.py --input "$(PRODUCT_WORKSPACE_INTAKE_SOURCE)" --output "$(IDEA_EVENT_STORMING_INTAKE_OUTPUT)"
 ifeq ($(PRODUCT_WORKSPACE_CANDIDATE_SEED_MODE),generate)
 	@$(PYTHON) tools/ontology_bound_candidate_graph_seed.py --intake "$(IDEA_EVENT_STORMING_INTAKE_OUTPUT)" --ontology-ir "$(ONTOLOGY_BOUND_CANDIDATE_SEED_ONTOLOGY_IR)" --output "$(PRODUCT_WORKSPACE_CANDIDATE_SEED_OUTPUT)"

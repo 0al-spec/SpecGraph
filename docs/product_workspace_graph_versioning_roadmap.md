@@ -1278,6 +1278,38 @@ source target can prefer a clarified session when present and use the original
 session otherwise. Incomplete answers keep strict mode blocked, and raw idea
 text remains local-only in `local_operator_*` artifacts.
 
+## Real Idea Active Candidate Flow
+
+Status: implemented in proposal `0187`.
+
+Proposal `0187` removes the operator friction between a ready real-intake source
+and the active candidate pipeline. The public-safe `user_idea_intake_source` is
+not the direct input contract for `product-workspace-active-candidate`; it must
+first be converted into an `idea_event_storming_seed`.
+
+The convenience target is:
+
+```bash
+make real-idea-intake-active-candidate
+```
+
+It sequences the existing review-only steps:
+
+```text
+ready or clarified user_idea_intake_session
+  -> user_idea_intake_source
+  -> idea_event_storming_seed
+  -> product-workspace-active-candidate
+```
+
+If no intake session artifact exists, the target first runs `real-idea-intake`.
+If a clarified session exists, the target prefers it. Under-specified sessions
+still fail the strict candidate-source bridge and require the clarification loop.
+
+`product-workspace-active-candidate` also rejects a direct
+`user_idea_intake_source` with an actionable error message, so operators do not
+debug an opaque downstream seed-contract mismatch.
+
 ## Team Decision Log Happy-Path Repair Pack
 
 Status: implemented in proposal `0182`.

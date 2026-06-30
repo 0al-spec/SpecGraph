@@ -10568,5 +10568,60 @@
         "pattern": "proposal 0186"
       }
     ]
+  },
+  {
+    "proposal_id": "0187",
+    "posture": "synchronous_runtime_slice",
+    "runtime_surfaces": [
+      "docs/proposals/0187_real_idea_active_candidate_flow.md",
+      "docs/archive/proposal_sources/0187_real_idea_active_candidate_flow.md",
+      "Makefile",
+      "tests/test_idea_intake_clarification_rerun.py",
+      "docs/product_workspace_graph_versioning_roadmap.md",
+      "Sources/SpecGraph/Documentation.docc/ProductWorkspacePilots.md",
+      "tools/README.md"
+    ],
+    "runtime_markers": [
+      {
+        "path": "Makefile",
+        "pattern": "real-idea-intake-active-candidate"
+      },
+      {
+        "path": "Makefile",
+        "pattern": "PRODUCT_WORKSPACE_INTAKE_SOURCE points to user_idea_intake_source"
+      },
+      {
+        "path": "Makefile",
+        "pattern": "USER_IDEA_INTAKE_SOURCE=\"$(USER_IDEA_INTAKE_SESSION_SOURCE_OUTPUT)\""
+      }
+    ],
+    "validation_markers": [
+      {
+        "path": "tests/test_idea_intake_clarification_rerun.py",
+        "pattern": "test_real_idea_intake_active_candidate_target_builds_seed_first"
+      },
+      {
+        "path": "tests/test_idea_intake_clarification_rerun.py",
+        "pattern": "test_product_workspace_active_candidate_rejects_direct_intake_source"
+      }
+    ],
+    "observation_markers": [
+      {
+        "path": "docs/proposals/0187_real_idea_active_candidate_flow.md",
+        "pattern": "Status: implemented."
+      },
+      {
+        "path": "docs/product_workspace_graph_versioning_roadmap.md",
+        "pattern": "Status: implemented in proposal `0187`"
+      },
+      {
+        "path": "Sources/SpecGraph/Documentation.docc/ProductWorkspacePilots.md",
+        "pattern": "Proposal `0187`"
+      },
+      {
+        "path": "tools/README.md",
+        "pattern": "Proposal 0187"
+      }
+    ]
   }
 ]
