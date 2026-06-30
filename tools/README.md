@@ -404,6 +404,12 @@ Supervisor modes:
   documented demo alias. The pack is demo input data and does not make drafts
   authoritative, apply answers, accept ontology terms, mutate specs, approve
   candidates, or create Git state.
+- The `Publish Static Artifacts` workflow builds the ordinary public bundle and
+  then builds a Team Decision Log product workspace bundle under
+  `dist/specgraph-public/workspaces/team-decision-log`. That workspace bundle
+  has its own `artifact_manifest.json`, so SpecSpace can route
+  `/team-decision-log` to product artifacts instead of the bootstrap root
+  bundle.
 - `tools/product_ontology_gap_review_decisions.py`: product-scoped ontology
   gap decision builder introduced by proposal 0168. Use
   `make product-ontology-gap-review-decisions` to consume a ready

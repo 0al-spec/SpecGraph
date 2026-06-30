@@ -10257,5 +10257,62 @@
         "pattern": "documented demo alias"
       }
     ]
+  },
+  {
+    "proposal_id": "0183",
+    "posture": "synchronous_runtime_slice",
+    "runtime_surfaces": [
+      "docs/proposals/0183_team_decision_log_workspace_static_bundle.md",
+      "docs/archive/proposal_sources/0183_team_decision_log_workspace_static_bundle.md",
+      ".github/workflows/publish-static-artifacts.yml",
+      "tests/test_publish_static_artifacts_workflow.py",
+      "docs/static_artifact_publish.md",
+      "docs/product_workspace_graph_versioning_roadmap.md",
+      "Sources/SpecGraph/Documentation.docc/ProductWorkspacePilots.md",
+      "tools/README.md",
+      "tools/docc_sync_contract.json"
+    ],
+    "runtime_markers": [
+      {
+        "path": ".github/workflows/publish-static-artifacts.yml",
+        "pattern": "Build Team Decision Log product workspace bundle"
+      },
+      {
+        "path": ".github/workflows/publish-static-artifacts.yml",
+        "pattern": "dist/specgraph-public/workspaces/team-decision-log"
+      },
+      {
+        "path": ".github/workflows/publish-static-artifacts.yml",
+        "pattern": "product-workspace-team-decision-log-happy-path-repair-pack"
+      }
+    ],
+    "validation_markers": [
+      {
+        "path": "tests/test_publish_static_artifacts_workflow.py",
+        "pattern": "test_publish_workflow_builds_team_decision_log_workspace_bundle"
+      }
+    ],
+    "observation_markers": [
+      {
+        "path": "docs/proposals/0183_team_decision_log_workspace_static_bundle.md",
+        "pattern": "workspaces/team-decision-log/artifact_manifest.json"
+      },
+      {
+        "path": "docs/static_artifact_publish.md",
+        "pattern": "https://specgraph.tech/workspaces/team-decision-log/artifact_manifest.json"
+      },
+      {
+        "path": "docs/product_workspace_graph_versioning_roadmap.md",
+        "pattern": "Status: implemented in proposal `0183`"
+      },
+      {
+        "path": "Sources/SpecGraph/Documentation.docc/ProductWorkspacePilots.md",
+        "pattern": "Proposal `0183`"
+      },
+      {
+        "path": "tools/README.md",
+        "pattern": "dist/specgraph-public/workspaces/team-decision-log"
+      }
+    ]
   }
 ]
