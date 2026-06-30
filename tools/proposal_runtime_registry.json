@@ -10744,5 +10744,57 @@
         "pattern": "Proposal 0189"
       }
     ]
+  },
+  {
+    "proposal_id": "0190",
+    "posture": "synchronous_runtime_slice",
+    "runtime_surfaces": [
+      "docs/proposals/0190_real_idea_smoke_run_dir.md",
+      "docs/archive/proposal_sources/0190_real_idea_smoke_run_dir.md",
+      "Makefile",
+      "tools/real_idea_smoke_summary.py",
+      "tests/test_idea_intake_clarification_rerun.py",
+      "docs/product_workspace_graph_versioning_roadmap.md",
+      "Sources/SpecGraph/Documentation.docc/ProductWorkspacePilots.md",
+      "tools/README.md"
+    ],
+    "runtime_markers": [
+      {
+        "path": "Makefile",
+        "pattern": "real-idea-smoke"
+      },
+      {
+        "path": "Makefile",
+        "pattern": "REAL_IDEA_SMOKE_RUN_DIR"
+      },
+      {
+        "path": "tools/real_idea_smoke_summary.py",
+        "pattern": "real_idea_smoke_summary"
+      }
+    ],
+    "validation_markers": [
+      {
+        "path": "tests/test_idea_intake_clarification_rerun.py",
+        "pattern": "test_real_idea_smoke_target_writes_isolated_run_dir_summary"
+      }
+    ],
+    "observation_markers": [
+      {
+        "path": "docs/proposals/0190_real_idea_smoke_run_dir.md",
+        "pattern": "Status: implemented."
+      },
+      {
+        "path": "docs/product_workspace_graph_versioning_roadmap.md",
+        "pattern": "Status: implemented in proposal `0190`"
+      },
+      {
+        "path": "Sources/SpecGraph/Documentation.docc/ProductWorkspacePilots.md",
+        "pattern": "Proposal `0190`"
+      },
+      {
+        "path": "tools/README.md",
+        "pattern": "Proposal 0190"
+      }
+    ]
   }
 ]

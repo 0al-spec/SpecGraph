@@ -459,6 +459,39 @@ def test_real_idea_intake_active_candidate_target_builds_seed_first(
         shutil.rmtree(run_dir, ignore_errors=True)
 
 
+def test_real_idea_smoke_target_writes_isolated_run_dir_summary(tmp_path: Path) -> None:
+    python = supported_python()
+    run_rel = Path("runs") / f"test_real_idea_smoke_{tmp_path.name}"
+    run_dir = ROOT / run_rel
+    shutil.rmtree(run_dir, ignore_errors=True)
+    ready_fixture = ROOT / "tests/fixtures/user_idea_intake_session/raw_idea_ready.json"
+    try:
+        result = subprocess.run(
+            [
+                "make",
+                "real-idea-smoke",
+                f"PYTHON={python}",
+                f"REAL_IDEA_SMOKE_RUN_DIR={run_rel}",
+                f"USER_IDEA_INTAKE_INTERVIEW_INPUT={ready_fixture}",
+            ],
+            cwd=ROOT,
+            check=False,
+            capture_output=True,
+            text=True,
+        )
+
+        assert result.returncode == 0, result.stderr
+        summary = load_json(run_dir / "real_idea_smoke_summary.json")
+        active = load_json(run_dir / "active_idea_to_spec_candidate.json")
+        assert summary["artifact_kind"] == "real_idea_smoke_summary"
+        assert summary["run_dir"] == run_rel.as_posix()
+        assert summary["summary"]["candidate_id"] == "support-triage-log"
+        assert summary["artifacts"]["active_candidate"]["present"] is True
+        assert active["summary"]["candidate_id"] == "support-triage-log"
+    finally:
+        shutil.rmtree(run_dir, ignore_errors=True)
+
+
 def test_product_workspace_active_candidate_rejects_direct_intake_source(
     tmp_path: Path,
 ) -> None:

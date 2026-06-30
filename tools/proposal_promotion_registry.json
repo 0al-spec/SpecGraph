@@ -2442,5 +2442,18 @@
     "required_provenance_links": [
       "source_draft_ref"
     ]
+  },
+  {
+    "proposal_id": "0190",
+    "source_artifact_class": "working_draft",
+    "source_refs": [
+      "docs/archive/proposal_sources/0190_real_idea_smoke_run_dir.md"
+    ],
+    "motivating_concern": "Real idea smoke runs required many output path overrides, making staged debugging verbose and increasing the risk of touching default runs/*.json artifacts.",
+    "normalized_title": "Real Idea Smoke Run Directory",
+    "bounded_scope": "Add a run-dir Make wrapper and compact smoke summary artifact for the existing real-intake active-candidate chain, with tests, proposal docs, roadmap, DocC, README, and registry tracking, without changing review gates or authority boundaries.",
+    "required_provenance_links": [
+      "source_draft_ref"
+    ]
   }
 ]
