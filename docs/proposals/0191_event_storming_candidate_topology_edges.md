@@ -27,6 +27,13 @@ seed. It does not infer command ordering, causality, ownership, lifecycle state,
 or domain semantics. It only records that each derived candidate node refines
 the reviewable product boundary built from the same event-storming intake.
 
+This is an explicit temporary anti-orphan topology layer, not the final
+event-storming topology model. The `relation` value is still validated only as a
+candidate graph relation string by `candidate_spec_graph.py`; it is not yet
+checked against an ontology relation contract. A later slice should add
+ontology-backed relation validation before richer command/event/policy edges are
+trusted downstream.
+
 Because those edges can make pre-SIB pass without any repair action, the
 candidate repair loop also treats a clean pre-SIB pass-through as an explicit
 ready no-op repair loop. This prevents the active-candidate pipeline from
@@ -61,6 +68,8 @@ It does not:
   a ready no-op repair loop instead of `repair_review_required`.
 - The implementation remains conservative and avoids inferred event ordering or
   causality.
+- The proposal text records that this is a temporary flat decomposition layer,
+  not ontology-validated event-storming topology.
 
 ## Validation
 

@@ -22,6 +22,11 @@ The edge is created only between known candidate nodes already emitted by the
 seed. It does not infer command ordering, causality, ownership, lifecycle state,
 or domain semantics.
 
+This is an explicit temporary anti-orphan topology layer, not the final
+event-storming topology model. The `relation` value is still validated only as a
+candidate graph relation string by `candidate_spec_graph.py`; it is not yet
+checked against an ontology relation contract.
+
 The candidate repair loop also treats clean pre-SIB pass-through as a ready
 no-op repair loop, so generated topology does not create a new
 `repair_loop_not_ready` blocker when no repair action is needed.
@@ -39,6 +44,8 @@ candidates, create Git branches, open pull requests, or publish read models.
 - Candidate graph building accepts those edges.
 - Pre-SIB topology metrics no longer report all generated nodes as orphaned.
 - Clean pre-SIB pass-through produces a ready no-op repair loop.
+- The proposal text records that this is a temporary flat decomposition layer,
+  not ontology-validated event-storming topology.
 
 ## Validation
 
