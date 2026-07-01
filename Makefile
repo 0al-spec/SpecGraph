@@ -88,6 +88,15 @@ REAL_IDEA_SMOKE_REFRESH_ARG := $(if $(filter 0 false no,$(strip $(REAL_IDEA_SMOK
 REAL_IDEA_SMOKE_CLARIFICATION_ANSWERS_INPUT ?= $(IDEA_INTAKE_CLARIFICATION_ANSWERS_INPUT)
 REAL_IDEA_SMOKE_CLARIFICATION_ANSWERS_ARG := $(if $(strip $(REAL_IDEA_SMOKE_CLARIFICATION_ANSWERS_INPUT)),--clarification-answers-input "$(REAL_IDEA_SMOKE_CLARIFICATION_ANSWERS_INPUT)",)
 REAL_IDEA_SMOKE_MATURITY_ABSENT_DIR ?= $(REAL_IDEA_SMOKE_RUN_DIR)/absent-post-approval
+REAL_IDEA_ANSWER_AUTHORING_STAGE ?= auto
+REAL_IDEA_ANSWER_AUTHORING_REQUESTS ?=
+REAL_IDEA_ANSWER_AUTHORING_REQUESTS_ARG := $(if $(strip $(REAL_IDEA_ANSWER_AUTHORING_REQUESTS)),--requests "$(REAL_IDEA_ANSWER_AUTHORING_REQUESTS)",)
+REAL_IDEA_ANSWER_TEMPLATE_OUTPUT ?= $(REAL_IDEA_SMOKE_RUN_DIR)/real_idea_answer_template.json
+REAL_IDEA_ANSWER_AUTHORING_REPORT_OUTPUT ?= $(REAL_IDEA_SMOKE_RUN_DIR)/real_idea_answer_authoring_report.json
+REAL_IDEA_ANSWER_AUTHORING_ANSWERS ?= $(REAL_IDEA_ANSWER_TEMPLATE_OUTPUT)
+REAL_IDEA_ANSWER_SET_OUTPUT ?= $(REAL_IDEA_SMOKE_RUN_DIR)/real_idea_answer_set.json
+REAL_IDEA_ANSWER_VALIDATED_OUTPUT ?=
+REAL_IDEA_ANSWER_VALIDATED_OUTPUT_ARG := $(if $(strip $(REAL_IDEA_ANSWER_VALIDATED_OUTPUT)),--validated-answers-output "$(REAL_IDEA_ANSWER_VALIDATED_OUTPUT)",)
 IDEA_EVENT_STORMING_INTAKE_SOURCE ?= tests/fixtures/idea_event_storming_intake/idea_ready.json
 IDEA_EVENT_STORMING_INTAKE_OUTPUT_DEFAULT := runs/idea_event_storming_intake.json
 IDEA_EVENT_STORMING_INTAKE_OUTPUT ?= $(IDEA_EVENT_STORMING_INTAKE_OUTPUT_DEFAULT)
@@ -301,6 +310,8 @@ PYTHON_TARGETS := viewer-surfaces dashboard backlog next-move spec-activity grap
 	real-idea-intake-clarification-answers real-idea-intake-clarification-rerun \
 	real-idea-intake-ready-candidate-source real-idea-intake-active-candidate \
 	real-idea-smoke real-idea-smoke-continue real-idea-smoke-idea-maturity \
+	real-idea-smoke-answer-template real-idea-smoke-validate-answers \
+	real-idea-smoke-materialize-answers \
 	user-idea-intake-source generic-idea-intake \
 	generic-idea-intake-session \
 	idea-event-storming-intake ontology-bound-candidate-graph-seed \
@@ -381,6 +392,9 @@ help:
 			'  make real-idea-intake-ready-candidate-source Prefer clarified session when present' \
 			'  make real-idea-intake-active-candidate Build active candidate from ready real intake' \
 			'  make real-idea-smoke-continue REAL_IDEA_SMOKE_CLARIFICATION_ANSWERS_INPUT=<json>' \
+			'  make real-idea-smoke-answer-template Build typed operator answer template' \
+			'  make real-idea-smoke-validate-answers REAL_IDEA_ANSWER_AUTHORING_ANSWERS=<json>' \
+			'  make real-idea-smoke-materialize-answers REAL_IDEA_ANSWER_AUTHORING_ANSWERS=<json>' \
 			'  make user-idea-intake-session USER_IDEA_INTAKE_SESSION_INPUT=<json>' \
 			'  make intake-session-candidate-source INTAKE_SESSION_CANDIDATE_SOURCE_INPUT=<json>' \
 			'  make user-idea-intake-source USER_IDEA_INTAKE_SOURCE=<json>' \
@@ -664,6 +678,20 @@ real-idea-smoke:
 .PHONY: real-idea-smoke-continue
 real-idea-smoke-continue:
 	@$(PYTHON) tools/real_idea_smoke.py --run-dir "$(REAL_IDEA_SMOKE_RUN_DIR)" --summary-output "$(REAL_IDEA_SMOKE_SUMMARY_OUTPUT)" --python "$(PYTHON)" --interview-input "$(USER_IDEA_INTAKE_INTERVIEW_INPUT)" --continue-existing $(REAL_IDEA_SMOKE_CLARIFICATION_ANSWERS_ARG)
+
+.PHONY: real-idea-smoke-answer-template
+real-idea-smoke-answer-template:
+	@$(PYTHON) tools/real_idea_answer_authoring.py template --run-dir "$(REAL_IDEA_SMOKE_RUN_DIR)" --stage "$(REAL_IDEA_ANSWER_AUTHORING_STAGE)" $(REAL_IDEA_ANSWER_AUTHORING_REQUESTS_ARG) --output "$(REAL_IDEA_ANSWER_TEMPLATE_OUTPUT)" --report "$(REAL_IDEA_ANSWER_AUTHORING_REPORT_OUTPUT)"
+
+.PHONY: real-idea-smoke-validate-answers
+real-idea-smoke-validate-answers:
+	@test -n "$(strip $(REAL_IDEA_ANSWER_AUTHORING_ANSWERS))" || (printf '%s\n' 'REAL_IDEA_ANSWER_AUTHORING_ANSWERS=<json> is required for answer validation.' >&2; exit 2)
+	@$(PYTHON) tools/real_idea_answer_authoring.py validate --run-dir "$(REAL_IDEA_SMOKE_RUN_DIR)" --stage "$(REAL_IDEA_ANSWER_AUTHORING_STAGE)" $(REAL_IDEA_ANSWER_AUTHORING_REQUESTS_ARG) --answers "$(REAL_IDEA_ANSWER_AUTHORING_ANSWERS)" --answer-set-output "$(REAL_IDEA_ANSWER_SET_OUTPUT)" --report "$(REAL_IDEA_ANSWER_AUTHORING_REPORT_OUTPUT)" --strict
+
+.PHONY: real-idea-smoke-materialize-answers
+real-idea-smoke-materialize-answers:
+	@test -n "$(strip $(REAL_IDEA_ANSWER_AUTHORING_ANSWERS))" || (printf '%s\n' 'REAL_IDEA_ANSWER_AUTHORING_ANSWERS=<json> is required for answer materialization.' >&2; exit 2)
+	@$(PYTHON) tools/real_idea_answer_authoring.py materialize --run-dir "$(REAL_IDEA_SMOKE_RUN_DIR)" --stage "$(REAL_IDEA_ANSWER_AUTHORING_STAGE)" $(REAL_IDEA_ANSWER_AUTHORING_REQUESTS_ARG) --answers "$(REAL_IDEA_ANSWER_AUTHORING_ANSWERS)" --answer-set-output "$(REAL_IDEA_ANSWER_SET_OUTPUT)" $(REAL_IDEA_ANSWER_VALIDATED_OUTPUT_ARG) --report "$(REAL_IDEA_ANSWER_AUTHORING_REPORT_OUTPUT)" --strict
 
 .PHONY: real-idea-smoke-idea-maturity
 real-idea-smoke-idea-maturity:

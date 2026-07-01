@@ -11039,5 +11039,79 @@
         "pattern": "Proposal 0193"
       }
     ]
+  },
+  {
+    "proposal_id": "0194",
+    "posture": "synchronous_runtime_slice",
+    "runtime_surfaces": [
+      "docs/proposals/0194_first_class_real_idea_answer_authoring.md",
+      "docs/archive/proposal_sources/0194_first_class_real_idea_answer_authoring.md",
+      "Makefile",
+      "tools/real_idea_answer_authoring.py",
+      "tests/test_real_idea_answer_authoring.py",
+      "docs/product_workspace_graph_versioning_roadmap.md",
+      "Sources/SpecGraph/Documentation.docc/ProductWorkspacePilots.md",
+      "tools/README.md"
+    ],
+    "runtime_markers": [
+      {
+        "path": "Makefile",
+        "pattern": "real-idea-smoke-answer-template"
+      },
+      {
+        "path": "Makefile",
+        "pattern": "real-idea-smoke-validate-answers"
+      },
+      {
+        "path": "Makefile",
+        "pattern": "real-idea-smoke-materialize-answers"
+      },
+      {
+        "path": "tools/real_idea_answer_authoring.py",
+        "pattern": "real_idea_answer_template"
+      },
+      {
+        "path": "tools/real_idea_answer_authoring.py",
+        "pattern": "real_idea_answer_authoring_report"
+      },
+      {
+        "path": "tools/real_idea_answer_authoring.py",
+        "pattern": "answer_required_field_empty"
+      },
+      {
+        "path": "tools/real_idea_answer_authoring.py",
+        "pattern": "authority_field_expanded"
+      }
+    ],
+    "validation_markers": [
+      {
+        "path": "tests/test_real_idea_answer_authoring.py",
+        "pattern": "test_answer_template_exposes_typed_targets"
+      },
+      {
+        "path": "tests/test_real_idea_answer_authoring.py",
+        "pattern": "test_answer_authoring_materializes_intake_stage_artifacts"
+      },
+      {
+        "path": "tests/test_real_idea_answer_authoring.py",
+        "pattern": "test_answer_authoring_materializes_repair_stage_artifacts"
+      },
+      {
+        "path": "docs/proposals/0194_first_class_real_idea_answer_authoring.md",
+        "pattern": "Status: implemented."
+      },
+      {
+        "path": "docs/product_workspace_graph_versioning_roadmap.md",
+        "pattern": "Done in proposal `0194`"
+      },
+      {
+        "path": "Sources/SpecGraph/Documentation.docc/ProductWorkspacePilots.md",
+        "pattern": "Proposal `0194`"
+      },
+      {
+        "path": "tools/README.md",
+        "pattern": "Proposal 0194"
+      }
+    ]
   }
 ]

@@ -341,6 +341,17 @@ Supervisor modes:
   manually setting `REAL_IDEA_SMOKE_REFRESH=0`. When answers are missing, the
   wrapper writes `real_idea_smoke_session_state_report.json` with blockers and
   the next safe action.
+- Proposal 0194 adds first-class real-idea answer authoring. Use
+  `make real-idea-smoke-answer-template` to build
+  `real_idea_answer_template.json` from the current smoke run directory's
+  clarification requests, then fill the template and run
+  `make real-idea-smoke-validate-answers
+  REAL_IDEA_ANSWER_AUTHORING_ANSWERS=<json>`. When ready, run
+  `make real-idea-smoke-materialize-answers
+  REAL_IDEA_ANSWER_AUTHORING_ANSWERS=<json>` to write the compatible
+  intake or repair answer artifacts. The helper validates required typed
+  fields, `may_*` authority expansion, raw trace fields, and private/local text
+  markers before any downstream rerun artifact is written.
 - `tools/user_idea_intake_source.py`: deterministic generic user-idea source
   builder introduced by proposal 0158. Use `make user-idea-intake-source
   USER_IDEA_INTAKE_SOURCE=<json>` to normalize product workspace identity,
@@ -1250,6 +1261,18 @@ Key derived artifacts:
   the real-intake clarification rerun, including accepted target counts,
   clarified session readiness, source/output refs, and explicit false authority
   boundary flags.
+- `runs/real_idea_answer_template.json`: operator-editable, public-safe answer
+  template introduced by proposal 0194. It records typed answer targets,
+  accepted actions, required fields, evidence refs, and false authority flags
+  for the current real-idea smoke run directory.
+- `runs/real_idea_answer_authoring_report.json`: review-only validation or
+  materialization report for first-class real-idea answer authoring. It records
+  source request refs, answer-set digest, validation status, output refs, and
+  findings without publishing raw idea text.
+- `runs/real_idea_answer_set.json`: generated compatible
+  `idea_to_spec_clarification_answer_set` emitted from a filled first-class
+  answer template. Existing clarification answer validators and rerun tools
+  consume this artifact without a new protocol.
 - `runs/idea_to_spec_rerun_preview.json`: public-safe, review-only preview that
   evaluates accepted-answer overlay effects against current intake and
   candidate graph state, including ontology gap resolution previews and
