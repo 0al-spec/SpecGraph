@@ -227,6 +227,14 @@ still consumes an event-storming seed, not a raw `user_idea_intake_source`. A
 direct intake-source input now fails with an actionable operator message instead
 of a later seed-contract mismatch.
 
+Proposal `0188` hardens the staged real-intake clarification workflow. The
+`real-idea-intake-clarification-requests` target now preserves an existing
+`USER_IDEA_INTAKE_SESSION_OUTPUT` artifact and emits clarification requests from
+that session by default. It only rebuilds intake when the session is missing or
+when the operator passes `REAL_IDEA_INTAKE_REFRESH=1`. This keeps isolated
+real-idea smoke runs from accidentally replacing a product-scoped intake session
+with a generic fallback session.
+
 Proposal `0163` adds `idea_to_spec_clarification_requests` as the unified
 read-only question/action surface:
 
