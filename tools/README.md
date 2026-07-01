@@ -312,7 +312,9 @@ Supervisor modes:
 - Proposal 0191 adds conservative `decomposes_to` topology edges from
   `candidate-spec.product-boundary` to each ontology-bound candidate node. This
   prevents real idea candidates from looking topology-empty in pre-SIB reports
-  without inferring domain causality or event ordering.
+  without inferring domain causality or event ordering. Clean pre-SIB
+  pass-through now produces a ready no-op repair loop instead of a false
+  `repair_loop_not_ready` blocker.
 - `tools/user_idea_intake_source.py`: deterministic generic user-idea source
   builder introduced by proposal 0158. Use `make user-idea-intake-source
   USER_IDEA_INTAKE_SOURCE=<json>` to normalize product workspace identity,

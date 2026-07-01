@@ -22,6 +22,10 @@ The edge is created only between known candidate nodes already emitted by the
 seed. It does not infer command ordering, causality, ownership, lifecycle state,
 or domain semantics.
 
+The candidate repair loop also treats clean pre-SIB pass-through as a ready
+no-op repair loop, so generated topology does not create a new
+`repair_loop_not_ready` blocker when no repair action is needed.
+
 ## Authority Boundary
 
 This proposal only enriches review-only candidate graph topology. It does not
@@ -34,9 +38,11 @@ candidates, create Git branches, open pull requests, or publish read models.
   candidate nodes.
 - Candidate graph building accepts those edges.
 - Pre-SIB topology metrics no longer report all generated nodes as orphaned.
+- Clean pre-SIB pass-through produces a ready no-op repair loop.
 
 ## Validation
 
 - `tests/test_ontology_bound_candidate_graph_seed.py`
 - `tests/test_candidate_spec_graph.py`
 - `tests/test_pre_sib_coherence_report.py`
+- `tests/test_candidate_repair_loop.py`

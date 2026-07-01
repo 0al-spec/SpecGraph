@@ -10825,6 +10825,8 @@
       "docs/proposals/0191_event_storming_candidate_topology_edges.md",
       "docs/archive/proposal_sources/0191_event_storming_candidate_topology_edges.md",
       "tools/ontology_bound_candidate_graph_seed.py",
+      "tests/test_candidate_repair_loop.py",
+      "tools/candidate_repair_loop.py",
       "tests/test_ontology_bound_candidate_graph_seed.py",
       "docs/product_workspace_graph_versioning_roadmap.md",
       "Sources/SpecGraph/Documentation.docc/ProductWorkspacePilots.md",
@@ -10842,12 +10844,24 @@
       {
         "path": "tools/ontology_bound_candidate_graph_seed.py",
         "pattern": "decomposes_to"
+      },
+      {
+        "path": "tools/candidate_repair_loop.py",
+        "pattern": "no_op_ready"
+      },
+      {
+        "path": "tools/candidate_repair_loop.py",
+        "pattern": "no_op_repair_loop"
       }
     ],
     "validation_markers": [
       {
         "path": "tests/test_ontology_bound_candidate_graph_seed.py",
         "pattern": "test_ontology_bound_candidate_seed_prevents_topology_empty_pre_sib_graph"
+      },
+      {
+        "path": "tests/test_candidate_repair_loop.py",
+        "pattern": "test_candidate_repair_loop_allows_clean_noop_repair_loop"
       }
     ],
     "observation_markers": [

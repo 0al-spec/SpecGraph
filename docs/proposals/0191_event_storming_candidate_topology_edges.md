@@ -27,6 +27,12 @@ seed. It does not infer command ordering, causality, ownership, lifecycle state,
 or domain semantics. It only records that each derived candidate node refines
 the reviewable product boundary built from the same event-storming intake.
 
+Because those edges can make pre-SIB pass without any repair action, the
+candidate repair loop also treats a clean pre-SIB pass-through as an explicit
+ready no-op repair loop. This prevents the active-candidate pipeline from
+replacing the old false orphan blocker with a new `repair_loop_not_ready`
+blocker when no repair is required.
+
 ## Authority Boundary
 
 This proposal only enriches review-only candidate graph topology.
@@ -51,6 +57,8 @@ It does not:
   `id/from/to/relation` contract.
 - Pre-SIB topology metrics no longer mark every generated node as orphaned when
   the candidate graph has boundary decomposition edges.
+- A candidate graph with clean pre-SIB readiness and no repair actions produces
+  a ready no-op repair loop instead of `repair_review_required`.
 - The implementation remains conservative and avoids inferred event ordering or
   causality.
 
@@ -59,3 +67,4 @@ It does not:
 - `tests/test_ontology_bound_candidate_graph_seed.py`
 - `tests/test_candidate_spec_graph.py`
 - `tests/test_pre_sib_coherence_report.py`
+- `tests/test_candidate_repair_loop.py`

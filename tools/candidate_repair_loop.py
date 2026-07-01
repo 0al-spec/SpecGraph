@@ -591,6 +591,8 @@ def build_candidate_repair_loop_report(
     )
     applied_count = sum(1 for action in actions if action["status"] == "applied_to_preview")
     context_required_count = sum(1 for action in actions if action["status"] == "requires_context")
+    pre_sib_ready = _dict(pre_sib_report.get("readiness")).get("ready") is True
+    no_op_ready = pre_sib_ready and not actions
     source_ref = _text(candidate_graph.get("source_ref"))
     if not source_ref and candidate_graph_path is not None:
         source_ref = _relative_ref(candidate_graph_path)
@@ -598,7 +600,10 @@ def build_candidate_repair_loop_report(
     if not pre_sib_ref and pre_sib_report_path is not None:
         pre_sib_ref = _relative_ref(pre_sib_report_path)
     findings = input_findings + pre_sib_findings
-    ready = not findings and applied_count > 0
+    ready = not findings and (applied_count > 0 or no_op_ready)
+    status = "repair_preview_ready" if ready else "repair_review_required"
+    if no_op_ready:
+        preview["repair_preview"]["no_op_repair_loop"] = True
     return {
         "artifact_kind": "candidate_repair_loop_report",
         "schema_version": SCHEMA_VERSION,
@@ -630,7 +635,7 @@ def build_candidate_repair_loop_report(
         "metric_delta_projection": _delta(candidate_graph, preview),
         "readiness": {
             "ready": ready,
-            "review_state": "repair_preview_ready" if ready else "repair_review_required",
+            "review_state": status,
             "next_artifact": "runs/idea_to_spec_workspace_bundle.json",
             "blocked_by": [finding["finding_id"] for finding in findings],
             "context_required_count": context_required_count,
@@ -653,11 +658,12 @@ def build_candidate_repair_loop_report(
         if context_required_count
         else [],
         "summary": {
-            "status": "repair_preview_ready" if ready else "repair_review_required",
+            "status": status,
             "action_count": len(actions),
             "applied_action_count": applied_count,
             "context_required_count": context_required_count,
             "finding_count": len(findings),
+            "no_op_repair_loop": no_op_ready,
         },
     }
 

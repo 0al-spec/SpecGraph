@@ -1392,7 +1392,9 @@ The edge generation is intentionally limited to product-boundary decomposition.
 It does not infer command ordering, causality, ownership, lifecycle state, or
 domain semantics. The goal is to keep real idea candidate graphs from appearing
 topology-empty in pre-SIB metrics while preserving the review-only authority
-boundary.
+boundary. Clean pre-SIB pass-through now produces a ready no-op repair loop, so
+connected candidates do not fail later with `repair_loop_not_ready` simply
+because no deterministic repair action was needed.
 
 ## Team Decision Log Happy-Path Repair Pack
 

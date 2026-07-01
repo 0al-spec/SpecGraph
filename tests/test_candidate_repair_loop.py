@@ -12,6 +12,9 @@ FIXTURE_DIR = ROOT / "tests" / "fixtures" / "candidate_repair_loop"
 CANDIDATE_REPAIRABLE = FIXTURE_DIR / "candidate_graph_repairable.json"
 PRE_SIB_REPAIR_REQUIRED = FIXTURE_DIR / "pre_sib_repair_required.json"
 PRE_SIB_WRONG_CONTRACT = FIXTURE_DIR / "pre_sib_wrong_contract.json"
+CLEAN_CANDIDATE = (
+    ROOT / "tests" / "fixtures" / "pre_sib_coherence" / "candidate_spec_graph_ready.json"
+)
 
 
 def load_module() -> object:
@@ -129,6 +132,51 @@ def test_candidate_repair_loop_projects_metric_delta() -> None:
     assert delta["acceptance_criteria_count"] == 1
     assert delta["orphan_node_count"] == -2
     assert delta["unsupported_strong_claim_count"] == -1
+
+
+def test_candidate_repair_loop_allows_clean_noop_repair_loop() -> None:
+    module = load_module()
+    candidate_graph = load_json(CLEAN_CANDIDATE)
+    nodes = candidate_graph["nodes"]
+    assert isinstance(nodes, list)
+    for node in nodes:
+        if isinstance(node, dict):
+            node["gaps"] = []
+    pre_sib_report = {
+        "artifact_kind": "pre_sib_coherence_report",
+        "schema_version": 1,
+        "contract_ref": "specgraph.idea-to-spec.pre-sib-coherence-report.v0.1",
+        "source_ref": candidate_graph["source_ref"],
+        "canonical_mutations_allowed": False,
+        "tracked_artifacts_written": False,
+        "source_candidate_graph": {
+            "artifact_kind": "candidate_spec_graph",
+            "contract_ref": "specgraph.idea-to-spec.candidate-spec-graph.v0.1",
+            "source_ref": candidate_graph["source_ref"],
+        },
+        "readiness": {
+            "ready": True,
+            "review_state": "ready_for_repair_loop",
+            "blocked_by": [],
+        },
+        "findings": [],
+        "warnings": [],
+    }
+
+    report = module.build_candidate_repair_loop_report(
+        candidate_graph=candidate_graph,
+        pre_sib_report=pre_sib_report,
+        candidate_graph_path=CLEAN_CANDIDATE,
+        pre_sib_report_path=ROOT / "runs" / "pre_sib_coherence_report.json",
+    )
+
+    assert report["readiness"]["ready"] is True
+    assert report["readiness"]["review_state"] == "repair_preview_ready"
+    assert report["repair_actions"] == []
+    assert report["summary"]["applied_action_count"] == 0
+    assert report["summary"]["context_required_count"] == 0
+    assert report["summary"]["no_op_repair_loop"] is True
+    assert report["revised_candidate_graph_preview"]["repair_preview"]["no_op_repair_loop"] is True
 
 
 def test_candidate_repair_loop_rejects_mismatched_pre_sib_report() -> None:
