@@ -1085,6 +1085,75 @@ def test_idea_maturity_metrics_report_counts_materialized_request_once(
     assert report["summary"]["answer_materialization_rate"] == 1.0
 
 
+def test_idea_maturity_metrics_report_accounts_aggregate_answer_closure(
+    tmp_path: Path,
+) -> None:
+    paths = write_ready_chain(tmp_path / "aggregate-answer")
+    answers = load_json(paths["clarification_answers"])
+    answers["answers"].append(
+        {
+            "request_id": "clarification.active-frame",
+            "answer_kind": "answer_question",
+            "status": "accepted_for_candidate",
+            "request_snapshot": {
+                "kind": "active_frame",
+                "target_artifact": "idea_event_storming_intake",
+                "target_ref": "active_frame.domain",
+            },
+        }
+    )
+    answers["summary"]["answer_count"] = 3
+    answers["summary"]["accepted_answer_count"] = 3
+    write_json(paths["clarification_answers"], answers)
+    rerun_input = load_json(paths["rerun_input"])
+    rerun_input["rerun_input_overlay"] = {
+        "intake_overlay": {
+            "active_frame_hints": [
+                {
+                    "request_id": "clarification.active-frame",
+                    "answer_kind": "answer_question",
+                    "request_kind": "active_frame",
+                    "target_artifact": "idea_event_storming_intake",
+                    "target_ref": "active_frame.domain",
+                    "value": {"domain": "cash_flow_control"},
+                }
+            ],
+            "event_storming_hints": [],
+        },
+        "ontology_review_hints": {
+            "term_bindings": [],
+            "aliases": [],
+            "project_local_terms": [],
+            "rejected_terms": [],
+            "deferred_terms": [],
+        },
+        "candidate_review_hints": {
+            "acceptance_criteria": [],
+            "graph_edges": [],
+            "claim_reviews": [],
+            "other": [],
+        },
+    }
+    rerun_input["summary"]["accepted_answer_count"] = 3
+    rerun_input["summary"]["intake_overlay_count"] = 1
+    write_json(paths["rerun_input"], rerun_input)
+
+    report = build_report(paths)
+    metrics = report["metrics"]
+    group = report["groups"]["answer_materialization"]
+
+    assert metrics["accepted_answer_count"] == 3
+    assert metrics["per_gap_materialized_answer_count"] == 2
+    assert metrics["aggregate_answer_count"] == 1
+    assert metrics["closure_evidence_answer_count"] == 3
+    assert metrics["unmaterialized_answer_count"] == 0
+    assert metrics["answer_materialization_rate"] == 1.0
+    assert group["ordinary_unmaterialized_answer_count"] == 0
+    assert group["answer_accounting"]["aggregate_answer_request_ids"] == [
+        "clarification.active-frame"
+    ]
+
+
 def test_idea_maturity_metrics_report_uses_structured_stale_findings_only(
     tmp_path: Path,
 ) -> None:

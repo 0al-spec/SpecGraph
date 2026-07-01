@@ -318,7 +318,7 @@ The follow-up backlog from that smoke is:
    `specspace_real_idea_answer_import_preview.json`, and
    `real_idea_answer_continuation_report.json`;
 4. classify aggregate repair answers as control/closure evidence in Idea
-   Maturity instead of ordinary unmaterialized answers;
+   Maturity instead of ordinary unmaterialized answers; done in Proposal `0196`;
 5. add a project-local ontology review lane for `bind`, `alias`,
    `keep project-local`, `promote`, and `reject` decisions;
 6. replace the temporary flat `decomposes_to` topology with

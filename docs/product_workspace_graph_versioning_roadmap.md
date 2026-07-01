@@ -1477,11 +1477,11 @@ The same run exposed the next product-flow friction points:
    intake session, materialize safe answer artifacts, and continue to the
    existing active-candidate pipeline with
    `make real-idea-intake-continue-from-specspace-answers`.
-4. **Aggregate repair-answer accounting.** Aggregate repair answers can close a
-   blocking control request while concrete node-scoped answers materialize the
-   actual graph changes. Idea Maturity should classify such aggregate answers as
-   control/closure evidence instead of counting them as ordinary unmaterialized
-   answers.
+4. **Aggregate repair-answer accounting.** Done in proposal `0196`. Idea
+   Maturity now distinguishes per-gap materialized answers from answers consumed
+   by the rerun overlay as aggregate/control closure evidence. Aggregate answers
+   no longer count as ordinary unmaterialized answer debt when they were already
+   consumed by the review-only rerun flow.
 5. **Project-local ontology review lane.** Product terms can safely remain
    project-local, but the operator needs an explicit review lane to decide
    `bind`, `alias`, `keep project-local`, `promote to workspace ontology`, or

@@ -1337,6 +1337,9 @@ Key derived artifacts:
   object with Metrics-owned schema refs, validation-report schema refs,
   validator id/version, compatibility-policy refs, and RFC refs so downstream
   consumers can display the exact Metrics contract evidence.
+  Proposal 0196 adds aggregate repair-answer accounting so answers consumed as
+  rerun overlay closure evidence do not appear as ordinary unmaterialized answer
+  debt.
 - `runs/idea_maturity_metrics_validation_report.json`: public-safe validation
   evidence for the maturity metrics report. Build it with
   `make idea-maturity-metrics-validate`. The target invokes the Metrics

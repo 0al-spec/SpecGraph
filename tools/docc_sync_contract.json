@@ -239,7 +239,8 @@
         "real_idea_answer_set",
         "make real-idea-smoke-answer-template",
         "make real-idea-smoke-validate-answers",
-        "make real-idea-smoke-materialize-answers"
+        "make real-idea-smoke-materialize-answers",
+        "proposal `0196`"
       ],
       "docc_required_terms": [
         "Active Candidate Source",
@@ -347,7 +348,8 @@
         "real_idea_answer_set",
         "make real-idea-smoke-answer-template",
         "make real-idea-smoke-validate-answers",
-        "make real-idea-smoke-materialize-answers"
+        "make real-idea-smoke-materialize-answers",
+        "Proposal `0196`"
       ]
     },
     {
