@@ -614,11 +614,15 @@ def _overlay_answer_records(artifacts: dict[str, dict[str, Any]]) -> list[dict[s
 def _is_nonblocking_consumed_answer(record: dict[str, str]) -> bool:
     if record["group"] == "intake_overlay":
         return True
-    if record["answer_kind"] in {"defer", "defer_candidate", "reject"}:
+    if record["answer_kind"] in {"defer", "defer_candidate"}:
         return True
     if record["request_kind"] not in {"candidate_gap", "ontology_gap"}:
         return True
     return False
+
+
+def _is_dismissed_consumed_answer(record: dict[str, str]) -> bool:
+    return record["answer_kind"] == "reject"
 
 
 def _answer_accounting(
@@ -637,21 +641,28 @@ def _answer_accounting(
         for record in overlay_records
         if record["request_id"] in accepted_ids and _is_nonblocking_consumed_answer(record)
     }
+    dismissed_ids = {
+        record["request_id"]
+        for record in overlay_records
+        if record["request_id"] in accepted_ids and _is_dismissed_consumed_answer(record)
+    }
     materialized_ids = materialized_answer_request_ids & accepted_ids
-    aggregate_ids = nonblocking_consumed_ids - materialized_ids
+    aggregate_ids = nonblocking_consumed_ids - materialized_ids - dismissed_ids
     closure_evidence_ids = materialized_ids | aggregate_ids
-    ordinary_unmaterialized_ids = accepted_ids - closure_evidence_ids
+    ordinary_unmaterialized_ids = accepted_ids - closure_evidence_ids - dismissed_ids
     return {
         "accepted_answer_request_ids": sorted(accepted_ids),
         "materialized_answer_request_ids": sorted(materialized_ids),
         "consumed_answer_request_ids": sorted(consumed_ids),
         "aggregate_answer_request_ids": sorted(aggregate_ids),
+        "dismissed_answer_request_ids": sorted(dismissed_ids),
         "closure_evidence_answer_request_ids": sorted(closure_evidence_ids),
         "ordinary_unmaterialized_answer_request_ids": sorted(ordinary_unmaterialized_ids),
         "accepted_answer_count": len(accepted_ids),
         "materialized_answer_count": len(materialized_ids),
         "consumed_answer_count": len(consumed_ids),
         "aggregate_answer_count": len(aggregate_ids),
+        "dismissed_answer_count": len(dismissed_ids),
         "closure_evidence_answer_count": len(closure_evidence_ids),
         "ordinary_unmaterialized_answer_count": len(ordinary_unmaterialized_ids),
     }
@@ -730,14 +741,26 @@ def _metrics(artifacts: dict[str, dict[str, Any]]) -> dict[str, Any]:
         materialized_answer_request_ids=materialized_answer_request_ids,
         artifacts=artifacts,
     )
+    accepted_answer_count = max(accepted_answer_count, answer_accounting["accepted_answer_count"])
     bounded_materialized_answer_count = min(
         answer_accounting["materialized_answer_count"],
         accepted_answer_count,
     )
+    closure_evidence_answer_count = min(
+        answer_accounting["closure_evidence_answer_count"],
+        accepted_answer_count,
+    )
     unmaterialized_answer_count = min(
         answer_accounting["ordinary_unmaterialized_answer_count"],
-        max(accepted_answer_count - bounded_materialized_answer_count, 0),
+        max(accepted_answer_count - closure_evidence_answer_count, 0),
     )
+    answer_accounting = {
+        **answer_accounting,
+        "accepted_answer_count": accepted_answer_count,
+        "materialized_answer_count": bounded_materialized_answer_count,
+        "closure_evidence_answer_count": closure_evidence_answer_count,
+        "ordinary_unmaterialized_answer_count": unmaterialized_answer_count,
+    }
     ontology_decision_counts = _ontology_decision_counts(artifacts)
 
     ontology_match_counter: Counter[str] = Counter()
@@ -824,7 +847,8 @@ def _metrics(artifacts: dict[str, dict[str, Any]]) -> dict[str, Any]:
         "per_gap_materialized_answer_count": bounded_materialized_answer_count,
         "consumed_answer_count": answer_accounting["consumed_answer_count"],
         "aggregate_answer_count": answer_accounting["aggregate_answer_count"],
-        "closure_evidence_answer_count": answer_accounting["closure_evidence_answer_count"],
+        "dismissed_answer_count": answer_accounting["dismissed_answer_count"],
+        "closure_evidence_answer_count": closure_evidence_answer_count,
         "ordinary_unmaterialized_answer_count": unmaterialized_answer_count,
         "answer_accounting": answer_accounting,
         "candidate_review_hint_count": _summary_int(
@@ -1996,6 +2020,7 @@ def _metric_groups(metrics: dict[str, Any]) -> dict[str, Any]:
             "per_gap_materialized_answer_count": metrics["per_gap_materialized_answer_count"],
             "consumed_answer_count": metrics["consumed_answer_count"],
             "aggregate_answer_count": metrics["aggregate_answer_count"],
+            "dismissed_answer_count": metrics["dismissed_answer_count"],
             "closure_evidence_answer_count": metrics["closure_evidence_answer_count"],
             "ordinary_unmaterialized_answer_count": metrics["ordinary_unmaterialized_answer_count"],
             "answer_accounting": metrics["answer_accounting"],

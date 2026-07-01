@@ -1154,6 +1154,83 @@ def test_idea_maturity_metrics_report_accounts_aggregate_answer_closure(
     ]
 
 
+def test_idea_maturity_metrics_rate_does_not_exceed_one_on_summary_mismatch(
+    tmp_path: Path,
+) -> None:
+    paths = write_ready_chain(tmp_path / "summary-mismatch")
+    answers = load_json(paths["clarification_answers"])
+    answers["summary"]["accepted_answer_count"] = 1
+    write_json(paths["clarification_answers"], answers)
+
+    report = build_report(paths)
+    metrics = report["metrics"]
+
+    assert metrics["accepted_answer_count"] == 2
+    assert metrics["closure_evidence_answer_count"] == 2
+    assert metrics["answer_materialization_rate"] == 1.0
+    assert metrics["answer_accounting"]["accepted_answer_count"] == metrics["accepted_answer_count"]
+
+
+def test_idea_maturity_metrics_counts_reject_as_dismissed_not_closure(
+    tmp_path: Path,
+) -> None:
+    paths = write_ready_chain(tmp_path / "dismissed-answer")
+    answers = load_json(paths["clarification_answers"])
+    answers["answers"].append(
+        {
+            "request_id": "clarification.reject-local-risk",
+            "answer_kind": "reject",
+            "status": "accepted_for_candidate",
+            "request_snapshot": {
+                "kind": "candidate_gap",
+                "target_ref": "candidate-spec.product-boundary#gap.local-risk",
+            },
+        }
+    )
+    answers["summary"]["answer_count"] = 3
+    answers["summary"]["accepted_answer_count"] = 3
+    write_json(paths["clarification_answers"], answers)
+    rerun_input = load_json(paths["rerun_input"])
+    rerun_input["rerun_input_overlay"] = {
+        "intake_overlay": {
+            "active_frame_hints": [],
+            "event_storming_hints": [],
+        },
+        "ontology_review_hints": {
+            "term_bindings": [],
+            "aliases": [],
+            "project_local_terms": [],
+            "rejected_terms": [],
+            "deferred_terms": [],
+        },
+        "candidate_review_hints": {
+            "acceptance_criteria": [],
+            "graph_edges": [],
+            "claim_reviews": [],
+            "other": [
+                {
+                    "request_id": "clarification.reject-local-risk",
+                    "answer_kind": "reject",
+                    "request_kind": "candidate_gap",
+                    "target_ref": "candidate-spec.product-boundary#gap.local-risk",
+                }
+            ],
+        },
+    }
+    write_json(paths["rerun_input"], rerun_input)
+
+    report = build_report(paths)
+    metrics = report["metrics"]
+
+    assert metrics["dismissed_answer_count"] == 1
+    assert metrics["closure_evidence_answer_count"] == 2
+    assert metrics["answer_materialization_rate"] == 0.666667
+    assert metrics["ordinary_unmaterialized_answer_count"] == 0
+    assert metrics["answer_accounting"]["dismissed_answer_request_ids"] == [
+        "clarification.reject-local-risk"
+    ]
+
+
 def test_idea_maturity_metrics_report_uses_structured_stale_findings_only(
     tmp_path: Path,
 ) -> None:
