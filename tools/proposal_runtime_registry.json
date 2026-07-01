@@ -10912,7 +10912,15 @@
       },
       {
         "path": "tools/real_idea_smoke.py",
-        "pattern": "MANAGED_OUTPUT_NAMES"
+        "pattern": "SMOKE_OUTPUT_FILES"
+      },
+      {
+        "path": "tools/real_idea_smoke.py",
+        "pattern": "DERIVED_REPAIR_OUTPUT_NAMES"
+      },
+      {
+        "path": "tools/real_idea_smoke.py",
+        "pattern": "absent-post-approval"
       },
       {
         "path": "tools/real_idea_smoke.py",

@@ -1412,12 +1412,15 @@ testing exposed two orchestration hazards:
   post-approval `runs/*.json` artifacts when those optional paths were not
   explicitly redirected.
 
-The smoke wrapper now refreshes only wrapper-owned derived outputs in the run
-directory by default. Operator-authored answer input files are not cleared, and
-`REAL_IDEA_SMOKE_REFRESH=0` preserves managed outputs intentionally. The new
-`make real-idea-smoke-idea-maturity` target builds and validates Idea Maturity
-from `REAL_IDEA_SMOKE_RUN_DIR` while routing optional post-approval Platform/Git
-inputs to `REAL_IDEA_SMOKE_MATURITY_ABSENT_DIR` by default.
+The smoke wrapper now refreshes wrapper-owned derived outputs in the run
+directory by default, including generated answer/rerun/repair/maturity artifacts
+and the default `absent-post-approval` directory. Operator-authored answer input
+files are not cleared, so operators must update or delete them before reusing the
+same run directory for a different idea. `REAL_IDEA_SMOKE_REFRESH=0` preserves
+managed outputs intentionally. The new `make real-idea-smoke-idea-maturity`
+target builds and validates Idea Maturity from `REAL_IDEA_SMOKE_RUN_DIR` while
+routing optional post-approval Platform/Git inputs to
+`REAL_IDEA_SMOKE_MATURITY_ABSENT_DIR` by default.
 
 ## Team Decision Log Happy-Path Repair Pack
 

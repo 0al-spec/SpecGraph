@@ -320,7 +320,9 @@ Supervisor modes:
   `make real-idea-smoke` clears only wrapper-owned derived outputs inside
   `REAL_IDEA_SMOKE_RUN_DIR` before rebuilding, so repeated runs do not silently
   reuse stale intake sessions. Set `REAL_IDEA_SMOKE_REFRESH=0` to preserve
-  existing managed outputs intentionally. Use
+  existing managed outputs intentionally. Operator-authored answer input files
+  are preserved, but generated answer/rerun/repair/maturity outputs and the
+  default `absent-post-approval` directory are cleared. Use
   `make real-idea-smoke-idea-maturity` to build Idea Maturity from the same
   run directory; optional post-approval Platform/Git artifacts are routed to
   `REAL_IDEA_SMOKE_MATURITY_ABSENT_DIR` by default so unrelated canonical

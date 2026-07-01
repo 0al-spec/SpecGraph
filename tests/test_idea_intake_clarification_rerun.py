@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import importlib.util
 import json
 import os
 import shutil
@@ -23,6 +24,19 @@ def load_json(path: Path) -> dict[str, object]:
 def write_json(path: Path, payload: object) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(json.dumps(payload, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+
+
+def load_module(path: Path, name: str) -> object:
+    spec = importlib.util.spec_from_file_location(name, path)
+    assert spec and spec.loader
+    module = importlib.util.module_from_spec(spec)
+    sys.path.insert(0, str(path.parent))
+    sys.modules[spec.name] = module
+    try:
+        spec.loader.exec_module(module)
+    finally:
+        sys.path.pop(0)
+    return module
 
 
 def supported_python() -> str:
@@ -493,6 +507,23 @@ def test_real_idea_smoke_target_writes_isolated_run_dir_summary(tmp_path: Path) 
         shutil.rmtree(run_dir, ignore_errors=True)
 
 
+def test_real_idea_smoke_cleanup_covers_wrapper_output_args() -> None:
+    module = load_module(ROOT / "tools" / "real_idea_smoke.py", "real_idea_smoke_under_test")
+    run_dir_ref = "runs/coverage-smoke"
+    args = module._smoke_make_args(run_dir_ref, python="python", interview_input="")
+    output_refs = {
+        value
+        for value in (arg.split("=", 1)[1] for arg in args if "=" in arg)
+        if value.startswith(f"{run_dir_ref}/")
+    }
+    managed_refs = {
+        f"{run_dir_ref}/{name}"
+        for _, name in [*module.SMOKE_OUTPUT_FILES, *module.SMOKE_OUTPUT_DIRS]
+    }
+
+    assert output_refs <= managed_refs
+
+
 def test_real_idea_smoke_refreshes_existing_managed_outputs(tmp_path: Path) -> None:
     python = supported_python()
     run_rel = Path(".pytest_cache") / "real_idea_smoke_refresh" / tmp_path.name
@@ -500,6 +531,9 @@ def test_real_idea_smoke_refreshes_existing_managed_outputs(tmp_path: Path) -> N
     shutil.rmtree(run_dir, ignore_errors=True)
     ready_fixture = ROOT / "tests/fixtures/user_idea_intake_session/raw_idea_ready.json"
     second_fixture = run_dir / "second_raw_idea_ready.json"
+    operator_answer_input = run_dir / "idea_to_spec_clarification_answers_input.json"
+    stale_validated_answers = run_dir / "idea_to_spec_clarification_answers.json"
+    stale_absent_decision = run_dir / "absent-post-approval" / "candidate_approval_decision.json"
     try:
         first = subprocess.run(
             [
@@ -519,6 +553,9 @@ def test_real_idea_smoke_refreshes_existing_managed_outputs(tmp_path: Path) -> N
             load_json(run_dir / "active_idea_to_spec_candidate.json")["summary"]["candidate_id"]
             == "support-triage-log"
         )
+        write_json(operator_answer_input, {"artifact_kind": "operator_authored_answer_input"})
+        write_json(stale_validated_answers, {"artifact_kind": "stale_validated_answers"})
+        write_json(stale_absent_decision, {"artifact_kind": "stale_absent_decision"})
 
         second_payload = load_json(ready_fixture)
         second_payload["workspace"] = {
@@ -560,6 +597,9 @@ def test_real_idea_smoke_refreshes_existing_managed_outputs(tmp_path: Path) -> N
         summary = load_json(run_dir / "real_idea_smoke_summary.json")
         assert active["summary"]["candidate_id"] == "cash-flow-refresh-smoke"
         assert summary["summary"]["candidate_id"] == "cash-flow-refresh-smoke"
+        assert operator_answer_input.exists()
+        assert not stale_validated_answers.exists()
+        assert not stale_absent_decision.exists()
     finally:
         shutil.rmtree(run_dir, ignore_errors=True)
 

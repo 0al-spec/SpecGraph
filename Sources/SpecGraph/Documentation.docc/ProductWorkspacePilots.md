@@ -265,8 +265,9 @@ Proposal `0192` makes repeated real-idea smoke runs safer. By default,
 `make real-idea-smoke` clears wrapper-owned derived outputs inside
 `REAL_IDEA_SMOKE_RUN_DIR` before rebuilding, so a second run cannot silently
 reuse an older `user_idea_intake_session.json`. Operator-authored answer input
-files are preserved, and `REAL_IDEA_SMOKE_REFRESH=0` keeps the old reuse
-behavior when that is intentional. The companion
+files are preserved, but generated answer/rerun/repair/maturity outputs and the
+default `absent-post-approval` directory are cleared. `REAL_IDEA_SMOKE_REFRESH=0`
+keeps the old reuse behavior when that is intentional. The companion
 `make real-idea-smoke-idea-maturity` target builds Idea Maturity from the same
 run directory and sends optional post-approval Platform/Git inputs to
 `REAL_IDEA_SMOKE_MATURITY_ABSENT_DIR`, preventing stale canonical `runs/*.json`
