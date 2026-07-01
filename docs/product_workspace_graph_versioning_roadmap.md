@@ -1428,6 +1428,71 @@ post-approval files cannot survive refresh, but SpecSpace repair-stage artifacts
 such as draft import previews and rerun requests are read from the smoke run
 directory when present.
 
+## Real Idea Cash-Flow Smoke Follow-ups
+
+Status: planned after the cash-flow control smoke run.
+
+The `cash-flow-control` smoke confirmed that a raw product idea can reach an
+approval-ready candidate without a prebuilt product-domain ontology. The flow
+used `ontology://specgraph-core` only as the structural specification ontology;
+cash-flow terms such as `Recurring Payment`, `Safe-to-Spend Amount`, and
+`Overdraft Risk` surfaced as ontology gaps and were resolved as project-local
+terms for the review-only candidate preview. No authority ontology package was
+mutated and no ontology terms were accepted globally.
+
+The run produced:
+
+- a real-intake event-storming frame with actors, commands, domain events, and
+  constraints;
+- a `10` node candidate graph with `9` topology edges, `10` requirements, and
+  `10` acceptance criteria;
+- `19` initial gaps: `15` ontology gaps and `4` candidate/spec enforcement
+  gaps;
+- a repaired candidate graph with `0` remaining gaps;
+- repaired handoff readiness with `ready_for_candidate_approval=true`;
+- Idea Maturity `status=ready`, lifecycle `approval_ready`, and validation
+  `ok`.
+
+The same run exposed the next product-flow friction points:
+
+1. **Session-aware smoke continuation.** After a first `real-idea-smoke` stops
+   at `needs_clarification`, the operator currently has to run clarification
+   targets and then continue with `REAL_IDEA_SMOKE_REFRESH=0`. Add an explicit
+   continuation target or session-aware wrapper so the operator does not have to
+   reason about refresh semantics manually.
+2. **First-class answer authoring.** CLI smoke still requires hand-authored
+   JSON answer sets for intake clarification and repair. Add a structured
+   answer-authoring surface, or make SpecSpace the default operator path, so
+   users answer questions in product terms rather than editing JSON.
+3. **Aggregate repair-answer accounting.** Aggregate repair answers can close a
+   blocking control request while concrete node-scoped answers materialize the
+   actual graph changes. Idea Maturity should classify such aggregate answers as
+   control/closure evidence instead of counting them as ordinary unmaterialized
+   answers.
+4. **Project-local ontology review lane.** Product terms can safely remain
+   project-local, but the operator needs an explicit review lane to decide
+   `bind`, `alias`, `keep project-local`, `promote to workspace ontology`, or
+   `reject` for each term without mutating authority ontology packages.
+5. **Event-storming topology.** Proposal `0191` currently emits flat
+   `Product Boundary --decomposes_to--> node` edges. The next topology slice
+   should add ontology-validated event-storming relations such as
+   `command -> event`, `event -> policy`, and `constraint -> command`, while
+   preserving the review-only boundary.
+6. **Human-friendly candidate ids.** Long constraint statements currently
+   produce truncated node ids. Keep stable machine ids, but add shorter
+   readable slugs or display aliases for UI, PR artifacts, and candidate
+   overview documents.
+7. **Generated candidate overview.** The artifacts are rich, but the operator
+   still needs a narrative summary assembled from the graph. Add a generated
+   `candidate_overview.md` or SpecSpace narrative panel that explains actors,
+   flows, constraints, gaps closed, and remaining promotion steps.
+8. **Custom-run Platform promotion dry-run.** The cash-flow smoke reached
+   `ready_for_platform_promotion_request`, but did not yet materialize an
+   approval decision, promotion request, or Git Service dry-run. Add a reusable
+   custom run-dir handoff so any repaired real-idea smoke can continue into the
+   existing Platform approval/promotion dry-run boundary without copying
+   artifacts into canonical `runs/*.json`.
+
 ## Team Decision Log Happy-Path Repair Pack
 
 Status: implemented in proposal `0182`.
