@@ -10752,6 +10752,7 @@
       "docs/proposals/0190_real_idea_smoke_run_dir.md",
       "docs/archive/proposal_sources/0190_real_idea_smoke_run_dir.md",
       "Makefile",
+      "tools/real_idea_smoke.py",
       "tools/real_idea_smoke_summary.py",
       "tests/test_idea_intake_clarification_rerun.py",
       "docs/product_workspace_graph_versioning_roadmap.md",
@@ -10770,6 +10771,18 @@
       {
         "path": "tools/real_idea_smoke_summary.py",
         "pattern": "real_idea_smoke_summary"
+      },
+      {
+        "path": "tools/real_idea_smoke.py",
+        "pattern": "_repo_relative_path"
+      },
+      {
+        "path": "tools/real_idea_smoke.py",
+        "pattern": "PRODUCT_WORKSPACE_ACTIVE_CANDIDATE_CONFIG"
+      },
+      {
+        "path": "tools/real_idea_smoke.py",
+        "pattern": "real_idea_smoke_summary.build_summary"
       }
     ],
     "validation_markers": [

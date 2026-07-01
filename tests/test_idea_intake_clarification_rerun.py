@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import os
 import shutil
 import subprocess
 import sys
@@ -461,7 +462,7 @@ def test_real_idea_intake_active_candidate_target_builds_seed_first(
 
 def test_real_idea_smoke_target_writes_isolated_run_dir_summary(tmp_path: Path) -> None:
     python = supported_python()
-    run_rel = Path("runs") / f"test_real_idea_smoke_{tmp_path.name}"
+    run_rel = Path(".pytest_cache") / "real_idea_smoke" / tmp_path.name
     run_dir = ROOT / run_rel
     shutil.rmtree(run_dir, ignore_errors=True)
     ready_fixture = ROOT / "tests/fixtures/user_idea_intake_session/raw_idea_ready.json"
@@ -488,6 +489,123 @@ def test_real_idea_smoke_target_writes_isolated_run_dir_summary(tmp_path: Path) 
         assert summary["summary"]["candidate_id"] == "support-triage-log"
         assert summary["artifacts"]["active_candidate"]["present"] is True
         assert active["summary"]["candidate_id"] == "support-triage-log"
+    finally:
+        shutil.rmtree(run_dir, ignore_errors=True)
+
+
+def test_real_idea_smoke_normalizes_repo_local_absolute_run_dir(tmp_path: Path) -> None:
+    python = supported_python()
+    run_rel = Path(".pytest_cache") / "real_idea_smoke_abs" / tmp_path.name
+    run_dir = ROOT / run_rel
+    shutil.rmtree(run_dir, ignore_errors=True)
+    ready_fixture = ROOT / "tests/fixtures/user_idea_intake_session/raw_idea_ready.json"
+    try:
+        result = subprocess.run(
+            [
+                "make",
+                "real-idea-smoke",
+                f"PYTHON={python}",
+                f"REAL_IDEA_SMOKE_RUN_DIR={run_dir}",
+                f"REAL_IDEA_SMOKE_SUMMARY_OUTPUT={run_dir / 'real_idea_smoke_summary.json'}",
+                f"USER_IDEA_INTAKE_INTERVIEW_INPUT={ready_fixture}",
+            ],
+            cwd=ROOT,
+            check=False,
+            capture_output=True,
+            text=True,
+        )
+
+        assert result.returncode == 0, result.stderr
+        summary = load_json(run_dir / "real_idea_smoke_summary.json")
+        assert summary["run_dir"] == run_rel.as_posix()
+        assert summary["summary"]["candidate_id"] == "support-triage-log"
+    finally:
+        shutil.rmtree(run_dir, ignore_errors=True)
+
+
+def test_real_idea_smoke_rejects_external_absolute_run_dir(tmp_path: Path) -> None:
+    python = supported_python()
+    ready_fixture = ROOT / "tests/fixtures/user_idea_intake_session/raw_idea_ready.json"
+    result = subprocess.run(
+        [
+            "make",
+            "real-idea-smoke",
+            f"PYTHON={python}",
+            f"REAL_IDEA_SMOKE_RUN_DIR={tmp_path}",
+            f"REAL_IDEA_SMOKE_SUMMARY_OUTPUT={tmp_path / 'real_idea_smoke_summary.json'}",
+            f"USER_IDEA_INTAKE_INTERVIEW_INPUT={ready_fixture}",
+        ],
+        cwd=ROOT,
+        check=False,
+        capture_output=True,
+        text=True,
+    )
+
+    assert result.returncode != 0
+    assert "REAL_IDEA_SMOKE_RUN_DIR must stay inside the SpecGraph repository" in result.stderr
+
+
+def test_real_idea_smoke_clears_ambient_active_candidate_config(tmp_path: Path) -> None:
+    python = supported_python()
+    run_rel = Path(".pytest_cache") / "real_idea_smoke_config" / tmp_path.name
+    run_dir = ROOT / run_rel
+    shutil.rmtree(run_dir, ignore_errors=True)
+    ready_fixture = ROOT / "tests/fixtures/user_idea_intake_session/raw_idea_ready.json"
+    env = os.environ.copy()
+    env["PRODUCT_WORKSPACE_ACTIVE_CANDIDATE_CONFIG"] = "tests/fixtures/missing-config.json"
+    env["ACTIVE_IDEA_TO_SPEC_CANDIDATE_CONFIG"] = "tests/fixtures/missing-config.json"
+    try:
+        result = subprocess.run(
+            [
+                "make",
+                "real-idea-smoke",
+                f"PYTHON={python}",
+                f"REAL_IDEA_SMOKE_RUN_DIR={run_rel}",
+                f"USER_IDEA_INTAKE_INTERVIEW_INPUT={ready_fixture}",
+            ],
+            cwd=ROOT,
+            env=env,
+            check=False,
+            capture_output=True,
+            text=True,
+        )
+
+        assert result.returncode == 0, result.stderr
+        active = load_json(run_dir / "active_idea_to_spec_candidate.json")
+        assert active["summary"]["candidate_id"] == "support-triage-log"
+    finally:
+        shutil.rmtree(run_dir, ignore_errors=True)
+
+
+def test_real_idea_smoke_writes_summary_for_blocked_intake(tmp_path: Path) -> None:
+    python = supported_python()
+    run_rel = Path(".pytest_cache") / "real_idea_smoke_blocked" / tmp_path.name
+    run_dir = ROOT / run_rel
+    shutil.rmtree(run_dir, ignore_errors=True)
+    needs_clarification = (
+        ROOT / "tests/fixtures/user_idea_intake_session/raw_idea_needs_clarification.json"
+    )
+    try:
+        result = subprocess.run(
+            [
+                "make",
+                "real-idea-smoke",
+                f"PYTHON={python}",
+                f"REAL_IDEA_SMOKE_RUN_DIR={run_rel}",
+                f"USER_IDEA_INTAKE_INTERVIEW_INPUT={needs_clarification}",
+            ],
+            cwd=ROOT,
+            check=False,
+            capture_output=True,
+            text=True,
+        )
+
+        assert result.returncode != 0
+        summary = load_json(run_dir / "real_idea_smoke_summary.json")
+        assert summary["artifact_kind"] == "real_idea_smoke_summary"
+        assert summary["status"] == "incomplete"
+        assert summary["artifacts"]["intake_session"]["present"] is True
+        assert summary["artifacts"]["active_candidate"]["present"] is False
     finally:
         shutil.rmtree(run_dir, ignore_errors=True)
 

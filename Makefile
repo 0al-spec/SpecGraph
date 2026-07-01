@@ -653,26 +653,7 @@ real-idea-intake-active-candidate:
 
 .PHONY: real-idea-smoke
 real-idea-smoke:
-	@mkdir -p "$(REAL_IDEA_SMOKE_RUN_DIR)"
-	@$(MAKE) real-idea-intake-active-candidate \
-		USER_IDEA_RAW_INPUT_OUTPUT="$(REAL_IDEA_SMOKE_RUN_DIR)/local_operator_user_idea_raw_input.json" \
-		USER_IDEA_INTAKE_SESSION_OUTPUT="$(REAL_IDEA_SMOKE_RUN_DIR)/user_idea_intake_session.json" \
-		USER_IDEA_INTAKE_SESSION_SOURCE_OUTPUT="$(REAL_IDEA_SMOKE_RUN_DIR)/user_idea_intake_source.json" \
-		USER_IDEA_INTAKE_INTERVIEW_REPORT_OUTPUT="$(REAL_IDEA_SMOKE_RUN_DIR)/user_idea_intake_interview_report.json" \
-		CLARIFIED_USER_IDEA_INTAKE_SESSION_OUTPUT="$(REAL_IDEA_SMOKE_RUN_DIR)/clarified_user_idea_intake_session.json" \
-		INTAKE_SESSION_CANDIDATE_SOURCE_REPORT_OUTPUT="$(REAL_IDEA_SMOKE_RUN_DIR)/intake_session_candidate_source_report.json" \
-		USER_IDEA_EVENT_STORMING_SEED_OUTPUT="$(REAL_IDEA_SMOKE_RUN_DIR)/idea_event_storming_seed.json" \
-		IDEA_EVENT_STORMING_INTAKE_OUTPUT="$(REAL_IDEA_SMOKE_RUN_DIR)/idea_event_storming_intake.json" \
-		PRODUCT_WORKSPACE_CANDIDATE_SEED_OUTPUT="$(REAL_IDEA_SMOKE_RUN_DIR)/candidate_spec_graph_seed.json" \
-		CANDIDATE_SPEC_GRAPH_OUTPUT="$(REAL_IDEA_SMOKE_RUN_DIR)/candidate_spec_graph.json" \
-		PRE_SIB_COHERENCE_OUTPUT="$(REAL_IDEA_SMOKE_RUN_DIR)/pre_sib_coherence_report.json" \
-		CANDIDATE_REPAIR_LOOP_OUTPUT="$(REAL_IDEA_SMOKE_RUN_DIR)/candidate_repair_loop_report.json" \
-		IDEA_TO_SPEC_CLARIFICATION_OUTPUT="$(REAL_IDEA_SMOKE_RUN_DIR)/idea_to_spec_clarification_requests.json" \
-		CANDIDATE_SPEC_MATERIALIZATION_OUTPUT_DIR="$(REAL_IDEA_SMOKE_RUN_DIR)/materialized_candidate_specs" \
-		CANDIDATE_SPEC_MATERIALIZATION_OUTPUT="$(REAL_IDEA_SMOKE_RUN_DIR)/candidate_spec_materialization_report.json" \
-		IDEA_TO_SPEC_PROMOTION_GATE_OUTPUT="$(REAL_IDEA_SMOKE_RUN_DIR)/idea_to_spec_promotion_gate.json" \
-		ACTIVE_IDEA_TO_SPEC_CANDIDATE_OUTPUT="$(REAL_IDEA_SMOKE_RUN_DIR)/active_idea_to_spec_candidate.json"
-	@$(PYTHON) tools/real_idea_smoke_summary.py --run-dir "$(REAL_IDEA_SMOKE_RUN_DIR)" --output "$(REAL_IDEA_SMOKE_SUMMARY_OUTPUT)"
+	@$(PYTHON) tools/real_idea_smoke.py --run-dir "$(REAL_IDEA_SMOKE_RUN_DIR)" --summary-output "$(REAL_IDEA_SMOKE_SUMMARY_OUTPUT)" --python "$(PYTHON)" --interview-input "$(USER_IDEA_INTAKE_INTERVIEW_INPUT)"
 
 .PHONY: generic-idea-intake
 generic-idea-intake: user-idea-intake-source

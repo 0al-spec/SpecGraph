@@ -37,6 +37,11 @@ runs/<id>/real_idea_smoke_summary.json
 The summary is public-safe telemetry over the run artifacts. It does not include
 raw idea text.
 
+The run directory and summary output must resolve inside the SpecGraph
+repository. Repository-local absolute paths are normalized to repository-relative
+artifact refs, external absolute paths are rejected, and ambient
+active-candidate config variables are cleared for the smoke child invocation.
+
 ## Authority Boundary
 
 This proposal only sequences existing review-only targets and summarizes their
@@ -59,6 +64,8 @@ It does not:
 - `make real-idea-smoke REAL_IDEA_SMOKE_RUN_DIR=<dir>` writes all active-candidate
   outputs under `<dir>`.
 - The target writes `<dir>/real_idea_smoke_summary.json`.
+- Blocked intake runs still emit the smoke summary and preserve the failing exit
+  status.
 - The summary reports the active candidate status, candidate id, route, artifact
   presence, and authority/privacy boundaries.
 - Under-specified ideas remain blocked by the existing intake/bridge gates.

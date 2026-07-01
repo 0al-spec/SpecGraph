@@ -247,7 +247,9 @@ Proposal `0190` adds a run-directory wrapper for live real-idea smoke runs:
 `make real-idea-smoke REAL_IDEA_SMOKE_RUN_DIR=runs/<id>`. The target routes the
 existing real-intake active-candidate chain into the selected directory and
 writes a compact `real_idea_smoke_summary.json` without publishing raw idea
-text.
+text. The wrapper normalizes repository-local absolute run dirs, rejects
+external absolute paths, clears ambient active-candidate config, and writes the
+summary even when intake gates block.
 
 Proposal `0163` adds `idea_to_spec_clarification_requests` as the unified
 read-only question/action surface:

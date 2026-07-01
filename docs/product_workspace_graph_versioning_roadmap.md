@@ -1371,6 +1371,9 @@ The target routes the existing real-intake active-candidate chain into the
 selected directory and writes a compact public-safe
 `real_idea_smoke_summary.json`. This makes live real-idea debugging easier
 without changing the underlying review-only gates or publishing raw idea text.
+The wrapper normalizes repository-local absolute run dirs, rejects external
+absolute paths, clears ambient active-candidate config, and writes the summary
+even when intake gates block.
 
 ## Team Decision Log Happy-Path Repair Pack
 
