@@ -1353,7 +1353,8 @@ domain.apartment_renovation_assistant
 The derived domain ref is appended when missing and existing domain refs remain
 ordered and intact. This avoids late `active_candidate_domain_mismatch` findings
 when a real idea supplies a useful bounded-context domain that is broader than
-the candidate id.
+the candidate id. The generated frame records `domain_ref_derivations` so
+auto-appended candidate-local refs remain system-derived, not owner-confirmed.
 
 ## Team Decision Log Happy-Path Repair Pack
 

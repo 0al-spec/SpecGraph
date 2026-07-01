@@ -10706,6 +10706,14 @@
       {
         "path": "tools/user_idea_intake_source.py",
         "pattern": "domain_refs = _append_unique(domain_refs, _slug_to_domain_ref(candidate_id))"
+      },
+      {
+        "path": "tools/user_idea_intake_session.py",
+        "pattern": "domain_ref_derivations"
+      },
+      {
+        "path": "tools/user_idea_intake_source.py",
+        "pattern": "system_derived_candidate_id"
       }
     ],
     "validation_markers": [

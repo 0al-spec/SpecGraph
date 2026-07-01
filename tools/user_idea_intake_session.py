@@ -119,6 +119,24 @@ def _append_unique(items: list[str], value: str) -> list[str]:
     return items
 
 
+def _domain_ref_derivations(
+    *,
+    original_domain_refs: list[str],
+    candidate_id: str,
+) -> list[dict[str, Any]]:
+    candidate_domain_ref = _slug_to_domain_ref(candidate_id)
+    owner_confirmed = candidate_domain_ref in original_domain_refs
+    return [
+        {
+            "ref": candidate_domain_ref,
+            "source": ("operator_provided" if owner_confirmed else "system_derived_candidate_id"),
+            "candidate_id": candidate_id,
+            "owner_confirmed": owner_confirmed,
+            "confirmation_required": not owner_confirmed,
+        }
+    ]
+
+
 def _slug(value: str, fallback: str = "idea-candidate") -> str:
     slug = re.sub(r"[^a-z0-9]+", "-", value.lower()).strip("-")
     return slug or fallback
@@ -393,13 +411,14 @@ def _frame(
     frame = _dict(raw_input.get("active_frame_hints")) or _dict(raw_input.get("active_frame"))
     candidate_id = workspace["candidate_id"]
     prepared_source_input = _is_prepared_source_input(raw_input)
+    original_domain_refs = _text_list(frame.get("domain_refs"))
     normalized = {
         "project": _text(frame.get("project"), _slug_to_project_id(candidate_id)),
         "subsystem": _text(frame.get("subsystem"), "product_specification"),
         "lifecycle_phase": _text(frame.get("lifecycle_phase"), "idea_intake"),
         "ontology_refs": _text_list(frame.get("ontology_refs")),
         "ontology_layer_refs": _text_list(frame.get("ontology_layer_refs")),
-        "domain_refs": _text_list(frame.get("domain_refs")),
+        "domain_refs": list(original_domain_refs),
         "context_refs": _text_list(frame.get("context_refs")),
         "model_applicability_refs": _text_list(frame.get("model_applicability_refs")),
     }
@@ -425,6 +444,10 @@ def _frame(
             normalized["model_applicability_refs"] = [
                 "model-applicability://specgraph-core/product-spec-mvp"
             ]
+        normalized["domain_ref_derivations"] = _domain_ref_derivations(
+            original_domain_refs=original_domain_refs,
+            candidate_id=candidate_id,
+        )
         return normalized, findings, questions
     required = {
         "ontology_refs": "Which ontology package or ontology ref should constrain the first spec?",
@@ -465,6 +488,10 @@ def _frame(
         )
     normalized["domain_refs"] = _append_unique(
         normalized["domain_refs"], _slug_to_domain_ref(candidate_id)
+    )
+    normalized["domain_ref_derivations"] = _domain_ref_derivations(
+        original_domain_refs=original_domain_refs,
+        candidate_id=candidate_id,
     )
     return normalized, findings, questions
 

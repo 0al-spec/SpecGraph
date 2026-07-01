@@ -144,9 +144,27 @@ def test_user_idea_intake_session_adds_candidate_local_domain_ref() -> None:
         "domain.home_renovation_project_management",
         "domain.apartment_renovation_assistant",
     ]
+    assert session["active_frame_hints"]["domain_ref_derivations"] == [
+        {
+            "ref": "domain.apartment_renovation_assistant",
+            "source": "system_derived_candidate_id",
+            "candidate_id": "apartment-renovation-assistant",
+            "owner_confirmed": False,
+            "confirmation_required": True,
+        }
+    ]
     assert source["active_frame_hints"]["domain_refs"] == [
         "domain.home_renovation_project_management",
         "domain.apartment_renovation_assistant",
+    ]
+    assert source["active_frame_hints"]["domain_ref_derivations"] == [
+        {
+            "ref": "domain.apartment_renovation_assistant",
+            "source": "system_derived_candidate_id",
+            "candidate_id": "apartment-renovation-assistant",
+            "owner_confirmed": False,
+            "confirmation_required": True,
+        }
     ]
 
 

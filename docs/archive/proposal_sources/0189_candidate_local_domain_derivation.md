@@ -30,7 +30,11 @@ domain.apartment_renovation_assistant
 ```
 
 The derived ref is appended only when missing. Existing refs keep their order
-and are not replaced.
+and are not replaced. The generated frame records `domain_ref_derivations` for
+the candidate-local ref; auto-appended refs are marked
+`source: system_derived_candidate_id`, `owner_confirmed: false`, and
+`confirmation_required: true` so downstream review/promotion surfaces do not
+treat them as user-confirmed domain decisions.
 
 ## Authority Boundary
 
@@ -52,6 +56,8 @@ It does not:
   domain refs are present.
 - `user_idea_intake_source` emits event-storming seeds with both broader and
   candidate-local domain refs.
+- Auto-appended candidate-local domain refs carry derivation metadata and are
+  not marked owner-confirmed.
 - Existing candidate-local-only inputs remain unchanged.
 - Active-candidate validation no longer produces
   `active_candidate_domain_mismatch` for real ideas that provide a broader

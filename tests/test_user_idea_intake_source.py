@@ -66,6 +66,15 @@ def test_user_idea_intake_source_preserves_broader_domain_and_adds_candidate_dom
         "domain.home_renovation_project_management",
         "domain.apartment_renovation_assistant",
     ]
+    assert seed["active_frame"]["domain_ref_derivations"] == [
+        {
+            "ref": "domain.apartment_renovation_assistant",
+            "source": "system_derived_candidate_id",
+            "candidate_id": "apartment-renovation-assistant",
+            "owner_confirmed": False,
+            "confirmation_required": True,
+        }
+    ]
 
 
 def test_user_idea_intake_source_feeds_existing_intake_contract() -> None:

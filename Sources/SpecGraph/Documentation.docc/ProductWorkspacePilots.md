@@ -240,7 +240,8 @@ validation by appending the candidate-local domain ref derived from
 `candidate_id` while preserving broader product domain refs. A renovation idea
 can therefore carry both `domain.home_renovation_project_management` and
 `domain.apartment_renovation_assistant` instead of failing later with
-`active_candidate_domain_mismatch`.
+`active_candidate_domain_mismatch`. Auto-appended domain refs carry
+`domain_ref_derivations` metadata and are not marked owner-confirmed.
 
 Proposal `0163` adds `idea_to_spec_clarification_requests` as the unified
 read-only question/action surface:
