@@ -606,9 +606,7 @@ real-idea-intake-candidate-source: real-idea-intake
 
 .PHONY: real-idea-intake-clarification-requests
 real-idea-intake-clarification-requests:
-	@if test ! -f "$(USER_IDEA_INTAKE_SESSION_OUTPUT)"; then \
-		$(MAKE) real-idea-intake; \
-	elif test "$(strip $(REAL_IDEA_INTAKE_REFRESH))" = "1"; then \
+	@if test ! -f "$(USER_IDEA_INTAKE_SESSION_OUTPUT)" || test "$(strip $(REAL_IDEA_INTAKE_REFRESH))" = "1"; then \
 		$(MAKE) real-idea-intake; \
 	fi
 	@$(PYTHON) tools/idea_to_spec_clarification_requests.py --session "$(USER_IDEA_INTAKE_SESSION_OUTPUT)" --no-intake --no-candidate-graph --no-pre-sib --no-repair-loop --output "$(IDEA_INTAKE_CLARIFICATION_REQUESTS_OUTPUT)"
