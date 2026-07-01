@@ -1471,29 +1471,35 @@ The same run exposed the next product-flow friction points:
    The helper writes `real_idea_answer_authoring_report.json` and
    `real_idea_answer_set.json`, blocks empty required typed fields, blocks
    truthy `may_*` authority fields, and keeps raw idea text local-only.
-3. **Aggregate repair-answer accounting.** Aggregate repair answers can close a
+3. **SpecSpace answer continuation handoff.** Done in proposal `0195`.
+   SpecGraph can now preview-import SpecSpace-owned real-idea intake answer
+   state, validate it against the answer template, clarification requests, and
+   intake session, materialize safe answer artifacts, and continue to the
+   existing active-candidate pipeline with
+   `make real-idea-intake-continue-from-specspace-answers`.
+4. **Aggregate repair-answer accounting.** Aggregate repair answers can close a
    blocking control request while concrete node-scoped answers materialize the
    actual graph changes. Idea Maturity should classify such aggregate answers as
    control/closure evidence instead of counting them as ordinary unmaterialized
    answers.
-4. **Project-local ontology review lane.** Product terms can safely remain
+5. **Project-local ontology review lane.** Product terms can safely remain
    project-local, but the operator needs an explicit review lane to decide
    `bind`, `alias`, `keep project-local`, `promote to workspace ontology`, or
    `reject` for each term without mutating authority ontology packages.
-5. **Event-storming topology.** Proposal `0191` currently emits flat
+6. **Event-storming topology.** Proposal `0191` currently emits flat
    `Product Boundary --decomposes_to--> node` edges. The next topology slice
    should add ontology-validated event-storming relations such as
    `command -> event`, `event -> policy`, and `constraint -> command`, while
    preserving the review-only boundary.
-6. **Human-friendly candidate ids.** Long constraint statements currently
+7. **Human-friendly candidate ids.** Long constraint statements currently
    produce truncated node ids. Keep stable machine ids, but add shorter
    readable slugs or display aliases for UI, PR artifacts, and candidate
    overview documents.
-7. **Generated candidate overview.** The artifacts are rich, but the operator
+8. **Generated candidate overview.** The artifacts are rich, but the operator
    still needs a narrative summary assembled from the graph. Add a generated
    `candidate_overview.md` or SpecSpace narrative panel that explains actors,
    flows, constraints, gaps closed, and remaining promotion steps.
-8. **Custom-run Platform promotion dry-run.** The cash-flow smoke reached
+9. **Custom-run Platform promotion dry-run.** The cash-flow smoke reached
    `ready_for_platform_promotion_request`, but did not yet materialize an
    approval decision, promotion request, or Git Service dry-run. Add a reusable
    custom run-dir handoff so any repaired real-idea smoke can continue into the

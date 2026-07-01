@@ -352,6 +352,16 @@ Supervisor modes:
   intake or repair answer artifacts. The helper validates required typed
   fields, `may_*` authority expansion, raw trace fields, and private/local text
   markers before any downstream rerun artifact is written.
+- Proposal 0195 adds SpecSpace real-idea answer continuation handoff. Use
+  `make specspace-real-idea-answer-import-preview` to validate
+  SpecSpace-owned intake clarification answer state against the current answer
+  template, clarification requests, and intake session. When ready, use
+  `make real-idea-intake-materialize-specspace-answers` to materialize safe
+  answer artifacts, or `make real-idea-intake-continue-from-specspace-answers`
+  to continue through the existing active-candidate pipeline. The handoff keeps
+  SpecSpace as the owner of mutable operator intent only; it does not grant
+  SpecSpace execution, ontology, spec mutation, approval, Git, or publication
+  authority.
 - `tools/user_idea_intake_source.py`: deterministic generic user-idea source
   builder introduced by proposal 0158. Use `make user-idea-intake-source
   USER_IDEA_INTAKE_SOURCE=<json>` to normalize product workspace identity,

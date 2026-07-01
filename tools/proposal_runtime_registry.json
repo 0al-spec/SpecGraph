@@ -11113,5 +11113,74 @@
         "pattern": "Proposal 0194"
       }
     ]
+  },
+  {
+    "proposal_id": "0195",
+    "posture": "synchronous_runtime_slice",
+    "runtime_surfaces": [
+      "docs/proposals/0195_specspace_real_idea_answer_continuation_handoff.md",
+      "docs/archive/proposal_sources/0195_specspace_real_idea_answer_continuation_handoff.md",
+      "Makefile",
+      "tools/specspace_real_idea_answer_handoff.py",
+      "tests/test_specspace_real_idea_answer_handoff.py",
+      "docs/product_workspace_graph_versioning_roadmap.md",
+      "Sources/SpecGraph/Documentation.docc/ProductWorkspacePilots.md",
+      "tools/README.md"
+    ],
+    "runtime_markers": [
+      {
+        "path": "Makefile",
+        "pattern": "specspace-real-idea-answer-import-preview"
+      },
+      {
+        "path": "Makefile",
+        "pattern": "real-idea-intake-materialize-specspace-answers"
+      },
+      {
+        "path": "Makefile",
+        "pattern": "real-idea-intake-continue-from-specspace-answers"
+      },
+      {
+        "path": "tools/specspace_real_idea_answer_handoff.py",
+        "pattern": "specspace_real_idea_answer_import_preview"
+      },
+      {
+        "path": "tools/specspace_real_idea_answer_handoff.py",
+        "pattern": "real_idea_answer_continuation_report"
+      },
+      {
+        "path": "tools/real_idea_smoke.py",
+        "pattern": "specspace_real_idea_answer_import_preview.json"
+      }
+    ],
+    "validation_markers": [
+      {
+        "path": "tests/test_specspace_real_idea_answer_handoff.py",
+        "pattern": "test_specspace_real_idea_answer_import_preview_accepts_state"
+      },
+      {
+        "path": "tests/test_specspace_real_idea_answer_handoff.py",
+        "pattern": "test_specspace_real_idea_answer_handoff_materializes_continuation"
+      },
+      {
+        "path": "tests/test_specspace_real_idea_answer_handoff.py",
+        "pattern": "test_specspace_real_idea_answer_import_preview_blocks_cross_candidate_state"
+      },
+      {
+        "path": "tests/test_specspace_real_idea_answer_handoff.py",
+        "pattern": "test_specspace_real_idea_answer_handoff_cli_strict_fails_when_not_ready"
+      }
+    ],
+    "observation_markers": [
+      {
+        "path": "docs/product_workspace_graph_versioning_roadmap.md",
+        "pattern": "SpecSpace answer continuation handoff"
+      },
+      {
+        "path": "Sources/SpecGraph/Documentation.docc/ProductWorkspacePilots.md",
+        "pattern": "specspace_real_idea_answer_import_preview.json"
+      }
+    ],
+    "notes": "SpecSpace-owned real-idea intake answers can now be preview-imported, validated, materialized, and continued through the existing active-candidate flow without granting SpecSpace execution or mutation authority."
   }
 ]

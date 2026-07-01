@@ -310,17 +310,24 @@ The follow-up backlog from that smoke is:
    `real_idea_answer_template.json`,
    `real_idea_answer_authoring_report.json`, and
    `real_idea_answer_set.json`;
-3. classify aggregate repair answers as control/closure evidence in Idea
+3. connect SpecSpace-owned real-idea intake answers back into SpecGraph
+   continuation; done in Proposal `0195` with
+   `make specspace-real-idea-answer-import-preview`,
+   `make real-idea-intake-materialize-specspace-answers`,
+   `make real-idea-intake-continue-from-specspace-answers`,
+   `specspace_real_idea_answer_import_preview.json`, and
+   `real_idea_answer_continuation_report.json`;
+4. classify aggregate repair answers as control/closure evidence in Idea
    Maturity instead of ordinary unmaterialized answers;
-4. add a project-local ontology review lane for `bind`, `alias`,
+5. add a project-local ontology review lane for `bind`, `alias`,
    `keep project-local`, `promote`, and `reject` decisions;
-5. replace the temporary flat `decomposes_to` topology with
+6. replace the temporary flat `decomposes_to` topology with
    ontology-validated event-storming relations such as `command -> event` and
    `constraint -> command`;
-6. add human-friendly display aliases for long generated candidate node ids;
-7. generate a candidate overview document or SpecSpace narrative panel from the
+7. add human-friendly display aliases for long generated candidate node ids;
+8. generate a candidate overview document or SpecSpace narrative panel from the
    repaired candidate graph;
-8. allow custom run-dir repaired candidates to continue into Platform
+9. allow custom run-dir repaired candidates to continue into Platform
    approval/promotion dry-run without copying artifacts into canonical
    `runs/*.json`.
 

@@ -59,6 +59,8 @@ DERIVED_REPAIR_OUTPUT_NAMES = (
     "real_idea_answer_template.json",
     "real_idea_answer_authoring_report.json",
     "real_idea_answer_set.json",
+    "specspace_real_idea_answer_import_preview.json",
+    "real_idea_answer_continuation_report.json",
 )
 DERIVED_REPAIR_OUTPUT_DIRS = (
     "repaired_materialized_candidate_specs",

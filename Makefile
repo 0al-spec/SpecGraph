@@ -97,6 +97,13 @@ REAL_IDEA_ANSWER_AUTHORING_ANSWERS ?= $(REAL_IDEA_ANSWER_TEMPLATE_OUTPUT)
 REAL_IDEA_ANSWER_SET_OUTPUT ?= $(REAL_IDEA_SMOKE_RUN_DIR)/real_idea_answer_set.json
 REAL_IDEA_ANSWER_VALIDATED_OUTPUT ?=
 REAL_IDEA_ANSWER_VALIDATED_OUTPUT_ARG := $(if $(strip $(REAL_IDEA_ANSWER_VALIDATED_OUTPUT)),--validated-answers-output "$(REAL_IDEA_ANSWER_VALIDATED_OUTPUT)",)
+SPECSPACE_REAL_IDEA_ANSWER_STATE ?= $(REAL_IDEA_SMOKE_RUN_DIR)/idea_to_spec_intake_clarification_answers.json
+SPECSPACE_REAL_IDEA_ANSWER_REQUESTS ?= $(REAL_IDEA_SMOKE_RUN_DIR)/idea_intake_clarification_requests.json
+SPECSPACE_REAL_IDEA_ANSWER_TEMPLATE ?= $(REAL_IDEA_ANSWER_TEMPLATE_OUTPUT)
+SPECSPACE_REAL_IDEA_ANSWER_INTAKE_SESSION ?= $(REAL_IDEA_SMOKE_RUN_DIR)/user_idea_intake_session.json
+SPECSPACE_REAL_IDEA_ANSWER_IMPORT_PREVIEW_OUTPUT ?= $(REAL_IDEA_SMOKE_RUN_DIR)/specspace_real_idea_answer_import_preview.json
+SPECSPACE_REAL_IDEA_VALIDATED_ANSWERS_OUTPUT ?= $(REAL_IDEA_SMOKE_RUN_DIR)/idea_intake_clarification_answers.json
+REAL_IDEA_ANSWER_CONTINUATION_REPORT_OUTPUT ?= $(REAL_IDEA_SMOKE_RUN_DIR)/real_idea_answer_continuation_report.json
 IDEA_EVENT_STORMING_INTAKE_SOURCE ?= tests/fixtures/idea_event_storming_intake/idea_ready.json
 IDEA_EVENT_STORMING_INTAKE_OUTPUT_DEFAULT := runs/idea_event_storming_intake.json
 IDEA_EVENT_STORMING_INTAKE_OUTPUT ?= $(IDEA_EVENT_STORMING_INTAKE_OUTPUT_DEFAULT)
@@ -692,6 +699,52 @@ real-idea-smoke-validate-answers:
 real-idea-smoke-materialize-answers:
 	@test -n "$(strip $(REAL_IDEA_ANSWER_AUTHORING_ANSWERS))" || (printf '%s\n' 'REAL_IDEA_ANSWER_AUTHORING_ANSWERS=<json> is required for answer materialization.' >&2; exit 2)
 	@$(PYTHON) tools/real_idea_answer_authoring.py materialize --run-dir "$(REAL_IDEA_SMOKE_RUN_DIR)" --stage "$(REAL_IDEA_ANSWER_AUTHORING_STAGE)" $(REAL_IDEA_ANSWER_AUTHORING_REQUESTS_ARG) --answers "$(REAL_IDEA_ANSWER_AUTHORING_ANSWERS)" --answer-set-output "$(REAL_IDEA_ANSWER_SET_OUTPUT)" $(REAL_IDEA_ANSWER_VALIDATED_OUTPUT_ARG) --report "$(REAL_IDEA_ANSWER_AUTHORING_REPORT_OUTPUT)" --strict
+
+.PHONY: specspace-real-idea-answer-import-preview
+specspace-real-idea-answer-import-preview:
+	@$(PYTHON) tools/specspace_real_idea_answer_handoff.py preview \
+		--run-dir "$(REAL_IDEA_SMOKE_RUN_DIR)" \
+		--stage intake \
+		--specspace-answers "$(SPECSPACE_REAL_IDEA_ANSWER_STATE)" \
+		--template "$(SPECSPACE_REAL_IDEA_ANSWER_TEMPLATE)" \
+		--requests "$(SPECSPACE_REAL_IDEA_ANSWER_REQUESTS)" \
+		--intake-session "$(SPECSPACE_REAL_IDEA_ANSWER_INTAKE_SESSION)" \
+		--output "$(SPECSPACE_REAL_IDEA_ANSWER_IMPORT_PREVIEW_OUTPUT)" \
+		--strict
+
+.PHONY: real-idea-intake-materialize-specspace-answers
+real-idea-intake-materialize-specspace-answers:
+	@$(PYTHON) tools/specspace_real_idea_answer_handoff.py materialize \
+		--run-dir "$(REAL_IDEA_SMOKE_RUN_DIR)" \
+		--stage intake \
+		--import-preview "$(SPECSPACE_REAL_IDEA_ANSWER_IMPORT_PREVIEW_OUTPUT)" \
+		--requests "$(SPECSPACE_REAL_IDEA_ANSWER_REQUESTS)" \
+		--answer-set-output "$(REAL_IDEA_ANSWER_SET_OUTPUT)" \
+		--validated-answers-output "$(SPECSPACE_REAL_IDEA_VALIDATED_ANSWERS_OUTPUT)" \
+		--authoring-report "$(REAL_IDEA_ANSWER_AUTHORING_REPORT_OUTPUT)" \
+		--output "$(REAL_IDEA_ANSWER_CONTINUATION_REPORT_OUTPUT)" \
+		--strict
+
+.PHONY: real-idea-intake-continue-from-specspace-answers
+real-idea-intake-continue-from-specspace-answers:
+	@$(MAKE) specspace-real-idea-answer-import-preview
+	@$(MAKE) real-idea-intake-materialize-specspace-answers
+	@$(MAKE) real-idea-intake-active-candidate \
+		USER_IDEA_INTAKE_SESSION_OUTPUT="$(REAL_IDEA_SMOKE_RUN_DIR)/user_idea_intake_session.json" \
+		CLARIFIED_USER_IDEA_INTAKE_SESSION_OUTPUT="$(REAL_IDEA_SMOKE_RUN_DIR)/clarified_user_idea_intake_session.json" \
+		USER_IDEA_INTAKE_SESSION_SOURCE_OUTPUT="$(REAL_IDEA_SMOKE_RUN_DIR)/user_idea_intake_source.json" \
+		INTAKE_SESSION_CANDIDATE_SOURCE_REPORT_OUTPUT="$(REAL_IDEA_SMOKE_RUN_DIR)/intake_session_candidate_source_report.json" \
+		USER_IDEA_EVENT_STORMING_SEED_OUTPUT="$(REAL_IDEA_SMOKE_RUN_DIR)/idea_event_storming_seed.json" \
+		IDEA_EVENT_STORMING_INTAKE_OUTPUT="$(REAL_IDEA_SMOKE_RUN_DIR)/idea_event_storming_intake.json" \
+		PRODUCT_WORKSPACE_CANDIDATE_SEED_OUTPUT="$(REAL_IDEA_SMOKE_RUN_DIR)/candidate_spec_graph_seed.json" \
+		CANDIDATE_SPEC_GRAPH_OUTPUT="$(REAL_IDEA_SMOKE_RUN_DIR)/candidate_spec_graph.json" \
+		PRE_SIB_COHERENCE_OUTPUT="$(REAL_IDEA_SMOKE_RUN_DIR)/pre_sib_coherence_report.json" \
+		CANDIDATE_REPAIR_LOOP_OUTPUT="$(REAL_IDEA_SMOKE_RUN_DIR)/candidate_repair_loop_report.json" \
+		IDEA_TO_SPEC_CLARIFICATION_OUTPUT="$(REAL_IDEA_SMOKE_RUN_DIR)/idea_to_spec_clarification_requests.json" \
+		CANDIDATE_SPEC_MATERIALIZATION_OUTPUT_DIR="$(REAL_IDEA_SMOKE_RUN_DIR)/materialized_candidate_specs" \
+		CANDIDATE_SPEC_MATERIALIZATION_OUTPUT="$(REAL_IDEA_SMOKE_RUN_DIR)/candidate_spec_materialization_report.json" \
+		IDEA_TO_SPEC_PROMOTION_GATE_OUTPUT="$(REAL_IDEA_SMOKE_RUN_DIR)/idea_to_spec_promotion_gate.json" \
+		ACTIVE_IDEA_TO_SPEC_CANDIDATE_OUTPUT="$(REAL_IDEA_SMOKE_RUN_DIR)/active_idea_to_spec_candidate.json"
 
 .PHONY: real-idea-smoke-idea-maturity
 real-idea-smoke-idea-maturity:
