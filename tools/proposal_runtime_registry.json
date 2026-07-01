@@ -10920,6 +10920,10 @@
       },
       {
         "path": "tools/real_idea_smoke.py",
+        "pattern": "RESERVED_RUN_DIRS"
+      },
+      {
+        "path": "tools/real_idea_smoke.py",
         "pattern": "absent-post-approval"
       },
       {
@@ -10937,8 +10941,16 @@
         "pattern": "test_real_idea_smoke_refreshes_existing_managed_outputs"
       },
       {
+        "path": "tests/test_idea_intake_clarification_rerun.py",
+        "pattern": "test_real_idea_smoke_rejects_shared_runs_directory"
+      },
+      {
         "path": "tests/test_idea_maturity_metrics_report.py",
         "pattern": "test_real_idea_smoke_idea_maturity_target_isolates_run_dir_optional_artifacts"
+      },
+      {
+        "path": "tests/test_idea_maturity_metrics_report.py",
+        "pattern": "test_real_idea_smoke_idea_maturity_clears_stale_absent_dir"
       }
     ],
     "observation_markers": [

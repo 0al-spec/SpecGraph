@@ -324,9 +324,14 @@ Supervisor modes:
   are preserved, but generated answer/rerun/repair/maturity outputs and the
   default `absent-post-approval` directory are cleared. Use
   `make real-idea-smoke-idea-maturity` to build Idea Maturity from the same
-  run directory; optional post-approval Platform/Git artifacts are routed to
-  `REAL_IDEA_SMOKE_MATURITY_ABSENT_DIR` by default so unrelated canonical
-  `runs/*.json` reports cannot leak into custom smoke metrics.
+  run directory; `REAL_IDEA_SMOKE_RUN_DIR=runs` is rejected because it is the
+  shared artifact directory, not a smoke run directory. Optional post-approval
+  Platform/Git artifacts are routed to `REAL_IDEA_SMOKE_MATURITY_ABSENT_DIR` by
+  default so unrelated canonical `runs/*.json` reports cannot leak into custom
+  smoke metrics. The absent-dir must be a child of the smoke run directory and
+  is cleared again immediately before maturity generation, while SpecSpace
+  repair-stage artifacts such as draft import previews and rerun requests are
+  read from the smoke run directory.
 - `tools/user_idea_intake_source.py`: deterministic generic user-idea source
   builder introduced by proposal 0158. Use `make user-idea-intake-source
   USER_IDEA_INTAKE_SOURCE=<json>` to normalize product workspace identity,

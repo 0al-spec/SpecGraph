@@ -656,6 +656,27 @@ def test_real_idea_smoke_rejects_external_absolute_run_dir(tmp_path: Path) -> No
     assert "REAL_IDEA_SMOKE_RUN_DIR must stay inside the SpecGraph repository" in result.stderr
 
 
+def test_real_idea_smoke_rejects_shared_runs_directory() -> None:
+    python = supported_python()
+    ready_fixture = ROOT / "tests/fixtures/user_idea_intake_session/raw_idea_ready.json"
+    result = subprocess.run(
+        [
+            "make",
+            "real-idea-smoke",
+            f"PYTHON={python}",
+            "REAL_IDEA_SMOKE_RUN_DIR=runs",
+            f"USER_IDEA_INTAKE_INTERVIEW_INPUT={ready_fixture}",
+        ],
+        cwd=ROOT,
+        check=False,
+        capture_output=True,
+        text=True,
+    )
+
+    assert result.returncode != 0
+    assert "REAL_IDEA_SMOKE_RUN_DIR=runs is reserved for shared SpecGraph runs" in result.stderr
+
+
 def test_real_idea_smoke_clears_ambient_active_candidate_config(tmp_path: Path) -> None:
     python = supported_python()
     run_rel = Path(".pytest_cache") / "real_idea_smoke_config" / tmp_path.name

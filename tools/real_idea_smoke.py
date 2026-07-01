@@ -58,6 +58,7 @@ DERIVED_REPAIR_OUTPUT_DIRS = (
     "repaired_materialized_candidate_specs",
     "absent-post-approval",
 )
+RESERVED_RUN_DIRS = {"runs"}
 
 
 def _repo_relative_path(value: str, *, field: str) -> tuple[str, Path]:
@@ -77,6 +78,14 @@ def _child_env() -> dict[str, str]:
     env.pop("PRODUCT_WORKSPACE_ACTIVE_CANDIDATE_CONFIG", None)
     env.pop("ACTIVE_IDEA_TO_SPEC_CANDIDATE_CONFIG", None)
     return env
+
+
+def _reject_reserved_run_dir(run_dir_ref: str) -> None:
+    if run_dir_ref in RESERVED_RUN_DIRS:
+        raise SystemExit(
+            f"REAL_IDEA_SMOKE_RUN_DIR={run_dir_ref} is reserved for shared SpecGraph runs. "
+            "Use a child directory such as runs/real_idea_smoke or runs/<id>."
+        )
 
 
 def _clear_managed_outputs(run_dir: Path, *, summary_output: Path) -> None:
@@ -128,6 +137,7 @@ def build_parser() -> argparse.ArgumentParser:
 def main(argv: list[str] | None = None) -> int:
     args = build_parser().parse_args(argv)
     run_dir_ref, run_dir = _repo_relative_path(args.run_dir, field="REAL_IDEA_SMOKE_RUN_DIR")
+    _reject_reserved_run_dir(run_dir_ref)
     _, summary_output = _repo_relative_path(
         args.summary_output,
         field="REAL_IDEA_SMOKE_SUMMARY_OUTPUT",

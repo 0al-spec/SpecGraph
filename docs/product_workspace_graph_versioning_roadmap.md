@@ -1420,7 +1420,13 @@ same run directory for a different idea. `REAL_IDEA_SMOKE_REFRESH=0` preserves
 managed outputs intentionally. The new `make real-idea-smoke-idea-maturity`
 target builds and validates Idea Maturity from `REAL_IDEA_SMOKE_RUN_DIR` while
 routing optional post-approval Platform/Git inputs to
-`REAL_IDEA_SMOKE_MATURITY_ABSENT_DIR` by default.
+`REAL_IDEA_SMOKE_MATURITY_ABSENT_DIR` by default. `REAL_IDEA_SMOKE_RUN_DIR=runs`
+is rejected because `runs/` is the shared SpecGraph artifact directory; use a
+child directory such as `runs/<id>` instead. The maturity target clears and
+validates the absent-dir immediately before metrics generation so stale
+post-approval files cannot survive refresh, but SpecSpace repair-stage artifacts
+such as draft import previews and rerun requests are read from the smoke run
+directory when present.
 
 ## Team Decision Log Happy-Path Repair Pack
 

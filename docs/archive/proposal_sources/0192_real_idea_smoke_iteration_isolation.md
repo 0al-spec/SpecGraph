@@ -38,6 +38,13 @@ Harden the real-idea smoke orchestration layer:
   fallback to canonical `runs/*.json` from unrelated flows.
 - The default absent-dir under the run directory is also cleared during smoke
   refresh so stale synthetic post-approval files cannot survive a new run.
+- `REAL_IDEA_SMOKE_RUN_DIR=runs` is rejected because `runs/` is the shared
+  SpecGraph artifact directory, not an iteration smoke directory.
+- `make real-idea-smoke-idea-maturity` clears and validates
+  `REAL_IDEA_SMOKE_MATURITY_ABSENT_DIR` immediately before building metrics.
+  The absent-dir must be a child of `REAL_IDEA_SMOKE_RUN_DIR`.
+- SpecSpace repair-stage artifacts such as draft import previews and rerun
+  requests are read from `REAL_IDEA_SMOKE_RUN_DIR`, not from the absent-dir.
 
 ## Authority Boundary
 
@@ -63,11 +70,15 @@ It does not:
 - Managed output cleanup does not remove operator-authored repair/clarification
   answer inputs, but operators must update or delete those inputs before using
   them with a different idea.
+- `REAL_IDEA_SMOKE_RUN_DIR=runs` is rejected; operators must use a child run
+  directory such as `runs/<id>`.
 - `make real-idea-smoke-idea-maturity` threads all core and repaired SpecGraph
   inputs through `REAL_IDEA_SMOKE_RUN_DIR`.
 - The smoke maturity target sends optional post-approval artifacts to
   `REAL_IDEA_SMOKE_MATURITY_ABSENT_DIR` by default, and the default absent-dir
-  is cleared during smoke refresh.
+  is cleared during smoke refresh and before maturity generation.
+- SpecSpace repair-stage artifacts remain visible to smoke maturity when present
+  in the smoke run directory.
 - Idea Maturity for custom smoke runs no longer accidentally consumes default
   `runs/candidate_approval_decision.json`, promotion request, promotion
   execution, review-status, or read-model publication artifacts.

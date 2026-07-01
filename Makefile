@@ -660,6 +660,9 @@ real-idea-smoke:
 
 .PHONY: real-idea-smoke-idea-maturity
 real-idea-smoke-idea-maturity:
+	@$(PYTHON) -c 'import shutil, sys; from pathlib import Path; root=Path.cwd(); run=(root / sys.argv[1]).resolve(); absent=(root / sys.argv[2]).resolve(); \
+(absent != run and run in absent.parents) or (_ for _ in ()).throw(SystemExit("REAL_IDEA_SMOKE_MATURITY_ABSENT_DIR must be a child of REAL_IDEA_SMOKE_RUN_DIR")); \
+shutil.rmtree(absent, ignore_errors=True)' "$(REAL_IDEA_SMOKE_RUN_DIR)" "$(REAL_IDEA_SMOKE_MATURITY_ABSENT_DIR)"
 	@$(MAKE) product-workspace-idea-maturity \
 		IDEA_MATURITY_METRICS_INTAKE="$(REAL_IDEA_SMOKE_RUN_DIR)/idea_event_storming_intake.json" \
 		IDEA_MATURITY_METRICS_CANDIDATE_GRAPH="$(REAL_IDEA_SMOKE_RUN_DIR)/candidate_spec_graph.json" \
@@ -678,8 +681,8 @@ real-idea-smoke-idea-maturity:
 		IDEA_MATURITY_METRICS_REPAIRED_ACTIVE_CANDIDATE="$(REAL_IDEA_SMOKE_RUN_DIR)/repaired_active_idea_to_spec_candidate.json" \
 		IDEA_MATURITY_METRICS_REPAIRED_PROMOTION_GATE="$(REAL_IDEA_SMOKE_RUN_DIR)/repaired_idea_to_spec_promotion_gate.json" \
 		IDEA_MATURITY_METRICS_REPAIRED_REPAIR_SESSION="$(REAL_IDEA_SMOKE_RUN_DIR)/repaired_idea_to_spec_repair_session.json" \
-		IDEA_MATURITY_METRICS_SPECSPACE_DRAFT_IMPORT_PREVIEW="$(REAL_IDEA_SMOKE_MATURITY_ABSENT_DIR)/specspace_repair_draft_import_preview.json" \
-		IDEA_MATURITY_METRICS_SPECSPACE_RERUN_REQUEST="$(REAL_IDEA_SMOKE_MATURITY_ABSENT_DIR)/idea_to_spec_repair_rerun_requests.json" \
+		IDEA_MATURITY_METRICS_SPECSPACE_DRAFT_IMPORT_PREVIEW="$(REAL_IDEA_SMOKE_RUN_DIR)/specspace_repair_draft_import_preview.json" \
+		IDEA_MATURITY_METRICS_SPECSPACE_RERUN_REQUEST="$(REAL_IDEA_SMOKE_RUN_DIR)/idea_to_spec_repair_rerun_requests.json" \
 		IDEA_MATURITY_METRICS_APPROVAL_INTENT="$(REAL_IDEA_SMOKE_MATURITY_ABSENT_DIR)/idea_to_spec_candidate_approval_intents.json" \
 		IDEA_MATURITY_METRICS_REPAIR_RERUN_EXECUTION="$(REAL_IDEA_SMOKE_MATURITY_ABSENT_DIR)/platform_product_repair_rerun_execution_report.json" \
 		IDEA_MATURITY_METRICS_REPAIR_RERUN_PUBLICATION="$(REAL_IDEA_SMOKE_MATURITY_ABSENT_DIR)/platform_product_repair_rerun_publication_report.json" \
