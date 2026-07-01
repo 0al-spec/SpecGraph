@@ -50,6 +50,33 @@ def test_user_idea_intake_source_builds_generic_event_storming_seed() -> None:
     assert source_intake["authority_boundary"]["may_execute_prompt_agent"] is False
 
 
+def test_user_idea_intake_source_preserves_broader_domain_and_adds_candidate_domain() -> None:
+    module = load_module(TOOL_PATH, "user_idea_intake_source_candidate_domain")
+    source = load_json(READY_FIXTURE)
+    source["workspace"]["candidate_id"] = "apartment-renovation-assistant"
+    source["workspace"]["display_name"] = "Apartment Renovation Assistant"
+    source["active_frame_hints"] = {
+        "project": "ApartmentRenovationAssistant",
+        "domain_refs": ["domain.home_renovation_project_management"],
+    }
+
+    seed = module.build_user_idea_event_storming_seed(source, source_path=READY_FIXTURE)
+
+    assert seed["active_frame"]["domain_refs"] == [
+        "domain.home_renovation_project_management",
+        "domain.apartment_renovation_assistant",
+    ]
+    assert seed["active_frame"]["domain_ref_derivations"] == [
+        {
+            "ref": "domain.apartment_renovation_assistant",
+            "source": "system_derived_candidate_id",
+            "candidate_id": "apartment-renovation-assistant",
+            "owner_confirmed": False,
+            "confirmation_required": True,
+        }
+    ]
+
+
 def test_user_idea_intake_source_feeds_existing_intake_contract() -> None:
     source_module = load_module(TOOL_PATH, "user_idea_intake_source_to_intake")
     intake_module = load_module(INTAKE_TOOL_PATH, "idea_event_storming_from_user_idea")

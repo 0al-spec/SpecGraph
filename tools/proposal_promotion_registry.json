@@ -2429,5 +2429,18 @@
     "required_provenance_links": [
       "source_draft_ref"
     ]
+  },
+  {
+    "proposal_id": "0189",
+    "source_artifact_class": "working_draft",
+    "source_refs": [
+      "docs/archive/proposal_sources/0189_candidate_local_domain_derivation.md"
+    ],
+    "motivating_concern": "Real idea intake can provide a broader product domain while active-candidate validation requires the candidate-local domain ref derived from candidate_id, causing late active_candidate_domain_mismatch findings.",
+    "normalized_title": "Candidate-Local Domain Derivation",
+    "bounded_scope": "Append the candidate-local domain ref in real idea intake session/source active frames while preserving broader domain refs, with tests, proposal docs, roadmap, DocC, README, and registry tracking, without inferring domain semantics with an LLM or changing authority boundaries.",
+    "required_provenance_links": [
+      "source_draft_ref"
+    ]
   }
 ]

@@ -67,6 +67,30 @@ def _text_list(value: Any) -> list[str]:
     return [item.strip() for item in _list(value) if isinstance(item, str) and item.strip()]
 
 
+def _append_unique(items: list[str], value: str) -> list[str]:
+    if value and value not in items:
+        return [*items, value]
+    return items
+
+
+def _domain_ref_derivations(
+    *,
+    original_domain_refs: list[str],
+    candidate_id: str,
+) -> list[dict[str, Any]]:
+    candidate_domain_ref = _slug_to_domain_ref(candidate_id)
+    owner_confirmed = candidate_domain_ref in original_domain_refs
+    return [
+        {
+            "ref": candidate_domain_ref,
+            "source": ("operator_provided" if owner_confirmed else "system_derived_candidate_id"),
+            "candidate_id": candidate_id,
+            "owner_confirmed": owner_confirmed,
+            "confirmation_required": not owner_confirmed,
+        }
+    ]
+
+
 def _slug(value: str, fallback: str = "idea-candidate") -> str:
     slug = re.sub(r"[^a-z0-9]+", "-", value.lower()).strip("-")
     return slug or fallback
@@ -229,6 +253,9 @@ def _frame(
     context_refs = _text_list(frame.get("context_refs"))
     if not context_refs:
         context_refs = ["context.idea_to_spec", _slug_to_context_ref(candidate_id)]
+    original_domain_refs = _text_list(frame.get("domain_refs"))
+    domain_refs = original_domain_refs or [_slug_to_domain_ref(candidate_id)]
+    domain_refs = _append_unique(domain_refs, _slug_to_domain_ref(candidate_id))
     return {
         "project": _text(frame.get("project"), _slug_to_project_id(candidate_id)),
         "subsystem": _text(frame.get("subsystem"), "product_specification"),
@@ -236,7 +263,11 @@ def _frame(
         "ontology_refs": _text_list(frame.get("ontology_refs")) or ["ontology://specgraph-core"],
         "ontology_layer_refs": _text_list(frame.get("ontology_layer_refs"))
         or ["objective", "mechanics"],
-        "domain_refs": _text_list(frame.get("domain_refs")) or [_slug_to_domain_ref(candidate_id)],
+        "domain_refs": domain_refs,
+        "domain_ref_derivations": _domain_ref_derivations(
+            original_domain_refs=original_domain_refs,
+            candidate_id=candidate_id,
+        ),
         "context_refs": context_refs,
         "model_applicability_refs": _text_list(frame.get("model_applicability_refs"))
         or ["model-applicability://specgraph-core/product-spec-mvp"],

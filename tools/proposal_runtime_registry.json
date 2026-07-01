@@ -10679,5 +10679,70 @@
         "pattern": "Proposal 0188"
       }
     ]
+  },
+  {
+    "proposal_id": "0189",
+    "posture": "synchronous_runtime_slice",
+    "runtime_surfaces": [
+      "docs/proposals/0189_candidate_local_domain_derivation.md",
+      "docs/archive/proposal_sources/0189_candidate_local_domain_derivation.md",
+      "tools/user_idea_intake_session.py",
+      "tools/user_idea_intake_source.py",
+      "tests/test_user_idea_intake_session.py",
+      "tests/test_user_idea_intake_source.py",
+      "docs/product_workspace_graph_versioning_roadmap.md",
+      "Sources/SpecGraph/Documentation.docc/ProductWorkspacePilots.md",
+      "tools/README.md"
+    ],
+    "runtime_markers": [
+      {
+        "path": "tools/user_idea_intake_session.py",
+        "pattern": "_append_unique"
+      },
+      {
+        "path": "tools/user_idea_intake_source.py",
+        "pattern": "_append_unique"
+      },
+      {
+        "path": "tools/user_idea_intake_source.py",
+        "pattern": "domain_refs = _append_unique(domain_refs, _slug_to_domain_ref(candidate_id))"
+      },
+      {
+        "path": "tools/user_idea_intake_session.py",
+        "pattern": "domain_ref_derivations"
+      },
+      {
+        "path": "tools/user_idea_intake_source.py",
+        "pattern": "system_derived_candidate_id"
+      }
+    ],
+    "validation_markers": [
+      {
+        "path": "tests/test_user_idea_intake_session.py",
+        "pattern": "test_user_idea_intake_session_adds_candidate_local_domain_ref"
+      },
+      {
+        "path": "tests/test_user_idea_intake_source.py",
+        "pattern": "test_user_idea_intake_source_preserves_broader_domain_and_adds_candidate_domain"
+      }
+    ],
+    "observation_markers": [
+      {
+        "path": "docs/proposals/0189_candidate_local_domain_derivation.md",
+        "pattern": "Status: implemented."
+      },
+      {
+        "path": "docs/product_workspace_graph_versioning_roadmap.md",
+        "pattern": "Status: implemented in proposal `0189`"
+      },
+      {
+        "path": "Sources/SpecGraph/Documentation.docc/ProductWorkspacePilots.md",
+        "pattern": "Proposal `0189`"
+      },
+      {
+        "path": "tools/README.md",
+        "pattern": "Proposal 0189"
+      }
+    ]
   }
 ]
