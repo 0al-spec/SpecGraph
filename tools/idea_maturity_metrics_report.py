@@ -614,11 +614,18 @@ def _overlay_answer_records(artifacts: dict[str, dict[str, Any]]) -> list[dict[s
 def _is_nonblocking_consumed_answer(record: dict[str, str]) -> bool:
     if record["group"] == "intake_overlay":
         return True
-    if record["answer_kind"] in {"defer", "defer_candidate"}:
+    if _is_aggregate_gap_target(record):
         return True
     if record["request_kind"] not in {"candidate_gap", "ontology_gap"}:
         return True
     return False
+
+
+def _is_aggregate_gap_target(record: dict[str, str]) -> bool:
+    return (
+        record["request_kind"] in {"candidate_gap", "ontology_gap"}
+        and record["target_ref"] == "candidate_graph.gaps"
+    )
 
 
 def _is_dismissed_consumed_answer(record: dict[str, str]) -> bool:
@@ -641,12 +648,14 @@ def _answer_accounting(
         for record in overlay_records
         if record["request_id"] in accepted_ids and _is_nonblocking_consumed_answer(record)
     }
-    dismissed_ids = {
+    dismissed_consumed_ids = {
         record["request_id"]
         for record in overlay_records
         if record["request_id"] in accepted_ids and _is_dismissed_consumed_answer(record)
     }
     materialized_ids = materialized_answer_request_ids & accepted_ids
+    dismissed_ids = dismissed_consumed_ids & materialized_ids
+    materialized_ids = materialized_ids - dismissed_ids
     aggregate_ids = nonblocking_consumed_ids - materialized_ids - dismissed_ids
     closure_evidence_ids = materialized_ids | aggregate_ids
     ordinary_unmaterialized_ids = accepted_ids - closure_evidence_ids - dismissed_ids
@@ -741,7 +750,27 @@ def _metrics(artifacts: dict[str, dict[str, Any]]) -> dict[str, Any]:
         materialized_answer_request_ids=materialized_answer_request_ids,
         artifacts=artifacts,
     )
-    accepted_answer_count = max(accepted_answer_count, answer_accounting["accepted_answer_count"])
+    if accepted_answer_count > 0 and answer_accounting["accepted_answer_count"] == 0:
+        summary_materialized_ids = sorted(materialized_answer_request_ids)[:accepted_answer_count]
+        summary_materialized_count = len(summary_materialized_ids)
+        answer_accounting = {
+            **answer_accounting,
+            "accepted_answer_count": accepted_answer_count,
+            "materialized_answer_request_ids": summary_materialized_ids,
+            "closure_evidence_answer_request_ids": summary_materialized_ids,
+            "ordinary_unmaterialized_answer_request_ids": [],
+            "materialized_answer_count": summary_materialized_count,
+            "closure_evidence_answer_count": summary_materialized_count,
+            "ordinary_unmaterialized_answer_count": max(
+                accepted_answer_count - summary_materialized_count,
+                0,
+            ),
+        }
+    else:
+        accepted_answer_count = max(
+            accepted_answer_count,
+            answer_accounting["accepted_answer_count"],
+        )
     bounded_materialized_answer_count = min(
         answer_accounting["materialized_answer_count"],
         accepted_answer_count,
