@@ -10783,12 +10783,20 @@
       {
         "path": "tools/real_idea_smoke.py",
         "pattern": "real_idea_smoke_summary.build_summary"
+      },
+      {
+        "path": "tools/real_idea_smoke_summary.py",
+        "pattern": "SAFE_SUMMARY_FIELDS"
       }
     ],
     "validation_markers": [
       {
         "path": "tests/test_idea_intake_clarification_rerun.py",
         "pattern": "test_real_idea_smoke_target_writes_isolated_run_dir_summary"
+      },
+      {
+        "path": "tests/test_idea_intake_clarification_rerun.py",
+        "pattern": "test_real_idea_smoke_summary_sanitizes_upstream_summaries"
       }
     ],
     "observation_markers": [

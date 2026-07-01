@@ -12,6 +12,29 @@ ROOT = Path(__file__).resolve().parents[1]
 PROPOSAL_ID = "0190"
 SCHEMA_VERSION = 1
 CONTRACT_REF = "specgraph.idea-to-spec.real-idea-smoke-summary.v0.1"
+SAFE_SUMMARY_FIELDS = {
+    "accepted_for_rerun_count",
+    "active_candidate_ready",
+    "action_count",
+    "applied_action_count",
+    "artifact_count",
+    "candidate_id",
+    "context_required_count",
+    "edge_count",
+    "finding_count",
+    "gap_count",
+    "invalid_draft_count",
+    "materialized_count",
+    "missing_artifact_count",
+    "node_count",
+    "ontology_gap_count",
+    "promotion_path_count",
+    "ready",
+    "source_artifact_count",
+    "status",
+    "valid_draft_count",
+    "workspace_route",
+}
 
 
 def _now_iso() -> str:
@@ -49,6 +72,17 @@ def write_json(payload: dict[str, Any], path: Path) -> None:
     path.write_text(json.dumps(payload, indent=2, sort_keys=True) + "\n", encoding="utf-8")
 
 
+def _safe_summary(summary: dict[str, Any]) -> dict[str, Any]:
+    safe: dict[str, Any] = {}
+    for key in sorted(SAFE_SUMMARY_FIELDS):
+        if key not in summary:
+            continue
+        value = summary.get(key)
+        if value is None or isinstance(value, (str, int, float, bool)):
+            safe[key] = value
+    return safe
+
+
 def _artifact_entry(run_dir: Path, name: str) -> dict[str, Any]:
     path = run_dir / name
     payload = load_optional(path)
@@ -63,7 +97,7 @@ def _artifact_entry(run_dir: Path, name: str) -> dict[str, Any]:
             _text(payload.get("status"), _text(readiness.get("review_state"))),
         ),
         "ready": readiness.get("ready"),
-        "summary": summary,
+        "summary": _safe_summary(summary),
     }
 
 

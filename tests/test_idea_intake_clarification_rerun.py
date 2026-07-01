@@ -610,6 +610,53 @@ def test_real_idea_smoke_writes_summary_for_blocked_intake(tmp_path: Path) -> No
         shutil.rmtree(run_dir, ignore_errors=True)
 
 
+def test_real_idea_smoke_summary_sanitizes_upstream_summaries(tmp_path: Path) -> None:
+    python = supported_python()
+    run_dir = tmp_path / "smoke"
+    raw_text = "секретный сырой текст идеи"
+    write_json(
+        run_dir / "active_idea_to_spec_candidate.json",
+        {
+            "artifact_kind": "active_idea_to_spec_candidate",
+            "summary": {
+                "status": "active_candidate_ready",
+                "candidate_id": "safe-candidate",
+                "workspace_route": "/safe-candidate",
+                "raw_idea_text": raw_text,
+                "debug_payload": {"raw_idea_text": raw_text},
+            },
+            "readiness": {"ready": True},
+        },
+    )
+    output = tmp_path / "real_idea_smoke_summary.json"
+
+    result = subprocess.run(
+        [
+            python,
+            "tools/real_idea_smoke_summary.py",
+            "--run-dir",
+            str(run_dir),
+            "--output",
+            str(output),
+        ],
+        cwd=ROOT,
+        check=False,
+        capture_output=True,
+        text=True,
+    )
+
+    assert result.returncode == 0, result.stderr
+    summary = load_json(output)
+    serialized = json.dumps(summary, ensure_ascii=False)
+    assert summary["summary"]["candidate_id"] == "safe-candidate"
+    assert summary["artifacts"]["active_candidate"]["summary"] == {
+        "candidate_id": "safe-candidate",
+        "status": "active_candidate_ready",
+        "workspace_route": "/safe-candidate",
+    }
+    assert raw_text not in serialized
+
+
 def test_product_workspace_active_candidate_rejects_direct_intake_source(
     tmp_path: Path,
 ) -> None:

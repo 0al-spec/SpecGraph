@@ -1373,7 +1373,8 @@ selected directory and writes a compact public-safe
 without changing the underlying review-only gates or publishing raw idea text.
 The wrapper normalizes repository-local absolute run dirs, rejects external
 absolute paths, clears ambient active-candidate config, and writes the summary
-even when intake gates block.
+even when intake gates block. Smoke summaries whitelist upstream summary fields
+so raw idea text cannot leak through artifact telemetry.
 
 ## Team Decision Log Happy-Path Repair Pack
 

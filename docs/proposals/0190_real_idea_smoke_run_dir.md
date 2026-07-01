@@ -35,7 +35,8 @@ runs/<id>/real_idea_smoke_summary.json
 ```
 
 The summary is public-safe telemetry over the run artifacts. It does not include
-raw idea text.
+raw idea text, and artifact `summary` blocks are copied through a safe-field
+whitelist instead of being embedded wholesale.
 
 The run directory and summary output must resolve inside the SpecGraph
 repository. Repository-local absolute paths are normalized to repository-relative
@@ -72,6 +73,8 @@ It does not:
   refs.
 - Blocked intake runs still emit the smoke summary and preserve the failing exit
   status.
+- Upstream artifact summary blocks are sanitized through a whitelist so raw idea
+  text/debug payloads cannot contradict the privacy boundary.
 - The summary reports the active candidate status, candidate id, route, artifact
   presence, and authority/privacy boundaries.
 - Under-specified ideas remain blocked by the existing intake/bridge gates.
