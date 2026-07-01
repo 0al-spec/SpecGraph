@@ -2455,5 +2455,18 @@
     "required_provenance_links": [
       "source_draft_ref"
     ]
+  },
+  {
+    "proposal_id": "0191",
+    "source_artifact_class": "working_draft",
+    "source_refs": [
+      "docs/archive/proposal_sources/0191_event_storming_candidate_topology_edges.md"
+    ],
+    "motivating_concern": "Real idea candidate graphs could be reviewable but topology-empty, causing pre-SIB to mark every generated node as orphaned.",
+    "normalized_title": "Event-Storming Candidate Topology Edges",
+    "bounded_scope": "Generate conservative product-boundary decomposition edges in ontology-bound candidate graph seeds, with tests, proposal docs, roadmap, DocC, README, and registry tracking, without inferring event ordering or expanding authority.",
+    "required_provenance_links": [
+      "source_draft_ref"
+    ]
   }
 ]

@@ -252,6 +252,15 @@ external absolute paths, clears ambient active-candidate config, and writes the
 summary even when intake gates block. Upstream artifact summaries are whitelisted
 before inclusion so raw idea text cannot leak through smoke telemetry.
 
+Proposal `0191` adds conservative topology edges to ontology-bound candidate
+graph seeds. Each generated candidate node is linked from
+`candidate-spec.product-boundary` with `decomposes_to`, so pre-SIB topology
+metrics no longer treat a real idea candidate as entirely orphaned. The edge
+generation does not infer domain causality or event ordering; it is a temporary
+flat anti-orphan topology layer, not an ontology-validated event-storming
+relation model. A clean pre-SIB pass-through also yields a ready no-op repair
+loop instead of a false `repair_loop_not_ready` blocker.
+
 Proposal `0163` adds `idea_to_spec_clarification_requests` as the unified
 read-only question/action surface:
 
