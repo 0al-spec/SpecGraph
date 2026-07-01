@@ -10971,5 +10971,73 @@
         "pattern": "Proposal 0192"
       }
     ]
+  },
+  {
+    "proposal_id": "0193",
+    "posture": "synchronous_runtime_slice",
+    "runtime_surfaces": [
+      "docs/proposals/0193_real_idea_smoke_session_continuation.md",
+      "docs/archive/proposal_sources/0193_real_idea_smoke_session_continuation.md",
+      "Makefile",
+      "tools/real_idea_smoke.py",
+      "tests/test_idea_intake_clarification_rerun.py",
+      "docs/product_workspace_graph_versioning_roadmap.md",
+      "Sources/SpecGraph/Documentation.docc/ProductWorkspacePilots.md",
+      "tools/README.md"
+    ],
+    "runtime_markers": [
+      {
+        "path": "Makefile",
+        "pattern": "real-idea-smoke-continue"
+      },
+      {
+        "path": "Makefile",
+        "pattern": "REAL_IDEA_SMOKE_CLARIFICATION_ANSWERS_INPUT"
+      },
+      {
+        "path": "tools/real_idea_smoke.py",
+        "pattern": "--continue-existing"
+      },
+      {
+        "path": "tools/real_idea_smoke.py",
+        "pattern": "real_idea_smoke_session_state_report.json"
+      },
+      {
+        "path": "tools/real_idea_smoke.py",
+        "pattern": "_prepare_continuation"
+      },
+      {
+        "path": "tools/real_idea_smoke.py",
+        "pattern": "_clear_downstream_outputs"
+      }
+    ],
+    "validation_markers": [
+      {
+        "path": "tests/test_idea_intake_clarification_rerun.py",
+        "pattern": "test_real_idea_smoke_continue_blocks_without_answers"
+      },
+      {
+        "path": "tests/test_idea_intake_clarification_rerun.py",
+        "pattern": "test_real_idea_smoke_continue_applies_answers_without_refresh_flag"
+      }
+    ],
+    "observation_markers": [
+      {
+        "path": "docs/proposals/0193_real_idea_smoke_session_continuation.md",
+        "pattern": "Status: implemented."
+      },
+      {
+        "path": "docs/product_workspace_graph_versioning_roadmap.md",
+        "pattern": "Done in proposal `0193`"
+      },
+      {
+        "path": "Sources/SpecGraph/Documentation.docc/ProductWorkspacePilots.md",
+        "pattern": "make real-idea-smoke-continue"
+      },
+      {
+        "path": "tools/README.md",
+        "pattern": "Proposal 0193"
+      }
+    ]
   }
 ]

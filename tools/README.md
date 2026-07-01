@@ -332,6 +332,15 @@ Supervisor modes:
   is cleared again immediately before maturity generation, while SpecSpace
   repair-stage artifacts such as draft import previews and rerun requests are
   read from the smoke run directory.
+- Proposal 0193 adds session-aware real-idea smoke continuation. After
+  `make real-idea-smoke` stops at `needs_clarification`, run
+  `make real-idea-smoke-continue
+  REAL_IDEA_SMOKE_CLARIFICATION_ANSWERS_INPUT=<json>` to preserve the existing
+  intake session, apply accepted intake clarification answers, clear downstream
+  generated outputs, and continue to active-candidate generation without
+  manually setting `REAL_IDEA_SMOKE_REFRESH=0`. When answers are missing, the
+  wrapper writes `real_idea_smoke_session_state_report.json` with blockers and
+  the next safe action.
 - `tools/user_idea_intake_source.py`: deterministic generic user-idea source
   builder introduced by proposal 0158. Use `make user-idea-intake-source
   USER_IDEA_INTAKE_SOURCE=<json>` to normalize product workspace identity,

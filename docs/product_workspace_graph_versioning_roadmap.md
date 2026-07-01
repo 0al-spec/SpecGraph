@@ -1455,11 +1455,14 @@ The run produced:
 
 The same run exposed the next product-flow friction points:
 
-1. **Session-aware smoke continuation.** After a first `real-idea-smoke` stops
-   at `needs_clarification`, the operator currently has to run clarification
-   targets and then continue with `REAL_IDEA_SMOKE_REFRESH=0`. Add an explicit
-   continuation target or session-aware wrapper so the operator does not have to
-   reason about refresh semantics manually.
+1. **Session-aware smoke continuation.** Done in proposal `0193`. After a
+   first `real-idea-smoke` stops at `needs_clarification`, operators can now
+   run `make real-idea-smoke-continue
+   REAL_IDEA_SMOKE_CLARIFICATION_ANSWERS_INPUT=<json>`. The target preserves
+   intake/session state, clears downstream generated outputs, applies accepted
+   clarification answers when supplied, and writes
+   `real_idea_smoke_session_state_report.json` with blockers and next safe
+   action when answers are missing.
 2. **First-class answer authoring.** CLI smoke still requires hand-authored
    JSON answer sets for intake clarification and repair. Add a structured
    answer-authoring surface, or make SpecSpace the default operator path, so
