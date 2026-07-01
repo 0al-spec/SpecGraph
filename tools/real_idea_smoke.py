@@ -56,6 +56,9 @@ DERIVED_REPAIR_OUTPUT_NAMES = (
     "idea_maturity_metrics_report.json",
     "idea_maturity_metrics_validation_report.json",
     "real_idea_smoke_session_state_report.json",
+    "real_idea_answer_template.json",
+    "real_idea_answer_authoring_report.json",
+    "real_idea_answer_set.json",
 )
 DERIVED_REPAIR_OUTPUT_DIRS = (
     "repaired_materialized_candidate_specs",

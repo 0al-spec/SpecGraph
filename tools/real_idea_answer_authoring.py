@@ -41,10 +41,14 @@ PRIVATE_TEXT_MARKERS = (
     "/Users/",
     "/home/",
     "/private/",
+    "/tmp/",
     "\\",
     "-----BEGIN",
+    "api-key",
+    "apikey",
     "api_key",
     "authorization",
+    "bearer ",
     "password",
     "secret",
     "token=",
@@ -267,7 +271,13 @@ def _value_template(action: str, request: dict[str, Any]) -> Any:
             "evidence_refs": [],
         }
     if action == "answer_question":
-        if "ontology_ref[]" in shape or "domain_ref[]" in shape or "context_ref[]" in shape:
+        if (
+            "ontology_ref[]" in shape
+            or "domain_ref[]" in shape
+            or "context_ref[]" in shape
+            or "ontology_layer_ref[]" in shape
+            or "model_applicability_ref[]" in shape
+        ):
             return {"refs": [""]}
         if "event_storming_entry[]" in shape or kind == "missing_event_storming_context":
             return {"entries": [""]}
@@ -445,18 +455,46 @@ def build_template(
     }
 
 
+def _answer_edit_rank(answer: dict[str, Any]) -> tuple[int, int]:
+    status = _text(answer.get("status"))
+    accepted = int(status in {"accepted_for_candidate", "accepted_for_review"})
+    substantive = int(_substantive(answer.get("value")) or bool(_text(answer.get("rationale"))))
+    return accepted, substantive
+
+
+def _prefer_answer(top_answer: dict[str, Any], nested_answer: dict[str, Any]) -> dict[str, Any]:
+    top_rank = _answer_edit_rank(top_answer)
+    nested_rank = _answer_edit_rank(nested_answer)
+    if nested_rank > top_rank:
+        return nested_answer
+    return top_answer
+
+
+def _template_answers(answer_input: dict[str, Any]) -> list[dict[str, Any]]:
+    top_answers = [_dict(item) for item in _list(answer_input.get("operator_answers"))]
+    nested_answers = [
+        _dict(_dict(target).get("operator_answer"))
+        for target in _list(answer_input.get("answer_targets"))
+    ]
+    if not top_answers:
+        return nested_answers
+    if not nested_answers:
+        return top_answers
+    merged: list[dict[str, Any]] = []
+    max_len = max(len(top_answers), len(nested_answers))
+    for index in range(max_len):
+        top_answer = top_answers[index] if index < len(top_answers) else {}
+        nested_answer = nested_answers[index] if index < len(nested_answers) else {}
+        merged.append(_prefer_answer(top_answer, nested_answer))
+    return merged
+
+
 def _answers_from_input(
     answer_input: dict[str, Any],
 ) -> tuple[list[dict[str, Any]], str]:
     artifact_kind = _text(answer_input.get("artifact_kind"))
     if artifact_kind == "real_idea_answer_template":
-        raw_answers = answer_input.get("operator_answers")
-        if raw_answers is None:
-            raw_answers = [
-                _dict(target).get("operator_answer")
-                for target in _list(answer_input.get("answer_targets"))
-            ]
-        return [_dict(item) for item in _list(raw_answers)], "real_idea_answer_template"
+        return _template_answers(answer_input), "real_idea_answer_template"
     if artifact_kind == "idea_to_spec_clarification_answer_set":
         return [_dict(item) for item in _list(answer_input.get("answers"))], artifact_kind
     return [_dict(item) for item in _list(answer_input.get("answers"))], artifact_kind or "unknown"
@@ -464,6 +502,10 @@ def _answers_from_input(
 
 def answer_set_from_input(answer_input: dict[str, Any]) -> dict[str, Any]:
     answers, _ = _answers_from_input(answer_input)
+    if answer_input.get("artifact_kind") == "idea_to_spec_clarification_answer_set":
+        answer_set = dict(answer_input)
+        answer_set["answers"] = [_public_safe(answer) for answer in answers]
+        return answer_set
     return {
         "artifact_kind": "idea_to_spec_clarification_answer_set",
         "schema_version": SCHEMA_VERSION,
@@ -477,9 +519,10 @@ def _scan_authority_and_raw(value: Any, *, path: str = "$") -> list[dict[str, An
     if isinstance(value, dict):
         for key, item in value.items():
             key_path = f"{path}.{key}" if path else key
+            key_lower = key.lower() if isinstance(key, str) else ""
             if (
                 isinstance(key, str)
-                and key.startswith("raw_")
+                and (key.startswith("raw_") or key in RAW_TRACE_FIELDS)
                 and not (path.endswith("privacy_boundary") and item is False)
             ):
                 findings.append(
@@ -496,6 +539,15 @@ def _scan_authority_and_raw(value: Any, *, path: str = "$") -> list[dict[str, An
                         finding_id="authority_field_expanded",
                         severity="review_required",
                         message="Answer authoring may_* authority fields must be explicitly false.",
+                        evidence={"path": key_path},
+                    )
+                )
+            if key_lower and any(marker.lower() in key_lower for marker in PRIVATE_TEXT_MARKERS):
+                findings.append(
+                    _finding(
+                        finding_id="private_text_marker_present",
+                        severity="review_required",
+                        message="Answer authoring input contains private/local text markers.",
                         evidence={"path": key_path},
                     )
                 )
@@ -705,7 +757,34 @@ def _write_intake_stage_artifacts(
     if clarified_source_output.exists():
         clarified_source_output.unlink()
     write_json(rerun_report, rerun_report_output)
-    return {
+    findings: list[dict[str, Any]] = []
+    if _dict(rerun_report.get("readiness")).get("ready") is not True:
+        findings.append(
+            _finding(
+                finding_id="intake_rerun_not_ready",
+                severity="review_required",
+                message="Intake answer materialization produced a not-ready rerun report.",
+                evidence={
+                    "review_state": _dict(rerun_report.get("readiness")).get("review_state"),
+                    "blocked_by": _list(_dict(rerun_report.get("readiness")).get("blocked_by")),
+                },
+            )
+        )
+    if _dict(clarified_session.get("readiness")).get("ready") is not True:
+        findings.append(
+            _finding(
+                finding_id="clarified_intake_session_not_ready",
+                severity="review_required",
+                message="Intake answer materialization did not produce a ready clarified session.",
+                evidence={
+                    "review_state": _dict(clarified_session.get("readiness")).get("review_state"),
+                    "blocked_by": _list(
+                        _dict(clarified_session.get("readiness")).get("blocked_by")
+                    ),
+                },
+            )
+        )
+    outputs = {
         "validated_answers": _relative_ref(validated_answers_output),
         "rerun_input": _relative_ref(rerun_input_output),
         "clarified_raw_input": _relative_ref(clarified_raw_output),
@@ -713,6 +792,7 @@ def _write_intake_stage_artifacts(
         "rerun_report": _relative_ref(rerun_report_output),
         "next_artifact": _relative_ref(clarified_session_output),
     }
+    return {"outputs": outputs, "findings": findings}
 
 
 def _write_repair_stage_artifacts(
@@ -738,12 +818,40 @@ def _write_repair_stage_artifacts(
         ontology_decisions_path=ontology_decisions_output,
     )
     write_json(rerun_input, rerun_input_output)
-    return {
+    findings: list[dict[str, Any]] = []
+    if _dict(ontology_decisions.get("readiness")).get("ready") is not True:
+        findings.append(
+            _finding(
+                finding_id="ontology_decisions_not_ready",
+                severity="review_required",
+                message="Repair answer materialization produced not-ready ontology decisions.",
+                evidence={
+                    "review_state": _dict(ontology_decisions.get("readiness")).get("review_state"),
+                    "blocked_by": _list(
+                        _dict(ontology_decisions.get("readiness")).get("blocked_by")
+                    ),
+                },
+            )
+        )
+    if _dict(rerun_input.get("readiness")).get("ready") is not True:
+        findings.append(
+            _finding(
+                finding_id="repair_rerun_input_not_ready",
+                severity="review_required",
+                message="Repair answer materialization produced a not-ready rerun input.",
+                evidence={
+                    "review_state": _dict(rerun_input.get("readiness")).get("review_state"),
+                    "blocked_by": _list(_dict(rerun_input.get("readiness")).get("blocked_by")),
+                },
+            )
+        )
+    outputs = {
         "validated_answers": _relative_ref(validated_answers_output),
         "ontology_decisions": _relative_ref(ontology_decisions_output),
         "rerun_input": _relative_ref(rerun_input_output),
         "next_artifact": _relative_ref(rerun_input_output),
     }
+    return {"outputs": outputs, "findings": findings}
 
 
 def build_materialization(
@@ -766,33 +874,38 @@ def build_materialization(
         run_dir=run_dir,
     )
     validation_ready = _dict(validation_report.get("readiness")).get("ready") is True
-    outputs: dict[str, Any] = {
-        "answer_set": _relative_ref(answer_set_output),
-        "validated_answers": _relative_ref(validated_answers_output),
-    }
-    write_json(answer_set, answer_set_output)
-    write_json(validated_answers, validated_answers_output)
+    outputs: dict[str, Any] = {}
     findings = list(_list(validation_report.get("findings")))
     status = "answers_materialized" if validation_ready else "answers_review_required"
     if validation_ready:
+        outputs.update(
+            {
+                "answer_set": _relative_ref(answer_set_output),
+                "validated_answers": _relative_ref(validated_answers_output),
+            }
+        )
+        write_json(answer_set, answer_set_output)
+        write_json(validated_answers, validated_answers_output)
         if stage == "intake":
-            outputs.update(
-                _write_intake_stage_artifacts(
-                    answer_set=answer_set,
-                    run_dir=run_dir,
-                    requests_path=requests_path,
-                    answer_set_output=answer_set_output,
-                    validated_answers_output=validated_answers_output,
-                )
+            stage_result = _write_intake_stage_artifacts(
+                answer_set=answer_set,
+                run_dir=run_dir,
+                requests_path=requests_path,
+                answer_set_output=answer_set_output,
+                validated_answers_output=validated_answers_output,
             )
+            outputs.update(_dict(stage_result.get("outputs")))
+            findings.extend(_list(stage_result.get("findings")))
         elif stage == "repair":
-            outputs.update(
-                _write_repair_stage_artifacts(
-                    validated_answers=validated_answers,
-                    validated_answers_output=validated_answers_output,
-                    run_dir=run_dir,
-                )
+            stage_result = _write_repair_stage_artifacts(
+                validated_answers=validated_answers,
+                validated_answers_output=validated_answers_output,
+                run_dir=run_dir,
             )
+            outputs.update(_dict(stage_result.get("outputs")))
+            findings.extend(_list(stage_result.get("findings")))
+        if findings:
+            status = "answers_review_required"
     report = _authoring_report(
         operation="materialize",
         status=status,
