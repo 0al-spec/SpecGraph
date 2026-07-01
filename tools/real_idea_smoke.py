@@ -92,6 +92,7 @@ def _child_env() -> dict[str, str]:
     env = os.environ.copy()
     env.pop("PRODUCT_WORKSPACE_ACTIVE_CANDIDATE_CONFIG", None)
     env.pop("ACTIVE_IDEA_TO_SPEC_CANDIDATE_CONFIG", None)
+    env.pop("REAL_IDEA_INTAKE_REFRESH", None)
     return env
 
 
@@ -331,15 +332,25 @@ def _prepare_continuation(
         )
         return 2
 
-    if clarified_session.exists():
+    clarified_payload = _load_optional(clarified_session)
+    clarified_ready = _dict(clarified_payload.get("readiness")).get("ready") is True
+    if clarified_session.exists() and (clarified_ready or not answers_input.strip()):
+        status = "ready" if clarified_ready else "blocked"
+        blocked_by = [] if clarified_ready else ["clarified_intake_session_not_ready"]
+        next_action = (
+            "Continue active candidate generation from clarified intake session."
+            if clarified_ready
+            else "Provide corrected REAL_IDEA_SMOKE_CLARIFICATION_ANSWERS_INPUT=<json>."
+        )
         _write_session_state_report(
             run_dir,
             answers_input=answers_input,
-            status="ready",
+            status=status,
             continuation_path="use_existing_clarified_session",
-            next_action="Continue active candidate generation from clarified intake session.",
+            blocked_by=blocked_by,
+            next_action=next_action,
         )
-        return 0
+        return 0 if clarified_ready else 2
 
     original_payload = _load_optional(original_session)
     review_state = _text(_dict(original_payload.get("readiness")).get("review_state"))

@@ -821,6 +821,19 @@ def test_real_idea_smoke_continue_applies_answers_without_refresh_flag(tmp_path:
         assert first.returncode != 0
         stale_active = run_dir / "active_idea_to_spec_candidate.json"
         write_json(stale_active, {"artifact_kind": "stale_active_candidate"})
+        stale_clarified = load_json(run_dir / "user_idea_intake_session.json")
+        stale_clarified["readiness"] = {
+            "ready": False,
+            "review_state": "needs_clarification",
+            "blocked_by": ["stale_test_session"],
+        }
+        write_json(run_dir / "clarified_user_idea_intake_session.json", stale_clarified)
+        env = os.environ.copy()
+        env["REAL_IDEA_INTAKE_REFRESH"] = "1"
+        env["SPECG_USER_IDEA_INTAKE_INTERVIEW_IDEA_TEXT"] = (
+            "This continuation must not overwrite the preserved session."
+        )
+        env["USER_IDEA_INTAKE_INTERVIEW_CANDIDATE_ID"] = "wrong-continuation-candidate"
 
         continued = subprocess.run(
             [
@@ -831,6 +844,7 @@ def test_real_idea_smoke_continue_applies_answers_without_refresh_flag(tmp_path:
                 f"REAL_IDEA_SMOKE_CLARIFICATION_ANSWERS_INPUT={ANSWERS_READY}",
             ],
             cwd=ROOT,
+            env=env,
             check=False,
             capture_output=True,
             text=True,
