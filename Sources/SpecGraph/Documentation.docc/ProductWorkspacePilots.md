@@ -303,7 +303,13 @@ The follow-up backlog from that smoke is:
    `0193` with `make real-idea-smoke-continue` and
    `real_idea_smoke_session_state_report.json`;
 2. replace hand-authored JSON answer sets with a structured answer-authoring
-   surface or SpecSpace-first operator path;
+   surface; done in Proposal `0194` with
+   `make real-idea-smoke-answer-template`,
+   `make real-idea-smoke-validate-answers`,
+   `make real-idea-smoke-materialize-answers`,
+   `real_idea_answer_template.json`,
+   `real_idea_answer_authoring_report.json`, and
+   `real_idea_answer_set.json`;
 3. classify aggregate repair answers as control/closure evidence in Idea
    Maturity instead of ordinary unmaterialized answers;
 4. add a project-local ontology review lane for `bind`, `alias`,

@@ -1463,10 +1463,14 @@ The same run exposed the next product-flow friction points:
    clarification answers when supplied, and writes
    `real_idea_smoke_session_state_report.json` with blockers and next safe
    action when answers are missing.
-2. **First-class answer authoring.** CLI smoke still requires hand-authored
-   JSON answer sets for intake clarification and repair. Add a structured
-   answer-authoring surface, or make SpecSpace the default operator path, so
-   users answer questions in product terms rather than editing JSON.
+2. **First-class answer authoring.** Done in proposal `0194`. Operators can now
+   run `make real-idea-smoke-answer-template` to generate a typed
+   `real_idea_answer_template.json`, fill it, validate it with
+   `make real-idea-smoke-validate-answers`, and materialize compatible
+   intake/repair artifacts with `make real-idea-smoke-materialize-answers`.
+   The helper writes `real_idea_answer_authoring_report.json` and
+   `real_idea_answer_set.json`, blocks empty required typed fields, blocks
+   truthy `may_*` authority fields, and keeps raw idea text local-only.
 3. **Aggregate repair-answer accounting.** Aggregate repair answers can close a
    blocking control request while concrete node-scoped answers materialize the
    actual graph changes. Idea Maturity should classify such aggregate answers as

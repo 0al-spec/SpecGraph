@@ -232,7 +232,14 @@
         "ontology_bound_candidate_graph_seed",
         "source_derivation",
         "make ontology-bound-candidate-graph-seed",
-        "make product-workspace-active-candidate"
+        "make product-workspace-active-candidate",
+        "proposal `0194`",
+        "real_idea_answer_template",
+        "real_idea_answer_authoring_report",
+        "real_idea_answer_set",
+        "make real-idea-smoke-answer-template",
+        "make real-idea-smoke-validate-answers",
+        "make real-idea-smoke-materialize-answers"
       ],
       "docc_required_terms": [
         "Active Candidate Source",
@@ -333,7 +340,14 @@
         "ontology_bound_candidate_graph_seed",
         "source_derivation",
         "make ontology-bound-candidate-graph-seed",
-        "make product-workspace-active-candidate"
+        "make product-workspace-active-candidate",
+        "Proposal `0194`",
+        "real_idea_answer_template",
+        "real_idea_answer_authoring_report",
+        "real_idea_answer_set",
+        "make real-idea-smoke-answer-template",
+        "make real-idea-smoke-validate-answers",
+        "make real-idea-smoke-materialize-answers"
       ]
     },
     {

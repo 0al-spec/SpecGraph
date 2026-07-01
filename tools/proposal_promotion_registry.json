@@ -2494,5 +2494,18 @@
     "required_provenance_links": [
       "source_draft_ref"
     ]
+  },
+  {
+    "proposal_id": "0194",
+    "source_artifact_class": "working_draft",
+    "source_refs": [
+      "docs/archive/proposal_sources/0194_first_class_real_idea_answer_authoring.md"
+    ],
+    "motivating_concern": "After session-aware real-idea smoke continuation, operators still had to hand-author low-level JSON answer sets for intake clarification and repair, which made product iteration brittle and easy to misuse.",
+    "normalized_title": "First-Class Real Idea Answer Authoring",
+    "bounded_scope": "Add a typed real-idea answer template, validator, materializer, Make targets, tests, proposal docs, roadmap, DocC, README, and registry tracking, without expanding authority or changing downstream rerun protocols.",
+    "required_provenance_links": [
+      "source_draft_ref"
+    ]
   }
 ]
