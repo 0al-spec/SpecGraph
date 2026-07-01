@@ -182,6 +182,57 @@ def test_answer_authoring_blocks_raw_alias_and_private_markers(tmp_path: Path) -
     assert "private_text_marker_present" in ids
 
 
+def test_answer_authoring_allows_legitimate_secret_words_in_text(tmp_path: Path) -> None:
+    module = load_module()
+    template_path = filled_repair_template(tmp_path)
+    template = load_json(template_path)
+    template["operator_answers"][0]["value"]["context"] = (
+        "The secretary reviews the authorization flow wording in product docs."
+    )
+    write_json(template_path, template)
+
+    _answer_set, validated_answers, report = module.build_validation(
+        clarification_requests=load_json(REPAIR_REQUESTS),
+        requests_path=REPAIR_REQUESTS,
+        answer_input=load_json(template_path),
+        answers_path=template_path,
+        stage="repair",
+        run_dir=tmp_path,
+    )
+
+    assert validated_answers["readiness"]["ready"] is True
+    assert report["readiness"]["ready"] is True
+    assert "private_text_marker_present" not in finding_ids(report)
+
+
+def test_answer_authoring_flags_filled_proposed_answers(tmp_path: Path) -> None:
+    module = load_module()
+    template = module.build_template(
+        clarification_requests=load_json(REPAIR_REQUESTS),
+        requests_path=REPAIR_REQUESTS,
+        stage="repair",
+        run_dir=tmp_path,
+    )
+    template["operator_answers"][0]["value"] = {
+        "terms": ["Decision Owner"],
+        "term_scope": "project_local",
+    }
+    template_path = tmp_path / "proposed_filled_template.json"
+    write_json(template_path, template)
+
+    _answer_set, _validated_answers, report = module.build_validation(
+        clarification_requests=load_json(REPAIR_REQUESTS),
+        requests_path=REPAIR_REQUESTS,
+        answer_input=load_json(template_path),
+        answers_path=template_path,
+        stage="repair",
+        run_dir=tmp_path,
+    )
+
+    assert report["readiness"]["ready"] is False
+    assert "answer_status_requires_acceptance" in finding_ids(report)
+
+
 def test_answer_authoring_preserves_supplied_answer_set_metadata(tmp_path: Path) -> None:
     module = load_module()
     template_path = filled_repair_template(tmp_path)
@@ -445,6 +496,32 @@ def test_answer_authoring_cli_rejects_shared_runs_dir() -> None:
 
     assert result.returncode != 0
     assert "REAL_IDEA_SMOKE_RUN_DIR=runs is reserved" in result.stderr
+
+
+def test_answer_authoring_cli_rejects_outputs_outside_run_dir(tmp_path: Path) -> None:
+    run_dir = Path(".pytest_cache") / "answer_authoring_guard" / tmp_path.name
+    result = subprocess.run(
+        [
+            sys.executable,
+            str(TOOL_PATH),
+            "template",
+            "--run-dir",
+            str(run_dir),
+            "--stage",
+            "repair",
+            "--requests",
+            str(REPAIR_REQUESTS),
+            "--output",
+            "runs/shared-answer-template.json",
+        ],
+        cwd=ROOT,
+        check=False,
+        capture_output=True,
+        text=True,
+    )
+
+    assert result.returncode != 0
+    assert "--output must stay inside REAL_IDEA_SMOKE_RUN_DIR" in result.stderr
 
 
 def test_answer_authoring_outputs_are_real_idea_smoke_managed_outputs() -> None:

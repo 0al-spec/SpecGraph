@@ -37,22 +37,31 @@ RAW_TRACE_FIELDS = {
     "raw_response",
     "raw_text",
 }
-PRIVATE_TEXT_MARKERS = (
+PRIVATE_PATH_MARKERS = (
     "/Users/",
     "/home/",
     "/private/",
     "/tmp/",
-    "\\",
+)
+PRIVATE_VALUE_MARKERS = (
     "-----BEGIN",
     "api-key",
     "apikey",
     "api_key",
-    "authorization",
     "bearer ",
-    "password",
-    "secret",
     "token=",
 )
+SENSITIVE_FIELD_NAMES = {
+    "api-key",
+    "api_key",
+    "apikey",
+    "authorization",
+    "password",
+    "secret",
+    "token",
+    "access_token",
+    "refresh_token",
+}
 FALSE_AUTHORITY_FIELDS = {
     "may_execute_prompt_agent",
     "may_infer_domain_model",
@@ -124,6 +133,15 @@ def _reject_reserved_run_dir(run_dir_ref: str) -> None:
             f"REAL_IDEA_SMOKE_RUN_DIR={run_dir_ref} is reserved for shared SpecGraph runs. "
             "Use a child directory such as runs/real_idea_smoke or runs/<id>."
         )
+
+
+def _guard_output_path(path: Path, *, run_dir: Path, field: str) -> Path:
+    _path_ref, repo_path = _repo_relative_path(path, field=field)
+    try:
+        repo_path.resolve().relative_to(run_dir.resolve())
+    except ValueError as exc:
+        raise SystemExit(f"{field} must stay inside REAL_IDEA_SMOKE_RUN_DIR.") from exc
+    return repo_path
 
 
 def load_json(path: Path) -> dict[str, Any]:
@@ -542,7 +560,7 @@ def _scan_authority_and_raw(value: Any, *, path: str = "$") -> list[dict[str, An
                         evidence={"path": key_path},
                     )
                 )
-            if key_lower and any(marker.lower() in key_lower for marker in PRIVATE_TEXT_MARKERS):
+            if key_lower in SENSITIVE_FIELD_NAMES:
                 findings.append(
                     _finding(
                         finding_id="private_text_marker_present",
@@ -557,7 +575,9 @@ def _scan_authority_and_raw(value: Any, *, path: str = "$") -> list[dict[str, An
             findings.extend(_scan_authority_and_raw(item, path=f"{path}[{index}]"))
     elif isinstance(value, str):
         lowered = value.lower()
-        if any(marker.lower() in lowered for marker in PRIVATE_TEXT_MARKERS):
+        private_path = any(marker.lower() in lowered for marker in PRIVATE_PATH_MARKERS)
+        private_value = any(marker.lower() in lowered for marker in PRIVATE_VALUE_MARKERS)
+        if private_path or private_value:
             findings.append(
                 _finding(
                     finding_id="private_text_marker_present",
@@ -577,17 +597,33 @@ def _required_value_findings(
     requests = _request_index(clarification_requests)
     findings: list[dict[str, Any]] = []
     for index, answer in enumerate([_dict(item) for item in _list(answer_set.get("answers"))]):
-        if _text(answer.get("status")) not in {
-            "accepted_for_candidate",
-            "accepted_for_review",
-        }:
-            continue
+        status = _text(answer.get("status"))
         request_id = _text(answer.get("request_id"))
         request = requests.get(request_id)
         if not request:
             continue
         action = _text(answer.get("answer_kind"))
         value = answer.get("value")
+        if status not in {"accepted_for_candidate", "accepted_for_review"}:
+            if status == "proposed" and any(
+                _field_present(value, field) for field in _required_fields(action, request)
+            ):
+                findings.append(
+                    _finding(
+                        finding_id="answer_status_requires_acceptance",
+                        severity="review_required",
+                        message=(
+                            "Filled answers must be marked accepted_for_candidate "
+                            "or accepted_for_review before materialization."
+                        ),
+                        evidence={
+                            "request_id": _text(answer.get("request_id")),
+                            "status": status,
+                            "index": index,
+                        },
+                    )
+                )
+            continue
         for field in _required_fields(action, request):
             if not _field_present(value, field):
                 findings.append(
@@ -728,7 +764,7 @@ def _write_intake_stage_artifacts(
     rerun_input_output = run_dir / "idea_intake_answer_rerun_input.json"
     clarified_raw_output = run_dir / "local_operator_clarified_user_idea_raw_input.json"
     clarified_session_output = run_dir / "clarified_user_idea_intake_session.json"
-    clarified_source_output = run_dir / "clarified_user_idea_intake_source.json"
+    clarified_source_output = run_dir / ".clarified_user_idea_intake_source.staging.json"
     rerun_report_output = run_dir / "idea_intake_clarification_rerun_report.json"
     (
         validated_answers,
@@ -754,6 +790,10 @@ def _write_intake_stage_artifacts(
     write_json(rerun_input, rerun_input_output)
     write_json(clarified_raw, clarified_raw_output)
     write_json(clarified_session, clarified_session_output)
+    # The shared real-idea flow requires the candidate-source bridge to be the
+    # only writer of public source artifacts. The intake rerun builder still
+    # needs a source output path to produce its internal report, so use a
+    # staging path and remove it before returning.
     if clarified_source_output.exists():
         clarified_source_output.unlink()
     write_json(rerun_report, rerun_report_output)
@@ -924,6 +964,8 @@ def build_materialization(
 def _write_template(args: argparse.Namespace) -> int:
     run_dir_ref, run_dir = _repo_relative_path(args.run_dir, field="REAL_IDEA_SMOKE_RUN_DIR")
     _reject_reserved_run_dir(run_dir_ref)
+    output = _guard_output_path(args.output, run_dir=run_dir, field="--output")
+    report_output = _guard_output_path(args.report, run_dir=run_dir, field="--report")
     requests_path = args.requests or _stage_request_path(args.stage, run_dir)
     stage = _detect_stage(args.stage, run_dir, requests_path)
     template = build_template(
@@ -932,26 +974,26 @@ def _write_template(args: argparse.Namespace) -> int:
         stage=stage,
         run_dir=run_dir,
     )
-    write_json(template, args.output)
+    write_json(template, output)
     report = _authoring_report(
         operation="template",
         status=_dict(template.get("summary")).get("status", "answer_template_review_required"),
         stage=stage,
         run_dir=run_dir,
         requests_path=requests_path,
-        answers_path=args.output,
+        answers_path=output,
         answer_set=answer_set_from_input(template),
         validated_answers=None,
         findings=[_dict(item) for item in _list(template.get("findings"))],
         outputs={
-            "template": _relative_ref(args.output),
-            "next_artifact": _relative_ref(args.output),
+            "template": _relative_ref(output),
+            "next_artifact": _relative_ref(output),
         },
     )
-    write_json(report, args.report)
+    write_json(report, report_output)
     print(
         f"{template['summary']['status']}: "
-        f"{template['summary']['target_count']} targets -> {_relative_ref(args.output)}"
+        f"{template['summary']['target_count']} targets -> {_relative_ref(output)}"
     )
     if args.strict and _dict(template.get("readiness")).get("ready") is not True:
         return 1
@@ -961,6 +1003,16 @@ def _write_template(args: argparse.Namespace) -> int:
 def _validate_answers(args: argparse.Namespace) -> int:
     run_dir_ref, run_dir = _repo_relative_path(args.run_dir, field="REAL_IDEA_SMOKE_RUN_DIR")
     _reject_reserved_run_dir(run_dir_ref)
+    report_output = _guard_output_path(args.report, run_dir=run_dir, field="--report")
+    answer_set_output = (
+        _guard_output_path(
+            args.answer_set_output,
+            run_dir=run_dir,
+            field="--answer-set-output",
+        )
+        if args.answer_set_output
+        else None
+    )
     requests_path = args.requests or _stage_request_path(args.stage, run_dir)
     stage = _detect_stage(args.stage, run_dir, requests_path)
     answer_set, _validated, report = build_validation(
@@ -971,13 +1023,13 @@ def _validate_answers(args: argparse.Namespace) -> int:
         stage=stage,
         run_dir=run_dir,
     )
-    if args.answer_set_output:
-        write_json(answer_set, args.answer_set_output)
-    write_json(report, args.report)
+    if answer_set_output:
+        write_json(answer_set, answer_set_output)
+    write_json(report, report_output)
     print(
         f"{report['summary']['status']}: "
         f"{report['summary']['accepted_answer_count']} accepted answers -> "
-        f"{_relative_ref(args.report)}"
+        f"{_relative_ref(report_output)}"
     )
     if args.strict and _dict(report.get("readiness")).get("ready") is not True:
         return 1
@@ -987,11 +1039,20 @@ def _validate_answers(args: argparse.Namespace) -> int:
 def _materialize_answers(args: argparse.Namespace) -> int:
     run_dir_ref, run_dir = _repo_relative_path(args.run_dir, field="REAL_IDEA_SMOKE_RUN_DIR")
     _reject_reserved_run_dir(run_dir_ref)
+    report_output = _guard_output_path(args.report, run_dir=run_dir, field="--report")
     requests_path = args.requests or _stage_request_path(args.stage, run_dir)
     stage = _detect_stage(args.stage, run_dir, requests_path)
-    answer_set_output = args.answer_set_output or (run_dir / "real_idea_answer_set.json")
+    answer_set_output = _guard_output_path(
+        args.answer_set_output or (run_dir / "real_idea_answer_set.json"),
+        run_dir=run_dir,
+        field="--answer-set-output",
+    )
     if args.validated_answers_output:
-        validated_answers_output = args.validated_answers_output
+        validated_answers_output = _guard_output_path(
+            args.validated_answers_output,
+            run_dir=run_dir,
+            field="--validated-answers-output",
+        )
     elif stage == "intake":
         validated_answers_output = run_dir / "idea_intake_clarification_answers.json"
     else:
@@ -1006,11 +1067,11 @@ def _materialize_answers(args: argparse.Namespace) -> int:
         stage=stage,
         run_dir=run_dir,
     )
-    write_json(report, args.report)
+    write_json(report, report_output)
     print(
         f"{report['summary']['status']}: "
         f"{report['summary']['accepted_answer_count']} accepted answers -> "
-        f"{_relative_ref(args.report)}"
+        f"{_relative_ref(report_output)}"
     )
     if args.strict and _dict(report.get("readiness")).get("ready") is not True:
         return 1
