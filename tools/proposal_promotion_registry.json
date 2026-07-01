@@ -2507,5 +2507,18 @@
     "required_provenance_links": [
       "source_draft_ref"
     ]
+  },
+  {
+    "proposal_id": "0195",
+    "source_artifact_class": "working_draft",
+    "source_refs": [
+      "docs/archive/proposal_sources/0195_specspace_real_idea_answer_continuation_handoff.md"
+    ],
+    "motivating_concern": "SpecSpace can collect first-class real-idea intake answers, but operators still needed manual JSON wiring to feed that SpecSpace-owned state back into SpecGraph continuation and active-candidate generation.",
+    "normalized_title": "SpecSpace Real Idea Answer Continuation Handoff",
+    "bounded_scope": "Add a review-only SpecSpace real-idea answer import preview, continuation materialization target, tests, proposal docs, roadmap, DocC, README, and registry tracking that validates SpecSpace-owned answer state against the answer template, clarification requests, and intake session, then materializes safe existing answer artifacts and optionally continues to the active-candidate pipeline without executing prompt agents, granting SpecSpace execution authority, mutating user intent, mutating candidate or canonical specs, writing Ontology packages or lockfiles, accepting ontology terms, approving candidates, creating Git branches or commits, opening pull requests, or publishing read models.",
+    "required_provenance_links": [
+      "source_draft_ref"
+    ]
   }
 ]
