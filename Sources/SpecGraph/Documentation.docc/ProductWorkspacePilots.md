@@ -261,6 +261,61 @@ flat anti-orphan topology layer, not an ontology-validated event-storming
 relation model. A clean pre-SIB pass-through also yields a ready no-op repair
 loop instead of a false `repair_loop_not_ready` blocker.
 
+Proposal `0192` makes repeated real-idea smoke runs safer. By default,
+`make real-idea-smoke` clears wrapper-owned derived outputs inside
+`REAL_IDEA_SMOKE_RUN_DIR` before rebuilding, so a second run cannot silently
+reuse an older `user_idea_intake_session.json`. Operator-authored answer input
+files are preserved, but generated answer/rerun/repair/maturity outputs and the
+default `absent-post-approval` directory are cleared. `REAL_IDEA_SMOKE_REFRESH=0`
+keeps the old reuse behavior when that is intentional. `REAL_IDEA_SMOKE_RUN_DIR`
+must name a child run directory such as `runs/<id>`; the shared `runs/`
+directory is rejected. The companion `make real-idea-smoke-idea-maturity` target
+builds Idea Maturity from the same run directory, clears and validates
+`REAL_IDEA_SMOKE_MATURITY_ABSENT_DIR`, and sends optional post-approval
+Platform/Git inputs there. SpecSpace repair-stage artifacts such as draft import
+previews and rerun requests remain routed from the smoke run directory when
+present. This prevents stale canonical `runs/*.json` artifacts from overstating
+custom smoke lifecycle state without hiding real repair-loop handoff evidence.
+
+## Real Idea Cash-Flow Smoke Follow-ups
+
+A `cash-flow-control` smoke run confirmed that real product ideas do not need a
+prebuilt product-domain ontology before they can become approval-ready
+candidates. The run used `ontology://specgraph-core` as the structural
+specification ontology, surfaced cash-flow terms as ontology gaps, and resolved
+them as project-local terms for the review-only preview. It did not mutate
+authority ontology packages or accept terms globally.
+
+The resulting repaired candidate reached:
+
+- `10` candidate nodes, `9` topology edges, `10` requirements, and `10`
+  acceptance criteria;
+- `15` ontology gaps and `4` candidate/spec gaps resolved through repair
+  answers;
+- `ready_for_candidate_approval=true`;
+- Idea Maturity `status=ready`, lifecycle `approval_ready`, and validation
+  `ok`.
+
+The follow-up backlog from that smoke is:
+
+1. add a session-aware smoke continuation target so operators do not manually
+   switch to `REAL_IDEA_SMOKE_REFRESH=0` after clarification;
+2. replace hand-authored JSON answer sets with a structured answer-authoring
+   surface or SpecSpace-first operator path;
+3. classify aggregate repair answers as control/closure evidence in Idea
+   Maturity instead of ordinary unmaterialized answers;
+4. add a project-local ontology review lane for `bind`, `alias`,
+   `keep project-local`, `promote`, and `reject` decisions;
+5. replace the temporary flat `decomposes_to` topology with
+   ontology-validated event-storming relations such as `command -> event` and
+   `constraint -> command`;
+6. add human-friendly display aliases for long generated candidate node ids;
+7. generate a candidate overview document or SpecSpace narrative panel from the
+   repaired candidate graph;
+8. allow custom run-dir repaired candidates to continue into Platform
+   approval/promotion dry-run without copying artifacts into canonical
+   `runs/*.json`.
+
 Proposal `0163` adds `idea_to_spec_clarification_requests` as the unified
 read-only question/action surface:
 

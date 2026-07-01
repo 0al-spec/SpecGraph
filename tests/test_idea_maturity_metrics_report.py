@@ -943,6 +943,35 @@ def _make_dry_run_target(target: str) -> str:
     return result.stdout
 
 
+def _write_fake_metrics_cli(path: Path, trace: Path) -> None:
+    path.write_text(
+        "\n".join(
+            [
+                "import json",
+                "import sys",
+                "from pathlib import Path",
+                f"Path({str(trace)!r}).write_text(json.dumps(sys.argv[1:]), encoding='utf-8')",
+                "args = sys.argv[1:]",
+                "output = Path(args[args.index('--output') + 1])",
+                "output.parent.mkdir(parents=True, exist_ok=True)",
+                "output.write_text(json.dumps({",
+                "  'artifact_kind': 'idea_maturity_metrics_validation_report',",
+                "  'metric_pack_id': 'idea_to_spec_maturity',",
+                "  'summary': {",
+                "    'status': 'ok',",
+                "    'report_count': 1,",
+                "    'valid_count': 1,",
+                "    'invalid_count': 0,",
+                "  },",
+                "  'reports': [{'path': args[2], 'status': 'ok', 'diagnostics': []}],",
+                "}), encoding='utf-8')",
+            ]
+        )
+        + "\n",
+        encoding="utf-8",
+    )
+
+
 def test_product_workspace_idea_maturity_target_builds_and_validates_report() -> None:
     output = _make_dry_run_target("product-workspace-idea-maturity")
 
@@ -951,6 +980,62 @@ def test_product_workspace_idea_maturity_target_builds_and_validates_report() ->
     assert metrics_index < validation_index
     assert "runs/idea_maturity_metrics_report.json" in output
     assert "runs/idea_maturity_metrics_validation_report.json" in output
+
+
+def test_real_idea_smoke_idea_maturity_target_isolates_run_dir_optional_artifacts() -> None:
+    output = _make_dry_run_target("real-idea-smoke-idea-maturity")
+
+    assert "runs/real_idea_smoke/idea_event_storming_intake.json" in output
+    assert "runs/real_idea_smoke/idea_maturity_metrics_report.json" in output
+    assert "runs/real_idea_smoke/idea_maturity_metrics_validation_report.json" in output
+    assert "runs/real_idea_smoke/specspace_repair_draft_import_preview.json" in output
+    assert "runs/real_idea_smoke/idea_to_spec_repair_rerun_requests.json" in output
+    assert "runs/real_idea_smoke/absent-post-approval/candidate_approval_decision.json" in output
+    assert "shutil.rmtree(absent, ignore_errors=True)" in output
+    assert '--candidate-approval-decision "runs/candidate_approval_decision.json"' not in output
+    assert '--promotion-request "runs/graph_repository_promotion_request.json"' not in output
+
+
+def test_real_idea_smoke_idea_maturity_clears_stale_absent_dir(
+    tmp_path: Path,
+) -> None:
+    run_dir = tmp_path / "smoke"
+    absent_dir = run_dir / "absent-post-approval"
+    paths = write_ready_chain(run_dir)
+    stale_decision = absent_dir / "candidate_approval_decision.json"
+    write_json(
+        stale_decision,
+        {
+            "artifact_kind": "candidate_approval_decision",
+            "summary": {"status": "candidate_approved", "effective_state": "approved"},
+            "decision": {"state": "approved"},
+            "readiness": {"ready": True},
+            "authority_boundary": authority_boundary(),
+        },
+    )
+    fake_cli = tmp_path / "fake_metrics_cli.py"
+    trace = tmp_path / "fake_metrics_cli_args.json"
+    _write_fake_metrics_cli(fake_cli, trace)
+
+    result = subprocess.run(
+        [
+            "make",
+            "real-idea-smoke-idea-maturity",
+            f"REAL_IDEA_SMOKE_RUN_DIR={run_dir}",
+            f"METRICS_CLI={sys.executable} {fake_cli}",
+        ],
+        cwd=ROOT,
+        check=False,
+        capture_output=True,
+        text=True,
+    )
+
+    assert result.returncode == 0, result.stderr
+    assert not stale_decision.exists()
+    report = load_json(paths["approval_intent"].parent / "idea_maturity_metrics_report.json")
+    assert report["metrics"]["candidate_approval_state"] == "ready"
+    assert report["metrics"]["candidate_approval_decision_state"] == "not_reached"
+    assert report["derived_state"]["lifecycle_state"] == "approval_ready"
 
 
 def test_decision_backed_repair_chain_emits_validated_idea_maturity() -> None:

@@ -1398,6 +1398,101 @@ pass-through now produces a ready no-op repair loop, so connected candidates do
 not fail later with `repair_loop_not_ready` simply because no deterministic
 repair action was needed.
 
+## Real Idea Smoke Iteration Isolation
+
+Status: implemented in proposal `0192`.
+
+Proposal `0192` hardens iterative real-idea smoke runs after live product idea
+testing exposed two orchestration hazards:
+
+- repeated `make real-idea-smoke REAL_IDEA_SMOKE_RUN_DIR=runs/<id>` runs could
+  preserve an old `user_idea_intake_session.json` and silently rebuild from the
+  previous idea unless the operator manually deleted derived artifacts;
+- custom run-dir Idea Maturity builds could accidentally consume stale canonical
+  post-approval `runs/*.json` artifacts when those optional paths were not
+  explicitly redirected.
+
+The smoke wrapper now refreshes wrapper-owned derived outputs in the run
+directory by default, including generated answer/rerun/repair/maturity artifacts
+and the default `absent-post-approval` directory. Operator-authored answer input
+files are not cleared, so operators must update or delete them before reusing the
+same run directory for a different idea. `REAL_IDEA_SMOKE_REFRESH=0` preserves
+managed outputs intentionally. The new `make real-idea-smoke-idea-maturity`
+target builds and validates Idea Maturity from `REAL_IDEA_SMOKE_RUN_DIR` while
+routing optional post-approval Platform/Git inputs to
+`REAL_IDEA_SMOKE_MATURITY_ABSENT_DIR` by default. `REAL_IDEA_SMOKE_RUN_DIR=runs`
+is rejected because `runs/` is the shared SpecGraph artifact directory; use a
+child directory such as `runs/<id>` instead. The maturity target clears and
+validates the absent-dir immediately before metrics generation so stale
+post-approval files cannot survive refresh, but SpecSpace repair-stage artifacts
+such as draft import previews and rerun requests are read from the smoke run
+directory when present.
+
+## Real Idea Cash-Flow Smoke Follow-ups
+
+Status: planned after the cash-flow control smoke run.
+
+The `cash-flow-control` smoke confirmed that a raw product idea can reach an
+approval-ready candidate without a prebuilt product-domain ontology. The flow
+used `ontology://specgraph-core` only as the structural specification ontology;
+cash-flow terms such as `Recurring Payment`, `Safe-to-Spend Amount`, and
+`Overdraft Risk` surfaced as ontology gaps and were resolved as project-local
+terms for the review-only candidate preview. No authority ontology package was
+mutated and no ontology terms were accepted globally.
+
+The run produced:
+
+- a real-intake event-storming frame with actors, commands, domain events, and
+  constraints;
+- a `10` node candidate graph with `9` topology edges, `10` requirements, and
+  `10` acceptance criteria;
+- `19` initial gaps: `15` ontology gaps and `4` candidate/spec enforcement
+  gaps;
+- a repaired candidate graph with `0` remaining gaps;
+- repaired handoff readiness with `ready_for_candidate_approval=true`;
+- Idea Maturity `status=ready`, lifecycle `approval_ready`, and validation
+  `ok`.
+
+The same run exposed the next product-flow friction points:
+
+1. **Session-aware smoke continuation.** After a first `real-idea-smoke` stops
+   at `needs_clarification`, the operator currently has to run clarification
+   targets and then continue with `REAL_IDEA_SMOKE_REFRESH=0`. Add an explicit
+   continuation target or session-aware wrapper so the operator does not have to
+   reason about refresh semantics manually.
+2. **First-class answer authoring.** CLI smoke still requires hand-authored
+   JSON answer sets for intake clarification and repair. Add a structured
+   answer-authoring surface, or make SpecSpace the default operator path, so
+   users answer questions in product terms rather than editing JSON.
+3. **Aggregate repair-answer accounting.** Aggregate repair answers can close a
+   blocking control request while concrete node-scoped answers materialize the
+   actual graph changes. Idea Maturity should classify such aggregate answers as
+   control/closure evidence instead of counting them as ordinary unmaterialized
+   answers.
+4. **Project-local ontology review lane.** Product terms can safely remain
+   project-local, but the operator needs an explicit review lane to decide
+   `bind`, `alias`, `keep project-local`, `promote to workspace ontology`, or
+   `reject` for each term without mutating authority ontology packages.
+5. **Event-storming topology.** Proposal `0191` currently emits flat
+   `Product Boundary --decomposes_to--> node` edges. The next topology slice
+   should add ontology-validated event-storming relations such as
+   `command -> event`, `event -> policy`, and `constraint -> command`, while
+   preserving the review-only boundary.
+6. **Human-friendly candidate ids.** Long constraint statements currently
+   produce truncated node ids. Keep stable machine ids, but add shorter
+   readable slugs or display aliases for UI, PR artifacts, and candidate
+   overview documents.
+7. **Generated candidate overview.** The artifacts are rich, but the operator
+   still needs a narrative summary assembled from the graph. Add a generated
+   `candidate_overview.md` or SpecSpace narrative panel that explains actors,
+   flows, constraints, gaps closed, and remaining promotion steps.
+8. **Custom-run Platform promotion dry-run.** The cash-flow smoke reached
+   `ready_for_platform_promotion_request`, but did not yet materialize an
+   approval decision, promotion request, or Git Service dry-run. Add a reusable
+   custom run-dir handoff so any repaired real-idea smoke can continue into the
+   existing Platform approval/promotion dry-run boundary without copying
+   artifacts into canonical `runs/*.json`.
+
 ## Team Decision Log Happy-Path Repair Pack
 
 Status: implemented in proposal `0182`.
