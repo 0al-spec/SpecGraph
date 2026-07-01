@@ -3,7 +3,9 @@
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
+import shutil
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
@@ -35,6 +37,8 @@ CONSUMER_FALSE_FIELDS = (
     "may_execute_prompt_agent",
     "may_apply_to_specgraph",
     "may_apply_answers",
+    "may_apply_answers_to_source_artifacts",
+    "may_mutate_user_intent",
     "may_mutate_candidate_source_artifacts",
     "may_mutate_canonical_specs",
     "may_write_ontology_package",
@@ -42,6 +46,7 @@ CONSUMER_FALSE_FIELDS = (
     "may_create_branch_or_commit",
     "may_open_pull_request",
     "may_execute_git_service_operation",
+    "may_publish_read_model",
 )
 AUTHORITY_FALSE_FIELDS = (
     "intake_answer_state_is_authority",
@@ -49,6 +54,8 @@ AUTHORITY_FALSE_FIELDS = (
     "ontology_authority",
     "git_service_authority",
     "canonical_mutations_allowed",
+    "may_mutate_user_intent",
+    "may_publish_read_model",
 )
 ANSWER_FALSE_FIELDS = (
     "canonical_mutations_allowed",
@@ -62,6 +69,10 @@ ANSWER_FALSE_FIELDS = (
     "creates_branch_or_commit",
     "opens_pull_request",
 )
+STATE_LEVEL_AUTHORITY_FIELDS = tuple(
+    sorted(set(TOP_LEVEL_FALSE_FIELDS + CONSUMER_FALSE_FIELDS + AUTHORITY_FALSE_FIELDS))
+)
+PRIVATE_PATH_MARKERS = ("/Users/", "/home/", "\\Users\\")
 
 
 def _now_iso() -> str:
@@ -130,8 +141,23 @@ def _relative_ref(path: Path | None) -> str | None:
         return real_idea_answer_authoring._relative_ref(path)
 
 
+def _safe_string(value: str) -> str:
+    lowered = value.lower()
+    if any(marker.lower() in lowered for marker in PRIVATE_PATH_MARKERS):
+        digest = hashlib.sha256(value.encode("utf-8")).hexdigest()[:16]
+        return f"redacted-local-ref:{digest}"
+    return value
+
+
 def _public_safe(value: Any) -> Any:
-    return real_idea_answer_authoring._public_safe(value)
+    sanitized = real_idea_answer_authoring._public_safe(value)
+    if isinstance(sanitized, dict):
+        return {key: _public_safe(item) for key, item in sanitized.items()}
+    if isinstance(sanitized, list):
+        return [_public_safe(item) for item in sanitized]
+    if isinstance(sanitized, str):
+        return _safe_string(sanitized)
+    return sanitized
 
 
 def _authority_boundary() -> dict[str, bool]:
@@ -184,6 +210,16 @@ def _first_true(value: Any, fields: tuple[str, ...]) -> str | None:
     return None
 
 
+def _first_authority_true(value: Any, fields: tuple[str, ...]) -> str | None:
+    raw = _dict(value)
+    for field, item in raw.items():
+        if item is not True or not isinstance(field, str):
+            continue
+        if field in fields or field.startswith("may_"):
+            return field
+    return None
+
+
 def _answer_set_from_specspace_state(state: dict[str, Any]) -> dict[str, Any]:
     answer_set = _dict(state.get("answer_set"))
     if answer_set:
@@ -208,6 +244,39 @@ def _answer_set_from_specspace_state(state: dict[str, Any]) -> dict[str, Any]:
             if _text(answer.get("request_id")) and _text(answer.get("answer_kind"))
         ],
     }
+
+
+def _validate_answer_set_authority(answer_set: dict[str, Any]) -> list[dict[str, Any]]:
+    findings: list[dict[str, Any]] = []
+    expanded = _first_authority_true(
+        answer_set,
+        STATE_LEVEL_AUTHORITY_FIELDS + ANSWER_FALSE_FIELDS,
+    )
+    if expanded:
+        findings.append(
+            _finding(
+                finding_id="specspace_answer_set_authority_expanded",
+                severity="blocking",
+                message="Nested SpecSpace answer set cannot claim mutation or execution authority.",
+                evidence={"field": expanded},
+            )
+        )
+    for index, answer in enumerate([_dict(item) for item in _list(answer_set.get("answers"))]):
+        expanded = _first_authority_true(answer, ANSWER_FALSE_FIELDS)
+        if expanded:
+            findings.append(
+                _finding(
+                    finding_id="specspace_answer_set_row_authority_expanded",
+                    severity="blocking",
+                    message="Nested answer-set rows cannot claim mutation authority.",
+                    evidence={
+                        "index": index,
+                        "request_id": answer.get("request_id"),
+                        "field": expanded,
+                    },
+                )
+            )
+    return findings
 
 
 def _expected_session(session: dict[str, Any]) -> dict[str, str]:
@@ -256,7 +325,7 @@ def _validate_state_root(state: dict[str, Any]) -> list[dict[str, Any]]:
         ("consumer_boundary", state.get("consumer_boundary"), CONSUMER_FALSE_FIELDS),
         ("authority_boundary", state.get("authority_boundary"), AUTHORITY_FALSE_FIELDS),
     ):
-        expanded = _first_true(source, fields)
+        expanded = _first_authority_true(source, fields)
         if expanded:
             findings.append(
                 _finding(
@@ -267,7 +336,7 @@ def _validate_state_root(state: dict[str, Any]) -> list[dict[str, Any]]:
                 )
             )
     for answer in [_dict(item) for item in _list(state.get("answers"))]:
-        expanded = _first_true(answer, ANSWER_FALSE_FIELDS)
+        expanded = _first_authority_true(answer, ANSWER_FALSE_FIELDS)
         if expanded:
             findings.append(
                 _finding(
@@ -277,6 +346,7 @@ def _validate_state_root(state: dict[str, Any]) -> list[dict[str, Any]]:
                     evidence={"answer_id": answer.get("answer_id"), "field": expanded},
                 )
             )
+    findings.extend(_validate_answer_set_authority(_dict(state.get("answer_set"))))
     findings.extend(
         real_idea_answer_authoring._scan_authority_and_raw(
             {
@@ -308,7 +378,15 @@ def _validate_refs(
             )
         )
     selected_workspace = _text(state.get("selected_workspace_id"))
-    if selected_workspace and expected_workspace and selected_workspace != expected_workspace:
+    if not selected_workspace:
+        findings.append(
+            _finding(
+                finding_id="specspace_answer_state_workspace_missing",
+                severity="blocking",
+                message="SpecSpace answer state must declare selected_workspace_id.",
+            )
+        )
+    elif expected_workspace and selected_workspace != expected_workspace:
         findings.append(
             _finding(
                 finding_id="specspace_answer_state_workspace_mismatch",
@@ -323,7 +401,16 @@ def _validate_refs(
     requests_ref = _relative_ref(requests_path)
     sources = _dict(state.get("source_artifacts"))
     source_template = _text(sources.get("real_idea_answer_template"))
-    if source_template and source_template != template_ref:
+    if not source_template:
+        findings.append(
+            _finding(
+                finding_id="specspace_answer_template_ref_missing",
+                severity="blocking",
+                message="SpecSpace answer state must reference the selected answer template.",
+                evidence={"expected": template_ref},
+            )
+        )
+    elif source_template != template_ref:
         findings.append(
             _finding(
                 finding_id="specspace_answer_template_ref_mismatch",
@@ -333,7 +420,18 @@ def _validate_refs(
             )
         )
     source_requests = _text(sources.get("intake_clarification_requests"))
-    if source_requests and source_requests != requests_ref:
+    if not source_requests:
+        findings.append(
+            _finding(
+                finding_id="specspace_answer_requests_ref_missing",
+                severity="blocking",
+                message=(
+                    "SpecSpace answer state must reference the selected clarification requests."
+                ),
+                evidence={"expected": requests_ref},
+            )
+        )
+    elif source_requests != requests_ref:
         findings.append(
             _finding(
                 finding_id="specspace_answer_requests_ref_mismatch",
@@ -406,6 +504,143 @@ def _validate_refs(
                 )
             )
     return findings
+
+
+def _validate_import_preview_for_continuation(
+    *,
+    import_preview: dict[str, Any],
+    import_preview_path: Path,
+    requests_path: Path,
+    run_dir: Path,
+) -> list[dict[str, Any]]:
+    findings: list[dict[str, Any]] = []
+    expected_run_dir = _relative_ref(run_dir)
+    preview_run_dir = _text(import_preview.get("run_dir"))
+    if preview_run_dir != expected_run_dir:
+        findings.append(
+            _finding(
+                finding_id="import_preview_run_dir_mismatch",
+                severity="blocking",
+                message="Import preview run_dir must match the selected run directory.",
+                evidence={"expected": expected_run_dir, "actual": preview_run_dir},
+            )
+        )
+    expected_preview_ref = _relative_ref(import_preview_path)
+    preview_source_ref = _text(
+        _dict(_dict(import_preview.get("source_artifacts")).get("specspace_answer_state")).get(
+            "source_ref"
+        )
+    )
+    if not preview_source_ref:
+        findings.append(
+            _finding(
+                finding_id="import_preview_answer_state_ref_missing",
+                severity="blocking",
+                message="Import preview must record the SpecSpace answer state source ref.",
+            )
+        )
+    expected_requests_ref = _relative_ref(requests_path)
+    preview_requests_ref = _text(
+        _dict(_dict(import_preview.get("source_artifacts")).get("clarification_requests")).get(
+            "source_ref"
+        )
+    )
+    if preview_requests_ref != expected_requests_ref:
+        findings.append(
+            _finding(
+                finding_id="import_preview_requests_ref_mismatch",
+                severity="blocking",
+                message=(
+                    "Import preview clarification-request source ref must match selected requests."
+                ),
+                evidence={"expected": expected_requests_ref, "actual": preview_requests_ref},
+            )
+        )
+    if _relative_ref(import_preview_path) != expected_preview_ref:
+        findings.append(
+            _finding(
+                finding_id="import_preview_source_ref_mismatch",
+                severity="blocking",
+                message="Import preview source ref could not be normalized for continuation.",
+            )
+        )
+    return findings
+
+
+def _copy_if_exists(source: Path, destination: Path) -> str | None:
+    if not source.exists():
+        return None
+    destination.parent.mkdir(parents=True, exist_ok=True)
+    shutil.copy2(source, destination)
+    return _relative_ref(destination)
+
+
+def _stage_materialization(
+    *,
+    clarification_requests: dict[str, Any],
+    requests_path: Path,
+    answer_set: dict[str, Any],
+    import_preview_path: Path,
+    answer_set_output: Path,
+    validated_answers_output: Path,
+    run_dir: Path,
+    stage: str,
+) -> tuple[dict[str, Any], dict[str, Any]]:
+    staging_dir = run_dir / ".specspace_real_idea_answer_handoff_staging"
+    if staging_dir.exists():
+        shutil.rmtree(staging_dir)
+    staging_dir.mkdir(parents=True, exist_ok=True)
+    raw_input = run_dir / "local_operator_user_idea_raw_input.json"
+    if raw_input.exists():
+        shutil.copy2(raw_input, staging_dir / raw_input.name)
+    staged_answer_set = staging_dir / answer_set_output.name
+    staged_validated_answers = staging_dir / validated_answers_output.name
+    _answer_set, _validated, authoring_report = real_idea_answer_authoring.build_materialization(
+        clarification_requests=clarification_requests,
+        requests_path=requests_path,
+        answer_input=answer_set,
+        answers_path=import_preview_path,
+        answer_set_output=staged_answer_set,
+        validated_answers_output=staged_validated_answers,
+        stage=stage,
+        run_dir=staging_dir,
+    )
+    ready = _dict(authoring_report.get("readiness")).get("ready") is True
+    published_outputs: dict[str, Any] = {}
+    if ready:
+        path_pairs = {
+            "answer_set": (staged_answer_set, answer_set_output),
+            "validated_answers": (staged_validated_answers, validated_answers_output),
+            "rerun_input": (
+                staging_dir / "idea_intake_answer_rerun_input.json",
+                run_dir / "idea_intake_answer_rerun_input.json",
+            ),
+            "clarified_raw_input": (
+                staging_dir / "local_operator_clarified_user_idea_raw_input.json",
+                run_dir / "local_operator_clarified_user_idea_raw_input.json",
+            ),
+            "clarified_intake_session": (
+                staging_dir / "clarified_user_idea_intake_session.json",
+                run_dir / "clarified_user_idea_intake_session.json",
+            ),
+            "rerun_report": (
+                staging_dir / "idea_intake_clarification_rerun_report.json",
+                run_dir / "idea_intake_clarification_rerun_report.json",
+            ),
+        }
+        for key, (source, destination) in path_pairs.items():
+            published_outputs[key] = _copy_if_exists(source, destination)
+        published_outputs["next_artifact"] = published_outputs.get(
+            "clarified_intake_session"
+        ) or published_outputs.get("rerun_input")
+        authoring_report["outputs"] = {
+            key: value for key, value in published_outputs.items() if value
+        }
+        authoring_report.setdefault("readiness", {})["next_artifact"] = published_outputs.get(
+            "next_artifact"
+        )
+    shutil.rmtree(staging_dir)
+    return authoring_report, published_outputs
 
 
 def build_import_preview(
@@ -583,45 +818,37 @@ def build_continuation_report(
                 },
             )
         )
+    findings.extend(
+        _validate_import_preview_for_continuation(
+            import_preview=import_preview,
+            import_preview_path=import_preview_path,
+            requests_path=requests_path,
+            run_dir=run_dir,
+        )
+    )
     answer_set = _dict(_dict(import_preview.get("import_preview")).get("answer_set_candidate"))
     outputs: dict[str, Any] = {}
     status = "real_idea_answer_continuation_review_required"
     if not findings:
-        _answer_set, _validated, authoring_report = (
-            real_idea_answer_authoring.build_materialization(
-                clarification_requests=clarification_requests,
-                requests_path=requests_path,
-                answer_input=answer_set,
-                answers_path=import_preview_path,
-                answer_set_output=answer_set_output,
-                validated_answers_output=validated_answers_output,
-                stage=stage,
-                run_dir=run_dir,
-            )
+        authoring_report, published_outputs = _stage_materialization(
+            clarification_requests=clarification_requests,
+            requests_path=requests_path,
+            answer_set=answer_set,
+            import_preview_path=import_preview_path,
+            answer_set_output=answer_set_output,
+            validated_answers_output=validated_answers_output,
+            run_dir=run_dir,
+            stage=stage,
         )
         write_json(authoring_report, authoring_report_output)
         findings.extend(_list(authoring_report.get("findings")))
         outputs.update(
             {
                 "authoring_report": _relative_ref(authoring_report_output),
-                "answer_set": _relative_ref(answer_set_output)
-                if answer_set_output.exists()
-                else None,
-                "validated_answers": (
-                    _relative_ref(validated_answers_output)
-                    if validated_answers_output.exists()
-                    else None
-                ),
-                "clarified_intake_session": _relative_ref(
-                    run_dir / "clarified_user_idea_intake_session.json"
-                )
-                if (run_dir / "clarified_user_idea_intake_session.json").exists()
-                else None,
-                "rerun_report": _relative_ref(
-                    run_dir / "idea_intake_clarification_rerun_report.json"
-                )
-                if (run_dir / "idea_intake_clarification_rerun_report.json").exists()
-                else None,
+                "answer_set": published_outputs.get("answer_set"),
+                "validated_answers": published_outputs.get("validated_answers"),
+                "clarified_intake_session": published_outputs.get("clarified_intake_session"),
+                "rerun_report": published_outputs.get("rerun_report"),
             }
         )
         if _dict(authoring_report.get("readiness")).get("ready") is True and not findings:

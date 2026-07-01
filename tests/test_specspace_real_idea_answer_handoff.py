@@ -311,6 +311,38 @@ def test_specspace_real_idea_answer_import_preview_blocks_template_mismatch() ->
 
     assert preview["readiness"]["ready"] is False
     assert "specspace_answer_template_ref_mismatch" in finding_ids(preview)
+    dumped = json.dumps(preview)
+    assert "/Users/" not in dumped
+
+
+def test_specspace_real_idea_answer_import_preview_requires_identity_and_source_refs() -> None:
+    module = load_module(TOOL_PATH, "specspace_real_idea_answer_handoff_identity_test")
+    run_dir = ROOT / ".pytest_cache" / "specspace_real_idea_answer_handoff" / "identity"
+    paths = prepare_run_dir(run_dir)
+    state = specspace_state(paths)
+    state.pop("selected_workspace_id")
+    state.pop("source_artifacts")
+    state_path = run_dir / "idea_to_spec_intake_clarification_answers.json"
+    write_json(state_path, state)
+
+    preview = module.build_import_preview(
+        specspace_answer_state=load_json(state_path),
+        state_path=state_path,
+        template=load_json(paths["template"]),
+        template_path=paths["template"],
+        clarification_requests=load_json(paths["requests"]),
+        requests_path=paths["requests"],
+        intake_session=load_json(paths["session"]),
+        intake_session_path=paths["session"],
+        run_dir=run_dir,
+        stage="intake",
+    )
+
+    assert preview["readiness"]["ready"] is False
+    ids = finding_ids(preview)
+    assert "specspace_answer_state_workspace_missing" in ids
+    assert "specspace_answer_template_ref_missing" in ids
+    assert "specspace_answer_requests_ref_missing" in ids
 
 
 def test_specspace_real_idea_answer_import_preview_blocks_authority_expansion() -> None:
@@ -319,6 +351,9 @@ def test_specspace_real_idea_answer_import_preview_blocks_authority_expansion() 
     paths = prepare_run_dir(run_dir)
     state = specspace_state(paths)
     state["consumer_boundary"]["may_execute_specgraph"] = True
+    state["authority_boundary"]["may_publish_read_model"] = True
+    state["answer_set"]["canonical_mutations_allowed"] = True
+    state["answer_set"]["answers"][0]["applies_to_specgraph"] = True
     state["answer_set"]["answers"][0]["value"]["may_write_ontology_package"] = True
     state_path = run_dir / "idea_to_spec_intake_clarification_answers.json"
     write_json(state_path, state)
@@ -339,7 +374,53 @@ def test_specspace_real_idea_answer_import_preview_blocks_authority_expansion() 
     assert preview["readiness"]["ready"] is False
     ids = finding_ids(preview)
     assert "specspace_answer_state_authority_expanded" in ids
+    assert "specspace_answer_set_authority_expanded" in ids
+    assert "specspace_answer_set_row_authority_expanded" in ids
     assert "authority_field_expanded" in ids
+
+
+def test_specspace_real_idea_answer_handoff_blocks_foreign_preview_without_writes() -> None:
+    module = load_module(TOOL_PATH, "specspace_real_idea_answer_handoff_foreign_preview_test")
+    first_run = ROOT / ".pytest_cache" / "specspace_real_idea_answer_handoff" / "foreign-a"
+    second_run = ROOT / ".pytest_cache" / "specspace_real_idea_answer_handoff" / "foreign-b"
+    first_paths = prepare_run_dir(first_run, candidate_id="first-product")
+    second_paths = prepare_run_dir(second_run, candidate_id="second-product")
+    state_path = first_run / "idea_to_spec_intake_clarification_answers.json"
+    write_json(state_path, specspace_state(first_paths, candidate_id="first-product"))
+    preview = module.build_import_preview(
+        specspace_answer_state=load_json(state_path),
+        state_path=state_path,
+        template=load_json(first_paths["template"]),
+        template_path=first_paths["template"],
+        clarification_requests=load_json(first_paths["requests"]),
+        requests_path=first_paths["requests"],
+        intake_session=load_json(first_paths["session"]),
+        intake_session_path=first_paths["session"],
+        run_dir=first_run,
+        stage="intake",
+    )
+    preview_path = first_run / "specspace_real_idea_answer_import_preview.json"
+    write_json(preview_path, preview)
+    existing_session = second_run / "clarified_user_idea_intake_session.json"
+    write_json(existing_session, {"artifact_kind": "sentinel_ready_session"})
+
+    report = module.build_continuation_report(
+        import_preview=preview,
+        import_preview_path=preview_path,
+        clarification_requests=load_json(second_paths["requests"]),
+        requests_path=second_paths["requests"],
+        answer_set_output=second_run / "real_idea_answer_set.json",
+        validated_answers_output=second_run / "idea_intake_clarification_answers.json",
+        authoring_report_output=second_run / "real_idea_answer_authoring_report.json",
+        run_dir=second_run,
+        stage="intake",
+    )
+
+    assert report["readiness"]["ready"] is False
+    ids = finding_ids(report)
+    assert "import_preview_run_dir_mismatch" in ids
+    assert "import_preview_requests_ref_mismatch" in ids
+    assert load_json(existing_session)["artifact_kind"] == "sentinel_ready_session"
 
 
 def test_specspace_real_idea_answer_handoff_cli_strict_fails_when_not_ready() -> None:
