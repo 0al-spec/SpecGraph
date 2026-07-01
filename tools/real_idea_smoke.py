@@ -4,12 +4,35 @@ from __future__ import annotations
 
 import argparse
 import os
+import shutil
 import subprocess
 from pathlib import Path
 
 import real_idea_smoke_summary
 
 ROOT = Path(__file__).resolve().parents[1]
+MANAGED_OUTPUT_NAMES = (
+    "local_operator_user_idea_raw_input.json",
+    "user_idea_intake_session.json",
+    "user_idea_intake_source.json",
+    "user_idea_intake_interview_report.json",
+    "clarified_user_idea_raw_input.json",
+    "clarified_user_idea_intake_session.json",
+    "clarified_user_idea_intake_source.json",
+    "intake_session_candidate_source_report.json",
+    "idea_event_storming_seed.json",
+    "idea_event_storming_intake.json",
+    "candidate_spec_graph_seed.json",
+    "candidate_spec_graph.json",
+    "pre_sib_coherence_report.json",
+    "candidate_repair_loop_report.json",
+    "idea_to_spec_clarification_requests.json",
+    "candidate_spec_materialization_report.json",
+    "idea_to_spec_promotion_gate.json",
+    "active_idea_to_spec_candidate.json",
+    "real_idea_smoke_summary.json",
+)
+MANAGED_OUTPUT_DIRS = ("materialized_candidate_specs",)
 
 
 def _repo_relative_path(value: str, *, field: str) -> tuple[str, Path]:
@@ -29,6 +52,14 @@ def _child_env() -> dict[str, str]:
     env.pop("PRODUCT_WORKSPACE_ACTIVE_CANDIDATE_CONFIG", None)
     env.pop("ACTIVE_IDEA_TO_SPEC_CANDIDATE_CONFIG", None)
     return env
+
+
+def _clear_managed_outputs(run_dir: Path, *, summary_output: Path) -> None:
+    for name in MANAGED_OUTPUT_NAMES:
+        (run_dir / name).unlink(missing_ok=True)
+    for name in MANAGED_OUTPUT_DIRS:
+        shutil.rmtree(run_dir / name, ignore_errors=True)
+    summary_output.unlink(missing_ok=True)
 
 
 def _smoke_make_args(run_dir_ref: str, *, python: str, interview_input: str) -> list[str]:
@@ -76,6 +107,11 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--summary-output", required=True)
     parser.add_argument("--python", default=".venv/bin/python")
     parser.add_argument("--interview-input", default="")
+    parser.add_argument(
+        "--preserve-existing",
+        action="store_true",
+        help="Do not clear managed smoke outputs before running.",
+    )
     return parser
 
 
@@ -87,6 +123,8 @@ def main(argv: list[str] | None = None) -> int:
         field="REAL_IDEA_SMOKE_SUMMARY_OUTPUT",
     )
     run_dir.mkdir(parents=True, exist_ok=True)
+    if not args.preserve_existing:
+        _clear_managed_outputs(run_dir, summary_output=summary_output)
 
     result = subprocess.run(
         _smoke_make_args(run_dir_ref, python=args.python, interview_input=args.interview_input),

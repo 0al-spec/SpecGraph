@@ -2468,5 +2468,18 @@
     "required_provenance_links": [
       "source_draft_ref"
     ]
+  },
+  {
+    "proposal_id": "0192",
+    "source_artifact_class": "working_draft",
+    "source_refs": [
+      "docs/archive/proposal_sources/0192_real_idea_smoke_iteration_isolation.md"
+    ],
+    "motivating_concern": "Iterative real-idea smoke runs could silently reuse stale run-dir sessions, and custom run-dir Idea Maturity could accidentally consume default post-approval runs/*.json from unrelated flows.",
+    "normalized_title": "Real Idea Smoke Iteration Isolation",
+    "bounded_scope": "Refresh wrapper-owned real-idea smoke outputs by default, add an opt-out for intentional reuse, and add a run-dir Idea Maturity target that routes optional post-approval artifacts to an absent directory, with tests, proposal docs, roadmap, DocC, README, and registry tracking, without expanding authority or mutating canonical artifacts.",
+    "required_provenance_links": [
+      "source_draft_ref"
+    ]
   }
 ]

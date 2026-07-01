@@ -10882,5 +10882,74 @@
         "pattern": "Proposal 0191"
       }
     ]
+  },
+  {
+    "proposal_id": "0192",
+    "posture": "synchronous_runtime_slice",
+    "runtime_surfaces": [
+      "docs/proposals/0192_real_idea_smoke_iteration_isolation.md",
+      "docs/archive/proposal_sources/0192_real_idea_smoke_iteration_isolation.md",
+      "Makefile",
+      "tools/real_idea_smoke.py",
+      "tests/test_idea_intake_clarification_rerun.py",
+      "tests/test_idea_maturity_metrics_report.py",
+      "docs/product_workspace_graph_versioning_roadmap.md",
+      "Sources/SpecGraph/Documentation.docc/ProductWorkspacePilots.md",
+      "tools/README.md"
+    ],
+    "runtime_markers": [
+      {
+        "path": "Makefile",
+        "pattern": "REAL_IDEA_SMOKE_REFRESH"
+      },
+      {
+        "path": "Makefile",
+        "pattern": "real-idea-smoke-idea-maturity"
+      },
+      {
+        "path": "Makefile",
+        "pattern": "REAL_IDEA_SMOKE_MATURITY_ABSENT_DIR"
+      },
+      {
+        "path": "tools/real_idea_smoke.py",
+        "pattern": "MANAGED_OUTPUT_NAMES"
+      },
+      {
+        "path": "tools/real_idea_smoke.py",
+        "pattern": "_clear_managed_outputs"
+      },
+      {
+        "path": "tools/real_idea_smoke.py",
+        "pattern": "--preserve-existing"
+      }
+    ],
+    "validation_markers": [
+      {
+        "path": "tests/test_idea_intake_clarification_rerun.py",
+        "pattern": "test_real_idea_smoke_refreshes_existing_managed_outputs"
+      },
+      {
+        "path": "tests/test_idea_maturity_metrics_report.py",
+        "pattern": "test_real_idea_smoke_idea_maturity_target_isolates_run_dir_optional_artifacts"
+      }
+    ],
+    "observation_markers": [
+      {
+        "path": "docs/proposals/0192_real_idea_smoke_iteration_isolation.md",
+        "pattern": "Status: implemented."
+      },
+      {
+        "path": "docs/product_workspace_graph_versioning_roadmap.md",
+        "pattern": "Status: implemented in proposal `0192`"
+      },
+      {
+        "path": "Sources/SpecGraph/Documentation.docc/ProductWorkspacePilots.md",
+        "pattern": "Proposal `0192`"
+      },
+      {
+        "path": "tools/README.md",
+        "pattern": "Proposal 0192"
+      }
+    ]
   }
 ]

@@ -83,6 +83,9 @@ USER_IDEA_EVENT_STORMING_SEED_OUTPUT_DEFAULT := runs/idea_event_storming_seed.js
 USER_IDEA_EVENT_STORMING_SEED_OUTPUT ?= $(USER_IDEA_EVENT_STORMING_SEED_OUTPUT_DEFAULT)
 REAL_IDEA_SMOKE_RUN_DIR ?= runs/real_idea_smoke
 REAL_IDEA_SMOKE_SUMMARY_OUTPUT ?= $(REAL_IDEA_SMOKE_RUN_DIR)/real_idea_smoke_summary.json
+REAL_IDEA_SMOKE_REFRESH ?= 1
+REAL_IDEA_SMOKE_REFRESH_ARG := $(if $(filter 0 false no,$(strip $(REAL_IDEA_SMOKE_REFRESH))),--preserve-existing,)
+REAL_IDEA_SMOKE_MATURITY_ABSENT_DIR ?= $(REAL_IDEA_SMOKE_RUN_DIR)/absent-post-approval
 IDEA_EVENT_STORMING_INTAKE_SOURCE ?= tests/fixtures/idea_event_storming_intake/idea_ready.json
 IDEA_EVENT_STORMING_INTAKE_OUTPUT_DEFAULT := runs/idea_event_storming_intake.json
 IDEA_EVENT_STORMING_INTAKE_OUTPUT ?= $(IDEA_EVENT_STORMING_INTAKE_OUTPUT_DEFAULT)
@@ -295,7 +298,7 @@ PYTHON_TARGETS := viewer-surfaces dashboard backlog next-move spec-activity grap
 	real-idea-intake-candidate-source real-idea-intake-clarification-requests \
 	real-idea-intake-clarification-answers real-idea-intake-clarification-rerun \
 	real-idea-intake-ready-candidate-source real-idea-intake-active-candidate \
-	real-idea-smoke \
+	real-idea-smoke real-idea-smoke-idea-maturity \
 	user-idea-intake-source generic-idea-intake \
 	generic-idea-intake-session \
 	idea-event-storming-intake ontology-bound-candidate-graph-seed \
@@ -653,7 +656,41 @@ real-idea-intake-active-candidate:
 
 .PHONY: real-idea-smoke
 real-idea-smoke:
-	@$(PYTHON) tools/real_idea_smoke.py --run-dir "$(REAL_IDEA_SMOKE_RUN_DIR)" --summary-output "$(REAL_IDEA_SMOKE_SUMMARY_OUTPUT)" --python "$(PYTHON)" --interview-input "$(USER_IDEA_INTAKE_INTERVIEW_INPUT)"
+	@$(PYTHON) tools/real_idea_smoke.py --run-dir "$(REAL_IDEA_SMOKE_RUN_DIR)" --summary-output "$(REAL_IDEA_SMOKE_SUMMARY_OUTPUT)" --python "$(PYTHON)" --interview-input "$(USER_IDEA_INTAKE_INTERVIEW_INPUT)" $(REAL_IDEA_SMOKE_REFRESH_ARG)
+
+.PHONY: real-idea-smoke-idea-maturity
+real-idea-smoke-idea-maturity:
+	@$(MAKE) product-workspace-idea-maturity \
+		IDEA_MATURITY_METRICS_INTAKE="$(REAL_IDEA_SMOKE_RUN_DIR)/idea_event_storming_intake.json" \
+		IDEA_MATURITY_METRICS_CANDIDATE_GRAPH="$(REAL_IDEA_SMOKE_RUN_DIR)/candidate_spec_graph.json" \
+		IDEA_MATURITY_METRICS_PRE_SIB="$(REAL_IDEA_SMOKE_RUN_DIR)/pre_sib_coherence_report.json" \
+		IDEA_MATURITY_METRICS_CLARIFICATION_REQUESTS="$(REAL_IDEA_SMOKE_RUN_DIR)/idea_to_spec_clarification_requests.json" \
+		IDEA_MATURITY_METRICS_CLARIFICATION_ANSWERS="$(REAL_IDEA_SMOKE_RUN_DIR)/idea_to_spec_clarification_answers.json" \
+		IDEA_MATURITY_METRICS_ONTOLOGY_DECISIONS="$(REAL_IDEA_SMOKE_RUN_DIR)/product_ontology_gap_review_decisions.json" \
+		IDEA_MATURITY_METRICS_RERUN_INPUT="$(REAL_IDEA_SMOKE_RUN_DIR)/idea_to_spec_answer_rerun_input.json" \
+		IDEA_MATURITY_METRICS_RERUN_PREVIEW="$(REAL_IDEA_SMOKE_RUN_DIR)/idea_to_spec_rerun_preview.json" \
+		IDEA_MATURITY_METRICS_RERUN_MATERIALIZATION="$(REAL_IDEA_SMOKE_RUN_DIR)/idea_to_spec_rerun_materialization.json" \
+		IDEA_MATURITY_METRICS_PROMOTION_GATE="$(REAL_IDEA_SMOKE_RUN_DIR)/idea_to_spec_promotion_gate.json" \
+		IDEA_MATURITY_METRICS_REPAIR_SESSION="$(REAL_IDEA_SMOKE_RUN_DIR)/idea_to_spec_repair_session.json" \
+		IDEA_MATURITY_METRICS_REPAIRED_HANDOFF="$(REAL_IDEA_SMOKE_RUN_DIR)/repaired_candidate_promotion_handoff_report.json" \
+		IDEA_MATURITY_METRICS_REPAIRED_CANDIDATE_GRAPH="$(REAL_IDEA_SMOKE_RUN_DIR)/repaired_candidate_spec_graph.json" \
+		IDEA_MATURITY_METRICS_REPAIRED_PRE_SIB="$(REAL_IDEA_SMOKE_RUN_DIR)/repaired_pre_sib_coherence_report.json" \
+		IDEA_MATURITY_METRICS_REPAIRED_ACTIVE_CANDIDATE="$(REAL_IDEA_SMOKE_RUN_DIR)/repaired_active_idea_to_spec_candidate.json" \
+		IDEA_MATURITY_METRICS_REPAIRED_PROMOTION_GATE="$(REAL_IDEA_SMOKE_RUN_DIR)/repaired_idea_to_spec_promotion_gate.json" \
+		IDEA_MATURITY_METRICS_REPAIRED_REPAIR_SESSION="$(REAL_IDEA_SMOKE_RUN_DIR)/repaired_idea_to_spec_repair_session.json" \
+		IDEA_MATURITY_METRICS_SPECSPACE_DRAFT_IMPORT_PREVIEW="$(REAL_IDEA_SMOKE_MATURITY_ABSENT_DIR)/specspace_repair_draft_import_preview.json" \
+		IDEA_MATURITY_METRICS_SPECSPACE_RERUN_REQUEST="$(REAL_IDEA_SMOKE_MATURITY_ABSENT_DIR)/idea_to_spec_repair_rerun_requests.json" \
+		IDEA_MATURITY_METRICS_APPROVAL_INTENT="$(REAL_IDEA_SMOKE_MATURITY_ABSENT_DIR)/idea_to_spec_candidate_approval_intents.json" \
+		IDEA_MATURITY_METRICS_REPAIR_RERUN_EXECUTION="$(REAL_IDEA_SMOKE_MATURITY_ABSENT_DIR)/platform_product_repair_rerun_execution_report.json" \
+		IDEA_MATURITY_METRICS_REPAIR_RERUN_PUBLICATION="$(REAL_IDEA_SMOKE_MATURITY_ABSENT_DIR)/platform_product_repair_rerun_publication_report.json" \
+		IDEA_MATURITY_METRICS_APPROVAL_EXECUTION="$(REAL_IDEA_SMOKE_MATURITY_ABSENT_DIR)/platform_candidate_approval_execution_report.json" \
+		IDEA_MATURITY_METRICS_CANDIDATE_APPROVAL_DECISION="$(REAL_IDEA_SMOKE_MATURITY_ABSENT_DIR)/candidate_approval_decision.json" \
+		IDEA_MATURITY_METRICS_PROMOTION_REQUEST="$(REAL_IDEA_SMOKE_MATURITY_ABSENT_DIR)/graph_repository_promotion_request.json" \
+		IDEA_MATURITY_METRICS_PROMOTION_EXECUTION="$(REAL_IDEA_SMOKE_MATURITY_ABSENT_DIR)/product_candidate_promotion_execution_report.json" \
+		IDEA_MATURITY_METRICS_REVIEW_STATUS="$(REAL_IDEA_SMOKE_MATURITY_ABSENT_DIR)/product_candidate_promotion_review_status_report.json" \
+		IDEA_MATURITY_METRICS_READ_MODEL_PUBLICATION="$(REAL_IDEA_SMOKE_MATURITY_ABSENT_DIR)/product_candidate_promotion_read_model_publication_report.json" \
+		IDEA_MATURITY_METRICS_OUTPUT="$(REAL_IDEA_SMOKE_RUN_DIR)/idea_maturity_metrics_report.json" \
+		IDEA_MATURITY_METRICS_VALIDATION_OUTPUT="$(REAL_IDEA_SMOKE_RUN_DIR)/idea_maturity_metrics_validation_report.json"
 
 .PHONY: generic-idea-intake
 generic-idea-intake: user-idea-intake-source

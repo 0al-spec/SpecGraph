@@ -953,6 +953,17 @@ def test_product_workspace_idea_maturity_target_builds_and_validates_report() ->
     assert "runs/idea_maturity_metrics_validation_report.json" in output
 
 
+def test_real_idea_smoke_idea_maturity_target_isolates_run_dir_optional_artifacts() -> None:
+    output = _make_dry_run_target("real-idea-smoke-idea-maturity")
+
+    assert "runs/real_idea_smoke/idea_event_storming_intake.json" in output
+    assert "runs/real_idea_smoke/idea_maturity_metrics_report.json" in output
+    assert "runs/real_idea_smoke/idea_maturity_metrics_validation_report.json" in output
+    assert "runs/real_idea_smoke/absent-post-approval/candidate_approval_decision.json" in output
+    assert '--candidate-approval-decision "runs/candidate_approval_decision.json"' not in output
+    assert '--promotion-request "runs/graph_repository_promotion_request.json"' not in output
+
+
 def test_decision_backed_repair_chain_emits_validated_idea_maturity() -> None:
     output = _make_dry_run_target("product-workspace-decision-backed-repair-chain")
 

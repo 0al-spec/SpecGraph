@@ -1398,6 +1398,27 @@ pass-through now produces a ready no-op repair loop, so connected candidates do
 not fail later with `repair_loop_not_ready` simply because no deterministic
 repair action was needed.
 
+## Real Idea Smoke Iteration Isolation
+
+Status: implemented in proposal `0192`.
+
+Proposal `0192` hardens iterative real-idea smoke runs after live product idea
+testing exposed two orchestration hazards:
+
+- repeated `make real-idea-smoke REAL_IDEA_SMOKE_RUN_DIR=runs/<id>` runs could
+  preserve an old `user_idea_intake_session.json` and silently rebuild from the
+  previous idea unless the operator manually deleted derived artifacts;
+- custom run-dir Idea Maturity builds could accidentally consume stale canonical
+  post-approval `runs/*.json` artifacts when those optional paths were not
+  explicitly redirected.
+
+The smoke wrapper now refreshes only wrapper-owned derived outputs in the run
+directory by default. Operator-authored answer input files are not cleared, and
+`REAL_IDEA_SMOKE_REFRESH=0` preserves managed outputs intentionally. The new
+`make real-idea-smoke-idea-maturity` target builds and validates Idea Maturity
+from `REAL_IDEA_SMOKE_RUN_DIR` while routing optional post-approval Platform/Git
+inputs to `REAL_IDEA_SMOKE_MATURITY_ABSENT_DIR` by default.
+
 ## Team Decision Log Happy-Path Repair Pack
 
 Status: implemented in proposal `0182`.

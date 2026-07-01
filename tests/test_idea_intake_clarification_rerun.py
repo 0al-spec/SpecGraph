@@ -493,6 +493,77 @@ def test_real_idea_smoke_target_writes_isolated_run_dir_summary(tmp_path: Path) 
         shutil.rmtree(run_dir, ignore_errors=True)
 
 
+def test_real_idea_smoke_refreshes_existing_managed_outputs(tmp_path: Path) -> None:
+    python = supported_python()
+    run_rel = Path(".pytest_cache") / "real_idea_smoke_refresh" / tmp_path.name
+    run_dir = ROOT / run_rel
+    shutil.rmtree(run_dir, ignore_errors=True)
+    ready_fixture = ROOT / "tests/fixtures/user_idea_intake_session/raw_idea_ready.json"
+    second_fixture = run_dir / "second_raw_idea_ready.json"
+    try:
+        first = subprocess.run(
+            [
+                "make",
+                "real-idea-smoke",
+                f"PYTHON={python}",
+                f"REAL_IDEA_SMOKE_RUN_DIR={run_rel}",
+                f"USER_IDEA_INTAKE_INTERVIEW_INPUT={ready_fixture}",
+            ],
+            cwd=ROOT,
+            check=False,
+            capture_output=True,
+            text=True,
+        )
+        assert first.returncode == 0, first.stderr
+        assert (
+            load_json(run_dir / "active_idea_to_spec_candidate.json")["summary"]["candidate_id"]
+            == "support-triage-log"
+        )
+
+        second_payload = load_json(ready_fixture)
+        second_payload["workspace"] = {
+            "candidate_id": "cash-flow-refresh-smoke",
+            "display_name": "Cash Flow Refresh Smoke",
+            "public_route": "/cash-flow-refresh-smoke",
+        }
+        second_payload["idea"] = {
+            "summary": "Build a cash-flow assistant that protects recurring payment reserves.",
+            "text": (
+                "The user records mandatory recurring payments and the system warns "
+                "before overspend or overdraft risk."
+            ),
+        }
+        second_payload["active_frame_hints"]["project"] = "CashFlowRefreshSmoke"
+        second_payload["active_frame_hints"]["context_refs"] = [
+            "context.idea_to_spec",
+            "context.cash_flow_refresh_smoke",
+        ]
+        second_payload["active_frame_hints"]["domain_refs"] = ["domain.cash_flow_refresh_smoke"]
+        write_json(second_fixture, second_payload)
+
+        second = subprocess.run(
+            [
+                "make",
+                "real-idea-smoke",
+                f"PYTHON={python}",
+                f"REAL_IDEA_SMOKE_RUN_DIR={run_rel}",
+                f"USER_IDEA_INTAKE_INTERVIEW_INPUT={second_fixture}",
+            ],
+            cwd=ROOT,
+            check=False,
+            capture_output=True,
+            text=True,
+        )
+
+        assert second.returncode == 0, second.stderr
+        active = load_json(run_dir / "active_idea_to_spec_candidate.json")
+        summary = load_json(run_dir / "real_idea_smoke_summary.json")
+        assert active["summary"]["candidate_id"] == "cash-flow-refresh-smoke"
+        assert summary["summary"]["candidate_id"] == "cash-flow-refresh-smoke"
+    finally:
+        shutil.rmtree(run_dir, ignore_errors=True)
+
+
 def test_real_idea_smoke_normalizes_repo_local_absolute_run_dir(tmp_path: Path) -> None:
     python = supported_python()
     run_rel = Path(".pytest_cache") / "real_idea_smoke_abs" / tmp_path.name
