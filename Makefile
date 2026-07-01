@@ -85,6 +85,8 @@ REAL_IDEA_SMOKE_RUN_DIR ?= runs/real_idea_smoke
 REAL_IDEA_SMOKE_SUMMARY_OUTPUT ?= $(REAL_IDEA_SMOKE_RUN_DIR)/real_idea_smoke_summary.json
 REAL_IDEA_SMOKE_REFRESH ?= 1
 REAL_IDEA_SMOKE_REFRESH_ARG := $(if $(filter 0 false no,$(strip $(REAL_IDEA_SMOKE_REFRESH))),--preserve-existing,)
+REAL_IDEA_SMOKE_CLARIFICATION_ANSWERS_INPUT ?= $(IDEA_INTAKE_CLARIFICATION_ANSWERS_INPUT)
+REAL_IDEA_SMOKE_CLARIFICATION_ANSWERS_ARG := $(if $(strip $(REAL_IDEA_SMOKE_CLARIFICATION_ANSWERS_INPUT)),--clarification-answers-input "$(REAL_IDEA_SMOKE_CLARIFICATION_ANSWERS_INPUT)",)
 REAL_IDEA_SMOKE_MATURITY_ABSENT_DIR ?= $(REAL_IDEA_SMOKE_RUN_DIR)/absent-post-approval
 IDEA_EVENT_STORMING_INTAKE_SOURCE ?= tests/fixtures/idea_event_storming_intake/idea_ready.json
 IDEA_EVENT_STORMING_INTAKE_OUTPUT_DEFAULT := runs/idea_event_storming_intake.json
@@ -298,7 +300,7 @@ PYTHON_TARGETS := viewer-surfaces dashboard backlog next-move spec-activity grap
 	real-idea-intake-candidate-source real-idea-intake-clarification-requests \
 	real-idea-intake-clarification-answers real-idea-intake-clarification-rerun \
 	real-idea-intake-ready-candidate-source real-idea-intake-active-candidate \
-	real-idea-smoke real-idea-smoke-idea-maturity \
+	real-idea-smoke real-idea-smoke-continue real-idea-smoke-idea-maturity \
 	user-idea-intake-source generic-idea-intake \
 	generic-idea-intake-session \
 	idea-event-storming-intake ontology-bound-candidate-graph-seed \
@@ -378,6 +380,7 @@ help:
 			'  make real-idea-intake-clarification-rerun IDEA_INTAKE_CLARIFICATION_ANSWERS_INPUT=<json>' \
 			'  make real-idea-intake-ready-candidate-source Prefer clarified session when present' \
 			'  make real-idea-intake-active-candidate Build active candidate from ready real intake' \
+			'  make real-idea-smoke-continue REAL_IDEA_SMOKE_CLARIFICATION_ANSWERS_INPUT=<json>' \
 			'  make user-idea-intake-session USER_IDEA_INTAKE_SESSION_INPUT=<json>' \
 			'  make intake-session-candidate-source INTAKE_SESSION_CANDIDATE_SOURCE_INPUT=<json>' \
 			'  make user-idea-intake-source USER_IDEA_INTAKE_SOURCE=<json>' \
@@ -657,6 +660,10 @@ real-idea-intake-active-candidate:
 .PHONY: real-idea-smoke
 real-idea-smoke:
 	@$(PYTHON) tools/real_idea_smoke.py --run-dir "$(REAL_IDEA_SMOKE_RUN_DIR)" --summary-output "$(REAL_IDEA_SMOKE_SUMMARY_OUTPUT)" --python "$(PYTHON)" --interview-input "$(USER_IDEA_INTAKE_INTERVIEW_INPUT)" $(REAL_IDEA_SMOKE_REFRESH_ARG)
+
+.PHONY: real-idea-smoke-continue
+real-idea-smoke-continue:
+	@$(PYTHON) tools/real_idea_smoke.py --run-dir "$(REAL_IDEA_SMOKE_RUN_DIR)" --summary-output "$(REAL_IDEA_SMOKE_SUMMARY_OUTPUT)" --python "$(PYTHON)" --interview-input "$(USER_IDEA_INTAKE_INTERVIEW_INPUT)" --continue-existing $(REAL_IDEA_SMOKE_CLARIFICATION_ANSWERS_ARG)
 
 .PHONY: real-idea-smoke-idea-maturity
 real-idea-smoke-idea-maturity:

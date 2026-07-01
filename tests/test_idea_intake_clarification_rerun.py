@@ -742,6 +742,121 @@ def test_real_idea_smoke_writes_summary_for_blocked_intake(tmp_path: Path) -> No
         shutil.rmtree(run_dir, ignore_errors=True)
 
 
+def test_real_idea_smoke_continue_blocks_without_answers(tmp_path: Path) -> None:
+    python = supported_python()
+    run_rel = Path(".pytest_cache") / "real_idea_smoke_continue_blocked" / tmp_path.name
+    run_dir = ROOT / run_rel
+    idea_text = "I want a small tool for team decisions."
+    shutil.rmtree(run_dir, ignore_errors=True)
+    try:
+        first = subprocess.run(
+            [
+                "make",
+                "real-idea-smoke",
+                f"PYTHON={python}",
+                f"REAL_IDEA_SMOKE_RUN_DIR={run_rel}",
+                f"SPECG_USER_IDEA_INTAKE_INTERVIEW_IDEA_TEXT={idea_text}",
+                "USER_IDEA_INTAKE_INTERVIEW_IDEA_SUMMARY=Track team decisions.",
+                "USER_IDEA_INTAKE_INTERVIEW_CANDIDATE_ID=team-decision-log",
+                "USER_IDEA_INTAKE_INTERVIEW_DISPLAY_NAME=Team Decision Log",
+                "USER_IDEA_INTAKE_INTERVIEW_PUBLIC_ROUTE=/team-decision-log",
+            ],
+            cwd=ROOT,
+            check=False,
+            capture_output=True,
+            text=True,
+        )
+        assert first.returncode != 0
+
+        continued = subprocess.run(
+            [
+                "make",
+                "real-idea-smoke-continue",
+                f"PYTHON={python}",
+                f"REAL_IDEA_SMOKE_RUN_DIR={run_rel}",
+            ],
+            cwd=ROOT,
+            check=False,
+            capture_output=True,
+            text=True,
+        )
+
+        assert continued.returncode != 0
+        report = load_json(run_dir / "real_idea_smoke_session_state_report.json")
+        summary = load_json(run_dir / "real_idea_smoke_summary.json")
+        assert report["status"] == "blocked"
+        assert report["summary"]["continuation_path"] == "await_clarification_answers"
+        assert "clarification_answers_input_missing" in report["blocked_by"]
+        assert (run_dir / "idea_intake_clarification_requests.json").exists()
+        assert summary["artifacts"]["intake_session"]["present"] is True
+        assert summary["artifacts"]["active_candidate"]["present"] is False
+    finally:
+        shutil.rmtree(run_dir, ignore_errors=True)
+
+
+def test_real_idea_smoke_continue_applies_answers_without_refresh_flag(tmp_path: Path) -> None:
+    python = supported_python()
+    run_rel = Path(".pytest_cache") / "real_idea_smoke_continue_ready" / tmp_path.name
+    run_dir = ROOT / run_rel
+    idea_text = "I want a small tool for team decisions."
+    shutil.rmtree(run_dir, ignore_errors=True)
+    try:
+        first = subprocess.run(
+            [
+                "make",
+                "real-idea-smoke",
+                f"PYTHON={python}",
+                f"REAL_IDEA_SMOKE_RUN_DIR={run_rel}",
+                f"SPECG_USER_IDEA_INTAKE_INTERVIEW_IDEA_TEXT={idea_text}",
+                "USER_IDEA_INTAKE_INTERVIEW_IDEA_SUMMARY=Track team decisions.",
+                "USER_IDEA_INTAKE_INTERVIEW_CANDIDATE_ID=team-decision-log",
+                "USER_IDEA_INTAKE_INTERVIEW_DISPLAY_NAME=Team Decision Log",
+                "USER_IDEA_INTAKE_INTERVIEW_PUBLIC_ROUTE=/team-decision-log",
+            ],
+            cwd=ROOT,
+            check=False,
+            capture_output=True,
+            text=True,
+        )
+        assert first.returncode != 0
+        stale_active = run_dir / "active_idea_to_spec_candidate.json"
+        write_json(stale_active, {"artifact_kind": "stale_active_candidate"})
+
+        continued = subprocess.run(
+            [
+                "make",
+                "real-idea-smoke-continue",
+                f"PYTHON={python}",
+                f"REAL_IDEA_SMOKE_RUN_DIR={run_rel}",
+                f"REAL_IDEA_SMOKE_CLARIFICATION_ANSWERS_INPUT={ANSWERS_READY}",
+            ],
+            cwd=ROOT,
+            check=False,
+            capture_output=True,
+            text=True,
+        )
+
+        assert continued.returncode == 0, continued.stderr
+        report = load_json(run_dir / "real_idea_smoke_session_state_report.json")
+        summary = load_json(run_dir / "real_idea_smoke_summary.json")
+        active = load_json(run_dir / "active_idea_to_spec_candidate.json")
+        assert report["status"] == "ready"
+        assert report["summary"]["continuation_path"] == "applied_clarification_answers"
+        assert report["summary"]["answer_input_present"] is True
+        assert (
+            load_json(run_dir / "clarified_user_idea_intake_session.json")["readiness"][
+                "review_state"
+            ]
+            == "ready_for_event_storming_intake"
+        )
+        assert active["artifact_kind"] == "active_idea_to_spec_candidate"
+        assert active["summary"]["candidate_id"] == "team-decision-log"
+        assert summary["artifacts"]["active_candidate"]["present"] is True
+        assert summary["summary"]["candidate_id"] == "team-decision-log"
+    finally:
+        shutil.rmtree(run_dir, ignore_errors=True)
+
+
 def test_real_idea_smoke_summary_sanitizes_upstream_summaries(tmp_path: Path) -> None:
     python = supported_python()
     run_dir = tmp_path / "smoke"

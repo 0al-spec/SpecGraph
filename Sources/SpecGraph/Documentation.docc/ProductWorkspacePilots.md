@@ -299,7 +299,9 @@ The resulting repaired candidate reached:
 The follow-up backlog from that smoke is:
 
 1. add a session-aware smoke continuation target so operators do not manually
-   switch to `REAL_IDEA_SMOKE_REFRESH=0` after clarification;
+   switch to `REAL_IDEA_SMOKE_REFRESH=0` after clarification; done in proposal
+   `0193` with `make real-idea-smoke-continue` and
+   `real_idea_smoke_session_state_report.json`;
 2. replace hand-authored JSON answer sets with a structured answer-authoring
    surface or SpecSpace-first operator path;
 3. classify aggregate repair answers as control/closure evidence in Idea
