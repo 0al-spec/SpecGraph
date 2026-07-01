@@ -1356,6 +1356,26 @@ when a real idea supplies a useful bounded-context domain that is broader than
 the candidate id. The generated frame records `domain_ref_derivations` so
 auto-appended candidate-local refs remain system-derived, not owner-confirmed.
 
+## Real Idea Smoke Run Directory
+
+Status: implemented in proposal `0190`.
+
+Proposal `0190` adds an operator-friendly run-dir wrapper for real idea smoke
+runs:
+
+```bash
+make real-idea-smoke REAL_IDEA_SMOKE_RUN_DIR=runs/<id>
+```
+
+The target routes the existing real-intake active-candidate chain into the
+selected directory and writes a compact public-safe
+`real_idea_smoke_summary.json`. This makes live real-idea debugging easier
+without changing the underlying review-only gates or publishing raw idea text.
+The wrapper normalizes repository-local absolute run dirs, rejects external
+absolute paths, clears ambient active-candidate config, and writes the summary
+even when intake gates block. Smoke summaries whitelist upstream summary fields
+so raw idea text cannot leak through artifact telemetry.
+
 ## Team Decision Log Happy-Path Repair Pack
 
 Status: implemented in proposal `0182`.

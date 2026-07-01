@@ -81,6 +81,8 @@ REAL_IDEA_INTAKE_READY_SESSION_INPUT = $(if $(wildcard $(CLARIFIED_USER_IDEA_INT
 USER_IDEA_INTAKE_SOURCE ?= tests/fixtures/user_idea_intake/source_ready.json
 USER_IDEA_EVENT_STORMING_SEED_OUTPUT_DEFAULT := runs/idea_event_storming_seed.json
 USER_IDEA_EVENT_STORMING_SEED_OUTPUT ?= $(USER_IDEA_EVENT_STORMING_SEED_OUTPUT_DEFAULT)
+REAL_IDEA_SMOKE_RUN_DIR ?= runs/real_idea_smoke
+REAL_IDEA_SMOKE_SUMMARY_OUTPUT ?= $(REAL_IDEA_SMOKE_RUN_DIR)/real_idea_smoke_summary.json
 IDEA_EVENT_STORMING_INTAKE_SOURCE ?= tests/fixtures/idea_event_storming_intake/idea_ready.json
 IDEA_EVENT_STORMING_INTAKE_OUTPUT_DEFAULT := runs/idea_event_storming_intake.json
 IDEA_EVENT_STORMING_INTAKE_OUTPUT ?= $(IDEA_EVENT_STORMING_INTAKE_OUTPUT_DEFAULT)
@@ -293,6 +295,7 @@ PYTHON_TARGETS := viewer-surfaces dashboard backlog next-move spec-activity grap
 	real-idea-intake-candidate-source real-idea-intake-clarification-requests \
 	real-idea-intake-clarification-answers real-idea-intake-clarification-rerun \
 	real-idea-intake-ready-candidate-source real-idea-intake-active-candidate \
+	real-idea-smoke \
 	user-idea-intake-source generic-idea-intake \
 	generic-idea-intake-session \
 	idea-event-storming-intake ontology-bound-candidate-graph-seed \
@@ -644,9 +647,13 @@ real-idea-intake-active-candidate:
 		CANDIDATE_REPAIR_LOOP_OUTPUT="$(CANDIDATE_REPAIR_LOOP_OUTPUT)" \
 		IDEA_TO_SPEC_CLARIFICATION_OUTPUT="$(IDEA_TO_SPEC_CLARIFICATION_OUTPUT)" \
 		CANDIDATE_SPEC_MATERIALIZATION_OUTPUT_DIR="$(CANDIDATE_SPEC_MATERIALIZATION_OUTPUT_DIR)" \
-		CANDIDATE_SPEC_MATERIALIZATION_OUTPUT="$(CANDIDATE_SPEC_MATERIALIZATION_OUTPUT)" \
-		IDEA_TO_SPEC_PROMOTION_GATE_OUTPUT="$(IDEA_TO_SPEC_PROMOTION_GATE_OUTPUT)" \
-		ACTIVE_IDEA_TO_SPEC_CANDIDATE_OUTPUT="$(ACTIVE_IDEA_TO_SPEC_CANDIDATE_OUTPUT)"
+			CANDIDATE_SPEC_MATERIALIZATION_OUTPUT="$(CANDIDATE_SPEC_MATERIALIZATION_OUTPUT)" \
+			IDEA_TO_SPEC_PROMOTION_GATE_OUTPUT="$(IDEA_TO_SPEC_PROMOTION_GATE_OUTPUT)" \
+			ACTIVE_IDEA_TO_SPEC_CANDIDATE_OUTPUT="$(ACTIVE_IDEA_TO_SPEC_CANDIDATE_OUTPUT)"
+
+.PHONY: real-idea-smoke
+real-idea-smoke:
+	@$(PYTHON) tools/real_idea_smoke.py --run-dir "$(REAL_IDEA_SMOKE_RUN_DIR)" --summary-output "$(REAL_IDEA_SMOKE_SUMMARY_OUTPUT)" --python "$(PYTHON)" --interview-input "$(USER_IDEA_INTAKE_INTERVIEW_INPUT)"
 
 .PHONY: generic-idea-intake
 generic-idea-intake: user-idea-intake-source

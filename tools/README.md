@@ -302,6 +302,13 @@ Supervisor modes:
   carry both `domain.<candidate>` and contextual domain refs into the active
   candidate pipeline. Auto-appended domain refs carry derivation metadata and
   are not marked owner-confirmed.
+- Proposal 0190 adds `make real-idea-smoke
+  REAL_IDEA_SMOKE_RUN_DIR=runs/<id>`, which routes the real-intake
+  active-candidate chain into an isolated run directory and writes
+  `real_idea_smoke_summary.json`. The wrapper normalizes repository-local
+  absolute run dirs, rejects external absolute paths, clears ambient
+  active-candidate config, writes the summary even for blocked intake runs, and
+  whitelists upstream summary fields before publishing smoke telemetry.
 - `tools/user_idea_intake_source.py`: deterministic generic user-idea source
   builder introduced by proposal 0158. Use `make user-idea-intake-source
   USER_IDEA_INTAKE_SOURCE=<json>` to normalize product workspace identity,
