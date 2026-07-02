@@ -242,6 +242,49 @@
       ],
       "result": "implemented",
       "notes": "SpecSpace projected the executor runtime environment boundary for static publish vs local operator execution, showing not_applicable_in_producer_environment instead of a broken missing_executable configuration after Platform published the Timeweb deploy branch."
+    },
+    {
+      "evidence_id": "specspace-candidate-overview-panel-20260702",
+      "handoff_id": "external_consumer_handoff::specspace",
+      "consumer_id": "specspace",
+      "consumer": "SpecSpace",
+      "implementation_ref": "https://github.com/0al-spec/SpecSpace/pull/305",
+      "consumed_artifacts": [
+        "runs/candidate_overview.json",
+        "runs/repaired_candidate_spec_graph.json",
+        "runs/idea_maturity_metrics_report.json",
+        "runs/project_local_ontology_review_lane.json",
+        "runs/project_local_ontology_decision_effect_report.json"
+      ],
+      "accepted_contract_artifacts": [
+        "runs/candidate_overview.json",
+        "runs/repaired_candidate_spec_graph.json",
+        "runs/idea_maturity_metrics_report.json",
+        "runs/project_local_ontology_review_lane.json",
+        "runs/project_local_ontology_decision_effect_report.json"
+      ],
+      "evidence": [
+        {
+          "kind": "pull_request",
+          "ref": "0al-spec/SpecSpace#305",
+          "status": "merged",
+          "url": "https://github.com/0al-spec/SpecSpace/pull/305"
+        },
+        {
+          "kind": "test",
+          "ref": "SpecSpace CI 28590721039",
+          "status": "success",
+          "url": "https://github.com/0al-spec/SpecSpace/actions/runs/28590721039"
+        },
+        {
+          "kind": "smoke",
+          "ref": "Product Workspace candidate overview panel smoke",
+          "status": "success",
+          "url": "https://github.com/0al-spec/SpecSpace/pull/305"
+        }
+      ],
+      "result": "implemented",
+      "notes": "SpecSpace consumes runs/candidate_overview.json in the Product Workspace candidate overview panel, rendering product intent, event-storming groups, topology relation counts, project-local ontology review, Idea Maturity, and next safe action without write or execution authority."
     }
   ]
 }

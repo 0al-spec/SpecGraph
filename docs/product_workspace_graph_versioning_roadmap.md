@@ -1425,7 +1425,8 @@ mutate specs, write Ontology packages, accept terms, or approve candidates.
 
 ## Candidate Overview
 
-Status: implemented in proposal `0201`.
+Status: implemented producer-side in proposal `0201` and surfaced in SpecSpace
+Product Workspace by the downstream candidate overview panel.
 
 Proposal `0201` adds `runs/candidate_overview.json` as a public-safe narrative
 surface for SpecSpace and operators:
@@ -1446,6 +1447,13 @@ existing lifecycle artifacts. If a source artifact claims expanded authority,
 the overview becomes `candidate_overview_review_required`; it never executes
 prompt agents, applies answers, mutates specs, writes Ontology packages, accepts
 terms, approves candidates, creates Git state, or publishes read models.
+
+The static artifact bundle builder runs `make candidate-overview`, so public
+workspace bundles can expose the same narrative surface that SpecSpace reads for
+the Product Workspace panel. The panel remains read-only and links the product
+brief, event-storming frame, topology relation counts, project-local ontology
+state, repair/maturity status, and next safe action back to existing lifecycle
+evidence.
 
 ## Real Idea Smoke Iteration Isolation
 
@@ -1559,19 +1567,16 @@ The same run exposed the next product-flow friction points:
    review-only workflow relations such as `actor_triggers_command`,
    `command_emits_event`, `event_informs_policy`, and
    `constraint_applies_to_command`.
-9. **Candidate overview / narrative panel.** Done producer-side in proposal
-   `0201`. SpecGraph now emits `runs/candidate_overview.json`, a public-safe
-   narrative and navigation surface over event-storming intake, candidate graph,
-   repaired graph, repair session, Idea Maturity, project-local ontology review,
-   and next safe action. The next UI slice is a SpecSpace narrative panel that
-   consumes this artifact directly.
+9. **Candidate overview / narrative panel.** Done. Proposal `0201` added the
+   SpecGraph producer artifact `runs/candidate_overview.json`, and SpecSpace now
+   consumes it in the Product Workspace as a read-only narrative panel over
+   event-storming intake, candidate graph, repaired graph, repair session, Idea
+   Maturity, project-local ontology review, topology relation counts, and next
+   safe action.
 10. **Human-friendly candidate ids.** Long constraint statements currently
    produce truncated node ids. Keep stable machine ids, but add shorter
    readable slugs or display aliases for UI, PR artifacts, and candidate
    overview documents.
-11. **Generated candidate overview UI.** The producer artifact exists, but
-   SpecSpace still needs the user-facing narrative panel that explains actors,
-   flows, constraints, gaps closed, and remaining promotion steps.
 11. **Custom-run Platform promotion dry-run.** The cash-flow smoke reached
    `ready_for_platform_promotion_request`, but did not yet materialize an
    approval decision, promotion request, or Git Service dry-run. Add a reusable

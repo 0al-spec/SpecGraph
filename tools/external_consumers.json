@@ -249,7 +249,10 @@
           "0081",
           "0124",
           "0131",
-          "0132"
+          "0132",
+          "0197",
+          "0200",
+          "0201"
         ],
         "source_gap": "agent_executor_passport_visibility_not_projected_to_specspace",
         "artifact_contract": {
@@ -268,7 +271,12 @@
             "runs/ontology_import_gap_index.json",
             "runs/ontology_compatibility_diff_preview.json",
             "runs/ontology_governance_evidence_index.json",
-            "ontology/packages/specgraph-core/generated/ontology.normalized.json"
+            "ontology/packages/specgraph-core/generated/ontology.normalized.json",
+            "runs/candidate_overview.json",
+            "runs/project_local_ontology_review_lane.json",
+            "runs/project_local_ontology_decision_effect_report.json",
+            "runs/repaired_candidate_spec_graph.json",
+            "runs/idea_maturity_metrics_report.json"
           ],
           "stable_fields": [
             "artifact_kind",
@@ -294,7 +302,14 @@
             "compatibility_diff",
             "governance_evidence",
             "raw_artifacts",
-            "status"
+            "status",
+            "candidate_overview",
+            "narrative",
+            "event_storming",
+            "topology",
+            "project_local_ontology",
+            "next_action",
+            "readiness"
           ],
           "local_only_fields_forbidden": true
         },
@@ -306,7 +321,8 @@
           "show verification gaps without exposing raw local paths, raw passport material, or supervisor logs",
           "show ontology package metadata, normalized compiler IR classes, relations, and domains when producer artifacts are available",
           "show ontology import gaps, compatibility diffs, and governance evidence as review evidence rather than accepted ontology authority",
-          "show fallback state when producer artifacts are absent or draft"
+          "show fallback state when producer artifacts are absent or draft",
+          "show candidate overview product narrative, event-storming groups, workflow topology, project-local ontology review state, repair/maturity readiness, and next safe action when candidate_overview is available"
         ],
         "evidence_contract": {
           "artifact_kind": "external_consumer_evidence",
@@ -333,7 +349,7 @@
           ]
         }
       },
-      "notes": "Stable SpecSpace consumer entry for supervisor-derived handoff packets. The 0078 contract adds report-only Agent runtime enforcement evidence artifacts for SpecSpace UI consumption without claiming runtime enforcement."
+      "notes": "Stable SpecSpace consumer entry for supervisor-derived handoff packets and product workspace narrative surfaces. The contract includes the candidate overview artifact as read-only downstream evidence without granting SpecSpace write or execution authority."
     }
   ]
 }
