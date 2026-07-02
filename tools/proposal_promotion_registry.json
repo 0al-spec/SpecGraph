@@ -2546,5 +2546,18 @@
     "required_provenance_links": [
       "source_draft_ref"
     ]
+  },
+  {
+    "proposal_id": "0198",
+    "source_artifact_class": "working_draft",
+    "source_refs": [
+      "docs/archive/proposal_sources/0198_specspace_project_local_ontology_decision_import_preview.md"
+    ],
+    "motivating_concern": "SpecSpace can store project-local ontology review decisions, but SpecGraph needs a typed import preview before treating that SpecSpace-owned mutable state as review evidence.",
+    "normalized_title": "SpecSpace Project-Local Ontology Decision Import Preview",
+    "bounded_scope": "Add a review-only import preview artifact, Make target, tests, proposal docs, roadmap, DocC, README, and registry tracking that validates SpecSpace-owned project-local ontology decisions against the current lane artifact and emits sanitized decision candidates without applying decisions, mutating candidate or canonical specs, writing Ontology packages or lockfiles, accepting ontology terms, approving candidates, creating Git branches or commits, opening pull requests, publishing read models, or executing prompt agents.",
+    "required_provenance_links": [
+      "source_draft_ref"
+    ]
   }
 ]

@@ -537,6 +537,16 @@ Supervisor modes:
   alias, reject, defer, or request workspace promotion. The lane is report-only
   and does not write Ontology packages, accept ontology terms, mutate source
   artifacts, approve candidates, create branches, or publish read models.
+- `tools/specspace_project_local_ontology_decision_import_preview.py`:
+  SpecSpace-owned project-local ontology decision import preview introduced by
+  proposal 0198. Use
+  `make specspace-project-local-ontology-decision-import-preview` to validate
+  `runs/project_local_ontology_review_decisions.json` against
+  `runs/project_local_ontology_review_lane.json` and write
+  `runs/specspace_project_local_ontology_decision_import_preview.json` with
+  accepted, invalid, missing, and non-resolving decisions. The preview is
+  report-only and does not apply decisions, write Ontology packages, accept
+  terms, mutate candidate artifacts, or execute Platform/Git Service.
 - `make product-workspace-decision-backed-repair-chain`: convenience wrapper
   introduced by proposal 0170. It runs the standard
   `product-workspace-active-candidate` flow, then validates clarification
@@ -1313,6 +1323,11 @@ Key derived artifacts:
   project-local ontology term lane derived from candidate ontology gaps,
   product ontology decisions, and optional rerun preview evidence. It is the
   stable downstream surface for SpecSpace project-local ontology review.
+- `runs/specspace_project_local_ontology_decision_import_preview.json`:
+  public-safe, review-only preview for SpecSpace-owned project-local ontology
+  decisions. It validates workspace/candidate/session identity, stale lane refs,
+  allowed actions, and authority boundaries before later flows may treat the
+  decisions as evidence.
 - `runs/candidate_spec_materialization_report.json`: review-only report for
   local candidate spec YAML previews under `runs/materialized_candidate_specs/`,
   including materialized paths for Platform promotion-request handoff without

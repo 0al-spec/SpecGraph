@@ -1488,23 +1488,30 @@ The same run exposed the next product-flow friction points:
    gaps by product term, attaching accepted product ontology decision evidence,
    showing rerun preview effects, and exposing operator next actions for
    `bind`, `alias`, `keep project-local`, `promote to workspace ontology`,
-   `reject`, and `defer` without mutating authority ontology packages. The next
-   slices should let SpecSpace store lane decisions and let SpecGraph
-   preview-import that SpecSpace-owned state.
-6. **Event-storming topology.** Proposal `0191` currently emits flat
+   `reject`, and `defer` without mutating authority ontology packages. The
+   companion SpecSpace slice stores lane decisions as operator-owned state.
+6. **SpecSpace project-local ontology decision import preview.** Done in
+   proposal `0198`. SpecGraph can now read
+   `runs/project_local_ontology_review_decisions.json`, validate it against
+   `runs/project_local_ontology_review_lane.json`, and write
+   `runs/specspace_project_local_ontology_decision_import_preview.json` with
+   accepted, invalid, missing, and non-resolving decisions. This remains
+   review-only: no ontology package writes, accepted terms, candidate mutation,
+   or Git authority.
+7. **Event-storming topology.** Proposal `0191` currently emits flat
    `Product Boundary --decomposes_to--> node` edges. The next topology slice
    should add ontology-validated event-storming relations such as
    `command -> event`, `event -> policy`, and `constraint -> command`, while
    preserving the review-only boundary.
-7. **Human-friendly candidate ids.** Long constraint statements currently
+8. **Human-friendly candidate ids.** Long constraint statements currently
    produce truncated node ids. Keep stable machine ids, but add shorter
    readable slugs or display aliases for UI, PR artifacts, and candidate
    overview documents.
-8. **Generated candidate overview.** The artifacts are rich, but the operator
+9. **Generated candidate overview.** The artifacts are rich, but the operator
    still needs a narrative summary assembled from the graph. Add a generated
    `candidate_overview.md` or SpecSpace narrative panel that explains actors,
    flows, constraints, gaps closed, and remaining promotion steps.
-9. **Custom-run Platform promotion dry-run.** The cash-flow smoke reached
+10. **Custom-run Platform promotion dry-run.** The cash-flow smoke reached
    `ready_for_platform_promotion_request`, but did not yet materialize an
    approval decision, promotion request, or Git Service dry-run. Add a reusable
    custom run-dir handoff so any repaired real-idea smoke can continue into the
