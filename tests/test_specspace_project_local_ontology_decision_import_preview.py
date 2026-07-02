@@ -207,6 +207,49 @@ def test_specspace_project_local_import_preview_blocks_authority_expansion() -> 
     )
 
 
+def test_specspace_project_local_import_preview_rejects_read_model_authority() -> None:
+    state = decision_state()
+    boundary = state["authority_boundary"]
+    assert isinstance(boundary, dict)
+    boundary["may_publish_read_model"] = True
+
+    report = build_report(state=state)
+
+    assert report["readiness"]["ready"] is False
+    assert any(
+        finding["finding_id"] == "project_local_decision_state_authority_boundary_expanded"
+        for finding in report["findings"]
+    )
+
+
+def test_specspace_project_local_import_preview_requires_candidate_identity() -> None:
+    state = decision_state()
+    decision = state["decisions"][0]
+    assert isinstance(decision, dict)
+    decision.pop("candidate_id")
+
+    report = build_report(state=state)
+
+    assert report["readiness"]["ready"] is False
+    assert report["summary"]["invalid_decision_count"] == 1
+    assert report["summary"]["missing_decision_count"] == 0
+    assert report["import_preview"]["invalid_decisions"][0]["reason"] == ("candidate_missing")
+
+
+def test_specspace_project_local_import_preview_requires_lane_ref() -> None:
+    state = decision_state()
+    decision = state["decisions"][0]
+    assert isinstance(decision, dict)
+    decision.pop("project_local_ontology_review_lane_ref")
+
+    report = build_report(state=state)
+
+    assert report["readiness"]["ready"] is False
+    assert report["summary"]["invalid_decision_count"] == 1
+    assert report["summary"]["missing_decision_count"] == 0
+    assert report["import_preview"]["invalid_decisions"][0]["reason"] == ("review_lane_ref_missing")
+
+
 def test_specspace_project_local_import_preview_rejects_invalid_bind() -> None:
     report = build_report(
         state=decision_state(
@@ -219,6 +262,41 @@ def test_specspace_project_local_import_preview_rejects_invalid_bind() -> None:
     assert report["summary"]["invalid_decision_count"] == 1
     assert report["import_preview"]["invalid_decisions"][0]["reason"] == (
         "bind_existing_requires_ontology_ref"
+    )
+    assert report["summary"]["missing_decision_count"] == 0
+
+
+def test_specspace_project_local_import_preview_rejects_term_mismatch() -> None:
+    report = build_report(
+        state=decision_state(
+            decision_value={
+                "term": "Customer Password",
+                "reason": "Wrong term.",
+            },
+        )
+    )
+
+    assert report["readiness"]["ready"] is False
+    assert report["summary"]["invalid_decision_count"] == 1
+    assert report["summary"]["missing_decision_count"] == 0
+    assert report["import_preview"]["invalid_decisions"][0]["reason"] == ("decision_term_mismatch")
+
+
+def test_specspace_project_local_import_preview_rejects_duplicate_term_decisions() -> None:
+    state = decision_state()
+    duplicate = dict(state["decisions"][0])
+    duplicate["decision_id"] = (
+        "specspace-project-local-ontology-decision::cash-flow-control::recurringpayment::2"
+    )
+    state["decisions"].append(duplicate)
+
+    report = build_report(state=state)
+
+    assert report["readiness"]["ready"] is False
+    assert report["summary"]["accepted_decision_count"] == 1
+    assert report["summary"]["invalid_decision_count"] == 1
+    assert report["import_preview"]["invalid_decisions"][0]["reason"] == (
+        "duplicate_project_local_term_decision"
     )
 
 

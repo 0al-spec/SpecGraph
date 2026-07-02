@@ -58,8 +58,10 @@ CONSUMER_FALSE_FIELDS = (
     "may_write_ontology_package",
     "may_write_ontology_lockfile",
     "may_accept_ontology_terms",
+    "may_mark_candidate_graph_accepted",
     "may_create_branch_or_commit",
     "may_open_pull_request",
+    "may_publish_read_model",
 )
 AUTHORITY_FALSE_FIELDS = (
     "project_local_ontology_review_decision_state_is_authority",
@@ -78,8 +80,10 @@ AUTHORITY_FALSE_FIELDS = (
     "may_write_ontology_package",
     "may_write_ontology_lockfile",
     "may_accept_ontology_terms",
+    "may_mark_candidate_graph_accepted",
     "may_create_branch_or_commit",
     "may_open_pull_request",
+    "may_publish_read_model",
 )
 DECISION_FALSE_FIELDS = (
     "canonical_mutations_allowed",
@@ -90,8 +94,10 @@ DECISION_FALSE_FIELDS = (
     "writes_ontology_package",
     "updates_ontology_lockfile",
     "accepts_ontology_terms",
+    "may_mark_candidate_graph_accepted",
     "creates_branch_or_commit",
     "opens_pull_request",
+    "may_publish_read_model",
     "may_execute_prompt_agent",
     "may_execute_specgraph",
     "may_execute_platform",
@@ -102,8 +108,10 @@ DECISION_FALSE_FIELDS = (
     "may_write_ontology_package",
     "may_write_ontology_lockfile",
     "may_accept_ontology_terms",
+    "may_mark_candidate_graph_accepted",
     "may_create_branch_or_commit",
     "may_open_pull_request",
+    "may_publish_read_model",
 )
 LANE_AUTHORITY_FALSE_FIELDS = (
     "may_execute_prompt_agent",
@@ -154,6 +162,10 @@ def _text(value: Any, default: str = "") -> str:
 def _slug(value: str, fallback: str = "decision") -> str:
     slug = re.sub(r"[^a-z0-9]+", "-", value.lower()).strip("-")
     return slug or fallback
+
+
+def _term_key(value: str) -> str:
+    return re.sub(r"[^a-z0-9]+", "", value.casefold())
 
 
 def _relative_ref(path: Path | None) -> str | None:
@@ -418,6 +430,13 @@ def _decision_value(
             "reason": "decision_value_authority_expanded",
             "field": field,
         }
+    explicit_term = _text(value.get("term"))
+    if explicit_term and _term_key(explicit_term) != _text(term.get("term_key")):
+        return {}, {
+            "reason": "decision_term_mismatch",
+            "expected_term_key": _text(term.get("term_key")),
+            "actual_term_key": _term_key(explicit_term),
+        }
     term_text = _text(value.get("term")) or _text(term.get("term"))
     if action == "keep_project_local":
         result = {"term": term_text, "term_scope": "project_local"}
@@ -543,6 +562,8 @@ def build_specspace_project_local_ontology_decision_import_preview(
     non_resolving_decisions: list[dict[str, Any]] = []
     invalid_decisions: list[dict[str, Any]] = []
     seen_terms: set[str] = set()
+    invalid_terms: set[str] = set()
+    processed_terms: set[str] = set()
 
     for raw_decision in _list(state.get("decisions")):
         decision = _dict(raw_decision)
@@ -559,6 +580,8 @@ def build_specspace_project_local_ontology_decision_import_preview(
             continue
         decision_workspace = _text(decision.get("workspace_id"))
         if workspace_id and decision_workspace != workspace_id:
+            if _text(decision.get("term_key")) in required_terms:
+                invalid_terms.add(_text(decision.get("term_key")))
             invalid_decisions.append(
                 {
                     "decision_id": decision_id,
@@ -569,7 +592,20 @@ def build_specspace_project_local_ontology_decision_import_preview(
             )
             continue
         context_workspace = _text(context.get("workspace_id"))
-        if context_workspace and decision_workspace and decision_workspace != context_workspace:
+        if context_workspace and not decision_workspace:
+            if _text(decision.get("term_key")) in required_terms:
+                invalid_terms.add(_text(decision.get("term_key")))
+            invalid_decisions.append(
+                {
+                    "decision_id": decision_id,
+                    "reason": "workspace_missing",
+                    "expected": context_workspace,
+                }
+            )
+            continue
+        if context_workspace and decision_workspace != context_workspace:
+            if _text(decision.get("term_key")) in required_terms:
+                invalid_terms.add(_text(decision.get("term_key")))
             invalid_decisions.append(
                 {
                     "decision_id": decision_id,
@@ -581,7 +617,20 @@ def build_specspace_project_local_ontology_decision_import_preview(
             continue
         candidate_id = _text(decision.get("candidate_id"))
         context_candidate = _text(context.get("candidate_id"))
-        if context_candidate and candidate_id and candidate_id != context_candidate:
+        if context_candidate and not candidate_id:
+            if _text(decision.get("term_key")) in required_terms:
+                invalid_terms.add(_text(decision.get("term_key")))
+            invalid_decisions.append(
+                {
+                    "decision_id": decision_id,
+                    "reason": "candidate_missing",
+                    "expected": context_candidate,
+                }
+            )
+            continue
+        if context_candidate and candidate_id != context_candidate:
+            if _text(decision.get("term_key")) in required_terms:
+                invalid_terms.add(_text(decision.get("term_key")))
             invalid_decisions.append(
                 {
                     "decision_id": decision_id,
@@ -593,7 +642,20 @@ def build_specspace_project_local_ontology_decision_import_preview(
             continue
         repair_session_id = _text(decision.get("repair_session_id"))
         context_session = _text(context.get("repair_session_id"))
-        if context_session and repair_session_id and repair_session_id != context_session:
+        if context_session and not repair_session_id:
+            if _text(decision.get("term_key")) in required_terms:
+                invalid_terms.add(_text(decision.get("term_key")))
+            invalid_decisions.append(
+                {
+                    "decision_id": decision_id,
+                    "reason": "repair_session_missing",
+                    "expected": context_session,
+                }
+            )
+            continue
+        if context_session and repair_session_id != context_session:
+            if _text(decision.get("term_key")) in required_terms:
+                invalid_terms.add(_text(decision.get("term_key")))
             invalid_decisions.append(
                 {
                     "decision_id": decision_id,
@@ -604,7 +666,20 @@ def build_specspace_project_local_ontology_decision_import_preview(
             )
             continue
         decision_lane_ref = _text(decision.get("project_local_ontology_review_lane_ref"))
-        if decision_lane_ref and lane_ref and decision_lane_ref != lane_ref:
+        if lane_ref and not decision_lane_ref:
+            if _text(decision.get("term_key")) in required_terms:
+                invalid_terms.add(_text(decision.get("term_key")))
+            invalid_decisions.append(
+                {
+                    "decision_id": decision_id,
+                    "reason": "review_lane_ref_missing",
+                    "expected": lane_ref,
+                }
+            )
+            continue
+        if lane_ref and decision_lane_ref != lane_ref:
+            if _text(decision.get("term_key")) in required_terms:
+                invalid_terms.add(_text(decision.get("term_key")))
             invalid_decisions.append(
                 {
                     "decision_id": decision_id,
@@ -625,6 +700,17 @@ def build_specspace_project_local_ontology_decision_import_preview(
                 }
             )
             continue
+        if term_key in processed_terms:
+            invalid_terms.add(term_key)
+            invalid_decisions.append(
+                {
+                    "decision_id": decision_id,
+                    "reason": "duplicate_project_local_term_decision",
+                    "term_key": term_key,
+                }
+            )
+            continue
+        processed_terms.add(term_key)
         action = _text(decision.get("review_action"))
         allowed_actions = set(_list(term.get("suggested_actions"))) or supported_actions
         if (
@@ -641,6 +727,8 @@ def build_specspace_project_local_ontology_decision_import_preview(
                     "allowed_actions": sorted(allowed_actions),
                 }
             )
+            if term_key in required_terms:
+                invalid_terms.add(term_key)
             continue
         value, value_error = _decision_value(
             action=action,
@@ -656,6 +744,8 @@ def build_specspace_project_local_ontology_decision_import_preview(
                     **value_error,
                 }
             )
+            if term_key in required_terms:
+                invalid_terms.add(term_key)
             continue
         candidate = _candidate_from_decision(
             decision=decision,
@@ -677,7 +767,7 @@ def build_specspace_project_local_ontology_decision_import_preview(
             "status": _text(lane_terms[term_key].get("status"), "unreviewed"),
             "reason": "required_project_local_ontology_decision_missing",
         }
-        for term_key in sorted(required_terms - seen_terms)
+        for term_key in sorted(required_terms - seen_terms - invalid_terms)
     ]
 
     for invalid in invalid_decisions:
