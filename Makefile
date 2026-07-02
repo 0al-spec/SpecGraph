@@ -285,6 +285,18 @@ IDEA_MATURITY_METRICS_OUTPUT ?= runs/idea_maturity_metrics_report.json
 IDEA_MATURITY_METRICS_VALIDATION_OUTPUT ?= runs/idea_maturity_metrics_validation_report.json
 IDEA_MATURITY_METRICS_STRICT ?=
 IDEA_MATURITY_METRICS_STRICT_ARG := $(if $(filter 1 true yes,$(strip $(IDEA_MATURITY_METRICS_STRICT))),--strict,)
+CANDIDATE_OVERVIEW_INTAKE ?= runs/idea_event_storming_intake.json
+CANDIDATE_OVERVIEW_CANDIDATE_GRAPH ?= runs/candidate_spec_graph.json
+CANDIDATE_OVERVIEW_REPAIRED_CANDIDATE_GRAPH ?= runs/repaired_candidate_spec_graph.json
+CANDIDATE_OVERVIEW_REPAIR_SESSION ?= runs/idea_to_spec_repair_session.json
+CANDIDATE_OVERVIEW_REPAIRED_REPAIR_SESSION ?= runs/repaired_idea_to_spec_repair_session.json
+CANDIDATE_OVERVIEW_IDEA_MATURITY ?= runs/idea_maturity_metrics_report.json
+CANDIDATE_OVERVIEW_PROJECT_LOCAL_ONTOLOGY_LANE ?= runs/project_local_ontology_review_lane.json
+CANDIDATE_OVERVIEW_PROJECT_LOCAL_ONTOLOGY_EFFECT ?= runs/project_local_ontology_decision_effect_report.json
+CANDIDATE_OVERVIEW_REPAIRED_HANDOFF ?= runs/repaired_candidate_promotion_handoff_report.json
+CANDIDATE_OVERVIEW_OUTPUT ?= runs/candidate_overview.json
+CANDIDATE_OVERVIEW_STRICT ?=
+CANDIDATE_OVERVIEW_STRICT_ARG := $(if $(filter 1 true yes,$(strip $(CANDIDATE_OVERVIEW_STRICT))),--strict,)
 SPECGRAPH_EXTERNAL_CHECKOUT_ROOT ?=
 METRICS_REPO_DEFAULT := $(if $(strip $(SPECGRAPH_EXTERNAL_CHECKOUT_ROOT)),$(SPECGRAPH_EXTERNAL_CHECKOUT_ROOT)/Metrics,../Metrics)
 METRICS_REPO ?= $(METRICS_REPO_DEFAULT)
@@ -361,6 +373,7 @@ PYTHON_TARGETS := viewer-surfaces dashboard backlog next-move spec-activity grap
 	product-workspace-repair-pack-state \
 	candidate-spec-materialization idea-to-spec-promotion-gate \
 	active-idea-to-spec-candidate-source candidate-approval-decision \
+	candidate-overview \
 	product-workspace-active-candidate product-workspace-decision-backed-repair-chain \
 	product-workspace-repaired-promotion-handoff \
 	product-workspace-happy-path-repair-pack \
@@ -452,6 +465,7 @@ help:
 			'  make product-workspace-team-decision-log-happy-path-repair-pack Demo alias for the Team Decision Log fixture' \
 			'  make idea-maturity-metrics   Build Idea-to-Spec maturity telemetry report' \
 			'  make idea-maturity-metrics-validate Validate maturity telemetry with Metrics CLI' \
+			'  make candidate-overview       Build public-safe candidate overview narrative JSON' \
 		'  make metrics-delivery         Refresh Metrics delivery workflow JSON' \
 		'  make metrics-feedback         Refresh Metrics feedback JSON' \
 		'  make metrics-source-promotion Refresh Metrics source promotion candidates JSON' \
@@ -496,6 +510,7 @@ help:
 			'  make active-idea-to-spec-candidate-source Build active product candidate source' \
 			'  make candidate-approval-decision Build explicit candidate approval decision' \
 			'  make idea-maturity-metrics   Build Idea-to-Spec maturity telemetry report' \
+			'  make candidate-overview       Build public-safe candidate overview narrative JSON' \
 			'  make idea-to-spec-repair-session-journal Build durable review-only repair session journal' \
 			'  make repaired-candidate-promotion-handoff Build repaired approval-ready handoff artifacts' \
 			'  make specspace-repair-draft-import-preview Build review-only SpecSpace repair draft import preview' \
@@ -990,6 +1005,10 @@ idea-maturity-metrics-validate:
 product-workspace-idea-maturity:
 	@$(MAKE) idea-maturity-metrics
 	@$(MAKE) idea-maturity-metrics-validate
+
+.PHONY: candidate-overview
+candidate-overview:
+	@$(PYTHON) tools/candidate_overview.py --intake "$(CANDIDATE_OVERVIEW_INTAKE)" --candidate-graph "$(CANDIDATE_OVERVIEW_CANDIDATE_GRAPH)" --repaired-candidate-graph "$(CANDIDATE_OVERVIEW_REPAIRED_CANDIDATE_GRAPH)" --repair-session "$(CANDIDATE_OVERVIEW_REPAIR_SESSION)" --repaired-repair-session "$(CANDIDATE_OVERVIEW_REPAIRED_REPAIR_SESSION)" --idea-maturity "$(CANDIDATE_OVERVIEW_IDEA_MATURITY)" --project-local-ontology-lane "$(CANDIDATE_OVERVIEW_PROJECT_LOCAL_ONTOLOGY_LANE)" --project-local-ontology-effect "$(CANDIDATE_OVERVIEW_PROJECT_LOCAL_ONTOLOGY_EFFECT)" --repaired-handoff "$(CANDIDATE_OVERVIEW_REPAIRED_HANDOFF)" --output "$(CANDIDATE_OVERVIEW_OUTPUT)" $(CANDIDATE_OVERVIEW_STRICT_ARG)
 
 .PHONY: product-workspace-active-candidate
 product-workspace-active-candidate:

@@ -11460,5 +11460,67 @@
       }
     ],
     "notes": "SpecGraph now adds review-only event-storming workflow topology edges on top of the product-boundary decomposes_to fallback without mutating specs or accepting ontology terms."
+  },
+  {
+    "proposal_id": "0201",
+    "posture": "synchronous_runtime_slice",
+    "runtime_surfaces": [
+      "docs/proposals/0201_candidate_overview.md",
+      "docs/archive/proposal_sources/0201_candidate_overview.md",
+      "Makefile",
+      "tools/candidate_overview.py",
+      "tools/build_static_artifact_bundle.py",
+      "tests/test_candidate_overview.py",
+      "docs/product_workspace_graph_versioning_roadmap.md",
+      "Sources/SpecGraph/Documentation.docc/ProductWorkspacePilots.md",
+      "tools/README.md"
+    ],
+    "runtime_markers": [
+      {
+        "path": "tools/candidate_overview.py",
+        "pattern": "candidate_overview"
+      },
+      {
+        "path": "tools/candidate_overview.py",
+        "pattern": "specgraph.idea-to-spec.candidate-overview.v0.1"
+      },
+      {
+        "path": "Makefile",
+        "pattern": "candidate-overview"
+      },
+      {
+        "path": "tools/build_static_artifact_bundle.py",
+        "pattern": "candidate-overview"
+      }
+    ],
+    "validation_markers": [
+      {
+        "path": "tests/test_candidate_overview.py",
+        "pattern": "test_candidate_overview_builds_public_safe_narrative"
+      },
+      {
+        "path": "tests/test_candidate_overview.py",
+        "pattern": "test_candidate_overview_blocks_source_authority_expansion"
+      },
+      {
+        "path": "tests/test_candidate_overview.py",
+        "pattern": "test_candidate_overview_cli_writes_output"
+      }
+    ],
+    "observation_markers": [
+      {
+        "path": "docs/product_workspace_graph_versioning_roadmap.md",
+        "pattern": "Candidate Overview"
+      },
+      {
+        "path": "Sources/SpecGraph/Documentation.docc/ProductWorkspacePilots.md",
+        "pattern": "runs/candidate_overview.json"
+      },
+      {
+        "path": "tools/README.md",
+        "pattern": "tools/candidate_overview.py"
+      }
+    ],
+    "notes": "SpecGraph now emits a public-safe candidate_overview artifact that summarizes product intent, event-storming frame, topology, repair readiness, Idea Maturity, project-local ontology state, and the next safe action without adding write authority."
   }
 ]

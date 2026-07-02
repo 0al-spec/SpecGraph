@@ -742,6 +742,7 @@ def refresh_publish_surfaces(repo_root: Path) -> None:
         run_make_target(repo_root, "product-workspace-active-candidate")
     run_make_target(repo_root, "idea-maturity-metrics")
     run_make_target(repo_root, "idea-maturity-metrics-validate")
+    run_make_target(repo_root, "candidate-overview")
     write_public_platform_handoff_surfaces(repo_root)
 
 

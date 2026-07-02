@@ -340,12 +340,30 @@ The follow-up backlog from that smoke is:
 7. replace the temporary flat `decomposes_to` topology with richer
    event-storming relations such as `command -> event` and
    `constraint -> command`; done in Proposal `0200`;
-8. add human-friendly display aliases for long generated candidate node ids;
-9. generate a candidate overview document or SpecSpace narrative panel from the
-   repaired candidate graph;
-10. allow custom run-dir repaired candidates to continue into Platform
+8. generate a candidate overview artifact from the repaired candidate graph;
+   done producer-side in Proposal `0201` with
+   `runs/candidate_overview.json` and `make candidate-overview`;
+9. add a SpecSpace narrative panel that consumes `candidate_overview.json`;
+10. add human-friendly display aliases for long generated candidate node ids;
+11. allow custom run-dir repaired candidates to continue into Platform
    approval/promotion dry-run without copying artifacts into canonical
    `runs/*.json`.
+
+Proposal `0201` adds the public-safe candidate overview producer:
+
+```bash
+make candidate-overview
+```
+
+The target writes `runs/candidate_overview.json`, preferring
+`runs/repaired_candidate_spec_graph.json` when present and falling back to the
+initial candidate graph otherwise. The artifact summarizes product intent,
+event-storming groups, candidate nodes, topology relation counts, repair
+readiness, Idea Maturity state, project-local ontology review state, and the
+next safe operator action. It is a read-only narrative/navigation surface, not a
+new gate or score, and it does not execute prompt agents, apply answers, mutate
+specs, write Ontology packages, accept terms, approve candidates, create Git
+state, or publish read models.
 
 Proposal `0163` adds `idea_to_spec_clarification_requests` as the unified
 read-only question/action surface:

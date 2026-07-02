@@ -507,6 +507,16 @@ Supervisor modes:
   ready for candidate approval review while keeping Platform promotion blocked
   until a separate `candidate_approval_decision`, and it does not mutate source
   artifacts, canonical specs, ontology packages, Git branches, or read models.
+- `tools/candidate_overview.py`: public-safe candidate overview producer
+  introduced by proposal 0201. Use `make candidate-overview` to write
+  `runs/candidate_overview.json` from the event-storming intake, candidate
+  graph, repaired graph when present, repair session, Idea Maturity report,
+  project-local ontology review/effect artifacts, and repaired handoff. The
+  overview is a narrative/navigation surface for SpecSpace: it summarizes
+  product intent, understood scope, event-storming groups, topology relation
+  counts, repair readiness, project-local ontology state, and the next safe
+  action without executing prompt agents, applying answers, mutating specs,
+  accepting ontology terms, creating Git state, or publishing read models.
 - `tools/product_workspace_repair_pack.py`: product workspace repair-pack
   materializer introduced by proposal 0182. Use
   `make product-workspace-repair-pack-state` to convert a
