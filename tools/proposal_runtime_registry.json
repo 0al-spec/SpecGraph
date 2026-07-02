@@ -11288,5 +11288,62 @@
       }
     ],
     "notes": "SpecGraph now emits a read-only project-local ontology review lane that groups candidate ontology gaps by product term, attaches product ontology decision evidence, and exposes operator next actions without writing ontology packages or accepting terms."
+  },
+  {
+    "proposal_id": "0198",
+    "posture": "synchronous_runtime_slice",
+    "runtime_surfaces": [
+      "docs/proposals/0198_specspace_project_local_ontology_decision_import_preview.md",
+      "docs/archive/proposal_sources/0198_specspace_project_local_ontology_decision_import_preview.md",
+      "Makefile",
+      "tools/specspace_project_local_ontology_decision_import_preview.py",
+      "tests/test_specspace_project_local_ontology_decision_import_preview.py",
+      "docs/product_workspace_graph_versioning_roadmap.md",
+      "Sources/SpecGraph/Documentation.docc/ProductWorkspacePilots.md",
+      "tools/README.md"
+    ],
+    "runtime_markers": [
+      {
+        "path": "tools/specspace_project_local_ontology_decision_import_preview.py",
+        "pattern": "specspace_project_local_ontology_decision_import_preview"
+      },
+      {
+        "path": "tools/specspace_project_local_ontology_decision_import_preview.py",
+        "pattern": "project_local_ontology_decision_import_ready"
+      },
+      {
+        "path": "Makefile",
+        "pattern": "specspace-project-local-ontology-decision-import-preview"
+      }
+    ],
+    "validation_markers": [
+      {
+        "path": "tests/test_specspace_project_local_ontology_decision_import_preview.py",
+        "pattern": "test_specspace_project_local_import_preview_accepts_project_local_decision"
+      },
+      {
+        "path": "tests/test_specspace_project_local_ontology_decision_import_preview.py",
+        "pattern": "test_specspace_project_local_import_preview_blocks_missing_decision"
+      },
+      {
+        "path": "tests/test_specspace_project_local_ontology_decision_import_preview.py",
+        "pattern": "test_specspace_project_local_import_preview_blocks_authority_expansion"
+      }
+    ],
+    "observation_markers": [
+      {
+        "path": "docs/product_workspace_graph_versioning_roadmap.md",
+        "pattern": "SpecSpace project-local ontology decision import preview"
+      },
+      {
+        "path": "Sources/SpecGraph/Documentation.docc/ProductWorkspacePilots.md",
+        "pattern": "specspace_project_local_ontology_decision_import_preview.json"
+      },
+      {
+        "path": "tools/README.md",
+        "pattern": "tools/specspace_project_local_ontology_decision_import_preview.py"
+      }
+    ],
+    "notes": "SpecGraph now validates SpecSpace-owned project-local ontology decisions against the current review lane and emits a public-safe import preview without applying decisions or accepting ontology terms."
   }
 ]

@@ -322,13 +322,16 @@ The follow-up backlog from that smoke is:
 5. add a project-local ontology review lane for `bind`, `alias`,
    `keep project-local`, `promote`, and `reject` decisions; done producer-side
    in Proposal `0197` with `project_local_ontology_review_lane.json`;
-6. replace the temporary flat `decomposes_to` topology with
+6. validate SpecSpace-owned project-local ontology review decisions before any
+   downstream use; done in Proposal `0198` with
+   `specspace_project_local_ontology_decision_import_preview.json`;
+7. replace the temporary flat `decomposes_to` topology with
    ontology-validated event-storming relations such as `command -> event` and
    `constraint -> command`;
-7. add human-friendly display aliases for long generated candidate node ids;
-8. generate a candidate overview document or SpecSpace narrative panel from the
+8. add human-friendly display aliases for long generated candidate node ids;
+9. generate a candidate overview document or SpecSpace narrative panel from the
    repaired candidate graph;
-9. allow custom run-dir repaired candidates to continue into Platform
+10. allow custom run-dir repaired candidates to continue into Platform
    approval/promotion dry-run without copying artifacts into canonical
    `runs/*.json`.
 
@@ -468,6 +471,23 @@ rejecting, deferring, or requesting future workspace ontology promotion. The
 artifact is public-safe and review-only: it does not write Ontology packages,
 accept ontology terms, mutate candidate artifacts, approve candidates, create
 Git branches, or publish read models.
+
+Proposal `0198` adds the SpecSpace project-local ontology decision import
+preview:
+
+```bash
+make specspace-project-local-ontology-decision-import-preview
+```
+
+The target reads `runs/project_local_ontology_review_decisions.json` alongside
+`runs/project_local_ontology_review_lane.json` and writes
+`runs/specspace_project_local_ontology_decision_import_preview.json`. It
+validates workspace/candidate/session identity, stale lane refs, allowed
+actions, decision value shape, and authority boundaries. Accepted decisions
+become sanitized decision candidates; invalid, missing, and deferred decisions
+stay visible as review blockers. The preview does not apply decisions, write
+Ontology packages, accept terms, mutate candidate artifacts, or execute
+Platform/Git Service.
 
 Proposal `0176` adds candidate repair answer materialization to the same
 review-only chain. Accepted `candidate_gap` answers now produce
