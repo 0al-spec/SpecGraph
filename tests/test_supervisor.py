@@ -11219,6 +11219,9 @@ def test_specspace_registry_handoff_contract_is_stable_and_ready(
         "0124",
         "0131",
         "0132",
+        "0197",
+        "0200",
+        "0201",
     ]
     assert "0131" in ready["source_proposal_ids"]
     assert "0132" in ready["source_proposal_ids"]
@@ -11237,6 +11240,11 @@ def test_specspace_registry_handoff_contract_is_stable_and_ready(
         "runs/ontology_compatibility_diff_preview.json",
         "runs/ontology_governance_evidence_index.json",
         "ontology/packages/specgraph-core/generated/ontology.normalized.json",
+        "runs/candidate_overview.json",
+        "runs/project_local_ontology_review_lane.json",
+        "runs/project_local_ontology_decision_effect_report.json",
+        "runs/repaired_candidate_spec_graph.json",
+        "runs/idea_maturity_metrics_report.json",
     ]
     assert "viewer_projection" in ready["artifact_contract"]["stable_fields"]
     assert "required_checks" in ready["artifact_contract"]["stable_fields"]
@@ -11245,11 +11253,17 @@ def test_specspace_registry_handoff_contract_is_stable_and_ready(
     assert "source_artifact_refs" in ready["artifact_contract"]["stable_fields"]
     assert "materialized_ir" in ready["artifact_contract"]["stable_fields"]
     assert "governance_evidence" in ready["artifact_contract"]["stable_fields"]
+    assert "candidate_overview" in ready["artifact_contract"]["stable_fields"]
+    assert "topology" in ready["artifact_contract"]["stable_fields"]
+    assert "project_local_ontology" in ready["artifact_contract"]["stable_fields"]
     assert "show runtime enforcement posture" in " ".join(ready["expected_consumer_behavior"])
     assert "show runtime enforcement evidence status" in " ".join(
         ready["expected_consumer_behavior"]
     )
     assert "show ontology package metadata" in " ".join(ready["expected_consumer_behavior"])
+    assert "show candidate overview product narrative" in " ".join(
+        ready["expected_consumer_behavior"]
+    )
     assert ready["transition_packet_validation"]["ok"] is True
     assert report["viewer_projection"]["named_filters"]["ready_for_handoff"] == ["specspace"]
     assert report["handoff_backlog"]["grouped_by_next_gap"] == {
