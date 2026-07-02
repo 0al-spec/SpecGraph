@@ -98,6 +98,69 @@ def test_candidate_spec_materialization_writes_review_yaml(tmp_path: Path) -> No
     assert parsed["specification"]["requirements"]
 
 
+def test_candidate_spec_materialization_skips_review_only_workflow_edges(
+    tmp_path: Path,
+) -> None:
+    module = load_module()
+    candidate_graph = {
+        "artifact_kind": "candidate_spec_graph",
+        "contract_ref": "specgraph.idea-to-spec.candidate-spec-graph.v0.1",
+        "canonical_mutations_allowed": False,
+        "tracked_artifacts_written": False,
+        "nodes": [
+            {
+                "id": "candidate-spec.product-boundary",
+                "title": "Product Boundary",
+                "kind": "product_spec_boundary",
+                "description": "Boundary",
+                "requirements": [{"id": "req.boundary", "statement": "Boundary"}],
+                "acceptance_criteria": [],
+            },
+            {
+                "id": "candidate-spec.record-decision",
+                "title": "Record Decision",
+                "kind": "behavior_requirement",
+                "description": "Record decision",
+                "requirements": [{"id": "req.record", "statement": "Record decision"}],
+                "acceptance_criteria": [],
+            },
+        ],
+        "edges": [
+            {
+                "id": "edge.product-boundary.record-decision",
+                "from": "candidate-spec.product-boundary",
+                "to": "candidate-spec.record-decision",
+                "relation": "decomposes_to",
+            },
+            {
+                "id": "edge.command.record-decision.decision-recorded",
+                "from": "candidate-spec.record-decision",
+                "to": "candidate-spec.product-boundary",
+                "relation": "command_emits_event",
+                "review_only": True,
+                "materialization_dependency": False,
+            },
+        ],
+    }
+    output_dir = tmp_path / "materialized"
+
+    report = module.build_candidate_spec_materialization_report(
+        candidate_graph=candidate_graph,
+        output_dir=output_dir,
+    )
+
+    assert report["readiness"]["ready"] is True
+    boundary = yaml.safe_load(
+        (output_dir / "CANDIDATE-CANDIDATE-SPEC-PRODUCT-BOUNDARY.yaml").read_text(encoding="utf-8")
+    )
+    command = yaml.safe_load(
+        (output_dir / "CANDIDATE-CANDIDATE-SPEC-RECORD-DECISION.yaml").read_text(encoding="utf-8")
+    )
+
+    assert boundary["depends_on"] == ["CANDIDATE-CANDIDATE-SPEC-RECORD-DECISION"]
+    assert command["depends_on"] == []
+
+
 def test_candidate_spec_materialization_rejects_authority_expansion(
     tmp_path: Path,
 ) -> None:

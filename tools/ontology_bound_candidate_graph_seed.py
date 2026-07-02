@@ -611,29 +611,36 @@ def _constraint_nodes(
     return nodes
 
 
-def _node_ids_by_source_ref(nodes: list[dict[str, Any]]) -> dict[str, list[str]]:
-    refs: dict[str, list[str]] = {}
+def _node_ids_by_source_ref(nodes: list[dict[str, Any]]) -> dict[str, list[dict[str, str]]]:
+    refs: dict[str, list[dict[str, str]]] = {}
     boundary_id = "candidate-spec.product-boundary"
     for node in nodes:
         node_id = _text(node.get("id"))
         if not node_id:
             continue
+        node_kind = _text(node.get("kind"))
         for source_ref in _text_list(node.get("source_event_refs")):
-            refs.setdefault(source_ref, []).append(node_id)
-    for source_ref, node_ids in refs.items():
+            refs.setdefault(source_ref, []).append({"id": node_id, "kind": node_kind})
+    for source_ref, entries in refs.items():
         refs[source_ref] = sorted(
-            node_ids,
-            key=lambda node_id: (node_id == boundary_id, node_id),
+            entries,
+            key=lambda entry: (entry["id"] == boundary_id, entry["id"]),
         )
     return refs
 
 
 def _first_node_for_source_ref(
-    refs_by_source_ref: dict[str, list[str]],
+    refs_by_source_ref: dict[str, list[dict[str, str]]],
     source_ref: str,
+    *,
+    allowed_kinds: set[str] | None = None,
 ) -> str:
-    node_ids = refs_by_source_ref.get(source_ref, [])
-    return node_ids[0] if node_ids else ""
+    node_refs = refs_by_source_ref.get(source_ref, [])
+    for node_ref in node_refs:
+        if allowed_kinds is not None and node_ref["kind"] not in allowed_kinds:
+            continue
+        return node_ref["id"]
+    return ""
 
 
 def _command_event_index(
@@ -715,7 +722,11 @@ def _candidate_topology_edges(
         )
     for command in event_storming.get("commands", []):
         command_id = _text(command.get("id"))
-        command_node = _first_node_for_source_ref(refs_by_source_ref, command_id)
+        command_node = _first_node_for_source_ref(
+            refs_by_source_ref,
+            command_id,
+            allowed_kinds={"behavior_requirement"},
+        )
         if not command_id or not command_node:
             continue
         command_slug = command_node.removeprefix("candidate-spec.")
@@ -732,7 +743,12 @@ def _candidate_topology_edges(
                     "kind": "event_storming_actor_command_relation",
                     "source": "ontology_bound_candidate_graph_seed",
                 },
-                extra={"actor_ref": actor_ref, "command_ref": command_id},
+                extra={
+                    "actor_ref": actor_ref,
+                    "command_ref": command_id,
+                    "review_only": True,
+                    "materialization_dependency": False,
+                },
             )
         for event_ref in _filtered_refs(command.get("produces_event_refs"), known_refs):
             _append_topology_edge(
@@ -747,7 +763,12 @@ def _candidate_topology_edges(
                     "kind": "event_storming_command_event_relation",
                     "source": "ontology_bound_candidate_graph_seed",
                 },
-                extra={"command_ref": command_id, "event_ref": event_ref},
+                extra={
+                    "command_ref": command_id,
+                    "event_ref": event_ref,
+                    "review_only": True,
+                    "materialization_dependency": False,
+                },
             )
     for kind, entries in (
         ("constraint", event_storming.get("constraints", [])),
@@ -757,7 +778,11 @@ def _candidate_topology_edges(
             if kind == "constraint" and _is_operational_constraint(entry):
                 continue
             entry_id = _text(entry.get("id"))
-            entry_node = _first_node_for_source_ref(refs_by_source_ref, entry_id)
+            entry_node = _first_node_for_source_ref(
+                refs_by_source_ref,
+                entry_id,
+                allowed_kinds={f"{kind}_constraint"},
+            )
             if not entry_id or not entry_node:
                 continue
             entry_slug = entry_node.removeprefix("candidate-spec.")
@@ -765,7 +790,11 @@ def _candidate_topology_edges(
             if kind == "policy":
                 relation = "policy_applies_to_command"
             for command_ref in _filtered_refs(entry.get("command_refs"), known_refs):
-                command_node = _first_node_for_source_ref(refs_by_source_ref, command_ref)
+                command_node = _first_node_for_source_ref(
+                    refs_by_source_ref,
+                    command_ref,
+                    allowed_kinds={"behavior_requirement"},
+                )
                 if not command_node:
                     continue
                 command_slug = command_node.removeprefix("candidate-spec.")
@@ -781,11 +810,20 @@ def _candidate_topology_edges(
                         "kind": f"event_storming_{kind}_command_relation",
                         "source": "ontology_bound_candidate_graph_seed",
                     },
-                    extra={f"{kind}_ref": entry_id, "command_ref": command_ref},
+                    extra={
+                        f"{kind}_ref": entry_id,
+                        "command_ref": command_ref,
+                        "review_only": True,
+                        "materialization_dependency": False,
+                    },
                 )
             for event_ref in _filtered_refs(entry.get("trigger_event_refs"), known_refs):
                 for command_ref in commands_by_event.get(event_ref, []):
-                    command_node = _first_node_for_source_ref(refs_by_source_ref, command_ref)
+                    command_node = _first_node_for_source_ref(
+                        refs_by_source_ref,
+                        command_ref,
+                        allowed_kinds={"behavior_requirement"},
+                    )
                     if not command_node:
                         continue
                     command_slug = command_node.removeprefix("candidate-spec.")
@@ -808,6 +846,8 @@ def _candidate_topology_edges(
                             "command_ref": command_ref,
                             "event_ref": event_ref,
                             f"{kind}_ref": entry_id,
+                            "review_only": True,
+                            "materialization_dependency": False,
                         },
                     )
     return edges

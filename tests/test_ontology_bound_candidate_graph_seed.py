@@ -193,6 +193,59 @@ def test_ontology_bound_candidate_seed_emits_policy_and_constraint_workflow_edge
         and edge["policy_ref"] == "policy.escalation-review"
         for edge in edges
     )
+    assert all(
+        edge.get("review_only") is True and edge.get("materialization_dependency") is False
+        for edge in edges
+        if isinstance(edge, dict) and edge.get("relation") != "decomposes_to"
+    )
+
+
+def test_ontology_bound_candidate_seed_resolves_commands_to_command_nodes_only() -> None:
+    intake = support_triage_intake()
+    event_storming = intake["event_storming"]
+    assert isinstance(event_storming, dict)
+    commands = event_storming["commands"]
+    assert isinstance(commands, list)
+    policies = event_storming.setdefault("policies", [])
+    assert isinstance(policies, list)
+    commands.append(
+        {
+            "id": "command.z-review-case",
+            "name": "Z Review Case",
+            "actor_refs": ["actor.support-agent"],
+            "produces_event_refs": ["event.case-reviewed"],
+        }
+    )
+    policies.append(
+        {
+            "id": "policy.a-review-case-policy",
+            "name": "A Review Case Policy",
+            "command_refs": ["command.z-review-case"],
+        }
+    )
+
+    seed = build_seed(intake=intake)
+    edges = seed["candidate_graph"]["edges"]
+    assert isinstance(edges, list)
+    command_edges = [
+        edge
+        for edge in edges
+        if isinstance(edge, dict) and edge.get("command_ref") == "command.z-review-case"
+    ]
+
+    assert command_edges
+    assert any(
+        edge["relation"] == "actor_triggers_command"
+        and edge["to"] == "candidate-spec.z-review-case"
+        for edge in command_edges
+    )
+    assert any(
+        edge["relation"] == "policy_applies_to_command"
+        and edge["from"] == "candidate-spec.a-review-case-policy"
+        and edge["to"] == "candidate-spec.z-review-case"
+        for edge in command_edges
+    )
+    assert all(edge["from"] != edge["to"] for edge in command_edges)
 
 
 def test_ontology_bound_candidate_seed_disambiguates_duplicate_node_slugs() -> None:
