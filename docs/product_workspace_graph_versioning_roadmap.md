@@ -1398,6 +1398,31 @@ pass-through now produces a ready no-op repair loop, so connected candidates do
 not fail later with `repair_loop_not_ready` simply because no deterministic
 repair action was needed.
 
+## Richer Event-Storming Topology
+
+Status: implemented in proposal `0200`.
+
+Proposal `0200` keeps the `0191` product-boundary `decomposes_to` fallback, but
+adds additive workflow topology evidence from the event-storming intake. The
+ontology-bound candidate graph seed now emits relations such as:
+
+```text
+actor_triggers_command
+command_emits_event
+event_informs_policy
+constraint_applies_to_command
+policy_applies_to_command
+```
+
+These relations use candidate node endpoints so the existing candidate graph
+validator and Pre-SIB metrics remain compatible, while event-storming refs are
+carried as evidence on the edge. The relation counts are summarized in
+`source_generation.summary.topology_relation_counts`. The seed generation report
+also emits non-blocking `topology_quality` warnings for incomplete topology, such
+as actors without commands or constraints without command/event targets. The
+slice remains review-only: it does not infer missing semantics with an LLM,
+mutate specs, write Ontology packages, accept terms, or approve candidates.
+
 ## Real Idea Smoke Iteration Isolation
 
 Status: implemented in proposal `0192`.
@@ -1505,11 +1530,11 @@ The same run exposed the next product-flow friction points:
    distinguish accepted keep-local/bind/alias/reject/promotion decisions from
    missing, invalid, or deferred decisions without writing Ontology packages or
    globally accepting terms.
-8. **Event-storming topology.** Proposal `0191` currently emits flat
-   `Product Boundary --decomposes_to--> node` edges. The next topology slice
-   should add ontology-validated event-storming relations such as
-   `command -> event`, `event -> policy`, and `constraint -> command`, while
-   preserving the review-only boundary.
+8. **Event-storming topology.** Done in proposal `0200`. SpecGraph now keeps
+   the `Product Boundary --decomposes_to--> node` fallback from `0191` and adds
+   review-only workflow relations such as `actor_triggers_command`,
+   `command_emits_event`, `event_informs_policy`, and
+   `constraint_applies_to_command`.
 9. **Human-friendly candidate ids.** Long constraint statements currently
    produce truncated node ids. Keep stable machine ids, but add shorter
    readable slugs or display aliases for UI, PR artifacts, and candidate

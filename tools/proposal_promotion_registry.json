@@ -2572,5 +2572,18 @@
     "required_provenance_links": [
       "source_draft_ref"
     ]
+  },
+  {
+    "proposal_id": "0200",
+    "source_artifact_class": "working_draft",
+    "source_refs": [
+      "docs/archive/proposal_sources/0200_richer_event_storming_topology.md"
+    ],
+    "motivating_concern": "Real idea candidate graphs are connected by flat product-boundary decomposition edges, but operators need reviewable event-storming workflow relations such as actor-command, command-event, event-policy, and constraint-command without treating them as canonical ontology facts.",
+    "normalized_title": "Richer Event-Storming Topology",
+    "bounded_scope": "Extend the ontology-bound candidate graph seed, tests, proposal docs, roadmap, DocC, README, and registry tracking so candidate graphs keep the existing decomposes_to fallback while adding review-only event-storming workflow topology edges and relation counts, without executing prompt agents, inferring missing product semantics with an LLM, mutating candidate or canonical specs, writing Ontology packages or lockfiles, accepting ontology terms, approving candidates, creating Git branches or commits, opening pull requests, or publishing read models.",
+    "required_provenance_links": [
+      "source_draft_ref"
+    ]
   }
 ]

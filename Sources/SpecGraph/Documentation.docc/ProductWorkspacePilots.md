@@ -261,6 +261,18 @@ flat anti-orphan topology layer, not an ontology-validated event-storming
 relation model. A clean pre-SIB pass-through also yields a ready no-op repair
 loop instead of a false `repair_loop_not_ready` blocker.
 
+Proposal `0200` adds the first richer event-storming topology layer on top of
+that fallback. The ontology-bound candidate graph seed now emits review-only
+workflow relations such as `actor_triggers_command`, `command_emits_event`,
+`event_informs_policy`, `constraint_applies_to_command`, and
+`policy_applies_to_command`. Edges still use candidate node endpoints for
+compatibility with candidate graph validation and Pre-SIB metrics, while
+event-storming refs stay attached as evidence. The relation counts are surfaced
+in `source_generation.summary.topology_relation_counts`. Non-blocking
+`topology_quality` warnings identify incomplete topology, such as actors without
+commands or constraints without command/event targets, without blocking candidate
+readiness.
+
 Proposal `0192` makes repeated real-idea smoke runs safer. By default,
 `make real-idea-smoke` clears wrapper-owned derived outputs inside
 `REAL_IDEA_SMOKE_RUN_DIR` before rebuilding, so a second run cannot silently
@@ -325,9 +337,9 @@ The follow-up backlog from that smoke is:
 6. validate SpecSpace-owned project-local ontology review decisions before any
    downstream use; done in Proposal `0198` with
    `specspace_project_local_ontology_decision_import_preview.json`;
-7. replace the temporary flat `decomposes_to` topology with
-   ontology-validated event-storming relations such as `command -> event` and
-   `constraint -> command`;
+7. replace the temporary flat `decomposes_to` topology with richer
+   event-storming relations such as `command -> event` and
+   `constraint -> command`; done in Proposal `0200`;
 8. add human-friendly display aliases for long generated candidate node ids;
 9. generate a candidate overview document or SpecSpace narrative panel from the
    repaired candidate graph;

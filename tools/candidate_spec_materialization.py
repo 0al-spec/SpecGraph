@@ -198,6 +198,14 @@ def _materialized_filename(candidate_node_id: str) -> str:
     return f"{_materialized_id(candidate_node_id)}.yaml"
 
 
+def _edge_materializes_dependency(edge: dict[str, Any]) -> bool:
+    if edge.get("materialization_dependency") is False:
+        return False
+    if edge.get("review_only") is True:
+        return False
+    return True
+
+
 def _candidate_graph_for_materialization(
     candidate_graph: dict[str, Any],
     repair_loop: dict[str, Any] | None,
@@ -211,6 +219,8 @@ def _candidate_graph_for_materialization(
 def _depends_on_for(node_id: str, graph: dict[str, Any], id_map: dict[str, str]) -> list[str]:
     depends_on: list[str] = []
     for edge in _edges(graph):
+        if not _edge_materializes_dependency(edge):
+            continue
         if _text(edge.get("from")) != node_id:
             continue
         target = _text(edge.get("to"))

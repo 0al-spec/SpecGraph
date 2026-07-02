@@ -316,6 +316,14 @@ Supervisor modes:
   anti-orphan topology layer, not ontology-validated event-storming topology.
   Clean pre-SIB pass-through now produces a ready no-op repair loop instead of a
   false `repair_loop_not_ready` blocker.
+- Proposal 0200 adds additive event-storming workflow topology evidence on top
+  of the 0191 fallback. The ontology-bound candidate graph seed now emits
+  review-only relations such as `actor_triggers_command`,
+  `command_emits_event`, `event_informs_policy`,
+  `constraint_applies_to_command`, and `policy_applies_to_command` while keeping
+  candidate-node endpoints compatible with existing graph validation and
+  Pre-SIB metrics. The seed generation report also includes non-blocking
+  `topology_quality` warnings for incomplete workflow topology.
 - Proposal 0192 makes real-idea smoke runs iteration-safe. By default,
   `make real-idea-smoke` clears only wrapper-owned derived outputs inside
   `REAL_IDEA_SMOKE_RUN_DIR` before rebuilding, so repeated runs do not silently

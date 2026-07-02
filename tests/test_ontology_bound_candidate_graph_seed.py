@@ -75,6 +75,9 @@ def test_ontology_bound_candidate_seed_builds_ready_seed_from_generic_intake() -
     assert source_generation["proposal_id"] == "0159"
     assert source_generation["readiness"]["ready"] is True
     assert source_generation["findings"] == []
+    assert source_generation["topology_quality"]["status"] == "topology_review_recommended"
+    assert source_generation["topology_quality"]["warning_count"] == 1
+    assert source_generation["summary"]["topology_warning_count"] == 1
     assert source_generation["summary"]["ontology_binding_count"] == 5
     assert source_generation["summary"]["ontology_gap_count"] >= 1
     gap_terms = {gap["term"] for gap in source_generation["ontology_gaps"] if isinstance(gap, dict)}
@@ -90,11 +93,19 @@ def test_ontology_bound_candidate_seed_builds_ready_seed_from_generic_intake() -
     assert "ontology://org.0al.specgraph.core/0.1.0/classes/Spec" in product["ontology_refs"]
     command_nodes = [node for node in nodes if node["kind"] == "behavior_requirement"]
     assert command_nodes
-    assert len(edges) == len(nodes) - 1
-    assert {edge["from"] for edge in edges if isinstance(edge, dict)} == {
-        "candidate-spec.product-boundary"
+    relation_counts = source_generation["summary"]["topology_relation_counts"]
+    assert relation_counts["decomposes_to"] == len(nodes) - 1
+    assert relation_counts["actor_triggers_command"] == len(command_nodes)
+    assert relation_counts["command_emits_event"] == len(command_nodes)
+    decomposition_sources = {
+        edge["from"]
+        for edge in edges
+        if isinstance(edge, dict) and edge["relation"] == "decomposes_to"
     }
-    assert {edge["relation"] for edge in edges if isinstance(edge, dict)} == {"decomposes_to"}
+    assert decomposition_sources == {"candidate-spec.product-boundary"}
+    assert {"decomposes_to", "actor_triggers_command", "command_emits_event"}.issubset(
+        {edge["relation"] for edge in edges if isinstance(edge, dict)}
+    )
     assert all(
         "ontology://org.0al.specgraph.core/0.1.0/classes/Requirement" in node["ontology_refs"]
         for node in command_nodes
@@ -115,7 +126,7 @@ def test_ontology_bound_candidate_seed_feeds_candidate_graph_builder() -> None:
 
     assert graph["pre_sib_readiness"]["ready"] is True
     assert graph["summary"]["node_count"] >= 4
-    assert graph["summary"]["edge_count"] == graph["summary"]["node_count"] - 1
+    assert graph["summary"]["edge_count"] >= graph["summary"]["node_count"] - 1
     assert graph["summary"]["gap_count"] >= 1
     assert graph["active_frame"]["domain_refs"] == ["domain.support_triage_log"]
     assert graph["findings"] == []
@@ -138,9 +149,103 @@ def test_ontology_bound_candidate_seed_prevents_topology_empty_pre_sib_graph() -
         candidate_graph_path=ROOT / "runs" / "candidate_spec_graph.json",
     )
 
-    assert report["metrics"]["edge_count"] == graph["summary"]["node_count"] - 1
+    assert report["metrics"]["edge_count"] >= graph["summary"]["node_count"] - 1
     assert report["metrics"]["orphan_node_count"] == 0
     assert "pre_sib_orphan_nodes" not in finding_ids(report)
+
+
+def test_ontology_bound_candidate_seed_emits_policy_and_constraint_workflow_edges() -> None:
+    intake = support_triage_intake()
+    event_storming = intake["event_storming"]
+    assert isinstance(event_storming, dict)
+    constraints = event_storming["constraints"]
+    assert isinstance(constraints, list)
+    policies = event_storming.setdefault("policies", [])
+    assert isinstance(policies, list)
+    constraints.append(
+        {
+            "id": "constraint.triage-note-required",
+            "statement": "Every escalation must include a triage note.",
+            "command_refs": ["command.escalate-case"],
+        }
+    )
+    policies.append(
+        {
+            "id": "policy.escalation-review",
+            "name": "Escalation Review",
+            "trigger_event_refs": ["event.case-escalated"],
+            "command_refs": ["command.escalate-case"],
+        }
+    )
+
+    seed = build_seed(intake=intake)
+    edges = seed["candidate_graph"]["edges"]
+    assert isinstance(edges, list)
+    relation_counts = seed["source_generation"]["summary"]["topology_relation_counts"]
+
+    assert relation_counts["constraint_applies_to_command"] == 1
+    assert relation_counts["policy_applies_to_command"] == 1
+    assert relation_counts["event_informs_policy"] == 1
+    assert any(
+        isinstance(edge, dict)
+        and edge["relation"] == "event_informs_policy"
+        and edge["event_ref"] == "event.case-escalated"
+        and edge["policy_ref"] == "policy.escalation-review"
+        for edge in edges
+    )
+    assert all(
+        edge.get("review_only") is True and edge.get("materialization_dependency") is False
+        for edge in edges
+        if isinstance(edge, dict) and edge.get("relation") != "decomposes_to"
+    )
+
+
+def test_ontology_bound_candidate_seed_resolves_commands_to_command_nodes_only() -> None:
+    intake = support_triage_intake()
+    event_storming = intake["event_storming"]
+    assert isinstance(event_storming, dict)
+    commands = event_storming["commands"]
+    assert isinstance(commands, list)
+    policies = event_storming.setdefault("policies", [])
+    assert isinstance(policies, list)
+    commands.append(
+        {
+            "id": "command.z-review-case",
+            "name": "Z Review Case",
+            "actor_refs": ["actor.support-agent"],
+            "produces_event_refs": ["event.case-reviewed"],
+        }
+    )
+    policies.append(
+        {
+            "id": "policy.a-review-case-policy",
+            "name": "A Review Case Policy",
+            "command_refs": ["command.z-review-case"],
+        }
+    )
+
+    seed = build_seed(intake=intake)
+    edges = seed["candidate_graph"]["edges"]
+    assert isinstance(edges, list)
+    command_edges = [
+        edge
+        for edge in edges
+        if isinstance(edge, dict) and edge.get("command_ref") == "command.z-review-case"
+    ]
+
+    assert command_edges
+    assert any(
+        edge["relation"] == "actor_triggers_command"
+        and edge["to"] == "candidate-spec.z-review-case"
+        for edge in command_edges
+    )
+    assert any(
+        edge["relation"] == "policy_applies_to_command"
+        and edge["from"] == "candidate-spec.a-review-case-policy"
+        and edge["to"] == "candidate-spec.z-review-case"
+        for edge in command_edges
+    )
+    assert all(edge["from"] != edge["to"] for edge in command_edges)
 
 
 def test_ontology_bound_candidate_seed_disambiguates_duplicate_node_slugs() -> None:
