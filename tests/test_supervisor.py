@@ -11246,6 +11246,11 @@ def test_specspace_registry_handoff_contract_is_stable_and_ready(
         "runs/repaired_candidate_spec_graph.json",
         "runs/idea_maturity_metrics_report.json",
     ]
+    assert ready["artifact_contract"]["optional_paths"] == [
+        "runs/repaired_candidate_spec_graph.json",
+        "runs/idea_maturity_metrics_report.json",
+    ]
+    assert "absent-tolerant" in ready["artifact_contract"]["availability_notes"]
     assert "viewer_projection" in ready["artifact_contract"]["stable_fields"]
     assert "required_checks" in ready["artifact_contract"]["stable_fields"]
     assert "policy_required_checks_satisfied" in ready["artifact_contract"]["stable_fields"]
@@ -11264,6 +11269,7 @@ def test_specspace_registry_handoff_contract_is_stable_and_ready(
     assert "show candidate overview product narrative" in " ".join(
         ready["expected_consumer_behavior"]
     )
+    assert "optional_paths" in " ".join(ready["expected_consumer_behavior"])
     assert ready["transition_packet_validation"]["ok"] is True
     assert report["viewer_projection"]["named_filters"]["ready_for_handoff"] == ["specspace"]
     assert report["handoff_backlog"]["grouped_by_next_gap"] == {
@@ -11399,6 +11405,55 @@ def test_build_external_consumer_handoff_packets_blocks_specspace_without_stable
                         "status": "stable",
                         "paths": ["runs/agent_surface_index.json"],
                         "stable_fields": [],
+                    },
+                },
+            }
+        ],
+    }
+    overlay = {
+        "generated_at": "2026-04-20T00:00:01Z",
+        "entries": [
+            {
+                "consumer_id": "specspace",
+                "bridge_state": "stable_ready",
+                "next_gap": "none",
+            }
+        ],
+    }
+
+    report = supervisor_module.build_external_consumer_handoff_packets(
+        consumer_index,
+        overlay,
+        {"generated_at": "2026-04-20T00:00:02Z", "metrics": []},
+        {"generated_at": "2026-04-20T00:00:03Z", "entries": []},
+    )
+
+    blocked = report["entries"][0]
+    assert blocked["handoff_status"] == "blocked_by_bridge_gap"
+    assert blocked["next_gap"] == "stabilize_specspace_handoff_contract"
+    assert blocked["transition_packet"] is None
+
+
+def test_build_external_consumer_handoff_packets_blocks_specspace_with_only_optional_paths(
+    supervisor_module: object,
+) -> None:
+    consumer_index = {
+        "generated_at": "2026-04-20T00:00:00Z",
+        "entries": [
+            {
+                "consumer_id": "specspace",
+                "title": "SpecSpace / Graph Operator Surface",
+                "reference_state": "stable_reference",
+                "profile": "graph_operator_surface_consumer",
+                "repo_url": "https://github.com/0al-spec/SpecSpace",
+                "metric_bindings": [],
+                "handoff_contract": {
+                    "artifact_contract": {
+                        "producer": "SpecGraph",
+                        "status": "stable",
+                        "paths": ["runs/idea_maturity_metrics_report.json"],
+                        "optional_paths": ["runs/idea_maturity_metrics_report.json"],
+                        "stable_fields": ["artifact_kind", "summary"],
                     },
                 },
             }
@@ -11847,6 +11902,136 @@ def test_build_external_consumer_evidence_index_accepts_specspace_evidence(
     ]
     assert index["evidence_backlog"]["entry_count"] == 0
     assert "/Users/" not in json.dumps(index, sort_keys=True)
+
+
+def test_build_external_consumer_evidence_treats_optional_paths_as_absent_tolerant(
+    supervisor_module: object,
+) -> None:
+    handoffs = {
+        "generated_at": "2026-06-06T00:00:00Z",
+        "entries": [
+            {
+                "handoff_id": "external_consumer_handoff::specspace",
+                "consumer_id": "specspace",
+                "handoff_status": "ready_for_handoff",
+                "artifact_contract": {
+                    "status": "stable",
+                    "paths": [
+                        "runs/candidate_overview.json",
+                        "runs/project_local_ontology_review_lane.json",
+                        "runs/repaired_candidate_spec_graph.json",
+                        "runs/idea_maturity_metrics_report.json",
+                    ],
+                    "optional_paths": [
+                        "runs/repaired_candidate_spec_graph.json",
+                        "runs/idea_maturity_metrics_report.json",
+                    ],
+                },
+                "evidence_contract": {
+                    "required_fields": [
+                        "handoff_id",
+                        "consumer",
+                        "implementation_ref",
+                        "consumed_artifacts",
+                        "evidence",
+                        "result",
+                    ],
+                    "accepted_evidence_kinds": ["pull_request", "test"],
+                    "result_values": ["implemented"],
+                },
+            }
+        ],
+    }
+    registry = {
+        "entries": [
+            {
+                "evidence_id": "specspace-candidate-overview-early-lifecycle",
+                "handoff_id": "external_consumer_handoff::specspace",
+                "consumer_id": "specspace",
+                "consumer": "SpecSpace",
+                "implementation_ref": "https://github.com/0al-spec/SpecSpace/pull/305",
+                "consumed_artifacts": [
+                    "runs/candidate_overview.json",
+                    "runs/project_local_ontology_review_lane.json",
+                ],
+                "evidence": [
+                    {"kind": "pull_request", "ref": "0al-spec/SpecSpace#305"},
+                    {"kind": "test", "ref": "SpecSpace CI", "status": "success"},
+                ],
+                "result": "implemented",
+            }
+        ]
+    }
+
+    index = supervisor_module.build_external_consumer_evidence_index(handoffs, registry)
+
+    entry = index["entries"][0]
+    assert entry["acceptance_status"] == "accepted"
+    assert entry["contract_evaluation"]["diagnostics"] == []
+    assert entry["contract_evaluation"]["required_consumed_artifacts"] == [
+        "runs/candidate_overview.json",
+        "runs/project_local_ontology_review_lane.json",
+    ]
+    assert entry["contract_evaluation"]["optional_contract_artifacts"] == [
+        "runs/idea_maturity_metrics_report.json",
+        "runs/repaired_candidate_spec_graph.json",
+    ]
+
+
+def test_build_external_consumer_evidence_rejects_optional_artifact_not_in_contract_paths(
+    supervisor_module: object,
+) -> None:
+    handoffs = {
+        "generated_at": "2026-06-06T00:00:00Z",
+        "entries": [
+            {
+                "handoff_id": "external_consumer_handoff::specspace",
+                "consumer_id": "specspace",
+                "handoff_status": "ready_for_handoff",
+                "artifact_contract": {
+                    "status": "stable",
+                    "paths": ["runs/candidate_overview.json"],
+                    "optional_paths": ["runs/idea_maturity_metrics_report.json"],
+                },
+                "evidence_contract": {
+                    "required_fields": [
+                        "handoff_id",
+                        "consumer",
+                        "implementation_ref",
+                        "consumed_artifacts",
+                        "evidence",
+                        "result",
+                    ],
+                    "accepted_evidence_kinds": ["pull_request"],
+                    "result_values": ["implemented"],
+                },
+            }
+        ],
+    }
+    registry = {
+        "entries": [
+            {
+                "evidence_id": "specspace-optional-path-drift",
+                "handoff_id": "external_consumer_handoff::specspace",
+                "consumer_id": "specspace",
+                "consumer": "SpecSpace",
+                "implementation_ref": "https://github.com/0al-spec/SpecSpace/pull/305",
+                "consumed_artifacts": ["runs/candidate_overview.json"],
+                "evidence": [{"kind": "pull_request", "ref": "0al-spec/SpecSpace#305"}],
+                "result": "implemented",
+            }
+        ]
+    }
+
+    index = supervisor_module.build_external_consumer_evidence_index(handoffs, registry)
+
+    entry = index["entries"][0]
+    assert entry["acceptance_status"] == "contract_mismatch"
+    assert entry["contract_evaluation"]["non_contract_optional_artifacts"] == [
+        "runs/idea_maturity_metrics_report.json",
+    ]
+    diagnostics = {diagnostic["code"] for diagnostic in entry["contract_evaluation"]["diagnostics"]}
+    assert diagnostics == {"optional_artifacts_not_in_handoff_contract"}
 
 
 def test_build_external_consumer_evidence_index_reports_contract_mismatch(

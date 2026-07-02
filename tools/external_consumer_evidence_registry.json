@@ -284,7 +284,7 @@
         }
       ],
       "result": "implemented",
-      "notes": "SpecSpace consumes runs/candidate_overview.json in the Product Workspace candidate overview panel, rendering product intent, event-storming groups, topology relation counts, project-local ontology review, Idea Maturity, and next safe action without write or execution authority."
+      "notes": "SpecSpace consumes runs/candidate_overview.json in the Product Workspace candidate overview panel, rendering product intent, event-storming groups, topology relation counts, project-local ontology review, Idea Maturity, and next safe action without write or execution authority. This is curated cross-repo evidence: SpecGraph records the linked SpecSpace PR and CI status and validates the evidence contract shape, but does not re-execute the downstream UI implementation locally."
     }
   ]
 }

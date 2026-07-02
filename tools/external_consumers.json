@@ -311,7 +311,12 @@
             "next_action",
             "readiness"
           ],
-          "local_only_fields_forbidden": true
+          "local_only_fields_forbidden": true,
+          "optional_paths": [
+            "runs/repaired_candidate_spec_graph.json",
+            "runs/idea_maturity_metrics_report.json"
+          ],
+          "availability_notes": "The product workspace narrative paths are stable contract members, but some are conditionally produced by lifecycle stage. Consumers must treat optional_paths as absent-tolerant evidence and fall back to the initial candidate graph, missing maturity state, or lower-level panels instead of treating absence as a broken handoff."
         },
         "expected_consumer_behavior": [
           "show agent and executor authority surfaces when producer artifacts are available",
@@ -322,7 +327,8 @@
           "show ontology package metadata, normalized compiler IR classes, relations, and domains when producer artifacts are available",
           "show ontology import gaps, compatibility diffs, and governance evidence as review evidence rather than accepted ontology authority",
           "show fallback state when producer artifacts are absent or draft",
-          "show candidate overview product narrative, event-storming groups, workflow topology, project-local ontology review state, repair/maturity readiness, and next safe action when candidate_overview is available"
+          "show candidate overview product narrative, event-storming groups, workflow topology, project-local ontology review state, repair/maturity readiness, and next safe action when candidate_overview is available",
+          "treat candidate overview optional_paths as absent-tolerant lifecycle evidence, not as required static surfaces"
         ],
         "evidence_contract": {
           "artifact_kind": "external_consumer_evidence",
@@ -349,7 +355,7 @@
           ]
         }
       },
-      "notes": "Stable SpecSpace consumer entry for supervisor-derived handoff packets and product workspace narrative surfaces. The contract includes the candidate overview artifact as read-only downstream evidence without granting SpecSpace write or execution authority."
+      "notes": "Stable SpecSpace consumer entry for supervisor-derived handoff packets and product workspace narrative surfaces. The contract includes the candidate overview artifact as read-only downstream evidence without granting SpecSpace write or execution authority. Cross-repo implementation evidence is curated in external_consumer_evidence_registry; SpecGraph validates the evidence shape and links but does not re-run SpecSpace CI locally."
     }
   ]
 }
