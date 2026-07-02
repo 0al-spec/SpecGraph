@@ -36264,12 +36264,18 @@ def derive_external_consumer_evidence_acceptance(
         for path in evidence_entry.get("accepted_contract_artifacts", [])
         if str(path).strip()
     ]
-    required_consumed_artifacts = accepted_contract_artifacts or [
+    handoff_contract_artifact_paths = [
         str(path).strip() for path in artifact_contract.get("paths", []) if str(path).strip()
     ]
-    handoff_contract_artifacts = {
-        str(path).strip() for path in artifact_contract.get("paths", []) if str(path).strip()
+    optional_contract_artifacts = {
+        str(path).strip()
+        for path in artifact_contract.get("optional_paths", [])
+        if str(path).strip()
     }
+    required_consumed_artifacts = accepted_contract_artifacts or [
+        path for path in handoff_contract_artifact_paths if path not in optional_contract_artifacts
+    ]
+    handoff_contract_artifacts = set(handoff_contract_artifact_paths)
     non_contract_accepted_artifacts = sorted(
         path for path in accepted_contract_artifacts if path not in handoff_contract_artifacts
     )
@@ -36399,6 +36405,8 @@ def derive_external_consumer_evidence_acceptance(
         "missing_consumed_artifacts": missing_consumed_artifacts,
         "non_contract_accepted_artifacts": non_contract_accepted_artifacts,
         "accepted_contract_artifacts": accepted_contract_artifacts,
+        "required_consumed_artifacts": required_consumed_artifacts,
+        "optional_contract_artifacts": sorted(optional_contract_artifacts),
         "privacy_violation": privacy_violation,
     }
 
