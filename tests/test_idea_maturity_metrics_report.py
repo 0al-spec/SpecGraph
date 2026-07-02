@@ -992,6 +992,11 @@ def test_real_idea_smoke_idea_maturity_target_isolates_run_dir_optional_artifact
     assert "runs/real_idea_smoke/idea_maturity_metrics_validation_report.json" in output
     assert "runs/real_idea_smoke/specspace_repair_draft_import_preview.json" in output
     assert "runs/real_idea_smoke/idea_to_spec_repair_rerun_requests.json" in output
+    assert (
+        "runs/real_idea_smoke/absent-post-approval/"
+        "project_local_ontology_decision_effect_report.json"
+    ) in output
+    assert "runs/real_idea_smoke/project_local_ontology_decision_effect_report.json" not in output
     assert "runs/real_idea_smoke/absent-post-approval/candidate_approval_decision.json" in output
     assert "shutil.rmtree(absent, ignore_errors=True)" in output
     assert '--candidate-approval-decision "runs/candidate_approval_decision.json"' not in output
@@ -1729,3 +1734,59 @@ def test_idea_maturity_metrics_explains_missing_project_local_decisions(
     )
     assert "candidate_approval" in explainer["blocks"]
     assert "Record project-local ontology decisions" in explainer["next_action"]
+
+
+def test_idea_maturity_metrics_counts_blocked_project_local_effect_once(
+    tmp_path: Path,
+) -> None:
+    paths = write_ready_chain(tmp_path / "project-local-effect-blocked")
+    write_json(
+        paths["project_local_ontology_decision_effect"],
+        {
+            "artifact_kind": "project_local_ontology_decision_effect_report",
+            "contract_ref": "specgraph.product-ontology.project-local-decision-effect.v0.1",
+            "schema_version": 1,
+            "summary": {
+                "status": "project_local_ontology_decision_effect_review_required",
+                "accepted_decision_count": 1,
+                "maturity_evidence_decision_count": 1,
+                "keep_project_local_count": 1,
+                "bind_existing_count": 0,
+                "alias_count": 0,
+                "request_promotion_count": 0,
+                "reject_count": 0,
+                "deferred_count": 0,
+                "non_resolving_decision_count": 0,
+                "invalid_decision_count": 0,
+                "missing_decision_count": 0,
+                "blocking_decision_count": 0,
+                "follow_up_decision_count": 0,
+                "effect_count": 1,
+                "ready_for_maturity": False,
+            },
+            "readiness": {
+                "ready": False,
+                "review_state": "project_local_ontology_decision_effect_review_required",
+                "blocked_by": ["project_local_ontology_import_preview_not_ready"],
+            },
+            "findings": [
+                {
+                    "finding_id": "project_local_ontology_import_preview_not_ready",
+                    "severity": "blocking",
+                }
+            ],
+            "authority_boundary": authority_boundary(),
+        },
+    )
+
+    report = build_report(paths)
+
+    assert report["status"] == "blocked"
+    assert report["metrics"]["remaining_blocker_count"] == 1
+    explainer = next(
+        item
+        for item in report["readiness_explainers"]
+        if item["kind"] == "project_local_ontology_decision_effect_blocked"
+    )
+    assert "candidate_approval" in explainer["blocks"]
+    assert "import preview" in explainer["next_action"]

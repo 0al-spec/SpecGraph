@@ -283,6 +283,10 @@ def _decision_effects(decisions: list[dict[str, Any]]) -> list[dict[str, Any]]:
     return effects
 
 
+def _preview_review_lane_source(preview: dict[str, Any]) -> dict[str, Any]:
+    return _dict(_dict(preview.get("source_artifacts")).get("project_local_ontology_review_lane"))
+
+
 def build_project_local_ontology_decision_effect_report(
     *,
     review_lane: dict[str, Any] | None,
@@ -334,6 +338,22 @@ def build_project_local_ontology_decision_effect_report(
                 evidence={"artifact_kind": preview.get("artifact_kind")},
             )
         )
+    elif _dict(preview.get("readiness")).get("ready") is not True:
+        readiness = _dict(preview.get("readiness"))
+        findings.append(
+            _finding(
+                finding_id="project_local_ontology_import_preview_not_ready",
+                severity="blocking",
+                message=(
+                    "Project-local ontology decision import preview must be ready "
+                    "before decision effects can feed maturity."
+                ),
+                evidence={
+                    "review_state": readiness.get("review_state"),
+                    "blocked_by": _list(readiness.get("blocked_by")),
+                },
+            )
+        )
 
     for field in _true_authority_fields(lane, prefix="review_lane."):
         findings.append(
@@ -356,6 +376,54 @@ def build_project_local_ontology_decision_effect_report(
                 evidence={"field": field},
             )
         )
+
+    if lane and preview and preview.get("artifact_kind") == IMPORT_PREVIEW_KIND:
+        expected_lane_ref = _relative_ref(review_lane_path)
+        expected_lane_sha = _sha256(review_lane_path)
+        preview_lane_source = _preview_review_lane_source(preview)
+        actual_lane_ref = _text(preview_lane_source.get("source_ref"))
+        actual_lane_sha = _text(preview_lane_source.get("sha256"))
+        if not actual_lane_ref:
+            findings.append(
+                _finding(
+                    finding_id="project_local_ontology_import_preview_lane_source_missing",
+                    severity="blocking",
+                    message=(
+                        "Project-local ontology import preview must declare its source review lane."
+                    ),
+                )
+            )
+        elif expected_lane_ref and actual_lane_ref != expected_lane_ref:
+            findings.append(
+                _finding(
+                    finding_id="project_local_ontology_import_preview_lane_source_stale",
+                    severity="blocking",
+                    message=(
+                        "Project-local ontology import preview was built from a "
+                        "different review lane artifact."
+                    ),
+                    evidence={
+                        "expected_source_ref": expected_lane_ref,
+                        "actual_source_ref": actual_lane_ref,
+                    },
+                )
+            )
+        elif expected_lane_sha and actual_lane_sha and actual_lane_sha != expected_lane_sha:
+            findings.append(
+                _finding(
+                    finding_id="project_local_ontology_import_preview_lane_digest_stale",
+                    severity="blocking",
+                    message=(
+                        "Project-local ontology import preview source review lane "
+                        "digest does not match the selected lane artifact."
+                    ),
+                    evidence={
+                        "source_ref": actual_lane_ref,
+                        "expected_sha256": expected_lane_sha,
+                        "actual_sha256": actual_lane_sha,
+                    },
+                )
+            )
 
     context = _dict(preview.get("context")) or _dict(lane.get("context"))
     accepted = [
