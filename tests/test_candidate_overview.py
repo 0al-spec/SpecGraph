@@ -236,6 +236,18 @@ def project_local_effect() -> dict[str, object]:
                 "accepts_ontology_terms": False,
             }
         ],
+        "source_artifacts": {
+            "project_local_ontology_review_lane": {
+                "artifact_kind": "project_local_ontology_review_lane",
+                "status": "present",
+                "summary": {
+                    "status": "project_local_ontology_review_ready",
+                    "term_count": 1,
+                    "reviewed_term_count": 1,
+                    "unreviewed_term_count": 0,
+                },
+            }
+        },
         "authority_boundary": authority_boundary(),
     }
 
@@ -296,17 +308,68 @@ def test_candidate_overview_uses_project_local_effect_as_effective_review_status
     lane["summary"]["status"] = "project_local_ontology_review_required"
     lane["summary"]["reviewed_term_count"] = 1
     lane["summary"]["unreviewed_term_count"] = 3
+    effect = project_local_effect()
+    effect["source_artifacts"]["project_local_ontology_review_lane"]["summary"] = lane["summary"]
 
-    overview = build_overview(project_local_ontology_lane=lane)
+    overview = build_overview(
+        project_local_ontology_lane=lane,
+        project_local_ontology_effect=effect,
+    )
 
     ontology = overview["sections"]["project_local_ontology"]
     assert ontology["lane_status"] == "project_local_ontology_review_required"
     assert ontology["effect_status"] == "project_local_ontology_decision_effect_ready"
+    assert ontology["effect_matches_lane"] is True
     assert ontology["review_status"] == "project_local_ontology_decision_effect_ready"
     assert (
         overview["summary"]["project_local_ontology_review_status"]
         == "project_local_ontology_decision_effect_ready"
     )
+
+
+def test_candidate_overview_ignores_stale_project_local_effect() -> None:
+    lane = project_local_lane()
+    lane["summary"]["status"] = "project_local_ontology_review_required"
+    lane["summary"]["reviewed_term_count"] = 0
+    lane["summary"]["unreviewed_term_count"] = 1
+    lane["terms"][0]["status"] = "unreviewed"
+
+    overview = build_overview(project_local_ontology_lane=lane)
+
+    ontology = overview["sections"]["project_local_ontology"]
+    assert ontology["lane_status"] == "project_local_ontology_review_required"
+    assert ontology["raw_effect_status"] == "project_local_ontology_decision_effect_ready"
+    assert ontology["effect_status"] == "missing"
+    assert ontology["effect_matches_lane"] is False
+    assert ontology["review_status"] == "project_local_ontology_review_required"
+    assert ontology["terms"][0]["effective_status"] == "unreviewed"
+
+
+def test_candidate_overview_does_not_mark_deferred_effect_as_reviewed() -> None:
+    lane = project_local_lane()
+    lane["summary"]["status"] = "project_local_ontology_review_required"
+    lane["summary"]["reviewed_term_count"] = 0
+    lane["summary"]["unreviewed_term_count"] = 1
+    lane["terms"][0]["status"] = "unreviewed"
+    effect = project_local_effect()
+    effect["summary"]["status"] = "project_local_ontology_decision_effect_review_required"
+    effect["summary"]["accepted_decision_count"] = 0
+    effect["summary"]["blocking_decision_count"] = 0
+    effect["decision_effects"][0]["status"] = "non_resolving"
+    effect["decision_effects"][0]["review_action"] = "defer"
+    effect["decision_effects"][0]["maturity_effect"] = "requires_owner_follow_up"
+    effect["source_artifacts"]["project_local_ontology_review_lane"]["summary"] = lane["summary"]
+
+    overview = build_overview(
+        project_local_ontology_lane=lane,
+        project_local_ontology_effect=effect,
+    )
+
+    ontology = overview["sections"]["project_local_ontology"]
+    assert ontology["effect_status"] == "project_local_ontology_decision_effect_review_required"
+    assert ontology["effect_matches_lane"] is True
+    assert ontology["terms"][0]["effective_status"] == "unreviewed"
+    assert ontology["terms"][0]["review_effect"]["review_action"] == "defer"
 
 
 def test_candidate_overview_uses_standard_graph_when_repaired_graph_missing() -> None:

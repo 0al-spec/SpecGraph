@@ -483,18 +483,69 @@ def _maturity_summary(maturity: dict[str, Any]) -> dict[str, Any]:
     }
 
 
+def _project_local_effect_matches_lane(
+    *,
+    lane: dict[str, Any],
+    effect: dict[str, Any],
+    source_artifacts: dict[str, dict[str, Any]],
+) -> bool:
+    if not lane or not effect:
+        return False
+    lane_source = _dict(
+        _dict(effect.get("source_artifacts")).get("project_local_ontology_review_lane")
+    )
+    if lane_source.get("artifact_kind") != "project_local_ontology_review_lane":
+        return False
+
+    loaded_lane = _dict(source_artifacts.get("project_local_ontology_lane"))
+    loaded_lane_sha = _text(loaded_lane.get("sha256"))
+    source_lane_sha = _text(lane_source.get("sha256"))
+    if loaded_lane_sha or source_lane_sha:
+        return bool(loaded_lane_sha and source_lane_sha and loaded_lane_sha == source_lane_sha)
+
+    lane_context = _dict(lane.get("context"))
+    effect_context = _dict(effect.get("context"))
+    if lane_context or effect_context:
+        for field in ("workspace_id", "candidate_id", "repair_session_id", "workflow_lane"):
+            if _text(lane_context.get(field)) != _text(effect_context.get(field)):
+                return False
+
+    lane_summary = _dict(lane.get("summary"))
+    source_summary = _dict(lane_source.get("summary"))
+    for field in ("status", "term_count", "reviewed_term_count", "unreviewed_term_count"):
+        if source_summary.get(field) != lane_summary.get(field):
+            return False
+    return True
+
+
+def _is_resolving_project_local_effect(effect: dict[str, Any]) -> bool:
+    return (
+        _text(effect.get("maturity_effect")) == "resolves_project_local_review"
+        and _text(effect.get("status")) == "accepted_for_project_local_preview"
+        and _text(effect.get("review_action"))
+        in {"keep_project_local", "bind_existing", "alias", "reject"}
+    )
+
+
 def _project_local_ontology_summary(
     *,
     lane: dict[str, Any],
     effect: dict[str, Any],
+    source_artifacts: dict[str, dict[str, Any]],
 ) -> dict[str, Any]:
     lane_summary = _dict(lane.get("summary"))
     effect_summary = _dict(effect.get("summary"))
-    effect_status = _text(effect_summary.get("status"), "missing")
     lane_status = _text(lane_summary.get("status"), "missing")
+    effect_matches_lane = _project_local_effect_matches_lane(
+        lane=lane,
+        effect=effect,
+        source_artifacts=source_artifacts,
+    )
+    raw_effect_status = _text(effect_summary.get("status"), "missing")
+    effect_status = raw_effect_status if effect_matches_lane else "missing"
     review_status = effect_status if effect_status != "missing" else lane_status
     effects_by_term: dict[str, dict[str, Any]] = {}
-    for raw_effect in _list(effect.get("decision_effects")):
+    for raw_effect in _list(effect.get("decision_effects")) if effect_matches_lane else []:
         item = _dict(raw_effect)
         term_key = _text(item.get("term_key"))
         if term_key:
@@ -506,7 +557,7 @@ def _project_local_ontology_summary(
         review_effect = _dict(effects_by_term.get(term_key))
         effective_status = (
             "reviewed_by_project_local_decision"
-            if review_effect
+            if review_effect and _is_resolving_project_local_effect(review_effect)
             else _text(term.get("status"), "unreviewed")
         )
         terms.append(
@@ -529,6 +580,8 @@ def _project_local_ontology_summary(
         "review_status": review_status,
         "lane_status": lane_status,
         "effect_status": effect_status,
+        "raw_effect_status": raw_effect_status,
+        "effect_matches_lane": effect_matches_lane,
         "term_count": _int(lane_summary.get("term_count")),
         "reviewed_term_count": _int(lane_summary.get("reviewed_term_count")),
         "unreviewed_term_count": _int(lane_summary.get("unreviewed_term_count")),
@@ -744,6 +797,7 @@ def build_candidate_overview(
     ontology = _project_local_ontology_summary(
         lane=project_local_ontology_lane,
         effect=project_local_ontology_effect,
+        source_artifacts=source_artifacts,
     )
     next_action = _next_action(
         maturity=maturity,
