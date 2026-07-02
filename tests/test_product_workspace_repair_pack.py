@@ -9,6 +9,9 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 TOOL_PATH = ROOT / "tools" / "product_workspace_repair_pack.py"
 IMPORT_PREVIEW_TOOL_PATH = ROOT / "tools" / "specspace_repair_draft_import_preview.py"
+PROJECT_LOCAL_IMPORT_TOOL_PATH = (
+    ROOT / "tools" / "specspace_project_local_ontology_decision_import_preview.py"
+)
 PACK_PATH = (
     ROOT
     / "tests"
@@ -161,6 +164,93 @@ def _clarification_requests(pack: dict[str, object]) -> dict[str, object]:
     }
 
 
+def _project_local_review_lane() -> dict[str, object]:
+    return {
+        "artifact_kind": "project_local_ontology_review_lane",
+        "schema_version": 1,
+        "proposal_id": "0197",
+        "contract_ref": "specgraph.product-ontology.project-local-review-lane.v0.1",
+        "canonical_mutations_allowed": False,
+        "tracked_artifacts_written": False,
+        "context": {
+            "workspace_id": "team-decision-log",
+            "candidate_id": "team-decision-log",
+            "repair_session_id": "repair-session.team-decision-log",
+            "workflow_lane": "product_idea_to_spec",
+            "domain_refs": ["domain.team_decision_log"],
+            "context_refs": ["context.idea_to_spec"],
+            "ontology_refs": ["ontology://specgraph-core"],
+        },
+        "review_decision_schema": {
+            "supported_actions": [
+                "keep_project_local",
+                "bind_existing",
+                "alias",
+                "reject",
+                "request_workspace_promotion",
+                "defer",
+            ],
+            "authority": "operator_intent_only",
+        },
+        "terms": [
+            {
+                "id": "project-local-ontology-term.decision-owner",
+                "term": "Decision Owner",
+                "term_key": "decisionowner",
+                "status": "kept_project_local",
+                "suggested_actions": [
+                    "keep_project_local",
+                    "bind_existing",
+                    "alias",
+                    "reject",
+                    "request_workspace_promotion",
+                    "defer",
+                ],
+            },
+            {
+                "id": "project-local-ontology-term.team-member",
+                "term": "Team Member",
+                "term_key": "teammember",
+                "status": "unreviewed",
+                "suggested_actions": [
+                    "keep_project_local",
+                    "bind_existing",
+                    "alias",
+                    "reject",
+                    "request_workspace_promotion",
+                    "defer",
+                ],
+            },
+            {
+                "id": "project-local-ontology-term.record-decision",
+                "term": "Record Decision",
+                "term_key": "recorddecision",
+                "status": "unreviewed",
+                "suggested_actions": [
+                    "keep_project_local",
+                    "bind_existing",
+                    "alias",
+                    "reject",
+                    "request_workspace_promotion",
+                    "defer",
+                ],
+            },
+        ],
+        "authority_boundary": {
+            "may_execute_prompt_agent": False,
+            "may_write_ontology_package": False,
+            "may_accept_ontology_terms": False,
+            "may_create_branch_or_commit": False,
+        },
+        "summary": {
+            "status": "project_local_ontology_review_required",
+            "term_count": 3,
+            "reviewed_term_count": 1,
+            "unreviewed_term_count": 2,
+        },
+    }
+
+
 def test_team_decision_log_repair_pack_materializes_specspace_owned_state() -> None:
     module = load_module(TOOL_PATH, "product_workspace_repair_pack_under_test")
     pack = _pack()
@@ -213,6 +303,65 @@ def test_team_decision_log_repair_pack_import_preview_is_ready() -> None:
     assert preview["summary"]["accepted_for_rerun_count"] == 15
     assert preview["summary"]["invalid_draft_count"] == 0
     assert preview["summary"]["deferred_count"] == 0
+
+
+def test_repair_pack_materializes_project_local_ontology_decisions() -> None:
+    module = load_module(
+        TOOL_PATH,
+        "product_workspace_repair_pack_project_local_under_test",
+    )
+    state = module.build_project_local_ontology_review_decision_state(
+        pack=_pack(),
+        review_lane=_project_local_review_lane(),
+        pack_path=PACK_PATH,
+        review_lane_path=ROOT / "runs" / "project_local_ontology_review_lane.json",
+    )
+
+    assert state["artifact_kind"] == "specspace_project_local_ontology_review_decision_state"
+    assert state["summary"]["decision_count"] == 2
+    assert state["summary"]["review_action"] == "keep_project_local"
+    assert state["consumer_boundary"]["may_apply_to_specgraph"] is False
+    assert state["authority_boundary"]["may_accept_ontology_terms"] is False
+    assert {decision["term_key"] for decision in state["decisions"]} == {
+        "teammember",
+        "recorddecision",
+    }
+    assert all(
+        decision["decision_value"]["term_scope"] == "project_local"
+        and decision["writes_ontology_package"] is False
+        and decision["accepts_ontology_terms"] is False
+        for decision in state["decisions"]
+    )
+
+
+def test_repair_pack_project_local_decisions_import_preview_is_ready() -> None:
+    pack_module = load_module(
+        TOOL_PATH,
+        "product_workspace_repair_pack_project_local_preview_under_test",
+    )
+    preview_module = load_module(
+        PROJECT_LOCAL_IMPORT_TOOL_PATH,
+        "project_local_import_preview_for_pack_under_test",
+    )
+    lane = _project_local_review_lane()
+    state = pack_module.build_project_local_ontology_review_decision_state(
+        pack=_pack(),
+        review_lane=lane,
+        pack_path=PACK_PATH,
+        review_lane_path=ROOT / "runs" / "project_local_ontology_review_lane.json",
+    )
+    preview = preview_module.build_specspace_project_local_ontology_decision_import_preview(
+        decision_state=state,
+        review_lane=lane,
+        decision_state_path=ROOT / "runs" / "project_local_ontology_review_decisions.json",
+        review_lane_path=ROOT / "runs" / "project_local_ontology_review_lane.json",
+        workspace_id="team-decision-log",
+    )
+
+    assert preview["readiness"]["ready"] is True
+    assert preview["summary"]["accepted_decision_count"] == 2
+    assert preview["summary"]["missing_decision_count"] == 0
+    assert preview["summary"]["invalid_decision_count"] == 0
 
 
 def test_repair_pack_request_state_counts_only_unique_resolving_drafts() -> None:

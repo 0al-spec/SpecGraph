@@ -760,14 +760,19 @@ make product-workspace-happy-path-repair-pack
 The materializer reads a `product_workspace_repair_pack` fixture and the current
 repair-session/clarification-request artifacts, then writes standard
 SpecSpace-owned `runs/idea_to_spec_repair_drafts.json` and
-`runs/idea_to_spec_repair_rerun_requests.json`. The generic happy-path target
-then reuses the same import preview, rerun request gate, repair-draft rerun,
-repaired promotion handoff, and Idea Maturity validation flow. The default
-fixture is the Team Decision Log pack, but product identity stays in pack data
-and `PRODUCT_WORKSPACE_REPAIR_PACK_WORKSPACE_ID`, not in the generic flow. The
-expected happy-path result has zero unresolved ontology gaps, zero unresolved
-candidate gaps, `ready_for_candidate_approval: true`, and Idea Maturity
-`lifecycle_state: approval_ready`.
+`runs/idea_to_spec_repair_rerun_requests.json`. When the project-local ontology
+review lane exists, the same pack also writes SpecSpace-owned
+`runs/project_local_ontology_review_decisions.json` so the demo can complete the
+project-local review loop without accepting terms into a global ontology. The
+generic happy-path target then reuses the same import preview, rerun request
+gate, repair-draft rerun, project-local ontology decision import/effect reports,
+repaired promotion handoff, Idea Maturity validation flow, and candidate overview
+producer. The default fixture is the Team Decision Log pack, but product
+identity stays in pack data and `PRODUCT_WORKSPACE_REPAIR_PACK_WORKSPACE_ID`,
+not in the generic flow. The expected happy-path result has zero unresolved
+ontology gaps, zero unresolved candidate gaps,
+`ready_for_candidate_approval: true`, project-local ontology decision effect
+ready, and Idea Maturity `lifecycle_state: approval_ready`.
 
 `make product-workspace-team-decision-log-happy-path-repair-pack` remains only
 as a documented demo alias for the default Team Decision Log fixture.

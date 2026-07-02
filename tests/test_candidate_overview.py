@@ -194,7 +194,13 @@ def project_local_lane() -> dict[str, object]:
         "artifact_kind": "project_local_ontology_review_lane",
         "contract_ref": "specgraph.product-ontology.project-local-review-lane.v0.1",
         "schema_version": 1,
-        "terms": [{"term": "Recurring Payment", "status": "kept_project_local"}],
+        "terms": [
+            {
+                "term": "Recurring Payment",
+                "term_key": "recurringpayment",
+                "status": "kept_project_local",
+            }
+        ],
         "summary": {
             "status": "project_local_ontology_review_ready",
             "term_count": 1,
@@ -214,6 +220,33 @@ def project_local_effect() -> dict[str, object]:
             "status": "project_local_ontology_decision_effect_ready",
             "accepted_decision_count": 1,
             "blocking_decision_count": 0,
+        },
+        "decision_effects": [
+            {
+                "term": "Recurring Payment",
+                "term_key": "recurringpayment",
+                "status": "accepted_for_project_local_preview",
+                "review_action": "keep_project_local",
+                "maturity_effect": "resolves_project_local_review",
+                "evidence_refs": [
+                    "runs/project_local_ontology_review_decisions.json",
+                    "candidate-spec.product-boundary.gaps.ontology-gap.payment",
+                ],
+                "writes_ontology_package": False,
+                "accepts_ontology_terms": False,
+            }
+        ],
+        "source_artifacts": {
+            "project_local_ontology_review_lane": {
+                "artifact_kind": "project_local_ontology_review_lane",
+                "status": "present",
+                "summary": {
+                    "status": "project_local_ontology_review_ready",
+                    "term_count": 1,
+                    "reviewed_term_count": 1,
+                    "unreviewed_term_count": 0,
+                },
+            }
         },
         "authority_boundary": authority_boundary(),
     }
@@ -261,9 +294,82 @@ def test_candidate_overview_builds_public_safe_narrative() -> None:
     assert overview["sections"]["topology"]["workflow_edge_count"] == 2
     assert overview["sections"]["repair"]["ready_for_candidate_approval"] is True
     assert overview["sections"]["project_local_ontology"]["accepted_decision_count"] == 1
+    assert (
+        overview["sections"]["project_local_ontology"]["terms"][0]["effective_status"]
+        == "reviewed_by_project_local_decision"
+    )
     serialized = json.dumps(overview)
     assert "raw_intent_text" not in serialized
     assert "/Users/egor" not in serialized
+
+
+def test_candidate_overview_uses_project_local_effect_as_effective_review_status() -> None:
+    lane = project_local_lane()
+    lane["summary"]["status"] = "project_local_ontology_review_required"
+    lane["summary"]["reviewed_term_count"] = 1
+    lane["summary"]["unreviewed_term_count"] = 3
+    effect = project_local_effect()
+    effect["source_artifacts"]["project_local_ontology_review_lane"]["summary"] = lane["summary"]
+
+    overview = build_overview(
+        project_local_ontology_lane=lane,
+        project_local_ontology_effect=effect,
+    )
+
+    ontology = overview["sections"]["project_local_ontology"]
+    assert ontology["lane_status"] == "project_local_ontology_review_required"
+    assert ontology["effect_status"] == "project_local_ontology_decision_effect_ready"
+    assert ontology["effect_matches_lane"] is True
+    assert ontology["review_status"] == "project_local_ontology_decision_effect_ready"
+    assert (
+        overview["summary"]["project_local_ontology_review_status"]
+        == "project_local_ontology_decision_effect_ready"
+    )
+
+
+def test_candidate_overview_ignores_stale_project_local_effect() -> None:
+    lane = project_local_lane()
+    lane["summary"]["status"] = "project_local_ontology_review_required"
+    lane["summary"]["reviewed_term_count"] = 0
+    lane["summary"]["unreviewed_term_count"] = 1
+    lane["terms"][0]["status"] = "unreviewed"
+
+    overview = build_overview(project_local_ontology_lane=lane)
+
+    ontology = overview["sections"]["project_local_ontology"]
+    assert ontology["lane_status"] == "project_local_ontology_review_required"
+    assert ontology["raw_effect_status"] == "project_local_ontology_decision_effect_ready"
+    assert ontology["effect_status"] == "missing"
+    assert ontology["effect_matches_lane"] is False
+    assert ontology["review_status"] == "project_local_ontology_review_required"
+    assert ontology["terms"][0]["effective_status"] == "unreviewed"
+
+
+def test_candidate_overview_does_not_mark_deferred_effect_as_reviewed() -> None:
+    lane = project_local_lane()
+    lane["summary"]["status"] = "project_local_ontology_review_required"
+    lane["summary"]["reviewed_term_count"] = 0
+    lane["summary"]["unreviewed_term_count"] = 1
+    lane["terms"][0]["status"] = "unreviewed"
+    effect = project_local_effect()
+    effect["summary"]["status"] = "project_local_ontology_decision_effect_review_required"
+    effect["summary"]["accepted_decision_count"] = 0
+    effect["summary"]["blocking_decision_count"] = 0
+    effect["decision_effects"][0]["status"] = "non_resolving"
+    effect["decision_effects"][0]["review_action"] = "defer"
+    effect["decision_effects"][0]["maturity_effect"] = "requires_owner_follow_up"
+    effect["source_artifacts"]["project_local_ontology_review_lane"]["summary"] = lane["summary"]
+
+    overview = build_overview(
+        project_local_ontology_lane=lane,
+        project_local_ontology_effect=effect,
+    )
+
+    ontology = overview["sections"]["project_local_ontology"]
+    assert ontology["effect_status"] == "project_local_ontology_decision_effect_review_required"
+    assert ontology["effect_matches_lane"] is True
+    assert ontology["terms"][0]["effective_status"] == "unreviewed"
+    assert ontology["terms"][0]["review_effect"]["review_action"] == "defer"
 
 
 def test_candidate_overview_uses_standard_graph_when_repaired_graph_missing() -> None:

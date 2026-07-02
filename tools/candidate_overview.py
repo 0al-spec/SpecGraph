@@ -483,22 +483,111 @@ def _maturity_summary(maturity: dict[str, Any]) -> dict[str, Any]:
     }
 
 
+def _project_local_effect_matches_lane(
+    *,
+    lane: dict[str, Any],
+    effect: dict[str, Any],
+    source_artifacts: dict[str, dict[str, Any]],
+) -> bool:
+    if not lane or not effect:
+        return False
+    lane_source = _dict(
+        _dict(effect.get("source_artifacts")).get("project_local_ontology_review_lane")
+    )
+    if lane_source.get("artifact_kind") != "project_local_ontology_review_lane":
+        return False
+
+    loaded_lane = _dict(source_artifacts.get("project_local_ontology_lane"))
+    loaded_lane_sha = _text(loaded_lane.get("sha256"))
+    source_lane_sha = _text(lane_source.get("sha256"))
+    if loaded_lane_sha or source_lane_sha:
+        return bool(loaded_lane_sha and source_lane_sha and loaded_lane_sha == source_lane_sha)
+
+    lane_context = _dict(lane.get("context"))
+    effect_context = _dict(effect.get("context"))
+    if lane_context or effect_context:
+        for field in ("workspace_id", "candidate_id", "repair_session_id", "workflow_lane"):
+            if _text(lane_context.get(field)) != _text(effect_context.get(field)):
+                return False
+
+    lane_summary = _dict(lane.get("summary"))
+    source_summary = _dict(lane_source.get("summary"))
+    for field in ("status", "term_count", "reviewed_term_count", "unreviewed_term_count"):
+        if source_summary.get(field) != lane_summary.get(field):
+            return False
+    return True
+
+
+def _is_resolving_project_local_effect(effect: dict[str, Any]) -> bool:
+    return (
+        _text(effect.get("maturity_effect")) == "resolves_project_local_review"
+        and _text(effect.get("status")) == "accepted_for_project_local_preview"
+        and _text(effect.get("review_action"))
+        in {"keep_project_local", "bind_existing", "alias", "reject"}
+    )
+
+
 def _project_local_ontology_summary(
     *,
     lane: dict[str, Any],
     effect: dict[str, Any],
+    source_artifacts: dict[str, dict[str, Any]],
 ) -> dict[str, Any]:
     lane_summary = _dict(lane.get("summary"))
     effect_summary = _dict(effect.get("summary"))
+    lane_status = _text(lane_summary.get("status"), "missing")
+    effect_matches_lane = _project_local_effect_matches_lane(
+        lane=lane,
+        effect=effect,
+        source_artifacts=source_artifacts,
+    )
+    raw_effect_status = _text(effect_summary.get("status"), "missing")
+    effect_status = raw_effect_status if effect_matches_lane else "missing"
+    review_status = effect_status if effect_status != "missing" else lane_status
+    effects_by_term: dict[str, dict[str, Any]] = {}
+    for raw_effect in _list(effect.get("decision_effects")) if effect_matches_lane else []:
+        item = _dict(raw_effect)
+        term_key = _text(item.get("term_key"))
+        if term_key:
+            effects_by_term[term_key] = item
+    terms: list[dict[str, Any]] = []
+    for raw_term in _list(lane.get("terms"))[:16]:
+        term = _dict(raw_term)
+        term_key = _text(term.get("term_key"))
+        review_effect = _dict(effects_by_term.get(term_key))
+        effective_status = (
+            "reviewed_by_project_local_decision"
+            if review_effect and _is_resolving_project_local_effect(review_effect)
+            else _text(term.get("status"), "unreviewed")
+        )
+        terms.append(
+            _public_safe(
+                {
+                    **term,
+                    "effective_status": effective_status,
+                    "review_effect": {
+                        "status": _text(review_effect.get("status")),
+                        "review_action": _text(review_effect.get("review_action")),
+                        "maturity_effect": _text(review_effect.get("maturity_effect")),
+                        "evidence_refs": _list(review_effect.get("evidence_refs"))[:8],
+                    }
+                    if review_effect
+                    else {},
+                }
+            )
+        )
     return {
-        "lane_status": _text(lane_summary.get("status"), "missing"),
-        "effect_status": _text(effect_summary.get("status"), "missing"),
+        "review_status": review_status,
+        "lane_status": lane_status,
+        "effect_status": effect_status,
+        "raw_effect_status": raw_effect_status,
+        "effect_matches_lane": effect_matches_lane,
         "term_count": _int(lane_summary.get("term_count")),
         "reviewed_term_count": _int(lane_summary.get("reviewed_term_count")),
         "unreviewed_term_count": _int(lane_summary.get("unreviewed_term_count")),
         "accepted_decision_count": _int(effect_summary.get("accepted_decision_count")),
         "blocking_decision_count": _int(effect_summary.get("blocking_decision_count")),
-        "terms": _public_safe(_list(lane.get("terms"))[:16]),
+        "terms": terms,
     }
 
 
@@ -708,6 +797,7 @@ def build_candidate_overview(
     ontology = _project_local_ontology_summary(
         lane=project_local_ontology_lane,
         effect=project_local_ontology_effect,
+        source_artifacts=source_artifacts,
     )
     next_action = _next_action(
         maturity=maturity,
@@ -752,7 +842,7 @@ def build_candidate_overview(
         "remaining_blocker_count": maturity_view["remaining_blocker_count"],
         "ready_for_candidate_approval": repair["ready_for_candidate_approval"],
         "ready_for_platform_promotion": repair["ready_for_platform_promotion"],
-        "project_local_ontology_review_status": ontology["lane_status"],
+        "project_local_ontology_review_status": ontology["review_status"],
         "finding_count": len(findings),
     }
 
