@@ -2520,5 +2520,18 @@
     "required_provenance_links": [
       "source_draft_ref"
     ]
+  },
+  {
+    "proposal_id": "0196",
+    "source_artifact_class": "working_draft",
+    "source_refs": [
+      "docs/archive/proposal_sources/0196_idea_maturity_aggregate_answer_accounting.md"
+    ],
+    "motivating_concern": "Idea Maturity counted accepted aggregate/control answers as ordinary unmaterialized answer debt even when the rerun overlay had already consumed them as closure evidence.",
+    "normalized_title": "Idea Maturity Aggregate Answer Accounting",
+    "bounded_scope": "Extend the Idea Maturity metrics producer, tests, Metrics contract docs/schema/examples, proposal docs, roadmap, DocC, README, and registry tracking so aggregate/control answers consumed by the rerun overlay are classified as closure evidence instead of ordinary unmaterialized answer debt, without applying answers to source artifacts, mutating candidate or canonical specs, writing Ontology packages or lockfiles, accepting ontology terms, approving candidates, creating Git branches or commits, opening pull requests, publishing read models, or executing prompt agents.",
+    "required_provenance_links": [
+      "source_draft_ref"
+    ]
   }
 ]

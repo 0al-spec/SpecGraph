@@ -1085,6 +1085,351 @@ def test_idea_maturity_metrics_report_counts_materialized_request_once(
     assert report["summary"]["answer_materialization_rate"] == 1.0
 
 
+def test_idea_maturity_metrics_report_accounts_aggregate_answer_closure(
+    tmp_path: Path,
+) -> None:
+    paths = write_ready_chain(tmp_path / "aggregate-answer")
+    answers = load_json(paths["clarification_answers"])
+    answers["answers"].append(
+        {
+            "request_id": "clarification.active-frame",
+            "answer_kind": "answer_question",
+            "status": "accepted_for_candidate",
+            "request_snapshot": {
+                "kind": "active_frame",
+                "target_artifact": "idea_event_storming_intake",
+                "target_ref": "active_frame.domain",
+            },
+        }
+    )
+    answers["summary"]["answer_count"] = 3
+    answers["summary"]["accepted_answer_count"] = 3
+    write_json(paths["clarification_answers"], answers)
+    rerun_input = load_json(paths["rerun_input"])
+    rerun_input["rerun_input_overlay"] = {
+        "intake_overlay": {
+            "active_frame_hints": [
+                {
+                    "request_id": "clarification.active-frame",
+                    "answer_kind": "answer_question",
+                    "request_kind": "active_frame",
+                    "target_artifact": "idea_event_storming_intake",
+                    "target_ref": "active_frame.domain",
+                    "value": {"domain": "cash_flow_control"},
+                }
+            ],
+            "event_storming_hints": [],
+        },
+        "ontology_review_hints": {
+            "term_bindings": [],
+            "aliases": [],
+            "project_local_terms": [],
+            "rejected_terms": [],
+            "deferred_terms": [],
+        },
+        "candidate_review_hints": {
+            "acceptance_criteria": [],
+            "graph_edges": [],
+            "claim_reviews": [],
+            "other": [],
+        },
+    }
+    rerun_input["summary"]["accepted_answer_count"] = 3
+    rerun_input["summary"]["intake_overlay_count"] = 1
+    write_json(paths["rerun_input"], rerun_input)
+
+    report = build_report(paths)
+    metrics = report["metrics"]
+    group = report["groups"]["answer_materialization"]
+
+    assert metrics["accepted_answer_count"] == 3
+    assert metrics["per_gap_materialized_answer_count"] == 2
+    assert metrics["aggregate_answer_count"] == 1
+    assert metrics["closure_evidence_answer_count"] == 3
+    assert metrics["unmaterialized_answer_count"] == 0
+    assert metrics["answer_materialization_rate"] == 1.0
+    assert group["ordinary_unmaterialized_answer_count"] == 0
+    assert group["answer_accounting"]["aggregate_answer_request_ids"] == [
+        "clarification.active-frame"
+    ]
+
+
+def test_idea_maturity_metrics_rate_does_not_exceed_one_on_summary_mismatch(
+    tmp_path: Path,
+) -> None:
+    paths = write_ready_chain(tmp_path / "summary-mismatch")
+    answers = load_json(paths["clarification_answers"])
+    answers["summary"]["accepted_answer_count"] = 1
+    write_json(paths["clarification_answers"], answers)
+
+    report = build_report(paths)
+    metrics = report["metrics"]
+
+    assert metrics["accepted_answer_count"] == 2
+    assert metrics["closure_evidence_answer_count"] == 2
+    assert metrics["answer_materialization_rate"] == 1.0
+    assert metrics["answer_accounting"]["accepted_answer_count"] == metrics["accepted_answer_count"]
+
+
+def test_idea_maturity_metrics_keeps_unconfirmed_reject_as_answer_debt(
+    tmp_path: Path,
+) -> None:
+    paths = write_ready_chain(tmp_path / "unconfirmed-dismissed-answer")
+    answers = load_json(paths["clarification_answers"])
+    answers["answers"].append(
+        {
+            "request_id": "clarification.reject-local-risk",
+            "answer_kind": "reject",
+            "status": "accepted_for_candidate",
+            "request_snapshot": {
+                "kind": "candidate_gap",
+                "target_ref": "candidate-spec.product-boundary#gap.local-risk",
+            },
+        }
+    )
+    answers["summary"]["answer_count"] = 3
+    answers["summary"]["accepted_answer_count"] = 3
+    write_json(paths["clarification_answers"], answers)
+    rerun_input = load_json(paths["rerun_input"])
+    rerun_input["rerun_input_overlay"] = {
+        "intake_overlay": {
+            "active_frame_hints": [],
+            "event_storming_hints": [],
+        },
+        "ontology_review_hints": {
+            "term_bindings": [],
+            "aliases": [],
+            "project_local_terms": [],
+            "rejected_terms": [],
+            "deferred_terms": [],
+        },
+        "candidate_review_hints": {
+            "acceptance_criteria": [],
+            "graph_edges": [],
+            "claim_reviews": [],
+            "other": [
+                {
+                    "request_id": "clarification.reject-local-risk",
+                    "answer_kind": "reject",
+                    "request_kind": "candidate_gap",
+                    "target_ref": "candidate-spec.product-boundary#gap.local-risk",
+                }
+            ],
+        },
+    }
+    write_json(paths["rerun_input"], rerun_input)
+
+    report = build_report(paths)
+    metrics = report["metrics"]
+
+    assert metrics["dismissed_answer_count"] == 0
+    assert metrics["closure_evidence_answer_count"] == 2
+    assert metrics["answer_materialization_rate"] == 0.666667
+    assert metrics["ordinary_unmaterialized_answer_count"] == 1
+    assert metrics["answer_accounting"]["dismissed_answer_request_ids"] == []
+
+
+def test_idea_maturity_metrics_counts_confirmed_reject_as_dismissed_not_closure(
+    tmp_path: Path,
+) -> None:
+    paths = write_ready_chain(tmp_path / "confirmed-dismissed-answer")
+    answers = load_json(paths["clarification_answers"])
+    answers["answers"].append(
+        {
+            "request_id": "clarification.reject-local-risk",
+            "answer_kind": "reject",
+            "status": "accepted_for_candidate",
+            "request_snapshot": {
+                "kind": "candidate_gap",
+                "target_ref": "candidate-spec.product-boundary#gap.local-risk",
+            },
+        }
+    )
+    answers["summary"]["answer_count"] = 3
+    answers["summary"]["accepted_answer_count"] = 3
+    write_json(paths["clarification_answers"], answers)
+    rerun_input = load_json(paths["rerun_input"])
+    rerun_input["rerun_input_overlay"] = {
+        "intake_overlay": {
+            "active_frame_hints": [],
+            "event_storming_hints": [],
+        },
+        "ontology_review_hints": {
+            "term_bindings": [],
+            "aliases": [],
+            "project_local_terms": [],
+            "rejected_terms": [],
+            "deferred_terms": [],
+        },
+        "candidate_review_hints": {
+            "acceptance_criteria": [],
+            "graph_edges": [],
+            "claim_reviews": [],
+            "other": [
+                {
+                    "request_id": "clarification.reject-local-risk",
+                    "answer_kind": "reject",
+                    "request_kind": "candidate_gap",
+                    "target_ref": "candidate-spec.product-boundary#gap.local-risk",
+                }
+            ],
+        },
+    }
+    write_json(paths["rerun_input"], rerun_input)
+    materialization = load_json(paths["rerun_materialization"])
+    materialization["materialization_preview"]["delta"]["candidate_resolution_records"].append(
+        {
+            "gap_id": "gap.local-risk",
+            "match_kind": "target_ref",
+            "request_id": "clarification.reject-local-risk",
+            "resolution_kind": "rejected",
+        }
+    )
+    write_json(paths["rerun_materialization"], materialization)
+
+    report = build_report(paths)
+    metrics = report["metrics"]
+
+    assert metrics["dismissed_answer_count"] == 1
+    assert metrics["closure_evidence_answer_count"] == 2
+    assert metrics["answer_materialization_rate"] == 0.666667
+    assert metrics["ordinary_unmaterialized_answer_count"] == 0
+    assert metrics["answer_accounting"]["dismissed_answer_request_ids"] == [
+        "clarification.reject-local-risk"
+    ]
+
+
+def test_idea_maturity_metrics_treats_aggregate_gap_target_as_closure(
+    tmp_path: Path,
+) -> None:
+    paths = write_ready_chain(tmp_path / "aggregate-gap-target")
+    answers = load_json(paths["clarification_answers"])
+    answers["answers"].append(
+        {
+            "request_id": "clarification.all-ontology-gaps",
+            "answer_kind": "propose_project_local_term",
+            "status": "accepted_for_candidate",
+            "request_snapshot": {
+                "kind": "ontology_gap",
+                "target_ref": "candidate_graph.gaps",
+            },
+        }
+    )
+    answers["summary"]["answer_count"] = 3
+    answers["summary"]["accepted_answer_count"] = 3
+    write_json(paths["clarification_answers"], answers)
+    rerun_input = load_json(paths["rerun_input"])
+    rerun_input["rerun_input_overlay"] = {
+        "intake_overlay": {
+            "active_frame_hints": [],
+            "event_storming_hints": [],
+        },
+        "ontology_review_hints": {
+            "term_bindings": [],
+            "aliases": [],
+            "project_local_terms": [
+                {
+                    "request_id": "clarification.all-ontology-gaps",
+                    "answer_kind": "propose_project_local_term",
+                    "request_kind": "ontology_gap",
+                    "target_ref": "candidate_graph.gaps",
+                }
+            ],
+            "rejected_terms": [],
+            "deferred_terms": [],
+        },
+        "candidate_review_hints": {
+            "acceptance_criteria": [],
+            "graph_edges": [],
+            "claim_reviews": [],
+            "other": [],
+        },
+    }
+    write_json(paths["rerun_input"], rerun_input)
+
+    report = build_report(paths)
+    metrics = report["metrics"]
+
+    assert metrics["aggregate_answer_count"] == 1
+    assert metrics["closure_evidence_answer_count"] == 3
+    assert metrics["ordinary_unmaterialized_answer_count"] == 0
+
+
+def test_idea_maturity_metrics_does_not_treat_deferral_as_closure(
+    tmp_path: Path,
+) -> None:
+    paths = write_ready_chain(tmp_path / "deferred-answer")
+    answers = load_json(paths["clarification_answers"])
+    answers["answers"].append(
+        {
+            "request_id": "clarification.defer-risk",
+            "answer_kind": "defer",
+            "status": "accepted_for_candidate",
+            "request_snapshot": {
+                "kind": "candidate_gap",
+                "target_ref": "candidate-spec.product-boundary#gap.local-risk",
+            },
+        }
+    )
+    answers["summary"]["answer_count"] = 3
+    answers["summary"]["accepted_answer_count"] = 3
+    write_json(paths["clarification_answers"], answers)
+    rerun_input = load_json(paths["rerun_input"])
+    rerun_input["rerun_input_overlay"] = {
+        "intake_overlay": {
+            "active_frame_hints": [],
+            "event_storming_hints": [],
+        },
+        "ontology_review_hints": {
+            "term_bindings": [],
+            "aliases": [],
+            "project_local_terms": [],
+            "rejected_terms": [],
+            "deferred_terms": [],
+        },
+        "candidate_review_hints": {
+            "acceptance_criteria": [],
+            "graph_edges": [],
+            "claim_reviews": [],
+            "other": [
+                {
+                    "request_id": "clarification.defer-risk",
+                    "answer_kind": "defer",
+                    "request_kind": "candidate_gap",
+                    "target_ref": "candidate-spec.product-boundary#gap.local-risk",
+                }
+            ],
+        },
+    }
+    write_json(paths["rerun_input"], rerun_input)
+
+    report = build_report(paths)
+    metrics = report["metrics"]
+
+    assert metrics["aggregate_answer_count"] == 0
+    assert metrics["closure_evidence_answer_count"] == 2
+    assert metrics["ordinary_unmaterialized_answer_count"] == 1
+
+
+def test_idea_maturity_metrics_preserves_summary_only_materialization_counts(
+    tmp_path: Path,
+) -> None:
+    paths = write_ready_chain(tmp_path / "summary-only-materialization")
+    answers = load_json(paths["clarification_answers"])
+    answers["answers"] = []
+    answers["summary"]["answer_count"] = 2
+    answers["summary"]["accepted_answer_count"] = 2
+    write_json(paths["clarification_answers"], answers)
+
+    report = build_report(paths)
+    metrics = report["metrics"]
+
+    assert metrics["accepted_answer_count"] == 2
+    assert metrics["materialized_answer_count"] == 2
+    assert metrics["closure_evidence_answer_count"] == 2
+    assert metrics["answer_materialization_rate"] == 1.0
+
+
 def test_idea_maturity_metrics_report_uses_structured_stale_findings_only(
     tmp_path: Path,
 ) -> None:

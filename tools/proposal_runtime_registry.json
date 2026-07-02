@@ -11182,5 +11182,54 @@
       }
     ],
     "notes": "SpecSpace-owned real-idea intake answers can now be preview-imported, validated, materialized, and continued through the existing active-candidate flow without granting SpecSpace execution or mutation authority."
+  },
+  {
+    "proposal_id": "0196",
+    "posture": "synchronous_runtime_slice",
+    "runtime_surfaces": [
+      "docs/proposals/0196_idea_maturity_aggregate_answer_accounting.md",
+      "docs/archive/proposal_sources/0196_idea_maturity_aggregate_answer_accounting.md",
+      "tools/idea_maturity_metrics_report.py",
+      "tests/test_idea_maturity_metrics_report.py",
+      "docs/product_workspace_graph_versioning_roadmap.md",
+      "Sources/SpecGraph/Documentation.docc/ProductWorkspacePilots.md",
+      "tools/README.md"
+    ],
+    "runtime_markers": [
+      {
+        "path": "tools/idea_maturity_metrics_report.py",
+        "pattern": "aggregate_answer_count"
+      },
+      {
+        "path": "tools/idea_maturity_metrics_report.py",
+        "pattern": "closure_evidence_answer_count"
+      },
+      {
+        "path": "tools/idea_maturity_metrics_report.py",
+        "pattern": "ordinary_unmaterialized_answer_count"
+      }
+    ],
+    "validation_markers": [
+      {
+        "path": "tests/test_idea_maturity_metrics_report.py",
+        "pattern": "test_idea_maturity_metrics_report_accounts_aggregate_answer_closure"
+      },
+      {
+        "path": "docs/proposals/0196_idea_maturity_aggregate_answer_accounting.md",
+        "pattern": "Status: implemented."
+      },
+      {
+        "path": "docs/product_workspace_graph_versioning_roadmap.md",
+        "pattern": "Done in proposal `0196`"
+      },
+      {
+        "path": "Sources/SpecGraph/Documentation.docc/ProductWorkspacePilots.md",
+        "pattern": "Proposal `0196`"
+      },
+      {
+        "path": "tools/README.md",
+        "pattern": "Proposal 0196"
+      }
+    ]
   }
 ]
