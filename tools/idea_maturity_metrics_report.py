@@ -49,6 +49,9 @@ DEFAULT_PATHS = {
     "repaired_repair_session": ROOT / "runs" / "repaired_idea_to_spec_repair_session.json",
     "specspace_draft_import_preview": ROOT / "runs" / "specspace_repair_draft_import_preview.json",
     "specspace_rerun_request": ROOT / "runs" / "idea_to_spec_repair_rerun_requests.json",
+    "project_local_ontology_decision_effect": ROOT
+    / "runs"
+    / "project_local_ontology_decision_effect_report.json",
     "approval_intent": ROOT / "runs" / "idea_to_spec_candidate_approval_intents.json",
     "repair_rerun_execution": ROOT / "runs" / "platform_product_repair_rerun_execution_report.json",
     "repair_rerun_publication": ROOT
@@ -158,6 +161,11 @@ SUMMARY_METRIC_KEYS = (
     "ontology_gap_resolved_count",
     "ontology_gap_unresolved_count",
     "ontology_gap_resolution_rate",
+    "project_local_ontology_review_status",
+    "project_local_ontology_accepted_decision_count",
+    "project_local_ontology_missing_decision_count",
+    "project_local_ontology_invalid_decision_count",
+    "project_local_ontology_blocking_decision_count",
     "candidate_gap_count_initial",
     "candidate_gap_resolved_count",
     "candidate_gap_unresolved_count",
@@ -707,6 +715,41 @@ def _ontology_decision_counts(artifacts: dict[str, dict[str, Any]]) -> dict[str,
     }
 
 
+def _project_local_ontology_review_metrics(
+    artifacts: dict[str, dict[str, Any]],
+) -> dict[str, Any]:
+    report = _dict(artifacts.get("project_local_ontology_decision_effect"))
+    summary = _dict(report.get("summary"))
+    review = _dict(report.get("project_local_ontology_review"))
+    status = _text(summary.get("status")) or _text(review.get("status")) or "missing"
+    evidence_refs = [
+        ref for ref in _list(review.get("evidence_refs")) if isinstance(ref, str) and ref.strip()
+    ]
+    return {
+        "project_local_ontology_review": {
+            "status": status,
+            "accepted_decision_count": _int(summary.get("accepted_decision_count")),
+            "maturity_evidence_decision_count": _int(
+                summary.get("maturity_evidence_decision_count")
+            ),
+            "keep_project_local_count": _int(summary.get("keep_project_local_count")),
+            "bind_existing_count": _int(summary.get("bind_existing_count")),
+            "alias_count": _int(summary.get("alias_count")),
+            "request_promotion_count": _int(summary.get("request_promotion_count")),
+            "reject_count": _int(summary.get("reject_count")),
+            "deferred_count": _int(summary.get("deferred_count")),
+            "non_resolving_decision_count": _int(summary.get("non_resolving_decision_count")),
+            "invalid_decision_count": _int(summary.get("invalid_decision_count")),
+            "missing_decision_count": _int(summary.get("missing_decision_count")),
+            "blocking_decision_count": _int(summary.get("blocking_decision_count")),
+            "follow_up_decision_count": _int(summary.get("follow_up_decision_count")),
+            "effect_count": _int(summary.get("effect_count")),
+            "ready_for_maturity": bool(summary.get("ready_for_maturity")),
+            "evidence_refs": evidence_refs,
+        }
+    }
+
+
 def _metrics(artifacts: dict[str, dict[str, Any]]) -> dict[str, Any]:
     candidate_graph = artifacts.get("candidate_graph")
     repaired_candidate_graph = artifacts.get("repaired_candidate_graph")
@@ -791,6 +834,9 @@ def _metrics(artifacts: dict[str, dict[str, Any]]) -> dict[str, Any]:
         "ordinary_unmaterialized_answer_count": unmaterialized_answer_count,
     }
     ontology_decision_counts = _ontology_decision_counts(artifacts)
+    project_local_review = _project_local_ontology_review_metrics(artifacts)[
+        "project_local_ontology_review"
+    ]
 
     ontology_match_counter: Counter[str] = Counter()
     for record in ontology_records:
@@ -839,6 +885,8 @@ def _metrics(artifacts: dict[str, dict[str, Any]]) -> dict[str, Any]:
     )
 
     remaining_blockers = _remaining_blocker_count(artifacts)
+    remaining_blockers += _int(project_local_review.get("blocking_decision_count"))
+    remaining_blockers += _int(project_local_review.get("non_resolving_decision_count"))
     stale_ref_count = _stale_ref_count(artifacts)
     failed_gate_count = _failed_gate_count(artifacts)
     dry_run_count = _dry_run_count(artifacts)
@@ -891,6 +939,28 @@ def _metrics(artifacts: dict[str, dict[str, Any]]) -> dict[str, Any]:
         "ontology_project_local_term_count": ontology_decision_counts["project_local"],
         "ontology_rejected_term_count": ontology_decision_counts["rejected"],
         "ontology_deferred_term_count": ontology_decision_counts["deferred"],
+        "project_local_ontology_review": project_local_review,
+        "project_local_ontology_review_status": project_local_review["status"],
+        "project_local_ontology_accepted_decision_count": project_local_review[
+            "accepted_decision_count"
+        ],
+        "project_local_ontology_keep_local_count": project_local_review["keep_project_local_count"],
+        "project_local_ontology_bind_existing_count": project_local_review["bind_existing_count"],
+        "project_local_ontology_alias_count": project_local_review["alias_count"],
+        "project_local_ontology_request_promotion_count": project_local_review[
+            "request_promotion_count"
+        ],
+        "project_local_ontology_reject_count": project_local_review["reject_count"],
+        "project_local_ontology_deferred_decision_count": project_local_review["deferred_count"],
+        "project_local_ontology_invalid_decision_count": project_local_review[
+            "invalid_decision_count"
+        ],
+        "project_local_ontology_missing_decision_count": project_local_review[
+            "missing_decision_count"
+        ],
+        "project_local_ontology_blocking_decision_count": project_local_review[
+            "blocking_decision_count"
+        ],
         "ontology_match_kind_counts": _closed_counter(
             ONTOLOGY_MATCH_KIND_KEYS,
             ontology_match_counter,
@@ -1881,6 +1951,70 @@ def _promotion_gate_readiness_explainers(
     return explainers
 
 
+def _project_local_ontology_readiness_explainers(
+    artifacts: dict[str, dict[str, Any]],
+    paths: dict[str, Path],
+) -> list[dict[str, Any]]:
+    report = _dict(artifacts.get("project_local_ontology_decision_effect"))
+    if not report:
+        return []
+    summary = _dict(report.get("summary"))
+    explainers: list[dict[str, Any]] = []
+    issue_specs = (
+        (
+            "missing_decision_count",
+            "project_local_ontology_decision_missing",
+            "Project-local ontology review is missing operator decisions.",
+            "Record project-local ontology decisions in SpecSpace and rebuild the import preview.",
+            "high",
+        ),
+        (
+            "invalid_decision_count",
+            "project_local_ontology_decision_invalid",
+            "Project-local ontology review contains invalid decisions.",
+            (
+                "Fix invalid project-local ontology decisions in SpecSpace and "
+                "rebuild the import preview."
+            ),
+            "high",
+        ),
+        (
+            "deferred_count",
+            "project_local_ontology_decision_deferred",
+            "Project-local ontology review contains deferred decisions.",
+            (
+                "Resolve or explicitly keep deferred project-local terms before "
+                "treating the candidate as fully reviewed."
+            ),
+            "medium",
+        ),
+    )
+    for field, kind, message, next_action, severity in issue_specs:
+        count = _int(summary.get(field))
+        if count <= 0:
+            continue
+        explainers.append(
+            _readiness_explainer(
+                explainer_id=f"project-local-ontology-{field}",
+                kind=kind,
+                source="project_local_ontology_decision_effect",
+                severity=severity,
+                blocks=["ontology_review", "candidate_approval"],
+                message=message,
+                next_action=next_action,
+                evidence_refs=[
+                    _path_evidence_ref(
+                        paths,
+                        "project_local_ontology_decision_effect",
+                        f"summary.{field}",
+                    )
+                ],
+                evidence={"count": count, "status": summary.get("status")},
+            )
+        )
+    return explainers
+
+
 def _finding_readiness_explainers(
     findings: list[dict[str, Any]],
     *,
@@ -1941,6 +2075,7 @@ def _readiness_explainers(
         *_pre_sib_readiness_explainers(artifacts, paths),
         *_repair_session_readiness_explainers(artifacts, paths),
         *_promotion_gate_readiness_explainers(artifacts, paths),
+        *_project_local_ontology_readiness_explainers(artifacts, paths),
         *_finding_readiness_explainers(policy_findings, collection="policy_findings"),
         *_finding_readiness_explainers(invariant_findings, collection="invariant_findings"),
     ]
@@ -2064,6 +2199,7 @@ def _metric_groups(metrics: dict[str, Any]) -> dict[str, Any]:
             "ontology_rejected_term_count": metrics["ontology_rejected_term_count"],
             "ontology_deferred_term_count": metrics["ontology_deferred_term_count"],
             "ontology_match_kind_counts": metrics["ontology_match_kind_counts"],
+            "project_local_ontology_review": metrics["project_local_ontology_review"],
         },
         "candidate_repair": {
             "candidate_gap_count_initial": metrics["candidate_gap_count_initial"],

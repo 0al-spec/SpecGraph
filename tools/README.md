@@ -1328,6 +1328,11 @@ Key derived artifacts:
   decisions. It validates workspace/candidate/session identity, stale lane refs,
   allowed actions, and authority boundaries before later flows may treat the
   decisions as evidence.
+- `runs/project_local_ontology_decision_effect_report.json`: public-safe,
+  review-only maturity evidence report for imported project-local ontology
+  decisions. It counts accepted keep-local/bind/alias/reject/promotion
+  decisions, keeps missing/invalid/deferred decisions visible as blockers or
+  follow-up items, and does not write Ontology packages or accept terms.
 - `runs/candidate_spec_materialization_report.json`: review-only report for
   local candidate spec YAML previews under `runs/materialized_candidate_specs/`,
   including materialized paths for Platform promotion-request handoff without

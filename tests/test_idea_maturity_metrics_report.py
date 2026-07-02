@@ -68,6 +68,8 @@ def base_paths(run_dir: Path) -> dict[str, Path]:
         "repaired_repair_session": run_dir / "repaired_idea_to_spec_repair_session.json",
         "specspace_draft_import_preview": run_dir / "specspace_repair_draft_import_preview.json",
         "specspace_rerun_request": run_dir / "idea_to_spec_repair_rerun_requests.json",
+        "project_local_ontology_decision_effect": run_dir
+        / "project_local_ontology_decision_effect_report.json",
         "approval_intent": run_dir / "idea_to_spec_candidate_approval_intents.json",
         "repair_rerun_execution": run_dir / "platform_product_repair_rerun_execution_report.json",
         "repair_rerun_publication": run_dir
@@ -1614,3 +1616,116 @@ def test_idea_maturity_metrics_strict_fails_on_blocked_report(tmp_path: Path) ->
     report = load_json(output)
     assert report["status"] == "blocked"
     assert report["metrics"]["stale_ref_count"] == 1
+
+
+def test_idea_maturity_metrics_surfaces_project_local_ontology_review(
+    tmp_path: Path,
+) -> None:
+    paths = write_ready_chain(tmp_path / "project-local-review")
+    write_json(
+        paths["project_local_ontology_decision_effect"],
+        {
+            "artifact_kind": "project_local_ontology_decision_effect_report",
+            "contract_ref": "specgraph.product-ontology.project-local-decision-effect.v0.1",
+            "schema_version": 1,
+            "summary": {
+                "status": "project_local_ontology_decision_effect_ready",
+                "accepted_decision_count": 2,
+                "maturity_evidence_decision_count": 2,
+                "keep_project_local_count": 1,
+                "bind_existing_count": 1,
+                "alias_count": 0,
+                "request_promotion_count": 0,
+                "reject_count": 0,
+                "deferred_count": 0,
+                "non_resolving_decision_count": 0,
+                "invalid_decision_count": 0,
+                "missing_decision_count": 0,
+                "blocking_decision_count": 0,
+                "follow_up_decision_count": 0,
+                "effect_count": 2,
+                "ready_for_maturity": True,
+            },
+            "project_local_ontology_review": {
+                "evidence_refs": [
+                    "runs/project_local_ontology_review_decisions.json",
+                    "candidate-spec.cash-flow.gaps.ontology-gap.recurring-payment",
+                ]
+            },
+            "readiness": {
+                "ready": True,
+                "review_state": "project_local_ontology_decision_effect_ready",
+            },
+            "authority_boundary": authority_boundary(),
+        },
+    )
+
+    report = build_report(paths)
+
+    review = report["metrics"]["project_local_ontology_review"]
+    assert review["status"] == "project_local_ontology_decision_effect_ready"
+    assert review["accepted_decision_count"] == 2
+    assert review["keep_project_local_count"] == 1
+    assert review["bind_existing_count"] == 1
+    assert (
+        report["groups"]["ontology_grounding"]["project_local_ontology_review"][
+            "maturity_evidence_decision_count"
+        ]
+        == 2
+    )
+    assert report["summary"]["project_local_ontology_accepted_decision_count"] == 2
+    assert not [
+        item
+        for item in report["readiness_explainers"]
+        if item["kind"].startswith("project_local_ontology_decision")
+    ]
+
+
+def test_idea_maturity_metrics_explains_missing_project_local_decisions(
+    tmp_path: Path,
+) -> None:
+    paths = write_ready_chain(tmp_path / "project-local-missing")
+    write_json(
+        paths["project_local_ontology_decision_effect"],
+        {
+            "artifact_kind": "project_local_ontology_decision_effect_report",
+            "contract_ref": "specgraph.product-ontology.project-local-decision-effect.v0.1",
+            "schema_version": 1,
+            "summary": {
+                "status": "project_local_ontology_decision_effect_review_required",
+                "accepted_decision_count": 0,
+                "maturity_evidence_decision_count": 0,
+                "keep_project_local_count": 0,
+                "bind_existing_count": 0,
+                "alias_count": 0,
+                "request_promotion_count": 0,
+                "reject_count": 0,
+                "deferred_count": 0,
+                "non_resolving_decision_count": 0,
+                "invalid_decision_count": 0,
+                "missing_decision_count": 1,
+                "blocking_decision_count": 1,
+                "follow_up_decision_count": 0,
+                "effect_count": 0,
+                "ready_for_maturity": False,
+            },
+            "readiness": {
+                "ready": False,
+                "review_state": "project_local_ontology_decision_effect_review_required",
+                "blocked_by": ["project_local_ontology_decision_missing_recurringpayment"],
+            },
+            "authority_boundary": authority_boundary(),
+        },
+    )
+
+    report = build_report(paths)
+
+    assert report["status"] == "blocked"
+    assert report["metrics"]["project_local_ontology_missing_decision_count"] == 1
+    explainer = next(
+        item
+        for item in report["readiness_explainers"]
+        if item["kind"] == "project_local_ontology_decision_missing"
+    )
+    assert "candidate_approval" in explainer["blocks"]
+    assert "Record project-local ontology decisions" in explainer["next_action"]

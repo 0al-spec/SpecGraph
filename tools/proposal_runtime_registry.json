@@ -11345,5 +11345,64 @@
       }
     ],
     "notes": "SpecGraph now validates SpecSpace-owned project-local ontology decisions against the current review lane and emits a public-safe import preview without applying decisions or accepting ontology terms."
+  },
+  {
+    "proposal_id": "0199",
+    "posture": "synchronous_runtime_slice",
+    "runtime_surfaces": [
+      "docs/proposals/0199_project_local_ontology_decision_effect_report.md",
+      "docs/archive/proposal_sources/0199_project_local_ontology_decision_effect_report.md",
+      "Makefile",
+      "tools/project_local_ontology_decision_effect_report.py",
+      "tools/idea_maturity_metrics_report.py",
+      "tests/test_project_local_ontology_decision_effect_report.py",
+      "tests/test_idea_maturity_metrics_report.py",
+      "docs/product_workspace_graph_versioning_roadmap.md",
+      "Sources/SpecGraph/Documentation.docc/ProductWorkspacePilots.md",
+      "tools/README.md"
+    ],
+    "runtime_markers": [
+      {
+        "path": "tools/project_local_ontology_decision_effect_report.py",
+        "pattern": "project_local_ontology_decision_effect_report"
+      },
+      {
+        "path": "tools/idea_maturity_metrics_report.py",
+        "pattern": "project_local_ontology_review"
+      },
+      {
+        "path": "Makefile",
+        "pattern": "project-local-ontology-decision-effect-report"
+      }
+    ],
+    "validation_markers": [
+      {
+        "path": "tests/test_project_local_ontology_decision_effect_report.py",
+        "pattern": "test_project_local_decision_effect_counts_maturity_evidence"
+      },
+      {
+        "path": "tests/test_project_local_ontology_decision_effect_report.py",
+        "pattern": "test_project_local_decision_effect_blocks_missing_decisions"
+      },
+      {
+        "path": "tests/test_idea_maturity_metrics_report.py",
+        "pattern": "test_idea_maturity_metrics_surfaces_project_local_ontology_review"
+      }
+    ],
+    "observation_markers": [
+      {
+        "path": "docs/product_workspace_graph_versioning_roadmap.md",
+        "pattern": "Project-local ontology decision effects"
+      },
+      {
+        "path": "Sources/SpecGraph/Documentation.docc/ProductWorkspacePilots.md",
+        "pattern": "project_local_ontology_decision_effect_report.json"
+      },
+      {
+        "path": "tools/README.md",
+        "pattern": "runs/project_local_ontology_decision_effect_report.json"
+      }
+    ],
+    "notes": "SpecGraph now converts project-local ontology decision import previews into review-only maturity evidence and feeds the resulting counters into Idea Maturity without accepting ontology terms or mutating specs."
   }
 ]

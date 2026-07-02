@@ -489,6 +489,21 @@ stay visible as review blockers. The preview does not apply decisions, write
 Ontology packages, accept terms, mutate candidate artifacts, or execute
 Platform/Git Service.
 
+Proposal `0199` adds the project-local ontology decision effect report:
+
+```bash
+make project-local-ontology-decision-effect-report
+```
+
+The target reads the review lane and SpecSpace import preview, then writes
+`runs/project_local_ontology_decision_effect_report.json`. The report turns
+accepted keep-local, bind, alias, reject, and promotion-request decisions into
+review-only maturity evidence. Missing, invalid, and deferred decisions remain
+visible as blockers or follow-up items. Idea Maturity can consume this report to
+explain project-local ontology review status without writing Ontology packages,
+accepting terms, mutating candidate artifacts, or changing approval/promotion
+gates.
+
 Proposal `0176` adds candidate repair answer materialization to the same
 review-only chain. Accepted `candidate_gap` answers now produce
 `candidate_gap_preview` records, and targeted answers can remove product/spec
