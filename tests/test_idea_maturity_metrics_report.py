@@ -1518,6 +1518,11 @@ def test_idea_maturity_metrics_report_preserves_blocked_promotion_execution(
     tmp_path: Path,
 ) -> None:
     paths = write_ready_chain(tmp_path / "blocked-promotion")
+    repair_session = load_json(paths["repaired_repair_session"])
+    repair_session["readiness_impact"]["platform_promotion_blocked_by"] = [
+        "promotion_execution_missing"
+    ]
+    write_json(paths["repaired_repair_session"], repair_session)
     write_json(
         paths["promotion_execution"],
         {
@@ -1533,6 +1538,10 @@ def test_idea_maturity_metrics_report_preserves_blocked_promotion_execution(
     assert report["metrics"]["promotion_execution_state"] == "blocked"
     assert report["metrics"]["platform_promotion_state"] == "blocked"
     assert report["metrics"]["failed_gate_count"] == 1
+    assert any(
+        item["id"] == "readiness-explainer.repair-session-platform-promotion-execution-missing"
+        for item in report["readiness_explainers"]
+    )
 
 
 def test_idea_maturity_metrics_report_counts_platform_error_inputs_by_key(
@@ -1574,6 +1583,14 @@ def test_idea_maturity_metrics_report_reads_candidate_approval_decision(
                 "promotion_path_count": 1,
                 "status": "promotion_request_approved",
             },
+        },
+    )
+    write_json(
+        paths["approval_execution"],
+        {
+            "artifact_kind": "platform_candidate_approval_execution_report",
+            "dry_run": True,
+            "summary": {"status": "dry_run"},
         },
     )
 

@@ -1382,20 +1382,6 @@ def _candidate_approval_intent_state(artifacts: dict[str, dict[str, Any]]) -> st
 
 
 def _candidate_approval_decision_state(artifacts: dict[str, dict[str, Any]]) -> str:
-    execution = _dict(artifacts.get("approval_execution"))
-    if execution:
-        summary = _summary(artifacts, "approval_execution")
-        status = _text(summary.get("status")) or _text(execution.get("status"))
-        if (
-            _dict(execution.get("candidate_approval_decision_ref"))
-            or summary.get("decision_written") is True
-        ):
-            return "materialized"
-        if execution.get("dry_run") is True:
-            return "dry_run"
-        if "failed" in status or "blocked" in status:
-            return "failed" if "failed" in status else "blocked"
-        return "unknown"
     decision = _dict(artifacts.get("candidate_approval_decision"))
     if decision:
         summary = _summary(artifacts, "candidate_approval_decision")
@@ -1415,6 +1401,20 @@ def _candidate_approval_decision_state(artifacts: dict[str, dict[str, Any]]) -> 
             return "failed"
         if _status_is_blocked(status) or state in {"rejected", "needs_context", "superseded"}:
             return "blocked"
+        return "unknown"
+    execution = _dict(artifacts.get("approval_execution"))
+    if execution:
+        summary = _summary(artifacts, "approval_execution")
+        status = _text(summary.get("status")) or _text(execution.get("status"))
+        if (
+            _dict(execution.get("candidate_approval_decision_ref"))
+            or summary.get("decision_written") is True
+        ):
+            return "materialized"
+        if execution.get("dry_run") is True:
+            return "dry_run"
+        if "failed" in status or "blocked" in status:
+            return "failed" if "failed" in status else "blocked"
         return "unknown"
     if _candidate_approval_intent_state(artifacts) in {"requested", "ready"}:
         return "not_available"
@@ -1973,7 +1973,7 @@ def _repair_session_platform_blocker_resolved(
     if blocker in {"promotion_request_missing", "graph_repository_promotion_request_missing"}:
         return _promotion_request_state(artifacts) == "requested"
     if blocker in {"promotion_execution_missing", "git_service_promotion_execution_missing"}:
-        return _promotion_execution_state(artifacts) not in {"not_reached", "not_available"}
+        return _promotion_execution_state(artifacts) in {"dry_run", "executed"}
     return False
 
 
