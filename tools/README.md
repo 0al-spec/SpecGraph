@@ -529,6 +529,14 @@ Supervisor modes:
   terms, and owner-review deferrals. The report is review-only and does not
   accept ontology terms, write Ontology packages, mutate candidate artifacts,
   approve candidates, create branches, or publish read models.
+- `tools/project_local_ontology_review_lane.py`: read-only project-local
+  ontology review lane introduced by proposal 0197. Use
+  `make project-local-ontology-review-lane` to group candidate ontology gaps by
+  product term, attach product ontology decision evidence, show rerun preview
+  effects, and emit operator next actions such as keep project-local, bind,
+  alias, reject, defer, or request workspace promotion. The lane is report-only
+  and does not write Ontology packages, accept ontology terms, mutate source
+  artifacts, approve candidates, create branches, or publish read models.
 - `make product-workspace-decision-backed-repair-chain`: convenience wrapper
   introduced by proposal 0170. It runs the standard
   `product-workspace-active-candidate` flow, then validates clarification
@@ -1301,6 +1309,10 @@ Key derived artifacts:
   product ontology decision report derived from accepted ontology-gap
   clarification answers, without accepting ontology terms or writing Ontology
   packages.
+- `runs/project_local_ontology_review_lane.json`: public-safe, review-only
+  project-local ontology term lane derived from candidate ontology gaps,
+  product ontology decisions, and optional rerun preview evidence. It is the
+  stable downstream surface for SpecSpace project-local ontology review.
 - `runs/candidate_spec_materialization_report.json`: review-only report for
   local candidate spec YAML previews under `runs/materialized_candidate_specs/`,
   including materialized paths for Platform promotion-request handoff without
