@@ -62,15 +62,29 @@ def candidate_graph() -> dict[str, object]:
     }
 
 
-def decisions_report(*, authority_expanded: bool = False) -> dict[str, object]:
+def decisions_report(
+    *,
+    authority_expanded: bool = False,
+    ready: bool = True,
+) -> dict[str, object]:
     return {
         "artifact_kind": "product_ontology_gap_review_decisions",
         "contract_ref": "specgraph.product-ontology.gap-review-decisions.v0.1",
         "schema_version": 1,
+        "readiness": {
+            "ready": ready,
+            "review_state": (
+                "ontology_gap_decisions_ready"
+                if ready
+                else "ontology_gap_decisions_review_required"
+            ),
+            "blocked_by": [] if ready else ["unsupported_ontology_decision"],
+        },
         "authority_boundary": {
             "may_execute_prompt_agent": False,
             "may_write_ontology_package": authority_expanded,
             "may_accept_ontology_terms": False,
+            "may_apply_answers_to_source_artifacts": False,
         },
         "decisions": [
             {
@@ -107,6 +121,7 @@ def rerun_preview() -> dict[str, object]:
         "schema_version": 1,
         "authority_boundary": {
             "may_execute_prompt_agent": False,
+            "may_apply_answers_to_source_artifacts": False,
             "may_write_ontology_package": False,
             "may_accept_ontology_terms": False,
         },
@@ -171,6 +186,38 @@ def test_project_local_ontology_review_lane_marks_project_local_decision_ready()
     )
 
 
+def test_project_local_ontology_review_lane_requires_ready_decisions() -> None:
+    module = load_module()
+
+    report = module.build_project_local_ontology_review_lane(
+        candidate_graph=candidate_graph(),
+        decisions_report=decisions_report(ready=False),
+        rerun_preview=rerun_preview(),
+    )
+
+    assert report["readiness"]["ready"] is False
+    assert "ontology_decisions_not_ready" in set(report["readiness"]["blocked_by"])
+    assert report["terms"][0]["status"] == "unreviewed"
+
+
+def test_project_local_ontology_review_lane_accepts_advertised_bind_action() -> None:
+    module = load_module()
+    decisions = decisions_report()
+    decision = decisions["decisions"][0]
+    assert isinstance(decision, dict)
+    decision["decision_type"] = "bind_existing"
+    decision["ontology_ref"] = "ontology://specgraph-core/classes/Requirement"
+
+    report = module.build_project_local_ontology_review_lane(
+        candidate_graph=candidate_graph(),
+        decisions_report=decisions,
+        rerun_preview=rerun_preview(),
+    )
+
+    assert report["readiness"]["ready"] is True
+    assert report["terms"][0]["status"] == "bound_existing"
+
+
 def test_project_local_ontology_review_lane_blocks_authority_expansion() -> None:
     module = load_module()
 
@@ -182,6 +229,23 @@ def test_project_local_ontology_review_lane_blocks_authority_expansion() -> None
 
     assert report["readiness"]["ready"] is False
     assert "ontology_decisions_authority_expanded" in set(report["readiness"]["blocked_by"])
+
+
+def test_project_local_ontology_review_lane_blocks_answer_apply_authority() -> None:
+    module = load_module()
+    preview = rerun_preview()
+    boundary = preview["authority_boundary"]
+    assert isinstance(boundary, dict)
+    boundary["may_apply_answers_to_source_artifacts"] = True
+
+    report = module.build_project_local_ontology_review_lane(
+        candidate_graph=candidate_graph(),
+        decisions_report=decisions_report(),
+        rerun_preview=preview,
+    )
+
+    assert report["readiness"]["ready"] is False
+    assert "rerun_preview_authority_expanded" in set(report["readiness"]["blocked_by"])
 
 
 def test_project_local_ontology_review_lane_does_not_apply_project_local_aggregate_to_all() -> None:
@@ -218,6 +282,56 @@ def test_project_local_ontology_review_lane_does_not_apply_project_local_aggrega
     assert statuses_by_term["Savings Buffer"] == "unreviewed"
 
 
+def test_project_local_ontology_review_lane_rejects_stale_rerun_preview_source(
+    tmp_path: Path,
+) -> None:
+    module = load_module()
+    candidate_path = tmp_path / "candidate_spec_graph.json"
+    preview = rerun_preview()
+    preview["source_artifacts"] = {
+        "candidate_graph": {
+            "artifact_kind": "candidate_spec_graph",
+            "source_ref": "runs/stale_candidate_spec_graph.json",
+        }
+    }
+
+    report = module.build_project_local_ontology_review_lane(
+        candidate_graph=candidate_graph(),
+        decisions_report=decisions_report(),
+        rerun_preview=preview,
+        candidate_graph_path=candidate_path,
+    )
+
+    assert report["readiness"]["ready"] is False
+    assert "rerun_preview_candidate_graph_source_mismatch" in set(report["readiness"]["blocked_by"])
+    assert report["terms"][0]["effect"]["candidate_readiness_effect"] == (
+        "decision_pending_rerun_preview"
+    )
+
+
+def test_project_local_ontology_review_lane_uses_actual_evidence_refs(
+    tmp_path: Path,
+) -> None:
+    module = load_module()
+    candidate_path = tmp_path / "custom_candidate_spec_graph.json"
+    decisions_path = tmp_path / "custom_decisions.json"
+    rerun_path = tmp_path / "custom_rerun_preview.json"
+
+    report = module.build_project_local_ontology_review_lane(
+        candidate_graph=candidate_graph(),
+        decisions_report=decisions_report(),
+        rerun_preview=rerun_preview(),
+        candidate_graph_path=candidate_path,
+        decisions_path=decisions_path,
+        rerun_preview_path=rerun_path,
+    )
+
+    refs = set(report["terms"][0]["evidence_refs"])
+    assert "external:custom_candidate_spec_graph.json" in refs
+    assert "external:custom_decisions.json" in refs
+    assert "external:custom_rerun_preview.json" in refs
+
+
 def test_project_local_ontology_review_lane_allows_reject_aggregate_target() -> None:
     module = load_module()
     decisions = decisions_report()
@@ -234,6 +348,39 @@ def test_project_local_ontology_review_lane_allows_reject_aggregate_target() -> 
 
     assert report["readiness"]["ready"] is True
     assert report["terms"][0]["status"] == "rejected"
+
+
+def test_project_local_ontology_review_lane_warns_on_conflicting_decisions() -> None:
+    module = load_module()
+    decisions = decisions_report()
+    second = dict(decisions["decisions"][0])
+    second["id"] = "product-ontology-decision.recurring-payment.1"
+    second["decision_type"] = "reject"
+    decisions["decisions"].append(second)
+
+    report = module.build_project_local_ontology_review_lane(
+        candidate_graph=candidate_graph(),
+        decisions_report=decisions,
+        rerun_preview=rerun_preview(),
+    )
+
+    warning_ids = {warning["finding_id"] for warning in report["warnings"]}
+    assert "project_local_ontology_conflicting_decisions_recurringpayment" in warning_ids
+
+
+def test_project_local_ontology_review_lane_redacts_private_text() -> None:
+    module = load_module()
+    decisions = decisions_report()
+    decision = decisions["decisions"][0]
+    assert isinstance(decision, dict)
+    decision["reason"] = "operator note in /Users/example/private.txt"
+
+    report = module.build_project_local_ontology_review_lane(
+        candidate_graph=candidate_graph(),
+        decisions_report=decisions,
+    )
+
+    assert report["terms"][0]["decisions"][0]["reason"] == "[redacted-private-text]"
 
 
 def test_project_local_ontology_review_lane_cli_writes_output(tmp_path: Path) -> None:

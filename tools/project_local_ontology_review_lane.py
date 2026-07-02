@@ -24,6 +24,7 @@ DEFAULT_OUTPUT_PATH = ROOT / "runs" / "project_local_ontology_review_lane.json"
 
 AUTHORITY_FALSE_FIELDS = (
     "may_execute_prompt_agent",
+    "may_apply_answers_to_source_artifacts",
     "may_apply_decisions_to_source_artifacts",
     "may_mutate_candidate_source_artifacts",
     "may_mutate_canonical_specs",
@@ -51,7 +52,23 @@ RAW_TRACE_FIELDS = {
     "raw_text",
 }
 
+PRIVATE_PATH_MARKERS = (
+    "/Users/",
+    "/home/",
+    "/private/",
+    "/tmp/",
+)
+PRIVATE_VALUE_MARKERS = (
+    "-----BEGIN",
+    "api-key",
+    "apikey",
+    "api_key",
+    "bearer ",
+    "token=",
+)
+
 DECISION_STATUS = {
+    "bind_existing": "bound_existing",
     "bind_existing_term": "bound_existing",
     "alias_existing_term": "aliased",
     "alias": "aliased",
@@ -138,6 +155,12 @@ def _public_safe(value: Any) -> Any:
         }
     if isinstance(value, list):
         return [_public_safe(item) for item in value]
+    if isinstance(value, str):
+        lowered = value.lower()
+        if any(marker.lower() in lowered for marker in PRIVATE_PATH_MARKERS):
+            return "[redacted-private-text]"
+        if any(marker.lower() in lowered for marker in PRIVATE_VALUE_MARKERS):
+            return "[redacted-private-text]"
     return value
 
 
@@ -322,6 +345,32 @@ def _resolved_gap_index(rerun_preview: dict[str, Any]) -> dict[tuple[str, str], 
     return resolved
 
 
+def _ready(payload: dict[str, Any]) -> bool:
+    return _dict(payload.get("readiness")).get("ready") is True
+
+
+def _blocking_findings(payload: dict[str, Any]) -> list[dict[str, Any]]:
+    return [
+        _dict(item)
+        for item in _list(payload.get("findings"))
+        if _text(_dict(item).get("severity")) in {"blocking", "review_required"}
+    ]
+
+
+def _rerun_preview_matches_candidate_graph(
+    *,
+    rerun_preview: dict[str, Any],
+    candidate_graph_path: Path | None,
+) -> bool:
+    if not rerun_preview or candidate_graph_path is None:
+        return True
+    expected_ref = _relative_ref(candidate_graph_path)
+    actual_ref = _text(
+        _dict(_dict(rerun_preview.get("source_artifacts")).get("candidate_graph")).get("source_ref")
+    )
+    return not actual_ref or actual_ref == expected_ref
+
+
 def _term_effect(
     *,
     status: str,
@@ -376,6 +425,9 @@ def _term_records(
     candidate_graph: dict[str, Any],
     decisions_report: dict[str, Any],
     rerun_preview: dict[str, Any],
+    candidate_graph_ref: str | None = None,
+    decisions_ref: str | None = None,
+    rerun_preview_ref: str | None = None,
 ) -> tuple[list[dict[str, Any]], list[dict[str, Any]]]:
     warnings: list[dict[str, Any]] = []
     gaps = _gap_items(candidate_graph)
@@ -402,8 +454,9 @@ def _term_records(
                 "suggested_actions": list(REVIEW_ACTIONS),
             },
         )
-        if gap.get("source_ref") and gap.get("source_ref") not in record["source_refs"]:
-            record["source_refs"].append(gap["source_ref"])
+        safe_source_ref = _public_safe(gap.get("source_ref"))
+        if safe_source_ref and safe_source_ref not in record["source_refs"]:
+            record["source_refs"].append(safe_source_ref)
         gap_ref = {
             key_name: gap[key_name]
             for key_name in (
@@ -417,7 +470,7 @@ def _term_records(
             )
             if gap.get(key_name) not in ("", None, [], {})
         }
-        record["gap_refs"].append(gap_ref)
+        record["gap_refs"].append(_public_safe(gap_ref))
         resolved = resolved_index.get((_text(gap.get("node_id")), _text(gap.get("gap_id"))))
         if resolved:
             record["resolved_gap_refs"].append(resolved)
@@ -477,6 +530,10 @@ def _term_records(
                 projected = _decision_projection(decision)
                 if projected not in record["decisions"]:
                     record["decisions"].append(projected)
+                status = projected["review_status"]
+                if STATUS_PRECEDENCE.get(status, 0) > STATUS_PRECEDENCE.get(record["status"], 0):
+                    record["status"] = status
+                    record["selected_decision_id"] = projected.get("id")
             else:
                 warnings.append(
                     _finding(
@@ -493,6 +550,25 @@ def _term_records(
 
     records: list[dict[str, Any]] = []
     for record in grouped.values():
+        distinct_statuses = {
+            _text(decision.get("review_status"))
+            for decision in _list(record.get("decisions"))
+            if _text(decision.get("review_status"))
+        }
+        if len(distinct_statuses) > 1:
+            warnings.append(
+                _finding(
+                    finding_id=f"project_local_ontology_conflicting_decisions_{_slug(_text(record.get('term_key')))}",
+                    severity="warning",
+                    message=(
+                        "Multiple project-local ontology decisions produce conflicting statuses."
+                    ),
+                    evidence={
+                        "term_key": _text(record.get("term_key")),
+                        "statuses": sorted(distinct_statuses),
+                    },
+                )
+            )
         record["effect"] = _term_effect(
             status=record["status"],
             gap_refs=record["gap_refs"],
@@ -502,9 +578,9 @@ def _term_records(
         record["evidence_refs"] = [
             ref
             for ref in (
-                "runs/candidate_spec_graph.json" if record["gap_refs"] else "",
-                "runs/product_ontology_gap_review_decisions.json" if record["decisions"] else "",
-                "runs/idea_to_spec_rerun_preview.json" if record["resolved_gap_refs"] else "",
+                candidate_graph_ref if record["gap_refs"] else "",
+                decisions_ref if record["decisions"] else "",
+                rerun_preview_ref if record["resolved_gap_refs"] else "",
             )
             if ref
         ]
@@ -588,6 +664,26 @@ def build_project_local_ontology_review_lane(
                     evidence={"artifact_kind": decisions_report.get("artifact_kind")},
                 )
             )
+        if not _ready(decisions_report) or _blocking_findings(decisions_report):
+            findings.append(
+                _finding(
+                    finding_id="ontology_decisions_not_ready",
+                    severity="review_required",
+                    message=(
+                        "Project-local ontology review lane only consumes ready "
+                        "product ontology decision reports."
+                    ),
+                    evidence={
+                        "review_state": _text(
+                            _dict(decisions_report.get("readiness")).get("review_state")
+                        ),
+                        "blocked_by": _list(
+                            _dict(decisions_report.get("readiness")).get("blocked_by")
+                        ),
+                        "blocking_finding_count": len(_blocking_findings(decisions_report)),
+                    },
+                )
+            )
         _validate_authority(
             payload=decisions_report,
             artifact_key="ontology_decisions",
@@ -603,12 +699,55 @@ def build_project_local_ontology_review_lane(
                     evidence={"artifact_kind": rerun_preview.get("artifact_kind")},
                 )
             )
+        if not _rerun_preview_matches_candidate_graph(
+            rerun_preview=rerun_preview,
+            candidate_graph_path=candidate_graph_path,
+        ):
+            findings.append(
+                _finding(
+                    finding_id="rerun_preview_candidate_graph_source_mismatch",
+                    severity="review_required",
+                    message=(
+                        "Rerun preview source candidate graph does not match the "
+                        "current project-local ontology review candidate graph."
+                    ),
+                    evidence={
+                        "expected_candidate_graph_source_ref": _relative_ref(candidate_graph_path),
+                        "actual_candidate_graph_source_ref": _text(
+                            _dict(
+                                _dict(rerun_preview.get("source_artifacts")).get("candidate_graph")
+                            ).get("source_ref")
+                        ),
+                    },
+                )
+            )
         _validate_authority(payload=rerun_preview, artifact_key="rerun_preview", findings=findings)
 
+    decisions_for_terms = (
+        decisions_report
+        if decisions_report
+        and decisions_report.get("artifact_kind") == "product_ontology_gap_review_decisions"
+        and _ready(decisions_report)
+        and not _blocking_findings(decisions_report)
+        else {}
+    )
+    rerun_preview_for_terms = (
+        rerun_preview
+        if rerun_preview
+        and rerun_preview.get("artifact_kind") == "idea_to_spec_rerun_preview"
+        and _rerun_preview_matches_candidate_graph(
+            rerun_preview=rerun_preview,
+            candidate_graph_path=candidate_graph_path,
+        )
+        else {}
+    )
     terms, warnings = _term_records(
         candidate_graph=candidate_graph,
-        decisions_report=decisions_report,
-        rerun_preview=rerun_preview,
+        decisions_report=decisions_for_terms,
+        rerun_preview=rerun_preview_for_terms,
+        candidate_graph_ref=_relative_ref(candidate_graph_path),
+        decisions_ref=_relative_ref(decisions_path),
+        rerun_preview_ref=_relative_ref(rerun_preview_path),
     )
     status_counts = _counts(terms)
     unreviewed_count = status_counts.get("unreviewed", 0)
