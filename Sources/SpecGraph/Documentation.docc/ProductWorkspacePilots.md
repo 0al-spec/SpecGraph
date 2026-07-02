@@ -320,7 +320,8 @@ The follow-up backlog from that smoke is:
 4. classify aggregate repair answers as control/closure evidence in Idea
    Maturity instead of ordinary unmaterialized answers; done in Proposal `0196`;
 5. add a project-local ontology review lane for `bind`, `alias`,
-   `keep project-local`, `promote`, and `reject` decisions;
+   `keep project-local`, `promote`, and `reject` decisions; done producer-side
+   in Proposal `0197` with `project_local_ontology_review_lane.json`;
 6. replace the temporary flat `decomposes_to` topology with
    ontology-validated event-storming relations such as `command -> event` and
    `constraint -> command`;
@@ -452,6 +453,21 @@ directional, so the decision term must be the prefix and the gap term may only
 add one safe suffix.
 This remains review-only: no ontology terms are accepted and no candidate or
 canonical artifacts are mutated.
+
+Proposal `0197` adds the project-local ontology review lane:
+
+```bash
+make project-local-ontology-review-lane
+```
+
+The lane writes `runs/project_local_ontology_review_lane.json`. It groups
+candidate ontology gaps by product term, attaches accepted product ontology
+decisions, shows whether rerun preview resolved each term's gaps, and emits
+operator next actions for keeping a term project-local, binding, aliasing,
+rejecting, deferring, or requesting future workspace ontology promotion. The
+artifact is public-safe and review-only: it does not write Ontology packages,
+accept ontology terms, mutate candidate artifacts, approve candidates, create
+Git branches, or publish read models.
 
 Proposal `0176` adds candidate repair answer materialization to the same
 review-only chain. Accepted `candidate_gap` answers now produce

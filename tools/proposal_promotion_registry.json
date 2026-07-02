@@ -2533,5 +2533,18 @@
     "required_provenance_links": [
       "source_draft_ref"
     ]
+  },
+  {
+    "proposal_id": "0197",
+    "source_artifact_class": "working_draft",
+    "source_refs": [
+      "docs/archive/proposal_sources/0197_project_local_ontology_review_lane.md"
+    ],
+    "motivating_concern": "Real idea flows can keep product terms project-local as a safe fallback, but operators need a stable review lane that distinguishes unreviewed, kept-local, bound, aliased, rejected, deferred, and promotion-requested terms without mutating authority ontology packages.",
+    "normalized_title": "Project-Local Ontology Review Lane",
+    "bounded_scope": "Add a read-only project-local ontology review lane artifact, Make target, tests, proposal docs, roadmap, DocC, README, and registry tracking that groups candidate ontology gaps by product term, attaches product ontology decision evidence, shows rerun preview effects, and exposes operator next actions without writing Ontology packages or lockfiles, accepting ontology terms, applying decisions to source artifacts, mutating candidate or canonical specs, approving candidates, creating Git branches or commits, opening pull requests, publishing read models, or executing prompt agents.",
+    "required_provenance_links": [
+      "source_draft_ref"
+    ]
   }
 ]

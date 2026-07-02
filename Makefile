@@ -136,6 +136,14 @@ IDEA_TO_SPEC_CLARIFICATION_ANSWERS_INPUT ?= tests/fixtures/idea_to_spec_clarific
 IDEA_TO_SPEC_CLARIFICATION_ANSWERS_OUTPUT ?= runs/idea_to_spec_clarification_answers.json
 PRODUCT_ONTOLOGY_GAP_REVIEW_DECISIONS_ANSWERS ?= runs/idea_to_spec_clarification_answers.json
 PRODUCT_ONTOLOGY_GAP_REVIEW_DECISIONS_OUTPUT ?= runs/product_ontology_gap_review_decisions.json
+PROJECT_LOCAL_ONTOLOGY_REVIEW_CANDIDATE_GRAPH ?= runs/candidate_spec_graph.json
+PROJECT_LOCAL_ONTOLOGY_REVIEW_DECISIONS ?= runs/product_ontology_gap_review_decisions.json
+PROJECT_LOCAL_ONTOLOGY_REVIEW_RERUN_PREVIEW ?= runs/idea_to_spec_rerun_preview.json
+PROJECT_LOCAL_ONTOLOGY_REVIEW_ACTIVE_CANDIDATE ?= runs/active_idea_to_spec_candidate.json
+PROJECT_LOCAL_ONTOLOGY_REVIEW_REPAIR_SESSION ?= runs/idea_to_spec_repair_session.json
+PROJECT_LOCAL_ONTOLOGY_REVIEW_OUTPUT ?= runs/project_local_ontology_review_lane.json
+PROJECT_LOCAL_ONTOLOGY_REVIEW_STRICT ?=
+PROJECT_LOCAL_ONTOLOGY_REVIEW_STRICT_ARG := $(if $(filter 1 true yes,$(strip $(PROJECT_LOCAL_ONTOLOGY_REVIEW_STRICT))),--strict,)
 IDEA_TO_SPEC_ANSWER_RERUN_INPUT_ANSWERS ?= runs/idea_to_spec_clarification_answers.json
 IDEA_TO_SPEC_ANSWER_RERUN_INPUT_ONTOLOGY_DECISIONS ?=
 IDEA_TO_SPEC_ANSWER_RERUN_INPUT_ONTOLOGY_DECISIONS_ARG := $(if $(strip $(IDEA_TO_SPEC_ANSWER_RERUN_INPUT_ONTOLOGY_DECISIONS)),--ontology-decisions "$(IDEA_TO_SPEC_ANSWER_RERUN_INPUT_ONTOLOGY_DECISIONS)",)
@@ -326,6 +334,7 @@ PYTHON_TARGETS := viewer-surfaces dashboard backlog next-move spec-activity grap
 	idea-to-spec-clarification-requests \
 	idea-to-spec-clarification-answers \
 	product-ontology-gap-review-decisions \
+	project-local-ontology-review-lane \
 	idea-to-spec-answer-rerun-input \
 	idea-to-spec-rerun-preview \
 	idea-to-spec-rerun-materialization \
@@ -416,6 +425,7 @@ help:
 			'  make idea-to-spec-clarification-requests IDEA_TO_SPEC_CLARIFICATION_SESSION=<json>' \
 			'  make idea-to-spec-clarification-answers IDEA_TO_SPEC_CLARIFICATION_ANSWERS_INPUT=<json>' \
 			'  make product-ontology-gap-review-decisions PRODUCT_ONTOLOGY_GAP_REVIEW_DECISIONS_ANSWERS=<json>' \
+			'  make project-local-ontology-review-lane PROJECT_LOCAL_ONTOLOGY_REVIEW_CANDIDATE_GRAPH=<json>' \
 			'  make idea-to-spec-answer-rerun-input IDEA_TO_SPEC_ANSWER_RERUN_INPUT_ANSWERS=<json>' \
 			'  make idea-to-spec-rerun-preview IDEA_TO_SPEC_RERUN_PREVIEW_INPUT=<json>' \
 			'  make idea-to-spec-rerun-materialization IDEA_TO_SPEC_RERUN_MATERIALIZATION_PREVIEW=<json>' \
@@ -824,6 +834,17 @@ idea-to-spec-clarification-answers:
 product-ontology-gap-review-decisions:
 	@$(PYTHON) tools/product_ontology_gap_review_decisions.py --answers "$(PRODUCT_ONTOLOGY_GAP_REVIEW_DECISIONS_ANSWERS)" --output "$(PRODUCT_ONTOLOGY_GAP_REVIEW_DECISIONS_OUTPUT)"
 
+.PHONY: project-local-ontology-review-lane
+project-local-ontology-review-lane:
+	@$(PYTHON) tools/project_local_ontology_review_lane.py \
+		--candidate-graph "$(PROJECT_LOCAL_ONTOLOGY_REVIEW_CANDIDATE_GRAPH)" \
+		--ontology-decisions "$(PROJECT_LOCAL_ONTOLOGY_REVIEW_DECISIONS)" \
+		--rerun-preview "$(PROJECT_LOCAL_ONTOLOGY_REVIEW_RERUN_PREVIEW)" \
+		--active-candidate "$(PROJECT_LOCAL_ONTOLOGY_REVIEW_ACTIVE_CANDIDATE)" \
+		--repair-session "$(PROJECT_LOCAL_ONTOLOGY_REVIEW_REPAIR_SESSION)" \
+		--output "$(PROJECT_LOCAL_ONTOLOGY_REVIEW_OUTPUT)" \
+		$(PROJECT_LOCAL_ONTOLOGY_REVIEW_STRICT_ARG)
+
 .PHONY: idea-to-spec-answer-rerun-input
 idea-to-spec-answer-rerun-input:
 	@$(PYTHON) tools/idea_to_spec_answer_rerun_input.py --answers "$(IDEA_TO_SPEC_ANSWER_RERUN_INPUT_ANSWERS)" $(IDEA_TO_SPEC_ANSWER_RERUN_INPUT_ONTOLOGY_DECISIONS_ARG) --output "$(IDEA_TO_SPEC_ANSWER_RERUN_INPUT_OUTPUT)"
@@ -968,6 +989,7 @@ product-workspace-decision-backed-repair-chain:
 	@$(MAKE) idea-to-spec-rerun-preview IDEA_TO_SPEC_RERUN_PREVIEW_INPUT="$(IDEA_TO_SPEC_ANSWER_RERUN_INPUT_OUTPUT)" IDEA_TO_SPEC_RERUN_PREVIEW_INTAKE="$(IDEA_EVENT_STORMING_INTAKE_OUTPUT)" IDEA_TO_SPEC_RERUN_PREVIEW_CANDIDATE_GRAPH="$(CANDIDATE_SPEC_GRAPH_OUTPUT)"
 	@$(MAKE) idea-to-spec-rerun-materialization IDEA_TO_SPEC_RERUN_MATERIALIZATION_PREVIEW="$(IDEA_TO_SPEC_RERUN_PREVIEW_OUTPUT)" IDEA_TO_SPEC_RERUN_MATERIALIZATION_CANDIDATE_GRAPH="$(CANDIDATE_SPEC_GRAPH_OUTPUT)"
 	@$(MAKE) idea-to-spec-repair-session-journal IDEA_TO_SPEC_REPAIR_SESSION_ACTIVE_CANDIDATE="$(ACTIVE_IDEA_TO_SPEC_CANDIDATE_OUTPUT)" IDEA_TO_SPEC_REPAIR_SESSION_CLARIFICATION_REQUESTS="$(IDEA_TO_SPEC_CLARIFICATION_OUTPUT)" IDEA_TO_SPEC_REPAIR_SESSION_CLARIFICATION_ANSWERS="$(IDEA_TO_SPEC_CLARIFICATION_ANSWERS_OUTPUT)" IDEA_TO_SPEC_REPAIR_SESSION_ONTOLOGY_DECISIONS="$(PRODUCT_ONTOLOGY_GAP_REVIEW_DECISIONS_OUTPUT)" IDEA_TO_SPEC_REPAIR_SESSION_RERUN_INPUT="$(IDEA_TO_SPEC_ANSWER_RERUN_INPUT_OUTPUT)" IDEA_TO_SPEC_REPAIR_SESSION_RERUN_PREVIEW="$(IDEA_TO_SPEC_RERUN_PREVIEW_OUTPUT)" IDEA_TO_SPEC_REPAIR_SESSION_RERUN_MATERIALIZATION="$(IDEA_TO_SPEC_RERUN_MATERIALIZATION_OUTPUT)" IDEA_TO_SPEC_REPAIR_SESSION_PROMOTION_GATE="$(IDEA_TO_SPEC_PROMOTION_GATE_OUTPUT)"
+	@$(MAKE) project-local-ontology-review-lane PROJECT_LOCAL_ONTOLOGY_REVIEW_CANDIDATE_GRAPH="$(CANDIDATE_SPEC_GRAPH_OUTPUT)" PROJECT_LOCAL_ONTOLOGY_REVIEW_DECISIONS="$(PRODUCT_ONTOLOGY_GAP_REVIEW_DECISIONS_OUTPUT)" PROJECT_LOCAL_ONTOLOGY_REVIEW_RERUN_PREVIEW="$(IDEA_TO_SPEC_RERUN_PREVIEW_OUTPUT)" PROJECT_LOCAL_ONTOLOGY_REVIEW_ACTIVE_CANDIDATE="$(ACTIVE_IDEA_TO_SPEC_CANDIDATE_OUTPUT)" PROJECT_LOCAL_ONTOLOGY_REVIEW_REPAIR_SESSION="$(IDEA_TO_SPEC_REPAIR_SESSION_OUTPUT)"
 	@$(MAKE) product-workspace-idea-maturity
 
 .PHONY: product-workspace-repaired-promotion-handoff

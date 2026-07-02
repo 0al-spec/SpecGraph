@@ -1482,10 +1482,15 @@ The same run exposed the next product-flow friction points:
    by the rerun overlay as aggregate/control closure evidence. Aggregate answers
    no longer count as ordinary unmaterialized answer debt when they were already
    consumed by the review-only rerun flow.
-5. **Project-local ontology review lane.** Product terms can safely remain
-   project-local, but the operator needs an explicit review lane to decide
-   `bind`, `alias`, `keep project-local`, `promote to workspace ontology`, or
-   `reject` for each term without mutating authority ontology packages.
+5. **Project-local ontology review lane.** Done producer-side in proposal
+   `0197`. SpecGraph now emits
+   `runs/project_local_ontology_review_lane.json`, grouping candidate ontology
+   gaps by product term, attaching accepted product ontology decision evidence,
+   showing rerun preview effects, and exposing operator next actions for
+   `bind`, `alias`, `keep project-local`, `promote to workspace ontology`,
+   `reject`, and `defer` without mutating authority ontology packages. The next
+   slices should let SpecSpace store lane decisions and let SpecGraph
+   preview-import that SpecSpace-owned state.
 6. **Event-storming topology.** Proposal `0191` currently emits flat
    `Product Boundary --decomposes_to--> node` edges. The next topology slice
    should add ontology-validated event-storming relations such as

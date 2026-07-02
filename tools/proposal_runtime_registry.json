@@ -11231,5 +11231,62 @@
         "pattern": "Proposal 0196"
       }
     ]
+  },
+  {
+    "proposal_id": "0197",
+    "posture": "synchronous_runtime_slice",
+    "runtime_surfaces": [
+      "docs/proposals/0197_project_local_ontology_review_lane.md",
+      "docs/archive/proposal_sources/0197_project_local_ontology_review_lane.md",
+      "Makefile",
+      "tools/project_local_ontology_review_lane.py",
+      "tests/test_project_local_ontology_review_lane.py",
+      "docs/product_workspace_graph_versioning_roadmap.md",
+      "Sources/SpecGraph/Documentation.docc/ProductWorkspacePilots.md",
+      "tools/README.md"
+    ],
+    "runtime_markers": [
+      {
+        "path": "tools/project_local_ontology_review_lane.py",
+        "pattern": "project_local_ontology_review_lane"
+      },
+      {
+        "path": "tools/project_local_ontology_review_lane.py",
+        "pattern": "request_workspace_promotion"
+      },
+      {
+        "path": "Makefile",
+        "pattern": "project-local-ontology-review-lane"
+      }
+    ],
+    "validation_markers": [
+      {
+        "path": "tests/test_project_local_ontology_review_lane.py",
+        "pattern": "test_project_local_ontology_review_lane_blocks_unreviewed_terms"
+      },
+      {
+        "path": "tests/test_project_local_ontology_review_lane.py",
+        "pattern": "test_project_local_ontology_review_lane_marks_project_local_decision_ready"
+      },
+      {
+        "path": "tests/test_project_local_ontology_review_lane.py",
+        "pattern": "test_project_local_ontology_review_lane_blocks_authority_expansion"
+      }
+    ],
+    "observation_markers": [
+      {
+        "path": "docs/product_workspace_graph_versioning_roadmap.md",
+        "pattern": "Project-local ontology review lane"
+      },
+      {
+        "path": "Sources/SpecGraph/Documentation.docc/ProductWorkspacePilots.md",
+        "pattern": "project_local_ontology_review_lane.json"
+      },
+      {
+        "path": "tools/README.md",
+        "pattern": "tools/project_local_ontology_review_lane.py"
+      }
+    ],
+    "notes": "SpecGraph now emits a read-only project-local ontology review lane that groups candidate ontology gaps by product term, attaches product ontology decision evidence, and exposes operator next actions without writing ontology packages or accepting terms."
   }
 ]
