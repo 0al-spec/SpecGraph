@@ -184,6 +184,41 @@ def test_specspace_project_local_import_preview_accepts_project_local_decision()
     assert report["authority_boundary"]["may_apply_to_specgraph"] is False
 
 
+def test_specspace_project_local_import_preview_redacts_private_decision_value_text() -> None:
+    report = build_report(
+        state=decision_state(
+            decision_value={
+                "term": "Recurring Payment",
+                "reason": "See /Users/operator/private-note.txt bearer secret-token",
+            },
+        )
+    )
+
+    candidate = report["decision_candidates"][0]
+    accepted = report["import_preview"]["accepted_decisions"][0]
+    assert candidate["decision_value"]["reason"] == "[redacted-private-text]"
+    assert accepted["decision_value"]["reason"] == "[redacted-private-text]"
+    assert "/Users/operator" not in json.dumps(report)
+    assert "bearer secret-token" not in json.dumps(report)
+
+
+def test_specspace_project_local_import_preview_redacts_private_non_resolving_text() -> None:
+    report = build_report(
+        state=decision_state(
+            action="defer",
+            decision_value={
+                "term": "Recurring Payment",
+                "reason": "Owner has the details.",
+                "follow_up": "Ask operator with api_key=local-secret",
+            },
+        )
+    )
+
+    deferred = report["import_preview"]["non_resolving_decisions"][0]
+    assert deferred["decision_value"]["follow_up"] == "[redacted-private-text]"
+    assert "api_key=local-secret" not in json.dumps(report)
+
+
 def test_specspace_project_local_import_preview_blocks_missing_decision() -> None:
     state = decision_state()
     state["decisions"] = []

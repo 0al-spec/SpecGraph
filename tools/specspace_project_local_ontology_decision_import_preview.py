@@ -142,6 +142,21 @@ RAW_TRACE_FIELDS = {
     "raw_text",
 }
 
+PRIVATE_PATH_MARKERS = (
+    "/Users/",
+    "/home/",
+    "/private/",
+    "/tmp/",
+)
+PRIVATE_VALUE_MARKERS = (
+    "-----BEGIN",
+    "api-key",
+    "apikey",
+    "api_key",
+    "bearer ",
+    "token=",
+)
+
 
 def _now_iso() -> str:
     return datetime.now(tz=timezone.utc).isoformat()
@@ -196,6 +211,12 @@ def _public_safe(value: Any) -> Any:
         }
     if isinstance(value, list):
         return [_public_safe(item) for item in value]
+    if isinstance(value, str):
+        lowered = value.lower()
+        if any(marker.lower() in lowered for marker in PRIVATE_PATH_MARKERS):
+            return "[redacted-private-text]"
+        if any(marker.lower() in lowered for marker in PRIVATE_VALUE_MARKERS):
+            return "[redacted-private-text]"
     return value
 
 
