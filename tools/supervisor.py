@@ -35742,19 +35742,34 @@ def external_consumer_handoff_artifact_contract(entry: dict[str, Any]) -> dict[s
     )
 
 
+def external_consumer_artifact_contract_path_sets(
+    artifact_contract: dict[str, Any],
+) -> tuple[list[str], set[str], list[str]]:
+    contract_paths = [
+        str(path).strip() for path in artifact_contract.get("paths", []) if str(path).strip()
+    ]
+    optional_paths = {
+        str(path).strip()
+        for path in artifact_contract.get("optional_paths", [])
+        if str(path).strip()
+    }
+    required_paths = [path for path in contract_paths if path not in optional_paths]
+    return contract_paths, optional_paths, required_paths
+
+
 def specspace_handoff_contract_ready(entry: dict[str, Any]) -> bool:
     artifact_contract = external_consumer_handoff_artifact_contract(entry)
     required_status = str(
         external_consumer_handoff_policy_lookup("specspace_handoff.required_contract_status")
     ).strip()
     status = str(artifact_contract.get("status", "")).strip()
-    paths = [str(path).strip() for path in artifact_contract.get("paths", []) if str(path).strip()]
+    _, _, required_paths = external_consumer_artifact_contract_path_sets(artifact_contract)
     stable_fields = [
         str(field).strip()
         for field in artifact_contract.get("stable_fields", [])
         if str(field).strip()
     ]
-    return bool(status == required_status and paths and stable_fields)
+    return bool(status == required_status and required_paths and stable_fields)
 
 
 def derive_external_consumer_handoff_status(
@@ -36264,20 +36279,20 @@ def derive_external_consumer_evidence_acceptance(
         for path in evidence_entry.get("accepted_contract_artifacts", [])
         if str(path).strip()
     ]
-    handoff_contract_artifact_paths = [
-        str(path).strip() for path in artifact_contract.get("paths", []) if str(path).strip()
-    ]
-    optional_contract_artifacts = {
-        str(path).strip()
-        for path in artifact_contract.get("optional_paths", [])
-        if str(path).strip()
-    }
-    required_consumed_artifacts = accepted_contract_artifacts or [
-        path for path in handoff_contract_artifact_paths if path not in optional_contract_artifacts
-    ]
+    (
+        handoff_contract_artifact_paths,
+        optional_contract_artifacts,
+        default_required_consumed_artifacts,
+    ) = external_consumer_artifact_contract_path_sets(artifact_contract)
+    # An explicit accepted list is a consumer claim about the artifacts it covers;
+    # keep those paths required even when some are conditionally optional by default.
+    required_consumed_artifacts = accepted_contract_artifacts or default_required_consumed_artifacts
     handoff_contract_artifacts = set(handoff_contract_artifact_paths)
     non_contract_accepted_artifacts = sorted(
         path for path in accepted_contract_artifacts if path not in handoff_contract_artifacts
+    )
+    non_contract_optional_artifacts = sorted(
+        path for path in optional_contract_artifacts if path not in handoff_contract_artifacts
     )
     missing_consumed_artifacts = sorted(
         path for path in required_consumed_artifacts if path not in consumed_artifacts
@@ -36351,6 +36366,18 @@ def derive_external_consumer_evidence_acceptance(
                 "paths": non_contract_accepted_artifacts,
             }
         )
+    if non_contract_optional_artifacts:
+        diagnostics.append(
+            {
+                "severity": "error",
+                "code": "optional_artifacts_not_in_handoff_contract",
+                "message": (
+                    "Optional contract artifact(s) must also be declared by the handoff "
+                    "artifact contract paths."
+                ),
+                "paths": non_contract_optional_artifacts,
+            }
+        )
     if privacy_violation:
         diagnostics.append(
             {
@@ -36404,6 +36431,7 @@ def derive_external_consumer_evidence_acceptance(
         "invalid_evidence_statuses": invalid_evidence_statuses,
         "missing_consumed_artifacts": missing_consumed_artifacts,
         "non_contract_accepted_artifacts": non_contract_accepted_artifacts,
+        "non_contract_optional_artifacts": non_contract_optional_artifacts,
         "accepted_contract_artifacts": accepted_contract_artifacts,
         "required_consumed_artifacts": required_consumed_artifacts,
         "optional_contract_artifacts": sorted(optional_contract_artifacts),

@@ -345,7 +345,7 @@ The follow-up backlog from that smoke is:
    `runs/candidate_overview.json` and `make candidate-overview`;
 9. show the candidate overview in SpecSpace Product Workspace as a read-only
    narrative panel over product intent, event-storming groups, topology, repair
-   readiness, project-local ontology review, and next safe action; done
+   readiness, project-local ontology review, and next safe action. This is done
    downstream by the SpecSpace Product Workspace panel;
 10. add human-friendly display aliases for long generated candidate node ids;
 11. allow custom run-dir repaired candidates to continue into Platform
