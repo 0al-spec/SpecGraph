@@ -750,6 +750,31 @@ def _project_local_ontology_review_metrics(
     }
 
 
+def _project_local_ontology_blocker_count(report: dict[str, Any]) -> int:
+    if not report:
+        return 0
+    summary = _dict(report.get("summary"))
+    readiness = _dict(report.get("readiness"))
+    if readiness.get("ready") is True:
+        return 0
+    blocking_decision_count = _int(summary.get("blocking_decision_count"))
+    if blocking_decision_count > 0:
+        return blocking_decision_count
+    blocking_findings = {
+        _text(item.get("finding_id"), "project_local_ontology_decision_effect_blocked")
+        for item in _list(report.get("findings"))
+        if isinstance(item, dict) and _text(item.get("severity")) == "blocking"
+    }
+    if blocking_findings:
+        return len(blocking_findings)
+    blocked_by = {item for item in _text_list(readiness.get("blocked_by")) if item}
+    if blocked_by:
+        return len(blocked_by)
+    if _int(summary.get("non_resolving_decision_count")) > 0:
+        return 0
+    return 1
+
+
 def _metrics(artifacts: dict[str, dict[str, Any]]) -> dict[str, Any]:
     candidate_graph = artifacts.get("candidate_graph")
     repaired_candidate_graph = artifacts.get("repaired_candidate_graph")
@@ -884,8 +909,12 @@ def _metrics(artifacts: dict[str, dict[str, Any]]) -> dict[str, Any]:
         )
     )
 
-    remaining_blockers = _remaining_blocker_count(artifacts)
-    remaining_blockers += _int(project_local_review.get("blocking_decision_count"))
+    project_local_effect = _dict(artifacts.get("project_local_ontology_decision_effect"))
+    remaining_blockers = _remaining_blocker_count(
+        artifacts,
+        exclude_keys={"project_local_ontology_decision_effect"},
+    )
+    remaining_blockers += _project_local_ontology_blocker_count(project_local_effect)
     remaining_blockers += _int(project_local_review.get("non_resolving_decision_count"))
     stale_ref_count = _stale_ref_count(artifacts)
     failed_gate_count = _failed_gate_count(artifacts)
@@ -1005,7 +1034,11 @@ def _metrics(artifacts: dict[str, dict[str, Any]]) -> dict[str, Any]:
     }
 
 
-def _remaining_blocker_count(artifacts: dict[str, dict[str, Any]]) -> int:
+def _remaining_blocker_count(
+    artifacts: dict[str, dict[str, Any]],
+    *,
+    exclude_keys: set[str] | None = None,
+) -> int:
     repaired_session = _dict(artifacts.get("repaired_repair_session"))
     readiness_impact = _dict(repaired_session.get("readiness_impact"))
     if readiness_impact:
@@ -1013,7 +1046,10 @@ def _remaining_blocker_count(artifacts: dict[str, dict[str, Any]]) -> int:
             readiness_impact.get("unresolved_blocking_count")
         )
     blocked: set[str] = set()
-    for artifact in artifacts.values():
+    excluded = exclude_keys or set()
+    for key, artifact in artifacts.items():
+        if key in excluded:
+            continue
         readiness = _dict(artifact.get("readiness"))
         for blocker in _list(readiness.get("blocked_by")):
             if isinstance(blocker, str):
@@ -2010,6 +2046,38 @@ def _project_local_ontology_readiness_explainers(
                     )
                 ],
                 evidence={"count": count, "status": summary.get("status")},
+            )
+        )
+    readiness = _dict(report.get("readiness"))
+    if not explainers and readiness.get("ready") is False:
+        blocked_by = _text_list(readiness.get("blocked_by"))
+        explainers.append(
+            _readiness_explainer(
+                explainer_id="project-local-ontology-effect-blocked",
+                kind="project_local_ontology_decision_effect_blocked",
+                source="project_local_ontology_decision_effect",
+                severity="high",
+                blocks=["ontology_review", "candidate_approval"],
+                message=(
+                    "Project-local ontology decision effect report is not ready "
+                    "for maturity accounting."
+                ),
+                next_action=(
+                    "Inspect the project-local ontology decision import preview, "
+                    "fix blocked or stale source artifacts, and rebuild the effect report."
+                ),
+                evidence_refs=[
+                    _path_evidence_ref(
+                        paths,
+                        "project_local_ontology_decision_effect",
+                        "readiness",
+                    )
+                ],
+                evidence={
+                    "status": summary.get("status"),
+                    "blocked_by": blocked_by,
+                    "review_state": readiness.get("review_state"),
+                },
             )
         )
     return explainers

@@ -118,6 +118,12 @@ def import_preview(
             "ready": bool(accepted) and not non_resolving and not missing,
             "review_state": "project_local_ontology_decision_import_ready",
         },
+        "source_artifacts": {
+            "project_local_ontology_review_lane": {
+                "source_ref": "runs/project_local_ontology_review_lane.json",
+                "status": "present",
+            }
+        },
         "authority_boundary": {
             "may_write_ontology_package": False,
             "may_accept_ontology_terms": False,
@@ -170,3 +176,33 @@ def test_project_local_decision_effect_records_deferred_as_non_resolving() -> No
     assert report["summary"]["deferred_count"] == 1
     assert report["summary"]["non_resolving_decision_count"] == 1
     assert report["summary"]["blocking_decision_count"] == 0
+
+
+def test_project_local_decision_effect_honors_blocked_import_preview() -> None:
+    preview = import_preview()
+    preview["readiness"] = {
+        "ready": False,
+        "review_state": "project_local_ontology_decision_import_review_required",
+        "blocked_by": ["project_local_decision_invalid_recurringpayment"],
+    }
+
+    report = build_report(preview=preview)
+
+    assert report["readiness"]["ready"] is False
+    assert "project_local_ontology_import_preview_not_ready" in set(
+        report["readiness"]["blocked_by"]
+    )
+
+
+def test_project_local_decision_effect_blocks_stale_import_preview_lane_source() -> None:
+    preview = import_preview()
+    preview["source_artifacts"]["project_local_ontology_review_lane"]["source_ref"] = (
+        "runs/old_project_local_ontology_review_lane.json"
+    )
+
+    report = build_report(preview=preview)
+
+    assert report["readiness"]["ready"] is False
+    assert "project_local_ontology_import_preview_lane_source_stale" in set(
+        report["readiness"]["blocked_by"]
+    )
