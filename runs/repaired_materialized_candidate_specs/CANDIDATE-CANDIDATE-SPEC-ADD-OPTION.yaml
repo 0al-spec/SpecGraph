@@ -1,0 +1,60 @@
+id: CANDIDATE-CANDIDATE-SPEC-ADD-OPTION
+title: Add Considered Option
+kind: spec
+created_at: '2026-07-02T22:18:23.778366+00:00'
+updated_at: '2026-07-02T22:18:23.778366+00:00'
+status: stub
+maturity: 0.0
+depends_on: []
+relates_to: []
+inputs:
+- runs/repaired_candidate_repair_loop_report.json#revised_candidate_graph_preview
+outputs:
+- runs/repaired_materialized_candidate_specs/CANDIDATE-CANDIDATE-SPEC-ADD-OPTION.yaml
+allowed_paths:
+- runs/repaired_materialized_candidate_specs/CANDIDATE-CANDIDATE-SPEC-ADD-OPTION.yaml
+acceptance:
+- 'Reviewer can verify: The product must support `Add Considered Option` and record Option Considered.'
+acceptance_evidence: []
+prompt: The product must support `Add Considered Option` and record Option Considered.
+specification:
+  materialization_mode: candidate_review_preview
+  candidate_source_id: candidate-spec.add-option
+  candidate_kind: behavior_requirement
+  description: The product must support `Add Considered Option` and record Option Considered.
+  source_event_refs:
+  - command.add-option
+  - event.option-considered
+  ontology_refs:
+  - ontology://org.0al.specgraph.core/0.1.0/classes/Requirement
+  - ontology://org.0al.specgraph.core/0.1.0/classes/Node
+  domain_refs:
+  - domain.team_decision_log
+  context_refs:
+  - context.idea_to_spec
+  - context.team_decision_management
+  requirements:
+  - acceptance_criteria_refs:
+    - ac.add-option.reviewable
+    id: req.add-option.main
+    ontology_refs:
+    - ontology://org.0al.specgraph.core/0.1.0/classes/Requirement
+    - ontology://org.0al.specgraph.core/0.1.0/classes/AcceptanceCriterion
+    source_event_refs:
+    - command.add-option
+    - event.option-considered
+    statement: The product must support `Add Considered Option` and record Option Considered.
+  acceptance_criteria:
+  - id: ac.add-option.reviewable
+    ontology_refs:
+    - ontology://org.0al.specgraph.core/0.1.0/classes/Requirement
+    - ontology://org.0al.specgraph.core/0.1.0/classes/AcceptanceCriterion
+    source_event_refs:
+    - command.add-option
+    - event.option-considered
+    statement: 'Reviewer can verify: The product must support `Add Considered Option` and record Option
+      Considered.'
+  claims: []
+  gaps: []
+gate_state: review_pending
+required_human_action: review_candidate_spec_materialization
