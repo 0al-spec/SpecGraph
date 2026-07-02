@@ -1140,6 +1140,7 @@ def test_refresh_publish_surfaces_builds_viewer_implementation_and_agent_surface
         "product-workspace-active-candidate",
         "idea-maturity-metrics",
         "idea-maturity-metrics-validate",
+        "candidate-overview",
     ]
     materialization = json.loads(
         (tmp_path / "runs" / "candidate_spec_materialization_report.json").read_text(
@@ -1182,10 +1183,11 @@ def test_refresh_publish_surfaces_preserves_ready_active_candidate_handoff(
     bundle_module.refresh_publish_surfaces(repo)
 
     materialization = json.loads(materialization_path.read_text(encoding="utf-8"))
-    assert calls[-1] == "idea-maturity-metrics-validate"
+    assert calls[-1] == "candidate-overview"
     assert "product-workspace-active-candidate" not in calls
-    assert calls[-2] == "idea-maturity-metrics"
-    assert calls[-3] == "specauthor-authoring-flow"
+    assert calls[-2] == "idea-maturity-metrics-validate"
+    assert calls[-3] == "idea-maturity-metrics"
+    assert calls[-4] == "specauthor-authoring-flow"
     assert materialization["summary"]["status"] == "real_active_candidate"
     assert "placeholder_reason" not in materialization
 
@@ -1208,10 +1210,11 @@ def test_refresh_publish_surfaces_rebuilds_ready_candidate_when_requested(
 
     bundle_module.refresh_publish_surfaces(repo)
 
-    assert calls[-3:] == [
+    assert calls[-4:] == [
         "product-workspace-active-candidate",
         "idea-maturity-metrics",
         "idea-maturity-metrics-validate",
+        "candidate-overview",
     ]
 
 
@@ -1242,10 +1245,11 @@ def test_refresh_publish_surfaces_builds_product_workspace_active_candidate_befo
     promotion_gate = json.loads(
         (repo / "runs" / "idea_to_spec_promotion_gate.json").read_text(encoding="utf-8")
     )
-    assert calls[-3:] == [
+    assert calls[-4:] == [
         "product-workspace-active-candidate",
         "idea-maturity-metrics",
         "idea-maturity-metrics-validate",
+        "candidate-overview",
     ]
     assert active_source["source_mode"] == "active_candidate"
     assert active_source["readiness"]["ready"] is True

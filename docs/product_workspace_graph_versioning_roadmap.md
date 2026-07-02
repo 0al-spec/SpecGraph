@@ -1423,6 +1423,30 @@ as actors without commands or constraints without command/event targets. The
 slice remains review-only: it does not infer missing semantics with an LLM,
 mutate specs, write Ontology packages, accept terms, or approve candidates.
 
+## Candidate Overview
+
+Status: implemented in proposal `0201`.
+
+Proposal `0201` adds `runs/candidate_overview.json` as a public-safe narrative
+surface for SpecSpace and operators:
+
+```bash
+make candidate-overview
+```
+
+The overview reads the event-storming intake, candidate graph, repaired
+candidate graph when available, repair session, Idea Maturity report,
+project-local ontology review lane/effect report, and repaired handoff report.
+It emits one compact artifact with product intent, understood scope, event
+storming groups, candidate nodes, topology relation counts, repair readiness,
+project-local ontology review state, and the next safe operator action.
+
+This is not a new gate or score. It is a read-only navigation surface over
+existing lifecycle artifacts. If a source artifact claims expanded authority,
+the overview becomes `candidate_overview_review_required`; it never executes
+prompt agents, applies answers, mutates specs, writes Ontology packages, accepts
+terms, approves candidates, creates Git state, or publishes read models.
+
 ## Real Idea Smoke Iteration Isolation
 
 Status: implemented in proposal `0192`.
@@ -1535,13 +1559,18 @@ The same run exposed the next product-flow friction points:
    review-only workflow relations such as `actor_triggers_command`,
    `command_emits_event`, `event_informs_policy`, and
    `constraint_applies_to_command`.
-9. **Human-friendly candidate ids.** Long constraint statements currently
+9. **Candidate overview / narrative panel.** Done producer-side in proposal
+   `0201`. SpecGraph now emits `runs/candidate_overview.json`, a public-safe
+   narrative and navigation surface over event-storming intake, candidate graph,
+   repaired graph, repair session, Idea Maturity, project-local ontology review,
+   and next safe action. The next UI slice is a SpecSpace narrative panel that
+   consumes this artifact directly.
+10. **Human-friendly candidate ids.** Long constraint statements currently
    produce truncated node ids. Keep stable machine ids, but add shorter
    readable slugs or display aliases for UI, PR artifacts, and candidate
    overview documents.
-10. **Generated candidate overview.** The artifacts are rich, but the operator
-   still needs a narrative summary assembled from the graph. Add a generated
-   `candidate_overview.md` or SpecSpace narrative panel that explains actors,
+11. **Generated candidate overview UI.** The producer artifact exists, but
+   SpecSpace still needs the user-facing narrative panel that explains actors,
    flows, constraints, gaps closed, and remaining promotion steps.
 11. **Custom-run Platform promotion dry-run.** The cash-flow smoke reached
    `ready_for_platform_promotion_request`, but did not yet materialize an

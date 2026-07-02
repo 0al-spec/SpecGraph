@@ -2585,5 +2585,18 @@
     "required_provenance_links": [
       "source_draft_ref"
     ]
+  },
+  {
+    "proposal_id": "0201",
+    "source_artifact_class": "working_draft",
+    "source_refs": [
+      "docs/archive/proposal_sources/0201_candidate_overview.md"
+    ],
+    "motivating_concern": "Idea-to-spec product workspaces expose many lifecycle artifacts, but users need one public-safe narrative surface that explains what the candidate means, what was repaired, and what safe action comes next without every downstream consumer reconstructing that story independently.",
+    "normalized_title": "Candidate Overview",
+    "bounded_scope": "Add a read-only candidate overview artifact, Make target, static bundle refresh hook, tests, proposal docs, roadmap, DocC, README, and registry tracking that summarizes product intent, event-storming groups, candidate nodes, topology, repair readiness, Idea Maturity, project-local ontology review, and next safe action without executing prompt agents, applying answers, mutating candidate or canonical specs, writing Ontology packages or lockfiles, accepting ontology terms, approving candidates, creating Git branches or commits, opening pull requests, or publishing read models.",
+    "required_provenance_links": [
+      "source_draft_ref"
+    ]
   }
 ]
