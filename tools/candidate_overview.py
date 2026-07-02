@@ -47,6 +47,22 @@ AUTHORITY_FALSE_FIELDS = (
     "may_merge_pull_request",
     "may_publish_read_model",
 )
+TOP_LEVEL_AUTHORITY_FALSE_FIELDS = (
+    "canonical_mutations_allowed",
+    "tracked_artifacts_written",
+)
+
+EXPECTED_SOURCE_ARTIFACT_KINDS = {
+    "intake": "idea_event_storming_intake",
+    "candidate_graph": "candidate_spec_graph",
+    "repaired_candidate_graph": "candidate_spec_graph",
+    "repair_session": "idea_to_spec_repair_session_journal",
+    "repaired_repair_session": "idea_to_spec_repair_session_journal",
+    "idea_maturity": "idea_maturity_metrics_report",
+    "project_local_ontology_lane": "project_local_ontology_review_lane",
+    "project_local_ontology_effect": "project_local_ontology_decision_effect_report",
+    "repaired_handoff": "repaired_candidate_promotion_handoff_report",
+}
 
 RAW_TRACE_FIELDS = {
     "operator_note",
@@ -158,6 +174,11 @@ def _public_safe(value: Any) -> Any:
     return value
 
 
+def _safe_text(value: Any, default: str = "") -> str:
+    safe = _public_safe(_text(value, default))
+    return safe if isinstance(safe, str) and safe else default
+
+
 def _slug(value: str, fallback: str = "item") -> str:
     slug = re.sub(r"[^a-z0-9]+", "-", value.lower()).strip("-")
     return slug or fallback
@@ -217,6 +238,9 @@ def _privacy_boundary() -> dict[str, bool]:
 
 def _true_authority_fields(payload: dict[str, Any], *, prefix: str = "") -> list[str]:
     fields: list[str] = []
+    for field in TOP_LEVEL_AUTHORITY_FALSE_FIELDS:
+        if payload.get(field) is True:
+            fields.append(f"{prefix}{field}")
     for field in AUTHORITY_FALSE_FIELDS:
         if payload.get(field) is True:
             fields.append(f"{prefix}{field}")
@@ -277,18 +301,30 @@ def _candidate_identity(
     public_route = _text(workspace.get("public_route")) or _text(
         graph_workspace.get("public_route")
     )
-    return {
+    identity = {
         "candidate_id": candidate_id,
         "display_name": display_name,
         "public_route": public_route or f"/{_slug(candidate_id, 'candidate')}",
     }
+    return {key: _safe_text(value) for key, value in identity.items()}
+
+
+def _payload_candidate_id(payload: dict[str, Any]) -> str:
+    workspace = _dict(_dict(payload.get("source_intake")).get("workspace"))
+    candidate = _dict(payload.get("candidate"))
+    summary = _dict(payload.get("summary"))
+    return (
+        _text(workspace.get("candidate_id"))
+        or _text(candidate.get("candidate_id"))
+        or _text(summary.get("candidate_id"))
+    )
 
 
 def _root_intent_summary(intake: dict[str, Any], candidate_graph: dict[str, Any]) -> str:
     root_intent = _dict(intake.get("root_intent"))
     summary = _text(root_intent.get("summary")) or _text(root_intent.get("statement"))
     if summary:
-        return summary
+        return _safe_text(summary, "No public intent summary available.")
     nodes = [node for node in _list(candidate_graph.get("nodes")) if isinstance(node, dict)]
     boundary = next(
         (
@@ -298,8 +334,9 @@ def _root_intent_summary(intake: dict[str, Any], candidate_graph: dict[str, Any]
         ),
         nodes[0] if nodes else {},
     )
-    return _text(boundary.get("description")) or _text(
-        boundary.get("title"), "No public intent summary available."
+    return _safe_text(
+        _text(boundary.get("description")) or _text(boundary.get("title")),
+        "No public intent summary available.",
     )
 
 
@@ -398,17 +435,17 @@ def _repair_summary(
     source = (
         "repaired" if repaired_repair_session else ("standard" if repair_session else "missing")
     )
+
+    def bool_with_handoff_fallback(field: str) -> bool:
+        if field in selected_summary:
+            return selected_summary.get(field) is True
+        return handoff_summary.get(field) is True
+
     return {
         "source": source,
         "status": _text(selected_summary.get("status"), "missing"),
-        "ready_for_candidate_approval": bool(
-            selected_summary.get("ready_for_candidate_approval")
-            or handoff_summary.get("ready_for_candidate_approval")
-        ),
-        "ready_for_platform_promotion": bool(
-            selected_summary.get("ready_for_platform_promotion")
-            or handoff_summary.get("ready_for_platform_promotion")
-        ),
+        "ready_for_candidate_approval": bool_with_handoff_fallback("ready_for_candidate_approval"),
+        "ready_for_platform_promotion": bool_with_handoff_fallback("ready_for_platform_promotion"),
         "accepted_answer_count": _int(selected_summary.get("accepted_answer_count")),
         "resolved_ontology_gap_count": _int(
             selected_summary.get("resolved_ontology_gap_count")
@@ -527,6 +564,25 @@ def _source_findings(source_artifacts: dict[str, dict[str, Any]]) -> list[dict[s
                     evidence={"artifact_key": key, "source_ref": artifact.get("source_ref")},
                 )
             )
+        expected_kind = EXPECTED_SOURCE_ARTIFACT_KINDS.get(key)
+        if (
+            artifact["status"] == "present"
+            and expected_kind
+            and artifact.get("artifact_kind") != expected_kind
+        ):
+            findings.append(
+                _finding(
+                    finding_id="candidate_overview_source_wrong_artifact_kind",
+                    severity="review_required",
+                    message="Candidate overview source artifact kind is unsupported.",
+                    evidence={
+                        "artifact_key": key,
+                        "source_ref": artifact.get("source_ref"),
+                        "expected_artifact_kind": expected_kind,
+                        "artifact_kind": artifact.get("artifact_kind"),
+                    },
+                )
+            )
         if key in required and artifact["status"] != "present":
             findings.append(
                 _finding(
@@ -537,6 +593,56 @@ def _source_findings(source_artifacts: dict[str, dict[str, Any]]) -> list[dict[s
                 )
             )
     return findings
+
+
+def _select_candidate_graph(
+    *,
+    candidate_graph: dict[str, Any],
+    repaired_candidate_graph: dict[str, Any],
+    identity: dict[str, Any],
+) -> tuple[dict[str, Any], str, list[dict[str, Any]]]:
+    if not repaired_candidate_graph:
+        return candidate_graph, "candidate_graph", []
+    expected_candidate_id = _text(identity.get("candidate_id"))
+    repaired_candidate_id = _payload_candidate_id(repaired_candidate_graph)
+    if not repaired_candidate_id:
+        return (
+            candidate_graph,
+            "candidate_graph",
+            [
+                _finding(
+                    finding_id="candidate_overview_repaired_graph_provenance_missing",
+                    severity="review_required",
+                    message=(
+                        "Candidate overview did not prefer repaired candidate graph "
+                        "because candidate provenance is missing."
+                    ),
+                    evidence={
+                        "expected_candidate_id": expected_candidate_id,
+                    },
+                )
+            ],
+        )
+    if repaired_candidate_id != expected_candidate_id:
+        return (
+            candidate_graph,
+            "candidate_graph",
+            [
+                _finding(
+                    finding_id="candidate_overview_repaired_graph_candidate_mismatch",
+                    severity="review_required",
+                    message=(
+                        "Candidate overview did not prefer repaired candidate graph "
+                        "because its candidate id differs from the selected workspace."
+                    ),
+                    evidence={
+                        "expected_candidate_id": expected_candidate_id,
+                        "repaired_candidate_id": repaired_candidate_id,
+                    },
+                )
+            ],
+        )
+    return repaired_candidate_graph, "repaired_candidate_graph", []
 
 
 def _authority_findings(payloads: dict[str, dict[str, Any]]) -> list[dict[str, Any]]:
@@ -572,7 +678,6 @@ def build_candidate_overview(
     source_artifacts: dict[str, dict[str, Any]] | None = None,
 ) -> dict[str, Any]:
     repaired_candidate_graph = repaired_candidate_graph or {}
-    selected_graph = repaired_candidate_graph or candidate_graph
     repair_session = repair_session or {}
     repaired_repair_session = repaired_repair_session or {}
     maturity = maturity or {}
@@ -583,8 +688,13 @@ def build_candidate_overview(
 
     identity = _candidate_identity(
         intake=intake,
-        candidate_graph=selected_graph,
+        candidate_graph=candidate_graph,
         maturity=maturity,
+    )
+    selected_graph, graph_source, graph_selection_findings = _select_candidate_graph(
+        candidate_graph=candidate_graph,
+        repaired_candidate_graph=repaired_candidate_graph,
+        identity=identity,
     )
     event_storming = _event_storming_summary(intake)
     nodes = _node_summary(selected_graph)
@@ -606,6 +716,7 @@ def build_candidate_overview(
     )
     findings = [
         *_source_findings(source_artifacts),
+        *graph_selection_findings,
         *_authority_findings(
             {
                 "intake": intake,
@@ -634,9 +745,7 @@ def build_candidate_overview(
         "status": "candidate_overview_ready" if ready else "candidate_overview_review_required",
         "candidate_id": identity["candidate_id"],
         "display_name": identity["display_name"],
-        "graph_source": (
-            "repaired_candidate_graph" if repaired_candidate_graph else "candidate_graph"
-        ),
+        "graph_source": graph_source,
         "node_count": nodes["count"],
         "edge_count": topology["edge_count"],
         "workflow_edge_count": topology["workflow_edge_count"],
@@ -668,9 +777,9 @@ def build_candidate_overview(
                 if finding["severity"] == "review_required"
             ],
         },
-        "candidate": identity,
+        "candidate": _public_safe(identity),
         "narrative": {
-            "product_intent": product_intent,
+            "product_intent": _safe_text(product_intent, "No public intent summary available."),
             "understood_scope": (
                 f"{identity['display_name']} currently has {nodes['count']} candidate nodes, "
                 f"{event_storming['commands']['count']} commands, "
@@ -681,7 +790,7 @@ def build_candidate_overview(
                 f"The candidate lifecycle is {lifecycle_state}; the repaired surface is "
                 f"{approval_phrase}."
             ),
-            "next_action": next_action["label"],
+            "next_action": _safe_text(next_action["label"]),
         },
         "sections": {
             "event_storming": event_storming,

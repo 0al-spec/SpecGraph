@@ -79,17 +79,25 @@ def intake() -> dict[str, object]:
     }
 
 
-def candidate_graph(*, repaired: bool = False, write_capable: bool = False) -> dict[str, object]:
+def candidate_graph(
+    *,
+    repaired: bool = False,
+    write_capable: bool = False,
+    top_level_write_capable: bool = False,
+    candidate_id: str = "cash-flow-control",
+) -> dict[str, object]:
     return {
         "artifact_kind": "candidate_spec_graph",
         "contract_ref": "specgraph.idea-to-spec.candidate-spec-graph.v0.1",
         "schema_version": 1,
         "source_intake": {
             "workspace": {
-                "candidate_id": "cash-flow-control",
+                "candidate_id": candidate_id,
                 "display_name": "Cash Flow Control",
             }
         },
+        "canonical_mutations_allowed": top_level_write_capable,
+        "tracked_artifacts_written": False,
         "nodes": [
             {
                 "id": "candidate-spec.product-boundary",
@@ -227,10 +235,19 @@ def build_overview(**overrides: object) -> dict[str, object]:
         project_local_ontology_effect=overrides.get(
             "project_local_ontology_effect", project_local_effect()
         ),
-        source_artifacts={
-            "intake": {"status": "present"},
-            "candidate_graph": {"status": "present"},
-        },
+        source_artifacts=overrides.get(
+            "source_artifacts",
+            {
+                "intake": {
+                    "status": "present",
+                    "artifact_kind": "idea_event_storming_intake",
+                },
+                "candidate_graph": {
+                    "status": "present",
+                    "artifact_kind": "candidate_spec_graph",
+                },
+            },
+        ),
     )
 
 
@@ -264,6 +281,105 @@ def test_candidate_overview_blocks_source_authority_expansion() -> None:
         finding["finding_id"] == "candidate_overview_source_authority_expansion"
         for finding in overview["findings"]
     )
+
+
+def test_candidate_overview_blocks_top_level_source_authority_expansion() -> None:
+    overview = build_overview(candidate_graph=candidate_graph(top_level_write_capable=True))
+
+    assert overview["readiness"]["ready"] is False
+    assert any(
+        finding["finding_id"] == "candidate_overview_source_authority_expansion"
+        and "candidate_graph.canonical_mutations_allowed" in finding["evidence"]["fields"]
+        for finding in overview["findings"]
+    )
+
+
+def test_candidate_overview_blocks_wrong_required_source_artifact_kind() -> None:
+    overview = build_overview(
+        source_artifacts={
+            "intake": {
+                "status": "present",
+                "artifact_kind": "idea_event_storming_intake",
+            },
+            "candidate_graph": {
+                "status": "present",
+                "artifact_kind": "idea_maturity_metrics_report",
+            },
+        }
+    )
+
+    assert overview["readiness"]["ready"] is False
+    assert any(
+        finding["finding_id"] == "candidate_overview_source_wrong_artifact_kind"
+        and finding["evidence"]["artifact_key"] == "candidate_graph"
+        for finding in overview["findings"]
+    )
+
+
+def test_candidate_overview_requires_repaired_graph_candidate_provenance() -> None:
+    repaired_graph = candidate_graph(repaired=True)
+    repaired_graph.pop("source_intake")
+
+    overview = build_overview(repaired_candidate_graph=repaired_graph)
+
+    assert overview["readiness"]["ready"] is False
+    assert overview["summary"]["graph_source"] == "candidate_graph"
+    assert any(
+        finding["finding_id"] == "candidate_overview_repaired_graph_provenance_missing"
+        for finding in overview["findings"]
+    )
+
+
+def test_candidate_overview_rejects_stale_repaired_graph_candidate() -> None:
+    overview = build_overview(
+        repaired_candidate_graph=candidate_graph(
+            repaired=True,
+            candidate_id="stale-candidate",
+        )
+    )
+
+    assert overview["readiness"]["ready"] is False
+    assert overview["summary"]["graph_source"] == "candidate_graph"
+    assert any(
+        finding["finding_id"] == "candidate_overview_repaired_graph_candidate_mismatch"
+        for finding in overview["findings"]
+    )
+
+
+def test_candidate_overview_does_not_let_handoff_override_selected_session() -> None:
+    repair_session = repaired_repair_session()
+    repair_session["summary"]["ready_for_candidate_approval"] = False
+    handoff = {
+        "artifact_kind": "repaired_candidate_promotion_handoff_report",
+        "summary": {"ready_for_candidate_approval": True},
+        "authority_boundary": authority_boundary(),
+    }
+
+    overview = build_overview(
+        repaired_repair_session=repair_session,
+        repaired_handoff=handoff,
+    )
+
+    assert overview["sections"]["repair"]["ready_for_candidate_approval"] is False
+    assert overview["next_action"]["action_id"] == "continue_repair_loop"
+
+
+def test_candidate_overview_sanitizes_final_candidate_narrative_fields() -> None:
+    unsafe_intake = intake()
+    workspace = unsafe_intake["source_intake"]["workspace"]
+    assert isinstance(workspace, dict)
+    workspace["display_name"] = "Bearer secret product"
+    workspace["public_route"] = "/Users/egor/private-product"
+    unsafe_intake["root_intent"]["summary"] = "Use token=secret in /Users/egor/raw.txt"
+
+    overview = build_overview(intake=unsafe_intake)
+    serialized = json.dumps(overview)
+
+    assert "Bearer secret product" not in serialized
+    assert "/Users/egor" not in serialized
+    assert "token=secret" not in serialized
+    assert overview["candidate"]["display_name"] == "[redacted-private-text]"
+    assert overview["narrative"]["product_intent"] == "[redacted-private-text]"
 
 
 def test_candidate_overview_cli_writes_output(tmp_path: Path) -> None:
@@ -314,3 +430,53 @@ def test_candidate_overview_cli_writes_output(tmp_path: Path) -> None:
     assert completed.returncode == 0, completed.stderr
     payload = json.loads(paths["output"].read_text(encoding="utf-8"))
     assert payload["summary"]["status"] == "candidate_overview_ready"
+
+
+def test_candidate_overview_strict_cli_rejects_wrong_candidate_graph_kind(
+    tmp_path: Path,
+) -> None:
+    intake_path = tmp_path / "idea_event_storming_intake.json"
+    candidate_path = tmp_path / "candidate_spec_graph.json"
+    output_path = tmp_path / "candidate_overview.json"
+    write_json(intake_path, intake())
+    write_json(candidate_path, maturity())
+
+    completed = subprocess.run(
+        [
+            sys.executable,
+            str(TOOL_PATH),
+            "--intake",
+            str(intake_path),
+            "--candidate-graph",
+            str(candidate_path),
+            "--repaired-candidate-graph",
+            str(tmp_path / "missing_repaired_graph.json"),
+            "--repair-session",
+            str(tmp_path / "missing_repair_session.json"),
+            "--repaired-repair-session",
+            str(tmp_path / "missing_repaired_repair_session.json"),
+            "--idea-maturity",
+            str(tmp_path / "missing_maturity.json"),
+            "--project-local-ontology-lane",
+            str(tmp_path / "missing_lane.json"),
+            "--project-local-ontology-effect",
+            str(tmp_path / "missing_effect.json"),
+            "--repaired-handoff",
+            str(tmp_path / "missing_handoff.json"),
+            "--output",
+            str(output_path),
+            "--strict",
+        ],
+        cwd=ROOT,
+        check=False,
+        capture_output=True,
+        text=True,
+    )
+
+    assert completed.returncode == 2
+    payload = json.loads(output_path.read_text(encoding="utf-8"))
+    assert payload["readiness"]["ready"] is False
+    assert any(
+        finding["finding_id"] == "candidate_overview_source_wrong_artifact_kind"
+        for finding in payload["findings"]
+    )
