@@ -1518,6 +1518,11 @@ def test_idea_maturity_metrics_report_preserves_blocked_promotion_execution(
     tmp_path: Path,
 ) -> None:
     paths = write_ready_chain(tmp_path / "blocked-promotion")
+    repair_session = load_json(paths["repaired_repair_session"])
+    repair_session["readiness_impact"]["platform_promotion_blocked_by"] = [
+        "promotion_execution_missing"
+    ]
+    write_json(paths["repaired_repair_session"], repair_session)
     write_json(
         paths["promotion_execution"],
         {
@@ -1533,6 +1538,10 @@ def test_idea_maturity_metrics_report_preserves_blocked_promotion_execution(
     assert report["metrics"]["promotion_execution_state"] == "blocked"
     assert report["metrics"]["platform_promotion_state"] == "blocked"
     assert report["metrics"]["failed_gate_count"] == 1
+    assert any(
+        item["id"] == "readiness-explainer.repair-session-platform-promotion-execution-missing"
+        for item in report["readiness_explainers"]
+    )
 
 
 def test_idea_maturity_metrics_report_counts_platform_error_inputs_by_key(
@@ -1557,6 +1566,11 @@ def test_idea_maturity_metrics_report_reads_candidate_approval_decision(
     tmp_path: Path,
 ) -> None:
     paths = write_ready_chain(tmp_path / "approval-decision")
+    repair_session = load_json(paths["repaired_repair_session"])
+    repair_session["readiness_impact"]["platform_promotion_blocked_by"] = [
+        "candidate_approval_decision_missing"
+    ]
+    write_json(paths["repaired_repair_session"], repair_session)
     write_json(
         paths["candidate_approval_decision"],
         {
@@ -1571,12 +1585,115 @@ def test_idea_maturity_metrics_report_reads_candidate_approval_decision(
             },
         },
     )
+    write_json(
+        paths["approval_execution"],
+        {
+            "artifact_kind": "platform_candidate_approval_execution_report",
+            "dry_run": True,
+            "summary": {"status": "dry_run"},
+        },
+    )
 
     report = build_report(paths)
 
     assert report["metrics"]["candidate_approval_decision_state"] == "materialized"
     assert report["metrics"]["platform_promotion_state"] == "ready"
     assert report["summary"]["lifecycle_state"] == "approval_materialized"
+    assert not any(
+        item["id"]
+        == "readiness-explainer.repair-session-platform-candidate-approval-decision-missing"
+        for item in report["readiness_explainers"]
+    )
+
+
+def test_idea_maturity_metrics_report_suppresses_resolved_promotion_request_blocker(
+    tmp_path: Path,
+) -> None:
+    paths = write_ready_chain(tmp_path / "promotion-request")
+    repair_session = load_json(paths["repaired_repair_session"])
+    repair_session["readiness_impact"]["platform_promotion_blocked_by"] = [
+        "promotion_request_missing"
+    ]
+    write_json(paths["repaired_repair_session"], repair_session)
+    write_json(
+        paths["candidate_approval_decision"],
+        {
+            "artifact_kind": "candidate_approval_decision",
+            "contract_ref": "specgraph.idea-to-spec.candidate-approval-decision.v0.1",
+            "decision": {"state": "approved"},
+            "readiness": {"ready": True, "review_state": "promotion_request_approved"},
+            "summary": {
+                "effective_state": "approved",
+                "promotion_path_count": 1,
+                "status": "promotion_request_approved",
+            },
+        },
+    )
+    write_json(
+        paths["promotion_request"],
+        {
+            "artifact_kind": "graph_repository_promotion_request",
+            "ok": True,
+            "summary": {"promotion_ready": True, "status": "promotion_request_ready"},
+        },
+    )
+
+    report = build_report(paths)
+
+    assert report["metrics"]["platform_promotion_state"] == "requested"
+    assert not any(
+        item["id"] == "readiness-explainer.repair-session-platform-promotion-request-missing"
+        for item in report["readiness_explainers"]
+    )
+
+
+def test_idea_maturity_metrics_report_suppresses_resolved_promotion_execution_blocker(
+    tmp_path: Path,
+) -> None:
+    paths = write_ready_chain(tmp_path / "promotion-execution")
+    repair_session = load_json(paths["repaired_repair_session"])
+    repair_session["readiness_impact"]["platform_promotion_blocked_by"] = [
+        "promotion_execution_missing"
+    ]
+    write_json(paths["repaired_repair_session"], repair_session)
+    write_json(
+        paths["candidate_approval_decision"],
+        {
+            "artifact_kind": "candidate_approval_decision",
+            "contract_ref": "specgraph.idea-to-spec.candidate-approval-decision.v0.1",
+            "decision": {"state": "approved"},
+            "readiness": {"ready": True, "review_state": "promotion_request_approved"},
+            "summary": {
+                "effective_state": "approved",
+                "promotion_path_count": 1,
+                "status": "promotion_request_approved",
+            },
+        },
+    )
+    write_json(
+        paths["promotion_request"],
+        {
+            "artifact_kind": "graph_repository_promotion_request",
+            "ok": True,
+            "summary": {"promotion_ready": True, "status": "promotion_request_ready"},
+        },
+    )
+    write_json(
+        paths["promotion_execution"],
+        {
+            "artifact_kind": "product_candidate_promotion_execution_report",
+            "dry_run": True,
+            "summary": {"status": "dry_run"},
+        },
+    )
+
+    report = build_report(paths)
+
+    assert report["metrics"]["platform_promotion_state"] == "dry_run"
+    assert not any(
+        item["id"] == "readiness-explainer.repair-session-platform-promotion-execution-missing"
+        for item in report["readiness_explainers"]
+    )
 
 
 def test_idea_maturity_metrics_report_requires_core_candidate_evidence(
