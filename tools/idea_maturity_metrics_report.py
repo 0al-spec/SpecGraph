@@ -760,17 +760,26 @@ def _project_local_ontology_blocker_count(report: dict[str, Any]) -> int:
     blocking_decision_count = _int(summary.get("blocking_decision_count"))
     if blocking_decision_count > 0:
         return blocking_decision_count
+    non_resolving_decision_count = _int(summary.get("non_resolving_decision_count"))
     blocking_findings = {
         _text(item.get("finding_id"), "project_local_ontology_decision_effect_blocked")
         for item in _list(report.get("findings"))
         if isinstance(item, dict) and _text(item.get("severity")) == "blocking"
     }
+    if non_resolving_decision_count > 0:
+        blocking_findings.discard("project_local_ontology_import_preview_not_ready")
     if blocking_findings:
         return len(blocking_findings)
     blocked_by = {item for item in _text_list(readiness.get("blocked_by")) if item}
+    if non_resolving_decision_count > 0:
+        blocked_by -= {
+            "project_local_ontology_import_preview_not_ready",
+            "project_local_ontology_decisions_deferred",
+            "project_local_ontology_decision_deferred",
+        }
     if blocked_by:
         return len(blocked_by)
-    if _int(summary.get("non_resolving_decision_count")) > 0:
+    if non_resolving_decision_count > 0:
         return 0
     return 1
 

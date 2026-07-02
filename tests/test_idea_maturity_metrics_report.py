@@ -1790,3 +1790,62 @@ def test_idea_maturity_metrics_counts_blocked_project_local_effect_once(
     )
     assert "candidate_approval" in explainer["blocks"]
     assert "import preview" in explainer["next_action"]
+
+
+def test_idea_maturity_metrics_does_not_double_count_deferred_project_local_decisions(
+    tmp_path: Path,
+) -> None:
+    paths = write_ready_chain(tmp_path / "project-local-deferred")
+    write_json(
+        paths["project_local_ontology_decision_effect"],
+        {
+            "artifact_kind": "project_local_ontology_decision_effect_report",
+            "contract_ref": "specgraph.product-ontology.project-local-decision-effect.v0.1",
+            "schema_version": 1,
+            "summary": {
+                "status": "project_local_ontology_decision_effect_review_required",
+                "accepted_decision_count": 0,
+                "maturity_evidence_decision_count": 0,
+                "keep_project_local_count": 0,
+                "bind_existing_count": 0,
+                "alias_count": 0,
+                "request_promotion_count": 0,
+                "reject_count": 0,
+                "deferred_count": 1,
+                "non_resolving_decision_count": 1,
+                "invalid_decision_count": 0,
+                "missing_decision_count": 0,
+                "blocking_decision_count": 0,
+                "follow_up_decision_count": 1,
+                "effect_count": 0,
+                "ready_for_maturity": False,
+            },
+            "readiness": {
+                "ready": False,
+                "review_state": "project_local_ontology_decision_effect_review_required",
+                "blocked_by": [
+                    "project_local_ontology_import_preview_not_ready",
+                    "project_local_ontology_decisions_deferred",
+                ],
+            },
+            "findings": [
+                {
+                    "finding_id": "project_local_ontology_import_preview_not_ready",
+                    "severity": "blocking",
+                }
+            ],
+            "authority_boundary": authority_boundary(),
+        },
+    )
+
+    report = build_report(paths)
+
+    assert report["status"] == "blocked"
+    assert report["metrics"]["project_local_ontology_deferred_decision_count"] == 1
+    assert report["metrics"]["remaining_blocker_count"] == 1
+    deferred_explainers = [
+        item
+        for item in report["readiness_explainers"]
+        if item["kind"] == "project_local_ontology_decision_deferred"
+    ]
+    assert len(deferred_explainers) == 1
