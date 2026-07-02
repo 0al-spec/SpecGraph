@@ -1609,10 +1609,14 @@ make product-workspace-happy-path-repair-pack
 The generic target builds the current product candidate and repair session,
 materializes the selected repair pack into SpecSpace-owned
 `runs/idea_to_spec_repair_drafts.json` and
-`runs/idea_to_spec_repair_rerun_requests.json`, validates the request through
+`runs/idea_to_spec_repair_rerun_requests.json`, materializes
+`runs/project_local_ontology_review_decisions.json` when the project-local
+ontology review lane is present, validates the request through
 `specspace_repair_draft_import_preview` and
-`specspace_repair_rerun_request_gate`, runs the standard repair-draft rerun, and
-then builds the repaired promotion handoff.
+`specspace_repair_rerun_request_gate`, validates the project-local ontology
+decisions through `specspace_project_local_ontology_decision_import_preview`,
+builds `runs/project_local_ontology_decision_effect_report.json`, runs the
+standard repair-draft rerun, and then builds the repaired promotion handoff.
 
 The default fixture is Team Decision Log. The product-specific
 `product-workspace-team-decision-log-happy-path-repair-pack` target is only a
@@ -1628,8 +1632,14 @@ The expected demo result is:
   ontology gaps;
 - `runs/repaired_candidate_promotion_handoff_report.json` reports
   `ready_for_candidate_approval: true`;
+- `runs/specspace_project_local_ontology_decision_import_preview.json` is ready
+  for the required project-local terms;
+- `runs/project_local_ontology_decision_effect_report.json` reports zero
+  blocking decisions and becomes Idea Maturity evidence;
 - `runs/idea_maturity_metrics_report.json` reports `status: ready` and
-  `lifecycle_state: approval_ready` for the repair-pack demo surface.
+  `lifecycle_state: approval_ready` for the repair-pack demo surface;
+- `runs/candidate_overview.json` reports effective project-local ontology review
+  status from the decision effect report.
 
 The final maturity refresh intentionally points approval/promotion inputs at
 absent demo-local paths so stale local Platform artifacts cannot make the

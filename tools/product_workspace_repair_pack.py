@@ -15,6 +15,8 @@ PACK_KIND = "product_workspace_repair_pack"
 PACK_CONTRACT_REF = "specgraph.idea-to-spec.product-workspace-repair-pack.v0.1"
 DRAFT_STATE_KIND = "specspace_idea_to_spec_repair_draft_state"
 RERUN_REQUEST_STATE_KIND = "specspace_idea_to_spec_repair_rerun_request_state"
+PROJECT_LOCAL_DECISION_STATE_KIND = "specspace_project_local_ontology_review_decision_state"
+PROJECT_LOCAL_LANE_KIND = "project_local_ontology_review_lane"
 
 DEFAULT_PACK_PATH = (
     ROOT
@@ -29,6 +31,10 @@ DEFAULT_DRAFTS_OUTPUT = ROOT / "runs" / "idea_to_spec_repair_drafts.json"
 DEFAULT_REQUESTS_OUTPUT = ROOT / "runs" / "idea_to_spec_repair_rerun_requests.json"
 DEFAULT_IMPORT_PREVIEW_REF = "runs/specspace_repair_draft_import_preview.json"
 DEFAULT_RERUN_REPORT_REF = "runs/specspace_repair_draft_rerun_report.json"
+DEFAULT_PROJECT_LOCAL_ONTOLOGY_LANE = ROOT / "runs" / "project_local_ontology_review_lane.json"
+DEFAULT_PROJECT_LOCAL_ONTOLOGY_DECISIONS_OUTPUT = (
+    ROOT / "runs" / "project_local_ontology_review_decisions.json"
+)
 
 
 def _now_iso() -> str:
@@ -150,6 +156,36 @@ def _request_authority_fields() -> dict[str, bool]:
     }
 
 
+def _project_local_decision_authority_fields() -> dict[str, bool]:
+    return {
+        "canonical_mutations_allowed": False,
+        "tracked_artifacts_written": False,
+        "applies_to_specgraph": False,
+        "applies_to_candidate_artifacts": False,
+        "mutates_canonical_specs": False,
+        "writes_ontology_package": False,
+        "updates_ontology_lockfile": False,
+        "accepts_ontology_terms": False,
+        "creates_branch_or_commit": False,
+        "opens_pull_request": False,
+        "may_publish_read_model": False,
+        "may_execute_prompt_agent": False,
+        "may_execute_specgraph": False,
+        "may_execute_platform": False,
+        "may_apply_to_specgraph": False,
+        "may_apply_decisions": False,
+        "may_mutate_candidate_artifacts": False,
+        "may_mutate_candidate_source_artifacts": False,
+        "may_mutate_canonical_specs": False,
+        "may_write_ontology_package": False,
+        "may_write_ontology_lockfile": False,
+        "may_accept_ontology_terms": False,
+        "may_mark_candidate_graph_accepted": False,
+        "may_create_branch_or_commit": False,
+        "may_open_pull_request": False,
+    }
+
+
 def _request_index(clarification_requests: dict[str, Any]) -> dict[str, dict[str, Any]]:
     raw_requests = _list(clarification_requests.get("clarification_requests"))
     return {
@@ -187,6 +223,42 @@ def _validate_pack(pack: dict[str, Any]) -> None:
     for field in ("canonical_mutations_allowed", "tracked_artifacts_written"):
         if pack.get(field) is not False:
             raise ValueError(f"repair pack {field} must be false")
+
+
+def _validate_project_local_lane(lane: dict[str, Any]) -> None:
+    if lane.get("artifact_kind") != PROJECT_LOCAL_LANE_KIND:
+        raise ValueError(
+            f"project-local ontology lane must use artifact_kind {PROJECT_LOCAL_LANE_KIND}"
+        )
+    if lane.get("canonical_mutations_allowed") is not False:
+        raise ValueError("project-local ontology lane canonical_mutations_allowed must be false")
+    if lane.get("tracked_artifacts_written") is not False:
+        raise ValueError("project-local ontology lane tracked_artifacts_written must be false")
+
+
+def _project_local_review_policy(pack: dict[str, Any]) -> dict[str, Any]:
+    policy = _dict(pack.get("project_local_ontology_review"))
+    if not policy:
+        raise ValueError(
+            "repair pack requires project_local_ontology_review for ontology decisions"
+        )
+    if _text(policy.get("decision_policy")) != "keep_all_required_project_local":
+        raise ValueError(
+            "project_local_ontology_review.decision_policy must be keep_all_required_project_local"
+        )
+    return policy
+
+
+def _required_project_local_terms(lane: dict[str, Any]) -> list[dict[str, Any]]:
+    required_statuses = {"unreviewed", "deferred"}
+    terms: list[dict[str, Any]] = []
+    for raw_term in _list(lane.get("terms")):
+        term = _dict(raw_term)
+        term_key = _text(term.get("term_key"))
+        status = _text(term.get("status"), "unreviewed")
+        if term_key and status in required_statuses:
+            terms.append(term)
+    return terms
 
 
 def _session_identity(
@@ -364,6 +436,127 @@ def build_product_workspace_repair_pack_states(
     return draft_state, request_state
 
 
+def build_project_local_ontology_review_decision_state(
+    *,
+    pack: dict[str, Any],
+    review_lane: dict[str, Any],
+    pack_path: Path | None,
+    review_lane_path: Path,
+) -> dict[str, Any]:
+    _validate_pack(pack)
+    _validate_project_local_lane(review_lane)
+    policy = _project_local_review_policy(pack)
+    context = _dict(review_lane.get("context"))
+    workspace_id = _text(pack.get("workspace_id")) or _text(context.get("workspace_id"))
+    candidate_id = _text(pack.get("candidate_id")) or _text(context.get("candidate_id"))
+    repair_session_id = _text(pack.get("repair_session_id")) or _text(
+        context.get("repair_session_id")
+    )
+    if not workspace_id or not candidate_id or not repair_session_id:
+        raise ValueError(
+            "project-local ontology decision state requires workspace, candidate, and session"
+        )
+    if _text(context.get("workspace_id")) and workspace_id != _text(context.get("workspace_id")):
+        raise ValueError("repair pack workspace_id must match project-local ontology lane")
+    if _text(context.get("candidate_id")) and candidate_id != _text(context.get("candidate_id")):
+        raise ValueError("repair pack candidate_id must match project-local ontology lane")
+    if _text(context.get("repair_session_id")) and repair_session_id != _text(
+        context.get("repair_session_id")
+    ):
+        raise ValueError("repair pack repair_session_id must match project-local ontology lane")
+
+    operator_ref = _text(policy.get("operator_ref")) or _text(
+        pack.get("operator_ref"), "operator://product-demo"
+    )
+    generated_at = _text(policy.get("generated_at")) or _text(pack.get("generated_at"), _now_iso())
+    reason = _text(
+        policy.get("reason"),
+        "Keep this product term project-local for the demo candidate review.",
+    )
+    lane_ref = _relative_ref(review_lane_path)
+    pack_ref = _relative_ref(pack_path)
+    decisions: list[dict[str, Any]] = []
+    for term in _required_project_local_terms(review_lane):
+        term_text = _text(term.get("term"))
+        term_key = _text(term.get("term_key"))
+        decisions.append(
+            {
+                "decision_id": (
+                    f"specspace-project-local-ontology-decision::{workspace_id}::{term_key}"
+                ),
+                "workspace_id": workspace_id,
+                "candidate_id": candidate_id,
+                "repair_session_id": repair_session_id,
+                "project_local_ontology_review_lane_ref": lane_ref,
+                "term": term_text,
+                "term_key": term_key,
+                "review_action": "keep_project_local",
+                "decision_value": {
+                    "term": term_text,
+                    "term_scope": "project_local",
+                    "reason": reason,
+                },
+                "operator_ref": operator_ref,
+                "created_at": generated_at,
+                "updated_at": generated_at,
+                "source_repair_pack_ref": pack_ref,
+                **_project_local_decision_authority_fields(),
+            }
+        )
+
+    return {
+        "artifact_kind": PROJECT_LOCAL_DECISION_STATE_KIND,
+        "schema_version": SCHEMA_VERSION,
+        "state_owner": "SpecSpace",
+        "canonical_mutations_allowed": False,
+        "tracked_artifacts_written": False,
+        "source_artifacts": {
+            "project_local_ontology_review_lane": lane_ref,
+            "product_workspace_repair_pack": pack_ref,
+        },
+        "consumer_boundary": {
+            "specspace_owned_state": True,
+            "for_product_ontology_review": True,
+            **_false_boundary(),
+            "may_execute_specgraph": False,
+            "may_execute_platform": False,
+            "may_apply_to_specgraph": False,
+            "may_apply_decisions": False,
+        },
+        "authority_boundary": {
+            "project_local_ontology_review_decision_state_is_authority": False,
+            "specgraph_artifact_authority": False,
+            "ontology_authority": False,
+            "git_service_authority": False,
+            "canonical_mutations_allowed": False,
+            "may_execute_prompt_agent": False,
+            "may_execute_specgraph": False,
+            "may_execute_platform": False,
+            "may_apply_to_specgraph": False,
+            "may_apply_decisions": False,
+            "may_mutate_candidate_artifacts": False,
+            "may_mutate_candidate_source_artifacts": False,
+            "may_mutate_canonical_specs": False,
+            "may_write_ontology_package": False,
+            "may_write_ontology_lockfile": False,
+            "may_accept_ontology_terms": False,
+            "may_create_branch_or_commit": False,
+            "may_open_pull_request": False,
+            "may_publish_read_model": False,
+        },
+        "decisions": decisions,
+        "summary": {
+            "status": "project_local_ontology_decisions_recorded",
+            "workspace_id": workspace_id,
+            "candidate_id": candidate_id,
+            "repair_session_id": repair_session_id,
+            "decision_count": len(decisions),
+            "review_action": "keep_project_local",
+            "source": "product_workspace_repair_pack",
+        },
+    }
+
+
 def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--pack", type=Path, default=DEFAULT_PACK_PATH)
@@ -377,6 +570,8 @@ def main() -> int:
     parser.add_argument("--request-state-output", type=Path, default=DEFAULT_REQUESTS_OUTPUT)
     parser.add_argument("--import-preview-ref", default=DEFAULT_IMPORT_PREVIEW_REF)
     parser.add_argument("--rerun-report-ref", default=DEFAULT_RERUN_REPORT_REF)
+    parser.add_argument("--project-local-ontology-review-lane", type=Path)
+    parser.add_argument("--project-local-ontology-decisions-output", type=Path)
     args = parser.parse_args()
 
     draft_state, request_state = build_product_workspace_repair_pack_states(
@@ -390,10 +585,27 @@ def main() -> int:
     )
     write_json(draft_state, args.drafts_output)
     write_json(request_state, args.request_state_output)
+    project_local_decision_state = None
+    if args.project_local_ontology_review_lane and args.project_local_ontology_decisions_output:
+        project_local_decision_state = build_project_local_ontology_review_decision_state(
+            pack=load_json(args.pack),
+            review_lane=load_json(args.project_local_ontology_review_lane),
+            pack_path=args.pack,
+            review_lane_path=args.project_local_ontology_review_lane,
+        )
+        write_json(project_local_decision_state, args.project_local_ontology_decisions_output)
     print(
         "repair_pack_states_written: "
         f"{draft_state['summary']['draft_count']} drafts -> {args.drafts_output}, "
         f"1 rerun request -> {args.request_state_output}"
+        + (
+            ", "
+            f"{project_local_decision_state['summary']['decision_count']} "
+            "project-local ontology decisions -> "
+            f"{args.project_local_ontology_decisions_output}"
+            if project_local_decision_state is not None
+            else ""
+        )
     )
     return 0
 

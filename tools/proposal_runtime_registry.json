@@ -10223,6 +10223,14 @@
       {
         "path": "tests/fixtures/product_workspace_repair_packs/team_decision_log_happy_path_repair_pack.json",
         "pattern": "\"proposal_id\": \"0182\""
+      },
+      {
+        "path": "tools/product_workspace_repair_pack.py",
+        "pattern": "def build_project_local_ontology_review_decision_state("
+      },
+      {
+        "path": "tests/fixtures/product_workspace_repair_packs/team_decision_log_happy_path_repair_pack.json",
+        "pattern": "keep_all_required_project_local"
       }
     ],
     "validation_markers": [
@@ -10237,6 +10245,14 @@
       {
         "path": "tests/test_product_workspace_repair_pack.py",
         "pattern": "test_repair_pack_rejects_stale_repair_session_identity"
+      },
+      {
+        "path": "tests/test_product_workspace_repair_pack.py",
+        "pattern": "test_repair_pack_materializes_project_local_ontology_decisions"
+      },
+      {
+        "path": "tests/test_product_workspace_repair_pack.py",
+        "pattern": "test_repair_pack_project_local_decisions_import_preview_is_ready"
       }
     ],
     "observation_markers": [
@@ -10256,7 +10272,8 @@
         "path": "tools/README.md",
         "pattern": "documented demo alias"
       }
-    ]
+    ],
+    "notes": "SpecGraph now materializes the Team Decision Log repair pack into SpecSpace-owned repair drafts, rerun request state, and project-local ontology review decisions, then validates the review-only rerun and maturity/overview surfaces without accepting ontology terms or mutating specs."
   },
   {
     "proposal_id": "0183",

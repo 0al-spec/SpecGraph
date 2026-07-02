@@ -523,11 +523,15 @@ Supervisor modes:
   `product_workspace_repair_pack` fixture plus the current repair session and
   clarification requests into standard SpecSpace-owned
   `runs/idea_to_spec_repair_drafts.json` and
-  `runs/idea_to_spec_repair_rerun_requests.json`. Use
+  `runs/idea_to_spec_repair_rerun_requests.json`. When supplied with a
+  project-local ontology review lane, the same materializer can also write
+  SpecSpace-owned `runs/project_local_ontology_review_decisions.json` for the
+  selected demo pack. Use
   `make product-workspace-happy-path-repair-pack` to replay the selected pack
   through the existing import preview, rerun request gate, repair-draft rerun,
-  repaired handoff, and Idea Maturity validation chain. The default fixture is
-  Team Decision Log, and
+  project-local ontology decision import/effect reports, repaired handoff, Idea
+  Maturity validation, and candidate overview chain. The default fixture is Team
+  Decision Log, and
   `make product-workspace-team-decision-log-happy-path-repair-pack` is only a
   documented demo alias. The pack is demo input data and does not make drafts
   authoritative, apply answers, accept ontology terms, mutate specs, approve

@@ -490,15 +490,51 @@ def _project_local_ontology_summary(
 ) -> dict[str, Any]:
     lane_summary = _dict(lane.get("summary"))
     effect_summary = _dict(effect.get("summary"))
+    effect_status = _text(effect_summary.get("status"), "missing")
+    lane_status = _text(lane_summary.get("status"), "missing")
+    review_status = effect_status if effect_status != "missing" else lane_status
+    effects_by_term: dict[str, dict[str, Any]] = {}
+    for raw_effect in _list(effect.get("decision_effects")):
+        item = _dict(raw_effect)
+        term_key = _text(item.get("term_key"))
+        if term_key:
+            effects_by_term[term_key] = item
+    terms: list[dict[str, Any]] = []
+    for raw_term in _list(lane.get("terms"))[:16]:
+        term = _dict(raw_term)
+        term_key = _text(term.get("term_key"))
+        review_effect = _dict(effects_by_term.get(term_key))
+        effective_status = (
+            "reviewed_by_project_local_decision"
+            if review_effect
+            else _text(term.get("status"), "unreviewed")
+        )
+        terms.append(
+            _public_safe(
+                {
+                    **term,
+                    "effective_status": effective_status,
+                    "review_effect": {
+                        "status": _text(review_effect.get("status")),
+                        "review_action": _text(review_effect.get("review_action")),
+                        "maturity_effect": _text(review_effect.get("maturity_effect")),
+                        "evidence_refs": _list(review_effect.get("evidence_refs"))[:8],
+                    }
+                    if review_effect
+                    else {},
+                }
+            )
+        )
     return {
-        "lane_status": _text(lane_summary.get("status"), "missing"),
-        "effect_status": _text(effect_summary.get("status"), "missing"),
+        "review_status": review_status,
+        "lane_status": lane_status,
+        "effect_status": effect_status,
         "term_count": _int(lane_summary.get("term_count")),
         "reviewed_term_count": _int(lane_summary.get("reviewed_term_count")),
         "unreviewed_term_count": _int(lane_summary.get("unreviewed_term_count")),
         "accepted_decision_count": _int(effect_summary.get("accepted_decision_count")),
         "blocking_decision_count": _int(effect_summary.get("blocking_decision_count")),
-        "terms": _public_safe(_list(lane.get("terms"))[:16]),
+        "terms": terms,
     }
 
 
@@ -752,7 +788,7 @@ def build_candidate_overview(
         "remaining_blocker_count": maturity_view["remaining_blocker_count"],
         "ready_for_candidate_approval": repair["ready_for_candidate_approval"],
         "ready_for_platform_promotion": repair["ready_for_platform_promotion"],
-        "project_local_ontology_review_status": ontology["lane_status"],
+        "project_local_ontology_review_status": ontology["review_status"],
         "finding_count": len(findings),
     }
 
