@@ -2559,5 +2559,18 @@
     "required_provenance_links": [
       "source_draft_ref"
     ]
+  },
+  {
+    "proposal_id": "0199",
+    "source_artifact_class": "working_draft",
+    "source_refs": [
+      "docs/archive/proposal_sources/0199_project_local_ontology_decision_effect_report.md"
+    ],
+    "motivating_concern": "SpecSpace project-local ontology decision import previews are validated operator intent, but Idea Maturity needs a stable review-evidence surface that distinguishes accepted local decisions from missing, invalid, or deferred decisions without confusing them with global Ontology acceptance.",
+    "normalized_title": "Project-Local Ontology Decision Effect Report",
+    "bounded_scope": "Add a review-only project-local ontology decision effect report, Make target, tests, proposal docs, roadmap, DocC, README, and Idea Maturity integration so imported project-local ontology decisions can improve maturity explainability without applying decisions, mutating candidate or canonical specs, writing Ontology packages or lockfiles, accepting ontology terms, approving candidates, creating Git branches or commits, opening pull requests, publishing read models, or executing prompt agents.",
+    "required_provenance_links": [
+      "source_draft_ref"
+    ]
   }
 ]

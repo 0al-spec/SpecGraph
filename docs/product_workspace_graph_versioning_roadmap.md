@@ -1498,20 +1498,27 @@ The same run exposed the next product-flow friction points:
    accepted, invalid, missing, and non-resolving decisions. This remains
    review-only: no ontology package writes, accepted terms, candidate mutation,
    or Git authority.
-7. **Event-storming topology.** Proposal `0191` currently emits flat
+7. **Project-local ontology decision effects.** Done in proposal `0199`.
+   SpecGraph can now convert a ready project-local ontology decision import
+   preview into `runs/project_local_ontology_decision_effect_report.json`, a
+   review-only maturity evidence surface. Idea Maturity consumes the report to
+   distinguish accepted keep-local/bind/alias/reject/promotion decisions from
+   missing, invalid, or deferred decisions without writing Ontology packages or
+   globally accepting terms.
+8. **Event-storming topology.** Proposal `0191` currently emits flat
    `Product Boundary --decomposes_to--> node` edges. The next topology slice
    should add ontology-validated event-storming relations such as
    `command -> event`, `event -> policy`, and `constraint -> command`, while
    preserving the review-only boundary.
-8. **Human-friendly candidate ids.** Long constraint statements currently
+9. **Human-friendly candidate ids.** Long constraint statements currently
    produce truncated node ids. Keep stable machine ids, but add shorter
    readable slugs or display aliases for UI, PR artifacts, and candidate
    overview documents.
-9. **Generated candidate overview.** The artifacts are rich, but the operator
+10. **Generated candidate overview.** The artifacts are rich, but the operator
    still needs a narrative summary assembled from the graph. Add a generated
    `candidate_overview.md` or SpecSpace narrative panel that explains actors,
    flows, constraints, gaps closed, and remaining promotion steps.
-10. **Custom-run Platform promotion dry-run.** The cash-flow smoke reached
+11. **Custom-run Platform promotion dry-run.** The cash-flow smoke reached
    `ready_for_platform_promotion_request`, but did not yet materialize an
    approval decision, promotion request, or Git Service dry-run. Add a reusable
    custom run-dir handoff so any repaired real-idea smoke can continue into the

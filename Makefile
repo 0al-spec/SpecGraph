@@ -151,6 +151,11 @@ SPECSPACE_PROJECT_LOCAL_ONTOLOGY_DECISION_IMPORT_WORKSPACE_ID_ARG := $(if $(stri
 SPECSPACE_PROJECT_LOCAL_ONTOLOGY_DECISION_IMPORT_OUTPUT ?= runs/specspace_project_local_ontology_decision_import_preview.json
 SPECSPACE_PROJECT_LOCAL_ONTOLOGY_DECISION_IMPORT_STRICT ?=
 SPECSPACE_PROJECT_LOCAL_ONTOLOGY_DECISION_IMPORT_STRICT_ARG := $(if $(filter 1 true yes,$(strip $(SPECSPACE_PROJECT_LOCAL_ONTOLOGY_DECISION_IMPORT_STRICT))),--strict,)
+PROJECT_LOCAL_ONTOLOGY_DECISION_EFFECT_REVIEW_LANE ?= runs/project_local_ontology_review_lane.json
+PROJECT_LOCAL_ONTOLOGY_DECISION_EFFECT_IMPORT_PREVIEW ?= runs/specspace_project_local_ontology_decision_import_preview.json
+PROJECT_LOCAL_ONTOLOGY_DECISION_EFFECT_OUTPUT ?= runs/project_local_ontology_decision_effect_report.json
+PROJECT_LOCAL_ONTOLOGY_DECISION_EFFECT_STRICT ?=
+PROJECT_LOCAL_ONTOLOGY_DECISION_EFFECT_STRICT_ARG := $(if $(filter 1 true yes,$(strip $(PROJECT_LOCAL_ONTOLOGY_DECISION_EFFECT_STRICT))),--strict,)
 IDEA_TO_SPEC_ANSWER_RERUN_INPUT_ANSWERS ?= runs/idea_to_spec_clarification_answers.json
 IDEA_TO_SPEC_ANSWER_RERUN_INPUT_ONTOLOGY_DECISIONS ?=
 IDEA_TO_SPEC_ANSWER_RERUN_INPUT_ONTOLOGY_DECISIONS_ARG := $(if $(strip $(IDEA_TO_SPEC_ANSWER_RERUN_INPUT_ONTOLOGY_DECISIONS)),--ontology-decisions "$(IDEA_TO_SPEC_ANSWER_RERUN_INPUT_ONTOLOGY_DECISIONS)",)
@@ -266,6 +271,7 @@ IDEA_MATURITY_METRICS_REPAIRED_PROMOTION_GATE ?= runs/repaired_idea_to_spec_prom
 IDEA_MATURITY_METRICS_REPAIRED_REPAIR_SESSION ?= runs/repaired_idea_to_spec_repair_session.json
 IDEA_MATURITY_METRICS_SPECSPACE_DRAFT_IMPORT_PREVIEW ?= runs/specspace_repair_draft_import_preview.json
 IDEA_MATURITY_METRICS_SPECSPACE_RERUN_REQUEST ?= runs/idea_to_spec_repair_rerun_requests.json
+IDEA_MATURITY_METRICS_PROJECT_LOCAL_ONTOLOGY_DECISION_EFFECT ?= runs/project_local_ontology_decision_effect_report.json
 IDEA_MATURITY_METRICS_APPROVAL_INTENT ?= runs/idea_to_spec_candidate_approval_intents.json
 IDEA_MATURITY_METRICS_REPAIR_RERUN_EXECUTION ?= runs/platform_product_repair_rerun_execution_report.json
 IDEA_MATURITY_METRICS_REPAIR_RERUN_PUBLICATION ?= runs/platform_product_repair_rerun_publication_report.json
@@ -788,6 +794,7 @@ shutil.rmtree(absent, ignore_errors=True)' "$(REAL_IDEA_SMOKE_RUN_DIR)" "$(REAL_
 		IDEA_MATURITY_METRICS_REPAIRED_REPAIR_SESSION="$(REAL_IDEA_SMOKE_RUN_DIR)/repaired_idea_to_spec_repair_session.json" \
 		IDEA_MATURITY_METRICS_SPECSPACE_DRAFT_IMPORT_PREVIEW="$(REAL_IDEA_SMOKE_RUN_DIR)/specspace_repair_draft_import_preview.json" \
 		IDEA_MATURITY_METRICS_SPECSPACE_RERUN_REQUEST="$(REAL_IDEA_SMOKE_RUN_DIR)/idea_to_spec_repair_rerun_requests.json" \
+		IDEA_MATURITY_METRICS_PROJECT_LOCAL_ONTOLOGY_DECISION_EFFECT="$(REAL_IDEA_SMOKE_RUN_DIR)/project_local_ontology_decision_effect_report.json" \
 		IDEA_MATURITY_METRICS_APPROVAL_INTENT="$(REAL_IDEA_SMOKE_MATURITY_ABSENT_DIR)/idea_to_spec_candidate_approval_intents.json" \
 		IDEA_MATURITY_METRICS_REPAIR_RERUN_EXECUTION="$(REAL_IDEA_SMOKE_MATURITY_ABSENT_DIR)/platform_product_repair_rerun_execution_report.json" \
 		IDEA_MATURITY_METRICS_REPAIR_RERUN_PUBLICATION="$(REAL_IDEA_SMOKE_MATURITY_ABSENT_DIR)/platform_product_repair_rerun_publication_report.json" \
@@ -861,6 +868,14 @@ specspace-project-local-ontology-decision-import-preview:
 		--output "$(SPECSPACE_PROJECT_LOCAL_ONTOLOGY_DECISION_IMPORT_OUTPUT)" \
 		$(SPECSPACE_PROJECT_LOCAL_ONTOLOGY_DECISION_IMPORT_STRICT_ARG)
 
+.PHONY: project-local-ontology-decision-effect-report
+project-local-ontology-decision-effect-report:
+	@$(PYTHON) tools/project_local_ontology_decision_effect_report.py \
+		--review-lane "$(PROJECT_LOCAL_ONTOLOGY_DECISION_EFFECT_REVIEW_LANE)" \
+		--import-preview "$(PROJECT_LOCAL_ONTOLOGY_DECISION_EFFECT_IMPORT_PREVIEW)" \
+		--output "$(PROJECT_LOCAL_ONTOLOGY_DECISION_EFFECT_OUTPUT)" \
+		$(PROJECT_LOCAL_ONTOLOGY_DECISION_EFFECT_STRICT_ARG)
+
 .PHONY: idea-to-spec-answer-rerun-input
 idea-to-spec-answer-rerun-input:
 	@$(PYTHON) tools/idea_to_spec_answer_rerun_input.py --answers "$(IDEA_TO_SPEC_ANSWER_RERUN_INPUT_ANSWERS)" $(IDEA_TO_SPEC_ANSWER_RERUN_INPUT_ONTOLOGY_DECISIONS_ARG) --output "$(IDEA_TO_SPEC_ANSWER_RERUN_INPUT_OUTPUT)"
@@ -922,6 +937,7 @@ product-workspace-happy-path-repair-pack:
 		IDEA_MATURITY_METRICS_APPROVAL_INTENT="$(PRODUCT_WORKSPACE_REPAIR_PACK_ABSENT_ARTIFACT_DIR)/idea_to_spec_candidate_approval_intents.json" \
 		IDEA_MATURITY_METRICS_REPAIR_RERUN_EXECUTION="$(PRODUCT_WORKSPACE_REPAIR_PACK_ABSENT_ARTIFACT_DIR)/platform_product_repair_rerun_execution_report.json" \
 		IDEA_MATURITY_METRICS_REPAIR_RERUN_PUBLICATION="$(PRODUCT_WORKSPACE_REPAIR_PACK_ABSENT_ARTIFACT_DIR)/platform_product_repair_rerun_publication_report.json" \
+		IDEA_MATURITY_METRICS_PROJECT_LOCAL_ONTOLOGY_DECISION_EFFECT="$(PRODUCT_WORKSPACE_REPAIR_PACK_ABSENT_ARTIFACT_DIR)/project_local_ontology_decision_effect_report.json" \
 		IDEA_MATURITY_METRICS_APPROVAL_EXECUTION="$(PRODUCT_WORKSPACE_REPAIR_PACK_ABSENT_ARTIFACT_DIR)/platform_candidate_approval_execution_report.json" \
 		IDEA_MATURITY_METRICS_CANDIDATE_APPROVAL_DECISION="$(PRODUCT_WORKSPACE_REPAIR_PACK_ABSENT_ARTIFACT_DIR)/candidate_approval_decision.json" \
 		IDEA_MATURITY_METRICS_PROMOTION_REQUEST="$(PRODUCT_WORKSPACE_REPAIR_PACK_ABSENT_ARTIFACT_DIR)/graph_repository_promotion_request.json" \
@@ -964,7 +980,7 @@ candidate-approval-decision:
 
 .PHONY: idea-maturity-metrics
 idea-maturity-metrics:
-	@$(PYTHON) tools/idea_maturity_metrics_report.py --intake "$(IDEA_MATURITY_METRICS_INTAKE)" --candidate-graph "$(IDEA_MATURITY_METRICS_CANDIDATE_GRAPH)" --pre-sib "$(IDEA_MATURITY_METRICS_PRE_SIB)" --clarification-requests "$(IDEA_MATURITY_METRICS_CLARIFICATION_REQUESTS)" --clarification-answers "$(IDEA_MATURITY_METRICS_CLARIFICATION_ANSWERS)" --ontology-decisions "$(IDEA_MATURITY_METRICS_ONTOLOGY_DECISIONS)" --rerun-input "$(IDEA_MATURITY_METRICS_RERUN_INPUT)" --rerun-preview "$(IDEA_MATURITY_METRICS_RERUN_PREVIEW)" --rerun-materialization "$(IDEA_MATURITY_METRICS_RERUN_MATERIALIZATION)" --promotion-gate "$(IDEA_MATURITY_METRICS_PROMOTION_GATE)" --repair-session "$(IDEA_MATURITY_METRICS_REPAIR_SESSION)" --repaired-handoff "$(IDEA_MATURITY_METRICS_REPAIRED_HANDOFF)" --repaired-candidate-graph "$(IDEA_MATURITY_METRICS_REPAIRED_CANDIDATE_GRAPH)" --repaired-pre-sib "$(IDEA_MATURITY_METRICS_REPAIRED_PRE_SIB)" --repaired-active-candidate "$(IDEA_MATURITY_METRICS_REPAIRED_ACTIVE_CANDIDATE)" --repaired-promotion-gate "$(IDEA_MATURITY_METRICS_REPAIRED_PROMOTION_GATE)" --repaired-repair-session "$(IDEA_MATURITY_METRICS_REPAIRED_REPAIR_SESSION)" --specspace-draft-import-preview "$(IDEA_MATURITY_METRICS_SPECSPACE_DRAFT_IMPORT_PREVIEW)" --specspace-rerun-request "$(IDEA_MATURITY_METRICS_SPECSPACE_RERUN_REQUEST)" --approval-intent "$(IDEA_MATURITY_METRICS_APPROVAL_INTENT)" --repair-rerun-execution "$(IDEA_MATURITY_METRICS_REPAIR_RERUN_EXECUTION)" --repair-rerun-publication "$(IDEA_MATURITY_METRICS_REPAIR_RERUN_PUBLICATION)" --approval-execution "$(IDEA_MATURITY_METRICS_APPROVAL_EXECUTION)" --candidate-approval-decision "$(IDEA_MATURITY_METRICS_CANDIDATE_APPROVAL_DECISION)" --promotion-request "$(IDEA_MATURITY_METRICS_PROMOTION_REQUEST)" --promotion-execution "$(IDEA_MATURITY_METRICS_PROMOTION_EXECUTION)" --review-status "$(IDEA_MATURITY_METRICS_REVIEW_STATUS)" --read-model-publication "$(IDEA_MATURITY_METRICS_READ_MODEL_PUBLICATION)" --output "$(IDEA_MATURITY_METRICS_OUTPUT)" $(IDEA_MATURITY_METRICS_STRICT_ARG)
+	@$(PYTHON) tools/idea_maturity_metrics_report.py --intake "$(IDEA_MATURITY_METRICS_INTAKE)" --candidate-graph "$(IDEA_MATURITY_METRICS_CANDIDATE_GRAPH)" --pre-sib "$(IDEA_MATURITY_METRICS_PRE_SIB)" --clarification-requests "$(IDEA_MATURITY_METRICS_CLARIFICATION_REQUESTS)" --clarification-answers "$(IDEA_MATURITY_METRICS_CLARIFICATION_ANSWERS)" --ontology-decisions "$(IDEA_MATURITY_METRICS_ONTOLOGY_DECISIONS)" --rerun-input "$(IDEA_MATURITY_METRICS_RERUN_INPUT)" --rerun-preview "$(IDEA_MATURITY_METRICS_RERUN_PREVIEW)" --rerun-materialization "$(IDEA_MATURITY_METRICS_RERUN_MATERIALIZATION)" --promotion-gate "$(IDEA_MATURITY_METRICS_PROMOTION_GATE)" --repair-session "$(IDEA_MATURITY_METRICS_REPAIR_SESSION)" --repaired-handoff "$(IDEA_MATURITY_METRICS_REPAIRED_HANDOFF)" --repaired-candidate-graph "$(IDEA_MATURITY_METRICS_REPAIRED_CANDIDATE_GRAPH)" --repaired-pre-sib "$(IDEA_MATURITY_METRICS_REPAIRED_PRE_SIB)" --repaired-active-candidate "$(IDEA_MATURITY_METRICS_REPAIRED_ACTIVE_CANDIDATE)" --repaired-promotion-gate "$(IDEA_MATURITY_METRICS_REPAIRED_PROMOTION_GATE)" --repaired-repair-session "$(IDEA_MATURITY_METRICS_REPAIRED_REPAIR_SESSION)" --specspace-draft-import-preview "$(IDEA_MATURITY_METRICS_SPECSPACE_DRAFT_IMPORT_PREVIEW)" --specspace-rerun-request "$(IDEA_MATURITY_METRICS_SPECSPACE_RERUN_REQUEST)" --project-local-ontology-decision-effect "$(IDEA_MATURITY_METRICS_PROJECT_LOCAL_ONTOLOGY_DECISION_EFFECT)" --approval-intent "$(IDEA_MATURITY_METRICS_APPROVAL_INTENT)" --repair-rerun-execution "$(IDEA_MATURITY_METRICS_REPAIR_RERUN_EXECUTION)" --repair-rerun-publication "$(IDEA_MATURITY_METRICS_REPAIR_RERUN_PUBLICATION)" --approval-execution "$(IDEA_MATURITY_METRICS_APPROVAL_EXECUTION)" --candidate-approval-decision "$(IDEA_MATURITY_METRICS_CANDIDATE_APPROVAL_DECISION)" --promotion-request "$(IDEA_MATURITY_METRICS_PROMOTION_REQUEST)" --promotion-execution "$(IDEA_MATURITY_METRICS_PROMOTION_EXECUTION)" --review-status "$(IDEA_MATURITY_METRICS_REVIEW_STATUS)" --read-model-publication "$(IDEA_MATURITY_METRICS_READ_MODEL_PUBLICATION)" --output "$(IDEA_MATURITY_METRICS_OUTPUT)" $(IDEA_MATURITY_METRICS_STRICT_ARG)
 
 .PHONY: idea-maturity-metrics-validate
 idea-maturity-metrics-validate:
