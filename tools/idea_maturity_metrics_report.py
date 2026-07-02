@@ -1937,6 +1937,8 @@ def _repair_session_readiness_explainers(
             )
         )
     for blocker in _text_list(readiness_impact.get("platform_promotion_blocked_by")):
+        if _repair_session_platform_blocker_resolved(blocker, artifacts):
+            continue
         explainers.append(
             _readiness_explainer(
                 explainer_id=f"repair-session-platform-{blocker}",
@@ -1960,6 +1962,19 @@ def _repair_session_readiness_explainers(
             )
         )
     return explainers
+
+
+def _repair_session_platform_blocker_resolved(
+    blocker: str,
+    artifacts: dict[str, dict[str, Any]],
+) -> bool:
+    if blocker == "candidate_approval_decision_missing":
+        return _candidate_approval_decision_state(artifacts) == "materialized"
+    if blocker in {"promotion_request_missing", "graph_repository_promotion_request_missing"}:
+        return _promotion_request_state(artifacts) == "requested"
+    if blocker in {"promotion_execution_missing", "git_service_promotion_execution_missing"}:
+        return _promotion_execution_state(artifacts) not in {"not_reached", "not_available"}
+    return False
 
 
 def _promotion_gate_readiness_explainers(
