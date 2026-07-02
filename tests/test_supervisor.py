@@ -11246,6 +11246,11 @@ def test_specspace_registry_handoff_contract_is_stable_and_ready(
         "runs/repaired_candidate_spec_graph.json",
         "runs/idea_maturity_metrics_report.json",
     ]
+    assert ready["artifact_contract"]["optional_paths"] == [
+        "runs/repaired_candidate_spec_graph.json",
+        "runs/idea_maturity_metrics_report.json",
+    ]
+    assert "absent-tolerant" in ready["artifact_contract"]["availability_notes"]
     assert "viewer_projection" in ready["artifact_contract"]["stable_fields"]
     assert "required_checks" in ready["artifact_contract"]["stable_fields"]
     assert "policy_required_checks_satisfied" in ready["artifact_contract"]["stable_fields"]
@@ -11264,6 +11269,7 @@ def test_specspace_registry_handoff_contract_is_stable_and_ready(
     assert "show candidate overview product narrative" in " ".join(
         ready["expected_consumer_behavior"]
     )
+    assert "optional_paths" in " ".join(ready["expected_consumer_behavior"])
     assert ready["transition_packet_validation"]["ok"] is True
     assert report["viewer_projection"]["named_filters"]["ready_for_handoff"] == ["specspace"]
     assert report["handoff_backlog"]["grouped_by_next_gap"] == {

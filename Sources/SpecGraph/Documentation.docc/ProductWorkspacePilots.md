@@ -345,7 +345,8 @@ The follow-up backlog from that smoke is:
    `runs/candidate_overview.json` and `make candidate-overview`;
 9. show the candidate overview in SpecSpace Product Workspace as a read-only
    narrative panel over product intent, event-storming groups, topology, repair
-   readiness, project-local ontology review, and next safe action;
+   readiness, project-local ontology review, and next safe action; done
+   downstream by the SpecSpace Product Workspace panel;
 10. add human-friendly display aliases for long generated candidate node ids;
 11. allow custom run-dir repaired candidates to continue into Platform
    approval/promotion dry-run without copying artifacts into canonical
@@ -371,6 +372,16 @@ SpecSpace consumes the artifact in the Product Workspace candidate overview
 panel. The panel remains read-only and uses the overview to explain what the
 system understood, which workflow relations exist, how project-local ontology
 review affects readiness, and what the next safe operator action is.
+
+The SpecSpace handoff contract is intentionally extended for the candidate
+overview surface. It includes `runs/candidate_overview.json` and related product
+workspace artifacts, while marking lifecycle-dependent artifacts such as
+`runs/repaired_candidate_spec_graph.json` and
+`runs/idea_maturity_metrics_report.json` as optional paths. Consumers must treat
+those optional paths as absent-tolerant evidence rather than required static
+surfaces. The linked SpecSpace PR and CI evidence are curated cross-repo evidence:
+SpecGraph validates their evidence contract shape and links, but does not re-run
+the downstream UI implementation locally.
 
 Proposal `0163` adds `idea_to_spec_clarification_requests` as the unified
 read-only question/action surface:

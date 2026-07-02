@@ -1455,6 +1455,17 @@ brief, event-storming frame, topology relation counts, project-local ontology
 state, repair/maturity status, and next safe action back to existing lifecycle
 evidence.
 
+The SpecSpace external-consumer handoff contract is intentionally extended for
+this slice. It declares `runs/candidate_overview.json` plus supporting product
+workspace artifacts as stable consumer contract members, while marking lifecycle
+artifacts such as `runs/repaired_candidate_spec_graph.json` and
+`runs/idea_maturity_metrics_report.json` as optional paths. Consumers must treat
+those optional paths as absent-tolerant evidence: their absence means the
+candidate is earlier in the lifecycle, not that the handoff contract is broken.
+The SpecSpace implementation evidence is curated cross-repo evidence from
+SpecSpace PRs and CI links; SpecGraph validates the evidence contract shape and
+links, but does not re-run the downstream UI implementation locally.
+
 ## Real Idea Smoke Iteration Isolation
 
 Status: implemented in proposal `0192`.
