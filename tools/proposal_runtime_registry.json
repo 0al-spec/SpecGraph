@@ -11404,5 +11404,61 @@
       }
     ],
     "notes": "SpecGraph now converts project-local ontology decision import previews into review-only maturity evidence and feeds the resulting counters into Idea Maturity without accepting ontology terms or mutating specs."
+  },
+  {
+    "proposal_id": "0200",
+    "posture": "synchronous_runtime_slice",
+    "runtime_surfaces": [
+      "docs/proposals/0200_richer_event_storming_topology.md",
+      "docs/archive/proposal_sources/0200_richer_event_storming_topology.md",
+      "tools/ontology_bound_candidate_graph_seed.py",
+      "tests/test_ontology_bound_candidate_graph_seed.py",
+      "docs/product_workspace_graph_versioning_roadmap.md",
+      "Sources/SpecGraph/Documentation.docc/ProductWorkspacePilots.md",
+      "tools/README.md"
+    ],
+    "runtime_markers": [
+      {
+        "path": "tools/ontology_bound_candidate_graph_seed.py",
+        "pattern": "actor_triggers_command"
+      },
+      {
+        "path": "tools/ontology_bound_candidate_graph_seed.py",
+        "pattern": "command_emits_event"
+      },
+      {
+        "path": "tools/ontology_bound_candidate_graph_seed.py",
+        "pattern": "topology_relation_counts"
+      },
+      {
+        "path": "tools/ontology_bound_candidate_graph_seed.py",
+        "pattern": "topology_quality"
+      }
+    ],
+    "validation_markers": [
+      {
+        "path": "tests/test_ontology_bound_candidate_graph_seed.py",
+        "pattern": "test_ontology_bound_candidate_seed_emits_policy_and_constraint_workflow_edges"
+      },
+      {
+        "path": "tests/test_ontology_bound_candidate_graph_seed.py",
+        "pattern": "topology_relation_counts"
+      }
+    ],
+    "observation_markers": [
+      {
+        "path": "docs/product_workspace_graph_versioning_roadmap.md",
+        "pattern": "Richer Event-Storming Topology"
+      },
+      {
+        "path": "Sources/SpecGraph/Documentation.docc/ProductWorkspacePilots.md",
+        "pattern": "actor_triggers_command"
+      },
+      {
+        "path": "tools/README.md",
+        "pattern": "Proposal 0200 adds additive event-storming workflow topology evidence"
+      }
+    ],
+    "notes": "SpecGraph now adds review-only event-storming workflow topology edges on top of the product-boundary decomposes_to fallback without mutating specs or accepting ontology terms."
   }
 ]

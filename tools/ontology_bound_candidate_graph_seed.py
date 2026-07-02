@@ -611,31 +611,321 @@ def _constraint_nodes(
     return nodes
 
 
-def _candidate_topology_edges(nodes: list[dict[str, Any]]) -> list[dict[str, Any]]:
+def _node_ids_by_source_ref(nodes: list[dict[str, Any]]) -> dict[str, list[str]]:
+    refs: dict[str, list[str]] = {}
+    boundary_id = "candidate-spec.product-boundary"
+    for node in nodes:
+        node_id = _text(node.get("id"))
+        if not node_id:
+            continue
+        for source_ref in _text_list(node.get("source_event_refs")):
+            refs.setdefault(source_ref, []).append(node_id)
+    for source_ref, node_ids in refs.items():
+        refs[source_ref] = sorted(
+            node_ids,
+            key=lambda node_id: (node_id == boundary_id, node_id),
+        )
+    return refs
+
+
+def _first_node_for_source_ref(
+    refs_by_source_ref: dict[str, list[str]],
+    source_ref: str,
+) -> str:
+    node_ids = refs_by_source_ref.get(source_ref, [])
+    return node_ids[0] if node_ids else ""
+
+
+def _command_event_index(
+    event_storming: dict[str, list[dict[str, Any]]],
+    known_refs: set[str],
+) -> dict[str, list[str]]:
+    index: dict[str, list[str]] = {}
+    for command in event_storming.get("commands", []):
+        command_id = _text(command.get("id"))
+        if not command_id:
+            continue
+        for event_ref in _filtered_refs(command.get("produces_event_refs"), known_refs):
+            index.setdefault(event_ref, []).append(command_id)
+    return index
+
+
+def _append_topology_edge(
+    edges: list[dict[str, Any]],
+    seen: set[tuple[str, str, str, str]],
+    *,
+    edge_id: str,
+    from_node: str,
+    to_node: str,
+    relation: str,
+    source_event_refs: list[str],
+    derivation: dict[str, Any],
+    extra: dict[str, Any] | None = None,
+) -> None:
+    if not from_node or not to_node:
+        return
+    key = (from_node, to_node, relation, "|".join(source_event_refs))
+    if key in seen:
+        return
+    seen.add(key)
+    edge = {
+        "id": edge_id,
+        "from": from_node,
+        "to": to_node,
+        "relation": relation,
+        "source_event_refs": source_event_refs,
+        "derivation": derivation,
+    }
+    if extra:
+        edge.update(extra)
+    edges.append(edge)
+
+
+def _candidate_topology_edges(
+    *,
+    nodes: list[dict[str, Any]],
+    event_storming: dict[str, list[dict[str, Any]]],
+    known_refs: set[str],
+) -> list[dict[str, Any]]:
     boundary_id = "candidate-spec.product-boundary"
     node_ids = {_text(node.get("id")) for node in nodes}
     if boundary_id not in node_ids:
         return []
     edges: list[dict[str, Any]] = []
+    seen: set[tuple[str, str, str, str]] = set()
+    refs_by_source_ref = _node_ids_by_source_ref(nodes)
+    commands_by_event = _command_event_index(event_storming, known_refs)
     for node in nodes:
         node_id = _text(node.get("id"))
         if not node_id or node_id == boundary_id:
             continue
         node_slug = node_id.removeprefix("candidate-spec.")
-        edges.append(
-            {
-                "id": f"edge.product-boundary.{node_slug}",
-                "from": boundary_id,
-                "to": node_id,
-                "relation": "decomposes_to",
-                "source_event_refs": _text_list(node.get("source_event_refs")),
-                "derivation": {
-                    "kind": "event_storming_product_boundary_decomposition",
+        _append_topology_edge(
+            edges,
+            seen,
+            edge_id=f"edge.product-boundary.{node_slug}",
+            from_node=boundary_id,
+            to_node=node_id,
+            relation="decomposes_to",
+            source_event_refs=_text_list(node.get("source_event_refs")),
+            derivation={
+                "kind": "event_storming_product_boundary_decomposition",
+                "source": "ontology_bound_candidate_graph_seed",
+            },
+        )
+    for command in event_storming.get("commands", []):
+        command_id = _text(command.get("id"))
+        command_node = _first_node_for_source_ref(refs_by_source_ref, command_id)
+        if not command_id or not command_node:
+            continue
+        command_slug = command_node.removeprefix("candidate-spec.")
+        for actor_ref in _filtered_refs(command.get("actor_refs"), known_refs):
+            _append_topology_edge(
+                edges,
+                seen,
+                edge_id=f"edge.actor.{_slug(actor_ref, 'actor')}.{command_slug}",
+                from_node=boundary_id,
+                to_node=command_node,
+                relation="actor_triggers_command",
+                source_event_refs=[actor_ref, command_id],
+                derivation={
+                    "kind": "event_storming_actor_command_relation",
                     "source": "ontology_bound_candidate_graph_seed",
                 },
-            }
-        )
+                extra={"actor_ref": actor_ref, "command_ref": command_id},
+            )
+        for event_ref in _filtered_refs(command.get("produces_event_refs"), known_refs):
+            _append_topology_edge(
+                edges,
+                seen,
+                edge_id=f"edge.command.{command_slug}.{_slug(event_ref, 'event')}",
+                from_node=command_node,
+                to_node=boundary_id,
+                relation="command_emits_event",
+                source_event_refs=[command_id, event_ref],
+                derivation={
+                    "kind": "event_storming_command_event_relation",
+                    "source": "ontology_bound_candidate_graph_seed",
+                },
+                extra={"command_ref": command_id, "event_ref": event_ref},
+            )
+    for kind, entries in (
+        ("constraint", event_storming.get("constraints", [])),
+        ("policy", event_storming.get("policies", [])),
+    ):
+        for entry in entries:
+            if kind == "constraint" and _is_operational_constraint(entry):
+                continue
+            entry_id = _text(entry.get("id"))
+            entry_node = _first_node_for_source_ref(refs_by_source_ref, entry_id)
+            if not entry_id or not entry_node:
+                continue
+            entry_slug = entry_node.removeprefix("candidate-spec.")
+            relation = "constraint_applies_to_command"
+            if kind == "policy":
+                relation = "policy_applies_to_command"
+            for command_ref in _filtered_refs(entry.get("command_refs"), known_refs):
+                command_node = _first_node_for_source_ref(refs_by_source_ref, command_ref)
+                if not command_node:
+                    continue
+                command_slug = command_node.removeprefix("candidate-spec.")
+                _append_topology_edge(
+                    edges,
+                    seen,
+                    edge_id=f"edge.{kind}.{entry_slug}.{command_slug}",
+                    from_node=entry_node,
+                    to_node=command_node,
+                    relation=relation,
+                    source_event_refs=[entry_id, command_ref],
+                    derivation={
+                        "kind": f"event_storming_{kind}_command_relation",
+                        "source": "ontology_bound_candidate_graph_seed",
+                    },
+                    extra={f"{kind}_ref": entry_id, "command_ref": command_ref},
+                )
+            for event_ref in _filtered_refs(entry.get("trigger_event_refs"), known_refs):
+                for command_ref in commands_by_event.get(event_ref, []):
+                    command_node = _first_node_for_source_ref(refs_by_source_ref, command_ref)
+                    if not command_node:
+                        continue
+                    command_slug = command_node.removeprefix("candidate-spec.")
+                    edge_id = f"edge.event.{_slug(event_ref, 'event')}.{command_slug}.{entry_slug}"
+                    _append_topology_edge(
+                        edges,
+                        seen,
+                        edge_id=edge_id,
+                        from_node=command_node,
+                        to_node=entry_node,
+                        relation="event_informs_policy"
+                        if kind == "policy"
+                        else "event_informs_constraint",
+                        source_event_refs=[command_ref, event_ref, entry_id],
+                        derivation={
+                            "kind": f"event_storming_event_{kind}_relation",
+                            "source": "ontology_bound_candidate_graph_seed",
+                        },
+                        extra={
+                            "command_ref": command_ref,
+                            "event_ref": event_ref,
+                            f"{kind}_ref": entry_id,
+                        },
+                    )
     return edges
+
+
+def _topology_relation_counts(edges: list[dict[str, Any]]) -> dict[str, int]:
+    counts: dict[str, int] = {}
+    for edge in edges:
+        relation = _text(edge.get("relation"), "unknown")
+        counts[relation] = counts.get(relation, 0) + 1
+    return dict(sorted(counts.items()))
+
+
+def _topology_quality_report(
+    *,
+    event_storming: dict[str, list[dict[str, Any]]],
+    known_refs: set[str],
+) -> dict[str, Any]:
+    actor_ids = {
+        _text(actor.get("id"))
+        for actor in event_storming.get("actors", [])
+        if _text(actor.get("id"))
+    }
+    event_ids = {
+        _text(event.get("id"))
+        for event in event_storming.get("domain_events", [])
+        if _text(event.get("id"))
+    }
+    used_actor_refs: set[str] = set()
+    produced_event_refs: set[str] = set()
+    commands_without_actor: list[str] = []
+    commands_without_event: list[str] = []
+    for command in event_storming.get("commands", []):
+        command_id = _text(command.get("id"))
+        actor_refs = _filtered_refs(command.get("actor_refs"), known_refs)
+        event_refs = _filtered_refs(command.get("produces_event_refs"), known_refs)
+        used_actor_refs.update(actor_refs)
+        produced_event_refs.update(event_refs)
+        if command_id and not actor_refs:
+            commands_without_actor.append(command_id)
+        if command_id and not event_refs:
+            commands_without_event.append(command_id)
+
+    constraints_without_target: list[str] = []
+    for constraint in event_storming.get("constraints", []):
+        if _is_operational_constraint(constraint):
+            continue
+        constraint_id = _text(constraint.get("id"))
+        command_refs = _filtered_refs(constraint.get("command_refs"), known_refs)
+        trigger_refs = _filtered_refs(constraint.get("trigger_event_refs"), known_refs)
+        if constraint_id and not command_refs and not trigger_refs:
+            constraints_without_target.append(constraint_id)
+
+    policies_without_target: list[str] = []
+    for policy in event_storming.get("policies", []):
+        policy_id = _text(policy.get("id"))
+        command_refs = _filtered_refs(policy.get("command_refs"), known_refs)
+        trigger_refs = _filtered_refs(policy.get("trigger_event_refs"), known_refs)
+        if policy_id and not command_refs and not trigger_refs:
+            policies_without_target.append(policy_id)
+
+    actors_without_command = sorted(actor_ids - used_actor_refs)
+    events_without_command = sorted(event_ids - produced_event_refs)
+    warnings: list[dict[str, Any]] = []
+    warning_specs = [
+        (
+            "topology_actor_without_command",
+            actors_without_command,
+            "Some event-storming actors are not linked to commands.",
+        ),
+        (
+            "topology_command_without_actor",
+            commands_without_actor,
+            "Some commands have no actor_refs.",
+        ),
+        (
+            "topology_command_without_event",
+            commands_without_event,
+            "Some commands have no produces_event_refs.",
+        ),
+        (
+            "topology_event_without_command",
+            events_without_command,
+            "Some domain events are not produced by any command.",
+        ),
+        (
+            "topology_constraint_without_target",
+            constraints_without_target,
+            "Some constraints have no command_refs or trigger_event_refs.",
+        ),
+        (
+            "topology_policy_without_target",
+            policies_without_target,
+            "Some policies have no command_refs or trigger_event_refs.",
+        ),
+    ]
+    for finding_id, refs, message in warning_specs:
+        if refs:
+            warnings.append(
+                _finding(
+                    finding_id=finding_id,
+                    severity="warning",
+                    message=message,
+                    evidence={"source_refs": refs, "count": len(refs)},
+                )
+            )
+
+    return {
+        "status": "topology_review_recommended" if warnings else "topology_ready",
+        "warning_count": len(warnings),
+        "actor_without_command_count": len(actors_without_command),
+        "command_without_actor_count": len(commands_without_actor),
+        "command_without_event_count": len(commands_without_event),
+        "event_without_command_count": len(events_without_command),
+        "constraint_without_target_count": len(constraints_without_target),
+        "policy_without_target_count": len(policies_without_target),
+        "warnings": warnings,
+    }
 
 
 def _risk_gaps(event_storming: dict[str, list[dict[str, Any]]]) -> list[dict[str, Any]]:
@@ -724,7 +1014,15 @@ def build_ontology_bound_candidate_graph_seed(
             used_slugs=used_slugs,
         )
     )
-    edges = _candidate_topology_edges(nodes)
+    edges = _candidate_topology_edges(
+        nodes=nodes,
+        event_storming=event_storming,
+        known_refs=known_refs,
+    )
+    topology_quality = _topology_quality_report(
+        event_storming=event_storming,
+        known_refs=known_refs,
+    )
     return {
         "artifact_kind": "candidate_spec_graph_seed",
         "schema_version": SCHEMA_VERSION,
@@ -751,6 +1049,7 @@ def build_ontology_bound_candidate_graph_seed(
             "ontology": _ontology_summary(ontology_ir, ontology_ir_path),
             "ontology_bindings": _ontology_bindings(classes),
             "ontology_gaps": ontology_gaps,
+            "topology_quality": topology_quality,
             "readiness": {
                 "ready": ok,
                 "review_state": (
@@ -765,11 +1064,13 @@ def build_ontology_bound_candidate_graph_seed(
                 "raw_model_output_published": False,
             },
             "findings": blocking_findings,
-            "warnings": [],
+            "warnings": topology_quality["warnings"],
             "summary": {
                 "status": "ready_for_candidate_graph" if ok else "ontology_seed_review_required",
                 "node_count": len(nodes),
                 "edge_count": len(edges),
+                "topology_relation_counts": _topology_relation_counts(edges),
+                "topology_warning_count": topology_quality["warning_count"],
                 "ontology_binding_count": len(_ontology_bindings(classes)),
                 "ontology_gap_count": len(ontology_gaps),
                 "finding_count": len(blocking_findings),
