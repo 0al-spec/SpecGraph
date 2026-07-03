@@ -770,8 +770,7 @@ real-idea-intake-from-entry-request:
 		--session-output "$(REAL_IDEA_SMOKE_RUN_DIR)/user_idea_intake_session.json" \
 		--source-output "$(REAL_IDEA_SMOKE_RUN_DIR)/user_idea_intake_source.json" \
 		--interview-report-output "$(REAL_IDEA_SMOKE_RUN_DIR)/user_idea_intake_interview_report.json" \
-		--output "$(REAL_IDEA_ENTRY_INTAKE_REPORT_OUTPUT)" \
-		--strict
+		--output "$(REAL_IDEA_ENTRY_INTAKE_REPORT_OUTPUT)"
 	@$(MAKE) real-idea-intake-clarification-requests \
 		REAL_IDEA_INTAKE_REFRESH=0 \
 		USER_IDEA_INTAKE_SESSION_OUTPUT="$(REAL_IDEA_SMOKE_RUN_DIR)/user_idea_intake_session.json" \

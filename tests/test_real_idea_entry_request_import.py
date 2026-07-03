@@ -37,11 +37,19 @@ def load_json(path: Path) -> dict[str, object]:
     return payload
 
 
-def entry_state(*, idea_text: str = "A small app for tracking pantry prices.") -> dict[str, object]:
+def entry_state(
+    *,
+    idea_text: str = "A small app for tracking pantry prices.",
+    idea_summary_hint: str | None = "Pantry price helper",
+    workspace_id: str = "pantry-price-helper",
+    workspace_display_name: str | None = "Pantry Price Helper",
+    schema_version: int = 1,
+    request_privacy: dict[str, object] | None = None,
+) -> dict[str, object]:
     return {
         "artifact_kind": "specspace_real_idea_entry_request_state",
-        "schema_version": 1,
-        "workspace_id": "pantry-price-helper",
+        "schema_version": schema_version,
+        "workspace_id": workspace_id,
         "summary": {"active_submitted_count": 1},
         "privacy_boundary": {
             "raw_idea_text_local_only": True,
@@ -62,15 +70,16 @@ def entry_state(*, idea_text: str = "A small app for tracking pantry prices.") -
         "requests": [
             {
                 "request_id": "entry-001",
-                "workspace_id": "pantry-price-helper",
+                "workspace_id": workspace_id,
                 "status": "submitted",
                 "idea_text": idea_text,
-                "idea_summary_hint": "Pantry price helper",
-                "workspace_display_name": "Pantry Price Helper",
-                "public_route_hint": "/pantry-price-helper",
+                "idea_summary_hint": idea_summary_hint,
+                "workspace_display_name": workspace_display_name,
+                "public_route_hint": f"/{workspace_id}",
                 "domain_hints": ["household shopping"],
                 "constraints": ["local-only storage"],
-                "privacy_boundary": {
+                "privacy_boundary": request_privacy
+                or {
                     "raw_idea_text_local_only": True,
                     "raw_idea_text_public_safe": False,
                 },
@@ -100,7 +109,87 @@ def test_entry_request_preview_is_sanitized() -> None:
     assert preview["selected_request"]["candidate_id"] == "pantry-price-helper"
     dumped = json.dumps(preview)
     assert "A small app for tracking pantry prices." not in dumped
+    assert "Pantry price helper" not in dumped
     assert "idea_text_digest" in dumped
+    assert "public_summary_digest" in dumped
+
+
+def test_entry_request_preview_blocks_missing_public_summary() -> None:
+    tool = load_module()
+    preview = tool.build_preview(
+        state=entry_state(idea_summary_hint=None),
+        state_path=Path("runs/test/real_idea_entry_requests.json"),
+        workspace_id="pantry-price-helper",
+        request_id="entry-001",
+    )
+
+    assert preview["readiness"]["ready"] is False
+    assert "real_idea_entry_public_summary_missing" in preview["readiness"]["blocked_by"]
+
+
+def test_entry_request_preview_blocks_raw_public_summary() -> None:
+    tool = load_module()
+    preview = tool.build_preview(
+        state=entry_state(
+            idea_text="A local-only idea with customer-sensitive shopping details.",
+            idea_summary_hint="A local-only idea with customer-sensitive shopping details.",
+        ),
+        state_path=Path("runs/test/real_idea_entry_requests.json"),
+        workspace_id="pantry-price-helper",
+        request_id="entry-001",
+    )
+
+    assert preview["readiness"]["ready"] is False
+    assert "real_idea_entry_public_summary_matches_raw_text" in preview["readiness"]["blocked_by"]
+
+
+def test_entry_request_preview_blocks_private_public_metadata() -> None:
+    tool = load_module()
+    preview = tool.build_preview(
+        state=entry_state(idea_summary_hint="Read draft from /Users/egor/private.md"),
+        state_path=Path("runs/test/real_idea_entry_requests.json"),
+        workspace_id="pantry-price-helper",
+        request_id="entry-001",
+    )
+
+    assert preview["readiness"]["ready"] is False
+    assert "real_idea_entry_public_metadata_private_marker" in preview["readiness"]["blocked_by"]
+
+
+def test_entry_request_preview_blocks_request_privacy_claim() -> None:
+    tool = load_module()
+    preview = tool.build_preview(
+        state=entry_state(
+            request_privacy={
+                "raw_idea_text_local_only": True,
+                "raw_idea_text_public_safe": True,
+            }
+        ),
+        state_path=Path("runs/test/real_idea_entry_requests.json"),
+        workspace_id="pantry-price-helper",
+        request_id="entry-001",
+    )
+
+    assert preview["readiness"]["ready"] is False
+    assert "real_idea_entry_request_privacy_claim_invalid" in preview["readiness"]["blocked_by"]
+
+
+def test_entry_request_preview_blocks_invalid_schema_and_workspace() -> None:
+    tool = load_module()
+    preview = tool.build_preview(
+        state=entry_state(
+            schema_version=2,
+            workspace_id="x",
+            workspace_display_name=None,
+        ),
+        state_path=Path("runs/test/real_idea_entry_requests.json"),
+        workspace_id="x",
+        request_id="entry-001",
+    )
+
+    assert preview["readiness"]["ready"] is False
+    assert "real_idea_entry_state_schema_version_unsupported" in preview["readiness"]["blocked_by"]
+    assert "real_idea_entry_candidate_id_invalid" in preview["readiness"]["blocked_by"]
 
 
 def test_entry_request_materialization_writes_local_raw_but_public_report_is_sanitized(
@@ -140,6 +229,37 @@ def test_entry_request_materialization_writes_local_raw_but_public_report_is_san
     assert report["privacy_boundary"]["raw_idea_text_published"] is False
     assert "A small app for tracking pantry prices." not in json.dumps(report)
     assert "A small app for tracking pantry prices." not in json.dumps(interview_report)
+
+
+def test_entry_request_materialization_requires_local_operator_raw_output(
+    tmp_path: Path,
+) -> None:
+    tool = load_module()
+    state_path = tmp_path / "real_idea_entry_requests.json"
+    state = entry_state()
+    write_json(state_path, state)
+    preview = tool.build_preview(
+        state=state,
+        state_path=state_path,
+        workspace_id="pantry-price-helper",
+        request_id="entry-001",
+    )
+    preview_path = tmp_path / "specspace_real_idea_entry_request_import_preview.json"
+    write_json(preview_path, preview)
+    run_dir = tmp_path / "run"
+
+    with pytest.raises(SystemExit, match="local_operator_"):
+        tool.build_materialization(
+            state=state,
+            state_path=state_path,
+            preview=preview,
+            preview_path=preview_path,
+            run_dir=run_dir,
+            raw_output_path=run_dir / "raw_input.json",
+            session_output_path=run_dir / "user_idea_intake_session.json",
+            source_output_path=run_dir / "user_idea_intake_source.json",
+            report_output_path=run_dir / "user_idea_intake_interview_report.json",
+        )
 
 
 def test_entry_request_materialization_rejects_stale_preview(tmp_path: Path) -> None:

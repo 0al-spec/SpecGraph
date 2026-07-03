@@ -64,11 +64,13 @@ preview is blocked.
 
 Raw idea text remains local-only. It may be written only to the local raw input
 artifact inside the selected run directory. Public-safe preview/report artifacts
-may contain request identity, workspace identity, counts, sanitized hints, and a
-digest of the raw idea text, but not the raw text itself.
+may contain request identity, workspace identity, counts, bounded public
+metadata, and digests of public summary / raw idea text, but not the raw text
+itself.
 
-The materialization step rejects stale previews by checking both the source
-state digest and selected raw-text digest before writing intake artifacts.
+Submitted requests must include a public-safe `idea_summary_hint`; the preview
+stores only a digest of that hint. The materialization step rejects stale
+previews by checking the source state digest before writing intake artifacts.
 
 ## Acceptance Criteria
 

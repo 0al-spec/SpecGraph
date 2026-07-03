@@ -15,6 +15,7 @@ import user_idea_intake_interview
 ROOT = Path(__file__).resolve().parents[1]
 PROPOSAL_ID = "0202"
 SCHEMA_VERSION = 1
+ENTRY_STATE_SCHEMA_VERSION = 1
 STATE_KIND = "specspace_real_idea_entry_request_state"
 PREVIEW_KIND = "specspace_real_idea_entry_request_import_preview"
 PREVIEW_CONTRACT_REF = (
@@ -41,6 +42,18 @@ AUTHORITY_FALSE_FIELDS = (
     "may_execute_git_service_operation",
     "may_publish_read_model",
 )
+CANDIDATE_ID_RE = re.compile(r"^[a-z0-9][a-z0-9-]{1,62}[a-z0-9]$")
+PRIVATE_VALUE_MARKERS = (
+    "/Users/",
+    "/home/",
+    "/tmp/",
+    "file://",
+    "localhost",
+    "127.0.0.1",
+    "BEGIN PRIVATE KEY",
+    "OPENAI_API_KEY",
+    "GITHUB_TOKEN",
+)
 
 
 def _now_iso() -> str:
@@ -65,6 +78,26 @@ def _text_or_none(value: Any) -> str | None:
 
 def _text_list(value: Any) -> list[str]:
     return [item.strip() for item in _list(value) if isinstance(item, str) and item.strip()]
+
+
+def _public_text_finding(value: str, *, field: str) -> dict[str, Any] | None:
+    if len(value) > 500:
+        return _finding(
+            finding_id="real_idea_entry_public_metadata_too_long",
+            severity="blocking",
+            message="Public real idea entry metadata must stay bounded.",
+            evidence={"field": field, "max_length": 500},
+        )
+    lowered = value.lower()
+    for marker in PRIVATE_VALUE_MARKERS:
+        if marker.lower() in lowered:
+            return _finding(
+                finding_id="real_idea_entry_public_metadata_private_marker",
+                severity="blocking",
+                message="Public real idea entry metadata contains a private marker.",
+                evidence={"field": field, "marker": marker},
+            )
+    return None
 
 
 def _slug(value: str, fallback: str = "real-idea") -> str:
@@ -199,7 +232,17 @@ def _select_request(
                 evidence={"artifact_kind": state.get("artifact_kind")},
             )
         ]
-    findings.extend(_authority_findings(state))
+    if state.get("schema_version") != ENTRY_STATE_SCHEMA_VERSION:
+        findings.append(
+            _finding(
+                finding_id="real_idea_entry_state_schema_version_unsupported",
+                severity="blocking",
+                message="SpecSpace entry request state schema_version is unsupported.",
+                evidence={"schema_version": state.get("schema_version")},
+            )
+        )
+    state_authority_view = {key: value for key, value in state.items() if key != "requests"}
+    findings.extend(_authority_findings(state_authority_view))
     privacy = _dict(state.get("privacy_boundary"))
     if privacy.get("public_safe") is True or privacy.get("raw_idea_text_public_safe") is True:
         findings.append(
@@ -241,6 +284,18 @@ def _select_request(
         return None, findings
     request = candidates[0]
     findings.extend(_authority_findings(request, prefix="request"))
+    request_privacy = _dict(request.get("privacy_boundary"))
+    if (
+        request_privacy.get("public_safe") is True
+        or request_privacy.get("raw_idea_text_public_safe") is True
+    ):
+        findings.append(
+            _finding(
+                finding_id="real_idea_entry_request_privacy_claim_invalid",
+                severity="blocking",
+                message="Raw idea entry request cannot claim public-safe raw idea text.",
+            )
+        )
     if not _text(request.get("idea_text")):
         findings.append(
             _finding(
@@ -249,6 +304,80 @@ def _select_request(
                 message="Submitted real idea entry request must include idea_text.",
             )
         )
+    public_summary = _text(request.get("idea_summary_hint"))
+    if not public_summary:
+        findings.append(
+            _finding(
+                finding_id="real_idea_entry_public_summary_missing",
+                severity="blocking",
+                message=(
+                    "Submitted real idea entry request must include a public-safe "
+                    "idea_summary_hint."
+                ),
+            )
+        )
+    else:
+        summary_finding = _public_text_finding(public_summary, field="idea_summary_hint")
+        if summary_finding:
+            findings.append(summary_finding)
+        if public_summary.strip().casefold() == _text(request.get("idea_text")).casefold():
+            findings.append(
+                _finding(
+                    finding_id="real_idea_entry_public_summary_matches_raw_text",
+                    severity="blocking",
+                    message="Public idea summary must not duplicate the raw idea text.",
+                )
+            )
+    workspace = _text(request.get("workspace_id"))
+    display_name = _text(request.get("workspace_display_name"))
+    if not workspace:
+        findings.append(
+            _finding(
+                finding_id="real_idea_entry_workspace_id_missing",
+                severity="blocking",
+                message="Submitted real idea entry request must include workspace_id.",
+            )
+        )
+    candidate_id = _slug(workspace)
+    if workspace and not CANDIDATE_ID_RE.fullmatch(candidate_id):
+        findings.append(
+            _finding(
+                finding_id="real_idea_entry_candidate_id_invalid",
+                severity="blocking",
+                message=(
+                    "Submitted real idea entry request workspace_id cannot form "
+                    "a valid candidate_id."
+                ),
+                evidence={"workspace_id": workspace, "candidate_id": candidate_id},
+            )
+        )
+    if display_name:
+        display_finding = _public_text_finding(display_name, field="workspace_display_name")
+        if display_finding:
+            findings.append(display_finding)
+    public_route = _text(request.get("public_route_hint")) or f"/{workspace}"
+    if (
+        public_route == "/"
+        or not public_route.startswith("/")
+        or "//" in public_route
+        or "?" in public_route
+        or "#" in public_route
+    ):
+        findings.append(
+            _finding(
+                finding_id="real_idea_entry_public_route_invalid",
+                severity="blocking",
+                message=(
+                    "Submitted real idea entry request public_route_hint must be "
+                    "a non-root absolute path."
+                ),
+                evidence={"public_route": public_route},
+            )
+        )
+    else:
+        route_finding = _public_text_finding(public_route, field="public_route_hint")
+        if route_finding:
+            findings.append(route_finding)
     return request, findings
 
 
@@ -295,14 +424,17 @@ def build_preview(
     request_meta: dict[str, Any] | None = None
     if request is not None:
         workspace = _text(request.get("workspace_id"))
-        display_name = _text_or_none(request.get("workspace_display_name")) or workspace
         request_meta = {
             "request_id": request.get("request_id"),
             "workspace_id": workspace,
-            "candidate_id": _slug(workspace or display_name or "real-idea"),
-            "display_name": display_name,
+            "candidate_id": _slug(workspace or "real-idea"),
             "public_route": _text_or_none(request.get("public_route_hint")) or f"/{workspace}",
-            "idea_summary_hint": _text_or_none(request.get("idea_summary_hint")),
+            "public_summary_digest": _digest(
+                {"idea_summary_hint": _text(request.get("idea_summary_hint"))}
+            ),
+            "display_name_digest": _digest(
+                {"workspace_display_name": _text(request.get("workspace_display_name"))}
+            ),
             "domain_hint_count": len(_text_list(request.get("domain_hints"))),
             "constraint_count": len(_text_list(request.get("constraints"))),
             "idea_text_digest": _digest({"idea_text": request.get("idea_text")}),
@@ -388,16 +520,12 @@ def build_materialization(
     blocking = [finding for finding in findings if finding.get("severity") == "blocking"]
     if blocking:
         raise SystemExit("Selected real idea entry request no longer passes import validation.")
-    selected_digest = selected.get("idea_text_digest")
-    current_digest = _digest({"idea_text": request.get("idea_text")})
-    if selected_digest != current_digest:
-        raise SystemExit("Selected real idea entry request text changed after import preview.")
+    if not raw_output_path.name.startswith("local_operator_"):
+        raise SystemExit("--raw-output must use a local_operator_ filename for raw idea text.")
     idea_text = _text(request.get("idea_text"))
     idea_summary = _text(request.get("idea_summary_hint"))
-    display_name = _text(request.get("workspace_display_name")) or _text(
-        selected.get("display_name")
-    )
     workspace_id = _text(request.get("workspace_id"))
+    display_name = _text(request.get("workspace_display_name")) or workspace_id
     candidate_id = _slug(workspace_id or display_name)
     public_route = _text(request.get("public_route_hint")) or f"/{workspace_id}"
     domain_refs = [
@@ -498,7 +626,6 @@ def build_parser() -> argparse.ArgumentParser:
     materialize.add_argument("--source-output", type=Path, required=True)
     materialize.add_argument("--interview-report-output", type=Path, required=True)
     materialize.add_argument("--output", type=Path, required=True)
-    materialize.add_argument("--strict", action="store_true")
     return parser
 
 
@@ -555,7 +682,7 @@ def main(argv: list[str] | None = None) -> int:
     )
     write_json(report, output)
     print(f"{report['summary']['status']}: {state_ref} + {preview_ref} -> {_relative_ref(output)}")
-    return 0 if (not args.strict or report["readiness"]["ready"]) else 1
+    return 0
 
 
 if __name__ == "__main__":
