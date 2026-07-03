@@ -370,6 +370,15 @@ Supervisor modes:
   SpecSpace as the owner of mutable operator intent only; it does not grant
   SpecSpace execution, ontology, spec mutation, approval, Git, or publication
   authority.
+- Proposal 0202 adds SpecSpace raw idea entry import. Use
+  `make real-idea-intake-from-entry-request
+  SPECSPACE_REAL_IDEA_ENTRY_REQUESTS=<json>` to validate a submitted
+  SpecSpace-owned raw idea entry request, write a sanitized
+  `specspace_real_idea_entry_request_import_preview.json`, materialize the
+  existing real-idea intake artifacts under `REAL_IDEA_SMOKE_RUN_DIR`, and
+  prepare clarification requests plus `real_idea_answer_template.json`. Raw
+  idea text remains local-only and appears only in the local operator raw input
+  artifact, not in preview or report artifacts.
 - `tools/user_idea_intake_source.py`: deterministic generic user-idea source
   builder introduced by proposal 0158. Use `make user-idea-intake-source
   USER_IDEA_INTAKE_SOURCE=<json>` to normalize product workspace identity,

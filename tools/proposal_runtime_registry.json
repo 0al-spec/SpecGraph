@@ -11539,5 +11539,63 @@
       }
     ],
     "notes": "SpecGraph now emits a public-safe candidate_overview artifact that summarizes product intent, event-storming frame, topology, repair readiness, Idea Maturity, project-local ontology state, and the next safe action without adding write authority."
+  },
+  {
+    "proposal_id": "0202",
+    "posture": "synchronous_runtime_slice",
+    "runtime_surfaces": [
+      "docs/proposals/0202_real_idea_entry_request_import.md",
+      "docs/archive/proposal_sources/0202_real_idea_entry_request_import.md",
+      "Makefile",
+      "tools/real_idea_entry_request_import.py",
+      "tools/real_idea_smoke.py",
+      "tests/test_real_idea_entry_request_import.py",
+      "docs/product_workspace_graph_versioning_roadmap.md",
+      "Sources/SpecGraph/Documentation.docc/ProductWorkspacePilots.md",
+      "tools/README.md"
+    ],
+    "runtime_markers": [
+      {
+        "path": "tools/real_idea_entry_request_import.py",
+        "pattern": "specspace_real_idea_entry_request_import_preview"
+      },
+      {
+        "path": "tools/real_idea_entry_request_import.py",
+        "pattern": "specgraph.idea-to-spec.real-idea-entry-request-intake.v0.1"
+      },
+      {
+        "path": "Makefile",
+        "pattern": "real-idea-intake-from-entry-request"
+      }
+    ],
+    "validation_markers": [
+      {
+        "path": "tests/test_real_idea_entry_request_import.py",
+        "pattern": "test_entry_request_preview_is_sanitized"
+      },
+      {
+        "path": "tests/test_real_idea_entry_request_import.py",
+        "pattern": "test_entry_request_materialization_rejects_stale_preview"
+      },
+      {
+        "path": "tests/test_real_idea_entry_request_import.py",
+        "pattern": "test_entry_request_make_flow_builds_intake_artifacts"
+      }
+    ],
+    "observation_markers": [
+      {
+        "path": "docs/product_workspace_graph_versioning_roadmap.md",
+        "pattern": "Real Idea Entry Request Import"
+      },
+      {
+        "path": "Sources/SpecGraph/Documentation.docc/ProductWorkspacePilots.md",
+        "pattern": "specspace_real_idea_entry_request_import_preview.json"
+      },
+      {
+        "path": "tools/README.md",
+        "pattern": "Proposal 0202 adds SpecSpace raw idea entry import"
+      }
+    ],
+    "notes": "SpecGraph now validates SpecSpace-owned raw idea entry request state and materializes local-only real idea intake artifacts without publishing raw text or adding execution, ontology, spec, approval, Git, or publication authority."
   }
 ]

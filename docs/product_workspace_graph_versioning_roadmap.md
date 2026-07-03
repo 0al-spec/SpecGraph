@@ -1466,6 +1466,34 @@ The SpecSpace implementation evidence is curated cross-repo evidence from
 SpecSpace PRs and CI links; SpecGraph validates the evidence contract shape and
 links, but does not re-run the downstream UI implementation locally.
 
+## Real Idea Entry Request Import
+
+Status: implemented producer-side in proposal `0202`; downstream UI/Platform
+handoff work is tracked separately.
+
+Proposal `0202` adds a review-only bridge from SpecSpace-owned raw idea entry
+state into the existing real idea intake pipeline:
+
+```bash
+make real-idea-intake-from-entry-request \
+  SPECSPACE_REAL_IDEA_ENTRY_REQUESTS=<json>
+```
+
+The flow validates a submitted SpecSpace entry request, writes
+`specspace_real_idea_entry_request_import_preview.json`, materializes the
+selected request into `user_idea_intake_session.json`, and prepares
+`idea_intake_clarification_requests.json` plus `real_idea_answer_template.json`
+under `REAL_IDEA_SMOKE_RUN_DIR`.
+
+Raw idea text remains local-only. It can appear in
+`local_operator_user_idea_raw_input.json`, but preview/report artifacts only
+publish sanitized request metadata and a digest. Stale previews are rejected
+before materialization by checking source state and selected request digests.
+
+The slice does not execute prompt agents, infer missing event-storming structure
+with an LLM, mutate candidate or canonical specs, write Ontology packages,
+accept terms, approve candidates, create Git state, or publish read models.
+
 ## Real Idea Smoke Iteration Isolation
 
 Status: implemented in proposal `0192`.
