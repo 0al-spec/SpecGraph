@@ -66,6 +66,8 @@ def test_real_idea_interview_captures_incomplete_idea_without_public_raw_text(
     session = load_json(tmp_path / "user_idea_intake_session.json")
     report = load_json(tmp_path / "user_idea_intake_interview_report.json")
     assert raw_input["idea"]["text"] == raw_text
+    assert raw_input["local_only"] is True
+    assert raw_input["raw_text_published"] is False
     assert session["readiness"]["review_state"] == "intake_interview_review_required"
     assert report["summary"]["ready_for_event_storming_intake"] is False
     assert report["raw_input"]["local_only"] is True
@@ -595,6 +597,8 @@ def test_real_idea_intake_make_target_accepts_non_ascii_env_text(tmp_path: Path)
     session = load_json(session_output)
     report = load_json(report_output)
     assert raw_input["idea"]["text"] == idea_text
+    assert raw_input["local_only"] is True
+    assert raw_input["raw_text_published"] is False
     assert session["intent"]["summary"] == "Помощник по ремонту квартиры."
     assert session["workspace"]["candidate_id"] == "apartment-renovation-assistant"
     assert report["raw_input"]["local_only"] is True
