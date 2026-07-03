@@ -383,6 +383,23 @@ surfaces. The linked SpecSpace PR and CI evidence are curated cross-repo evidenc
 SpecGraph validates their evidence contract shape and links, but does not re-run
 the downstream UI implementation locally.
 
+Proposal `0202` adds a bridge from SpecSpace-owned raw idea entry state into
+real idea intake:
+
+```bash
+make real-idea-intake-from-entry-request \
+  SPECSPACE_REAL_IDEA_ENTRY_REQUESTS=<json>
+```
+
+The target validates one submitted entry request, writes
+`specspace_real_idea_entry_request_import_preview.json`, materializes
+`user_idea_intake_session.json`, and prepares clarification requests plus
+`real_idea_answer_template.json` under `REAL_IDEA_SMOKE_RUN_DIR`. Raw idea text
+stays local-only in `local_operator_user_idea_raw_input.json`; preview and
+report artifacts contain only sanitized request metadata and digests. The flow
+does not execute prompt agents, apply answers, mutate specs, write Ontology,
+accept terms, create Git state, or publish read models.
+
 Proposal `0163` adds `idea_to_spec_clarification_requests` as the unified
 read-only question/action surface:
 

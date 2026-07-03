@@ -104,6 +104,13 @@ SPECSPACE_REAL_IDEA_ANSWER_INTAKE_SESSION ?= $(REAL_IDEA_SMOKE_RUN_DIR)/user_ide
 SPECSPACE_REAL_IDEA_ANSWER_IMPORT_PREVIEW_OUTPUT ?= $(REAL_IDEA_SMOKE_RUN_DIR)/specspace_real_idea_answer_import_preview.json
 SPECSPACE_REAL_IDEA_VALIDATED_ANSWERS_OUTPUT ?= $(REAL_IDEA_SMOKE_RUN_DIR)/idea_intake_clarification_answers.json
 REAL_IDEA_ANSWER_CONTINUATION_REPORT_OUTPUT ?= $(REAL_IDEA_SMOKE_RUN_DIR)/real_idea_answer_continuation_report.json
+SPECSPACE_REAL_IDEA_ENTRY_REQUESTS ?= $(REAL_IDEA_SMOKE_RUN_DIR)/real_idea_entry_requests.json
+SPECSPACE_REAL_IDEA_ENTRY_WORKSPACE_ID ?=
+SPECSPACE_REAL_IDEA_ENTRY_WORKSPACE_ID_ARG := $(if $(strip $(SPECSPACE_REAL_IDEA_ENTRY_WORKSPACE_ID)),--workspace-id "$(SPECSPACE_REAL_IDEA_ENTRY_WORKSPACE_ID)",)
+SPECSPACE_REAL_IDEA_ENTRY_REQUEST_ID ?=
+SPECSPACE_REAL_IDEA_ENTRY_REQUEST_ID_ARG := $(if $(strip $(SPECSPACE_REAL_IDEA_ENTRY_REQUEST_ID)),--request-id "$(SPECSPACE_REAL_IDEA_ENTRY_REQUEST_ID)",)
+SPECSPACE_REAL_IDEA_ENTRY_IMPORT_PREVIEW_OUTPUT ?= $(REAL_IDEA_SMOKE_RUN_DIR)/specspace_real_idea_entry_request_import_preview.json
+REAL_IDEA_ENTRY_INTAKE_REPORT_OUTPUT ?= $(REAL_IDEA_SMOKE_RUN_DIR)/real_idea_entry_request_intake_report.json
 IDEA_EVENT_STORMING_INTAKE_SOURCE ?= tests/fixtures/idea_event_storming_intake/idea_ready.json
 IDEA_EVENT_STORMING_INTAKE_OUTPUT_DEFAULT := runs/idea_event_storming_intake.json
 IDEA_EVENT_STORMING_INTAKE_OUTPUT ?= $(IDEA_EVENT_STORMING_INTAKE_OUTPUT_DEFAULT)
@@ -355,6 +362,7 @@ PYTHON_TARGETS := viewer-surfaces dashboard backlog next-move spec-activity grap
 	real-idea-smoke real-idea-smoke-continue real-idea-smoke-idea-maturity \
 	real-idea-smoke-answer-template real-idea-smoke-validate-answers \
 	real-idea-smoke-materialize-answers \
+	specspace-real-idea-entry-import-preview real-idea-intake-from-entry-request \
 	user-idea-intake-source generic-idea-intake \
 	generic-idea-intake-session \
 	idea-event-storming-intake ontology-bound-candidate-graph-seed \
@@ -440,6 +448,7 @@ help:
 			'  make real-idea-smoke-answer-template Build typed operator answer template' \
 			'  make real-idea-smoke-validate-answers REAL_IDEA_ANSWER_AUTHORING_ANSWERS=<json>' \
 			'  make real-idea-smoke-materialize-answers REAL_IDEA_ANSWER_AUTHORING_ANSWERS=<json>' \
+			'  make real-idea-intake-from-entry-request SPECSPACE_REAL_IDEA_ENTRY_REQUESTS=<json>' \
 			'  make user-idea-intake-session USER_IDEA_INTAKE_SESSION_INPUT=<json>' \
 			'  make intake-session-candidate-source INTAKE_SESSION_CANDIDATE_SOURCE_INPUT=<json>' \
 			'  make user-idea-intake-source USER_IDEA_INTAKE_SOURCE=<json>' \
@@ -740,6 +749,38 @@ real-idea-smoke-validate-answers:
 real-idea-smoke-materialize-answers:
 	@test -n "$(strip $(REAL_IDEA_ANSWER_AUTHORING_ANSWERS))" || (printf '%s\n' 'REAL_IDEA_ANSWER_AUTHORING_ANSWERS=<json> is required for answer materialization.' >&2; exit 2)
 	@$(PYTHON) tools/real_idea_answer_authoring.py materialize --run-dir "$(REAL_IDEA_SMOKE_RUN_DIR)" --stage "$(REAL_IDEA_ANSWER_AUTHORING_STAGE)" $(REAL_IDEA_ANSWER_AUTHORING_REQUESTS_ARG) --answers "$(REAL_IDEA_ANSWER_AUTHORING_ANSWERS)" --answer-set-output "$(REAL_IDEA_ANSWER_SET_OUTPUT)" $(REAL_IDEA_ANSWER_VALIDATED_OUTPUT_ARG) --report "$(REAL_IDEA_ANSWER_AUTHORING_REPORT_OUTPUT)" --strict
+
+.PHONY: specspace-real-idea-entry-import-preview
+specspace-real-idea-entry-import-preview:
+	@$(PYTHON) tools/real_idea_entry_request_import.py preview \
+		--specspace-entry-requests "$(SPECSPACE_REAL_IDEA_ENTRY_REQUESTS)" \
+		$(SPECSPACE_REAL_IDEA_ENTRY_WORKSPACE_ID_ARG) \
+		$(SPECSPACE_REAL_IDEA_ENTRY_REQUEST_ID_ARG) \
+		--output "$(SPECSPACE_REAL_IDEA_ENTRY_IMPORT_PREVIEW_OUTPUT)" \
+		--strict
+
+.PHONY: real-idea-intake-from-entry-request
+real-idea-intake-from-entry-request:
+	@$(MAKE) specspace-real-idea-entry-import-preview
+	@$(PYTHON) tools/real_idea_entry_request_import.py materialize \
+		--specspace-entry-requests "$(SPECSPACE_REAL_IDEA_ENTRY_REQUESTS)" \
+		--import-preview "$(SPECSPACE_REAL_IDEA_ENTRY_IMPORT_PREVIEW_OUTPUT)" \
+		--run-dir "$(REAL_IDEA_SMOKE_RUN_DIR)" \
+		--raw-output "$(REAL_IDEA_SMOKE_RUN_DIR)/local_operator_user_idea_raw_input.json" \
+		--session-output "$(REAL_IDEA_SMOKE_RUN_DIR)/user_idea_intake_session.json" \
+		--source-output "$(REAL_IDEA_SMOKE_RUN_DIR)/user_idea_intake_source.json" \
+		--interview-report-output "$(REAL_IDEA_SMOKE_RUN_DIR)/user_idea_intake_interview_report.json" \
+		--output "$(REAL_IDEA_ENTRY_INTAKE_REPORT_OUTPUT)" \
+		--strict
+	@$(MAKE) real-idea-intake-clarification-requests \
+		REAL_IDEA_INTAKE_REFRESH=0 \
+		USER_IDEA_INTAKE_SESSION_OUTPUT="$(REAL_IDEA_SMOKE_RUN_DIR)/user_idea_intake_session.json" \
+		IDEA_INTAKE_CLARIFICATION_REQUESTS_OUTPUT="$(REAL_IDEA_SMOKE_RUN_DIR)/idea_intake_clarification_requests.json"
+	@$(MAKE) real-idea-smoke-answer-template \
+		REAL_IDEA_SMOKE_RUN_DIR="$(REAL_IDEA_SMOKE_RUN_DIR)" \
+		REAL_IDEA_ANSWER_AUTHORING_REQUESTS="$(REAL_IDEA_SMOKE_RUN_DIR)/idea_intake_clarification_requests.json" \
+		REAL_IDEA_ANSWER_TEMPLATE_OUTPUT="$(REAL_IDEA_ANSWER_TEMPLATE_OUTPUT)" \
+		REAL_IDEA_ANSWER_AUTHORING_REPORT_OUTPUT="$(REAL_IDEA_ANSWER_AUTHORING_REPORT_OUTPUT)"
 
 .PHONY: specspace-real-idea-answer-import-preview
 specspace-real-idea-answer-import-preview:
