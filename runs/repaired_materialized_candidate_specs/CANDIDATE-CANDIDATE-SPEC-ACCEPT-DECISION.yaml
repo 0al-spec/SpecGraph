@@ -1,0 +1,60 @@
+id: CANDIDATE-CANDIDATE-SPEC-ACCEPT-DECISION
+title: Accept Decision
+kind: spec
+created_at: '2026-07-02T22:18:23.778366+00:00'
+updated_at: '2026-07-02T22:18:23.778366+00:00'
+status: stub
+maturity: 0.0
+depends_on: []
+relates_to: []
+inputs:
+- runs/repaired_candidate_repair_loop_report.json#revised_candidate_graph_preview
+- runs/candidate_approval_decision.json#promotion_request.paths
+outputs:
+- runs/repaired_materialized_candidate_specs/CANDIDATE-CANDIDATE-SPEC-ACCEPT-DECISION.yaml
+allowed_paths:
+- runs/repaired_materialized_candidate_specs/CANDIDATE-CANDIDATE-SPEC-ACCEPT-DECISION.yaml
+acceptance:
+- 'Reviewer can verify: The product must support `Accept Decision` and record Decision Accepted.'
+acceptance_evidence: []
+prompt: The product must support `Accept Decision` and record Decision Accepted.
+specification:
+  materialization_mode: candidate_review_preview
+  candidate_source_id: candidate-spec.accept-decision
+  candidate_kind: behavior_requirement
+  description: The product must support `Accept Decision` and record Decision Accepted.
+  source_event_refs:
+  - command.accept-decision
+  - event.decision-accepted
+  ontology_refs:
+  - ontology://org.0al.specgraph.core/0.1.0/classes/Requirement
+  - ontology://org.0al.specgraph.core/0.1.0/classes/Node
+  domain_refs:
+  - domain.team_decision_log
+  context_refs:
+  - context.idea_to_spec
+  - context.team_decision_management
+  requirements:
+  - acceptance_criteria_refs:
+    - ac.accept-decision.reviewable
+    id: req.accept-decision.main
+    ontology_refs:
+    - ontology://org.0al.specgraph.core/0.1.0/classes/Requirement
+    - ontology://org.0al.specgraph.core/0.1.0/classes/AcceptanceCriterion
+    source_event_refs:
+    - command.accept-decision
+    - event.decision-accepted
+    statement: The product must support `Accept Decision` and record Decision Accepted.
+  acceptance_criteria:
+  - id: ac.accept-decision.reviewable
+    ontology_refs:
+    - ontology://org.0al.specgraph.core/0.1.0/classes/Requirement
+    - ontology://org.0al.specgraph.core/0.1.0/classes/AcceptanceCriterion
+    source_event_refs:
+    - command.accept-decision
+    - event.decision-accepted
+    statement: 'Reviewer can verify: The product must support `Accept Decision` and record Decision Accepted.'
+  claims: []
+  gaps: []
+gate_state: review_pending
+required_human_action: review_candidate_spec_materialization
