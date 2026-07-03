@@ -467,6 +467,7 @@ def test_real_idea_intake_active_candidate_target_builds_seed_first(
         assert load_json(ROOT / candidate_graph)["summary"]["node_count"] > 0
         active = load_json(ROOT / active_candidate)
         assert active["summary"]["candidate_id"] == "store-unit-price-helper"
+        assert "active_candidate_project_mismatch" not in json.dumps(active)
         assert "idea_event_storming_seed_contract_invalid" not in json.dumps(
             load_json(ROOT / intake)
         )
@@ -865,6 +866,7 @@ def test_real_idea_smoke_continue_applies_answers_without_refresh_flag(tmp_path:
         )
         assert active["artifact_kind"] == "active_idea_to_spec_candidate"
         assert active["summary"]["candidate_id"] == "team-decision-log"
+        assert "active_candidate_project_mismatch" not in json.dumps(active)
         assert summary["artifacts"]["active_candidate"]["present"] is True
         assert summary["summary"]["candidate_id"] == "team-decision-log"
     finally:

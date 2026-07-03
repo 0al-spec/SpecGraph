@@ -227,6 +227,8 @@ def test_entry_request_materialization_writes_local_raw_but_public_report_is_san
     assert raw_input["idea"]["text"] == "A small app for tracking pantry prices."
     assert raw_input["local_only"] is True
     assert raw_input["raw_text_published"] is False
+    assert raw_input["active_frame_hints"]["project"] == "PantryPriceHelper"
+    assert session["active_frame_hints"]["project"] == "PantryPriceHelper"
     assert session["intent"]["raw_text_published"] is False
     assert report["privacy_boundary"]["raw_idea_text_published"] is False
     assert "A small app for tracking pantry prices." not in json.dumps(report)
