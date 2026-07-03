@@ -1,0 +1,1184 @@
+{
+  "active_frame": {
+    "context_refs": [
+      "context.idea_to_spec",
+      "context.team_decision_management"
+    ],
+    "domain_refs": [
+      "domain.team_decision_log"
+    ],
+    "lifecycle_phase": "idea_intake",
+    "model_applicability_refs": [
+      "model-applicability://specgraph-core/product-spec-mvp"
+    ],
+    "ontology_layer_refs": [
+      "objective",
+      "mechanics",
+      "execution"
+    ],
+    "ontology_refs": [
+      "ontology://specgraph-core"
+    ],
+    "project": "TeamDecisionLog",
+    "subsystem": "product_specification"
+  },
+  "artifact_kind": "candidate_spec_graph",
+  "authority_boundary": {
+    "may_create_branch_or_commit": false,
+    "may_execute_prompt_agent": false,
+    "may_mark_candidate_graph_accepted": false,
+    "may_mutate_canonical_specs": false,
+    "may_write_ontology_lockfile": false,
+    "may_write_ontology_package": false
+  },
+  "canonical_mutations_allowed": false,
+  "contract_ref": "specgraph.idea-to-spec.candidate-spec-graph.v0.1",
+  "edges": [
+    {
+      "derivation": {
+        "kind": "event_storming_product_boundary_decomposition",
+        "source": "ontology_bound_candidate_graph_seed"
+      },
+      "from": "candidate-spec.product-boundary",
+      "id": "edge.product-boundary.record-decision",
+      "relation": "decomposes_to",
+      "source_event_refs": [
+        "command.record-decision",
+        "event.decision-recorded"
+      ],
+      "to": "candidate-spec.record-decision"
+    },
+    {
+      "derivation": {
+        "kind": "event_storming_product_boundary_decomposition",
+        "source": "ontology_bound_candidate_graph_seed"
+      },
+      "from": "candidate-spec.product-boundary",
+      "id": "edge.product-boundary.add-option",
+      "relation": "decomposes_to",
+      "source_event_refs": [
+        "command.add-option",
+        "event.option-considered"
+      ],
+      "to": "candidate-spec.add-option"
+    },
+    {
+      "derivation": {
+        "kind": "event_storming_product_boundary_decomposition",
+        "source": "ontology_bound_candidate_graph_seed"
+      },
+      "from": "candidate-spec.product-boundary",
+      "id": "edge.product-boundary.accept-decision",
+      "relation": "decomposes_to",
+      "source_event_refs": [
+        "command.accept-decision",
+        "event.decision-accepted"
+      ],
+      "to": "candidate-spec.accept-decision"
+    },
+    {
+      "derivation": {
+        "kind": "event_storming_product_boundary_decomposition",
+        "source": "ontology_bound_candidate_graph_seed"
+      },
+      "from": "candidate-spec.product-boundary",
+      "id": "edge.product-boundary.accepted-decision-owner",
+      "relation": "decomposes_to",
+      "source_event_refs": [
+        "constraint.accepted-decision-owner"
+      ],
+      "to": "candidate-spec.accepted-decision-owner"
+    },
+    {
+      "derivation": {
+        "kind": "event_storming_product_boundary_decomposition",
+        "source": "ontology_bound_candidate_graph_seed"
+      },
+      "from": "candidate-spec.product-boundary",
+      "id": "edge.product-boundary.accepted-decision-completeness",
+      "relation": "decomposes_to",
+      "source_event_refs": [
+        "policy.accepted-decision-completeness",
+        "event.decision-accepted",
+        "command.accept-decision"
+      ],
+      "to": "candidate-spec.accepted-decision-completeness"
+    },
+    {
+      "actor_ref": "actor.team-member",
+      "command_ref": "command.record-decision",
+      "derivation": {
+        "kind": "event_storming_actor_command_relation",
+        "source": "ontology_bound_candidate_graph_seed"
+      },
+      "from": "candidate-spec.product-boundary",
+      "id": "edge.actor.actor-team-member.record-decision",
+      "materialization_dependency": false,
+      "relation": "actor_triggers_command",
+      "review_only": true,
+      "source_event_refs": [
+        "actor.team-member",
+        "command.record-decision"
+      ],
+      "to": "candidate-spec.record-decision"
+    },
+    {
+      "command_ref": "command.record-decision",
+      "derivation": {
+        "kind": "event_storming_command_event_relation",
+        "source": "ontology_bound_candidate_graph_seed"
+      },
+      "event_ref": "event.decision-recorded",
+      "from": "candidate-spec.record-decision",
+      "id": "edge.command.record-decision.event-decision-recorded",
+      "materialization_dependency": false,
+      "relation": "command_emits_event",
+      "review_only": true,
+      "source_event_refs": [
+        "command.record-decision",
+        "event.decision-recorded"
+      ],
+      "to": "candidate-spec.product-boundary"
+    },
+    {
+      "actor_ref": "actor.team-member",
+      "command_ref": "command.add-option",
+      "derivation": {
+        "kind": "event_storming_actor_command_relation",
+        "source": "ontology_bound_candidate_graph_seed"
+      },
+      "from": "candidate-spec.product-boundary",
+      "id": "edge.actor.actor-team-member.add-option",
+      "materialization_dependency": false,
+      "relation": "actor_triggers_command",
+      "review_only": true,
+      "source_event_refs": [
+        "actor.team-member",
+        "command.add-option"
+      ],
+      "to": "candidate-spec.add-option"
+    },
+    {
+      "command_ref": "command.add-option",
+      "derivation": {
+        "kind": "event_storming_command_event_relation",
+        "source": "ontology_bound_candidate_graph_seed"
+      },
+      "event_ref": "event.option-considered",
+      "from": "candidate-spec.add-option",
+      "id": "edge.command.add-option.event-option-considered",
+      "materialization_dependency": false,
+      "relation": "command_emits_event",
+      "review_only": true,
+      "source_event_refs": [
+        "command.add-option",
+        "event.option-considered"
+      ],
+      "to": "candidate-spec.product-boundary"
+    },
+    {
+      "actor_ref": "actor.decision-owner",
+      "command_ref": "command.accept-decision",
+      "derivation": {
+        "kind": "event_storming_actor_command_relation",
+        "source": "ontology_bound_candidate_graph_seed"
+      },
+      "from": "candidate-spec.product-boundary",
+      "id": "edge.actor.actor-decision-owner.accept-decision",
+      "materialization_dependency": false,
+      "relation": "actor_triggers_command",
+      "review_only": true,
+      "source_event_refs": [
+        "actor.decision-owner",
+        "command.accept-decision"
+      ],
+      "to": "candidate-spec.accept-decision"
+    },
+    {
+      "command_ref": "command.accept-decision",
+      "derivation": {
+        "kind": "event_storming_command_event_relation",
+        "source": "ontology_bound_candidate_graph_seed"
+      },
+      "event_ref": "event.decision-accepted",
+      "from": "candidate-spec.accept-decision",
+      "id": "edge.command.accept-decision.event-decision-accepted",
+      "materialization_dependency": false,
+      "relation": "command_emits_event",
+      "review_only": true,
+      "source_event_refs": [
+        "command.accept-decision",
+        "event.decision-accepted"
+      ],
+      "to": "candidate-spec.product-boundary"
+    },
+    {
+      "command_ref": "command.accept-decision",
+      "derivation": {
+        "kind": "event_storming_policy_command_relation",
+        "source": "ontology_bound_candidate_graph_seed"
+      },
+      "from": "candidate-spec.accepted-decision-completeness",
+      "id": "edge.policy.accepted-decision-completeness.accept-decision",
+      "materialization_dependency": false,
+      "policy_ref": "policy.accepted-decision-completeness",
+      "relation": "policy_applies_to_command",
+      "review_only": true,
+      "source_event_refs": [
+        "policy.accepted-decision-completeness",
+        "command.accept-decision"
+      ],
+      "to": "candidate-spec.accept-decision"
+    },
+    {
+      "command_ref": "command.accept-decision",
+      "derivation": {
+        "kind": "event_storming_event_policy_relation",
+        "source": "ontology_bound_candidate_graph_seed"
+      },
+      "event_ref": "event.decision-accepted",
+      "from": "candidate-spec.accept-decision",
+      "id": "edge.event.event-decision-accepted.accept-decision.accepted-decision-completeness",
+      "materialization_dependency": false,
+      "policy_ref": "policy.accepted-decision-completeness",
+      "relation": "event_informs_policy",
+      "review_only": true,
+      "source_event_refs": [
+        "command.accept-decision",
+        "event.decision-accepted",
+        "policy.accepted-decision-completeness"
+      ],
+      "to": "candidate-spec.accepted-decision-completeness"
+    }
+  ],
+  "findings": [],
+  "generated_at": "2026-07-02T22:17:50.260876+00:00",
+  "materialization_intent": {
+    "may_create_branch_or_commit": false,
+    "may_write_canonical_specs": false,
+    "state": "review_only",
+    "target": "pre_sib_coherence_review"
+  },
+  "nodes": [
+    {
+      "acceptance_criteria": [
+        {
+          "id": "ac.product-boundary.reviewable",
+          "ontology_refs": [
+            "ontology://org.0al.specgraph.core/0.1.0/classes/Requirement",
+            "ontology://org.0al.specgraph.core/0.1.0/classes/AcceptanceCriterion"
+          ],
+          "source_event_refs": [
+            "actor.decision-owner",
+            "actor.team-member",
+            "command.accept-decision",
+            "command.add-option",
+            "command.record-decision",
+            "constraint.accepted-decision-owner",
+            "event.decision-accepted",
+            "event.decision-recorded",
+            "event.evidence-attached",
+            "event.option-considered",
+            "policy.accepted-decision-completeness"
+          ],
+          "statement": "Reviewer can verify: The promoted slice records decisions, options, rationale, evidence, and owners without claiming review triggers or supersession/conflict relations as materialized behavior."
+        }
+      ],
+      "candidate_gap_resolutions": [
+        {
+          "answer_kind": "answer_question",
+          "confidence": "explicit_target",
+          "gap_id": "gap.risk.a-decision-without-rationale-can-be-reused-later-as-if-it-were-fully-justified",
+          "gap_kind": "risk_requires_review",
+          "match": {
+            "answer_kind": "answer_question",
+            "confidence": "explicit_target",
+            "gap_id": "gap.risk.a-decision-without-rationale-can-be-reused-later-as-if-it-were-fully-justified",
+            "match_kind": "target_ref",
+            "node_id": "candidate-spec.product-boundary",
+            "request_id": "clarification.candidate-gap.candidate-spec-product-boundary-gaps-gap-risk-a-decision-without-rationale-can-be-reused-later-as-if-it-were-fully-justified",
+            "target_ref": "candidate-spec.product-boundary.gaps.gap.risk.a-decision-without-rationale-can-be-reused-later-as-if-it-were-fully-justified"
+          },
+          "match_kind": "target_ref",
+          "request_id": "clarification.candidate-gap.candidate-spec-product-boundary-gaps-gap-risk-a-decision-without-rationale-can-be-reused-later-as-if-it-were-fully-justified",
+          "resolution_kind": "risk_accepted",
+          "resolution_preview": {
+            "answer_kind": "answer_question",
+            "bucket": "other",
+            "request_id": "clarification.candidate-gap.candidate-spec-product-boundary-gaps-gap-risk-a-decision-without-rationale-can-be-reused-later-as-if-it-were-fully-justified",
+            "request_kind": "candidate_gap",
+            "target_artifact": "runs/candidate_spec_graph.json",
+            "target_ref": "candidate-spec.product-boundary.gaps.gap.risk.a-decision-without-rationale-can-be-reused-later-as-if-it-were-fully-justified",
+            "value": {
+              "evidence_refs": [
+                "risk.decision-without-rationale",
+                "constraint.accepted-decision-owner",
+                "policy.accepted-decision-completeness"
+              ],
+              "reason": "Accepted decisions require owner, rationale, and evidence references before they can be recorded. The residual risk remains visible in review but is accepted for this candidate preview.",
+              "resolution": "risk_accepted"
+            }
+          },
+          "statement": "A decision without rationale can be reused later as if it were fully justified."
+        }
+      ],
+      "claims": [],
+      "context_refs": [
+        "context.idea_to_spec",
+        "context.team_decision_management"
+      ],
+      "description": "Build a Team Decision Log slice that records decisions, options, rationale, evidence, and owners.",
+      "domain_refs": [
+        "domain.team_decision_log"
+      ],
+      "gaps": [],
+      "id": "candidate-spec.product-boundary",
+      "kind": "product_spec_boundary",
+      "model_applicability_refs": [
+        "model-applicability://specgraph-core/product-spec-mvp"
+      ],
+      "ontology_gap_resolutions": [
+        {
+          "confidence": "explicit_target",
+          "decision_id": "product-ontology-decision.clarification-candidate-gap-candidate-spec-product-boundary-gaps-ontology-gap-team-member.13",
+          "decision_term": "Team Member",
+          "gap_id": "ontology-gap.team-member",
+          "match": {
+            "confidence": "explicit_target",
+            "decision_id": "product-ontology-decision.clarification-candidate-gap-candidate-spec-product-boundary-gaps-ontology-gap-team-member.13",
+            "decision_term": "Team Member",
+            "gap_id": "ontology-gap.team-member",
+            "gap_term": "Team Member",
+            "match_kind": "target_ref",
+            "node_id": "candidate-spec.product-boundary",
+            "normalized_decision_term": "team member",
+            "normalized_gap_term": "team member"
+          },
+          "match_kind": "target_ref",
+          "resolution_preview": {
+            "answer_kind": "propose_project_local_term",
+            "decision": "project_local_term",
+            "decision_id": "product-ontology-decision.clarification-candidate-gap-candidate-spec-product-boundary-gaps-ontology-gap-team-member.13",
+            "request_id": "clarification.candidate-gap.candidate-spec-product-boundary-gaps-ontology-gap-team-member",
+            "target_artifact": "runs/candidate_spec_graph.json",
+            "target_ref": "candidate-spec.product-boundary.gaps.ontology-gap.team-member",
+            "term": "Team Member",
+            "term_scope": "project_local"
+          },
+          "source_ref": "actor.team-member",
+          "term": "Team Member"
+        },
+        {
+          "confidence": "explicit_target",
+          "decision_id": "product-ontology-decision.clarification-candidate-gap-candidate-spec-product-boundary-gaps-ontology-gap-decision-owner.7",
+          "decision_term": "Decision Owner",
+          "gap_id": "ontology-gap.decision-owner",
+          "match": {
+            "confidence": "explicit_target",
+            "decision_id": "product-ontology-decision.clarification-candidate-gap-candidate-spec-product-boundary-gaps-ontology-gap-decision-owner.7",
+            "decision_term": "Decision Owner",
+            "gap_id": "ontology-gap.decision-owner",
+            "gap_term": "Decision Owner",
+            "match_kind": "target_ref",
+            "node_id": "candidate-spec.product-boundary",
+            "normalized_decision_term": "decision owner",
+            "normalized_gap_term": "decision owner"
+          },
+          "match_kind": "target_ref",
+          "resolution_preview": {
+            "answer_kind": "propose_project_local_term",
+            "decision": "project_local_term",
+            "decision_id": "product-ontology-decision.clarification-candidate-gap-candidate-spec-product-boundary-gaps-ontology-gap-decision-owner.7",
+            "request_id": "clarification.candidate-gap.candidate-spec-product-boundary-gaps-ontology-gap-decision-owner",
+            "target_artifact": "runs/candidate_spec_graph.json",
+            "target_ref": "candidate-spec.product-boundary.gaps.ontology-gap.decision-owner",
+            "term": "Decision Owner",
+            "term_scope": "project_local"
+          },
+          "source_ref": "actor.decision-owner",
+          "term": "Decision Owner"
+        },
+        {
+          "confidence": "explicit_target",
+          "decision_id": "product-ontology-decision.clarification-candidate-gap-candidate-spec-product-boundary-gaps-ontology-gap-decision-recorded.8",
+          "decision_term": "Decision Recorded",
+          "gap_id": "ontology-gap.decision-recorded",
+          "match": {
+            "confidence": "explicit_target",
+            "decision_id": "product-ontology-decision.clarification-candidate-gap-candidate-spec-product-boundary-gaps-ontology-gap-decision-recorded.8",
+            "decision_term": "Decision Recorded",
+            "gap_id": "ontology-gap.decision-recorded",
+            "gap_term": "Decision Recorded",
+            "match_kind": "target_ref",
+            "node_id": "candidate-spec.product-boundary",
+            "normalized_decision_term": "decision recorded",
+            "normalized_gap_term": "decision recorded"
+          },
+          "match_kind": "target_ref",
+          "resolution_preview": {
+            "answer_kind": "propose_project_local_term",
+            "decision": "project_local_term",
+            "decision_id": "product-ontology-decision.clarification-candidate-gap-candidate-spec-product-boundary-gaps-ontology-gap-decision-recorded.8",
+            "request_id": "clarification.candidate-gap.candidate-spec-product-boundary-gaps-ontology-gap-decision-recorded",
+            "target_artifact": "runs/candidate_spec_graph.json",
+            "target_ref": "candidate-spec.product-boundary.gaps.ontology-gap.decision-recorded",
+            "term": "Decision Recorded",
+            "term_scope": "project_local"
+          },
+          "source_ref": "event.decision-recorded",
+          "term": "Decision Recorded"
+        },
+        {
+          "confidence": "explicit_target",
+          "decision_id": "product-ontology-decision.clarification-candidate-gap-candidate-spec-product-boundary-gaps-ontology-gap-option-considered.11",
+          "decision_term": "Option Considered",
+          "gap_id": "ontology-gap.option-considered",
+          "match": {
+            "confidence": "explicit_target",
+            "decision_id": "product-ontology-decision.clarification-candidate-gap-candidate-spec-product-boundary-gaps-ontology-gap-option-considered.11",
+            "decision_term": "Option Considered",
+            "gap_id": "ontology-gap.option-considered",
+            "gap_term": "Option Considered",
+            "match_kind": "target_ref",
+            "node_id": "candidate-spec.product-boundary",
+            "normalized_decision_term": "option considered",
+            "normalized_gap_term": "option considered"
+          },
+          "match_kind": "target_ref",
+          "resolution_preview": {
+            "answer_kind": "propose_project_local_term",
+            "decision": "project_local_term",
+            "decision_id": "product-ontology-decision.clarification-candidate-gap-candidate-spec-product-boundary-gaps-ontology-gap-option-considered.11",
+            "request_id": "clarification.candidate-gap.candidate-spec-product-boundary-gaps-ontology-gap-option-considered",
+            "target_artifact": "runs/candidate_spec_graph.json",
+            "target_ref": "candidate-spec.product-boundary.gaps.ontology-gap.option-considered",
+            "term": "Option Considered",
+            "term_scope": "project_local"
+          },
+          "source_ref": "event.option-considered",
+          "term": "Option Considered"
+        },
+        {
+          "confidence": "explicit_target",
+          "decision_id": "product-ontology-decision.clarification-candidate-gap-candidate-spec-product-boundary-gaps-ontology-gap-evidence-attached.10",
+          "decision_term": "Evidence Attached",
+          "gap_id": "ontology-gap.evidence-attached",
+          "match": {
+            "confidence": "explicit_target",
+            "decision_id": "product-ontology-decision.clarification-candidate-gap-candidate-spec-product-boundary-gaps-ontology-gap-evidence-attached.10",
+            "decision_term": "Evidence Attached",
+            "gap_id": "ontology-gap.evidence-attached",
+            "gap_term": "Evidence Attached",
+            "match_kind": "target_ref",
+            "node_id": "candidate-spec.product-boundary",
+            "normalized_decision_term": "evidence attached",
+            "normalized_gap_term": "evidence attached"
+          },
+          "match_kind": "target_ref",
+          "resolution_preview": {
+            "answer_kind": "propose_project_local_term",
+            "decision": "project_local_term",
+            "decision_id": "product-ontology-decision.clarification-candidate-gap-candidate-spec-product-boundary-gaps-ontology-gap-evidence-attached.10",
+            "request_id": "clarification.candidate-gap.candidate-spec-product-boundary-gaps-ontology-gap-evidence-attached",
+            "target_artifact": "runs/candidate_spec_graph.json",
+            "target_ref": "candidate-spec.product-boundary.gaps.ontology-gap.evidence-attached",
+            "term": "Evidence Attached",
+            "term_scope": "project_local"
+          },
+          "source_ref": "event.evidence-attached",
+          "term": "Evidence Attached"
+        },
+        {
+          "confidence": "explicit_target",
+          "decision_id": "product-ontology-decision.clarification-candidate-gap-candidate-spec-product-boundary-gaps-ontology-gap-decision-accepted.6",
+          "decision_term": "Decision Accepted",
+          "gap_id": "ontology-gap.decision-accepted",
+          "match": {
+            "confidence": "explicit_target",
+            "decision_id": "product-ontology-decision.clarification-candidate-gap-candidate-spec-product-boundary-gaps-ontology-gap-decision-accepted.6",
+            "decision_term": "Decision Accepted",
+            "gap_id": "ontology-gap.decision-accepted",
+            "gap_term": "Decision Accepted",
+            "match_kind": "target_ref",
+            "node_id": "candidate-spec.product-boundary",
+            "normalized_decision_term": "decision accepted",
+            "normalized_gap_term": "decision accepted"
+          },
+          "match_kind": "target_ref",
+          "resolution_preview": {
+            "answer_kind": "propose_project_local_term",
+            "decision": "project_local_term",
+            "decision_id": "product-ontology-decision.clarification-candidate-gap-candidate-spec-product-boundary-gaps-ontology-gap-decision-accepted.6",
+            "request_id": "clarification.candidate-gap.candidate-spec-product-boundary-gaps-ontology-gap-decision-accepted",
+            "target_artifact": "runs/candidate_spec_graph.json",
+            "target_ref": "candidate-spec.product-boundary.gaps.ontology-gap.decision-accepted",
+            "term": "Decision Accepted",
+            "term_scope": "project_local"
+          },
+          "source_ref": "event.decision-accepted",
+          "term": "Decision Accepted"
+        },
+        {
+          "confidence": "explicit_target",
+          "decision_id": "product-ontology-decision.clarification-candidate-gap-candidate-spec-product-boundary-gaps-ontology-gap-record-decision.12",
+          "decision_term": "Record Decision",
+          "gap_id": "ontology-gap.record-decision",
+          "match": {
+            "confidence": "explicit_target",
+            "decision_id": "product-ontology-decision.clarification-candidate-gap-candidate-spec-product-boundary-gaps-ontology-gap-record-decision.12",
+            "decision_term": "Record Decision",
+            "gap_id": "ontology-gap.record-decision",
+            "gap_term": "Record Decision",
+            "match_kind": "target_ref",
+            "node_id": "candidate-spec.product-boundary",
+            "normalized_decision_term": "record decision",
+            "normalized_gap_term": "record decision"
+          },
+          "match_kind": "target_ref",
+          "resolution_preview": {
+            "answer_kind": "propose_project_local_term",
+            "decision": "project_local_term",
+            "decision_id": "product-ontology-decision.clarification-candidate-gap-candidate-spec-product-boundary-gaps-ontology-gap-record-decision.12",
+            "request_id": "clarification.candidate-gap.candidate-spec-product-boundary-gaps-ontology-gap-record-decision",
+            "target_artifact": "runs/candidate_spec_graph.json",
+            "target_ref": "candidate-spec.product-boundary.gaps.ontology-gap.record-decision",
+            "term": "Record Decision",
+            "term_scope": "project_local"
+          },
+          "source_ref": "command.record-decision",
+          "term": "Record Decision"
+        },
+        {
+          "confidence": "explicit_target",
+          "decision_id": "product-ontology-decision.clarification-candidate-gap-candidate-spec-product-boundary-gaps-ontology-gap-add-considered-option.5",
+          "decision_term": "Add Considered Option",
+          "gap_id": "ontology-gap.add-considered-option",
+          "match": {
+            "confidence": "explicit_target",
+            "decision_id": "product-ontology-decision.clarification-candidate-gap-candidate-spec-product-boundary-gaps-ontology-gap-add-considered-option.5",
+            "decision_term": "Add Considered Option",
+            "gap_id": "ontology-gap.add-considered-option",
+            "gap_term": "Add Considered Option",
+            "match_kind": "target_ref",
+            "node_id": "candidate-spec.product-boundary",
+            "normalized_decision_term": "add considered option",
+            "normalized_gap_term": "add considered option"
+          },
+          "match_kind": "target_ref",
+          "resolution_preview": {
+            "answer_kind": "propose_project_local_term",
+            "decision": "project_local_term",
+            "decision_id": "product-ontology-decision.clarification-candidate-gap-candidate-spec-product-boundary-gaps-ontology-gap-add-considered-option.5",
+            "request_id": "clarification.candidate-gap.candidate-spec-product-boundary-gaps-ontology-gap-add-considered-option",
+            "target_artifact": "runs/candidate_spec_graph.json",
+            "target_ref": "candidate-spec.product-boundary.gaps.ontology-gap.add-considered-option",
+            "term": "Add Considered Option",
+            "term_scope": "project_local"
+          },
+          "source_ref": "command.add-option",
+          "term": "Add Considered Option"
+        },
+        {
+          "confidence": "explicit_target",
+          "decision_id": "product-ontology-decision.clarification-candidate-gap-candidate-spec-product-boundary-gaps-ontology-gap-accept-decision.3",
+          "decision_term": "Accept Decision",
+          "gap_id": "ontology-gap.accept-decision",
+          "match": {
+            "confidence": "explicit_target",
+            "decision_id": "product-ontology-decision.clarification-candidate-gap-candidate-spec-product-boundary-gaps-ontology-gap-accept-decision.3",
+            "decision_term": "Accept Decision",
+            "gap_id": "ontology-gap.accept-decision",
+            "gap_term": "Accept Decision",
+            "match_kind": "target_ref",
+            "node_id": "candidate-spec.product-boundary",
+            "normalized_decision_term": "accept decision",
+            "normalized_gap_term": "accept decision"
+          },
+          "match_kind": "target_ref",
+          "resolution_preview": {
+            "answer_kind": "propose_project_local_term",
+            "decision": "project_local_term",
+            "decision_id": "product-ontology-decision.clarification-candidate-gap-candidate-spec-product-boundary-gaps-ontology-gap-accept-decision.3",
+            "request_id": "clarification.candidate-gap.candidate-spec-product-boundary-gaps-ontology-gap-accept-decision",
+            "target_artifact": "runs/candidate_spec_graph.json",
+            "target_ref": "candidate-spec.product-boundary.gaps.ontology-gap.accept-decision",
+            "term": "Accept Decision",
+            "term_scope": "project_local"
+          },
+          "source_ref": "command.accept-decision",
+          "term": "Accept Decision"
+        },
+        {
+          "confidence": "explicit_target",
+          "decision_id": "product-ontology-decision.clarification-candidate-gap-candidate-spec-product-boundary-gaps-ontology-gap-accepted-decision-completeness.4",
+          "decision_term": "Accepted Decision Completeness",
+          "gap_id": "ontology-gap.accepted-decision-completeness",
+          "match": {
+            "confidence": "explicit_target",
+            "decision_id": "product-ontology-decision.clarification-candidate-gap-candidate-spec-product-boundary-gaps-ontology-gap-accepted-decision-completeness.4",
+            "decision_term": "Accepted Decision Completeness",
+            "gap_id": "ontology-gap.accepted-decision-completeness",
+            "gap_term": "Accepted Decision Completeness",
+            "match_kind": "target_ref",
+            "node_id": "candidate-spec.product-boundary",
+            "normalized_decision_term": "accepted decision completeness",
+            "normalized_gap_term": "accepted decision completeness"
+          },
+          "match_kind": "target_ref",
+          "resolution_preview": {
+            "answer_kind": "propose_project_local_term",
+            "decision": "project_local_term",
+            "decision_id": "product-ontology-decision.clarification-candidate-gap-candidate-spec-product-boundary-gaps-ontology-gap-accepted-decision-completeness.4",
+            "request_id": "clarification.candidate-gap.candidate-spec-product-boundary-gaps-ontology-gap-accepted-decision-completeness",
+            "target_artifact": "runs/candidate_spec_graph.json",
+            "target_ref": "candidate-spec.product-boundary.gaps.ontology-gap.accepted-decision-completeness",
+            "term": "Accepted Decision Completeness",
+            "term_scope": "project_local"
+          },
+          "source_ref": "policy.accepted-decision-completeness",
+          "term": "Accepted Decision Completeness"
+        },
+        {
+          "confidence": "explicit_target",
+          "decision_id": "product-ontology-decision.clarification-candidate-gap-candidate-spec-product-boundary-gaps-ontology-gap-decisionoption.9",
+          "decision_term": "DecisionOption",
+          "gap_id": "ontology-gap.decisionoption",
+          "match": {
+            "confidence": "explicit_target",
+            "decision_id": "product-ontology-decision.clarification-candidate-gap-candidate-spec-product-boundary-gaps-ontology-gap-decisionoption.9",
+            "decision_term": "DecisionOption",
+            "gap_id": "ontology-gap.decisionoption",
+            "gap_term": "DecisionOption",
+            "match_kind": "target_ref",
+            "node_id": "candidate-spec.product-boundary",
+            "normalized_decision_term": "decisionoption",
+            "normalized_gap_term": "decisionoption"
+          },
+          "match_kind": "target_ref",
+          "resolution_preview": {
+            "answer_kind": "propose_project_local_term",
+            "decision": "project_local_term",
+            "decision_id": "product-ontology-decision.clarification-candidate-gap-candidate-spec-product-boundary-gaps-ontology-gap-decisionoption.9",
+            "request_id": "clarification.candidate-gap.candidate-spec-product-boundary-gaps-ontology-gap-decisionoption",
+            "target_artifact": "runs/candidate_spec_graph.json",
+            "target_ref": "candidate-spec.product-boundary.gaps.ontology-gap.decisionoption",
+            "term": "DecisionOption",
+            "term_scope": "project_local"
+          },
+          "source_ref": "question.decision-vs-option",
+          "term": "DecisionOption"
+        }
+      ],
+      "ontology_layer_refs": [
+        "objective",
+        "mechanics",
+        "execution"
+      ],
+      "ontology_refs": [
+        "ontology://org.0al.specgraph.core/0.1.0/classes/Spec",
+        "ontology://org.0al.specgraph.core/0.1.0/classes/Node"
+      ],
+      "requirements": [
+        {
+          "acceptance_criteria_refs": [
+            "ac.product-boundary.reviewable"
+          ],
+          "id": "req.product-boundary.main",
+          "ontology_refs": [
+            "ontology://org.0al.specgraph.core/0.1.0/classes/Requirement",
+            "ontology://org.0al.specgraph.core/0.1.0/classes/AcceptanceCriterion"
+          ],
+          "source_event_refs": [
+            "actor.decision-owner",
+            "actor.team-member",
+            "command.accept-decision",
+            "command.add-option",
+            "command.record-decision",
+            "constraint.accepted-decision-owner",
+            "event.decision-accepted",
+            "event.decision-recorded",
+            "event.evidence-attached",
+            "event.option-considered",
+            "policy.accepted-decision-completeness"
+          ],
+          "statement": "The promoted slice records decisions, options, rationale, evidence, and owners without claiming review triggers or supersession/conflict relations as materialized behavior."
+        }
+      ],
+      "source_event_refs": [
+        "actor.decision-owner",
+        "actor.team-member",
+        "command.accept-decision",
+        "command.add-option",
+        "command.record-decision",
+        "constraint.accepted-decision-owner",
+        "event.decision-accepted",
+        "event.decision-recorded",
+        "event.evidence-attached",
+        "event.option-considered",
+        "policy.accepted-decision-completeness"
+      ],
+      "title": "Product Boundary"
+    },
+    {
+      "acceptance_criteria": [
+        {
+          "id": "ac.record-decision.reviewable",
+          "ontology_refs": [
+            "ontology://org.0al.specgraph.core/0.1.0/classes/Requirement",
+            "ontology://org.0al.specgraph.core/0.1.0/classes/AcceptanceCriterion"
+          ],
+          "source_event_refs": [
+            "command.record-decision",
+            "event.decision-recorded"
+          ],
+          "statement": "Reviewer can verify: The product must support `Record Decision` and record Decision Recorded."
+        }
+      ],
+      "claims": [],
+      "context_refs": [
+        "context.idea_to_spec",
+        "context.team_decision_management"
+      ],
+      "description": "The product must support `Record Decision` and record Decision Recorded.",
+      "domain_refs": [
+        "domain.team_decision_log"
+      ],
+      "gaps": [],
+      "id": "candidate-spec.record-decision",
+      "kind": "behavior_requirement",
+      "model_applicability_refs": [
+        "model-applicability://specgraph-core/product-spec-mvp"
+      ],
+      "ontology_layer_refs": [
+        "objective",
+        "mechanics",
+        "execution"
+      ],
+      "ontology_refs": [
+        "ontology://org.0al.specgraph.core/0.1.0/classes/Requirement",
+        "ontology://org.0al.specgraph.core/0.1.0/classes/Node"
+      ],
+      "requirements": [
+        {
+          "acceptance_criteria_refs": [
+            "ac.record-decision.reviewable"
+          ],
+          "id": "req.record-decision.main",
+          "ontology_refs": [
+            "ontology://org.0al.specgraph.core/0.1.0/classes/Requirement",
+            "ontology://org.0al.specgraph.core/0.1.0/classes/AcceptanceCriterion"
+          ],
+          "source_event_refs": [
+            "command.record-decision",
+            "event.decision-recorded"
+          ],
+          "statement": "The product must support `Record Decision` and record Decision Recorded."
+        }
+      ],
+      "source_event_refs": [
+        "command.record-decision",
+        "event.decision-recorded"
+      ],
+      "title": "Record Decision"
+    },
+    {
+      "acceptance_criteria": [
+        {
+          "id": "ac.add-option.reviewable",
+          "ontology_refs": [
+            "ontology://org.0al.specgraph.core/0.1.0/classes/Requirement",
+            "ontology://org.0al.specgraph.core/0.1.0/classes/AcceptanceCriterion"
+          ],
+          "source_event_refs": [
+            "command.add-option",
+            "event.option-considered"
+          ],
+          "statement": "Reviewer can verify: The product must support `Add Considered Option` and record Option Considered."
+        }
+      ],
+      "claims": [],
+      "context_refs": [
+        "context.idea_to_spec",
+        "context.team_decision_management"
+      ],
+      "description": "The product must support `Add Considered Option` and record Option Considered.",
+      "domain_refs": [
+        "domain.team_decision_log"
+      ],
+      "gaps": [],
+      "id": "candidate-spec.add-option",
+      "kind": "behavior_requirement",
+      "model_applicability_refs": [
+        "model-applicability://specgraph-core/product-spec-mvp"
+      ],
+      "ontology_layer_refs": [
+        "objective",
+        "mechanics",
+        "execution"
+      ],
+      "ontology_refs": [
+        "ontology://org.0al.specgraph.core/0.1.0/classes/Requirement",
+        "ontology://org.0al.specgraph.core/0.1.0/classes/Node"
+      ],
+      "requirements": [
+        {
+          "acceptance_criteria_refs": [
+            "ac.add-option.reviewable"
+          ],
+          "id": "req.add-option.main",
+          "ontology_refs": [
+            "ontology://org.0al.specgraph.core/0.1.0/classes/Requirement",
+            "ontology://org.0al.specgraph.core/0.1.0/classes/AcceptanceCriterion"
+          ],
+          "source_event_refs": [
+            "command.add-option",
+            "event.option-considered"
+          ],
+          "statement": "The product must support `Add Considered Option` and record Option Considered."
+        }
+      ],
+      "source_event_refs": [
+        "command.add-option",
+        "event.option-considered"
+      ],
+      "title": "Add Considered Option"
+    },
+    {
+      "acceptance_criteria": [
+        {
+          "id": "ac.accept-decision.reviewable",
+          "ontology_refs": [
+            "ontology://org.0al.specgraph.core/0.1.0/classes/Requirement",
+            "ontology://org.0al.specgraph.core/0.1.0/classes/AcceptanceCriterion"
+          ],
+          "source_event_refs": [
+            "command.accept-decision",
+            "event.decision-accepted"
+          ],
+          "statement": "Reviewer can verify: The product must support `Accept Decision` and record Decision Accepted."
+        }
+      ],
+      "claims": [],
+      "context_refs": [
+        "context.idea_to_spec",
+        "context.team_decision_management"
+      ],
+      "description": "The product must support `Accept Decision` and record Decision Accepted.",
+      "domain_refs": [
+        "domain.team_decision_log"
+      ],
+      "gaps": [],
+      "id": "candidate-spec.accept-decision",
+      "kind": "behavior_requirement",
+      "model_applicability_refs": [
+        "model-applicability://specgraph-core/product-spec-mvp"
+      ],
+      "ontology_layer_refs": [
+        "objective",
+        "mechanics",
+        "execution"
+      ],
+      "ontology_refs": [
+        "ontology://org.0al.specgraph.core/0.1.0/classes/Requirement",
+        "ontology://org.0al.specgraph.core/0.1.0/classes/Node"
+      ],
+      "requirements": [
+        {
+          "acceptance_criteria_refs": [
+            "ac.accept-decision.reviewable"
+          ],
+          "id": "req.accept-decision.main",
+          "ontology_refs": [
+            "ontology://org.0al.specgraph.core/0.1.0/classes/Requirement",
+            "ontology://org.0al.specgraph.core/0.1.0/classes/AcceptanceCriterion"
+          ],
+          "source_event_refs": [
+            "command.accept-decision",
+            "event.decision-accepted"
+          ],
+          "statement": "The product must support `Accept Decision` and record Decision Accepted."
+        }
+      ],
+      "source_event_refs": [
+        "command.accept-decision",
+        "event.decision-accepted"
+      ],
+      "title": "Accept Decision"
+    },
+    {
+      "acceptance_criteria": [
+        {
+          "id": "ac.accepted-decision-owner.reviewable",
+          "ontology_refs": [
+            "ontology://org.0al.specgraph.core/0.1.0/classes/Constraint",
+            "ontology://org.0al.specgraph.core/0.1.0/classes/Requirement",
+            "ontology://org.0al.specgraph.core/0.1.0/classes/AcceptanceCriterion"
+          ],
+          "source_event_refs": [
+            "constraint.accepted-decision-owner"
+          ],
+          "statement": "Reviewer can verify: An accepted decision needs an owner, rationale, and evidence reference."
+        }
+      ],
+      "candidate_gap_resolutions": [
+        {
+          "answer_kind": "provide_candidate_context",
+          "confidence": "explicit_target",
+          "gap_id": "gap.accepted-decision-owner.enforcement-mechanism",
+          "gap_kind": "implementation_gap",
+          "match": {
+            "answer_kind": "provide_candidate_context",
+            "confidence": "explicit_target",
+            "gap_id": "gap.accepted-decision-owner.enforcement-mechanism",
+            "match_kind": "target_ref",
+            "node_id": "candidate-spec.accepted-decision-owner",
+            "request_id": "clarification.candidate-gap.candidate-spec-accepted-decision-owner-gaps-gap-accepted-decision-owner-enforcement-mechanism",
+            "target_ref": "candidate-spec.accepted-decision-owner.gaps.gap.accepted-decision-owner.enforcement-mechanism"
+          },
+          "match_kind": "target_ref",
+          "request_id": "clarification.candidate-gap.candidate-spec-accepted-decision-owner-gaps-gap-accepted-decision-owner-enforcement-mechanism",
+          "resolution_kind": "enforcement_mechanism_added",
+          "resolution_preview": {
+            "answer_kind": "provide_candidate_context",
+            "bucket": "other",
+            "request_id": "clarification.candidate-gap.candidate-spec-accepted-decision-owner-gaps-gap-accepted-decision-owner-enforcement-mechanism",
+            "request_kind": "candidate_gap",
+            "target_artifact": "runs/candidate_spec_graph.json",
+            "target_ref": "candidate-spec.accepted-decision-owner.gaps.gap.accepted-decision-owner.enforcement-mechanism",
+            "value": {
+              "enforces": [
+                "owner",
+                "rationale",
+                "evidence_reference"
+              ],
+              "mechanism": "The accept-decision command validates owner, rationale, and evidence reference fields before Decision Accepted can be recorded.",
+              "source_refs": [
+                "constraint.accepted-decision-owner",
+                "command.accept-decision"
+              ]
+            }
+          },
+          "statement": "Define the exact enforcement mechanism for this constraint."
+        }
+      ],
+      "claims": [],
+      "context_refs": [
+        "context.idea_to_spec",
+        "context.team_decision_management"
+      ],
+      "description": "An accepted decision needs an owner, rationale, and evidence reference.",
+      "domain_refs": [
+        "domain.team_decision_log"
+      ],
+      "gaps": [],
+      "id": "candidate-spec.accepted-decision-owner",
+      "kind": "constraint_constraint",
+      "model_applicability_refs": [
+        "model-applicability://specgraph-core/product-spec-mvp"
+      ],
+      "ontology_layer_refs": [
+        "objective",
+        "mechanics",
+        "execution"
+      ],
+      "ontology_refs": [
+        "ontology://org.0al.specgraph.core/0.1.0/classes/Constraint",
+        "ontology://org.0al.specgraph.core/0.1.0/classes/Requirement",
+        "ontology://org.0al.specgraph.core/0.1.0/classes/Node"
+      ],
+      "requirements": [
+        {
+          "acceptance_criteria_refs": [
+            "ac.accepted-decision-owner.reviewable"
+          ],
+          "id": "req.accepted-decision-owner.main",
+          "ontology_refs": [
+            "ontology://org.0al.specgraph.core/0.1.0/classes/Constraint",
+            "ontology://org.0al.specgraph.core/0.1.0/classes/Requirement",
+            "ontology://org.0al.specgraph.core/0.1.0/classes/AcceptanceCriterion"
+          ],
+          "source_event_refs": [
+            "constraint.accepted-decision-owner"
+          ],
+          "statement": "An accepted decision needs an owner, rationale, and evidence reference."
+        }
+      ],
+      "source_event_refs": [
+        "constraint.accepted-decision-owner"
+      ],
+      "title": "An accepted decision needs an owner, rationale, and evidence reference."
+    },
+    {
+      "acceptance_criteria": [
+        {
+          "id": "ac.accepted-decision-completeness.reviewable",
+          "ontology_refs": [
+            "ontology://org.0al.specgraph.core/0.1.0/classes/Constraint",
+            "ontology://org.0al.specgraph.core/0.1.0/classes/Requirement",
+            "ontology://org.0al.specgraph.core/0.1.0/classes/AcceptanceCriterion"
+          ],
+          "source_event_refs": [
+            "policy.accepted-decision-completeness",
+            "event.decision-accepted",
+            "command.accept-decision"
+          ],
+          "statement": "Reviewer can verify: The product must enforce `Accepted Decision Completeness`."
+        }
+      ],
+      "candidate_gap_resolutions": [
+        {
+          "answer_kind": "provide_candidate_context",
+          "confidence": "explicit_target",
+          "gap_id": "gap.accepted-decision-completeness.enforcement-mechanism",
+          "gap_kind": "implementation_gap",
+          "match": {
+            "answer_kind": "provide_candidate_context",
+            "confidence": "explicit_target",
+            "gap_id": "gap.accepted-decision-completeness.enforcement-mechanism",
+            "match_kind": "target_ref",
+            "node_id": "candidate-spec.accepted-decision-completeness",
+            "request_id": "clarification.candidate-gap.candidate-spec-accepted-decision-completeness-gaps-gap-accepted-decision-completeness-enforcement-mechanism",
+            "target_ref": "candidate-spec.accepted-decision-completeness.gaps.gap.accepted-decision-completeness.enforcement-mechanism"
+          },
+          "match_kind": "target_ref",
+          "request_id": "clarification.candidate-gap.candidate-spec-accepted-decision-completeness-gaps-gap-accepted-decision-completeness-enforcement-mechanism",
+          "resolution_kind": "enforcement_mechanism_added",
+          "resolution_preview": {
+            "answer_kind": "provide_candidate_context",
+            "bucket": "other",
+            "request_id": "clarification.candidate-gap.candidate-spec-accepted-decision-completeness-gaps-gap-accepted-decision-completeness-enforcement-mechanism",
+            "request_kind": "candidate_gap",
+            "target_artifact": "runs/candidate_spec_graph.json",
+            "target_ref": "candidate-spec.accepted-decision-completeness.gaps.gap.accepted-decision-completeness.enforcement-mechanism",
+            "value": {
+              "enforces": [
+                "accepted_decision_owner",
+                "accepted_decision_rationale",
+                "accepted_decision_evidence_reference",
+                "reviewed_option_context"
+              ],
+              "mechanism": "The Accepted Decision Completeness policy gates the Decision Accepted event on complete owner, rationale, evidence reference, and reviewed option context.",
+              "source_refs": [
+                "policy.accepted-decision-completeness",
+                "event.decision-accepted",
+                "command.accept-decision"
+              ]
+            }
+          },
+          "statement": "Define the exact enforcement mechanism for this policy."
+        }
+      ],
+      "claims": [],
+      "context_refs": [
+        "context.idea_to_spec",
+        "context.team_decision_management"
+      ],
+      "description": "The product must enforce `Accepted Decision Completeness`.",
+      "domain_refs": [
+        "domain.team_decision_log"
+      ],
+      "gaps": [],
+      "id": "candidate-spec.accepted-decision-completeness",
+      "kind": "policy_constraint",
+      "model_applicability_refs": [
+        "model-applicability://specgraph-core/product-spec-mvp"
+      ],
+      "ontology_layer_refs": [
+        "objective",
+        "mechanics",
+        "execution"
+      ],
+      "ontology_refs": [
+        "ontology://org.0al.specgraph.core/0.1.0/classes/Constraint",
+        "ontology://org.0al.specgraph.core/0.1.0/classes/Requirement",
+        "ontology://org.0al.specgraph.core/0.1.0/classes/Node"
+      ],
+      "requirements": [
+        {
+          "acceptance_criteria_refs": [
+            "ac.accepted-decision-completeness.reviewable"
+          ],
+          "id": "req.accepted-decision-completeness.main",
+          "ontology_refs": [
+            "ontology://org.0al.specgraph.core/0.1.0/classes/Constraint",
+            "ontology://org.0al.specgraph.core/0.1.0/classes/Requirement",
+            "ontology://org.0al.specgraph.core/0.1.0/classes/AcceptanceCriterion"
+          ],
+          "source_event_refs": [
+            "policy.accepted-decision-completeness",
+            "event.decision-accepted",
+            "command.accept-decision"
+          ],
+          "statement": "The product must enforce `Accepted Decision Completeness`."
+        }
+      ],
+      "source_event_refs": [
+        "policy.accepted-decision-completeness",
+        "event.decision-accepted",
+        "command.accept-decision"
+      ],
+      "title": "Accepted Decision Completeness"
+    }
+  ],
+  "pre_sib_readiness": {
+    "blocked_by": [],
+    "next_artifact": "runs/pre_sib_coherence_report.json",
+    "ready": true,
+    "review_state": "ready_for_pre_sib"
+  },
+  "privacy_boundary": {},
+  "proposal_id": "0150",
+  "repaired_candidate_promotion_handoff": {
+    "contract_ref": "specgraph.idea-to-spec.repaired-candidate-promotion-handoff.v0.1",
+    "proposal_id": "0177",
+    "source_candidate_graph_preview_ref": "runs/idea_to_spec_rerun_materialization.json#candidate_graph_preview",
+    "source_rerun_materialization_ref": "runs/idea_to_spec_rerun_materialization.json",
+    "state": "review_only"
+  },
+  "rerun_materialization": {
+    "candidate_resolution_count": 3,
+    "contract_ref": "specgraph.idea-to-spec.rerun-materialization.v0.1",
+    "ontology_resolution_count": 11,
+    "proposal_id": "0167",
+    "removed_gap_ids": [
+      "ontology-gap.team-member",
+      "ontology-gap.decision-owner",
+      "ontology-gap.decision-recorded",
+      "ontology-gap.option-considered",
+      "ontology-gap.evidence-attached",
+      "ontology-gap.decision-accepted",
+      "ontology-gap.record-decision",
+      "ontology-gap.add-considered-option",
+      "ontology-gap.accept-decision",
+      "ontology-gap.accepted-decision-completeness",
+      "ontology-gap.decisionoption",
+      "gap.risk.a-decision-without-rationale-can-be-reused-later-as-if-it-were-fully-justified",
+      "gap.accepted-decision-owner.enforcement-mechanism",
+      "gap.accepted-decision-completeness.enforcement-mechanism"
+    ],
+    "resolution_count": 14,
+    "state": "review_only"
+  },
+  "schema_version": 1,
+  "seed_contract_ref": "specgraph.idea-to-spec.candidate-spec-graph-seed.v0.1",
+  "source_intake": {
+    "artifact_kind": "idea_event_storming_intake",
+    "contract_ref": "specgraph.idea-to-spec.event-storming-intake.v0.1",
+    "readiness": "ready_for_candidate_graph",
+    "root_intent_sha256": "3f4d95c696e52b4d5123a55c616866ed37d3a1e1913b7c376b15d030ff999e13",
+    "source_ref": "product://team-decision-log/root-intent"
+  },
+  "source_ref": "product://team-decision-log/root-intent",
+  "summary": {
+    "acceptance_criteria_count": 6,
+    "claim_count": 0,
+    "edge_count": 13,
+    "finding_count": 0,
+    "gap_count": 0,
+    "node_count": 6,
+    "requirement_count": 6,
+    "status": "ready_for_pre_sib"
+  },
+  "tracked_artifacts_written": false,
+  "warnings": []
+}

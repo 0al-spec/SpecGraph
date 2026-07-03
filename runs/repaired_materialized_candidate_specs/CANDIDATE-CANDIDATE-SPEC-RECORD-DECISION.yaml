@@ -9,6 +9,7 @@ depends_on: []
 relates_to: []
 inputs:
 - runs/repaired_candidate_repair_loop_report.json#revised_candidate_graph_preview
+- runs/candidate_approval_decision.json#promotion_request.paths
 outputs:
 - runs/repaired_materialized_candidate_specs/CANDIDATE-CANDIDATE-SPEC-RECORD-DECISION.yaml
 allowed_paths:

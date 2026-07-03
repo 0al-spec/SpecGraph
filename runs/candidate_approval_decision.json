@@ -1,0 +1,67 @@
+{
+  "artifact_kind": "candidate_approval_decision",
+  "authority_boundary": {
+    "may_create_branch_or_commit": false,
+    "may_execute_git_service_operation": false,
+    "may_execute_prompt_agent": false,
+    "may_mark_candidate_graph_accepted": false,
+    "may_mutate_candidate_source_artifacts": false,
+    "may_mutate_canonical_specs": false,
+    "may_open_pull_request": false,
+    "may_publish_read_model": false,
+    "may_write_ontology_lockfile": false,
+    "may_write_ontology_package": false
+  },
+  "candidate": {
+    "active_candidate_ref": "runs/repaired_active_idea_to_spec_candidate.json",
+    "candidate_id": "team-decision-log",
+    "display_name": "Team Decision Log",
+    "promotion_gate_ref": "runs/repaired_idea_to_spec_promotion_gate.json"
+  },
+  "canonical_mutations_allowed": false,
+  "contract_ref": "specgraph.idea-to-spec.candidate-approval-decision.v0.1",
+  "decision": {
+    "conditions": [],
+    "operator_ref": "operator://manual-loop-smoke",
+    "reason": "Manual loop smoke reached approval-ready repaired handoff with successful Platform repair rerun publication.",
+    "requested_state": "approved",
+    "state": "approved"
+  },
+  "gate_report_ref": "runs/platform_candidate_approval_intent_gate_report.json",
+  "generated_at": "2026-07-02T22:19:57.954418+00:00",
+  "ontology_writes_allowed": false,
+  "promotion_request": {
+    "paths": [
+      "runs/repaired_materialized_candidate_specs/CANDIDATE-CANDIDATE-SPEC-PRODUCT-BOUNDARY.yaml",
+      "runs/repaired_materialized_candidate_specs/CANDIDATE-CANDIDATE-SPEC-RECORD-DECISION.yaml",
+      "runs/repaired_materialized_candidate_specs/CANDIDATE-CANDIDATE-SPEC-ADD-OPTION.yaml",
+      "runs/repaired_materialized_candidate_specs/CANDIDATE-CANDIDATE-SPEC-ACCEPT-DECISION.yaml",
+      "runs/repaired_materialized_candidate_specs/CANDIDATE-CANDIDATE-SPEC-ACCEPTED-DECISION-OWNER.yaml",
+      "runs/repaired_materialized_candidate_specs/CANDIDATE-CANDIDATE-SPEC-ACCEPTED-DECISION-COMPLETENESS.yaml"
+    ],
+    "platform_artifact_kind": "platform_graph_repository_promotion_request",
+    "requires_git_service_execution": true
+  },
+  "readiness": {
+    "blocked_by": [],
+    "ready": true,
+    "review_state": "candidate_approval_ready"
+  },
+  "schema_version": 1,
+  "source_artifacts": {
+    "candidate_approval_gate": "runs/platform_candidate_approval_intent_gate_report.json",
+    "candidate_approval_intent": "candidate-approval-intent.team-decision-log.20260630T151049Z.f43eeeae3f21",
+    "platform_repair_execution": "runs/platform_product_repair_rerun_execution_report.json",
+    "platform_repair_publication": "runs/platform_product_repair_rerun_publication_report.json",
+    "promotion_gate": "runs/repaired_idea_to_spec_promotion_gate.json",
+    "repair_session": "runs/repaired_idea_to_spec_repair_session.json",
+    "repaired_handoff": "runs/repaired_candidate_promotion_handoff_report.json"
+  },
+  "tracked_artifacts_written": false,
+  "workspace": {
+    "mode": "product_idea_to_spec",
+    "public_route": "/team-decision-log",
+    "repository_role": "product_spec_workspace",
+    "workspace_id": "team-decision-log"
+  }
+}
