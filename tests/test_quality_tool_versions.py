@@ -24,6 +24,10 @@ def load_python_ci() -> str:
     return (ROOT / ".github" / "workflows" / "python-ci.yml").read_text(encoding="utf-8")
 
 
+def load_python_quality() -> str:
+    return (ROOT / "tools" / "python_quality.py").read_text(encoding="utf-8")
+
+
 def find_local_hook(config: dict, hook_id: str) -> dict:
     for repo in config.get("repos", []):
         if repo.get("repo") != "local":
@@ -45,6 +49,7 @@ def test_quality_tool_versions_are_pinned_and_aligned() -> None:
     pyproject = load_pyproject()
     pre_commit = load_pre_commit()
     python_ci = load_python_ci()
+    python_quality = load_python_quality()
 
     dependencies = pyproject["project"]["dependencies"]
     dev_dependencies = pyproject["project"]["optional-dependencies"]["dev"]
@@ -53,8 +58,8 @@ def test_quality_tool_versions_are_pinned_and_aligned() -> None:
     assert "pytest==9.0.2" in dev_dependencies
     assert "ruff==0.15.9" in dev_dependencies
 
-    python_quality = find_local_hook(pre_commit, "python-quality")
-    assert python_quality["additional_dependencies"] == ["ruff==0.15.9", "pyyaml==6.0.3"]
+    python_quality_hook = find_local_hook(pre_commit, "python-quality")
+    assert python_quality_hook["additional_dependencies"] == ["ruff==0.15.9", "pyyaml==6.0.3"]
 
     spec_yaml_format = find_local_hook(pre_commit, "spec-yaml-format")
     assert spec_yaml_format["additional_dependencies"] == ["pyyaml==6.0.3"]
@@ -67,3 +72,4 @@ def test_quality_tool_versions_are_pinned_and_aligned() -> None:
 
     assert "python -m pip install -e .[dev]" in python_ci
     assert "python tools/python_quality.py" in python_ci
+    assert "tools/validate_architecture_style.py" in python_quality

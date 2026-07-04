@@ -348,7 +348,7 @@ PRODUCT_WORKSPACE_ACTIVE_CANDIDATE_REFRESH ?= $(PRODUCT_WORKSPACE_ACTIVE_CANDIDA
 .DEFAULT_GOAL := help
 
 PYTHON_TARGETS := viewer-surfaces dashboard backlog next-move spec-activity graph-diagnostics \
-	proposal-spec-trace proposal-tracking proposal-tracking-gate spec-evidence-gate external-consumers external-handoffs \
+	proposal-spec-trace proposal-tracking proposal-tracking-gate spec-evidence-gate architecture-style architecture-metrics external-consumers external-handoffs \
 	external-consumer-evidence ontology-imports ontology-imports-public \
 	ontology-package-validate ontology-package-preview ontology-package-gaps \
 	spec-ontology-bindings spec-ontology-validation \
@@ -422,6 +422,8 @@ help:
 		'  make proposal-tracking        Refresh report-only proposal tracking JSON' \
 		'  make proposal-tracking-gate   Fail on proposal docs without tracking' \
 		'  make spec-evidence-gate      Fail on logic changes without Spec-ID evidence' \
+		'  make architecture-style       Fail on new supervisor package architecture/style violations' \
+		'  make architecture-metrics     Print report-only architecture/code-shape metrics JSON' \
 		'  make proposal-work-claims     Refresh proposal work claim report JSON' \
 		'  make proposal-work-claims-gate Fail on stale or duplicate proposal work claims' \
 		'  make proposal-id              Print the next deterministic proposal id' \
@@ -585,6 +587,14 @@ SPEC_EVIDENCE_HEAD_REF ?= HEAD
 .PHONY: spec-evidence-gate
 spec-evidence-gate:
 	@$(PYTHON) tools/spec_evidence_gate.py --base-ref "$(SPEC_EVIDENCE_BASE_REF)" --head-ref "$(SPEC_EVIDENCE_HEAD_REF)"
+
+.PHONY: architecture-style
+architecture-style:
+	@$(PYTHON) tools/validate_architecture_style.py
+
+.PHONY: architecture-metrics
+architecture-metrics:
+	@$(PYTHON) tools/architecture_metrics.py
 
 .PHONY: proposal-work-claims
 proposal-work-claims:

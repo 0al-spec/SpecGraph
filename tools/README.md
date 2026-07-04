@@ -1868,12 +1868,15 @@ Canonical YAML helpers for spec nodes:
 python tools/spec_yaml_format.py
 python tools/spec_yaml_lint.py
 python tools/python_quality.py
+python tools/validate_architecture_style.py
+python tools/architecture_metrics.py
 ```
 
-Both commands default to `specs/nodes/*.yaml`. The formatter rewrites files into the
-repository's canonical YAML style; the linter enforces syntax, rejects duplicate keys,
-and fails when a file has drifted from canonical formatting. Canonical spec nodes now
-require top-level `created_at` and `updated_at` timestamps immediately after `kind`.
+The spec YAML formatter and linter default to `specs/nodes/*.yaml`. The formatter
+rewrites files into the repository's canonical YAML style; the linter enforces
+syntax, rejects duplicate keys, and fails when a file has drifted from canonical
+formatting. Canonical spec nodes now require top-level `created_at` and
+`updated_at` timestamps immediately after `kind`.
 
 To backfill those fields onto existing specs from git history with filesystem fallback:
 
@@ -1886,9 +1889,24 @@ python tools/spec_backfill_timestamps.py
 - `ruff check .`
 - `ruff format --check .`
 - `python tools/spec_yaml_lint.py`
+- `python tools/validate_architecture_style.py`
 
 The same project-wide gate is also installed in `.pre-commit-config.yaml` as the
 `python-quality` hook.
+
+`validate_architecture_style.py` is intentionally baseline-friendly. It does not
+try to grade the legacy `tools/supervisor.py` monolith; it applies architecture
+style rules to new package code under `src/specgraph/supervisor/`. The gate
+forbids procedural class suffixes, `@staticmethod`, setter-style methods,
+`dict[str, Any]` in package signatures, forbidden dependencies back into
+legacy tools/tests/docs, and import-time I/O or subprocess work.
+
+`architecture_metrics.py` is report-only and prints JSON for trend tracking. It
+includes `architecture_gate.findings_total` and code-shape metrics for both the
+new supervisor package scope and the legacy supervisor baseline: files, lines,
+classes, functions, top-level functions, function length thresholds, parameter
+count thresholds, `dict[str, Any]` signatures, `isinstance` calls, static
+methods, setters, and procedural class suffixes.
 
 Quality tool versions are intentionally pinned to match GitHub Actions:
 
