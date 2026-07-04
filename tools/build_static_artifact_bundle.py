@@ -191,7 +191,7 @@ def iter_publish_sources(repo_root: Path) -> Iterable[tuple[str, Path, PurePosix
             rel = PurePosixPath(root_name, path.relative_to(source_root).as_posix())
             if root_name == "runs":
                 run_rel = rel.relative_to("runs").as_posix()
-                if is_local_only_run_path(run_rel):
+                if is_local_only_run_path(run_rel) or is_local_only_json_artifact(path):
                     continue
                 if run_rel == ACTIVE_IDEA_TO_SPEC_CANDIDATE_SURFACE and not active_candidate_ready:
                     continue
@@ -201,7 +201,20 @@ def iter_publish_sources(repo_root: Path) -> Iterable[tuple[str, Path, PurePosix
 
 
 def is_local_only_run_path(run_rel: str) -> bool:
-    return run_rel in LOCAL_ONLY_RUN_SURFACES or run_rel.startswith(LOCAL_ONLY_RUN_PREFIXES)
+    rel = PurePosixPath(run_rel)
+    if rel.name in LOCAL_ONLY_RUN_SURFACES:
+        return True
+    return any(part.startswith(LOCAL_ONLY_RUN_PREFIXES) for part in rel.parts)
+
+
+def is_local_only_json_artifact(path: Path) -> bool:
+    if path.suffix != ".json":
+        return False
+    try:
+        payload = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError):
+        return False
+    return isinstance(payload, dict) and payload.get("local_only") is True
 
 
 def safe_repo_relative_path(value: object, *, field: str) -> PurePosixPath:

@@ -268,7 +268,11 @@ def valid_paths() -> dict[str, Path]:
     }
 
 
-def build_report(artifacts: dict[str, dict[str, object]]) -> dict[str, object]:
+def build_report(
+    artifacts: dict[str, dict[str, object]],
+    *,
+    missing_stages: set[str] | None = None,
+) -> dict[str, object]:
     module = load_module(TOOL_PATH, "idea_to_spec_repair_session_journal_under_test")
     paths = valid_paths()
     return module.build_idea_to_spec_repair_session_journal(
@@ -289,6 +293,7 @@ def build_report(artifacts: dict[str, dict[str, object]]) -> dict[str, object]:
         rerun_materialization_path=paths["rerun_materialization"],
         promotion_gate_path=paths["promotion_gate"],
         operator_ref="operator:test",
+        missing_stages=missing_stages,
     )
 
 
@@ -330,7 +335,16 @@ def test_repair_session_journal_allows_initial_session_with_missing_repair_stage
     ):
         artifacts[key] = missing_optional_artifact(key)
 
-    report = build_report(artifacts)
+    report = build_report(
+        artifacts,
+        missing_stages={
+            "clarification_answers",
+            "ontology_decisions",
+            "rerun_input",
+            "rerun_preview",
+            "rerun_materialization",
+        },
+    )
 
     assert report["readiness"]["ready"] is True
     assert report["summary"]["ready_for_candidate_approval"] is False
@@ -340,6 +354,22 @@ def test_repair_session_journal_allows_initial_session_with_missing_repair_stage
     assert len(stages) == 8
     missing_stages = [stage for stage in stages if stage["status"] == "artifact_missing"]
     assert len(missing_stages) == 5
+    source = report["source_artifacts"]["clarification_answers"]
+    assert source["schema_version"] is None
+    assert source["sha256"] is None
+
+
+def test_repair_session_journal_does_not_trust_loaded_missing_optional_marker() -> None:
+    artifacts = valid_artifacts()
+    artifacts["clarification_answers"]["missing_optional_stage"] = True
+
+    report = build_report(artifacts)
+
+    assert "clarification_answers_missing_optional_stage_untrusted" in finding_ids(report)
+    assert report["readiness"]["ready"] is False
+    source = report["source_artifacts"]["clarification_answers"]
+    assert source["schema_version"] == 1
+    assert source["source_ref"] == "runs/idea_to_spec_clarification_answers.json"
 
 
 def test_repair_session_journal_marks_candidate_approval_possible_only_after_ready_chain() -> None:

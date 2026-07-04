@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import hashlib
 import importlib.util
 import json
 import subprocess
@@ -105,7 +106,35 @@ def decision_state(
     decision_value: dict[str, object] | None = None,
     authority_expanded: bool = False,
     lane_ref: str = "runs/project_local_ontology_review_lane.json",
+    lane_sha256: str | None = None,
 ) -> dict[str, object]:
+    decision = {
+        "decision_id": (
+            "specspace-project-local-ontology-decision::cash-flow-control::recurringpayment"
+        ),
+        "workspace_id": "cash-flow-control",
+        "candidate_id": "cash-flow-control",
+        "repair_session_id": "repair-session.cash-flow-control",
+        "project_local_ontology_review_lane_ref": lane_ref,
+        "term": "Recurring Payment",
+        "term_key": "recurringpayment",
+        "review_action": action,
+        "decision_value": decision_value
+        if decision_value is not None
+        else {
+            "term": "Recurring Payment",
+            "term_scope": "project_local",
+            "reason": "Product-local term for this bounded context.",
+        },
+        "canonical_mutations_allowed": False,
+        "tracked_artifacts_written": False,
+        "applies_to_specgraph": False,
+        "writes_ontology_package": False,
+        "accepts_ontology_terms": False,
+        "creates_branch_or_commit": False,
+    }
+    if lane_sha256 is not None:
+        decision["project_local_ontology_review_lane_sha256"] = lane_sha256
     return {
         "artifact_kind": "specspace_project_local_ontology_review_decision_state",
         "schema_version": 1,
@@ -123,33 +152,7 @@ def decision_state(
             "ontology_authority": False,
             "git_service_authority": False,
         },
-        "decisions": [
-            {
-                "decision_id": (
-                    "specspace-project-local-ontology-decision::cash-flow-control::recurringpayment"
-                ),
-                "workspace_id": "cash-flow-control",
-                "candidate_id": "cash-flow-control",
-                "repair_session_id": "repair-session.cash-flow-control",
-                "project_local_ontology_review_lane_ref": lane_ref,
-                "term": "Recurring Payment",
-                "term_key": "recurringpayment",
-                "review_action": action,
-                "decision_value": decision_value
-                if decision_value is not None
-                else {
-                    "term": "Recurring Payment",
-                    "term_scope": "project_local",
-                    "reason": "Product-local term for this bounded context.",
-                },
-                "canonical_mutations_allowed": False,
-                "tracked_artifacts_written": False,
-                "applies_to_specgraph": False,
-                "writes_ontology_package": False,
-                "accepts_ontology_terms": False,
-                "creates_branch_or_commit": False,
-            }
-        ],
+        "decisions": [decision],
         "summary": {"decision_count": 1},
     }
 
@@ -203,6 +206,31 @@ def test_specspace_project_local_import_preview_accepts_isolated_lane_alias() ->
     assert report["readiness"]["ready"] is True
     assert report["summary"]["accepted_decision_count"] == 1
     assert report["summary"]["invalid_decision_count"] == 0
+
+
+def test_specspace_project_local_import_preview_rejects_stale_lane_digest(tmp_path: Path) -> None:
+    module = load_module()
+    lane = review_lane()
+    lane_path = tmp_path / "runs" / "ui-started-smoke" / "project_local_ontology_review_lane.json"
+    lane_path.parent.mkdir(parents=True, exist_ok=True)
+    lane_path.write_text(json.dumps(lane, sort_keys=True), encoding="utf-8")
+    actual_digest = hashlib.sha256(lane_path.read_bytes()).hexdigest()
+    assert actual_digest != "0" * 64
+
+    report = module.build_specspace_project_local_ontology_decision_import_preview(
+        decision_state=decision_state(
+            lane_ref="external:project_local_ontology_review_lane.json",
+            lane_sha256="0" * 64,
+        ),
+        review_lane=lane,
+        decision_state_path=tmp_path / "runs" / "project_local_ontology_review_decisions.json",
+        review_lane_path=lane_path,
+        workspace_id="cash-flow-control",
+    )
+
+    assert report["readiness"]["ready"] is False
+    assert report["summary"]["invalid_decision_count"] == 1
+    assert report["import_preview"]["invalid_decisions"][0]["reason"] == "review_lane_digest_stale"
 
 
 def test_specspace_project_local_import_preview_redacts_private_decision_value_text() -> None:
