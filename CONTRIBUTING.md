@@ -40,6 +40,10 @@ Style rules for new supervisor package code:
 - Keep untyped `dict[str, Any]` payloads at CLI/I/O boundaries. Prefer typed domain objects, `Mapping[str, object]`, `Protocol`, and explicit `to_payload()` methods inside package code.
 - Avoid setter-style mutation. Prefer immutable transitions that return a changed value/object.
 - Prefer protocols or polymorphic objects over repeated type branching when the branch represents a domain variant.
+- The architecture gate detects direct and compound `dict[str, Any]` annotations,
+  including optional/union and string annotations, but it does not resolve type
+  aliases such as `JsonPayload = dict[str, Any]`; avoid those aliases in package
+  signatures.
 
 The legacy supervisor monolith is exempt while it is being strangled behind the
 stable CLI façade. New code under `src/specgraph/supervisor/` is checked by:

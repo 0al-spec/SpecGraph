@@ -79,6 +79,118 @@ def test_architecture_style_reports_supervisor_package_violations(tmp_path: Path
     assert codes == {"ARCH001", "ARCH002", "ARCH003", "ARCH004", "ARCH005", "ARCH006"}
 
 
+def test_architecture_style_allows_top_level_string_normalization(tmp_path: Path) -> None:
+    module = _load_architecture_style_module()
+    package = tmp_path / "src" / "specgraph" / "supervisor"
+    package.mkdir(parents=True)
+    (package / "names.py").write_text(
+        'NORMALIZED = "a-b".replace("-", "_")\n',
+        encoding="utf-8",
+    )
+
+    assert module.validate(tmp_path) == []
+
+
+def test_architecture_style_reports_import_time_io_in_class_body(tmp_path: Path) -> None:
+    module = _load_architecture_style_module()
+    package = tmp_path / "src" / "specgraph" / "supervisor"
+    package.mkdir(parents=True)
+    (package / "policy.py").write_text(
+        "\n".join(
+            [
+                "from pathlib import Path",
+                "",
+                "class Policy:",
+                "    PAYLOAD = Path('policy.json').read_text()",
+                "",
+            ]
+        ),
+        encoding="utf-8",
+    )
+
+    findings = module.validate(tmp_path)
+
+    assert [finding.code for finding in findings] == ["ARCH006"]
+
+
+def test_architecture_style_reports_aliased_import_time_runtime_calls(tmp_path: Path) -> None:
+    module = _load_architecture_style_module()
+    package = tmp_path / "src" / "specgraph" / "supervisor"
+    package.mkdir(parents=True)
+    (package / "runner.py").write_text(
+        "\n".join(
+            [
+                "import subprocess as sp",
+                "",
+                "RESULT = sp.run(['true'])",
+                "",
+            ]
+        ),
+        encoding="utf-8",
+    )
+
+    findings = module.validate(tmp_path)
+
+    assert [finding.code for finding in findings] == ["ARCH006"]
+
+
+def test_architecture_style_reports_compound_dict_any_annotations(tmp_path: Path) -> None:
+    module = _load_architecture_style_module()
+    package = tmp_path / "src" / "specgraph" / "supervisor"
+    package.mkdir(parents=True)
+    (package / "payloads.py").write_text(
+        "\n".join(
+            [
+                "from __future__ import annotations",
+                "",
+                "from typing import Any",
+                "import typing",
+                "",
+                "def optional_payload(payload: dict[str, Any] | None) -> None:",
+                "    return None",
+                "",
+                "def qualified_payload(payload: typing.Dict[str, typing.Any]) -> None:",
+                "    return None",
+                "",
+                "def string_payload(payload: 'dict[str, Any]') -> None:",
+                "    return None",
+                "",
+            ]
+        ),
+        encoding="utf-8",
+    )
+
+    findings = module.validate(tmp_path)
+
+    assert [finding.code for finding in findings] == ["ARCH004", "ARCH004", "ARCH004"]
+
+
+def test_architecture_style_reports_any_legacy_tools_import(tmp_path: Path) -> None:
+    module = _load_architecture_style_module()
+    package = tmp_path / "src" / "specgraph" / "supervisor"
+    package.mkdir(parents=True)
+    (package / "legacy.py").write_text(
+        "import tools.spec_yaml_lint\n",
+        encoding="utf-8",
+    )
+
+    findings = module.validate(tmp_path)
+
+    assert [finding.code for finding in findings] == ["ARCH005"]
+
+
+def test_architecture_style_success_reports_checked_file_count(
+    tmp_path: Path,
+    capsys,
+) -> None:
+    module = _load_architecture_style_module()
+
+    assert module.main(["--repo", tmp_path.as_posix()]) == 0
+
+    captured = capsys.readouterr()
+    assert "Architecture style validation passed (0 files)." in captured.out
+
+
 def test_architecture_style_does_not_scan_legacy_supervisor_shim(tmp_path: Path) -> None:
     module = _load_architecture_style_module()
     tools = tmp_path / "tools"

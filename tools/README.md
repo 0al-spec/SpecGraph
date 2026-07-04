@@ -1900,13 +1900,15 @@ style rules to new package code under `src/specgraph/supervisor/`. The gate
 forbids procedural class suffixes, `@staticmethod`, setter-style methods,
 `dict[str, Any]` in package signatures, forbidden dependencies back into
 legacy tools/tests/docs, and import-time I/O or subprocess work.
+The CLI prints the checked file count so a zero-file baseline pass is visible in
+CI logs.
 
 `architecture_metrics.py` is report-only and prints JSON for trend tracking. It
 includes `architecture_gate.findings_total` and code-shape metrics for both the
 new supervisor package scope and the legacy supervisor baseline: files, lines,
 classes, functions, top-level functions, function length thresholds, parameter
 count thresholds, `dict[str, Any]` signatures, `isinstance` calls, static
-methods, setters, and procedural class suffixes.
+methods, setters, syntax errors, and procedural class suffixes.
 
 Quality tool versions are intentionally pinned to match GitHub Actions:
 

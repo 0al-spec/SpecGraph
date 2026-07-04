@@ -73,6 +73,7 @@ def _empty_scope(name: str, patterns: tuple[str, ...]) -> dict[str, Any]:
         "patterns": list(patterns),
         "files": [],
         "file_count": 0,
+        "syntax_error_count": 0,
         "line_count": 0,
         "class_count": 0,
         "function_count": 0,
@@ -90,7 +91,7 @@ def _empty_scope(name: str, patterns: tuple[str, ...]) -> dict[str, Any]:
         "staticmethod_count": 0,
         "setter_function_count": 0,
         "procedural_class_suffix_count": 0,
-        "procedural_class_suffixes_by_name": {},
+        "procedural_class_suffixes_by_suffix": {},
     }
 
 
@@ -106,7 +107,11 @@ def _scope_metrics(repo: Path, name: str, patterns: tuple[str, ...]) -> dict[str
     for path in files:
         text = path.read_text(encoding="utf-8")
         metrics["line_count"] += len(text.splitlines())
-        module = ast.parse(text, filename=path.as_posix())
+        try:
+            module = ast.parse(text, filename=path.as_posix())
+        except SyntaxError:
+            metrics["syntax_error_count"] += 1
+            continue
         metrics["top_level_function_count"] += sum(
             isinstance(node, ast.FunctionDef | ast.AsyncFunctionDef) for node in module.body
         )
@@ -119,7 +124,7 @@ def _scope_metrics(repo: Path, name: str, patterns: tuple[str, ...]) -> dict[str
                 metrics["class_count"] += 1
                 for suffix in validate_architecture_style.FORBIDDEN_CLASS_SUFFIXES:
                     if node.name.endswith(suffix):
-                        procedural_suffixes[node.name] += 1
+                        procedural_suffixes[suffix] += 1
                         metrics["procedural_class_suffix_count"] += 1
                         break
             elif isinstance(node, ast.FunctionDef | ast.AsyncFunctionDef):
@@ -156,7 +161,7 @@ def _scope_metrics(repo: Path, name: str, patterns: tuple[str, ...]) -> dict[str
         metrics["max_parameter_count"] = max(parameter_counts)
         metrics["functions_over_5_parameters"] = sum(count > 5 for count in parameter_counts)
 
-    metrics["procedural_class_suffixes_by_name"] = _counter_dict(procedural_suffixes)
+    metrics["procedural_class_suffixes_by_suffix"] = _counter_dict(procedural_suffixes)
     return metrics
 
 
