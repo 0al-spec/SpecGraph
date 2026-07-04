@@ -184,6 +184,27 @@ def test_specspace_project_local_import_preview_accepts_project_local_decision()
     assert report["authority_boundary"]["may_apply_to_specgraph"] is False
 
 
+def test_specspace_project_local_import_preview_accepts_isolated_lane_alias() -> None:
+    module = load_module()
+    report = module.build_specspace_project_local_ontology_decision_import_preview(
+        decision_state=decision_state(lane_ref="runs/project_local_ontology_review_lane.json"),
+        review_lane=review_lane(),
+        decision_state_path=ROOT
+        / "runs"
+        / "ui-started-smoke"
+        / "project_local_ontology_review_decisions.json",
+        review_lane_path=ROOT
+        / "runs"
+        / "ui-started-smoke"
+        / "project_local_ontology_review_lane.json",
+        workspace_id="cash-flow-control",
+    )
+
+    assert report["readiness"]["ready"] is True
+    assert report["summary"]["accepted_decision_count"] == 1
+    assert report["summary"]["invalid_decision_count"] == 0
+
+
 def test_specspace_project_local_import_preview_redacts_private_decision_value_text() -> None:
     report = build_report(
         state=decision_state(

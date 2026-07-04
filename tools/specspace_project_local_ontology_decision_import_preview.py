@@ -192,6 +192,21 @@ def _relative_ref(path: Path | None) -> str | None:
         return f"external:{path.name or 'artifact'}"
 
 
+def _accepted_review_lane_refs(path: Path | None) -> set[str]:
+    lane_ref = _relative_ref(path)
+    if not lane_ref:
+        return set()
+    refs = {lane_ref}
+    if (
+        path is not None
+        and path.name == "project_local_ontology_review_lane.json"
+        and lane_ref.startswith("runs/")
+        and lane_ref != "runs/project_local_ontology_review_lane.json"
+    ):
+        refs.add("runs/project_local_ontology_review_lane.json")
+    return refs
+
+
 def _sha256(path: Path | None) -> str | None:
     if path is None or not path.exists():
         return None
@@ -572,6 +587,7 @@ def build_specspace_project_local_ontology_decision_import_preview(
     lane_terms = _lane_terms(lane)
     required_terms = _required_term_keys(lane_terms)
     lane_ref = _relative_ref(review_lane_path)
+    accepted_lane_refs = _accepted_review_lane_refs(review_lane_path)
     state_ref = _relative_ref(decision_state_path)
     supported_actions = set(
         _list(_dict(lane.get("review_decision_schema")).get("supported_actions"))
@@ -687,7 +703,7 @@ def build_specspace_project_local_ontology_decision_import_preview(
             )
             continue
         decision_lane_ref = _text(decision.get("project_local_ontology_review_lane_ref"))
-        if lane_ref and not decision_lane_ref:
+        if accepted_lane_refs and not decision_lane_ref:
             if _text(decision.get("term_key")) in required_terms:
                 invalid_terms.add(_text(decision.get("term_key")))
             invalid_decisions.append(
@@ -698,7 +714,7 @@ def build_specspace_project_local_ontology_decision_import_preview(
                 }
             )
             continue
-        if lane_ref and decision_lane_ref != lane_ref:
+        if accepted_lane_refs and decision_lane_ref not in accepted_lane_refs:
             if _text(decision.get("term_key")) in required_terms:
                 invalid_terms.add(_text(decision.get("term_key")))
             invalid_decisions.append(
