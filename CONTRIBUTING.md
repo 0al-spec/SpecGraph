@@ -16,6 +16,52 @@ Use [AGENTS.md](AGENTS.md) for executable agent rules. Use this file for the hum
 
 Do not treat this as a batch-edit repository. The graph is the coordination system, so the graph should remain explainable after every PR.
 
+## Code Methodology and Style
+
+SpecGraph tooling should evolve by preserving observable contracts while moving
+implementation details behind clearer boundaries. Treat command behavior,
+artifact shapes, documented viewer surfaces, and Makefile targets as the public
+contract unless a proposal explicitly changes them.
+
+Practical method:
+
+1. Identify the contract first: CLI flags, exit codes, JSON/YAML fields, file paths, and affected specs/proposals.
+2. Add or name the characterization check that proves current behavior before changing shared tooling.
+3. Extract one seam at a time behind the existing façade, usually leaving `tools/supervisor.py` compatible until the package code is proven.
+4. Move I/O, subprocess execution, policy loading, and artifact writing to visible boundary objects or functions.
+5. Move domain decisions into typed values and objects with explicit serialization at the edge.
+6. Run focused tests first, then the broader gate matching the blast radius.
+
+Style rules for new supervisor package code:
+
+- Use domain names such as `Policy`, `SpecNode`, `RefinementPass`, and `GateDecision`.
+- Avoid procedural class suffixes such as `Manager`, `Helper`, `Processor`, `Service`, `Controller`, `Validator`, `Calculator`, and `Utils`.
+- Keep constructors and imports inert; no filesystem reads, YAML/JSON parsing, subprocess calls, or artifact writes at import time.
+- Keep untyped `dict[str, Any]` payloads at CLI/I/O boundaries. Prefer typed domain objects, `Mapping[str, object]`, `Protocol`, and explicit `to_payload()` methods inside package code.
+- Avoid setter-style mutation. Prefer immutable transitions that return a changed value/object.
+- Prefer protocols or polymorphic objects over repeated type branching when the branch represents a domain variant.
+- The architecture gate detects direct and compound `dict[str, Any]` annotations,
+  including optional/union and string annotations, but it does not resolve type
+  aliases such as `JsonPayload = dict[str, Any]`; avoid those aliases in package
+  signatures.
+
+The legacy supervisor monolith is exempt while it is being strangled behind the
+stable CLI façade. New code under `src/specgraph/supervisor/` is checked by:
+
+```bash
+make architecture-style
+make architecture-metrics
+python tools/validate_architecture_style.py
+python tools/architecture_metrics.py
+```
+
+`make architecture-metrics` is report-only. It emits JSON with the current
+architecture gate finding count plus code-shape metrics such as line count,
+top-level function count, class count, function length, parameter count,
+`dict[str, Any]` signatures, `isinstance` calls, setters, static methods, and
+procedural class suffixes. Use it for trend tracking; do not fail legacy work
+only because the historical baseline is large.
+
 ## Local Python Environment
 
 SpecGraph tooling requires Python 3.10 or newer. GitHub Actions installs Python
@@ -290,6 +336,7 @@ Choose checks based on blast radius:
 
 - JSON registry change: validate JSON and run focused supervisor tests.
 - Policy or supervisor behavior: run focused tests plus `make test-supervisor`.
+- New supervisor package code: run `make architecture-style` and focused tests.
 - Viewer-facing artifact shape: rebuild surfaces and update or add contract tests.
 - CI/deploy workflow: prefer a connection check or dry-run job before upload behavior changes.
 - Broad graph marathon: run `make backlog` and `make next-move` after the stack lands.
@@ -299,6 +346,7 @@ Useful baseline:
 ```bash
 make test
 make test-supervisor
+make architecture-style
 make viewer-surfaces
 make backlog
 make next-move

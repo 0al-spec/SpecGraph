@@ -19,6 +19,24 @@ repository. Do not edit `../.0al/tasks.md` or `../.0al/decisions.md` directly
 unless the user explicitly asks for tracker maintenance, and never write secrets,
 credentials, private keys, or machine-local tokens to `.0al`.
 
+## Engineering methodology
+- Start from the external contract: CLI flags, exit codes, JSON/YAML artifact shapes, Makefile targets, and documented viewer surfaces.
+- Characterize existing behavior before refactoring shared tooling. Add or name the focused test, fixture, golden artifact, or validator that proves the contract stays stable.
+- Work in bounded slices. One PR should change one spec node, one proposal realization, one evidence mapping, one viewer contract, or one architectural seam.
+- Prefer façade-preserving refactors. Keep compatibility shims such as `tools/supervisor.py` stable while extracting typed package code behind them.
+- Make dependencies explicit. Pass roots, policies, clocks, executors, and artifact paths as values instead of reading hidden globals in domain logic.
+- Close every process lesson through code, tests, docs, or policy. Do not leave reusable workflow knowledge only in chat history.
+
+## Code style and architecture
+- Name domain concepts as nouns (`Policy`, `SpecNode`, `RefinementPass`, `GateDecision`), not procedural roles such as `Manager`, `Helper`, `Processor`, `Service`, `Controller`, `Validator`, `Calculator`, or `Utils`.
+- Keep constructors cheap: constructors store collaborators and values; they do not read files, parse YAML/JSON, spawn processes, or mutate the repository.
+- Keep import-time work inert. New package modules must not perform filesystem I/O, subprocess calls, policy loading, or artifact generation during import.
+- Keep DTOs at boundaries. YAML/JSON may enter as mappings at CLI/I/O boundaries, but core supervisor package code should use typed values, domain objects, `Protocol`s, and explicit serialization methods.
+- Prefer immutable transitions. Avoid setter-style methods; use methods such as `with_status(...)` or return a new value/object when state changes.
+- Prefer polymorphism and protocols over repeated `isinstance` branching when the branch represents a domain variant.
+- Keep I/O adapters at the edge and domain behavior in the package core. CLI parsing, filesystem access, subprocess execution, and artifact writing should be visibly separated from policy decisions.
+- Legacy code may remain non-conforming while it is being strangled behind a stable façade. New supervisor package code under `src/specgraph/supervisor/` must pass `make architecture-style`.
+
 ## Repository rules
 - Merge in main branch ONLY  via Pull (Merge) Request on GitHub
 - Deliver feature changes through a dedicated branch and Pull Request; do not land feature work directly on `main`.
@@ -32,10 +50,10 @@ credentials, private keys, or machine-local tokens to `.0al`.
 - Keep DocC documentation synchronized with ordinary repository documentation. When changing `docs/`, `README.md`, `CONTRIBUTING.md`, `AGENTS.md`, or `tools/README.md` in a way that affects published technical guidance, update the corresponding `Sources/SpecGraph/Documentation.docc/` page or the DocC sync contract, then run `make docc-sync`.
 - When addressing actionable PR review threads, treat review feedback as process evidence: classify the root cause, add or name a prevention action such as a regression test, validator, policy rule, documentation rule, or agent instruction, record verification, and only use accepted risk when prevention is intentionally deferred. Use [tools/review_feedback_policy.json](tools/review_feedback_policy.json) as the vocabulary source.
 - When operating the supervisor, use the repo-local skills under [`.codex/skills`](.codex/skills) as the default operational wrapper before ad hoc CLI usage; especially `specgraph-supervisor`, `specgraph-supervisor-gate-review`, and `specgraph-supervisor-child-materialize`.
-- Prefer the repository Makefile shortcuts for routine supervisor/viewer/test operations instead of direct verbose commands: `make viewer-surfaces`, `make dashboard`, `make backlog`, `make next-move`, `make spec-activity`, `make proposal-spec-trace`, `make proposal-tracking`, `make proposal-tracking-gate`, `make external-consumers`, `make external-handoffs`, `make metrics-delivery`, `make metrics-feedback`, `make metrics-source-promotion`, `make metric-signals`, `make metric-thresholds`, `make metric-packs`, `make metric-pack-drift`, `make metric-pack-adapters`, `make metric-pack-runs`, `make metric-pricing`, `make model-usage`, `make conversation-memory`, `make conversation-memory-map`, `make conversation-memory-pressure`, `make pre-spec-semantics`, `make implementation-work`, `make supervisor-evidence-packet`, `make supervisor-stalled-run-salvage`, `make factory-architecture`, `make swift-typed-tooling`, `make project-environment`, `make init-product-workspace`, `make review-feedback`, `make docc-sync`, `make publish-bundle`, `make test`, and `make test-supervisor`. Use direct `python3 tools/supervisor.py ... --output-mode full` only when a task explicitly needs the complete artifact on stdout.
+- Prefer the repository Makefile shortcuts for routine supervisor/viewer/test operations instead of direct verbose commands: `make viewer-surfaces`, `make dashboard`, `make backlog`, `make next-move`, `make spec-activity`, `make proposal-spec-trace`, `make proposal-tracking`, `make proposal-tracking-gate`, `make architecture-style`, `make architecture-metrics`, `make external-consumers`, `make external-handoffs`, `make metrics-delivery`, `make metrics-feedback`, `make metrics-source-promotion`, `make metric-signals`, `make metric-thresholds`, `make metric-packs`, `make metric-pack-drift`, `make metric-pack-adapters`, `make metric-pack-runs`, `make metric-pricing`, `make model-usage`, `make conversation-memory`, `make conversation-memory-map`, `make conversation-memory-pressure`, `make pre-spec-semantics`, `make implementation-work`, `make supervisor-evidence-packet`, `make supervisor-stalled-run-salvage`, `make factory-architecture`, `make swift-typed-tooling`, `make project-environment`, `make init-product-workspace`, `make review-feedback`, `make docc-sync`, `make publish-bundle`, `make test`, and `make test-supervisor`. Use direct `python3 tools/supervisor.py ... --output-mode full` only when a task explicitly needs the complete artifact on stdout.
 - Treat generated supervisor runtime artifacts as local by default, including `.worktrees/` and `runs/*`; only intentionally curated artifacts should be promoted into tracked documentation or specification surfaces.
 - Tool-related work belongs under `/tools` (including code when needed).
 - Test-related work belongs under `/tests` (including test code).
-- Runtime code is only allowed when it is scoped to `/tools` or `/tests`.
+- Runtime code is only allowed when it is scoped to `/tools` or `/tests`, except for explicit package-extraction work under `src/specgraph/` that preserves the existing CLI/tool façade and carries focused tests.
 - Do not edit unrelated files.
 - If blocked, stop and explain the blocker clearly.
