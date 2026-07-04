@@ -19,7 +19,9 @@ package boundaries behind stable façades. `AGENTS.md` and `CONTRIBUTING.md`
 define the source-of-truth engineering method and code style. New supervisor
 package code under `src/specgraph/supervisor/` is guarded by the
 `architecture-style` gate, while `architecture-metrics` provides report-only
-code-shape and EO-inspired trend metrics.
+code-shape and EO-inspired trend metrics. The long-running supervisor refactor
+roadmap is tracked in `docs/supervisor_refactor_roadmap.md` as engineering
+governance rather than a SpecGraph semantic specification.
 
 The current public surfaces are:
 
@@ -40,6 +42,7 @@ The canonical source files remain in the repository:
 - `CONTRIBUTING.md`
 - `AGENTS.md`
 - `docs/static_artifact_publish.md`
+- `docs/supervisor_refactor_roadmap.md`
 - `docs/product_workspace_graph_versioning_roadmap.md`
 - `docs/product_workspace_stable_mode_guide.md`
 - `docs/proposals/*.md`

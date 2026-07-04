@@ -62,6 +62,10 @@ top-level function count, class count, function length, parameter count,
 procedural class suffixes. Use it for trend tracking; do not fail legacy work
 only because the historical baseline is large.
 
+For the long-running supervisor refactor plan, see
+[docs/supervisor_refactor_roadmap.md](docs/supervisor_refactor_roadmap.md).
+The roadmap is engineering governance, not a SpecGraph semantic specification.
+
 ## Local Python Environment
 
 SpecGraph tooling requires Python 3.10 or newer. GitHub Actions installs Python
