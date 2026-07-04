@@ -14,6 +14,17 @@
 - 
 - 
 
+## Spec Evidence
+For SpecGraph logic/tooling changes, cite at least one existing `SG-SPEC-####`
+or proposal `####`. PR body is preferred; commit trailers with the same fields
+are accepted. For a true no-impact change, use `Spec-ID: NO-SPEC-IMPACT` and
+provide a rationale.
+
+Spec-ID:
+Proposal-ID:
+Spec-Impact: behavior | schema | lifecycle | tooling | docs-only | no-impact
+Spec-Rationale:
+
 ## Validation
 - [ ] Tests added/updated for changed behavior
 - [ ] Local checks passed

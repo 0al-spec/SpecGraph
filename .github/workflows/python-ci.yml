@@ -2,6 +2,7 @@ name: Python CI
 
 on:
   pull_request:
+    types: [opened, synchronize, reopened, edited]
   push:
     branches:
       - main
@@ -11,6 +12,26 @@ env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
 
 jobs:
+  spec-evidence:
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - name: Set up Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: "3.10"
+
+      - name: Check Spec evidence gate
+        run: >
+          make spec-evidence-gate
+          SPEC_EVIDENCE_BASE_REF="${{ github.event.pull_request.base.sha }}"
+          SPEC_EVIDENCE_HEAD_REF="${{ github.event.pull_request.head.sha }}"
+
   python-quality:
     runs-on: ubuntu-latest
     steps:
