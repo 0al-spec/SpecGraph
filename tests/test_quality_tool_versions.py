@@ -24,6 +24,10 @@ def load_python_ci() -> str:
     return (ROOT / ".github" / "workflows" / "python-ci.yml").read_text(encoding="utf-8")
 
 
+def load_python_ci_config() -> dict:
+    return yaml.safe_load(load_python_ci())
+
+
 def load_python_quality() -> str:
     return (ROOT / "tools" / "python_quality.py").read_text(encoding="utf-8")
 
@@ -73,3 +77,12 @@ def test_quality_tool_versions_are_pinned_and_aligned() -> None:
     assert "python -m pip install -e .[dev]" in python_ci
     assert "python tools/python_quality.py" in python_ci
     assert "tools/validate_architecture_style.py" in python_quality
+
+
+def test_python_ci_runs_fast_gates_before_full_test_suite() -> None:
+    python_ci = load_python_ci_config()
+    steps = python_ci["jobs"]["test"]["steps"]
+    step_names = [step.get("name", "") for step in steps]
+
+    assert step_names.index("Check proposal tracking gate") < step_names.index("Run tests")
+    assert step_names.index("Check DocC documentation sync") < step_names.index("Run tests")
