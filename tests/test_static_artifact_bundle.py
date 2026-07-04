@@ -288,6 +288,14 @@ def test_build_public_bundle_copies_specs_and_runs_with_manifest(
         {"artifact_kind": "local_operator_executor_report", "local_only": True},
     )
     write_json(
+        repo / "runs" / "real_idea_smoke" / "local_operator_user_idea_raw_input.json",
+        {"artifact_kind": "user_idea_raw_input", "local_only": True, "idea": "private nested idea"},
+    )
+    write_json(
+        repo / "runs" / "real_idea_smoke" / "custom_raw_idea.json",
+        {"artifact_kind": "user_idea_raw_input", "local_only": True, "idea": "private custom idea"},
+    )
+    write_json(
         repo / "runs" / "local_operator_executor_report_review_packet.json",
         {
             "artifact_kind": "local_operator_executor_report_review_packet",
@@ -380,6 +388,10 @@ def test_build_public_bundle_copies_specs_and_runs_with_manifest(
         result.output_dir / "runs" / "local_operator_executor_report_contract.json"
     ).exists()
     assert not (result.output_dir / "runs" / "local_operator_executor_report.json").exists()
+    assert not (
+        result.output_dir / "runs" / "real_idea_smoke" / "local_operator_user_idea_raw_input.json"
+    ).exists()
+    assert not (result.output_dir / "runs" / "real_idea_smoke" / "custom_raw_idea.json").exists()
     assert not (
         result.output_dir / "runs" / "local_operator_executor_report_review_packet.json"
     ).exists()

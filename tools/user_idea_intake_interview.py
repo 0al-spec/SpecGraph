@@ -491,6 +491,8 @@ def build_interview(
         subsystem=subsystem,
         lifecycle_phase=lifecycle_phase,
     )
+    raw_input["local_only"] = True
+    raw_input["raw_text_published"] = False
     frame = _dict(raw_input.get("active_frame_hints"))
     _extend_list(frame, "ontology_refs", ontology_refs)
     _extend_list(frame, "ontology_layer_refs", ontology_layer_refs)
@@ -568,7 +570,7 @@ def build_interview(
             "artifact_kind": "user_idea_raw_input",
             "contract_ref": RAW_INPUT_CONTRACT_REF,
             "digest": _digest(raw_input),
-            "local_only": raw_output_path.name.startswith("local_operator_"),
+            "local_only": True,
             "raw_text_published": False,
         },
         "clarification_answer_application": {

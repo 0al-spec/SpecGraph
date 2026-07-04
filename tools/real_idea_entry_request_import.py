@@ -105,6 +105,10 @@ def _slug(value: str, fallback: str = "real-idea") -> str:
     return slug or fallback
 
 
+def _slug_to_project_id(value: str) -> str:
+    return "".join(part[:1].upper() + part[1:] for part in value.split("-") if part)
+
+
 def load_json(path: Path) -> dict[str, Any]:
     payload = json.loads(path.read_text(encoding="utf-8"))
     if not isinstance(payload, dict):
@@ -541,7 +545,7 @@ def build_materialization(
         candidate_id=candidate_id,
         display_name=display_name,
         public_route=public_route,
-        project="SpecGraph",
+        project=_slug_to_project_id(candidate_id),
         subsystem="Product Workspace",
         lifecycle_phase="idea_intake",
         ontology_refs=["ontology://specgraph-core"],

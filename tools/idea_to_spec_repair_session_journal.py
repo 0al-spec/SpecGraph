@@ -58,6 +58,13 @@ EXPECTED_ARTIFACTS = {
         "specgraph.idea-to-spec.promotion-gate.v0.1",
     ),
 }
+OPTIONAL_REPAIR_STAGE_KEYS = {
+    "clarification_answers",
+    "ontology_decisions",
+    "rerun_input",
+    "rerun_preview",
+    "rerun_materialization",
+}
 
 RAW_TRACE_FIELDS = {
     "operator_note",
@@ -175,7 +182,30 @@ def _source_artifact(
     key: str,
     artifact: dict[str, Any],
     path: Path | None,
+    missing_stages: set[str] | None = None,
 ) -> dict[str, Any]:
+    missing_stage_keys = missing_stages or set()
+    if key in missing_stage_keys:
+        expected_kind, expected_contract = EXPECTED_ARTIFACTS[key]
+        return {
+            "artifact_key": key,
+            "artifact_kind": expected_kind,
+            "contract_ref": expected_contract,
+            "proposal_id": artifact.get("proposal_id"),
+            "schema_version": None,
+            "source_ref": _relative_ref(path) if path else f"missing:{key}",
+            "sha256": None,
+            "readiness": {
+                "ready": False,
+                "review_state": "artifact_missing",
+                "blocked_by": [f"{key}_missing"],
+            },
+            "summary": {
+                "status": "artifact_missing",
+                "missing_optional_stage": True,
+            },
+            "status": "artifact_missing",
+        }
     readiness = _dict(artifact.get("readiness"))
     summary = _dict(artifact.get("summary"))
     return {
@@ -196,8 +226,24 @@ def _validate_artifact(
     *,
     key: str,
     artifact: dict[str, Any],
+    missing_stages: set[str] | None = None,
 ) -> list[dict[str, Any]]:
     findings: list[dict[str, Any]] = []
+    missing_stage_keys = missing_stages or set()
+    if artifact.get("missing_optional_stage") is True and key not in missing_stage_keys:
+        findings.append(
+            _finding(
+                finding_id=f"{key}_missing_optional_stage_untrusted",
+                severity="review_required",
+                message=(
+                    f"{key} declares missing_optional_stage in content. Missing optional "
+                    "stages are trusted only when established by the journal loader from "
+                    "an absent input path."
+                ),
+            )
+        )
+    if key in missing_stage_keys:
+        return findings
     expected_kind, expected_contract = EXPECTED_ARTIFACTS[key]
     if artifact.get("artifact_kind") != expected_kind:
         findings.append(
@@ -264,7 +310,9 @@ def _source_ref_mismatch_findings(
     *,
     artifacts: dict[str, dict[str, Any]],
     paths: dict[str, Path],
+    missing_stages: set[str] | None = None,
 ) -> list[dict[str, Any]]:
+    missing_stage_keys = missing_stages or set()
     expected_refs = {key: _relative_ref(path) for key, path in paths.items()}
     checks = (
         (
@@ -310,6 +358,10 @@ def _source_ref_mismatch_findings(
     )
     findings: list[dict[str, Any]] = []
     for artifact_key, field_path, expected_key in checks:
+        if artifact_key in missing_stage_keys:
+            continue
+        if expected_key in missing_stage_keys:
+            continue
         cursor: Any = artifacts.get(artifact_key, {})
         for field in field_path:
             cursor = _dict(cursor).get(field)
@@ -340,6 +392,28 @@ def _source_ref_mismatch_findings(
                 )
             )
     return findings
+
+
+def _missing_optional_artifact(key: str) -> dict[str, Any]:
+    expected_kind, expected_contract = EXPECTED_ARTIFACTS[key]
+    return {
+        "artifact_kind": expected_kind,
+        "schema_version": None,
+        "contract_ref": expected_contract,
+        "canonical_mutations_allowed": False,
+        "tracked_artifacts_written": False,
+        "missing_optional_stage": True,
+        "readiness": {
+            "ready": False,
+            "review_state": "artifact_missing",
+            "blocked_by": [f"{key}_missing"],
+        },
+        "authority_boundary": _authority_boundary(),
+        "summary": {
+            "status": "artifact_missing",
+            "missing_optional_stage": True,
+        },
+    }
 
 
 def _accepted_answers(answers: dict[str, Any]) -> list[dict[str, Any]]:
@@ -538,7 +612,9 @@ def build_idea_to_spec_repair_session_journal(
     promotion_gate_path: Path | None = None,
     session_id: str | None = None,
     operator_ref: str = "local_operator:unattributed",
+    missing_stages: set[str] | None = None,
 ) -> dict[str, Any]:
+    missing_stage_keys = missing_stages or set()
     artifacts = {
         "active_candidate": active_candidate,
         "clarification_requests": clarification_requests,
@@ -562,23 +638,37 @@ def build_idea_to_spec_repair_session_journal(
 
     findings: list[dict[str, Any]] = []
     for key, artifact in artifacts.items():
-        findings.extend(_validate_artifact(key=key, artifact=artifact))
+        findings.extend(
+            _validate_artifact(key=key, artifact=artifact, missing_stages=missing_stage_keys)
+        )
     findings.extend(
         _source_ref_mismatch_findings(
             artifacts=artifacts,
             paths={key: path for key, path in paths.items() if path is not None},
+            missing_stages=missing_stage_keys,
         )
     )
 
     source_artifacts = {
-        key: _source_artifact(key=key, artifact=artifact, path=paths[key])
+        key: _source_artifact(
+            key=key,
+            artifact=artifact,
+            path=paths[key],
+            missing_stages=missing_stage_keys,
+        )
         for key, artifact in artifacts.items()
     }
     candidate = _dict(active_candidate.get("candidate"))
     candidate_id = _text(candidate.get("candidate_id"), "unknown-candidate")
     effective_session_id = _text(session_id, f"repair-session.{candidate_id}")
-    accepted_answers = _accepted_answers(clarification_answers)
-    decisions = _ontology_decisions(ontology_decisions)
+    if "clarification_answers" in missing_stage_keys:
+        accepted_answers = []
+    else:
+        accepted_answers = _accepted_answers(clarification_answers)
+    if "ontology_decisions" in missing_stage_keys:
+        decisions = []
+    else:
+        decisions = _ontology_decisions(ontology_decisions)
     readiness_impact = _readiness_impact(
         active_candidate=active_candidate,
         clarification_requests=clarification_requests,
@@ -698,20 +788,41 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--session-id")
     parser.add_argument("--operator-ref", default="local_operator:unattributed")
     parser.add_argument("--output", default=DEFAULT_OUTPUT_PATH, type=Path)
+    parser.add_argument(
+        "--allow-missing-repair-artifacts",
+        action="store_true",
+        help=(
+            "Allow post-request repair artifacts to be absent and record them as "
+            "missing stages. The journal remains review-session ready, but "
+            "candidate approval readiness stays false until rerun artifacts exist."
+        ),
+    )
     parser.add_argument("--strict", action="store_true")
     return parser
 
 
 def main(argv: list[str] | None = None) -> int:
     args = build_parser().parse_args(argv)
+    missing_stages: set[str] = set()
+
+    def load_stage(key: str, path: Path) -> dict[str, Any]:
+        if (
+            args.allow_missing_repair_artifacts
+            and key in OPTIONAL_REPAIR_STAGE_KEYS
+            and not path.exists()
+        ):
+            missing_stages.add(key)
+            return _missing_optional_artifact(key)
+        return load_json(path)
+
     report = build_idea_to_spec_repair_session_journal(
         active_candidate=load_json(args.active_candidate),
         clarification_requests=load_json(args.clarification_requests),
-        clarification_answers=load_json(args.clarification_answers),
-        ontology_decisions=load_json(args.ontology_decisions),
-        rerun_input=load_json(args.rerun_input),
-        rerun_preview=load_json(args.rerun_preview),
-        rerun_materialization=load_json(args.rerun_materialization),
+        clarification_answers=load_stage("clarification_answers", args.clarification_answers),
+        ontology_decisions=load_stage("ontology_decisions", args.ontology_decisions),
+        rerun_input=load_stage("rerun_input", args.rerun_input),
+        rerun_preview=load_stage("rerun_preview", args.rerun_preview),
+        rerun_materialization=load_stage("rerun_materialization", args.rerun_materialization),
         promotion_gate=load_json(args.promotion_gate),
         active_candidate_path=args.active_candidate,
         clarification_requests_path=args.clarification_requests,
@@ -723,6 +834,7 @@ def main(argv: list[str] | None = None) -> int:
         promotion_gate_path=args.promotion_gate,
         session_id=args.session_id,
         operator_ref=args.operator_ref,
+        missing_stages=missing_stages,
     )
     write_json(report, args.output)
     summary = _dict(report.get("summary"))

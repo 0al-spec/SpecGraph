@@ -66,6 +66,8 @@ def test_real_idea_interview_captures_incomplete_idea_without_public_raw_text(
     session = load_json(tmp_path / "user_idea_intake_session.json")
     report = load_json(tmp_path / "user_idea_intake_interview_report.json")
     assert raw_input["idea"]["text"] == raw_text
+    assert raw_input["local_only"] is True
+    assert raw_input["raw_text_published"] is False
     assert session["readiness"]["review_state"] == "intake_interview_review_required"
     assert report["summary"]["ready_for_event_storming_intake"] is False
     assert report["raw_input"]["local_only"] is True
@@ -73,6 +75,37 @@ def test_real_idea_interview_captures_incomplete_idea_without_public_raw_text(
     assert raw_text not in json.dumps(report)
     assert report["summary"]["finding_count"] > 0
     assert not (tmp_path / "user_idea_intake_source.json").exists()
+
+
+def test_real_idea_interview_marks_custom_raw_output_local_only(tmp_path: Path) -> None:
+    result = subprocess.run(
+        [
+            sys.executable,
+            str(TOOL_PATH),
+            "--idea-text",
+            "Build a local tool for comparing subscription costs.",
+            "--raw-output",
+            str(tmp_path / "raw.json"),
+            "--session-output",
+            str(tmp_path / "user_idea_intake_session.json"),
+            "--source-output",
+            str(tmp_path / "user_idea_intake_source.json"),
+            "--report-output",
+            str(tmp_path / "user_idea_intake_interview_report.json"),
+        ],
+        cwd=ROOT,
+        check=False,
+        capture_output=True,
+        text=True,
+    )
+
+    assert result.returncode == 0
+    raw_input = load_json(tmp_path / "raw.json")
+    report = load_json(tmp_path / "user_idea_intake_interview_report.json")
+    assert raw_input["local_only"] is True
+    assert raw_input["raw_text_published"] is False
+    assert report["raw_input"]["local_only"] is True
+    assert report["raw_input"]["raw_text_published"] is False
 
 
 def test_real_idea_interview_cli_hints_write_ready_source(tmp_path: Path) -> None:
@@ -595,6 +628,8 @@ def test_real_idea_intake_make_target_accepts_non_ascii_env_text(tmp_path: Path)
     session = load_json(session_output)
     report = load_json(report_output)
     assert raw_input["idea"]["text"] == idea_text
+    assert raw_input["local_only"] is True
+    assert raw_input["raw_text_published"] is False
     assert session["intent"]["summary"] == "Помощник по ремонту квартиры."
     assert session["workspace"]["candidate_id"] == "apartment-renovation-assistant"
     assert report["raw_input"]["local_only"] is True

@@ -207,6 +207,7 @@ IDEA_TO_SPEC_REPAIR_SESSION_OUTPUT ?= runs/idea_to_spec_repair_session.json
 IDEA_TO_SPEC_REPAIR_SESSION_ID ?=
 IDEA_TO_SPEC_REPAIR_SESSION_ID_ARG := $(if $(strip $(IDEA_TO_SPEC_REPAIR_SESSION_ID)),--session-id "$(IDEA_TO_SPEC_REPAIR_SESSION_ID)",)
 IDEA_TO_SPEC_REPAIR_SESSION_OPERATOR_REF ?= local_operator:unattributed
+IDEA_TO_SPEC_REPAIR_SESSION_JOURNAL_ARGS := --active-candidate "$(IDEA_TO_SPEC_REPAIR_SESSION_ACTIVE_CANDIDATE)" --clarification-requests "$(IDEA_TO_SPEC_REPAIR_SESSION_CLARIFICATION_REQUESTS)" --clarification-answers "$(IDEA_TO_SPEC_REPAIR_SESSION_CLARIFICATION_ANSWERS)" --ontology-decisions "$(IDEA_TO_SPEC_REPAIR_SESSION_ONTOLOGY_DECISIONS)" --rerun-input "$(IDEA_TO_SPEC_REPAIR_SESSION_RERUN_INPUT)" --rerun-preview "$(IDEA_TO_SPEC_REPAIR_SESSION_RERUN_PREVIEW)" --rerun-materialization "$(IDEA_TO_SPEC_REPAIR_SESSION_RERUN_MATERIALIZATION)" --promotion-gate "$(IDEA_TO_SPEC_REPAIR_SESSION_PROMOTION_GATE)" --operator-ref "$(IDEA_TO_SPEC_REPAIR_SESSION_OPERATOR_REF)" $(IDEA_TO_SPEC_REPAIR_SESSION_ID_ARG) --output "$(IDEA_TO_SPEC_REPAIR_SESSION_OUTPUT)"
 SPECSPACE_REPAIR_DRAFT_IMPORT_DRAFTS ?= runs/idea_to_spec_repair_drafts.json
 SPECSPACE_REPAIR_DRAFT_IMPORT_REPAIR_SESSION ?= runs/idea_to_spec_repair_session.json
 SPECSPACE_REPAIR_DRAFT_IMPORT_CLARIFICATION_REQUESTS ?= runs/idea_to_spec_clarification_requests.json
@@ -375,6 +376,7 @@ PYTHON_TARGETS := viewer-surfaces dashboard backlog next-move spec-activity grap
 	idea-to-spec-rerun-preview \
 	idea-to-spec-rerun-materialization \
 	repaired-candidate-promotion-handoff \
+	idea-to-spec-initial-repair-session-journal \
 	idea-to-spec-repair-session-journal \
 	specspace-repair-draft-import-preview \
 	specspace-repair-rerun-request-gate \
@@ -952,7 +954,11 @@ repaired-candidate-promotion-handoff:
 
 .PHONY: idea-to-spec-repair-session-journal
 idea-to-spec-repair-session-journal:
-	@$(PYTHON) tools/idea_to_spec_repair_session_journal.py --active-candidate "$(IDEA_TO_SPEC_REPAIR_SESSION_ACTIVE_CANDIDATE)" --clarification-requests "$(IDEA_TO_SPEC_REPAIR_SESSION_CLARIFICATION_REQUESTS)" --clarification-answers "$(IDEA_TO_SPEC_REPAIR_SESSION_CLARIFICATION_ANSWERS)" --ontology-decisions "$(IDEA_TO_SPEC_REPAIR_SESSION_ONTOLOGY_DECISIONS)" --rerun-input "$(IDEA_TO_SPEC_REPAIR_SESSION_RERUN_INPUT)" --rerun-preview "$(IDEA_TO_SPEC_REPAIR_SESSION_RERUN_PREVIEW)" --rerun-materialization "$(IDEA_TO_SPEC_REPAIR_SESSION_RERUN_MATERIALIZATION)" --promotion-gate "$(IDEA_TO_SPEC_REPAIR_SESSION_PROMOTION_GATE)" --operator-ref "$(IDEA_TO_SPEC_REPAIR_SESSION_OPERATOR_REF)" $(IDEA_TO_SPEC_REPAIR_SESSION_ID_ARG) --output "$(IDEA_TO_SPEC_REPAIR_SESSION_OUTPUT)"
+	@$(PYTHON) tools/idea_to_spec_repair_session_journal.py $(IDEA_TO_SPEC_REPAIR_SESSION_JOURNAL_ARGS)
+
+.PHONY: idea-to-spec-initial-repair-session-journal
+idea-to-spec-initial-repair-session-journal:
+	@$(PYTHON) tools/idea_to_spec_repair_session_journal.py $(IDEA_TO_SPEC_REPAIR_SESSION_JOURNAL_ARGS) --allow-missing-repair-artifacts
 
 .PHONY: specspace-repair-draft-import-preview
 specspace-repair-draft-import-preview:

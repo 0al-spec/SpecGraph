@@ -192,6 +192,21 @@ def _relative_ref(path: Path | None) -> str | None:
         return f"external:{path.name or 'artifact'}"
 
 
+def _accepted_review_lane_refs(path: Path | None) -> set[str]:
+    lane_ref = _relative_ref(path)
+    if not lane_ref:
+        return set()
+    refs = {lane_ref}
+    if (
+        path is not None
+        and path.name == "project_local_ontology_review_lane.json"
+        and lane_ref.startswith("runs/")
+        and lane_ref != "runs/project_local_ontology_review_lane.json"
+    ):
+        refs.add("runs/project_local_ontology_review_lane.json")
+    return refs
+
+
 def _sha256(path: Path | None) -> str | None:
     if path is None or not path.exists():
         return None
@@ -516,6 +531,8 @@ def _candidate_from_decision(
     value: dict[str, Any],
     term: dict[str, Any],
     source_ref: str | None,
+    review_lane_ref: str | None,
+    review_lane_sha256: str | None,
 ) -> dict[str, Any]:
     term_key = _text(decision.get("term_key"))
     target_ref = _text(decision.get("target_ref")) or _text(
@@ -531,6 +548,8 @@ def _candidate_from_decision(
         "id": f"specspace-project-local-ontology-import.{_slug(term_key)}.{_slug(action)}",
         "source_decision_id": _text(decision.get("decision_id")),
         "source_artifact": source_ref,
+        "project_local_ontology_review_lane_ref": review_lane_ref,
+        "project_local_ontology_review_lane_sha256": review_lane_sha256,
         "decision_type": decision_type,
         "review_action": action,
         "status": status,
@@ -572,6 +591,8 @@ def build_specspace_project_local_ontology_decision_import_preview(
     lane_terms = _lane_terms(lane)
     required_terms = _required_term_keys(lane_terms)
     lane_ref = _relative_ref(review_lane_path)
+    lane_digest = _sha256(review_lane_path)
+    accepted_lane_refs = _accepted_review_lane_refs(review_lane_path)
     state_ref = _relative_ref(decision_state_path)
     supported_actions = set(
         _list(_dict(lane.get("review_decision_schema")).get("supported_actions"))
@@ -687,7 +708,7 @@ def build_specspace_project_local_ontology_decision_import_preview(
             )
             continue
         decision_lane_ref = _text(decision.get("project_local_ontology_review_lane_ref"))
-        if lane_ref and not decision_lane_ref:
+        if accepted_lane_refs and not decision_lane_ref:
             if _text(decision.get("term_key")) in required_terms:
                 invalid_terms.add(_text(decision.get("term_key")))
             invalid_decisions.append(
@@ -698,7 +719,7 @@ def build_specspace_project_local_ontology_decision_import_preview(
                 }
             )
             continue
-        if lane_ref and decision_lane_ref != lane_ref:
+        if accepted_lane_refs and decision_lane_ref not in accepted_lane_refs:
             if _text(decision.get("term_key")) in required_terms:
                 invalid_terms.add(_text(decision.get("term_key")))
             invalid_decisions.append(
@@ -707,6 +728,22 @@ def build_specspace_project_local_ontology_decision_import_preview(
                     "reason": "review_lane_ref_stale",
                     "expected": lane_ref,
                     "actual": decision_lane_ref,
+                }
+            )
+            continue
+        decision_lane_digest = _text(
+            decision.get("project_local_ontology_review_lane_sha256"),
+            _text(decision.get("review_lane_sha256")),
+        )
+        if lane_digest and decision_lane_digest and decision_lane_digest != lane_digest:
+            if _text(decision.get("term_key")) in required_terms:
+                invalid_terms.add(_text(decision.get("term_key")))
+            invalid_decisions.append(
+                {
+                    "decision_id": decision_id,
+                    "reason": "review_lane_digest_stale",
+                    "expected": lane_digest,
+                    "actual": decision_lane_digest,
                 }
             )
             continue
@@ -774,6 +811,8 @@ def build_specspace_project_local_ontology_decision_import_preview(
             value=value,
             term=term,
             source_ref=state_ref,
+            review_lane_ref=lane_ref,
+            review_lane_sha256=lane_digest,
         )
         seen_terms.add(term_key)
         if action in NON_RESOLVING_ACTIONS:
