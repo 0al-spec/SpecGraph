@@ -29,6 +29,15 @@ specgraph.space/team-decision-log
 The Team Decision Log route should use product workspace artifacts and should
 not expose SpecGraph bootstrap/self-evolution surfaces as product-domain state.
 
+Agent Surface is the intended future protocol vocabulary for describing these
+product workspace operations to agents and external runtimes. The current
+SpecGraph state is only alignment-ready: typed artifacts and durable reports
+can become action and receipt evidence later, but SpecGraph does not publish an
+Agent Surface manifest, issue Agent Grants, accept runtime action requests, or
+enforce revocation. Any future Agent Surface preview must remain experimental
+until the draft protocol and cross-repo product workspace contracts are
+versioned together.
+
 ## Active Candidate Source
 
 The next implementation slice should connect a validated Active Candidate
