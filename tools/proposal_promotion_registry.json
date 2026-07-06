@@ -2611,5 +2611,18 @@
     "required_provenance_links": [
       "source_draft_ref"
     ]
+  },
+  {
+    "proposal_id": "0203",
+    "source_artifact_class": "working_draft",
+    "source_refs": [
+      "docs/archive/proposal_sources/0203_feature_passport_rfc_02_adoption_contract.md"
+    ],
+    "motivating_concern": "FeaturePassport PR #3 tightened FP-RFC-0001 to version 0.2.0, so SpecGraph must update its Feature Runtime Evidence integration contract before implementing derived feature evidence artifacts against stale receipt, ladder, or claim-evaluation semantics.",
+    "normalized_title": "Feature Passport RFC 0.2 Adoption Contract",
+    "bounded_scope": "Update the SpecGraph Feature Runtime Evidence external-authority contract and roadmap tracking for FP-RFC-0001 0.2.0, including receipt hash coverage, chain scope, success-only level satisfaction, required_when skipped levels, aggregate claim evaluation, passport lifecycle/version pinning, and downstream schema/UI/Platform follow-ups, without implementing SDKs, ingestion, storage, signing, verification, SpecSpace UI, Platform receipt issuance, canonical spec mutation, or product workspace mutation.",
+    "required_provenance_links": [
+      "source_draft_ref"
+    ]
   }
 ]

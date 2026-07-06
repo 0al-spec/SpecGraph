@@ -375,6 +375,34 @@ Proposal `0158` intentionally stops before candidate spec graph authoring,
 prompt-agent execution, Git Service calls, canonical spec mutation, or Ontology
 writes.
 
+### 10A. Feature Passport RFC 0.2 Adoption
+
+Status: contract adoption tracked in proposal `0203`; implementation remains
+future work.
+
+FeaturePassport PR `#3` updated `FP-RFC-0001` from `0.1.0` to `0.2.0`. Before
+SpecGraph implements Feature Passport producer artifacts, the derived evidence
+line must use the tightened contract:
+
+- define schema contracts for `runs/feature_passport_index.json`,
+  `runs/feature_evidence_index.json`, receipt projections, and
+  claim-evaluation results;
+- carry receipt hash-chain scope and protected signature metadata instead of
+  accepting event-only hash chains;
+- distinguish probe-level receipt acceptance from aggregate claim evaluation
+  such as `minimum_evidence.users` and `minimum_evidence.sessions`;
+- represent `required_when` skipped levels as `not applicable`, not missing or
+  failed;
+- treat only `observation.result: "success"` as level-satisfying evidence while
+  keeping failure observations visible as execution/error evidence;
+- pin Feature Passport lifecycle/version state so historical receipts remain
+  interpretable under the passport version active at sealing time.
+
+The first implementation task after `0203` should be a schema-only producer
+contract for Feature Passport indexes, receipt projections, and claim-evaluation
+results. SpecSpace viewer work and Platform receipt authority decisions remain
+downstream tasks after those producer schemas exist.
+
 ### 11. Ontology-Bound Candidate Graph Seed
 
 Status: implemented in proposal `0159`.
