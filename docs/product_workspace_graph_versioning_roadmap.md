@@ -82,6 +82,41 @@ Not allowed in the MVP:
 - merge to `main` without a repository policy decision;
 - treating candidate graph state as accepted specification truth.
 
+## Agent Surface Alignment Intent
+
+Agent Surface is the intended future vocabulary for describing idea-to-spec
+operations to agents and external runtimes, but SpecGraph should not claim
+Agent Surface conformance yet.
+
+Current state:
+
+- SpecGraph produces typed candidate artifacts, validation gates, repair
+  reports, approval handoffs, promotion handoffs, maturity reports, and public
+  bundles.
+- These durable reports are candidate Agent Surface receipt evidence, but they
+  are not normalized Agent Surface receipts yet.
+- SpecGraph does not publish an Agent Surface manifest, issue Agent Grants,
+  accept external runtime action requests, or enforce grant revocation.
+- SpecGraph remains the producer/validator for product idea-to-spec artifacts;
+  Platform remains the execution boundary; SpecSpace remains the operator
+  surface.
+
+Near-term alignment should map existing product flow artifacts to the Agent
+Surface draft vocabulary without expanding authority:
+
+- Make targets and artifact contracts can be cataloged as candidate actions.
+- Gate and execution reports can be normalized toward receipt fields such as
+  action id, input refs, idempotency scope, authority boundary, result status,
+  and output refs.
+- Public-safe bundles can expose only sanitized evidence, never raw prompts,
+  private operator notes, local paths, Agent Grants, or runtime credentials.
+- Any future `/.well-known/agent-surface.json` or equivalent manifest must be
+  experimental until the Agent Surface draft is stable and cross-repo contract
+  versioning is in place.
+
+This is a coordination target, not a new gate. The existing product
+`product_idea_to_spec` authority boundary remains unchanged.
+
 ## Roadmap
 
 ### 1. Event-Storming Intake Artifact
