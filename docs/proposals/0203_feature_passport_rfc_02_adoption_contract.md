@@ -6,9 +6,11 @@ Draft / contract adoption slice.
 
 ## Summary
 
-Adopt FeaturePassport PR `#3` as the current external authority for SpecGraph
-Feature Runtime Evidence planning.
+Adopt the merged FeaturePassport PR `#3` result as the current external
+authority for SpecGraph Feature Runtime Evidence planning.
 
+The accepted upstream source is FeaturePassport PR `#3`, merged on
+2026-07-06 as merge commit `724e51c47fee89de1fcd4a3857ebbcea9bf1fa19`.
 The merged RFC version is `FP-RFC-0001` / `0.2.0`. It tightens the evidence
 contract in ways that affect future SpecGraph derived artifacts, but it does not
 require SpecGraph to implement a telemetry SDK, ingestion service, storage
@@ -72,7 +74,8 @@ This slice does not:
 ## Acceptance Criteria
 
 - Proposal `0058` references `FP-RFC-0001` / `0.2.0` and the merged PR `#3`
-  authority.
+  authority, including merge commit
+  `724e51c47fee89de1fcd4a3857ebbcea9bf1fa19`.
 - SpecGraph roadmap text names the pre-implementation schema task for Feature
   Passport indexes, receipt projections, and claim-evaluation results.
 - SpecSpace and Platform follow-ups are recorded as downstream roadmap items,

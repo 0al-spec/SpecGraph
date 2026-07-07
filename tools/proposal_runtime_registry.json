@@ -11600,7 +11600,7 @@
   },
   {
     "proposal_id": "0203",
-    "posture": "contract_adoption_followup",
+    "posture": "bounded_runtime_followup",
     "runtime_surfaces": [
       "docs/proposals/0203_feature_passport_rfc_02_adoption_contract.md",
       "docs/archive/proposal_sources/0203_feature_passport_rfc_02_adoption_contract.md",

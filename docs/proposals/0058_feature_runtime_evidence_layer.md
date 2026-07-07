@@ -20,7 +20,7 @@ External Feature Passport authority:
   <https://github.com/0al-spec/FeaturePassport/blob/724e51c47fee89de1fcd4a3857ebbcea9bf1fa19/docs/proposals/0001_specgraph_feature_runtime_evidence_layer.md>
 - RFC id/version: `FP-RFC-0001` / `0.2.0`
 - Adoption follow-up: proposal `0203` records the bounded SpecGraph contract
-  update required by FeaturePassport PR `#3`.
+  update required by merged FeaturePassport PR `#3`.
 
 External standards and transport anchors remain non-authoritative inputs:
 
