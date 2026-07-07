@@ -409,6 +409,27 @@ report artifacts contain only sanitized request metadata and digests. The flow
 does not execute prompt agents, apply answers, mutate specs, write Ontology,
 accept terms, create Git state, or publish read models.
 
+Proposal `0203` records the Feature Passport RFC 0.2 adoption boundary before
+SpecGraph implements Feature Runtime Evidence producer artifacts. The accepted
+upstream source is FeaturePassport PR `#3`, merged as
+`724e51c47fee89de1fcd4a3857ebbcea9bf1fa19`, which updates `FP-RFC-0001` to
+`0.2.0`.
+
+Before `runs/feature_evidence_index.json` exists, the next SpecGraph slice must
+define schema-only producer contracts for:
+
+- `runs/feature_passport_index.json`;
+- `runs/feature_evidence_index.json`;
+- receipt projections, including hash-chain scope and protected signature
+  metadata;
+- claim-evaluation results, including aggregate-pending, satisfied, failed,
+  inapplicable, and conflicting states.
+
+SpecSpace viewer work and Platform receipt authority decisions remain downstream
+tasks after those producer schemas exist. This DocC section mirrors the roadmap
+guidance; it does not add telemetry ingestion, receipt signing, canonical spec
+mutation, or Platform receipt issuance authority.
+
 Proposal `0163` adds `idea_to_spec_clarification_requests` as the unified
 read-only question/action surface:
 

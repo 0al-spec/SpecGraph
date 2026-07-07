@@ -11597,5 +11597,33 @@
       }
     ],
     "notes": "SpecGraph now validates SpecSpace-owned raw idea entry request state and materializes local-only real idea intake artifacts without publishing raw text or adding execution, ontology, spec, approval, Git, or publication authority."
+  },
+  {
+    "proposal_id": "0203",
+    "posture": "bounded_runtime_followup",
+    "runtime_surfaces": [
+      "docs/proposals/0203_feature_passport_rfc_02_adoption_contract.md",
+      "docs/archive/proposal_sources/0203_feature_passport_rfc_02_adoption_contract.md",
+      "docs/proposals/0058_feature_runtime_evidence_layer.md",
+      "docs/product_workspace_graph_versioning_roadmap.md"
+    ],
+    "runtime_markers": [
+      {
+        "path": "docs/proposals/0058_feature_runtime_evidence_layer.md",
+        "pattern": "FP-RFC-0001` / `0.2.0"
+      },
+      {
+        "path": "docs/proposals/0203_feature_passport_rfc_02_adoption_contract.md",
+        "pattern": "receipt_hash` covers the accepted event hash"
+      }
+    ],
+    "validation_markers": [],
+    "observation_markers": [
+      {
+        "path": "docs/product_workspace_graph_versioning_roadmap.md",
+        "pattern": "Feature Passport RFC 0.2 Adoption"
+      }
+    ],
+    "notes": "SpecGraph records the FP-RFC-0001 0.2 adoption boundary before implementing Feature Passport derived evidence indexes, receipt projections, claim-evaluation results, SpecSpace viewer contracts, or Platform receipt authority."
   }
 ]

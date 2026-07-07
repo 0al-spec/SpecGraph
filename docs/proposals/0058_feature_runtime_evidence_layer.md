@@ -17,8 +17,10 @@ External Feature Passport authority:
 
 - Feature Passport repository: <https://github.com/0al-spec/FeaturePassport>
 - Feature Passport RFC:
-  <https://github.com/0al-spec/FeaturePassport/blob/a56467a02f4f45457e6d1d5085874880799a4529/docs/proposals/0001_specgraph_feature_runtime_evidence_layer.md>
-- RFC id/version: `FP-RFC-0001` / `0.1.0`
+  <https://github.com/0al-spec/FeaturePassport/blob/724e51c47fee89de1fcd4a3857ebbcea9bf1fa19/docs/proposals/0001_specgraph_feature_runtime_evidence_layer.md>
+- RFC id/version: `FP-RFC-0001` / `0.2.0`
+- Adoption follow-up: proposal `0203` records the bounded SpecGraph contract
+  update required by merged FeaturePassport PR `#3`.
 
 External standards and transport anchors remain non-authoritative inputs:
 
@@ -58,6 +60,14 @@ Feature Passport, evidence claims, observations, attestations, receipts, evidenc
 levels, canonical event envelopes, and honesty boundaries. SpecGraph should not
 copy that contract. SpecGraph should consume it, reference it, and project its
 evidence into graph-native surfaces.
+
+`FP-RFC-0001` version `0.2.0` tightens the first downstream contract boundary:
+receipt hashes cover receipt content and signature metadata, each chain declares
+its scope, ladder levels are monotonic only across applicable levels, only
+successful observations satisfy levels, aggregate claims require a separate
+claim-evaluation step, and Feature Passport lifecycle/version pinning is
+explicit. SpecGraph derived surfaces must preserve those constraints rather than
+reconstructing earlier `0.1.0` semantics locally.
 
 ## Problem
 
@@ -272,13 +282,19 @@ receipt and event names remain defined by `FP-RFC-0001`.
 
 Suggested bounded slices:
 
-1. Feature Passport external authority policy and import/reference contract.
+1. Feature Passport external authority policy and import/reference contract
+   updated for `FP-RFC-0001` `0.2.0` through proposal `0203`.
 2. Feature Passport index derived from known external/passport sources.
-3. Build/release provenance projection linked by `request_id` and `feature_id`.
-4. Runtime receipt projection linked by Feature Passport evidence claims.
-5. Feature evidence ladder derived from passports, provenance, and receipts.
-6. Viewer contract for evidence ladder and honesty boundary badges.
-7. Product workspace integration so non-SpecGraph projects can emit compatible
+3. Schema contracts for `feature_passport_index`, `feature_evidence_index`,
+   receipt projection, and claim-evaluation results before any implementation
+   consumes `runs/feature_evidence_index.json`.
+4. Build/release provenance projection linked by `request_id` and `feature_id`.
+5. Runtime receipt projection linked by Feature Passport evidence claims.
+6. Feature evidence ladder derived from passports, provenance, sealed receipts,
+   and separate aggregate claim evaluation.
+7. Viewer contract for evidence ladder, skipped/inapplicable levels, failure
+   observations, aggregate-pending states, and honesty boundary badges.
+8. Product workspace integration so non-SpecGraph projects can emit compatible
    evidence without enabling SpecGraph self-evolution.
 
 ## Acceptance Criteria
