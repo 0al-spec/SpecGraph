@@ -16,8 +16,9 @@ downstream consumers.
 Repository methodology is contract-first: preserve documented CLI behavior,
 artifact shapes, viewer surfaces, and Makefile targets while extracting clearer
 package boundaries behind stable façades. `AGENTS.md` and `CONTRIBUTING.md`
-define the source-of-truth engineering method and code style. New supervisor
-package code under `src/specgraph/supervisor/` is guarded by the
+define the source-of-truth engineering method, code style, and review heuristics
+for artifact readiness, producer lifecycle states, and gate behavior. New
+supervisor package code under `src/specgraph/supervisor/` is guarded by the
 `architecture-style` gate, while `architecture-metrics` provides report-only
 code-shape and EO-inspired trend metrics. The long-running supervisor refactor
 roadmap is tracked in `docs/supervisor_refactor_roadmap.md` as engineering
