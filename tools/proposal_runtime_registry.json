@@ -11840,5 +11840,73 @@
       }
     ],
     "notes": "SpecGraph can now turn shallow Metrics-owned structural depth observations into review-required clarification requests and convert accepted entries answers into event-storming rerun hints."
+  },
+  {
+    "proposal_id": "0208",
+    "posture": "bounded_runtime_followup",
+    "runtime_surfaces": [
+      "docs/proposals/0208_safe_workflow_topology_repair.md",
+      "docs/archive/proposal_sources/0208_safe_workflow_topology_repair.md",
+      "tools/idea_to_spec_clarification_requests.py",
+      "tools/idea_to_spec_answer_rerun_input.py",
+      "tools/idea_to_spec_rerun_preview.py",
+      "tools/idea_to_spec_rerun_materialization.py",
+      "tools/real_idea_answer_authoring.py",
+      "tests/test_idea_to_spec_clarification_requests.py",
+      "tests/test_idea_to_spec_answer_rerun_input.py",
+      "tests/test_idea_to_spec_rerun_preview.py",
+      "tests/test_idea_to_spec_rerun_materialization.py",
+      "tests/test_real_idea_answer_authoring.py",
+      "docs/product_workspace_graph_versioning_roadmap.md",
+      "Sources/SpecGraph/Documentation.docc/ProductWorkspacePilots.md",
+      "tools/README.md"
+    ],
+    "runtime_markers": [
+      {
+        "path": "tools/idea_to_spec_clarification_requests.py",
+        "pattern": "WORKFLOW_TOPOLOGY_REPAIR_PROPOSAL_ID = \"0208\""
+      },
+      {
+        "path": "tools/idea_to_spec_rerun_preview.py",
+        "pattern": "WORKFLOW_RELATION_SPECS = {"
+      },
+      {
+        "path": "tools/idea_to_spec_rerun_materialization.py",
+        "pattern": "def _merge_workflow_topology_edges("
+      }
+    ],
+    "validation_markers": [
+      {
+        "path": "tests/test_idea_to_spec_clarification_requests.py",
+        "pattern": "clarification.depth.workflow-topology"
+      },
+      {
+        "path": "tests/test_idea_to_spec_answer_rerun_input.py",
+        "pattern": "test_answer_rerun_input_preserves_workflow_relation_hints"
+      },
+      {
+        "path": "tests/test_idea_to_spec_rerun_preview.py",
+        "pattern": "test_rerun_preview_applies_typed_workflow_relation_hints"
+      },
+      {
+        "path": "tests/test_idea_to_spec_rerun_materialization.py",
+        "pattern": "test_rerun_materialization_merges_review_only_workflow_topology_edges"
+      }
+    ],
+    "observation_markers": [
+      {
+        "path": "docs/product_workspace_graph_versioning_roadmap.md",
+        "pattern": "Safe Workflow Topology Repair"
+      },
+      {
+        "path": "Sources/SpecGraph/Documentation.docc/ProductWorkspacePilots.md",
+        "pattern": "Proposal `0208` adds the patch-capable workflow-topology overlay"
+      },
+      {
+        "path": "tools/README.md",
+        "pattern": "Proposal 0208 adds safe workflow-topology repair"
+      }
+    ],
+    "notes": "SpecGraph can now turn flat workflow_edge_count observations into review-required typed workflow relation requests and safely materialize validated review-only topology edges in candidate graph preview."
   }
 ]

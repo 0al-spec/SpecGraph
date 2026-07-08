@@ -713,9 +713,13 @@ structural-depth observations can now become ordinary
 `idea_to_spec_clarification_requests` with `event_storming_hints.*` targets.
 Accepted typed `entries[]` answers flow through the existing review-only rerun
 overlay and can increase actor, command, event, policy, or constraint depth.
-Workflow-topology depth remains diagnostic until a patch-capable topology
-overlay exists. The loop does not introduce a score, prompt-agent execution,
-canonical spec mutation, Ontology writes, or promotion authority.
+Proposal `0208` adds the patch-capable workflow-topology overlay for the
+previously diagnostic `workflow_edge_count` case. Flat workflow topology can
+now ask for typed `event_storming_hints.workflow_relations` answers. Rerun
+preview validates relation names and source/target event-storming refs before
+materialization copies only review-only, non-dependency workflow edges into the
+candidate graph preview. The loop does not introduce a score, prompt-agent
+execution, canonical spec mutation, Ontology writes, or promotion authority.
 
 The next slices are Platform awareness and a `local-subscription-control` demo
 pass. Platform may use the report as an explanatory preflight signal before

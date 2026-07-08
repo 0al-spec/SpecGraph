@@ -348,7 +348,7 @@ def test_clarification_requests_adds_depth_driven_event_storming_requests() -> N
     assert report["readiness"]["ready"] is False
     assert report["readiness"]["review_state"] == "clarification_review_required"
     assert report["summary"]["blocking_request_count"] == 0
-    assert report["summary"]["review_required_request_count"] == 2
+    assert report["summary"]["review_required_request_count"] == 3
     actor_request = request_by_id(report, "clarification.depth.actors")
     assert actor_request["kind"] == "event_storming_gap"
     assert actor_request["severity"] == "review_required"
@@ -359,6 +359,11 @@ def test_clarification_requests_adds_depth_driven_event_storming_requests() -> N
     assert actor_request["source_findings"][0]["evidence"]["source_ref"] == (
         "runs/custom/idea_maturity_metrics_report.json#groups.candidate_structure_depth.actor_count"
     )
+    topology_request = request_by_id(report, "clarification.depth.workflow-topology")
+    assert topology_request["kind"] == "workflow_topology_gap"
+    assert topology_request["target_ref"] == "event_storming_hints.workflow_relations"
+    assert topology_request["suggested_answer_shape"] == "event_storming_relation[]"
+    assert topology_request["source_findings"][0]["evidence"]["proposal_id"] == "0208"
 
 
 def test_clarification_requests_missing_depth_group_is_not_faked() -> None:

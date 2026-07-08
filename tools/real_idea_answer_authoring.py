@@ -289,6 +289,8 @@ def _value_template(action: str, request: dict[str, Any]) -> Any:
             "evidence_refs": [],
         }
     if action == "answer_question":
+        if "event_storming_relation[]" in shape or kind == "workflow_topology_gap":
+            return {"relations": [{"relation": "", "source_ref": "", "target_ref": ""}]}
         if (
             "ontology_ref[]" in shape
             or "domain_ref[]" in shape
@@ -317,6 +319,10 @@ def _required_fields(action: str, request: dict[str, Any]) -> list[str]:
     if action == "provide_candidate_context":
         return ["value.context"]
     if action == "answer_question":
+        shape = _text(request.get("suggested_answer_shape"))
+        kind = _text(request.get("kind"))
+        if "event_storming_relation[]" in shape or kind == "workflow_topology_gap":
+            return ["value.relations[]"]
         return ["value"]
     return ["value"]
 
@@ -343,6 +349,8 @@ def _field_present(value: Any, field: str) -> bool:
         key = path[:-2]
         if not isinstance(current, dict):
             return False
+        if key == "relations":
+            return bool(_list(current.get(key)))
         return bool(_text_list(current.get(key)))
     if not isinstance(current, dict):
         return False

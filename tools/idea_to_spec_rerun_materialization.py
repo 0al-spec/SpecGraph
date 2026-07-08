@@ -306,6 +306,50 @@ def _refresh_candidate_graph_summary(candidate_graph: dict[str, Any]) -> None:
     candidate_graph["summary"] = summary
 
 
+def _edge_key(edge: dict[str, Any]) -> tuple[str, str, str]:
+    return (_text(edge.get("from")), _text(edge.get("to")), _text(edge.get("relation")))
+
+
+def _workflow_topology_edges_from_preview(rerun_preview: dict[str, Any]) -> list[dict[str, Any]]:
+    workflow_preview = _dict(
+        _dict(rerun_preview.get("rerun_preview")).get("workflow_topology_preview")
+    )
+    edges: list[dict[str, Any]] = []
+    for raw_edge in _list(workflow_preview.get("workflow_edges")):
+        edge = _dict(raw_edge)
+        if edge.get("review_only") is not True:
+            continue
+        if edge.get("materialization_dependency") is not False:
+            continue
+        relation = _text(edge.get("relation"))
+        from_node = _text(edge.get("from"))
+        to_node = _text(edge.get("to"))
+        if not relation or not from_node or not to_node:
+            continue
+        edges.append(_public_safe(edge))
+    return edges
+
+
+def _merge_workflow_topology_edges(
+    candidate_graph: dict[str, Any],
+    rerun_preview: dict[str, Any],
+) -> list[dict[str, Any]]:
+    existing_edges = [_dict(edge) for edge in _list(candidate_graph.get("edges"))]
+    seen = {_edge_key(edge) for edge in existing_edges}
+    added: list[dict[str, Any]] = []
+    merged_edges = list(_list(candidate_graph.get("edges")))
+    for edge in _workflow_topology_edges_from_preview(rerun_preview):
+        key = _edge_key(edge)
+        if not all(key) or key in seen:
+            continue
+        seen.add(key)
+        merged_edges.append(edge)
+        added.append(edge)
+    if added:
+        candidate_graph["edges"] = merged_edges
+    return added
+
+
 def _empty_delta(candidate_graph: dict[str, Any]) -> dict[str, Any]:
     unresolved_ontology_gap_ids: list[str] = []
     unresolved_candidate_gap_ids: list[str] = []
@@ -322,6 +366,8 @@ def _empty_delta(candidate_graph: dict[str, Any]) -> dict[str, Any]:
                 unresolved_candidate_gap_ids.append(gap_id)
     return {
         "removed_gap_ids": [],
+        "added_workflow_topology_edges": [],
+        "added_workflow_topology_edge_count": 0,
         "unresolved_ontology_gap_ids": unresolved_ontology_gap_ids,
         "unresolved_candidate_gap_ids": unresolved_candidate_gap_ids,
         "resolved_ontology_gap_count": 0,
@@ -441,6 +487,7 @@ def _materialize_candidate_graph_preview(
                 if isinstance(item, dict)
             ]
             node["candidate_gap_resolutions"] = existing_resolutions + node_candidate_resolutions
+    added_workflow_edges = _merge_workflow_topology_edges(preview, rerun_preview)
     preview["source_ref"] = candidate_graph_preview_ref
     _refresh_candidate_graph_summary(preview)
     preview["rerun_materialization"] = {
@@ -451,9 +498,12 @@ def _materialize_candidate_graph_preview(
         "resolution_count": len(resolution_records),
         "ontology_resolution_count": len(ontology_resolution_records),
         "candidate_resolution_count": len(candidate_resolution_records),
+        "added_workflow_topology_edge_count": len(added_workflow_edges),
     }
     delta = {
         "removed_gap_ids": removed_gap_ids,
+        "added_workflow_topology_edges": added_workflow_edges,
+        "added_workflow_topology_edge_count": len(added_workflow_edges),
         "unresolved_ontology_gap_ids": unresolved_ontology_gap_ids,
         "unresolved_candidate_gap_ids": unresolved_candidate_gap_ids,
         "resolved_ontology_gap_count": len(ontology_resolution_records),
