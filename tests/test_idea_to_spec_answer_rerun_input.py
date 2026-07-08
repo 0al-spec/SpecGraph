@@ -260,6 +260,43 @@ def test_answer_rerun_input_captures_direct_active_frame_fields() -> None:
     ]
 
 
+def test_answer_rerun_input_infers_event_storming_category_from_target_ref() -> None:
+    module = load_module(
+        RERUN_TOOL_PATH,
+        "idea_to_spec_answer_rerun_input_depth_event_storming_test",
+    )
+    answer_report = ready_answer_report_with_answer(
+        answer_kind="answer_question",
+        value={"entries": [{"id": "actor.household-member", "name": "Household member"}]},
+        request_kind="event_storming_gap",
+        target_ref="event_storming_hints.actors",
+    )
+
+    report = module.build_idea_to_spec_answer_rerun_input(
+        answers_report=answer_report,
+    )
+
+    hints = report["rerun_input_overlay"]["intake_overlay"]["event_storming_hints"]
+    assert hints == [
+        {
+            "answer_kind": "answer_question",
+            "request_id": "clarification.repair.repair-review-unresolved-gaps",
+            "request_kind": "event_storming_gap",
+            "target_artifact": "runs/candidate_spec_graph.json",
+            "target_ref": "event_storming_hints.actors",
+            "value": {
+                "actors": [
+                    {
+                        "id": "actor.household-member",
+                        "name": "Household member",
+                    }
+                ]
+            },
+        }
+    ]
+    assert report["summary"]["intake_overlay_count"] == 1
+
+
 def test_answer_rerun_input_routes_non_ontology_reject_to_candidate_hints() -> None:
     module = load_module(
         RERUN_TOOL_PATH,

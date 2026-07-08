@@ -2663,5 +2663,18 @@
     "required_provenance_links": [
       "source_draft_ref"
     ]
+  },
+  {
+    "proposal_id": "0207",
+    "source_artifact_class": "working_draft",
+    "source_refs": [
+      "docs/archive/proposal_sources/0207_depth_driven_clarification_loop.md"
+    ],
+    "motivating_concern": "Idea Maturity structural depth observations and readiness explainers can tell an operator that a candidate is shallow, but the generic repair loop needs ordinary clarification requests that collect structured event-storming context and feed review-only rerun.",
+    "normalized_title": "Depth-Driven Clarification Loop",
+    "bounded_scope": "Emit review-required idea-to-spec clarification requests from shallow candidate_structure_depth observations and map accepted entries answers into existing event-storming rerun hints, without changing Metrics schemas, adding scores, changing gates, approving candidates, mutating canonical specs, writing Ontology packages or lockfiles, accepting ontology terms, creating Git branches or commits, opening pull requests, or publishing read models.",
+    "required_provenance_links": [
+      "source_draft_ref"
+    ]
   }
 ]

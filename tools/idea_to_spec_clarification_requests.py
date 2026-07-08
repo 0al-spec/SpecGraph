@@ -11,6 +11,7 @@ from typing import Any
 
 ROOT = Path(__file__).resolve().parents[1]
 PROPOSAL_ID = "0163"
+DEPTH_DRIVEN_PROPOSAL_ID = "0207"
 SCHEMA_VERSION = 1
 CONTRACT_REF = "specgraph.idea-to-spec.clarification-requests.v0.1"
 USER_IDEA_INTAKE_SESSION_CONTRACT_REF = "specgraph.idea-to-spec.user-idea-intake-session.v0.1"
@@ -19,12 +20,14 @@ CANDIDATE_GRAPH_CONTRACT_REF = "specgraph.idea-to-spec.candidate-spec-graph.v0.1
 PRE_SIB_CONTRACT_REF = "specgraph.idea-to-spec.pre-sib-coherence-report.v0.1"
 REPAIR_LOOP_CONTRACT_REF = "specgraph.idea-to-spec.candidate-repair-loop.v0.1"
 ONTOLOGY_GAP_REVIEW_KIND = "ontology_gap_review_workflow"
+IDEA_MATURITY_KIND = "idea_maturity_metrics_report"
 
 DEFAULT_SESSION_PATH = ROOT / "runs" / "user_idea_intake_session.json"
 DEFAULT_INTAKE_PATH = ROOT / "runs" / "idea_event_storming_intake.json"
 DEFAULT_CANDIDATE_GRAPH_PATH = ROOT / "runs" / "candidate_spec_graph.json"
 DEFAULT_PRE_SIB_PATH = ROOT / "runs" / "pre_sib_coherence_report.json"
 DEFAULT_REPAIR_LOOP_PATH = ROOT / "runs" / "candidate_repair_loop_report.json"
+DEFAULT_IDEA_MATURITY_PATH = ROOT / "runs" / "idea_maturity_metrics_report.json"
 DEFAULT_OUTPUT_PATH = ROOT / "runs" / "idea_to_spec_clarification_requests.json"
 
 RAW_TRACE_FIELDS = {
@@ -134,6 +137,34 @@ ONTOLOGY_GAP_ACTIONS = [
 ]
 CANDIDATE_GAP_ANSWER_SHAPE = "answer_question | provide_candidate_context | reject | defer"
 CANDIDATE_GAP_ACTIONS = ["answer_question", "provide_candidate_context", "reject", "defer"]
+
+EVENT_STORMING_DEPTH_CATEGORIES = {
+    "actors": {
+        "metric": "actor_count",
+        "question": "Which actors should participate in this product workflow?",
+        "block": "candidate_structure_depth.actor_count",
+    },
+    "commands": {
+        "metric": "command_count",
+        "question": "Which user or system commands should drive this product workflow?",
+        "block": "candidate_structure_depth.command_count",
+    },
+    "domain_events": {
+        "metric": "domain_event_count",
+        "question": "Which domain events should be recorded when this workflow changes state?",
+        "block": "candidate_structure_depth.domain_event_count",
+    },
+    "policies": {
+        "metric": "policy_count",
+        "question": "Which policies should react to domain events or constrain commands?",
+        "block": "candidate_structure_depth.policy_count",
+    },
+    "constraints": {
+        "metric": "constraint_count",
+        "question": "Which product constraints should bound this workflow?",
+        "block": "candidate_structure_depth.constraint_count",
+    },
+}
 
 
 def _now_iso() -> str:
@@ -645,6 +676,106 @@ def _requests_from_candidate_graph(
     return requests
 
 
+def _non_negative_int(value: Any) -> int | None:
+    if isinstance(value, bool) or not isinstance(value, int) or value < 0:
+        return None
+    return value
+
+
+def _candidate_structure_depth(idea_maturity_report: dict[str, Any] | None) -> dict[str, Any]:
+    if idea_maturity_report is None:
+        return {}
+    groups = _dict(idea_maturity_report.get("groups"))
+    depth = _dict(groups.get("candidate_structure_depth"))
+    if not depth:
+        metrics = _dict(idea_maturity_report.get("metrics"))
+        depth = _dict(metrics.get("candidate_structure_depth"))
+    return depth
+
+
+def _depth_source_findings(
+    *,
+    metric: str,
+    idea_maturity_target: str,
+) -> list[dict[str, Any]]:
+    return [
+        {
+            "source_artifact": "idea_maturity_metrics_report",
+            "finding_id": f"candidate_structure_depth.{metric}",
+            "severity": "review_required",
+            "message": "Candidate structure depth is shallow for this observation.",
+            "evidence": {
+                "proposal_id": DEPTH_DRIVEN_PROPOSAL_ID,
+                "source_ref": f"{idea_maturity_target}#groups.candidate_structure_depth.{metric}",
+            },
+        }
+    ]
+
+
+def _requests_from_structure_depth(
+    idea_maturity_report: dict[str, Any] | None,
+    *,
+    idea_maturity_target: str,
+    intake_target: str,
+) -> list[dict[str, Any]]:
+    if idea_maturity_report is None:
+        return []
+    depth = _candidate_structure_depth(idea_maturity_report)
+    if not depth:
+        return []
+
+    requests: list[dict[str, Any]] = []
+    for category, spec in EVENT_STORMING_DEPTH_CATEGORIES.items():
+        metric = spec["metric"]
+        count = _non_negative_int(depth.get(metric))
+        if count != 0:
+            continue
+        target_ref = f"event_storming_hints.{category}"
+        requests.append(
+            _request(
+                request_id=f"clarification.depth.{category}",
+                kind="event_storming_gap",
+                severity="review_required",
+                question=spec["question"],
+                target_artifact=intake_target,
+                target_ref=target_ref,
+                blocks=[spec["block"]],
+                suggested_answer_shape="event_storming_entry[]",
+                suggested_actions=["answer_question", "defer_candidate"],
+                source_findings=_depth_source_findings(
+                    metric=metric,
+                    idea_maturity_target=idea_maturity_target,
+                ),
+            )
+        )
+
+    workflow_edge_count = _non_negative_int(depth.get("workflow_edge_count"))
+    command_count = _non_negative_int(depth.get("command_count"))
+    event_count = _non_negative_int(depth.get("domain_event_count"))
+    if workflow_edge_count == 0 and (command_count or 0) > 0 and (event_count or 0) > 0:
+        requests.append(
+            _request(
+                request_id="clarification.depth.workflow-topology",
+                kind="workflow_topology_gap",
+                severity="review_required",
+                question=(
+                    "Which command-to-event or event-to-policy links should be present "
+                    "in the candidate workflow topology?"
+                ),
+                target_artifact=intake_target,
+                target_ref="event_storming_hints.commands",
+                blocks=["candidate_structure_depth.workflow_edge_count"],
+                suggested_answer_shape="event_storming_entry[]",
+                suggested_actions=["answer_question", "defer_candidate"],
+                source_findings=_depth_source_findings(
+                    metric="workflow_edge_count",
+                    idea_maturity_target=idea_maturity_target,
+                ),
+            )
+        )
+    return requests
+
+
 def _gap_label(group: dict[str, Any]) -> str:
     return (
         _text(group.get("proposed_term"))
@@ -717,6 +848,7 @@ def _validate_inputs(
     pre_sib_report: dict[str, Any] | None,
     repair_loop: dict[str, Any] | None,
     ontology_gap_review: dict[str, Any] | None,
+    idea_maturity_report: dict[str, Any] | None,
 ) -> list[dict[str, Any]]:
     checks = (
         (
@@ -736,7 +868,11 @@ def _validate_inputs(
         ("repair_loop", repair_loop, "candidate_repair_loop_report", REPAIR_LOOP_CONTRACT_REF),
     )
     findings: list[dict[str, Any]] = []
-    if not any(artifact for _, artifact, _, _ in checks) and ontology_gap_review is None:
+    if (
+        not any(artifact for _, artifact, _, _ in checks)
+        and ontology_gap_review is None
+        and idea_maturity_report is None
+    ):
         findings.append(
             _finding(
                 finding_id="clarification_sources_missing",
@@ -778,6 +914,17 @@ def _validate_inputs(
                 evidence={"artifact_kind": ontology_gap_review.get("artifact_kind")},
             )
         )
+    if idea_maturity_report is not None and idea_maturity_report.get("artifact_kind") != (
+        IDEA_MATURITY_KIND
+    ):
+        findings.append(
+            _finding(
+                finding_id="idea_maturity_contract_invalid",
+                severity="review_required",
+                message="idea_maturity_report must be an idea_maturity_metrics_report artifact.",
+                evidence={"artifact_kind": idea_maturity_report.get("artifact_kind")},
+            )
+        )
     return findings
 
 
@@ -789,6 +936,7 @@ def build_idea_to_spec_clarification_requests(
     pre_sib_report: dict[str, Any] | None = None,
     repair_loop: dict[str, Any] | None = None,
     ontology_gap_review: dict[str, Any] | None = None,
+    idea_maturity_report: dict[str, Any] | None = None,
     source_artifacts: list[dict[str, Any]] | None = None,
     user_idea_intake_source_target: str = "runs/user_idea_intake_source.json",
     idea_event_storming_intake_target: str = "runs/idea_event_storming_intake.json",
@@ -796,6 +944,7 @@ def build_idea_to_spec_clarification_requests(
     pre_sib_report_target: str = "runs/pre_sib_coherence_report.json",
     repair_loop_target: str = "runs/candidate_repair_loop_report.json",
     ontology_gap_review_target: str = "runs/ontology_gap_review_workflow.json",
+    idea_maturity_target: str = "runs/idea_maturity_metrics_report.json",
 ) -> dict[str, Any]:
     findings = _validate_inputs(
         user_idea_intake_session=user_idea_intake_session,
@@ -804,6 +953,7 @@ def build_idea_to_spec_clarification_requests(
         pre_sib_report=pre_sib_report,
         repair_loop=repair_loop,
         ontology_gap_review=ontology_gap_review,
+        idea_maturity_report=idea_maturity_report,
     )
     requests: list[dict[str, Any]] = []
     used_ids: set[str] = set()
@@ -843,6 +993,13 @@ def build_idea_to_spec_clarification_requests(
         for request in _requests_from_ontology_gap_review(
             ontology_gap_review,
             target_artifact=ontology_gap_review_target,
+        ):
+            _append_request(requests, request, used_ids)
+    if idea_maturity_report:
+        for request in _requests_from_structure_depth(
+            idea_maturity_report,
+            idea_maturity_target=idea_maturity_target,
+            intake_target=idea_event_storming_intake_target,
         ):
             _append_request(requests, request, used_ids)
 
@@ -929,6 +1086,7 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--repair-loop", default=DEFAULT_REPAIR_LOOP_PATH, type=Path)
     parser.add_argument("--no-repair-loop", action="store_true")
     parser.add_argument("--ontology-gap-review", default=None, type=Path)
+    parser.add_argument("--idea-maturity", default=None, type=Path)
     parser.add_argument("--output", default=DEFAULT_OUTPUT_PATH, type=Path)
     parser.add_argument("--strict", action="store_true")
     return parser
@@ -943,6 +1101,7 @@ def main(argv: list[str] | None = None) -> int:
         ("pre_sib_report", None if args.no_pre_sib else args.pre_sib),
         ("repair_loop", None if args.no_repair_loop else args.repair_loop),
         ("ontology_gap_review", args.ontology_gap_review),
+        ("idea_maturity_report", args.idea_maturity),
     )
     loaded: dict[str, dict[str, Any] | None] = {}
     source_artifacts: list[dict[str, Any]] = []
@@ -959,6 +1118,7 @@ def main(argv: list[str] | None = None) -> int:
         pre_sib_report=loaded["pre_sib_report"],
         repair_loop=loaded["repair_loop"],
         ontology_gap_review=loaded["ontology_gap_review"],
+        idea_maturity_report=loaded["idea_maturity_report"],
         source_artifacts=source_artifacts,
         user_idea_intake_source_target=_source_output_target_artifact(
             loaded["user_idea_intake_session"] or {},
@@ -972,6 +1132,11 @@ def main(argv: list[str] | None = None) -> int:
             _relative_ref(args.ontology_gap_review)
             if args.ontology_gap_review
             else "runs/ontology_gap_review_workflow.json"
+        ),
+        idea_maturity_target=(
+            _relative_ref(args.idea_maturity)
+            if args.idea_maturity
+            else "runs/idea_maturity_metrics_report.json"
         ),
     )
     write_json(report, args.output)

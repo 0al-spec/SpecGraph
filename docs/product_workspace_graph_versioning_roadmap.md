@@ -1579,6 +1579,19 @@ actor, command, domain-event, workflow-topology, requirement, or
 acceptance-criteria review without treating the counts as a promotion gate,
 approval gate, Git gate, ontology authority, or composite quality score.
 
+## Depth-Driven Clarification Loop
+
+Status: implemented producer-side in proposal `0207`; SpecSpace UX can layer
+structured controls over the same request/answer/rerun contracts.
+
+Proposal `0207` turns shallow `candidate_structure_depth` observations into
+ordinary idea-to-spec clarification requests. Missing actors, commands, domain
+events, policies, and constraints become `event_storming_hints.*` answer
+targets; a flat workflow topology becomes a command-link clarification when
+commands and events already exist. The requests are `review_required`, not
+blocking, and accepted typed answers feed the existing review-only rerun overlay
+as event-storming hints.
+
 ## Real Idea Entry Request Import
 
 Status: implemented producer-side in proposal `0202`; downstream UI/Platform
