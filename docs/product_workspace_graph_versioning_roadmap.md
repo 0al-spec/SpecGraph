@@ -1553,6 +1553,20 @@ semantically empty candidate. The target does not execute prompt agents, infer
 domain semantics, mutate canonical specs, write Ontology packages, accept
 terms, approve candidates, create Git artifacts, or publish read models.
 
+## Idea Maturity Structural Depth Observations
+
+Status: implemented in proposal `0205`.
+
+Proposal `0205` moves reusable structural depth observations into the
+Metrics-owned Idea Maturity report as `groups.candidate_structure_depth`.
+
+The group records event-storming actor, command, domain event, policy, and
+constraint counts plus candidate topology edge, workflow edge, requirement, and
+acceptance-criteria counts. It is intentionally raw telemetry, not a new score.
+Product demo depth remains the strict local demo diagnostic; Idea Maturity gives
+SpecSpace and downstream reports a general lifecycle evidence surface for the
+same depth signals.
+
 ## Real Idea Entry Request Import
 
 Status: implemented producer-side in proposal `0202`; downstream UI/Platform

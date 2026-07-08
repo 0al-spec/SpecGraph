@@ -11682,5 +11682,57 @@
       }
     ],
     "notes": "SpecGraph now emits a strict product demo depth report for real-idea smoke run directories so UI-started demos must prove actors, commands, events, policies, constraints, workflow topology, candidate overview, and Idea Maturity before presentation."
+  },
+  {
+    "proposal_id": "0205",
+    "posture": "bounded_runtime_followup",
+    "runtime_surfaces": [
+      "docs/proposals/0205_idea_maturity_structural_depth_observations.md",
+      "docs/archive/proposal_sources/0205_idea_maturity_structural_depth_observations.md",
+      "tools/idea_maturity_metrics_report.py",
+      "tests/test_idea_maturity_metrics_report.py",
+      "docs/product_workspace_graph_versioning_roadmap.md",
+      "Sources/SpecGraph/Documentation.docc/ProductWorkspacePilots.md",
+      "tools/README.md"
+    ],
+    "runtime_markers": [
+      {
+        "path": "tools/idea_maturity_metrics_report.py",
+        "pattern": "WORKFLOW_RELATIONS"
+      },
+      {
+        "path": "tools/idea_maturity_metrics_report.py",
+        "pattern": "def _candidate_structure_depth("
+      },
+      {
+        "path": "tools/idea_maturity_metrics_report.py",
+        "pattern": "\"candidate_structure_depth\""
+      }
+    ],
+    "validation_markers": [
+      {
+        "path": "tests/test_idea_maturity_metrics_report.py",
+        "pattern": "\"candidate_structure_depth\""
+      },
+      {
+        "path": "tests/test_idea_maturity_metrics_report.py",
+        "pattern": "\"workflow_edge_count\": 2"
+      }
+    ],
+    "observation_markers": [
+      {
+        "path": "docs/product_workspace_graph_versioning_roadmap.md",
+        "pattern": "Idea Maturity Structural Depth Observations"
+      },
+      {
+        "path": "Sources/SpecGraph/Documentation.docc/ProductWorkspacePilots.md",
+        "pattern": "groups.candidate_structure_depth"
+      },
+      {
+        "path": "tools/README.md",
+        "pattern": "Proposal 0205 adds reusable structural depth observations"
+      }
+    ],
+    "notes": "SpecGraph now emits Metrics-owned Idea Maturity structural depth observations from event-storming intake and current candidate graph artifacts so SpecSpace can explain candidate depth without duplicating the product demo depth baseline."
   }
 ]

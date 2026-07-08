@@ -117,6 +117,15 @@ CANDIDATE_RESOLUTION_KIND_KEYS = (
     "other",
 )
 
+WORKFLOW_RELATIONS = {
+    "actor_triggers_command",
+    "command_emits_event",
+    "event_informs_policy",
+    "event_informs_constraint",
+    "constraint_applies_to_command",
+    "policy_applies_to_command",
+}
+
 PLATFORM_REPORT_KEYS = {
     "repair_rerun_execution",
     "repair_rerun_publication",
@@ -477,6 +486,45 @@ def _all_gaps(candidate_graph: dict[str, Any] | None) -> list[dict[str, Any]]:
             if isinstance(gap, dict):
                 gaps.append(gap)
     return gaps
+
+
+def _edges(artifact: dict[str, Any] | None) -> list[dict[str, Any]]:
+    return [edge for edge in _list(_dict(artifact).get("edges")) if isinstance(edge, dict)]
+
+
+def _event_storming_depth(intake: dict[str, Any] | None) -> dict[str, int]:
+    event_storming = _dict(_dict(intake).get("event_storming"))
+    return {
+        "actor_count": len(_list(event_storming.get("actors"))),
+        "command_count": len(_list(event_storming.get("commands"))),
+        "domain_event_count": len(_list(event_storming.get("domain_events"))),
+        "policy_count": len(_list(event_storming.get("policies"))),
+        "constraint_count": len(_list(event_storming.get("constraints"))),
+    }
+
+
+def _candidate_graph_depth(candidate_graph: dict[str, Any] | None) -> dict[str, int]:
+    nodes = _nodes(candidate_graph)
+    edges = _edges(candidate_graph)
+    workflow_edge_count = sum(
+        1 for edge in edges if _text(edge.get("relation")) in WORKFLOW_RELATIONS
+    )
+    return {
+        "topology_edge_count": len(edges),
+        "workflow_edge_count": workflow_edge_count,
+        "requirement_count": sum(len(_list(node.get("requirements"))) for node in nodes),
+        "acceptance_criteria_count": sum(
+            len(_list(node.get("acceptance_criteria"))) for node in nodes
+        ),
+    }
+
+
+def _candidate_structure_depth(artifacts: dict[str, dict[str, Any]]) -> dict[str, int]:
+    candidate_graph = artifacts.get("repaired_candidate_graph") or artifacts.get("candidate_graph")
+    return {
+        **_event_storming_depth(artifacts.get("intake")),
+        **_candidate_graph_depth(candidate_graph),
+    }
 
 
 def _candidate_identity(artifacts: dict[str, dict[str, Any]]) -> dict[str, Any]:
@@ -938,6 +986,7 @@ def _metrics(artifacts: dict[str, dict[str, Any]]) -> dict[str, Any]:
         or _summary_int(artifacts, "candidate_graph", "node_count")
         or len(_nodes(repaired_candidate_graph or candidate_graph))
     )
+    candidate_structure_depth = _candidate_structure_depth(artifacts)
 
     return {
         "clarification_question_count": _summary_int(
@@ -1040,6 +1089,7 @@ def _metrics(artifacts: dict[str, dict[str, Any]]) -> dict[str, Any]:
         "published_file_count": _published_file_count(artifacts),
         "published_manifest_digest": _published_manifest_digest(artifacts),
         "candidate_node_count": candidate_node_count,
+        "candidate_structure_depth": candidate_structure_depth,
     }
 
 
@@ -2304,6 +2354,7 @@ def _metric_groups(metrics: dict[str, Any]) -> dict[str, Any]:
             "context_supplied_count": metrics["context_supplied_count"],
             "remaining_blocker_count": metrics["remaining_blocker_count"],
         },
+        "candidate_structure_depth": metrics["candidate_structure_depth"],
         "workflow_friction": {
             "manual_handoff_count": metrics["manual_handoff_count"],
             "operator_command_count": metrics["operator_command_count"],

@@ -693,6 +693,14 @@ repair chain and repaired promotion handoff targets run it after their normal
 review-only outputs. `make product-workspace-active-candidate` stays narrow and
 does not run metrics validation.
 
+Proposal `0205` adds structural depth observations to Idea Maturity under
+`groups.candidate_structure_depth`. The counts cover event-storming actors,
+commands, domain events, policies, constraints, candidate topology edges,
+workflow topology edges, requirements, and acceptance criteria. They are raw
+diagnostics, not a composite score and not a promotion gate. Repaired candidate
+graph depth is used when repaired artifacts exist; otherwise the active
+candidate graph is used.
+
 The next slices are Platform awareness and a `local-subscription-control` demo
 pass. Platform may use the report as an explanatory preflight signal before
 promotion, but not as promotion authority. Concrete handoff artifacts and
