@@ -992,11 +992,11 @@ def test_real_idea_smoke_idea_maturity_target_isolates_run_dir_optional_artifact
     assert "runs/real_idea_smoke/idea_maturity_metrics_validation_report.json" in output
     assert "runs/real_idea_smoke/specspace_repair_draft_import_preview.json" in output
     assert "runs/real_idea_smoke/idea_to_spec_repair_rerun_requests.json" in output
+    assert ("runs/real_idea_smoke/project_local_ontology_decision_effect_report.json") in output
     assert (
         "runs/real_idea_smoke/absent-post-approval/"
         "project_local_ontology_decision_effect_report.json"
-    ) in output
-    assert "runs/real_idea_smoke/project_local_ontology_decision_effect_report.json" not in output
+    ) not in output
     assert "runs/real_idea_smoke/absent-post-approval/candidate_approval_decision.json" in output
     assert "shutil.rmtree(absent, ignore_errors=True)" in output
     assert '--candidate-approval-decision "runs/candidate_approval_decision.json"' not in output
