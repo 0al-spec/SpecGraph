@@ -15,6 +15,7 @@ ROOT = Path(__file__).resolve().parents[1]
 PROPOSAL_ID = "0178"
 READINESS_EXPLAINERS_PROPOSAL_ID = "0180"
 METRICS_CONTRACT_PROPOSAL_ID = "0181"
+STRUCTURE_DEPTH_EXPLAINERS_PROPOSAL_ID = "0206"
 SCHEMA_VERSION = 1
 CONTRACT_REF = "specgraph.idea-to-spec.maturity-metrics-report.v0.1"
 METRIC_PACK_ID = "idea_to_spec_maturity"
@@ -1863,10 +1864,11 @@ def _readiness_explainer(
     next_action: str,
     evidence_refs: list[str | None] | None = None,
     evidence: dict[str, Any] | None = None,
+    proposal_id: str = READINESS_EXPLAINERS_PROPOSAL_ID,
 ) -> dict[str, Any]:
     return {
         "id": f"readiness-explainer.{_slug(explainer_id)}",
-        "proposal_id": READINESS_EXPLAINERS_PROPOSAL_ID,
+        "proposal_id": proposal_id,
         "kind": kind,
         "source": source,
         "severity": _readiness_severity(severity),
@@ -2196,6 +2198,118 @@ def _project_local_ontology_readiness_explainers(
     return explainers
 
 
+STRUCTURE_DEPTH_INTERPRETATIONS = (
+    (
+        "actor_count",
+        "candidate-structure-actors-missing",
+        "candidate_structure_actor_model_missing",
+        "Candidate structure has no explicit actor model.",
+        "Clarify the product actors before treating the candidate narrative as mature.",
+        "medium",
+    ),
+    (
+        "command_count",
+        "candidate-structure-commands-missing",
+        "candidate_structure_command_model_missing",
+        "Candidate structure has no explicit commands.",
+        "Clarify the commands or user/system actions that should drive the workflow.",
+        "medium",
+    ),
+    (
+        "domain_event_count",
+        "candidate-structure-domain-events-missing",
+        "candidate_structure_domain_event_model_missing",
+        "Candidate structure has no explicit domain events.",
+        "Clarify the domain events or state changes that prove the workflow occurred.",
+        "medium",
+    ),
+    (
+        "policy_count",
+        "candidate-structure-policies-missing",
+        "candidate_structure_policy_model_missing",
+        "Candidate structure has no explicit policies.",
+        "Review whether the product needs policies or rules before presenting the candidate.",
+        "low",
+    ),
+    (
+        "constraint_count",
+        "candidate-structure-constraints-missing",
+        "candidate_structure_constraints_missing",
+        "Candidate structure has no explicit constraints.",
+        "Review product constraints such as privacy, local-only behavior, or validation rules.",
+        "low",
+    ),
+    (
+        "workflow_edge_count",
+        "candidate-structure-workflow-topology-flat",
+        "candidate_structure_workflow_topology_flat",
+        "Candidate graph has no workflow topology edges.",
+        (
+            "Regenerate or repair event-storming topology so actors, commands, "
+            "events, policies, and constraints are linked."
+        ),
+        "medium",
+    ),
+    (
+        "requirement_count",
+        "candidate-structure-requirements-missing",
+        "candidate_structure_requirements_missing",
+        "Candidate nodes have no requirements.",
+        "Regenerate or repair the candidate graph so material nodes carry requirement evidence.",
+        "medium",
+    ),
+    (
+        "acceptance_criteria_count",
+        "candidate-structure-acceptance-criteria-missing",
+        "candidate_structure_acceptance_criteria_missing",
+        "Candidate nodes have no acceptance criteria.",
+        "Regenerate or repair the candidate graph so material nodes carry acceptance criteria.",
+        "medium",
+    ),
+)
+
+
+def _candidate_structure_depth_readiness_explainers(
+    artifacts: dict[str, dict[str, Any]],
+    metrics: dict[str, Any],
+) -> list[dict[str, Any]]:
+    if not artifacts.get("candidate_graph") and not artifacts.get("repaired_candidate_graph"):
+        return []
+    depth = _dict(metrics.get("candidate_structure_depth"))
+    explainers: list[dict[str, Any]] = []
+    for (
+        field,
+        explainer_id,
+        kind,
+        message,
+        next_action,
+        severity,
+    ) in STRUCTURE_DEPTH_INTERPRETATIONS:
+        value = _int(depth.get(field))
+        if value > 0:
+            continue
+        explainers.append(
+            _readiness_explainer(
+                explainer_id=explainer_id,
+                kind=kind,
+                source="idea_maturity_metrics_report.groups.candidate_structure_depth",
+                severity=severity,
+                blocks=["candidate_structure_review"],
+                message=message,
+                next_action=next_action,
+                evidence_refs=[
+                    (
+                        "runs/idea_maturity_metrics_report.json"
+                        f"#groups.candidate_structure_depth.{field}"
+                    )
+                ],
+                evidence={"metric_id": field, "observed_count": value},
+                proposal_id=STRUCTURE_DEPTH_EXPLAINERS_PROPOSAL_ID,
+            )
+        )
+    return explainers
+
+
 def _finding_readiness_explainers(
     findings: list[dict[str, Any]],
     *,
@@ -2249,6 +2363,7 @@ def _readiness_explainers(
     artifacts: dict[str, dict[str, Any]],
     paths: dict[str, Path],
     *,
+    metrics: dict[str, Any],
     policy_findings: list[dict[str, Any]],
     invariant_findings: list[dict[str, Any]],
 ) -> list[dict[str, Any]]:
@@ -2257,6 +2372,7 @@ def _readiness_explainers(
         *_repair_session_readiness_explainers(artifacts, paths),
         *_promotion_gate_readiness_explainers(artifacts, paths),
         *_project_local_ontology_readiness_explainers(artifacts, paths),
+        *_candidate_structure_depth_readiness_explainers(artifacts, metrics),
         *_finding_readiness_explainers(policy_findings, collection="policy_findings"),
         *_finding_readiness_explainers(invariant_findings, collection="invariant_findings"),
     ]
@@ -2450,6 +2566,7 @@ def build_idea_maturity_metrics_report(
     readiness_explainers = _readiness_explainers(
         artifacts,
         paths,
+        metrics=metrics,
         policy_findings=policy_findings,
         invariant_findings=invariant_findings,
     )

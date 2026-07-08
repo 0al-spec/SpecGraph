@@ -395,6 +395,10 @@ Supervisor modes:
   requirement, and acceptance-criteria counts from existing intake and candidate
   graph artifacts. These counts explain candidate depth without replacing the
   stricter product demo depth report or becoming a promotion gate.
+- Proposal 0206 adds producer-side readiness explainers over those raw structural
+  observations. Shallow counts can surface `candidate_structure_review` next
+  steps while the Metrics counts remain objective telemetry rather than a score,
+  approval gate, promotion gate, Git authority, or Ontology authority.
 - `tools/user_idea_intake_source.py`: deterministic generic user-idea source
   builder introduced by proposal 0158. Use `make user-idea-intake-source
   USER_IDEA_INTAKE_SOURCE=<json>` to normalize product workspace identity,

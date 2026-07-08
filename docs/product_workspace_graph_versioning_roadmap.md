@@ -1567,6 +1567,18 @@ Product demo depth remains the strict local demo diagnostic; Idea Maturity gives
 SpecSpace and downstream reports a general lifecycle evidence surface for the
 same depth signals.
 
+## Idea Maturity Structure Depth Readiness Interpretation
+
+Status: implemented in proposal `0206`.
+
+Proposal `0206` keeps `candidate_structure_depth` as Metrics-owned raw
+telemetry and adds SpecGraph-owned `readiness_explainers` when those objective
+counts show a shallow candidate narrative. The explainers use the neutral
+`candidate_structure_review` block so consumers can point operators toward
+actor, command, domain-event, workflow-topology, requirement, or
+acceptance-criteria review without treating the counts as a promotion gate,
+approval gate, Git gate, ontology authority, or composite quality score.
+
 ## Real Idea Entry Request Import
 
 Status: implemented producer-side in proposal `0202`; downstream UI/Platform

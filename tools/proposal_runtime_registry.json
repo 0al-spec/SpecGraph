@@ -11734,5 +11734,57 @@
       }
     ],
     "notes": "SpecGraph now emits Metrics-owned Idea Maturity structural depth observations from event-storming intake and current candidate graph artifacts so SpecSpace can explain candidate depth without duplicating the product demo depth baseline."
+  },
+  {
+    "proposal_id": "0206",
+    "posture": "bounded_runtime_followup",
+    "runtime_surfaces": [
+      "docs/proposals/0206_idea_maturity_structure_depth_readiness_interpretation.md",
+      "docs/archive/proposal_sources/0206_idea_maturity_structure_depth_readiness_interpretation.md",
+      "tools/idea_maturity_metrics_report.py",
+      "tests/test_idea_maturity_metrics_report.py",
+      "docs/product_workspace_graph_versioning_roadmap.md",
+      "Sources/SpecGraph/Documentation.docc/ProductWorkspacePilots.md",
+      "tools/README.md"
+    ],
+    "runtime_markers": [
+      {
+        "path": "tools/idea_maturity_metrics_report.py",
+        "pattern": "STRUCTURE_DEPTH_EXPLAINERS_PROPOSAL_ID = \"0206\""
+      },
+      {
+        "path": "tools/idea_maturity_metrics_report.py",
+        "pattern": "def _candidate_structure_depth_readiness_explainers("
+      },
+      {
+        "path": "tools/idea_maturity_metrics_report.py",
+        "pattern": "\"candidate_structure_review\""
+      }
+    ],
+    "validation_markers": [
+      {
+        "path": "tests/test_idea_maturity_metrics_report.py",
+        "pattern": "test_idea_maturity_metrics_report_interprets_shallow_structure_without_gating"
+      },
+      {
+        "path": "tests/test_idea_maturity_metrics_report.py",
+        "pattern": "\"candidate_structure_review\""
+      }
+    ],
+    "observation_markers": [
+      {
+        "path": "docs/product_workspace_graph_versioning_roadmap.md",
+        "pattern": "Idea Maturity Structure Depth Readiness Interpretation"
+      },
+      {
+        "path": "Sources/SpecGraph/Documentation.docc/ProductWorkspacePilots.md",
+        "pattern": "candidate_structure_review"
+      },
+      {
+        "path": "tools/README.md",
+        "pattern": "Proposal 0206 adds producer-side readiness explainers"
+      }
+    ],
+    "notes": "SpecGraph now interprets shallow Metrics-owned structural depth observations as readiness_explainers with candidate_structure_review blocks while leaving raw Metrics counts objective and unchanged."
   }
 ]
