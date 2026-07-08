@@ -2650,5 +2650,18 @@
     "required_provenance_links": [
       "source_draft_ref"
     ]
+  },
+  {
+    "proposal_id": "0206",
+    "source_artifact_class": "working_draft",
+    "source_refs": [
+      "docs/archive/proposal_sources/0206_idea_maturity_structure_depth_readiness_interpretation.md"
+    ],
+    "motivating_concern": "Idea Maturity structural depth counts are objective Metrics telemetry, but product surfaces still need a separate SpecGraph-owned interpretation when those counts show a shallow candidate narrative.",
+    "normalized_title": "Idea Maturity Structure Depth Readiness Interpretation",
+    "bounded_scope": "Emit producer-side readiness_explainers for shallow candidate_structure_depth observations using the existing non-authority pre_sib_review block and candidate-structure kind/source evidence, without adding metric ids, introducing a score, changing maturity status, altering repair/approval/promotion/Git/publication gates, mutating canonical specs, writing Ontology packages or lockfiles, accepting ontology terms, creating Git branches or commits, opening pull requests, or publishing read models.",
+    "required_provenance_links": [
+      "source_draft_ref"
+    ]
   }
 ]

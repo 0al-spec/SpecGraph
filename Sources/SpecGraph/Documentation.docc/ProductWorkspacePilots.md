@@ -701,6 +701,13 @@ diagnostics, not a composite score and not a promotion gate. Repaired candidate
 graph depth is used when repaired artifacts exist; otherwise the active
 candidate graph is used.
 
+Proposal `0206` adds SpecGraph-owned interpretation over those raw observations
+by emitting `readiness_explainers` with the existing non-authority
+`pre_sib_review` block when a current candidate graph is shallow.
+The explainers direct operator review without changing Idea Maturity status,
+approval readiness, Platform promotion readiness, Git authority, or Ontology
+authority.
+
 The next slices are Platform awareness and a `local-subscription-control` demo
 pass. Platform may use the report as an explanatory preflight signal before
 promotion, but not as promotion authority. Concrete handoff artifacts and

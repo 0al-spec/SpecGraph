@@ -627,6 +627,92 @@ def test_idea_maturity_metrics_report_ignores_stale_repaired_graph_depth(
     assert report["metrics"]["candidate_structure_depth"]["workflow_edge_count"] == 1
 
 
+def test_idea_maturity_metrics_report_interprets_shallow_structure_without_gating(
+    tmp_path: Path,
+) -> None:
+    paths = write_ready_chain(tmp_path / "shallow-structure")
+    paths["repaired_candidate_graph"].unlink()
+    intake = load_json(paths["intake"])
+    intake["event_storming"] = {
+        "actors": [],
+        "commands": [],
+        "domain_events": [],
+        "policies": [],
+        "constraints": [],
+    }
+    write_json(paths["intake"], intake)
+    candidate_graph = load_json(paths["candidate_graph"])
+    candidate_graph["nodes"][0]["requirements"] = []
+    candidate_graph["nodes"][0]["acceptance_criteria"] = []
+    candidate_graph["edges"] = []
+    write_json(paths["candidate_graph"], candidate_graph)
+
+    report = build_report(paths)
+
+    assert report["status"] == "ready"
+    assert report["policy_findings"] == []
+    structure_explainers = [
+        item
+        for item in report["readiness_explainers"]
+        if item["kind"].startswith("candidate_structure_")
+    ]
+    assert {item["proposal_id"] for item in structure_explainers} == {"0206"}
+    assert {item["blocks"][0] for item in structure_explainers} == {"pre_sib_review"}
+    assert {item["kind"] for item in structure_explainers} >= {
+        "candidate_structure_actor_model_missing",
+        "candidate_structure_domain_event_model_missing",
+        "candidate_structure_workflow_topology_flat",
+        "candidate_structure_requirements_missing",
+        "candidate_structure_acceptance_criteria_missing",
+    }
+    assert all("candidate_approval" not in item["blocks"] for item in structure_explainers)
+    assert all("platform_promotion" not in item["blocks"] for item in structure_explainers)
+
+
+def test_idea_maturity_metrics_report_prioritizes_blockers_before_structure(
+    tmp_path: Path,
+) -> None:
+    paths = write_ready_chain(tmp_path / "blocked-shallow-structure", stale_rerun_ref=True)
+    paths["repaired_candidate_graph"].unlink()
+    candidate_graph = load_json(paths["candidate_graph"])
+    candidate_graph["nodes"][0]["requirements"] = []
+    candidate_graph["nodes"][0]["acceptance_criteria"] = []
+    candidate_graph["edges"] = []
+    write_json(paths["candidate_graph"], candidate_graph)
+
+    report = build_report(paths)
+
+    kinds = [item["kind"] for item in report["readiness_explainers"]]
+    assert "stale_ref" in kinds
+    assert "candidate_structure_workflow_topology_flat" in kinds
+    assert kinds.index("stale_ref") < kinds.index("candidate_structure_workflow_topology_flat")
+
+
+def test_idea_maturity_metrics_report_does_not_infer_intake_depth_when_intake_missing(
+    tmp_path: Path,
+) -> None:
+    paths = write_ready_chain(tmp_path / "missing-intake-structure")
+    paths["intake"].unlink()
+    paths["repaired_candidate_graph"].unlink()
+    candidate_graph = load_json(paths["candidate_graph"])
+    candidate_graph["edges"] = []
+    write_json(paths["candidate_graph"], candidate_graph)
+
+    report = build_report(paths)
+
+    structure_kinds = {
+        item["kind"]
+        for item in report["readiness_explainers"]
+        if item["kind"].startswith("candidate_structure_")
+    }
+    assert "candidate_structure_workflow_topology_flat" in structure_kinds
+    assert "candidate_structure_actor_model_missing" not in structure_kinds
+    assert "candidate_structure_command_model_missing" not in structure_kinds
+    assert "candidate_structure_domain_event_model_missing" not in structure_kinds
+    assert "candidate_structure_policy_model_missing" not in structure_kinds
+    assert "candidate_structure_constraints_missing" not in structure_kinds
+
+
 def test_idea_maturity_metrics_report_preserves_zero_denominator_rates(
     tmp_path: Path,
 ) -> None:
