@@ -519,8 +519,47 @@ def _candidate_graph_depth(candidate_graph: dict[str, Any] | None) -> dict[str, 
     }
 
 
+def _graph_identity(artifact: dict[str, Any] | None) -> dict[str, str]:
+    graph = _dict(artifact)
+    source_intake = _dict(graph.get("source_intake"))
+    workspace = _dict(source_intake.get("workspace"))
+    identity = {
+        "candidate_id": _text(workspace.get("candidate_id")),
+        "public_route": _text(workspace.get("public_route")),
+        "workspace_route": _text(workspace.get("workspace_route")),
+        "root_intent_sha256": _text(source_intake.get("root_intent_sha256")),
+        "source_ref": _text(source_intake.get("source_ref")) or _text(graph.get("source_ref")),
+    }
+    return {key: value for key, value in identity.items() if value}
+
+
+def _compatible_graph_identity(
+    candidate_graph: dict[str, Any] | None,
+    repaired_candidate_graph: dict[str, Any] | None,
+) -> bool:
+    current_identity = _graph_identity(candidate_graph)
+    repaired_identity = _graph_identity(repaired_candidate_graph)
+    shared_keys = set(current_identity) & set(repaired_identity)
+    if not shared_keys:
+        return True
+    return all(current_identity[key] == repaired_identity[key] for key in shared_keys)
+
+
+def _selected_candidate_graph_for_depth(
+    artifacts: dict[str, dict[str, Any]],
+) -> dict[str, Any] | None:
+    candidate_graph = artifacts.get("candidate_graph")
+    repaired_candidate_graph = artifacts.get("repaired_candidate_graph")
+    if repaired_candidate_graph and _compatible_graph_identity(
+        candidate_graph,
+        repaired_candidate_graph,
+    ):
+        return repaired_candidate_graph
+    return candidate_graph
+
+
 def _candidate_structure_depth(artifacts: dict[str, dict[str, Any]]) -> dict[str, int]:
-    candidate_graph = artifacts.get("repaired_candidate_graph") or artifacts.get("candidate_graph")
+    candidate_graph = _selected_candidate_graph_for_depth(artifacts)
     return {
         **_event_storming_depth(artifacts.get("intake")),
         **_candidate_graph_depth(candidate_graph),

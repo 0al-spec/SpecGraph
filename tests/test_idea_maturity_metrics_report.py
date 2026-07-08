@@ -604,6 +604,29 @@ def test_idea_maturity_metrics_report_builds_approval_ready_metrics(tmp_path: Pa
     assert report["specgraph_summary"]["readiness_explainer_count"] == 0
 
 
+def test_idea_maturity_metrics_report_ignores_stale_repaired_graph_depth(
+    tmp_path: Path,
+) -> None:
+    paths = write_ready_chain(tmp_path / "stale-repaired-depth")
+    candidate_graph = load_json(paths["candidate_graph"])
+    candidate_graph["source_intake"] = {
+        "source_ref": "product://current-candidate/root-intent",
+        "root_intent_sha256": "current-root-intent",
+    }
+    write_json(paths["candidate_graph"], candidate_graph)
+    repaired_graph = load_json(paths["repaired_candidate_graph"])
+    repaired_graph["source_intake"] = {
+        "source_ref": "product://stale-candidate/root-intent",
+        "root_intent_sha256": "stale-root-intent",
+    }
+    write_json(paths["repaired_candidate_graph"], repaired_graph)
+
+    report = build_report(paths)
+
+    assert report["metrics"]["candidate_structure_depth"]["topology_edge_count"] == 1
+    assert report["metrics"]["candidate_structure_depth"]["workflow_edge_count"] == 1
+
+
 def test_idea_maturity_metrics_report_preserves_zero_denominator_rates(
     tmp_path: Path,
 ) -> None:
