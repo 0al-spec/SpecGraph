@@ -28,9 +28,12 @@ event-storming hints during review-only rerun.
 - missing commands -> `target_ref: event_storming_hints.commands`;
 - missing domain events -> `target_ref: event_storming_hints.domain_events`;
 - missing policies -> `target_ref: event_storming_hints.policies`;
-- missing constraints -> `target_ref: event_storming_hints.constraints`;
-- zero workflow edges with existing commands and events -> a workflow topology
-  request targeting command hints.
+- missing constraints -> `target_ref: event_storming_hints.constraints`.
+
+Workflow topology depth remains diagnostic in this slice. The current rerun
+overlay appends event-storming entries; it does not patch existing command/event
+relations, so zero workflow edges must not emit a repair request until a
+patch-capable topology overlay exists.
 
 The requests keep `suggested_actions: ["answer_question", "defer_candidate"]`
 and `suggested_answer_shape: "event_storming_entry[]"` so existing answer
@@ -59,10 +62,13 @@ This slice is review-only. It does not:
 
 - Missing `candidate_structure_depth` does not create fake clarification
   requests.
+- Invalid or unsupported maturity reports do not create clarification requests.
+- Intake-sourced depth requests require the maturity report to have loaded an
+  event-storming intake source.
 - Zero actor/event/policy/constraint counts create `review_required` structured
   event-storming requests, not blocking gates.
-- Zero workflow-edge count creates a workflow-topology request only when
-  commands and domain events already exist.
+- Zero workflow-edge count does not create a topology repair request in this
+  slice.
 - Accepted typed `entries[]` answers feed the existing review-only rerun overlay
   as event-storming hints.
 - Metrics remains the objective telemetry layer; interpretation and prompts stay

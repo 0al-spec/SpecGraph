@@ -21,6 +21,7 @@ PRE_SIB_CONTRACT_REF = "specgraph.idea-to-spec.pre-sib-coherence-report.v0.1"
 REPAIR_LOOP_CONTRACT_REF = "specgraph.idea-to-spec.candidate-repair-loop.v0.1"
 ONTOLOGY_GAP_REVIEW_KIND = "ontology_gap_review_workflow"
 IDEA_MATURITY_KIND = "idea_maturity_metrics_report"
+IDEA_MATURITY_CONTRACT_REF = "specgraph.idea-to-spec.maturity-metrics-report.v0.1"
 
 DEFAULT_SESSION_PATH = ROOT / "runs" / "user_idea_intake_session.json"
 DEFAULT_INTAKE_PATH = ROOT / "runs" / "idea_event_storming_intake.json"
@@ -693,6 +694,20 @@ def _candidate_structure_depth(idea_maturity_report: dict[str, Any] | None) -> d
     return depth
 
 
+def _has_loaded_maturity_intake_source(idea_maturity_report: dict[str, Any]) -> bool:
+    source_refs = _list(idea_maturity_report.get("source_artifacts"))
+    if any(
+        isinstance(source_ref, str) and source_ref.endswith("idea_event_storming_intake.json")
+        for source_ref in source_refs
+    ):
+        return True
+    source_details = _dict(idea_maturity_report.get("source_artifact_details"))
+    intake_source = _dict(
+        source_details.get("intake") or source_details.get("event_storming_intake")
+    )
+    return intake_source.get("status") == "loaded"
+
+
 def _depth_source_findings(
     *,
     metric: str,
@@ -720,59 +735,43 @@ def _requests_from_structure_depth(
 ) -> list[dict[str, Any]]:
     if idea_maturity_report is None:
         return []
+    if (
+        idea_maturity_report.get("artifact_kind") != IDEA_MATURITY_KIND
+        or idea_maturity_report.get("contract_ref") != IDEA_MATURITY_CONTRACT_REF
+    ):
+        return []
+    if idea_maturity_report.get("status") == "invalid":
+        return []
+    has_intake = _has_loaded_maturity_intake_source(idea_maturity_report)
     depth = _candidate_structure_depth(idea_maturity_report)
     if not depth:
         return []
 
     requests: list[dict[str, Any]] = []
-    for category, spec in EVENT_STORMING_DEPTH_CATEGORIES.items():
-        metric = spec["metric"]
-        count = _non_negative_int(depth.get(metric))
-        if count != 0:
-            continue
-        target_ref = f"event_storming_hints.{category}"
-        requests.append(
-            _request(
-                request_id=f"clarification.depth.{category}",
-                kind="event_storming_gap",
-                severity="review_required",
-                question=spec["question"],
-                target_artifact=intake_target,
-                target_ref=target_ref,
-                blocks=[spec["block"]],
-                suggested_answer_shape="event_storming_entry[]",
-                suggested_actions=["answer_question", "defer_candidate"],
-                source_findings=_depth_source_findings(
-                    metric=metric,
-                    idea_maturity_target=idea_maturity_target,
-                ),
+    if has_intake:
+        for category, spec in EVENT_STORMING_DEPTH_CATEGORIES.items():
+            metric = spec["metric"]
+            count = _non_negative_int(depth.get(metric))
+            if count != 0:
+                continue
+            target_ref = f"event_storming_hints.{category}"
+            requests.append(
+                _request(
+                    request_id=f"clarification.depth.{category}",
+                    kind="event_storming_gap",
+                    severity="review_required",
+                    question=spec["question"],
+                    target_artifact=intake_target,
+                    target_ref=target_ref,
+                    blocks=[spec["block"]],
+                    suggested_answer_shape="event_storming_entry[]",
+                    suggested_actions=["answer_question", "defer_candidate"],
+                    source_findings=_depth_source_findings(
+                        metric=metric,
+                        idea_maturity_target=idea_maturity_target,
+                    ),
+                )
             )
-        )
-
-    workflow_edge_count = _non_negative_int(depth.get("workflow_edge_count"))
-    command_count = _non_negative_int(depth.get("command_count"))
-    event_count = _non_negative_int(depth.get("domain_event_count"))
-    if workflow_edge_count == 0 and (command_count or 0) > 0 and (event_count or 0) > 0:
-        requests.append(
-            _request(
-                request_id="clarification.depth.workflow-topology",
-                kind="workflow_topology_gap",
-                severity="review_required",
-                question=(
-                    "Which command-to-event or event-to-policy links should be present "
-                    "in the candidate workflow topology?"
-                ),
-                target_artifact=intake_target,
-                target_ref="event_storming_hints.commands",
-                blocks=["candidate_structure_depth.workflow_edge_count"],
-                suggested_answer_shape="event_storming_entry[]",
-                suggested_actions=["answer_question", "defer_candidate"],
-                source_findings=_depth_source_findings(
-                    metric="workflow_edge_count",
-                    idea_maturity_target=idea_maturity_target,
-                ),
-            )
-        )
     return requests
 
 
@@ -914,17 +913,27 @@ def _validate_inputs(
                 evidence={"artifact_kind": ontology_gap_review.get("artifact_kind")},
             )
         )
-    if idea_maturity_report is not None and idea_maturity_report.get("artifact_kind") != (
-        IDEA_MATURITY_KIND
-    ):
-        findings.append(
-            _finding(
-                finding_id="idea_maturity_contract_invalid",
-                severity="review_required",
-                message="idea_maturity_report must be an idea_maturity_metrics_report artifact.",
-                evidence={"artifact_kind": idea_maturity_report.get("artifact_kind")},
+    if idea_maturity_report is not None:
+        invalid: list[str] = []
+        if idea_maturity_report.get("artifact_kind") != IDEA_MATURITY_KIND:
+            invalid.append("artifact_kind")
+        if idea_maturity_report.get("contract_ref") != IDEA_MATURITY_CONTRACT_REF:
+            invalid.append("contract_ref")
+        if invalid:
+            findings.append(
+                _finding(
+                    finding_id="idea_maturity_contract_invalid",
+                    severity="review_required",
+                    message="idea_maturity_report must use a supported maturity metrics contract.",
+                    evidence={
+                        "invalid_fields": invalid,
+                        "expected_artifact_kind": IDEA_MATURITY_KIND,
+                        "expected_contract_ref": IDEA_MATURITY_CONTRACT_REF,
+                        "actual_artifact_kind": idea_maturity_report.get("artifact_kind"),
+                        "actual_contract_ref": idea_maturity_report.get("contract_ref"),
+                    },
+                )
             )
-        )
     return findings
 
 

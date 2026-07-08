@@ -590,7 +590,9 @@ def _append_event_storming(
     if not event_storming:
         target_ref = context["target_ref"]
         category = target_ref.removeprefix("event_storming_hints.")
-        entries = _list(value_dict.get("entries"))
+        entries = _list(value)
+        if not entries:
+            entries = _list(value_dict.get("entries"))
         if (
             target_ref.startswith("event_storming_hints.")
             and category in EVENT_STORMING_CATEGORIES

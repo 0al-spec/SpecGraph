@@ -322,6 +322,8 @@ def test_clarification_requests_adds_depth_driven_event_storming_requests() -> N
     clarification_module = load_module(TOOL_PATH, "clarification_requests_structure_depth")
     maturity = {
         "artifact_kind": "idea_maturity_metrics_report",
+        "contract_ref": "specgraph.idea-to-spec.maturity-metrics-report.v0.1",
+        "source_artifacts": ["runs/custom/idea_event_storming_intake.json"],
         "groups": {
             "candidate_structure_depth": {
                 "actor_count": 0,
@@ -346,7 +348,7 @@ def test_clarification_requests_adds_depth_driven_event_storming_requests() -> N
     assert report["readiness"]["ready"] is False
     assert report["readiness"]["review_state"] == "clarification_review_required"
     assert report["summary"]["blocking_request_count"] == 0
-    assert report["summary"]["review_required_request_count"] == 3
+    assert report["summary"]["review_required_request_count"] == 2
     actor_request = request_by_id(report, "clarification.depth.actors")
     assert actor_request["kind"] == "event_storming_gap"
     assert actor_request["severity"] == "review_required"
@@ -354,12 +356,8 @@ def test_clarification_requests_adds_depth_driven_event_storming_requests() -> N
     assert actor_request["target_ref"] == "event_storming_hints.actors"
     assert actor_request["suggested_answer_shape"] == "event_storming_entry[]"
     assert actor_request["suggested_actions"] == ["answer_question", "defer_candidate"]
-    workflow_request = request_by_id(report, "clarification.depth.workflow-topology")
-    assert workflow_request["kind"] == "workflow_topology_gap"
-    assert workflow_request["target_ref"] == "event_storming_hints.commands"
-    assert workflow_request["source_findings"][0]["evidence"]["source_ref"] == (
-        "runs/custom/idea_maturity_metrics_report.json#"
-        "groups.candidate_structure_depth.workflow_edge_count"
+    assert actor_request["source_findings"][0]["evidence"]["source_ref"] == (
+        "runs/custom/idea_maturity_metrics_report.json#groups.candidate_structure_depth.actor_count"
     )
 
 
@@ -367,12 +365,95 @@ def test_clarification_requests_missing_depth_group_is_not_faked() -> None:
     clarification_module = load_module(TOOL_PATH, "clarification_requests_structure_depth_missing")
 
     report = clarification_module.build_idea_to_spec_clarification_requests(
-        idea_maturity_report={"artifact_kind": "idea_maturity_metrics_report", "groups": {}},
+        idea_maturity_report={
+            "artifact_kind": "idea_maturity_metrics_report",
+            "contract_ref": "specgraph.idea-to-spec.maturity-metrics-report.v0.1",
+            "groups": {},
+        },
     )
 
     assert report["summary"]["request_count"] == 0
     assert report["readiness"]["ready"] is True
     assert report["readiness"]["review_state"] == "clarification_clear"
+
+
+def test_clarification_requests_does_not_infer_depth_when_intake_not_loaded() -> None:
+    clarification_module = load_module(
+        TOOL_PATH,
+        "clarification_requests_structure_depth_without_intake",
+    )
+    maturity = {
+        "artifact_kind": "idea_maturity_metrics_report",
+        "contract_ref": "specgraph.idea-to-spec.maturity-metrics-report.v0.1",
+        "status": "ready",
+        "source_artifacts": ["runs/candidate_spec_graph.json"],
+        "groups": {
+            "candidate_structure_depth": {
+                "actor_count": 0,
+                "command_count": 0,
+                "domain_event_count": 0,
+                "policy_count": 0,
+                "constraint_count": 0,
+            }
+        },
+    }
+
+    report = clarification_module.build_idea_to_spec_clarification_requests(
+        idea_maturity_report=maturity,
+    )
+
+    assert report["summary"]["request_count"] == 0
+    assert report["readiness"]["ready"] is True
+
+
+def test_clarification_requests_does_not_infer_depth_from_invalid_maturity() -> None:
+    clarification_module = load_module(
+        TOOL_PATH,
+        "clarification_requests_invalid_structure_depth",
+    )
+    maturity = {
+        "artifact_kind": "idea_maturity_metrics_report",
+        "contract_ref": "specgraph.idea-to-spec.maturity-metrics-report.v0.1",
+        "status": "invalid",
+        "source_artifacts": ["runs/idea_event_storming_intake.json"],
+        "groups": {
+            "candidate_structure_depth": {
+                "actor_count": 0,
+                "command_count": 0,
+                "domain_event_count": 0,
+                "policy_count": 0,
+                "constraint_count": 0,
+            }
+        },
+    }
+
+    report = clarification_module.build_idea_to_spec_clarification_requests(
+        idea_maturity_report=maturity,
+    )
+
+    assert report["summary"]["request_count"] == 0
+    assert report["readiness"]["ready"] is True
+
+
+def test_clarification_requests_rejects_unsupported_maturity_contract() -> None:
+    clarification_module = load_module(
+        TOOL_PATH,
+        "clarification_requests_unsupported_maturity_contract",
+    )
+    maturity = {
+        "artifact_kind": "idea_maturity_metrics_report",
+        "contract_ref": "specgraph.idea-to-spec.maturity-metrics-report.v0.0",
+        "source_artifacts": ["runs/idea_event_storming_intake.json"],
+        "groups": {"candidate_structure_depth": {"actor_count": 0}},
+    }
+
+    report = clarification_module.build_idea_to_spec_clarification_requests(
+        idea_maturity_report=maturity,
+    )
+
+    assert report["readiness"]["ready"] is False
+    assert report["findings"][0]["finding_id"] == "idea_maturity_contract_invalid"
+    assert report["summary"]["request_count"] == 0
 
 
 def test_product_workspace_raw_idea_writes_clarification_before_abort(tmp_path: Path) -> None:
