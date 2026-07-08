@@ -2294,7 +2294,7 @@ def _candidate_structure_depth_readiness_explainers(
                 kind=kind,
                 source="idea_maturity_metrics_report.groups.candidate_structure_depth",
                 severity=severity,
-                blocks=["candidate_structure_review"],
+                blocks=["pre_sib_review"],
                 message=message,
                 next_action=next_action,
                 evidence_refs=[

@@ -1573,8 +1573,8 @@ Status: implemented in proposal `0206`.
 
 Proposal `0206` keeps `candidate_structure_depth` as Metrics-owned raw
 telemetry and adds SpecGraph-owned `readiness_explainers` when those objective
-counts show a shallow candidate narrative. The explainers use the neutral
-`candidate_structure_review` block so consumers can point operators toward
+counts show a shallow candidate narrative. The explainers use the existing
+non-authority `pre_sib_review` block so consumers can point operators toward
 actor, command, domain-event, workflow-topology, requirement, or
 acceptance-criteria review without treating the counts as a promotion gate,
 approval gate, Git gate, ontology authority, or composite quality score.

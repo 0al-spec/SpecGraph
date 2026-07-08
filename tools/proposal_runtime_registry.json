@@ -11758,7 +11758,7 @@
       },
       {
         "path": "tools/idea_maturity_metrics_report.py",
-        "pattern": "\"candidate_structure_review\""
+        "pattern": "blocks=[\"pre_sib_review\"]"
       }
     ],
     "validation_markers": [
@@ -11768,7 +11768,7 @@
       },
       {
         "path": "tests/test_idea_maturity_metrics_report.py",
-        "pattern": "\"candidate_structure_review\""
+        "pattern": "\"pre_sib_review\""
       }
     ],
     "observation_markers": [
@@ -11778,13 +11778,13 @@
       },
       {
         "path": "Sources/SpecGraph/Documentation.docc/ProductWorkspacePilots.md",
-        "pattern": "candidate_structure_review"
+        "pattern": "pre_sib_review"
       },
       {
         "path": "tools/README.md",
         "pattern": "Proposal 0206 adds producer-side readiness explainers"
       }
     ],
-    "notes": "SpecGraph now interprets shallow Metrics-owned structural depth observations as readiness_explainers with candidate_structure_review blocks while leaving raw Metrics counts objective and unchanged."
+    "notes": "SpecGraph now interprets shallow Metrics-owned structural depth observations as readiness_explainers with pre_sib_review blocks and candidate-structure kind/source evidence while leaving raw Metrics counts objective and unchanged."
   }
 ]

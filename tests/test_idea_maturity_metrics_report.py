@@ -657,7 +657,7 @@ def test_idea_maturity_metrics_report_interprets_shallow_structure_without_gatin
         if item["kind"].startswith("candidate_structure_")
     ]
     assert {item["proposal_id"] for item in structure_explainers} == {"0206"}
-    assert {item["blocks"][0] for item in structure_explainers} == {"candidate_structure_review"}
+    assert {item["blocks"][0] for item in structure_explainers} == {"pre_sib_review"}
     assert {item["kind"] for item in structure_explainers} >= {
         "candidate_structure_actor_model_missing",
         "candidate_structure_domain_event_model_missing",

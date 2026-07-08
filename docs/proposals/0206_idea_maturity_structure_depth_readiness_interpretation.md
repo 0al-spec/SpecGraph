@@ -26,7 +26,7 @@ The explainers:
 
 - use `proposal_id: "0206"`;
 - use `source: "idea_maturity_metrics_report.groups.candidate_structure_depth"`;
-- use `blocks: ["candidate_structure_review"]`;
+- use `blocks: ["pre_sib_review"]`;
 - point evidence refs at the corresponding
   `runs/idea_maturity_metrics_report.json#groups.candidate_structure_depth.*`
   metric;
@@ -53,16 +53,16 @@ It does not:
 ## Metrics Boundary
 
 Metrics remains the source of truth for the raw
-`candidate_structure_depth` schema and validator. Metrics may allow the neutral
-`candidate_structure_review` readiness block vocabulary, but Metrics does not
+`candidate_structure_depth` schema and validator. Metrics already defines the
+existing non-authority `pre_sib_review` readiness block, but Metrics does not
 define thresholds or next actions for the structural counts.
 
 ## Acceptance Criteria
 
 - Shallow structural counts produce `readiness_explainers[]` with
   `proposal_id: "0206"`.
-- The explainers use `candidate_structure_review`, not approval, promotion, Git,
-  or publication blocks.
+- The explainers use `pre_sib_review` plus candidate-structure `kind`/`source`,
+  not approval, promotion, Git, or publication blocks.
 - Shallow structural counts do not create policy findings and do not make the
   report `blocked` by themselves.
 - Rich structural counts do not emit structural-depth readiness explainers.
