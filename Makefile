@@ -83,11 +83,13 @@ USER_IDEA_EVENT_STORMING_SEED_OUTPUT_DEFAULT := runs/idea_event_storming_seed.js
 USER_IDEA_EVENT_STORMING_SEED_OUTPUT ?= $(USER_IDEA_EVENT_STORMING_SEED_OUTPUT_DEFAULT)
 REAL_IDEA_SMOKE_RUN_DIR ?= runs/real_idea_smoke
 REAL_IDEA_SMOKE_SUMMARY_OUTPUT ?= $(REAL_IDEA_SMOKE_RUN_DIR)/real_idea_smoke_summary.json
+REAL_IDEA_SMOKE_DEPTH_REPORT_OUTPUT ?= $(REAL_IDEA_SMOKE_RUN_DIR)/product_demo_depth_report.json
 REAL_IDEA_SMOKE_REFRESH ?= 1
 REAL_IDEA_SMOKE_REFRESH_ARG := $(if $(filter 0 false no,$(strip $(REAL_IDEA_SMOKE_REFRESH))),--preserve-existing,)
 REAL_IDEA_SMOKE_CLARIFICATION_ANSWERS_INPUT ?= $(IDEA_INTAKE_CLARIFICATION_ANSWERS_INPUT)
 REAL_IDEA_SMOKE_CLARIFICATION_ANSWERS_ARG := $(if $(strip $(REAL_IDEA_SMOKE_CLARIFICATION_ANSWERS_INPUT)),--clarification-answers-input "$(REAL_IDEA_SMOKE_CLARIFICATION_ANSWERS_INPUT)",)
 REAL_IDEA_SMOKE_MATURITY_ABSENT_DIR ?= $(REAL_IDEA_SMOKE_RUN_DIR)/absent-post-approval
+REAL_IDEA_SMOKE_CANDIDATE_OVERVIEW_OUTPUT ?= $(REAL_IDEA_SMOKE_RUN_DIR)/candidate_overview.json
 REAL_IDEA_ANSWER_AUTHORING_STAGE ?= auto
 REAL_IDEA_ANSWER_AUTHORING_REQUESTS ?=
 REAL_IDEA_ANSWER_AUTHORING_REQUESTS_ARG := $(if $(strip $(REAL_IDEA_ANSWER_AUTHORING_REQUESTS)),--requests "$(REAL_IDEA_ANSWER_AUTHORING_REQUESTS)",)
@@ -884,6 +886,31 @@ shutil.rmtree(absent, ignore_errors=True)' "$(REAL_IDEA_SMOKE_RUN_DIR)" "$(REAL_
 		IDEA_MATURITY_METRICS_READ_MODEL_PUBLICATION="$(REAL_IDEA_SMOKE_MATURITY_ABSENT_DIR)/product_candidate_promotion_read_model_publication_report.json" \
 		IDEA_MATURITY_METRICS_OUTPUT="$(REAL_IDEA_SMOKE_RUN_DIR)/idea_maturity_metrics_report.json" \
 		IDEA_MATURITY_METRICS_VALIDATION_OUTPUT="$(REAL_IDEA_SMOKE_RUN_DIR)/idea_maturity_metrics_validation_report.json"
+
+.PHONY: real-idea-smoke-depth-baseline
+real-idea-smoke-depth-baseline:
+	@$(MAKE) real-idea-smoke-idea-maturity \
+		REAL_IDEA_SMOKE_RUN_DIR="$(REAL_IDEA_SMOKE_RUN_DIR)" \
+		REAL_IDEA_SMOKE_MATURITY_ABSENT_DIR="$(REAL_IDEA_SMOKE_MATURITY_ABSENT_DIR)"
+	@$(MAKE) candidate-overview \
+		CANDIDATE_OVERVIEW_INTAKE="$(REAL_IDEA_SMOKE_RUN_DIR)/idea_event_storming_intake.json" \
+		CANDIDATE_OVERVIEW_CANDIDATE_GRAPH="$(REAL_IDEA_SMOKE_RUN_DIR)/candidate_spec_graph.json" \
+		CANDIDATE_OVERVIEW_REPAIRED_CANDIDATE_GRAPH="$(REAL_IDEA_SMOKE_RUN_DIR)/repaired_candidate_spec_graph.json" \
+		CANDIDATE_OVERVIEW_REPAIR_SESSION="$(REAL_IDEA_SMOKE_RUN_DIR)/idea_to_spec_repair_session.json" \
+		CANDIDATE_OVERVIEW_REPAIRED_REPAIR_SESSION="$(REAL_IDEA_SMOKE_RUN_DIR)/repaired_idea_to_spec_repair_session.json" \
+		CANDIDATE_OVERVIEW_IDEA_MATURITY="$(REAL_IDEA_SMOKE_RUN_DIR)/idea_maturity_metrics_report.json" \
+		CANDIDATE_OVERVIEW_PROJECT_LOCAL_ONTOLOGY_LANE="$(REAL_IDEA_SMOKE_RUN_DIR)/project_local_ontology_review_lane.json" \
+		CANDIDATE_OVERVIEW_PROJECT_LOCAL_ONTOLOGY_EFFECT="$(REAL_IDEA_SMOKE_MATURITY_ABSENT_DIR)/project_local_ontology_decision_effect_report.json" \
+		CANDIDATE_OVERVIEW_REPAIRED_HANDOFF="$(REAL_IDEA_SMOKE_RUN_DIR)/repaired_candidate_promotion_handoff_report.json" \
+		CANDIDATE_OVERVIEW_OUTPUT="$(REAL_IDEA_SMOKE_CANDIDATE_OVERVIEW_OUTPUT)"
+	@$(PYTHON) tools/product_demo_depth_report.py \
+		--run-dir "$(REAL_IDEA_SMOKE_RUN_DIR)" \
+		--intake "$(REAL_IDEA_SMOKE_RUN_DIR)/idea_event_storming_intake.json" \
+		--candidate-graph "$(REAL_IDEA_SMOKE_RUN_DIR)/candidate_spec_graph.json" \
+		--candidate-overview "$(REAL_IDEA_SMOKE_CANDIDATE_OVERVIEW_OUTPUT)" \
+		--idea-maturity "$(REAL_IDEA_SMOKE_RUN_DIR)/idea_maturity_metrics_report.json" \
+		--output "$(REAL_IDEA_SMOKE_DEPTH_REPORT_OUTPUT)" \
+		--strict
 
 .PHONY: generic-idea-intake
 generic-idea-intake: user-idea-intake-source

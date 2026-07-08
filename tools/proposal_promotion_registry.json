@@ -2624,5 +2624,18 @@
     "required_provenance_links": [
       "source_draft_ref"
     ]
+  },
+  {
+    "proposal_id": "0204",
+    "source_artifact_class": "working_draft",
+    "source_refs": [
+      "docs/archive/proposal_sources/0204_product_demo_depth_baseline.md"
+    ],
+    "motivating_concern": "UI-started product demo runs can currently pass with a shallow generated candidate, so SpecGraph needs a first-class report that proves semantic event-storming and candidate depth before SpecSpace presents the demo.",
+    "normalized_title": "Product Demo Depth Baseline",
+    "bounded_scope": "Add a strict product demo depth report, Make target, tests, proposal docs, roadmap, DocC, README, and registry tracking that validates actors, commands, domain events, policies, constraints, workflow topology, candidate overview, Idea Maturity, requirements, and acceptance criteria for real-idea smoke run directories without executing prompt agents, mutating canonical specs, writing Ontology packages or lockfiles, accepting ontology terms, approving candidates, creating Git branches or commits, opening pull requests, or publishing read models.",
+    "required_provenance_links": [
+      "source_draft_ref"
+    ]
   }
 ]

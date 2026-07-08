@@ -379,6 +379,16 @@ Supervisor modes:
   prepare clarification requests plus `real_idea_answer_template.json`. Raw
   idea text remains local-only and appears only in the local operator raw input
   artifact, not in preview or report artifacts.
+- Proposal 0204 adds a product demo depth baseline for UI-started real-idea
+  smoke runs. Use `make real-idea-smoke-depth-baseline
+  REAL_IDEA_SMOKE_RUN_DIR=runs/<id>` after a real-idea candidate run to build
+  Idea Maturity, `candidate_overview.json`, and
+  `product_demo_depth_report.json` for the same run directory. The strict report
+  fails shallow demos that lack actors, commands, domain events, policies,
+  constraints, workflow topology, requirements, acceptance criteria, candidate
+  overview, or non-missing Idea Maturity. The target is report-only and does
+  not execute prompt agents, mutate specs, write ontology packages, approve
+  candidates, create Git artifacts, or publish read models.
 - `tools/user_idea_intake_source.py`: deterministic generic user-idea source
   builder introduced by proposal 0158. Use `make user-idea-intake-source
   USER_IDEA_INTAKE_SOURCE=<json>` to normalize product workspace identity,
