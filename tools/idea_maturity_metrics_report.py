@@ -2201,6 +2201,7 @@ def _project_local_ontology_readiness_explainers(
 STRUCTURE_DEPTH_INTERPRETATIONS = (
     (
         "actor_count",
+        "intake",
         "candidate-structure-actors-missing",
         "candidate_structure_actor_model_missing",
         "Candidate structure has no explicit actor model.",
@@ -2209,6 +2210,7 @@ STRUCTURE_DEPTH_INTERPRETATIONS = (
     ),
     (
         "command_count",
+        "intake",
         "candidate-structure-commands-missing",
         "candidate_structure_command_model_missing",
         "Candidate structure has no explicit commands.",
@@ -2217,6 +2219,7 @@ STRUCTURE_DEPTH_INTERPRETATIONS = (
     ),
     (
         "domain_event_count",
+        "intake",
         "candidate-structure-domain-events-missing",
         "candidate_structure_domain_event_model_missing",
         "Candidate structure has no explicit domain events.",
@@ -2225,6 +2228,7 @@ STRUCTURE_DEPTH_INTERPRETATIONS = (
     ),
     (
         "policy_count",
+        "intake",
         "candidate-structure-policies-missing",
         "candidate_structure_policy_model_missing",
         "Candidate structure has no explicit policies.",
@@ -2233,6 +2237,7 @@ STRUCTURE_DEPTH_INTERPRETATIONS = (
     ),
     (
         "constraint_count",
+        "intake",
         "candidate-structure-constraints-missing",
         "candidate_structure_constraints_missing",
         "Candidate structure has no explicit constraints.",
@@ -2241,6 +2246,7 @@ STRUCTURE_DEPTH_INTERPRETATIONS = (
     ),
     (
         "workflow_edge_count",
+        "candidate_graph",
         "candidate-structure-workflow-topology-flat",
         "candidate_structure_workflow_topology_flat",
         "Candidate graph has no workflow topology edges.",
@@ -2252,6 +2258,7 @@ STRUCTURE_DEPTH_INTERPRETATIONS = (
     ),
     (
         "requirement_count",
+        "candidate_graph",
         "candidate-structure-requirements-missing",
         "candidate_structure_requirements_missing",
         "Candidate nodes have no requirements.",
@@ -2260,6 +2267,7 @@ STRUCTURE_DEPTH_INTERPRETATIONS = (
     ),
     (
         "acceptance_criteria_count",
+        "candidate_graph",
         "candidate-structure-acceptance-criteria-missing",
         "candidate_structure_acceptance_criteria_missing",
         "Candidate nodes have no acceptance criteria.",
@@ -2276,15 +2284,19 @@ def _candidate_structure_depth_readiness_explainers(
     if not artifacts.get("candidate_graph") and not artifacts.get("repaired_candidate_graph"):
         return []
     depth = _dict(metrics.get("candidate_structure_depth"))
+    has_intake = bool(artifacts.get("intake"))
     explainers: list[dict[str, Any]] = []
     for (
         field,
+        source_artifact,
         explainer_id,
         kind,
         message,
         next_action,
         severity,
     ) in STRUCTURE_DEPTH_INTERPRETATIONS:
+        if source_artifact == "intake" and not has_intake:
+            continue
         value = _int(depth.get(field))
         if value > 0:
             continue
@@ -2372,9 +2384,9 @@ def _readiness_explainers(
         *_repair_session_readiness_explainers(artifacts, paths),
         *_promotion_gate_readiness_explainers(artifacts, paths),
         *_project_local_ontology_readiness_explainers(artifacts, paths),
-        *_candidate_structure_depth_readiness_explainers(artifacts, metrics),
         *_finding_readiness_explainers(policy_findings, collection="policy_findings"),
         *_finding_readiness_explainers(invariant_findings, collection="invariant_findings"),
+        *_candidate_structure_depth_readiness_explainers(artifacts, metrics),
     ]
     return _dedupe_explainers(explainers)
 

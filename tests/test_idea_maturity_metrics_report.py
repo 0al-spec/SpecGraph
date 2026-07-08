@@ -669,6 +669,50 @@ def test_idea_maturity_metrics_report_interprets_shallow_structure_without_gatin
     assert all("platform_promotion" not in item["blocks"] for item in structure_explainers)
 
 
+def test_idea_maturity_metrics_report_prioritizes_blockers_before_structure(
+    tmp_path: Path,
+) -> None:
+    paths = write_ready_chain(tmp_path / "blocked-shallow-structure", stale_rerun_ref=True)
+    paths["repaired_candidate_graph"].unlink()
+    candidate_graph = load_json(paths["candidate_graph"])
+    candidate_graph["nodes"][0]["requirements"] = []
+    candidate_graph["nodes"][0]["acceptance_criteria"] = []
+    candidate_graph["edges"] = []
+    write_json(paths["candidate_graph"], candidate_graph)
+
+    report = build_report(paths)
+
+    kinds = [item["kind"] for item in report["readiness_explainers"]]
+    assert "stale_ref" in kinds
+    assert "candidate_structure_workflow_topology_flat" in kinds
+    assert kinds.index("stale_ref") < kinds.index("candidate_structure_workflow_topology_flat")
+
+
+def test_idea_maturity_metrics_report_does_not_infer_intake_depth_when_intake_missing(
+    tmp_path: Path,
+) -> None:
+    paths = write_ready_chain(tmp_path / "missing-intake-structure")
+    paths["intake"].unlink()
+    paths["repaired_candidate_graph"].unlink()
+    candidate_graph = load_json(paths["candidate_graph"])
+    candidate_graph["edges"] = []
+    write_json(paths["candidate_graph"], candidate_graph)
+
+    report = build_report(paths)
+
+    structure_kinds = {
+        item["kind"]
+        for item in report["readiness_explainers"]
+        if item["kind"].startswith("candidate_structure_")
+    }
+    assert "candidate_structure_workflow_topology_flat" in structure_kinds
+    assert "candidate_structure_actor_model_missing" not in structure_kinds
+    assert "candidate_structure_command_model_missing" not in structure_kinds
+    assert "candidate_structure_domain_event_model_missing" not in structure_kinds
+    assert "candidate_structure_policy_model_missing" not in structure_kinds
+    assert "candidate_structure_constraints_missing" not in structure_kinds
+
+
 def test_idea_maturity_metrics_report_preserves_zero_denominator_rates(
     tmp_path: Path,
 ) -> None:
