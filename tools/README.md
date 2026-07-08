@@ -389,6 +389,12 @@ Supervisor modes:
   overview, or non-missing Idea Maturity. The target is report-only and does
   not execute prompt agents, mutate specs, write ontology packages, approve
   candidates, create Git artifacts, or publish read models.
+- Proposal 0205 adds reusable structural depth observations to the Metrics-owned
+  Idea Maturity report. `groups.candidate_structure_depth` records actor,
+  command, domain event, policy, constraint, topology edge, workflow edge,
+  requirement, and acceptance-criteria counts from existing intake and candidate
+  graph artifacts. These counts explain candidate depth without replacing the
+  stricter product demo depth report or becoming a promotion gate.
 - `tools/user_idea_intake_source.py`: deterministic generic user-idea source
   builder introduced by proposal 0158. Use `make user-idea-intake-source
   USER_IDEA_INTAKE_SOURCE=<json>` to normalize product workspace identity,

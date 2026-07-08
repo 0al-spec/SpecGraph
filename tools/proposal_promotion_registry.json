@@ -2637,5 +2637,18 @@
     "required_provenance_links": [
       "source_draft_ref"
     ]
+  },
+  {
+    "proposal_id": "0205",
+    "source_artifact_class": "working_draft",
+    "source_refs": [
+      "docs/archive/proposal_sources/0205_idea_maturity_structural_depth_observations.md"
+    ],
+    "motivating_concern": "Product demo depth proved that actors, events, topology, requirements, and acceptance criteria are important maturity evidence, but downstream consumers should not need a separate demo-specific report to inspect those raw depth observations.",
+    "normalized_title": "Idea Maturity Structural Depth Observations",
+    "bounded_scope": "Emit structural depth observations in the Metrics-owned Idea Maturity report, including event-storming actor, command, domain event, policy, constraint, topology edge, workflow edge, requirement, and acceptance-criteria counts, without introducing a score, replacing product demo depth baseline, approving candidates, mutating canonical specs, writing Ontology packages or lockfiles, accepting ontology terms, creating Git branches or commits, opening pull requests, or publishing read models.",
+    "required_provenance_links": [
+      "source_draft_ref"
+    ]
   }
 ]

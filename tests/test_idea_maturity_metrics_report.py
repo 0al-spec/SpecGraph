@@ -100,6 +100,13 @@ def write_ready_chain(run_dir: Path, *, stale_rerun_ref: bool = False) -> dict[s
                     "public_route": "/local-subscription-control",
                 }
             },
+            "event_storming": {
+                "actors": [{"id": "actor.household-member"}, {"id": "actor.scheduler"}],
+                "commands": [{"id": "command.record-subscription"}],
+                "domain_events": [{"id": "event.subscription-recorded"}],
+                "policies": [{"id": "policy.renewal-review"}],
+                "constraints": [{"id": "constraint.local-only-storage"}],
+            },
             "summary": {"status": "ready_for_candidate_graph"},
             "authority_boundary": authority_boundary(),
         },
@@ -114,10 +121,19 @@ def write_ready_chain(run_dir: Path, *, stale_rerun_ref: bool = False) -> dict[s
             "nodes": [
                 {
                     "id": "candidate-spec.product-boundary",
+                    "requirements": [{"id": "req.product-boundary"}],
+                    "acceptance_criteria": [{"id": "ac.product-boundary"}],
                     "gaps": [
                         {"id": "ontology-gap.subscription", "kind": "ontology_gap"},
                         {"id": "gap.local-risk", "kind": "risk_requires_review"},
                     ],
+                }
+            ],
+            "edges": [
+                {
+                    "source": "actor.household-member",
+                    "target": "command.record-subscription",
+                    "relation": "actor_triggers_command",
                 }
             ],
             "summary": {"node_count": 1, "gap_count": 2, "status": "ready_for_pre_sib"},
@@ -316,7 +332,26 @@ def write_ready_chain(run_dir: Path, *, stale_rerun_ref: bool = False) -> dict[s
             "artifact_kind": "candidate_spec_graph",
             "contract_ref": "specgraph.idea-to-spec.candidate-spec-graph.v0.1",
             "schema_version": 1,
-            "nodes": [{"id": "candidate-spec.product-boundary", "gaps": []}],
+            "nodes": [
+                {
+                    "id": "candidate-spec.product-boundary",
+                    "requirements": [{"id": "req.product-boundary"}],
+                    "acceptance_criteria": [{"id": "ac.product-boundary"}],
+                    "gaps": [],
+                }
+            ],
+            "edges": [
+                {
+                    "source": "actor.household-member",
+                    "target": "command.record-subscription",
+                    "relation": "actor_triggers_command",
+                },
+                {
+                    "source": "command.record-subscription",
+                    "target": "event.subscription-recorded",
+                    "relation": "command_emits_event",
+                },
+            ],
             "summary": {"node_count": 1, "gap_count": 0, "status": "ready_for_pre_sib"},
         },
     )
@@ -546,6 +581,18 @@ def test_idea_maturity_metrics_report_builds_approval_ready_metrics(tmp_path: Pa
         report["groups"]["candidate_repair"]["candidate_resolution_kind_counts"]["risk_accepted"]
         == 1
     )
+    assert metrics["candidate_structure_depth"] == {
+        "actor_count": 2,
+        "command_count": 1,
+        "domain_event_count": 1,
+        "policy_count": 1,
+        "constraint_count": 1,
+        "topology_edge_count": 2,
+        "workflow_edge_count": 2,
+        "requirement_count": 1,
+        "acceptance_criteria_count": 1,
+    }
+    assert report["groups"]["candidate_structure_depth"] == metrics["candidate_structure_depth"]
     assert metrics["candidate_approval_state"] == "ready"
     assert metrics["platform_promotion_state"] == "not_reached"
     assert metrics["promotion_path_count"] == 1
@@ -555,6 +602,29 @@ def test_idea_maturity_metrics_report_builds_approval_ready_metrics(tmp_path: Pa
     assert "source_artifact_details" in report
     assert report["readiness_explainers"] == []
     assert report["specgraph_summary"]["readiness_explainer_count"] == 0
+
+
+def test_idea_maturity_metrics_report_ignores_stale_repaired_graph_depth(
+    tmp_path: Path,
+) -> None:
+    paths = write_ready_chain(tmp_path / "stale-repaired-depth")
+    candidate_graph = load_json(paths["candidate_graph"])
+    candidate_graph["source_intake"] = {
+        "source_ref": "product://current-candidate/root-intent",
+        "root_intent_sha256": "current-root-intent",
+    }
+    write_json(paths["candidate_graph"], candidate_graph)
+    repaired_graph = load_json(paths["repaired_candidate_graph"])
+    repaired_graph["source_intake"] = {
+        "source_ref": "product://stale-candidate/root-intent",
+        "root_intent_sha256": "stale-root-intent",
+    }
+    write_json(paths["repaired_candidate_graph"], repaired_graph)
+
+    report = build_report(paths)
+
+    assert report["metrics"]["candidate_structure_depth"]["topology_edge_count"] == 1
+    assert report["metrics"]["candidate_structure_depth"]["workflow_edge_count"] == 1
 
 
 def test_idea_maturity_metrics_report_preserves_zero_denominator_rates(
