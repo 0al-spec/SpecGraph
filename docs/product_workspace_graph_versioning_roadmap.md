@@ -1529,6 +1529,30 @@ The SpecSpace implementation evidence is curated cross-repo evidence from
 SpecSpace PRs and CI links; SpecGraph validates the evidence contract shape and
 links, but does not re-run the downstream UI implementation locally.
 
+## Product Demo Depth Baseline
+
+Status: implemented in proposal `0204`.
+
+Proposal `0204` adds a strict quality baseline for UI-started real-idea product
+demo runs:
+
+```bash
+make real-idea-smoke-depth-baseline REAL_IDEA_SMOKE_RUN_DIR=runs/<id>
+```
+
+The target builds Idea Maturity and `candidate_overview.json` for the selected
+run directory, then emits `product_demo_depth_report.json`. The report fails in
+strict mode when a demo candidate is too shallow to present: no actors, no
+commands, no domain events, no policies, no constraints, no review-only
+workflow topology, no candidate nodes, no requirements, no acceptance criteria,
+missing candidate overview, or missing Idea Maturity.
+
+This is not a promotion gate or product quality score. It is a read-only demo
+diagnostic so SpecSpace Playwright demos cannot pass with a generated but
+semantically empty candidate. The target does not execute prompt agents, infer
+domain semantics, mutate canonical specs, write Ontology packages, accept
+terms, approve candidates, create Git artifacts, or publish read models.
+
 ## Real Idea Entry Request Import
 
 Status: implemented producer-side in proposal `0202`; downstream UI/Platform
@@ -1675,11 +1699,15 @@ The same run exposed the next product-flow friction points:
    event-storming intake, candidate graph, repaired graph, repair session, Idea
    Maturity, project-local ontology review, topology relation counts, and next
    safe action.
-10. **Human-friendly candidate ids.** Long constraint statements currently
+10. **Product demo depth baseline.** Done in proposal `0204`. UI-started demo
+   runs can now call `make real-idea-smoke-depth-baseline` to fail shallow demos
+   that lack event-storming depth, workflow topology, candidate overview, or
+   Idea Maturity before SpecSpace presents them as a product story.
+11. **Human-friendly candidate ids.** Long constraint statements currently
    produce truncated node ids. Keep stable machine ids, but add shorter
    readable slugs or display aliases for UI, PR artifacts, and candidate
    overview documents.
-11. **Custom-run Platform promotion dry-run.** The cash-flow smoke reached
+12. **Custom-run Platform promotion dry-run.** The cash-flow smoke reached
    `ready_for_platform_promotion_request`, but did not yet materialize an
    approval decision, promotion request, or Git Service dry-run. Add a reusable
    custom run-dir handoff so any repaired real-idea smoke can continue into the

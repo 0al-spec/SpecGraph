@@ -356,8 +356,11 @@ The follow-up backlog from that smoke is:
    narrative panel over product intent, event-storming groups, topology, repair
    readiness, project-local ontology review, and next safe action. This is done
    downstream by the SpecSpace Product Workspace panel;
-10. add human-friendly display aliases for long generated candidate node ids;
-11. allow custom run-dir repaired candidates to continue into Platform
+10. require a product demo depth baseline before presenting generated
+   candidates as a live product story; done in proposal `0204` with
+   `make real-idea-smoke-depth-baseline` and `product_demo_depth_report.json`;
+11. add human-friendly display aliases for long generated candidate node ids;
+12. allow custom run-dir repaired candidates to continue into Platform
    approval/promotion dry-run without copying artifacts into canonical
    `runs/*.json`.
 
@@ -391,6 +394,22 @@ those optional paths as absent-tolerant evidence rather than required static
 surfaces. The linked SpecSpace PR and CI evidence are curated cross-repo evidence:
 SpecGraph validates their evidence contract shape and links, but does not re-run
 the downstream UI implementation locally.
+
+Proposal `0204` adds a strict product demo depth baseline:
+
+```bash
+make real-idea-smoke-depth-baseline REAL_IDEA_SMOKE_RUN_DIR=runs/<id>
+```
+
+The target builds Idea Maturity, builds `candidate_overview.json`, and emits
+`product_demo_depth_report.json` for the selected real-idea smoke run directory.
+Strict mode blocks demos that have a generated candidate but lack actors,
+commands, domain events, policies, constraints, workflow topology, candidate
+requirements, acceptance criteria, candidate overview, or non-missing Idea
+Maturity. This is a presentation-quality diagnostic for SpecSpace Playwright
+demos, not a promotion gate or quality score. It remains read-only: no
+prompt-agent execution, spec mutation, ontology writes, term acceptance,
+candidate approval, Git state, or read-model publication.
 
 Proposal `0202` adds a bridge from SpecSpace-owned raw idea entry state into
 real idea intake:

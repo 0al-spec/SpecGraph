@@ -11625,5 +11625,62 @@
       }
     ],
     "notes": "SpecGraph records the FP-RFC-0001 0.2 adoption boundary before implementing Feature Passport derived evidence indexes, receipt projections, claim-evaluation results, SpecSpace viewer contracts, or Platform receipt authority."
+  },
+  {
+    "proposal_id": "0204",
+    "posture": "bounded_runtime_followup",
+    "runtime_surfaces": [
+      "docs/proposals/0204_product_demo_depth_baseline.md",
+      "docs/archive/proposal_sources/0204_product_demo_depth_baseline.md",
+      "tools/product_demo_depth_report.py",
+      "Makefile",
+      "tests/test_product_demo_depth_report.py",
+      "docs/product_workspace_graph_versioning_roadmap.md",
+      "Sources/SpecGraph/Documentation.docc/ProductWorkspacePilots.md",
+      "tools/README.md"
+    ],
+    "runtime_markers": [
+      {
+        "path": "tools/product_demo_depth_report.py",
+        "pattern": "product_demo_depth_report"
+      },
+      {
+        "path": "Makefile",
+        "pattern": "real-idea-smoke-depth-baseline"
+      },
+      {
+        "path": "tools/product_demo_depth_report.py",
+        "pattern": "specgraph.idea-to-spec.product-demo-depth-report.v0.1"
+      }
+    ],
+    "validation_markers": [
+      {
+        "path": "tests/test_product_demo_depth_report.py",
+        "pattern": "test_product_demo_depth_report_passes_baseline"
+      },
+      {
+        "path": "tests/test_product_demo_depth_report.py",
+        "pattern": "test_product_demo_depth_report_blocks_shallow_demo"
+      },
+      {
+        "path": "tests/test_product_demo_depth_report.py",
+        "pattern": "test_product_demo_depth_report_strict_cli_fails_for_missing_depth"
+      }
+    ],
+    "observation_markers": [
+      {
+        "path": "docs/product_workspace_graph_versioning_roadmap.md",
+        "pattern": "Product Demo Depth Baseline"
+      },
+      {
+        "path": "Sources/SpecGraph/Documentation.docc/ProductWorkspacePilots.md",
+        "pattern": "product_demo_depth_report.json"
+      },
+      {
+        "path": "tools/README.md",
+        "pattern": "Proposal 0204 adds a product demo depth baseline"
+      }
+    ],
+    "notes": "SpecGraph now emits a strict product demo depth report for real-idea smoke run directories so UI-started demos must prove actors, commands, events, policies, constraints, workflow topology, candidate overview, and Idea Maturity before presentation."
   }
 ]
