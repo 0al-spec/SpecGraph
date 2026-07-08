@@ -174,3 +174,126 @@ def test_product_demo_depth_report_strict_cli_fails_for_missing_depth(tmp_path: 
     assert result.returncode == 1
     payload = json.loads(output.read_text(encoding="utf-8"))
     assert payload["summary"]["status"] == "depth_baseline_failed"
+
+
+def test_product_demo_depth_report_writes_report_for_malformed_source(tmp_path: Path) -> None:
+    run_dir = tmp_path / "runs" / "demo"
+    write_json(run_dir / "idea_event_storming_intake.json", intake())
+    write_json(run_dir / "candidate_spec_graph.json", candidate_graph())
+    (run_dir / "candidate_overview.json").write_text("{", encoding="utf-8")
+    write_json(run_dir / "idea_maturity_metrics_report.json", idea_maturity())
+    output = run_dir / "product_demo_depth_report.json"
+
+    result = subprocess.run(
+        [
+            sys.executable,
+            str(TOOL_PATH),
+            "--run-dir",
+            str(run_dir),
+            "--intake",
+            str(run_dir / "idea_event_storming_intake.json"),
+            "--candidate-graph",
+            str(run_dir / "candidate_spec_graph.json"),
+            "--candidate-overview",
+            str(run_dir / "candidate_overview.json"),
+            "--idea-maturity",
+            str(run_dir / "idea_maturity_metrics_report.json"),
+            "--output",
+            str(output),
+            "--strict",
+        ],
+        cwd=ROOT,
+        text=True,
+        capture_output=True,
+        check=False,
+    )
+
+    assert result.returncode == 1
+    payload = json.loads(output.read_text(encoding="utf-8"))
+    finding_ids = {finding["finding_id"] for finding in payload["findings"]}
+    assert "product_demo_depth_candidate_overview_invalid_json" in finding_ids
+
+
+def test_product_demo_depth_report_blocks_review_required_overview(tmp_path: Path) -> None:
+    module = load_module()
+    run_dir = tmp_path / "runs" / "demo"
+    paths = {
+        "intake": run_dir / "idea_event_storming_intake.json",
+        "graph": run_dir / "candidate_spec_graph.json",
+        "overview": run_dir / "candidate_overview.json",
+        "maturity": run_dir / "idea_maturity_metrics_report.json",
+    }
+    write_json(paths["intake"], intake())
+    write_json(paths["graph"], candidate_graph())
+    overview = candidate_overview()
+    overview["summary"] = {"status": "candidate_overview_review_required"}
+    write_json(paths["overview"], overview)
+    write_json(paths["maturity"], idea_maturity())
+
+    report = module.build_depth_report(
+        run_dir=run_dir,
+        intake_path=paths["intake"],
+        candidate_graph_path=paths["graph"],
+        candidate_overview_path=paths["overview"],
+        idea_maturity_path=paths["maturity"],
+    )
+
+    assert report["summary"]["status"] == "depth_baseline_failed"
+    finding_ids = {finding["finding_id"] for finding in report["findings"]}
+    assert "product_demo_depth_candidate_overview_review_required" in finding_ids
+
+
+def test_product_demo_depth_report_prefers_repaired_candidate_graph(tmp_path: Path) -> None:
+    module = load_module()
+    run_dir = tmp_path / "runs" / "demo"
+    original_graph = run_dir / "candidate_spec_graph.json"
+    repaired_graph = run_dir / "repaired_candidate_spec_graph.json"
+    write_json(run_dir / "idea_event_storming_intake.json", intake())
+    write_json(original_graph, {"artifact_kind": "candidate_spec_graph", "nodes": [], "edges": []})
+    write_json(repaired_graph, candidate_graph())
+    write_json(run_dir / "candidate_overview.json", candidate_overview())
+    write_json(run_dir / "idea_maturity_metrics_report.json", idea_maturity())
+
+    report = module.build_depth_report(
+        run_dir=run_dir,
+        intake_path=run_dir / "idea_event_storming_intake.json",
+        candidate_graph_path=original_graph,
+        repaired_candidate_graph_path=repaired_graph,
+        candidate_overview_path=run_dir / "candidate_overview.json",
+        idea_maturity_path=run_dir / "idea_maturity_metrics_report.json",
+    )
+
+    assert report["summary"]["status"] == "depth_baseline_met"
+    assert report["source_refs"]["candidate_graph"].endswith("repaired_candidate_spec_graph.json")
+
+
+def test_product_demo_depth_report_cli_rejects_shared_runs_dir(tmp_path: Path) -> None:
+    output = tmp_path / "product_demo_depth_report.json"
+
+    result = subprocess.run(
+        [
+            sys.executable,
+            str(TOOL_PATH),
+            "--run-dir",
+            "runs",
+            "--intake",
+            "runs/idea_event_storming_intake.json",
+            "--candidate-graph",
+            "runs/candidate_spec_graph.json",
+            "--candidate-overview",
+            "runs/candidate_overview.json",
+            "--idea-maturity",
+            "runs/idea_maturity_metrics_report.json",
+            "--output",
+            str(output),
+            "--strict",
+        ],
+        cwd=ROOT,
+        text=True,
+        capture_output=True,
+        check=False,
+    )
+
+    assert result.returncode == 1
+    assert "REAL_IDEA_SMOKE_RUN_DIR=runs is reserved" in result.stderr
+    assert not output.exists()

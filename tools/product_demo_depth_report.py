@@ -6,6 +6,7 @@ import argparse
 import json
 from collections import Counter
 from datetime import datetime, timezone
+from json import JSONDecodeError
 from pathlib import Path
 from typing import Any
 
@@ -22,6 +23,7 @@ WORKFLOW_RELATIONS = {
     "constraint_applies_to_command",
     "policy_applies_to_command",
 }
+RESERVED_RUN_DIRS = {"runs"}
 
 
 def _now_iso() -> str:
@@ -61,12 +63,68 @@ def _relative_ref(path: Path) -> str:
         return f"external:{repo_path.name or 'artifact'}"
 
 
-def load_optional(path: Path) -> dict[str, Any]:
+def _blocking_finding(
+    finding_id: str,
+    message: str,
+    *,
+    evidence: dict[str, Any],
+) -> dict[str, Any]:
+    return {
+        "finding_id": finding_id,
+        "severity": "blocking",
+        "message": message,
+        "source": "product_demo_depth_report",
+        "evidence": evidence,
+    }
+
+
+def _reject_reserved_run_dir(path: Path) -> None:
+    repo_path = _repo_path(path)
+    try:
+        rel = repo_path.resolve().relative_to(ROOT)
+    except ValueError:
+        return
+    if rel.as_posix() in RESERVED_RUN_DIRS:
+        raise SystemExit(
+            "REAL_IDEA_SMOKE_RUN_DIR=runs is reserved for shared SpecGraph runs. "
+            "Use a child directory such as runs/real_idea_smoke or runs/<id>."
+        )
+
+
+def load_optional(
+    path: Path,
+    *,
+    artifact_name: str,
+    findings: list[dict[str, Any]],
+) -> dict[str, Any]:
     repo_path = _repo_path(path)
     if not repo_path.exists():
         return {}
-    payload = json.loads(repo_path.read_text(encoding="utf-8"))
-    return payload if isinstance(payload, dict) else {}
+    try:
+        payload = json.loads(repo_path.read_text(encoding="utf-8"))
+    except JSONDecodeError as exc:
+        findings.append(
+            _blocking_finding(
+                f"product_demo_depth_{artifact_name}_invalid_json",
+                f"Product demo depth source {artifact_name} is not valid JSON.",
+                evidence={
+                    "artifact": artifact_name,
+                    "source_ref": _relative_ref(repo_path),
+                    "error": exc.msg,
+                },
+            )
+        )
+        return {}
+    if not isinstance(payload, dict):
+        findings.append(
+            _blocking_finding(
+                f"product_demo_depth_{artifact_name}_invalid_shape",
+                f"Product demo depth source {artifact_name} must be a JSON object.",
+                evidence={"artifact": artifact_name, "source_ref": _relative_ref(repo_path)},
+            )
+        )
+        return {}
+    return payload
 
 
 def write_json(payload: dict[str, Any], path: Path) -> None:
@@ -172,43 +230,43 @@ def _blocking_findings(depth: dict[str, Any]) -> list[dict[str, Any]]:
     for field, message in checks:
         if _int(depth.get(field)) <= 0:
             findings.append(
-                {
-                    "finding_id": f"product_demo_depth_{field}_missing",
-                    "severity": "blocking",
-                    "message": message,
-                    "source": "product_demo_depth_report",
-                    "evidence": {"field": field, "value": depth.get(field)},
-                }
+                _blocking_finding(
+                    f"product_demo_depth_{field}_missing",
+                    message,
+                    evidence={"field": field, "value": depth.get(field)},
+                )
             )
     if not depth.get("candidate_overview_present"):
         findings.append(
-            {
-                "finding_id": "product_demo_depth_candidate_overview_missing",
-                "severity": "blocking",
-                "message": "Product demo requires candidate_overview.json.",
-                "source": "product_demo_depth_report",
-                "evidence": {"candidate_overview_present": False},
-            }
+            _blocking_finding(
+                "product_demo_depth_candidate_overview_missing",
+                "Product demo requires candidate_overview.json.",
+                evidence={"candidate_overview_present": False},
+            )
+        )
+    elif "review_required" in _text(depth.get("candidate_overview_status")).lower():
+        findings.append(
+            _blocking_finding(
+                "product_demo_depth_candidate_overview_review_required",
+                "Product demo candidate overview must be ready, not review-required.",
+                evidence={"candidate_overview_status": depth.get("candidate_overview_status")},
+            )
         )
     if not depth.get("idea_maturity_present"):
         findings.append(
-            {
-                "finding_id": "product_demo_depth_idea_maturity_missing",
-                "severity": "blocking",
-                "message": "Product demo requires idea_maturity_metrics_report.json.",
-                "source": "product_demo_depth_report",
-                "evidence": {"idea_maturity_present": False},
-            }
+            _blocking_finding(
+                "product_demo_depth_idea_maturity_missing",
+                "Product demo requires idea_maturity_metrics_report.json.",
+                evidence={"idea_maturity_present": False},
+            )
         )
     elif depth.get("idea_maturity_status") in {"", "missing"}:
         findings.append(
-            {
-                "finding_id": "product_demo_depth_idea_maturity_status_missing",
-                "severity": "blocking",
-                "message": "Product demo Idea Maturity status must be available.",
-                "source": "product_demo_depth_report",
-                "evidence": {"idea_maturity_status": depth.get("idea_maturity_status")},
-            }
+            _blocking_finding(
+                "product_demo_depth_idea_maturity_status_missing",
+                "Product demo Idea Maturity status must be available.",
+                evidence={"idea_maturity_status": depth.get("idea_maturity_status")},
+            )
         )
     return findings
 
@@ -218,20 +276,40 @@ def build_depth_report(
     run_dir: Path,
     intake_path: Path,
     candidate_graph_path: Path,
+    repaired_candidate_graph_path: Path | None = None,
     candidate_overview_path: Path,
     idea_maturity_path: Path,
 ) -> dict[str, Any]:
-    intake = load_optional(intake_path)
-    candidate_graph = load_optional(candidate_graph_path)
-    candidate_overview = load_optional(candidate_overview_path)
-    idea_maturity = load_optional(idea_maturity_path)
+    source_findings: list[dict[str, Any]] = []
+    selected_candidate_graph_path = (
+        repaired_candidate_graph_path
+        if repaired_candidate_graph_path is not None
+        and _repo_path(repaired_candidate_graph_path).exists()
+        else candidate_graph_path
+    )
+    intake = load_optional(intake_path, artifact_name="intake", findings=source_findings)
+    candidate_graph = load_optional(
+        selected_candidate_graph_path,
+        artifact_name="candidate_graph",
+        findings=source_findings,
+    )
+    candidate_overview = load_optional(
+        candidate_overview_path,
+        artifact_name="candidate_overview",
+        findings=source_findings,
+    )
+    idea_maturity = load_optional(
+        idea_maturity_path,
+        artifact_name="idea_maturity",
+        findings=source_findings,
+    )
     depth = {
         **_event_storming_counts(intake),
         **_candidate_graph_counts(candidate_graph),
         **_overview_counts(candidate_overview),
         **_maturity_counts(idea_maturity),
     }
-    findings = _blocking_findings(depth)
+    findings = [*source_findings, *_blocking_findings(depth)]
     status = "depth_baseline_met" if not findings else "depth_baseline_failed"
     return {
         "artifact_kind": "product_demo_depth_report",
@@ -254,7 +332,8 @@ def build_depth_report(
         "findings": findings,
         "source_refs": {
             "intake": _relative_ref(intake_path),
-            "candidate_graph": _relative_ref(candidate_graph_path),
+            "candidate_graph": _relative_ref(selected_candidate_graph_path),
+            "original_candidate_graph": _relative_ref(candidate_graph_path),
             "candidate_overview": _relative_ref(candidate_overview_path),
             "idea_maturity": _relative_ref(idea_maturity_path),
         },
@@ -268,6 +347,7 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--run-dir", type=Path, required=True)
     parser.add_argument("--intake", type=Path, required=True)
     parser.add_argument("--candidate-graph", type=Path, required=True)
+    parser.add_argument("--repaired-candidate-graph", type=Path)
     parser.add_argument("--candidate-overview", type=Path, required=True)
     parser.add_argument("--idea-maturity", type=Path, required=True)
     parser.add_argument("--output", type=Path, required=True)
@@ -277,10 +357,12 @@ def build_parser() -> argparse.ArgumentParser:
 
 def main(argv: list[str] | None = None) -> int:
     args = build_parser().parse_args(argv)
+    _reject_reserved_run_dir(args.run_dir)
     report = build_depth_report(
         run_dir=args.run_dir,
         intake_path=args.intake,
         candidate_graph_path=args.candidate_graph,
+        repaired_candidate_graph_path=args.repaired_candidate_graph,
         candidate_overview_path=args.candidate_overview,
         idea_maturity_path=args.idea_maturity,
     )
