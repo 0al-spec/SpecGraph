@@ -22,6 +22,7 @@ credentials, private keys, or machine-local tokens to `.0al`.
 ## Engineering methodology
 - Start from the external contract: CLI flags, exit codes, JSON/YAML artifact shapes, Makefile targets, and documented viewer surfaces.
 - Characterize existing behavior before refactoring shared tooling. Add or name the focused test, fixture, golden artifact, or validator that proves the contract stays stable.
+- During review, distinguish artifact presence from artifact readiness: trace producer lifecycle states, repaired-vs-original artifact authority, run-local paths, and explicit gate failure modes.
 - Work in bounded slices. One PR should change one spec node, one proposal realization, one evidence mapping, one viewer contract, or one architectural seam.
 - Prefer façade-preserving refactors. Keep compatibility shims such as `tools/supervisor.py` stable while extracting typed package code behind them.
 - Make dependencies explicit. Pass roots, policies, clocks, executors, and artifact paths as values instead of reading hidden globals in domain logic.

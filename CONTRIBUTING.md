@@ -227,6 +227,39 @@ Code review comments are process evidence. For each actionable review thread:
 
 Use [tools/review_feedback_policy.json](tools/review_feedback_policy.json) as the vocabulary source.
 
+### Review Heuristics for Artifacts and Gates
+
+Apply these checks systematically when reviewing supervisor, proposal,
+evidence, viewer-surface, CLI, and quality-gate changes:
+
+- **Presence is not readiness.** A file that exists, a non-empty field, or a
+  generated JSON payload is not automatically usable. If a producer emits
+  lifecycle states such as `ready`, `review_required`, `blocked`, `missing`,
+  `verified`, or `in_progress`, verify that every consumer handles each state
+  intentionally.
+- **Prefer authoritative artifacts.** When a workflow can repair, retry,
+  regenerate, promote, or finalize an artifact, confirm that consumers select
+  the repaired, latest, promoted, or otherwise authoritative version instead of
+  the first matching file.
+- **Keep run state scoped.** Intermediate paths must be visibly run-local,
+  task-local, or intentionally shared. Treat shared `runs/`, `.worktrees/`, and
+  temporary artifact paths as review risks when parallel or later runs could
+  overwrite or reuse them.
+- **Model operator misuse.** Review likely human mistakes, not only malformed
+  input data: wrong root, wrong run directory, wrong Make target, wrong flag, or
+  confusion between shared and scoped artifact locations.
+- **Enumerate gate failure modes.** Before calling a quality gate complete,
+  list the ways the checked artifact can fail: missing, empty, malformed JSON,
+  wrong shape, stale, non-authoritative, or explicitly not ready. Each case
+  should map to an intentional code path or structured finding.
+- **Trace producer semantics.** For files such as `producer_output.json` or
+  generated viewer surfaces, inspect the producer code and tests for actual
+  emitted values instead of validating only key names or schema shape.
+- **Separate crashes from silent skips.** A crash is visible, while a silent skip
+  can mask graph or evidence drift. Smoke/reporting tools should prefer
+  structured findings and continued execution; label that work as robustness
+  unless it fixes a masking bug.
+
 ## Capturing Lessons
 
 Treat important project experience as a first-class contribution. When a PR, supervisor run, review thread, deploy incident, viewer integration, or graph diagnosis teaches a reusable lesson, record it in this file before the knowledge stays only in chat history.
