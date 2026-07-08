@@ -708,6 +708,15 @@ The explainers direct operator review without changing Idea Maturity status,
 approval readiness, Platform promotion readiness, Git authority, or Ontology
 authority.
 
+Proposal `0207` adds a producer-side depth-driven clarification loop. Shallow
+structural-depth observations can now become ordinary
+`idea_to_spec_clarification_requests` with `event_storming_hints.*` targets.
+Accepted typed `entries[]` answers flow through the existing review-only rerun
+overlay and can increase actor, command, event, policy, or constraint depth.
+Workflow-topology depth remains diagnostic until a patch-capable topology
+overlay exists. The loop does not introduce a score, prompt-agent execution,
+canonical spec mutation, Ontology writes, or promotion authority.
+
 The next slices are Platform awareness and a `local-subscription-control` demo
 pass. Platform may use the report as an explanatory preflight signal before
 promotion, but not as promotion authority. Concrete handoff artifacts and

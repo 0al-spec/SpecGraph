@@ -400,6 +400,13 @@ Supervisor modes:
   the existing `pre_sib_review` block while the Metrics counts remain objective
   telemetry rather than a score, approval gate, promotion gate, Git authority, or
   Ontology authority.
+- Proposal 0207 adds depth-driven clarification requests from the same raw
+  structural observations. Pass `--idea-maturity` to
+  `tools/idea_to_spec_clarification_requests.py` or set
+  `IDEA_TO_SPEC_CLARIFICATION_IDEA_MATURITY=<report>` to emit review-required
+  `event_storming_hints.*` questions. Accepted `entries[]` answers are converted
+  into review-only event-storming rerun hints by
+  `tools/idea_to_spec_answer_rerun_input.py`.
 - `tools/user_idea_intake_source.py`: deterministic generic user-idea source
   builder introduced by proposal 0158. Use `make user-idea-intake-source
   USER_IDEA_INTAKE_SOURCE=<json>` to normalize product workspace identity,

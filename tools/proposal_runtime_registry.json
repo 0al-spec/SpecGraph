@@ -11786,5 +11786,59 @@
       }
     ],
     "notes": "SpecGraph now interprets shallow Metrics-owned structural depth observations as readiness_explainers with pre_sib_review blocks and candidate-structure kind/source evidence while leaving raw Metrics counts objective and unchanged."
+  },
+  {
+    "proposal_id": "0207",
+    "posture": "bounded_runtime_followup",
+    "runtime_surfaces": [
+      "docs/proposals/0207_depth_driven_clarification_loop.md",
+      "docs/archive/proposal_sources/0207_depth_driven_clarification_loop.md",
+      "tools/idea_to_spec_clarification_requests.py",
+      "tools/idea_to_spec_answer_rerun_input.py",
+      "tests/test_idea_to_spec_clarification_requests.py",
+      "tests/test_idea_to_spec_answer_rerun_input.py",
+      "docs/product_workspace_graph_versioning_roadmap.md",
+      "Sources/SpecGraph/Documentation.docc/ProductWorkspacePilots.md",
+      "tools/README.md"
+    ],
+    "runtime_markers": [
+      {
+        "path": "tools/idea_to_spec_clarification_requests.py",
+        "pattern": "DEPTH_DRIVEN_PROPOSAL_ID = \"0207\""
+      },
+      {
+        "path": "tools/idea_to_spec_clarification_requests.py",
+        "pattern": "def _requests_from_structure_depth("
+      },
+      {
+        "path": "tools/idea_to_spec_answer_rerun_input.py",
+        "pattern": "target_ref.startswith(\"event_storming_hints.\")"
+      }
+    ],
+    "validation_markers": [
+      {
+        "path": "tests/test_idea_to_spec_clarification_requests.py",
+        "pattern": "test_clarification_requests_adds_depth_driven_event_storming_requests"
+      },
+      {
+        "path": "tests/test_idea_to_spec_answer_rerun_input.py",
+        "pattern": "test_answer_rerun_input_infers_event_storming_category_from_target_ref"
+      }
+    ],
+    "observation_markers": [
+      {
+        "path": "docs/product_workspace_graph_versioning_roadmap.md",
+        "pattern": "Depth-Driven Clarification Loop"
+      },
+      {
+        "path": "Sources/SpecGraph/Documentation.docc/ProductWorkspacePilots.md",
+        "pattern": "Proposal `0207` adds a producer-side depth-driven clarification loop"
+      },
+      {
+        "path": "tools/README.md",
+        "pattern": "Proposal 0207 adds depth-driven clarification requests"
+      }
+    ],
+    "notes": "SpecGraph can now turn shallow Metrics-owned structural depth observations into review-required clarification requests and convert accepted entries answers into event-storming rerun hints."
   }
 ]
