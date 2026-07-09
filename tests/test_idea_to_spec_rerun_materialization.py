@@ -218,9 +218,23 @@ def rerun_preview_with_workflow_topology() -> dict[str, object]:
                 "event_ref": "event.pantry-item-recorded",
                 "review_only": True,
                 "materialization_dependency": False,
-            }
+            },
+            {
+                "id": "edge.command.record-pantry-item.pantry-item-reviewed",
+                "from": "candidate-spec.record-pantry-item",
+                "to": "candidate-spec.product-boundary",
+                "relation": "command_emits_event",
+                "source_event_refs": [
+                    "command.record-pantry-item",
+                    "event.pantry-item-reviewed",
+                ],
+                "command_ref": "command.record-pantry-item",
+                "event_ref": "event.pantry-item-reviewed",
+                "review_only": True,
+                "materialization_dependency": False,
+            },
         ],
-        "workflow_edge_count": 1,
+        "workflow_edge_count": 2,
         "review_only": True,
         "materialization_dependency": False,
     }
@@ -339,15 +353,18 @@ def test_rerun_materialization_merges_review_only_workflow_topology_edges() -> N
     assert report["readiness"]["ready"] is True
     preview = report["materialization_preview"]["candidate_graph_preview"]
     edges = preview["edges"]
-    assert len(edges) == 1
+    assert len(edges) == 2
     edge = edges[0]
     assert edge["relation"] == "command_emits_event"
     assert edge["review_only"] is True
     assert edge["materialization_dependency"] is False
-    assert preview["summary"]["edge_count"] == 1
+    assert preview["summary"]["edge_count"] == 2
     delta = report["materialization_preview"]["delta"]
-    assert delta["added_workflow_topology_edge_count"] == 1
-    assert delta["added_workflow_topology_edges"][0]["event_ref"] == ("event.pantry-item-recorded")
+    assert delta["added_workflow_topology_edge_count"] == 2
+    assert {edge["event_ref"] for edge in delta["added_workflow_topology_edges"]} == {
+        "event.pantry-item-recorded",
+        "event.pantry-item-reviewed",
+    }
     assert report["summary"]["removed_gap_count"] == 0
 
 

@@ -70,6 +70,30 @@ def filled_repair_template(tmp_path: Path) -> Path:
     return template_path
 
 
+def workflow_relation_requests() -> dict[str, object]:
+    return {
+        "artifact_kind": "idea_to_spec_clarification_requests",
+        "schema_version": 1,
+        "contract_ref": "specgraph.idea-to-spec.clarification-requests.v0.1",
+        "canonical_mutations_allowed": False,
+        "tracked_artifacts_written": False,
+        "clarification_requests": [
+            {
+                "id": "clarification.depth.workflow-topology",
+                "kind": "workflow_topology_gap",
+                "status": "open",
+                "severity": "blocking",
+                "question": "Which workflow relations connect actors, commands, and events?",
+                "target_artifact": "runs/idea_event_storming_intake.json",
+                "target_ref": "event_storming_hints.workflow_relations",
+                "suggested_actions": ["answer_question"],
+                "suggested_answer_shape": "event_storming_relation[]",
+            }
+        ],
+        "readiness": {"ready": True, "review_state": "clarification_requests_ready"},
+    }
+
+
 def test_answer_template_exposes_typed_targets(tmp_path: Path) -> None:
     module = load_module()
 
@@ -136,6 +160,71 @@ def test_answer_authoring_blocks_empty_required_fields(tmp_path: Path) -> None:
 
     assert report["readiness"]["ready"] is False
     assert "answer_required_field_empty" in finding_ids(report)
+
+
+def test_answer_authoring_requires_substantive_workflow_relation(tmp_path: Path) -> None:
+    module = load_module()
+    requests = workflow_relation_requests()
+    requests_path = tmp_path / "workflow_relation_requests.json"
+    write_json(requests_path, requests)
+    template = module.build_template(
+        clarification_requests=requests,
+        requests_path=requests_path,
+        stage="repair",
+        run_dir=tmp_path,
+    )
+    template["operator_answers"][0]["status"] = "accepted_for_candidate"
+    template_path = tmp_path / "unfilled_workflow_relation_template.json"
+    write_json(template_path, template)
+
+    _answer_set, _validated_answers, report = module.build_validation(
+        clarification_requests=requests,
+        requests_path=requests_path,
+        answer_input=load_json(template_path),
+        answers_path=template_path,
+        stage="repair",
+        run_dir=tmp_path,
+    )
+
+    assert report["readiness"]["ready"] is False
+    assert "answer_required_field_empty" in finding_ids(report)
+
+
+def test_answer_authoring_accepts_complete_workflow_relation(tmp_path: Path) -> None:
+    module = load_module()
+    requests = workflow_relation_requests()
+    requests_path = tmp_path / "workflow_relation_requests.json"
+    write_json(requests_path, requests)
+    template = module.build_template(
+        clarification_requests=requests,
+        requests_path=requests_path,
+        stage="repair",
+        run_dir=tmp_path,
+    )
+    template["operator_answers"][0]["status"] = "accepted_for_candidate"
+    template["operator_answers"][0]["value"] = {
+        "relations": [
+            {
+                "relation": "command_emits_event",
+                "source_ref": "command.record-pantry-item",
+                "target_ref": "event.pantry-item-recorded",
+            }
+        ]
+    }
+    template_path = tmp_path / "filled_workflow_relation_template.json"
+    write_json(template_path, template)
+
+    _answer_set, validated_answers, report = module.build_validation(
+        clarification_requests=requests,
+        requests_path=requests_path,
+        answer_input=load_json(template_path),
+        answers_path=template_path,
+        stage="repair",
+        run_dir=tmp_path,
+    )
+
+    assert validated_answers["readiness"]["ready"] is True
+    assert report["readiness"]["ready"] is True
 
 
 def test_answer_authoring_blocks_authority_expansion(tmp_path: Path) -> None:

@@ -615,9 +615,17 @@ def _command_event_index(
     return by_event
 
 
+def _has_boundary_workflow_inputs(event_storming: dict[str, list[dict[str, Any]]]) -> bool:
+    for raw_command in _list(event_storming.get("commands")):
+        command = _dict(raw_command)
+        if _text_list(command.get("actor_refs")) or _text_list(command.get("produces_event_refs")):
+            return True
+    return False
+
+
 def _append_workflow_edge(
     edges: list[dict[str, Any]],
-    seen: set[tuple[str, str, str]],
+    seen: set[tuple[str, str, str, tuple[str, ...]]],
     *,
     edge_id: str,
     from_node: str,
@@ -628,7 +636,7 @@ def _append_workflow_edge(
 ) -> None:
     if not from_node or not to_node:
         return
-    key = (from_node, to_node, relation)
+    key = (from_node, to_node, relation, tuple(source_event_refs))
     if key in seen:
         return
     seen.add(key)
@@ -660,10 +668,25 @@ def _workflow_topology_preview(
         for category in EVENT_STORMING_CATEGORIES
     }
     boundary_id = "candidate-spec.product-boundary"
+    node_ids = {_text(_dict(node).get("id")) for node in _list(candidate_graph.get("nodes"))}
+    boundary_available = boundary_id in node_ids
     nodes_by_ref = _nodes_by_source_ref(candidate_graph)
     command_events = _command_event_index(event_storming)
     edges: list[dict[str, Any]] = []
-    seen: set[tuple[str, str, str]] = set()
+    findings: list[dict[str, Any]] = []
+    seen: set[tuple[str, str, str, tuple[str, ...]]] = set()
+    if not boundary_available and _has_boundary_workflow_inputs(event_storming):
+        findings.append(
+            _finding(
+                finding_id="workflow_topology_boundary_missing",
+                severity="review_required",
+                message=(
+                    "Workflow topology preview requires the product boundary candidate node "
+                    "before boundary-based workflow edges can be emitted."
+                ),
+                evidence={"boundary_id": boundary_id},
+            )
+        )
     for raw_command in _list(event_storming.get("commands")):
         command = _dict(raw_command)
         command_ref = _text(command.get("id"))
@@ -672,10 +695,25 @@ def _workflow_topology_preview(
             command_ref,
             allowed_kinds={"behavior_requirement"},
         )
-        if not command_ref or not command_node:
+        if not command_ref:
+            continue
+        if not command_node:
+            findings.append(
+                _finding(
+                    finding_id="workflow_topology_endpoint_unmapped",
+                    severity="review_required",
+                    message="Workflow relation endpoint does not map to a candidate graph node.",
+                    evidence={
+                        "source_ref": command_ref,
+                        "expected_kind": "behavior_requirement",
+                    },
+                )
+            )
             continue
         command_slug = command_node.removeprefix("candidate-spec.")
         for actor_ref in _text_list(command.get("actor_refs")):
+            if not boundary_available:
+                continue
             _append_workflow_edge(
                 edges,
                 seen,
@@ -687,6 +725,8 @@ def _workflow_topology_preview(
                 extra={"actor_ref": actor_ref, "command_ref": command_ref},
             )
         for event_ref in _text_list(command.get("produces_event_refs")):
+            if not boundary_available:
+                continue
             _append_workflow_edge(
                 edges,
                 seen,
@@ -706,7 +746,22 @@ def _workflow_topology_preview(
                 entry_ref,
                 allowed_kinds={f"{kind}_constraint"},
             )
-            if not entry_ref or not entry_node:
+            if not entry_ref:
+                continue
+            if not entry_node:
+                findings.append(
+                    _finding(
+                        finding_id="workflow_topology_endpoint_unmapped",
+                        severity="review_required",
+                        message=(
+                            "Workflow relation endpoint does not map to a candidate graph node."
+                        ),
+                        evidence={
+                            "source_ref": entry_ref,
+                            "expected_kind": f"{kind}_constraint",
+                        },
+                    )
+                )
                 continue
             entry_slug = entry_node.removeprefix("candidate-spec.")
             relation = (
@@ -718,6 +773,22 @@ def _workflow_topology_preview(
                     command_ref,
                     allowed_kinds={"behavior_requirement"},
                 )
+                if not command_node:
+                    findings.append(
+                        _finding(
+                            finding_id="workflow_topology_endpoint_unmapped",
+                            severity="review_required",
+                            message=(
+                                "Workflow relation endpoint does not map to a candidate graph node."
+                            ),
+                            evidence={
+                                "source_ref": command_ref,
+                                "expected_kind": "behavior_requirement",
+                                f"{kind}_ref": entry_ref,
+                            },
+                        )
+                    )
+                    continue
                 command_slug = command_node.removeprefix("candidate-spec.")
                 _append_workflow_edge(
                     edges,
@@ -736,6 +807,24 @@ def _workflow_topology_preview(
                         command_ref,
                         allowed_kinds={"behavior_requirement"},
                     )
+                    if not command_node:
+                        findings.append(
+                            _finding(
+                                finding_id="workflow_topology_endpoint_unmapped",
+                                severity="review_required",
+                                message=(
+                                    "Workflow relation endpoint does not map to a candidate "
+                                    "graph node."
+                                ),
+                                evidence={
+                                    "source_ref": command_ref,
+                                    "expected_kind": "behavior_requirement",
+                                    "event_ref": event_ref,
+                                    f"{kind}_ref": entry_ref,
+                                },
+                            )
+                        )
+                        continue
                     command_slug = command_node.removeprefix("candidate-spec.")
                     _append_workflow_edge(
                         edges,
@@ -766,6 +855,7 @@ def _workflow_topology_preview(
         "topology_relation_counts": relation_counts,
         "review_only": True,
         "materialization_dependency": False,
+        "findings": findings,
     }
 
 
@@ -1282,6 +1372,7 @@ def build_idea_to_spec_rerun_preview(
         candidate_graph=candidate_graph,
         event_storming_preview=event_storming_preview,
     )
+    findings.extend(_list(workflow_topology_preview.get("findings")))
     ontology_gap_preview = _ontology_gap_preview(
         candidate_graph=candidate_graph,
         overlay=overlay,

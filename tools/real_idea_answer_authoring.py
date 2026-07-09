@@ -350,7 +350,15 @@ def _field_present(value: Any, field: str) -> bool:
         if not isinstance(current, dict):
             return False
         if key == "relations":
-            return bool(_list(current.get(key)))
+            for raw_relation in _list(current.get(key)):
+                relation = _dict(raw_relation)
+                if (
+                    _text(relation.get("relation"))
+                    and _text(relation.get("source_ref"))
+                    and _text(relation.get("target_ref"))
+                ):
+                    return True
+            return False
         return bool(_text_list(current.get(key)))
     if not isinstance(current, dict):
         return False

@@ -840,6 +840,110 @@ def test_rerun_preview_applies_typed_workflow_relation_hints() -> None:
     assert report["summary"]["workflow_relation_hint_count"] == 3
 
 
+def test_rerun_preview_preserves_distinct_workflow_edges_with_same_endpoints() -> None:
+    module = load_module(
+        PREVIEW_TOOL_PATH,
+        "idea_to_spec_rerun_preview_workflow_relation_distinct_edges_test",
+    )
+    intake = workflow_topology_intake()
+    intake["event_storming"]["actors"].append(
+        {"id": "actor.shopping-planner", "name": "Shopping planner"}
+    )
+    rerun_input = rerun_input_with_workflow_relations(
+        [
+            {
+                "relation": "actor_triggers_command",
+                "source_ref": "actor.household-member",
+                "target_ref": "command.record-pantry-item",
+            },
+            {
+                "relation": "actor_triggers_command",
+                "source_ref": "actor.shopping-planner",
+                "target_ref": "command.record-pantry-item",
+            },
+        ]
+    )
+
+    report = module.build_idea_to_spec_rerun_preview(
+        rerun_input=rerun_input,
+        intake=intake,
+        candidate_graph=workflow_topology_candidate_graph(),
+    )
+
+    topology = report["rerun_preview"]["workflow_topology_preview"]
+    assert report["readiness"]["ready"] is True
+    assert topology["workflow_edge_count"] == 2
+    assert topology["topology_relation_counts"]["actor_triggers_command"] == 2
+    assert {tuple(edge["source_event_refs"]) for edge in topology["workflow_edges"]} == {
+        ("actor.household-member", "command.record-pantry-item"),
+        ("actor.shopping-planner", "command.record-pantry-item"),
+    }
+
+
+def test_rerun_preview_blocks_workflow_topology_when_boundary_node_missing() -> None:
+    module = load_module(
+        PREVIEW_TOOL_PATH,
+        "idea_to_spec_rerun_preview_workflow_relation_boundary_test",
+    )
+    candidate_graph = workflow_topology_candidate_graph()
+    candidate_graph["nodes"] = [
+        node for node in candidate_graph["nodes"] if node["id"] != "candidate-spec.product-boundary"
+    ]
+    rerun_input = rerun_input_with_workflow_relations(
+        [
+            {
+                "relation": "actor_triggers_command",
+                "source_ref": "actor.household-member",
+                "target_ref": "command.record-pantry-item",
+            }
+        ]
+    )
+
+    report = module.build_idea_to_spec_rerun_preview(
+        rerun_input=rerun_input,
+        intake=workflow_topology_intake(),
+        candidate_graph=candidate_graph,
+    )
+
+    assert report["readiness"]["ready"] is False
+    assert "workflow_topology_boundary_missing" in finding_ids(report)
+    topology = report["rerun_preview"]["workflow_topology_preview"]
+    assert topology["workflow_edge_count"] == 0
+
+
+def test_rerun_preview_reports_unmapped_workflow_relation_endpoint() -> None:
+    module = load_module(
+        PREVIEW_TOOL_PATH,
+        "idea_to_spec_rerun_preview_workflow_relation_unmapped_test",
+    )
+    candidate_graph = workflow_topology_candidate_graph()
+    candidate_graph["nodes"] = [
+        node
+        for node in candidate_graph["nodes"]
+        if node["id"] != "candidate-spec.record-pantry-item"
+    ]
+    rerun_input = rerun_input_with_workflow_relations(
+        [
+            {
+                "relation": "command_emits_event",
+                "source_ref": "command.record-pantry-item",
+                "target_ref": "event.pantry-item-recorded",
+            }
+        ]
+    )
+
+    report = module.build_idea_to_spec_rerun_preview(
+        rerun_input=rerun_input,
+        intake=workflow_topology_intake(),
+        candidate_graph=candidate_graph,
+    )
+
+    assert report["readiness"]["ready"] is False
+    assert "workflow_topology_endpoint_unmapped" in finding_ids(report)
+    topology = report["rerun_preview"]["workflow_topology_preview"]
+    assert topology["workflow_edge_count"] == 0
+
+
 def test_rerun_preview_blocks_wrong_kind_workflow_relation_hint() -> None:
     module = load_module(
         PREVIEW_TOOL_PATH,

@@ -49,6 +49,10 @@ def _text(value: Any, default: str = "") -> str:
     return value.strip() if isinstance(value, str) and value.strip() else default
 
 
+def _text_list(value: Any) -> list[str]:
+    return [_text(item) for item in _list(value) if _text(item)]
+
+
 def _relative_ref(path: Path) -> str:
     try:
         return path.resolve().relative_to(ROOT).as_posix()
@@ -306,8 +310,13 @@ def _refresh_candidate_graph_summary(candidate_graph: dict[str, Any]) -> None:
     candidate_graph["summary"] = summary
 
 
-def _edge_key(edge: dict[str, Any]) -> tuple[str, str, str]:
-    return (_text(edge.get("from")), _text(edge.get("to")), _text(edge.get("relation")))
+def _edge_key(edge: dict[str, Any]) -> tuple[str, str, str, tuple[str, ...]]:
+    return (
+        _text(edge.get("from")),
+        _text(edge.get("to")),
+        _text(edge.get("relation")),
+        tuple(_text_list(edge.get("source_event_refs"))),
+    )
 
 
 def _workflow_topology_edges_from_preview(rerun_preview: dict[str, Any]) -> list[dict[str, Any]]:
@@ -340,7 +349,8 @@ def _merge_workflow_topology_edges(
     merged_edges = list(_list(candidate_graph.get("edges")))
     for edge in _workflow_topology_edges_from_preview(rerun_preview):
         key = _edge_key(edge)
-        if not all(key) or key in seen:
+        from_node, to_node, relation, _source_event_refs = key
+        if not from_node or not to_node or not relation or key in seen:
             continue
         seen.add(key)
         merged_edges.append(edge)
