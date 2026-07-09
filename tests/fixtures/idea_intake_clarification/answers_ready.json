@@ -93,6 +93,17 @@
     {
       "answer_kind": "answer_question",
       "authority": "operator_approved",
+      "request_id": "clarification.intake.question-event-storming-policies",
+      "status": "accepted_for_candidate",
+      "value": {
+        "entries": [
+          "Decision Review Policy"
+        ]
+      }
+    },
+    {
+      "answer_kind": "answer_question",
+      "authority": "operator_approved",
       "request_id": "clarification.intake.question-event-storming-constraints",
       "status": "accepted_for_candidate",
       "value": {

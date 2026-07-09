@@ -15,6 +15,7 @@ SESSION_TOOL_PATH = ROOT / "tools" / "user_idea_intake_session.py"
 INTAKE_TOOL_PATH = ROOT / "tools" / "idea_event_storming_intake.py"
 REPAIR_TOOL_PATH = ROOT / "tools" / "candidate_repair_loop.py"
 SESSION_FIXTURE = ROOT / "tests" / "fixtures" / "user_idea_intake_session"
+READY_FIXTURE = SESSION_FIXTURE / "raw_idea_ready.json"
 NEEDS_CLARIFICATION_FIXTURE = SESSION_FIXTURE / "raw_idea_needs_clarification.json"
 INTAKE_REVIEW_REQUIRED = (
     ROOT / "tests" / "fixtures" / "idea_event_storming_intake" / "idea_review_required.json"
@@ -100,16 +101,40 @@ def test_clarification_requests_collects_intake_session_questions() -> None:
     assert report["canonical_mutations_allowed"] is False
     assert report["tracked_artifacts_written"] is False
     assert report["readiness"]["ready"] is False
-    assert report["summary"]["request_count"] == 9
-    assert report["summary"]["blocking_request_count"] == 9
+    assert report["summary"]["request_count"] == 10
+    assert report["summary"]["blocking_request_count"] == 10
     assert report["summary"]["review_required_request_count"] == 0
+    assert report["clarification_outcome"] == "answers_required"
+    assert report["workspace_id"] == "i-want-a-small-tool-for-team-decisions"
+    assert report["candidate_id"] == "i-want-a-small-tool-for-team-decisions"
+    assert "0210" in report["contract_extensions"]
     assert "clarification.intake.question-active-frame-ontology-refs" in request_ids(report)
     assert "clarification.intake.question-event-storming-actors" in request_ids(report)
+    assert "clarification.intake.question-event-storming-policies" in request_ids(report)
     assert request_kinds(report) == {"missing_context", "missing_event_storming_context"}
     dumped = json.dumps(report)
     raw_text = load_json(NEEDS_CLARIFICATION_FIXTURE)["idea"]["text"]
     assert raw_text not in dumped
     assert "private prompt trace" not in dumped
+
+
+def test_clarification_requests_marks_ready_session_not_required() -> None:
+    session_module = load_module(SESSION_TOOL_PATH, "user_idea_session_without_clarifications")
+    clarification_module = load_module(TOOL_PATH, "clarification_requests_not_required")
+    session, source = session_module.build_user_idea_intake_session(
+        load_json(READY_FIXTURE),
+        source_path=READY_FIXTURE,
+    )
+
+    report = clarification_module.build_idea_to_spec_clarification_requests(
+        user_idea_intake_session=session,
+    )
+
+    assert source is not None
+    assert report["clarification_outcome"] == "clarification_not_required"
+    assert report["readiness"]["ready"] is True
+    assert report["summary"]["request_count"] == 0
+    assert report["workspace_id"] == "support-triage-log"
 
 
 def test_clarification_requests_project_repair_context_actions() -> None:
@@ -242,7 +267,7 @@ def test_clarification_requests_cli_writes_output(tmp_path: Path) -> None:
     assert result.returncode == 0
     report = load_json(output_path)
     assert report["artifact_kind"] == "idea_to_spec_clarification_requests"
-    assert report["summary"]["request_count"] == 14
+    assert report["summary"]["request_count"] == 15
     assert "clarification_required" in result.stdout
     repair_request = request_by_id(
         report,
@@ -484,5 +509,5 @@ def test_product_workspace_raw_idea_writes_clarification_before_abort(tmp_path: 
     assert output_path.exists()
     report = load_json(output_path)
     assert report["readiness"]["ready"] is False
-    assert report["summary"]["blocking_request_count"] == 9
+    assert report["summary"]["blocking_request_count"] == 10
     assert not (tmp_path / "source.json").exists()

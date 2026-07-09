@@ -17,8 +17,9 @@ import product_ontology_gap_review_decisions
 
 ROOT = Path(__file__).resolve().parents[1]
 PROPOSAL_ID = "0194"
+FALLBACK_FREE_INTAKE_PROPOSAL_ID = "0210"
 SCHEMA_VERSION = 1
-TEMPLATE_CONTRACT_REF = "specgraph.idea-to-spec.real-idea-answer-template.v0.1"
+TEMPLATE_CONTRACT_REF = "specgraph.idea-to-spec.real-idea-answer-template.v0.2"
 REPORT_CONTRACT_REF = "specgraph.idea-to-spec.real-idea-answer-authoring-report.v0.1"
 ANSWER_SET_CONTRACT_REF = "specgraph.idea-to-spec.clarification-answer-set.v0.1"
 REQUESTS_CONTRACT_REF = "specgraph.idea-to-spec.clarification-requests.v0.1"
@@ -77,6 +78,26 @@ FALSE_AUTHORITY_FIELDS = {
     "may_create_branch_or_commit",
     "may_open_pull_request",
     "may_publish_read_model",
+}
+SUPPORTED_BROWSER_ACTIONS = {
+    "answer_question",
+    "provide_candidate_context",
+    "propose_project_local_term",
+    "reject",
+    "reject_candidate",
+    "defer",
+    "defer_candidate",
+}
+SUPPORTED_BROWSER_VALUE_FIELDS = {
+    "value",
+    "value.answer",
+    "value.context",
+    "value.entries[]",
+    "value.follow_up",
+    "value.reason",
+    "value.refs[]",
+    "value.relations[]",
+    "value.terms[]",
 }
 
 
@@ -173,6 +194,10 @@ def _digest(payload: dict[str, Any]) -> str:
     return f"sha256:{hashlib.sha256(encoded).hexdigest()}"
 
 
+def _source_digest(payload: dict[str, Any]) -> str:
+    return _digest({key: value for key, value in payload.items() if key != "generated_at"})
+
+
 def _finding(
     *,
     finding_id: str,
@@ -210,6 +235,84 @@ def _request_index(clarification_requests: dict[str, Any]) -> dict[str, dict[str
         if request_id:
             index[request_id] = request
     return index
+
+
+def _workspace_identity(clarification_requests: dict[str, Any]) -> dict[str, str]:
+    workspace = _dict(clarification_requests.get("workspace"))
+    workspace_id = _text(clarification_requests.get("workspace_id")) or _text(
+        workspace.get("workspace_id")
+    )
+    candidate_id = _text(clarification_requests.get("candidate_id")) or _text(
+        workspace.get("candidate_id")
+    )
+    workspace_id = workspace_id or candidate_id
+    if not workspace_id:
+        return {}
+    return {
+        "workspace_id": workspace_id,
+        "candidate_id": candidate_id or workspace_id,
+        "display_name": _text(workspace.get("display_name"), workspace_id),
+        "public_route": _text(workspace.get("public_route"), f"/{workspace_id}"),
+    }
+
+
+def _clarification_outcome(clarification_requests: dict[str, Any]) -> str:
+    declared = _text(clarification_requests.get("clarification_outcome"))
+    if declared in {
+        "answers_required",
+        "clarification_not_required",
+        "clarification_blocked",
+    }:
+        return declared
+    requests = _list(clarification_requests.get("clarification_requests"))
+    readiness = _dict(clarification_requests.get("readiness"))
+    if not requests and readiness.get("ready") is True:
+        return "clarification_not_required"
+    return "answers_required" if requests else "clarification_blocked"
+
+
+def _browser_answerability_findings(
+    request: dict[str, Any], *, stage: str, index: int
+) -> list[dict[str, Any]]:
+    if _text(request.get("status"), "open") != "open" or _text(request.get("severity")) not in {
+        "blocking",
+        "review_required",
+    }:
+        return []
+    request_id = _text(request.get("id"), f"request-{index}")
+    actions = _text_list(request.get("suggested_actions"))
+    supported_actions = [action for action in actions if action in SUPPORTED_BROWSER_ACTIONS]
+    fields = {field for action in supported_actions for field in _required_fields(action, request)}
+    missing = []
+    if not _text(request.get("id")):
+        missing.append("id")
+    if not _text(request.get("question")):
+        missing.append("question")
+    if not _text(request.get("target_ref")):
+        missing.append("target_ref")
+    if not supported_actions:
+        missing.append("supported_action")
+    if fields and not fields.issubset(SUPPORTED_BROWSER_VALUE_FIELDS):
+        missing.append("supported_value_shape")
+    if not missing:
+        return []
+    return [
+        _finding(
+            finding_id="clarification_request_not_browser_answerable",
+            severity="blocking",
+            message=(
+                "A mandatory clarification request cannot be represented by the "
+                "current browser answer contract."
+            ),
+            evidence={
+                "request_id": request_id,
+                "stage": stage,
+                "missing_or_unsupported": missing,
+                "suggested_actions": actions,
+                "suggested_answer_shape": request.get("suggested_answer_shape"),
+            },
+        )
+    ]
 
 
 def _stage_request_path(stage: str, run_dir: Path) -> Path:
@@ -415,6 +518,8 @@ def build_template(
     targets = [
         _answer_target(request, stage=stage, index=index) for index, request in enumerate(requests)
     ]
+    workspace = _workspace_identity(clarification_requests)
+    declared_outcome = _clarification_outcome(clarification_requests)
     findings: list[dict[str, Any]] = []
     if clarification_requests.get("artifact_kind") != "idea_to_spec_clarification_requests":
         findings.append(
@@ -434,28 +539,67 @@ def build_template(
                 evidence={"contract_ref": clarification_requests.get("contract_ref")},
             )
         )
-    if not targets:
+    if stage == "intake" and not workspace:
+        findings.append(
+            _finding(
+                finding_id="answer_template_workspace_identity_missing",
+                severity="blocking",
+                message="Intake answer templates require workspace and candidate identity.",
+            )
+        )
+    for index, request in enumerate(requests):
+        findings.extend(_browser_answerability_findings(request, stage=stage, index=index))
+    if declared_outcome == "clarification_not_required" and requests:
+        findings.append(
+            _finding(
+                finding_id="clarification_not_required_has_requests",
+                severity="blocking",
+                message="clarification_not_required cannot contain clarification requests.",
+            )
+        )
+    if declared_outcome == "answers_required" and not targets:
         findings.append(
             _finding(
                 finding_id="answer_targets_missing",
-                severity="review_required",
-                message="No clarification requests are available for answer authoring.",
+                severity="blocking",
+                message="answers_required must provide browser-answerable targets.",
             )
         )
-    ready = not findings
+    outcome = declared_outcome if not findings else "clarification_blocked"
+    ready = outcome in {"answers_required", "clarification_not_required"}
+    next_artifact = (
+        "real_idea_answer_set.json"
+        if outcome == "answers_required"
+        else "user_idea_intake_source.json"
+        if outcome == "clarification_not_required"
+        else None
+    )
+    next_action = (
+        "Collect operator answers for the published clarification targets."
+        if outcome == "answers_required"
+        else "Continue candidate-source generation from the ready intake session."
+        if outcome == "clarification_not_required"
+        else "Inspect blocking template findings before continuation."
+    )
     return {
         "artifact_kind": "real_idea_answer_template",
         "schema_version": SCHEMA_VERSION,
         "proposal_id": PROPOSAL_ID,
+        "contract_extensions": [FALLBACK_FREE_INTAKE_PROPOSAL_ID],
         "contract_ref": TEMPLATE_CONTRACT_REF,
         "generated_at": _now_iso(),
         "stage": stage,
         "run_dir": _relative_ref(run_dir),
+        "workspace_id": workspace.get("workspace_id"),
+        "candidate_id": workspace.get("candidate_id"),
+        "workspace": workspace or None,
+        "clarification_outcome": outcome,
         "source_artifacts": {
             "clarification_requests": {
                 "artifact_kind": clarification_requests.get("artifact_kind"),
                 "contract_ref": clarification_requests.get("contract_ref"),
                 "source_ref": _relative_ref(requests_path),
+                "source_digest": _source_digest(clarification_requests),
                 "request_count": len(requests),
             }
         },
@@ -468,19 +612,24 @@ def build_template(
         },
         "readiness": {
             "ready": ready,
-            "review_state": (
-                "answer_template_ready" if ready else "answer_template_review_required"
-            ),
+            "review_state": outcome,
             "blocked_by": [finding["finding_id"] for finding in findings],
-            "next_artifact": "real_idea_answer_set.json",
+            "next_artifact": next_artifact,
+            "next_action": next_action,
         },
         "authority_boundary": _authority_boundary(),
         "privacy_boundary": _privacy_boundary(),
         "findings": findings,
         "summary": {
-            "status": ("answer_template_ready" if ready else "answer_template_review_required"),
+            "status": outcome,
             "stage": stage,
             "target_count": len(targets),
+            "answerable_target_count": (len(targets) if outcome == "answers_required" else 0),
+            "unsupported_target_count": sum(
+                1
+                for finding in findings
+                if finding["finding_id"] == "clarification_request_not_browser_answerable"
+            ),
             "blocking_target_count": sum(
                 1 for target in targets if target["severity"] == "blocking"
             ),
@@ -990,7 +1139,10 @@ def _write_template(args: argparse.Namespace) -> int:
         stage=stage,
         run_dir=run_dir,
     )
-    write_json(template, output)
+    template_ready = _dict(template.get("readiness")).get("ready") is True
+    template_written = template_ready or not output.exists()
+    if template_written:
+        write_json(template, output)
     report = _authoring_report(
         operation="template",
         status=_dict(template.get("summary")).get("status", "answer_template_review_required"),
@@ -1002,8 +1154,10 @@ def _write_template(args: argparse.Namespace) -> int:
         validated_answers=None,
         findings=[_dict(item) for item in _list(template.get("findings"))],
         outputs={
-            "template": _relative_ref(output),
-            "next_artifact": _relative_ref(output),
+            "template": _relative_ref(output) if template_written else None,
+            "template_written": template_written,
+            "preserved_existing_template": not template_written,
+            "next_artifact": _dict(template.get("readiness")).get("next_artifact"),
         },
     )
     write_json(report, report_output)
@@ -1011,7 +1165,7 @@ def _write_template(args: argparse.Namespace) -> int:
         f"{template['summary']['status']}: "
         f"{template['summary']['target_count']} targets -> {_relative_ref(output)}"
     )
-    if args.strict and _dict(template.get("readiness")).get("ready") is not True:
+    if args.strict and not template_ready:
         return 1
     return 0
 
@@ -1094,6 +1248,61 @@ def _materialize_answers(args: argparse.Namespace) -> int:
     return 0
 
 
+def _verify_no_clarification(args: argparse.Namespace) -> int:
+    run_dir_ref, run_dir = _repo_relative_path(args.run_dir, field="REAL_IDEA_SMOKE_RUN_DIR")
+    _reject_reserved_run_dir(run_dir_ref)
+    template_path = _guard_output_path(args.template, run_dir=run_dir, field="--template")
+    template = load_json(template_path)
+    workspace = _workspace_identity(template)
+    requests_path = run_dir / "idea_intake_clarification_requests.json"
+    findings: list[str] = []
+    if template.get("artifact_kind") != "real_idea_answer_template":
+        findings.append("artifact_kind")
+    if template.get("contract_ref") != TEMPLATE_CONTRACT_REF:
+        findings.append("contract_ref")
+    if template.get("clarification_outcome") != "clarification_not_required":
+        findings.append("clarification_outcome")
+    if _dict(template.get("readiness")).get("ready") is not True:
+        findings.append("readiness.ready")
+    if _list(template.get("answer_targets")):
+        findings.append("answer_targets")
+    if args.workspace_id and workspace.get("workspace_id") != args.workspace_id:
+        findings.append("workspace_id")
+    requests: dict[str, Any] = {}
+    if not requests_path.is_file():
+        findings.append("source_artifacts.clarification_requests.source_ref")
+    else:
+        requests = load_json(requests_path)
+        request_source = _dict(
+            _dict(template.get("source_artifacts")).get("clarification_requests")
+        )
+        if request_source.get("source_ref") != _relative_ref(requests_path):
+            findings.append("source_artifacts.clarification_requests.source_ref")
+        if request_source.get("source_digest") != _source_digest(requests):
+            findings.append("source_artifacts.clarification_requests.source_digest")
+        if requests.get("artifact_kind") != "idea_to_spec_clarification_requests":
+            findings.append("clarification_requests.artifact_kind")
+        if requests.get("contract_ref") != REQUESTS_CONTRACT_REF:
+            findings.append("clarification_requests.contract_ref")
+        if _clarification_outcome(requests) != "clarification_not_required":
+            findings.append("clarification_requests.clarification_outcome")
+        if _list(requests.get("clarification_requests")):
+            findings.append("clarification_requests.requests")
+        request_workspace = _workspace_identity(requests)
+        if request_workspace.get("workspace_id") != workspace.get("workspace_id"):
+            findings.append("clarification_requests.workspace_id")
+    if findings:
+        print(
+            "clarification_not_required verification failed: " + ", ".join(findings),
+        )
+        return 1
+    print(
+        "clarification_not_required verified for "
+        f"{workspace.get('workspace_id', 'unknown-workspace')} -> {_relative_ref(template_path)}"
+    )
+    return 0
+
+
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(description=__doc__)
     subparsers = parser.add_subparsers(dest="command", required=True)
@@ -1123,6 +1332,15 @@ def build_parser() -> argparse.ArgumentParser:
             else:
                 sub.add_argument("--validated-answers-output", type=Path)
                 sub.set_defaults(func=_materialize_answers)
+    verify = subparsers.add_parser("verify-no-clarification")
+    verify.add_argument("--run-dir", type=Path, default=DEFAULT_RUN_DIR)
+    verify.add_argument(
+        "--template",
+        type=Path,
+        default=DEFAULT_RUN_DIR / "real_idea_answer_template.json",
+    )
+    verify.add_argument("--workspace-id", default="")
+    verify.set_defaults(func=_verify_no_clarification)
     return parser
 
 

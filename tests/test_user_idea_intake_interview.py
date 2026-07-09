@@ -143,6 +143,8 @@ def test_real_idea_interview_cli_hints_write_ready_source(tmp_path: Path) -> Non
             "Subscription Recorded",
             "--command",
             "Add Subscription",
+            "--policy",
+            "Upcoming renewals require owner review.",
             "--constraint",
             "Data remains local to the device.",
             *output_args(tmp_path),
@@ -228,6 +230,11 @@ def test_real_idea_interview_applies_clarification_answers(tmp_path: Path) -> No
                 "suggested_actions": ["answer_question"],
             },
             {
+                "id": "q.policy",
+                "target_ref": "event_storming_hints.policies",
+                "suggested_actions": ["answer_question"],
+            },
+            {
                 "id": "q.constraint",
                 "target_ref": "event_storming_hints.constraints",
                 "suggested_actions": ["answer_question"],
@@ -296,6 +303,13 @@ def test_real_idea_interview_applies_clarification_answers(tmp_path: Path) -> No
                 "value": {"entries": ["Record Decision"]},
             },
             {
+                "request_id": "q.policy",
+                "answer_kind": "answer_question",
+                "status": "accepted_for_candidate",
+                "authority": "operator_approved",
+                "value": {"entries": ["Decision Review Policy"]},
+            },
+            {
                 "request_id": "q.constraint",
                 "answer_kind": "answer_question",
                 "status": "accepted_for_candidate",
@@ -333,7 +347,7 @@ def test_real_idea_interview_applies_clarification_answers(tmp_path: Path) -> No
     assert result.returncode == 0, result.stderr
     report = load_json(tmp_path / "user_idea_intake_interview_report.json")
     source = load_json(tmp_path / "user_idea_intake_source.json")
-    assert report["clarification_answer_application"]["applied_count"] == 9
+    assert report["clarification_answer_application"]["applied_count"] == 10
     assert source["active_frame_hints"]["domain_refs"] == ["domain.team_decision_log"]
     assert source["event_storming_hints"]["domain_events"][0]["name"] == ("Decision Recorded")
 

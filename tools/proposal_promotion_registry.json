@@ -2702,5 +2702,18 @@
     "required_provenance_links": [
       "source_draft_ref"
     ]
+  },
+  {
+    "proposal_id": "0210",
+    "source_artifact_class": "working_draft",
+    "source_refs": [
+      "docs/archive/proposal_sources/0210_fallback_free_real_intake_clarification_templates.md"
+    ],
+    "motivating_concern": "UI-started real idea demos still require deterministic clarification fixtures because producer artifacts lack workspace binding, explicit no-clarification semantics, and complete browser-answerable policy context.",
+    "normalized_title": "Fallback-Free Real Intake Clarification Templates",
+    "bounded_scope": "Emit workspace-bound browser-answerable real-intake clarification templates or explicit clarification_not_required and clarification_blocked outcomes, including policy questions and stable source digest evidence, without executing prompt agents, auto-answering questions, mutating canonical specs, writing Ontology packages or lockfiles, accepting ontology terms, approving candidates, creating Git artifacts, or publishing read models.",
+    "required_provenance_links": [
+      "source_draft_ref"
+    ]
   }
 ]

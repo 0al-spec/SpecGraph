@@ -60,6 +60,7 @@ REQUIRED_EVENT_STORMING_CATEGORIES = (
     "actors",
     "domain_events",
     "commands",
+    "policies",
     "constraints",
 )
 EVENT_STORMING_CATEGORIES = (
@@ -535,6 +536,7 @@ def _event_storming(
         "actors": "Who are the primary actors or roles in this product idea?",
         "domain_events": "Which important domain events should the specification preserve?",
         "commands": "Which user or system commands should trigger those events?",
+        "policies": "Which policies should react to events or constrain commands?",
         "constraints": "Which constraints, policies, or non-goals bound the first candidate graph?",
     }
     invalid_entry_categories: set[str] = set()

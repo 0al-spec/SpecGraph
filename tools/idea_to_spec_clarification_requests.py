@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
 import re
 from datetime import datetime, timezone
@@ -13,6 +14,7 @@ ROOT = Path(__file__).resolve().parents[1]
 PROPOSAL_ID = "0163"
 DEPTH_DRIVEN_PROPOSAL_ID = "0207"
 WORKFLOW_TOPOLOGY_REPAIR_PROPOSAL_ID = "0208"
+FALLBACK_FREE_INTAKE_PROPOSAL_ID = "0210"
 SCHEMA_VERSION = 1
 CONTRACT_REF = "specgraph.idea-to-spec.clarification-requests.v0.1"
 USER_IDEA_INTAKE_SESSION_CONTRACT_REF = "specgraph.idea-to-spec.user-idea-intake-session.v0.1"
@@ -222,6 +224,32 @@ def _public_safe(value: Any) -> Any:
     return value
 
 
+def _stable_digest(value: dict[str, Any]) -> str:
+    stable = _public_safe(value)
+    if isinstance(stable, dict):
+        stable = {key: item for key, item in stable.items() if key != "generated_at"}
+    encoded = json.dumps(stable, sort_keys=True, separators=(",", ":")).encode("utf-8")
+    return f"sha256:{hashlib.sha256(encoded).hexdigest()}"
+
+
+def _workspace_identity(*artifacts: dict[str, Any] | None) -> dict[str, str]:
+    for artifact in artifacts:
+        if not artifact:
+            continue
+        workspace = _dict(artifact.get("workspace"))
+        candidate_id = _text(workspace.get("candidate_id")) or _text(artifact.get("candidate_id"))
+        workspace_id = _text(artifact.get("workspace_id")) or candidate_id
+        if not workspace_id:
+            continue
+        return {
+            "workspace_id": workspace_id,
+            "candidate_id": candidate_id or workspace_id,
+            "display_name": _text(workspace.get("display_name"), workspace_id),
+            "public_route": _text(workspace.get("public_route"), f"/{workspace_id}"),
+        }
+    return {}
+
+
 def load_json(path: Path) -> dict[str, Any]:
     payload = json.loads(path.read_text(encoding="utf-8"))
     if not isinstance(payload, dict):
@@ -271,6 +299,7 @@ def _source_artifact(
         "status": status,
         "artifact_kind": artifact.get("artifact_kind") if artifact else None,
         "contract_ref": artifact.get("contract_ref") if artifact else None,
+        "source_digest": _stable_digest(artifact) if artifact else None,
         "review_state": _dict(artifact.get("readiness")).get("review_state")
         if artifact
         else artifact.get("review_state")
@@ -1089,15 +1118,34 @@ def build_idea_to_spec_clarification_requests(
             if blocking_count or findings
             else "clarification_review_required"
         )
+    workspace = _workspace_identity(
+        user_idea_intake_session,
+        idea_event_storming_intake,
+        candidate_graph,
+        pre_sib_report,
+        repair_loop,
+        ontology_gap_review,
+        idea_maturity_report,
+    )
+    clarification_outcome = "answers_required"
+    if findings:
+        clarification_outcome = "clarification_blocked"
+    elif not open_requests:
+        clarification_outcome = "clarification_not_required"
     return {
         "artifact_kind": "idea_to_spec_clarification_requests",
         "schema_version": SCHEMA_VERSION,
         "proposal_id": PROPOSAL_ID,
+        "contract_extensions": [FALLBACK_FREE_INTAKE_PROPOSAL_ID],
         "contract_ref": CONTRACT_REF,
         "generated_at": _now_iso(),
         "canonical_mutations_allowed": False,
         "tracked_artifacts_written": False,
         "source_artifacts": source_artifacts or [],
+        "workspace_id": workspace.get("workspace_id"),
+        "candidate_id": workspace.get("candidate_id"),
+        "workspace": workspace or None,
+        "clarification_outcome": clarification_outcome,
         "request_counts": {
             "total": len(requests),
             "by_severity": severity_counts,

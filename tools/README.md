@@ -419,6 +419,12 @@ Supervisor modes:
   evidence, remaining shallow dimensions, and an effect status. This is
   report-only visibility, not a Metrics schema change, score, gate, or authority
   expansion.
+- Proposal 0210 makes real-intake clarification templates fallback-free.
+  Clarification requests and answer templates carry workspace identity and a
+  stable source digest, publish `answers_required`,
+  `clarification_not_required`, or `clarification_blocked`, and treat
+  missing policy context as an ordinary typed intake question. Strict blocked
+  generation preserves an existing ready template.
 - `tools/user_idea_intake_source.py`: deterministic generic user-idea source
   builder introduced by proposal 0158. Use `make user-idea-intake-source
   USER_IDEA_INTAKE_SOURCE=<json>` to normalize product workspace identity,
@@ -1363,7 +1369,9 @@ Key derived artifacts:
 - `runs/real_idea_answer_template.json`: operator-editable, public-safe answer
   template introduced by proposal 0194. It records typed answer targets,
   accepted actions, required fields, evidence refs, and false authority flags
-  for the current real-idea smoke run directory.
+  for the current real-idea smoke run directory. Proposal 0210 adds workspace
+  identity, source digest binding, and explicit fallback-free clarification
+  outcomes.
 - `runs/real_idea_answer_authoring_report.json`: review-only validation or
   materialization report for first-class real-idea answer authoring. It records
   source request refs, answer-set digest, validation status, output refs, and
