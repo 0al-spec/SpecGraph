@@ -720,6 +720,13 @@ preview validates relation names and source/target event-storming refs before
 materialization copies only review-only, non-dependency workflow edges into the
 candidate graph preview. The loop does not introduce a score, prompt-agent
 execution, canonical spec mutation, Ontology writes, or promotion authority.
+Proposal `0209` adds the post-rerun visibility layer for this loop:
+`structural_depth_delta` records before/after structural counts, added
+event-storming refs, added workflow relation evidence, remaining shallow
+dimensions, and whether the repair effect was `improved`, `resolved`,
+`still_shallow`, `unchanged`, or `not_measured`. The delta is review-only
+evidence for downstream product surfaces, not a Metrics field, gate, score, or
+authority expansion.
 
 The next slices are Platform awareness and a `local-subscription-control` demo
 pass. Platform may use the report as an explanatory preflight signal before

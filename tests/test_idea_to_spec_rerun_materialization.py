@@ -238,6 +238,51 @@ def rerun_preview_with_workflow_topology() -> dict[str, object]:
         "review_only": True,
         "materialization_dependency": False,
     }
+    preview["rerun_preview"]["structural_depth_delta"] = {
+        "proposal_id": "0209",
+        "status": "improved",
+        "before": {
+            "actor_count": 0,
+            "command_count": 0,
+            "domain_event_count": 0,
+            "policy_count": 0,
+            "constraint_count": 0,
+            "topology_edge_count": 0,
+            "workflow_edge_count": 0,
+            "requirement_count": 0,
+            "acceptance_criteria_count": 0,
+        },
+        "after": {
+            "actor_count": 0,
+            "command_count": 0,
+            "domain_event_count": 0,
+            "policy_count": 0,
+            "constraint_count": 0,
+            "topology_edge_count": 2,
+            "workflow_edge_count": 2,
+            "requirement_count": 0,
+            "acceptance_criteria_count": 0,
+        },
+        "delta": {
+            "topology_edge_count": 2,
+            "workflow_edge_count": 2,
+        },
+        "added_event_storming_entry_refs": {},
+        "added_workflow_relation_count": 0,
+        "added_workflow_relations": [],
+        "remaining_shallow_dimensions": [
+            "actor_count",
+            "command_count",
+            "domain_event_count",
+            "policy_count",
+            "constraint_count",
+            "requirement_count",
+            "acceptance_criteria_count",
+        ],
+        "review_only": True,
+        "canonical_mutations_allowed": False,
+        "materialization_dependency": False,
+    }
     preview["rerun_preview"]["ontology_gap_preview"]["resolved_ontology_gaps"] = []
     preview["rerun_preview"]["ontology_gap_preview"]["unresolved_ontology_gaps"] = []
     return preview
@@ -365,7 +410,37 @@ def test_rerun_materialization_merges_review_only_workflow_topology_edges() -> N
         "event.pantry-item-recorded",
         "event.pantry-item-reviewed",
     }
+    depth_delta = delta["structural_depth_delta"]
+    assert depth_delta["proposal_id"] == "0209"
+    assert depth_delta["status"] == "improved"
+    assert depth_delta["before"]["workflow_edge_count"] == 0
+    assert depth_delta["after"]["workflow_edge_count"] == 2
+    assert depth_delta["delta"]["workflow_edge_count"] == 2
+    assert depth_delta["added_workflow_relation_count"] == 0
+    assert report["summary"]["structural_depth_delta_status"] == "improved"
     assert report["summary"]["removed_gap_count"] == 0
+
+
+def test_rerun_materialization_treats_missing_preview_depth_delta_as_not_measured() -> None:
+    module = load_module()
+    rerun_preview = rerun_preview_with_workflow_topology()
+    del rerun_preview["rerun_preview"]["structural_depth_delta"]
+
+    report = module.build_idea_to_spec_rerun_materialization(
+        rerun_preview=rerun_preview,
+        candidate_graph=candidate_graph_for_workflow_topology(),
+    )
+
+    assert report["readiness"]["ready"] is True
+    delta = report["materialization_preview"]["delta"]
+    assert delta["added_workflow_topology_edge_count"] == 2
+    depth_delta = delta["structural_depth_delta"]
+    assert depth_delta["status"] == "not_measured"
+    assert depth_delta["delta"] == {}
+    assert depth_delta["remaining_shallow_dimensions"] == []
+    assert "actor_count" not in depth_delta["before"]
+    assert report["summary"]["structural_depth_delta_status"] == "not_measured"
+    assert report["summary"]["structural_depth_remaining_shallow_dimension_count"] == 0
 
 
 def test_rerun_materialization_preserves_node_scope_for_duplicate_candidate_gap_ids() -> None:

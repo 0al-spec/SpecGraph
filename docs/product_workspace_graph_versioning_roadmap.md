@@ -1614,6 +1614,23 @@ workflow topology remains review evidence and never becomes canonical spec
 mutation, Ontology acceptance, Git authority, or YAML implementation
 dependency.
 
+## Depth Repair Effect Visibility
+
+Status: implemented producer-side in proposal `0209`; SpecSpace can layer a
+read-only "Depth impact" surface over the existing rerun materialization
+artifact.
+
+Proposal `0209` closes the visibility gap after depth-driven repair. Rerun
+preview and rerun materialization now expose
+`structural_depth_delta`: before/after structural counts, added event-storming
+entry refs, added workflow relation evidence, remaining shallow dimensions, and
+a compact status such as `improved`, `resolved`, `still_shallow`, `unchanged`,
+or `not_measured`.
+
+The delta is not a Metrics schema extension, score, gate, approval signal, or
+promotion condition. It is review-only evidence that helps product surfaces
+explain what depth repair changed and what still needs clarification.
+
 ## Real Idea Entry Request Import
 
 Status: implemented producer-side in proposal `0202`; downstream UI/Platform

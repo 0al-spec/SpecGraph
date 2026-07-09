@@ -11,6 +11,7 @@ from typing import Any
 
 ROOT = Path(__file__).resolve().parents[1]
 PROPOSAL_ID = "0167"
+DEPTH_REPAIR_EFFECT_PROPOSAL_ID = "0209"
 SCHEMA_VERSION = 1
 CONTRACT_REF = "specgraph.idea-to-spec.rerun-materialization.v0.1"
 RERUN_PREVIEW_CONTRACT_REF = "specgraph.idea-to-spec.rerun-preview.v0.1"
@@ -31,6 +32,25 @@ RAW_TRACE_FIELDS = {
     "raw_response",
     "raw_text",
 }
+WORKFLOW_RELATIONS = {
+    "actor_triggers_command",
+    "command_emits_event",
+    "event_informs_policy",
+    "event_informs_constraint",
+    "constraint_applies_to_command",
+    "policy_applies_to_command",
+}
+STRUCTURAL_DEPTH_FIELDS = (
+    "actor_count",
+    "command_count",
+    "domain_event_count",
+    "policy_count",
+    "constraint_count",
+    "topology_edge_count",
+    "workflow_edge_count",
+    "requirement_count",
+    "acceptance_criteria_count",
+)
 
 
 def _now_iso() -> str:
@@ -47,6 +67,10 @@ def _list(value: Any) -> list[Any]:
 
 def _text(value: Any, default: str = "") -> str:
     return value.strip() if isinstance(value, str) and value.strip() else default
+
+
+def _int(value: Any) -> int:
+    return value if isinstance(value, int) and not isinstance(value, bool) else 0
 
 
 def _text_list(value: Any) -> list[str]:
@@ -304,6 +328,105 @@ def _candidate_graph_counts(candidate_graph: dict[str, Any]) -> dict[str, int]:
     }
 
 
+def _candidate_graph_depth(candidate_graph: dict[str, Any]) -> dict[str, int]:
+    nodes = [_dict(item) for item in _list(candidate_graph.get("nodes"))]
+    edges = [_dict(item) for item in _list(candidate_graph.get("edges"))]
+    return {
+        "topology_edge_count": len(edges),
+        "workflow_edge_count": sum(
+            1 for edge in edges if _text(edge.get("relation")) in WORKFLOW_RELATIONS
+        ),
+        "requirement_count": sum(len(_list(node.get("requirements"))) for node in nodes),
+        "acceptance_criteria_count": sum(
+            len(_list(node.get("acceptance_criteria"))) for node in nodes
+        ),
+    }
+
+
+def _depth_status(before: dict[str, int], after: dict[str, int]) -> str:
+    if not before or not after:
+        return "not_measured"
+    remaining_shallow = [field for field in STRUCTURAL_DEPTH_FIELDS if after.get(field, 0) <= 0]
+    was_shallow = [field for field in STRUCTURAL_DEPTH_FIELDS if before.get(field, 0) <= 0]
+    improved = any(after.get(field, 0) > before.get(field, 0) for field in STRUCTURAL_DEPTH_FIELDS)
+    if was_shallow and not remaining_shallow:
+        return "resolved"
+    if improved:
+        return "improved"
+    if remaining_shallow:
+        return "still_shallow"
+    return "unchanged"
+
+
+def _has_complete_depth_counts(value: dict[str, Any]) -> bool:
+    return all(
+        isinstance(value.get(field), int) and not isinstance(value.get(field), bool)
+        for field in STRUCTURAL_DEPTH_FIELDS
+    )
+
+
+def _not_measured_structural_depth_delta(
+    *,
+    before: dict[str, int] | None = None,
+    after: dict[str, int] | None = None,
+) -> dict[str, Any]:
+    return {
+        "proposal_id": DEPTH_REPAIR_EFFECT_PROPOSAL_ID,
+        "status": "not_measured",
+        "before": before or {},
+        "after": after or {},
+        "delta": {},
+        "added_event_storming_entry_refs": {},
+        "added_workflow_relation_count": 0,
+        "added_workflow_relations": [],
+        "remaining_shallow_dimensions": [],
+        "review_only": True,
+        "canonical_mutations_allowed": False,
+        "materialization_dependency": False,
+    }
+
+
+def _structural_depth_delta(
+    *,
+    rerun_preview: dict[str, Any],
+    candidate_graph: dict[str, Any],
+    candidate_graph_preview: dict[str, Any],
+) -> dict[str, Any]:
+    preview_delta = _dict(_dict(rerun_preview.get("rerun_preview")).get("structural_depth_delta"))
+    before = _dict(preview_delta.get("before"))
+    after = dict(_dict(preview_delta.get("after")))
+    if (
+        not preview_delta
+        or _text(preview_delta.get("status")) == "not_measured"
+        or not _has_complete_depth_counts(before)
+        or not _has_complete_depth_counts(after)
+    ):
+        return _not_measured_structural_depth_delta()
+    after.update(_candidate_graph_depth(candidate_graph_preview))
+    remaining = [field for field in STRUCTURAL_DEPTH_FIELDS if after.get(field, 0) <= 0]
+    return {
+        "proposal_id": DEPTH_REPAIR_EFFECT_PROPOSAL_ID,
+        "status": _depth_status(before, after),
+        "before": before,
+        "after": after,
+        "delta": {
+            field: after.get(field, 0) - before.get(field, 0)
+            for field in sorted(set(before) | set(after))
+        },
+        "added_event_storming_entry_refs": _public_safe(
+            _dict(preview_delta.get("added_event_storming_entry_refs"))
+        ),
+        "added_workflow_relation_count": _int(preview_delta.get("added_workflow_relation_count")),
+        "added_workflow_relations": _public_safe(
+            _list(preview_delta.get("added_workflow_relations"))
+        ),
+        "remaining_shallow_dimensions": remaining,
+        "review_only": True,
+        "canonical_mutations_allowed": False,
+        "materialization_dependency": False,
+    }
+
+
 def _refresh_candidate_graph_summary(candidate_graph: dict[str, Any]) -> None:
     summary = dict(_dict(candidate_graph.get("summary")))
     summary.update(_candidate_graph_counts(candidate_graph))
@@ -378,6 +501,10 @@ def _empty_delta(candidate_graph: dict[str, Any]) -> dict[str, Any]:
         "removed_gap_ids": [],
         "added_workflow_topology_edges": [],
         "added_workflow_topology_edge_count": 0,
+        "structural_depth_delta": _not_measured_structural_depth_delta(
+            before=_candidate_graph_depth(candidate_graph),
+            after=_candidate_graph_depth(candidate_graph),
+        ),
         "unresolved_ontology_gap_ids": unresolved_ontology_gap_ids,
         "unresolved_candidate_gap_ids": unresolved_candidate_gap_ids,
         "resolved_ontology_gap_count": 0,
@@ -500,6 +627,11 @@ def _materialize_candidate_graph_preview(
     added_workflow_edges = _merge_workflow_topology_edges(preview, rerun_preview)
     preview["source_ref"] = candidate_graph_preview_ref
     _refresh_candidate_graph_summary(preview)
+    structural_depth_delta = _structural_depth_delta(
+        rerun_preview=rerun_preview,
+        candidate_graph=candidate_graph,
+        candidate_graph_preview=preview,
+    )
     preview["rerun_materialization"] = {
         "proposal_id": PROPOSAL_ID,
         "contract_ref": CONTRACT_REF,
@@ -509,11 +641,13 @@ def _materialize_candidate_graph_preview(
         "ontology_resolution_count": len(ontology_resolution_records),
         "candidate_resolution_count": len(candidate_resolution_records),
         "added_workflow_topology_edge_count": len(added_workflow_edges),
+        "structural_depth_delta_status": structural_depth_delta["status"],
     }
     delta = {
         "removed_gap_ids": removed_gap_ids,
         "added_workflow_topology_edges": added_workflow_edges,
         "added_workflow_topology_edge_count": len(added_workflow_edges),
+        "structural_depth_delta": structural_depth_delta,
         "unresolved_ontology_gap_ids": unresolved_ontology_gap_ids,
         "unresolved_candidate_gap_ids": unresolved_candidate_gap_ids,
         "resolved_ontology_gap_count": len(ontology_resolution_records),
@@ -614,6 +748,13 @@ def build_idea_to_spec_rerun_materialization(
             "resolved_candidate_gap_count": delta["resolved_candidate_gap_count"],
             "unresolved_candidate_gap_count": delta["unresolved_candidate_gap_count"],
             "removed_gap_count": len(delta["removed_gap_ids"]),
+            "structural_depth_delta_status": delta["structural_depth_delta"]["status"],
+            "structural_depth_added_workflow_relation_count": delta["structural_depth_delta"][
+                "added_workflow_relation_count"
+            ],
+            "structural_depth_remaining_shallow_dimension_count": len(
+                delta["structural_depth_delta"]["remaining_shallow_dimensions"]
+            ),
             "finding_count": len(findings),
         },
     }

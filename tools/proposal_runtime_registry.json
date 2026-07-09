@@ -11908,5 +11908,65 @@
       }
     ],
     "notes": "SpecGraph can now turn flat workflow_edge_count observations into review-required typed workflow relation requests and safely materialize validated review-only topology edges in candidate graph preview."
+  },
+  {
+    "proposal_id": "0209",
+    "posture": "bounded_runtime_followup",
+    "runtime_surfaces": [
+      "docs/proposals/0209_depth_repair_effect_visibility.md",
+      "docs/archive/proposal_sources/0209_depth_repair_effect_visibility.md",
+      "tools/idea_to_spec_rerun_preview.py",
+      "tools/idea_to_spec_rerun_materialization.py",
+      "tools/idea_maturity_metrics_report.py",
+      "tests/test_idea_to_spec_rerun_preview.py",
+      "tests/test_idea_to_spec_rerun_materialization.py",
+      "tests/test_idea_maturity_metrics_report.py",
+      "docs/product_workspace_graph_versioning_roadmap.md",
+      "Sources/SpecGraph/Documentation.docc/ProductWorkspacePilots.md",
+      "tools/README.md"
+    ],
+    "runtime_markers": [
+      {
+        "path": "tools/idea_to_spec_rerun_preview.py",
+        "pattern": "DEPTH_REPAIR_EFFECT_PROPOSAL_ID = \"0209\""
+      },
+      {
+        "path": "tools/idea_to_spec_rerun_preview.py",
+        "pattern": "def _structural_depth_delta("
+      },
+      {
+        "path": "tools/idea_to_spec_rerun_materialization.py",
+        "pattern": "\"structural_depth_delta\""
+      }
+    ],
+    "validation_markers": [
+      {
+        "path": "tests/test_idea_to_spec_rerun_preview.py",
+        "pattern": "test_rerun_preview_structural_depth_delta_tracks_added_event_storming_entries"
+      },
+      {
+        "path": "tests/test_idea_to_spec_rerun_materialization.py",
+        "pattern": "structural_depth_delta_status"
+      },
+      {
+        "path": "tests/test_idea_maturity_metrics_report.py",
+        "pattern": "repair_effect_status"
+      }
+    ],
+    "observation_markers": [
+      {
+        "path": "docs/product_workspace_graph_versioning_roadmap.md",
+        "pattern": "Depth Repair Effect Visibility"
+      },
+      {
+        "path": "Sources/SpecGraph/Documentation.docc/ProductWorkspacePilots.md",
+        "pattern": "Proposal `0209` adds the post-rerun visibility layer"
+      },
+      {
+        "path": "tools/README.md",
+        "pattern": "Proposal 0209 adds `structural_depth_delta`"
+      }
+    ],
+    "notes": "SpecGraph now emits review-only structural_depth_delta evidence from depth repair reruns so downstream surfaces can show what changed, what was added, and which shallow dimensions remain without adding metrics, scores, gates, or authority."
   }
 ]

@@ -11,6 +11,7 @@ from typing import Any
 
 ROOT = Path(__file__).resolve().parents[1]
 PROPOSAL_ID = "0166"
+DEPTH_REPAIR_EFFECT_PROPOSAL_ID = "0209"
 SCHEMA_VERSION = 1
 CONTRACT_REF = "specgraph.idea-to-spec.rerun-preview.v0.1"
 RERUN_INPUT_CONTRACT_REF = "specgraph.idea-to-spec.answer-rerun-input.v0.1"
@@ -85,6 +86,17 @@ WORKFLOW_RELATION_SPECS = {
     },
 }
 WORKFLOW_RELATION_NAMES = set(WORKFLOW_RELATION_SPECS)
+STRUCTURAL_DEPTH_FIELDS = (
+    "actor_count",
+    "command_count",
+    "domain_event_count",
+    "policy_count",
+    "constraint_count",
+    "topology_edge_count",
+    "workflow_edge_count",
+    "requirement_count",
+    "acceptance_criteria_count",
+)
 RAW_TRACE_FIELDS = {
     "operator_note",
     "operator_notes",
@@ -859,6 +871,155 @@ def _workflow_topology_preview(
     }
 
 
+def _event_storming_depth(event_storming: dict[str, Any]) -> dict[str, int]:
+    return {
+        "actor_count": len(_list(event_storming.get("actors"))),
+        "command_count": len(_list(event_storming.get("commands"))),
+        "domain_event_count": len(_list(event_storming.get("domain_events"))),
+        "policy_count": len(_list(event_storming.get("policies"))),
+        "constraint_count": len(_list(event_storming.get("constraints"))),
+    }
+
+
+def _candidate_graph_depth(candidate_graph: dict[str, Any]) -> dict[str, int]:
+    nodes = [_dict(node) for node in _list(candidate_graph.get("nodes"))]
+    edges = [_dict(edge) for edge in _list(candidate_graph.get("edges"))]
+    return {
+        "topology_edge_count": len(edges),
+        "workflow_edge_count": sum(
+            1 for edge in edges if _text(edge.get("relation")) in WORKFLOW_RELATION_NAMES
+        ),
+        "requirement_count": sum(len(_list(node.get("requirements"))) for node in nodes),
+        "acceptance_criteria_count": sum(
+            len(_list(node.get("acceptance_criteria"))) for node in nodes
+        ),
+    }
+
+
+def _event_storming_entry_ids(event_storming: dict[str, Any], category: str) -> set[str]:
+    return {
+        _text(_dict(entry).get("id"))
+        for entry in _list(event_storming.get(category))
+        if _text(_dict(entry).get("id"))
+    }
+
+
+def _edge_key(edge: dict[str, Any]) -> tuple[str, str, str, tuple[str, ...]]:
+    return (
+        _text(edge.get("from")),
+        _text(edge.get("to")),
+        _text(edge.get("relation")),
+        tuple(_text_list(edge.get("source_event_refs"))),
+    )
+
+
+def _new_workflow_edges(
+    *,
+    candidate_graph: dict[str, Any],
+    workflow_topology_preview: dict[str, Any],
+) -> list[dict[str, Any]]:
+    existing = {_edge_key(_dict(edge)) for edge in _list(candidate_graph.get("edges"))}
+    added: list[dict[str, Any]] = []
+    seen = set(existing)
+    for raw_edge in _list(workflow_topology_preview.get("workflow_edges")):
+        edge = _dict(raw_edge)
+        if edge.get("review_only") is not True:
+            continue
+        if edge.get("materialization_dependency") is not False:
+            continue
+        key = _edge_key(edge)
+        if not key[0] or not key[1] or not key[2] or key in seen:
+            continue
+        seen.add(key)
+        added.append(_public_safe(edge))
+    return added
+
+
+def _depth_status(before: dict[str, int], after: dict[str, int]) -> str:
+    if not before or not after:
+        return "not_measured"
+    remaining_shallow = [field for field in STRUCTURAL_DEPTH_FIELDS if after.get(field, 0) <= 0]
+    was_shallow = [field for field in STRUCTURAL_DEPTH_FIELDS if before.get(field, 0) <= 0]
+    improved = any(after.get(field, 0) > before.get(field, 0) for field in STRUCTURAL_DEPTH_FIELDS)
+    if was_shallow and not remaining_shallow:
+        return "resolved"
+    if improved:
+        return "improved"
+    if remaining_shallow:
+        return "still_shallow"
+    return "unchanged"
+
+
+def _not_measured_structural_depth_delta() -> dict[str, Any]:
+    return {
+        "proposal_id": DEPTH_REPAIR_EFFECT_PROPOSAL_ID,
+        "status": "not_measured",
+        "before": {},
+        "after": {},
+        "delta": {},
+        "added_event_storming_entry_refs": {},
+        "added_workflow_relation_count": 0,
+        "added_workflow_relations": [],
+        "remaining_shallow_dimensions": [],
+        "review_only": True,
+        "canonical_mutations_allowed": False,
+        "materialization_dependency": False,
+    }
+
+
+def _structural_depth_delta(
+    *,
+    intake: dict[str, Any],
+    candidate_graph: dict[str, Any],
+    event_storming_preview: dict[str, Any],
+    workflow_topology_preview: dict[str, Any],
+    ready: bool,
+) -> dict[str, Any]:
+    if not ready:
+        return _not_measured_structural_depth_delta()
+    before_event_storming = _dict(intake.get("event_storming"))
+    after_event_storming = _dict(event_storming_preview.get("event_storming"))
+    added_edges = _new_workflow_edges(
+        candidate_graph=candidate_graph,
+        workflow_topology_preview=workflow_topology_preview,
+    )
+    before = {
+        **_event_storming_depth(before_event_storming),
+        **_candidate_graph_depth(candidate_graph),
+    }
+    after_graph_depth = _candidate_graph_depth(
+        {**candidate_graph, "edges": _list(candidate_graph.get("edges")) + added_edges}
+    )
+    after = {
+        **_event_storming_depth(after_event_storming),
+        **after_graph_depth,
+    }
+    added_entries = {
+        category: sorted(
+            _event_storming_entry_ids(after_event_storming, category)
+            - _event_storming_entry_ids(before_event_storming, category)
+        )
+        for category in ("actors", "commands", "domain_events", "policies", "constraints")
+    }
+    added_entries = {category: refs for category, refs in added_entries.items() if refs}
+    return {
+        "proposal_id": DEPTH_REPAIR_EFFECT_PROPOSAL_ID,
+        "status": _depth_status(before, after),
+        "before": before,
+        "after": after,
+        "delta": {field: after.get(field, 0) - before.get(field, 0) for field in before},
+        "added_event_storming_entry_refs": added_entries,
+        "added_workflow_relation_count": len(added_edges),
+        "added_workflow_relations": added_edges,
+        "remaining_shallow_dimensions": [
+            field for field in STRUCTURAL_DEPTH_FIELDS if after.get(field, 0) <= 0
+        ],
+        "review_only": True,
+        "canonical_mutations_allowed": False,
+        "materialization_dependency": False,
+    }
+
+
 def _decision_records(
     *,
     overlay: dict[str, Any],
@@ -1387,6 +1548,13 @@ def build_idea_to_spec_rerun_preview(
         candidate_gap_preview,
     )
     ready = not findings
+    structural_depth_delta = _structural_depth_delta(
+        intake=intake,
+        candidate_graph=candidate_graph,
+        event_storming_preview=event_storming_preview,
+        workflow_topology_preview=workflow_topology_preview,
+        ready=ready,
+    )
     return {
         "artifact_kind": "idea_to_spec_rerun_preview",
         "schema_version": SCHEMA_VERSION,
@@ -1428,6 +1596,7 @@ def build_idea_to_spec_rerun_preview(
             "active_frame_preview": active_frame_preview,
             "event_storming_preview": event_storming_preview,
             "workflow_topology_preview": workflow_topology_preview,
+            "structural_depth_delta": structural_depth_delta,
             "ontology_gap_preview": ontology_gap_preview,
             "candidate_gap_preview": candidate_gap_preview,
             "candidate_review_preview": candidate_review_preview,
@@ -1455,6 +1624,13 @@ def build_idea_to_spec_rerun_preview(
                 "applied_workflow_relation_count"
             ],
             "workflow_edge_preview_count": workflow_topology_preview["workflow_edge_count"],
+            "structural_depth_delta_status": structural_depth_delta["status"],
+            "structural_depth_added_workflow_relation_count": structural_depth_delta[
+                "added_workflow_relation_count"
+            ],
+            "structural_depth_remaining_shallow_dimension_count": len(
+                structural_depth_delta["remaining_shallow_dimensions"]
+            ),
             "ontology_decision_count": ontology_gap_preview["decision_count"],
             "resolved_ontology_gap_count": ontology_gap_preview["resolved_ontology_gap_count"],
             "unresolved_ontology_gap_count": ontology_gap_preview["unresolved_ontology_gap_count"],

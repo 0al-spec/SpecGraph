@@ -646,6 +646,44 @@ def test_idea_maturity_metrics_report_interprets_shallow_structure_without_gatin
     candidate_graph["nodes"][0]["acceptance_criteria"] = []
     candidate_graph["edges"] = []
     write_json(paths["candidate_graph"], candidate_graph)
+    materialization = load_json(paths["rerun_materialization"])
+    materialization["materialization_preview"]["delta"]["structural_depth_delta"] = {
+        "proposal_id": "0209",
+        "status": "improved",
+        "before": {
+            "actor_count": 0,
+            "command_count": 0,
+            "domain_event_count": 0,
+            "policy_count": 0,
+            "constraint_count": 0,
+            "topology_edge_count": 0,
+            "workflow_edge_count": 0,
+            "requirement_count": 0,
+            "acceptance_criteria_count": 0,
+        },
+        "after": {
+            "actor_count": 0,
+            "command_count": 0,
+            "domain_event_count": 0,
+            "policy_count": 0,
+            "constraint_count": 0,
+            "topology_edge_count": 1,
+            "workflow_edge_count": 1,
+            "requirement_count": 0,
+            "acceptance_criteria_count": 0,
+        },
+        "delta": {"workflow_edge_count": 1, "topology_edge_count": 1},
+        "remaining_shallow_dimensions": [
+            "actor_count",
+            "command_count",
+            "domain_event_count",
+            "policy_count",
+            "constraint_count",
+            "requirement_count",
+            "acceptance_criteria_count",
+        ],
+    }
+    write_json(paths["rerun_materialization"], materialization)
 
     report = build_report(paths)
 
@@ -667,6 +705,18 @@ def test_idea_maturity_metrics_report_interprets_shallow_structure_without_gatin
     }
     assert all("candidate_approval" not in item["blocks"] for item in structure_explainers)
     assert all("platform_promotion" not in item["blocks"] for item in structure_explainers)
+    workflow_explainer = next(
+        item
+        for item in structure_explainers
+        if item["kind"] == "candidate_structure_workflow_topology_flat"
+    )
+    assert (
+        f"{ref(paths['rerun_materialization'])}"
+        "#materialization_preview.delta.structural_depth_delta"
+        in workflow_explainer["evidence_refs"]
+    )
+    assert workflow_explainer["evidence"]["repair_effect_status"] == "improved"
+    assert workflow_explainer["evidence"]["repair_effect_delta"] == 1
 
 
 def test_idea_maturity_metrics_report_prioritizes_blockers_before_structure(
