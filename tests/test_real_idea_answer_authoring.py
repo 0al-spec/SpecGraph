@@ -178,6 +178,19 @@ def test_intake_answer_template_marks_clarification_not_required(tmp_path: Path)
     assert template["readiness"]["next_artifact"] == "user_idea_intake_source.json"
     assert template["answer_targets"] == []
     assert template["findings"] == []
+    report = module._authoring_report(
+        operation="template",
+        status=template["summary"]["status"],
+        stage="intake",
+        run_dir=tmp_path,
+        requests_path=requests_path,
+        answers_path=None,
+        answer_set=None,
+        validated_answers=None,
+        findings=[],
+        outputs={"next_artifact": template["readiness"]["next_artifact"]},
+    )
+    assert report["readiness"]["ready"] is True
 
 
 def test_intake_answer_template_blocks_unsupported_mandatory_request(tmp_path: Path) -> None:
@@ -198,7 +211,7 @@ def test_intake_answer_template_blocks_unsupported_mandatory_request(tmp_path: P
                 "status": "open",
                 "question": "Provide an unsupported executable answer.",
                 "target_ref": "unsupported.target",
-                "suggested_actions": ["execute_custom_resolver"],
+                "suggested_actions": ["answer_question"],
                 "suggested_answer_shape": "custom_binary_payload",
             }
         ],
@@ -216,6 +229,76 @@ def test_intake_answer_template_blocks_unsupported_mandatory_request(tmp_path: P
     assert template["clarification_outcome"] == "clarification_blocked"
     assert template["readiness"]["ready"] is False
     assert "clarification_request_not_browser_answerable" in finding_ids(template)
+
+
+def test_answer_validation_rejects_stale_template_requests_digest(tmp_path: Path) -> None:
+    module = load_module()
+    requests = load_json(REPAIR_REQUESTS)
+    template = module.build_template(
+        clarification_requests=requests,
+        requests_path=REPAIR_REQUESTS,
+        stage="repair",
+        run_dir=tmp_path,
+    )
+    template["operator_answers"] = [
+        {
+            **answer,
+            "status": "accepted_for_candidate",
+            "value": {"answer": "operator answer"},
+        }
+        for answer in template["operator_answers"]
+    ]
+    stale_requests = json.loads(json.dumps(requests))
+    stale_requests["clarification_requests"][0]["question"] = "Changed question"
+
+    _answer_set, _validated, report = module.build_validation(
+        clarification_requests=stale_requests,
+        requests_path=REPAIR_REQUESTS,
+        answer_input=template,
+        answers_path=tmp_path / "stale_template.json",
+        stage="repair",
+        run_dir=tmp_path,
+    )
+
+    assert report["readiness"]["ready"] is False
+    assert "answer_template_requests_digest_mismatch" in finding_ids(report)
+
+
+def test_answer_template_ignores_closed_requests_for_not_required_outcome(
+    tmp_path: Path,
+) -> None:
+    module = load_module()
+    requests = {
+        "artifact_kind": "idea_to_spec_clarification_requests",
+        "contract_ref": "specgraph.idea-to-spec.clarification-requests.v0.1",
+        "clarification_outcome": "clarification_not_required",
+        "clarification_requests": [
+            {
+                "id": "clarification.closed",
+                "kind": "graph_repair",
+                "severity": "advisory",
+                "status": "preview_applied",
+                "question": "Already applied",
+                "target_ref": "candidate-spec.preview",
+                "suggested_actions": ["defer"],
+                "suggested_answer_shape": "plain text",
+            }
+        ],
+        "readiness": {"ready": True},
+    }
+    requests_path = tmp_path / "closed_requests.json"
+    write_json(requests_path, requests)
+
+    template = module.build_template(
+        clarification_requests=requests,
+        requests_path=requests_path,
+        stage="repair",
+        run_dir=tmp_path,
+    )
+
+    assert template["clarification_outcome"] == "clarification_not_required"
+    assert template["answer_targets"] == []
+    assert template["readiness"]["ready"] is True
 
 
 def test_answer_authoring_validate_accepts_filled_template(tmp_path: Path) -> None:
@@ -786,6 +869,16 @@ def test_verify_no_clarification_requires_matching_workspace(tmp_path: Path) -> 
     run_dir_ref = Path(".pytest_cache") / "no_clarification_verify" / tmp_path.name
     run_dir = ROOT / run_dir_ref
     template_path = run_dir / "real_idea_answer_template.json"
+    session_path = run_dir / "user_idea_intake_session.json"
+    session = {
+        "artifact_kind": "user_idea_intake_session",
+        "workspace": {
+            "candidate_id": "complete-idea",
+            "display_name": "Complete Idea",
+            "public_route": "/complete-idea",
+        },
+        "readiness": {"ready": True},
+    }
     requests = {
         "artifact_kind": "idea_to_spec_clarification_requests",
         "contract_ref": "specgraph.idea-to-spec.clarification-requests.v0.1",
@@ -795,6 +888,13 @@ def test_verify_no_clarification_requires_matching_workspace(tmp_path: Path) -> 
         "clarification_outcome": "clarification_not_required",
         "clarification_requests": [],
         "readiness": {"ready": True, "review_state": "clarification_clear"},
+        "source_artifacts": [
+            {
+                "name": "user_idea_intake_session",
+                "path": run_dir_ref.joinpath("user_idea_intake_session.json").as_posix(),
+                "source_digest": module._source_digest(session),
+            }
+        ],
     }
     try:
         template = module.build_template(
@@ -803,6 +903,7 @@ def test_verify_no_clarification_requires_matching_workspace(tmp_path: Path) -> 
             stage="intake",
             run_dir=run_dir,
         )
+        write_json(session_path, session)
         write_json(run_dir / "idea_intake_clarification_requests.json", requests)
         write_json(template_path, template)
         success = subprocess.run(
@@ -843,6 +944,30 @@ def test_verify_no_clarification_requires_matching_workspace(tmp_path: Path) -> 
         assert success.returncode == 0
         assert mismatch.returncode == 1
         assert "workspace_id" in mismatch.stdout
+
+        session["workspace"]["display_name"] = "Changed after template"
+        write_json(session_path, session)
+        stale_session = subprocess.run(
+            [
+                sys.executable,
+                str(TOOL_PATH),
+                "verify-no-clarification",
+                "--run-dir",
+                str(run_dir_ref),
+                "--template",
+                str(template_path),
+                "--workspace-id",
+                "complete-idea",
+            ],
+            cwd=ROOT,
+            check=False,
+            capture_output=True,
+            text=True,
+        )
+        assert stale_session.returncode == 1
+        assert "intake_session.source_digest" in stale_session.stdout
+        session["workspace"]["display_name"] = "Complete Idea"
+        write_json(session_path, session)
 
         requests["clarification_outcome"] = "answers_required"
         write_json(run_dir / "idea_intake_clarification_requests.json", requests)

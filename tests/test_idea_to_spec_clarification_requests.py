@@ -137,6 +137,29 @@ def test_clarification_requests_marks_ready_session_not_required() -> None:
     assert report["workspace_id"] == "support-triage-log"
 
 
+def test_closed_clarification_rows_are_not_required() -> None:
+    clarification_module = load_module(
+        TOOL_PATH,
+        "clarification_requests_closed_rows",
+    )
+    report = clarification_module.build_idea_to_spec_clarification_requests(
+        repair_loop={
+            "artifact_kind": "candidate_repair_loop_report",
+            "contract_ref": "specgraph.idea-to-spec.candidate-repair-loop.v0.1",
+            "repair_actions": [
+                {
+                    "id": "repair.preview-applied",
+                    "kind": "graph_repair",
+                    "status": "preview_applied",
+                    "target_ref": "candidate-spec.preview",
+                }
+            ],
+        }
+    )
+    assert report["clarification_outcome"] == "clarification_not_required"
+    assert report["clarification_requests"]
+
+
 def test_clarification_requests_project_repair_context_actions() -> None:
     repair_module = load_module(REPAIR_TOOL_PATH, "repair_loop_for_clarifications")
     clarification_module = load_module(TOOL_PATH, "clarification_requests_for_repair_loop")

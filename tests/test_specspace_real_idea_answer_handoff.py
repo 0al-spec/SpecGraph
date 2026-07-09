@@ -315,6 +315,32 @@ def test_specspace_real_idea_answer_import_preview_blocks_template_mismatch() ->
     assert "/Users/" not in dumped
 
 
+def test_specspace_real_idea_answer_import_preview_blocks_stale_template_digest() -> None:
+    module = load_module(TOOL_PATH, "specspace_real_idea_answer_handoff_digest_test")
+    run_dir = ROOT / ".pytest_cache" / "specspace_real_idea_answer_handoff" / "digest"
+    paths = prepare_run_dir(run_dir)
+    state_path = run_dir / "idea_to_spec_intake_clarification_answers.json"
+    write_json(state_path, specspace_state(paths))
+    requests = load_json(paths["requests"])
+    requests["clarification_requests"][0]["question"] = "Changed after template generation"
+
+    preview = module.build_import_preview(
+        specspace_answer_state=load_json(state_path),
+        state_path=state_path,
+        template=load_json(paths["template"]),
+        template_path=paths["template"],
+        clarification_requests=requests,
+        requests_path=paths["requests"],
+        intake_session=load_json(paths["session"]),
+        intake_session_path=paths["session"],
+        run_dir=run_dir,
+        stage="intake",
+    )
+
+    assert preview["readiness"]["ready"] is False
+    assert "answer_template_requests_digest_mismatch" in finding_ids(preview)
+
+
 def test_specspace_real_idea_answer_import_preview_requires_identity_and_source_refs() -> None:
     module = load_module(TOOL_PATH, "specspace_real_idea_answer_handoff_identity_test")
     run_dir = ROOT / ".pytest_cache" / "specspace_real_idea_answer_handoff" / "identity"

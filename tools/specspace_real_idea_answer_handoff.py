@@ -685,6 +685,13 @@ def build_import_preview(
                 evidence={"readiness": _dict(template.get("readiness"))},
             )
         )
+    findings.extend(
+        real_idea_answer_authoring.template_request_binding_findings(
+            template=template,
+            clarification_requests=clarification_requests,
+            requests_path=requests_path,
+        )
+    )
     if not answer_count:
         findings.append(
             _finding(
