@@ -2689,5 +2689,18 @@
     "required_provenance_links": [
       "source_draft_ref"
     ]
+  },
+  {
+    "proposal_id": "0209",
+    "source_artifact_class": "working_draft",
+    "source_refs": [
+      "docs/archive/proposal_sources/0209_depth_repair_effect_visibility.md"
+    ],
+    "motivating_concern": "Depth-driven repair can now add event-storming entries and workflow relations, but downstream product surfaces need durable review-only evidence showing what changed and which shallow dimensions remain after rerun materialization.",
+    "normalized_title": "Depth Repair Effect Visibility",
+    "bounded_scope": "Emit review-only structural_depth_delta evidence from rerun preview and rerun materialization, and let Idea Maturity readiness explainers cite that evidence, without changing Metrics schemas, adding scores, changing gates, approving candidates, mutating source intake or canonical specs, writing Ontology packages or lockfiles, accepting ontology terms, creating Git branches or commits, opening pull requests, publishing read models, or turning workflow topology into YAML dependencies.",
+    "required_provenance_links": [
+      "source_draft_ref"
+    ]
   }
 ]

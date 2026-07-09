@@ -178,6 +178,31 @@ def rerun_input_with_workflow_relations(relations: list[dict[str, object]]) -> d
     }
 
 
+def rerun_input_with_event_storming_entries() -> dict[str, object]:
+    payload = rerun_input_with_workflow_relations([])
+    hints = payload["rerun_input_overlay"]["intake_overlay"]["event_storming_hints"]
+    hints.append(
+        {
+            "request_id": "clarification.depth.event-storming",
+            "request_kind": "candidate_structure_gap",
+            "answer_kind": "answer_question",
+            "target_artifact": "runs/idea_event_storming_intake.json",
+            "target_ref": "event_storming_hints.domain_events",
+            "value": {
+                "actors": [{"id": "actor.household-member", "name": "Household member"}],
+                "domain_events": [
+                    {
+                        "id": "event.pantry-item-recorded",
+                        "statement": "Pantry item recorded",
+                    }
+                ],
+                "policies": [{"id": "policy.expiration-reminder", "name": "Expiration reminder"}],
+            },
+        }
+    )
+    return payload
+
+
 def candidate_graph_with_candidate_gaps() -> dict[str, object]:
     graph = candidate_graph_artifact()
     graph["nodes"] = [
@@ -838,6 +863,41 @@ def test_rerun_preview_applies_typed_workflow_relation_hints() -> None:
     assert topology["topology_relation_counts"]["event_informs_policy"] == 1
     assert all(edge["review_only"] is True for edge in topology["workflow_edges"])
     assert report["summary"]["workflow_relation_hint_count"] == 3
+    depth_delta = report["rerun_preview"]["structural_depth_delta"]
+    assert depth_delta["proposal_id"] == "0209"
+    assert depth_delta["status"] == "improved"
+    assert depth_delta["before"]["workflow_edge_count"] == 0
+    assert depth_delta["after"]["workflow_edge_count"] == 3
+    assert depth_delta["delta"]["workflow_edge_count"] == 3
+    assert depth_delta["added_workflow_relation_count"] == 3
+    assert "constraint_count" in depth_delta["remaining_shallow_dimensions"]
+    assert report["summary"]["structural_depth_delta_status"] == "improved"
+
+
+def test_rerun_preview_structural_depth_delta_tracks_added_event_storming_entries() -> None:
+    module = load_module(
+        PREVIEW_TOOL_PATH,
+        "idea_to_spec_rerun_preview_depth_delta_event_entries_test",
+    )
+
+    report = module.build_idea_to_spec_rerun_preview(
+        rerun_input=rerun_input_with_event_storming_entries(),
+        intake=intake_artifact(),
+        candidate_graph=workflow_topology_candidate_graph(),
+    )
+
+    assert report["readiness"]["ready"] is True
+    depth_delta = report["rerun_preview"]["structural_depth_delta"]
+    assert depth_delta["status"] == "improved"
+    assert depth_delta["before"]["actor_count"] == 0
+    assert depth_delta["after"]["actor_count"] == 1
+    assert depth_delta["after"]["domain_event_count"] == 1
+    assert depth_delta["after"]["policy_count"] == 1
+    assert depth_delta["added_event_storming_entry_refs"] == {
+        "actors": ["actor.household-member"],
+        "domain_events": ["event.pantry-item-recorded"],
+        "policies": ["policy.expiration-reminder"],
+    }
 
 
 def test_rerun_preview_preserves_distinct_workflow_edges_with_same_endpoints() -> None:

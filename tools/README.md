@@ -413,6 +413,12 @@ Supervisor modes:
   Rerun preview validates source/target refs and relation kinds before emitting
   review-only workflow topology edges; materialization copies only
   `review_only` / non-dependency edges into candidate graph preview.
+- Proposal 0209 adds `structural_depth_delta` to rerun preview and
+  materialization so downstream surfaces can show depth repair impact:
+  before/after counts, added event-storming refs, added workflow relation
+  evidence, remaining shallow dimensions, and an effect status. This is
+  report-only visibility, not a Metrics schema change, score, gate, or authority
+  expansion.
 - `tools/user_idea_intake_source.py`: deterministic generic user-idea source
   builder introduced by proposal 0158. Use `make user-idea-intake-source
   USER_IDEA_INTAKE_SOURCE=<json>` to normalize product workspace identity,

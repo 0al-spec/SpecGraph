@@ -16,6 +16,7 @@ PROPOSAL_ID = "0178"
 READINESS_EXPLAINERS_PROPOSAL_ID = "0180"
 METRICS_CONTRACT_PROPOSAL_ID = "0181"
 STRUCTURE_DEPTH_EXPLAINERS_PROPOSAL_ID = "0206"
+DEPTH_REPAIR_EFFECT_PROPOSAL_ID = "0209"
 SCHEMA_VERSION = 1
 CONTRACT_REF = "specgraph.idea-to-spec.maturity-metrics-report.v0.1"
 METRIC_PACK_ID = "idea_to_spec_maturity"
@@ -2284,6 +2285,19 @@ def _candidate_structure_depth_readiness_explainers(
     if not artifacts.get("candidate_graph") and not artifacts.get("repaired_candidate_graph"):
         return []
     depth = _dict(metrics.get("candidate_structure_depth"))
+    repair_effect = _dict(
+        _dict(_dict(artifacts.get("rerun_materialization")).get("materialization_preview")).get(
+            "delta"
+        )
+    ).get("structural_depth_delta")
+    repair_effect = _dict(repair_effect)
+    repair_effect_delta = _dict(repair_effect.get("delta"))
+    repair_effect_refs = []
+    if repair_effect:
+        repair_effect_refs.append(
+            "runs/idea_to_spec_rerun_materialization.json"
+            "#materialization_preview.delta.structural_depth_delta"
+        )
     has_intake = bool(artifacts.get("intake"))
     explainers: list[dict[str, Any]] = []
     for (
@@ -2300,6 +2314,15 @@ def _candidate_structure_depth_readiness_explainers(
         value = _int(depth.get(field))
         if value > 0:
             continue
+        evidence = {"metric_id": field, "observed_count": value}
+        if repair_effect:
+            evidence.update(
+                {
+                    "repair_effect_status": _text(repair_effect.get("status")),
+                    "repair_effect_delta": _int(repair_effect_delta.get(field)),
+                    "repair_effect_proposal_id": DEPTH_REPAIR_EFFECT_PROPOSAL_ID,
+                }
+            )
         explainers.append(
             _readiness_explainer(
                 explainer_id=explainer_id,
@@ -2313,9 +2336,10 @@ def _candidate_structure_depth_readiness_explainers(
                     (
                         "runs/idea_maturity_metrics_report.json"
                         f"#groups.candidate_structure_depth.{field}"
-                    )
+                    ),
+                    *repair_effect_refs,
                 ],
-                evidence={"metric_id": field, "observed_count": value},
+                evidence=evidence,
                 proposal_id=STRUCTURE_DEPTH_EXPLAINERS_PROPOSAL_ID,
             )
         )

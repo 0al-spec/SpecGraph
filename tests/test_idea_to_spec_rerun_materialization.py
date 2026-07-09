@@ -365,6 +365,14 @@ def test_rerun_materialization_merges_review_only_workflow_topology_edges() -> N
         "event.pantry-item-recorded",
         "event.pantry-item-reviewed",
     }
+    depth_delta = delta["structural_depth_delta"]
+    assert depth_delta["proposal_id"] == "0209"
+    assert depth_delta["status"] == "improved"
+    assert depth_delta["before"]["workflow_edge_count"] == 0
+    assert depth_delta["after"]["workflow_edge_count"] == 2
+    assert depth_delta["delta"]["workflow_edge_count"] == 2
+    assert depth_delta["added_workflow_relation_count"] == 0
+    assert report["summary"]["structural_depth_delta_status"] == "improved"
     assert report["summary"]["removed_gap_count"] == 0
 
 
