@@ -82,6 +82,18 @@
         "name": "Case Escalated"
       }
     ],
+    "policies": [
+      {
+        "command_refs": [
+          "command.escalate-case"
+        ],
+        "id": "policy.escalation-review",
+        "name": "Escalation Review Policy",
+        "trigger_event_refs": [
+          "event.case-escalated"
+        ]
+      }
+    ],
     "risks": [
       {
         "id": "risk.unowned-escalation",

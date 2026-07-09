@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import importlib.util
 import json
+import shutil
 import subprocess
 import sys
 from pathlib import Path
@@ -115,6 +116,106 @@ def test_answer_template_exposes_typed_targets(tmp_path: Path) -> None:
         "value.ontology_ref",
     ]
     assert template["authority_boundary"]["may_write_ontology_package"] is False
+
+
+def test_intake_answer_template_is_workspace_bound_and_answers_required(
+    tmp_path: Path,
+) -> None:
+    module = load_module()
+    requests_path = build_intake_requests(tmp_path)
+    requests = load_json(requests_path)
+
+    template = module.build_template(
+        clarification_requests=requests,
+        requests_path=requests_path,
+        stage="intake",
+        run_dir=tmp_path,
+    )
+
+    assert template["contract_ref"] == "specgraph.idea-to-spec.real-idea-answer-template.v0.2"
+    assert template["clarification_outcome"] == "answers_required"
+    assert template["readiness"]["ready"] is True
+    assert template["workspace_id"] == "team-decision-log"
+    assert template["candidate_id"] == "team-decision-log"
+    assert template["summary"]["answerable_target_count"] == 10
+    assert template["summary"]["unsupported_target_count"] == 0
+    assert template["source_artifacts"]["clarification_requests"]["source_digest"].startswith(
+        "sha256:"
+    )
+    assert "0210" in template["contract_extensions"]
+
+
+def test_intake_answer_template_marks_clarification_not_required(tmp_path: Path) -> None:
+    module = load_module()
+    requests = {
+        "artifact_kind": "idea_to_spec_clarification_requests",
+        "schema_version": 1,
+        "contract_ref": "specgraph.idea-to-spec.clarification-requests.v0.1",
+        "workspace_id": "complete-idea",
+        "candidate_id": "complete-idea",
+        "workspace": {
+            "workspace_id": "complete-idea",
+            "candidate_id": "complete-idea",
+            "display_name": "Complete Idea",
+            "public_route": "/complete-idea",
+        },
+        "clarification_outcome": "clarification_not_required",
+        "clarification_requests": [],
+        "readiness": {"ready": True, "review_state": "clarification_clear"},
+    }
+    requests_path = tmp_path / "clarification_not_required.json"
+    write_json(requests_path, requests)
+
+    template = module.build_template(
+        clarification_requests=requests,
+        requests_path=requests_path,
+        stage="intake",
+        run_dir=tmp_path,
+    )
+
+    assert template["clarification_outcome"] == "clarification_not_required"
+    assert template["readiness"]["ready"] is True
+    assert template["readiness"]["next_artifact"] == "user_idea_intake_source.json"
+    assert template["answer_targets"] == []
+    assert template["findings"] == []
+
+
+def test_intake_answer_template_blocks_unsupported_mandatory_request(tmp_path: Path) -> None:
+    module = load_module()
+    requests = {
+        "artifact_kind": "idea_to_spec_clarification_requests",
+        "schema_version": 1,
+        "contract_ref": "specgraph.idea-to-spec.clarification-requests.v0.1",
+        "workspace_id": "unsupported-idea",
+        "candidate_id": "unsupported-idea",
+        "workspace": {"candidate_id": "unsupported-idea"},
+        "clarification_outcome": "answers_required",
+        "clarification_requests": [
+            {
+                "id": "clarification.unsupported",
+                "kind": "unsupported",
+                "severity": "blocking",
+                "status": "open",
+                "question": "Provide an unsupported executable answer.",
+                "target_ref": "unsupported.target",
+                "suggested_actions": ["execute_custom_resolver"],
+                "suggested_answer_shape": "custom_binary_payload",
+            }
+        ],
+    }
+    requests_path = tmp_path / "unsupported_requests.json"
+    write_json(requests_path, requests)
+
+    template = module.build_template(
+        clarification_requests=requests,
+        requests_path=requests_path,
+        stage="intake",
+        run_dir=tmp_path,
+    )
+
+    assert template["clarification_outcome"] == "clarification_blocked"
+    assert template["readiness"]["ready"] is False
+    assert "clarification_request_not_browser_answerable" in finding_ids(template)
 
 
 def test_answer_authoring_validate_accepts_filled_template(tmp_path: Path) -> None:
@@ -611,6 +712,161 @@ def test_answer_authoring_cli_rejects_outputs_outside_run_dir(tmp_path: Path) ->
 
     assert result.returncode != 0
     assert "--output must stay inside REAL_IDEA_SMOKE_RUN_DIR" in result.stderr
+
+
+def test_blocked_template_does_not_clobber_existing_ready_output(tmp_path: Path) -> None:
+    run_dir_ref = Path(".pytest_cache") / "answer_template_no_clobber" / tmp_path.name
+    run_dir = ROOT / run_dir_ref
+    requests_path = run_dir / "unsupported_requests.json"
+    output_path = run_dir / "real_idea_answer_template.json"
+    report_path = run_dir / "real_idea_answer_authoring_report.json"
+    existing = {
+        "artifact_kind": "real_idea_answer_template",
+        "contract_ref": "specgraph.idea-to-spec.real-idea-answer-template.v0.2",
+        "clarification_outcome": "answers_required",
+        "sentinel": "preserve-ready-template",
+        "readiness": {"ready": True, "review_state": "answers_required"},
+    }
+    unsupported = {
+        "artifact_kind": "idea_to_spec_clarification_requests",
+        "contract_ref": "specgraph.idea-to-spec.clarification-requests.v0.1",
+        "workspace_id": "no-clobber",
+        "candidate_id": "no-clobber",
+        "workspace": {"candidate_id": "no-clobber"},
+        "clarification_outcome": "answers_required",
+        "clarification_requests": [
+            {
+                "id": "clarification.unsupported",
+                "kind": "unsupported",
+                "severity": "blocking",
+                "status": "open",
+                "question": "Unsupported question",
+                "target_ref": "unsupported.target",
+                "suggested_actions": ["execute_custom_resolver"],
+            }
+        ],
+    }
+    try:
+        write_json(requests_path, unsupported)
+        write_json(output_path, existing)
+        result = subprocess.run(
+            [
+                sys.executable,
+                str(TOOL_PATH),
+                "template",
+                "--run-dir",
+                str(run_dir_ref),
+                "--stage",
+                "intake",
+                "--requests",
+                str(requests_path),
+                "--output",
+                str(output_path),
+                "--report",
+                str(report_path),
+                "--strict",
+            ],
+            cwd=ROOT,
+            check=False,
+            capture_output=True,
+            text=True,
+        )
+
+        assert result.returncode == 1
+        assert load_json(output_path)["sentinel"] == "preserve-ready-template"
+        report = load_json(report_path)
+        assert report["outputs"]["template_written"] is False
+        assert report["outputs"]["preserved_existing_template"] is True
+    finally:
+        shutil.rmtree(run_dir, ignore_errors=True)
+
+
+def test_verify_no_clarification_requires_matching_workspace(tmp_path: Path) -> None:
+    module = load_module()
+    run_dir_ref = Path(".pytest_cache") / "no_clarification_verify" / tmp_path.name
+    run_dir = ROOT / run_dir_ref
+    template_path = run_dir / "real_idea_answer_template.json"
+    requests = {
+        "artifact_kind": "idea_to_spec_clarification_requests",
+        "contract_ref": "specgraph.idea-to-spec.clarification-requests.v0.1",
+        "workspace_id": "complete-idea",
+        "candidate_id": "complete-idea",
+        "workspace": {"candidate_id": "complete-idea"},
+        "clarification_outcome": "clarification_not_required",
+        "clarification_requests": [],
+        "readiness": {"ready": True, "review_state": "clarification_clear"},
+    }
+    try:
+        template = module.build_template(
+            clarification_requests=requests,
+            requests_path=run_dir / "idea_intake_clarification_requests.json",
+            stage="intake",
+            run_dir=run_dir,
+        )
+        write_json(run_dir / "idea_intake_clarification_requests.json", requests)
+        write_json(template_path, template)
+        success = subprocess.run(
+            [
+                sys.executable,
+                str(TOOL_PATH),
+                "verify-no-clarification",
+                "--run-dir",
+                str(run_dir_ref),
+                "--template",
+                str(template_path),
+                "--workspace-id",
+                "complete-idea",
+            ],
+            cwd=ROOT,
+            check=False,
+            capture_output=True,
+            text=True,
+        )
+        mismatch = subprocess.run(
+            [
+                sys.executable,
+                str(TOOL_PATH),
+                "verify-no-clarification",
+                "--run-dir",
+                str(run_dir_ref),
+                "--template",
+                str(template_path),
+                "--workspace-id",
+                "foreign-idea",
+            ],
+            cwd=ROOT,
+            check=False,
+            capture_output=True,
+            text=True,
+        )
+
+        assert success.returncode == 0
+        assert mismatch.returncode == 1
+        assert "workspace_id" in mismatch.stdout
+
+        requests["clarification_outcome"] = "answers_required"
+        write_json(run_dir / "idea_intake_clarification_requests.json", requests)
+        stale_source = subprocess.run(
+            [
+                sys.executable,
+                str(TOOL_PATH),
+                "verify-no-clarification",
+                "--run-dir",
+                str(run_dir_ref),
+                "--template",
+                str(template_path),
+                "--workspace-id",
+                "complete-idea",
+            ],
+            cwd=ROOT,
+            check=False,
+            capture_output=True,
+            text=True,
+        )
+        assert stale_source.returncode == 1
+        assert "source_digest" in stale_source.stdout
+    finally:
+        shutil.rmtree(run_dir, ignore_errors=True)
 
 
 def test_answer_authoring_outputs_are_real_idea_smoke_managed_outputs() -> None:

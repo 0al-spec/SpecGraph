@@ -1640,13 +1640,12 @@ contracts. Do not add another competing "depth score" or product-quality metric.
 The next producer-side work should instead make the existing idea-to-spec flow
 more reliable and easier for SpecSpace to present:
 
-1. **Fallback-free real-intake clarification templates.** Real intake should
-   emit either a browser-answerable `real_idea_answer_template` or an explicit
-   `clarification_not_required` state. The current SpecSpace product-demo
-   fallback remains a temporary local harness policy, not a producer contract.
-   A strict UI-started demo should be able to pass without deterministic answer
-   fixtures while still proving that the candidate came from the new workspace
-   rather than the Team Decision Log pilot.
+1. **Fallback-free real-intake clarification templates.** Implemented
+   producer-side in proposal `0210`. Real intake now emits a workspace-bound
+   browser-answerable `real_idea_answer_template`, an explicit
+   `clarification_not_required` outcome, or a strict
+   `clarification_blocked` finding. SpecSpace can remove its deterministic
+   product-demo fallback and rely on producer evidence.
 2. **Human-friendly candidate display aliases.** Keep stable machine ids for
    refs, materialization, and promotion paths, but add deterministic display
    aliases or readable labels for long generated candidate node ids. Candidate

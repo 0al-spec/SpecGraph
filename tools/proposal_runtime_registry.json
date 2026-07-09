@@ -11968,5 +11968,78 @@
       }
     ],
     "notes": "SpecGraph now emits review-only structural_depth_delta evidence from depth repair reruns so downstream surfaces can show what changed, what was added, and which shallow dimensions remain without adding metrics, scores, gates, or authority."
+  },
+  {
+    "proposal_id": "0210",
+    "posture": "bounded_runtime_followup",
+    "runtime_surfaces": [
+      "docs/proposals/0210_fallback_free_real_intake_clarification_templates.md",
+      "docs/archive/proposal_sources/0210_fallback_free_real_intake_clarification_templates.md",
+      "tools/user_idea_intake_session.py",
+      "tools/idea_to_spec_clarification_requests.py",
+      "tools/real_idea_answer_authoring.py",
+      "Makefile",
+      "tests/fixtures/user_idea_intake_session/raw_idea_ready.json",
+      "tests/fixtures/idea_intake_clarification/answers_ready.json",
+      "tests/test_user_idea_intake_session.py",
+      "tests/test_idea_to_spec_clarification_requests.py",
+      "tests/test_real_idea_answer_authoring.py",
+      "tests/test_specspace_real_idea_answer_handoff.py",
+      "tests/test_user_idea_intake_interview.py",
+      "docs/product_workspace_graph_versioning_roadmap.md",
+      "Sources/SpecGraph/Documentation.docc/ProductWorkspacePilots.md",
+      "tools/README.md"
+    ],
+    "runtime_markers": [
+      {
+        "path": "tools/idea_to_spec_clarification_requests.py",
+        "pattern": "FALLBACK_FREE_INTAKE_PROPOSAL_ID = \"0210\""
+      },
+      {
+        "path": "tools/real_idea_answer_authoring.py",
+        "pattern": "TEMPLATE_CONTRACT_REF = \"specgraph.idea-to-spec.real-idea-answer-template.v0.2\""
+      },
+      {
+        "path": "tools/user_idea_intake_session.py",
+        "pattern": "\"policies\": \"Which policies should react to events or constrain commands?\""
+      },
+      {
+        "path": "Makefile",
+        "pattern": "real-idea-intake-continue-without-answers:"
+      }
+    ],
+    "validation_markers": [
+      {
+        "path": "tests/test_idea_to_spec_clarification_requests.py",
+        "pattern": "test_clarification_requests_marks_ready_session_not_required"
+      },
+      {
+        "path": "tests/test_real_idea_answer_authoring.py",
+        "pattern": "test_intake_answer_template_blocks_unsupported_mandatory_request"
+      },
+      {
+        "path": "tests/test_real_idea_answer_authoring.py",
+        "pattern": "test_blocked_template_does_not_clobber_existing_ready_output"
+      },
+      {
+        "path": "tests/test_real_idea_answer_authoring.py",
+        "pattern": "test_verify_no_clarification_requires_matching_workspace"
+      }
+    ],
+    "observation_markers": [
+      {
+        "path": "docs/product_workspace_graph_versioning_roadmap.md",
+        "pattern": "Implemented producer-side in proposal `0210`"
+      },
+      {
+        "path": "Sources/SpecGraph/Documentation.docc/ProductWorkspacePilots.md",
+        "pattern": "proposal `0210` makes real-intake clarification fallback-free"
+      },
+      {
+        "path": "tools/README.md",
+        "pattern": "Proposal 0210 makes real-intake clarification templates fallback-free"
+      }
+    ],
+    "notes": "SpecGraph now emits workspace-bound fallback-free real-intake clarification outcomes and browser-answerable templates, including mandatory policy context, without publishing raw ideas or expanding execution authority."
   }
 ]

@@ -732,9 +732,10 @@ authority expansion.
 The next producer-side slices should keep using Idea Maturity and repair
 contracts instead of creating a second depth metric:
 
-1. real intake should emit browser-answerable clarification templates, or an
-   explicit `clarification_not_required` state, so SpecSpace product demos do
-   not need deterministic answer fallback fixtures;
+1. proposal `0210` makes real-intake clarification fallback-free:
+   workspace-bound templates now publish `answers_required`,
+   `clarification_not_required`, or `clarification_blocked`, and mandatory
+   policy context is represented as an ordinary browser-answerable target;
 2. candidate graphs should keep stable machine ids while publishing
    human-friendly display aliases for generated nodes, candidate overview, PR
    artifacts, and topology/readiness panels;

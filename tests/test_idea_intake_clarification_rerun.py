@@ -122,7 +122,7 @@ def build_intake_requests(tmp_path: Path, session: Path) -> Path:
         text=True,
     )
     assert result.returncode == 0, result.stderr
-    assert load_json(requests)["summary"]["blocking_request_count"] == 9
+    assert load_json(requests)["summary"]["blocking_request_count"] == 10
     return requests
 
 
@@ -174,7 +174,7 @@ def test_idea_intake_clarification_rerun_materializes_clarified_session(
     rerun_report = load_json(report)
     assert rerun["artifact_kind"] == "idea_intake_answer_rerun_input"
     assert rerun["readiness"]["ready"] is True
-    assert len(rerun["accepted_answer_targets"]) == 9
+    assert len(rerun["accepted_answer_targets"]) == 10
     assert session_payload["readiness"]["review_state"] == "ready_for_event_storming_intake"
     assert not clarified_source.exists()
     assert rerun_report["summary"]["ready_for_candidate_source"] is True
@@ -358,7 +358,7 @@ def test_real_idea_intake_clarification_requests_preserves_existing_session(
     request_payload = load_json(requests)
     assert after == before
     assert after["workspace"]["candidate_id"] == "team-decision-log"
-    assert request_payload["summary"]["blocking_request_count"] == 9
+    assert request_payload["summary"]["blocking_request_count"] == 10
 
 
 def test_real_idea_intake_active_candidate_target_builds_seed_first(

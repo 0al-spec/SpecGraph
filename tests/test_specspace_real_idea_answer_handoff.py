@@ -216,7 +216,7 @@ def test_specspace_real_idea_answer_import_preview_accepts_state() -> None:
 
     assert preview["artifact_kind"] == "specspace_real_idea_answer_import_preview"
     assert preview["readiness"]["ready"] is True
-    assert preview["summary"]["accepted_answer_count"] == 9
+    assert preview["summary"]["accepted_answer_count"] == 10
     dumped = json.dumps(preview)
     assert "I want a small tool for team decisions" not in dumped
     assert "/Users/" not in dumped
