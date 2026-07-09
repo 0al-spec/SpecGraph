@@ -959,3 +959,10 @@ The full planning contracts remain in repository Markdown:
 
 - `docs/product_workspace_graph_versioning_roadmap.md`
 - `docs/product_workspace_stable_mode_guide.md`
+## Durable workspace binding evidence
+
+Proposal `0211` adds a public-safe `workspace_binding_evidence` descriptor to
+the SpecGraph product workspace initialization receipt. The descriptor pins
+workspace identity, relative layout roots, project-config digest, and
+repository-role hints without exposing absolute local paths or granting
+Platform, Git, spec, or Ontology mutation authority.

@@ -25015,6 +25015,33 @@ def test_initialize_product_workspace_creates_minimal_layout(
     )
     assert artifact["workspace"]["root"] == "."
     assert artifact["workspace"]["local_input_path_persisted"] is False
+    binding = artifact["workspace_binding_evidence"]
+    assert binding["contract_ref"] == ("specgraph.product-workspace.binding-evidence.v0.1")
+    assert binding["proposal_id"] == "0211"
+    assert binding["status"] == "ready"
+    assert binding["identity"] == {
+        "workspace_id": "swiftui-calculator",
+        "display_name": "SwiftUI Calculator",
+        "governance_profile": "product_workspace",
+        "repository_role": "product_spec_workspace",
+    }
+    assert binding["layout"]["runs_root_ref"] == "runs"
+    assert binding["project_config"]["source_ref"] == "specgraph.project.yaml"
+    assert len(binding["project_config"]["source_sha256"]) == 64
+    binding_without_digest = copy.deepcopy(binding)
+    evidence_sha256 = binding_without_digest.pop("evidence_sha256")
+    assert (
+        evidence_sha256
+        == supervisor_module.hashlib.sha256(
+            json.dumps(
+                binding_without_digest,
+                sort_keys=True,
+                separators=(",", ":"),
+            ).encode("utf-8")
+        ).hexdigest()
+    )
+    assert binding["privacy_boundary"]["workspace_relative_refs_only"] is True
+    assert binding["authority_boundary"]["may_create_git_commit"] is False
     assert artifact["root_intent"]["status"] == "captured"
     assert "Build a SwiftUI calculator" not in json.dumps(artifact)
 
@@ -25044,6 +25071,14 @@ def test_initialize_product_workspace_is_idempotent(
     assert second["workspace"]["created_paths"] == []
     assert "specgraph.project.yaml" in second["workspace"]["existing_paths"]
     assert ".specgraph/root_intent.md" in second["workspace"]["existing_paths"]
+    assert (
+        first["workspace_binding_evidence"]["project_config"]["source_sha256"]
+        == second["workspace_binding_evidence"]["project_config"]["source_sha256"]
+    )
+    assert (
+        first["workspace_binding_evidence"]["evidence_sha256"]
+        == second["workspace_binding_evidence"]["evidence_sha256"]
+    )
 
 
 def test_initialize_product_workspace_hashes_existing_root_intent(
@@ -25216,6 +25251,7 @@ def test_initialize_product_workspace_blocks_conflicting_config_without_overwrit
     )
     assert artifact["summary"]["status"] == "blocked"
     assert artifact["next_gap"] == "repair_product_workspace_initialization"
+    assert artifact["workspace_binding_evidence"]["status"] == "blocked"
 
 
 def test_initialize_product_workspace_refuses_core_repo_paths(

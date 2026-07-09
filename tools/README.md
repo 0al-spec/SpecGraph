@@ -2030,3 +2030,9 @@ python3 tools/search_pageindex.py "agent orchestration" --top-k 10 --context
 
 The script expects the PageIndex API to be running on `http://localhost:8765` and uses the
 `~/Development/GitHub/PageIndexInstance/results/chatgpt_dialogs/catalog.json` catalog by default.
+## Durable product workspace binding evidence
+
+Proposal 0211 adds digest-bound `workspace_binding_evidence` to
+`runs/product_workspace_initialization.json`. Platform can use it as
+producer-owned initialization evidence while retaining ownership of artifact
+routing, state namespaces, execution roots, and repository operations.
