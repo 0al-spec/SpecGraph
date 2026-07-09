@@ -12041,5 +12041,54 @@
       }
     ],
     "notes": "SpecGraph now emits workspace-bound fallback-free real-intake clarification outcomes and browser-answerable templates, including mandatory policy context, without publishing raw ideas or expanding execution authority."
+  },
+  {
+    "proposal_id": "0211",
+    "posture": "bounded_runtime_followup",
+    "runtime_surfaces": [
+      "docs/proposals/0211_durable_product_workspace_binding_evidence.md",
+      "docs/archive/proposal_sources/0211_durable_product_workspace_binding_evidence.md",
+      "tools/supervisor.py",
+      "tests/test_supervisor.py",
+      "docs/product_workspace_initialization_viewer_contract.md",
+      "docs/product_workspace_graph_versioning_roadmap.md",
+      "Sources/SpecGraph/Documentation.docc/ProductWorkspacePilots.md",
+      "tools/README.md"
+    ],
+    "runtime_markers": [
+      {
+        "path": "tools/supervisor.py",
+        "pattern": "PRODUCT_WORKSPACE_BINDING_EVIDENCE_PROPOSAL_ID = \"0211\""
+      },
+      {
+        "path": "tools/supervisor.py",
+        "pattern": "\"workspace_binding_evidence\": binding_evidence"
+      }
+    ],
+    "validation_markers": [
+      {
+        "path": "tests/test_supervisor.py",
+        "pattern": "specgraph.product-workspace.binding-evidence.v0.1"
+      },
+      {
+        "path": "tests/test_supervisor.py",
+        "pattern": "workspace_binding_evidence\"][\"status\"] == \"blocked\""
+      }
+    ],
+    "observation_markers": [
+      {
+        "path": "docs/product_workspace_graph_versioning_roadmap.md",
+        "pattern": "Implemented producer-side in proposal `0211`"
+      },
+      {
+        "path": "Sources/SpecGraph/Documentation.docc/ProductWorkspacePilots.md",
+        "pattern": "Proposal `0211` adds a public-safe"
+      },
+      {
+        "path": "tools/README.md",
+        "pattern": "Proposal 0211 adds digest-bound"
+      }
+    ],
+    "notes": "SpecGraph product workspace initialization now emits digest-bound workspace-relative binding evidence for Platform without taking ownership of external routing, state namespaces, execution roots, or Git operations."
   }
 ]

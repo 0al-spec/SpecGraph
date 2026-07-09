@@ -1885,6 +1885,14 @@ That directory has its own `artifact_manifest.json` and `checksums.sha256`.
 SpecSpace production routes should read `/team-decision-log` from this
 workspace-specific artifact base instead of the bootstrap root bundle.
 
+## Durable Product Workspace Binding Evidence
+
+Implemented producer-side in proposal `0211`. Product workspace initialization
+now emits digest-bound, workspace-relative binding evidence. Platform owns the
+external binding across artifact routing, SpecSpace state namespace, execution
+run directory, and repository resolution; SpecGraph owns only initialized
+workspace identity, layout semantics, and project-config evidence.
+
 ## Related Documents
 
 - `docs/product_workspace_stable_mode_guide.md`

@@ -2715,5 +2715,18 @@
     "required_provenance_links": [
       "source_draft_ref"
     ]
+  },
+  {
+    "proposal_id": "0211",
+    "source_artifact_class": "working_draft",
+    "source_refs": [
+      "docs/archive/proposal_sources/0211_durable_product_workspace_binding_evidence.md"
+    ],
+    "motivating_concern": "Platform and SpecSpace need durable product workspace routing and execution bindings, but SpecGraph initialization currently lacks a compact digest-bound descriptor of the workspace identity and relative layout it owns.",
+    "normalized_title": "Durable Product Workspace Binding Evidence",
+    "bounded_scope": "Emit digest-bound workspace-relative initialization evidence for Platform and SpecSpace consumers without selecting deployment URLs or state storage, executing managed operations, mutating canonical specs, writing Ontology packages, accepting terms, creating Git artifacts, or publishing raw intent and local paths.",
+    "required_provenance_links": [
+      "source_draft_ref"
+    ]
   }
 ]

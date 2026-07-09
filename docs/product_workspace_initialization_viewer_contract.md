@@ -79,6 +79,13 @@ python3 tools/supervisor.py \
 }
 ```
 
+Proposal `0211` adds `workspace_binding_evidence` to the same receipt. The
+evidence carries workspace identity, workspace-relative layout refs, the
+`specgraph.project.yaml` digest, repository/worktree identity hints, and a
+stable evidence digest. Platform may pin it into a durable workspace binding;
+SpecSpace should consume only a public-safe projection and must not infer local
+paths from the route.
+
 ## UI Guidance
 
 - Show `summary.status` as the primary status.

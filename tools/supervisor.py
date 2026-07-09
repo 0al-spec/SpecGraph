@@ -10924,6 +10924,10 @@ def write_project_environment(environment: dict[str, Any]) -> Path:
 
 
 PRODUCT_WORKSPACE_INITIALIZATION_ARTIFACT_KIND = "product_workspace_initialization"
+PRODUCT_WORKSPACE_BINDING_EVIDENCE_PROPOSAL_ID = "0211"
+PRODUCT_WORKSPACE_BINDING_EVIDENCE_CONTRACT_REF = (
+    "specgraph.product-workspace.binding-evidence.v0.1"
+)
 PRODUCT_WORKSPACE_INITIALIZATION_SCHEMA_VERSION = 1
 PRODUCT_WORKSPACE_INITIALIZATION_PROPOSAL_ID = "0054"
 PRODUCT_WORKSPACE_REQUIRED_DIRECTORIES = (
@@ -11330,6 +11334,56 @@ def initialize_product_workspace(
         root_intent_content_sha256 = ""
 
     workspace_status = "blocked" if has_errors else ("initialized" if created_paths else "ready")
+    binding_evidence: dict[str, Any] = {
+        "contract_ref": PRODUCT_WORKSPACE_BINDING_EVIDENCE_CONTRACT_REF,
+        "proposal_id": PRODUCT_WORKSPACE_BINDING_EVIDENCE_PROPOSAL_ID,
+        "status": "blocked" if has_errors else "ready",
+        "identity": {
+            "workspace_id": normalized_project_id,
+            "display_name": normalized_display_name,
+            "governance_profile": "product_workspace",
+            "repository_role": "product_spec_workspace",
+        },
+        "layout": {
+            "root_reference": "workspace_relative",
+            "project_config_ref": PROJECT_CONFIG_RELATIVE_PATH,
+            "specs_root_ref": "specs",
+            "proposals_root_ref": "docs/proposals",
+            "runs_root_ref": "runs",
+            "supervisor_state_root_ref": ".specgraph",
+        },
+        "project_config": {
+            "source_ref": PROJECT_CONFIG_RELATIVE_PATH,
+            "source_sha256": hashlib.sha256(config_text.encode("utf-8")).hexdigest(),
+        },
+        "repository": {
+            "repository_role": "product_spec_workspace",
+            "workspace_identity": normalized_project_id,
+            "worktree_identity": f"product-workspace/{normalized_project_id}",
+            "creates_worktree": False,
+        },
+        "privacy_boundary": {
+            "workspace_relative_refs_only": True,
+            "local_input_path_persisted": False,
+            "raw_root_intent_published": False,
+        },
+        "authority_boundary": {
+            "report_only": True,
+            "may_execute_platform": False,
+            "may_mutate_canonical_specs": False,
+            "may_write_ontology_packages": False,
+            "may_accept_ontology_terms": False,
+            "may_create_git_commit": False,
+            "may_open_pull_request": False,
+        },
+    }
+    binding_evidence["evidence_sha256"] = hashlib.sha256(
+        json.dumps(
+            binding_evidence,
+            sort_keys=True,
+            separators=(",", ":"),
+        ).encode("utf-8")
+    ).hexdigest()
     report: dict[str, Any] = {
         "artifact_kind": PRODUCT_WORKSPACE_INITIALIZATION_ARTIFACT_KIND,
         "schema_version": PRODUCT_WORKSPACE_INITIALIZATION_SCHEMA_VERSION,
@@ -11342,6 +11396,7 @@ def initialize_product_workspace(
             "display_name": normalized_display_name,
             "governance_profile": "product_workspace",
         },
+        "workspace_binding_evidence": binding_evidence,
         "workspace": {
             "root": ".",
             "root_reference": "workspace_relative",
