@@ -2280,6 +2280,7 @@ STRUCTURE_DEPTH_INTERPRETATIONS = (
 
 def _candidate_structure_depth_readiness_explainers(
     artifacts: dict[str, dict[str, Any]],
+    paths: dict[str, Path],
     metrics: dict[str, Any],
 ) -> list[dict[str, Any]]:
     if not artifacts.get("candidate_graph") and not artifacts.get("repaired_candidate_graph"):
@@ -2295,8 +2296,11 @@ def _candidate_structure_depth_readiness_explainers(
     repair_effect_refs = []
     if repair_effect:
         repair_effect_refs.append(
-            "runs/idea_to_spec_rerun_materialization.json"
-            "#materialization_preview.delta.structural_depth_delta"
+            _path_evidence_ref(
+                paths,
+                "rerun_materialization",
+                "materialization_preview.delta.structural_depth_delta",
+            )
         )
     has_intake = bool(artifacts.get("intake"))
     explainers: list[dict[str, Any]] = []
@@ -2410,7 +2414,7 @@ def _readiness_explainers(
         *_project_local_ontology_readiness_explainers(artifacts, paths),
         *_finding_readiness_explainers(policy_findings, collection="policy_findings"),
         *_finding_readiness_explainers(invariant_findings, collection="invariant_findings"),
-        *_candidate_structure_depth_readiness_explainers(artifacts, metrics),
+        *_candidate_structure_depth_readiness_explainers(artifacts, paths, metrics),
     ]
     return _dedupe_explainers(explainers)
 

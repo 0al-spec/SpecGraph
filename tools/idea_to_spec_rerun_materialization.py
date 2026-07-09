@@ -358,6 +358,34 @@ def _depth_status(before: dict[str, int], after: dict[str, int]) -> str:
     return "unchanged"
 
 
+def _has_complete_depth_counts(value: dict[str, Any]) -> bool:
+    return all(
+        isinstance(value.get(field), int) and not isinstance(value.get(field), bool)
+        for field in STRUCTURAL_DEPTH_FIELDS
+    )
+
+
+def _not_measured_structural_depth_delta(
+    *,
+    before: dict[str, int] | None = None,
+    after: dict[str, int] | None = None,
+) -> dict[str, Any]:
+    return {
+        "proposal_id": DEPTH_REPAIR_EFFECT_PROPOSAL_ID,
+        "status": "not_measured",
+        "before": before or {},
+        "after": after or {},
+        "delta": {},
+        "added_event_storming_entry_refs": {},
+        "added_workflow_relation_count": 0,
+        "added_workflow_relations": [],
+        "remaining_shallow_dimensions": [],
+        "review_only": True,
+        "canonical_mutations_allowed": False,
+        "materialization_dependency": False,
+    }
+
+
 def _structural_depth_delta(
     *,
     rerun_preview: dict[str, Any],
@@ -366,12 +394,15 @@ def _structural_depth_delta(
 ) -> dict[str, Any]:
     preview_delta = _dict(_dict(rerun_preview.get("rerun_preview")).get("structural_depth_delta"))
     before = _dict(preview_delta.get("before"))
-    if not before:
-        before = _candidate_graph_depth(candidate_graph)
-    after = _dict(preview_delta.get("after"))
+    after = dict(_dict(preview_delta.get("after")))
+    if (
+        not preview_delta
+        or _text(preview_delta.get("status")) == "not_measured"
+        or not _has_complete_depth_counts(before)
+        or not _has_complete_depth_counts(after)
+    ):
+        return _not_measured_structural_depth_delta()
     after.update(_candidate_graph_depth(candidate_graph_preview))
-    if not after:
-        after = _candidate_graph_depth(candidate_graph_preview)
     remaining = [field for field in STRUCTURAL_DEPTH_FIELDS if after.get(field, 0) <= 0]
     return {
         "proposal_id": DEPTH_REPAIR_EFFECT_PROPOSAL_ID,
@@ -470,20 +501,10 @@ def _empty_delta(candidate_graph: dict[str, Any]) -> dict[str, Any]:
         "removed_gap_ids": [],
         "added_workflow_topology_edges": [],
         "added_workflow_topology_edge_count": 0,
-        "structural_depth_delta": {
-            "proposal_id": DEPTH_REPAIR_EFFECT_PROPOSAL_ID,
-            "status": "not_measured",
-            "before": _candidate_graph_depth(candidate_graph),
-            "after": _candidate_graph_depth(candidate_graph),
-            "delta": {},
-            "added_event_storming_entry_refs": {},
-            "added_workflow_relation_count": 0,
-            "added_workflow_relations": [],
-            "remaining_shallow_dimensions": [],
-            "review_only": True,
-            "canonical_mutations_allowed": False,
-            "materialization_dependency": False,
-        },
+        "structural_depth_delta": _not_measured_structural_depth_delta(
+            before=_candidate_graph_depth(candidate_graph),
+            after=_candidate_graph_depth(candidate_graph),
+        ),
         "unresolved_ontology_gap_ids": unresolved_ontology_gap_ids,
         "unresolved_candidate_gap_ids": unresolved_candidate_gap_ids,
         "resolved_ontology_gap_count": 0,

@@ -950,13 +950,33 @@ def _depth_status(before: dict[str, int], after: dict[str, int]) -> str:
     return "unchanged"
 
 
+def _not_measured_structural_depth_delta() -> dict[str, Any]:
+    return {
+        "proposal_id": DEPTH_REPAIR_EFFECT_PROPOSAL_ID,
+        "status": "not_measured",
+        "before": {},
+        "after": {},
+        "delta": {},
+        "added_event_storming_entry_refs": {},
+        "added_workflow_relation_count": 0,
+        "added_workflow_relations": [],
+        "remaining_shallow_dimensions": [],
+        "review_only": True,
+        "canonical_mutations_allowed": False,
+        "materialization_dependency": False,
+    }
+
+
 def _structural_depth_delta(
     *,
     intake: dict[str, Any],
     candidate_graph: dict[str, Any],
     event_storming_preview: dict[str, Any],
     workflow_topology_preview: dict[str, Any],
+    ready: bool,
 ) -> dict[str, Any]:
+    if not ready:
+        return _not_measured_structural_depth_delta()
     before_event_storming = _dict(intake.get("event_storming"))
     after_event_storming = _dict(event_storming_preview.get("event_storming"))
     added_edges = _new_workflow_edges(
@@ -1527,13 +1547,14 @@ def build_idea_to_spec_rerun_preview(
         ontology_gap_preview,
         candidate_gap_preview,
     )
+    ready = not findings
     structural_depth_delta = _structural_depth_delta(
         intake=intake,
         candidate_graph=candidate_graph,
         event_storming_preview=event_storming_preview,
         workflow_topology_preview=workflow_topology_preview,
+        ready=ready,
     )
-    ready = not findings
     return {
         "artifact_kind": "idea_to_spec_rerun_preview",
         "schema_version": SCHEMA_VERSION,

@@ -325,6 +325,7 @@ def test_rerun_preview_blocks_unready_rerun_input() -> None:
 
     assert report["readiness"]["ready"] is False
     assert "rerun_input_not_ready" in finding_ids(report)
+    assert report["rerun_preview"]["structural_depth_delta"]["status"] == "not_measured"
     gap_preview = report["rerun_preview"]["ontology_gap_preview"]
     assert gap_preview["decision_count"] == 0
     assert gap_preview["resolved_ontology_gap_count"] == 0

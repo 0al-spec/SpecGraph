@@ -711,7 +711,7 @@ def test_idea_maturity_metrics_report_interprets_shallow_structure_without_gatin
         if item["kind"] == "candidate_structure_workflow_topology_flat"
     )
     assert (
-        "runs/idea_to_spec_rerun_materialization.json"
+        f"{ref(paths['rerun_materialization'])}"
         "#materialization_preview.delta.structural_depth_delta"
         in workflow_explainer["evidence_refs"]
     )
