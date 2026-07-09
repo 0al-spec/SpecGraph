@@ -1593,6 +1593,27 @@ event-storming entries rather than patching existing command/event relations.
 The requests are `review_required`, not blocking, and accepted typed answers
 feed the existing review-only rerun overlay as event-storming hints.
 
+## Safe Workflow Topology Repair
+
+Status: implemented producer-side in proposal `0208`; SpecSpace can layer typed
+relation controls over the same request/answer/rerun contracts.
+
+Proposal `0208` closes the deferred workflow-topology gap from proposal `0207`.
+When `workflow_edge_count` is zero and the current event-storming intake already
+has linkable entries, SpecGraph can emit one `workflow_topology_gap`
+clarification request targeting `event_storming_hints.workflow_relations`.
+Accepted answers contain typed `relations[]` such as command-event,
+actor-command, event-policy, event-constraint, policy-command, or
+constraint-command links.
+
+The rerun preview validates relation names and source/target kinds against the
+current event-storming preview before patching relation fields. Rerun
+materialization copies only validated `review_only` edges with
+`materialization_dependency: false` into the candidate graph preview, so
+workflow topology remains review evidence and never becomes canonical spec
+mutation, Ontology acceptance, Git authority, or YAML implementation
+dependency.
+
 ## Real Idea Entry Request Import
 
 Status: implemented producer-side in proposal `0202`; downstream UI/Platform

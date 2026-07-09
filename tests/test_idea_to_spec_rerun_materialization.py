@@ -181,6 +181,68 @@ def candidate_graph_artifact() -> dict[str, object]:
     }
 
 
+def candidate_graph_for_workflow_topology() -> dict[str, object]:
+    graph = candidate_graph_artifact()
+    graph["nodes"] = [
+        {
+            "id": "candidate-spec.product-boundary",
+            "kind": "product_boundary",
+            "source_event_refs": [],
+            "gaps": [],
+        },
+        {
+            "id": "candidate-spec.record-pantry-item",
+            "kind": "behavior_requirement",
+            "source_event_refs": ["command.record-pantry-item"],
+            "gaps": [],
+        },
+    ]
+    graph["edges"] = []
+    return graph
+
+
+def rerun_preview_with_workflow_topology() -> dict[str, object]:
+    preview = rerun_preview_artifact()
+    preview["rerun_preview"]["workflow_topology_preview"] = {
+        "workflow_edges": [
+            {
+                "id": "edge.command.record-pantry-item.pantry-item-recorded",
+                "from": "candidate-spec.record-pantry-item",
+                "to": "candidate-spec.product-boundary",
+                "relation": "command_emits_event",
+                "source_event_refs": [
+                    "command.record-pantry-item",
+                    "event.pantry-item-recorded",
+                ],
+                "command_ref": "command.record-pantry-item",
+                "event_ref": "event.pantry-item-recorded",
+                "review_only": True,
+                "materialization_dependency": False,
+            },
+            {
+                "id": "edge.command.record-pantry-item.pantry-item-reviewed",
+                "from": "candidate-spec.record-pantry-item",
+                "to": "candidate-spec.product-boundary",
+                "relation": "command_emits_event",
+                "source_event_refs": [
+                    "command.record-pantry-item",
+                    "event.pantry-item-reviewed",
+                ],
+                "command_ref": "command.record-pantry-item",
+                "event_ref": "event.pantry-item-reviewed",
+                "review_only": True,
+                "materialization_dependency": False,
+            },
+        ],
+        "workflow_edge_count": 2,
+        "review_only": True,
+        "materialization_dependency": False,
+    }
+    preview["rerun_preview"]["ontology_gap_preview"]["resolved_ontology_gaps"] = []
+    preview["rerun_preview"]["ontology_gap_preview"]["unresolved_ontology_gaps"] = []
+    return preview
+
+
 def candidate_graph_with_candidate_gaps() -> dict[str, object]:
     graph = candidate_graph_artifact()
     graph["nodes"] = [
@@ -278,6 +340,32 @@ def test_rerun_materialization_removes_resolved_candidate_gap_in_preview() -> No
     assert delta["candidate_resolution_records"][0]["request_id"] == "clarification.local-storage"
     assert delta["unresolved_candidate_gap_ids"] == ["gap.required-fields.enforcement-mechanism"]
     assert "private prompt trace" not in json.dumps(report)
+
+
+def test_rerun_materialization_merges_review_only_workflow_topology_edges() -> None:
+    module = load_module()
+
+    report = module.build_idea_to_spec_rerun_materialization(
+        rerun_preview=rerun_preview_with_workflow_topology(),
+        candidate_graph=candidate_graph_for_workflow_topology(),
+    )
+
+    assert report["readiness"]["ready"] is True
+    preview = report["materialization_preview"]["candidate_graph_preview"]
+    edges = preview["edges"]
+    assert len(edges) == 2
+    edge = edges[0]
+    assert edge["relation"] == "command_emits_event"
+    assert edge["review_only"] is True
+    assert edge["materialization_dependency"] is False
+    assert preview["summary"]["edge_count"] == 2
+    delta = report["materialization_preview"]["delta"]
+    assert delta["added_workflow_topology_edge_count"] == 2
+    assert {edge["event_ref"] for edge in delta["added_workflow_topology_edges"]} == {
+        "event.pantry-item-recorded",
+        "event.pantry-item-reviewed",
+    }
+    assert report["summary"]["removed_gap_count"] == 0
 
 
 def test_rerun_materialization_preserves_node_scope_for_duplicate_candidate_gap_ids() -> None:

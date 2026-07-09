@@ -407,6 +407,12 @@ Supervisor modes:
   `event_storming_hints.*` questions. Accepted `entries[]` answers are converted
   into review-only event-storming rerun hints by
   `tools/idea_to_spec_answer_rerun_input.py`.
+- Proposal 0208 adds safe workflow-topology repair for flat candidates. When
+  `workflow_edge_count = 0`, clarification requests can target
+  `event_storming_hints.workflow_relations` with typed `relations[]` answers.
+  Rerun preview validates source/target refs and relation kinds before emitting
+  review-only workflow topology edges; materialization copies only
+  `review_only` / non-dependency edges into candidate graph preview.
 - `tools/user_idea_intake_source.py`: deterministic generic user-idea source
   builder introduced by proposal 0158. Use `make user-idea-intake-source
   USER_IDEA_INTAKE_SOURCE=<json>` to normalize product workspace identity,

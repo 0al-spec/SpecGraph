@@ -12,6 +12,7 @@ from typing import Any
 ROOT = Path(__file__).resolve().parents[1]
 PROPOSAL_ID = "0163"
 DEPTH_DRIVEN_PROPOSAL_ID = "0207"
+WORKFLOW_TOPOLOGY_REPAIR_PROPOSAL_ID = "0208"
 SCHEMA_VERSION = 1
 CONTRACT_REF = "specgraph.idea-to-spec.clarification-requests.v0.1"
 USER_IDEA_INTAKE_SESSION_CONTRACT_REF = "specgraph.idea-to-spec.user-idea-intake-session.v0.1"
@@ -165,6 +166,15 @@ EVENT_STORMING_DEPTH_CATEGORIES = {
         "question": "Which product constraints should bound this workflow?",
         "block": "candidate_structure_depth.constraint_count",
     },
+}
+
+WORKFLOW_TOPOLOGY_REPAIR_REQUEST = {
+    "metric": "workflow_edge_count",
+    "question": (
+        "Which typed workflow relations connect the existing actors, commands, "
+        "domain events, policies, and constraints?"
+    ),
+    "block": "candidate_structure_depth.workflow_edge_count",
 }
 
 
@@ -770,6 +780,45 @@ def _requests_from_structure_depth(
                         metric=metric,
                         idea_maturity_target=idea_maturity_target,
                     ),
+                )
+            )
+        workflow_edge_count = _non_negative_int(depth.get("workflow_edge_count"))
+        command_count = _non_negative_int(depth.get("command_count"))
+        relation_context_count = sum(
+            _non_negative_int(depth.get(metric))
+            for metric in (
+                "actor_count",
+                "domain_event_count",
+                "policy_count",
+                "constraint_count",
+            )
+        )
+        if workflow_edge_count == 0 and command_count > 0 and relation_context_count > 0:
+            spec = WORKFLOW_TOPOLOGY_REPAIR_REQUEST
+            requests.append(
+                _request(
+                    request_id="clarification.depth.workflow-topology",
+                    kind="workflow_topology_gap",
+                    severity="review_required",
+                    question=spec["question"],
+                    target_artifact=intake_target,
+                    target_ref="event_storming_hints.workflow_relations",
+                    blocks=[spec["block"]],
+                    suggested_answer_shape="event_storming_relation[]",
+                    suggested_actions=["answer_question", "defer_candidate"],
+                    source_findings=[
+                        {
+                            **item,
+                            "evidence": {
+                                **_dict(item.get("evidence")),
+                                "proposal_id": WORKFLOW_TOPOLOGY_REPAIR_PROPOSAL_ID,
+                            },
+                        }
+                        for item in _depth_source_findings(
+                            metric=spec["metric"],
+                            idea_maturity_target=idea_maturity_target,
+                        )
+                    ],
                 )
             )
     return requests

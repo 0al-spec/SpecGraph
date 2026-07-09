@@ -96,6 +96,88 @@ def candidate_graph_artifact() -> dict[str, object]:
     }
 
 
+def workflow_topology_intake() -> dict[str, object]:
+    intake = intake_artifact()
+    intake["event_storming"] = {
+        "actors": [{"id": "actor.household-member", "name": "Household member"}],
+        "domain_events": [
+            {"id": "event.pantry-item-recorded", "statement": "Pantry item recorded"}
+        ],
+        "commands": [{"id": "command.record-pantry-item", "name": "Record pantry item"}],
+        "policies": [{"id": "policy.expiration-reminder", "name": "Expiration reminder"}],
+        "external_systems": [],
+        "constraints": [],
+        "risks": [],
+        "assumptions": [],
+        "vocabulary_questions": [],
+    }
+    return intake
+
+
+def workflow_topology_candidate_graph() -> dict[str, object]:
+    graph = candidate_graph_artifact()
+    graph["nodes"] = [
+        {
+            "id": "candidate-spec.product-boundary",
+            "kind": "product_boundary",
+            "source_event_refs": [],
+            "gaps": [],
+        },
+        {
+            "id": "candidate-spec.record-pantry-item",
+            "kind": "behavior_requirement",
+            "source_event_refs": ["command.record-pantry-item"],
+            "gaps": [],
+        },
+        {
+            "id": "candidate-spec.expiration-reminder",
+            "kind": "policy_constraint",
+            "source_event_refs": ["policy.expiration-reminder"],
+            "gaps": [],
+        },
+    ]
+    return graph
+
+
+def rerun_input_with_workflow_relations(relations: list[dict[str, object]]) -> dict[str, object]:
+    return {
+        "artifact_kind": "idea_to_spec_answer_rerun_input",
+        "schema_version": 1,
+        "contract_ref": "specgraph.idea-to-spec.answer-rerun-input.v0.1",
+        "canonical_mutations_allowed": False,
+        "tracked_artifacts_written": False,
+        "readiness": {"ready": True, "review_state": "rerun_input_ready"},
+        "rerun_input_overlay": {
+            "intake_overlay": {
+                "active_frame_hints": [],
+                "event_storming_hints": [
+                    {
+                        "request_id": "clarification.depth.workflow-topology",
+                        "request_kind": "workflow_topology_gap",
+                        "answer_kind": "answer_question",
+                        "target_artifact": "runs/idea_event_storming_intake.json",
+                        "target_ref": "event_storming_hints.workflow_relations",
+                        "value": {"workflow_relations": relations},
+                    }
+                ],
+            },
+            "ontology_review_hints": {
+                "term_bindings": [],
+                "aliases": [],
+                "project_local_terms": [],
+                "rejected_terms": [],
+                "deferred_terms": [],
+            },
+            "candidate_review_hints": {
+                "acceptance_criteria": [],
+                "graph_edges": [],
+                "claim_reviews": [],
+                "other": [],
+            },
+        },
+    }
+
+
 def candidate_graph_with_candidate_gaps() -> dict[str, object]:
     graph = candidate_graph_artifact()
     graph["nodes"] = [
@@ -709,6 +791,184 @@ def test_rerun_preview_sanitizes_base_event_storming_entries() -> None:
     actors = report["rerun_preview"]["event_storming_preview"]["event_storming"]["actors"]
     assert actors == [{"id": "actor.owner", "name": "Owner"}]
     assert "private prompt trace" not in json.dumps(report)
+
+
+def test_rerun_preview_applies_typed_workflow_relation_hints() -> None:
+    module = load_module(
+        PREVIEW_TOOL_PATH,
+        "idea_to_spec_rerun_preview_workflow_relations_test",
+    )
+    rerun_input = rerun_input_with_workflow_relations(
+        [
+            {
+                "relation": "actor_triggers_command",
+                "source_ref": "actor.household-member",
+                "target_ref": "command.record-pantry-item",
+            },
+            {
+                "relation": "command_emits_event",
+                "source_ref": "command.record-pantry-item",
+                "target_ref": "event.pantry-item-recorded",
+            },
+            {
+                "relation": "event_informs_policy",
+                "source_ref": "event.pantry-item-recorded",
+                "target_ref": "policy.expiration-reminder",
+            },
+        ]
+    )
+
+    report = module.build_idea_to_spec_rerun_preview(
+        rerun_input=rerun_input,
+        intake=workflow_topology_intake(),
+        candidate_graph=workflow_topology_candidate_graph(),
+    )
+
+    assert report["readiness"]["ready"] is True
+    event_storming = report["rerun_preview"]["event_storming_preview"]["event_storming"]
+    command = event_storming["commands"][0]
+    policy = event_storming["policies"][0]
+    assert command["actor_refs"] == ["actor.household-member"]
+    assert command["produces_event_refs"] == ["event.pantry-item-recorded"]
+    assert policy["trigger_event_refs"] == ["event.pantry-item-recorded"]
+    topology = report["rerun_preview"]["workflow_topology_preview"]
+    assert topology["workflow_edge_count"] == 3
+    assert topology["topology_relation_counts"]["actor_triggers_command"] == 1
+    assert topology["topology_relation_counts"]["command_emits_event"] == 1
+    assert topology["topology_relation_counts"]["event_informs_policy"] == 1
+    assert all(edge["review_only"] is True for edge in topology["workflow_edges"])
+    assert report["summary"]["workflow_relation_hint_count"] == 3
+
+
+def test_rerun_preview_preserves_distinct_workflow_edges_with_same_endpoints() -> None:
+    module = load_module(
+        PREVIEW_TOOL_PATH,
+        "idea_to_spec_rerun_preview_workflow_relation_distinct_edges_test",
+    )
+    intake = workflow_topology_intake()
+    intake["event_storming"]["actors"].append(
+        {"id": "actor.shopping-planner", "name": "Shopping planner"}
+    )
+    rerun_input = rerun_input_with_workflow_relations(
+        [
+            {
+                "relation": "actor_triggers_command",
+                "source_ref": "actor.household-member",
+                "target_ref": "command.record-pantry-item",
+            },
+            {
+                "relation": "actor_triggers_command",
+                "source_ref": "actor.shopping-planner",
+                "target_ref": "command.record-pantry-item",
+            },
+        ]
+    )
+
+    report = module.build_idea_to_spec_rerun_preview(
+        rerun_input=rerun_input,
+        intake=intake,
+        candidate_graph=workflow_topology_candidate_graph(),
+    )
+
+    topology = report["rerun_preview"]["workflow_topology_preview"]
+    assert report["readiness"]["ready"] is True
+    assert topology["workflow_edge_count"] == 2
+    assert topology["topology_relation_counts"]["actor_triggers_command"] == 2
+    assert {tuple(edge["source_event_refs"]) for edge in topology["workflow_edges"]} == {
+        ("actor.household-member", "command.record-pantry-item"),
+        ("actor.shopping-planner", "command.record-pantry-item"),
+    }
+
+
+def test_rerun_preview_blocks_workflow_topology_when_boundary_node_missing() -> None:
+    module = load_module(
+        PREVIEW_TOOL_PATH,
+        "idea_to_spec_rerun_preview_workflow_relation_boundary_test",
+    )
+    candidate_graph = workflow_topology_candidate_graph()
+    candidate_graph["nodes"] = [
+        node for node in candidate_graph["nodes"] if node["id"] != "candidate-spec.product-boundary"
+    ]
+    rerun_input = rerun_input_with_workflow_relations(
+        [
+            {
+                "relation": "actor_triggers_command",
+                "source_ref": "actor.household-member",
+                "target_ref": "command.record-pantry-item",
+            }
+        ]
+    )
+
+    report = module.build_idea_to_spec_rerun_preview(
+        rerun_input=rerun_input,
+        intake=workflow_topology_intake(),
+        candidate_graph=candidate_graph,
+    )
+
+    assert report["readiness"]["ready"] is False
+    assert "workflow_topology_boundary_missing" in finding_ids(report)
+    topology = report["rerun_preview"]["workflow_topology_preview"]
+    assert topology["workflow_edge_count"] == 0
+
+
+def test_rerun_preview_reports_unmapped_workflow_relation_endpoint() -> None:
+    module = load_module(
+        PREVIEW_TOOL_PATH,
+        "idea_to_spec_rerun_preview_workflow_relation_unmapped_test",
+    )
+    candidate_graph = workflow_topology_candidate_graph()
+    candidate_graph["nodes"] = [
+        node
+        for node in candidate_graph["nodes"]
+        if node["id"] != "candidate-spec.record-pantry-item"
+    ]
+    rerun_input = rerun_input_with_workflow_relations(
+        [
+            {
+                "relation": "command_emits_event",
+                "source_ref": "command.record-pantry-item",
+                "target_ref": "event.pantry-item-recorded",
+            }
+        ]
+    )
+
+    report = module.build_idea_to_spec_rerun_preview(
+        rerun_input=rerun_input,
+        intake=workflow_topology_intake(),
+        candidate_graph=candidate_graph,
+    )
+
+    assert report["readiness"]["ready"] is False
+    assert "workflow_topology_endpoint_unmapped" in finding_ids(report)
+    topology = report["rerun_preview"]["workflow_topology_preview"]
+    assert topology["workflow_edge_count"] == 0
+
+
+def test_rerun_preview_blocks_wrong_kind_workflow_relation_hint() -> None:
+    module = load_module(
+        PREVIEW_TOOL_PATH,
+        "idea_to_spec_rerun_preview_workflow_relation_kind_test",
+    )
+    rerun_input = rerun_input_with_workflow_relations(
+        [
+            {
+                "relation": "command_emits_event",
+                "source_ref": "actor.household-member",
+                "target_ref": "event.pantry-item-recorded",
+            }
+        ]
+    )
+
+    report = module.build_idea_to_spec_rerun_preview(
+        rerun_input=rerun_input,
+        intake=workflow_topology_intake(),
+        candidate_graph=workflow_topology_candidate_graph(),
+    )
+
+    assert report["readiness"]["ready"] is False
+    assert "workflow_relation_hint_kind_mismatch" in finding_ids(report)
+    topology = report["rerun_preview"]["workflow_topology_preview"]
+    assert topology["workflow_edge_count"] == 0
 
 
 def test_rerun_preview_cli_writes_output(tmp_path: Path) -> None:

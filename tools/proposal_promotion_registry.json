@@ -2676,5 +2676,18 @@
     "required_provenance_links": [
       "source_draft_ref"
     ]
+  },
+  {
+    "proposal_id": "0208",
+    "source_artifact_class": "working_draft",
+    "source_refs": [
+      "docs/archive/proposal_sources/0208_safe_workflow_topology_repair.md"
+    ],
+    "motivating_concern": "Depth-driven clarification can collect missing event-storming entries, but flat workflow topology still needs typed relation repair that links existing entries without fuzzy inference or implementation dependency authority.",
+    "normalized_title": "Safe Workflow Topology Repair",
+    "bounded_scope": "Emit review-required workflow_topology_gap clarification requests from flat candidate_structure_depth workflow edges, preserve accepted typed relations answers in rerun input, validate relation names and source/target kinds in rerun preview, and materialize only review-only non-dependency workflow edges into candidate graph preview, without changing Metrics schemas, adding scores, changing gates, approving candidates, mutating source intake or canonical specs, writing Ontology packages or lockfiles, accepting ontology terms, creating Git branches or commits, opening pull requests, publishing read models, or turning workflow topology into YAML dependencies.",
+    "required_provenance_links": [
+      "source_draft_ref"
+    ]
   }
 ]

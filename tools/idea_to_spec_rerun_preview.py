@@ -39,6 +39,52 @@ EVENT_STORMING_CATEGORIES = (
     "assumptions",
     "vocabulary_questions",
 )
+EVENT_STORMING_RELATION_TARGET = "event_storming_hints.workflow_relations"
+WORKFLOW_RELATION_SPECS = {
+    "actor_triggers_command": {
+        "source_category": "actors",
+        "target_category": "commands",
+        "patch_category": "commands",
+        "patch_ref": "target_ref",
+        "field": "actor_refs",
+    },
+    "command_emits_event": {
+        "source_category": "commands",
+        "target_category": "domain_events",
+        "patch_category": "commands",
+        "patch_ref": "source_ref",
+        "field": "produces_event_refs",
+    },
+    "event_informs_policy": {
+        "source_category": "domain_events",
+        "target_category": "policies",
+        "patch_category": "policies",
+        "patch_ref": "target_ref",
+        "field": "trigger_event_refs",
+    },
+    "event_informs_constraint": {
+        "source_category": "domain_events",
+        "target_category": "constraints",
+        "patch_category": "constraints",
+        "patch_ref": "target_ref",
+        "field": "trigger_event_refs",
+    },
+    "constraint_applies_to_command": {
+        "source_category": "constraints",
+        "target_category": "commands",
+        "patch_category": "constraints",
+        "patch_ref": "source_ref",
+        "field": "command_refs",
+    },
+    "policy_applies_to_command": {
+        "source_category": "policies",
+        "target_category": "commands",
+        "patch_category": "policies",
+        "patch_ref": "source_ref",
+        "field": "command_refs",
+    },
+}
+WORKFLOW_RELATION_NAMES = set(WORKFLOW_RELATION_SPECS)
 RAW_TRACE_FIELDS = {
     "operator_note",
     "operator_notes",
@@ -285,6 +331,151 @@ def _merge_unique(existing: list[Any], additions: list[Any]) -> list[Any]:
     return merged
 
 
+def _append_text_unique(entry: dict[str, Any], field: str, ref: str) -> bool:
+    refs = _text_list(entry.get(field))
+    if ref in refs:
+        entry[field] = refs
+        return False
+    refs.append(ref)
+    entry[field] = refs
+    return True
+
+
+def _event_storming_index(
+    event_storming: dict[str, list[dict[str, Any]]],
+) -> dict[str, dict[str, Any]]:
+    index: dict[str, dict[str, Any]] = {}
+    for category in EVENT_STORMING_CATEGORIES:
+        for entry in _list(event_storming.get(category)):
+            record = _dict(entry)
+            entry_id = _text(record.get("id"))
+            if entry_id:
+                index[entry_id] = {"category": category, "entry": record}
+    return index
+
+
+def _relation_hint_record(
+    relation: str,
+    source_ref: str,
+    target_ref: str,
+    hint: dict[str, Any],
+) -> dict[str, Any]:
+    return {
+        "relation": relation,
+        "source_ref": source_ref,
+        "target_ref": target_ref,
+        "request_id": _text(hint.get("request_id")),
+        "target_ref_context": _text(hint.get("target_ref")),
+        "review_only": True,
+        "materialization_dependency": False,
+    }
+
+
+def _apply_workflow_relation_hints(
+    *,
+    preview: dict[str, list[dict[str, Any]]],
+    overlay: dict[str, Any],
+) -> tuple[list[dict[str, Any]], list[dict[str, Any]]]:
+    applied: list[dict[str, Any]] = []
+    findings: list[dict[str, Any]] = []
+    seen: set[tuple[str, str, str]] = set()
+    for raw_hint in _list(_dict(overlay.get("intake_overlay")).get("event_storming_hints")):
+        hint = _dict(raw_hint)
+        value = _dict(hint.get("value"))
+        relations = _list(value.get("workflow_relations"))
+        if not relations:
+            continue
+        if _text(hint.get("target_ref")) != EVENT_STORMING_RELATION_TARGET:
+            findings.append(
+                _finding(
+                    finding_id="workflow_relation_hint_target_mismatch",
+                    severity="review_required",
+                    message=(
+                        "Workflow relation hints must target "
+                        "event_storming_hints.workflow_relations."
+                    ),
+                    evidence={
+                        "request_id": _text(hint.get("request_id")),
+                        "target_ref": _text(hint.get("target_ref")),
+                    },
+                )
+            )
+            continue
+        index = _event_storming_index(preview)
+        for index_in_hint, raw_relation in enumerate(relations):
+            relation_item = _dict(raw_relation)
+            relation = _text(relation_item.get("relation"))
+            source_ref = _text(relation_item.get("source_ref"))
+            target_ref = _text(relation_item.get("target_ref"))
+            evidence = {
+                "request_id": _text(hint.get("request_id")),
+                "relation_index": index_in_hint,
+                "relation": relation,
+                "source_ref": source_ref,
+                "target_ref": target_ref,
+            }
+            spec = WORKFLOW_RELATION_SPECS.get(relation)
+            if not spec or not source_ref or not target_ref:
+                findings.append(
+                    _finding(
+                        finding_id="workflow_relation_hint_invalid",
+                        severity="review_required",
+                        message=(
+                            "Workflow relation hint requires an allowed relation, "
+                            "source_ref, and target_ref."
+                        ),
+                        evidence=evidence,
+                    )
+                )
+                continue
+            source = index.get(source_ref)
+            target = index.get(target_ref)
+            if source is None or target is None:
+                findings.append(
+                    _finding(
+                        finding_id="workflow_relation_hint_ref_missing",
+                        severity="review_required",
+                        message=(
+                            "Workflow relation hint references an unknown event-storming entry."
+                        ),
+                        evidence=evidence,
+                    )
+                )
+                continue
+            if (
+                source["category"] != spec["source_category"]
+                or target["category"] != spec["target_category"]
+            ):
+                findings.append(
+                    _finding(
+                        finding_id="workflow_relation_hint_kind_mismatch",
+                        severity="review_required",
+                        message=(
+                            "Workflow relation hint source_ref/target_ref kinds "
+                            "do not match the relation."
+                        ),
+                        evidence={
+                            **evidence,
+                            "expected_source_category": spec["source_category"],
+                            "actual_source_category": source["category"],
+                            "expected_target_category": spec["target_category"],
+                            "actual_target_category": target["category"],
+                        },
+                    )
+                )
+                continue
+            relation_key = (relation, source_ref, target_ref)
+            if relation_key in seen:
+                continue
+            patch_ref = source_ref if spec["patch_ref"] == "source_ref" else target_ref
+            patch_entry = index[patch_ref]["entry"]
+            append_ref = target_ref if spec["patch_ref"] == "source_ref" else source_ref
+            _append_text_unique(patch_entry, spec["field"], append_ref)
+            seen.add(relation_key)
+            applied.append(_relation_hint_record(relation, source_ref, target_ref, hint))
+    return applied, findings
+
+
 def _merge_active_frame(
     *,
     intake: dict[str, Any],
@@ -346,10 +537,17 @@ def _merge_event_storming(
                     "categories": applied_categories,
                 }
             )
+    applied_relations, relation_findings = _apply_workflow_relation_hints(
+        preview=preview,
+        overlay=overlay,
+    )
     return {
         "event_storming": preview,
         "applied_hint_count": len(applied_hints),
         "applied_hints": applied_hints,
+        "applied_workflow_relation_count": len(applied_relations),
+        "applied_workflow_relations": applied_relations,
+        "findings": relation_findings,
     }
 
 
@@ -372,6 +570,293 @@ def _gap_items(candidate_graph: dict[str, Any]) -> list[dict[str, Any]]:
                 }
             )
     return items
+
+
+def _slug(value: str, fallback: str = "ref") -> str:
+    slug = re.sub(r"[^a-z0-9]+", "-", value.casefold()).strip("-")
+    return slug or fallback
+
+
+def _nodes_by_source_ref(candidate_graph: dict[str, Any]) -> dict[str, list[dict[str, Any]]]:
+    by_ref: dict[str, list[dict[str, Any]]] = {}
+    for raw_node in _list(candidate_graph.get("nodes")):
+        node = _dict(raw_node)
+        for ref in _text_list(node.get("source_event_refs")):
+            by_ref.setdefault(ref, []).append(node)
+    return by_ref
+
+
+def _first_node_id_for_ref(
+    nodes_by_ref: dict[str, list[dict[str, Any]]],
+    source_ref: str,
+    *,
+    allowed_kinds: set[str],
+) -> str:
+    for node in nodes_by_ref.get(source_ref, []):
+        node_id = _text(node.get("id"))
+        node_kind = _text(node.get("kind"))
+        if node_id and (not allowed_kinds or node_kind in allowed_kinds):
+            return node_id
+    return ""
+
+
+def _command_event_index(
+    event_storming: dict[str, list[dict[str, Any]]],
+) -> dict[str, list[str]]:
+    by_event: dict[str, list[str]] = {}
+    for raw_command in _list(event_storming.get("commands")):
+        command = _dict(raw_command)
+        command_id = _text(command.get("id"))
+        if not command_id:
+            continue
+        for event_ref in _text_list(command.get("produces_event_refs")):
+            if command_id not in by_event.setdefault(event_ref, []):
+                by_event[event_ref].append(command_id)
+    return by_event
+
+
+def _has_boundary_workflow_inputs(event_storming: dict[str, list[dict[str, Any]]]) -> bool:
+    for raw_command in _list(event_storming.get("commands")):
+        command = _dict(raw_command)
+        if _text_list(command.get("actor_refs")) or _text_list(command.get("produces_event_refs")):
+            return True
+    return False
+
+
+def _append_workflow_edge(
+    edges: list[dict[str, Any]],
+    seen: set[tuple[str, str, str, tuple[str, ...]]],
+    *,
+    edge_id: str,
+    from_node: str,
+    to_node: str,
+    relation: str,
+    source_event_refs: list[str],
+    extra: dict[str, Any],
+) -> None:
+    if not from_node or not to_node:
+        return
+    key = (from_node, to_node, relation, tuple(source_event_refs))
+    if key in seen:
+        return
+    seen.add(key)
+    edges.append(
+        {
+            "id": edge_id,
+            "from": from_node,
+            "to": to_node,
+            "relation": relation,
+            "source_event_refs": source_event_refs,
+            "derivation": {
+                "kind": "event_storming_workflow_relation_hint",
+                "source": "idea_to_spec_rerun_preview",
+            },
+            "review_only": True,
+            "materialization_dependency": False,
+            **extra,
+        }
+    )
+
+
+def _workflow_topology_preview(
+    *,
+    candidate_graph: dict[str, Any],
+    event_storming_preview: dict[str, Any],
+) -> dict[str, Any]:
+    event_storming = {
+        category: _list(_dict(event_storming_preview.get("event_storming")).get(category))
+        for category in EVENT_STORMING_CATEGORIES
+    }
+    boundary_id = "candidate-spec.product-boundary"
+    node_ids = {_text(_dict(node).get("id")) for node in _list(candidate_graph.get("nodes"))}
+    boundary_available = boundary_id in node_ids
+    nodes_by_ref = _nodes_by_source_ref(candidate_graph)
+    command_events = _command_event_index(event_storming)
+    edges: list[dict[str, Any]] = []
+    findings: list[dict[str, Any]] = []
+    seen: set[tuple[str, str, str, tuple[str, ...]]] = set()
+    if not boundary_available and _has_boundary_workflow_inputs(event_storming):
+        findings.append(
+            _finding(
+                finding_id="workflow_topology_boundary_missing",
+                severity="review_required",
+                message=(
+                    "Workflow topology preview requires the product boundary candidate node "
+                    "before boundary-based workflow edges can be emitted."
+                ),
+                evidence={"boundary_id": boundary_id},
+            )
+        )
+    for raw_command in _list(event_storming.get("commands")):
+        command = _dict(raw_command)
+        command_ref = _text(command.get("id"))
+        command_node = _first_node_id_for_ref(
+            nodes_by_ref,
+            command_ref,
+            allowed_kinds={"behavior_requirement"},
+        )
+        if not command_ref:
+            continue
+        if not command_node:
+            findings.append(
+                _finding(
+                    finding_id="workflow_topology_endpoint_unmapped",
+                    severity="review_required",
+                    message="Workflow relation endpoint does not map to a candidate graph node.",
+                    evidence={
+                        "source_ref": command_ref,
+                        "expected_kind": "behavior_requirement",
+                    },
+                )
+            )
+            continue
+        command_slug = command_node.removeprefix("candidate-spec.")
+        for actor_ref in _text_list(command.get("actor_refs")):
+            if not boundary_available:
+                continue
+            _append_workflow_edge(
+                edges,
+                seen,
+                edge_id=f"edge.actor.{_slug(actor_ref, 'actor')}.{command_slug}",
+                from_node=boundary_id,
+                to_node=command_node,
+                relation="actor_triggers_command",
+                source_event_refs=[actor_ref, command_ref],
+                extra={"actor_ref": actor_ref, "command_ref": command_ref},
+            )
+        for event_ref in _text_list(command.get("produces_event_refs")):
+            if not boundary_available:
+                continue
+            _append_workflow_edge(
+                edges,
+                seen,
+                edge_id=f"edge.command.{command_slug}.{_slug(event_ref, 'event')}",
+                from_node=command_node,
+                to_node=boundary_id,
+                relation="command_emits_event",
+                source_event_refs=[command_ref, event_ref],
+                extra={"command_ref": command_ref, "event_ref": event_ref},
+            )
+    for kind, category in (("constraint", "constraints"), ("policy", "policies")):
+        for raw_entry in _list(event_storming.get(category)):
+            entry = _dict(raw_entry)
+            entry_ref = _text(entry.get("id"))
+            entry_node = _first_node_id_for_ref(
+                nodes_by_ref,
+                entry_ref,
+                allowed_kinds={f"{kind}_constraint"},
+            )
+            if not entry_ref:
+                continue
+            if not entry_node:
+                findings.append(
+                    _finding(
+                        finding_id="workflow_topology_endpoint_unmapped",
+                        severity="review_required",
+                        message=(
+                            "Workflow relation endpoint does not map to a candidate graph node."
+                        ),
+                        evidence={
+                            "source_ref": entry_ref,
+                            "expected_kind": f"{kind}_constraint",
+                        },
+                    )
+                )
+                continue
+            entry_slug = entry_node.removeprefix("candidate-spec.")
+            relation = (
+                "policy_applies_to_command" if kind == "policy" else "constraint_applies_to_command"
+            )
+            for command_ref in _text_list(entry.get("command_refs")):
+                command_node = _first_node_id_for_ref(
+                    nodes_by_ref,
+                    command_ref,
+                    allowed_kinds={"behavior_requirement"},
+                )
+                if not command_node:
+                    findings.append(
+                        _finding(
+                            finding_id="workflow_topology_endpoint_unmapped",
+                            severity="review_required",
+                            message=(
+                                "Workflow relation endpoint does not map to a candidate graph node."
+                            ),
+                            evidence={
+                                "source_ref": command_ref,
+                                "expected_kind": "behavior_requirement",
+                                f"{kind}_ref": entry_ref,
+                            },
+                        )
+                    )
+                    continue
+                command_slug = command_node.removeprefix("candidate-spec.")
+                _append_workflow_edge(
+                    edges,
+                    seen,
+                    edge_id=f"edge.{kind}.{entry_slug}.{command_slug}",
+                    from_node=entry_node,
+                    to_node=command_node,
+                    relation=relation,
+                    source_event_refs=[entry_ref, command_ref],
+                    extra={f"{kind}_ref": entry_ref, "command_ref": command_ref},
+                )
+            for event_ref in _text_list(entry.get("trigger_event_refs")):
+                for command_ref in command_events.get(event_ref, []):
+                    command_node = _first_node_id_for_ref(
+                        nodes_by_ref,
+                        command_ref,
+                        allowed_kinds={"behavior_requirement"},
+                    )
+                    if not command_node:
+                        findings.append(
+                            _finding(
+                                finding_id="workflow_topology_endpoint_unmapped",
+                                severity="review_required",
+                                message=(
+                                    "Workflow relation endpoint does not map to a candidate "
+                                    "graph node."
+                                ),
+                                evidence={
+                                    "source_ref": command_ref,
+                                    "expected_kind": "behavior_requirement",
+                                    "event_ref": event_ref,
+                                    f"{kind}_ref": entry_ref,
+                                },
+                            )
+                        )
+                        continue
+                    command_slug = command_node.removeprefix("candidate-spec.")
+                    _append_workflow_edge(
+                        edges,
+                        seen,
+                        edge_id=(
+                            f"edge.event.{_slug(event_ref, 'event')}.{command_slug}.{entry_slug}"
+                        ),
+                        from_node=command_node,
+                        to_node=entry_node,
+                        relation=(
+                            "event_informs_policy"
+                            if kind == "policy"
+                            else "event_informs_constraint"
+                        ),
+                        source_event_refs=[command_ref, event_ref, entry_ref],
+                        extra={
+                            "command_ref": command_ref,
+                            "event_ref": event_ref,
+                            f"{kind}_ref": entry_ref,
+                        },
+                    )
+    relation_counts = {relation: 0 for relation in WORKFLOW_RELATION_NAMES}
+    for edge in edges:
+        relation_counts[edge["relation"]] = relation_counts.get(edge["relation"], 0) + 1
+    return {
+        "workflow_edges": edges,
+        "workflow_edge_count": len(edges),
+        "topology_relation_counts": relation_counts,
+        "review_only": True,
+        "materialization_dependency": False,
+        "findings": findings,
+    }
 
 
 def _decision_records(
@@ -882,6 +1367,12 @@ def build_idea_to_spec_rerun_preview(
     overlay = _dict(rerun_input.get("rerun_input_overlay")) if not findings else {}
     active_frame_preview = _merge_active_frame(intake=intake, overlay=overlay)
     event_storming_preview = _merge_event_storming(intake=intake, overlay=overlay)
+    findings.extend(_list(event_storming_preview.get("findings")))
+    workflow_topology_preview = _workflow_topology_preview(
+        candidate_graph=candidate_graph,
+        event_storming_preview=event_storming_preview,
+    )
+    findings.extend(_list(workflow_topology_preview.get("findings")))
     ontology_gap_preview = _ontology_gap_preview(
         candidate_graph=candidate_graph,
         overlay=overlay,
@@ -936,6 +1427,7 @@ def build_idea_to_spec_rerun_preview(
         "rerun_preview": {
             "active_frame_preview": active_frame_preview,
             "event_storming_preview": event_storming_preview,
+            "workflow_topology_preview": workflow_topology_preview,
             "ontology_gap_preview": ontology_gap_preview,
             "candidate_gap_preview": candidate_gap_preview,
             "candidate_review_preview": candidate_review_preview,
@@ -959,6 +1451,10 @@ def build_idea_to_spec_rerun_preview(
             "status": "rerun_preview_ready" if ready else "rerun_preview_review_required",
             "active_frame_hint_count": active_frame_preview["applied_hint_count"],
             "event_storming_hint_count": event_storming_preview["applied_hint_count"],
+            "workflow_relation_hint_count": event_storming_preview[
+                "applied_workflow_relation_count"
+            ],
+            "workflow_edge_preview_count": workflow_topology_preview["workflow_edge_count"],
             "ontology_decision_count": ontology_gap_preview["decision_count"],
             "resolved_ontology_gap_count": ontology_gap_preview["resolved_ontology_gap_count"],
             "unresolved_ontology_gap_count": ontology_gap_preview["unresolved_ontology_gap_count"],

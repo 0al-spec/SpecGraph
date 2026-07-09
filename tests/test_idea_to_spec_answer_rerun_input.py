@@ -320,6 +320,52 @@ def test_answer_rerun_input_accepts_array_valued_event_storming_answer() -> None
     assert report["summary"]["intake_overlay_count"] == 1
 
 
+def test_answer_rerun_input_preserves_workflow_relation_hints() -> None:
+    module = load_module(
+        RERUN_TOOL_PATH,
+        "idea_to_spec_answer_rerun_input_workflow_relations_test",
+    )
+    answer_report = ready_answer_report_with_answer(
+        answer_kind="answer_question",
+        value={
+            "relations": [
+                {
+                    "relation": "command_emits_event",
+                    "source_ref": "command.record-pantry-item",
+                    "target_ref": "event.pantry-item-recorded",
+                }
+            ]
+        },
+        request_kind="workflow_topology_gap",
+        target_ref="event_storming_hints.workflow_relations",
+    )
+
+    report = module.build_idea_to_spec_answer_rerun_input(
+        answers_report=answer_report,
+    )
+
+    hints = report["rerun_input_overlay"]["intake_overlay"]["event_storming_hints"]
+    assert hints == [
+        {
+            "answer_kind": "answer_question",
+            "request_id": "clarification.repair.repair-review-unresolved-gaps",
+            "request_kind": "workflow_topology_gap",
+            "target_artifact": "runs/candidate_spec_graph.json",
+            "target_ref": "event_storming_hints.workflow_relations",
+            "value": {
+                "workflow_relations": [
+                    {
+                        "relation": "command_emits_event",
+                        "source_ref": "command.record-pantry-item",
+                        "target_ref": "event.pantry-item-recorded",
+                    }
+                ]
+            },
+        }
+    ]
+    assert report["summary"]["intake_overlay_count"] == 1
+
+
 def test_answer_rerun_input_routes_non_ontology_reject_to_candidate_hints() -> None:
     module = load_module(
         RERUN_TOOL_PATH,

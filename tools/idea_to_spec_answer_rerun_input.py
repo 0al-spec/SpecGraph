@@ -26,6 +26,15 @@ EVENT_STORMING_CATEGORIES = {
     "policies",
     "constraints",
 }
+EVENT_STORMING_RELATION_TARGET = "event_storming_hints.workflow_relations"
+WORKFLOW_RELATIONS = {
+    "actor_triggers_command",
+    "command_emits_event",
+    "event_informs_policy",
+    "event_informs_constraint",
+    "constraint_applies_to_command",
+    "policy_applies_to_command",
+}
 ACTIVE_FRAME_FIELDS = {
     "project",
     "subsystem",
@@ -593,6 +602,9 @@ def _append_event_storming(
         entries = _list(value)
         if not entries:
             entries = _list(value_dict.get("entries"))
+        relations = _list(value_dict.get("relations"))
+        if target_ref == EVENT_STORMING_RELATION_TARGET and relations:
+            event_storming = {"workflow_relations": relations}
         if (
             target_ref.startswith("event_storming_hints.")
             and category in EVENT_STORMING_CATEGORIES
