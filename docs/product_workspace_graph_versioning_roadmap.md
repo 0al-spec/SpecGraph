@@ -1631,6 +1631,35 @@ The delta is not a Metrics schema extension, score, gate, approval signal, or
 promotion condition. It is review-only evidence that helps product surfaces
 explain what depth repair changed and what still needs clarification.
 
+## Near-Term Producer Backlog After Structural Depth
+
+Status: planned.
+
+The structural-depth line is now part of the existing Idea Maturity and repair
+contracts. Do not add another competing "depth score" or product-quality metric.
+The next producer-side work should instead make the existing idea-to-spec flow
+more reliable and easier for SpecSpace to present:
+
+1. **Fallback-free real-intake clarification templates.** Real intake should
+   emit either a browser-answerable `real_idea_answer_template` or an explicit
+   `clarification_not_required` state. The current SpecSpace product-demo
+   fallback remains a temporary local harness policy, not a producer contract.
+   A strict UI-started demo should be able to pass without deterministic answer
+   fixtures while still proving that the candidate came from the new workspace
+   rather than the Team Decision Log pilot.
+2. **Human-friendly candidate display aliases.** Keep stable machine ids for
+   refs, materialization, and promotion paths, but add deterministic display
+   aliases or readable labels for long generated candidate node ids. Candidate
+   overview, PR artifacts, and SpecSpace topology/readiness panels should show
+   the alias while preserving the canonical id in evidence refs.
+3. **Custom-run approval/promotion handoff reconciliation.** The local
+   managed-operation chain can already drive arbitrary workspace routes through
+   approval and promotion dry-run paths. Reconcile that with the older
+   cash-flow smoke follow-up: if the existing Platform wrappers cover custom
+   run directories, replace the follow-up with a documented verification target;
+   otherwise add a small producer-side handoff artifact that prevents operators
+   from copying repaired custom-run artifacts into canonical `runs/*.json`.
+
 ## Real Idea Entry Request Import
 
 Status: implemented producer-side in proposal `0202`; downstream UI/Platform
@@ -1781,16 +1810,17 @@ The same run exposed the next product-flow friction points:
    runs can now call `make real-idea-smoke-depth-baseline` to fail shallow demos
    that lack event-storming depth, workflow topology, candidate overview, or
    Idea Maturity before SpecSpace presents them as a product story.
-11. **Human-friendly candidate ids.** Long constraint statements currently
+11. **Human-friendly candidate ids.** Planned. Long constraint statements currently
    produce truncated node ids. Keep stable machine ids, but add shorter
    readable slugs or display aliases for UI, PR artifacts, and candidate
    overview documents.
-12. **Custom-run Platform promotion dry-run.** The cash-flow smoke reached
-   `ready_for_platform_promotion_request`, but did not yet materialize an
-   approval decision, promotion request, or Git Service dry-run. Add a reusable
-   custom run-dir handoff so any repaired real-idea smoke can continue into the
-   existing Platform approval/promotion dry-run boundary without copying
-   artifacts into canonical `runs/*.json`.
+12. **Custom-run Platform promotion dry-run.** Needs reconciliation. Later
+   SpecSpace/Platform managed-operation smokes proved arbitrary-route
+   approval/promotion dry-runs, but this cash-flow-specific follow-up should be
+   closed only after the run-dir binding is verified against a repaired
+   real-idea smoke and documented as either an existing Platform capability or a
+   small new producer handoff. Avoid copying custom-run artifacts into canonical
+   `runs/*.json`.
 
 ## Team Decision Log Happy-Path Repair Pack
 

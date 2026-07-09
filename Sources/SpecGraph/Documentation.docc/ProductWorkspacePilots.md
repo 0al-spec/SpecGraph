@@ -360,9 +360,10 @@ The follow-up backlog from that smoke is:
    candidates as a live product story; done in proposal `0204` with
    `make real-idea-smoke-depth-baseline` and `product_demo_depth_report.json`;
 11. add human-friendly display aliases for long generated candidate node ids;
-12. allow custom run-dir repaired candidates to continue into Platform
-   approval/promotion dry-run without copying artifacts into canonical
-   `runs/*.json`.
+12. reconcile custom run-dir repaired candidates with the existing Platform
+   arbitrary-route approval/promotion dry-run path, then either document that
+   path as sufficient or add a small producer handoff that avoids copying
+   artifacts into canonical `runs/*.json`.
 
 Proposal `0201` adds the public-safe candidate overview producer:
 
@@ -728,9 +729,23 @@ dimensions, and whether the repair effect was `improved`, `resolved`,
 evidence for downstream product surfaces, not a Metrics field, gate, score, or
 authority expansion.
 
-The next slices are Platform awareness and a `local-subscription-control` demo
-pass. Platform may use the report as an explanatory preflight signal before
-promotion, but not as promotion authority. Concrete handoff artifacts and
+The next producer-side slices should keep using Idea Maturity and repair
+contracts instead of creating a second depth metric:
+
+1. real intake should emit browser-answerable clarification templates, or an
+   explicit `clarification_not_required` state, so SpecSpace product demos do
+   not need deterministic answer fallback fixtures;
+2. candidate graphs should keep stable machine ids while publishing
+   human-friendly display aliases for generated nodes, candidate overview, PR
+   artifacts, and topology/readiness panels;
+3. the older custom-run approval/promotion follow-up should be reconciled with
+   the managed-operation path: either document the existing arbitrary-route
+   Platform dry-run capability as sufficient, or add a small producer handoff so
+   repaired custom-run artifacts do not need to be copied into canonical
+   `runs/*.json`.
+
+Platform may use depth reports and deltas as explanatory preflight signals
+before promotion, but not as promotion authority. Concrete handoff artifacts and
 existing gates remain the source of branch/commit/PR readiness.
 
 Proposal `0181` adds explicit Metrics contract metadata to the maturity report:
