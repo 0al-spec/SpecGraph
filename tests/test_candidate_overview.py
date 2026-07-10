@@ -102,6 +102,8 @@ def candidate_graph(
             {
                 "id": "candidate-spec.product-boundary",
                 "kind": "product_spec_boundary",
+                "display_alias": "Cash flow boundary",
+                "display_alias_source": "provided",
                 "title": "Cash Flow Product Boundary",
                 "description": "Track recurring payments and prevent overspending.",
                 "source_event_refs": ["actor.user", "command.record-payment"],
@@ -114,6 +116,8 @@ def candidate_graph(
             {
                 "id": "candidate-spec.record-payment",
                 "kind": "command_spec",
+                "display_alias": "Record a payment",
+                "display_alias_source": "provided",
                 "title": "Record Payment",
                 "source_event_refs": ["command.record-payment", "event.payment-recorded"],
                 "requirements": [{"id": "req.record-payment"}],
@@ -292,6 +296,11 @@ def test_candidate_overview_builds_public_safe_narrative() -> None:
     assert overview["summary"]["candidate_id"] == "cash-flow-control"
     assert overview["summary"]["graph_source"] == "repaired_candidate_graph"
     assert overview["sections"]["topology"]["workflow_edge_count"] == 2
+    aliases = overview["sections"]["candidate_nodes"]["alias_by_node_id"]
+    assert aliases["candidate-spec.record-payment"] == "Record a payment"
+    topology_edge = overview["sections"]["topology"]["examples"][0]
+    assert topology_edge["from_display_alias"] == "Cash flow boundary"
+    assert topology_edge["to_display_alias"] == "Record a payment"
     assert overview["sections"]["repair"]["ready_for_candidate_approval"] is True
     assert overview["sections"]["project_local_ontology"]["accepted_decision_count"] == 1
     assert (

@@ -28,6 +28,18 @@ DEFAULT_CANDIDATE_GRAPH_PATH = (
 DEFAULT_REPAIR_LOOP_PATH = ROOT / "runs" / "candidate_repair_loop_report.json"
 DEFAULT_OUTPUT_DIR = ROOT / "runs" / "materialized_candidate_specs"
 DEFAULT_OUTPUT_PATH = ROOT / "runs" / "candidate_spec_materialization_report.json"
+DISPLAY_ALIAS_PRIVATE_MARKERS = (
+    "/Users/",
+    "/home/",
+    "/private/",
+    "/tmp/",
+    "-----BEGIN",
+    "api-key",
+    "apikey",
+    "api_key",
+    "bearer ",
+    "token=",
+)
 
 
 def _now_iso() -> str:
@@ -48,6 +60,18 @@ def _text(value: Any, default: str = "") -> str:
 
 def _text_list(value: Any) -> list[str]:
     return [item.strip() for item in _list(value) if isinstance(item, str) and item.strip()]
+
+
+def _display_alias(value: Any) -> str:
+    if not isinstance(value, str) or any(ord(character) < 32 for character in value):
+        return ""
+    alias = " ".join(value.split())
+    if not alias:
+        return ""
+    lowered = alias.lower()
+    if any(marker.lower() in lowered for marker in DISPLAY_ALIAS_PRIVATE_MARKERS):
+        return ""
+    return alias
 
 
 def _slug(value: str, fallback: str) -> str:
@@ -142,6 +166,21 @@ def _validate_candidate_graph(candidate_graph: dict[str, Any]) -> list[dict[str,
                 message="Materialization requires at least one candidate node.",
             )
         )
+    for node in _nodes(candidate_graph):
+        if node.get("display_alias") not in (None, "") and not _display_alias(
+            node.get("display_alias")
+        ):
+            findings.append(
+                _finding(
+                    finding_id="candidate_node_display_alias_invalid",
+                    severity="review_required",
+                    message=(
+                        "Materialization requires public-safe single-line candidate "
+                        "display aliases."
+                    ),
+                    evidence={"node_id": _text(node.get("id"))},
+                )
+            )
     return findings
 
 
@@ -251,6 +290,8 @@ def _build_spec_yaml(
     source_ref: str,
 ) -> dict[str, Any]:
     node_id = _text(node.get("id"), "candidate-node")
+    candidate_title = _text(node.get("title"), node_id)
+    display_alias = _display_alias(node.get("display_alias"))
     requirements = [item for item in _list(node.get("requirements")) if isinstance(item, dict)]
     acceptance_criteria = [
         item for item in _list(node.get("acceptance_criteria")) if isinstance(item, dict)
@@ -262,7 +303,7 @@ def _build_spec_yaml(
         acceptance = ["Review candidate requirements and acceptance criteria before promotion."]
     return {
         "id": id_map[node_id],
-        "title": _text(node.get("title"), node_id),
+        "title": display_alias or candidate_title,
         "kind": "spec",
         "created_at": generated_at,
         "updated_at": generated_at,
@@ -282,6 +323,8 @@ def _build_spec_yaml(
         "specification": {
             "materialization_mode": "candidate_review_preview",
             "candidate_source_id": node_id,
+            "candidate_display_alias": display_alias or None,
+            "candidate_source_title": candidate_title,
             "candidate_kind": _text(node.get("kind")),
             "description": _text(node.get("description")),
             "source_event_refs": _text_list(node.get("source_event_refs")),
@@ -347,6 +390,7 @@ def build_candidate_spec_materialization_report(
             materialized_files.append(
                 {
                     "candidate_node_id": node_id,
+                    "display_alias": _display_alias(node.get("display_alias")) or None,
                     "materialized_id": spec_yaml["id"],
                     "path": local_ref,
                     "promotion_path": local_ref,

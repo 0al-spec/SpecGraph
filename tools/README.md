@@ -420,6 +420,9 @@ Supervisor modes:
   report-only visibility, not a Metrics schema change, score, gate, or authority
   expansion.
 - Proposal 0210 makes real-intake clarification templates fallback-free.
+- Proposal 0212 adds deterministic public-safe candidate display aliases for
+  operator-facing overview, topology, and materialized review surfaces without
+  changing canonical node ids, refs, or promotion paths.
   Clarification requests and answer templates carry workspace identity and a
   stable source digest, publish `answers_required`,
   `clarification_not_required`, or `clarification_blocked`, and treat

@@ -12090,5 +12090,65 @@
       }
     ],
     "notes": "SpecGraph product workspace initialization now emits digest-bound workspace-relative binding evidence for Platform without taking ownership of external routing, state namespaces, execution roots, or Git operations."
+  },
+  {
+    "proposal_id": "0212",
+    "posture": "bounded_runtime_followup",
+    "runtime_surfaces": [
+      "docs/proposals/0212_human_friendly_candidate_display_aliases.md",
+      "docs/archive/proposal_sources/0212_human_friendly_candidate_display_aliases.md",
+      "tools/candidate_spec_graph.py",
+      "tools/candidate_overview.py",
+      "tools/candidate_spec_materialization.py",
+      "tests/test_candidate_spec_graph.py",
+      "tests/test_candidate_overview.py",
+      "tests/test_candidate_spec_materialization.py",
+      "docs/product_workspace_graph_versioning_roadmap.md",
+      "Sources/SpecGraph/Documentation.docc/ProductWorkspacePilots.md",
+      "tools/README.md"
+    ],
+    "runtime_markers": [
+      {
+        "path": "tools/candidate_spec_graph.py",
+        "pattern": "def _apply_display_aliases"
+      },
+      {
+        "path": "tools/candidate_overview.py",
+        "pattern": "alias_by_node_id"
+      },
+      {
+        "path": "tools/candidate_spec_materialization.py",
+        "pattern": "candidate_display_alias"
+      }
+    ],
+    "validation_markers": [
+      {
+        "path": "tests/test_candidate_spec_graph.py",
+        "pattern": "test_candidate_spec_graph_derives_stable_short_display_aliases"
+      },
+      {
+        "path": "tests/test_candidate_overview.py",
+        "pattern": "from_display_alias"
+      },
+      {
+        "path": "tests/test_candidate_spec_materialization.py",
+        "pattern": "candidate_display_alias"
+      }
+    ],
+    "observation_markers": [
+      {
+        "path": "docs/product_workspace_graph_versioning_roadmap.md",
+        "pattern": "Implemented producer-side in proposal `0212`"
+      },
+      {
+        "path": "Sources/SpecGraph/Documentation.docc/ProductWorkspacePilots.md",
+        "pattern": "Proposal `0212` keeps candidate graph machine ids stable"
+      },
+      {
+        "path": "tools/README.md",
+        "pattern": "Proposal 0212 adds deterministic public-safe candidate display aliases"
+      }
+    ],
+    "notes": "SpecGraph now emits deterministic presentation-only display aliases for candidate nodes and propagates them into overview, topology, and materialization outputs without changing canonical ids, refs, paths, or authority."
   }
 ]

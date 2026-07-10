@@ -132,6 +132,99 @@ def test_candidate_spec_graph_filters_raw_seed_fields() -> None:
     assert graph["privacy_boundary"]["raw_model_output_published"] is False
 
 
+def test_candidate_spec_graph_derives_stable_short_display_aliases() -> None:
+    module = load_module()
+    seed = load_json(CANDIDATE_READY)
+    candidate_graph = seed["candidate_graph"]
+    assert isinstance(candidate_graph, dict)
+    nodes = candidate_graph["nodes"]
+    assert isinstance(nodes, list)
+    nodes[0]["title"] = (
+        "Safe-to-spend calculations must reserve mandatory recurring payments "
+        "before discretionary spending."
+    )
+
+    graph = module.build_candidate_spec_graph(
+        intake=load_json(INTAKE_READY),
+        seed=seed,
+        intake_path=INTAKE_READY,
+        seed_path=CANDIDATE_READY,
+    )
+
+    node = graph["nodes"][0]
+    assert node["id"] == "candidate-spec.calculator-product"
+    assert node["display_alias"] == "Reserve mandatory recurring payments"
+    assert node["display_alias_source"] == "derived_title"
+    assert graph["pre_sib_readiness"]["ready"] is True
+
+
+def test_candidate_spec_graph_disambiguates_duplicate_display_aliases() -> None:
+    module = load_module()
+    seed = load_json(CANDIDATE_READY)
+    candidate_graph = seed["candidate_graph"]
+    assert isinstance(candidate_graph, dict)
+    nodes = candidate_graph["nodes"]
+    assert isinstance(nodes, list)
+    nodes[0]["display_alias"] = "Review calculation"
+    nodes[1]["display_alias"] = "Review calculation"
+
+    graph = module.build_candidate_spec_graph(
+        intake=load_json(INTAKE_READY),
+        seed=seed,
+        intake_path=INTAKE_READY,
+        seed_path=CANDIDATE_READY,
+    )
+
+    aliases = [node["display_alias"] for node in graph["nodes"]]
+    assert aliases[0] == "Review calculation"
+    assert aliases[1] != aliases[0]
+    assert graph["pre_sib_readiness"]["ready"] is True
+
+
+def test_candidate_spec_graph_keeps_disambiguator_for_max_length_aliases() -> None:
+    module = load_module()
+    seed = load_json(CANDIDATE_READY)
+    candidate_graph = seed["candidate_graph"]
+    assert isinstance(candidate_graph, dict)
+    nodes = candidate_graph["nodes"]
+    assert isinstance(nodes, list)
+    nodes[0]["display_alias"] = "A" * 64
+    nodes[1]["display_alias"] = "A" * 64
+
+    graph = module.build_candidate_spec_graph(
+        intake=load_json(INTAKE_READY),
+        seed=seed,
+        intake_path=INTAKE_READY,
+        seed_path=CANDIDATE_READY,
+    )
+
+    aliases = [node["display_alias"] for node in graph["nodes"]]
+    assert aliases[0] == "A" * 64
+    assert aliases[1] != aliases[0]
+    assert len(aliases[1]) <= 64
+
+
+def test_candidate_spec_graph_blocks_private_or_multiline_display_aliases() -> None:
+    module = load_module()
+    seed = load_json(CANDIDATE_READY)
+    candidate_graph = seed["candidate_graph"]
+    assert isinstance(candidate_graph, dict)
+    nodes = candidate_graph["nodes"]
+    assert isinstance(nodes, list)
+    nodes[0]["display_alias"] = "/Users/operator/private candidate"
+    nodes[1]["display_alias"] = "Review\ncalculation"
+
+    graph = module.build_candidate_spec_graph(
+        intake=load_json(INTAKE_READY),
+        seed=seed,
+        intake_path=INTAKE_READY,
+        seed_path=CANDIDATE_READY,
+    )
+
+    assert graph["pre_sib_readiness"]["ready"] is False
+    assert "candidate_node_display_alias_invalid" in finding_ids(graph)
+
+
 def test_candidate_spec_graph_rejects_duplicate_node_ids() -> None:
     module = load_module()
     seed = load_json(CANDIDATE_READY)

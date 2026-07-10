@@ -374,11 +374,29 @@ def _node_summary(candidate_graph: dict[str, Any]) -> dict[str, Any]:
     nodes = [node for node in _list(candidate_graph.get("nodes")) if isinstance(node, dict)]
     by_kind = Counter(_text(node.get("kind"), "unknown") for node in nodes)
     compact_nodes: list[dict[str, Any]] = []
+    aliases: list[dict[str, str]] = []
+    alias_by_node_id: dict[str, str] = {}
+    for node in sorted(nodes, key=lambda item: _text(item.get("id"))):
+        node_id = _text(node.get("id"))
+        display_alias = _safe_text(node.get("display_alias"))
+        if node_id and display_alias:
+            alias_by_node_id[node_id] = display_alias
+            aliases.append(
+                {
+                    "node_id": node_id,
+                    "display_alias": display_alias,
+                    "display_alias_source": _safe_text(node.get("display_alias_source")),
+                    "title": _safe_text(node.get("title")),
+                    "kind": _safe_text(node.get("kind")),
+                }
+            )
     for node in nodes[:24]:
         gaps = [gap for gap in _list(node.get("gaps")) if isinstance(gap, dict)]
         compact_nodes.append(
             {
                 "id": _text(node.get("id")),
+                "display_alias": _safe_text(node.get("display_alias")),
+                "display_alias_source": _safe_text(node.get("display_alias_source")),
                 "title": _text(node.get("title")),
                 "kind": _text(node.get("kind")),
                 "description": _text(node.get("description")),
@@ -397,11 +415,16 @@ def _node_summary(candidate_graph: dict[str, Any]) -> dict[str, Any]:
     return {
         "count": len(nodes),
         "kind_counts": dict(sorted(by_kind.items())),
+        "aliases": aliases,
+        "alias_count": len(aliases),
+        "alias_by_node_id": alias_by_node_id,
         "items": [_public_safe(node) for node in compact_nodes],
     }
 
 
-def _topology_summary(candidate_graph: dict[str, Any]) -> dict[str, Any]:
+def _topology_summary(
+    candidate_graph: dict[str, Any], *, alias_by_node_id: dict[str, str]
+) -> dict[str, Any]:
     edges = [edge for edge in _list(candidate_graph.get("edges")) if isinstance(edge, dict)]
     relation_counts = Counter(_text(edge.get("relation"), "unknown") for edge in edges)
     workflow_edge_count = sum(relation_counts.get(relation, 0) for relation in WORKFLOW_RELATIONS)
@@ -410,7 +433,9 @@ def _topology_summary(candidate_graph: dict[str, Any]) -> dict[str, Any]:
             "id": _text(edge.get("id")),
             "relation": _text(edge.get("relation")),
             "from": _text(edge.get("from")),
+            "from_display_alias": _safe_text(alias_by_node_id.get(_text(edge.get("from")))),
             "to": _text(edge.get("to")),
+            "to_display_alias": _safe_text(alias_by_node_id.get(_text(edge.get("to")))),
             "source_event_refs": _list(edge.get("source_event_refs"))[:8],
         }
         for edge in edges[:24]
@@ -787,7 +812,7 @@ def build_candidate_overview(
     )
     event_storming = _event_storming_summary(intake)
     nodes = _node_summary(selected_graph)
-    topology = _topology_summary(selected_graph)
+    topology = _topology_summary(selected_graph, alias_by_node_id=nodes["alias_by_node_id"])
     repair = _repair_summary(
         repair_session=repair_session,
         repaired_repair_session=repaired_repair_session,

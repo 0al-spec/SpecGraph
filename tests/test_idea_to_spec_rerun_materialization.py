@@ -161,6 +161,8 @@ def candidate_graph_artifact() -> dict[str, object]:
         "nodes": [
             {
                 "id": "candidate-spec.product-boundary",
+                "display_alias": "Product boundary",
+                "display_alias_source": "provided",
                 "gaps": [
                     {
                         "id": "ontology-gap.decision-owner",
@@ -334,6 +336,8 @@ def test_rerun_materialization_removes_resolved_gap_in_preview() -> None:
 
     preview = report["materialization_preview"]["candidate_graph_preview"]
     node = preview["nodes"][0]
+    assert node["display_alias"] == "Product boundary"
+    assert node["display_alias_source"] == "provided"
     assert [gap["id"] for gap in node["gaps"]] == ["ontology-gap.record-decision"]
     assert preview["summary"]["gap_count"] == 1
     assert node["ontology_gap_resolutions"][0]["gap_id"] == "ontology-gap.decision-owner"

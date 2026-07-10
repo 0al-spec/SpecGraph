@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
 import re
 from datetime import datetime, timezone
@@ -54,6 +55,19 @@ RAW_TRACE_FIELDS = {
     "raw_response",
     "raw_text",
 }
+DISPLAY_ALIAS_MAX_LENGTH = 64
+DISPLAY_ALIAS_PRIVATE_MARKERS = (
+    "/Users/",
+    "/home/",
+    "/private/",
+    "/tmp/",
+    "-----BEGIN",
+    "api-key",
+    "apikey",
+    "api_key",
+    "bearer ",
+    "token=",
+)
 
 
 def _now_iso() -> str:
@@ -79,6 +93,94 @@ def _text_list(value: Any) -> list[str]:
 def _slug(value: str, fallback: str) -> str:
     slug = re.sub(r"[^a-z0-9]+", "-", value.lower()).strip("-")
     return slug or fallback
+
+
+def _display_alias_text(value: Any) -> str:
+    if not isinstance(value, str):
+        return ""
+    if any(ord(character) < 32 for character in value):
+        return ""
+    text = " ".join(value.split())
+    if not text:
+        return ""
+    lowered = text.lower()
+    if any(marker.lower() in lowered for marker in DISPLAY_ALIAS_PRIVATE_MARKERS):
+        return ""
+    return text
+
+
+def _bounded_display_alias(value: str) -> str:
+    text = value.rstrip(". ")
+    if len(text) <= DISPLAY_ALIAS_MAX_LENGTH:
+        return text
+    candidate = text[: DISPLAY_ALIAS_MAX_LENGTH - 1].rsplit(" ", 1)[0].rstrip(" ,;:")
+    return f"{candidate or text[: DISPLAY_ALIAS_MAX_LENGTH - 1].rstrip()}…"
+
+
+def _display_alias_with_suffix(alias: str, suffix: str) -> str:
+    if len(alias) + len(suffix) <= DISPLAY_ALIAS_MAX_LENGTH:
+        return f"{alias}{suffix}"
+    prefix_limit = max(1, DISPLAY_ALIAS_MAX_LENGTH - len(suffix))
+    prefix = alias[:prefix_limit].rsplit(" ", 1)[0].rstrip(" ,;:")
+    return f"{prefix or alias[:prefix_limit].rstrip()}{suffix}"
+
+
+def _derived_display_alias(title: str) -> str:
+    sentence = title.rstrip(". ")
+    match = re.search(r"\bmust\s+(.+)", sentence, flags=re.IGNORECASE)
+    if match:
+        sentence = match.group(1)
+        for separator in (" before ", " after ", " when ", " unless ", " while "):
+            position = sentence.lower().find(separator)
+            if position > 0:
+                sentence = sentence[:position]
+                break
+        sentence = sentence[:1].upper() + sentence[1:]
+    return _bounded_display_alias(sentence)
+
+
+def _node_display_alias(node: dict[str, Any]) -> tuple[str, str, bool]:
+    explicit = _display_alias_text(node.get("display_alias"))
+    if explicit:
+        return _bounded_display_alias(explicit), "provided", False
+    if node.get("display_alias") not in (None, ""):
+        return "", "", True
+    title = _display_alias_text(node.get("title"))
+    if not title:
+        return "", "", True
+    alias = _derived_display_alias(title)
+    return alias, ("title" if alias == title.rstrip(". ") else "derived_title"), False
+
+
+def _apply_display_aliases(nodes: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    findings: list[dict[str, Any]] = []
+    seen: set[str] = set()
+    for node in nodes:
+        alias, source, invalid = _node_display_alias(node)
+        node_id = _text(node.get("id"))
+        if invalid or not alias:
+            findings.append(
+                _finding(
+                    finding_id="candidate_node_display_alias_invalid",
+                    severity="review_required",
+                    message="Candidate node display alias must be public-safe single-line text.",
+                    evidence={"node_id": node_id},
+                )
+            )
+            continue
+        key = alias.casefold()
+        if key in seen:
+            kind = _text(node.get("kind"), "node").replace("_", " ")
+            alias = _display_alias_with_suffix(alias, f" ({kind[:24]})")
+            key = alias.casefold()
+        if key in seen:
+            digest = hashlib.sha256(node_id.encode("utf-8")).hexdigest()[:6]
+            alias = _display_alias_with_suffix(alias, f" [{digest}]")
+            key = alias.casefold()
+        seen.add(key)
+        node["display_alias"] = alias
+        node["display_alias_source"] = source
+    return findings
 
 
 def _relative_ref(path: Path) -> str:
@@ -368,6 +470,7 @@ def _normalize_nodes(seed: dict[str, Any]) -> tuple[list[dict[str, Any]], list[d
                 message="Candidate spec graph requires at least one candidate node.",
             )
         )
+    findings.extend(_apply_display_aliases(nodes))
     return nodes, findings
 
 

@@ -360,6 +360,7 @@ The follow-up backlog from that smoke is:
    candidates as a live product story; done in proposal `0204` with
    `make real-idea-smoke-depth-baseline` and `product_demo_depth_report.json`;
 11. add human-friendly display aliases for long generated candidate node ids;
+    done producer-side in Proposal `0212` while preserving canonical refs;
 12. reconcile custom run-dir repaired candidates with the existing Platform
    arbitrary-route approval/promotion dry-run path, then either document that
    path as sufficient or add a small producer handoff that avoids copying
@@ -736,9 +737,9 @@ contracts instead of creating a second depth metric:
    workspace-bound templates now publish `answers_required`,
    `clarification_not_required`, or `clarification_blocked`, and mandatory
    policy context is represented as an ordinary browser-answerable target;
-2. candidate graphs should keep stable machine ids while publishing
-   human-friendly display aliases for generated nodes, candidate overview, PR
-   artifacts, and topology/readiness panels;
+2. Proposal `0212` keeps candidate graph machine ids stable while publishing
+   deterministic human-friendly display aliases for generated nodes, candidate
+   overview, review YAML, and topology/readiness panels;
 3. the older custom-run approval/promotion follow-up should be reconciled with
    the managed-operation path: either document the existing arbitrary-route
    Platform dry-run capability as sufficient, or add a small producer handoff so

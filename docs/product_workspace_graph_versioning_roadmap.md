@@ -1646,11 +1646,12 @@ more reliable and easier for SpecSpace to present:
    `clarification_not_required` outcome, or a strict
    `clarification_blocked` finding. SpecSpace can remove its deterministic
    product-demo fallback and rely on producer evidence.
-2. **Human-friendly candidate display aliases.** Keep stable machine ids for
-   refs, materialization, and promotion paths, but add deterministic display
-   aliases or readable labels for long generated candidate node ids. Candidate
-   overview, PR artifacts, and SpecSpace topology/readiness panels should show
-   the alias while preserving the canonical id in evidence refs.
+2. **Human-friendly candidate display aliases.** Implemented producer-side in
+   proposal `0212`. Candidate nodes retain stable machine ids for refs,
+   materialization, and promotion paths while publishing deterministic,
+   public-safe `display_alias` labels for candidate overview, topology, and
+   materialized review artifacts. Consumers must preserve canonical ids in
+   evidence refs and managed-operation inputs.
 3. **Custom-run approval/promotion handoff reconciliation.** The local
    managed-operation chain can already drive arbitrary workspace routes through
    approval and promotion dry-run paths. Reconcile that with the older
@@ -1809,10 +1810,10 @@ The same run exposed the next product-flow friction points:
    runs can now call `make real-idea-smoke-depth-baseline` to fail shallow demos
    that lack event-storming depth, workflow topology, candidate overview, or
    Idea Maturity before SpecSpace presents them as a product story.
-11. **Human-friendly candidate ids.** Planned. Long constraint statements currently
-   produce truncated node ids. Keep stable machine ids, but add shorter
-   readable slugs or display aliases for UI, PR artifacts, and candidate
-   overview documents.
+11. **Human-friendly candidate ids.** Done in proposal `0212`. Long constraint
+   statements retain their stable machine ids, while deterministic display
+   aliases provide shorter readable labels for UI, topology, review YAML, and
+   candidate overview documents.
 12. **Custom-run Platform promotion dry-run.** Needs reconciliation. Later
    SpecSpace/Platform managed-operation smokes proved arbitrary-route
    approval/promotion dry-runs, but this cash-flow-specific follow-up should be
