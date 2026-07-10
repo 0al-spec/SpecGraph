@@ -218,6 +218,39 @@ def test_candidate_spec_materialization_rejects_unsafe_display_alias(
     assert report["materialized_files"] == []
 
 
+def test_candidate_spec_materialization_rejects_unbounded_display_alias(
+    tmp_path: Path,
+) -> None:
+    module = load_module()
+    candidate_graph = {
+        "artifact_kind": "candidate_spec_graph",
+        "contract_ref": "specgraph.idea-to-spec.candidate-spec-graph.v0.1",
+        "canonical_mutations_allowed": False,
+        "tracked_artifacts_written": False,
+        "nodes": [
+            {
+                "id": "candidate-spec.long-alias",
+                "display_alias": "A" * 65,
+                "title": "Long alias node",
+                "kind": "product_spec_boundary",
+                "description": "Boundary",
+                "requirements": [{"id": "req.long", "statement": "Boundary"}],
+                "acceptance_criteria": [],
+            }
+        ],
+        "edges": [],
+    }
+
+    report = module.build_candidate_spec_materialization_report(
+        candidate_graph=candidate_graph,
+        output_dir=tmp_path / "materialized",
+    )
+
+    assert report["readiness"]["ready"] is False
+    assert "candidate_node_display_alias_invalid" in finding_ids(report)
+    assert report["materialized_files"] == []
+
+
 def test_candidate_spec_materialization_cli_writes_report_and_files(
     tmp_path: Path,
 ) -> None:

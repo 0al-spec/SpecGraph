@@ -61,6 +61,7 @@ DISPLAY_ALIAS_PRIVATE_MARKERS = (
     "/home/",
     "/private/",
     "/tmp/",
+    "/var/folders/",
     "-----BEGIN",
     "api-key",
     "apikey",
@@ -159,6 +160,8 @@ def _apply_display_aliases(nodes: list[dict[str, Any]]) -> list[dict[str, Any]]:
         alias, source, invalid = _node_display_alias(node)
         node_id = _text(node.get("id"))
         if invalid or not alias:
+            node.pop("display_alias", None)
+            node.pop("display_alias_source", None)
             findings.append(
                 _finding(
                     finding_id="candidate_node_display_alias_invalid",
@@ -170,12 +173,41 @@ def _apply_display_aliases(nodes: list[dict[str, Any]]) -> list[dict[str, Any]]:
             continue
         key = alias.casefold()
         if key in seen:
-            kind = _text(node.get("kind"), "node").replace("_", " ")
+            kind = _display_alias_text(node.get("kind")) or "node"
+            kind = kind.replace("_", " ")
             alias = _display_alias_with_suffix(alias, f" ({kind[:24]})")
+            if not _display_alias_text(alias):
+                node.pop("display_alias", None)
+                node.pop("display_alias_source", None)
+                findings.append(
+                    _finding(
+                        finding_id="candidate_node_display_alias_invalid",
+                        severity="review_required",
+                        message=(
+                            "Candidate node display alias must be public-safe single-line text."
+                        ),
+                        evidence={"node_id": node_id},
+                    )
+                )
+                continue
             key = alias.casefold()
         if key in seen:
             digest = hashlib.sha256(node_id.encode("utf-8")).hexdigest()[:6]
             alias = _display_alias_with_suffix(alias, f" [{digest}]")
+            if not _display_alias_text(alias):
+                node.pop("display_alias", None)
+                node.pop("display_alias_source", None)
+                findings.append(
+                    _finding(
+                        finding_id="candidate_node_display_alias_invalid",
+                        severity="review_required",
+                        message=(
+                            "Candidate node display alias must be public-safe single-line text."
+                        ),
+                        evidence={"node_id": node_id},
+                    )
+                )
+                continue
             key = alias.casefold()
         seen.add(key)
         node["display_alias"] = alias

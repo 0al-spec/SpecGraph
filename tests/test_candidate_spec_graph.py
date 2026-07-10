@@ -223,6 +223,55 @@ def test_candidate_spec_graph_blocks_private_or_multiline_display_aliases() -> N
 
     assert graph["pre_sib_readiness"]["ready"] is False
     assert "candidate_node_display_alias_invalid" in finding_ids(graph)
+    serialized = json.dumps(graph)
+    assert "/Users/operator/private candidate" not in serialized
+    assert "Review\ncalculation" not in serialized
+    assert "display_alias" not in graph["nodes"][0]
+    assert "display_alias" not in graph["nodes"][1]
+
+
+def test_candidate_spec_graph_blocks_macos_private_temp_display_alias() -> None:
+    module = load_module()
+    seed = load_json(CANDIDATE_READY)
+    candidate_graph = seed["candidate_graph"]
+    assert isinstance(candidate_graph, dict)
+    nodes = candidate_graph["nodes"]
+    assert isinstance(nodes, list)
+    nodes[0]["display_alias"] = "/var/folders/example/private candidate"
+
+    graph = module.build_candidate_spec_graph(
+        intake=load_json(INTAKE_READY),
+        seed=seed,
+        intake_path=INTAKE_READY,
+        seed_path=CANDIDATE_READY,
+    )
+
+    assert graph["pre_sib_readiness"]["ready"] is False
+    assert "candidate_node_display_alias_invalid" in finding_ids(graph)
+    assert "/var/folders/" not in json.dumps(graph)
+
+
+def test_candidate_spec_graph_does_not_leak_unsafe_kind_in_alias_suffix() -> None:
+    module = load_module()
+    seed = load_json(CANDIDATE_READY)
+    candidate_graph = seed["candidate_graph"]
+    assert isinstance(candidate_graph, dict)
+    nodes = candidate_graph["nodes"]
+    assert isinstance(nodes, list)
+    nodes[0]["display_alias"] = "Review calculation"
+    nodes[1]["display_alias"] = "Review calculation"
+    nodes[1]["kind"] = "/Users/operator/private-kind"
+
+    graph = module.build_candidate_spec_graph(
+        intake=load_json(INTAKE_READY),
+        seed=seed,
+        intake_path=INTAKE_READY,
+        seed_path=CANDIDATE_READY,
+    )
+
+    assert graph["pre_sib_readiness"]["ready"] is True
+    assert "/Users/operator" not in graph["nodes"][1]["display_alias"]
+    assert graph["nodes"][1]["display_alias"].endswith("(node)")
 
 
 def test_candidate_spec_graph_rejects_duplicate_node_ids() -> None:

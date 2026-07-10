@@ -28,11 +28,13 @@ DEFAULT_CANDIDATE_GRAPH_PATH = (
 DEFAULT_REPAIR_LOOP_PATH = ROOT / "runs" / "candidate_repair_loop_report.json"
 DEFAULT_OUTPUT_DIR = ROOT / "runs" / "materialized_candidate_specs"
 DEFAULT_OUTPUT_PATH = ROOT / "runs" / "candidate_spec_materialization_report.json"
+DISPLAY_ALIAS_MAX_LENGTH = 64
 DISPLAY_ALIAS_PRIVATE_MARKERS = (
     "/Users/",
     "/home/",
     "/private/",
     "/tmp/",
+    "/var/folders/",
     "-----BEGIN",
     "api-key",
     "apikey",
@@ -66,7 +68,7 @@ def _display_alias(value: Any) -> str:
     if not isinstance(value, str) or any(ord(character) < 32 for character in value):
         return ""
     alias = " ".join(value.split())
-    if not alias:
+    if not alias or len(alias) > DISPLAY_ALIAS_MAX_LENGTH:
         return ""
     lowered = alias.lower()
     if any(marker.lower() in lowered for marker in DISPLAY_ALIAS_PRIVATE_MARKERS):
