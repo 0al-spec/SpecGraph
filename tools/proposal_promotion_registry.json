@@ -2728,5 +2728,18 @@
     "required_provenance_links": [
       "source_draft_ref"
     ]
+  },
+  {
+    "proposal_id": "0212",
+    "source_artifact_class": "working_draft",
+    "source_refs": [
+      "docs/archive/proposal_sources/0212_human_friendly_candidate_display_aliases.md"
+    ],
+    "motivating_concern": "Long generated candidate ids and constraint statements are hard to scan in operator-facing surfaces, while consumers must not independently shorten canonical refs.",
+    "normalized_title": "Human-Friendly Candidate Display Aliases",
+    "bounded_scope": "Emit deterministic public-safe presentation aliases for candidate graph nodes and propagate them through candidate overview, topology endpoint labels, and materialized review files without changing canonical ids, graph refs, materialized ids, filenames, promotion paths, gates, matching, canonical specs, Ontology packages, Git operations, or raw-idea privacy boundaries.",
+    "required_provenance_links": [
+      "source_draft_ref"
+    ]
   }
 ]

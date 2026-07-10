@@ -110,6 +110,7 @@ def test_candidate_spec_materialization_skips_review_only_workflow_edges(
         "nodes": [
             {
                 "id": "candidate-spec.product-boundary",
+                "display_alias": "Product boundary",
                 "title": "Product Boundary",
                 "kind": "product_spec_boundary",
                 "description": "Boundary",
@@ -118,6 +119,7 @@ def test_candidate_spec_materialization_skips_review_only_workflow_edges(
             },
             {
                 "id": "candidate-spec.record-decision",
+                "display_alias": "Record a decision",
                 "title": "Record Decision",
                 "kind": "behavior_requirement",
                 "description": "Record decision",
@@ -159,6 +161,10 @@ def test_candidate_spec_materialization_skips_review_only_workflow_edges(
 
     assert boundary["depends_on"] == ["CANDIDATE-CANDIDATE-SPEC-RECORD-DECISION"]
     assert command["depends_on"] == []
+    assert boundary["title"] == "Product boundary"
+    assert boundary["specification"]["candidate_display_alias"] == "Product boundary"
+    assert boundary["specification"]["candidate_source_title"] == "Product Boundary"
+    assert report["materialized_files"][0]["display_alias"] == "Product boundary"
 
 
 def test_candidate_spec_materialization_rejects_authority_expansion(
@@ -177,6 +183,72 @@ def test_candidate_spec_materialization_rejects_authority_expansion(
     assert "candidate_graph_authority_expanded" in finding_ids(report)
     assert report["materialized_files"] == []
     assert report["local_files_written"] == []
+
+
+def test_candidate_spec_materialization_rejects_unsafe_display_alias(
+    tmp_path: Path,
+) -> None:
+    module = load_module()
+    candidate_graph = {
+        "artifact_kind": "candidate_spec_graph",
+        "contract_ref": "specgraph.idea-to-spec.candidate-spec-graph.v0.1",
+        "canonical_mutations_allowed": False,
+        "tracked_artifacts_written": False,
+        "nodes": [
+            {
+                "id": "candidate-spec.private-node",
+                "display_alias": "/Users/operator/private candidate",
+                "title": "Private node",
+                "kind": "product_spec_boundary",
+                "description": "Boundary",
+                "requirements": [{"id": "req.private", "statement": "Boundary"}],
+                "acceptance_criteria": [],
+            }
+        ],
+        "edges": [],
+    }
+
+    report = module.build_candidate_spec_materialization_report(
+        candidate_graph=candidate_graph,
+        output_dir=tmp_path / "materialized",
+    )
+
+    assert report["readiness"]["ready"] is False
+    assert "candidate_node_display_alias_invalid" in finding_ids(report)
+    assert report["materialized_files"] == []
+
+
+def test_candidate_spec_materialization_rejects_unbounded_display_alias(
+    tmp_path: Path,
+) -> None:
+    module = load_module()
+    candidate_graph = {
+        "artifact_kind": "candidate_spec_graph",
+        "contract_ref": "specgraph.idea-to-spec.candidate-spec-graph.v0.1",
+        "canonical_mutations_allowed": False,
+        "tracked_artifacts_written": False,
+        "nodes": [
+            {
+                "id": "candidate-spec.long-alias",
+                "display_alias": "A" * 65,
+                "title": "Long alias node",
+                "kind": "product_spec_boundary",
+                "description": "Boundary",
+                "requirements": [{"id": "req.long", "statement": "Boundary"}],
+                "acceptance_criteria": [],
+            }
+        ],
+        "edges": [],
+    }
+
+    report = module.build_candidate_spec_materialization_report(
+        candidate_graph=candidate_graph,
+        output_dir=tmp_path / "materialized",
+    )
+
+    assert report["readiness"]["ready"] is False
+    assert "candidate_node_display_alias_invalid" in finding_ids(report)
+    assert report["materialized_files"] == []
 
 
 def test_candidate_spec_materialization_cli_writes_report_and_files(
