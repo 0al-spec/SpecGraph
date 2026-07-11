@@ -1139,9 +1139,9 @@ def test_idea_maturity_metrics_validate_make_target_invokes_metrics_cli(
     assert validation["summary"]["status"] == "ok"
 
 
-def _make_dry_run_target(target: str) -> str:
+def _make_dry_run_target(target: str, *variables: str) -> str:
     result = subprocess.run(
-        ["make", "-n", target],
+        ["make", "-n", target, *variables],
         cwd=ROOT,
         check=False,
         capture_output=True,
@@ -1267,6 +1267,58 @@ def test_repaired_promotion_handoff_emits_validated_idea_maturity() -> None:
     metrics_index = output.index("tools/idea_maturity_metrics_report.py")
     validation_index = output.index("validate idea-maturity")
     assert handoff_index < metrics_index < validation_index
+
+
+def test_repaired_promotion_handoff_preserves_explicit_scoped_inputs() -> None:
+    output = _make_dry_run_target(
+        "product-workspace-repaired-promotion-handoff",
+        "REPAIRED_CANDIDATE_PROMOTION_HANDOFF_INTAKE=runs/hosted-operation-canary/idea_event_storming_intake.json",
+        "REPAIRED_CANDIDATE_PROMOTION_HANDOFF_CLARIFICATION_REQUESTS=runs/hosted-operation-canary/idea_to_spec_clarification_requests.json",
+        "REPAIRED_CANDIDATE_PROMOTION_HANDOFF_CLARIFICATION_ANSWERS=runs/hosted-operation-canary/idea_to_spec_clarification_answers.json",
+        "REPAIRED_CANDIDATE_PROMOTION_HANDOFF_ONTOLOGY_DECISIONS=runs/hosted-operation-canary/product_ontology_gap_review_decisions.json",
+        "REPAIRED_CANDIDATE_PROMOTION_HANDOFF_RERUN_INPUT=runs/hosted-operation-canary/idea_to_spec_answer_rerun_input.json",
+        "REPAIRED_CANDIDATE_PROMOTION_HANDOFF_RERUN_PREVIEW=runs/hosted-operation-canary/idea_to_spec_rerun_preview.json",
+        "REPAIRED_CANDIDATE_PROMOTION_HANDOFF_RERUN_MATERIALIZATION=runs/hosted-operation-canary/idea_to_spec_rerun_materialization.json",
+        "REPAIRED_CANDIDATE_PROMOTION_HANDOFF_OUTPUT=runs/hosted-operation-canary/repaired_candidate_promotion_handoff_report.json",
+    )
+
+    assert '--intake "runs/hosted-operation-canary/idea_event_storming_intake.json"' in output
+    assert (
+        "--clarification-requests "
+        '"runs/hosted-operation-canary/idea_to_spec_clarification_requests.json"' in output
+    )
+    assert (
+        "--rerun-materialization "
+        '"runs/hosted-operation-canary/idea_to_spec_rerun_materialization.json"' in output
+    )
+    assert (
+        'IDEA_MATURITY_METRICS_REPAIRED_HANDOFF="runs/hosted-operation-canary/repaired_candidate_promotion_handoff_report.json"'
+        in output
+    )
+
+
+def test_repaired_promotion_handoff_threads_scoped_producer_outputs() -> None:
+    output = _make_dry_run_target(
+        "product-workspace-repaired-promotion-handoff",
+        "IDEA_EVENT_STORMING_INTAKE_OUTPUT=runs/hosted-operation-canary/idea_event_storming_intake.json",
+        "IDEA_TO_SPEC_CLARIFICATION_OUTPUT=runs/hosted-operation-canary/idea_to_spec_clarification_requests.json",
+        "IDEA_TO_SPEC_CLARIFICATION_ANSWERS_OUTPUT=runs/hosted-operation-canary/idea_to_spec_clarification_answers.json",
+        "PRODUCT_ONTOLOGY_GAP_REVIEW_DECISIONS_OUTPUT=runs/hosted-operation-canary/product_ontology_gap_review_decisions.json",
+        "IDEA_TO_SPEC_ANSWER_RERUN_INPUT_OUTPUT=runs/hosted-operation-canary/idea_to_spec_answer_rerun_input.json",
+        "IDEA_TO_SPEC_RERUN_PREVIEW_OUTPUT=runs/hosted-operation-canary/idea_to_spec_rerun_preview.json",
+        "IDEA_TO_SPEC_RERUN_MATERIALIZATION_OUTPUT=runs/hosted-operation-canary/idea_to_spec_rerun_materialization.json",
+    )
+
+    assert '--intake "runs/hosted-operation-canary/idea_event_storming_intake.json"' in output
+    assert (
+        "--rerun-materialization "
+        '"runs/hosted-operation-canary/idea_to_spec_rerun_materialization.json"' in output
+    )
+    assert (
+        'IDEA_MATURITY_METRICS_RERUN_MATERIALIZATION="runs/hosted-operation-canary/idea_to_spec_rerun_materialization.json"'
+        in output
+    )
+    assert '--repaired-handoff "runs/repaired_candidate_promotion_handoff_report.json"' in output
 
 
 def test_idea_maturity_metrics_report_counts_materialized_request_once(
