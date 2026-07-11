@@ -1,0 +1,63 @@
+id: CANDIDATE-CANDIDATE-SPEC-LOCAL-FIRST-OPERATOR-STATE
+title: local-first operator state
+kind: spec
+created_at: '2026-07-10T22:47:24.926101+00:00'
+updated_at: '2026-07-10T22:47:24.926101+00:00'
+status: stub
+maturity: 0.0
+depends_on: []
+relates_to: []
+inputs:
+- runs/hosted-operation-canary/repaired_candidate_repair_loop_report.json#revised_candidate_graph_preview
+outputs:
+- runs/hosted-operation-canary/repaired_materialized_candidate_specs/CANDIDATE-CANDIDATE-SPEC-LOCAL-FIRST-OPERATOR-STATE.yaml
+allowed_paths:
+- runs/hosted-operation-canary/repaired_materialized_candidate_specs/CANDIDATE-CANDIDATE-SPEC-LOCAL-FIRST-OPERATOR-STATE.yaml
+acceptance:
+- 'Reviewer can verify: local-first operator state'
+acceptance_evidence: []
+prompt: local-first operator state
+specification:
+  materialization_mode: candidate_review_preview
+  candidate_source_id: candidate-spec.local-first-operator-state
+  candidate_display_alias: local-first operator state
+  candidate_source_title: local-first operator state
+  candidate_kind: constraint_constraint
+  description: local-first operator state
+  source_event_refs:
+  - constraint.local-first-operator-state
+  ontology_refs:
+  - ontology://org.0al.specgraph.core/0.1.0/classes/Constraint
+  - ontology://org.0al.specgraph.core/0.1.0/classes/Requirement
+  - ontology://org.0al.specgraph.core/0.1.0/classes/Node
+  domain_refs:
+  - domain.deployment-canary
+  - domain.review-status
+  - domain.follow-up-verification
+  - domain.hosted_operation_canary
+  context_refs:
+  - context.hosted-operation-canary
+  requirements:
+  - acceptance_criteria_refs:
+    - ac.local-first-operator-state.reviewable
+    id: req.local-first-operator-state.main
+    ontology_refs:
+    - ontology://org.0al.specgraph.core/0.1.0/classes/Constraint
+    - ontology://org.0al.specgraph.core/0.1.0/classes/Requirement
+    - ontology://org.0al.specgraph.core/0.1.0/classes/AcceptanceCriterion
+    source_event_refs:
+    - constraint.local-first-operator-state
+    statement: local-first operator state
+  acceptance_criteria:
+  - id: ac.local-first-operator-state.reviewable
+    ontology_refs:
+    - ontology://org.0al.specgraph.core/0.1.0/classes/Constraint
+    - ontology://org.0al.specgraph.core/0.1.0/classes/Requirement
+    - ontology://org.0al.specgraph.core/0.1.0/classes/AcceptanceCriterion
+    source_event_refs:
+    - constraint.local-first-operator-state
+    statement: 'Reviewer can verify: local-first operator state'
+  claims: []
+  gaps: []
+gate_state: review_pending
+required_human_action: review_candidate_spec_materialization
