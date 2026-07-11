@@ -1297,6 +1297,30 @@ def test_repaired_promotion_handoff_preserves_explicit_scoped_inputs() -> None:
     )
 
 
+def test_repaired_promotion_handoff_threads_scoped_producer_outputs() -> None:
+    output = _make_dry_run_target(
+        "product-workspace-repaired-promotion-handoff",
+        "IDEA_EVENT_STORMING_INTAKE_OUTPUT=runs/hosted-operation-canary/idea_event_storming_intake.json",
+        "IDEA_TO_SPEC_CLARIFICATION_OUTPUT=runs/hosted-operation-canary/idea_to_spec_clarification_requests.json",
+        "IDEA_TO_SPEC_CLARIFICATION_ANSWERS_OUTPUT=runs/hosted-operation-canary/idea_to_spec_clarification_answers.json",
+        "PRODUCT_ONTOLOGY_GAP_REVIEW_DECISIONS_OUTPUT=runs/hosted-operation-canary/product_ontology_gap_review_decisions.json",
+        "IDEA_TO_SPEC_ANSWER_RERUN_INPUT_OUTPUT=runs/hosted-operation-canary/idea_to_spec_answer_rerun_input.json",
+        "IDEA_TO_SPEC_RERUN_PREVIEW_OUTPUT=runs/hosted-operation-canary/idea_to_spec_rerun_preview.json",
+        "IDEA_TO_SPEC_RERUN_MATERIALIZATION_OUTPUT=runs/hosted-operation-canary/idea_to_spec_rerun_materialization.json",
+    )
+
+    assert '--intake "runs/hosted-operation-canary/idea_event_storming_intake.json"' in output
+    assert (
+        "--rerun-materialization "
+        '"runs/hosted-operation-canary/idea_to_spec_rerun_materialization.json"' in output
+    )
+    assert (
+        'IDEA_MATURITY_METRICS_RERUN_MATERIALIZATION="runs/hosted-operation-canary/idea_to_spec_rerun_materialization.json"'
+        in output
+    )
+    assert '--repaired-handoff "runs/repaired_candidate_promotion_handoff_report.json"' in output
+
+
 def test_idea_maturity_metrics_report_counts_materialized_request_once(
     tmp_path: Path,
 ) -> None:
