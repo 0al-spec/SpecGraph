@@ -1,15 +1,21 @@
 from __future__ import annotations
 
 import hashlib
+import importlib.util
 import json
 from pathlib import Path
 
 import pytest
-from tools.static_artifact_incremental_stage import (
-    IncrementalStageError,
-    stage_changed_files,
-    verify_remote_bundle,
-)
+
+TOOL_PATH = Path(__file__).resolve().parents[1] / "tools" / "static_artifact_incremental_stage.py"
+SPEC = importlib.util.spec_from_file_location("static_artifact_incremental_stage", TOOL_PATH)
+assert SPEC is not None and SPEC.loader is not None
+MODULE = importlib.util.module_from_spec(SPEC)
+SPEC.loader.exec_module(MODULE)
+
+IncrementalStageError = MODULE.IncrementalStageError
+stage_changed_files = MODULE.stage_changed_files
+verify_remote_bundle = MODULE.verify_remote_bundle
 
 
 def _bundle(root: Path, files: dict[str, bytes]) -> Path:
