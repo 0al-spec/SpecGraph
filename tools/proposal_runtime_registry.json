@@ -12251,5 +12251,68 @@
       }
     ],
     "notes": "SpecGraph now publishes the tracked Hosted Operation Canary approval and provenance packet at its durable workspace binding URL without starting hosted execution or publishing a read model."
+  },
+  {
+    "proposal_id": "0215",
+    "posture": "synchronous_runtime_slice",
+    "runtime_surfaces": [
+      "docs/proposals/0215_incremental_static_workspace_deployment.md",
+      "docs/archive/proposal_sources/0215_incremental_static_workspace_deployment.md",
+      "tools/static_artifact_incremental_stage.py",
+      ".github/workflows/publish-static-artifacts.yml",
+      "tests/test_static_artifact_incremental_stage.py",
+      "tests/test_publish_static_artifacts_workflow.py",
+      "docs/static_artifact_publish.md",
+      "docs/product_workspace_graph_versioning_roadmap.md",
+      "Sources/SpecGraph/Documentation.docc/ProductWorkspacePilots.md",
+      "tools/README.md"
+    ],
+    "runtime_markers": [
+      {
+        "path": "tools/static_artifact_incremental_stage.py",
+        "pattern": "def stage_changed_files"
+      },
+      {
+        "path": ".github/workflows/publish-static-artifacts.yml",
+        "pattern": "Stage changed artifact payloads"
+      },
+      {
+        "path": ".github/workflows/publish-static-artifacts.yml",
+        "pattern": "Verify published artifact digests"
+      }
+    ],
+    "validation_markers": [
+      {
+        "path": "tests/test_static_artifact_incremental_stage.py",
+        "pattern": "test_stage_copies_only_changed_payload_under_workspace_prefix"
+      },
+      {
+        "path": "tests/test_static_artifact_incremental_stage.py",
+        "pattern": "test_verify_remote_bundle_fails_on_digest_drift"
+      },
+      {
+        "path": "tests/test_publish_static_artifacts_workflow.py",
+        "pattern": "test_deploy_stages_workspace_payloads_and_finalizes_manifests_last"
+      }
+    ],
+    "observation_markers": [
+      {
+        "path": "docs/static_artifact_publish.md",
+        "pattern": "Proposal `0215` makes the payload transfer checksum-aware"
+      },
+      {
+        "path": "docs/product_workspace_graph_versioning_roadmap.md",
+        "pattern": "Done in proposal `0215`"
+      },
+      {
+        "path": "Sources/SpecGraph/Documentation.docc/ProductWorkspacePilots.md",
+        "pattern": "Proposal `0215` publishes the root and tracked product workspace bundles"
+      },
+      {
+        "path": "tools/README.md",
+        "pattern": "Proposal 0215 adds `static_artifact_incremental_stage.py`"
+      }
+    ],
+    "notes": "Static publication now stages only checksum-changed root and workspace payloads, finalizes checksums and manifests after payload upload, and verifies all authoritative files over HTTPS without deleting the shared webroot."
   }
 ]

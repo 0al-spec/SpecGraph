@@ -47,6 +47,15 @@ files. Consumers should use `artifact_manifest.json` and `checksums.sha256` as
 the authoritative artifact index instead of inferring validity from every file
 that happens to remain under `specs/` or `runs/`.
 
+Proposal `0215` makes the payload transfer checksum-aware. The deploy job
+compares each local manifest with its durable HTTPS manifest and stages only
+added or content-changed files for the root, Team Decision Log, and Hosted
+Operation Canary surfaces. It uploads payload files first, then checksums, and
+manifests last. A post-upload pass downloads every manifest-authorized file and
+verifies its SHA-256, so an incomplete or stale public surface fails closed.
+Remote files omitted by a new manifest are not deleted from the shared webroot;
+they simply stop being authoritative.
+
 The repository landing page is deployed by a separate workflow job from
 `landing/` into the same `SFTP_REMOTE_ROOT`. That job is also non-destructive and
 excludes local QA screenshots under `landing/check/`. Landing files are not part

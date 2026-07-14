@@ -1,5 +1,12 @@
 # Tools
 
+Proposal 0215 adds `static_artifact_incremental_stage.py`. Its `stage` command
+copies only manifest paths whose SHA-256 differs from the durable remote
+manifest, with an optional workspace URL prefix. Its `verify` command downloads
+every manifest-authorized artifact from the public HTTPS base and fails on any
+missing or mismatched payload. Deployment still treats the local public-safe
+manifest as authority and never deletes the shared remote webroot.
+
 For a practical operator/contributor guide to the supervisor, see
 [docs/supervisor_manual.md](../docs/supervisor_manual.md).
 For a visualizer-facing compact report and overlay guide, see
