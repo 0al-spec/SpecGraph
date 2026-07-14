@@ -14,14 +14,14 @@
   "candidate_id": "hosted-operation-canary",
   "canonical_mutations_allowed": false,
   "commit_paths": [
+    "runs/hosted-operation-canary/repaired_materialized_candidate_specs/CANDIDATE-HOSTED-OPERATION-CANARY-CANDIDATE-SPEC-BLOCK-RELEASE-COMPLETION-UNTIL-REQUIRED-FOLLOW-UP-VERIFICATION.yaml",
+    "runs/hosted-operation-canary/repaired_materialized_candidate_specs/CANDIDATE-HOSTED-OPERATION-CANARY-CANDIDATE-SPEC-CONFIRM-FOLLOW-UP-VERIFICATION.yaml",
+    "runs/hosted-operation-canary/repaired_materialized_candidate_specs/CANDIDATE-HOSTED-OPERATION-CANARY-CANDIDATE-SPEC-ESCALATE-FAILED-CANARY-CHECKS-TO-THE-SERVICE-OWNER.yaml",
+    "runs/hosted-operation-canary/repaired_materialized_candidate_specs/CANDIDATE-HOSTED-OPERATION-CANARY-CANDIDATE-SPEC-LOCAL-FIRST-OPERATOR-STATE.yaml",
+    "runs/hosted-operation-canary/repaired_materialized_candidate_specs/CANDIDATE-HOSTED-OPERATION-CANARY-CANDIDATE-SPEC-NO-AUTOMATIC-RELEASE-APPROVAL.yaml",
     "runs/hosted-operation-canary/repaired_materialized_candidate_specs/CANDIDATE-HOSTED-OPERATION-CANARY-CANDIDATE-SPEC-PRODUCT-BOUNDARY.yaml",
     "runs/hosted-operation-canary/repaired_materialized_candidate_specs/CANDIDATE-HOSTED-OPERATION-CANARY-CANDIDATE-SPEC-RECORD-CANARY-CHECK.yaml",
     "runs/hosted-operation-canary/repaired_materialized_candidate_specs/CANDIDATE-HOSTED-OPERATION-CANARY-CANDIDATE-SPEC-REFRESH-REVIEW-STATUS.yaml",
-    "runs/hosted-operation-canary/repaired_materialized_candidate_specs/CANDIDATE-HOSTED-OPERATION-CANARY-CANDIDATE-SPEC-CONFIRM-FOLLOW-UP-VERIFICATION.yaml",
-    "runs/hosted-operation-canary/repaired_materialized_candidate_specs/CANDIDATE-HOSTED-OPERATION-CANARY-CANDIDATE-SPEC-LOCAL-FIRST-OPERATOR-STATE.yaml",
-    "runs/hosted-operation-canary/repaired_materialized_candidate_specs/CANDIDATE-HOSTED-OPERATION-CANARY-CANDIDATE-SPEC-NO-AUTOMATIC-RELEASE-APPROVAL.yaml",
-    "runs/hosted-operation-canary/repaired_materialized_candidate_specs/CANDIDATE-HOSTED-OPERATION-CANARY-CANDIDATE-SPEC-BLOCK-RELEASE-COMPLETION-UNTIL-REQUIRED-FOLLOW-UP-VERIFICATION.yaml",
-    "runs/hosted-operation-canary/repaired_materialized_candidate_specs/CANDIDATE-HOSTED-OPERATION-CANARY-CANDIDATE-SPEC-ESCALATE-FAILED-CANARY-CHECKS-TO-THE-SERVICE-OWNER.yaml",
     "runs/hosted-operation-canary/repaired_candidate_spec_graph.json",
     "runs/hosted-operation-canary/repaired_pre_sib_coherence_report.json",
     "runs/hosted-operation-canary/repaired_candidate_repair_loop_report.json",
@@ -30,20 +30,23 @@
     "runs/hosted-operation-canary/repaired_active_idea_to_spec_candidate.json",
     "runs/hosted-operation-canary/repaired_idea_to_spec_repair_session.json",
     "runs/hosted-operation-canary/repaired_candidate_promotion_handoff_report.json",
+    "runs/hosted-operation-canary/platform_candidate_approval_intent_gate_report.json",
+    "runs/hosted-operation-canary/platform_product_repair_rerun_execution_report.json",
+    "runs/hosted-operation-canary/platform_product_repair_rerun_publication_report.json",
     "runs/hosted-operation-canary/candidate_approval_decision.json",
     "runs/hosted-operation-canary/graph_repository_promotion_request.json"
   ],
   "deployment_profile_id": "product_idea_to_spec_workbench",
   "diagnostics": [],
   "dry_run": false,
-  "generated_at": "2026-07-14T16:35:55.686424+00:00",
+  "generated_at": "2026-07-14T16:48:32.839056+00:00",
   "git_commands_executed": [],
   "local_files_written": [
-    "../SpecGraph/runs/hosted-operation-canary/graph_repository_promotion_request.json"
+    "$LOCAL_PATH"
   ],
   "merges_performed": [],
   "ok": true,
-  "plan_ref": "../SpecGraph/runs/hosted-operation-canary/graph_repository_execution_plan.json",
+  "plan_ref": "$LOCAL_PATH",
   "pull_requests_opened": [],
   "read_models_published": [],
   "requested_operations": [
@@ -53,7 +56,7 @@
   ],
   "review": {
     "base_branch": "main",
-    "body": "Review candidate-scoped materialization from SpecGraph proposal 0213. This PR includes the public-safe repaired handoff, approval decision, and promotion request.",
+    "body": "Promote the approval-ready Hosted Operation Canary candidate review packet after candidate-scoped materialization proposal 0213.",
     "title": "Promote Hosted Operation Canary candidate spec graph"
   },
   "schema_version": 1,
@@ -116,7 +119,7 @@
     }
   ],
   "summary": {
-    "commit_path_count": 18,
+    "commit_path_count": 21,
     "error_count": 0,
     "promotion_ready": true
   },
