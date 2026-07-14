@@ -1,0 +1,247 @@
+{
+  "active_frame": {
+    "context_refs": [
+      "context.hosted-operation-canary"
+    ],
+    "domain_refs": [
+      "domain.deployment-canary",
+      "domain.review-status",
+      "domain.follow-up-verification",
+      "domain.hosted_operation_canary"
+    ],
+    "lifecycle_phase": "idea_intake",
+    "model_applicability_refs": [
+      "model-applicability://product-idea-to-spec"
+    ],
+    "ontology_layer_refs": [
+      "ontology-layer://core"
+    ],
+    "ontology_refs": [
+      "ontology://specgraph-core"
+    ],
+    "project": "HostedOperationCanary",
+    "subsystem": "Product Workspace"
+  },
+  "artifact_kind": "active_idea_to_spec_candidate",
+  "authority_boundary": {
+    "may_create_branch_or_commit": false,
+    "may_execute_prompt_agent": false,
+    "may_mark_candidate_graph_accepted": false,
+    "may_mutate_candidate_source_artifacts": false,
+    "may_mutate_canonical_specs": false,
+    "may_open_pull_request": false,
+    "may_publish_read_model": false,
+    "may_write_ontology_lockfile": false,
+    "may_write_ontology_package": false
+  },
+  "candidate": {
+    "authority_profile": "workspace_owner_controlled",
+    "candidate_id": "hosted-operation-canary",
+    "display_name": "Hosted Operation Canary",
+    "governance_profile": "product_workspace",
+    "public_route": "/hosted-operation-canary",
+    "target_repository_role": "product_spec_workspace",
+    "workflow_lane": "product_idea_to_spec"
+  },
+  "canonical_mutations_allowed": false,
+  "config_source": {
+    "artifact_kind": "active_idea_to_spec_candidate_source_config",
+    "contract_ref": "specgraph.idea-to-spec.active-candidate-source-config.v0.1",
+    "mode": "repaired_candidate_promotion_handoff",
+    "required": false,
+    "source_ref": null
+  },
+  "contract_ref": "specgraph.idea-to-spec.active-candidate-source.v0.1",
+  "findings": [],
+  "generated_at": "2026-07-14T16:32:11.833975+00:00",
+  "platform_handoff_surfaces": {
+    "candidate_spec_materialization_report.json": {
+      "ready": true,
+      "source_ref": "runs/hosted-operation-canary/repaired_candidate_spec_materialization_report.json"
+    },
+    "idea_to_spec_promotion_gate.json": {
+      "ready": true,
+      "source_ref": "runs/hosted-operation-canary/repaired_idea_to_spec_promotion_gate.json"
+    }
+  },
+  "privacy_boundary": {
+    "raw_intent_text_published": false,
+    "raw_model_output_published": false,
+    "raw_operator_note_published": false,
+    "raw_prompt_published": false
+  },
+  "proposal_id": "0155",
+  "readiness": {
+    "blocked_by": [],
+    "next_artifact": "SpecSpace product workspace route",
+    "ready": true,
+    "review_state": "active_candidate_ready"
+  },
+  "schema_version": 1,
+  "source_artifacts": {
+    "candidate_graph": {
+      "artifact_key": "candidate_graph",
+      "artifact_kind": "candidate_spec_graph",
+      "contract_ref": "specgraph.idea-to-spec.candidate-spec-graph.v0.1",
+      "proposal_id": "0150",
+      "readiness": {
+        "blocked_by": [],
+        "next_artifact": "runs/pre_sib_coherence_report.json",
+        "ready": true,
+        "review_state": "ready_for_pre_sib"
+      },
+      "sha256": "e9e1438270cfc6327641263c98f2b8d4593eb09fc326658d8f7cd675b4320f64",
+      "source_ref": "runs/hosted-operation-canary/repaired_candidate_spec_graph.json",
+      "summary": {
+        "acceptance_criteria_count": 8,
+        "claim_count": 0,
+        "edge_count": 7,
+        "finding_count": 0,
+        "gap_count": 0,
+        "node_count": 8,
+        "requirement_count": 8,
+        "status": "ready_for_pre_sib"
+      }
+    },
+    "intake": {
+      "artifact_key": "intake",
+      "artifact_kind": "idea_event_storming_intake",
+      "contract_ref": "specgraph.idea-to-spec.event-storming-intake.v0.1",
+      "proposal_id": "0149",
+      "readiness": {
+        "blocked_by": [],
+        "next_artifact": "runs/candidate_spec_graph.json",
+        "ready": true,
+        "review_state": "ready_for_candidate_graph"
+      },
+      "sha256": "e9ec4d3ccd06be75fd58f403dc1954c392ffde42db93dfdbf6f42ecc5ac32c29",
+      "source_ref": "runs/hosted-operation-canary/idea_event_storming_intake.json",
+      "summary": {
+        "actor_count": 3,
+        "assumption_count": 0,
+        "command_count": 3,
+        "constraint_count": 2,
+        "domain_event_count": 3,
+        "external_system_count": 0,
+        "finding_count": 0,
+        "policy_count": 2,
+        "risk_count": 0,
+        "status": "ready_for_candidate_graph",
+        "vocabulary_question_count": 0,
+        "warning_count": 0
+      }
+    },
+    "materialization": {
+      "artifact_key": "materialization",
+      "artifact_kind": "candidate_spec_materialization_report",
+      "contract_ref": "specgraph.idea-to-spec.candidate-spec-materialization.v0.1",
+      "proposal_id": "0153",
+      "readiness": {
+        "blocked_by": [],
+        "next_artifact": "Platform graph-repository promotion-request",
+        "ready": true,
+        "review_state": "materialized_candidate_review_ready"
+      },
+      "sha256": "5b276209921b5780e1236a0722bdb6ca255cd82e4272fb55baf4aa6da99595c4",
+      "source_ref": "runs/hosted-operation-canary/repaired_candidate_spec_materialization_report.json",
+      "summary": {
+        "candidate_node_count": 8,
+        "finding_count": 0,
+        "materialized_file_count": 8,
+        "status": "materialized_candidate_review_ready"
+      }
+    },
+    "pre_sib": {
+      "artifact_key": "pre_sib",
+      "artifact_kind": "pre_sib_coherence_report",
+      "contract_ref": "specgraph.idea-to-spec.pre-sib-coherence-report.v0.1",
+      "proposal_id": "0151",
+      "readiness": {
+        "blocked_by": [],
+        "next_artifact": "runs/candidate_repair_loop_report.json",
+        "ready": true,
+        "review_state": "ready_for_repair_loop"
+      },
+      "sha256": "f76cfa70f544cf3ecc79ed7c07ed272e5d8ad1c1f4c9a96aae4f727bcc7ce100",
+      "source_ref": "runs/hosted-operation-canary/repaired_pre_sib_coherence_report.json",
+      "summary": {
+        "edge_count": 7,
+        "finding_count": 0,
+        "gap_count": 0,
+        "node_count": 8,
+        "status": "ready_for_repair_loop",
+        "warning_count": 0
+      }
+    },
+    "promotion_gate": {
+      "artifact_key": "promotion_gate",
+      "artifact_kind": "idea_to_spec_promotion_gate",
+      "contract_ref": "specgraph.idea-to-spec.promotion-gate.v0.1",
+      "proposal_id": "0154",
+      "readiness": {
+        "blocked_by": [],
+        "next_artifact": "Platform graph-repository promotion-request",
+        "ready": true,
+        "review_state": "ready_for_platform_promotion_request"
+      },
+      "sha256": "9dc6c37e0aa0a0fc8e6ebf43352332a3179f7611c1c20ad4665307b16d9cc99e",
+      "source_ref": "runs/hosted-operation-canary/repaired_idea_to_spec_promotion_gate.json",
+      "summary": {
+        "finding_count": 0,
+        "materialized_file_count": 8,
+        "promotion_path_count": 8,
+        "status": "ready_for_platform_promotion_request",
+        "warning_count": 0
+      }
+    },
+    "repair_loop": {
+      "artifact_key": "repair_loop",
+      "artifact_kind": "candidate_repair_loop_report",
+      "contract_ref": "specgraph.idea-to-spec.candidate-repair-loop.v0.1",
+      "proposal_id": "0152",
+      "readiness": {
+        "blocked_by": [],
+        "context_required_count": 0,
+        "next_artifact": "runs/idea_to_spec_workspace_bundle.json",
+        "ready": true,
+        "review_state": "repair_preview_ready"
+      },
+      "sha256": "5ef3e181339aaa142d81a360b08f47613a00b1a20707a5b29bebb671f93c049d",
+      "source_ref": "runs/hosted-operation-canary/repaired_candidate_repair_loop_report.json",
+      "summary": {
+        "action_count": 0,
+        "applied_action_count": 0,
+        "context_required_count": 0,
+        "finding_count": 0,
+        "no_op_repair_loop": true,
+        "status": "repair_preview_ready"
+      }
+    }
+  },
+  "source_derivation": {
+    "artifact_paths_source": "repaired_candidate_promotion_handoff",
+    "config_required": false,
+    "identity_source": "intake.source_intake.workspace",
+    "standard_artifact_paths": {
+      "candidate_graph": "runs/candidate_spec_graph.json",
+      "intake": "runs/idea_event_storming_intake.json",
+      "materialization": "runs/candidate_spec_materialization_report.json",
+      "pre_sib": "runs/pre_sib_coherence_report.json",
+      "promotion_gate": "runs/idea_to_spec_promotion_gate.json",
+      "repair_loop": "runs/candidate_repair_loop_report.json"
+    }
+  },
+  "source_mode": "active_candidate",
+  "summary": {
+    "candidate_id": "hosted-operation-canary",
+    "finding_count": 0,
+    "materialized_file_count": 8,
+    "promotion_path_count": 8,
+    "source_artifact_count": 6,
+    "status": "active_candidate_ready",
+    "warning_count": 0,
+    "workspace_route": "/hosted-operation-canary"
+  },
+  "tracked_artifacts_written": false,
+  "warnings": []
+}

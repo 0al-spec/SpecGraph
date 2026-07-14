@@ -1,0 +1,60 @@
+{
+  "artifact_kind": "pre_sib_coherence_report",
+  "authority_boundary": {
+    "may_create_branch_or_commit": false,
+    "may_execute_prompt_agent": false,
+    "may_mark_candidate_graph_accepted": false,
+    "may_mutate_canonical_specs": false,
+    "may_write_ontology_lockfile": false,
+    "may_write_ontology_package": false
+  },
+  "canonical_mutations_allowed": false,
+  "contract_ref": "specgraph.idea-to-spec.pre-sib-coherence-report.v0.1",
+  "findings": [],
+  "generated_at": "2026-07-14T16:32:11.823886+00:00",
+  "metrics": {
+    "acceptance_criteria_count": 8,
+    "acceptance_criteria_coverage_ratio": 1.0,
+    "claim_count": 0,
+    "connected_node_ratio": 1.0,
+    "duplicate_node_titles": [],
+    "edge_count": 7,
+    "gap_count": 0,
+    "node_count": 8,
+    "ontology_coverage_ratio": 1.0,
+    "ontology_covered_node_count": 8,
+    "orphan_node_count": 0,
+    "requirement_count": 8,
+    "unsupported_strong_claim_count": 0
+  },
+  "privacy_boundary": {
+    "raw_intent_text_published": false,
+    "raw_model_output_published": false,
+    "raw_prompt_published": false
+  },
+  "proposal_id": "0151",
+  "readiness": {
+    "blocked_by": [],
+    "next_artifact": "runs/candidate_repair_loop_report.json",
+    "ready": true,
+    "review_state": "ready_for_repair_loop"
+  },
+  "schema_version": 1,
+  "source_candidate_graph": {
+    "artifact_kind": "candidate_spec_graph",
+    "contract_ref": "specgraph.idea-to-spec.candidate-spec-graph.v0.1",
+    "pre_sib_readiness": "ready_for_pre_sib",
+    "source_ref": "product://hosted-operation-canary/root-intent"
+  },
+  "source_ref": "product://hosted-operation-canary/root-intent",
+  "summary": {
+    "edge_count": 7,
+    "finding_count": 0,
+    "gap_count": 0,
+    "node_count": 8,
+    "status": "ready_for_repair_loop",
+    "warning_count": 0
+  },
+  "tracked_artifacts_written": false,
+  "warnings": []
+}
