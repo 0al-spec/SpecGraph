@@ -2767,5 +2767,18 @@
     "required_provenance_links": [
       "source_draft_ref"
     ]
+  },
+  {
+    "proposal_id": "0215",
+    "source_artifact_class": "working_draft",
+    "source_refs": [
+      "docs/archive/proposal_sources/0215_incremental_static_workspace_deployment.md"
+    ],
+    "motivating_concern": "Publishing the root plus two workspace bundles through one recursive lftp mirror now takes about 30 minutes and retransfers unchanged workspace payloads.",
+    "normalized_title": "Incremental Static Workspace Deployment",
+    "bounded_scope": "Stage only manifest paths whose SHA-256 changed for the root and tracked workspace bundles, upload payload before checksums and manifests, and verify the resulting HTTPS surfaces without deleting remote webroot files, changing artifact authority, starting hosted execution, mutating canonical specs or Ontology, approving candidates, or executing Git operations.",
+    "required_provenance_links": [
+      "source_draft_ref"
+    ]
   }
 ]

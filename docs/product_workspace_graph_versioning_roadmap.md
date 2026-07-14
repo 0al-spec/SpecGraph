@@ -1,5 +1,13 @@
 # Product Workspace Graph Versioning Roadmap
 
+## Incremental Static Workspace Deployment
+
+Done in proposal `0215`. Root and product workspace publication now stages
+only checksum-changed payload files, finalizes checksums/manifests after the
+payload, and verifies every published manifest path over HTTPS. This replaces
+the full recursive payload mirror that grew to about 30 minutes after the
+Hosted Operation Canary workspace bundle was added.
+
 ## Purpose
 
 This roadmap defines how product workspaces should version and publish

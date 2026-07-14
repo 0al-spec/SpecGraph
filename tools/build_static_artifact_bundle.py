@@ -53,6 +53,9 @@ PLATFORM_HANDOFF_RUN_SURFACES = (
 )
 ACTIVE_IDEA_TO_SPEC_CANDIDATE_SURFACE = "active_idea_to_spec_candidate.json"
 CANDIDATE_APPROVAL_DECISION_SURFACE = "candidate_approval_decision.json"
+WORKSPACE_INITIALIZATION_EXECUTION_SURFACE = (
+    "platform_product_workspace_initialization_execution_report.json"
+)
 PRODUCT_WORKSPACE_ACTIVE_CANDIDATE_REFRESH_ENV = "PRODUCT_WORKSPACE_ACTIVE_CANDIDATE_REFRESH"
 PLATFORM_HANDOFF_PLACEHOLDER_REASON = "no_active_candidate"
 PLATFORM_HANDOFF_MATERIALIZATION_CONTRACT_REF = (
@@ -174,7 +177,28 @@ def has_symlink_component(path: Path, stop_at: Path) -> bool:
     return False
 
 
-def iter_publish_sources(repo_root: Path) -> Iterable[tuple[str, Path, PurePosixPath]]:
+def resolve_workspace_bootstrap_run_dir(repo_root: Path, value: Path | None) -> Path | None:
+    if value is None:
+        return None
+    runs_root = (repo_root / "runs").resolve()
+    candidate = (repo_root / value).resolve() if not value.is_absolute() else value.resolve()
+    if candidate == runs_root or runs_root not in candidate.parents:
+        raise PublishBundleError("workspace bootstrap run directory must stay below runs/")
+    if not candidate.is_dir() or has_symlink_component(candidate, runs_root):
+        raise PublishBundleError("workspace bootstrap run directory is missing or symlinked")
+    surface = candidate / WORKSPACE_INITIALIZATION_EXECUTION_SURFACE
+    if not surface.is_file() or has_symlink_component(surface, runs_root):
+        raise PublishBundleError(
+            "workspace bootstrap initialization execution report is missing or symlinked"
+        )
+    return candidate
+
+
+def iter_publish_sources(
+    repo_root: Path,
+    *,
+    workspace_bootstrap_run_dir: Path | None = None,
+) -> Iterable[tuple[str, Path, PurePosixPath]]:
     active_candidate_ready = is_publishable_active_candidate_source(repo_root)
     approval_ready = is_publishable_candidate_approval_decision(repo_root)
     for root_name in PUBLISHED_ROOTS:
@@ -191,6 +215,11 @@ def iter_publish_sources(repo_root: Path) -> Iterable[tuple[str, Path, PurePosix
             rel = PurePosixPath(root_name, path.relative_to(source_root).as_posix())
             if root_name == "runs":
                 run_rel = rel.relative_to("runs").as_posix()
+                if (
+                    workspace_bootstrap_run_dir is not None
+                    and run_rel == WORKSPACE_INITIALIZATION_EXECUTION_SURFACE
+                ):
+                    continue
                 if is_local_only_run_path(run_rel) or is_local_only_json_artifact(path):
                     continue
                 if run_rel == ACTIVE_IDEA_TO_SPEC_CANDIDATE_SURFACE and not active_candidate_ready:
@@ -198,6 +227,13 @@ def iter_publish_sources(repo_root: Path) -> Iterable[tuple[str, Path, PurePosix
                 if run_rel == CANDIDATE_APPROVAL_DECISION_SURFACE and not approval_ready:
                     continue
             yield root_name, path, rel
+    if workspace_bootstrap_run_dir is not None:
+        source = workspace_bootstrap_run_dir / WORKSPACE_INITIALIZATION_EXECUTION_SURFACE
+        yield (
+            "runs",
+            source,
+            PurePosixPath("runs", WORKSPACE_INITIALIZATION_EXECUTION_SURFACE),
+        )
 
 
 def is_local_only_run_path(run_rel: str) -> bool:
@@ -766,10 +802,14 @@ def build_public_bundle(
     refresh_surfaces: bool = False,
     strict_required_surfaces: bool = True,
     require_verified_agent_passports: bool = True,
+    workspace_bootstrap_run_dir: Path | None = None,
 ) -> BuildResult:
     repo_root = repo_root.resolve()
     output_dir = (
         (repo_root / output_dir).resolve() if not output_dir.is_absolute() else output_dir.resolve()
+    )
+    workspace_bootstrap_run_dir = resolve_workspace_bootstrap_run_dir(
+        repo_root, workspace_bootstrap_run_dir
     )
 
     if refresh_surfaces:
@@ -790,7 +830,10 @@ def build_public_bundle(
     secret_findings: list[str] = []
     ontology_fixture_findings: list[str] = []
 
-    for root_name, source_path, rel_path in iter_publish_sources(repo_root):
+    for root_name, source_path, rel_path in iter_publish_sources(
+        repo_root,
+        workspace_bootstrap_run_dir=workspace_bootstrap_run_dir,
+    ):
         text = load_text(source_path)
         if root_name == "runs" and source_path.suffix == ".json":
             validate_json_artifact(source_path, text)
@@ -909,6 +952,14 @@ def parse_args(argv: list[str]) -> argparse.Namespace:
     parser.add_argument("--repo-root", type=Path, default=Path.cwd())
     parser.add_argument("--output-dir", type=Path, default=DEFAULT_OUTPUT_DIR)
     parser.add_argument(
+        "--workspace-bootstrap-run-dir",
+        type=Path,
+        help=(
+            "Publish the selected workspace initialization execution report at the "
+            "top-level runs/ bootstrap path while retaining scoped run artifacts."
+        ),
+    )
+    parser.add_argument(
         "--refresh-publish-surfaces",
         action="store_true",
         dest="refresh_publish_surfaces",
@@ -954,6 +1005,7 @@ def main(argv: list[str] | None = None) -> int:
             refresh_surfaces=args.refresh_publish_surfaces,
             strict_required_surfaces=not args.allow_missing_required_surfaces,
             require_verified_agent_passports=not args.allow_unverified_agent_passports,
+            workspace_bootstrap_run_dir=args.workspace_bootstrap_run_dir,
         )
     except PublishBundleError as exc:
         print(f"ERROR: {exc}", file=sys.stderr)

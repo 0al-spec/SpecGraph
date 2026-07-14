@@ -47,6 +47,18 @@ files. Consumers should use `artifact_manifest.json` and `checksums.sha256` as
 the authoritative artifact index instead of inferring validity from every file
 that happens to remain under `specs/` or `runs/`.
 
+Proposal `0215` makes the payload transfer checksum-aware. The deploy job
+compares each local manifest with its durable HTTPS manifest and stages only
+added or content-changed files for the root, Team Decision Log, and Hosted
+Operation Canary surfaces. Manifest-matched payload bytes are checked at the
+HTTPS origin so a rerun stages and repairs missing or stale files after partial
+publication. It uploads payload files first, then checksums, and manifests last.
+A post-upload pass verifies the published manifest, checksum file, and every
+manifest-authorized payload, so an incomplete or stale public surface fails
+closed.
+Remote files omitted by a new manifest are not deleted from the shared webroot;
+they simply stop being authoritative.
+
 The repository landing page is deployed by a separate workflow job from
 `landing/` into the same `SFTP_REMOTE_ROOT`. That job is also non-destructive and
 excludes local QA screenshots under `landing/check/`. Landing files are not part
@@ -358,6 +370,11 @@ Unlike the Team Decision Log demo bundle, this workspace bundle is built from
 the tracked 59-file approval/provenance packet. Publishing it does not start the
 hosted worker, execute Git operations, merge the candidate review, or publish a
 post-merge read model.
+
+The bundle exposes the scoped initialization execution report once at
+`runs/platform_product_workspace_initialization_execution_report.json` as a
+bootstrap alias. SpecSpace validates the durable binding from that report before
+following the binding's workspace-scoped artifact refs.
 
 ## Consumer Contract
 

@@ -73,9 +73,25 @@ def test_secret_bearing_jobs_do_not_run_on_pr_controlled_workflow() -> None:
 def test_deploy_upload_mirrors_bundle_contents_not_wrapper_directory() -> None:
     workflow = _workflow_text()
 
-    assert "lcd dist/specgraph-public" in workflow
-    assert 'mirror -R --verbose . "$SFTP_REMOTE_ROOT"' in workflow
+    assert 'lcd "$INCREMENTAL_STAGE_DIR"' in workflow
+    assert 'mirror -R --verbose . "$REMOTE_ROOT"' in workflow
     assert 'mirror -R --delete --verbose dist/specgraph-public "$SFTP_REMOTE_ROOT"' not in workflow
+
+
+def test_deploy_stages_workspace_payloads_and_finalizes_manifests_last() -> None:
+    workflow = _workflow_text()
+    stage_block = _step_block(workflow, "Stage changed artifact payloads")
+    upload_block = _step_block(workflow, "Upload changed artifact payloads and metadata")
+    verify_block = _step_block(workflow, "Verify published artifact digests")
+
+    assert stage_block.count("tools/static_artifact_incremental_stage.py stage") == 3
+    assert "--staging-prefix workspaces/team-decision-log" in stage_block
+    assert "--staging-prefix workspaces/hosted-operation-canary" in stage_block
+    assert upload_block.index("mirror -R --verbose") < upload_block.index("checksums.sha256")
+    assert upload_block.index("checksums.sha256") < upload_block.index("artifact_manifest.json")
+    assert verify_block.count("tools/static_artifact_incremental_stage.py verify") == 3
+    assert "$STATIC_ARTIFACT_PUBLIC_BASE_URL/workspaces/hosted-operation-canary" in (verify_block)
+    assert "name: specgraph-incremental-deployment-reports" in workflow
 
 
 def test_publish_workflow_builds_team_decision_log_workspace_bundle() -> None:
@@ -104,6 +120,7 @@ def test_publish_workflow_builds_hosted_operation_canary_workspace_bundle() -> N
     )
 
     assert "tools/build_static_artifact_bundle.py" in build_workspace_block
+    assert "--workspace-bootstrap-run-dir runs/hosted-operation-canary" in (build_workspace_block)
     assert (
         "--output-dir dist/specgraph-public/workspaces/hosted-operation-canary"
         in build_workspace_block
@@ -154,7 +171,9 @@ def test_hosted_operation_canary_packet_is_self_contained_and_ready() -> None:
 
 def test_artifact_deploy_does_not_delete_webroot_content() -> None:
     workflow = _workflow_text()
-    upload_bundle_block = workflow.split("      - name: Upload bundle", 1)[1].split(
+    upload_bundle_block = workflow.split(
+        "      - name: Upload changed artifact payloads and metadata", 1
+    )[1].split(
         "      - name: Report skipped SFTP upload",
         1,
     )[0]

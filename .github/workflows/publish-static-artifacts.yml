@@ -110,6 +110,7 @@ jobs:
       - name: Build Hosted Operation Canary product workspace bundle
         run: |
           python tools/build_static_artifact_bundle.py \
+            --workspace-bootstrap-run-dir runs/hosted-operation-canary \
             --output-dir dist/specgraph-public/workspaces/hosted-operation-canary
 
       - name: Upload bundle as GitHub Actions artifact
@@ -135,6 +136,8 @@ jobs:
       SFTP_KNOWN_HOSTS: ${{ secrets.SFTP_KNOWN_HOSTS }}
       SFTP_REMOTE_ROOT: ${{ secrets.SFTP_REMOTE_ROOT }}
       FTPS_ALLOW_UNVERIFIED_CERT: ${{ secrets.FTPS_ALLOW_UNVERIFIED_CERT }}
+      STATIC_ARTIFACT_PUBLIC_BASE_URL: https://specgraph.tech
+      INCREMENTAL_STAGE_DIR: ${{ runner.temp }}/specgraph-incremental-upload
 
     steps:
       - name: Checkout deploy tooling
@@ -150,18 +153,42 @@ jobs:
         if: env.SFTP_HOST != ''
         run: python tools/static_artifact_deploy_plan.py --bundle-dir dist/specgraph-public
 
+      - name: Stage changed artifact payloads
+        if: env.SFTP_HOST != ''
+        run: |
+          rm -rf "$INCREMENTAL_STAGE_DIR"
+          mkdir -p "$INCREMENTAL_STAGE_DIR" "$RUNNER_TEMP/specgraph-incremental-reports"
+          python tools/static_artifact_incremental_stage.py stage \
+            --bundle-dir dist/specgraph-public \
+            --remote-manifest-url "$STATIC_ARTIFACT_PUBLIC_BASE_URL/artifact_manifest.json" \
+            --staging-dir "$INCREMENTAL_STAGE_DIR" \
+            --output "$RUNNER_TEMP/specgraph-incremental-reports/root.json"
+          python tools/static_artifact_incremental_stage.py stage \
+            --bundle-dir dist/specgraph-public/workspaces/team-decision-log \
+            --remote-manifest-url "$STATIC_ARTIFACT_PUBLIC_BASE_URL/workspaces/team-decision-log/artifact_manifest.json" \
+            --staging-dir "$INCREMENTAL_STAGE_DIR" \
+            --staging-prefix workspaces/team-decision-log \
+            --output "$RUNNER_TEMP/specgraph-incremental-reports/team-decision-log.json"
+          python tools/static_artifact_incremental_stage.py stage \
+            --bundle-dir dist/specgraph-public/workspaces/hosted-operation-canary \
+            --remote-manifest-url "$STATIC_ARTIFACT_PUBLIC_BASE_URL/workspaces/hosted-operation-canary/artifact_manifest.json" \
+            --staging-dir "$INCREMENTAL_STAGE_DIR" \
+            --staging-prefix workspaces/hosted-operation-canary \
+            --output "$RUNNER_TEMP/specgraph-incremental-reports/hosted-operation-canary.json"
+
       - name: Install transfer client
         if: env.SFTP_HOST != ''
         run: |
           sudo apt-get update
           sudo apt-get install -y lftp openssh-client
 
-      - name: Upload bundle
+      - name: Upload changed artifact payloads and metadata
         if: env.SFTP_HOST != ''
         run: |
           test -n "$SFTP_USER"
           test -n "$SFTP_REMOTE_ROOT"
           DEPLOY_PORT="${SFTP_PORT:-22}"
+          REMOTE_ROOT="${SFTP_REMOTE_ROOT%/}"
 
           if [ "$DEPLOY_PORT" = "21" ]; then
             test -n "$SFTP_PASSWORD"
@@ -176,8 +203,16 @@ jobs:
           $FTPS_VERIFY_CERT_LINE
           set net:max-retries 2
           set net:timeout 30
-          lcd dist/specgraph-public
-          mirror -R --verbose . "$SFTP_REMOTE_ROOT"
+          lcd "$INCREMENTAL_STAGE_DIR"
+          mirror -R --verbose . "$REMOTE_ROOT"
+          mkdir -p "$REMOTE_ROOT/workspaces/team-decision-log"
+          mkdir -p "$REMOTE_ROOT/workspaces/hosted-operation-canary"
+          put "$GITHUB_WORKSPACE/dist/specgraph-public/checksums.sha256" -o "$REMOTE_ROOT/checksums.sha256"
+          put "$GITHUB_WORKSPACE/dist/specgraph-public/workspaces/team-decision-log/checksums.sha256" -o "$REMOTE_ROOT/workspaces/team-decision-log/checksums.sha256"
+          put "$GITHUB_WORKSPACE/dist/specgraph-public/workspaces/hosted-operation-canary/checksums.sha256" -o "$REMOTE_ROOT/workspaces/hosted-operation-canary/checksums.sha256"
+          put "$GITHUB_WORKSPACE/dist/specgraph-public/artifact_manifest.json" -o "$REMOTE_ROOT/artifact_manifest.json"
+          put "$GITHUB_WORKSPACE/dist/specgraph-public/workspaces/team-decision-log/artifact_manifest.json" -o "$REMOTE_ROOT/workspaces/team-decision-log/artifact_manifest.json"
+          put "$GITHUB_WORKSPACE/dist/specgraph-public/workspaces/hosted-operation-canary/artifact_manifest.json" -o "$REMOTE_ROOT/workspaces/hosted-operation-canary/artifact_manifest.json"
           bye
           EOF
             exit 0
@@ -195,8 +230,16 @@ jobs:
           set sftp:connect-program "ssh -a -x -i $HOME/.ssh/specgraph_publish_key -o UserKnownHostsFile=$HOME/.ssh/known_hosts"
           set net:max-retries 2
           set net:timeout 30
-          lcd dist/specgraph-public
-          mirror -R --verbose . "$SFTP_REMOTE_ROOT"
+          lcd "$INCREMENTAL_STAGE_DIR"
+          mirror -R --verbose . "$REMOTE_ROOT"
+          mkdir -p "$REMOTE_ROOT/workspaces/team-decision-log"
+          mkdir -p "$REMOTE_ROOT/workspaces/hosted-operation-canary"
+          put "$GITHUB_WORKSPACE/dist/specgraph-public/checksums.sha256" -o "$REMOTE_ROOT/checksums.sha256"
+          put "$GITHUB_WORKSPACE/dist/specgraph-public/workspaces/team-decision-log/checksums.sha256" -o "$REMOTE_ROOT/workspaces/team-decision-log/checksums.sha256"
+          put "$GITHUB_WORKSPACE/dist/specgraph-public/workspaces/hosted-operation-canary/checksums.sha256" -o "$REMOTE_ROOT/workspaces/hosted-operation-canary/checksums.sha256"
+          put "$GITHUB_WORKSPACE/dist/specgraph-public/artifact_manifest.json" -o "$REMOTE_ROOT/artifact_manifest.json"
+          put "$GITHUB_WORKSPACE/dist/specgraph-public/workspaces/team-decision-log/artifact_manifest.json" -o "$REMOTE_ROOT/workspaces/team-decision-log/artifact_manifest.json"
+          put "$GITHUB_WORKSPACE/dist/specgraph-public/workspaces/hosted-operation-canary/artifact_manifest.json" -o "$REMOTE_ROOT/workspaces/hosted-operation-canary/artifact_manifest.json"
           bye
           EOF
           else
@@ -205,11 +248,43 @@ jobs:
           set sftp:connect-program "ssh -a -x -o UserKnownHostsFile=$HOME/.ssh/known_hosts"
           set net:max-retries 2
           set net:timeout 30
-          lcd dist/specgraph-public
-          mirror -R --verbose . "$SFTP_REMOTE_ROOT"
+          lcd "$INCREMENTAL_STAGE_DIR"
+          mirror -R --verbose . "$REMOTE_ROOT"
+          mkdir -p "$REMOTE_ROOT/workspaces/team-decision-log"
+          mkdir -p "$REMOTE_ROOT/workspaces/hosted-operation-canary"
+          put "$GITHUB_WORKSPACE/dist/specgraph-public/checksums.sha256" -o "$REMOTE_ROOT/checksums.sha256"
+          put "$GITHUB_WORKSPACE/dist/specgraph-public/workspaces/team-decision-log/checksums.sha256" -o "$REMOTE_ROOT/workspaces/team-decision-log/checksums.sha256"
+          put "$GITHUB_WORKSPACE/dist/specgraph-public/workspaces/hosted-operation-canary/checksums.sha256" -o "$REMOTE_ROOT/workspaces/hosted-operation-canary/checksums.sha256"
+          put "$GITHUB_WORKSPACE/dist/specgraph-public/artifact_manifest.json" -o "$REMOTE_ROOT/artifact_manifest.json"
+          put "$GITHUB_WORKSPACE/dist/specgraph-public/workspaces/team-decision-log/artifact_manifest.json" -o "$REMOTE_ROOT/workspaces/team-decision-log/artifact_manifest.json"
+          put "$GITHUB_WORKSPACE/dist/specgraph-public/workspaces/hosted-operation-canary/artifact_manifest.json" -o "$REMOTE_ROOT/workspaces/hosted-operation-canary/artifact_manifest.json"
           bye
           EOF
           fi
+
+      - name: Verify published artifact digests
+        if: env.SFTP_HOST != ''
+        run: |
+          python tools/static_artifact_incremental_stage.py verify \
+            --bundle-dir dist/specgraph-public \
+            --remote-base-url "$STATIC_ARTIFACT_PUBLIC_BASE_URL" \
+            --output "$RUNNER_TEMP/specgraph-incremental-reports/root-verification.json"
+          python tools/static_artifact_incremental_stage.py verify \
+            --bundle-dir dist/specgraph-public/workspaces/team-decision-log \
+            --remote-base-url "$STATIC_ARTIFACT_PUBLIC_BASE_URL/workspaces/team-decision-log" \
+            --output "$RUNNER_TEMP/specgraph-incremental-reports/team-decision-log-verification.json"
+          python tools/static_artifact_incremental_stage.py verify \
+            --bundle-dir dist/specgraph-public/workspaces/hosted-operation-canary \
+            --remote-base-url "$STATIC_ARTIFACT_PUBLIC_BASE_URL/workspaces/hosted-operation-canary" \
+            --output "$RUNNER_TEMP/specgraph-incremental-reports/hosted-operation-canary-verification.json"
+
+      - name: Upload incremental deployment reports
+        if: always() && env.SFTP_HOST != ''
+        uses: actions/upload-artifact@v7
+        with:
+          name: specgraph-incremental-deployment-reports
+          path: ${{ runner.temp }}/specgraph-incremental-reports
+          if-no-files-found: warn
 
       - name: Report skipped SFTP upload
         if: env.SFTP_HOST == ''

@@ -24,6 +24,46 @@ def write_json(path: Path, payload: object) -> None:
     path.write_text(json.dumps(payload, indent=2), encoding="utf-8")
 
 
+def test_workspace_bootstrap_alias_uses_scoped_initialization_report(
+    bundle_module: object, tmp_path: Path
+) -> None:
+    repo = make_repo(tmp_path / "repo")
+    surface = "platform_product_workspace_initialization_execution_report.json"
+    write_json(repo / "runs" / surface, {"workspace": {"workspace_id": "foreign"}})
+    write_json(
+        repo / "runs" / "example" / surface,
+        {"workspace": {"workspace_id": "example"}},
+    )
+
+    result = bundle_module.build_public_bundle(
+        repo_root=repo,
+        output_dir=repo / "dist" / "workspace",
+        workspace_bootstrap_run_dir=Path("runs/example"),
+    )
+
+    bootstrap = json.loads((result.output_dir / "runs" / surface).read_text())
+    scoped = json.loads((result.output_dir / "runs" / "example" / surface).read_text())
+    assert bootstrap["workspace"]["workspace_id"] == "example"
+    assert scoped == bootstrap
+    assert [entry["path"] for entry in result.manifest["files"]].count(f"runs/{surface}") == 1
+
+
+def test_workspace_bootstrap_run_dir_must_stay_below_runs(
+    bundle_module: object, tmp_path: Path
+) -> None:
+    repo = make_repo(tmp_path / "repo")
+
+    with pytest.raises(
+        bundle_module.PublishBundleError,
+        match="must stay below runs",
+    ):
+        bundle_module.build_public_bundle(
+            repo_root=repo,
+            output_dir=repo / "dist" / "workspace",
+            workspace_bootstrap_run_dir=repo / "specs",
+        )
+
+
 def make_repo(root: Path) -> Path:
     specs_dir = root / "specs" / "nodes"
     runs_dir = root / "runs"

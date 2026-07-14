@@ -1,5 +1,10 @@
 # Product Workspace Pilots
 
+Proposal `0215` publishes the root and tracked product workspace bundles through
+checksum-aware incremental staging. Payload files are transferred before
+checksums and manifests, and all manifest-authorized paths are verified over
+HTTPS after publication. The shared static webroot remains non-destructive.
+
 SpecGraph can run in `product_workspace` mode when it should develop a user's
 product graph instead of improving SpecGraph itself.
 
