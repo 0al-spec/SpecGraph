@@ -119,6 +119,7 @@ def test_publish_workflow_builds_hosted_operation_canary_workspace_bundle() -> N
     )
 
     assert "tools/build_static_artifact_bundle.py" in build_workspace_block
+    assert "--workspace-bootstrap-run-dir runs/hosted-operation-canary" in (build_workspace_block)
     assert (
         "--output-dir dist/specgraph-public/workspaces/hosted-operation-canary"
         in build_workspace_block

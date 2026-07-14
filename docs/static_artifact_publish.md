@@ -368,6 +368,11 @@ the tracked 59-file approval/provenance packet. Publishing it does not start the
 hosted worker, execute Git operations, merge the candidate review, or publish a
 post-merge read model.
 
+The bundle exposes the scoped initialization execution report once at
+`runs/platform_product_workspace_initialization_execution_report.json` as a
+bootstrap alias. SpecSpace validates the durable binding from that report before
+following the binding's workspace-scoped artifact refs.
+
 ## Consumer Contract
 
 SpecSpace should start from `artifact_manifest.json` and then fetch concrete

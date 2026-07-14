@@ -110,6 +110,7 @@ jobs:
       - name: Build Hosted Operation Canary product workspace bundle
         run: |
           python tools/build_static_artifact_bundle.py \
+            --workspace-bootstrap-run-dir runs/hosted-operation-canary \
             --output-dir dist/specgraph-public/workspaces/hosted-operation-canary
 
       - name: Upload bundle as GitHub Actions artifact

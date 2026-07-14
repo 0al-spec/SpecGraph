@@ -1,4 +1,4 @@
-+# 0215 Incremental Static Workspace Deployment
+# 0215 Incremental Static Workspace Deployment
 
 ## Status
 
@@ -32,6 +32,12 @@ finally each `artifact_manifest.json`. A post-upload verifier downloads every
 manifest-authorized file from all three HTTPS bases and checks its SHA-256. A
 missing, malformed, partial, or digest-mismatched public surface fails the job.
 
+The Hosted Operation Canary bundle also publishes its scoped initialization
+execution report at the top-level `runs/` bootstrap path. That single
+public-safe alias lets SpecSpace discover and validate the durable workspace
+binding before it follows the binding's scoped `runs/hosted-operation-canary`
+refs. The remaining artifacts stay scoped and are not flattened by route slug.
+
 ## Authority Boundary
 
 This proposal changes static artifact transport only. It does not:
@@ -53,6 +59,7 @@ post-publication HTTP digest verification is required.
 - Path traversal and local digest mismatches fail closed.
 - Payload upload precedes checksums and manifest finalization.
 - All three published surfaces receive post-upload HTTP digest verification.
+- Hosted Operation Canary exposes a public-safe initialization bootstrap alias
+  without flattening the remaining scoped run artifacts.
 - Root-level `mirror --delete` remains forbidden.
 - Static bundle safety validation and existing publication tests pass.
-

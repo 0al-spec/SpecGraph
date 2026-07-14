@@ -444,6 +444,9 @@ Supervisor modes:
   `dist/specgraph-public/workspaces/hosted-operation-canary`. The bundle follows
   the durable binding URL without starting hosted execution, merging the review,
   or publishing a post-merge read model.
+- Proposal 0215 adds manifest-diff static deployment and a single Hosted
+  Operation Canary initialization-report bootstrap alias so consumers can
+  validate the durable binding before following scoped run refs.
 - `tools/user_idea_intake_source.py`: deterministic generic user-idea source
   builder introduced by proposal 0158. Use `make user-idea-intake-source
   USER_IDEA_INTAKE_SOURCE=<json>` to normalize product workspace identity,
