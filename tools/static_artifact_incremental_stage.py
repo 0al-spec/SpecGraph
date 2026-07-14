@@ -94,6 +94,7 @@ def stage_changed_files(
     staging_dir: Path,
     staging_prefix: str = "",
     fetcher: Fetcher = _fetch,
+    workers: int = 12,
 ) -> dict[str, Any]:
     parsed = urllib.parse.urlparse(remote_manifest_url)
     if parsed.scheme != "https" or not parsed.netloc:
@@ -101,11 +102,30 @@ def stage_changed_files(
     prefix = _safe_path(staging_prefix) if staging_prefix else ""
     _, local_files = _load_local_manifest(bundle_dir)
     remote_files, remote_manifest_available = _remote_files(remote_manifest_url, fetcher)
-    changed = sorted(
+    changed_from_manifest = {
         path
         for path, row in local_files.items()
         if remote_files.get(path, {}).get("sha256") != row["sha256"]
-    )
+    }
+    remote_base_url = remote_manifest_url.rsplit("/", 1)[0]
+
+    def manifest_match_is_stale(item: tuple[str, dict[str, Any]]) -> str | None:
+        path, row = item
+        if path in changed_from_manifest:
+            return None
+        try:
+            body = fetcher(f"{remote_base_url}/{path}")
+        except Exception:
+            return path
+        return path if hashlib.sha256(body).hexdigest() != row["sha256"] else None
+
+    with ThreadPoolExecutor(max_workers=workers) as pool:
+        stale_matches = {
+            path
+            for path in pool.map(manifest_match_is_stale, local_files.items())
+            if path is not None
+        }
+    changed = sorted(changed_from_manifest | stale_matches)
     removed = sorted(set(remote_files) - set(local_files))
     payload_bytes = 0
     for relative_path in changed:
@@ -129,6 +149,7 @@ def stage_changed_files(
             "local_file_count": len(local_files),
             "remote_file_count": len(remote_files),
             "changed_file_count": len(changed),
+            "manifest_matched_but_stale_count": len(stale_matches),
             "unchanged_file_count": len(local_files) - len(changed),
             "removed_file_count": len(removed),
             "payload_bytes": payload_bytes,
@@ -151,6 +172,20 @@ def verify_remote_bundle(
     _, local_files = _load_local_manifest(bundle_dir)
     base_url = remote_base_url.rstrip("/")
 
+    for metadata_name in ("artifact_manifest.json", "checksums.sha256"):
+        local_metadata = (bundle_dir / metadata_name).read_bytes()
+        try:
+            remote_metadata = fetcher(f"{base_url}/{metadata_name}")
+        except Exception as exc:
+            raise IncrementalStageError(
+                f"remote metadata request failed for {metadata_name}: {exc}"
+            ) from exc
+        if (
+            hashlib.sha256(remote_metadata).hexdigest()
+            != hashlib.sha256(local_metadata).hexdigest()
+        ):
+            raise IncrementalStageError(f"remote metadata digest mismatch: {metadata_name}")
+
     def verify(item: tuple[str, dict[str, Any]]) -> str:
         path, row = item
         try:
@@ -171,7 +206,11 @@ def verify_remote_bundle(
         "schema_version": 1,
         "status": "verified",
         "remote_base_url": base_url,
-        "summary": {"verified_file_count": len(verified), "failure_count": 0},
+        "summary": {
+            "verified_file_count": len(verified),
+            "verified_metadata_file_count": 2,
+            "failure_count": 0,
+        },
     }
 
 

@@ -50,9 +50,12 @@ that happens to remain under `specs/` or `runs/`.
 Proposal `0215` makes the payload transfer checksum-aware. The deploy job
 compares each local manifest with its durable HTTPS manifest and stages only
 added or content-changed files for the root, Team Decision Log, and Hosted
-Operation Canary surfaces. It uploads payload files first, then checksums, and
-manifests last. A post-upload pass downloads every manifest-authorized file and
-verifies its SHA-256, so an incomplete or stale public surface fails closed.
+Operation Canary surfaces. Manifest-matched payload bytes are checked at the
+HTTPS origin so a rerun stages and repairs missing or stale files after partial
+publication. It uploads payload files first, then checksums, and manifests last.
+A post-upload pass verifies the published manifest, checksum file, and every
+manifest-authorized payload, so an incomplete or stale public surface fails
+closed.
 Remote files omitted by a new manifest are not deleted from the shared webroot;
 they simply stop being authoritative.
 

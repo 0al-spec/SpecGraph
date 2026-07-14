@@ -23,14 +23,17 @@ manifested surface:
 
 The staging tool compares each local `artifact_manifest.json` with the manifest
 at the durable HTTPS base and copies only added or content-changed payload files
-into one remote-root-shaped staging directory. Removed files remain physically
+into one remote-root-shaped staging directory. Manifest-matched files are also
+checked at the HTTPS origin, so a missing or stale payload is staged again and
+the next deploy self-heals partial publication. Removed files remain physically
 present because the shared webroot is non-destructive, but the new manifest no
 longer authorizes them.
 
 Deployment uploads the changed payload first, then each `checksums.sha256`, and
-finally each `artifact_manifest.json`. A post-upload verifier downloads every
-manifest-authorized file from all three HTTPS bases and checks its SHA-256. A
-missing, malformed, partial, or digest-mismatched public surface fails the job.
+finally each `artifact_manifest.json`. A post-upload verifier downloads each
+published manifest, checksum file, and manifest-authorized payload from all
+three HTTPS bases and checks its SHA-256. A missing, malformed, partial, or
+digest-mismatched public surface fails the job.
 
 The Hosted Operation Canary bundle also publishes its scoped initialization
 execution report at the top-level `runs/` bootstrap path. That single
