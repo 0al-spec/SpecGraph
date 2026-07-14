@@ -1652,7 +1652,12 @@ more reliable and easier for SpecSpace to present:
    public-safe `display_alias` labels for candidate overview, topology, and
    materialized review artifacts. Consumers must preserve canonical ids in
    evidence refs and managed-operation inputs.
-3. **Custom-run approval/promotion handoff reconciliation.** The local
+3. **Candidate-scoped materialization ids.** Implemented producer-side in
+   proposal `0213`. Review YAML ids, filenames, dependencies, and promotion
+   paths now include a namespace derived from authoritative candidate
+   provenance. Existing approval decisions over generic materialized paths must
+   be rebuilt before promotion.
+4. **Custom-run approval/promotion handoff reconciliation.** The local
    managed-operation chain can already drive arbitrary workspace routes through
    approval and promotion dry-run paths. Reconcile that with the older
    cash-flow smoke follow-up: if the existing Platform wrappers cover custom
@@ -1812,9 +1817,13 @@ The same run exposed the next product-flow friction points:
    Idea Maturity before SpecSpace presents them as a product story.
 11. **Human-friendly candidate ids.** Done in proposal `0212`. Long constraint
    statements retain their stable machine ids, while deterministic display
-   aliases provide shorter readable labels for UI, topology, review YAML, and
-   candidate overview documents.
-12. **Custom-run Platform promotion dry-run.** Needs reconciliation. Later
+    aliases provide shorter readable labels for UI, topology, review YAML, and
+    candidate overview documents.
+12. **Candidate-scoped materialization ids.** Done in proposal `0213`.
+    Candidate review YAML and promotion paths are namespaced by validated
+    candidate provenance, preventing products with shared structural node ids
+    from colliding in Git review.
+13. **Custom-run Platform promotion dry-run.** Needs reconciliation. Later
    SpecSpace/Platform managed-operation smokes proved arbitrary-route
    approval/promotion dry-runs, but this cash-flow-specific follow-up should be
    closed only after the run-dir binding is verified against a repaired

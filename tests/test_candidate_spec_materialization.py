@@ -91,7 +91,8 @@ def test_candidate_spec_materialization_writes_review_yaml(tmp_path: Path) -> No
     if not materialized_path.exists():
         materialized_path = output_dir / Path(first_file["path"]).name
     parsed = yaml.safe_load(materialized_path.read_text(encoding="utf-8"))
-    assert parsed["id"].startswith("CANDIDATE-CANDIDATE-SPEC-")
+    assert parsed["id"].startswith("CANDIDATE-SOURCE-")
+    assert report["candidate_scope"]["derivation"] == "source_ref_digest"
     assert parsed["kind"] == "spec"
     assert parsed["gate_state"] == "review_pending"
     assert parsed["specification"]["materialization_mode"] == "candidate_review_preview"
@@ -107,6 +108,7 @@ def test_candidate_spec_materialization_skips_review_only_workflow_edges(
         "contract_ref": "specgraph.idea-to-spec.candidate-spec-graph.v0.1",
         "canonical_mutations_allowed": False,
         "tracked_artifacts_written": False,
+        "source_ref": "product://workflow-review/root-intent",
         "nodes": [
             {
                 "id": "candidate-spec.product-boundary",
@@ -152,19 +154,68 @@ def test_candidate_spec_materialization_skips_review_only_workflow_edges(
     )
 
     assert report["readiness"]["ready"] is True
-    boundary = yaml.safe_load(
-        (output_dir / "CANDIDATE-CANDIDATE-SPEC-PRODUCT-BOUNDARY.yaml").read_text(encoding="utf-8")
-    )
-    command = yaml.safe_load(
-        (output_dir / "CANDIDATE-CANDIDATE-SPEC-RECORD-DECISION.yaml").read_text(encoding="utf-8")
-    )
+    paths = {
+        item["candidate_node_id"]: output_dir / Path(item["path"]).name
+        for item in report["materialized_files"]
+    }
+    boundary = yaml.safe_load(paths["candidate-spec.product-boundary"].read_text(encoding="utf-8"))
+    command = yaml.safe_load(paths["candidate-spec.record-decision"].read_text(encoding="utf-8"))
 
-    assert boundary["depends_on"] == ["CANDIDATE-CANDIDATE-SPEC-RECORD-DECISION"]
+    assert boundary["depends_on"] == [command["id"]]
     assert command["depends_on"] == []
     assert boundary["title"] == "Product boundary"
     assert boundary["specification"]["candidate_display_alias"] == "Product boundary"
     assert boundary["specification"]["candidate_source_title"] == "Product Boundary"
     assert report["materialized_files"][0]["display_alias"] == "Product boundary"
+
+
+def test_candidate_spec_materialization_namespaces_shared_node_ids_by_candidate(
+    tmp_path: Path,
+) -> None:
+    module = load_module()
+    base_graph = load_json(CANDIDATE_REPAIRABLE)
+    base_graph["source_ref"] = "product://first-product/root-intent"
+    other_graph = load_json(CANDIDATE_REPAIRABLE)
+    other_graph["source_ref"] = "product://second-product/root-intent"
+
+    first_report = module.build_candidate_spec_materialization_report(
+        candidate_graph=base_graph,
+        output_dir=tmp_path / "first",
+    )
+    second_report = module.build_candidate_spec_materialization_report(
+        candidate_graph=other_graph,
+        output_dir=tmp_path / "second",
+    )
+
+    first_paths = {Path(path).name for path in first_report["promotion_request"]["paths"]}
+    second_paths = {Path(path).name for path in second_report["promotion_request"]["paths"]}
+    first_ids = {item["materialized_id"] for item in first_report["materialized_files"]}
+    second_ids = {item["materialized_id"] for item in second_report["materialized_files"]}
+
+    assert first_report["candidate_scope"]["namespace"] == "first-product"
+    assert second_report["candidate_scope"]["namespace"] == "second-product"
+    assert first_paths.isdisjoint(second_paths)
+    assert first_ids.isdisjoint(second_ids)
+    assert all(identifier.startswith("CANDIDATE-FIRST-PRODUCT-") for identifier in first_ids)
+    assert all(identifier.startswith("CANDIDATE-SECOND-PRODUCT-") for identifier in second_ids)
+
+
+def test_candidate_spec_materialization_rejects_invalid_product_scope(
+    tmp_path: Path,
+) -> None:
+    module = load_module()
+    candidate_graph = load_json(CANDIDATE_REPAIRABLE)
+    candidate_graph["source_ref"] = "product://Wrong_Candidate/root-intent"
+
+    report = module.build_candidate_spec_materialization_report(
+        candidate_graph=candidate_graph,
+        output_dir=tmp_path / "materialized",
+    )
+
+    assert report["readiness"]["ready"] is False
+    assert "candidate_materialization_product_scope_invalid" in finding_ids(report)
+    assert report["candidate_scope"] is None
+    assert report["materialized_files"] == []
 
 
 def test_candidate_spec_materialization_rejects_authority_expansion(

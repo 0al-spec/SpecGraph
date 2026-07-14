@@ -740,7 +740,10 @@ contracts instead of creating a second depth metric:
 2. Proposal `0212` keeps candidate graph machine ids stable while publishing
    deterministic human-friendly display aliases for generated nodes, candidate
    overview, review YAML, and topology/readiness panels;
-3. the older custom-run approval/promotion follow-up should be reconciled with
+3. Proposal `0213` namespaces materialized review ids, filenames,
+   dependencies, and promotion paths by validated candidate provenance so
+   products that reuse structural node ids cannot collide in Git review;
+4. the older custom-run approval/promotion follow-up should be reconciled with
    the managed-operation path: either document the existing arbitrary-route
    Platform dry-run capability as sufficient, or add a small producer handoff so
    repaired custom-run artifacts do not need to be copied into canonical
