@@ -12150,5 +12150,53 @@
       }
     ],
     "notes": "SpecGraph now emits deterministic presentation-only display aliases for candidate nodes and propagates them into overview, topology, and materialization outputs without changing canonical ids, refs, paths, or authority."
+  },
+  {
+    "proposal_id": "0213",
+    "posture": "bounded_runtime_followup",
+    "runtime_surfaces": [
+      "docs/proposals/0213_candidate_scoped_materialization_ids.md",
+      "docs/archive/proposal_sources/0213_candidate_scoped_materialization_ids.md",
+      "tools/candidate_spec_materialization.py",
+      "tests/test_candidate_spec_materialization.py",
+      "docs/product_workspace_graph_versioning_roadmap.md",
+      "Sources/SpecGraph/Documentation.docc/ProductWorkspacePilots.md",
+      "tools/README.md"
+    ],
+    "runtime_markers": [
+      {
+        "path": "tools/candidate_spec_materialization.py",
+        "pattern": "def _candidate_scope"
+      },
+      {
+        "path": "tools/candidate_spec_materialization.py",
+        "pattern": "\"candidate_scope\": candidate_scope or None"
+      }
+    ],
+    "validation_markers": [
+      {
+        "path": "tests/test_candidate_spec_materialization.py",
+        "pattern": "test_candidate_spec_materialization_namespaces_shared_node_ids_by_candidate"
+      },
+      {
+        "path": "tests/test_candidate_spec_materialization.py",
+        "pattern": "test_candidate_spec_materialization_rejects_invalid_product_scope"
+      }
+    ],
+    "observation_markers": [
+      {
+        "path": "docs/product_workspace_graph_versioning_roadmap.md",
+        "pattern": "Implemented producer-side in proposal `0213`"
+      },
+      {
+        "path": "Sources/SpecGraph/Documentation.docc/ProductWorkspacePilots.md",
+        "pattern": "Proposal `0213` namespaces materialized review ids"
+      },
+      {
+        "path": "tools/README.md",
+        "pattern": "Proposal 0213 namespaces materialized review ids"
+      }
+    ],
+    "notes": "SpecGraph now namespaces review-only materialized spec ids, filenames, dependencies, and promotion paths by authoritative candidate provenance without changing canonical graph ids or expanding promotion authority."
   }
 ]

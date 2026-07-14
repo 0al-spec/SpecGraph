@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
 import re
 import sys
@@ -29,6 +30,9 @@ DEFAULT_REPAIR_LOOP_PATH = ROOT / "runs" / "candidate_repair_loop_report.json"
 DEFAULT_OUTPUT_DIR = ROOT / "runs" / "materialized_candidate_specs"
 DEFAULT_OUTPUT_PATH = ROOT / "runs" / "candidate_spec_materialization_report.json"
 DISPLAY_ALIAS_MAX_LENGTH = 64
+PRODUCT_SOURCE_REF_RE = re.compile(
+    r"^product://(?P<candidate_id>[a-z0-9][a-z0-9-]{1,62}[a-z0-9])/.+$"
+)
 DISPLAY_ALIAS_PRIVATE_MARKERS = (
     "/Users/",
     "/home/",
@@ -231,12 +235,56 @@ def _edges(candidate_graph: dict[str, Any]) -> list[dict[str, Any]]:
     return [edge for edge in _list(candidate_graph.get("edges")) if isinstance(edge, dict)]
 
 
-def _materialized_id(candidate_node_id: str) -> str:
-    return f"CANDIDATE-{_slug(candidate_node_id, 'spec').upper()}"
+def _candidate_scope(
+    candidate_graph: dict[str, Any],
+) -> tuple[dict[str, str], list[dict[str, Any]]]:
+    source_ref = _text(candidate_graph.get("source_ref"))
+    if not source_ref:
+        return {}, [
+            _finding(
+                finding_id="candidate_materialization_scope_missing",
+                severity="review_required",
+                message="Materialization requires candidate graph source_ref provenance.",
+            )
+        ]
+    product_match = PRODUCT_SOURCE_REF_RE.fullmatch(source_ref)
+    if product_match:
+        candidate_id = product_match.group("candidate_id")
+        return {
+            "namespace": candidate_id,
+            "derivation": "product_source_ref",
+            "source_ref_sha256": hashlib.sha256(source_ref.encode("utf-8")).hexdigest(),
+        }, []
+    if source_ref.startswith("product://"):
+        return {}, [
+            _finding(
+                finding_id="candidate_materialization_product_scope_invalid",
+                severity="review_required",
+                message=(
+                    "Product candidate source_ref must contain a stable lowercase candidate slug."
+                ),
+                evidence={
+                    "source_ref_sha256": hashlib.sha256(source_ref.encode("utf-8")).hexdigest()
+                },
+            )
+        ]
+    source_digest = hashlib.sha256(source_ref.encode("utf-8")).hexdigest()
+    return {
+        "namespace": f"source-{source_digest[:12]}",
+        "derivation": "source_ref_digest",
+        "source_ref_sha256": source_digest,
+    }, []
 
 
-def _materialized_filename(candidate_node_id: str) -> str:
-    return f"{_materialized_id(candidate_node_id)}.yaml"
+def _materialized_id(candidate_scope: str, candidate_node_id: str) -> str:
+    return (
+        f"CANDIDATE-{_slug(candidate_scope, 'candidate').upper()}-"
+        f"{_slug(candidate_node_id, 'spec').upper()}"
+    )
+
+
+def _materialized_filename(candidate_scope: str, candidate_node_id: str) -> str:
+    return f"{_materialized_id(candidate_scope, candidate_node_id)}.yaml"
 
 
 def _edge_materializes_dependency(edge: dict[str, Any]) -> bool:
@@ -352,6 +400,8 @@ def build_candidate_spec_materialization_report(
     output_dir: Path = DEFAULT_OUTPUT_DIR,
 ) -> dict[str, Any]:
     findings = _validate_candidate_graph(candidate_graph) + _validate_repair_loop(repair_loop)
+    candidate_scope, scope_findings = _candidate_scope(candidate_graph)
+    findings.extend(scope_findings)
     graph, source_kind = _candidate_graph_for_materialization(candidate_graph, repair_loop)
     if source_kind == "repair_loop_preview":
         findings.extend(_validate_candidate_graph(graph))
@@ -368,15 +418,16 @@ def build_candidate_spec_materialization_report(
     local_files_written: list[str] = []
     if not blocking_findings:
         nodes = _nodes(graph)
+        scope_namespace = candidate_scope["namespace"]
         id_map = {
             _text(node.get("id"), f"candidate-node-{index}"): _materialized_id(
-                _text(node.get("id"), f"candidate-node-{index}")
+                scope_namespace, _text(node.get("id"), f"candidate-node-{index}")
             )
             for index, node in enumerate(nodes, start=1)
         }
         for node in nodes:
             node_id = _text(node.get("id"), "candidate-node")
-            output_path = output_dir / _materialized_filename(node_id)
+            output_path = output_dir / _materialized_filename(scope_namespace, node_id)
             spec_yaml = _build_spec_yaml(
                 node=node,
                 graph=graph,
@@ -420,6 +471,7 @@ def build_candidate_spec_materialization_report(
             "source_ref": _relative_ref(repair_loop_path) if repair_loop_path is not None else None,
         },
         "materialization_source": source_kind,
+        "candidate_scope": candidate_scope or None,
         "materialized_files": materialized_files,
         "promotion_request": {
             "path_argument": "--path",

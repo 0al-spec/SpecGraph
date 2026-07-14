@@ -423,6 +423,10 @@ Supervisor modes:
 - Proposal 0212 adds deterministic public-safe candidate display aliases for
   operator-facing overview, topology, and materialized review surfaces without
   changing canonical node ids, refs, or promotion paths.
+- Proposal 0213 namespaces materialized review ids, filenames, dependencies,
+  and promotion paths by authoritative candidate provenance. Canonical graph
+  node ids stay unchanged, while malformed or missing provenance blocks
+  materialization instead of falling back to globally shared paths.
   Clarification requests and answer templates carry workspace identity and a
   stable source digest, publish `answers_required`,
   `clarification_not_required`, or `clarification_blocked`, and treat

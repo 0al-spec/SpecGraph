@@ -2741,5 +2741,18 @@
     "required_provenance_links": [
       "source_draft_ref"
     ]
+  },
+  {
+    "proposal_id": "0213",
+    "source_artifact_class": "working_draft",
+    "source_refs": [
+      "docs/archive/proposal_sources/0213_candidate_scoped_materialization_ids.md"
+    ],
+    "motivating_concern": "Review materialization currently derives ids and filenames only from reusable candidate node ids, so different product candidates can collide in Git promotion paths.",
+    "normalized_title": "Candidate-Scoped Materialization IDs",
+    "bounded_scope": "Namespace review-only materialized spec ids, filenames, dependencies, outputs, allowed paths, and promotion paths by validated authoritative candidate provenance, without changing canonical candidate node ids or graph refs, mutating canonical specs, writing Ontology packages, accepting terms, approving candidates, creating Git branches, commits, or pull requests, or publishing read models.",
+    "required_provenance_links": [
+      "source_draft_ref"
+    ]
   }
 ]

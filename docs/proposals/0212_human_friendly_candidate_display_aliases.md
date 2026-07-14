@@ -51,3 +51,8 @@ This proposal does not:
 - Materialized review files retain canonical ids and paths while carrying the
   short alias and original source title.
 - Older artifacts without aliases remain readable by downstream consumers.
+
+Proposal `0213` supersedes only the materialized-id/path preservation statement
+in this proposal. Canonical candidate node ids and graph refs remain unchanged;
+review YAML ids, filenames, dependencies, and promotion paths now include a
+candidate-scoped namespace to prevent cross-product collisions.
