@@ -137,7 +137,7 @@ jobs:
       SFTP_REMOTE_ROOT: ${{ secrets.SFTP_REMOTE_ROOT }}
       FTPS_ALLOW_UNVERIFIED_CERT: ${{ secrets.FTPS_ALLOW_UNVERIFIED_CERT }}
       STATIC_ARTIFACT_PUBLIC_BASE_URL: https://specgraph.tech
-      INCREMENTAL_STAGE_DIR: ${{ runner.temp }}/specgraph-incremental-upload
+      INCREMENTAL_STAGE_DIR: ${{ github.workspace }}/.specgraph-incremental-upload
 
     steps:
       - name: Checkout deploy tooling
