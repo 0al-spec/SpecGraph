@@ -1,6 +1,10 @@
 from __future__ import annotations
 
+import hashlib
+import json
 from pathlib import Path
+
+ROOT = Path(__file__).resolve().parents[1]
 
 
 def _workflow_text(relative_path: str = "publish-static-artifacts.yml") -> str:
@@ -90,6 +94,62 @@ def test_publish_workflow_builds_team_decision_log_workspace_bundle() -> None:
     )
     upload_block = _step_block(workflow, "Upload bundle as GitHub Actions artifact")
     assert "path: dist/specgraph-public" in upload_block
+
+
+def test_publish_workflow_builds_hosted_operation_canary_workspace_bundle() -> None:
+    workflow = _workflow_text()
+    build_workspace_block = _step_block(
+        workflow,
+        "Build Hosted Operation Canary product workspace bundle",
+    )
+
+    assert "tools/build_static_artifact_bundle.py" in build_workspace_block
+    assert (
+        "--output-dir dist/specgraph-public/workspaces/hosted-operation-canary"
+        in build_workspace_block
+    )
+    assert workflow.index("Build Team Decision Log product workspace bundle") < (
+        workflow.index("Build Hosted Operation Canary product workspace bundle")
+    )
+    assert workflow.index("Build Hosted Operation Canary product workspace bundle") < (
+        workflow.index("Upload bundle as GitHub Actions artifact")
+    )
+
+
+def test_hosted_operation_canary_packet_is_self_contained_and_ready() -> None:
+    run_dir = ROOT / "runs" / "hosted-operation-canary"
+    decision = json.loads(
+        (run_dir / "candidate_approval_decision.json").read_text(encoding="utf-8")
+    )
+    approved_paths = decision["promotion_request"]["paths"]
+
+    assert len(approved_paths) == 59
+    assert len(approved_paths) == len(set(approved_paths))
+    assert all((ROOT / path).is_file() for path in approved_paths)
+    assert "runs/hosted-operation-canary/graph_repository_execution_plan.json" in (approved_paths)
+    assert "runs/hosted-operation-canary/idea_maturity_metrics_report.json" in (approved_paths)
+
+    for source_key in ("active_candidate", "promotion_gate"):
+        source = decision["source_artifacts"][source_key]
+        source_path = ROOT / source["source_ref"]
+        assert hashlib.sha256(source_path.read_bytes()).hexdigest() == source["sha256"]
+
+    maturity = json.loads(
+        (run_dir / "idea_maturity_metrics_report.json").read_text(encoding="utf-8")
+    )
+    validation = json.loads(
+        (run_dir / "idea_maturity_metrics_validation_report.json").read_text(encoding="utf-8")
+    )
+    assert maturity["status"] == "ready"
+    assert maturity["summary"]["lifecycle_state"] == "promotion_requested"
+    assert maturity["summary"]["remaining_blocker_count"] == 0
+    assert maturity["summary"]["stale_ref_count"] == 0
+    assert validation["summary"]["status"] == "ok"
+
+    private_markers = ("/Users/", "/private/tmp/", "/home/")
+    for path in approved_paths:
+        content = (ROOT / path).read_text(encoding="utf-8")
+        assert not any(marker in content for marker in private_markers)
 
 
 def test_artifact_deploy_does_not_delete_webroot_content() -> None:

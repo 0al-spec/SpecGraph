@@ -12198,5 +12198,58 @@
       }
     ],
     "notes": "SpecGraph now namespaces review-only materialized spec ids, filenames, dependencies, and promotion paths by authoritative candidate provenance without changing canonical graph ids or expanding promotion authority."
+  },
+  {
+    "proposal_id": "0214",
+    "posture": "synchronous_runtime_slice",
+    "runtime_surfaces": [
+      "docs/proposals/0214_hosted_operation_canary_workspace_static_bundle.md",
+      "docs/archive/proposal_sources/0214_hosted_operation_canary_workspace_static_bundle.md",
+      ".github/workflows/publish-static-artifacts.yml",
+      "tests/test_publish_static_artifacts_workflow.py",
+      "docs/static_artifact_publish.md",
+      "docs/product_workspace_graph_versioning_roadmap.md",
+      "Sources/SpecGraph/Documentation.docc/ProductWorkspacePilots.md",
+      "tools/README.md"
+    ],
+    "runtime_markers": [
+      {
+        "path": ".github/workflows/publish-static-artifacts.yml",
+        "pattern": "Build Hosted Operation Canary product workspace bundle"
+      },
+      {
+        "path": ".github/workflows/publish-static-artifacts.yml",
+        "pattern": "dist/specgraph-public/workspaces/hosted-operation-canary"
+      }
+    ],
+    "validation_markers": [
+      {
+        "path": "tests/test_publish_static_artifacts_workflow.py",
+        "pattern": "test_hosted_operation_canary_packet_is_self_contained_and_ready"
+      },
+      {
+        "path": "tests/test_publish_static_artifacts_workflow.py",
+        "pattern": "test_publish_workflow_builds_hosted_operation_canary_workspace_bundle"
+      }
+    ],
+    "observation_markers": [
+      {
+        "path": "docs/static_artifact_publish.md",
+        "pattern": "https://specgraph.tech/workspaces/hosted-operation-canary/artifact_manifest.json"
+      },
+      {
+        "path": "docs/product_workspace_graph_versioning_roadmap.md",
+        "pattern": "Done in proposal `0214`"
+      },
+      {
+        "path": "Sources/SpecGraph/Documentation.docc/ProductWorkspacePilots.md",
+        "pattern": "Proposal `0214` publishes the tracked Hosted Operation Canary"
+      },
+      {
+        "path": "tools/README.md",
+        "pattern": "Proposal 0214 publishes the tracked Hosted Operation Canary"
+      }
+    ],
+    "notes": "SpecGraph now publishes the tracked Hosted Operation Canary approval and provenance packet at its durable workspace binding URL without starting hosted execution or publishing a read model."
   }
 ]
