@@ -1823,7 +1823,11 @@ The same run exposed the next product-flow friction points:
     Candidate review YAML and promotion paths are namespaced by validated
     candidate provenance, preventing products with shared structural node ids
     from colliding in Git review.
-13. **Custom-run Platform promotion dry-run.** Needs reconciliation. Later
+13. **Hosted Operation Canary durable workspace bundle.** Done in proposal
+    `0214`. The tracked 59-file approval/provenance packet is built and deployed
+    under `workspaces/hosted-operation-canary`, matching the durable workspace
+    binding without starting hosted execution or publishing a read model.
+14. **Custom-run Platform promotion dry-run.** Needs reconciliation. Later
    SpecSpace/Platform managed-operation smokes proved arbitrary-route
    approval/promotion dry-runs, but this cash-flow-specific follow-up should be
    closed only after the run-dir binding is verified against a repaired

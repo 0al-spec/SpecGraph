@@ -2754,5 +2754,18 @@
     "required_provenance_links": [
       "source_draft_ref"
     ]
+  },
+  {
+    "proposal_id": "0214",
+    "source_artifact_class": "working_draft",
+    "source_refs": [
+      "docs/archive/proposal_sources/0214_hosted_operation_canary_workspace_static_bundle.md"
+    ],
+    "motivating_concern": "The durable Hosted Operation Canary workspace binding names a public workspace URL, but the static publish workflow does not build or deploy a bundle at that path.",
+    "normalized_title": "Hosted Operation Canary Workspace Static Bundle",
+    "bounded_scope": "Build and deploy the tracked public-safe Hosted Operation Canary approval and provenance packet under workspaces/hosted-operation-canary, add fail-closed packet tests and synchronized documentation, without starting hosted execution, mutating canonical specs, writing Ontology packages, accepting terms, approving another candidate, creating or merging another Git review, or publishing a post-merge read model.",
+    "required_provenance_links": [
+      "source_draft_ref"
+    ]
   }
 ]

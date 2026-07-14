@@ -347,6 +347,18 @@ Team Decision Log happy-path repair pack so `specgraph.space/team-decision-log`
 can consume product workspace artifacts without falling back to the bootstrap
 SpecGraph root bundle.
 
+The workflow also publishes the tracked Hosted Operation Canary review packet
+at its durable binding URL:
+
+```text
+https://specgraph.tech/workspaces/hosted-operation-canary/artifact_manifest.json
+```
+
+Unlike the Team Decision Log demo bundle, this workspace bundle is built from
+the tracked 59-file approval/provenance packet. Publishing it does not start the
+hosted worker, execute Git operations, merge the candidate review, or publish a
+post-merge read model.
+
 ## Consumer Contract
 
 SpecSpace should start from `artifact_manifest.json` and then fetch concrete
@@ -354,8 +366,9 @@ paths from the published roots. It should not assume that every historical run
 artifact is present forever without checking the manifest and checksums.
 
 For product workspace routes, SpecSpace should start from the workspace-specific
-manifest, for example `workspaces/team-decision-log/artifact_manifest.json`,
-instead of the root `artifact_manifest.json`.
+manifest, for example `workspaces/team-decision-log/artifact_manifest.json` or
+`workspaces/hosted-operation-canary/artifact_manifest.json`, instead of the root
+`artifact_manifest.json`.
 
 When SpecSpace reads `runs/ontology_package_index.json`, it may follow each
 package `materialized_ir` relative path if and only if that path appears in

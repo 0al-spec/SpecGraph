@@ -107,6 +107,11 @@ jobs:
           python tools/build_static_artifact_bundle.py \
             --output-dir dist/specgraph-public/workspaces/team-decision-log
 
+      - name: Build Hosted Operation Canary product workspace bundle
+        run: |
+          python tools/build_static_artifact_bundle.py \
+            --output-dir dist/specgraph-public/workspaces/hosted-operation-canary
+
       - name: Upload bundle as GitHub Actions artifact
         uses: actions/upload-artifact@v7
         with:

@@ -420,6 +420,11 @@ Supervisor modes:
   report-only visibility, not a Metrics schema change, score, gate, or authority
   expansion.
 - Proposal 0210 makes real-intake clarification templates fallback-free.
+  Clarification requests and answer templates carry workspace identity and a
+  stable source digest, publish `answers_required`,
+  `clarification_not_required`, or `clarification_blocked`, and treat
+  missing policy context as an ordinary typed intake question. Strict blocked
+  generation preserves an existing ready template.
 - Proposal 0212 adds deterministic public-safe candidate display aliases for
   operator-facing overview, topology, and materialized review surfaces without
   changing canonical node ids, refs, or promotion paths.
@@ -427,11 +432,11 @@ Supervisor modes:
   and promotion paths by authoritative candidate provenance. Canonical graph
   node ids stay unchanged, while malformed or missing provenance blocks
   materialization instead of falling back to globally shared paths.
-  Clarification requests and answer templates carry workspace identity and a
-  stable source digest, publish `answers_required`,
-  `clarification_not_required`, or `clarification_blocked`, and treat
-  missing policy context as an ordinary typed intake question. Strict blocked
-  generation preserves an existing ready template.
+- Proposal 0214 publishes the tracked Hosted Operation Canary review packet as
+  a separate static workspace bundle under
+  `dist/specgraph-public/workspaces/hosted-operation-canary`. The bundle follows
+  the durable binding URL without starting hosted execution, merging the review,
+  or publishing a post-merge read model.
 - `tools/user_idea_intake_source.py`: deterministic generic user-idea source
   builder introduced by proposal 0158. Use `make user-idea-intake-source
   USER_IDEA_INTAKE_SOURCE=<json>` to normalize product workspace identity,
