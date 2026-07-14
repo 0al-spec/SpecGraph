@@ -1,0 +1,135 @@
+{
+  "artifact_kind": "candidate_spec_materialization_report",
+  "authority_boundary": {
+    "may_create_branch_or_commit": false,
+    "may_execute_prompt_agent": false,
+    "may_mark_candidate_graph_accepted": false,
+    "may_mutate_candidate_source_artifacts": false,
+    "may_mutate_canonical_specs": false,
+    "may_write_ontology_lockfile": false,
+    "may_write_ontology_package": false
+  },
+  "candidate_scope": {
+    "derivation": "product_source_ref",
+    "namespace": "hosted-operation-canary",
+    "source_ref_sha256": "6454ab2429f2a3843ef8a6b75d815bbc015b96669d61c52b77004b734d332310"
+  },
+  "canonical_mutations_allowed": false,
+  "contract_ref": "specgraph.idea-to-spec.candidate-spec-materialization.v0.1",
+  "findings": [],
+  "generated_at": "2026-07-14T16:32:11.825131+00:00",
+  "local_files_written": [
+    "runs/hosted-operation-canary/repaired_materialized_candidate_specs/CANDIDATE-HOSTED-OPERATION-CANARY-CANDIDATE-SPEC-PRODUCT-BOUNDARY.yaml",
+    "runs/hosted-operation-canary/repaired_materialized_candidate_specs/CANDIDATE-HOSTED-OPERATION-CANARY-CANDIDATE-SPEC-RECORD-CANARY-CHECK.yaml",
+    "runs/hosted-operation-canary/repaired_materialized_candidate_specs/CANDIDATE-HOSTED-OPERATION-CANARY-CANDIDATE-SPEC-REFRESH-REVIEW-STATUS.yaml",
+    "runs/hosted-operation-canary/repaired_materialized_candidate_specs/CANDIDATE-HOSTED-OPERATION-CANARY-CANDIDATE-SPEC-CONFIRM-FOLLOW-UP-VERIFICATION.yaml",
+    "runs/hosted-operation-canary/repaired_materialized_candidate_specs/CANDIDATE-HOSTED-OPERATION-CANARY-CANDIDATE-SPEC-LOCAL-FIRST-OPERATOR-STATE.yaml",
+    "runs/hosted-operation-canary/repaired_materialized_candidate_specs/CANDIDATE-HOSTED-OPERATION-CANARY-CANDIDATE-SPEC-NO-AUTOMATIC-RELEASE-APPROVAL.yaml",
+    "runs/hosted-operation-canary/repaired_materialized_candidate_specs/CANDIDATE-HOSTED-OPERATION-CANARY-CANDIDATE-SPEC-BLOCK-RELEASE-COMPLETION-UNTIL-REQUIRED-FOLLOW-UP-VERIFICATION.yaml",
+    "runs/hosted-operation-canary/repaired_materialized_candidate_specs/CANDIDATE-HOSTED-OPERATION-CANARY-CANDIDATE-SPEC-ESCALATE-FAILED-CANARY-CHECKS-TO-THE-SERVICE-OWNER.yaml"
+  ],
+  "materialization_source": "repair_loop_preview",
+  "materialized_files": [
+    {
+      "candidate_node_id": "candidate-spec.product-boundary",
+      "display_alias": "Product Boundary",
+      "materialized_id": "CANDIDATE-HOSTED-OPERATION-CANARY-CANDIDATE-SPEC-PRODUCT-BOUNDARY",
+      "path": "runs/hosted-operation-canary/repaired_materialized_candidate_specs/CANDIDATE-HOSTED-OPERATION-CANARY-CANDIDATE-SPEC-PRODUCT-BOUNDARY.yaml",
+      "promotion_path": "runs/hosted-operation-canary/repaired_materialized_candidate_specs/CANDIDATE-HOSTED-OPERATION-CANARY-CANDIDATE-SPEC-PRODUCT-BOUNDARY.yaml"
+    },
+    {
+      "candidate_node_id": "candidate-spec.record-canary-check",
+      "display_alias": "Record canary check",
+      "materialized_id": "CANDIDATE-HOSTED-OPERATION-CANARY-CANDIDATE-SPEC-RECORD-CANARY-CHECK",
+      "path": "runs/hosted-operation-canary/repaired_materialized_candidate_specs/CANDIDATE-HOSTED-OPERATION-CANARY-CANDIDATE-SPEC-RECORD-CANARY-CHECK.yaml",
+      "promotion_path": "runs/hosted-operation-canary/repaired_materialized_candidate_specs/CANDIDATE-HOSTED-OPERATION-CANARY-CANDIDATE-SPEC-RECORD-CANARY-CHECK.yaml"
+    },
+    {
+      "candidate_node_id": "candidate-spec.refresh-review-status",
+      "display_alias": "Refresh review status",
+      "materialized_id": "CANDIDATE-HOSTED-OPERATION-CANARY-CANDIDATE-SPEC-REFRESH-REVIEW-STATUS",
+      "path": "runs/hosted-operation-canary/repaired_materialized_candidate_specs/CANDIDATE-HOSTED-OPERATION-CANARY-CANDIDATE-SPEC-REFRESH-REVIEW-STATUS.yaml",
+      "promotion_path": "runs/hosted-operation-canary/repaired_materialized_candidate_specs/CANDIDATE-HOSTED-OPERATION-CANARY-CANDIDATE-SPEC-REFRESH-REVIEW-STATUS.yaml"
+    },
+    {
+      "candidate_node_id": "candidate-spec.confirm-follow-up-verification",
+      "display_alias": "Confirm follow-up verification",
+      "materialized_id": "CANDIDATE-HOSTED-OPERATION-CANARY-CANDIDATE-SPEC-CONFIRM-FOLLOW-UP-VERIFICATION",
+      "path": "runs/hosted-operation-canary/repaired_materialized_candidate_specs/CANDIDATE-HOSTED-OPERATION-CANARY-CANDIDATE-SPEC-CONFIRM-FOLLOW-UP-VERIFICATION.yaml",
+      "promotion_path": "runs/hosted-operation-canary/repaired_materialized_candidate_specs/CANDIDATE-HOSTED-OPERATION-CANARY-CANDIDATE-SPEC-CONFIRM-FOLLOW-UP-VERIFICATION.yaml"
+    },
+    {
+      "candidate_node_id": "candidate-spec.local-first-operator-state",
+      "display_alias": "local-first operator state",
+      "materialized_id": "CANDIDATE-HOSTED-OPERATION-CANARY-CANDIDATE-SPEC-LOCAL-FIRST-OPERATOR-STATE",
+      "path": "runs/hosted-operation-canary/repaired_materialized_candidate_specs/CANDIDATE-HOSTED-OPERATION-CANARY-CANDIDATE-SPEC-LOCAL-FIRST-OPERATOR-STATE.yaml",
+      "promotion_path": "runs/hosted-operation-canary/repaired_materialized_candidate_specs/CANDIDATE-HOSTED-OPERATION-CANARY-CANDIDATE-SPEC-LOCAL-FIRST-OPERATOR-STATE.yaml"
+    },
+    {
+      "candidate_node_id": "candidate-spec.no-automatic-release-approval",
+      "display_alias": "no automatic release approval",
+      "materialized_id": "CANDIDATE-HOSTED-OPERATION-CANARY-CANDIDATE-SPEC-NO-AUTOMATIC-RELEASE-APPROVAL",
+      "path": "runs/hosted-operation-canary/repaired_materialized_candidate_specs/CANDIDATE-HOSTED-OPERATION-CANARY-CANDIDATE-SPEC-NO-AUTOMATIC-RELEASE-APPROVAL.yaml",
+      "promotion_path": "runs/hosted-operation-canary/repaired_materialized_candidate_specs/CANDIDATE-HOSTED-OPERATION-CANARY-CANDIDATE-SPEC-NO-AUTOMATIC-RELEASE-APPROVAL.yaml"
+    },
+    {
+      "candidate_node_id": "candidate-spec.block-release-completion-until-required-follow-up-verification",
+      "display_alias": "Block release completion until required follow-up verification",
+      "materialized_id": "CANDIDATE-HOSTED-OPERATION-CANARY-CANDIDATE-SPEC-BLOCK-RELEASE-COMPLETION-UNTIL-REQUIRED-FOLLOW-UP-VERIFICATION",
+      "path": "runs/hosted-operation-canary/repaired_materialized_candidate_specs/CANDIDATE-HOSTED-OPERATION-CANARY-CANDIDATE-SPEC-BLOCK-RELEASE-COMPLETION-UNTIL-REQUIRED-FOLLOW-UP-VERIFICATION.yaml",
+      "promotion_path": "runs/hosted-operation-canary/repaired_materialized_candidate_specs/CANDIDATE-HOSTED-OPERATION-CANARY-CANDIDATE-SPEC-BLOCK-RELEASE-COMPLETION-UNTIL-REQUIRED-FOLLOW-UP-VERIFICATION.yaml"
+    },
+    {
+      "candidate_node_id": "candidate-spec.escalate-failed-canary-checks-to-the-service-owner",
+      "display_alias": "Escalate failed canary checks to the service owner",
+      "materialized_id": "CANDIDATE-HOSTED-OPERATION-CANARY-CANDIDATE-SPEC-ESCALATE-FAILED-CANARY-CHECKS-TO-THE-SERVICE-OWNER",
+      "path": "runs/hosted-operation-canary/repaired_materialized_candidate_specs/CANDIDATE-HOSTED-OPERATION-CANARY-CANDIDATE-SPEC-ESCALATE-FAILED-CANARY-CHECKS-TO-THE-SERVICE-OWNER.yaml",
+      "promotion_path": "runs/hosted-operation-canary/repaired_materialized_candidate_specs/CANDIDATE-HOSTED-OPERATION-CANARY-CANDIDATE-SPEC-ESCALATE-FAILED-CANARY-CHECKS-TO-THE-SERVICE-OWNER.yaml"
+    }
+  ],
+  "privacy_boundary": {
+    "raw_intent_text_published": false,
+    "raw_model_output_published": false,
+    "raw_prompt_published": false
+  },
+  "promotion_request": {
+    "path_argument": "--path",
+    "paths": [
+      "runs/hosted-operation-canary/repaired_materialized_candidate_specs/CANDIDATE-HOSTED-OPERATION-CANARY-CANDIDATE-SPEC-PRODUCT-BOUNDARY.yaml",
+      "runs/hosted-operation-canary/repaired_materialized_candidate_specs/CANDIDATE-HOSTED-OPERATION-CANARY-CANDIDATE-SPEC-RECORD-CANARY-CHECK.yaml",
+      "runs/hosted-operation-canary/repaired_materialized_candidate_specs/CANDIDATE-HOSTED-OPERATION-CANARY-CANDIDATE-SPEC-REFRESH-REVIEW-STATUS.yaml",
+      "runs/hosted-operation-canary/repaired_materialized_candidate_specs/CANDIDATE-HOSTED-OPERATION-CANARY-CANDIDATE-SPEC-CONFIRM-FOLLOW-UP-VERIFICATION.yaml",
+      "runs/hosted-operation-canary/repaired_materialized_candidate_specs/CANDIDATE-HOSTED-OPERATION-CANARY-CANDIDATE-SPEC-LOCAL-FIRST-OPERATOR-STATE.yaml",
+      "runs/hosted-operation-canary/repaired_materialized_candidate_specs/CANDIDATE-HOSTED-OPERATION-CANARY-CANDIDATE-SPEC-NO-AUTOMATIC-RELEASE-APPROVAL.yaml",
+      "runs/hosted-operation-canary/repaired_materialized_candidate_specs/CANDIDATE-HOSTED-OPERATION-CANARY-CANDIDATE-SPEC-BLOCK-RELEASE-COMPLETION-UNTIL-REQUIRED-FOLLOW-UP-VERIFICATION.yaml",
+      "runs/hosted-operation-canary/repaired_materialized_candidate_specs/CANDIDATE-HOSTED-OPERATION-CANARY-CANDIDATE-SPEC-ESCALATE-FAILED-CANARY-CHECKS-TO-THE-SERVICE-OWNER.yaml"
+    ],
+    "platform_artifact_kind": "platform_graph_repository_promotion_request"
+  },
+  "proposal_id": "0153",
+  "readiness": {
+    "blocked_by": [],
+    "next_artifact": "Platform graph-repository promotion-request",
+    "ready": true,
+    "review_state": "materialized_candidate_review_ready"
+  },
+  "schema_version": 1,
+  "source_candidate_graph": {
+    "artifact_kind": "candidate_spec_graph",
+    "contract_ref": "specgraph.idea-to-spec.candidate-spec-graph.v0.1",
+    "source_ref": "runs/hosted-operation-canary/repaired_candidate_spec_graph.json"
+  },
+  "source_repair_loop": {
+    "artifact_kind": "candidate_repair_loop_report",
+    "contract_ref": "specgraph.idea-to-spec.candidate-repair-loop.v0.1",
+    "source_ref": "runs/hosted-operation-canary/repaired_candidate_repair_loop_report.json"
+  },
+  "summary": {
+    "candidate_node_count": 8,
+    "finding_count": 0,
+    "materialized_file_count": 8,
+    "status": "materialized_candidate_review_ready"
+  },
+  "tracked_artifacts_written": false,
+  "warnings": []
+}

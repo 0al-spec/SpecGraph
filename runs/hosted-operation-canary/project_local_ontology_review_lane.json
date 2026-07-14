@@ -1,0 +1,1187 @@
+{
+  "artifact_kind": "project_local_ontology_review_lane",
+  "authority_boundary": {
+    "may_accept_ontology_terms": false,
+    "may_apply_answers_to_source_artifacts": false,
+    "may_apply_decisions_to_source_artifacts": false,
+    "may_create_branch_or_commit": false,
+    "may_execute_prompt_agent": false,
+    "may_mark_candidate_graph_accepted": false,
+    "may_mutate_candidate_source_artifacts": false,
+    "may_mutate_canonical_specs": false,
+    "may_open_pull_request": false,
+    "may_publish_read_model": false,
+    "may_write_ontology_lockfile": false,
+    "may_write_ontology_package": false
+  },
+  "canonical_mutations_allowed": false,
+  "context": {
+    "candidate_id": "hosted-operation-canary",
+    "context_refs": [
+      "context.hosted-operation-canary"
+    ],
+    "domain_refs": [
+      "domain.deployment-canary",
+      "domain.review-status",
+      "domain.follow-up-verification",
+      "domain.hosted_operation_canary"
+    ],
+    "ontology_refs": [
+      "ontology://specgraph-core"
+    ],
+    "repair_session_id": "repair-session.hosted-operation-canary",
+    "workflow_lane": "product_idea_to_spec",
+    "workspace_id": "hosted-operation-canary",
+    "workspace_route": "/hosted-operation-canary"
+  },
+  "contract_ref": "specgraph.product-ontology.project-local-review-lane.v0.1",
+  "findings": [],
+  "generated_at": "2026-07-10T22:50:07.339922+00:00",
+  "materialization_intent": "review_lane_only",
+  "privacy_boundary": {
+    "private_operator_state_published": false,
+    "raw_idea_text_published": false,
+    "raw_model_output_published": false,
+    "raw_operator_note_published": false,
+    "raw_prompt_published": false
+  },
+  "proposal_id": "0197",
+  "readiness": {
+    "blocked_by": [],
+    "next_artifact": "runs/idea_maturity_metrics_report.json",
+    "ready": true,
+    "review_state": "project_local_ontology_review_ready"
+  },
+  "review_decision_schema": {
+    "authority": "operator_intent_only",
+    "request_workspace_promotion_effect": "proposal_only_no_ontology_write",
+    "supported_actions": [
+      "keep_project_local",
+      "bind_existing",
+      "alias",
+      "reject",
+      "request_workspace_promotion",
+      "defer"
+    ]
+  },
+  "schema_version": 1,
+  "source_artifacts": {
+    "active_candidate": {
+      "artifact_key": "active_candidate",
+      "artifact_kind": "active_idea_to_spec_candidate",
+      "contract_ref": "specgraph.idea-to-spec.active-candidate-source.v0.1",
+      "schema_version": 1,
+      "sha256": "734e63ae6027d1238c9c56964ea92918ff23267609f44bab38f830191152f570",
+      "source_ref": "runs/hosted-operation-canary/active_idea_to_spec_candidate.json",
+      "status": "present",
+      "summary": {
+        "candidate_id": "hosted-operation-canary",
+        "finding_count": 2,
+        "materialized_file_count": 8,
+        "promotion_path_count": 0,
+        "source_artifact_count": 6,
+        "status": "active_candidate_review_required",
+        "warning_count": 0,
+        "workspace_route": "/hosted-operation-canary"
+      }
+    },
+    "candidate_graph": {
+      "artifact_key": "candidate_graph",
+      "artifact_kind": "candidate_spec_graph",
+      "contract_ref": "specgraph.idea-to-spec.candidate-spec-graph.v0.1",
+      "schema_version": 1,
+      "sha256": "cc54e0a2b56900864299317499d9ecbcf2795d9006ef5894bee3d09ad1ef9f9b",
+      "source_ref": "runs/hosted-operation-canary/candidate_spec_graph.json",
+      "status": "present",
+      "summary": {
+        "acceptance_criteria_count": 8,
+        "claim_count": 0,
+        "edge_count": 7,
+        "finding_count": 0,
+        "gap_count": 15,
+        "node_count": 8,
+        "requirement_count": 8,
+        "status": "ready_for_pre_sib"
+      }
+    },
+    "ontology_decisions": {
+      "artifact_key": "ontology_decisions",
+      "artifact_kind": "product_ontology_gap_review_decisions",
+      "contract_ref": "specgraph.product-ontology.gap-review-decisions.v0.1",
+      "schema_version": 1,
+      "sha256": "1c452194ae1eece18c590b31a0ea972b3a1b5661e5b862bc6ccea3e7bd8e8a41",
+      "source_ref": "runs/hosted-operation-canary/product_ontology_gap_review_decisions.json",
+      "status": "present",
+      "summary": {
+        "decision_count": 12,
+        "decision_counts": {
+          "propose_project_local_term": 12
+        },
+        "finding_count": 0,
+        "ontology_answer_count": 12,
+        "status": "ontology_gap_decisions_ready"
+      }
+    },
+    "repair_session": {
+      "artifact_key": "repair_session",
+      "artifact_kind": "idea_to_spec_repair_session_journal",
+      "contract_ref": "specgraph.idea-to-spec.repair-session-journal.v0.1",
+      "schema_version": 1,
+      "sha256": "b80d7f036f851d12252d30f303a9a58cc4b9a9560435fa8ea26d4449e70152ba",
+      "source_ref": "runs/hosted-operation-canary/idea_to_spec_repair_session.json",
+      "status": "present",
+      "summary": {
+        "accepted_answer_count": 16,
+        "candidate_id": "hosted-operation-canary",
+        "finding_count": 0,
+        "ontology_decision_count": 12,
+        "ready_for_candidate_approval": false,
+        "resolved_candidate_gap_count": 4,
+        "resolved_ontology_gap_count": 11,
+        "source_artifact_count": 8,
+        "status": "repair_session_journal_ready",
+        "unresolved_candidate_gap_count": 0,
+        "unresolved_ontology_gap_count": 0,
+        "workflow_lane": "product_idea_to_spec"
+      }
+    },
+    "rerun_preview": {
+      "artifact_key": "rerun_preview",
+      "artifact_kind": "idea_to_spec_rerun_preview",
+      "contract_ref": "specgraph.idea-to-spec.rerun-preview.v0.1",
+      "schema_version": 1,
+      "sha256": "f36b173a99e9bd475ec64de2fefd4f2f0bbee7c8678a00300a9b4ed6617b73bb",
+      "source_ref": "runs/hosted-operation-canary/idea_to_spec_rerun_preview.json",
+      "status": "present",
+      "summary": {
+        "active_frame_hint_count": 0,
+        "candidate_quality_review_state": "candidate_quality_improved",
+        "candidate_review_hint_count": 4,
+        "event_storming_hint_count": 0,
+        "finding_count": 0,
+        "ontology_decision_count": 12,
+        "resolved_candidate_gap_count": 4,
+        "resolved_ontology_gap_count": 11,
+        "status": "rerun_preview_ready",
+        "structural_depth_added_workflow_relation_count": 0,
+        "structural_depth_delta_status": "still_shallow",
+        "structural_depth_remaining_shallow_dimension_count": 1,
+        "unresolved_candidate_gap_count": 0,
+        "unresolved_ontology_gap_count": 0,
+        "workflow_edge_preview_count": 0,
+        "workflow_relation_hint_count": 0
+      }
+    }
+  },
+  "summary": {
+    "blocking_term_count": 0,
+    "deferred_term_count": 0,
+    "finding_count": 0,
+    "reviewed_term_count": 11,
+    "status": "project_local_ontology_review_ready",
+    "status_counts": {
+      "kept_project_local": 11
+    },
+    "term_count": 11,
+    "unreviewed_term_count": 0,
+    "warning_count": 0
+  },
+  "terms": [
+    {
+      "decisions": [
+        {
+          "decision_type": "propose_project_local_term",
+          "id": "product-ontology-decision.clarification-candidate-gap-candidate-spec-product-boundary-gaps-ontology-gap-block-release-completion-until-required-follow-up-verification.4",
+          "materialization_intent": "rerun_overlay_only",
+          "request_id": "clarification.candidate-gap.candidate-spec-product-boundary-gaps-ontology-gap-block-release-completion-until-required-follow-up-verification",
+          "request_kind": "ontology_gap",
+          "review_status": "kept_project_local",
+          "source_answer_kind": "propose_project_local_term",
+          "source_answer_status": "accepted_for_candidate",
+          "status": "accepted_for_candidate_preview",
+          "target_artifact": "runs/hosted-operation-canary/candidate_spec_graph.json",
+          "target_ref": "candidate-spec.product-boundary.gaps.ontology-gap.block-release-completion-until-required-follow-up-verification",
+          "term": "Block release completion until required follow-up verification",
+          "term_scope": "project_local"
+        }
+      ],
+      "effect": {
+        "candidate_readiness_effect": "preview_resolves_ontology_gap",
+        "next_action": "review_repaired_candidate_handoff",
+        "resolved_gap_count": 1
+      },
+      "evidence_refs": [
+        "runs/hosted-operation-canary/candidate_spec_graph.json",
+        "runs/hosted-operation-canary/product_ontology_gap_review_decisions.json",
+        "runs/hosted-operation-canary/idea_to_spec_rerun_preview.json"
+      ],
+      "gap_refs": [
+        {
+          "gap_id": "ontology-gap.block-release-completion-until-required-follow-up-verification",
+          "node_id": "candidate-spec.product-boundary",
+          "source_kind": "policy",
+          "source_ref": "policy.block-release-completion-until-required-follow-up-verification",
+          "statement": "Confirm whether `Block release completion until required follow-up verification` should bind to an existing ontology term or remain a project-local domain term.",
+          "suggested_action": "confirm_bind_or_promote_domain_term",
+          "target_ref": "candidate-spec.product-boundary.gaps.ontology-gap.block-release-completion-until-required-follow-up-verification"
+        }
+      ],
+      "id": "project-local-ontology-term.block-release-completion-until-required-follow-up-verification",
+      "resolved_gap_refs": [
+        {
+          "confidence": "explicit_target",
+          "decision_id": "product-ontology-decision.clarification-candidate-gap-candidate-spec-product-boundary-gaps-ontology-gap-block-release-completion-until-required-follow-up-verification.4",
+          "decision_term": "Block release completion until required follow-up verification",
+          "gap_id": "ontology-gap.block-release-completion-until-required-follow-up-verification",
+          "match": {
+            "confidence": "explicit_target",
+            "decision_id": "product-ontology-decision.clarification-candidate-gap-candidate-spec-product-boundary-gaps-ontology-gap-block-release-completion-until-required-follow-up-verification.4",
+            "decision_term": "Block release completion until required follow-up verification",
+            "gap_id": "ontology-gap.block-release-completion-until-required-follow-up-verification",
+            "gap_term": "Block release completion until required follow-up verification",
+            "match_kind": "target_ref",
+            "node_id": "candidate-spec.product-boundary",
+            "normalized_decision_term": "block release completion until required follow up verification",
+            "normalized_gap_term": "block release completion until required follow up verification"
+          },
+          "match_kind": "target_ref",
+          "node_id": "candidate-spec.product-boundary",
+          "resolution_preview": {
+            "answer_kind": "propose_project_local_term",
+            "decision": "project_local_term",
+            "decision_id": "product-ontology-decision.clarification-candidate-gap-candidate-spec-product-boundary-gaps-ontology-gap-block-release-completion-until-required-follow-up-verification.4",
+            "request_id": "clarification.candidate-gap.candidate-spec-product-boundary-gaps-ontology-gap-block-release-completion-until-required-follow-up-verification",
+            "target_artifact": "runs/hosted-operation-canary/candidate_spec_graph.json",
+            "target_ref": "candidate-spec.product-boundary.gaps.ontology-gap.block-release-completion-until-required-follow-up-verification",
+            "term": "Block release completion until required follow-up verification",
+            "term_scope": "project_local"
+          },
+          "source_ref": "policy.block-release-completion-until-required-follow-up-verification",
+          "term": "Block release completion until required follow-up verification"
+        }
+      ],
+      "selected_decision_id": "product-ontology-decision.clarification-candidate-gap-candidate-spec-product-boundary-gaps-ontology-gap-block-release-completion-until-required-follow-up-verification.4",
+      "source_refs": [
+        "policy.block-release-completion-until-required-follow-up-verification"
+      ],
+      "status": "kept_project_local",
+      "suggested_actions": [
+        "keep_project_local",
+        "bind_existing",
+        "alias",
+        "reject",
+        "request_workspace_promotion",
+        "defer"
+      ],
+      "term": "Block release completion until required follow-up verification",
+      "term_key": "blockreleasecompletionuntilrequiredfollowupverification"
+    },
+    {
+      "decisions": [
+        {
+          "decision_type": "propose_project_local_term",
+          "id": "product-ontology-decision.clarification-candidate-gap-candidate-spec-product-boundary-gaps-ontology-gap-canary-check-recorded.5",
+          "materialization_intent": "rerun_overlay_only",
+          "request_id": "clarification.candidate-gap.candidate-spec-product-boundary-gaps-ontology-gap-canary-check-recorded",
+          "request_kind": "ontology_gap",
+          "review_status": "kept_project_local",
+          "source_answer_kind": "propose_project_local_term",
+          "source_answer_status": "accepted_for_candidate",
+          "status": "accepted_for_candidate_preview",
+          "target_artifact": "runs/hosted-operation-canary/candidate_spec_graph.json",
+          "target_ref": "candidate-spec.product-boundary.gaps.ontology-gap.canary-check-recorded",
+          "term": "Canary check recorded",
+          "term_scope": "project_local"
+        }
+      ],
+      "effect": {
+        "candidate_readiness_effect": "preview_resolves_ontology_gap",
+        "next_action": "review_repaired_candidate_handoff",
+        "resolved_gap_count": 1
+      },
+      "evidence_refs": [
+        "runs/hosted-operation-canary/candidate_spec_graph.json",
+        "runs/hosted-operation-canary/product_ontology_gap_review_decisions.json",
+        "runs/hosted-operation-canary/idea_to_spec_rerun_preview.json"
+      ],
+      "gap_refs": [
+        {
+          "gap_id": "ontology-gap.canary-check-recorded",
+          "node_id": "candidate-spec.product-boundary",
+          "source_kind": "domain_event",
+          "source_ref": "event.canary-check-recorded",
+          "statement": "Confirm whether `Canary check recorded` should bind to an existing ontology term or remain a project-local domain term.",
+          "suggested_action": "confirm_bind_or_promote_domain_term",
+          "target_ref": "candidate-spec.product-boundary.gaps.ontology-gap.canary-check-recorded"
+        }
+      ],
+      "id": "project-local-ontology-term.canary-check-recorded",
+      "resolved_gap_refs": [
+        {
+          "confidence": "explicit_target",
+          "decision_id": "product-ontology-decision.clarification-candidate-gap-candidate-spec-product-boundary-gaps-ontology-gap-canary-check-recorded.5",
+          "decision_term": "Canary check recorded",
+          "gap_id": "ontology-gap.canary-check-recorded",
+          "match": {
+            "confidence": "explicit_target",
+            "decision_id": "product-ontology-decision.clarification-candidate-gap-candidate-spec-product-boundary-gaps-ontology-gap-canary-check-recorded.5",
+            "decision_term": "Canary check recorded",
+            "gap_id": "ontology-gap.canary-check-recorded",
+            "gap_term": "Canary check recorded",
+            "match_kind": "target_ref",
+            "node_id": "candidate-spec.product-boundary",
+            "normalized_decision_term": "canary check recorded",
+            "normalized_gap_term": "canary check recorded"
+          },
+          "match_kind": "target_ref",
+          "node_id": "candidate-spec.product-boundary",
+          "resolution_preview": {
+            "answer_kind": "propose_project_local_term",
+            "decision": "project_local_term",
+            "decision_id": "product-ontology-decision.clarification-candidate-gap-candidate-spec-product-boundary-gaps-ontology-gap-canary-check-recorded.5",
+            "request_id": "clarification.candidate-gap.candidate-spec-product-boundary-gaps-ontology-gap-canary-check-recorded",
+            "target_artifact": "runs/hosted-operation-canary/candidate_spec_graph.json",
+            "target_ref": "candidate-spec.product-boundary.gaps.ontology-gap.canary-check-recorded",
+            "term": "Canary check recorded",
+            "term_scope": "project_local"
+          },
+          "source_ref": "event.canary-check-recorded",
+          "term": "Canary check recorded"
+        }
+      ],
+      "selected_decision_id": "product-ontology-decision.clarification-candidate-gap-candidate-spec-product-boundary-gaps-ontology-gap-canary-check-recorded.5",
+      "source_refs": [
+        "event.canary-check-recorded"
+      ],
+      "status": "kept_project_local",
+      "suggested_actions": [
+        "keep_project_local",
+        "bind_existing",
+        "alias",
+        "reject",
+        "request_workspace_promotion",
+        "defer"
+      ],
+      "term": "Canary check recorded",
+      "term_key": "canarycheckrecorded"
+    },
+    {
+      "decisions": [
+        {
+          "decision_type": "propose_project_local_term",
+          "id": "product-ontology-decision.clarification-candidate-gap-candidate-spec-product-boundary-gaps-ontology-gap-confirm-follow-up-verification.6",
+          "materialization_intent": "rerun_overlay_only",
+          "request_id": "clarification.candidate-gap.candidate-spec-product-boundary-gaps-ontology-gap-confirm-follow-up-verification",
+          "request_kind": "ontology_gap",
+          "review_status": "kept_project_local",
+          "source_answer_kind": "propose_project_local_term",
+          "source_answer_status": "accepted_for_candidate",
+          "status": "accepted_for_candidate_preview",
+          "target_artifact": "runs/hosted-operation-canary/candidate_spec_graph.json",
+          "target_ref": "candidate-spec.product-boundary.gaps.ontology-gap.confirm-follow-up-verification",
+          "term": "Confirm follow-up verification",
+          "term_scope": "project_local"
+        }
+      ],
+      "effect": {
+        "candidate_readiness_effect": "preview_resolves_ontology_gap",
+        "next_action": "review_repaired_candidate_handoff",
+        "resolved_gap_count": 1
+      },
+      "evidence_refs": [
+        "runs/hosted-operation-canary/candidate_spec_graph.json",
+        "runs/hosted-operation-canary/product_ontology_gap_review_decisions.json",
+        "runs/hosted-operation-canary/idea_to_spec_rerun_preview.json"
+      ],
+      "gap_refs": [
+        {
+          "gap_id": "ontology-gap.confirm-follow-up-verification",
+          "node_id": "candidate-spec.product-boundary",
+          "source_kind": "command",
+          "source_ref": "command.confirm-follow-up-verification",
+          "statement": "Confirm whether `Confirm follow-up verification` should bind to an existing ontology term or remain a project-local domain term.",
+          "suggested_action": "confirm_bind_or_promote_domain_term",
+          "target_ref": "candidate-spec.product-boundary.gaps.ontology-gap.confirm-follow-up-verification"
+        }
+      ],
+      "id": "project-local-ontology-term.confirm-follow-up-verification",
+      "resolved_gap_refs": [
+        {
+          "confidence": "explicit_target",
+          "decision_id": "product-ontology-decision.clarification-candidate-gap-candidate-spec-product-boundary-gaps-ontology-gap-confirm-follow-up-verification.6",
+          "decision_term": "Confirm follow-up verification",
+          "gap_id": "ontology-gap.confirm-follow-up-verification",
+          "match": {
+            "confidence": "explicit_target",
+            "decision_id": "product-ontology-decision.clarification-candidate-gap-candidate-spec-product-boundary-gaps-ontology-gap-confirm-follow-up-verification.6",
+            "decision_term": "Confirm follow-up verification",
+            "gap_id": "ontology-gap.confirm-follow-up-verification",
+            "gap_term": "Confirm follow-up verification",
+            "match_kind": "target_ref",
+            "node_id": "candidate-spec.product-boundary",
+            "normalized_decision_term": "confirm follow up verification",
+            "normalized_gap_term": "confirm follow up verification"
+          },
+          "match_kind": "target_ref",
+          "node_id": "candidate-spec.product-boundary",
+          "resolution_preview": {
+            "answer_kind": "propose_project_local_term",
+            "decision": "project_local_term",
+            "decision_id": "product-ontology-decision.clarification-candidate-gap-candidate-spec-product-boundary-gaps-ontology-gap-confirm-follow-up-verification.6",
+            "request_id": "clarification.candidate-gap.candidate-spec-product-boundary-gaps-ontology-gap-confirm-follow-up-verification",
+            "target_artifact": "runs/hosted-operation-canary/candidate_spec_graph.json",
+            "target_ref": "candidate-spec.product-boundary.gaps.ontology-gap.confirm-follow-up-verification",
+            "term": "Confirm follow-up verification",
+            "term_scope": "project_local"
+          },
+          "source_ref": "command.confirm-follow-up-verification",
+          "term": "Confirm follow-up verification"
+        }
+      ],
+      "selected_decision_id": "product-ontology-decision.clarification-candidate-gap-candidate-spec-product-boundary-gaps-ontology-gap-confirm-follow-up-verification.6",
+      "source_refs": [
+        "command.confirm-follow-up-verification"
+      ],
+      "status": "kept_project_local",
+      "suggested_actions": [
+        "keep_project_local",
+        "bind_existing",
+        "alias",
+        "reject",
+        "request_workspace_promotion",
+        "defer"
+      ],
+      "term": "Confirm follow-up verification",
+      "term_key": "confirmfollowupverification"
+    },
+    {
+      "decisions": [
+        {
+          "decision_type": "propose_project_local_term",
+          "id": "product-ontology-decision.clarification-candidate-gap-candidate-spec-product-boundary-gaps-ontology-gap-escalate-failed-canary-checks-to-the-service-owner.7",
+          "materialization_intent": "rerun_overlay_only",
+          "request_id": "clarification.candidate-gap.candidate-spec-product-boundary-gaps-ontology-gap-escalate-failed-canary-checks-to-the-service-owner",
+          "request_kind": "ontology_gap",
+          "review_status": "kept_project_local",
+          "source_answer_kind": "propose_project_local_term",
+          "source_answer_status": "accepted_for_candidate",
+          "status": "accepted_for_candidate_preview",
+          "target_artifact": "runs/hosted-operation-canary/candidate_spec_graph.json",
+          "target_ref": "candidate-spec.product-boundary.gaps.ontology-gap.escalate-failed-canary-checks-to-the-service-owner",
+          "term": "Escalate failed canary checks to the service owner",
+          "term_scope": "project_local"
+        }
+      ],
+      "effect": {
+        "candidate_readiness_effect": "preview_resolves_ontology_gap",
+        "next_action": "review_repaired_candidate_handoff",
+        "resolved_gap_count": 1
+      },
+      "evidence_refs": [
+        "runs/hosted-operation-canary/candidate_spec_graph.json",
+        "runs/hosted-operation-canary/product_ontology_gap_review_decisions.json",
+        "runs/hosted-operation-canary/idea_to_spec_rerun_preview.json"
+      ],
+      "gap_refs": [
+        {
+          "gap_id": "ontology-gap.escalate-failed-canary-checks-to-the-service-owner",
+          "node_id": "candidate-spec.product-boundary",
+          "source_kind": "policy",
+          "source_ref": "policy.escalate-failed-canary-checks-to-the-service-owner",
+          "statement": "Confirm whether `Escalate failed canary checks to the service owner` should bind to an existing ontology term or remain a project-local domain term.",
+          "suggested_action": "confirm_bind_or_promote_domain_term",
+          "target_ref": "candidate-spec.product-boundary.gaps.ontology-gap.escalate-failed-canary-checks-to-the-service-owner"
+        }
+      ],
+      "id": "project-local-ontology-term.escalate-failed-canary-checks-to-the-service-owner",
+      "resolved_gap_refs": [
+        {
+          "confidence": "explicit_target",
+          "decision_id": "product-ontology-decision.clarification-candidate-gap-candidate-spec-product-boundary-gaps-ontology-gap-escalate-failed-canary-checks-to-the-service-owner.7",
+          "decision_term": "Escalate failed canary checks to the service owner",
+          "gap_id": "ontology-gap.escalate-failed-canary-checks-to-the-service-owner",
+          "match": {
+            "confidence": "explicit_target",
+            "decision_id": "product-ontology-decision.clarification-candidate-gap-candidate-spec-product-boundary-gaps-ontology-gap-escalate-failed-canary-checks-to-the-service-owner.7",
+            "decision_term": "Escalate failed canary checks to the service owner",
+            "gap_id": "ontology-gap.escalate-failed-canary-checks-to-the-service-owner",
+            "gap_term": "Escalate failed canary checks to the service owner",
+            "match_kind": "target_ref",
+            "node_id": "candidate-spec.product-boundary",
+            "normalized_decision_term": "escalate failed canary checks to the service owner",
+            "normalized_gap_term": "escalate failed canary checks to the service owner"
+          },
+          "match_kind": "target_ref",
+          "node_id": "candidate-spec.product-boundary",
+          "resolution_preview": {
+            "answer_kind": "propose_project_local_term",
+            "decision": "project_local_term",
+            "decision_id": "product-ontology-decision.clarification-candidate-gap-candidate-spec-product-boundary-gaps-ontology-gap-escalate-failed-canary-checks-to-the-service-owner.7",
+            "request_id": "clarification.candidate-gap.candidate-spec-product-boundary-gaps-ontology-gap-escalate-failed-canary-checks-to-the-service-owner",
+            "target_artifact": "runs/hosted-operation-canary/candidate_spec_graph.json",
+            "target_ref": "candidate-spec.product-boundary.gaps.ontology-gap.escalate-failed-canary-checks-to-the-service-owner",
+            "term": "Escalate failed canary checks to the service owner",
+            "term_scope": "project_local"
+          },
+          "source_ref": "policy.escalate-failed-canary-checks-to-the-service-owner",
+          "term": "Escalate failed canary checks to the service owner"
+        }
+      ],
+      "selected_decision_id": "product-ontology-decision.clarification-candidate-gap-candidate-spec-product-boundary-gaps-ontology-gap-escalate-failed-canary-checks-to-the-service-owner.7",
+      "source_refs": [
+        "policy.escalate-failed-canary-checks-to-the-service-owner"
+      ],
+      "status": "kept_project_local",
+      "suggested_actions": [
+        "keep_project_local",
+        "bind_existing",
+        "alias",
+        "reject",
+        "request_workspace_promotion",
+        "defer"
+      ],
+      "term": "Escalate failed canary checks to the service owner",
+      "term_key": "escalatefailedcanarycheckstotheserviceowner"
+    },
+    {
+      "decisions": [
+        {
+          "decision_type": "propose_project_local_term",
+          "id": "product-ontology-decision.clarification-candidate-gap-candidate-spec-product-boundary-gaps-ontology-gap-follow-up-verification-required.8",
+          "materialization_intent": "rerun_overlay_only",
+          "request_id": "clarification.candidate-gap.candidate-spec-product-boundary-gaps-ontology-gap-follow-up-verification-required",
+          "request_kind": "ontology_gap",
+          "review_status": "kept_project_local",
+          "source_answer_kind": "propose_project_local_term",
+          "source_answer_status": "accepted_for_candidate",
+          "status": "accepted_for_candidate_preview",
+          "target_artifact": "runs/hosted-operation-canary/candidate_spec_graph.json",
+          "target_ref": "candidate-spec.product-boundary.gaps.ontology-gap.follow-up-verification-required",
+          "term": "Follow-up verification required",
+          "term_scope": "project_local"
+        }
+      ],
+      "effect": {
+        "candidate_readiness_effect": "preview_resolves_ontology_gap",
+        "next_action": "review_repaired_candidate_handoff",
+        "resolved_gap_count": 1
+      },
+      "evidence_refs": [
+        "runs/hosted-operation-canary/candidate_spec_graph.json",
+        "runs/hosted-operation-canary/product_ontology_gap_review_decisions.json",
+        "runs/hosted-operation-canary/idea_to_spec_rerun_preview.json"
+      ],
+      "gap_refs": [
+        {
+          "gap_id": "ontology-gap.follow-up-verification-required",
+          "node_id": "candidate-spec.product-boundary",
+          "source_kind": "domain_event",
+          "source_ref": "event.follow-up-verification-required",
+          "statement": "Confirm whether `Follow-up verification required` should bind to an existing ontology term or remain a project-local domain term.",
+          "suggested_action": "confirm_bind_or_promote_domain_term",
+          "target_ref": "candidate-spec.product-boundary.gaps.ontology-gap.follow-up-verification-required"
+        }
+      ],
+      "id": "project-local-ontology-term.follow-up-verification-required",
+      "resolved_gap_refs": [
+        {
+          "confidence": "explicit_target",
+          "decision_id": "product-ontology-decision.clarification-candidate-gap-candidate-spec-product-boundary-gaps-ontology-gap-follow-up-verification-required.8",
+          "decision_term": "Follow-up verification required",
+          "gap_id": "ontology-gap.follow-up-verification-required",
+          "match": {
+            "confidence": "explicit_target",
+            "decision_id": "product-ontology-decision.clarification-candidate-gap-candidate-spec-product-boundary-gaps-ontology-gap-follow-up-verification-required.8",
+            "decision_term": "Follow-up verification required",
+            "gap_id": "ontology-gap.follow-up-verification-required",
+            "gap_term": "Follow-up verification required",
+            "match_kind": "target_ref",
+            "node_id": "candidate-spec.product-boundary",
+            "normalized_decision_term": "follow up verification required",
+            "normalized_gap_term": "follow up verification required"
+          },
+          "match_kind": "target_ref",
+          "node_id": "candidate-spec.product-boundary",
+          "resolution_preview": {
+            "answer_kind": "propose_project_local_term",
+            "decision": "project_local_term",
+            "decision_id": "product-ontology-decision.clarification-candidate-gap-candidate-spec-product-boundary-gaps-ontology-gap-follow-up-verification-required.8",
+            "request_id": "clarification.candidate-gap.candidate-spec-product-boundary-gaps-ontology-gap-follow-up-verification-required",
+            "target_artifact": "runs/hosted-operation-canary/candidate_spec_graph.json",
+            "target_ref": "candidate-spec.product-boundary.gaps.ontology-gap.follow-up-verification-required",
+            "term": "Follow-up verification required",
+            "term_scope": "project_local"
+          },
+          "source_ref": "event.follow-up-verification-required",
+          "term": "Follow-up verification required"
+        }
+      ],
+      "selected_decision_id": "product-ontology-decision.clarification-candidate-gap-candidate-spec-product-boundary-gaps-ontology-gap-follow-up-verification-required.8",
+      "source_refs": [
+        "event.follow-up-verification-required"
+      ],
+      "status": "kept_project_local",
+      "suggested_actions": [
+        "keep_project_local",
+        "bind_existing",
+        "alias",
+        "reject",
+        "request_workspace_promotion",
+        "defer"
+      ],
+      "term": "Follow-up verification required",
+      "term_key": "followupverificationrequired"
+    },
+    {
+      "decisions": [
+        {
+          "decision_type": "propose_project_local_term",
+          "id": "product-ontology-decision.clarification-candidate-gap-candidate-spec-product-boundary-gaps-ontology-gap-on-call-reviewer.9",
+          "materialization_intent": "rerun_overlay_only",
+          "request_id": "clarification.candidate-gap.candidate-spec-product-boundary-gaps-ontology-gap-on-call-reviewer",
+          "request_kind": "ontology_gap",
+          "review_status": "kept_project_local",
+          "source_answer_kind": "propose_project_local_term",
+          "source_answer_status": "accepted_for_candidate",
+          "status": "accepted_for_candidate_preview",
+          "target_artifact": "runs/hosted-operation-canary/candidate_spec_graph.json",
+          "target_ref": "candidate-spec.product-boundary.gaps.ontology-gap.on-call-reviewer",
+          "term": "On-call reviewer",
+          "term_scope": "project_local"
+        }
+      ],
+      "effect": {
+        "candidate_readiness_effect": "preview_resolves_ontology_gap",
+        "next_action": "review_repaired_candidate_handoff",
+        "resolved_gap_count": 1
+      },
+      "evidence_refs": [
+        "runs/hosted-operation-canary/candidate_spec_graph.json",
+        "runs/hosted-operation-canary/product_ontology_gap_review_decisions.json",
+        "runs/hosted-operation-canary/idea_to_spec_rerun_preview.json"
+      ],
+      "gap_refs": [
+        {
+          "gap_id": "ontology-gap.on-call-reviewer",
+          "node_id": "candidate-spec.product-boundary",
+          "source_kind": "actor",
+          "source_ref": "actor.on-call-reviewer",
+          "statement": "Confirm whether `On-call reviewer` should bind to an existing ontology term or remain a project-local domain term.",
+          "suggested_action": "confirm_bind_or_promote_domain_term",
+          "target_ref": "candidate-spec.product-boundary.gaps.ontology-gap.on-call-reviewer"
+        }
+      ],
+      "id": "project-local-ontology-term.on-call-reviewer",
+      "resolved_gap_refs": [
+        {
+          "confidence": "explicit_target",
+          "decision_id": "product-ontology-decision.clarification-candidate-gap-candidate-spec-product-boundary-gaps-ontology-gap-on-call-reviewer.9",
+          "decision_term": "On-call reviewer",
+          "gap_id": "ontology-gap.on-call-reviewer",
+          "match": {
+            "confidence": "explicit_target",
+            "decision_id": "product-ontology-decision.clarification-candidate-gap-candidate-spec-product-boundary-gaps-ontology-gap-on-call-reviewer.9",
+            "decision_term": "On-call reviewer",
+            "gap_id": "ontology-gap.on-call-reviewer",
+            "gap_term": "On-call reviewer",
+            "match_kind": "target_ref",
+            "node_id": "candidate-spec.product-boundary",
+            "normalized_decision_term": "on call reviewer",
+            "normalized_gap_term": "on call reviewer"
+          },
+          "match_kind": "target_ref",
+          "node_id": "candidate-spec.product-boundary",
+          "resolution_preview": {
+            "answer_kind": "propose_project_local_term",
+            "decision": "project_local_term",
+            "decision_id": "product-ontology-decision.clarification-candidate-gap-candidate-spec-product-boundary-gaps-ontology-gap-on-call-reviewer.9",
+            "request_id": "clarification.candidate-gap.candidate-spec-product-boundary-gaps-ontology-gap-on-call-reviewer",
+            "target_artifact": "runs/hosted-operation-canary/candidate_spec_graph.json",
+            "target_ref": "candidate-spec.product-boundary.gaps.ontology-gap.on-call-reviewer",
+            "term": "On-call reviewer",
+            "term_scope": "project_local"
+          },
+          "source_ref": "actor.on-call-reviewer",
+          "term": "On-call reviewer"
+        }
+      ],
+      "selected_decision_id": "product-ontology-decision.clarification-candidate-gap-candidate-spec-product-boundary-gaps-ontology-gap-on-call-reviewer.9",
+      "source_refs": [
+        "actor.on-call-reviewer"
+      ],
+      "status": "kept_project_local",
+      "suggested_actions": [
+        "keep_project_local",
+        "bind_existing",
+        "alias",
+        "reject",
+        "request_workspace_promotion",
+        "defer"
+      ],
+      "term": "On-call reviewer",
+      "term_key": "oncallreviewer"
+    },
+    {
+      "decisions": [
+        {
+          "decision_type": "propose_project_local_term",
+          "id": "product-ontology-decision.clarification-candidate-gap-candidate-spec-product-boundary-gaps-ontology-gap-record-canary-check.10",
+          "materialization_intent": "rerun_overlay_only",
+          "request_id": "clarification.candidate-gap.candidate-spec-product-boundary-gaps-ontology-gap-record-canary-check",
+          "request_kind": "ontology_gap",
+          "review_status": "kept_project_local",
+          "source_answer_kind": "propose_project_local_term",
+          "source_answer_status": "accepted_for_candidate",
+          "status": "accepted_for_candidate_preview",
+          "target_artifact": "runs/hosted-operation-canary/candidate_spec_graph.json",
+          "target_ref": "candidate-spec.product-boundary.gaps.ontology-gap.record-canary-check",
+          "term": "Record canary check",
+          "term_scope": "project_local"
+        }
+      ],
+      "effect": {
+        "candidate_readiness_effect": "preview_resolves_ontology_gap",
+        "next_action": "review_repaired_candidate_handoff",
+        "resolved_gap_count": 1
+      },
+      "evidence_refs": [
+        "runs/hosted-operation-canary/candidate_spec_graph.json",
+        "runs/hosted-operation-canary/product_ontology_gap_review_decisions.json",
+        "runs/hosted-operation-canary/idea_to_spec_rerun_preview.json"
+      ],
+      "gap_refs": [
+        {
+          "gap_id": "ontology-gap.record-canary-check",
+          "node_id": "candidate-spec.product-boundary",
+          "source_kind": "command",
+          "source_ref": "command.record-canary-check",
+          "statement": "Confirm whether `Record canary check` should bind to an existing ontology term or remain a project-local domain term.",
+          "suggested_action": "confirm_bind_or_promote_domain_term",
+          "target_ref": "candidate-spec.product-boundary.gaps.ontology-gap.record-canary-check"
+        }
+      ],
+      "id": "project-local-ontology-term.record-canary-check",
+      "resolved_gap_refs": [
+        {
+          "confidence": "explicit_target",
+          "decision_id": "product-ontology-decision.clarification-candidate-gap-candidate-spec-product-boundary-gaps-ontology-gap-record-canary-check.10",
+          "decision_term": "Record canary check",
+          "gap_id": "ontology-gap.record-canary-check",
+          "match": {
+            "confidence": "explicit_target",
+            "decision_id": "product-ontology-decision.clarification-candidate-gap-candidate-spec-product-boundary-gaps-ontology-gap-record-canary-check.10",
+            "decision_term": "Record canary check",
+            "gap_id": "ontology-gap.record-canary-check",
+            "gap_term": "Record canary check",
+            "match_kind": "target_ref",
+            "node_id": "candidate-spec.product-boundary",
+            "normalized_decision_term": "record canary check",
+            "normalized_gap_term": "record canary check"
+          },
+          "match_kind": "target_ref",
+          "node_id": "candidate-spec.product-boundary",
+          "resolution_preview": {
+            "answer_kind": "propose_project_local_term",
+            "decision": "project_local_term",
+            "decision_id": "product-ontology-decision.clarification-candidate-gap-candidate-spec-product-boundary-gaps-ontology-gap-record-canary-check.10",
+            "request_id": "clarification.candidate-gap.candidate-spec-product-boundary-gaps-ontology-gap-record-canary-check",
+            "target_artifact": "runs/hosted-operation-canary/candidate_spec_graph.json",
+            "target_ref": "candidate-spec.product-boundary.gaps.ontology-gap.record-canary-check",
+            "term": "Record canary check",
+            "term_scope": "project_local"
+          },
+          "source_ref": "command.record-canary-check",
+          "term": "Record canary check"
+        }
+      ],
+      "selected_decision_id": "product-ontology-decision.clarification-candidate-gap-candidate-spec-product-boundary-gaps-ontology-gap-record-canary-check.10",
+      "source_refs": [
+        "command.record-canary-check"
+      ],
+      "status": "kept_project_local",
+      "suggested_actions": [
+        "keep_project_local",
+        "bind_existing",
+        "alias",
+        "reject",
+        "request_workspace_promotion",
+        "defer"
+      ],
+      "term": "Record canary check",
+      "term_key": "recordcanarycheck"
+    },
+    {
+      "decisions": [
+        {
+          "decision_type": "propose_project_local_term",
+          "id": "product-ontology-decision.clarification-candidate-gap-candidate-spec-product-boundary-gaps-ontology-gap-refresh-review-status.11",
+          "materialization_intent": "rerun_overlay_only",
+          "request_id": "clarification.candidate-gap.candidate-spec-product-boundary-gaps-ontology-gap-refresh-review-status",
+          "request_kind": "ontology_gap",
+          "review_status": "kept_project_local",
+          "source_answer_kind": "propose_project_local_term",
+          "source_answer_status": "accepted_for_candidate",
+          "status": "accepted_for_candidate_preview",
+          "target_artifact": "runs/hosted-operation-canary/candidate_spec_graph.json",
+          "target_ref": "candidate-spec.product-boundary.gaps.ontology-gap.refresh-review-status",
+          "term": "Refresh review status",
+          "term_scope": "project_local"
+        }
+      ],
+      "effect": {
+        "candidate_readiness_effect": "preview_resolves_ontology_gap",
+        "next_action": "review_repaired_candidate_handoff",
+        "resolved_gap_count": 1
+      },
+      "evidence_refs": [
+        "runs/hosted-operation-canary/candidate_spec_graph.json",
+        "runs/hosted-operation-canary/product_ontology_gap_review_decisions.json",
+        "runs/hosted-operation-canary/idea_to_spec_rerun_preview.json"
+      ],
+      "gap_refs": [
+        {
+          "gap_id": "ontology-gap.refresh-review-status",
+          "node_id": "candidate-spec.product-boundary",
+          "source_kind": "command",
+          "source_ref": "command.refresh-review-status",
+          "statement": "Confirm whether `Refresh review status` should bind to an existing ontology term or remain a project-local domain term.",
+          "suggested_action": "confirm_bind_or_promote_domain_term",
+          "target_ref": "candidate-spec.product-boundary.gaps.ontology-gap.refresh-review-status"
+        }
+      ],
+      "id": "project-local-ontology-term.refresh-review-status",
+      "resolved_gap_refs": [
+        {
+          "confidence": "explicit_target",
+          "decision_id": "product-ontology-decision.clarification-candidate-gap-candidate-spec-product-boundary-gaps-ontology-gap-refresh-review-status.11",
+          "decision_term": "Refresh review status",
+          "gap_id": "ontology-gap.refresh-review-status",
+          "match": {
+            "confidence": "explicit_target",
+            "decision_id": "product-ontology-decision.clarification-candidate-gap-candidate-spec-product-boundary-gaps-ontology-gap-refresh-review-status.11",
+            "decision_term": "Refresh review status",
+            "gap_id": "ontology-gap.refresh-review-status",
+            "gap_term": "Refresh review status",
+            "match_kind": "target_ref",
+            "node_id": "candidate-spec.product-boundary",
+            "normalized_decision_term": "refresh review status",
+            "normalized_gap_term": "refresh review status"
+          },
+          "match_kind": "target_ref",
+          "node_id": "candidate-spec.product-boundary",
+          "resolution_preview": {
+            "answer_kind": "propose_project_local_term",
+            "decision": "project_local_term",
+            "decision_id": "product-ontology-decision.clarification-candidate-gap-candidate-spec-product-boundary-gaps-ontology-gap-refresh-review-status.11",
+            "request_id": "clarification.candidate-gap.candidate-spec-product-boundary-gaps-ontology-gap-refresh-review-status",
+            "target_artifact": "runs/hosted-operation-canary/candidate_spec_graph.json",
+            "target_ref": "candidate-spec.product-boundary.gaps.ontology-gap.refresh-review-status",
+            "term": "Refresh review status",
+            "term_scope": "project_local"
+          },
+          "source_ref": "command.refresh-review-status",
+          "term": "Refresh review status"
+        }
+      ],
+      "selected_decision_id": "product-ontology-decision.clarification-candidate-gap-candidate-spec-product-boundary-gaps-ontology-gap-refresh-review-status.11",
+      "source_refs": [
+        "command.refresh-review-status"
+      ],
+      "status": "kept_project_local",
+      "suggested_actions": [
+        "keep_project_local",
+        "bind_existing",
+        "alias",
+        "reject",
+        "request_workspace_promotion",
+        "defer"
+      ],
+      "term": "Refresh review status",
+      "term_key": "refreshreviewstatus"
+    },
+    {
+      "decisions": [
+        {
+          "decision_type": "propose_project_local_term",
+          "id": "product-ontology-decision.clarification-candidate-gap-candidate-spec-product-boundary-gaps-ontology-gap-release-operator.12",
+          "materialization_intent": "rerun_overlay_only",
+          "request_id": "clarification.candidate-gap.candidate-spec-product-boundary-gaps-ontology-gap-release-operator",
+          "request_kind": "ontology_gap",
+          "review_status": "kept_project_local",
+          "source_answer_kind": "propose_project_local_term",
+          "source_answer_status": "accepted_for_candidate",
+          "status": "accepted_for_candidate_preview",
+          "target_artifact": "runs/hosted-operation-canary/candidate_spec_graph.json",
+          "target_ref": "candidate-spec.product-boundary.gaps.ontology-gap.release-operator",
+          "term": "Release operator",
+          "term_scope": "project_local"
+        },
+        {
+          "decision_type": "propose_project_local_term",
+          "id": "product-ontology-decision.clarification-repair-repair-review-unresolved-gaps.15",
+          "materialization_intent": "rerun_overlay_only",
+          "request_id": "clarification.repair.repair-review-unresolved-gaps",
+          "request_kind": "ontology_gap",
+          "review_status": "kept_project_local",
+          "source_answer_kind": "propose_project_local_term",
+          "source_answer_status": "accepted_for_candidate",
+          "status": "accepted_for_candidate_preview",
+          "target_artifact": "runs/hosted-operation-canary/candidate_repair_loop_report.json",
+          "target_ref": "candidate_graph.gaps",
+          "term": "Release operator",
+          "term_scope": "project_local"
+        }
+      ],
+      "effect": {
+        "candidate_readiness_effect": "preview_resolves_ontology_gap",
+        "next_action": "review_repaired_candidate_handoff",
+        "resolved_gap_count": 1
+      },
+      "evidence_refs": [
+        "runs/hosted-operation-canary/candidate_spec_graph.json",
+        "runs/hosted-operation-canary/product_ontology_gap_review_decisions.json",
+        "runs/hosted-operation-canary/idea_to_spec_rerun_preview.json"
+      ],
+      "gap_refs": [
+        {
+          "gap_id": "ontology-gap.release-operator",
+          "node_id": "candidate-spec.product-boundary",
+          "source_kind": "actor",
+          "source_ref": "actor.release-operator",
+          "statement": "Confirm whether `Release operator` should bind to an existing ontology term or remain a project-local domain term.",
+          "suggested_action": "confirm_bind_or_promote_domain_term",
+          "target_ref": "candidate-spec.product-boundary.gaps.ontology-gap.release-operator"
+        }
+      ],
+      "id": "project-local-ontology-term.release-operator",
+      "resolved_gap_refs": [
+        {
+          "confidence": "explicit_target",
+          "decision_id": "product-ontology-decision.clarification-candidate-gap-candidate-spec-product-boundary-gaps-ontology-gap-release-operator.12",
+          "decision_term": "Release operator",
+          "gap_id": "ontology-gap.release-operator",
+          "match": {
+            "confidence": "explicit_target",
+            "decision_id": "product-ontology-decision.clarification-candidate-gap-candidate-spec-product-boundary-gaps-ontology-gap-release-operator.12",
+            "decision_term": "Release operator",
+            "gap_id": "ontology-gap.release-operator",
+            "gap_term": "Release operator",
+            "match_kind": "target_ref",
+            "node_id": "candidate-spec.product-boundary",
+            "normalized_decision_term": "release operator",
+            "normalized_gap_term": "release operator"
+          },
+          "match_kind": "target_ref",
+          "node_id": "candidate-spec.product-boundary",
+          "resolution_preview": {
+            "answer_kind": "propose_project_local_term",
+            "decision": "project_local_term",
+            "decision_id": "product-ontology-decision.clarification-candidate-gap-candidate-spec-product-boundary-gaps-ontology-gap-release-operator.12",
+            "request_id": "clarification.candidate-gap.candidate-spec-product-boundary-gaps-ontology-gap-release-operator",
+            "target_artifact": "runs/hosted-operation-canary/candidate_spec_graph.json",
+            "target_ref": "candidate-spec.product-boundary.gaps.ontology-gap.release-operator",
+            "term": "Release operator",
+            "term_scope": "project_local"
+          },
+          "source_ref": "actor.release-operator",
+          "term": "Release operator"
+        }
+      ],
+      "selected_decision_id": "product-ontology-decision.clarification-candidate-gap-candidate-spec-product-boundary-gaps-ontology-gap-release-operator.12",
+      "source_refs": [
+        "actor.release-operator"
+      ],
+      "status": "kept_project_local",
+      "suggested_actions": [
+        "keep_project_local",
+        "bind_existing",
+        "alias",
+        "reject",
+        "request_workspace_promotion",
+        "defer"
+      ],
+      "term": "Release operator",
+      "term_key": "releaseoperator"
+    },
+    {
+      "decisions": [
+        {
+          "decision_type": "propose_project_local_term",
+          "id": "product-ontology-decision.clarification-candidate-gap-candidate-spec-product-boundary-gaps-ontology-gap-review-status-refreshed.13",
+          "materialization_intent": "rerun_overlay_only",
+          "request_id": "clarification.candidate-gap.candidate-spec-product-boundary-gaps-ontology-gap-review-status-refreshed",
+          "request_kind": "ontology_gap",
+          "review_status": "kept_project_local",
+          "source_answer_kind": "propose_project_local_term",
+          "source_answer_status": "accepted_for_candidate",
+          "status": "accepted_for_candidate_preview",
+          "target_artifact": "runs/hosted-operation-canary/candidate_spec_graph.json",
+          "target_ref": "candidate-spec.product-boundary.gaps.ontology-gap.review-status-refreshed",
+          "term": "Review status refreshed",
+          "term_scope": "project_local"
+        }
+      ],
+      "effect": {
+        "candidate_readiness_effect": "preview_resolves_ontology_gap",
+        "next_action": "review_repaired_candidate_handoff",
+        "resolved_gap_count": 1
+      },
+      "evidence_refs": [
+        "runs/hosted-operation-canary/candidate_spec_graph.json",
+        "runs/hosted-operation-canary/product_ontology_gap_review_decisions.json",
+        "runs/hosted-operation-canary/idea_to_spec_rerun_preview.json"
+      ],
+      "gap_refs": [
+        {
+          "gap_id": "ontology-gap.review-status-refreshed",
+          "node_id": "candidate-spec.product-boundary",
+          "source_kind": "domain_event",
+          "source_ref": "event.review-status-refreshed",
+          "statement": "Confirm whether `Review status refreshed` should bind to an existing ontology term or remain a project-local domain term.",
+          "suggested_action": "confirm_bind_or_promote_domain_term",
+          "target_ref": "candidate-spec.product-boundary.gaps.ontology-gap.review-status-refreshed"
+        }
+      ],
+      "id": "project-local-ontology-term.review-status-refreshed",
+      "resolved_gap_refs": [
+        {
+          "confidence": "explicit_target",
+          "decision_id": "product-ontology-decision.clarification-candidate-gap-candidate-spec-product-boundary-gaps-ontology-gap-review-status-refreshed.13",
+          "decision_term": "Review status refreshed",
+          "gap_id": "ontology-gap.review-status-refreshed",
+          "match": {
+            "confidence": "explicit_target",
+            "decision_id": "product-ontology-decision.clarification-candidate-gap-candidate-spec-product-boundary-gaps-ontology-gap-review-status-refreshed.13",
+            "decision_term": "Review status refreshed",
+            "gap_id": "ontology-gap.review-status-refreshed",
+            "gap_term": "Review status refreshed",
+            "match_kind": "target_ref",
+            "node_id": "candidate-spec.product-boundary",
+            "normalized_decision_term": "review status refreshed",
+            "normalized_gap_term": "review status refreshed"
+          },
+          "match_kind": "target_ref",
+          "node_id": "candidate-spec.product-boundary",
+          "resolution_preview": {
+            "answer_kind": "propose_project_local_term",
+            "decision": "project_local_term",
+            "decision_id": "product-ontology-decision.clarification-candidate-gap-candidate-spec-product-boundary-gaps-ontology-gap-review-status-refreshed.13",
+            "request_id": "clarification.candidate-gap.candidate-spec-product-boundary-gaps-ontology-gap-review-status-refreshed",
+            "target_artifact": "runs/hosted-operation-canary/candidate_spec_graph.json",
+            "target_ref": "candidate-spec.product-boundary.gaps.ontology-gap.review-status-refreshed",
+            "term": "Review status refreshed",
+            "term_scope": "project_local"
+          },
+          "source_ref": "event.review-status-refreshed",
+          "term": "Review status refreshed"
+        }
+      ],
+      "selected_decision_id": "product-ontology-decision.clarification-candidate-gap-candidate-spec-product-boundary-gaps-ontology-gap-review-status-refreshed.13",
+      "source_refs": [
+        "event.review-status-refreshed"
+      ],
+      "status": "kept_project_local",
+      "suggested_actions": [
+        "keep_project_local",
+        "bind_existing",
+        "alias",
+        "reject",
+        "request_workspace_promotion",
+        "defer"
+      ],
+      "term": "Review status refreshed",
+      "term_key": "reviewstatusrefreshed"
+    },
+    {
+      "decisions": [
+        {
+          "decision_type": "propose_project_local_term",
+          "id": "product-ontology-decision.clarification-candidate-gap-candidate-spec-product-boundary-gaps-ontology-gap-service-owner.14",
+          "materialization_intent": "rerun_overlay_only",
+          "request_id": "clarification.candidate-gap.candidate-spec-product-boundary-gaps-ontology-gap-service-owner",
+          "request_kind": "ontology_gap",
+          "review_status": "kept_project_local",
+          "source_answer_kind": "propose_project_local_term",
+          "source_answer_status": "accepted_for_candidate",
+          "status": "accepted_for_candidate_preview",
+          "target_artifact": "runs/hosted-operation-canary/candidate_spec_graph.json",
+          "target_ref": "candidate-spec.product-boundary.gaps.ontology-gap.service-owner",
+          "term": "Service owner",
+          "term_scope": "project_local"
+        }
+      ],
+      "effect": {
+        "candidate_readiness_effect": "preview_resolves_ontology_gap",
+        "next_action": "review_repaired_candidate_handoff",
+        "resolved_gap_count": 1
+      },
+      "evidence_refs": [
+        "runs/hosted-operation-canary/candidate_spec_graph.json",
+        "runs/hosted-operation-canary/product_ontology_gap_review_decisions.json",
+        "runs/hosted-operation-canary/idea_to_spec_rerun_preview.json"
+      ],
+      "gap_refs": [
+        {
+          "gap_id": "ontology-gap.service-owner",
+          "node_id": "candidate-spec.product-boundary",
+          "source_kind": "actor",
+          "source_ref": "actor.service-owner",
+          "statement": "Confirm whether `Service owner` should bind to an existing ontology term or remain a project-local domain term.",
+          "suggested_action": "confirm_bind_or_promote_domain_term",
+          "target_ref": "candidate-spec.product-boundary.gaps.ontology-gap.service-owner"
+        }
+      ],
+      "id": "project-local-ontology-term.service-owner",
+      "resolved_gap_refs": [
+        {
+          "confidence": "explicit_target",
+          "decision_id": "product-ontology-decision.clarification-candidate-gap-candidate-spec-product-boundary-gaps-ontology-gap-service-owner.14",
+          "decision_term": "Service owner",
+          "gap_id": "ontology-gap.service-owner",
+          "match": {
+            "confidence": "explicit_target",
+            "decision_id": "product-ontology-decision.clarification-candidate-gap-candidate-spec-product-boundary-gaps-ontology-gap-service-owner.14",
+            "decision_term": "Service owner",
+            "gap_id": "ontology-gap.service-owner",
+            "gap_term": "Service owner",
+            "match_kind": "target_ref",
+            "node_id": "candidate-spec.product-boundary",
+            "normalized_decision_term": "service owner",
+            "normalized_gap_term": "service owner"
+          },
+          "match_kind": "target_ref",
+          "node_id": "candidate-spec.product-boundary",
+          "resolution_preview": {
+            "answer_kind": "propose_project_local_term",
+            "decision": "project_local_term",
+            "decision_id": "product-ontology-decision.clarification-candidate-gap-candidate-spec-product-boundary-gaps-ontology-gap-service-owner.14",
+            "request_id": "clarification.candidate-gap.candidate-spec-product-boundary-gaps-ontology-gap-service-owner",
+            "target_artifact": "runs/hosted-operation-canary/candidate_spec_graph.json",
+            "target_ref": "candidate-spec.product-boundary.gaps.ontology-gap.service-owner",
+            "term": "Service owner",
+            "term_scope": "project_local"
+          },
+          "source_ref": "actor.service-owner",
+          "term": "Service owner"
+        }
+      ],
+      "selected_decision_id": "product-ontology-decision.clarification-candidate-gap-candidate-spec-product-boundary-gaps-ontology-gap-service-owner.14",
+      "source_refs": [
+        "actor.service-owner"
+      ],
+      "status": "kept_project_local",
+      "suggested_actions": [
+        "keep_project_local",
+        "bind_existing",
+        "alias",
+        "reject",
+        "request_workspace_promotion",
+        "defer"
+      ],
+      "term": "Service owner",
+      "term_key": "serviceowner"
+    }
+  ],
+  "tracked_artifacts_written": false,
+  "warnings": []
+}

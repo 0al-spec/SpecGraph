@@ -1,0 +1,975 @@
+{
+  "artifact_kind": "candidate_repair_loop_report",
+  "authority_boundary": {
+    "may_create_branch_or_commit": false,
+    "may_execute_prompt_agent": false,
+    "may_mark_candidate_graph_accepted": false,
+    "may_mutate_canonical_specs": false,
+    "may_write_ontology_lockfile": false,
+    "may_write_ontology_package": false
+  },
+  "canonical_mutations_allowed": false,
+  "contract_ref": "specgraph.idea-to-spec.candidate-repair-loop.v0.1",
+  "findings": [],
+  "generated_at": "2026-07-10T22:13:14.069204+00:00",
+  "loop": {
+    "iteration": 1,
+    "max_iterations": 1,
+    "mode": "deterministic_preview",
+    "writes_candidate_graph": false
+  },
+  "metric_delta_projection": {
+    "after": {
+      "acceptance_criteria_count": 8,
+      "claim_count": 0,
+      "connected_node_ratio": 1.0,
+      "edge_count": 7,
+      "gap_count": 15,
+      "node_count": 8,
+      "ontology_coverage_ratio": 1.0,
+      "orphan_node_count": 0,
+      "requirement_count": 8,
+      "unsupported_strong_claim_count": 0
+    },
+    "before": {
+      "acceptance_criteria_count": 8,
+      "claim_count": 0,
+      "connected_node_ratio": 1.0,
+      "edge_count": 7,
+      "gap_count": 15,
+      "node_count": 8,
+      "ontology_coverage_ratio": 1.0,
+      "orphan_node_count": 0,
+      "requirement_count": 8,
+      "unsupported_strong_claim_count": 0
+    },
+    "delta": {
+      "acceptance_criteria_count": 0,
+      "claim_count": 0,
+      "edge_count": 0,
+      "gap_count": 0,
+      "node_count": 0,
+      "orphan_node_count": 0,
+      "requirement_count": 0,
+      "unsupported_strong_claim_count": 0
+    }
+  },
+  "privacy_boundary": {
+    "raw_intent_text_published": false,
+    "raw_model_output_published": false,
+    "raw_prompt_published": false
+  },
+  "proposal_id": "0152",
+  "readiness": {
+    "blocked_by": [],
+    "context_required_count": 1,
+    "next_artifact": "runs/idea_to_spec_workspace_bundle.json",
+    "ready": false,
+    "review_state": "repair_review_required"
+  },
+  "repair_actions": [
+    {
+      "id": "repair.review-unresolved-gaps",
+      "kind": "request_context_for_gaps",
+      "rationale": "Unresolved gaps require owner or operator context before canonical review.",
+      "source_findings": [
+        "pre_sib_unresolved_gaps"
+      ],
+      "status": "requires_context",
+      "target_ref": "candidate_graph.gaps"
+    }
+  ],
+  "revised_candidate_graph_preview": {
+    "active_frame": {
+      "context_refs": [
+        "context.hosted-operation-canary"
+      ],
+      "domain_refs": [
+        "domain.deployment-canary",
+        "domain.review-status",
+        "domain.follow-up-verification",
+        "domain.hosted_operation_canary"
+      ],
+      "lifecycle_phase": "idea_intake",
+      "model_applicability_refs": [
+        "model-applicability://product-idea-to-spec"
+      ],
+      "ontology_layer_refs": [
+        "ontology-layer://core"
+      ],
+      "ontology_refs": [
+        "ontology://specgraph-core"
+      ],
+      "project": "HostedOperationCanary",
+      "subsystem": "Product Workspace"
+    },
+    "artifact_kind": "candidate_spec_graph",
+    "authority_boundary": {
+      "may_create_branch_or_commit": false,
+      "may_execute_prompt_agent": false,
+      "may_mark_candidate_graph_accepted": false,
+      "may_mutate_canonical_specs": false,
+      "may_write_ontology_lockfile": false,
+      "may_write_ontology_package": false
+    },
+    "canonical_mutations_allowed": false,
+    "contract_ref": "specgraph.idea-to-spec.candidate-spec-graph.v0.1",
+    "edges": [
+      {
+        "derivation": {
+          "kind": "event_storming_product_boundary_decomposition",
+          "source": "ontology_bound_candidate_graph_seed"
+        },
+        "from": "candidate-spec.product-boundary",
+        "id": "edge.product-boundary.record-canary-check",
+        "relation": "decomposes_to",
+        "source_event_refs": [
+          "command.record-canary-check"
+        ],
+        "to": "candidate-spec.record-canary-check"
+      },
+      {
+        "derivation": {
+          "kind": "event_storming_product_boundary_decomposition",
+          "source": "ontology_bound_candidate_graph_seed"
+        },
+        "from": "candidate-spec.product-boundary",
+        "id": "edge.product-boundary.refresh-review-status",
+        "relation": "decomposes_to",
+        "source_event_refs": [
+          "command.refresh-review-status"
+        ],
+        "to": "candidate-spec.refresh-review-status"
+      },
+      {
+        "derivation": {
+          "kind": "event_storming_product_boundary_decomposition",
+          "source": "ontology_bound_candidate_graph_seed"
+        },
+        "from": "candidate-spec.product-boundary",
+        "id": "edge.product-boundary.confirm-follow-up-verification",
+        "relation": "decomposes_to",
+        "source_event_refs": [
+          "command.confirm-follow-up-verification"
+        ],
+        "to": "candidate-spec.confirm-follow-up-verification"
+      },
+      {
+        "derivation": {
+          "kind": "event_storming_product_boundary_decomposition",
+          "source": "ontology_bound_candidate_graph_seed"
+        },
+        "from": "candidate-spec.product-boundary",
+        "id": "edge.product-boundary.local-first-operator-state",
+        "relation": "decomposes_to",
+        "source_event_refs": [
+          "constraint.local-first-operator-state"
+        ],
+        "to": "candidate-spec.local-first-operator-state"
+      },
+      {
+        "derivation": {
+          "kind": "event_storming_product_boundary_decomposition",
+          "source": "ontology_bound_candidate_graph_seed"
+        },
+        "from": "candidate-spec.product-boundary",
+        "id": "edge.product-boundary.no-automatic-release-approval",
+        "relation": "decomposes_to",
+        "source_event_refs": [
+          "constraint.no-automatic-release-approval"
+        ],
+        "to": "candidate-spec.no-automatic-release-approval"
+      },
+      {
+        "derivation": {
+          "kind": "event_storming_product_boundary_decomposition",
+          "source": "ontology_bound_candidate_graph_seed"
+        },
+        "from": "candidate-spec.product-boundary",
+        "id": "edge.product-boundary.block-release-completion-until-required-follow-up-verification",
+        "relation": "decomposes_to",
+        "source_event_refs": [
+          "policy.block-release-completion-until-required-follow-up-verification"
+        ],
+        "to": "candidate-spec.block-release-completion-until-required-follow-up-verification"
+      },
+      {
+        "derivation": {
+          "kind": "event_storming_product_boundary_decomposition",
+          "source": "ontology_bound_candidate_graph_seed"
+        },
+        "from": "candidate-spec.product-boundary",
+        "id": "edge.product-boundary.escalate-failed-canary-checks-to-the-service-owner",
+        "relation": "decomposes_to",
+        "source_event_refs": [
+          "policy.escalate-failed-canary-checks-to-the-service-owner"
+        ],
+        "to": "candidate-spec.escalate-failed-canary-checks-to-the-service-owner"
+      }
+    ],
+    "findings": [],
+    "generated_at": "2026-07-10T22:13:14.024891+00:00",
+    "materialization_intent": {
+      "may_create_branch_or_commit": false,
+      "may_write_canonical_specs": false,
+      "state": "review_only",
+      "target": "pre_sib_coherence_review"
+    },
+    "nodes": [
+      {
+        "acceptance_criteria": [
+          {
+            "id": "ac.product-boundary.reviewable",
+            "ontology_refs": [
+              "ontology://org.0al.specgraph.core/0.1.0/classes/Requirement",
+              "ontology://org.0al.specgraph.core/0.1.0/classes/AcceptanceCriterion"
+            ],
+            "source_event_refs": [
+              "actor.on-call-reviewer",
+              "actor.release-operator",
+              "actor.service-owner",
+              "command.confirm-follow-up-verification",
+              "command.record-canary-check",
+              "command.refresh-review-status",
+              "constraint.local-first-operator-state",
+              "constraint.no-automatic-release-approval",
+              "event.canary-check-recorded",
+              "event.follow-up-verification-required",
+              "event.review-status-refreshed",
+              "policy.block-release-completion-until-required-follow-up-verification",
+              "policy.escalate-failed-canary-checks-to-the-service-owner"
+            ],
+            "statement": "Reviewer can verify: The product specification must preserve the root intent: Track canary checks and review follow-up."
+          }
+        ],
+        "claims": [],
+        "context_refs": [
+          "context.hosted-operation-canary"
+        ],
+        "description": "Track canary checks and review follow-up.",
+        "display_alias": "Product Boundary",
+        "display_alias_source": "title",
+        "domain_refs": [
+          "domain.deployment-canary",
+          "domain.review-status",
+          "domain.follow-up-verification",
+          "domain.hosted_operation_canary"
+        ],
+        "gaps": [
+          {
+            "blocks_candidate_graph": false,
+            "id": "ontology-gap.release-operator",
+            "kind": "ontology_gap",
+            "source_kind": "actor",
+            "source_ref": "actor.release-operator",
+            "statement": "Confirm whether `Release operator` should bind to an existing ontology term or remain a project-local domain term.",
+            "suggested_action": "confirm_bind_or_promote_domain_term",
+            "term": "Release operator"
+          },
+          {
+            "blocks_candidate_graph": false,
+            "id": "ontology-gap.service-owner",
+            "kind": "ontology_gap",
+            "source_kind": "actor",
+            "source_ref": "actor.service-owner",
+            "statement": "Confirm whether `Service owner` should bind to an existing ontology term or remain a project-local domain term.",
+            "suggested_action": "confirm_bind_or_promote_domain_term",
+            "term": "Service owner"
+          },
+          {
+            "blocks_candidate_graph": false,
+            "id": "ontology-gap.on-call-reviewer",
+            "kind": "ontology_gap",
+            "source_kind": "actor",
+            "source_ref": "actor.on-call-reviewer",
+            "statement": "Confirm whether `On-call reviewer` should bind to an existing ontology term or remain a project-local domain term.",
+            "suggested_action": "confirm_bind_or_promote_domain_term",
+            "term": "On-call reviewer"
+          },
+          {
+            "blocks_candidate_graph": false,
+            "id": "ontology-gap.canary-check-recorded",
+            "kind": "ontology_gap",
+            "source_kind": "domain_event",
+            "source_ref": "event.canary-check-recorded",
+            "statement": "Confirm whether `Canary check recorded` should bind to an existing ontology term or remain a project-local domain term.",
+            "suggested_action": "confirm_bind_or_promote_domain_term",
+            "term": "Canary check recorded"
+          },
+          {
+            "blocks_candidate_graph": false,
+            "id": "ontology-gap.review-status-refreshed",
+            "kind": "ontology_gap",
+            "source_kind": "domain_event",
+            "source_ref": "event.review-status-refreshed",
+            "statement": "Confirm whether `Review status refreshed` should bind to an existing ontology term or remain a project-local domain term.",
+            "suggested_action": "confirm_bind_or_promote_domain_term",
+            "term": "Review status refreshed"
+          },
+          {
+            "blocks_candidate_graph": false,
+            "id": "ontology-gap.follow-up-verification-required",
+            "kind": "ontology_gap",
+            "source_kind": "domain_event",
+            "source_ref": "event.follow-up-verification-required",
+            "statement": "Confirm whether `Follow-up verification required` should bind to an existing ontology term or remain a project-local domain term.",
+            "suggested_action": "confirm_bind_or_promote_domain_term",
+            "term": "Follow-up verification required"
+          },
+          {
+            "blocks_candidate_graph": false,
+            "id": "ontology-gap.record-canary-check",
+            "kind": "ontology_gap",
+            "source_kind": "command",
+            "source_ref": "command.record-canary-check",
+            "statement": "Confirm whether `Record canary check` should bind to an existing ontology term or remain a project-local domain term.",
+            "suggested_action": "confirm_bind_or_promote_domain_term",
+            "term": "Record canary check"
+          },
+          {
+            "blocks_candidate_graph": false,
+            "id": "ontology-gap.refresh-review-status",
+            "kind": "ontology_gap",
+            "source_kind": "command",
+            "source_ref": "command.refresh-review-status",
+            "statement": "Confirm whether `Refresh review status` should bind to an existing ontology term or remain a project-local domain term.",
+            "suggested_action": "confirm_bind_or_promote_domain_term",
+            "term": "Refresh review status"
+          },
+          {
+            "blocks_candidate_graph": false,
+            "id": "ontology-gap.confirm-follow-up-verification",
+            "kind": "ontology_gap",
+            "source_kind": "command",
+            "source_ref": "command.confirm-follow-up-verification",
+            "statement": "Confirm whether `Confirm follow-up verification` should bind to an existing ontology term or remain a project-local domain term.",
+            "suggested_action": "confirm_bind_or_promote_domain_term",
+            "term": "Confirm follow-up verification"
+          },
+          {
+            "blocks_candidate_graph": false,
+            "id": "ontology-gap.block-release-completion-until-required-follow-up-verification",
+            "kind": "ontology_gap",
+            "source_kind": "policy",
+            "source_ref": "policy.block-release-completion-until-required-follow-up-verification",
+            "statement": "Confirm whether `Block release completion until required follow-up verification` should bind to an existing ontology term or remain a project-local domain term.",
+            "suggested_action": "confirm_bind_or_promote_domain_term",
+            "term": "Block release completion until required follow-up verification"
+          },
+          {
+            "blocks_candidate_graph": false,
+            "id": "ontology-gap.escalate-failed-canary-checks-to-the-service-owner",
+            "kind": "ontology_gap",
+            "source_kind": "policy",
+            "source_ref": "policy.escalate-failed-canary-checks-to-the-service-owner",
+            "statement": "Confirm whether `Escalate failed canary checks to the service owner` should bind to an existing ontology term or remain a project-local domain term.",
+            "suggested_action": "confirm_bind_or_promote_domain_term",
+            "term": "Escalate failed canary checks to the service owner"
+          }
+        ],
+        "id": "candidate-spec.product-boundary",
+        "kind": "product_spec_boundary",
+        "model_applicability_refs": [
+          "model-applicability://product-idea-to-spec"
+        ],
+        "ontology_layer_refs": [
+          "ontology-layer://core"
+        ],
+        "ontology_refs": [
+          "ontology://org.0al.specgraph.core/0.1.0/classes/Spec",
+          "ontology://org.0al.specgraph.core/0.1.0/classes/Node"
+        ],
+        "requirements": [
+          {
+            "acceptance_criteria_refs": [
+              "ac.product-boundary.reviewable"
+            ],
+            "id": "req.product-boundary.main",
+            "ontology_refs": [
+              "ontology://org.0al.specgraph.core/0.1.0/classes/Requirement",
+              "ontology://org.0al.specgraph.core/0.1.0/classes/AcceptanceCriterion"
+            ],
+            "source_event_refs": [
+              "actor.on-call-reviewer",
+              "actor.release-operator",
+              "actor.service-owner",
+              "command.confirm-follow-up-verification",
+              "command.record-canary-check",
+              "command.refresh-review-status",
+              "constraint.local-first-operator-state",
+              "constraint.no-automatic-release-approval",
+              "event.canary-check-recorded",
+              "event.follow-up-verification-required",
+              "event.review-status-refreshed",
+              "policy.block-release-completion-until-required-follow-up-verification",
+              "policy.escalate-failed-canary-checks-to-the-service-owner"
+            ],
+            "statement": "The product specification must preserve the root intent: Track canary checks and review follow-up."
+          }
+        ],
+        "source_event_refs": [
+          "actor.on-call-reviewer",
+          "actor.release-operator",
+          "actor.service-owner",
+          "command.confirm-follow-up-verification",
+          "command.record-canary-check",
+          "command.refresh-review-status",
+          "constraint.local-first-operator-state",
+          "constraint.no-automatic-release-approval",
+          "event.canary-check-recorded",
+          "event.follow-up-verification-required",
+          "event.review-status-refreshed",
+          "policy.block-release-completion-until-required-follow-up-verification",
+          "policy.escalate-failed-canary-checks-to-the-service-owner"
+        ],
+        "title": "Product Boundary"
+      },
+      {
+        "acceptance_criteria": [
+          {
+            "id": "ac.record-canary-check.reviewable",
+            "ontology_refs": [
+              "ontology://org.0al.specgraph.core/0.1.0/classes/Requirement",
+              "ontology://org.0al.specgraph.core/0.1.0/classes/AcceptanceCriterion"
+            ],
+            "source_event_refs": [
+              "command.record-canary-check"
+            ],
+            "statement": "Reviewer can verify: The product must support `Record canary check` and record a reviewable domain event."
+          }
+        ],
+        "claims": [],
+        "context_refs": [
+          "context.hosted-operation-canary"
+        ],
+        "description": "The product must support `Record canary check` and record a reviewable domain event.",
+        "display_alias": "Record canary check",
+        "display_alias_source": "title",
+        "domain_refs": [
+          "domain.deployment-canary",
+          "domain.review-status",
+          "domain.follow-up-verification",
+          "domain.hosted_operation_canary"
+        ],
+        "gaps": [],
+        "id": "candidate-spec.record-canary-check",
+        "kind": "behavior_requirement",
+        "model_applicability_refs": [
+          "model-applicability://product-idea-to-spec"
+        ],
+        "ontology_layer_refs": [
+          "ontology-layer://core"
+        ],
+        "ontology_refs": [
+          "ontology://org.0al.specgraph.core/0.1.0/classes/Requirement",
+          "ontology://org.0al.specgraph.core/0.1.0/classes/Node"
+        ],
+        "requirements": [
+          {
+            "acceptance_criteria_refs": [
+              "ac.record-canary-check.reviewable"
+            ],
+            "id": "req.record-canary-check.main",
+            "ontology_refs": [
+              "ontology://org.0al.specgraph.core/0.1.0/classes/Requirement",
+              "ontology://org.0al.specgraph.core/0.1.0/classes/AcceptanceCriterion"
+            ],
+            "source_event_refs": [
+              "command.record-canary-check"
+            ],
+            "statement": "The product must support `Record canary check` and record a reviewable domain event."
+          }
+        ],
+        "source_event_refs": [
+          "command.record-canary-check"
+        ],
+        "title": "Record canary check"
+      },
+      {
+        "acceptance_criteria": [
+          {
+            "id": "ac.refresh-review-status.reviewable",
+            "ontology_refs": [
+              "ontology://org.0al.specgraph.core/0.1.0/classes/Requirement",
+              "ontology://org.0al.specgraph.core/0.1.0/classes/AcceptanceCriterion"
+            ],
+            "source_event_refs": [
+              "command.refresh-review-status"
+            ],
+            "statement": "Reviewer can verify: The product must support `Refresh review status` and record a reviewable domain event."
+          }
+        ],
+        "claims": [],
+        "context_refs": [
+          "context.hosted-operation-canary"
+        ],
+        "description": "The product must support `Refresh review status` and record a reviewable domain event.",
+        "display_alias": "Refresh review status",
+        "display_alias_source": "title",
+        "domain_refs": [
+          "domain.deployment-canary",
+          "domain.review-status",
+          "domain.follow-up-verification",
+          "domain.hosted_operation_canary"
+        ],
+        "gaps": [],
+        "id": "candidate-spec.refresh-review-status",
+        "kind": "behavior_requirement",
+        "model_applicability_refs": [
+          "model-applicability://product-idea-to-spec"
+        ],
+        "ontology_layer_refs": [
+          "ontology-layer://core"
+        ],
+        "ontology_refs": [
+          "ontology://org.0al.specgraph.core/0.1.0/classes/Requirement",
+          "ontology://org.0al.specgraph.core/0.1.0/classes/Node"
+        ],
+        "requirements": [
+          {
+            "acceptance_criteria_refs": [
+              "ac.refresh-review-status.reviewable"
+            ],
+            "id": "req.refresh-review-status.main",
+            "ontology_refs": [
+              "ontology://org.0al.specgraph.core/0.1.0/classes/Requirement",
+              "ontology://org.0al.specgraph.core/0.1.0/classes/AcceptanceCriterion"
+            ],
+            "source_event_refs": [
+              "command.refresh-review-status"
+            ],
+            "statement": "The product must support `Refresh review status` and record a reviewable domain event."
+          }
+        ],
+        "source_event_refs": [
+          "command.refresh-review-status"
+        ],
+        "title": "Refresh review status"
+      },
+      {
+        "acceptance_criteria": [
+          {
+            "id": "ac.confirm-follow-up-verification.reviewable",
+            "ontology_refs": [
+              "ontology://org.0al.specgraph.core/0.1.0/classes/Requirement",
+              "ontology://org.0al.specgraph.core/0.1.0/classes/AcceptanceCriterion"
+            ],
+            "source_event_refs": [
+              "command.confirm-follow-up-verification"
+            ],
+            "statement": "Reviewer can verify: The product must support `Confirm follow-up verification` and record a reviewable domain event."
+          }
+        ],
+        "claims": [],
+        "context_refs": [
+          "context.hosted-operation-canary"
+        ],
+        "description": "The product must support `Confirm follow-up verification` and record a reviewable domain event.",
+        "display_alias": "Confirm follow-up verification",
+        "display_alias_source": "title",
+        "domain_refs": [
+          "domain.deployment-canary",
+          "domain.review-status",
+          "domain.follow-up-verification",
+          "domain.hosted_operation_canary"
+        ],
+        "gaps": [],
+        "id": "candidate-spec.confirm-follow-up-verification",
+        "kind": "behavior_requirement",
+        "model_applicability_refs": [
+          "model-applicability://product-idea-to-spec"
+        ],
+        "ontology_layer_refs": [
+          "ontology-layer://core"
+        ],
+        "ontology_refs": [
+          "ontology://org.0al.specgraph.core/0.1.0/classes/Requirement",
+          "ontology://org.0al.specgraph.core/0.1.0/classes/Node"
+        ],
+        "requirements": [
+          {
+            "acceptance_criteria_refs": [
+              "ac.confirm-follow-up-verification.reviewable"
+            ],
+            "id": "req.confirm-follow-up-verification.main",
+            "ontology_refs": [
+              "ontology://org.0al.specgraph.core/0.1.0/classes/Requirement",
+              "ontology://org.0al.specgraph.core/0.1.0/classes/AcceptanceCriterion"
+            ],
+            "source_event_refs": [
+              "command.confirm-follow-up-verification"
+            ],
+            "statement": "The product must support `Confirm follow-up verification` and record a reviewable domain event."
+          }
+        ],
+        "source_event_refs": [
+          "command.confirm-follow-up-verification"
+        ],
+        "title": "Confirm follow-up verification"
+      },
+      {
+        "acceptance_criteria": [
+          {
+            "id": "ac.local-first-operator-state.reviewable",
+            "ontology_refs": [
+              "ontology://org.0al.specgraph.core/0.1.0/classes/Constraint",
+              "ontology://org.0al.specgraph.core/0.1.0/classes/Requirement",
+              "ontology://org.0al.specgraph.core/0.1.0/classes/AcceptanceCriterion"
+            ],
+            "source_event_refs": [
+              "constraint.local-first-operator-state"
+            ],
+            "statement": "Reviewer can verify: local-first operator state"
+          }
+        ],
+        "claims": [],
+        "context_refs": [
+          "context.hosted-operation-canary"
+        ],
+        "description": "local-first operator state",
+        "display_alias": "local-first operator state",
+        "display_alias_source": "title",
+        "domain_refs": [
+          "domain.deployment-canary",
+          "domain.review-status",
+          "domain.follow-up-verification",
+          "domain.hosted_operation_canary"
+        ],
+        "gaps": [
+          {
+            "id": "gap.local-first-operator-state.enforcement-mechanism",
+            "kind": "implementation_gap",
+            "source_event_refs": [
+              "constraint.local-first-operator-state"
+            ],
+            "statement": "Define the exact enforcement mechanism for this constraint."
+          }
+        ],
+        "id": "candidate-spec.local-first-operator-state",
+        "kind": "constraint_constraint",
+        "model_applicability_refs": [
+          "model-applicability://product-idea-to-spec"
+        ],
+        "ontology_layer_refs": [
+          "ontology-layer://core"
+        ],
+        "ontology_refs": [
+          "ontology://org.0al.specgraph.core/0.1.0/classes/Constraint",
+          "ontology://org.0al.specgraph.core/0.1.0/classes/Requirement",
+          "ontology://org.0al.specgraph.core/0.1.0/classes/Node"
+        ],
+        "requirements": [
+          {
+            "acceptance_criteria_refs": [
+              "ac.local-first-operator-state.reviewable"
+            ],
+            "id": "req.local-first-operator-state.main",
+            "ontology_refs": [
+              "ontology://org.0al.specgraph.core/0.1.0/classes/Constraint",
+              "ontology://org.0al.specgraph.core/0.1.0/classes/Requirement",
+              "ontology://org.0al.specgraph.core/0.1.0/classes/AcceptanceCriterion"
+            ],
+            "source_event_refs": [
+              "constraint.local-first-operator-state"
+            ],
+            "statement": "local-first operator state"
+          }
+        ],
+        "source_event_refs": [
+          "constraint.local-first-operator-state"
+        ],
+        "title": "local-first operator state"
+      },
+      {
+        "acceptance_criteria": [
+          {
+            "id": "ac.no-automatic-release-approval.reviewable",
+            "ontology_refs": [
+              "ontology://org.0al.specgraph.core/0.1.0/classes/Constraint",
+              "ontology://org.0al.specgraph.core/0.1.0/classes/Requirement",
+              "ontology://org.0al.specgraph.core/0.1.0/classes/AcceptanceCriterion"
+            ],
+            "source_event_refs": [
+              "constraint.no-automatic-release-approval"
+            ],
+            "statement": "Reviewer can verify: no automatic release approval"
+          }
+        ],
+        "claims": [],
+        "context_refs": [
+          "context.hosted-operation-canary"
+        ],
+        "description": "no automatic release approval",
+        "display_alias": "no automatic release approval",
+        "display_alias_source": "title",
+        "domain_refs": [
+          "domain.deployment-canary",
+          "domain.review-status",
+          "domain.follow-up-verification",
+          "domain.hosted_operation_canary"
+        ],
+        "gaps": [
+          {
+            "id": "gap.no-automatic-release-approval.enforcement-mechanism",
+            "kind": "implementation_gap",
+            "source_event_refs": [
+              "constraint.no-automatic-release-approval"
+            ],
+            "statement": "Define the exact enforcement mechanism for this constraint."
+          }
+        ],
+        "id": "candidate-spec.no-automatic-release-approval",
+        "kind": "constraint_constraint",
+        "model_applicability_refs": [
+          "model-applicability://product-idea-to-spec"
+        ],
+        "ontology_layer_refs": [
+          "ontology-layer://core"
+        ],
+        "ontology_refs": [
+          "ontology://org.0al.specgraph.core/0.1.0/classes/Constraint",
+          "ontology://org.0al.specgraph.core/0.1.0/classes/Requirement",
+          "ontology://org.0al.specgraph.core/0.1.0/classes/Node"
+        ],
+        "requirements": [
+          {
+            "acceptance_criteria_refs": [
+              "ac.no-automatic-release-approval.reviewable"
+            ],
+            "id": "req.no-automatic-release-approval.main",
+            "ontology_refs": [
+              "ontology://org.0al.specgraph.core/0.1.0/classes/Constraint",
+              "ontology://org.0al.specgraph.core/0.1.0/classes/Requirement",
+              "ontology://org.0al.specgraph.core/0.1.0/classes/AcceptanceCriterion"
+            ],
+            "source_event_refs": [
+              "constraint.no-automatic-release-approval"
+            ],
+            "statement": "no automatic release approval"
+          }
+        ],
+        "source_event_refs": [
+          "constraint.no-automatic-release-approval"
+        ],
+        "title": "no automatic release approval"
+      },
+      {
+        "acceptance_criteria": [
+          {
+            "id": "ac.block-release-completion-until-required-follow-up-verification.reviewable",
+            "ontology_refs": [
+              "ontology://org.0al.specgraph.core/0.1.0/classes/Constraint",
+              "ontology://org.0al.specgraph.core/0.1.0/classes/Requirement",
+              "ontology://org.0al.specgraph.core/0.1.0/classes/AcceptanceCriterion"
+            ],
+            "source_event_refs": [
+              "policy.block-release-completion-until-required-follow-up-verification"
+            ],
+            "statement": "Reviewer can verify: The product must enforce `Block release completion until required follow-up verification`."
+          }
+        ],
+        "claims": [],
+        "context_refs": [
+          "context.hosted-operation-canary"
+        ],
+        "description": "The product must enforce `Block release completion until required follow-up verification`.",
+        "display_alias": "Block release completion until required follow-up verification",
+        "display_alias_source": "title",
+        "domain_refs": [
+          "domain.deployment-canary",
+          "domain.review-status",
+          "domain.follow-up-verification",
+          "domain.hosted_operation_canary"
+        ],
+        "gaps": [
+          {
+            "id": "gap.block-release-completion-until-required-follow-up-verification.enforcement-mechanism",
+            "kind": "implementation_gap",
+            "source_event_refs": [
+              "policy.block-release-completion-until-required-follow-up-verification"
+            ],
+            "statement": "Define the exact enforcement mechanism for this policy."
+          }
+        ],
+        "id": "candidate-spec.block-release-completion-until-required-follow-up-verification",
+        "kind": "policy_constraint",
+        "model_applicability_refs": [
+          "model-applicability://product-idea-to-spec"
+        ],
+        "ontology_layer_refs": [
+          "ontology-layer://core"
+        ],
+        "ontology_refs": [
+          "ontology://org.0al.specgraph.core/0.1.0/classes/Constraint",
+          "ontology://org.0al.specgraph.core/0.1.0/classes/Requirement",
+          "ontology://org.0al.specgraph.core/0.1.0/classes/Node"
+        ],
+        "requirements": [
+          {
+            "acceptance_criteria_refs": [
+              "ac.block-release-completion-until-required-follow-up-verification.reviewable"
+            ],
+            "id": "req.block-release-completion-until-required-follow-up-verification.main",
+            "ontology_refs": [
+              "ontology://org.0al.specgraph.core/0.1.0/classes/Constraint",
+              "ontology://org.0al.specgraph.core/0.1.0/classes/Requirement",
+              "ontology://org.0al.specgraph.core/0.1.0/classes/AcceptanceCriterion"
+            ],
+            "source_event_refs": [
+              "policy.block-release-completion-until-required-follow-up-verification"
+            ],
+            "statement": "The product must enforce `Block release completion until required follow-up verification`."
+          }
+        ],
+        "source_event_refs": [
+          "policy.block-release-completion-until-required-follow-up-verification"
+        ],
+        "title": "Block release completion until required follow-up verification"
+      },
+      {
+        "acceptance_criteria": [
+          {
+            "id": "ac.escalate-failed-canary-checks-to-the-service-owner.reviewable",
+            "ontology_refs": [
+              "ontology://org.0al.specgraph.core/0.1.0/classes/Constraint",
+              "ontology://org.0al.specgraph.core/0.1.0/classes/Requirement",
+              "ontology://org.0al.specgraph.core/0.1.0/classes/AcceptanceCriterion"
+            ],
+            "source_event_refs": [
+              "policy.escalate-failed-canary-checks-to-the-service-owner"
+            ],
+            "statement": "Reviewer can verify: The product must enforce `Escalate failed canary checks to the service owner`."
+          }
+        ],
+        "claims": [],
+        "context_refs": [
+          "context.hosted-operation-canary"
+        ],
+        "description": "The product must enforce `Escalate failed canary checks to the service owner`.",
+        "display_alias": "Escalate failed canary checks to the service owner",
+        "display_alias_source": "title",
+        "domain_refs": [
+          "domain.deployment-canary",
+          "domain.review-status",
+          "domain.follow-up-verification",
+          "domain.hosted_operation_canary"
+        ],
+        "gaps": [
+          {
+            "id": "gap.escalate-failed-canary-checks-to-the-service-owner.enforcement-mechanism",
+            "kind": "implementation_gap",
+            "source_event_refs": [
+              "policy.escalate-failed-canary-checks-to-the-service-owner"
+            ],
+            "statement": "Define the exact enforcement mechanism for this policy."
+          }
+        ],
+        "id": "candidate-spec.escalate-failed-canary-checks-to-the-service-owner",
+        "kind": "policy_constraint",
+        "model_applicability_refs": [
+          "model-applicability://product-idea-to-spec"
+        ],
+        "ontology_layer_refs": [
+          "ontology-layer://core"
+        ],
+        "ontology_refs": [
+          "ontology://org.0al.specgraph.core/0.1.0/classes/Constraint",
+          "ontology://org.0al.specgraph.core/0.1.0/classes/Requirement",
+          "ontology://org.0al.specgraph.core/0.1.0/classes/Node"
+        ],
+        "requirements": [
+          {
+            "acceptance_criteria_refs": [
+              "ac.escalate-failed-canary-checks-to-the-service-owner.reviewable"
+            ],
+            "id": "req.escalate-failed-canary-checks-to-the-service-owner.main",
+            "ontology_refs": [
+              "ontology://org.0al.specgraph.core/0.1.0/classes/Constraint",
+              "ontology://org.0al.specgraph.core/0.1.0/classes/Requirement",
+              "ontology://org.0al.specgraph.core/0.1.0/classes/AcceptanceCriterion"
+            ],
+            "source_event_refs": [
+              "policy.escalate-failed-canary-checks-to-the-service-owner"
+            ],
+            "statement": "The product must enforce `Escalate failed canary checks to the service owner`."
+          }
+        ],
+        "source_event_refs": [
+          "policy.escalate-failed-canary-checks-to-the-service-owner"
+        ],
+        "title": "Escalate failed canary checks to the service owner"
+      }
+    ],
+    "pre_sib_readiness": {
+      "blocked_by": [],
+      "next_artifact": "runs/pre_sib_coherence_report.json",
+      "ready": true,
+      "review_state": "ready_for_pre_sib"
+    },
+    "privacy_boundary": {
+      "raw_intent_text_published": false,
+      "raw_model_output_published": false,
+      "raw_prompt_published": false
+    },
+    "proposal_id": "0150",
+    "repair_preview": {
+      "applied_action_count": 0,
+      "generated_by": "specgraph.idea-to-spec.candidate-repair-loop.v0.1"
+    },
+    "schema_version": 1,
+    "seed_contract_ref": "specgraph.idea-to-spec.candidate-spec-graph-seed.v0.1",
+    "source_intake": {
+      "artifact_kind": "idea_event_storming_intake",
+      "contract_ref": "specgraph.idea-to-spec.event-storming-intake.v0.1",
+      "readiness": "ready_for_candidate_graph",
+      "root_intent_sha256": "8cec2f6b01d7072959030c44d950b97953324c3543e74878335c7d05c83e2759",
+      "source_ref": "product://hosted-operation-canary/root-intent"
+    },
+    "source_ref": "runs/hosted-operation-canary/candidate_repair_loop_report.json#revised_candidate_graph_preview",
+    "summary": {
+      "acceptance_criteria_count": 8,
+      "claim_count": 0,
+      "edge_count": 7,
+      "finding_count": 0,
+      "gap_count": 15,
+      "node_count": 8,
+      "requirement_count": 8,
+      "status": "ready_for_pre_sib"
+    },
+    "tracked_artifacts_written": false,
+    "warnings": []
+  },
+  "schema_version": 1,
+  "source_candidate_graph": {
+    "artifact_kind": "candidate_spec_graph",
+    "contract_ref": "specgraph.idea-to-spec.candidate-spec-graph.v0.1",
+    "source_ref": "product://hosted-operation-canary/candidate-spec-graph-seed"
+  },
+  "source_pre_sib_report": {
+    "artifact_kind": "pre_sib_coherence_report",
+    "contract_ref": "specgraph.idea-to-spec.pre-sib-coherence-report.v0.1",
+    "review_state": "ready_for_repair_loop",
+    "source_ref": "product://hosted-operation-canary/candidate-spec-graph-seed"
+  },
+  "source_ref": "product://hosted-operation-canary/candidate-spec-graph-seed",
+  "summary": {
+    "action_count": 1,
+    "applied_action_count": 0,
+    "context_required_count": 1,
+    "finding_count": 0,
+    "no_op_repair_loop": false,
+    "status": "repair_review_required"
+  },
+  "tracked_artifacts_written": false,
+  "warnings": [
+    {
+      "evidence": {
+        "context_required_count": 1
+      },
+      "finding_id": "repair_context_required",
+      "message": "Some repair actions require owner or operator context.",
+      "severity": "warning",
+      "source": "candidate_repair_loop"
+    }
+  ]
+}

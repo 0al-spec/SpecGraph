@@ -1,0 +1,129 @@
+{
+  "active_frame_hints": {
+    "context_refs": [
+      "context.hosted-operation-canary"
+    ],
+    "domain_ref_derivations": [
+      {
+        "candidate_id": "hosted-operation-canary",
+        "confirmation_required": true,
+        "owner_confirmed": false,
+        "ref": "domain.hosted_operation_canary",
+        "source": "system_derived_candidate_id"
+      }
+    ],
+    "domain_refs": [
+      "domain.deployment-canary",
+      "domain.review-status",
+      "domain.follow-up-verification",
+      "domain.hosted_operation_canary"
+    ],
+    "lifecycle_phase": "idea_intake",
+    "model_applicability_refs": [
+      "model-applicability://product-idea-to-spec"
+    ],
+    "ontology_layer_refs": [
+      "ontology-layer://core"
+    ],
+    "ontology_refs": [
+      "ontology://specgraph-core"
+    ],
+    "project": "HostedOperationCanary",
+    "subsystem": "Product Workspace"
+  },
+  "artifact_kind": "user_idea_intake_source",
+  "contract_ref": "specgraph.idea-to-spec.user-idea-intake-source.v0.1",
+  "event_storming_hints": {
+    "actors": [
+      {
+        "id": "actor.release-operator",
+        "name": "Release operator"
+      },
+      {
+        "id": "actor.service-owner",
+        "name": "Service owner"
+      },
+      {
+        "id": "actor.on-call-reviewer",
+        "name": "On-call reviewer"
+      }
+    ],
+    "assumptions": [],
+    "commands": [
+      {
+        "id": "command.record-canary-check",
+        "name": "Record canary check"
+      },
+      {
+        "id": "command.refresh-review-status",
+        "name": "Refresh review status"
+      },
+      {
+        "id": "command.confirm-follow-up-verification",
+        "name": "Confirm follow-up verification"
+      }
+    ],
+    "constraints": [
+      {
+        "id": "constraint.local-first-operator-state",
+        "statement": "local-first operator state"
+      },
+      {
+        "id": "constraint.no-automatic-release-approval",
+        "statement": "no automatic release approval"
+      }
+    ],
+    "domain_events": [
+      {
+        "id": "event.canary-check-recorded",
+        "name": "Canary check recorded"
+      },
+      {
+        "id": "event.review-status-refreshed",
+        "name": "Review status refreshed"
+      },
+      {
+        "id": "event.follow-up-verification-required",
+        "name": "Follow-up verification required"
+      }
+    ],
+    "external_systems": [],
+    "policies": [
+      {
+        "id": "policy.block-release-completion-until-required-follow-up-verification",
+        "name": "Block release completion until required follow-up verification"
+      },
+      {
+        "id": "policy.escalate-failed-canary-checks-to-the-service-owner",
+        "name": "Escalate failed canary checks to the service owner"
+      }
+    ],
+    "risks": [],
+    "vocabulary_questions": []
+  },
+  "intent": {
+    "summary": "Track canary checks and review follow-up.",
+    "text": ""
+  },
+  "schema_version": 1,
+  "source_materialization": {
+    "artifact_kind": "intake_session_candidate_source_report",
+    "contract_ref": "specgraph.idea-to-spec.intake-session-candidate-source.v0.1",
+    "mode": "session_embedded_public_payload",
+    "proposal_id": "0185"
+  },
+  "source_ref": "product://hosted-operation-canary/root-intent",
+  "source_session": {
+    "artifact_kind": "user_idea_intake_session",
+    "bridge_proposal_id": "0185",
+    "contract_ref": "specgraph.idea-to-spec.user-idea-intake-session.v0.1",
+    "proposal_id": "0162",
+    "session_digest": "9044cf05f64348fee25f93f7fa8713485ecde858b907dba2768b942d67de801e",
+    "source_ref": "runs/hosted-operation-canary/clarified_user_idea_intake_session.json"
+  },
+  "workspace": {
+    "candidate_id": "hosted-operation-canary",
+    "display_name": "Hosted Operation Canary",
+    "public_route": "/hosted-operation-canary"
+  }
+}

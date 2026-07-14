@@ -1,0 +1,168 @@
+{
+  "artifact_kind": "idea_to_spec_promotion_gate",
+  "authority_boundary": {
+    "may_create_branch_or_commit": false,
+    "may_execute_prompt_agent": false,
+    "may_mark_candidate_graph_accepted": false,
+    "may_mutate_candidate_source_artifacts": false,
+    "may_mutate_canonical_specs": false,
+    "may_open_pull_request": false,
+    "may_publish_read_model": false,
+    "may_write_ontology_lockfile": false,
+    "may_write_ontology_package": false
+  },
+  "canonical_mutations_allowed": false,
+  "contract_ref": "specgraph.idea-to-spec.promotion-gate.v0.1",
+  "findings": [
+    {
+      "evidence": {
+        "readiness": {
+          "blocked_by": [],
+          "context_required_count": 1,
+          "next_artifact": "runs/idea_to_spec_workspace_bundle.json",
+          "ready": false,
+          "review_state": "repair_review_required"
+        }
+      },
+      "finding_id": "repair_loop_not_ready",
+      "message": "Repair loop must be ready before promotion handoff.",
+      "severity": "review_required",
+      "source": "idea_to_spec_promotion_gate"
+    },
+    {
+      "evidence": {
+        "context_required_count": 1
+      },
+      "finding_id": "repair_context_required",
+      "message": "Owner/operator context is still required before Platform promotion.",
+      "severity": "review_required",
+      "source": "idea_to_spec_promotion_gate"
+    }
+  ],
+  "generated_at": "2026-07-10T22:13:14.161879+00:00",
+  "metric_snapshot": {
+    "materialized_file_count": 8,
+    "pre_sib": {
+      "acceptance_criteria_count": 8,
+      "acceptance_criteria_coverage_ratio": 1.0,
+      "claim_count": 0,
+      "connected_node_ratio": 1.0,
+      "duplicate_node_titles": [],
+      "edge_count": 7,
+      "gap_count": 15,
+      "node_count": 8,
+      "ontology_coverage_ratio": 1.0,
+      "ontology_covered_node_count": 8,
+      "orphan_node_count": 0,
+      "requirement_count": 8,
+      "unsupported_strong_claim_count": 0
+    },
+    "promotion_path_count": 8,
+    "repair_delta": {
+      "after": {
+        "acceptance_criteria_count": 8,
+        "claim_count": 0,
+        "connected_node_ratio": 1.0,
+        "edge_count": 7,
+        "gap_count": 15,
+        "node_count": 8,
+        "ontology_coverage_ratio": 1.0,
+        "orphan_node_count": 0,
+        "requirement_count": 8,
+        "unsupported_strong_claim_count": 0
+      },
+      "before": {
+        "acceptance_criteria_count": 8,
+        "claim_count": 0,
+        "connected_node_ratio": 1.0,
+        "edge_count": 7,
+        "gap_count": 15,
+        "node_count": 8,
+        "ontology_coverage_ratio": 1.0,
+        "orphan_node_count": 0,
+        "requirement_count": 8,
+        "unsupported_strong_claim_count": 0
+      },
+      "delta": {
+        "acceptance_criteria_count": 0,
+        "claim_count": 0,
+        "edge_count": 0,
+        "gap_count": 0,
+        "node_count": 0,
+        "orphan_node_count": 0,
+        "requirement_count": 0,
+        "unsupported_strong_claim_count": 0
+      }
+    }
+  },
+  "privacy_boundary": {
+    "raw_intent_text_published": false,
+    "raw_model_output_published": false,
+    "raw_prompt_published": false
+  },
+  "promotion_request": {
+    "next_command": "platform.py graph-repository promotion-request",
+    "path_argument": "--path",
+    "paths": [],
+    "platform_artifact_kind": "platform_graph_repository_promotion_request"
+  },
+  "proposal_id": "0154",
+  "readiness": {
+    "blocked_by": [
+      "repair_loop_not_ready",
+      "repair_context_required"
+    ],
+    "next_artifact": "owner/operator repair before promotion",
+    "ready": false,
+    "review_state": "idea_to_spec_promotion_blocked"
+  },
+  "schema_version": 1,
+  "source_artifacts": {
+    "materialization": {
+      "artifact_kind": "candidate_spec_materialization_report",
+      "contract_ref": "specgraph.idea-to-spec.candidate-spec-materialization.v0.1",
+      "proposal_id": "0153",
+      "readiness": {
+        "blocked_by": [],
+        "next_artifact": "Platform graph-repository promotion-request",
+        "ready": true,
+        "review_state": "materialized_candidate_review_ready"
+      },
+      "source_ref": "runs/hosted-operation-canary/candidate_spec_materialization_report.json"
+    },
+    "pre_sib": {
+      "artifact_kind": "pre_sib_coherence_report",
+      "contract_ref": "specgraph.idea-to-spec.pre-sib-coherence-report.v0.1",
+      "proposal_id": "0151",
+      "readiness": {
+        "blocked_by": [],
+        "next_artifact": "runs/candidate_repair_loop_report.json",
+        "ready": true,
+        "review_state": "ready_for_repair_loop"
+      },
+      "source_ref": "runs/hosted-operation-canary/pre_sib_coherence_report.json"
+    },
+    "repair_loop": {
+      "artifact_kind": "candidate_repair_loop_report",
+      "contract_ref": "specgraph.idea-to-spec.candidate-repair-loop.v0.1",
+      "proposal_id": "0152",
+      "readiness": {
+        "blocked_by": [],
+        "context_required_count": 1,
+        "next_artifact": "runs/idea_to_spec_workspace_bundle.json",
+        "ready": false,
+        "review_state": "repair_review_required"
+      },
+      "source_ref": "runs/hosted-operation-canary/candidate_repair_loop_report.json"
+    }
+  },
+  "summary": {
+    "finding_count": 2,
+    "materialized_file_count": 8,
+    "promotion_path_count": 0,
+    "status": "idea_to_spec_promotion_blocked",
+    "warning_count": 0
+  },
+  "tracked_artifacts_written": false,
+  "warnings": []
+}

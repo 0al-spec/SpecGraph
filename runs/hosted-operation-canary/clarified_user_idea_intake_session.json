@@ -1,0 +1,223 @@
+{
+  "active_frame_hints": {
+    "context_refs": [
+      "context.hosted-operation-canary"
+    ],
+    "domain_ref_derivations": [
+      {
+        "candidate_id": "hosted-operation-canary",
+        "confirmation_required": true,
+        "owner_confirmed": false,
+        "ref": "domain.hosted_operation_canary",
+        "source": "system_derived_candidate_id"
+      }
+    ],
+    "domain_refs": [
+      "domain.deployment-canary",
+      "domain.review-status",
+      "domain.follow-up-verification",
+      "domain.hosted_operation_canary"
+    ],
+    "lifecycle_phase": "idea_intake",
+    "model_applicability_refs": [
+      "model-applicability://product-idea-to-spec"
+    ],
+    "ontology_layer_refs": [
+      "ontology-layer://core"
+    ],
+    "ontology_refs": [
+      "ontology://specgraph-core"
+    ],
+    "project": "HostedOperationCanary",
+    "subsystem": "Product Workspace"
+  },
+  "artifact_kind": "user_idea_intake_session",
+  "authority_boundary": {
+    "may_accept_ontology_terms": false,
+    "may_create_branch_or_commit": false,
+    "may_execute_prompt_agent": false,
+    "may_infer_domain_model": false,
+    "may_mutate_candidate_source_artifacts": false,
+    "may_mutate_canonical_specs": false,
+    "may_open_pull_request": false,
+    "may_write_ontology_lockfile": false,
+    "may_write_ontology_package": false
+  },
+  "candidate_source_input": {
+    "active_frame_hints": {
+      "context_refs": [
+        "context.hosted-operation-canary"
+      ],
+      "domain_ref_derivations": [
+        {
+          "candidate_id": "hosted-operation-canary",
+          "confirmation_required": true,
+          "owner_confirmed": false,
+          "ref": "domain.hosted_operation_canary",
+          "source": "system_derived_candidate_id"
+        }
+      ],
+      "domain_refs": [
+        "domain.deployment-canary",
+        "domain.review-status",
+        "domain.follow-up-verification",
+        "domain.hosted_operation_canary"
+      ],
+      "lifecycle_phase": "idea_intake",
+      "model_applicability_refs": [
+        "model-applicability://product-idea-to-spec"
+      ],
+      "ontology_layer_refs": [
+        "ontology-layer://core"
+      ],
+      "ontology_refs": [
+        "ontology://specgraph-core"
+      ],
+      "project": "HostedOperationCanary",
+      "subsystem": "Product Workspace"
+    },
+    "artifact_kind": "intake_session_candidate_source_input",
+    "contract_ref": "specgraph.idea-to-spec.intake-session-candidate-source-input.v0.1",
+    "event_storming_hints": {
+      "actors": [
+        {
+          "id": "actor.release-operator",
+          "name": "Release operator"
+        },
+        {
+          "id": "actor.service-owner",
+          "name": "Service owner"
+        },
+        {
+          "id": "actor.on-call-reviewer",
+          "name": "On-call reviewer"
+        }
+      ],
+      "assumptions": [],
+      "commands": [
+        {
+          "id": "command.record-canary-check",
+          "name": "Record canary check"
+        },
+        {
+          "id": "command.refresh-review-status",
+          "name": "Refresh review status"
+        },
+        {
+          "id": "command.confirm-follow-up-verification",
+          "name": "Confirm follow-up verification"
+        }
+      ],
+      "constraints": [
+        {
+          "id": "constraint.local-first-operator-state",
+          "statement": "local-first operator state"
+        },
+        {
+          "id": "constraint.no-automatic-release-approval",
+          "statement": "no automatic release approval"
+        }
+      ],
+      "domain_events": [
+        {
+          "id": "event.canary-check-recorded",
+          "name": "Canary check recorded"
+        },
+        {
+          "id": "event.review-status-refreshed",
+          "name": "Review status refreshed"
+        },
+        {
+          "id": "event.follow-up-verification-required",
+          "name": "Follow-up verification required"
+        }
+      ],
+      "external_systems": [],
+      "policies": [
+        {
+          "id": "policy.block-release-completion-until-required-follow-up-verification",
+          "name": "Block release completion until required follow-up verification"
+        },
+        {
+          "id": "policy.escalate-failed-canary-checks-to-the-service-owner",
+          "name": "Escalate failed canary checks to the service owner"
+        }
+      ],
+      "risks": [],
+      "vocabulary_questions": []
+    },
+    "intent": {
+      "summary": "Track canary checks and review follow-up.",
+      "text": ""
+    },
+    "privacy_boundary": {
+      "raw_idea_text_published": false,
+      "raw_model_output_published": false,
+      "raw_operator_note_published": false,
+      "raw_prompt_published": false
+    },
+    "proposal_id": "0162",
+    "schema_version": 1,
+    "source_digest": "9044cf05f64348fee25f93f7fa8713485ecde858b907dba2768b942d67de801e",
+    "source_ref": "product://hosted-operation-canary/root-intent",
+    "workspace": {
+      "candidate_id": "hosted-operation-canary",
+      "display_name": "Hosted Operation Canary",
+      "public_route": "/hosted-operation-canary"
+    }
+  },
+  "canonical_mutations_allowed": false,
+  "clarification_questions": [],
+  "contract_ref": "specgraph.idea-to-spec.user-idea-intake-session.v0.1",
+  "event_storming_summary": {
+    "actors_count": 3,
+    "assumptions_count": 0,
+    "commands_count": 3,
+    "constraints_count": 2,
+    "domain_events_count": 3,
+    "external_systems_count": 0,
+    "policies_count": 2,
+    "risks_count": 0,
+    "vocabulary_questions_count": 0
+  },
+  "findings": [],
+  "generated_at": "2026-07-10T22:13:13.791097+00:00",
+  "intent": {
+    "raw_text_digest": "44c9c7efe6af08c6d05cce3c14a95f2b4c26e63431eb441ca8445b4c7f1f5014",
+    "raw_text_published": false,
+    "summary": "Track canary checks and review follow-up."
+  },
+  "privacy_boundary": {
+    "raw_idea_text_published_in_session": false,
+    "raw_model_output_published": false,
+    "raw_operator_note_published": false,
+    "raw_prompt_published": false
+  },
+  "proposal_id": "0162",
+  "readiness": {
+    "blocked_by": [],
+    "ready": true,
+    "review_state": "ready_for_event_storming_intake"
+  },
+  "schema_version": 1,
+  "source_output": {
+    "artifact_kind": "user_idea_intake_source",
+    "contract_ref": "specgraph.idea-to-spec.user-idea-intake-source.v0.1",
+    "digest": "9044cf05f64348fee25f93f7fa8713485ecde858b907dba2768b942d67de801e",
+    "path": "runs/hosted-operation-canary/.specspace_real_idea_answer_handoff_staging/.clarified_user_idea_intake_source.staging.json",
+    "written": true
+  },
+  "source_ref": "runs/hosted-operation-canary/.specspace_real_idea_answer_handoff_staging/local_operator_clarified_user_idea_raw_input.json",
+  "summary": {
+    "clarification_question_count": 0,
+    "finding_count": 0,
+    "source_written": true,
+    "status": "ready_for_event_storming_intake"
+  },
+  "tracked_artifacts_written": false,
+  "workspace": {
+    "candidate_id": "hosted-operation-canary",
+    "display_name": "Hosted Operation Canary",
+    "public_route": "/hosted-operation-canary"
+  }
+}

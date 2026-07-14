@@ -1,0 +1,286 @@
+{
+  "active_frame": {
+    "context_refs": [
+      "context.hosted-operation-canary"
+    ],
+    "domain_refs": [
+      "domain.deployment-canary",
+      "domain.review-status",
+      "domain.follow-up-verification",
+      "domain.hosted_operation_canary"
+    ],
+    "lifecycle_phase": "idea_intake",
+    "model_applicability_refs": [
+      "model-applicability://product-idea-to-spec"
+    ],
+    "ontology_layer_refs": [
+      "ontology-layer://core"
+    ],
+    "ontology_refs": [
+      "ontology://specgraph-core"
+    ],
+    "project": "HostedOperationCanary",
+    "subsystem": "Product Workspace"
+  },
+  "artifact_kind": "active_idea_to_spec_candidate",
+  "authority_boundary": {
+    "may_create_branch_or_commit": false,
+    "may_execute_prompt_agent": false,
+    "may_mark_candidate_graph_accepted": false,
+    "may_mutate_candidate_source_artifacts": false,
+    "may_mutate_canonical_specs": false,
+    "may_open_pull_request": false,
+    "may_publish_read_model": false,
+    "may_write_ontology_lockfile": false,
+    "may_write_ontology_package": false
+  },
+  "candidate": {
+    "authority_profile": "workspace_owner_controlled",
+    "candidate_id": "hosted-operation-canary",
+    "display_name": "Hosted Operation Canary",
+    "governance_profile": "product_workspace",
+    "public_route": "/hosted-operation-canary",
+    "target_repository_role": "product_spec_workspace",
+    "workflow_lane": "product_idea_to_spec"
+  },
+  "canonical_mutations_allowed": false,
+  "config_source": {
+    "artifact_kind": "active_idea_to_spec_candidate_source_config",
+    "contract_ref": "specgraph.idea-to-spec.active-candidate-source-config.v0.1",
+    "mode": "artifact_arguments",
+    "required": false,
+    "source_ref": null
+  },
+  "contract_ref": "specgraph.idea-to-spec.active-candidate-source.v0.1",
+  "findings": [
+    {
+      "evidence": {
+        "readiness": {
+          "blocked_by": [],
+          "context_required_count": 1,
+          "next_artifact": "runs/idea_to_spec_workspace_bundle.json",
+          "ready": false,
+          "review_state": "repair_review_required"
+        }
+      },
+      "finding_id": "repair_loop_not_ready",
+      "message": "repair_loop must be ready for active candidate publishing.",
+      "severity": "review_required",
+      "source": "active_idea_to_spec_candidate_source"
+    },
+    {
+      "evidence": {
+        "readiness": {
+          "blocked_by": [
+            "repair_loop_not_ready",
+            "repair_context_required"
+          ],
+          "next_artifact": "owner/operator repair before promotion",
+          "ready": false,
+          "review_state": "idea_to_spec_promotion_blocked"
+        }
+      },
+      "finding_id": "promotion_gate_not_ready",
+      "message": "promotion_gate must be ready for active candidate publishing.",
+      "severity": "review_required",
+      "source": "active_idea_to_spec_candidate_source"
+    }
+  ],
+  "generated_at": "2026-07-10T22:13:14.186135+00:00",
+  "platform_handoff_surfaces": {
+    "candidate_spec_materialization_report.json": {
+      "ready": true,
+      "source_ref": "runs/hosted-operation-canary/candidate_spec_materialization_report.json"
+    },
+    "idea_to_spec_promotion_gate.json": {
+      "ready": false,
+      "source_ref": "runs/hosted-operation-canary/idea_to_spec_promotion_gate.json"
+    }
+  },
+  "privacy_boundary": {
+    "raw_intent_text_published": false,
+    "raw_model_output_published": false,
+    "raw_operator_note_published": false,
+    "raw_prompt_published": false
+  },
+  "proposal_id": "0155",
+  "readiness": {
+    "blocked_by": [
+      "repair_loop_not_ready",
+      "promotion_gate_not_ready"
+    ],
+    "next_artifact": "repair active candidate source before public handoff",
+    "ready": false,
+    "review_state": "active_candidate_review_required"
+  },
+  "schema_version": 1,
+  "source_artifacts": {
+    "candidate_graph": {
+      "artifact_key": "candidate_graph",
+      "artifact_kind": "candidate_spec_graph",
+      "contract_ref": "specgraph.idea-to-spec.candidate-spec-graph.v0.1",
+      "proposal_id": "0150",
+      "readiness": {
+        "blocked_by": [],
+        "next_artifact": "runs/pre_sib_coherence_report.json",
+        "ready": true,
+        "review_state": "ready_for_pre_sib"
+      },
+      "sha256": "cc54e0a2b56900864299317499d9ecbcf2795d9006ef5894bee3d09ad1ef9f9b",
+      "source_ref": "runs/hosted-operation-canary/candidate_spec_graph.json",
+      "summary": {
+        "acceptance_criteria_count": 8,
+        "claim_count": 0,
+        "edge_count": 7,
+        "finding_count": 0,
+        "gap_count": 15,
+        "node_count": 8,
+        "requirement_count": 8,
+        "status": "ready_for_pre_sib"
+      }
+    },
+    "intake": {
+      "artifact_key": "intake",
+      "artifact_kind": "idea_event_storming_intake",
+      "contract_ref": "specgraph.idea-to-spec.event-storming-intake.v0.1",
+      "proposal_id": "0149",
+      "readiness": {
+        "blocked_by": [],
+        "next_artifact": "runs/candidate_spec_graph.json",
+        "ready": true,
+        "review_state": "ready_for_candidate_graph"
+      },
+      "sha256": "e9ec4d3ccd06be75fd58f403dc1954c392ffde42db93dfdbf6f42ecc5ac32c29",
+      "source_ref": "runs/hosted-operation-canary/idea_event_storming_intake.json",
+      "summary": {
+        "actor_count": 3,
+        "assumption_count": 0,
+        "command_count": 3,
+        "constraint_count": 2,
+        "domain_event_count": 3,
+        "external_system_count": 0,
+        "finding_count": 0,
+        "policy_count": 2,
+        "risk_count": 0,
+        "status": "ready_for_candidate_graph",
+        "vocabulary_question_count": 0,
+        "warning_count": 0
+      }
+    },
+    "materialization": {
+      "artifact_key": "materialization",
+      "artifact_kind": "candidate_spec_materialization_report",
+      "contract_ref": "specgraph.idea-to-spec.candidate-spec-materialization.v0.1",
+      "proposal_id": "0153",
+      "readiness": {
+        "blocked_by": [],
+        "next_artifact": "Platform graph-repository promotion-request",
+        "ready": true,
+        "review_state": "materialized_candidate_review_ready"
+      },
+      "sha256": "eaad5a405f3e0c3a19dbe1a9b08678fa892c199848037fe2429dce69f90c6db5",
+      "source_ref": "runs/hosted-operation-canary/candidate_spec_materialization_report.json",
+      "summary": {
+        "candidate_node_count": 8,
+        "finding_count": 0,
+        "materialized_file_count": 8,
+        "status": "materialized_candidate_review_ready"
+      }
+    },
+    "pre_sib": {
+      "artifact_key": "pre_sib",
+      "artifact_kind": "pre_sib_coherence_report",
+      "contract_ref": "specgraph.idea-to-spec.pre-sib-coherence-report.v0.1",
+      "proposal_id": "0151",
+      "readiness": {
+        "blocked_by": [],
+        "next_artifact": "runs/candidate_repair_loop_report.json",
+        "ready": true,
+        "review_state": "ready_for_repair_loop"
+      },
+      "sha256": "668cef198871075c385f4d6c7fa375680bbc46d07f8d03278d807eaba919a1f8",
+      "source_ref": "runs/hosted-operation-canary/pre_sib_coherence_report.json",
+      "summary": {
+        "edge_count": 7,
+        "finding_count": 0,
+        "gap_count": 15,
+        "node_count": 8,
+        "status": "ready_for_repair_loop",
+        "warning_count": 1
+      }
+    },
+    "promotion_gate": {
+      "artifact_key": "promotion_gate",
+      "artifact_kind": "idea_to_spec_promotion_gate",
+      "contract_ref": "specgraph.idea-to-spec.promotion-gate.v0.1",
+      "proposal_id": "0154",
+      "readiness": {
+        "blocked_by": [
+          "repair_loop_not_ready",
+          "repair_context_required"
+        ],
+        "next_artifact": "owner/operator repair before promotion",
+        "ready": false,
+        "review_state": "idea_to_spec_promotion_blocked"
+      },
+      "sha256": "337e4eb9189b0fa91864e4a62243a2c93b42deefa2824b7cfc7513b2b763c0a8",
+      "source_ref": "runs/hosted-operation-canary/idea_to_spec_promotion_gate.json",
+      "summary": {
+        "finding_count": 2,
+        "materialized_file_count": 8,
+        "promotion_path_count": 0,
+        "status": "idea_to_spec_promotion_blocked",
+        "warning_count": 0
+      }
+    },
+    "repair_loop": {
+      "artifact_key": "repair_loop",
+      "artifact_kind": "candidate_repair_loop_report",
+      "contract_ref": "specgraph.idea-to-spec.candidate-repair-loop.v0.1",
+      "proposal_id": "0152",
+      "readiness": {
+        "blocked_by": [],
+        "context_required_count": 1,
+        "next_artifact": "runs/idea_to_spec_workspace_bundle.json",
+        "ready": false,
+        "review_state": "repair_review_required"
+      },
+      "sha256": "4125e59d46e2690848f56e6e6a40dbd260fe0a229a0e5a9e58cad38ff9229e4c",
+      "source_ref": "runs/hosted-operation-canary/candidate_repair_loop_report.json",
+      "summary": {
+        "action_count": 1,
+        "applied_action_count": 0,
+        "context_required_count": 1,
+        "finding_count": 0,
+        "no_op_repair_loop": false,
+        "status": "repair_review_required"
+      }
+    }
+  },
+  "source_derivation": {
+    "artifact_paths_source": "arguments",
+    "config_required": false,
+    "identity_source": "intake.source_intake.workspace",
+    "standard_artifact_paths": {
+      "candidate_graph": "runs/candidate_spec_graph.json",
+      "intake": "runs/idea_event_storming_intake.json",
+      "materialization": "runs/candidate_spec_materialization_report.json",
+      "pre_sib": "runs/pre_sib_coherence_report.json",
+      "promotion_gate": "runs/idea_to_spec_promotion_gate.json",
+      "repair_loop": "runs/candidate_repair_loop_report.json"
+    }
+  },
+  "source_mode": "active_candidate",
+  "summary": {
+    "candidate_id": "hosted-operation-canary",
+    "finding_count": 2,
+    "materialized_file_count": 8,
+    "promotion_path_count": 0,
+    "source_artifact_count": 6,
+    "status": "active_candidate_review_required",
+    "warning_count": 0,
+    "workspace_route": "/hosted-operation-canary"
+  },
+  "tracked_artifacts_written": false,
+  "warnings": []
+}

@@ -1,0 +1,196 @@
+{
+  "artifact_kind": "platform_product_repair_rerun_publication_report",
+  "authority_boundary": {
+    "accepts_ontology_terms": false,
+    "executes_git_commands": false,
+    "executes_specgraph_make_target": true,
+    "merges_pull_requests": false,
+    "mutates_canonical_specs": false,
+    "opens_pull_requests": false,
+    "publishes_private_artifacts": false,
+    "writes_ontology_packages": false
+  },
+  "canonical_mutations_allowed": false,
+  "command": [
+    "make",
+    "publish-bundle"
+  ],
+  "command_result": {
+    "command": [
+      "make",
+      "publish-bundle"
+    ],
+    "cwd": "$LOCAL_PATH",
+    "returncode": 0,
+    "stderr": "",
+    "stdout": ".core/0.1.0/classes/AcceptanceCriterion\"\n            ],\n            \"source_event_refs\": [\n              \"policy.accepted-decision-completeness\",\n              \"event.decision-accepted\",\n              \"command.accept-decision\"\n            ],\n            \"statement\": \"The product must enforce `Accepted Decision Completeness`.\"\n          }\n        ],\n        \"source_event_refs\": [\n          \"policy.accepted-decision-completeness\",\n          \"event.decision-accepted\",\n          \"command.accept-decision\"\n        ],\n        \"title\": \"Accepted Decision Completeness\"\n      }\n    ],\n    \"pre_sib_readiness\": {\n      \"blocked_by\": [],\n      \"next_artifact\": \"runs/pre_sib_coherence_report.json\",\n      \"ready\": true,\n      \"review_state\": \"ready_for_pre_sib\"\n    },\n    \"privacy_boundary\": {\n      \"raw_intent_text_published\": false,\n      \"raw_model_output_published\": false,\n      \"raw_prompt_published\": false\n    },\n    \"proposal_id\": \"0150\",\n    \"repair_preview\": {\n      \"applied_action_count\": 0,\n      \"generated_by\": \"specgraph.idea-to-spec.candidate-repair-loop.v0.1\"\n    },\n    \"schema_version\": 1,\n    \"seed_contract_ref\": \"specgraph.idea-to-spec.candidate-spec-graph-seed.v0.1\",\n    \"source_intake\": {\n      \"artifact_kind\": \"idea_event_storming_intake\",\n      \"contract_ref\": \"specgraph.idea-to-spec.event-storming-intake.v0.1\",\n      \"readiness\": \"ready_for_candidate_graph\",\n      \"root_intent_sha256\": \"3f4d95c696e52b4d5123a55c616866ed37d3a1e1913b7c376b15d030ff999e13\",\n      \"source_ref\": \"product://team-decision-log/root-intent\"\n    },\n    \"source_ref\": \"runs/candidate_repair_loop_report.json#revised_candidate_graph_preview\",\n    \"summary\": {\n      \"acceptance_criteria_count\": 6,\n      \"claim_count\": 0,\n      \"edge_count\": 13,\n      \"finding_count\": 0,\n      \"gap_count\": 14,\n      \"node_count\": 6,\n      \"requirement_count\": 6,\n      \"status\": \"ready_for_pre_sib\"\n    },\n    \"tracked_artifacts_written\": false,\n    \"warnings\": []\n  },\n  \"schema_version\": 1,\n  \"source_candidate_graph\": {\n    \"artifact_kind\": \"candidate_spec_graph\",\n    \"contract_ref\": \"specgraph.idea-to-spec.candidate-spec-graph.v0.1\",\n    \"source_ref\": \"product://team-decision-log/candidate-spec-graph-seed\"\n  },\n  \"source_pre_sib_report\": {\n    \"artifact_kind\": \"pre_sib_coherence_report\",\n    \"contract_ref\": \"specgraph.idea-to-spec.pre-sib-coherence-report.v0.1\",\n    \"review_state\": \"ready_for_repair_loop\",\n    \"source_ref\": \"product://team-decision-log/candidate-spec-graph-seed\"\n  },\n  \"source_ref\": \"product://team-decision-log/candidate-spec-graph-seed\",\n  \"summary\": {\n    \"action_count\": 1,\n    \"applied_action_count\": 0,\n    \"context_required_count\": 1,\n    \"finding_count\": 0,\n    \"no_op_repair_loop\": false,\n    \"status\": \"repair_review_required\"\n  },\n  \"tracked_artifacts_written\": false,\n  \"warnings\": [\n    {\n      \"evidence\": {\n        \"context_required_count\": 1\n      },\n      \"finding_id\": \"repair_context_required\",\n      \"message\": \"Some repair actions require owner or operator context.\",\n      \"severity\": \"warning\",\n      \"source\": \"candidate_repair_loop\"\n    }\n  ]\n}\nclarification_required: 16 requests, 1 blocking -> runs/idea_to_spec_clarification_requests.json\nmaterialized_candidate_review_ready: 6 files\nidea_to_spec_promotion_blocked: 0 promotion paths\nactive_candidate_review_required: 6 artifacts\nwrote runs/idea_maturity_metrics_report.json status=blocked lifecycle=read_model_publication_complete\nok $LOCAL_PATH\n{\n  \"checksums_path\": \"$LOCAL_PATH\",\n  \"file_count\": 1415,\n  \"manifest_path\": \"$LOCAL_PATH\",\n  \"output_dir\": \"$LOCAL_PATH\",\n  \"redacted_local_path_occurrences\": 5957,\n  \"safety_gate\": {\n    \"redacted_local_path_occurrences\": 5957,\n    \"status\": \"passed\",\n    \"warnings\": []\n  }\n}\n"
+  },
+  "diagnostics": [],
+  "dry_run": false,
+  "execution_report_ref": "$LOCAL_PATH",
+  "generated_at": "2026-07-10T22:48:49.792019+00:00",
+  "idea_maturity": {
+    "answer_materialization": {
+      "accepted_answer_count": 15,
+      "aggregate_answer_count": 1,
+      "closure_evidence_answer_count": 15,
+      "dismissed_answer_count": 0,
+      "ordinary_unmaterialized_answer_count": 0,
+      "per_gap_materialized_answer_count": 14
+    },
+    "artifact_refs": {
+      "metrics_report": {
+        "path": "$LOCAL_PATH",
+        "present": true,
+        "sha256": "d5524413e26ea7da3bf6474ec9cbf1a7a2f924c24a9ea9349c71591753c626d0"
+      },
+      "validation_report": {
+        "path": "$LOCAL_PATH",
+        "present": true,
+        "sha256": "b8dca5bd517843f5667f074e36eeefc7b5d17499894c8da5621bf080eb95cee8"
+      }
+    },
+    "available": true,
+    "blocker_count": 1,
+    "blockers": [
+      "out_of_order_publication"
+    ],
+    "candidate_approval_state": "ready",
+    "contract": {
+      "available": true,
+      "report": {
+        "compatibility_policy": "additive_v1",
+        "compatibility_policy_ref": "VALIDATOR_CONTRACT.md#compatibility-policy",
+        "metrics_rfc_ref": "Metrics/IDEA_MATURITY_METRICS.md",
+        "proposal_id": "0181",
+        "schema_ref": "schemas/idea_maturity_metrics_report.schema.json",
+        "schema_version": 1,
+        "validation_report_schema_ref": "schemas/idea_maturity_metrics_validation_report.schema.json",
+        "validator_id": "metrics.idea_maturity_metrics.validator.v0.1",
+        "validator_version": "0.1.0"
+      },
+      "validator": {
+        "compatibility_policy_ref": "VALIDATOR_CONTRACT.md#compatibility-policy",
+        "id": "metrics.idea_maturity_metrics.validator.v0.1",
+        "rfc_ref": "IDEA_MATURITY_METRICS.md",
+        "schema_ref": "schemas/idea_maturity_metrics_report.schema.json",
+        "script_ref": "scripts/metrics.py",
+        "validation_report_schema_ref": "schemas/idea_maturity_metrics_validation_report.schema.json",
+        "version": "0.1.0"
+      }
+    },
+    "diagnostics": [],
+    "dry_run_count": 0,
+    "failed_gate_count": 0,
+    "lifecycle_state": "read_model_publication_complete",
+    "metric_pack_id": "idea_to_spec_maturity",
+    "platform_promotion_state": "executed",
+    "project_local_ontology_review": {
+      "accepted_decision_count": 10,
+      "alias_count": 0,
+      "bind_existing_count": 0,
+      "blocking_decision_count": 0,
+      "deferred_count": 0,
+      "effect_count": 10,
+      "evidence_refs": [
+        "candidate-spec.product-boundary.gaps.ontology-gap.accept-decision",
+        "candidate-spec.product-boundary.gaps.ontology-gap.accepted-decision-completeness",
+        "candidate-spec.product-boundary.gaps.ontology-gap.add-considered-option",
+        "candidate-spec.product-boundary.gaps.ontology-gap.decision-accepted",
+        "candidate-spec.product-boundary.gaps.ontology-gap.decision-recorded",
+        "candidate-spec.product-boundary.gaps.ontology-gap.decisionoption",
+        "candidate-spec.product-boundary.gaps.ontology-gap.evidence-attached",
+        "candidate-spec.product-boundary.gaps.ontology-gap.option-considered"
+      ],
+      "follow_up_decision_count": 0,
+      "invalid_decision_count": 0,
+      "keep_project_local_count": 10,
+      "maturity_evidence_decision_count": 10,
+      "missing_decision_count": 0,
+      "ready_for_maturity": true,
+      "reject_count": 0,
+      "request_promotion_count": 0,
+      "status": "project_local_ontology_decision_effect_ready"
+    },
+    "public_artifacts": {
+      "expected": [
+        "runs/idea_maturity_metrics_report.json",
+        "runs/idea_maturity_metrics_validation_report.json"
+      ],
+      "missing": [],
+      "missing_count": 0,
+      "public_root": "$LOCAL_PATH",
+      "published": [
+        "runs/idea_maturity_metrics_report.json",
+        "runs/idea_maturity_metrics_validation_report.json"
+      ],
+      "published_count": 2
+    },
+    "read_model_publication_state": "published",
+    "readiness_explainer_count": 1,
+    "readiness_explainer_omitted_count": 0,
+    "readiness_explainers": [
+      {
+        "blocks": [
+          "candidate_approval",
+          "platform_promotion"
+        ],
+        "evidence_refs": [
+          "runs/idea_maturity_metrics_report.json#policy_findings.out-of-order-publication"
+        ],
+        "id": "readiness-explainer.policy-findings-out-of-order-publication",
+        "kind": "policy_failure",
+        "message": "Read-model publication appears before merged review evidence.",
+        "next_action": "Inspect the policy finding evidence and complete the missing lifecycle handoff.",
+        "proposal_id": "0180",
+        "severity": "high",
+        "source": "idea_maturity_metrics_report.policy_findings"
+      }
+    ],
+    "review_status": "unknown",
+    "source_refs": {
+      "metrics_report": "runs/idea_maturity_metrics_report.json",
+      "validation_report": "runs/idea_maturity_metrics_validation_report.json"
+    },
+    "stale_ref_count": 0,
+    "status": "available",
+    "trusted": true,
+    "upstream_source_artifact_count": 29,
+    "validation_invalid_count": 0,
+    "validation_report_count": 1,
+    "validation_status": "ok"
+  },
+  "manifest": {
+    "path": "$LOCAL_PATH",
+    "present": true,
+    "sha256": "9c8f8f0839ffe909783e24b3633ce3489680962d04a59cb4e710b830bee9afac"
+  },
+  "missing_artifacts": [],
+  "ok": true,
+  "published_artifacts": [
+    "runs/idea_to_spec_repair_session.json",
+    "runs/specspace_repair_draft_rerun_report.json",
+    "runs/idea_to_spec_rerun_preview.json",
+    "runs/idea_to_spec_rerun_materialization.json",
+    "runs/repaired_candidate_promotion_handoff_report.json",
+    "runs/repaired_active_idea_to_spec_candidate.json",
+    "runs/repaired_candidate_spec_graph.json",
+    "runs/repaired_pre_sib_coherence_report.json",
+    "runs/repaired_candidate_repair_loop_report.json",
+    "runs/repaired_candidate_spec_materialization_report.json",
+    "runs/repaired_idea_to_spec_repair_session.json",
+    "runs/repaired_idea_to_spec_promotion_gate.json"
+  ],
+  "schema_version": 1,
+  "specgraph_dir": "$LOCAL_PATH",
+  "summary": {
+    "error_count": 0,
+    "idea_maturity_status": "available",
+    "idea_maturity_trusted": true,
+    "idea_maturity_validation_status": "ok",
+    "missing_artifact_count": 0,
+    "published_artifact_count": 12,
+    "status": "published"
+  },
+  "tracked_artifacts_written": false
+}

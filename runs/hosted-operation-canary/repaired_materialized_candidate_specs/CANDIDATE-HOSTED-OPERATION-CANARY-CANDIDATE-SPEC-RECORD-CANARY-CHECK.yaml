@@ -1,0 +1,62 @@
+id: CANDIDATE-HOSTED-OPERATION-CANARY-CANDIDATE-SPEC-RECORD-CANARY-CHECK
+title: Record canary check
+kind: spec
+created_at: '2026-07-14T16:32:11.825131+00:00'
+updated_at: '2026-07-14T16:32:11.825131+00:00'
+status: stub
+maturity: 0.0
+depends_on: []
+relates_to: []
+inputs:
+- runs/hosted-operation-canary/repaired_candidate_repair_loop_report.json#revised_candidate_graph_preview
+outputs:
+- runs/hosted-operation-canary/repaired_materialized_candidate_specs/CANDIDATE-HOSTED-OPERATION-CANARY-CANDIDATE-SPEC-RECORD-CANARY-CHECK.yaml
+allowed_paths:
+- runs/hosted-operation-canary/repaired_materialized_candidate_specs/CANDIDATE-HOSTED-OPERATION-CANARY-CANDIDATE-SPEC-RECORD-CANARY-CHECK.yaml
+acceptance:
+- 'Reviewer can verify: The product must support `Record canary check` and record a reviewable domain
+  event.'
+acceptance_evidence: []
+prompt: The product must support `Record canary check` and record a reviewable domain event.
+specification:
+  materialization_mode: candidate_review_preview
+  candidate_source_id: candidate-spec.record-canary-check
+  candidate_display_alias: Record canary check
+  candidate_source_title: Record canary check
+  candidate_kind: behavior_requirement
+  description: The product must support `Record canary check` and record a reviewable domain event.
+  source_event_refs:
+  - command.record-canary-check
+  ontology_refs:
+  - ontology://org.0al.specgraph.core/0.1.0/classes/Requirement
+  - ontology://org.0al.specgraph.core/0.1.0/classes/Node
+  domain_refs:
+  - domain.deployment-canary
+  - domain.review-status
+  - domain.follow-up-verification
+  - domain.hosted_operation_canary
+  context_refs:
+  - context.hosted-operation-canary
+  requirements:
+  - acceptance_criteria_refs:
+    - ac.record-canary-check.reviewable
+    id: req.record-canary-check.main
+    ontology_refs:
+    - ontology://org.0al.specgraph.core/0.1.0/classes/Requirement
+    - ontology://org.0al.specgraph.core/0.1.0/classes/AcceptanceCriterion
+    source_event_refs:
+    - command.record-canary-check
+    statement: The product must support `Record canary check` and record a reviewable domain event.
+  acceptance_criteria:
+  - id: ac.record-canary-check.reviewable
+    ontology_refs:
+    - ontology://org.0al.specgraph.core/0.1.0/classes/Requirement
+    - ontology://org.0al.specgraph.core/0.1.0/classes/AcceptanceCriterion
+    source_event_refs:
+    - command.record-canary-check
+    statement: 'Reviewer can verify: The product must support `Record canary check` and record a reviewable
+      domain event.'
+  claims: []
+  gaps: []
+gate_state: review_pending
+required_human_action: review_candidate_spec_materialization

@@ -1,0 +1,139 @@
+{
+  "artifact_kind": "platform_graph_repository_execution_plan",
+  "authority_boundary": {
+    "executes_git_commands": false,
+    "merges_pull_requests": false,
+    "mutates_canonical_specs": false,
+    "opens_pull_requests": false,
+    "publishes_private_artifacts": false,
+    "writes_ontology_packages": false
+  },
+  "canonical_mutations_allowed": false,
+  "contract_ref": "graph-repository-service.example.json",
+  "diagnostics": [],
+  "ok": true,
+  "operations": [
+    {
+      "evidence": [
+        "repaired_active_candidate",
+        "repaired_repair_session",
+        "repaired_promotion_gate",
+        "repaired_handoff"
+      ],
+      "name": "create_candidate_workspace",
+      "reason": "repaired candidate handoff artifacts are available",
+      "status": "ready"
+    },
+    {
+      "evidence": [
+        "repaired_handoff",
+        "repaired_active_candidate",
+        "repaired_repair_session",
+        "repaired_promotion_gate"
+      ],
+      "name": "validate_candidate_graph",
+      "reason": "repaired candidate handoff is ready for branch preparation",
+      "status": "ready"
+    },
+    {
+      "evidence": [
+        "repaired_handoff",
+        "repaired_active_candidate",
+        "repaired_repair_session",
+        "repaired_promotion_gate"
+      ],
+      "name": "prepare_branch",
+      "reason": "repaired_candidate_approval_ready",
+      "status": "ready"
+    },
+    {
+      "evidence": [],
+      "name": "create_commit",
+      "reason": "report-only plan does not execute git commit",
+      "status": "blocked_until_prepare_branch"
+    },
+    {
+      "evidence": [],
+      "name": "open_review",
+      "reason": "report-only plan does not open pull requests",
+      "status": "blocked_until_create_commit"
+    },
+    {
+      "evidence": [],
+      "name": "publish_read_model",
+      "reason": "report-only plan does not publish read models",
+      "status": "blocked_until_review_or_policy"
+    }
+  ],
+  "read_only": true,
+  "ready_for_branch": true,
+  "runs_dir": "$LOCAL_PATH",
+  "schema_version": 1,
+  "source_artifacts": [
+    {
+      "artifact_kind": "repaired_candidate_promotion_handoff_report",
+      "available": true,
+      "contract_ref": "specgraph.idea-to-spec.repaired-candidate-promotion-handoff.v0.1",
+      "expected_artifact_kind": "repaired_candidate_promotion_handoff_report",
+      "key": "repaired_handoff",
+      "path": "$LOCAL_PATH",
+      "pre_sib_ready": null,
+      "proposal_id": "0177",
+      "readiness_ready": true,
+      "review_state": "repaired_candidate_promotion_handoff_ready",
+      "source_mode": "repaired_handoff",
+      "source_ref": "runs/hosted-operation-canary/repaired_candidate_promotion_handoff_report.json"
+    },
+    {
+      "artifact_kind": "active_idea_to_spec_candidate",
+      "available": true,
+      "contract_ref": "specgraph.idea-to-spec.active-candidate-source.v0.1",
+      "expected_artifact_kind": "active_idea_to_spec_candidate",
+      "key": "repaired_active_candidate",
+      "path": "$LOCAL_PATH",
+      "pre_sib_ready": null,
+      "proposal_id": "0155",
+      "readiness_ready": true,
+      "review_state": "active_candidate_ready",
+      "source_mode": "repaired_handoff",
+      "source_ref": "runs/hosted-operation-canary/repaired_active_idea_to_spec_candidate.json"
+    },
+    {
+      "artifact_kind": "idea_to_spec_repair_session_journal",
+      "available": true,
+      "contract_ref": "specgraph.idea-to-spec.repair-session-journal.v0.1",
+      "expected_artifact_kind": "idea_to_spec_repair_session_journal",
+      "key": "repaired_repair_session",
+      "path": "$LOCAL_PATH",
+      "pre_sib_ready": null,
+      "proposal_id": "0171",
+      "readiness_ready": true,
+      "review_state": "repair_session_journal_ready",
+      "source_mode": "repaired_handoff",
+      "source_ref": "runs/hosted-operation-canary/repaired_idea_to_spec_repair_session.json"
+    },
+    {
+      "artifact_kind": "idea_to_spec_promotion_gate",
+      "available": true,
+      "contract_ref": "specgraph.idea-to-spec.promotion-gate.v0.1",
+      "expected_artifact_kind": "idea_to_spec_promotion_gate",
+      "key": "repaired_promotion_gate",
+      "path": "$LOCAL_PATH",
+      "pre_sib_ready": null,
+      "proposal_id": "0154",
+      "readiness_ready": true,
+      "review_state": "ready_for_platform_promotion_request",
+      "source_mode": "repaired_handoff",
+      "source_ref": "runs/hosted-operation-canary/repaired_idea_to_spec_promotion_gate.json"
+    }
+  ],
+  "source_mode": "repaired_handoff",
+  "summary": {
+    "blocked_operation_count": 3,
+    "error_count": 0,
+    "ready_operation_count": 3,
+    "source_artifact_count": 4
+  },
+  "tracked_artifacts_written": false,
+  "write_actions_executed": []
+}
