@@ -278,6 +278,14 @@ jobs:
             --remote-base-url "$STATIC_ARTIFACT_PUBLIC_BASE_URL/workspaces/hosted-operation-canary" \
             --output "$RUNNER_TEMP/specgraph-incremental-reports/hosted-operation-canary-verification.json"
 
+      - name: Upload incremental deployment reports
+        if: always() && env.SFTP_HOST != ''
+        uses: actions/upload-artifact@v7
+        with:
+          name: specgraph-incremental-deployment-reports
+          path: ${{ runner.temp }}/specgraph-incremental-reports
+          if-no-files-found: warn
+
       - name: Report skipped SFTP upload
         if: env.SFTP_HOST == ''
         run: |

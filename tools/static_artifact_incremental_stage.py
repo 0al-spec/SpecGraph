@@ -178,7 +178,16 @@ def verify_remote_bundle(
 def _write_report(report: dict[str, Any], output: Path) -> None:
     output.parent.mkdir(parents=True, exist_ok=True)
     output.write_text(json.dumps(report, indent=2, sort_keys=True) + "\n", encoding="utf-8")
-    print(json.dumps(report, indent=2, sort_keys=True))
+    print(
+        json.dumps(
+            {
+                "status": report.get("status"),
+                "summary": report.get("summary", {}),
+                "output": str(output),
+            },
+            sort_keys=True,
+        )
+    )
 
 
 def build_parser() -> argparse.ArgumentParser:

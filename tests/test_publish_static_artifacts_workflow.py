@@ -91,6 +91,7 @@ def test_deploy_stages_workspace_payloads_and_finalizes_manifests_last() -> None
     assert upload_block.index("checksums.sha256") < upload_block.index("artifact_manifest.json")
     assert verify_block.count("tools/static_artifact_incremental_stage.py verify") == 3
     assert "$STATIC_ARTIFACT_PUBLIC_BASE_URL/workspaces/hosted-operation-canary" in (verify_block)
+    assert "name: specgraph-incremental-deployment-reports" in workflow
 
 
 def test_publish_workflow_builds_team_decision_log_workspace_bundle() -> None:
