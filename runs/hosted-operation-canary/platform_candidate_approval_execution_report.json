@@ -1,19 +1,6 @@
 {
-  "artifact_kind": "platform_graph_repository_promotion_request",
-  "authority_boundary": {
-    "creates_commits": false,
-    "executes_git_commands": false,
-    "merges_pull_requests": false,
-    "mutates_canonical_specs": false,
-    "opens_pull_requests": false,
-    "publishes_read_models": false,
-    "writes_ontology_packages": false
-  },
-  "authority_profile": "workspace_owner_controlled",
-  "candidate_branch": "graph-candidate/hosted-operation-canary",
-  "candidate_id": "hosted-operation-canary",
-  "canonical_mutations_allowed": false,
-  "commit_paths": [
+  "approval_intent_ref": "candidate-approval-intent.hosted-operation-canary.20260714T163349Z.994fd28f352d",
+  "approved_paths": [
     "runs/hosted-operation-canary/active_idea_to_spec_candidate.json",
     "runs/hosted-operation-canary/candidate_approval_decision.json",
     "runs/hosted-operation-canary/candidate_repair_loop_report.json",
@@ -74,129 +61,98 @@
     "runs/hosted-operation-canary/specspace_repair_rerun_request_gate.json",
     "runs/hosted-operation-canary/user_idea_intake_source.json"
   ],
-  "deployment_profile_id": "product_idea_to_spec_workbench",
+  "artifact_kind": "platform_candidate_approval_execution_report",
+  "authority_boundary": {
+    "accepts_ontology_terms": false,
+    "approval_intent_state_is_authority": false,
+    "candidate_approval_decision_authority": false,
+    "executes_git_commands": false,
+    "executes_specgraph_make_target": false,
+    "git_service_promotion_started": false,
+    "may_create_branch_or_commit": false,
+    "may_execute_prompt_agent": false,
+    "may_mark_candidate_graph_accepted": false,
+    "may_mutate_candidate_source_artifacts": false,
+    "may_mutate_canonical_specs": false,
+    "may_open_pull_request": false,
+    "may_publish_read_model": false,
+    "may_write_ontology_lockfile": false,
+    "may_write_ontology_package": false,
+    "merges_pull_requests": false,
+    "mutates_canonical_specs": false,
+    "opens_pull_requests": false,
+    "publishes_private_artifacts": false,
+    "writes_ontology_packages": false
+  },
+  "candidate_approval_decision_ref": "$LOCAL_PATH",
+  "candidate_id": "hosted-operation-canary",
+  "canonical_mutations_allowed": false,
   "diagnostics": [],
   "dry_run": false,
-  "generated_at": "2026-07-14T20:20:40.200139+00:00",
-  "git_commands_executed": [],
-  "local_files_written": [
-    "../SpecGraph/runs/hosted-operation-canary/graph_repository_promotion_request.json"
-  ],
-  "merges_performed": [],
+  "execution_report_ref": "$LOCAL_PATH",
+  "gate_report_ref": "$LOCAL_PATH",
+  "generated_at": "2026-07-14T20:20:40.079862+00:00",
   "ok": true,
-  "plan_ref": "../SpecGraph/runs/hosted-operation-canary/graph_repository_execution_plan.json",
-  "pull_requests_opened": [],
-  "read_models_published": [],
-  "requested_operations": [
-    "prepare_branch",
-    "create_commit",
-    "open_review"
-  ],
-  "review": {
-    "base_branch": "main",
-    "body": "Rebuild approval after candidate-scoped materialization proposal 0213.",
-    "title": "Promote Hosted Operation Canary candidate spec graph"
-  },
-  "schema_version": 1,
-  "source_artifacts": [
+  "ontology_writes_allowed": false,
+  "operations": [
     {
-      "artifact_kind": "repaired_candidate_promotion_handoff_report",
-      "available": true,
-      "contract_ref": "specgraph.idea-to-spec.repaired-candidate-promotion-handoff.v0.1",
-      "expected_artifact_kind": "repaired_candidate_promotion_handoff_report",
-      "key": "repaired_handoff",
-      "path": "$LOCAL_PATH",
-      "pre_sib_ready": null,
-      "proposal_id": "0177",
-      "readiness_ready": true,
-      "review_state": "repaired_candidate_promotion_handoff_ready",
-      "source_mode": "repaired_handoff",
-      "source_ref": "runs/hosted-operation-canary/repaired_candidate_promotion_handoff_report.json"
+      "evidence": [
+        "platform_candidate_approval_intent_gate_report"
+      ],
+      "name": "build_candidate_approval_gate",
+      "reason": "candidate approval gate is ready",
+      "status": "ready"
     },
     {
-      "artifact_kind": "active_idea_to_spec_candidate",
-      "available": true,
-      "contract_ref": "specgraph.idea-to-spec.active-candidate-source.v0.1",
-      "expected_artifact_kind": "active_idea_to_spec_candidate",
-      "key": "repaired_active_candidate",
-      "path": "$LOCAL_PATH",
-      "pre_sib_ready": null,
-      "proposal_id": "0155",
-      "readiness_ready": true,
-      "review_state": "active_candidate_ready",
-      "source_mode": "repaired_handoff",
-      "source_ref": "runs/hosted-operation-canary/repaired_active_idea_to_spec_candidate.json"
-    },
-    {
-      "artifact_kind": "idea_to_spec_repair_session_journal",
-      "available": true,
-      "contract_ref": "specgraph.idea-to-spec.repair-session-journal.v0.1",
-      "expected_artifact_kind": "idea_to_spec_repair_session_journal",
-      "key": "repaired_repair_session",
-      "path": "$LOCAL_PATH",
-      "pre_sib_ready": null,
-      "proposal_id": "0171",
-      "readiness_ready": true,
-      "review_state": "repair_session_journal_ready",
-      "source_mode": "repaired_handoff",
-      "source_ref": "runs/hosted-operation-canary/repaired_idea_to_spec_repair_session.json"
-    },
-    {
-      "artifact_kind": "idea_to_spec_promotion_gate",
-      "available": true,
-      "contract_ref": "specgraph.idea-to-spec.promotion-gate.v0.1",
-      "expected_artifact_kind": "idea_to_spec_promotion_gate",
-      "key": "repaired_promotion_gate",
-      "path": "$LOCAL_PATH",
-      "pre_sib_ready": null,
-      "proposal_id": "0154",
-      "readiness_ready": true,
-      "review_state": "ready_for_platform_promotion_request",
-      "source_mode": "repaired_handoff",
-      "source_ref": "runs/hosted-operation-canary/repaired_idea_to_spec_promotion_gate.json"
+      "evidence": [
+        "candidate_approval_decision"
+      ],
+      "name": "materialize_candidate_approval_decision",
+      "reason": "candidate approval decision written",
+      "status": "succeeded"
     }
   ],
-  "summary": {
-    "commit_path_count": 59,
-    "error_count": 0,
-    "promotion_ready": true
+  "output_artifacts": {
+    "candidate_approval_decision": {
+      "artifact_kind": "candidate_approval_decision",
+      "path": "$LOCAL_PATH",
+      "present": true,
+      "ready": true,
+      "sha256": "553d224cf274adb764b631aeef3e33fadaefcae0d21c0d80a039451a5b919d9c"
+    },
+    "gate_report": {
+      "artifact_kind": "platform_candidate_approval_intent_gate_report",
+      "path": "$LOCAL_PATH",
+      "present": true,
+      "sha256": "5c112e74a65a9accc2e06f6b6609f16300126f1490534c1303b0eadaa4c81b22"
+    }
   },
-  "target_repository_role": "product_spec_workspace",
-  "tracked_artifacts_written": false,
-  "workflow_lane": "product_idea_to_spec",
-  "workspace_binding": {
-    "authority_boundary": {
-      "may_create_git_commit": false,
-      "may_execute_platform": false,
-      "may_execute_specgraph": false,
-      "may_open_pull_request": false,
-      "may_publish_read_model": false,
-      "report_only": true
-    },
-    "binding_id": "product-workspace-binding://hosted-operation-canary",
-    "binding_revision_sha256": "f3f2abc793db0da92a0c506e97c8e5b02717c4b3fe79b58576044ef56d0b3e25",
-    "contract_ref": "platform.product-workspace.binding.v1",
-    "display_name": "Hosted Operation Canary",
-    "platform_default_run_dir_ref": "runs/hosted-operation-canary",
-    "product_artifact_bundle_ref": "workspaces/hosted-operation-canary",
-    "product_artifact_manifest_ref": "workspaces/hosted-operation-canary/artifact_manifest.json",
-    "provenance": {
-      "plan_sha256": "83453ec07cc53d6298a81cd3ef3a8296d87984db7bc37f3ec67f927030944284",
-      "specgraph_initialization_report_sha256": "61798c642d33c3475180e9ed7ad8df69c5650f69e6da9ee11df4e1268c0d0d90"
-    },
-    "repository": {
-      "creates_worktree": false,
-      "workspace_identity": "hosted-operation-canary",
-      "worktree_identity": "product-workspace/hosted-operation-canary"
-    },
-    "repository_role": "product_spec_workspace",
-    "route": "/hosted-operation-canary",
-    "source_ref": "runs/hosted-operation-canary/platform_product_workspace_initialization_execution_report.json",
-    "source_sha256": "b23a79838ecd0ee7cc9bc09ea0d57569306a3b1e7bb4a16c5f3e5314d99bcbc6",
-    "specspace_state_namespace_ref": "specspace-state://workspace/hosted-operation-canary",
-    "status": "ready",
+  "repair_session_ref": "runs/hosted-operation-canary/repaired_idea_to_spec_repair_session.json",
+  "schema_version": 1,
+  "selected_intent": {
+    "candidate_id": "hosted-operation-canary",
+    "created_at": "2026-07-14T16:33:49Z",
+    "id": "candidate-approval-intent.hosted-operation-canary.20260714T163349Z.994fd28f352d",
+    "promotion_gate_ref": "runs/hosted-operation-canary/repaired_idea_to_spec_promotion_gate.json",
+    "reason": "Rebuild approval after candidate-scoped materialization proposal 0213.",
+    "repair_session_id": "repair-session.hosted-operation-canary",
+    "repair_session_ref": "runs/hosted-operation-canary/repaired_idea_to_spec_repair_session.json",
+    "requested_by": "operator:hosted-canary-rebuild",
     "workspace_id": "hosted-operation-canary"
   },
-  "workspace_id": "hosted-operation-canary",
-  "write_actions_executed": []
+  "specgraph_dir": "$LOCAL_PATH",
+  "status": "candidate_approval_materialized",
+  "summary": {
+    "approved_path_count": 59,
+    "candidate_id": "hosted-operation-canary",
+    "decision_written": true,
+    "error_count": 0,
+    "gate_ready": true,
+    "next_artifact": "runs/graph_repository_promotion_request.json",
+    "selected_intent_id": "candidate-approval-intent.hosted-operation-canary.20260714T163349Z.994fd28f352d",
+    "status": "candidate_approval_materialized",
+    "workspace_id": "hosted-operation-canary"
+  },
+  "tracked_artifacts_written": false,
+  "workspace_id": "hosted-operation-canary"
 }

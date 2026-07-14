@@ -1,0 +1,116 @@
+{
+  "artifact_kind": "platform_product_workspace_initialization_execution_report",
+  "authority_boundary": {
+    "accepts_ontology_terms": false,
+    "creates_git_commits": false,
+    "creates_workspace_files": true,
+    "executes_platform": true,
+    "executes_specgraph": true,
+    "mutates_canonical_specs": false,
+    "opens_pull_requests": false,
+    "publishes_read_models": false,
+    "updates_workspace_catalog": true,
+    "writes_ontology_packages": false
+  },
+  "catalog_ref": "$LOCAL_PATH",
+  "diagnostics": [],
+  "dry_run": false,
+  "executed_operations": [
+    "validate_product_workspace_initialization_plan",
+    "execute_specgraph_product_workspace_initializer",
+    "append_platform_workspace_catalog_entry"
+  ],
+  "execution_request_ref": "/private$LOCAL_PATH",
+  "generated_at": "2026-07-10T22:07:01.952163+00:00",
+  "local_files_written": [
+    "$LOCAL_PATH"
+  ],
+  "ok": true,
+  "plan_ref": "/private$LOCAL_PATH",
+  "schema_version": 1,
+  "specgraph_initialization_report_ref": "$LOCAL_PATH",
+  "summary": {
+    "catalog_written": true,
+    "error_count": 0,
+    "specgraph_executed": true,
+    "status": "workspace_initialization_executed",
+    "workspace_files_created": true
+  },
+  "workspace": {
+    "display_name": "Hosted Operation Canary",
+    "governance_profile": "product_workspace",
+    "repository_role": "product_spec_workspace",
+    "route": "/hosted-operation-canary",
+    "workspace_id": "hosted-operation-canary",
+    "workspace_root": "$LOCAL_PATH"
+  },
+  "workspace_binding": {
+    "artifact_kind": "platform_product_workspace_binding",
+    "binding_authority": {
+      "may_create_git_commit": false,
+      "may_execute_platform": false,
+      "may_execute_specgraph": false,
+      "may_mutate_specspace_state": false,
+      "may_write_catalog": false,
+      "report_only": true
+    },
+    "binding_id": "product-workspace-binding://hosted-operation-canary",
+    "binding_revision_sha256": "f3f2abc793db0da92a0c506e97c8e5b02717c4b3fe79b58576044ef56d0b3e25",
+    "contract_ref": "platform.product-workspace.binding.v1",
+    "display_name": "Hosted Operation Canary",
+    "execution": {
+      "local_only": true,
+      "platform_default_run_dir_ref": "runs/hosted-operation-canary",
+      "workspace_root": "$LOCAL_PATH",
+      "workspace_runs_root": "$LOCAL_PATH"
+    },
+    "governance_profile": "product_workspace",
+    "identity": {
+      "display_name": "Hosted Operation Canary",
+      "governance_profile": "product_workspace",
+      "repository_role": "product_spec_workspace",
+      "route": "/hosted-operation-canary",
+      "workspace_id": "hosted-operation-canary"
+    },
+    "platform_default_run_dir_ref": "runs/hosted-operation-canary",
+    "privacy_boundary": {
+      "local_execution_paths_public": false,
+      "public_safe_projection_available": true,
+      "raw_idea_public": false
+    },
+    "product_artifact_base_url": "https://specgraph.tech/workspaces/hosted-operation-canary",
+    "product_artifact_bundle_ref": "workspaces/hosted-operation-canary",
+    "product_artifact_manifest_ref": "workspaces/hosted-operation-canary/artifact_manifest.json",
+    "product_artifact_manifest_url": "https://specgraph.tech/workspaces/hosted-operation-canary/artifact_manifest.json",
+    "provenance": {
+      "plan_ref": "/private$LOCAL_PATH",
+      "plan_sha256": "83453ec07cc53d6298a81cd3ef3a8296d87984db7bc37f3ec67f927030944284",
+      "specgraph_initialization_report_ref": "$LOCAL_PATH",
+      "specgraph_initialization_report_sha256": "61798c642d33c3475180e9ed7ad8df69c5650f69e6da9ee11df4e1268c0d0d90"
+    },
+    "repository": {
+      "creates_worktree": false,
+      "repository_role": "product_spec_workspace",
+      "workspace_identity": "hosted-operation-canary",
+      "worktree_identity": "product-workspace/hosted-operation-canary"
+    },
+    "repository_role": "product_spec_workspace",
+    "root_artifact_base_url": "https://specgraph.tech",
+    "route": "/hosted-operation-canary",
+    "routing": {
+      "product_artifact_base_url": "https://specgraph.tech/workspaces/hosted-operation-canary",
+      "product_artifact_bundle_ref": "workspaces/hosted-operation-canary",
+      "product_artifact_manifest_ref": "workspaces/hosted-operation-canary/artifact_manifest.json",
+      "product_artifact_manifest_url": "https://specgraph.tech/workspaces/hosted-operation-canary/artifact_manifest.json",
+      "root_artifact_base_url": "https://specgraph.tech",
+      "specspace_state_namespace_ref": "specspace-state://workspace/hosted-operation-canary"
+    },
+    "schema_version": 1,
+    "specspace_state_namespace_ref": "specspace-state://workspace/hosted-operation-canary",
+    "status": "ready",
+    "workspace_id": "hosted-operation-canary",
+    "workspace_root": "$LOCAL_PATH",
+    "workspace_runs_root": "$LOCAL_PATH"
+  },
+  "workspace_root": "$LOCAL_PATH"
+}

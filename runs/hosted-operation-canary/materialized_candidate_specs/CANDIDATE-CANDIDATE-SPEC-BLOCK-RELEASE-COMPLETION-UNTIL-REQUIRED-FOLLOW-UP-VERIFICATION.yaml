@@ -1,0 +1,69 @@
+id: CANDIDATE-CANDIDATE-SPEC-BLOCK-RELEASE-COMPLETION-UNTIL-REQUIRED-FOLLOW-UP-VERIFICATION
+title: Block release completion until required follow-up verification
+kind: spec
+created_at: '2026-07-10T22:13:14.129222+00:00'
+updated_at: '2026-07-10T22:13:14.129222+00:00'
+status: stub
+maturity: 0.0
+depends_on: []
+relates_to: []
+inputs:
+- runs/hosted-operation-canary/candidate_repair_loop_report.json#revised_candidate_graph_preview
+outputs:
+- runs/hosted-operation-canary/materialized_candidate_specs/CANDIDATE-CANDIDATE-SPEC-BLOCK-RELEASE-COMPLETION-UNTIL-REQUIRED-FOLLOW-UP-VERIFICATION.yaml
+allowed_paths:
+- runs/hosted-operation-canary/materialized_candidate_specs/CANDIDATE-CANDIDATE-SPEC-BLOCK-RELEASE-COMPLETION-UNTIL-REQUIRED-FOLLOW-UP-VERIFICATION.yaml
+acceptance:
+- 'Reviewer can verify: The product must enforce `Block release completion until required follow-up verification`.'
+acceptance_evidence: []
+prompt: The product must enforce `Block release completion until required follow-up verification`.
+specification:
+  materialization_mode: candidate_review_preview
+  candidate_source_id: candidate-spec.block-release-completion-until-required-follow-up-verification
+  candidate_display_alias: Block release completion until required follow-up verification
+  candidate_source_title: Block release completion until required follow-up verification
+  candidate_kind: policy_constraint
+  description: The product must enforce `Block release completion until required follow-up verification`.
+  source_event_refs:
+  - policy.block-release-completion-until-required-follow-up-verification
+  ontology_refs:
+  - ontology://org.0al.specgraph.core/0.1.0/classes/Constraint
+  - ontology://org.0al.specgraph.core/0.1.0/classes/Requirement
+  - ontology://org.0al.specgraph.core/0.1.0/classes/Node
+  domain_refs:
+  - domain.deployment-canary
+  - domain.review-status
+  - domain.follow-up-verification
+  - domain.hosted_operation_canary
+  context_refs:
+  - context.hosted-operation-canary
+  requirements:
+  - acceptance_criteria_refs:
+    - ac.block-release-completion-until-required-follow-up-verification.reviewable
+    id: req.block-release-completion-until-required-follow-up-verification.main
+    ontology_refs:
+    - ontology://org.0al.specgraph.core/0.1.0/classes/Constraint
+    - ontology://org.0al.specgraph.core/0.1.0/classes/Requirement
+    - ontology://org.0al.specgraph.core/0.1.0/classes/AcceptanceCriterion
+    source_event_refs:
+    - policy.block-release-completion-until-required-follow-up-verification
+    statement: The product must enforce `Block release completion until required follow-up verification`.
+  acceptance_criteria:
+  - id: ac.block-release-completion-until-required-follow-up-verification.reviewable
+    ontology_refs:
+    - ontology://org.0al.specgraph.core/0.1.0/classes/Constraint
+    - ontology://org.0al.specgraph.core/0.1.0/classes/Requirement
+    - ontology://org.0al.specgraph.core/0.1.0/classes/AcceptanceCriterion
+    source_event_refs:
+    - policy.block-release-completion-until-required-follow-up-verification
+    statement: 'Reviewer can verify: The product must enforce `Block release completion until required
+      follow-up verification`.'
+  claims: []
+  gaps:
+  - id: gap.block-release-completion-until-required-follow-up-verification.enforcement-mechanism
+    kind: implementation_gap
+    source_event_refs:
+    - policy.block-release-completion-until-required-follow-up-verification
+    statement: Define the exact enforcement mechanism for this policy.
+gate_state: review_pending
+required_human_action: review_candidate_spec_materialization

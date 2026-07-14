@@ -1,0 +1,205 @@
+id: CANDIDATE-CANDIDATE-SPEC-PRODUCT-BOUNDARY
+title: Product Boundary
+kind: spec
+created_at: '2026-07-10T22:13:14.129222+00:00'
+updated_at: '2026-07-10T22:13:14.129222+00:00'
+status: stub
+maturity: 0.0
+depends_on:
+- CANDIDATE-CANDIDATE-SPEC-RECORD-CANARY-CHECK
+- CANDIDATE-CANDIDATE-SPEC-REFRESH-REVIEW-STATUS
+- CANDIDATE-CANDIDATE-SPEC-CONFIRM-FOLLOW-UP-VERIFICATION
+- CANDIDATE-CANDIDATE-SPEC-LOCAL-FIRST-OPERATOR-STATE
+- CANDIDATE-CANDIDATE-SPEC-NO-AUTOMATIC-RELEASE-APPROVAL
+- CANDIDATE-CANDIDATE-SPEC-BLOCK-RELEASE-COMPLETION-UNTIL-REQUIRED-FOLLOW-UP-VERIFICATION
+- CANDIDATE-CANDIDATE-SPEC-ESCALATE-FAILED-CANARY-CHECKS-TO-THE-SERVICE-OWNER
+relates_to: []
+inputs:
+- runs/hosted-operation-canary/candidate_repair_loop_report.json#revised_candidate_graph_preview
+outputs:
+- runs/hosted-operation-canary/materialized_candidate_specs/CANDIDATE-CANDIDATE-SPEC-PRODUCT-BOUNDARY.yaml
+allowed_paths:
+- runs/hosted-operation-canary/materialized_candidate_specs/CANDIDATE-CANDIDATE-SPEC-PRODUCT-BOUNDARY.yaml
+acceptance:
+- 'Reviewer can verify: The product specification must preserve the root intent: Track canary checks and
+  review follow-up.'
+acceptance_evidence: []
+prompt: Track canary checks and review follow-up.
+specification:
+  materialization_mode: candidate_review_preview
+  candidate_source_id: candidate-spec.product-boundary
+  candidate_display_alias: Product Boundary
+  candidate_source_title: Product Boundary
+  candidate_kind: product_spec_boundary
+  description: Track canary checks and review follow-up.
+  source_event_refs:
+  - actor.on-call-reviewer
+  - actor.release-operator
+  - actor.service-owner
+  - command.confirm-follow-up-verification
+  - command.record-canary-check
+  - command.refresh-review-status
+  - constraint.local-first-operator-state
+  - constraint.no-automatic-release-approval
+  - event.canary-check-recorded
+  - event.follow-up-verification-required
+  - event.review-status-refreshed
+  - policy.block-release-completion-until-required-follow-up-verification
+  - policy.escalate-failed-canary-checks-to-the-service-owner
+  ontology_refs:
+  - ontology://org.0al.specgraph.core/0.1.0/classes/Spec
+  - ontology://org.0al.specgraph.core/0.1.0/classes/Node
+  domain_refs:
+  - domain.deployment-canary
+  - domain.review-status
+  - domain.follow-up-verification
+  - domain.hosted_operation_canary
+  context_refs:
+  - context.hosted-operation-canary
+  requirements:
+  - acceptance_criteria_refs:
+    - ac.product-boundary.reviewable
+    id: req.product-boundary.main
+    ontology_refs:
+    - ontology://org.0al.specgraph.core/0.1.0/classes/Requirement
+    - ontology://org.0al.specgraph.core/0.1.0/classes/AcceptanceCriterion
+    source_event_refs:
+    - actor.on-call-reviewer
+    - actor.release-operator
+    - actor.service-owner
+    - command.confirm-follow-up-verification
+    - command.record-canary-check
+    - command.refresh-review-status
+    - constraint.local-first-operator-state
+    - constraint.no-automatic-release-approval
+    - event.canary-check-recorded
+    - event.follow-up-verification-required
+    - event.review-status-refreshed
+    - policy.block-release-completion-until-required-follow-up-verification
+    - policy.escalate-failed-canary-checks-to-the-service-owner
+    statement: 'The product specification must preserve the root intent: Track canary checks and review
+      follow-up.'
+  acceptance_criteria:
+  - id: ac.product-boundary.reviewable
+    ontology_refs:
+    - ontology://org.0al.specgraph.core/0.1.0/classes/Requirement
+    - ontology://org.0al.specgraph.core/0.1.0/classes/AcceptanceCriterion
+    source_event_refs:
+    - actor.on-call-reviewer
+    - actor.release-operator
+    - actor.service-owner
+    - command.confirm-follow-up-verification
+    - command.record-canary-check
+    - command.refresh-review-status
+    - constraint.local-first-operator-state
+    - constraint.no-automatic-release-approval
+    - event.canary-check-recorded
+    - event.follow-up-verification-required
+    - event.review-status-refreshed
+    - policy.block-release-completion-until-required-follow-up-verification
+    - policy.escalate-failed-canary-checks-to-the-service-owner
+    statement: 'Reviewer can verify: The product specification must preserve the root intent: Track canary
+      checks and review follow-up.'
+  claims: []
+  gaps:
+  - blocks_candidate_graph: false
+    id: ontology-gap.release-operator
+    kind: ontology_gap
+    source_kind: actor
+    source_ref: actor.release-operator
+    statement: Confirm whether `Release operator` should bind to an existing ontology term or remain a
+      project-local domain term.
+    suggested_action: confirm_bind_or_promote_domain_term
+    term: Release operator
+  - blocks_candidate_graph: false
+    id: ontology-gap.service-owner
+    kind: ontology_gap
+    source_kind: actor
+    source_ref: actor.service-owner
+    statement: Confirm whether `Service owner` should bind to an existing ontology term or remain a project-local
+      domain term.
+    suggested_action: confirm_bind_or_promote_domain_term
+    term: Service owner
+  - blocks_candidate_graph: false
+    id: ontology-gap.on-call-reviewer
+    kind: ontology_gap
+    source_kind: actor
+    source_ref: actor.on-call-reviewer
+    statement: Confirm whether `On-call reviewer` should bind to an existing ontology term or remain a
+      project-local domain term.
+    suggested_action: confirm_bind_or_promote_domain_term
+    term: On-call reviewer
+  - blocks_candidate_graph: false
+    id: ontology-gap.canary-check-recorded
+    kind: ontology_gap
+    source_kind: domain_event
+    source_ref: event.canary-check-recorded
+    statement: Confirm whether `Canary check recorded` should bind to an existing ontology term or remain
+      a project-local domain term.
+    suggested_action: confirm_bind_or_promote_domain_term
+    term: Canary check recorded
+  - blocks_candidate_graph: false
+    id: ontology-gap.review-status-refreshed
+    kind: ontology_gap
+    source_kind: domain_event
+    source_ref: event.review-status-refreshed
+    statement: Confirm whether `Review status refreshed` should bind to an existing ontology term or remain
+      a project-local domain term.
+    suggested_action: confirm_bind_or_promote_domain_term
+    term: Review status refreshed
+  - blocks_candidate_graph: false
+    id: ontology-gap.follow-up-verification-required
+    kind: ontology_gap
+    source_kind: domain_event
+    source_ref: event.follow-up-verification-required
+    statement: Confirm whether `Follow-up verification required` should bind to an existing ontology term
+      or remain a project-local domain term.
+    suggested_action: confirm_bind_or_promote_domain_term
+    term: Follow-up verification required
+  - blocks_candidate_graph: false
+    id: ontology-gap.record-canary-check
+    kind: ontology_gap
+    source_kind: command
+    source_ref: command.record-canary-check
+    statement: Confirm whether `Record canary check` should bind to an existing ontology term or remain
+      a project-local domain term.
+    suggested_action: confirm_bind_or_promote_domain_term
+    term: Record canary check
+  - blocks_candidate_graph: false
+    id: ontology-gap.refresh-review-status
+    kind: ontology_gap
+    source_kind: command
+    source_ref: command.refresh-review-status
+    statement: Confirm whether `Refresh review status` should bind to an existing ontology term or remain
+      a project-local domain term.
+    suggested_action: confirm_bind_or_promote_domain_term
+    term: Refresh review status
+  - blocks_candidate_graph: false
+    id: ontology-gap.confirm-follow-up-verification
+    kind: ontology_gap
+    source_kind: command
+    source_ref: command.confirm-follow-up-verification
+    statement: Confirm whether `Confirm follow-up verification` should bind to an existing ontology term
+      or remain a project-local domain term.
+    suggested_action: confirm_bind_or_promote_domain_term
+    term: Confirm follow-up verification
+  - blocks_candidate_graph: false
+    id: ontology-gap.block-release-completion-until-required-follow-up-verification
+    kind: ontology_gap
+    source_kind: policy
+    source_ref: policy.block-release-completion-until-required-follow-up-verification
+    statement: Confirm whether `Block release completion until required follow-up verification` should
+      bind to an existing ontology term or remain a project-local domain term.
+    suggested_action: confirm_bind_or_promote_domain_term
+    term: Block release completion until required follow-up verification
+  - blocks_candidate_graph: false
+    id: ontology-gap.escalate-failed-canary-checks-to-the-service-owner
+    kind: ontology_gap
+    source_kind: policy
+    source_ref: policy.escalate-failed-canary-checks-to-the-service-owner
+    statement: Confirm whether `Escalate failed canary checks to the service owner` should bind to an
+      existing ontology term or remain a project-local domain term.
+    suggested_action: confirm_bind_or_promote_domain_term
+    term: Escalate failed canary checks to the service owner
+gate_state: review_pending
+required_human_action: review_candidate_spec_materialization

@@ -1,0 +1,75 @@
+{
+  "artifact_kind": "specspace_idea_to_spec_candidate_approval_intent_state",
+  "authority_boundary": {
+    "candidate_approval_decision_authority": false,
+    "candidate_approval_intent_state_is_authority": false,
+    "canonical_mutations_allowed": false,
+    "git_service_authority": false,
+    "ontology_authority": false,
+    "specgraph_artifact_authority": false
+  },
+  "canonical_mutations_allowed": false,
+  "consumer_boundary": {
+    "for_product_approval_workflow": true,
+    "may_accept_ontology_terms": false,
+    "may_apply_to_specgraph": false,
+    "may_create_branch_or_commit": false,
+    "may_execute_git_service_operation": false,
+    "may_execute_prompt_agent": false,
+    "may_execute_specgraph": false,
+    "may_mark_candidate_graph_accepted": false,
+    "may_mutate_candidate_source_artifacts": false,
+    "may_mutate_canonical_specs": false,
+    "may_open_pull_request": false,
+    "may_write_ontology_package": false,
+    "specspace_owned_state": true
+  },
+  "intents": [
+    {
+      "blocked_by": [],
+      "candidate_id": "hosted-operation-canary",
+      "canonical_mutations_allowed": false,
+      "created_at": "2026-07-14T16:33:49Z",
+      "id": "candidate-approval-intent.hosted-operation-canary.20260714T163349Z.994fd28f352d",
+      "may_accept_ontology_terms": false,
+      "may_apply_to_specgraph": false,
+      "may_create_branch_or_commit": false,
+      "may_execute_git_service_operation": false,
+      "may_execute_prompt_agent": false,
+      "may_execute_specgraph": false,
+      "may_mark_candidate_accepted": false,
+      "may_mark_candidate_graph_accepted": false,
+      "may_mutate_candidate_source_artifacts": false,
+      "may_mutate_canonical_specs": false,
+      "may_open_pull_request": false,
+      "may_write_ontology_package": false,
+      "promotion_gate_ref": "runs/hosted-operation-canary/repaired_idea_to_spec_promotion_gate.json",
+      "ready_for_candidate_approval": true,
+      "ready_for_platform_promotion": false,
+      "reason": "Rebuild approval after candidate-scoped materialization proposal 0213.",
+      "repair_session_id": "repair-session.hosted-operation-canary",
+      "repair_session_ref": "runs/hosted-operation-canary/repaired_idea_to_spec_repair_session.json",
+      "requested_action": "approve_candidate_for_promotion_review",
+      "requested_by": "operator:hosted-canary-rebuild",
+      "status": "requested",
+      "tracked_artifacts_written": false,
+      "updated_at": "2026-07-14T16:33:49Z",
+      "workspace_id": "hosted-operation-canary"
+    }
+  ],
+  "schema_version": 1,
+  "source_artifacts": {
+    "idea_to_spec_promotion_gate": "runs/hosted-operation-canary/repaired_idea_to_spec_promotion_gate.json",
+    "idea_to_spec_repair_session": "runs/hosted-operation-canary/repaired_idea_to_spec_repair_session.json"
+  },
+  "state_owner": "SpecSpace",
+  "state_path": "$LOCAL_PATH",
+  "summary": {
+    "active_intent_count": 1,
+    "intent_count": 1,
+    "next_gap": "platform_candidate_approval_decision_gate",
+    "status": "candidate_approval_intent_recorded",
+    "workspace_count": 1
+  },
+  "tracked_artifacts_written": false
+}

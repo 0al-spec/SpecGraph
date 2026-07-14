@@ -1,0 +1,38 @@
+{
+  "artifact_kind": "idea_maturity_metrics_validation_report",
+  "schema_version": 1,
+  "generated_at": "2026-07-14T20:20:55.446636+00:00",
+  "metric_pack_id": "idea_to_spec_maturity",
+  "validator": {
+    "id": "metrics.idea_maturity_metrics.validator.v0.1",
+    "version": "0.1.0",
+    "rfc_ref": "IDEA_MATURITY_METRICS.md",
+    "schema_ref": "schemas/idea_maturity_metrics_report.schema.json",
+    "validation_report_schema_ref": "schemas/idea_maturity_metrics_validation_report.schema.json",
+    "script_ref": "scripts/metrics.py",
+    "compatibility_policy_ref": "VALIDATOR_CONTRACT.md#compatibility-policy"
+  },
+  "summary": {
+    "status": "ok",
+    "report_count": 1,
+    "valid_count": 1,
+    "invalid_count": 0
+  },
+  "authority_boundary": {
+    "may_mutate_canonical_specs": false,
+    "may_write_ontology_package": false,
+    "may_accept_ontology_terms": false,
+    "may_create_branch_or_commit": false,
+    "may_open_pull_request": false,
+    "may_merge_pull_request": false,
+    "may_publish_read_model": false,
+    "may_execute_prompt_agent": false
+  },
+  "reports": [
+    {
+      "path": "$LOCAL_PATH",
+      "status": "ok",
+      "diagnostics": []
+    }
+  ]
+}

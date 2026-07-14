@@ -1,0 +1,958 @@
+{
+  "artifact_kind": "specspace_project_local_ontology_decision_import_preview",
+  "authority_boundary": {
+    "may_accept_ontology_terms": false,
+    "may_apply_decisions": false,
+    "may_apply_to_specgraph": false,
+    "may_create_branch_or_commit": false,
+    "may_execute_platform": false,
+    "may_execute_prompt_agent": false,
+    "may_execute_specgraph": false,
+    "may_mutate_candidate_artifacts": false,
+    "may_mutate_candidate_source_artifacts": false,
+    "may_mutate_canonical_specs": false,
+    "may_open_pull_request": false,
+    "may_publish_read_model": false,
+    "may_write_ontology_lockfile": false,
+    "may_write_ontology_package": false
+  },
+  "canonical_mutations_allowed": false,
+  "context": {
+    "candidate_id": "hosted-operation-canary",
+    "context_refs": [
+      "context.hosted-operation-canary"
+    ],
+    "domain_refs": [
+      "domain.deployment-canary",
+      "domain.review-status",
+      "domain.follow-up-verification",
+      "domain.hosted_operation_canary"
+    ],
+    "ontology_refs": [
+      "ontology://specgraph-core"
+    ],
+    "repair_session_id": "repair-session.hosted-operation-canary",
+    "workflow_lane": "product_idea_to_spec",
+    "workspace_id": "hosted-operation-canary"
+  },
+  "contract_ref": "specgraph.product-ontology.specspace-project-local-decision-import-preview.v0.1",
+  "decision_candidates": [
+    {
+      "accepts_ontology_terms": false,
+      "applies_to_specgraph": false,
+      "canonical_mutations_allowed": false,
+      "creates_branch_or_commit": false,
+      "decision_type": "propose_project_local_term",
+      "decision_value": {
+        "reason": "Retain candidate-specific terminology for this controlled canary workspace.",
+        "term": "Block release completion until required follow-up verification",
+        "term_scope": "project_local"
+      },
+      "gap_refs": [
+        {
+          "gap_id": "ontology-gap.block-release-completion-until-required-follow-up-verification",
+          "node_id": "candidate-spec.product-boundary",
+          "source_kind": "policy",
+          "source_ref": "policy.block-release-completion-until-required-follow-up-verification",
+          "statement": "Confirm whether `Block release completion until required follow-up verification` should bind to an existing ontology term or remain a project-local domain term.",
+          "suggested_action": "confirm_bind_or_promote_domain_term",
+          "target_ref": "candidate-spec.product-boundary.gaps.ontology-gap.block-release-completion-until-required-follow-up-verification"
+        }
+      ],
+      "id": "specspace-project-local-ontology-import.blockreleasecompletionuntilrequiredfollowupverification.keep-project-local",
+      "materialization_intent": "review_overlay_only",
+      "opens_pull_request": false,
+      "project_local_ontology_review_lane_ref": "runs/hosted-operation-canary/project_local_ontology_review_lane.json",
+      "project_local_ontology_review_lane_sha256": "92e58ac13e648b757fdd93c449869de2560e6bddfeec5c315c31bee3856ef880",
+      "review_action": "keep_project_local",
+      "source_artifact": "external:project_local_ontology_review_decisions.json",
+      "source_decision_id": "specspace-project-local-ontology-decision::hosted-operation-canary::blockreleasecompletionuntilrequiredfollowupverification",
+      "status": "accepted_for_project_local_preview",
+      "target_ref": "candidate-spec.product-boundary.gaps.ontology-gap.block-release-completion-until-required-follow-up-verification",
+      "term": "Block release completion until required follow-up verification",
+      "term_key": "blockreleasecompletionuntilrequiredfollowupverification",
+      "tracked_artifacts_written": false,
+      "updates_ontology_lockfile": false,
+      "writes_ontology_package": false
+    },
+    {
+      "accepts_ontology_terms": false,
+      "applies_to_specgraph": false,
+      "canonical_mutations_allowed": false,
+      "creates_branch_or_commit": false,
+      "decision_type": "propose_project_local_term",
+      "decision_value": {
+        "reason": "Retain candidate-specific terminology for this controlled canary workspace.",
+        "term": "Canary check recorded",
+        "term_scope": "project_local"
+      },
+      "gap_refs": [
+        {
+          "gap_id": "ontology-gap.canary-check-recorded",
+          "node_id": "candidate-spec.product-boundary",
+          "source_kind": "domain_event",
+          "source_ref": "event.canary-check-recorded",
+          "statement": "Confirm whether `Canary check recorded` should bind to an existing ontology term or remain a project-local domain term.",
+          "suggested_action": "confirm_bind_or_promote_domain_term",
+          "target_ref": "candidate-spec.product-boundary.gaps.ontology-gap.canary-check-recorded"
+        }
+      ],
+      "id": "specspace-project-local-ontology-import.canarycheckrecorded.keep-project-local",
+      "materialization_intent": "review_overlay_only",
+      "opens_pull_request": false,
+      "project_local_ontology_review_lane_ref": "runs/hosted-operation-canary/project_local_ontology_review_lane.json",
+      "project_local_ontology_review_lane_sha256": "92e58ac13e648b757fdd93c449869de2560e6bddfeec5c315c31bee3856ef880",
+      "review_action": "keep_project_local",
+      "source_artifact": "external:project_local_ontology_review_decisions.json",
+      "source_decision_id": "specspace-project-local-ontology-decision::hosted-operation-canary::canarycheckrecorded",
+      "status": "accepted_for_project_local_preview",
+      "target_ref": "candidate-spec.product-boundary.gaps.ontology-gap.canary-check-recorded",
+      "term": "Canary check recorded",
+      "term_key": "canarycheckrecorded",
+      "tracked_artifacts_written": false,
+      "updates_ontology_lockfile": false,
+      "writes_ontology_package": false
+    },
+    {
+      "accepts_ontology_terms": false,
+      "applies_to_specgraph": false,
+      "canonical_mutations_allowed": false,
+      "creates_branch_or_commit": false,
+      "decision_type": "propose_project_local_term",
+      "decision_value": {
+        "reason": "Retain candidate-specific terminology for this controlled canary workspace.",
+        "term": "Confirm follow-up verification",
+        "term_scope": "project_local"
+      },
+      "gap_refs": [
+        {
+          "gap_id": "ontology-gap.confirm-follow-up-verification",
+          "node_id": "candidate-spec.product-boundary",
+          "source_kind": "command",
+          "source_ref": "command.confirm-follow-up-verification",
+          "statement": "Confirm whether `Confirm follow-up verification` should bind to an existing ontology term or remain a project-local domain term.",
+          "suggested_action": "confirm_bind_or_promote_domain_term",
+          "target_ref": "candidate-spec.product-boundary.gaps.ontology-gap.confirm-follow-up-verification"
+        }
+      ],
+      "id": "specspace-project-local-ontology-import.confirmfollowupverification.keep-project-local",
+      "materialization_intent": "review_overlay_only",
+      "opens_pull_request": false,
+      "project_local_ontology_review_lane_ref": "runs/hosted-operation-canary/project_local_ontology_review_lane.json",
+      "project_local_ontology_review_lane_sha256": "92e58ac13e648b757fdd93c449869de2560e6bddfeec5c315c31bee3856ef880",
+      "review_action": "keep_project_local",
+      "source_artifact": "external:project_local_ontology_review_decisions.json",
+      "source_decision_id": "specspace-project-local-ontology-decision::hosted-operation-canary::confirmfollowupverification",
+      "status": "accepted_for_project_local_preview",
+      "target_ref": "candidate-spec.product-boundary.gaps.ontology-gap.confirm-follow-up-verification",
+      "term": "Confirm follow-up verification",
+      "term_key": "confirmfollowupverification",
+      "tracked_artifacts_written": false,
+      "updates_ontology_lockfile": false,
+      "writes_ontology_package": false
+    },
+    {
+      "accepts_ontology_terms": false,
+      "applies_to_specgraph": false,
+      "canonical_mutations_allowed": false,
+      "creates_branch_or_commit": false,
+      "decision_type": "propose_project_local_term",
+      "decision_value": {
+        "reason": "Retain candidate-specific terminology for this controlled canary workspace.",
+        "term": "Escalate failed canary checks to the service owner",
+        "term_scope": "project_local"
+      },
+      "gap_refs": [
+        {
+          "gap_id": "ontology-gap.escalate-failed-canary-checks-to-the-service-owner",
+          "node_id": "candidate-spec.product-boundary",
+          "source_kind": "policy",
+          "source_ref": "policy.escalate-failed-canary-checks-to-the-service-owner",
+          "statement": "Confirm whether `Escalate failed canary checks to the service owner` should bind to an existing ontology term or remain a project-local domain term.",
+          "suggested_action": "confirm_bind_or_promote_domain_term",
+          "target_ref": "candidate-spec.product-boundary.gaps.ontology-gap.escalate-failed-canary-checks-to-the-service-owner"
+        }
+      ],
+      "id": "specspace-project-local-ontology-import.escalatefailedcanarycheckstotheserviceowner.keep-project-local",
+      "materialization_intent": "review_overlay_only",
+      "opens_pull_request": false,
+      "project_local_ontology_review_lane_ref": "runs/hosted-operation-canary/project_local_ontology_review_lane.json",
+      "project_local_ontology_review_lane_sha256": "92e58ac13e648b757fdd93c449869de2560e6bddfeec5c315c31bee3856ef880",
+      "review_action": "keep_project_local",
+      "source_artifact": "external:project_local_ontology_review_decisions.json",
+      "source_decision_id": "specspace-project-local-ontology-decision::hosted-operation-canary::escalatefailedcanarycheckstotheserviceowner",
+      "status": "accepted_for_project_local_preview",
+      "target_ref": "candidate-spec.product-boundary.gaps.ontology-gap.escalate-failed-canary-checks-to-the-service-owner",
+      "term": "Escalate failed canary checks to the service owner",
+      "term_key": "escalatefailedcanarycheckstotheserviceowner",
+      "tracked_artifacts_written": false,
+      "updates_ontology_lockfile": false,
+      "writes_ontology_package": false
+    },
+    {
+      "accepts_ontology_terms": false,
+      "applies_to_specgraph": false,
+      "canonical_mutations_allowed": false,
+      "creates_branch_or_commit": false,
+      "decision_type": "propose_project_local_term",
+      "decision_value": {
+        "reason": "Retain candidate-specific terminology for this controlled canary workspace.",
+        "term": "Follow-up verification required",
+        "term_scope": "project_local"
+      },
+      "gap_refs": [
+        {
+          "gap_id": "ontology-gap.follow-up-verification-required",
+          "node_id": "candidate-spec.product-boundary",
+          "source_kind": "domain_event",
+          "source_ref": "event.follow-up-verification-required",
+          "statement": "Confirm whether `Follow-up verification required` should bind to an existing ontology term or remain a project-local domain term.",
+          "suggested_action": "confirm_bind_or_promote_domain_term",
+          "target_ref": "candidate-spec.product-boundary.gaps.ontology-gap.follow-up-verification-required"
+        }
+      ],
+      "id": "specspace-project-local-ontology-import.followupverificationrequired.keep-project-local",
+      "materialization_intent": "review_overlay_only",
+      "opens_pull_request": false,
+      "project_local_ontology_review_lane_ref": "runs/hosted-operation-canary/project_local_ontology_review_lane.json",
+      "project_local_ontology_review_lane_sha256": "92e58ac13e648b757fdd93c449869de2560e6bddfeec5c315c31bee3856ef880",
+      "review_action": "keep_project_local",
+      "source_artifact": "external:project_local_ontology_review_decisions.json",
+      "source_decision_id": "specspace-project-local-ontology-decision::hosted-operation-canary::followupverificationrequired",
+      "status": "accepted_for_project_local_preview",
+      "target_ref": "candidate-spec.product-boundary.gaps.ontology-gap.follow-up-verification-required",
+      "term": "Follow-up verification required",
+      "term_key": "followupverificationrequired",
+      "tracked_artifacts_written": false,
+      "updates_ontology_lockfile": false,
+      "writes_ontology_package": false
+    },
+    {
+      "accepts_ontology_terms": false,
+      "applies_to_specgraph": false,
+      "canonical_mutations_allowed": false,
+      "creates_branch_or_commit": false,
+      "decision_type": "propose_project_local_term",
+      "decision_value": {
+        "reason": "Retain candidate-specific terminology for this controlled canary workspace.",
+        "term": "On-call reviewer",
+        "term_scope": "project_local"
+      },
+      "gap_refs": [
+        {
+          "gap_id": "ontology-gap.on-call-reviewer",
+          "node_id": "candidate-spec.product-boundary",
+          "source_kind": "actor",
+          "source_ref": "actor.on-call-reviewer",
+          "statement": "Confirm whether `On-call reviewer` should bind to an existing ontology term or remain a project-local domain term.",
+          "suggested_action": "confirm_bind_or_promote_domain_term",
+          "target_ref": "candidate-spec.product-boundary.gaps.ontology-gap.on-call-reviewer"
+        }
+      ],
+      "id": "specspace-project-local-ontology-import.oncallreviewer.keep-project-local",
+      "materialization_intent": "review_overlay_only",
+      "opens_pull_request": false,
+      "project_local_ontology_review_lane_ref": "runs/hosted-operation-canary/project_local_ontology_review_lane.json",
+      "project_local_ontology_review_lane_sha256": "92e58ac13e648b757fdd93c449869de2560e6bddfeec5c315c31bee3856ef880",
+      "review_action": "keep_project_local",
+      "source_artifact": "external:project_local_ontology_review_decisions.json",
+      "source_decision_id": "specspace-project-local-ontology-decision::hosted-operation-canary::oncallreviewer",
+      "status": "accepted_for_project_local_preview",
+      "target_ref": "candidate-spec.product-boundary.gaps.ontology-gap.on-call-reviewer",
+      "term": "On-call reviewer",
+      "term_key": "oncallreviewer",
+      "tracked_artifacts_written": false,
+      "updates_ontology_lockfile": false,
+      "writes_ontology_package": false
+    },
+    {
+      "accepts_ontology_terms": false,
+      "applies_to_specgraph": false,
+      "canonical_mutations_allowed": false,
+      "creates_branch_or_commit": false,
+      "decision_type": "propose_project_local_term",
+      "decision_value": {
+        "reason": "Retain candidate-specific terminology for this controlled canary workspace.",
+        "term": "Record canary check",
+        "term_scope": "project_local"
+      },
+      "gap_refs": [
+        {
+          "gap_id": "ontology-gap.record-canary-check",
+          "node_id": "candidate-spec.product-boundary",
+          "source_kind": "command",
+          "source_ref": "command.record-canary-check",
+          "statement": "Confirm whether `Record canary check` should bind to an existing ontology term or remain a project-local domain term.",
+          "suggested_action": "confirm_bind_or_promote_domain_term",
+          "target_ref": "candidate-spec.product-boundary.gaps.ontology-gap.record-canary-check"
+        }
+      ],
+      "id": "specspace-project-local-ontology-import.recordcanarycheck.keep-project-local",
+      "materialization_intent": "review_overlay_only",
+      "opens_pull_request": false,
+      "project_local_ontology_review_lane_ref": "runs/hosted-operation-canary/project_local_ontology_review_lane.json",
+      "project_local_ontology_review_lane_sha256": "92e58ac13e648b757fdd93c449869de2560e6bddfeec5c315c31bee3856ef880",
+      "review_action": "keep_project_local",
+      "source_artifact": "external:project_local_ontology_review_decisions.json",
+      "source_decision_id": "specspace-project-local-ontology-decision::hosted-operation-canary::recordcanarycheck",
+      "status": "accepted_for_project_local_preview",
+      "target_ref": "candidate-spec.product-boundary.gaps.ontology-gap.record-canary-check",
+      "term": "Record canary check",
+      "term_key": "recordcanarycheck",
+      "tracked_artifacts_written": false,
+      "updates_ontology_lockfile": false,
+      "writes_ontology_package": false
+    },
+    {
+      "accepts_ontology_terms": false,
+      "applies_to_specgraph": false,
+      "canonical_mutations_allowed": false,
+      "creates_branch_or_commit": false,
+      "decision_type": "propose_project_local_term",
+      "decision_value": {
+        "reason": "Retain candidate-specific terminology for this controlled canary workspace.",
+        "term": "Refresh review status",
+        "term_scope": "project_local"
+      },
+      "gap_refs": [
+        {
+          "gap_id": "ontology-gap.refresh-review-status",
+          "node_id": "candidate-spec.product-boundary",
+          "source_kind": "command",
+          "source_ref": "command.refresh-review-status",
+          "statement": "Confirm whether `Refresh review status` should bind to an existing ontology term or remain a project-local domain term.",
+          "suggested_action": "confirm_bind_or_promote_domain_term",
+          "target_ref": "candidate-spec.product-boundary.gaps.ontology-gap.refresh-review-status"
+        }
+      ],
+      "id": "specspace-project-local-ontology-import.refreshreviewstatus.keep-project-local",
+      "materialization_intent": "review_overlay_only",
+      "opens_pull_request": false,
+      "project_local_ontology_review_lane_ref": "runs/hosted-operation-canary/project_local_ontology_review_lane.json",
+      "project_local_ontology_review_lane_sha256": "92e58ac13e648b757fdd93c449869de2560e6bddfeec5c315c31bee3856ef880",
+      "review_action": "keep_project_local",
+      "source_artifact": "external:project_local_ontology_review_decisions.json",
+      "source_decision_id": "specspace-project-local-ontology-decision::hosted-operation-canary::refreshreviewstatus",
+      "status": "accepted_for_project_local_preview",
+      "target_ref": "candidate-spec.product-boundary.gaps.ontology-gap.refresh-review-status",
+      "term": "Refresh review status",
+      "term_key": "refreshreviewstatus",
+      "tracked_artifacts_written": false,
+      "updates_ontology_lockfile": false,
+      "writes_ontology_package": false
+    },
+    {
+      "accepts_ontology_terms": false,
+      "applies_to_specgraph": false,
+      "canonical_mutations_allowed": false,
+      "creates_branch_or_commit": false,
+      "decision_type": "propose_project_local_term",
+      "decision_value": {
+        "reason": "Retain candidate-specific terminology for this controlled canary workspace.",
+        "term": "Release operator",
+        "term_scope": "project_local"
+      },
+      "gap_refs": [
+        {
+          "gap_id": "ontology-gap.release-operator",
+          "node_id": "candidate-spec.product-boundary",
+          "source_kind": "actor",
+          "source_ref": "actor.release-operator",
+          "statement": "Confirm whether `Release operator` should bind to an existing ontology term or remain a project-local domain term.",
+          "suggested_action": "confirm_bind_or_promote_domain_term",
+          "target_ref": "candidate-spec.product-boundary.gaps.ontology-gap.release-operator"
+        }
+      ],
+      "id": "specspace-project-local-ontology-import.releaseoperator.keep-project-local",
+      "materialization_intent": "review_overlay_only",
+      "opens_pull_request": false,
+      "project_local_ontology_review_lane_ref": "runs/hosted-operation-canary/project_local_ontology_review_lane.json",
+      "project_local_ontology_review_lane_sha256": "92e58ac13e648b757fdd93c449869de2560e6bddfeec5c315c31bee3856ef880",
+      "review_action": "keep_project_local",
+      "source_artifact": "external:project_local_ontology_review_decisions.json",
+      "source_decision_id": "specspace-project-local-ontology-decision::hosted-operation-canary::releaseoperator",
+      "status": "accepted_for_project_local_preview",
+      "target_ref": "candidate-spec.product-boundary.gaps.ontology-gap.release-operator",
+      "term": "Release operator",
+      "term_key": "releaseoperator",
+      "tracked_artifacts_written": false,
+      "updates_ontology_lockfile": false,
+      "writes_ontology_package": false
+    },
+    {
+      "accepts_ontology_terms": false,
+      "applies_to_specgraph": false,
+      "canonical_mutations_allowed": false,
+      "creates_branch_or_commit": false,
+      "decision_type": "propose_project_local_term",
+      "decision_value": {
+        "reason": "Retain candidate-specific terminology for this controlled canary workspace.",
+        "term": "Review status refreshed",
+        "term_scope": "project_local"
+      },
+      "gap_refs": [
+        {
+          "gap_id": "ontology-gap.review-status-refreshed",
+          "node_id": "candidate-spec.product-boundary",
+          "source_kind": "domain_event",
+          "source_ref": "event.review-status-refreshed",
+          "statement": "Confirm whether `Review status refreshed` should bind to an existing ontology term or remain a project-local domain term.",
+          "suggested_action": "confirm_bind_or_promote_domain_term",
+          "target_ref": "candidate-spec.product-boundary.gaps.ontology-gap.review-status-refreshed"
+        }
+      ],
+      "id": "specspace-project-local-ontology-import.reviewstatusrefreshed.keep-project-local",
+      "materialization_intent": "review_overlay_only",
+      "opens_pull_request": false,
+      "project_local_ontology_review_lane_ref": "runs/hosted-operation-canary/project_local_ontology_review_lane.json",
+      "project_local_ontology_review_lane_sha256": "92e58ac13e648b757fdd93c449869de2560e6bddfeec5c315c31bee3856ef880",
+      "review_action": "keep_project_local",
+      "source_artifact": "external:project_local_ontology_review_decisions.json",
+      "source_decision_id": "specspace-project-local-ontology-decision::hosted-operation-canary::reviewstatusrefreshed",
+      "status": "accepted_for_project_local_preview",
+      "target_ref": "candidate-spec.product-boundary.gaps.ontology-gap.review-status-refreshed",
+      "term": "Review status refreshed",
+      "term_key": "reviewstatusrefreshed",
+      "tracked_artifacts_written": false,
+      "updates_ontology_lockfile": false,
+      "writes_ontology_package": false
+    },
+    {
+      "accepts_ontology_terms": false,
+      "applies_to_specgraph": false,
+      "canonical_mutations_allowed": false,
+      "creates_branch_or_commit": false,
+      "decision_type": "propose_project_local_term",
+      "decision_value": {
+        "reason": "Retain candidate-specific terminology for this controlled canary workspace.",
+        "term": "Service owner",
+        "term_scope": "project_local"
+      },
+      "gap_refs": [
+        {
+          "gap_id": "ontology-gap.service-owner",
+          "node_id": "candidate-spec.product-boundary",
+          "source_kind": "actor",
+          "source_ref": "actor.service-owner",
+          "statement": "Confirm whether `Service owner` should bind to an existing ontology term or remain a project-local domain term.",
+          "suggested_action": "confirm_bind_or_promote_domain_term",
+          "target_ref": "candidate-spec.product-boundary.gaps.ontology-gap.service-owner"
+        }
+      ],
+      "id": "specspace-project-local-ontology-import.serviceowner.keep-project-local",
+      "materialization_intent": "review_overlay_only",
+      "opens_pull_request": false,
+      "project_local_ontology_review_lane_ref": "runs/hosted-operation-canary/project_local_ontology_review_lane.json",
+      "project_local_ontology_review_lane_sha256": "92e58ac13e648b757fdd93c449869de2560e6bddfeec5c315c31bee3856ef880",
+      "review_action": "keep_project_local",
+      "source_artifact": "external:project_local_ontology_review_decisions.json",
+      "source_decision_id": "specspace-project-local-ontology-decision::hosted-operation-canary::serviceowner",
+      "status": "accepted_for_project_local_preview",
+      "target_ref": "candidate-spec.product-boundary.gaps.ontology-gap.service-owner",
+      "term": "Service owner",
+      "term_key": "serviceowner",
+      "tracked_artifacts_written": false,
+      "updates_ontology_lockfile": false,
+      "writes_ontology_package": false
+    }
+  ],
+  "findings": [],
+  "generated_at": "2026-07-10T22:52:03.378402+00:00",
+  "import_preview": {
+    "accepted_decisions": [
+      {
+        "accepts_ontology_terms": false,
+        "applies_to_specgraph": false,
+        "canonical_mutations_allowed": false,
+        "creates_branch_or_commit": false,
+        "decision_type": "propose_project_local_term",
+        "decision_value": {
+          "reason": "Retain candidate-specific terminology for this controlled canary workspace.",
+          "term": "Block release completion until required follow-up verification",
+          "term_scope": "project_local"
+        },
+        "gap_refs": [
+          {
+            "gap_id": "ontology-gap.block-release-completion-until-required-follow-up-verification",
+            "node_id": "candidate-spec.product-boundary",
+            "source_kind": "policy",
+            "source_ref": "policy.block-release-completion-until-required-follow-up-verification",
+            "statement": "Confirm whether `Block release completion until required follow-up verification` should bind to an existing ontology term or remain a project-local domain term.",
+            "suggested_action": "confirm_bind_or_promote_domain_term",
+            "target_ref": "candidate-spec.product-boundary.gaps.ontology-gap.block-release-completion-until-required-follow-up-verification"
+          }
+        ],
+        "id": "specspace-project-local-ontology-import.blockreleasecompletionuntilrequiredfollowupverification.keep-project-local",
+        "materialization_intent": "review_overlay_only",
+        "opens_pull_request": false,
+        "project_local_ontology_review_lane_ref": "runs/hosted-operation-canary/project_local_ontology_review_lane.json",
+        "project_local_ontology_review_lane_sha256": "92e58ac13e648b757fdd93c449869de2560e6bddfeec5c315c31bee3856ef880",
+        "review_action": "keep_project_local",
+        "source_artifact": "external:project_local_ontology_review_decisions.json",
+        "source_decision_id": "specspace-project-local-ontology-decision::hosted-operation-canary::blockreleasecompletionuntilrequiredfollowupverification",
+        "status": "accepted_for_project_local_preview",
+        "target_ref": "candidate-spec.product-boundary.gaps.ontology-gap.block-release-completion-until-required-follow-up-verification",
+        "term": "Block release completion until required follow-up verification",
+        "term_key": "blockreleasecompletionuntilrequiredfollowupverification",
+        "tracked_artifacts_written": false,
+        "updates_ontology_lockfile": false,
+        "writes_ontology_package": false
+      },
+      {
+        "accepts_ontology_terms": false,
+        "applies_to_specgraph": false,
+        "canonical_mutations_allowed": false,
+        "creates_branch_or_commit": false,
+        "decision_type": "propose_project_local_term",
+        "decision_value": {
+          "reason": "Retain candidate-specific terminology for this controlled canary workspace.",
+          "term": "Canary check recorded",
+          "term_scope": "project_local"
+        },
+        "gap_refs": [
+          {
+            "gap_id": "ontology-gap.canary-check-recorded",
+            "node_id": "candidate-spec.product-boundary",
+            "source_kind": "domain_event",
+            "source_ref": "event.canary-check-recorded",
+            "statement": "Confirm whether `Canary check recorded` should bind to an existing ontology term or remain a project-local domain term.",
+            "suggested_action": "confirm_bind_or_promote_domain_term",
+            "target_ref": "candidate-spec.product-boundary.gaps.ontology-gap.canary-check-recorded"
+          }
+        ],
+        "id": "specspace-project-local-ontology-import.canarycheckrecorded.keep-project-local",
+        "materialization_intent": "review_overlay_only",
+        "opens_pull_request": false,
+        "project_local_ontology_review_lane_ref": "runs/hosted-operation-canary/project_local_ontology_review_lane.json",
+        "project_local_ontology_review_lane_sha256": "92e58ac13e648b757fdd93c449869de2560e6bddfeec5c315c31bee3856ef880",
+        "review_action": "keep_project_local",
+        "source_artifact": "external:project_local_ontology_review_decisions.json",
+        "source_decision_id": "specspace-project-local-ontology-decision::hosted-operation-canary::canarycheckrecorded",
+        "status": "accepted_for_project_local_preview",
+        "target_ref": "candidate-spec.product-boundary.gaps.ontology-gap.canary-check-recorded",
+        "term": "Canary check recorded",
+        "term_key": "canarycheckrecorded",
+        "tracked_artifacts_written": false,
+        "updates_ontology_lockfile": false,
+        "writes_ontology_package": false
+      },
+      {
+        "accepts_ontology_terms": false,
+        "applies_to_specgraph": false,
+        "canonical_mutations_allowed": false,
+        "creates_branch_or_commit": false,
+        "decision_type": "propose_project_local_term",
+        "decision_value": {
+          "reason": "Retain candidate-specific terminology for this controlled canary workspace.",
+          "term": "Confirm follow-up verification",
+          "term_scope": "project_local"
+        },
+        "gap_refs": [
+          {
+            "gap_id": "ontology-gap.confirm-follow-up-verification",
+            "node_id": "candidate-spec.product-boundary",
+            "source_kind": "command",
+            "source_ref": "command.confirm-follow-up-verification",
+            "statement": "Confirm whether `Confirm follow-up verification` should bind to an existing ontology term or remain a project-local domain term.",
+            "suggested_action": "confirm_bind_or_promote_domain_term",
+            "target_ref": "candidate-spec.product-boundary.gaps.ontology-gap.confirm-follow-up-verification"
+          }
+        ],
+        "id": "specspace-project-local-ontology-import.confirmfollowupverification.keep-project-local",
+        "materialization_intent": "review_overlay_only",
+        "opens_pull_request": false,
+        "project_local_ontology_review_lane_ref": "runs/hosted-operation-canary/project_local_ontology_review_lane.json",
+        "project_local_ontology_review_lane_sha256": "92e58ac13e648b757fdd93c449869de2560e6bddfeec5c315c31bee3856ef880",
+        "review_action": "keep_project_local",
+        "source_artifact": "external:project_local_ontology_review_decisions.json",
+        "source_decision_id": "specspace-project-local-ontology-decision::hosted-operation-canary::confirmfollowupverification",
+        "status": "accepted_for_project_local_preview",
+        "target_ref": "candidate-spec.product-boundary.gaps.ontology-gap.confirm-follow-up-verification",
+        "term": "Confirm follow-up verification",
+        "term_key": "confirmfollowupverification",
+        "tracked_artifacts_written": false,
+        "updates_ontology_lockfile": false,
+        "writes_ontology_package": false
+      },
+      {
+        "accepts_ontology_terms": false,
+        "applies_to_specgraph": false,
+        "canonical_mutations_allowed": false,
+        "creates_branch_or_commit": false,
+        "decision_type": "propose_project_local_term",
+        "decision_value": {
+          "reason": "Retain candidate-specific terminology for this controlled canary workspace.",
+          "term": "Escalate failed canary checks to the service owner",
+          "term_scope": "project_local"
+        },
+        "gap_refs": [
+          {
+            "gap_id": "ontology-gap.escalate-failed-canary-checks-to-the-service-owner",
+            "node_id": "candidate-spec.product-boundary",
+            "source_kind": "policy",
+            "source_ref": "policy.escalate-failed-canary-checks-to-the-service-owner",
+            "statement": "Confirm whether `Escalate failed canary checks to the service owner` should bind to an existing ontology term or remain a project-local domain term.",
+            "suggested_action": "confirm_bind_or_promote_domain_term",
+            "target_ref": "candidate-spec.product-boundary.gaps.ontology-gap.escalate-failed-canary-checks-to-the-service-owner"
+          }
+        ],
+        "id": "specspace-project-local-ontology-import.escalatefailedcanarycheckstotheserviceowner.keep-project-local",
+        "materialization_intent": "review_overlay_only",
+        "opens_pull_request": false,
+        "project_local_ontology_review_lane_ref": "runs/hosted-operation-canary/project_local_ontology_review_lane.json",
+        "project_local_ontology_review_lane_sha256": "92e58ac13e648b757fdd93c449869de2560e6bddfeec5c315c31bee3856ef880",
+        "review_action": "keep_project_local",
+        "source_artifact": "external:project_local_ontology_review_decisions.json",
+        "source_decision_id": "specspace-project-local-ontology-decision::hosted-operation-canary::escalatefailedcanarycheckstotheserviceowner",
+        "status": "accepted_for_project_local_preview",
+        "target_ref": "candidate-spec.product-boundary.gaps.ontology-gap.escalate-failed-canary-checks-to-the-service-owner",
+        "term": "Escalate failed canary checks to the service owner",
+        "term_key": "escalatefailedcanarycheckstotheserviceowner",
+        "tracked_artifacts_written": false,
+        "updates_ontology_lockfile": false,
+        "writes_ontology_package": false
+      },
+      {
+        "accepts_ontology_terms": false,
+        "applies_to_specgraph": false,
+        "canonical_mutations_allowed": false,
+        "creates_branch_or_commit": false,
+        "decision_type": "propose_project_local_term",
+        "decision_value": {
+          "reason": "Retain candidate-specific terminology for this controlled canary workspace.",
+          "term": "Follow-up verification required",
+          "term_scope": "project_local"
+        },
+        "gap_refs": [
+          {
+            "gap_id": "ontology-gap.follow-up-verification-required",
+            "node_id": "candidate-spec.product-boundary",
+            "source_kind": "domain_event",
+            "source_ref": "event.follow-up-verification-required",
+            "statement": "Confirm whether `Follow-up verification required` should bind to an existing ontology term or remain a project-local domain term.",
+            "suggested_action": "confirm_bind_or_promote_domain_term",
+            "target_ref": "candidate-spec.product-boundary.gaps.ontology-gap.follow-up-verification-required"
+          }
+        ],
+        "id": "specspace-project-local-ontology-import.followupverificationrequired.keep-project-local",
+        "materialization_intent": "review_overlay_only",
+        "opens_pull_request": false,
+        "project_local_ontology_review_lane_ref": "runs/hosted-operation-canary/project_local_ontology_review_lane.json",
+        "project_local_ontology_review_lane_sha256": "92e58ac13e648b757fdd93c449869de2560e6bddfeec5c315c31bee3856ef880",
+        "review_action": "keep_project_local",
+        "source_artifact": "external:project_local_ontology_review_decisions.json",
+        "source_decision_id": "specspace-project-local-ontology-decision::hosted-operation-canary::followupverificationrequired",
+        "status": "accepted_for_project_local_preview",
+        "target_ref": "candidate-spec.product-boundary.gaps.ontology-gap.follow-up-verification-required",
+        "term": "Follow-up verification required",
+        "term_key": "followupverificationrequired",
+        "tracked_artifacts_written": false,
+        "updates_ontology_lockfile": false,
+        "writes_ontology_package": false
+      },
+      {
+        "accepts_ontology_terms": false,
+        "applies_to_specgraph": false,
+        "canonical_mutations_allowed": false,
+        "creates_branch_or_commit": false,
+        "decision_type": "propose_project_local_term",
+        "decision_value": {
+          "reason": "Retain candidate-specific terminology for this controlled canary workspace.",
+          "term": "On-call reviewer",
+          "term_scope": "project_local"
+        },
+        "gap_refs": [
+          {
+            "gap_id": "ontology-gap.on-call-reviewer",
+            "node_id": "candidate-spec.product-boundary",
+            "source_kind": "actor",
+            "source_ref": "actor.on-call-reviewer",
+            "statement": "Confirm whether `On-call reviewer` should bind to an existing ontology term or remain a project-local domain term.",
+            "suggested_action": "confirm_bind_or_promote_domain_term",
+            "target_ref": "candidate-spec.product-boundary.gaps.ontology-gap.on-call-reviewer"
+          }
+        ],
+        "id": "specspace-project-local-ontology-import.oncallreviewer.keep-project-local",
+        "materialization_intent": "review_overlay_only",
+        "opens_pull_request": false,
+        "project_local_ontology_review_lane_ref": "runs/hosted-operation-canary/project_local_ontology_review_lane.json",
+        "project_local_ontology_review_lane_sha256": "92e58ac13e648b757fdd93c449869de2560e6bddfeec5c315c31bee3856ef880",
+        "review_action": "keep_project_local",
+        "source_artifact": "external:project_local_ontology_review_decisions.json",
+        "source_decision_id": "specspace-project-local-ontology-decision::hosted-operation-canary::oncallreviewer",
+        "status": "accepted_for_project_local_preview",
+        "target_ref": "candidate-spec.product-boundary.gaps.ontology-gap.on-call-reviewer",
+        "term": "On-call reviewer",
+        "term_key": "oncallreviewer",
+        "tracked_artifacts_written": false,
+        "updates_ontology_lockfile": false,
+        "writes_ontology_package": false
+      },
+      {
+        "accepts_ontology_terms": false,
+        "applies_to_specgraph": false,
+        "canonical_mutations_allowed": false,
+        "creates_branch_or_commit": false,
+        "decision_type": "propose_project_local_term",
+        "decision_value": {
+          "reason": "Retain candidate-specific terminology for this controlled canary workspace.",
+          "term": "Record canary check",
+          "term_scope": "project_local"
+        },
+        "gap_refs": [
+          {
+            "gap_id": "ontology-gap.record-canary-check",
+            "node_id": "candidate-spec.product-boundary",
+            "source_kind": "command",
+            "source_ref": "command.record-canary-check",
+            "statement": "Confirm whether `Record canary check` should bind to an existing ontology term or remain a project-local domain term.",
+            "suggested_action": "confirm_bind_or_promote_domain_term",
+            "target_ref": "candidate-spec.product-boundary.gaps.ontology-gap.record-canary-check"
+          }
+        ],
+        "id": "specspace-project-local-ontology-import.recordcanarycheck.keep-project-local",
+        "materialization_intent": "review_overlay_only",
+        "opens_pull_request": false,
+        "project_local_ontology_review_lane_ref": "runs/hosted-operation-canary/project_local_ontology_review_lane.json",
+        "project_local_ontology_review_lane_sha256": "92e58ac13e648b757fdd93c449869de2560e6bddfeec5c315c31bee3856ef880",
+        "review_action": "keep_project_local",
+        "source_artifact": "external:project_local_ontology_review_decisions.json",
+        "source_decision_id": "specspace-project-local-ontology-decision::hosted-operation-canary::recordcanarycheck",
+        "status": "accepted_for_project_local_preview",
+        "target_ref": "candidate-spec.product-boundary.gaps.ontology-gap.record-canary-check",
+        "term": "Record canary check",
+        "term_key": "recordcanarycheck",
+        "tracked_artifacts_written": false,
+        "updates_ontology_lockfile": false,
+        "writes_ontology_package": false
+      },
+      {
+        "accepts_ontology_terms": false,
+        "applies_to_specgraph": false,
+        "canonical_mutations_allowed": false,
+        "creates_branch_or_commit": false,
+        "decision_type": "propose_project_local_term",
+        "decision_value": {
+          "reason": "Retain candidate-specific terminology for this controlled canary workspace.",
+          "term": "Refresh review status",
+          "term_scope": "project_local"
+        },
+        "gap_refs": [
+          {
+            "gap_id": "ontology-gap.refresh-review-status",
+            "node_id": "candidate-spec.product-boundary",
+            "source_kind": "command",
+            "source_ref": "command.refresh-review-status",
+            "statement": "Confirm whether `Refresh review status` should bind to an existing ontology term or remain a project-local domain term.",
+            "suggested_action": "confirm_bind_or_promote_domain_term",
+            "target_ref": "candidate-spec.product-boundary.gaps.ontology-gap.refresh-review-status"
+          }
+        ],
+        "id": "specspace-project-local-ontology-import.refreshreviewstatus.keep-project-local",
+        "materialization_intent": "review_overlay_only",
+        "opens_pull_request": false,
+        "project_local_ontology_review_lane_ref": "runs/hosted-operation-canary/project_local_ontology_review_lane.json",
+        "project_local_ontology_review_lane_sha256": "92e58ac13e648b757fdd93c449869de2560e6bddfeec5c315c31bee3856ef880",
+        "review_action": "keep_project_local",
+        "source_artifact": "external:project_local_ontology_review_decisions.json",
+        "source_decision_id": "specspace-project-local-ontology-decision::hosted-operation-canary::refreshreviewstatus",
+        "status": "accepted_for_project_local_preview",
+        "target_ref": "candidate-spec.product-boundary.gaps.ontology-gap.refresh-review-status",
+        "term": "Refresh review status",
+        "term_key": "refreshreviewstatus",
+        "tracked_artifacts_written": false,
+        "updates_ontology_lockfile": false,
+        "writes_ontology_package": false
+      },
+      {
+        "accepts_ontology_terms": false,
+        "applies_to_specgraph": false,
+        "canonical_mutations_allowed": false,
+        "creates_branch_or_commit": false,
+        "decision_type": "propose_project_local_term",
+        "decision_value": {
+          "reason": "Retain candidate-specific terminology for this controlled canary workspace.",
+          "term": "Release operator",
+          "term_scope": "project_local"
+        },
+        "gap_refs": [
+          {
+            "gap_id": "ontology-gap.release-operator",
+            "node_id": "candidate-spec.product-boundary",
+            "source_kind": "actor",
+            "source_ref": "actor.release-operator",
+            "statement": "Confirm whether `Release operator` should bind to an existing ontology term or remain a project-local domain term.",
+            "suggested_action": "confirm_bind_or_promote_domain_term",
+            "target_ref": "candidate-spec.product-boundary.gaps.ontology-gap.release-operator"
+          }
+        ],
+        "id": "specspace-project-local-ontology-import.releaseoperator.keep-project-local",
+        "materialization_intent": "review_overlay_only",
+        "opens_pull_request": false,
+        "project_local_ontology_review_lane_ref": "runs/hosted-operation-canary/project_local_ontology_review_lane.json",
+        "project_local_ontology_review_lane_sha256": "92e58ac13e648b757fdd93c449869de2560e6bddfeec5c315c31bee3856ef880",
+        "review_action": "keep_project_local",
+        "source_artifact": "external:project_local_ontology_review_decisions.json",
+        "source_decision_id": "specspace-project-local-ontology-decision::hosted-operation-canary::releaseoperator",
+        "status": "accepted_for_project_local_preview",
+        "target_ref": "candidate-spec.product-boundary.gaps.ontology-gap.release-operator",
+        "term": "Release operator",
+        "term_key": "releaseoperator",
+        "tracked_artifacts_written": false,
+        "updates_ontology_lockfile": false,
+        "writes_ontology_package": false
+      },
+      {
+        "accepts_ontology_terms": false,
+        "applies_to_specgraph": false,
+        "canonical_mutations_allowed": false,
+        "creates_branch_or_commit": false,
+        "decision_type": "propose_project_local_term",
+        "decision_value": {
+          "reason": "Retain candidate-specific terminology for this controlled canary workspace.",
+          "term": "Review status refreshed",
+          "term_scope": "project_local"
+        },
+        "gap_refs": [
+          {
+            "gap_id": "ontology-gap.review-status-refreshed",
+            "node_id": "candidate-spec.product-boundary",
+            "source_kind": "domain_event",
+            "source_ref": "event.review-status-refreshed",
+            "statement": "Confirm whether `Review status refreshed` should bind to an existing ontology term or remain a project-local domain term.",
+            "suggested_action": "confirm_bind_or_promote_domain_term",
+            "target_ref": "candidate-spec.product-boundary.gaps.ontology-gap.review-status-refreshed"
+          }
+        ],
+        "id": "specspace-project-local-ontology-import.reviewstatusrefreshed.keep-project-local",
+        "materialization_intent": "review_overlay_only",
+        "opens_pull_request": false,
+        "project_local_ontology_review_lane_ref": "runs/hosted-operation-canary/project_local_ontology_review_lane.json",
+        "project_local_ontology_review_lane_sha256": "92e58ac13e648b757fdd93c449869de2560e6bddfeec5c315c31bee3856ef880",
+        "review_action": "keep_project_local",
+        "source_artifact": "external:project_local_ontology_review_decisions.json",
+        "source_decision_id": "specspace-project-local-ontology-decision::hosted-operation-canary::reviewstatusrefreshed",
+        "status": "accepted_for_project_local_preview",
+        "target_ref": "candidate-spec.product-boundary.gaps.ontology-gap.review-status-refreshed",
+        "term": "Review status refreshed",
+        "term_key": "reviewstatusrefreshed",
+        "tracked_artifacts_written": false,
+        "updates_ontology_lockfile": false,
+        "writes_ontology_package": false
+      },
+      {
+        "accepts_ontology_terms": false,
+        "applies_to_specgraph": false,
+        "canonical_mutations_allowed": false,
+        "creates_branch_or_commit": false,
+        "decision_type": "propose_project_local_term",
+        "decision_value": {
+          "reason": "Retain candidate-specific terminology for this controlled canary workspace.",
+          "term": "Service owner",
+          "term_scope": "project_local"
+        },
+        "gap_refs": [
+          {
+            "gap_id": "ontology-gap.service-owner",
+            "node_id": "candidate-spec.product-boundary",
+            "source_kind": "actor",
+            "source_ref": "actor.service-owner",
+            "statement": "Confirm whether `Service owner` should bind to an existing ontology term or remain a project-local domain term.",
+            "suggested_action": "confirm_bind_or_promote_domain_term",
+            "target_ref": "candidate-spec.product-boundary.gaps.ontology-gap.service-owner"
+          }
+        ],
+        "id": "specspace-project-local-ontology-import.serviceowner.keep-project-local",
+        "materialization_intent": "review_overlay_only",
+        "opens_pull_request": false,
+        "project_local_ontology_review_lane_ref": "runs/hosted-operation-canary/project_local_ontology_review_lane.json",
+        "project_local_ontology_review_lane_sha256": "92e58ac13e648b757fdd93c449869de2560e6bddfeec5c315c31bee3856ef880",
+        "review_action": "keep_project_local",
+        "source_artifact": "external:project_local_ontology_review_decisions.json",
+        "source_decision_id": "specspace-project-local-ontology-decision::hosted-operation-canary::serviceowner",
+        "status": "accepted_for_project_local_preview",
+        "target_ref": "candidate-spec.product-boundary.gaps.ontology-gap.service-owner",
+        "term": "Service owner",
+        "term_key": "serviceowner",
+        "tracked_artifacts_written": false,
+        "updates_ontology_lockfile": false,
+        "writes_ontology_package": false
+      }
+    ],
+    "invalid_decisions": [],
+    "missing_decisions": [],
+    "non_resolving_decisions": []
+  },
+  "privacy_boundary": {
+    "private_operator_state_published": false,
+    "raw_idea_text_published": false,
+    "raw_model_output_published": false,
+    "raw_operator_note_published": false,
+    "raw_prompt_published": false
+  },
+  "proposal_id": "0198",
+  "readiness": {
+    "blocked_by": [],
+    "next_artifact": "project_local_ontology_decisions_for_repair",
+    "ready": true,
+    "review_state": "project_local_ontology_decision_import_ready"
+  },
+  "schema_version": 1,
+  "source_artifacts": {
+    "decision_state": {
+      "artifact_key": "decision_state",
+      "artifact_kind": "specspace_project_local_ontology_review_decision_state",
+      "contract_ref": null,
+      "schema_version": 1,
+      "sha256": "0528b80f73c531fa02a160bae09302be5b014a65492dd10052884ace4893dfce",
+      "source_ref": "external:project_local_ontology_review_decisions.json",
+      "status": "present",
+      "summary": {
+        "action_counts": {
+          "keep_project_local": 11
+        },
+        "decision_count": 11,
+        "dropped_decision_count": 0,
+        "invalid_decision_count": 0,
+        "next_gap": "export_project_local_ontology_review_decisions_for_specgraph_validation",
+        "status": "project_local_ontology_review_decisions_recorded",
+        "workspace_count": 1
+      }
+    },
+    "project_local_ontology_review_lane": {
+      "artifact_key": "project_local_ontology_review_lane",
+      "artifact_kind": "project_local_ontology_review_lane",
+      "contract_ref": "specgraph.product-ontology.project-local-review-lane.v0.1",
+      "schema_version": 1,
+      "sha256": "92e58ac13e648b757fdd93c449869de2560e6bddfeec5c315c31bee3856ef880",
+      "source_ref": "runs/hosted-operation-canary/project_local_ontology_review_lane.json",
+      "status": "present",
+      "summary": {
+        "blocking_term_count": 0,
+        "deferred_term_count": 0,
+        "finding_count": 0,
+        "reviewed_term_count": 11,
+        "status": "project_local_ontology_review_ready",
+        "status_counts": {
+          "kept_project_local": 11
+        },
+        "term_count": 11,
+        "unreviewed_term_count": 0,
+        "warning_count": 0
+      }
+    }
+  },
+  "summary": {
+    "accepted_decision_count": 11,
+    "candidate_id": "hosted-operation-canary",
+    "decision_count": 11,
+    "finding_count": 0,
+    "invalid_decision_count": 0,
+    "missing_decision_count": 0,
+    "non_resolving_decision_count": 0,
+    "ready": true,
+    "status": "project_local_ontology_decision_import_ready",
+    "workspace_id": "hosted-operation-canary"
+  },
+  "tracked_artifacts_written": false
+}

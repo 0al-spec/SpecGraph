@@ -1,5 +1,50 @@
 {
   "approved_paths": [
+    "runs/hosted-operation-canary/active_idea_to_spec_candidate.json",
+    "runs/hosted-operation-canary/candidate_approval_decision.json",
+    "runs/hosted-operation-canary/candidate_repair_loop_report.json",
+    "runs/hosted-operation-canary/candidate_spec_graph.json",
+    "runs/hosted-operation-canary/candidate_spec_materialization_report.json",
+    "runs/hosted-operation-canary/clarified_user_idea_intake_session.json",
+    "runs/hosted-operation-canary/graph_repository_execution_plan.json",
+    "runs/hosted-operation-canary/graph_repository_promotion_request.json",
+    "runs/hosted-operation-canary/idea_event_storming_intake.json",
+    "runs/hosted-operation-canary/idea_maturity_metrics_report.json",
+    "runs/hosted-operation-canary/idea_maturity_metrics_validation_report.json",
+    "runs/hosted-operation-canary/idea_to_spec_answer_rerun_input.json",
+    "runs/hosted-operation-canary/idea_to_spec_candidate_approval_intents.json",
+    "runs/hosted-operation-canary/idea_to_spec_clarification_answers.json",
+    "runs/hosted-operation-canary/idea_to_spec_clarification_requests.json",
+    "runs/hosted-operation-canary/idea_to_spec_promotion_gate.json",
+    "runs/hosted-operation-canary/idea_to_spec_repair_drafts.json",
+    "runs/hosted-operation-canary/idea_to_spec_repair_rerun_requests.json",
+    "runs/hosted-operation-canary/idea_to_spec_repair_session.json",
+    "runs/hosted-operation-canary/idea_to_spec_rerun_materialization.json",
+    "runs/hosted-operation-canary/idea_to_spec_rerun_preview.json",
+    "runs/hosted-operation-canary/materialized_candidate_specs/CANDIDATE-CANDIDATE-SPEC-BLOCK-RELEASE-COMPLETION-UNTIL-REQUIRED-FOLLOW-UP-VERIFICATION.yaml",
+    "runs/hosted-operation-canary/materialized_candidate_specs/CANDIDATE-CANDIDATE-SPEC-CONFIRM-FOLLOW-UP-VERIFICATION.yaml",
+    "runs/hosted-operation-canary/materialized_candidate_specs/CANDIDATE-CANDIDATE-SPEC-ESCALATE-FAILED-CANARY-CHECKS-TO-THE-SERVICE-OWNER.yaml",
+    "runs/hosted-operation-canary/materialized_candidate_specs/CANDIDATE-CANDIDATE-SPEC-LOCAL-FIRST-OPERATOR-STATE.yaml",
+    "runs/hosted-operation-canary/materialized_candidate_specs/CANDIDATE-CANDIDATE-SPEC-NO-AUTOMATIC-RELEASE-APPROVAL.yaml",
+    "runs/hosted-operation-canary/materialized_candidate_specs/CANDIDATE-CANDIDATE-SPEC-PRODUCT-BOUNDARY.yaml",
+    "runs/hosted-operation-canary/materialized_candidate_specs/CANDIDATE-CANDIDATE-SPEC-RECORD-CANARY-CHECK.yaml",
+    "runs/hosted-operation-canary/materialized_candidate_specs/CANDIDATE-CANDIDATE-SPEC-REFRESH-REVIEW-STATUS.yaml",
+    "runs/hosted-operation-canary/platform_candidate_approval_execution_report.json",
+    "runs/hosted-operation-canary/platform_candidate_approval_intent_gate_report.json",
+    "runs/hosted-operation-canary/platform_product_repair_rerun_execution_report.json",
+    "runs/hosted-operation-canary/platform_product_repair_rerun_publication_report.json",
+    "runs/hosted-operation-canary/platform_product_workspace_initialization_execution_report.json",
+    "runs/hosted-operation-canary/pre_sib_coherence_report.json",
+    "runs/hosted-operation-canary/product_ontology_gap_review_decisions.json",
+    "runs/hosted-operation-canary/project_local_ontology_decision_effect_report.json",
+    "runs/hosted-operation-canary/project_local_ontology_review_lane.json",
+    "runs/hosted-operation-canary/repaired_active_idea_to_spec_candidate.json",
+    "runs/hosted-operation-canary/repaired_candidate_promotion_handoff_report.json",
+    "runs/hosted-operation-canary/repaired_candidate_repair_loop_report.json",
+    "runs/hosted-operation-canary/repaired_candidate_spec_graph.json",
+    "runs/hosted-operation-canary/repaired_candidate_spec_materialization_report.json",
+    "runs/hosted-operation-canary/repaired_idea_to_spec_promotion_gate.json",
+    "runs/hosted-operation-canary/repaired_idea_to_spec_repair_session.json",
     "runs/hosted-operation-canary/repaired_materialized_candidate_specs/CANDIDATE-HOSTED-OPERATION-CANARY-CANDIDATE-SPEC-BLOCK-RELEASE-COMPLETION-UNTIL-REQUIRED-FOLLOW-UP-VERIFICATION.yaml",
     "runs/hosted-operation-canary/repaired_materialized_candidate_specs/CANDIDATE-HOSTED-OPERATION-CANARY-CANDIDATE-SPEC-CONFIRM-FOLLOW-UP-VERIFICATION.yaml",
     "runs/hosted-operation-canary/repaired_materialized_candidate_specs/CANDIDATE-HOSTED-OPERATION-CANARY-CANDIDATE-SPEC-ESCALATE-FAILED-CANARY-CHECKS-TO-THE-SERVICE-OWNER.yaml",
@@ -8,19 +53,12 @@
     "runs/hosted-operation-canary/repaired_materialized_candidate_specs/CANDIDATE-HOSTED-OPERATION-CANARY-CANDIDATE-SPEC-PRODUCT-BOUNDARY.yaml",
     "runs/hosted-operation-canary/repaired_materialized_candidate_specs/CANDIDATE-HOSTED-OPERATION-CANARY-CANDIDATE-SPEC-RECORD-CANARY-CHECK.yaml",
     "runs/hosted-operation-canary/repaired_materialized_candidate_specs/CANDIDATE-HOSTED-OPERATION-CANARY-CANDIDATE-SPEC-REFRESH-REVIEW-STATUS.yaml",
-    "runs/hosted-operation-canary/repaired_candidate_spec_graph.json",
     "runs/hosted-operation-canary/repaired_pre_sib_coherence_report.json",
-    "runs/hosted-operation-canary/repaired_candidate_repair_loop_report.json",
-    "runs/hosted-operation-canary/repaired_candidate_spec_materialization_report.json",
-    "runs/hosted-operation-canary/repaired_idea_to_spec_promotion_gate.json",
-    "runs/hosted-operation-canary/repaired_active_idea_to_spec_candidate.json",
-    "runs/hosted-operation-canary/repaired_idea_to_spec_repair_session.json",
-    "runs/hosted-operation-canary/repaired_candidate_promotion_handoff_report.json",
-    "runs/hosted-operation-canary/platform_candidate_approval_intent_gate_report.json",
-    "runs/hosted-operation-canary/platform_product_repair_rerun_execution_report.json",
-    "runs/hosted-operation-canary/platform_product_repair_rerun_publication_report.json",
-    "runs/hosted-operation-canary/candidate_approval_decision.json",
-    "runs/hosted-operation-canary/graph_repository_promotion_request.json"
+    "runs/hosted-operation-canary/specspace_project_local_ontology_decision_import_preview.json",
+    "runs/hosted-operation-canary/specspace_repair_draft_import_preview.json",
+    "runs/hosted-operation-canary/specspace_repair_draft_rerun_report.json",
+    "runs/hosted-operation-canary/specspace_repair_rerun_request_gate.json",
+    "runs/hosted-operation-canary/user_idea_intake_source.json"
   ],
   "artifact_kind": "platform_candidate_approval_intent_gate_report",
   "authority_boundary": {
@@ -48,7 +86,7 @@
   "canonical_mutations_allowed": false,
   "deployment_profile_ref": "$LOCAL_PATH",
   "diagnostics": [],
-  "generated_at": "2026-07-14T16:48:17.317846+00:00",
+  "generated_at": "2026-07-14T20:20:40.078849+00:00",
   "idea_maturity": {
     "answer_materialization": {
       "accepted_answer_count": 15,
@@ -240,7 +278,7 @@
     "reason": "Rebuild approval after candidate-scoped materialization proposal 0213.",
     "repair_session_id": "repair-session.hosted-operation-canary",
     "repair_session_ref": "runs/hosted-operation-canary/repaired_idea_to_spec_repair_session.json",
-    "requested_by": "operator://hosted-canary-rebuild",
+    "requested_by": "operator:hosted-canary-rebuild",
     "workspace_id": "hosted-operation-canary"
   },
   "source_artifacts": [
@@ -251,7 +289,16 @@
       "expected_artifact_kind": "specspace_idea_to_spec_candidate_approval_intent_state",
       "key": "idea_to_spec_candidate_approval_intents",
       "path": "$LOCAL_PATH",
-      "sha256": "4faa6dc91387b1eac62bd223cd8e68c04f961b0c54afc2edbac113830cd6c06e"
+      "proposal_id": null,
+      "readiness": {},
+      "sha256": "e3dcb438b66d277a0beb0a753a3902335b659d2b8cf1b889e850e912781afc58",
+      "summary": {
+        "active_intent_count": 1,
+        "intent_count": 1,
+        "next_gap": "platform_candidate_approval_decision_gate",
+        "status": "candidate_approval_intent_recorded",
+        "workspace_count": 1
+      }
     },
     {
       "artifact_kind": "active_idea_to_spec_candidate",
@@ -260,7 +307,24 @@
       "expected_artifact_kind": "active_idea_to_spec_candidate",
       "key": "active_idea_to_spec_candidate",
       "path": "$LOCAL_PATH",
-      "sha256": "3982199730815bbceb9fb0cda9cb8d24d98cd85b6dd345044c20395ec0655fd0"
+      "proposal_id": "0155",
+      "readiness": {
+        "blocked_by": [],
+        "next_artifact": "SpecSpace product workspace route",
+        "ready": true,
+        "review_state": "active_candidate_ready"
+      },
+      "sha256": "3982199730815bbceb9fb0cda9cb8d24d98cd85b6dd345044c20395ec0655fd0",
+      "summary": {
+        "candidate_id": "hosted-operation-canary",
+        "finding_count": 0,
+        "materialized_file_count": 8,
+        "promotion_path_count": 8,
+        "source_artifact_count": 6,
+        "status": "active_candidate_ready",
+        "warning_count": 0,
+        "workspace_route": "/hosted-operation-canary"
+      }
     },
     {
       "artifact_kind": "idea_to_spec_repair_session_journal",
@@ -269,7 +333,28 @@
       "expected_artifact_kind": "idea_to_spec_repair_session_journal",
       "key": "idea_to_spec_repair_session",
       "path": "$LOCAL_PATH",
-      "sha256": "5598652b75be642196a416675a55297963234ab53f6d831915bc297fc4406259"
+      "proposal_id": "0171",
+      "readiness": {
+        "blocked_by": [],
+        "next_artifact": "SpecSpace product repair workspace",
+        "ready": true,
+        "review_state": "repair_session_journal_ready"
+      },
+      "sha256": "5598652b75be642196a416675a55297963234ab53f6d831915bc297fc4406259",
+      "summary": {
+        "accepted_answer_count": 16,
+        "candidate_id": "hosted-operation-canary",
+        "finding_count": 0,
+        "ontology_decision_count": 12,
+        "ready_for_candidate_approval": true,
+        "resolved_candidate_gap_count": 4,
+        "resolved_ontology_gap_count": 11,
+        "source_artifact_count": 8,
+        "status": "repair_session_journal_ready",
+        "unresolved_candidate_gap_count": 0,
+        "unresolved_ontology_gap_count": 0,
+        "workflow_lane": "product_idea_to_spec"
+      }
     },
     {
       "artifact_kind": "idea_to_spec_promotion_gate",
@@ -278,7 +363,21 @@
       "expected_artifact_kind": "idea_to_spec_promotion_gate",
       "key": "idea_to_spec_promotion_gate",
       "path": "$LOCAL_PATH",
-      "sha256": "9dc6c37e0aa0a0fc8e6ebf43352332a3179f7611c1c20ad4665307b16d9cc99e"
+      "proposal_id": "0154",
+      "readiness": {
+        "blocked_by": [],
+        "next_artifact": "Platform graph-repository promotion-request",
+        "ready": true,
+        "review_state": "ready_for_platform_promotion_request"
+      },
+      "sha256": "9dc6c37e0aa0a0fc8e6ebf43352332a3179f7611c1c20ad4665307b16d9cc99e",
+      "summary": {
+        "finding_count": 0,
+        "materialized_file_count": 8,
+        "promotion_path_count": 8,
+        "status": "ready_for_platform_promotion_request",
+        "warning_count": 0
+      }
     },
     {
       "artifact_kind": "repaired_candidate_promotion_handoff_report",
@@ -287,7 +386,26 @@
       "expected_artifact_kind": "repaired_candidate_promotion_handoff_report",
       "key": "repaired_candidate_promotion_handoff_report",
       "path": "$LOCAL_PATH",
-      "sha256": "b3bd3b6ae5de5a9e93a4d72bd46d00ae4e63ce3012fae8ebb0f163ba7b679ef1"
+      "proposal_id": "0177",
+      "readiness": {
+        "blocked_by": [],
+        "next_artifact": "candidate_approval_decision",
+        "ready": true,
+        "review_state": "repaired_candidate_promotion_handoff_ready"
+      },
+      "sha256": "b3bd3b6ae5de5a9e93a4d72bd46d00ae4e63ce3012fae8ebb0f163ba7b679ef1",
+      "summary": {
+        "finding_count": 0,
+        "generated_artifact_count": 7,
+        "ready_for_candidate_approval": true,
+        "ready_for_platform_promotion": false,
+        "removed_gap_count": 15,
+        "resolved_candidate_gap_count": 4,
+        "resolved_ontology_gap_count": 11,
+        "status": "repaired_candidate_promotion_handoff_ready",
+        "unresolved_candidate_gap_count": 0,
+        "unresolved_ontology_gap_count": 0
+      }
     },
     {
       "artifact_kind": "platform_product_repair_rerun_execution_report",
@@ -296,7 +414,22 @@
       "expected_artifact_kind": "platform_product_repair_rerun_execution_report",
       "key": "platform_product_repair_rerun_execution_report",
       "path": "$LOCAL_PATH",
-      "sha256": "9bc069e5d48b813fd1ed41e2a3c8608ef5f85db625c327795db8ef883de33b5b"
+      "proposal_id": null,
+      "readiness": {},
+      "sha256": "9bc069e5d48b813fd1ed41e2a3c8608ef5f85db625c327795db8ef883de33b5b",
+      "summary": {
+        "error_count": 0,
+        "output_artifact_count": 13,
+        "repair_session_digest": "b80d7f036f851d12252d30f303a9a58cc4b9a9560435fa8ea26d4449e70152ba",
+        "repaired_handoff_built": true,
+        "repaired_handoff_digest": "26c6cdf7b213942c2ce4231907480e9b2c4eeea3f8fbc0e952dfb82464273d2a",
+        "repaired_handoff_requested": true,
+        "repaired_repair_session_digest": "bb8650ea53e5f97e852aba8f7c6341e703db6e5f2566bde7157391e275fde7cc",
+        "rerun_report_accepted_as_intermediate_evidence": false,
+        "rerun_report_digest": "350d1673d6aaad63e6f5bf2bc8c7ae83c2b06da5aab1714d0bdbfa8c365225c3",
+        "rerun_report_ready": true,
+        "status": "completed"
+      }
     },
     {
       "artifact_kind": "platform_product_repair_rerun_publication_report",
@@ -305,7 +438,18 @@
       "expected_artifact_kind": "platform_product_repair_rerun_publication_report",
       "key": "platform_product_repair_rerun_publication_report",
       "path": "$LOCAL_PATH",
-      "sha256": "4b47b5bcaba54d6fc2ec98ce99b545244853c8d9e7e99babe7d30901b3a27133"
+      "proposal_id": null,
+      "readiness": {},
+      "sha256": "4b47b5bcaba54d6fc2ec98ce99b545244853c8d9e7e99babe7d30901b3a27133",
+      "summary": {
+        "error_count": 0,
+        "idea_maturity_status": "available",
+        "idea_maturity_trusted": true,
+        "idea_maturity_validation_status": "ok",
+        "missing_artifact_count": 0,
+        "published_artifact_count": 12,
+        "status": "published"
+      }
     }
   ],
   "source_refs": {
@@ -318,7 +462,7 @@
   },
   "specgraph_dir": "$LOCAL_PATH",
   "summary": {
-    "approved_path_count": 21,
+    "approved_path_count": 59,
     "candidate_id": "hosted-operation-canary",
     "error_count": 0,
     "idea_maturity_status": "available",
