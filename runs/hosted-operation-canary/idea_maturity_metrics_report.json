@@ -40,7 +40,7 @@
     "review_status": "not_available"
   },
   "findings": [],
-  "generated_at": "2026-07-14T20:20:55.410381+00:00",
+  "generated_at": "2026-07-15T15:33:23.147447+00:00",
   "groups": {
     "answer_materialization": {
       "accepted_answer_count": 16,
@@ -254,7 +254,7 @@
       "phase_dwell_seconds": {
         "approval_materialized": 0.12,
         "intake_ready": 0.048,
-        "promotion_requested": 15.21,
+        "promotion_requested": 69162.947,
         "repair_required": 2050.827,
         "repair_rerun_requested": 323086.983,
         "repaired_candidate_ready": 13708.245
@@ -439,7 +439,7 @@
     "phase_dwell_seconds": {
       "approval_materialized": 0.12,
       "intake_ready": 0.048,
-      "promotion_requested": 15.21,
+      "promotion_requested": 69162.947,
       "repair_required": 2050.827,
       "repair_rerun_requested": 323086.983,
       "repaired_candidate_ready": 13708.245
