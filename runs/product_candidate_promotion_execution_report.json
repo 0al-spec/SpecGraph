@@ -1,0 +1,322 @@
+{
+  "approval_decision_ref": "/Users/egor/Development/GitHub/0AL/SpecGraph/runs/hosted-operation-canary/candidate_approval_decision.json",
+  "artifact_kind": "platform_product_candidate_promotion_execution_report",
+  "authority_boundary": {
+    "canonical_spec_mutation_without_review": false,
+    "controlled_git_service_execution": true,
+    "creates_candidate_commit": true,
+    "creates_candidate_worktree_or_branch": true,
+    "merges_pull_requests": false,
+    "ontology_package_write": false,
+    "ontology_term_acceptance": false,
+    "opens_pull_requests": true,
+    "private_artifact_publication": false,
+    "publishes_read_models": false,
+    "specspace_direct_git_write": false
+  },
+  "candidate_branch": "graph-candidate/hosted-operation-canary",
+  "candidate_id": "hosted-operation-canary",
+  "child_report_refs": {
+    "commit_candidate": "/private/tmp/specgraph-hosted-operation-canary-review-worktree/.platform/graph_repository_review_commit_report.json",
+    "open_review": "/private/tmp/specgraph-hosted-operation-canary-review-worktree/.platform/graph_repository_open_review_report.json",
+    "prepare_worktree": "/private/tmp/specgraph-hosted-operation-canary-review-worktree/.platform/graph_repository_worktree_prepare_report.json"
+  },
+  "contract_ref": "/Users/egor/Development/GitHub/0AL/Platform/git-service-operation-contract.example.json",
+  "deployment_profile_ref": "/Users/egor/Development/GitHub/0AL/Platform/deployment-profile.product-idea-to-spec.example.json",
+  "diagnostics": [],
+  "dry_run": false,
+  "generated_at": "2026-07-11T11:01:12.168568+00:00",
+  "git_review": {
+    "candidate_branch": "graph-candidate/hosted-operation-canary",
+    "candidate_branch_pushed": true,
+    "commit_report_ref": "/private/tmp/specgraph-hosted-operation-canary-review-worktree/.platform/graph_repository_review_commit_report.json",
+    "commit_sha": "3c72fad03bbb114ea1d1a7858daa301c17295fd6",
+    "copied_file_count": 8,
+    "open_review_dry_run": false,
+    "open_review_report_ref": "/private/tmp/specgraph-hosted-operation-canary-review-worktree/.platform/graph_repository_open_review_report.json",
+    "physical_worktree_created": true,
+    "prepare_worktree_report_ref": "/private/tmp/specgraph-hosted-operation-canary-review-worktree/.platform/graph_repository_worktree_prepare_report.json",
+    "review_number": 683,
+    "review_opened": true,
+    "review_url": "https://github.com/0al-spec/SpecGraph/pull/683",
+    "worktree_dir": "/private/tmp/specgraph-hosted-operation-canary-review-worktree",
+    "worktree_prepare_dry_run": false,
+    "worktree_prepare_planned": true,
+    "worktree_prepare_status": "succeeded"
+  },
+  "git_service_command": [
+    "git-service",
+    "execute-promotion",
+    "--contract",
+    "/Users/egor/Development/GitHub/0AL/Platform/git-service-operation-contract.example.json",
+    "--promotion-request",
+    "/Users/egor/Development/GitHub/0AL/SpecGraph/runs/hosted-operation-canary/graph_repository_promotion_request.json",
+    "--approval-decision",
+    "/Users/egor/Development/GitHub/0AL/SpecGraph/runs/hosted-operation-canary/candidate_approval_decision.json",
+    "--deployment-profile",
+    "/Users/egor/Development/GitHub/0AL/Platform/deployment-profile.product-idea-to-spec.example.json",
+    "--repository-dir",
+    "/Users/egor/Development/GitHub/0AL/SpecGraph",
+    "--workspace-dir",
+    "/private/tmp/specgraph-hosted-operation-canary-review-worktree",
+    "--output",
+    "/private/tmp/specgraph-hosted-operation-canary-review-worktree/.platform/git_service_promotion_execution_report.json",
+    "--format",
+    "json",
+    "--materialized-source-dir",
+    "/Users/egor/Development/GitHub/0AL/SpecGraph",
+    "--repo",
+    "0al-spec/SpecGraph",
+    "--gh-bin",
+    "gh"
+  ],
+  "git_service_command_result": {
+    "command": [
+      "git-service",
+      "execute-promotion",
+      "--contract",
+      "/Users/egor/Development/GitHub/0AL/Platform/git-service-operation-contract.example.json",
+      "--promotion-request",
+      "/Users/egor/Development/GitHub/0AL/SpecGraph/runs/hosted-operation-canary/graph_repository_promotion_request.json",
+      "--approval-decision",
+      "/Users/egor/Development/GitHub/0AL/SpecGraph/runs/hosted-operation-canary/candidate_approval_decision.json",
+      "--deployment-profile",
+      "/Users/egor/Development/GitHub/0AL/Platform/deployment-profile.product-idea-to-spec.example.json",
+      "--repository-dir",
+      "/Users/egor/Development/GitHub/0AL/SpecGraph",
+      "--workspace-dir",
+      "/private/tmp/specgraph-hosted-operation-canary-review-worktree",
+      "--output",
+      "/private/tmp/specgraph-hosted-operation-canary-review-worktree/.platform/git_service_promotion_execution_report.json",
+      "--format",
+      "json",
+      "--materialized-source-dir",
+      "/Users/egor/Development/GitHub/0AL/SpecGraph",
+      "--repo",
+      "0al-spec/SpecGraph",
+      "--gh-bin",
+      "gh"
+    ],
+    "returncode": 0,
+    "stderr": "",
+    "stdout": "didate_response\",\n      \"status\": \"succeeded\"\n    },\n    {\n      \"adapter_command\": [\n        \"graph-repository\",\n        \"open-review\",\n        \"--commit-report\",\n        \"/private/tmp/specgraph-hosted-operation-canary-review-worktree/.platform/graph_repository_review_commit_report.json\",\n        \"--worktree-dir\",\n        \"/private/tmp/specgraph-hosted-operation-canary-review-worktree\",\n        \"--base\",\n        \"main\",\n        \"--title\",\n        \"Promote Hosted Operation Canary candidate spec graph\",\n        \"--body\",\n        \"Approve candidate for promotion review.\",\n        \"--gh-bin\",\n        \"gh\",\n        \"--format\",\n        \"json\",\n        \"--repo\",\n        \"0al-spec/SpecGraph\"\n      ],\n      \"diagnostics\": [],\n      \"name\": \"open_review\",\n      \"report_ref\": \"/private/tmp/specgraph-hosted-operation-canary-review-worktree/.platform/graph_repository_open_review_report.json\",\n      \"request_artifact_kind\": \"platform_git_service_open_review_request\",\n      \"response_artifact_kind\": \"platform_git_service_open_review_response\",\n      \"status\": \"succeeded\"\n    }\n  ],\n  \"promotion_request_ref\": \"/Users/egor/Development/GitHub/0AL/SpecGraph/runs/hosted-operation-canary/graph_repository_promotion_request.json\",\n  \"report_refs\": {\n    \"commit_candidate\": \"/private/tmp/specgraph-hosted-operation-canary-review-worktree/.platform/graph_repository_review_commit_report.json\",\n    \"open_review\": \"/private/tmp/specgraph-hosted-operation-canary-review-worktree/.platform/graph_repository_open_review_report.json\",\n    \"prepare_worktree\": \"/private/tmp/specgraph-hosted-operation-canary-review-worktree/.platform/graph_repository_worktree_prepare_report.json\"\n  },\n  \"repository_dir\": \"/Users/egor/Development/GitHub/0AL/SpecGraph\",\n  \"schema_version\": 1,\n  \"summary\": {\n    \"completed_operation_count\": 3,\n    \"error_count\": 0,\n    \"operation_count\": 3\n  },\n  \"workflow_lane\": \"product_idea_to_spec\",\n  \"workspace_dir\": \"/private/tmp/specgraph-hosted-operation-canary-review-worktree\"\n}\n"
+  },
+  "git_service_execution": {
+    "artifact_kind": "platform_git_service_promotion_execution_report",
+    "candidate_ref": "graph-candidate/hosted-operation-canary",
+    "copied_materialized_files": [
+      {
+        "source": "/Users/egor/Development/GitHub/0AL/SpecGraph/runs/hosted-operation-canary/repaired_materialized_candidate_specs/CANDIDATE-CANDIDATE-SPEC-PRODUCT-BOUNDARY.yaml",
+        "target": "/private/tmp/specgraph-hosted-operation-canary-review-worktree/runs/hosted-operation-canary/repaired_materialized_candidate_specs/CANDIDATE-CANDIDATE-SPEC-PRODUCT-BOUNDARY.yaml"
+      },
+      {
+        "source": "/Users/egor/Development/GitHub/0AL/SpecGraph/runs/hosted-operation-canary/repaired_materialized_candidate_specs/CANDIDATE-CANDIDATE-SPEC-RECORD-CANARY-CHECK.yaml",
+        "target": "/private/tmp/specgraph-hosted-operation-canary-review-worktree/runs/hosted-operation-canary/repaired_materialized_candidate_specs/CANDIDATE-CANDIDATE-SPEC-RECORD-CANARY-CHECK.yaml"
+      },
+      {
+        "source": "/Users/egor/Development/GitHub/0AL/SpecGraph/runs/hosted-operation-canary/repaired_materialized_candidate_specs/CANDIDATE-CANDIDATE-SPEC-REFRESH-REVIEW-STATUS.yaml",
+        "target": "/private/tmp/specgraph-hosted-operation-canary-review-worktree/runs/hosted-operation-canary/repaired_materialized_candidate_specs/CANDIDATE-CANDIDATE-SPEC-REFRESH-REVIEW-STATUS.yaml"
+      },
+      {
+        "source": "/Users/egor/Development/GitHub/0AL/SpecGraph/runs/hosted-operation-canary/repaired_materialized_candidate_specs/CANDIDATE-CANDIDATE-SPEC-CONFIRM-FOLLOW-UP-VERIFICATION.yaml",
+        "target": "/private/tmp/specgraph-hosted-operation-canary-review-worktree/runs/hosted-operation-canary/repaired_materialized_candidate_specs/CANDIDATE-CANDIDATE-SPEC-CONFIRM-FOLLOW-UP-VERIFICATION.yaml"
+      },
+      {
+        "source": "/Users/egor/Development/GitHub/0AL/SpecGraph/runs/hosted-operation-canary/repaired_materialized_candidate_specs/CANDIDATE-CANDIDATE-SPEC-LOCAL-FIRST-OPERATOR-STATE.yaml",
+        "target": "/private/tmp/specgraph-hosted-operation-canary-review-worktree/runs/hosted-operation-canary/repaired_materialized_candidate_specs/CANDIDATE-CANDIDATE-SPEC-LOCAL-FIRST-OPERATOR-STATE.yaml"
+      },
+      {
+        "source": "/Users/egor/Development/GitHub/0AL/SpecGraph/runs/hosted-operation-canary/repaired_materialized_candidate_specs/CANDIDATE-CANDIDATE-SPEC-NO-AUTOMATIC-RELEASE-APPROVAL.yaml",
+        "target": "/private/tmp/specgraph-hosted-operation-canary-review-worktree/runs/hosted-operation-canary/repaired_materialized_candidate_specs/CANDIDATE-CANDIDATE-SPEC-NO-AUTOMATIC-RELEASE-APPROVAL.yaml"
+      },
+      {
+        "source": "/Users/egor/Development/GitHub/0AL/SpecGraph/runs/hosted-operation-canary/repaired_materialized_candidate_specs/CANDIDATE-CANDIDATE-SPEC-BLOCK-RELEASE-COMPLETION-UNTIL-REQUIRED-FOLLOW-UP-VERIFICATION.yaml",
+        "target": "/private/tmp/specgraph-hosted-operation-canary-review-worktree/runs/hosted-operation-canary/repaired_materialized_candidate_specs/CANDIDATE-CANDIDATE-SPEC-BLOCK-RELEASE-COMPLETION-UNTIL-REQUIRED-FOLLOW-UP-VERIFICATION.yaml"
+      },
+      {
+        "source": "/Users/egor/Development/GitHub/0AL/SpecGraph/runs/hosted-operation-canary/repaired_materialized_candidate_specs/CANDIDATE-CANDIDATE-SPEC-ESCALATE-FAILED-CANARY-CHECKS-TO-THE-SERVICE-OWNER.yaml",
+        "target": "/private/tmp/specgraph-hosted-operation-canary-review-worktree/runs/hosted-operation-canary/repaired_materialized_candidate_specs/CANDIDATE-CANDIDATE-SPEC-ESCALATE-FAILED-CANARY-CHECKS-TO-THE-SERVICE-OWNER.yaml"
+      }
+    ],
+    "dry_run": false,
+    "ok": true,
+    "open_review_dry_run": false,
+    "operations": [
+      {
+        "adapter_command": [
+          "graph-repository",
+          "prepare-worktree",
+          "--plan",
+          "/Users/egor/Development/GitHub/0AL/SpecGraph/runs/hosted-operation-canary/graph_repository_execution_plan.json",
+          "--repository-dir",
+          "/Users/egor/Development/GitHub/0AL/SpecGraph",
+          "--candidate-id",
+          "hosted-operation-canary",
+          "--workspace-dir",
+          "/private/tmp/specgraph-hosted-operation-canary-review-worktree",
+          "--format",
+          "json"
+        ],
+        "diagnostics": [],
+        "name": "prepare_worktree",
+        "report_ref": "/private/tmp/specgraph-hosted-operation-canary-review-worktree/.platform/graph_repository_worktree_prepare_report.json",
+        "request_artifact_kind": "platform_git_service_prepare_worktree_request",
+        "response_artifact_kind": "platform_git_service_prepare_worktree_response",
+        "status": "succeeded"
+      },
+      {
+        "adapter_command": [
+          "graph-repository",
+          "commit-worktree",
+          "--prepare-report",
+          "/private/tmp/specgraph-hosted-operation-canary-review-worktree/.platform/graph_repository_worktree_prepare_report.json",
+          "--worktree-dir",
+          "/private/tmp/specgraph-hosted-operation-canary-review-worktree",
+          "--message",
+          "Promote Hosted Operation Canary candidate spec graph",
+          "--format",
+          "json",
+          "--path",
+          "runs/hosted-operation-canary/repaired_materialized_candidate_specs/CANDIDATE-CANDIDATE-SPEC-PRODUCT-BOUNDARY.yaml",
+          "--path",
+          "runs/hosted-operation-canary/repaired_materialized_candidate_specs/CANDIDATE-CANDIDATE-SPEC-RECORD-CANARY-CHECK.yaml",
+          "--path",
+          "runs/hosted-operation-canary/repaired_materialized_candidate_specs/CANDIDATE-CANDIDATE-SPEC-REFRESH-REVIEW-STATUS.yaml",
+          "--path",
+          "runs/hosted-operation-canary/repaired_materialized_candidate_specs/CANDIDATE-CANDIDATE-SPEC-CONFIRM-FOLLOW-UP-VERIFICATION.yaml",
+          "--path",
+          "runs/hosted-operation-canary/repaired_materialized_candidate_specs/CANDIDATE-CANDIDATE-SPEC-LOCAL-FIRST-OPERATOR-STATE.yaml",
+          "--path",
+          "runs/hosted-operation-canary/repaired_materialized_candidate_specs/CANDIDATE-CANDIDATE-SPEC-NO-AUTOMATIC-RELEASE-APPROVAL.yaml",
+          "--path",
+          "runs/hosted-operation-canary/repaired_materialized_candidate_specs/CANDIDATE-CANDIDATE-SPEC-BLOCK-RELEASE-COMPLETION-UNTIL-REQUIRED-FOLLOW-UP-VERIFICATION.yaml",
+          "--path",
+          "runs/hosted-operation-canary/repaired_materialized_candidate_specs/CANDIDATE-CANDIDATE-SPEC-ESCALATE-FAILED-CANARY-CHECKS-TO-THE-SERVICE-OWNER.yaml"
+        ],
+        "diagnostics": [],
+        "name": "commit_candidate",
+        "report_ref": "/private/tmp/specgraph-hosted-operation-canary-review-worktree/.platform/graph_repository_review_commit_report.json",
+        "request_artifact_kind": "platform_git_service_commit_candidate_request",
+        "response_artifact_kind": "platform_git_service_commit_candidate_response",
+        "status": "succeeded"
+      },
+      {
+        "adapter_command": [
+          "graph-repository",
+          "open-review",
+          "--commit-report",
+          "/private/tmp/specgraph-hosted-operation-canary-review-worktree/.platform/graph_repository_review_commit_report.json",
+          "--worktree-dir",
+          "/private/tmp/specgraph-hosted-operation-canary-review-worktree",
+          "--base",
+          "main",
+          "--title",
+          "Promote Hosted Operation Canary candidate spec graph",
+          "--body",
+          "Approve candidate for promotion review.",
+          "--gh-bin",
+          "gh",
+          "--format",
+          "json",
+          "--repo",
+          "0al-spec/SpecGraph"
+        ],
+        "diagnostics": [],
+        "name": "open_review",
+        "report_ref": "/private/tmp/specgraph-hosted-operation-canary-review-worktree/.platform/graph_repository_open_review_report.json",
+        "request_artifact_kind": "platform_git_service_open_review_request",
+        "response_artifact_kind": "platform_git_service_open_review_response",
+        "status": "succeeded"
+      }
+    ],
+    "report_refs": {
+      "commit_candidate": "/private/tmp/specgraph-hosted-operation-canary-review-worktree/.platform/graph_repository_review_commit_report.json",
+      "open_review": "/private/tmp/specgraph-hosted-operation-canary-review-worktree/.platform/graph_repository_open_review_report.json",
+      "prepare_worktree": "/private/tmp/specgraph-hosted-operation-canary-review-worktree/.platform/graph_repository_worktree_prepare_report.json"
+    }
+  },
+  "git_service_execution_report_ref": "/private/tmp/specgraph-hosted-operation-canary-review-worktree/.platform/git_service_promotion_execution_report.json",
+  "graph_repository_plan_ref": "/Users/egor/Development/GitHub/0AL/SpecGraph/runs/hosted-operation-canary/graph_repository_execution_plan.json",
+  "materialized_source_dir": "/Users/egor/Development/GitHub/0AL/SpecGraph",
+  "ok": true,
+  "open_review_dry_run": false,
+  "operations": [
+    {
+      "evidence": [
+        "/Users/egor/Development/GitHub/0AL/SpecGraph/runs/hosted-operation-canary/graph_repository_promotion_request.json",
+        "/Users/egor/Development/GitHub/0AL/SpecGraph/runs/hosted-operation-canary/candidate_approval_decision.json"
+      ],
+      "name": "validate_product_promotion_handoff",
+      "reason": "promotion request and candidate approval decision are valid",
+      "status": "ready"
+    },
+    {
+      "evidence": [
+        "git-service execute-promotion"
+      ],
+      "name": "execute_git_service_promotion",
+      "reason": "Git Service promotion executor completed",
+      "status": "succeeded"
+    },
+    {
+      "evidence": [
+        "git-service finalize-promotion"
+      ],
+      "name": "publish_read_model",
+      "reason": "read model publication is a separate post-review step after PR merge",
+      "status": "blocked_until_review_merge"
+    }
+  ],
+  "promotion_request_ref": "/Users/egor/Development/GitHub/0AL/SpecGraph/runs/hosted-operation-canary/graph_repository_promotion_request.json",
+  "repository_dir": "/Users/egor/Development/GitHub/0AL/SpecGraph",
+  "schema_version": 1,
+  "summary": {
+    "child_operation_count": 3,
+    "commit_created": true,
+    "error_count": 0,
+    "physical_worktree_created": true,
+    "read_model_published": false,
+    "review_opened": true,
+    "status": "completed",
+    "worktree_prepare_dry_run": false,
+    "worktree_prepare_planned": true,
+    "worktree_prepare_status": "succeeded",
+    "worktree_prepared": true
+  },
+  "workflow_lane": "product_idea_to_spec",
+  "workspace_binding": {
+    "authority_boundary": {
+      "may_create_git_commit": false,
+      "may_execute_platform": false,
+      "may_execute_specgraph": false,
+      "may_open_pull_request": false,
+      "may_publish_read_model": false,
+      "report_only": true
+    },
+    "binding_id": "product-workspace-binding://hosted-operation-canary",
+    "binding_revision_sha256": "f3f2abc793db0da92a0c506e97c8e5b02717c4b3fe79b58576044ef56d0b3e25",
+    "contract_ref": "platform.product-workspace.binding.v1",
+    "display_name": "Hosted Operation Canary",
+    "platform_default_run_dir_ref": "runs/hosted-operation-canary",
+    "product_artifact_bundle_ref": "workspaces/hosted-operation-canary",
+    "product_artifact_manifest_ref": "workspaces/hosted-operation-canary/artifact_manifest.json",
+    "provenance": {
+      "plan_sha256": "83453ec07cc53d6298a81cd3ef3a8296d87984db7bc37f3ec67f927030944284",
+      "specgraph_initialization_report_sha256": "61798c642d33c3475180e9ed7ad8df69c5650f69e6da9ee11df4e1268c0d0d90"
+    },
+    "repository": {
+      "creates_worktree": false,
+      "workspace_identity": "hosted-operation-canary",
+      "worktree_identity": "product-workspace/hosted-operation-canary"
+    },
+    "repository_role": "product_spec_workspace",
+    "route": "/hosted-operation-canary",
+    "source_ref": "runs/hosted-operation-canary/platform_product_workspace_initialization_execution_report.json",
+    "source_sha256": "b23a79838ecd0ee7cc9bc09ea0d57569306a3b1e7bb4a16c5f3e5314d99bcbc6",
+    "specspace_state_namespace_ref": "specspace-state://workspace/hosted-operation-canary",
+    "status": "ready",
+    "workspace_id": "hosted-operation-canary"
+  },
+  "workspace_dir": "/private/tmp/specgraph-hosted-operation-canary-review-worktree",
+  "workspace_id": "hosted-operation-canary"
+}
