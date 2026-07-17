@@ -35,6 +35,10 @@ published manifest, checksum file, and manifest-authorized payload from all
 three HTTPS bases and checks its SHA-256. A missing, malformed, partial, or
 digest-mismatched public surface fails the job.
 
+The changed payload mirror uses four parallel transfers. This is a bounded
+transport optimization for high-latency SFTP hosts; checksums and manifests
+remain sequential finalization writes after every payload transfer completes.
+
 The Hosted Operation Canary bundle also publishes its scoped initialization
 execution report at the top-level `runs/` bootstrap path. That single
 public-safe alias lets SpecSpace discover and validate the durable workspace
@@ -61,6 +65,7 @@ post-publication HTTP digest verification is required.
 - Changed root and workspace payloads retain their relative durable URL paths.
 - Path traversal and local digest mismatches fail closed.
 - Payload upload precedes checksums and manifest finalization.
+- Payload transfer parallelism is explicitly bounded.
 - All three published surfaces receive post-upload HTTP digest verification.
 - Hosted Operation Canary exposes a public-safe initialization bootstrap alias
   without flattening the remaining scoped run artifacts.

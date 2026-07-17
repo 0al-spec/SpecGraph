@@ -8,6 +8,16 @@ payload, and verifies every published manifest path over HTTPS. This replaces
 the full recursive payload mirror that grew to about 30 minutes after the
 Hosted Operation Canary workspace bundle was added.
 
+Production measurement on 2026-07-17 showed that a small canary publication
+still staged 286 files (about 27 MiB across the root and two workspace
+surfaces), mostly because generated timestamps changed otherwise stable
+reports. Sequential SFTP transfer took about 11 minutes. Payload transfer is
+therefore bounded to four parallel files while retaining payload-first metadata
+finalization and full post-upload digest verification.
+
+Follow-up: reduce producer-side timestamp churn without treating timestamps as
+deployment authority or weakening manifest digest checks.
+
 ## Purpose
 
 This roadmap defines how product workspaces should version and publish

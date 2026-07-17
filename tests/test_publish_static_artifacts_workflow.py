@@ -74,7 +74,7 @@ def test_deploy_upload_mirrors_bundle_contents_not_wrapper_directory() -> None:
     workflow = _workflow_text()
 
     assert 'lcd "$INCREMENTAL_STAGE_DIR"' in workflow
-    assert 'mirror -R --verbose . "$REMOTE_ROOT"' in workflow
+    assert workflow.count('mirror -R --parallel=4 --verbose . "$REMOTE_ROOT"') == 3
     assert 'mirror -R --delete --verbose dist/specgraph-public "$SFTP_REMOTE_ROOT"' not in workflow
 
 
@@ -87,7 +87,9 @@ def test_deploy_stages_workspace_payloads_and_finalizes_manifests_last() -> None
     assert stage_block.count("tools/static_artifact_incremental_stage.py stage") == 3
     assert "--staging-prefix workspaces/team-decision-log" in stage_block
     assert "--staging-prefix workspaces/hosted-operation-canary" in stage_block
-    assert upload_block.index("mirror -R --verbose") < upload_block.index("checksums.sha256")
+    assert upload_block.index("mirror -R --parallel=4 --verbose") < upload_block.index(
+        "checksums.sha256"
+    )
     assert upload_block.index("checksums.sha256") < upload_block.index("artifact_manifest.json")
     assert verify_block.count("tools/static_artifact_incremental_stage.py verify") == 3
     assert "$STATIC_ARTIFACT_PUBLIC_BASE_URL/workspaces/hosted-operation-canary" in (verify_block)
