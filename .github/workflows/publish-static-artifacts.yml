@@ -204,7 +204,7 @@ jobs:
           set net:max-retries 2
           set net:timeout 30
           lcd "$INCREMENTAL_STAGE_DIR"
-          mirror -R --verbose . "$REMOTE_ROOT"
+          mirror -R --parallel=4 --verbose . "$REMOTE_ROOT"
           mkdir -p "$REMOTE_ROOT/workspaces/team-decision-log"
           mkdir -p "$REMOTE_ROOT/workspaces/hosted-operation-canary"
           put "$GITHUB_WORKSPACE/dist/specgraph-public/checksums.sha256" -o "$REMOTE_ROOT/checksums.sha256"
@@ -231,7 +231,7 @@ jobs:
           set net:max-retries 2
           set net:timeout 30
           lcd "$INCREMENTAL_STAGE_DIR"
-          mirror -R --verbose . "$REMOTE_ROOT"
+          mirror -R --parallel=4 --verbose . "$REMOTE_ROOT"
           mkdir -p "$REMOTE_ROOT/workspaces/team-decision-log"
           mkdir -p "$REMOTE_ROOT/workspaces/hosted-operation-canary"
           put "$GITHUB_WORKSPACE/dist/specgraph-public/checksums.sha256" -o "$REMOTE_ROOT/checksums.sha256"
@@ -249,7 +249,7 @@ jobs:
           set net:max-retries 2
           set net:timeout 30
           lcd "$INCREMENTAL_STAGE_DIR"
-          mirror -R --verbose . "$REMOTE_ROOT"
+          mirror -R --parallel=4 --verbose . "$REMOTE_ROOT"
           mkdir -p "$REMOTE_ROOT/workspaces/team-decision-log"
           mkdir -p "$REMOTE_ROOT/workspaces/hosted-operation-canary"
           put "$GITHUB_WORKSPACE/dist/specgraph-public/checksums.sha256" -o "$REMOTE_ROOT/checksums.sha256"
