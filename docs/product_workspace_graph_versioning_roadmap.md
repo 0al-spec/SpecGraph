@@ -12,11 +12,34 @@ Production measurement on 2026-07-17 showed that a small canary publication
 still staged 286 files (about 27 MiB across the root and two workspace
 surfaces), mostly because generated timestamps changed otherwise stable
 reports. Sequential SFTP transfer took about 11 minutes. Payload transfer is
-therefore bounded to four parallel files while retaining payload-first metadata
-finalization and full post-upload digest verification.
+therefore bounded to four parallel files in PR `#692` while retaining
+payload-first metadata finalization and full post-upload digest verification.
 
-Follow-up: reduce producer-side timestamp churn without treating timestamps as
-deployment authority or weakening manifest digest checks.
+Follow-ups:
+
+- measure the next production publications to confirm the latency effect of the
+  bounded parallel transfer;
+- reduce producer-side timestamp churn without treating timestamps as
+  deployment authority or weakening manifest digest checks.
+
+## Current Near-Term Producer Priorities
+
+1. **Deterministic public-safe outputs.** Reduce timestamp-only bundle churn
+   while preserving generated-at evidence where it is semantically required.
+   Deployment manifests and digest verification remain authoritative.
+2. **Ontology applicability import.** After Ontology ONT-040 publishes a
+   compiler-backed `ModelApplicabilityProfile`, import the profile into
+   candidate graph, gap/diff, Candidate Overview, and review evidence without
+   inventing a SpecGraph-local applicability vocabulary.
+3. **External SpecSpace state coordination.** The next production managed-mode
+   milestone belongs to SpecSpace and Platform: an authenticated external state
+   service backed by PostgreSQL. SpecGraph must preserve workspace binding,
+   digest, privacy, and handoff compatibility, but must not become the owner of
+   browser drafts, execution requests, or approval intents.
+4. **Custom-run handoff reconciliation.** Close the remaining cash-flow
+   follow-up by verifying the existing workspace-bound Platform promotion
+   dry-run path or adding only the smallest missing producer handoff. Do not
+   copy custom-run artifacts into shared `runs/*.json`.
 
 ## Purpose
 

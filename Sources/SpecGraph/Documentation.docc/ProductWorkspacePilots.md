@@ -10,6 +10,14 @@ measurement still shows timestamp-only churn in otherwise stable reports, so
 producer-side deterministic output remains a follow-up rather than weakening
 digest verification.
 
+The current producer priorities are to measure the bounded-parallel publication
+effect, reduce timestamp-only public bundle churn, consume compiler-backed
+Ontology applicability data after ONT-040, and reconcile the remaining
+custom-run promotion handoff. Durable SpecSpace-owned drafts and execution
+requests belong to an external SpecSpace/Platform state service; SpecGraph
+preserves workspace-bound handoff evidence but does not become their storage
+authority.
+
 SpecGraph can run in `product_workspace` mode when it should develop a user's
 product graph instead of improving SpecGraph itself.
 
