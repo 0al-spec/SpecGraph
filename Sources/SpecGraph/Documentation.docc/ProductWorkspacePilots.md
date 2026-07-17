@@ -972,14 +972,19 @@ The product pilot must not:
 9. Prompt-side enrichment for richer candidate graph authoring under the same
    ontology-bound seed contract.
 10. SpecSpace workflow lane refinement for clearer active candidate blockers and
-   repair suggestions.
+    repair suggestions.
 11. Extend Platform Git Service orchestration through review status and
-   read-model publication.
-12. Refine product workspace workflow lane metrics and blocker copy.
-13. Preserve workspace binding, digest, privacy, and scoped-run compatibility
+    read-model publication.
+12. Preserve workspace binding, digest, privacy, and scoped-run compatibility
     while SpecSpace and Platform move mutable operator state to an authenticated
     external service. SpecGraph does not own that state.
-14. After durable-state migration and production managed-mode recovery evidence
+13. After migration, restart, concurrency, provider-failure, backup/restore,
+    rollback, and one bounded read-only operation are proven, verify production
+    managed-mode compatibility without shared runs, absolute paths, or demo
+    workspace fallback.
+14. Reduce timestamp-only public bundle churn while preserving semantically
+    required generated-at evidence and manifest digest validation.
+15. After durable-state migration and production managed-mode recovery evidence
     are proven, import Ontology ONT-040 `ModelApplicabilityProfile` and
     review-only change classification into candidate review artifacts without
     creating a local vocabulary, score, policy decision, or promotion gate.

@@ -1338,8 +1338,19 @@ The active stack after production workspace isolation is:
    suggestions, and approval state.
 10. Platform Git Service post-review status and read-model publication
    orchestration.
-11. Ontology applicability and layer-aware review refinement as compiler support
-   matures.
+11. Preserve workspace binding, digest, privacy, and scoped-run compatibility
+    while SpecSpace and Platform move mutable operator state to an authenticated
+    external service. SpecGraph does not own browser drafts, execution requests,
+    approval intents, or their persistence lifecycle.
+12. After migration, restart, concurrency, provider-failure, backup/restore,
+    rollback, and one bounded read-only operation are proven, verify production
+    managed-mode compatibility without shared `runs/*`, absolute paths, or demo
+    workspace fallback.
+13. Reduce timestamp-only public bundle churn while preserving semantically
+    required generated-at evidence and manifest digest validation.
+14. Import Ontology ONT-040 `ModelApplicabilityProfile` and review-only change
+    classification into candidate review artifacts without creating a local
+    vocabulary, score, policy decision, ontology write, or promotion gate.
 
 ## Intake Session Candidate Source Bridge
 
