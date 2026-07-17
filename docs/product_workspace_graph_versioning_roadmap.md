@@ -24,22 +24,46 @@ Follow-ups:
 
 ## Current Near-Term Producer Priorities
 
-1. **Deterministic public-safe outputs.** Reduce timestamp-only bundle churn
-   while preserving generated-at evidence where it is semantically required.
-   Deployment manifests and digest verification remain authoritative.
-2. **Ontology applicability import.** After Ontology ONT-040 publishes a
-   compiler-backed `ModelApplicabilityProfile`, import the profile into
-   candidate graph, gap/diff, Candidate Overview, and review evidence without
-   inventing a SpecGraph-local applicability vocabulary.
-3. **External SpecSpace state coordination.** The next production managed-mode
+1. **External SpecSpace state coordination.** The next production managed-mode
    milestone belongs to SpecSpace and Platform: an authenticated external state
    service backed by PostgreSQL. SpecGraph must preserve workspace binding,
    digest, privacy, and handoff compatibility, but must not become the owner of
    browser drafts, execution requests, or approval intents.
-4. **Custom-run handoff reconciliation.** Close the remaining cash-flow
+2. **Production managed-mode compatibility.** After durable state migration and
+   recovery evidence exist, verify that workspace-scoped SpecGraph inputs and
+   authoritative reports survive the production rollout without falling back
+   to shared `runs/*`, local absolute paths, or demo workspace artifacts. This
+   is compatibility evidence, not SpecGraph execution authority.
+3. **Deterministic public-safe outputs.** Reduce timestamp-only bundle churn
+   while preserving generated-at evidence where it is semantically required.
+   Deployment manifests and digest verification remain authoritative.
+4. **Ontology applicability import.** Ontology ONT-040 now publishes a
+   compiler-backed `ModelApplicabilityProfile` and review-only change
+   classification. Import those contracts into
+   candidate graph, gap/diff, Candidate Overview, and review evidence without
+   inventing a SpecGraph-local applicability vocabulary.
+5. **Custom-run handoff reconciliation.** Close the remaining cash-flow
    follow-up by verifying the existing workspace-bound Platform promotion
    dry-run path or adding only the smallest missing producer handoff. Do not
    copy custom-run artifacts into shared `runs/*.json`.
+
+## Cross-Repo Transition Gates
+
+The producer sequence is intentionally gated:
+
+1. External state must preserve the current workspace binding, request digests,
+   and private/public boundary across SpecSpace restarts and concurrent writes.
+2. Production managed mode must prove migration, provider failure, backup,
+   restore, rollback, and one bounded read-only operation before continuous
+   execution is considered.
+3. Applicability import starts from Ontology normalized IR and compatibility
+   reports. SpecGraph may add provenance and readiness explainers, but it must
+   not reinterpret applicability as a score, policy decision, ontology write,
+   or candidate promotion gate.
+
+This order keeps storage durability and execution safety separate from semantic
+review quality. Ontology consumer work may be developed in parallel, but it
+must not be used as evidence that production managed mode is ready.
 
 ## Purpose
 
@@ -1314,8 +1338,19 @@ The active stack after production workspace isolation is:
    suggestions, and approval state.
 10. Platform Git Service post-review status and read-model publication
    orchestration.
-11. Ontology applicability and layer-aware review refinement as compiler support
-   matures.
+11. Preserve workspace binding, digest, privacy, and scoped-run compatibility
+    while SpecSpace and Platform move mutable operator state to an authenticated
+    external service. SpecGraph does not own browser drafts, execution requests,
+    approval intents, or their persistence lifecycle.
+12. After migration, restart, concurrency, provider-failure, backup/restore,
+    rollback, and one bounded read-only operation are proven, verify production
+    managed-mode compatibility without shared `runs/*`, absolute paths, or demo
+    workspace fallback.
+13. Reduce timestamp-only public bundle churn while preserving semantically
+    required generated-at evidence and manifest digest validation.
+14. Import Ontology ONT-040 `ModelApplicabilityProfile` and review-only change
+    classification into candidate review artifacts without creating a local
+    vocabulary, score, policy decision, ontology write, or promotion gate.
 
 ## Intake Session Candidate Source Bridge
 
