@@ -39,7 +39,7 @@
     "stdout": "{\"baseRefName\":\"main\",\"headRefName\":\"graph-candidate/hosted-operation-canary\",\"headRefOid\":\"824af11c02bcbab38e99a92e0c4e762bde23dbf4\",\"isDraft\":false,\"number\":690,\"state\":\"OPEN\",\"url\":\"https://github.com/0al-spec/SpecGraph/pull/690\"}\n"
   },
   "diagnostics": [],
-  "generated_at": "2026-07-16T17:39:22.934804+00:00",
+  "generated_at": "2026-07-17T14:19:10.992815+00:00",
   "ok": true,
   "privacy_boundary": {
     "local_paths_included": false,
