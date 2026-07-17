@@ -1,0 +1,154 @@
+{
+  "artifact_kind": "platform_product_candidate_promotion_review_status_report",
+  "authority_boundary": {
+    "canonical_spec_mutation_without_review": false,
+    "executes_git_commands": false,
+    "merges_pull_requests": false,
+    "ontology_package_write": false,
+    "ontology_term_acceptance": false,
+    "opens_pull_requests": false,
+    "private_artifact_publication": false,
+    "publishes_read_models": false,
+    "specspace_direct_git_write": false
+  },
+  "candidate_branch": "graph-candidate/hosted-operation-canary",
+  "candidate_id": "hosted-operation-canary",
+  "diagnostics": [],
+  "generated_at": "2026-07-17T14:28:15.477882+00:00",
+  "graph_repository_command": [
+    "graph-repository",
+    "review-status",
+    "--worktree-dir",
+    "/workspace/SpecGraph/runs/hosted-operation-canary",
+    "--gh-bin",
+    "gh",
+    "--format",
+    "json",
+    "--review-url",
+    "https://github.com/0al-spec/SpecGraph/pull/690"
+  ],
+  "graph_repository_command_result": {
+    "command": [
+      "graph-repository",
+      "review-status",
+      "--worktree-dir",
+      "/workspace/SpecGraph/runs/hosted-operation-canary",
+      "--gh-bin",
+      "gh",
+      "--format",
+      "json",
+      "--review-url",
+      "https://github.com/0al-spec/SpecGraph/pull/690"
+    ],
+    "returncode": 0,
+    "stderr": "",
+    "stdout": "{\n  \"artifact_kind\": \"platform_graph_repository_review_status_report\",\n  \"canonical_mutations_allowed\": false,\n  \"canonical_tracked_artifacts_written\": false,\n  \"commands_executed\": [\n    {\n      \"command\": [\n        \"gh\",\n        \"pr\",\n        \"view\",\n        \"https://github.com/0al-spec/SpecGraph/pull/690\",\n        \"--json\",\n        \"number,url,state,isDraft,mergedAt,mergeCommit,headRefName,headRefOid,baseRefName,reviewDecision\"\n      ],\n      \"cwd\": null,\n      \"returncode\": 0,\n      \"stderr\": \"\",\n      \"stdout\": \"{\\\"baseRefName\\\":\\\"main\\\",\\\"headRefName\\\":\\\"graph-candidate/hosted-operation-canary\\\",\\\"headRefOid\\\":\\\"824af11c02bcbab38e99a92e0c4e762bde23dbf4\\\",\\\"isDraft\\\":false,\\\"mergeCommit\\\":null,\\\"mergedAt\\\":null,\\\"number\\\":690,\\\"reviewDecision\\\":\\\"\\\",\\\"state\\\":\\\"OPEN\\\",\\\"url\\\":\\\"https://github.com/0al-spec/SpecGraph/pull/690\\\"}\\n\"\n    }\n  ],\n  \"diagnostics\": [],\n  \"local_files_written\": [\n    \"/workspace/SpecGraph/runs/hosted-operation-canary/.platform/graph_repository_review_status_report.json\"\n  ],\n  \"merges_performed\": [],\n  \"ok\": true,\n  \"open_review_report_ref\": null,\n  \"pull_request\": {\n    \"baseRefName\": \"main\",\n    \"headRefName\": \"graph-candidate/hosted-operation-canary\",\n    \"headRefOid\": \"824af11c02bcbab38e99a92e0c4e762bde23dbf4\",\n    \"isDraft\": false,\n    \"mergeCommit\": null,\n    \"mergedAt\": null,\n    \"number\": 690,\n    \"reviewDecision\": \"\",\n    \"state\": \"OPEN\",\n    \"url\": \"https://github.com/0al-spec/SpecGraph/pull/690\"\n  },\n  \"read_models_published\": [],\n  \"review_decision\": \"\",\n  \"review_state\": \"open\",\n  \"review_url\": \"https://github.com/0al-spec/SpecGraph/pull/690\",\n  \"schema_version\": 1,\n  \"summary\": {\n    \"error_count\": 0,\n    \"review_merged\": false\n  }\n}\n"
+  },
+  "graph_repository_review_status": {
+    "artifact_kind": "platform_graph_repository_review_status_report",
+    "ok": true,
+    "review_state": "open",
+    "review_url": "https://github.com/0al-spec/SpecGraph/pull/690",
+    "summary": {
+      "error_count": 0,
+      "review_merged": false
+    }
+  },
+  "graph_repository_review_status_report_ref": "/workspace/SpecGraph/runs/hosted-operation-canary/.platform/graph_repository_review_status_report.json",
+  "ok": true,
+  "operations": [
+    {
+      "evidence": [
+        "/workspace/SpecGraph/runs/hosted-operation-canary/product_candidate_promotion_execution_report.json"
+      ],
+      "name": "validate_product_promotion_execution",
+      "reason": "product promotion execution is ready for review status",
+      "status": "ready"
+    },
+    {
+      "evidence": [
+        "graph-repository",
+        "review-status",
+        "--worktree-dir",
+        "/workspace/SpecGraph/runs/hosted-operation-canary",
+        "--gh-bin",
+        "gh",
+        "--format",
+        "json",
+        "--review-url",
+        "https://github.com/0al-spec/SpecGraph/pull/690"
+      ],
+      "name": "inspect_review_status",
+      "reason": "graph repository review status inspected",
+      "status": "succeeded"
+    },
+    {
+      "evidence": [
+        "/workspace/SpecGraph/runs/hosted-operation-canary/.platform/graph_repository_review_status_report.json"
+      ],
+      "name": "publish_read_model",
+      "reason": "read-model publication waits for merged review",
+      "status": "blocked_until_review_merge"
+    }
+  ],
+  "promotion_execution_report_ref": "/workspace/SpecGraph/runs/hosted-operation-canary/product_candidate_promotion_execution_report.json",
+  "pull_request": {
+    "baseRefName": "main",
+    "headRefName": "graph-candidate/hosted-operation-canary",
+    "headRefOid": "824af11c02bcbab38e99a92e0c4e762bde23dbf4",
+    "isDraft": false,
+    "mergeCommit": null,
+    "mergedAt": null,
+    "number": 690,
+    "reviewDecision": "",
+    "state": "OPEN",
+    "url": "https://github.com/0al-spec/SpecGraph/pull/690"
+  },
+  "review_decision": "",
+  "review_object_evidence_ref": "/workspace/SpecGraph/runs/hosted-operation-canary/product_candidate_promotion_review_object_evidence.json",
+  "review_probe_only": true,
+  "review_state": "open",
+  "schema_version": 1,
+  "summary": {
+    "error_count": 0,
+    "read_model_published": false,
+    "review_merged": false,
+    "status": "review_probe_completed"
+  },
+  "workflow_lane": "product_idea_to_spec",
+  "workspace_binding": {
+    "authority_boundary": {
+      "may_create_git_commit": false,
+      "may_execute_platform": false,
+      "may_execute_specgraph": false,
+      "may_open_pull_request": false,
+      "may_publish_read_model": false,
+      "report_only": true
+    },
+    "binding_id": "product-workspace-binding://hosted-operation-canary",
+    "binding_revision_sha256": "f3f2abc793db0da92a0c506e97c8e5b02717c4b3fe79b58576044ef56d0b3e25",
+    "contract_ref": "platform.product-workspace.binding.v1",
+    "display_name": "Hosted Operation Canary",
+    "platform_default_run_dir_ref": "runs/hosted-operation-canary",
+    "product_artifact_bundle_ref": "workspaces/hosted-operation-canary",
+    "product_artifact_manifest_ref": "workspaces/hosted-operation-canary/artifact_manifest.json",
+    "provenance": {
+      "plan_sha256": "83453ec07cc53d6298a81cd3ef3a8296d87984db7bc37f3ec67f927030944284",
+      "specgraph_initialization_report_sha256": "61798c642d33c3475180e9ed7ad8df69c5650f69e6da9ee11df4e1268c0d0d90"
+    },
+    "repository": {
+      "creates_worktree": false,
+      "workspace_identity": "hosted-operation-canary",
+      "worktree_identity": "product-workspace/hosted-operation-canary"
+    },
+    "repository_role": "product_spec_workspace",
+    "route": "/hosted-operation-canary",
+    "source_ref": "runs/hosted-operation-canary/platform_product_workspace_initialization_execution_report.json",
+    "source_sha256": "b23a79838ecd0ee7cc9bc09ea0d57569306a3b1e7bb4a16c5f3e5314d99bcbc6",
+    "specspace_state_namespace_ref": "specspace-state://workspace/hosted-operation-canary",
+    "status": "ready",
+    "workspace_id": "hosted-operation-canary"
+  },
+  "workspace_dir": "/workspace/SpecGraph/runs/hosted-operation-canary",
+  "workspace_id": "hosted-operation-canary"
+}
