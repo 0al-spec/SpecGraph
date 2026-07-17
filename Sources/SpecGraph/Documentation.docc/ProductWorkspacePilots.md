@@ -3,7 +3,12 @@
 Proposal `0215` publishes the root and tracked product workspace bundles through
 checksum-aware incremental staging. Payload files are transferred before
 checksums and manifests, and all manifest-authorized paths are verified over
-HTTPS after publication. The shared static webroot remains non-destructive.
+HTTPS after publication. Changed payload transfer is bounded to four parallel
+files; checksum and manifest finalization remains sequential after payload
+completion. The shared static webroot remains non-destructive. Production
+measurement still shows timestamp-only churn in otherwise stable reports, so
+producer-side deterministic output remains a follow-up rather than weakening
+digest verification.
 
 SpecGraph can run in `product_workspace` mode when it should develop a user's
 product graph instead of improving SpecGraph itself.
