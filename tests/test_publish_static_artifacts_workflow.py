@@ -135,6 +135,18 @@ def test_publish_workflow_builds_hosted_operation_canary_workspace_bundle() -> N
 
 def test_hosted_operation_canary_packet_is_self_contained_and_ready() -> None:
     run_dir = ROOT / "runs" / "hosted-operation-canary"
+    promotion_execution = run_dir / "product_candidate_promotion_execution_report.json"
+    review_object_evidence = run_dir / "product_candidate_promotion_review_object_evidence.json"
+    assert promotion_execution.is_file()
+    assert review_object_evidence.is_file()
+    assert not (ROOT / "runs" / promotion_execution.name).exists()
+    assert not (ROOT / "runs" / review_object_evidence.name).exists()
+
+    review_object = json.loads(review_object_evidence.read_text(encoding="utf-8"))
+    assert review_object["promotion_execution_report_ref"] == (
+        "runs/hosted-operation-canary/product_candidate_promotion_execution_report.json"
+    )
+
     decision = json.loads(
         (run_dir / "candidate_approval_decision.json").read_text(encoding="utf-8")
     )

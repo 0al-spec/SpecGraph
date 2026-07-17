@@ -47,7 +47,7 @@
     "raw_idea_included": false
   },
   "probe_only": true,
-  "promotion_execution_report_ref": "runs/product_candidate_promotion_execution_report.json",
+  "promotion_execution_report_ref": "runs/hosted-operation-canary/product_candidate_promotion_execution_report.json",
   "promotion_execution_report_sha256": "484614545dcda4333c61dc4ad32dd2af056b33a3b4fd4228481caacc6e4ee9b9",
   "review_head_sha": "824af11c02bcbab38e99a92e0c4e762bde23dbf4",
   "review_number": 690,
