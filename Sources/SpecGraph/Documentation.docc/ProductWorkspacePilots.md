@@ -976,8 +976,13 @@ The product pilot must not:
 11. Extend Platform Git Service orchestration through review status and
    read-model publication.
 12. Refine product workspace workflow lane metrics and blocker copy.
-13. Refine ontology applicability and layer-aware review as compiler support
-   matures.
+13. Preserve workspace binding, digest, privacy, and scoped-run compatibility
+    while SpecSpace and Platform move mutable operator state to an authenticated
+    external service. SpecGraph does not own that state.
+14. After durable-state migration and production managed-mode recovery evidence
+    are proven, import Ontology ONT-040 `ModelApplicabilityProfile` and
+    review-only change classification into candidate review artifacts without
+    creating a local vocabulary, score, policy decision, or promotion gate.
 
 ## Canonical Sources
 
