@@ -588,7 +588,12 @@ Supervisor modes:
   introduced by proposal 0201. Use `make candidate-overview` to write
   `runs/candidate_overview.json` from the event-storming intake, candidate
   graph, repaired graph when present, repair session, Idea Maturity report,
-  project-local ontology review/effect artifacts, and repaired handoff. The
+  project-local ontology review/effect artifacts, and repaired handoff.
+  Proposal 0216 additionally reads the proposal-0144 ontology package index and
+  compatibility diff to publish compiler-backed applicability scopes,
+  assumptions, exclusions, invalidation triggers, and classified changes. A
+  missing profile remains `not_published`; applicability is review-only and
+  does not change lifecycle gates. The
   overview is a narrative/navigation surface for SpecSpace: it summarizes
   product intent, understood scope, event-storming groups, topology relation
   counts, repair readiness, project-local ontology state, and the next safe

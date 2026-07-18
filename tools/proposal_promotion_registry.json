@@ -2780,5 +2780,18 @@
     "required_provenance_links": [
       "source_draft_ref"
     ]
+  },
+  {
+    "proposal_id": "0216",
+    "source_artifact_class": "working_draft",
+    "source_refs": [
+      "docs/archive/proposal_sources/0216_candidate_ontology_applicability_review.md"
+    ],
+    "motivating_concern": "Compiler-backed ONT-040 applicability is available in the package index and compatibility diff, but Product Workspace Candidate Overview does not carry that review evidence.",
+    "normalized_title": "Candidate Ontology Applicability Review",
+    "bounded_scope": "Project existing compiler-backed applicability scopes, assumptions, exclusions, invalidation triggers, and structural/annotation/applicability change classifications into Candidate Overview without inferring applicability, introducing a parallel schema, changing lifecycle gates, mutating candidate or canonical specs, writing Ontology packages, accepting terms, approving or promoting candidates, or executing Platform, Git, or prompt agents.",
+    "required_provenance_links": [
+      "source_draft_ref"
+    ]
   }
 ]

@@ -26,6 +26,10 @@ DEFAULT_PROJECT_LOCAL_ONTOLOGY_LANE_PATH = ROOT / "runs" / "project_local_ontolo
 DEFAULT_PROJECT_LOCAL_ONTOLOGY_EFFECT_PATH = (
     ROOT / "runs" / "project_local_ontology_decision_effect_report.json"
 )
+DEFAULT_ONTOLOGY_PACKAGE_INDEX_PATH = ROOT / "runs" / "ontology_package_index.json"
+DEFAULT_ONTOLOGY_COMPATIBILITY_DIFF_PATH = (
+    ROOT / "runs" / "ontology_compatibility_diff_preview.json"
+)
 DEFAULT_REPAIRED_HANDOFF_PATH = ROOT / "runs" / "repaired_candidate_promotion_handoff_report.json"
 DEFAULT_OUTPUT_PATH = ROOT / "runs" / "candidate_overview.json"
 
@@ -51,6 +55,21 @@ TOP_LEVEL_AUTHORITY_FALSE_FIELDS = (
     "canonical_mutations_allowed",
     "tracked_artifacts_written",
 )
+APPLICABILITY_SCOPE_FIELDS = (
+    ("domains", "domains"),
+    ("lifecycle_phases", "lifecyclePhases"),
+    ("agent_types", "agentTypes"),
+    ("subsystems", "subsystems"),
+    ("runtimes", "runtimes"),
+    ("platforms", "platforms"),
+    ("contexts", "contexts"),
+)
+CLASSIFIED_CHANGE_DETAIL_FIELDS = (
+    "target_kind",
+    "before",
+    "after",
+    "compatibility",
+)
 
 EXPECTED_SOURCE_ARTIFACT_KINDS = {
     "intake": "idea_event_storming_intake",
@@ -61,6 +80,8 @@ EXPECTED_SOURCE_ARTIFACT_KINDS = {
     "idea_maturity": "idea_maturity_metrics_report",
     "project_local_ontology_lane": "project_local_ontology_review_lane",
     "project_local_ontology_effect": "project_local_ontology_decision_effect_report",
+    "ontology_package_index": "ontology_package_index",
+    "ontology_compatibility_diff": "ontology_compatibility_diff_preview",
     "repaired_handoff": "repaired_candidate_promotion_handoff_report",
 }
 
@@ -244,11 +265,17 @@ def _true_authority_fields(payload: dict[str, Any], *, prefix: str = "") -> list
     for field in AUTHORITY_FALSE_FIELDS:
         if payload.get(field) is True:
             fields.append(f"{prefix}{field}")
+    for field, value in payload.items():
+        if field.startswith("may_") and value is True:
+            fields.append(f"{prefix}{field}")
     boundary = _dict(payload.get("authority_boundary"))
     for field in AUTHORITY_FALSE_FIELDS:
         if boundary.get(field) is True:
             fields.append(f"{prefix}authority_boundary.{field}")
-    return fields
+    for field, value in boundary.items():
+        if field.startswith("may_") and value is True:
+            fields.append(f"{prefix}authority_boundary.{field}")
+    return list(dict.fromkeys(fields))
 
 
 def _source_artifact(
@@ -616,6 +643,150 @@ def _project_local_ontology_summary(
     }
 
 
+def _string_items(value: Any, *, limit: int = 16) -> list[str]:
+    return [item.strip() for item in _list(value) if isinstance(item, str) and item.strip()][:limit]
+
+
+def _applicability_scope(value: Any) -> dict[str, list[str]]:
+    scope = _dict(value)
+    return {
+        output_key: values
+        for output_key, input_key in APPLICABILITY_SCOPE_FIELDS
+        if (values := _string_items(scope.get(input_key)))
+    }
+
+
+def _applicability_records(value: Any) -> list[dict[str, Any]]:
+    records: list[dict[str, Any]] = []
+    for raw_record in _list(value)[:16]:
+        record = _dict(raw_record)
+        record_id = _text(record.get("id"))
+        if not record_id:
+            continue
+        records.append(
+            {
+                "id": record_id,
+                "layer": _text(record.get("layer")) or None,
+                "text": _safe_text(record.get("text"), "No applicability text published."),
+            }
+        )
+    return records
+
+
+def _classified_changes(value: Any) -> list[dict[str, str]]:
+    changes: list[dict[str, str]] = []
+    for raw_change in _list(value)[:24]:
+        change = _dict(raw_change)
+        kind = _text(change.get("kind"))
+        ref = _text(change.get("ref"))
+        if not kind or not ref:
+            continue
+        projected = {"kind": kind, "ref": ref}
+        for field in CLASSIFIED_CHANGE_DETAIL_FIELDS:
+            detail = _text(change.get(field))
+            if detail:
+                projected[field] = detail
+        changes.append(projected)
+    return changes
+
+
+def _ontology_applicability_summary(
+    *,
+    package_index: dict[str, Any],
+    compatibility_diff: dict[str, Any],
+    source_artifacts: dict[str, dict[str, Any]],
+) -> dict[str, Any]:
+    profiles: list[dict[str, Any]] = []
+    for raw_package in _list(package_index.get("packages"))[:8]:
+        package = _dict(raw_package)
+        profile = _dict(package.get("model_applicability"))
+        profile_summary = _dict(package.get("model_applicability_summary"))
+        if not profile and _text(profile_summary.get("status")) != "declared":
+            continue
+        package_id = _text(package.get("package_id"), "unknown-package")
+        version = _text(package.get("version"))
+        lock = _dict(package.get("lock"))
+        package_ref = _text(lock.get("package_ref")) or (
+            f"{package_id}@{version}" if version else package_id
+        )
+        profiles.append(
+            {
+                "package_id": package_id,
+                "package_ref": package_ref,
+                "status": _text(profile_summary.get("status"), "declared"),
+                "applies_to": _applicability_scope(profile.get("applies_to")),
+                "excludes": _applicability_scope(profile.get("excludes")),
+                "assumptions": _applicability_records(profile.get("assumptions")),
+                "invalidation_triggers": _applicability_records(
+                    profile.get("invalidation_triggers")
+                ),
+            }
+        )
+
+    profile_refs = {item["package_ref"] for item in profiles if _text(item.get("package_ref"))}
+    diff_package_refs = [
+        ref
+        for key in ("package_ref", "from_ref", "to_ref")
+        if (ref := _text(compatibility_diff.get(key)))
+    ]
+    matched_package_refs = sorted(profile_refs.intersection(diff_package_refs))
+    diff_matches_profile = bool(compatibility_diff and profile_refs and matched_package_refs)
+    classification = (
+        _dict(compatibility_diff.get("change_classification")) if diff_matches_profile else {}
+    )
+    structural_changes = _classified_changes(classification.get("structural_changes"))
+    annotation_changes = _classified_changes(classification.get("annotation_changes"))
+    applicability_changes = _classified_changes(classification.get("applicability_changes"))
+    classified_change_count = (
+        len(structural_changes) + len(annotation_changes) + len(applicability_changes)
+    )
+    source_refs = [
+        source_ref
+        for key in ("ontology_package_index", "ontology_compatibility_diff")
+        if (source_ref := _text(_dict(source_artifacts.get(key)).get("source_ref")))
+        and _dict(source_artifacts.get(key)).get("status") == "present"
+    ]
+    status = "not_published"
+    if profiles:
+        status = "declared"
+    if compatibility_diff and not diff_matches_profile:
+        status = "change_evidence_stale"
+    if classified_change_count:
+        status = "change_review_required"
+    return {
+        "proposal_id": "0216",
+        "status": status,
+        "review_only": True,
+        "profile_count": len(profiles),
+        "assumption_count": sum(len(item["assumptions"]) for item in profiles),
+        "invalidation_trigger_count": sum(len(item["invalidation_triggers"]) for item in profiles),
+        "profiles": profiles,
+        "change_classification": {
+            "status": (
+                "published"
+                if diff_matches_profile
+                else ("stale_package_mismatch" if compatibility_diff else "not_published")
+            ),
+            "diff_package_refs": diff_package_refs,
+            "matched_package_refs": matched_package_refs,
+            "structural_changes": structural_changes,
+            "annotation_changes": annotation_changes,
+            "applicability_changes": applicability_changes,
+            "classified_change_count": classified_change_count,
+        },
+        "source_refs": source_refs,
+        "authority_boundary": {
+            "may_infer_applicability": False,
+            "may_enforce_runtime_policy": False,
+            "may_mutate_candidate_artifacts": False,
+            "may_write_ontology_package": False,
+            "may_accept_ontology_terms": False,
+            "may_approve_candidate": False,
+            "may_promote_candidate": False,
+        },
+    }
+
+
 def _next_action(
     *,
     maturity: dict[str, Any],
@@ -788,6 +959,8 @@ def build_candidate_overview(
     maturity: dict[str, Any] | None = None,
     project_local_ontology_lane: dict[str, Any] | None = None,
     project_local_ontology_effect: dict[str, Any] | None = None,
+    ontology_package_index: dict[str, Any] | None = None,
+    ontology_compatibility_diff: dict[str, Any] | None = None,
     repaired_handoff: dict[str, Any] | None = None,
     source_artifacts: dict[str, dict[str, Any]] | None = None,
 ) -> dict[str, Any]:
@@ -797,6 +970,8 @@ def build_candidate_overview(
     maturity = maturity or {}
     project_local_ontology_lane = project_local_ontology_lane or {}
     project_local_ontology_effect = project_local_ontology_effect or {}
+    ontology_package_index = ontology_package_index or {}
+    ontology_compatibility_diff = ontology_compatibility_diff or {}
     repaired_handoff = repaired_handoff or {}
     source_artifacts = source_artifacts or {}
 
@@ -824,6 +999,11 @@ def build_candidate_overview(
         effect=project_local_ontology_effect,
         source_artifacts=source_artifacts,
     )
+    ontology_applicability = _ontology_applicability_summary(
+        package_index=ontology_package_index,
+        compatibility_diff=ontology_compatibility_diff,
+        source_artifacts=source_artifacts,
+    )
     next_action = _next_action(
         maturity=maturity,
         repair=repair,
@@ -842,6 +1022,8 @@ def build_candidate_overview(
                 "maturity": maturity,
                 "project_local_ontology_lane": project_local_ontology_lane,
                 "project_local_ontology_effect": project_local_ontology_effect,
+                "ontology_package_index": ontology_package_index,
+                "ontology_compatibility_diff": ontology_compatibility_diff,
                 "repaired_handoff": repaired_handoff,
             }
         ),
@@ -868,6 +1050,7 @@ def build_candidate_overview(
         "ready_for_candidate_approval": repair["ready_for_candidate_approval"],
         "ready_for_platform_promotion": repair["ready_for_platform_promotion"],
         "project_local_ontology_review_status": ontology["review_status"],
+        "ontology_applicability_status": ontology_applicability["status"],
         "finding_count": len(findings),
     }
 
@@ -914,6 +1097,7 @@ def build_candidate_overview(
             "repair": repair,
             "idea_maturity": maturity_view,
             "project_local_ontology": ontology,
+            "ontology_applicability": _public_safe(ontology_applicability),
         },
         "next_action": next_action,
         "findings": findings,
@@ -930,6 +1114,8 @@ def build_candidate_overview_from_paths(
     maturity_path: Path | None,
     project_local_ontology_lane_path: Path | None,
     project_local_ontology_effect_path: Path | None,
+    ontology_package_index_path: Path | None,
+    ontology_compatibility_diff_path: Path | None,
     repaired_handoff_path: Path | None,
 ) -> dict[str, Any]:
     loaded: dict[str, tuple[dict[str, Any], Path | None, str | None]] = {
@@ -941,6 +1127,8 @@ def build_candidate_overview_from_paths(
         "idea_maturity": _load_optional(maturity_path),
         "project_local_ontology_lane": _load_optional(project_local_ontology_lane_path),
         "project_local_ontology_effect": _load_optional(project_local_ontology_effect_path),
+        "ontology_package_index": _load_optional(ontology_package_index_path),
+        "ontology_compatibility_diff": _load_optional(ontology_compatibility_diff_path),
         "repaired_handoff": _load_optional(repaired_handoff_path),
     }
     source_artifacts = {
@@ -956,6 +1144,8 @@ def build_candidate_overview_from_paths(
         maturity=loaded["idea_maturity"][0],
         project_local_ontology_lane=loaded["project_local_ontology_lane"][0],
         project_local_ontology_effect=loaded["project_local_ontology_effect"][0],
+        ontology_package_index=loaded["ontology_package_index"][0],
+        ontology_compatibility_diff=loaded["ontology_compatibility_diff"][0],
         repaired_handoff=loaded["repaired_handoff"][0],
         source_artifacts=source_artifacts,
     )
@@ -987,6 +1177,16 @@ def parse_args() -> argparse.Namespace:
         type=Path,
         default=DEFAULT_PROJECT_LOCAL_ONTOLOGY_EFFECT_PATH,
     )
+    parser.add_argument(
+        "--ontology-package-index",
+        type=Path,
+        default=DEFAULT_ONTOLOGY_PACKAGE_INDEX_PATH,
+    )
+    parser.add_argument(
+        "--ontology-compatibility-diff",
+        type=Path,
+        default=DEFAULT_ONTOLOGY_COMPATIBILITY_DIFF_PATH,
+    )
     parser.add_argument("--repaired-handoff", type=Path, default=DEFAULT_REPAIRED_HANDOFF_PATH)
     parser.add_argument("--output", type=Path, default=DEFAULT_OUTPUT_PATH)
     parser.add_argument("--strict", action="store_true")
@@ -1004,6 +1204,8 @@ def main() -> int:
         maturity_path=args.idea_maturity,
         project_local_ontology_lane_path=args.project_local_ontology_lane,
         project_local_ontology_effect_path=args.project_local_ontology_effect,
+        ontology_package_index_path=args.ontology_package_index,
+        ontology_compatibility_diff_path=args.ontology_compatibility_diff,
         repaired_handoff_path=args.repaired_handoff,
     )
     write_json(overview, args.output)
