@@ -117,7 +117,7 @@ def review_status() -> dict:
         },
         "diagnostics": [],
         "summary": {
-            "status": "review_probe_completed",
+            "status": "waiting_for_review_merge",
             "review_merged": False,
             "read_model_published": False,
             "error_count": 0,
@@ -187,10 +187,27 @@ def test_rejects_digest_drift_foreign_workspace_and_authority_expansion() -> Non
             workspace_id=overlay.WORKSPACE_ID,
         )
 
-
-def test_rejects_private_fields_and_local_paths() -> None:
     report = review_status()
-    report["command_result"] = {"stdout": "ok"}
+    report["authority_boundary"]["executes_managed_operations"] = True
+    with pytest.raises(overlay.OverlayError, match="invalid"):
+        overlay.validate_packet(
+            packet(report, overlay.REVIEW_STATUS_REF),
+            workspace_id=overlay.WORKSPACE_ID,
+        )
+
+
+@pytest.mark.parametrize(
+    "unsafe_value",
+    [
+        "/Users/operator/private",
+        "/workspace/SpecGraph/runs/private.json",
+        "/github/workspace/runs/private.json",
+        "/opt/specgraph/private.json",
+    ],
+)
+def test_rejects_private_fields_and_local_paths(unsafe_value: str) -> None:
+    report = review_status()
+    report["stdout"] = "ok"
     with pytest.raises(overlay.OverlayError, match="forbidden field"):
         overlay.validate_packet(
             packet(report, overlay.REVIEW_STATUS_REF),
@@ -198,12 +215,72 @@ def test_rejects_private_fields_and_local_paths() -> None:
         )
 
     report = review_status()
-    report["summary"]["detail"] = "/Users/operator/private"
+    report["summary"]["detail"] = unsafe_value
     with pytest.raises(overlay.OverlayError, match="local path"):
         overlay.validate_packet(
             packet(report, overlay.REVIEW_STATUS_REF),
             workspace_id=overlay.WORKSPACE_ID,
         )
+
+    report = review_status()
+    report["summary"]["detail"] = "github_pat_" + "a" * 32
+    with pytest.raises(overlay.OverlayError, match="secret-like"):
+        overlay.validate_packet(
+            packet(report, overlay.REVIEW_STATUS_REF),
+            workspace_id=overlay.WORKSPACE_ID,
+        )
+
+
+def test_rejects_foreign_branch_probe_status_missing_refs_and_state_drift() -> None:
+    report = review_status()
+    report["candidate_branch"] = "graph-candidate/foreign"
+    report["pull_request"]["headRefName"] = "graph-candidate/foreign"
+    with pytest.raises(overlay.OverlayError, match="identity"):
+        overlay.validate_packet(
+            packet(report, overlay.REVIEW_STATUS_REF),
+            workspace_id=overlay.WORKSPACE_ID,
+        )
+
+    for missing_ref in (
+        "promotion_execution_report_ref",
+        "review_object_evidence_ref",
+    ):
+        report = review_status()
+        report.pop(missing_ref)
+        with pytest.raises(overlay.OverlayError, match="invalid"):
+            overlay.validate_packet(
+                packet(report, overlay.REVIEW_STATUS_REF),
+                workspace_id=overlay.WORKSPACE_ID,
+            )
+
+    report = review_status()
+    report["review_probe_only"] = True
+    with pytest.raises(overlay.OverlayError, match="invalid"):
+        overlay.validate_packet(
+            packet(report, overlay.REVIEW_STATUS_REF),
+            workspace_id=overlay.WORKSPACE_ID,
+        )
+
+    report = review_status()
+    report["summary"]["status"] = "ready_for_read_model_publication"
+    with pytest.raises(overlay.OverlayError, match="invalid"):
+        overlay.validate_packet(
+            packet(report, overlay.REVIEW_STATUS_REF),
+            workspace_id=overlay.WORKSPACE_ID,
+        )
+
+
+def test_rejects_non_finite_json_and_workflow_refreshes_lifecycle() -> None:
+    payload = packet(review_status(), overlay.REVIEW_STATUS_REF)
+    payload["report"]["summary"]["depth"] = float("nan")
+    with pytest.raises(overlay.OverlayError, match="non-strict JSON"):
+        overlay.validate_packet(payload, workspace_id=overlay.WORKSPACE_ID)
+
+    workflow = (ROOT / ".github" / "workflows" / "publish-static-artifacts.yml").read_text(
+        encoding="utf-8"
+    )
+    assert "make hosted-managed-publication-lifecycle-refresh" in workflow
+    assert "HOSTED_MANAGED_PUBLICATION_RUN_DIR=runs/hosted-operation-canary" in workflow
 
 
 def test_apply_is_atomic_and_invalid_packet_preserves_existing_artifact() -> None:

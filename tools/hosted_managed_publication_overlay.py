@@ -17,6 +17,7 @@ PACKET_ARTIFACT_KIND = "platform_hosted_managed_publication_packet"
 PACKET_CONTRACT_REF = "platform.hosted-managed.public-report-publication.v1"
 WORKSPACE_ID = "hosted-operation-canary"
 OPERATION_ID = "review_status_execute"
+CANDIDATE_BRANCH = "graph-candidate/hosted-operation-canary"
 REVIEW_OBJECT_REF = "runs/product_candidate_promotion_review_object_evidence.json"
 REVIEW_STATUS_REF = "runs/product_candidate_promotion_review_status_report.json"
 REVIEW_OBJECT_KIND = "platform_product_candidate_promotion_review_object_evidence"
@@ -24,10 +25,29 @@ REVIEW_STATUS_KIND = "platform_product_candidate_promotion_review_status_report"
 MAX_PACKET_BYTES = 32 * 1024
 SHA256_RE = re.compile(r"^[0-9a-f]{64}$")
 REVIEW_URL_RE = re.compile(r"^https://github\.com/0al-spec/SpecGraph/pull/([1-9][0-9]*)$")
-BRANCH_RE = re.compile(r"^graph-candidate/[a-z0-9][a-z0-9-]{1,62}[a-z0-9]$")
-LOCAL_PATH_RE = re.compile(r"(?:^|[\s\"'])(?:/Users/|/home/|/private/|/tmp/|/var/folders/)")
+LOCAL_PATH_RE = re.compile(
+    r"(?:^|[\s\"'])(?:"
+    r"/Users/|/home/|/private/|/tmp/|/var/folders/|/srv/|"
+    r"/workspace/|/github/workspace/|/opt/|/root/|/etc/0al/|"
+    r"/run/secrets/|/data/|[A-Za-z]:\\"
+    r")"
+)
+SECRET_VALUE_RE = re.compile(
+    r"(?:"
+    r"github_pat_[A-Za-z0-9_]{20,}|"
+    r"gh[opusr]_[A-Za-z0-9_]{20,}|"
+    r"Bearer\s+\S{20,}|"
+    r"-----BEGIN (?:RSA |EC |OPENSSH )?PRIVATE KEY-----|"
+    r"\b(?:password|secret|token|authorization)\s*[:=]\s*\S+"
+    r")",
+    re.IGNORECASE,
+)
 FORBIDDEN_KEY_PARTS = (
     "command",
+    "stdout",
+    "stderr",
+    "exit_code",
+    "returncode",
     "password",
     "secret",
     "token",
@@ -54,7 +74,20 @@ def _integer(value: Any) -> int | None:
 
 
 def _json_bytes(payload: dict[str, Any]) -> bytes:
-    return (json.dumps(payload, indent=2, sort_keys=True) + "\n").encode("utf-8")
+    try:
+        rendered = json.dumps(
+            payload,
+            allow_nan=False,
+            indent=2,
+            sort_keys=True,
+        )
+    except (TypeError, ValueError) as exc:
+        raise OverlayError("publication packet contains non-strict JSON") from exc
+    return (rendered + "\n").encode("utf-8")
+
+
+def _reject_json_constant(value: str) -> None:
+    raise ValueError(f"non-standard JSON constant {value}")
 
 
 def load_packet(path: Path) -> dict[str, Any]:
@@ -65,8 +98,11 @@ def load_packet(path: Path) -> dict[str, Any]:
     try:
         if path.stat().st_size > MAX_PACKET_BYTES:
             raise OverlayError("publication packet exceeds its bounded size")
-        payload = json.loads(path.read_text(encoding="utf-8"))
-    except (OSError, json.JSONDecodeError) as exc:
+        payload = json.loads(
+            path.read_text(encoding="utf-8"),
+            parse_constant=_reject_json_constant,
+        )
+    except (OSError, ValueError, json.JSONDecodeError) as exc:
         raise OverlayError("publication packet is unreadable") from exc
     if not isinstance(payload, dict):
         raise OverlayError("publication packet must contain an object")
@@ -86,8 +122,7 @@ def _public_boundary(value: Any) -> bool:
         "accepts_ontology_terms",
     )
     return all(boundary.get(key) is False for key in required) and all(
-        not (isinstance(key, str) and key.startswith("may_") and item is not False)
-        for key, item in boundary.items()
+        isinstance(key, str) and item is False for key, item in boundary.items()
     )
 
 
@@ -106,8 +141,10 @@ def _scan_public(value: Any, *, path: tuple[str, ...] = ()) -> None:
             if not isinstance(key, str):
                 raise OverlayError("public report contains a non-string key")
             lowered = key.lower()
-            negative_boundary_declaration = (path == ("authority_boundary",) and item is False) or (
-                path == ("privacy_boundary",)
+            negative_boundary_declaration = (
+                path[-1:] == ("authority_boundary",) and item is False
+            ) or (
+                path[-1:] == ("privacy_boundary",)
                 and key in {"raw_idea_included", "local_paths_included"}
                 and item is False
             )
@@ -133,6 +170,8 @@ def _scan_public(value: Any, *, path: tuple[str, ...] = ()) -> None:
             raise OverlayError("public report contains unsafe text")
         if LOCAL_PATH_RE.search(value):
             raise OverlayError("public report contains a local path")
+        if SECRET_VALUE_RE.search(value):
+            raise OverlayError("public report contains a secret-like value")
 
 
 def _identity(report: dict[str, Any]) -> tuple[str, str, str]:
@@ -142,8 +181,7 @@ def _identity(report: dict[str, Any]) -> tuple[str, str, str]:
     if (
         workspace_id != WORKSPACE_ID
         or candidate_id != WORKSPACE_ID
-        or candidate_branch is None
-        or not BRANCH_RE.fullmatch(candidate_branch)
+        or candidate_branch != CANDIDATE_BRANCH
     ):
         raise OverlayError("public report workspace or candidate identity is invalid")
     return workspace_id, candidate_id, candidate_branch
@@ -196,20 +234,42 @@ def _validate_review_status(report: dict[str, Any]) -> None:
         review_number=pull_request.get("number"),
     )
     graph_review = _record(report.get("graph_repository_review_status"))
+    graph_summary = _record(graph_review.get("summary"))
+    summary = _record(report.get("summary"))
+    review_state = report.get("review_state")
+    expected_pull_request_state = {
+        "open": "OPEN",
+        "closed": "CLOSED",
+        "merged": "MERGED",
+    }.get(review_state)
+    expected_summary_status = (
+        "ready_for_read_model_publication"
+        if review_state == "merged"
+        else "waiting_for_review_merge"
+    )
+    review_merged = review_state == "merged"
     if (
         report.get("artifact_kind") != REVIEW_STATUS_KIND
         or report.get("schema_version") != 1
         or report.get("ok") is not True
         or report.get("workflow_lane") != "product_idea_to_spec"
-        or report.get("review_state") not in {"open", "closed", "merged"}
-        or report.get("review_probe_only") not in {True, False}
+        or expected_pull_request_state is None
+        or report.get("review_probe_only") is not False
+        or report.get("promotion_execution_report_ref")
+        != "runs/product_candidate_promotion_execution_report.json"
+        or report.get("review_object_evidence_ref") != REVIEW_OBJECT_REF
         or pull_request.get("headRefName") != candidate_branch
         or pull_request.get("baseRefName") != "main"
         or pull_request.get("number") != review_number
-        or pull_request.get("state") not in {"OPEN", "CLOSED", "MERGED"}
+        or pull_request.get("state") != expected_pull_request_state
         or not isinstance(pull_request.get("isDraft"), bool)
         or graph_review.get("ok") is not True
+        or graph_review.get("review_state") != review_state
         or graph_review.get("review_url") != review_url
+        or graph_summary.get("review_merged") is not review_merged
+        or summary.get("status") != expected_summary_status
+        or summary.get("review_merged") is not review_merged
+        or summary.get("read_model_published") is not False
         or not _public_privacy(report.get("privacy_boundary"))
         or not _public_boundary(report.get("authority_boundary"))
     ):
@@ -263,7 +323,7 @@ def validate_packet(
     actual_digest = hashlib.sha256(_json_bytes(report)).hexdigest()
     if expected_digest != actual_digest:
         raise OverlayError("publication report digest does not match the packet")
-    _scan_public(report)
+    _scan_public(packet)
     if logical_ref == REVIEW_OBJECT_REF:
         _validate_review_object(report)
     else:

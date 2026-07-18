@@ -47,6 +47,35 @@ def authority_boundary() -> dict[str, bool]:
     }
 
 
+def test_hosted_public_review_status_shape_drives_lifecycle_metrics() -> None:
+    module = load_module()
+    artifacts = {
+        "review_status": {
+            "review_state": "open",
+            "pull_request": {
+                "number": 690,
+                "mergeCommit": None,
+            },
+            "summary": {
+                "status": "waiting_for_review_merge",
+                "review_merged": False,
+            },
+        }
+    }
+
+    assert module._review_status(artifacts) == "open"
+    assert module._review_pr_number(artifacts) == 690
+    assert module._review_merge_commit_sha(artifacts) is None
+
+    artifacts["review_status"]["review_state"] = "merged"
+    artifacts["review_status"]["pull_request"]["mergeCommit"] = {"oid": "a" * 40}
+    artifacts["review_status"]["summary"]["status"] = "ready_for_read_model_publication"
+    artifacts["review_status"]["summary"]["review_merged"] = True
+
+    assert module._review_status(artifacts) == "merged"
+    assert module._review_merge_commit_sha(artifacts) == "a" * 40
+
+
 def base_paths(run_dir: Path) -> dict[str, Path]:
     return {
         "intake": run_dir / "idea_event_storming_intake.json",

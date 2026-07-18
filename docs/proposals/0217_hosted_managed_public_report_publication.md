@@ -31,7 +31,10 @@ review identity, bounded size, and exact workspace scope before atomically
 overlaying the tracked `runs/hosted-operation-canary` source. Invalid input does
 not overwrite an existing artifact.
 
-The ordinary Hosted Operation Canary bundle build then includes the report.
+The workflow regenerates the scoped Idea Maturity report, validation report, and
+Candidate Overview after a successful overlay. The ordinary Hosted Operation
+Canary bundle build then includes the report and lifecycle projections derived
+from it.
 Proposal `0215` remains the transport implementation: checksum comparison stages
 only changed payloads, metadata is finalized last, and HTTPS digest verification
 is required.
@@ -66,7 +69,8 @@ authoritative reports remain the execution authority.
   authority expansion fail closed.
 - Invalid packets preserve any previously tracked report.
 - The overlay runs only for an explicit non-empty workflow-dispatch input and
-  precedes the Hosted Operation Canary bundle build.
+  precedes scoped lifecycle projection refresh and the Hosted Operation Canary
+  bundle build.
 - Ordinary push, pull-request, and empty manual builds remain unchanged.
 - Existing checksum-aware incremental deployment stages and verifies the new
   report without a full static mirror.

@@ -318,6 +318,7 @@ CANDIDATE_OVERVIEW_REPAIRED_HANDOFF ?= runs/repaired_candidate_promotion_handoff
 CANDIDATE_OVERVIEW_OUTPUT ?= runs/candidate_overview.json
 CANDIDATE_OVERVIEW_STRICT ?=
 CANDIDATE_OVERVIEW_STRICT_ARG := $(if $(filter 1 true yes,$(strip $(CANDIDATE_OVERVIEW_STRICT))),--strict,)
+HOSTED_MANAGED_PUBLICATION_RUN_DIR ?= runs/hosted-operation-canary
 SPECGRAPH_EXTERNAL_CHECKOUT_ROOT ?=
 METRICS_REPO_DEFAULT := $(if $(strip $(SPECGRAPH_EXTERNAL_CHECKOUT_ROOT)),$(SPECGRAPH_EXTERNAL_CHECKOUT_ROOT)/Metrics,../Metrics)
 METRICS_REPO ?= $(METRICS_REPO_DEFAULT)
@@ -1141,6 +1142,54 @@ product-workspace-idea-maturity:
 .PHONY: candidate-overview
 candidate-overview:
 	@$(PYTHON) tools/candidate_overview.py --intake "$(CANDIDATE_OVERVIEW_INTAKE)" --candidate-graph "$(CANDIDATE_OVERVIEW_CANDIDATE_GRAPH)" --repaired-candidate-graph "$(CANDIDATE_OVERVIEW_REPAIRED_CANDIDATE_GRAPH)" --repair-session "$(CANDIDATE_OVERVIEW_REPAIR_SESSION)" --repaired-repair-session "$(CANDIDATE_OVERVIEW_REPAIRED_REPAIR_SESSION)" --idea-maturity "$(CANDIDATE_OVERVIEW_IDEA_MATURITY)" --project-local-ontology-lane "$(CANDIDATE_OVERVIEW_PROJECT_LOCAL_ONTOLOGY_LANE)" --project-local-ontology-effect "$(CANDIDATE_OVERVIEW_PROJECT_LOCAL_ONTOLOGY_EFFECT)" --ontology-package-index "$(CANDIDATE_OVERVIEW_ONTOLOGY_PACKAGE_INDEX)" --ontology-compatibility-diff "$(CANDIDATE_OVERVIEW_ONTOLOGY_COMPATIBILITY_DIFF)" --repaired-handoff "$(CANDIDATE_OVERVIEW_REPAIRED_HANDOFF)" --output "$(CANDIDATE_OVERVIEW_OUTPUT)" $(CANDIDATE_OVERVIEW_STRICT_ARG)
+
+.PHONY: hosted-managed-publication-lifecycle-refresh
+hosted-managed-publication-lifecycle-refresh:
+	@$(MAKE) product-workspace-idea-maturity \
+		IDEA_MATURITY_METRICS_INTAKE="$(HOSTED_MANAGED_PUBLICATION_RUN_DIR)/idea_event_storming_intake.json" \
+		IDEA_MATURITY_METRICS_CANDIDATE_GRAPH="$(HOSTED_MANAGED_PUBLICATION_RUN_DIR)/candidate_spec_graph.json" \
+		IDEA_MATURITY_METRICS_PRE_SIB="$(HOSTED_MANAGED_PUBLICATION_RUN_DIR)/pre_sib_coherence_report.json" \
+		IDEA_MATURITY_METRICS_CLARIFICATION_REQUESTS="$(HOSTED_MANAGED_PUBLICATION_RUN_DIR)/idea_to_spec_clarification_requests.json" \
+		IDEA_MATURITY_METRICS_CLARIFICATION_ANSWERS="$(HOSTED_MANAGED_PUBLICATION_RUN_DIR)/idea_to_spec_clarification_answers.json" \
+		IDEA_MATURITY_METRICS_ONTOLOGY_DECISIONS="$(HOSTED_MANAGED_PUBLICATION_RUN_DIR)/product_ontology_gap_review_decisions.json" \
+		IDEA_MATURITY_METRICS_RERUN_INPUT="$(HOSTED_MANAGED_PUBLICATION_RUN_DIR)/idea_to_spec_answer_rerun_input.json" \
+		IDEA_MATURITY_METRICS_RERUN_PREVIEW="$(HOSTED_MANAGED_PUBLICATION_RUN_DIR)/idea_to_spec_rerun_preview.json" \
+		IDEA_MATURITY_METRICS_RERUN_MATERIALIZATION="$(HOSTED_MANAGED_PUBLICATION_RUN_DIR)/idea_to_spec_rerun_materialization.json" \
+		IDEA_MATURITY_METRICS_PROMOTION_GATE="$(HOSTED_MANAGED_PUBLICATION_RUN_DIR)/idea_to_spec_promotion_gate.json" \
+		IDEA_MATURITY_METRICS_REPAIR_SESSION="$(HOSTED_MANAGED_PUBLICATION_RUN_DIR)/idea_to_spec_repair_session.json" \
+		IDEA_MATURITY_METRICS_REPAIRED_HANDOFF="$(HOSTED_MANAGED_PUBLICATION_RUN_DIR)/repaired_candidate_promotion_handoff_report.json" \
+		IDEA_MATURITY_METRICS_REPAIRED_CANDIDATE_GRAPH="$(HOSTED_MANAGED_PUBLICATION_RUN_DIR)/repaired_candidate_spec_graph.json" \
+		IDEA_MATURITY_METRICS_REPAIRED_PRE_SIB="$(HOSTED_MANAGED_PUBLICATION_RUN_DIR)/repaired_pre_sib_coherence_report.json" \
+		IDEA_MATURITY_METRICS_REPAIRED_ACTIVE_CANDIDATE="$(HOSTED_MANAGED_PUBLICATION_RUN_DIR)/repaired_active_idea_to_spec_candidate.json" \
+		IDEA_MATURITY_METRICS_REPAIRED_PROMOTION_GATE="$(HOSTED_MANAGED_PUBLICATION_RUN_DIR)/repaired_idea_to_spec_promotion_gate.json" \
+		IDEA_MATURITY_METRICS_REPAIRED_REPAIR_SESSION="$(HOSTED_MANAGED_PUBLICATION_RUN_DIR)/repaired_idea_to_spec_repair_session.json" \
+		IDEA_MATURITY_METRICS_SPECSPACE_DRAFT_IMPORT_PREVIEW="$(HOSTED_MANAGED_PUBLICATION_RUN_DIR)/specspace_repair_draft_import_preview.json" \
+		IDEA_MATURITY_METRICS_SPECSPACE_RERUN_REQUEST="$(HOSTED_MANAGED_PUBLICATION_RUN_DIR)/idea_to_spec_repair_rerun_requests.json" \
+		IDEA_MATURITY_METRICS_PROJECT_LOCAL_ONTOLOGY_DECISION_EFFECT="$(HOSTED_MANAGED_PUBLICATION_RUN_DIR)/project_local_ontology_decision_effect_report.json" \
+		IDEA_MATURITY_METRICS_APPROVAL_INTENT="$(HOSTED_MANAGED_PUBLICATION_RUN_DIR)/idea_to_spec_candidate_approval_intents.json" \
+		IDEA_MATURITY_METRICS_REPAIR_RERUN_EXECUTION="$(HOSTED_MANAGED_PUBLICATION_RUN_DIR)/platform_product_repair_rerun_execution_report.json" \
+		IDEA_MATURITY_METRICS_REPAIR_RERUN_PUBLICATION="$(HOSTED_MANAGED_PUBLICATION_RUN_DIR)/platform_product_repair_rerun_publication_report.json" \
+		IDEA_MATURITY_METRICS_APPROVAL_EXECUTION="$(HOSTED_MANAGED_PUBLICATION_RUN_DIR)/platform_candidate_approval_execution_report.json" \
+		IDEA_MATURITY_METRICS_CANDIDATE_APPROVAL_DECISION="$(HOSTED_MANAGED_PUBLICATION_RUN_DIR)/candidate_approval_decision.json" \
+		IDEA_MATURITY_METRICS_PROMOTION_REQUEST="$(HOSTED_MANAGED_PUBLICATION_RUN_DIR)/graph_repository_promotion_request.json" \
+		IDEA_MATURITY_METRICS_PROMOTION_EXECUTION="$(HOSTED_MANAGED_PUBLICATION_RUN_DIR)/product_candidate_promotion_execution_report.json" \
+		IDEA_MATURITY_METRICS_REVIEW_STATUS="$(HOSTED_MANAGED_PUBLICATION_RUN_DIR)/product_candidate_promotion_review_status_report.json" \
+		IDEA_MATURITY_METRICS_READ_MODEL_PUBLICATION="$(HOSTED_MANAGED_PUBLICATION_RUN_DIR)/product_candidate_promotion_read_model_publication_report.json" \
+		IDEA_MATURITY_METRICS_OUTPUT="$(HOSTED_MANAGED_PUBLICATION_RUN_DIR)/idea_maturity_metrics_report.json" \
+		IDEA_MATURITY_METRICS_VALIDATION_OUTPUT="$(HOSTED_MANAGED_PUBLICATION_RUN_DIR)/idea_maturity_metrics_validation_report.json"
+	@$(MAKE) candidate-overview \
+		CANDIDATE_OVERVIEW_INTAKE="$(HOSTED_MANAGED_PUBLICATION_RUN_DIR)/idea_event_storming_intake.json" \
+		CANDIDATE_OVERVIEW_CANDIDATE_GRAPH="$(HOSTED_MANAGED_PUBLICATION_RUN_DIR)/candidate_spec_graph.json" \
+		CANDIDATE_OVERVIEW_REPAIRED_CANDIDATE_GRAPH="$(HOSTED_MANAGED_PUBLICATION_RUN_DIR)/repaired_candidate_spec_graph.json" \
+		CANDIDATE_OVERVIEW_REPAIR_SESSION="$(HOSTED_MANAGED_PUBLICATION_RUN_DIR)/idea_to_spec_repair_session.json" \
+		CANDIDATE_OVERVIEW_REPAIRED_REPAIR_SESSION="$(HOSTED_MANAGED_PUBLICATION_RUN_DIR)/repaired_idea_to_spec_repair_session.json" \
+		CANDIDATE_OVERVIEW_IDEA_MATURITY="$(HOSTED_MANAGED_PUBLICATION_RUN_DIR)/idea_maturity_metrics_report.json" \
+		CANDIDATE_OVERVIEW_PROJECT_LOCAL_ONTOLOGY_LANE="$(HOSTED_MANAGED_PUBLICATION_RUN_DIR)/project_local_ontology_review_lane.json" \
+		CANDIDATE_OVERVIEW_PROJECT_LOCAL_ONTOLOGY_EFFECT="$(HOSTED_MANAGED_PUBLICATION_RUN_DIR)/project_local_ontology_decision_effect_report.json" \
+		CANDIDATE_OVERVIEW_ONTOLOGY_PACKAGE_INDEX="$(HOSTED_MANAGED_PUBLICATION_RUN_DIR)/ontology_package_index.json" \
+		CANDIDATE_OVERVIEW_ONTOLOGY_COMPATIBILITY_DIFF="$(HOSTED_MANAGED_PUBLICATION_RUN_DIR)/ontology_compatibility_diff_preview.json" \
+		CANDIDATE_OVERVIEW_REPAIRED_HANDOFF="$(HOSTED_MANAGED_PUBLICATION_RUN_DIR)/repaired_candidate_promotion_handoff_report.json" \
+		CANDIDATE_OVERVIEW_OUTPUT="$(HOSTED_MANAGED_PUBLICATION_RUN_DIR)/candidate_overview.json"
 
 .PHONY: product-workspace-active-candidate
 product-workspace-active-candidate:

@@ -62,7 +62,8 @@ they simply stop being authoritative.
 Proposal `0217` adds one optional manual-dispatch input for a bounded hosted
 managed-operation publication packet. The input may overlay exactly one
 public-safe review-object or review-status projection into the
-`hosted-operation-canary` run directory before its workspace bundle is built.
+`hosted-operation-canary` run directory. The workflow refreshes scoped Idea
+Maturity and Candidate Overview projections before its workspace bundle is built.
 The validator rejects command data, local paths, foreign workspace identity,
 digest drift, and write-capable authority. Empty manual inputs and ordinary
 push/PR builds do not apply an overlay. Upload remains checksum-aware through

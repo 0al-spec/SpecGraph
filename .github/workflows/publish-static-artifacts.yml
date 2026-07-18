@@ -130,6 +130,8 @@ jobs:
             --workspace-id hosted-operation-canary \
             --run-dir runs/hosted-operation-canary \
             --output "$report"
+          make hosted-managed-publication-lifecycle-refresh \
+            HOSTED_MANAGED_PUBLICATION_RUN_DIR=runs/hosted-operation-canary
 
       - name: Build Hosted Operation Canary product workspace bundle
         run: |
