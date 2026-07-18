@@ -45,6 +45,12 @@ queue, and one digest-pinned authoritative report. Review-object publication
 requires fresh open-PR evidence pinned to the selected non-dry-run promotion
 execution report.
 
+An external review-object probe may publish
+`review_probe_only=true` as diagnostic lifecycle evidence. Its status may show
+that the selected PR is open, closed, or merged, but the probe never emits
+`ready_for_read_model_publication` and cannot authorize read-model publication.
+Execution-backed review status remains required for that transition.
+
 ## Authority Boundary
 
 This proposal does not:
@@ -65,6 +71,8 @@ authoritative reports remain the execution authority.
 
 - A valid review-object or review-status packet overlays exactly one allowlisted
   Hosted Operation Canary report.
+- A probe-only review status can produce waiting-for-review evidence but cannot
+  produce read-model publication readiness.
 - Digest drift, foreign workspace identity, local paths, private fields, and
   authority expansion fail closed.
 - Invalid packets preserve any previously tracked report.

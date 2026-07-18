@@ -25,6 +25,8 @@ sanitized review-object or review-status packet. SpecGraph verifies its digest,
 workspace identity, privacy, authority, and GitHub review identity before the
 existing incremental workspace publication runs. Worker commands, local paths,
 secrets, and raw request payloads are never copied into the public bundle.
+Probe-only review status is diagnostic evidence: it may show that the workspace
+is waiting for review or merge, but it cannot authorize read-model publication.
 
 The current producer priorities are to verify the bounded hosted report
 publication with fresh review provenance, measure the bounded-parallel

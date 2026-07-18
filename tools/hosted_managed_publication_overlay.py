@@ -244,16 +244,22 @@ def _validate_review_status(report: dict[str, Any]) -> None:
     graph_summary = _record(graph_review.get("summary"))
     summary = _record(report.get("summary"))
     review_state = report.get("review_state")
+    review_probe_only = report.get("review_probe_only")
     expected_pull_request_state = {
         "open": "OPEN",
         "closed": "CLOSED",
         "merged": "MERGED",
     }.get(review_state)
     expected_summary_status = (
-        "ready_for_read_model_publication"
-        if review_state == "merged"
-        else "waiting_for_review_merge"
+        "review_probe_completed"
+        if review_probe_only is True
+        else (
+            "ready_for_read_model_publication"
+            if review_state == "merged"
+            else "waiting_for_review_merge"
+        )
     )
+    expected_graph_summary_status = expected_summary_status
     review_merged = review_state == "merged"
     if (
         report.get("artifact_kind") != REVIEW_STATUS_KIND
@@ -261,7 +267,7 @@ def _validate_review_status(report: dict[str, Any]) -> None:
         or report.get("ok") is not True
         or report.get("workflow_lane") != "product_idea_to_spec"
         or expected_pull_request_state is None
-        or report.get("review_probe_only") is not False
+        or not isinstance(review_probe_only, bool)
         or report.get("promotion_execution_report_ref")
         != "runs/product_candidate_promotion_execution_report.json"
         or report.get("review_object_evidence_ref") != REVIEW_OBJECT_REF
@@ -273,6 +279,7 @@ def _validate_review_status(report: dict[str, Any]) -> None:
         or graph_review.get("ok") is not True
         or graph_review.get("review_state") != review_state
         or graph_review.get("review_url") != review_url
+        or graph_summary.get("status") != expected_graph_summary_status
         or graph_summary.get("review_merged") is not review_merged
         or summary.get("status") != expected_summary_status
         or summary.get("review_merged") is not review_merged

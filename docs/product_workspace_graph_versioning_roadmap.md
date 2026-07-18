@@ -67,7 +67,9 @@ evidence through its existing artifact consumer.
    is compatibility evidence, not SpecGraph execution authority.
 3. **Hosted report publication evidence.** Verify proposal `0217` in production
    with fresh open-PR provenance, one attempt, a drained queue, one changed
-   workspace payload, and post-upload digest verification.
+   workspace payload, and post-upload digest verification. Probe-only review
+   evidence may move the public workspace to waiting-for-review, but must never
+   authorize read-model publication.
 4. **Deterministic public-safe outputs.** Reduce timestamp-only bundle churn
    while preserving generated-at evidence where it is semantically required.
    Deployment manifests and digest verification remain authoritative.

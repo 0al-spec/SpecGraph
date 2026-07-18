@@ -76,6 +76,30 @@ def test_hosted_public_review_status_shape_drives_lifecycle_metrics() -> None:
     assert module._review_merge_commit_sha(artifacts) == "a" * 40
 
 
+def test_probe_merge_does_not_authorize_read_model_publication() -> None:
+    module = load_module()
+    artifacts = {
+        "review_status": {
+            "review_probe_only": True,
+            "review_state": "merged",
+            "summary": {
+                "status": "review_probe_completed",
+                "review_merged": True,
+            },
+        },
+        "read_model_publication": {
+            "ok": True,
+            "summary": {
+                "status": "published",
+                "published": True,
+            },
+        },
+    }
+
+    assert module._review_status(artifacts) == "unknown"
+    assert module._read_model_publication_state(artifacts) == "not_reached"
+
+
 def base_paths(run_dir: Path) -> dict[str, Path]:
     return {
         "intake": run_dir / "idea_event_storming_intake.json",

@@ -1576,6 +1576,8 @@ def _review_status(artifacts: dict[str, dict[str, Any]]) -> str:
             else "not_available"
         )
     review_state = _text(review.get("review_state"))
+    if review.get("review_probe_only") is True and review_state == "merged":
+        return "unknown"
     if review_state in {"open", "merged"}:
         return review_state
     if review_state == "closed":
@@ -1616,6 +1618,8 @@ def _review_merge_commit_sha(artifacts: dict[str, dict[str, Any]]) -> str | None
 
 
 def _read_model_publication_state(artifacts: dict[str, dict[str, Any]]) -> str:
+    if _dict(artifacts.get("review_status")).get("review_probe_only") is True:
+        return "not_reached"
     publication = _dict(artifacts.get("read_model_publication"))
     if not publication:
         return "not_reached" if _review_status(artifacts) != "merged" else "not_available"

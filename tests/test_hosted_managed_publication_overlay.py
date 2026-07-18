@@ -283,6 +283,39 @@ def test_rejects_foreign_branch_probe_status_missing_refs_and_state_drift() -> N
         )
 
 
+def test_accepts_probe_status_without_read_model_publication_authority() -> None:
+    report = review_status()
+    report["review_probe_only"] = True
+    report["summary"]["status"] = "review_probe_completed"
+    report["graph_repository_review_status"]["summary"]["status"] = "review_probe_completed"
+
+    logical_ref, projected = overlay.validate_packet(
+        packet(report, overlay.REVIEW_STATUS_REF),
+        workspace_id=overlay.WORKSPACE_ID,
+    )
+
+    assert logical_ref == overlay.REVIEW_STATUS_REF
+    assert projected["review_probe_only"] is True
+    assert projected["review_state"] == "open"
+    assert projected["summary"]["status"] == "review_probe_completed"
+    assert projected["summary"]["review_merged"] is False
+
+
+def test_probe_status_rejects_nested_publication_readiness() -> None:
+    report = review_status()
+    report["review_probe_only"] = True
+    report["summary"]["status"] = "review_probe_completed"
+    report["graph_repository_review_status"]["summary"]["status"] = (
+        "ready_for_read_model_publication"
+    )
+
+    with pytest.raises(overlay.OverlayError, match="invalid"):
+        overlay.validate_packet(
+            packet(report, overlay.REVIEW_STATUS_REF),
+            workspace_id=overlay.WORKSPACE_ID,
+        )
+
+
 def test_rejects_non_finite_json_and_workflow_refreshes_lifecycle() -> None:
     payload = packet(review_status(), overlay.REVIEW_STATUS_REF)
     payload["report"]["summary"]["depth"] = float("nan")
