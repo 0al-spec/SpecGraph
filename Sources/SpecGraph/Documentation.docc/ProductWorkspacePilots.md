@@ -411,7 +411,10 @@ and compatibility change classification into Candidate Overview. It reuses the
 package index and diff artifacts from proposal `0144`; missing applicability is
 `not_published`, while declared scopes, assumptions, exclusions, invalidation
 triggers, and classified changes remain review-only evidence rather than a
-score, gate, or runtime policy.
+score, gate, or runtime policy. All compiler scope dimensions and classified
+change details are preserved. Diff evidence must match a declared package ref;
+foreign or stale changes are reported as stale rather than mixed into the
+candidate, and custom-run smoke inputs remain scoped to their run directory.
 
 The SpecSpace handoff contract is intentionally extended for the candidate
 overview surface. It includes `runs/candidate_overview.json` and related product

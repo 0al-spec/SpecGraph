@@ -55,6 +55,21 @@ TOP_LEVEL_AUTHORITY_FALSE_FIELDS = (
     "canonical_mutations_allowed",
     "tracked_artifacts_written",
 )
+APPLICABILITY_SCOPE_FIELDS = (
+    ("domains", "domains"),
+    ("lifecycle_phases", "lifecyclePhases"),
+    ("agent_types", "agentTypes"),
+    ("subsystems", "subsystems"),
+    ("runtimes", "runtimes"),
+    ("platforms", "platforms"),
+    ("contexts", "contexts"),
+)
+CLASSIFIED_CHANGE_DETAIL_FIELDS = (
+    "target_kind",
+    "before",
+    "after",
+    "compatibility",
+)
 
 EXPECTED_SOURCE_ARTIFACT_KINDS = {
     "intake": "idea_event_storming_intake",
@@ -250,11 +265,17 @@ def _true_authority_fields(payload: dict[str, Any], *, prefix: str = "") -> list
     for field in AUTHORITY_FALSE_FIELDS:
         if payload.get(field) is True:
             fields.append(f"{prefix}{field}")
+    for field, value in payload.items():
+        if field.startswith("may_") and value is True:
+            fields.append(f"{prefix}{field}")
     boundary = _dict(payload.get("authority_boundary"))
     for field in AUTHORITY_FALSE_FIELDS:
         if boundary.get(field) is True:
             fields.append(f"{prefix}authority_boundary.{field}")
-    return fields
+    for field, value in boundary.items():
+        if field.startswith("may_") and value is True:
+            fields.append(f"{prefix}authority_boundary.{field}")
+    return list(dict.fromkeys(fields))
 
 
 def _source_artifact(
@@ -630,11 +651,7 @@ def _applicability_scope(value: Any) -> dict[str, list[str]]:
     scope = _dict(value)
     return {
         output_key: values
-        for output_key, input_key in (
-            ("domains", "domains"),
-            ("lifecycle_phases", "lifecyclePhases"),
-            ("agent_types", "agentTypes"),
-        )
+        for output_key, input_key in APPLICABILITY_SCOPE_FIELDS
         if (values := _string_items(scope.get(input_key)))
     }
 
@@ -664,7 +681,12 @@ def _classified_changes(value: Any) -> list[dict[str, str]]:
         ref = _text(change.get("ref"))
         if not kind or not ref:
             continue
-        changes.append({"kind": kind, "ref": ref})
+        projected = {"kind": kind, "ref": ref}
+        for field in CLASSIFIED_CHANGE_DETAIL_FIELDS:
+            detail = _text(change.get(field))
+            if detail:
+                projected[field] = detail
+        changes.append(projected)
     return changes
 
 
@@ -701,7 +723,17 @@ def _ontology_applicability_summary(
             }
         )
 
-    classification = _dict(compatibility_diff.get("change_classification"))
+    profile_refs = {item["package_ref"] for item in profiles if _text(item.get("package_ref"))}
+    diff_package_refs = [
+        ref
+        for key in ("package_ref", "from_ref", "to_ref")
+        if (ref := _text(compatibility_diff.get(key)))
+    ]
+    matched_package_refs = sorted(profile_refs.intersection(diff_package_refs))
+    diff_matches_profile = bool(compatibility_diff and profile_refs and matched_package_refs)
+    classification = (
+        _dict(compatibility_diff.get("change_classification")) if diff_matches_profile else {}
+    )
     structural_changes = _classified_changes(classification.get("structural_changes"))
     annotation_changes = _classified_changes(classification.get("annotation_changes"))
     applicability_changes = _classified_changes(classification.get("applicability_changes"))
@@ -717,6 +749,8 @@ def _ontology_applicability_summary(
     status = "not_published"
     if profiles:
         status = "declared"
+    if compatibility_diff and not diff_matches_profile:
+        status = "change_evidence_stale"
     if classified_change_count:
         status = "change_review_required"
     return {
@@ -728,7 +762,13 @@ def _ontology_applicability_summary(
         "invalidation_trigger_count": sum(len(item["invalidation_triggers"]) for item in profiles),
         "profiles": profiles,
         "change_classification": {
-            "status": ("published" if compatibility_diff else "not_published"),
+            "status": (
+                "published"
+                if diff_matches_profile
+                else ("stale_package_mismatch" if compatibility_diff else "not_published")
+            ),
+            "diff_package_refs": diff_package_refs,
+            "matched_package_refs": matched_package_refs,
             "structural_changes": structural_changes,
             "annotation_changes": annotation_changes,
             "applicability_changes": applicability_changes,

@@ -279,9 +279,14 @@ def ontology_package_index() -> dict[str, object]:
                         "domains": ["specgraph_core"],
                         "lifecyclePhases": ["draft_spec_authoring"],
                         "agentTypes": ["SpecAuthorAgent"],
+                        "subsystems": ["candidate_authoring"],
+                        "runtimes": ["specgraph_cli"],
+                        "platforms": ["local_workspace"],
+                        "contexts": ["idea_to_spec"],
                     },
                     "excludes": {
                         "domains": ["unrelated_product_domain"],
+                        "platforms": ["unreviewed_runtime"],
                     },
                     "assumptions": [
                         {
@@ -314,9 +319,19 @@ def ontology_compatibility_diff() -> dict[str, object]:
         "schema_version": 1,
         "canonical_mutations_allowed": False,
         "tracked_artifacts_written": False,
+        "package_ref": "org.0al.specgraph.core@0.1.0",
+        "from_ref": "org.0al.specgraph.core@0.1.0",
+        "to_ref": "org.0al.specgraph.core@0.2.0",
         "change_classification": {
             "structural_changes": [
-                {"kind": "relationRangeChanged", "ref": "sgcore:definesRequirement"}
+                {
+                    "kind": "relationRangeChanged",
+                    "ref": "sgcore:definesRequirement",
+                    "target_kind": "relation",
+                    "before": "sgcore:Spec",
+                    "after": "sgcore:BoundarySpec",
+                    "compatibility": "review_required",
+                }
             ],
             "annotation_changes": [],
             "applicability_changes": [
@@ -424,8 +439,24 @@ def test_candidate_overview_projects_compiler_backed_ontology_applicability() ->
         "domains": ["specgraph_core"],
         "lifecycle_phases": ["draft_spec_authoring"],
         "agent_types": ["SpecAuthorAgent"],
+        "subsystems": ["candidate_authoring"],
+        "runtimes": ["specgraph_cli"],
+        "platforms": ["local_workspace"],
+        "contexts": ["idea_to_spec"],
     }
+    assert applicability["profiles"][0]["excludes"]["platforms"] == ["unreviewed_runtime"]
+    assert applicability["change_classification"]["status"] == "published"
+    assert applicability["change_classification"]["matched_package_refs"] == [
+        "org.0al.specgraph.core@0.1.0"
+    ]
     assert applicability["change_classification"]["classified_change_count"] == 2
+    assert (
+        applicability["change_classification"]["structural_changes"][0]["target_kind"] == "relation"
+    )
+    assert (
+        applicability["change_classification"]["structural_changes"][0]["compatibility"]
+        == "review_required"
+    )
     assert (
         applicability["change_classification"]["applicability_changes"][0]["kind"]
         == "invalidationTriggerAdded"
@@ -454,6 +485,61 @@ def test_candidate_overview_blocks_write_capable_applicability_source() -> None:
     assert any(
         finding["finding_id"] == "candidate_overview_source_authority_expansion"
         for finding in overview["findings"]
+    )
+
+
+def test_candidate_overview_blocks_unknown_write_capable_ontology_source() -> None:
+    compatibility_diff = ontology_compatibility_diff()
+    compatibility_diff["authority_boundary"] = {"may_update_ontology_lockfile": True}
+
+    overview = build_overview(
+        ontology_package_index=ontology_package_index(),
+        ontology_compatibility_diff=compatibility_diff,
+    )
+
+    assert overview["readiness"]["ready"] is False
+    assert any(
+        finding["finding_id"] == "candidate_overview_source_authority_expansion"
+        and "ontology_compatibility_diff.authority_boundary.may_update_ontology_lockfile"
+        in finding["evidence"]["fields"]
+        for finding in overview["findings"]
+    )
+
+
+def test_candidate_overview_marks_foreign_diff_as_stale() -> None:
+    compatibility_diff = ontology_compatibility_diff()
+    compatibility_diff["package_ref"] = "org.example.foreign@1.0.0"
+    compatibility_diff["from_ref"] = "org.example.foreign@1.0.0"
+    compatibility_diff["to_ref"] = "org.example.foreign@1.1.0"
+
+    overview = build_overview(
+        ontology_package_index=ontology_package_index(),
+        ontology_compatibility_diff=compatibility_diff,
+    )
+
+    applicability = overview["sections"]["ontology_applicability"]
+    classification = applicability["change_classification"]
+    assert applicability["status"] == "change_evidence_stale"
+    assert classification["status"] == "stale_package_mismatch"
+    assert classification["classified_change_count"] == 0
+    assert classification["structural_changes"] == []
+    assert classification["matched_package_refs"] == []
+    assert overview["readiness"]["ready"] is True
+
+
+def test_real_idea_smoke_scopes_ontology_inputs_to_run_dir() -> None:
+    makefile = (ROOT / "Makefile").read_text(encoding="utf-8")
+    target = makefile.split(".PHONY: real-idea-smoke-depth-baseline", maxsplit=1)[1].split(
+        ".PHONY: generic-idea-intake", maxsplit=1
+    )[0]
+
+    assert (
+        'CANDIDATE_OVERVIEW_ONTOLOGY_PACKAGE_INDEX="$(REAL_IDEA_SMOKE_RUN_DIR)/ontology_package_index.json"'
+        in target
+    )
+    assert (
+        'CANDIDATE_OVERVIEW_ONTOLOGY_COMPATIBILITY_DIFF="$(REAL_IDEA_SMOKE_RUN_DIR)/ontology_compatibility_diff_preview.json"'
+        in target
     )
 
 

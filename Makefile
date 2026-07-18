@@ -933,6 +933,8 @@ real-idea-smoke-depth-baseline:
 		CANDIDATE_OVERVIEW_IDEA_MATURITY="$(REAL_IDEA_SMOKE_RUN_DIR)/idea_maturity_metrics_report.json" \
 		CANDIDATE_OVERVIEW_PROJECT_LOCAL_ONTOLOGY_LANE="$(REAL_IDEA_SMOKE_RUN_DIR)/project_local_ontology_review_lane.json" \
 		CANDIDATE_OVERVIEW_PROJECT_LOCAL_ONTOLOGY_EFFECT="$(REAL_IDEA_SMOKE_RUN_DIR)/project_local_ontology_decision_effect_report.json" \
+		CANDIDATE_OVERVIEW_ONTOLOGY_PACKAGE_INDEX="$(REAL_IDEA_SMOKE_RUN_DIR)/ontology_package_index.json" \
+		CANDIDATE_OVERVIEW_ONTOLOGY_COMPATIBILITY_DIFF="$(REAL_IDEA_SMOKE_RUN_DIR)/ontology_compatibility_diff_preview.json" \
 		CANDIDATE_OVERVIEW_REPAIRED_HANDOFF="$(REAL_IDEA_SMOKE_RUN_DIR)/repaired_candidate_promotion_handoff_report.json" \
 		CANDIDATE_OVERVIEW_OUTPUT="$(REAL_IDEA_SMOKE_CANDIDATE_OVERVIEW_OUTPUT)"
 	@$(PYTHON) tools/product_demo_depth_report.py \
