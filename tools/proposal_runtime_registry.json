@@ -12371,5 +12371,68 @@
       }
     ],
     "notes": "Candidate Overview now exposes compiler-backed ONT-040 applicability and classified change evidence as an additive review-only section; missing profiles remain not_published and lifecycle gates are unchanged."
+  },
+  {
+    "proposal_id": "0217",
+    "posture": "synchronous_runtime_slice",
+    "runtime_surfaces": [
+      "docs/proposals/0217_hosted_managed_public_report_publication.md",
+      "docs/archive/proposal_sources/0217_hosted_managed_public_report_publication.md",
+      "tools/hosted_managed_publication_overlay.py",
+      ".github/workflows/publish-static-artifacts.yml",
+      "tests/test_hosted_managed_publication_overlay.py",
+      "tests/test_publish_static_artifacts_workflow.py",
+      "docs/static_artifact_publish.md",
+      "docs/product_workspace_graph_versioning_roadmap.md",
+      "Sources/SpecGraph/Documentation.docc/ProductWorkspacePilots.md",
+      "tools/README.md"
+    ],
+    "runtime_markers": [
+      {
+        "path": "tools/hosted_managed_publication_overlay.py",
+        "pattern": "def validate_packet"
+      },
+      {
+        "path": "tools/hosted_managed_publication_overlay.py",
+        "pattern": "def apply_packet"
+      },
+      {
+        "path": ".github/workflows/publish-static-artifacts.yml",
+        "pattern": "Apply hosted managed public report overlay"
+      }
+    ],
+    "validation_markers": [
+      {
+        "path": "tests/test_hosted_managed_publication_overlay.py",
+        "pattern": "test_validate_review_object_and_status_packets"
+      },
+      {
+        "path": "tests/test_hosted_managed_publication_overlay.py",
+        "pattern": "test_apply_is_atomic_and_invalid_packet_preserves_existing_artifact"
+      },
+      {
+        "path": "tests/test_publish_static_artifacts_workflow.py",
+        "pattern": "test_publish_workflow_applies_bounded_hosted_report_before_workspace_build"
+      }
+    ],
+    "observation_markers": [
+      {
+        "path": "docs/static_artifact_publish.md",
+        "pattern": "Proposal `0217` adds one optional manual-dispatch input"
+      },
+      {
+        "path": "docs/product_workspace_graph_versioning_roadmap.md",
+        "pattern": "Proposal `0217` adds the missing hosted-report visibility handoff"
+      },
+      {
+        "path": "Sources/SpecGraph/Documentation.docc/ProductWorkspacePilots.md",
+        "pattern": "Proposal `0217` adds a bounded hosted-report handoff"
+      },
+      {
+        "path": "tools/README.md",
+        "pattern": "Proposal 0217 adds `hosted_managed_publication_overlay.py`"
+      }
+    ],
+    "notes": "Hosted managed review-object and review-status reports can now enter the tracked canary workspace only through one digest-bound public-safe packet before existing checksum-aware static publication."
   }
 ]

@@ -135,6 +135,24 @@ def test_publish_workflow_builds_hosted_operation_canary_workspace_bundle() -> N
     )
 
 
+def test_publish_workflow_applies_bounded_hosted_report_before_workspace_build() -> None:
+    workflow = _workflow_text()
+    overlay_block = _step_block(
+        workflow,
+        "Apply hosted managed public report overlay",
+    )
+
+    assert "hosted_managed_publication_packet_b64:" in workflow
+    assert "inputs.hosted_managed_publication_packet_b64 != ''" in overlay_block
+    assert "base64 --decode" in overlay_block
+    assert "tools/hosted_managed_publication_overlay.py" in overlay_block
+    assert "--workspace-id hosted-operation-canary" in overlay_block
+    assert "--run-dir runs/hosted-operation-canary" in overlay_block
+    assert workflow.index("Apply hosted managed public report overlay") < workflow.index(
+        "Build Hosted Operation Canary product workspace bundle"
+    )
+
+
 def test_hosted_operation_canary_packet_is_self_contained_and_ready() -> None:
     run_dir = ROOT / "runs" / "hosted-operation-canary"
     decision = json.loads(

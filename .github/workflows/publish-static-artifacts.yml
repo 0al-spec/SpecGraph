@@ -2,6 +2,11 @@ name: Publish Static Artifacts
 
 on:
   workflow_dispatch:
+    inputs:
+      hosted_managed_publication_packet_b64:
+        description: "Bounded public-safe hosted-operation publication packet"
+        required: false
+        type: string
   pull_request:
     paths:
       - "landing/**"
@@ -106,6 +111,25 @@ jobs:
           make product-workspace-team-decision-log-happy-path-repair-pack
           python tools/build_static_artifact_bundle.py \
             --output-dir dist/specgraph-public/workspaces/team-decision-log
+
+      - name: Apply hosted managed public report overlay
+        if: >-
+          github.event_name == 'workflow_dispatch' &&
+          inputs.hosted_managed_publication_packet_b64 != ''
+        env:
+          HOSTED_MANAGED_PUBLICATION_PACKET_B64: >-
+            ${{ inputs.hosted_managed_publication_packet_b64 }}
+        run: |
+          set -euo pipefail
+          packet="$RUNNER_TEMP/hosted-managed-publication-packet.json"
+          report="$RUNNER_TEMP/hosted-managed-publication-overlay-report.json"
+          printf '%s' "$HOSTED_MANAGED_PUBLICATION_PACKET_B64" \
+            | base64 --decode > "$packet"
+          python tools/hosted_managed_publication_overlay.py \
+            --input "$packet" \
+            --workspace-id hosted-operation-canary \
+            --run-dir runs/hosted-operation-canary \
+            --output "$report"
 
       - name: Build Hosted Operation Canary product workspace bundle
         run: |
