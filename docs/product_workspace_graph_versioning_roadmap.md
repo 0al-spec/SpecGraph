@@ -37,11 +37,12 @@ Follow-ups:
 3. **Deterministic public-safe outputs.** Reduce timestamp-only bundle churn
    while preserving generated-at evidence where it is semantically required.
    Deployment manifests and digest verification remain authoritative.
-4. **Ontology applicability import.** Ontology ONT-040 now publishes a
-   compiler-backed `ModelApplicabilityProfile` and review-only change
-   classification. Import those contracts into
-   candidate graph, gap/diff, Candidate Overview, and review evidence without
-   inventing a SpecGraph-local applicability vocabulary.
+4. **Ontology applicability review.** Done in proposal `0144` for package and
+   compatibility-diff imports, and proposal `0216` for Candidate Overview.
+   SpecGraph reuses the compiler-backed ONT-040 vocabulary for scopes,
+   assumptions, exclusions, invalidation triggers, and classified changes. It
+   does not invent a local applicability schema or turn review evidence into a
+   score, gate, or runtime policy.
 5. **Custom-run handoff reconciliation.** Close the remaining cash-flow
    follow-up by verifying the existing workspace-bound Platform promotion
    dry-run path or adding only the smallest missing producer handoff. Do not
@@ -1580,6 +1581,14 @@ project-local ontology review lane/effect report, and repaired handoff report.
 It emits one compact artifact with product intent, understood scope, event
 storming groups, candidate nodes, topology relation counts, repair readiness,
 project-local ontology review state, and the next safe operator action.
+
+Proposal `0216` adds compiler-backed ontology applicability to the same
+narrative surface. Candidate Overview reads the package index and compatibility
+diff produced by proposal `0144`, then exposes authored scopes, assumptions,
+exclusions, invalidation triggers, and structural/annotation/applicability
+change classification. Missing applicability remains `not_published`; it is not
+a zero score or implicit blocker. The projection is review-only and does not
+alter candidate approval, promotion, or publication readiness.
 
 This is not a new gate or score. It is a read-only navigation surface over
 existing lifecycle artifacts. If a source artifact claims expanded authority,

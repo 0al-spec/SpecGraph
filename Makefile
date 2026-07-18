@@ -312,6 +312,8 @@ CANDIDATE_OVERVIEW_REPAIRED_REPAIR_SESSION ?= runs/repaired_idea_to_spec_repair_
 CANDIDATE_OVERVIEW_IDEA_MATURITY ?= runs/idea_maturity_metrics_report.json
 CANDIDATE_OVERVIEW_PROJECT_LOCAL_ONTOLOGY_LANE ?= runs/project_local_ontology_review_lane.json
 CANDIDATE_OVERVIEW_PROJECT_LOCAL_ONTOLOGY_EFFECT ?= runs/project_local_ontology_decision_effect_report.json
+CANDIDATE_OVERVIEW_ONTOLOGY_PACKAGE_INDEX ?= runs/ontology_package_index.json
+CANDIDATE_OVERVIEW_ONTOLOGY_COMPATIBILITY_DIFF ?= runs/ontology_compatibility_diff_preview.json
 CANDIDATE_OVERVIEW_REPAIRED_HANDOFF ?= runs/repaired_candidate_promotion_handoff_report.json
 CANDIDATE_OVERVIEW_OUTPUT ?= runs/candidate_overview.json
 CANDIDATE_OVERVIEW_STRICT ?=
@@ -1136,7 +1138,7 @@ product-workspace-idea-maturity:
 
 .PHONY: candidate-overview
 candidate-overview:
-	@$(PYTHON) tools/candidate_overview.py --intake "$(CANDIDATE_OVERVIEW_INTAKE)" --candidate-graph "$(CANDIDATE_OVERVIEW_CANDIDATE_GRAPH)" --repaired-candidate-graph "$(CANDIDATE_OVERVIEW_REPAIRED_CANDIDATE_GRAPH)" --repair-session "$(CANDIDATE_OVERVIEW_REPAIR_SESSION)" --repaired-repair-session "$(CANDIDATE_OVERVIEW_REPAIRED_REPAIR_SESSION)" --idea-maturity "$(CANDIDATE_OVERVIEW_IDEA_MATURITY)" --project-local-ontology-lane "$(CANDIDATE_OVERVIEW_PROJECT_LOCAL_ONTOLOGY_LANE)" --project-local-ontology-effect "$(CANDIDATE_OVERVIEW_PROJECT_LOCAL_ONTOLOGY_EFFECT)" --repaired-handoff "$(CANDIDATE_OVERVIEW_REPAIRED_HANDOFF)" --output "$(CANDIDATE_OVERVIEW_OUTPUT)" $(CANDIDATE_OVERVIEW_STRICT_ARG)
+	@$(PYTHON) tools/candidate_overview.py --intake "$(CANDIDATE_OVERVIEW_INTAKE)" --candidate-graph "$(CANDIDATE_OVERVIEW_CANDIDATE_GRAPH)" --repaired-candidate-graph "$(CANDIDATE_OVERVIEW_REPAIRED_CANDIDATE_GRAPH)" --repair-session "$(CANDIDATE_OVERVIEW_REPAIR_SESSION)" --repaired-repair-session "$(CANDIDATE_OVERVIEW_REPAIRED_REPAIR_SESSION)" --idea-maturity "$(CANDIDATE_OVERVIEW_IDEA_MATURITY)" --project-local-ontology-lane "$(CANDIDATE_OVERVIEW_PROJECT_LOCAL_ONTOLOGY_LANE)" --project-local-ontology-effect "$(CANDIDATE_OVERVIEW_PROJECT_LOCAL_ONTOLOGY_EFFECT)" --ontology-package-index "$(CANDIDATE_OVERVIEW_ONTOLOGY_PACKAGE_INDEX)" --ontology-compatibility-diff "$(CANDIDATE_OVERVIEW_ONTOLOGY_COMPATIBILITY_DIFF)" --repaired-handoff "$(CANDIDATE_OVERVIEW_REPAIRED_HANDOFF)" --output "$(CANDIDATE_OVERVIEW_OUTPUT)" $(CANDIDATE_OVERVIEW_STRICT_ARG)
 
 .PHONY: product-workspace-active-candidate
 product-workspace-active-candidate:

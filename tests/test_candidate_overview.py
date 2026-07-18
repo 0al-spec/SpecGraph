@@ -256,6 +256,81 @@ def project_local_effect() -> dict[str, object]:
     }
 
 
+def ontology_package_index() -> dict[str, object]:
+    return {
+        "artifact_kind": "ontology_package_index",
+        "schema_version": 1,
+        "canonical_mutations_allowed": False,
+        "tracked_artifacts_written": False,
+        "packages": [
+            {
+                "package_id": "org.0al.specgraph.core",
+                "version": "0.1.0",
+                "lock": {
+                    "package_ref": "org.0al.specgraph.core@0.1.0",
+                },
+                "model_applicability_summary": {
+                    "status": "declared",
+                    "assumption_count": 2,
+                    "invalidation_trigger_count": 1,
+                },
+                "model_applicability": {
+                    "applies_to": {
+                        "domains": ["specgraph_core"],
+                        "lifecyclePhases": ["draft_spec_authoring"],
+                        "agentTypes": ["SpecAuthorAgent"],
+                    },
+                    "excludes": {
+                        "domains": ["unrelated_product_domain"],
+                    },
+                    "assumptions": [
+                        {
+                            "id": "human_review_required",
+                            "layer": "execution",
+                            "text": "Generated ontology changes require owner review.",
+                        },
+                        {
+                            "id": "project_local_authority",
+                            "layer": "meta",
+                            "text": "Project ontology packages remain workspace-owned.",
+                        },
+                    ],
+                    "invalidation_triggers": [
+                        {
+                            "id": "package_layer_contract_changed",
+                            "layer": "meta",
+                            "text": "Re-review when the layer vocabulary changes.",
+                        }
+                    ],
+                },
+            }
+        ],
+    }
+
+
+def ontology_compatibility_diff() -> dict[str, object]:
+    return {
+        "artifact_kind": "ontology_compatibility_diff_preview",
+        "schema_version": 1,
+        "canonical_mutations_allowed": False,
+        "tracked_artifacts_written": False,
+        "change_classification": {
+            "structural_changes": [
+                {"kind": "relationRangeChanged", "ref": "sgcore:definesRequirement"}
+            ],
+            "annotation_changes": [],
+            "applicability_changes": [
+                {
+                    "kind": "invalidationTriggerAdded",
+                    "ref": (
+                        "modelApplicability.invalidationTriggers.package_layer_contract_changed"
+                    ),
+                }
+            ],
+        },
+    }
+
+
 def build_overview(**overrides: object) -> dict[str, object]:
     module = load_module()
     return module.build_candidate_overview(
@@ -272,6 +347,8 @@ def build_overview(**overrides: object) -> dict[str, object]:
         project_local_ontology_effect=overrides.get(
             "project_local_ontology_effect", project_local_effect()
         ),
+        ontology_package_index=overrides.get("ontology_package_index", {}),
+        ontology_compatibility_diff=overrides.get("ontology_compatibility_diff", {}),
         source_artifacts=overrides.get(
             "source_artifacts",
             {
@@ -310,6 +387,74 @@ def test_candidate_overview_builds_public_safe_narrative() -> None:
     serialized = json.dumps(overview)
     assert "raw_intent_text" not in serialized
     assert "/Users/egor" not in serialized
+
+
+def test_candidate_overview_projects_compiler_backed_ontology_applicability() -> None:
+    overview = build_overview(
+        ontology_package_index=ontology_package_index(),
+        ontology_compatibility_diff=ontology_compatibility_diff(),
+        source_artifacts={
+            "intake": {
+                "status": "present",
+                "artifact_kind": "idea_event_storming_intake",
+            },
+            "candidate_graph": {
+                "status": "present",
+                "artifact_kind": "candidate_spec_graph",
+            },
+            "ontology_package_index": {
+                "status": "present",
+                "artifact_kind": "ontology_package_index",
+                "source_ref": "runs/ontology_package_index.json",
+            },
+            "ontology_compatibility_diff": {
+                "status": "present",
+                "artifact_kind": "ontology_compatibility_diff_preview",
+                "source_ref": "runs/ontology_compatibility_diff_preview.json",
+            },
+        },
+    )
+
+    applicability = overview["sections"]["ontology_applicability"]
+    assert applicability["status"] == "change_review_required"
+    assert applicability["review_only"] is True
+    assert applicability["profile_count"] == 1
+    assert applicability["assumption_count"] == 2
+    assert applicability["profiles"][0]["applies_to"] == {
+        "domains": ["specgraph_core"],
+        "lifecycle_phases": ["draft_spec_authoring"],
+        "agent_types": ["SpecAuthorAgent"],
+    }
+    assert applicability["change_classification"]["classified_change_count"] == 2
+    assert (
+        applicability["change_classification"]["applicability_changes"][0]["kind"]
+        == "invalidationTriggerAdded"
+    )
+    assert applicability["authority_boundary"]["may_infer_applicability"] is False
+    assert overview["readiness"]["ready"] is True
+
+
+def test_candidate_overview_marks_missing_applicability_as_not_published() -> None:
+    overview = build_overview()
+
+    applicability = overview["sections"]["ontology_applicability"]
+    assert applicability["status"] == "not_published"
+    assert applicability["profile_count"] == 0
+    assert applicability["change_classification"]["status"] == "not_published"
+    assert overview["readiness"]["ready"] is True
+
+
+def test_candidate_overview_blocks_write_capable_applicability_source() -> None:
+    package_index = ontology_package_index()
+    package_index["authority_boundary"] = {"may_write_ontology_package": True}
+
+    overview = build_overview(ontology_package_index=package_index)
+
+    assert overview["readiness"]["ready"] is False
+    assert any(
+        finding["finding_id"] == "candidate_overview_source_authority_expansion"
+        for finding in overview["findings"]
+    )
 
 
 def test_candidate_overview_uses_project_local_effect_as_effective_review_status() -> None:

@@ -11,9 +11,10 @@ producer-side deterministic output remains a follow-up rather than weakening
 digest verification.
 
 The current producer priorities are to measure the bounded-parallel publication
-effect, reduce timestamp-only public bundle churn, consume compiler-backed
-Ontology applicability data after ONT-040, and reconcile the remaining
-custom-run promotion handoff. Durable SpecSpace-owned drafts and execution
+effect, reduce timestamp-only public bundle churn, and reconcile the remaining
+custom-run promotion handoff. Compiler-backed Ontology applicability is already
+consumed by proposal `0144` and projected into Candidate Overview by proposal
+`0216`. Durable SpecSpace-owned drafts and execution
 requests belong to an external SpecSpace/Platform state service; SpecGraph
 preserves workspace-bound handoff evidence but does not become their storage
 authority.
@@ -404,6 +405,13 @@ SpecSpace consumes the artifact in the Product Workspace candidate overview
 panel. The panel remains read-only and uses the overview to explain what the
 system understood, which workflow relations exist, how project-local ontology
 review affects readiness, and what the next safe operator action is.
+
+Proposal `0216` also projects the compiler-backed ONT-040 applicability profile
+and compatibility change classification into Candidate Overview. It reuses the
+package index and diff artifacts from proposal `0144`; missing applicability is
+`not_published`, while declared scopes, assumptions, exclusions, invalidation
+triggers, and classified changes remain review-only evidence rather than a
+score, gate, or runtime policy.
 
 The SpecSpace handoff contract is intentionally extended for the candidate
 overview surface. It includes `runs/candidate_overview.json` and related product
