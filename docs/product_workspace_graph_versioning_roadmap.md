@@ -22,6 +22,30 @@ Follow-ups:
 - reduce producer-side timestamp churn without treating timestamps as
   deployment authority or weakening manifest digest checks.
 
+## Static Artifact Hosting Migration
+
+Plan a separate migration from the current FTP/FTPS/SFTP static host to an
+S3-compatible object store with HTTPS/CDN delivery. The hosted Platform VPS
+remains the private execution and authoritative-report boundary; public
+artifacts must not be served from its private worker report root.
+
+The migration must proceed through dual publication rather than an in-place
+cutover:
+
+1. publish the same immutable root and workspace bundles to the current host
+   and the candidate object store;
+2. compare manifest paths and SHA-256 digests across both public origins;
+3. verify SpecSpace product routes and production smoke against the candidate
+   origin;
+4. document rollback, retention, lifecycle cleanup, TLS/custom-domain routing,
+   and least-privileged write credentials;
+5. switch the public artifact base only after repeated parity checks, then
+   remove the legacy transfer dependency in a separate change.
+
+This migration changes storage transport, not artifact authority. Manifests,
+public-safety validation, payload-first metadata finalization, and post-upload
+digest verification remain mandatory.
+
 Proposal `0217` adds the missing hosted-report visibility handoff. Platform can
 dispatch one bounded public-safe review-object or review-status projection for
 `hosted-operation-canary`; SpecGraph validates and overlays it before proposal

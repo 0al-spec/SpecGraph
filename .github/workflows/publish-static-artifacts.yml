@@ -119,6 +119,7 @@ jobs:
         env:
           HOSTED_MANAGED_PUBLICATION_PACKET_B64: >-
             ${{ inputs.hosted_managed_publication_packet_b64 }}
+          SPECGRAPH_EXTERNAL_CHECKOUT_ROOT: ${{ github.workspace }}/external
         run: |
           set -euo pipefail
           packet="$RUNNER_TEMP/hosted-managed-publication-packet.json"

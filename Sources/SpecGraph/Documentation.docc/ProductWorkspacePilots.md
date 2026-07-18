@@ -10,6 +10,15 @@ measurement still shows timestamp-only churn in otherwise stable reports, so
 producer-side deterministic output remains a follow-up rather than weakening
 digest verification.
 
+The next storage evolution is a separate migration from FTP/FTPS/SFTP to an
+S3-compatible object store with HTTPS/CDN delivery. It must use dual
+publication, manifest and SHA-256 parity checks, SpecSpace smoke against the
+candidate origin, documented rollback and retention, and least-privileged
+write credentials before cutover. The hosted Platform VPS remains the private
+execution boundary and must not expose its private worker report root as the
+public artifact origin. This changes storage transport, not manifest or
+public-safety authority.
+
 Proposal `0217` adds a bounded hosted-report handoff for
 `hosted-operation-canary`. An authenticated workflow dispatch may carry one
 sanitized review-object or review-status packet. SpecGraph verifies its digest,
