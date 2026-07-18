@@ -1,14 +1,22 @@
 from __future__ import annotations
 
 import hashlib
+import importlib.util
 import json
 import tempfile
 from pathlib import Path
 
 import pytest
-from tools import hosted_managed_publication_overlay as overlay
 
 ROOT = Path(__file__).resolve().parents[1]
+TOOL_PATH = ROOT / "tools" / "hosted_managed_publication_overlay.py"
+SPEC = importlib.util.spec_from_file_location(
+    "hosted_managed_publication_overlay",
+    TOOL_PATH,
+)
+assert SPEC is not None and SPEC.loader is not None
+overlay = importlib.util.module_from_spec(SPEC)
+SPEC.loader.exec_module(overlay)
 
 
 def json_bytes(payload: dict) -> bytes:
