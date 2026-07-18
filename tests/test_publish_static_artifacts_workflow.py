@@ -144,6 +144,7 @@ def test_publish_workflow_applies_bounded_hosted_report_before_workspace_build()
 
     assert "hosted_managed_publication_packet_b64:" in workflow
     assert "inputs.hosted_managed_publication_packet_b64 != ''" in overlay_block
+    assert "SPECGRAPH_EXTERNAL_CHECKOUT_ROOT: ${{ github.workspace }}/external" in overlay_block
     assert "base64 --decode" in overlay_block
     assert "tools/hosted_managed_publication_overlay.py" in overlay_block
     assert "--workspace-id hosted-operation-canary" in overlay_block
