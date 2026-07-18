@@ -55,6 +55,11 @@ def review_object() -> dict:
         "review_state_at_capture": "open",
         "review_head_sha": "b" * 40,
         "base_branch": "main",
+        "workspace_binding": {
+            "status": "ready",
+            "workspace_id": overlay.WORKSPACE_ID,
+            "binding_id": (f"product-workspace-binding://{overlay.WORKSPACE_ID}"),
+        },
         "privacy_boundary": {
             "public_safe": True,
             "raw_idea_included": False,
@@ -178,6 +183,14 @@ def test_rejects_digest_drift_foreign_workspace_and_authority_expansion() -> Non
     payload["workspace_id"] = "foreign"
     with pytest.raises(overlay.OverlayError, match="contract"):
         overlay.validate_packet(payload, workspace_id=overlay.WORKSPACE_ID)
+
+    report = review_object()
+    report["workspace_binding"]["workspace_id"] = "foreign"
+    with pytest.raises(overlay.OverlayError, match="invalid"):
+        overlay.validate_packet(
+            packet(report, overlay.REVIEW_OBJECT_REF),
+            workspace_id=overlay.WORKSPACE_ID,
+        )
 
     report = review_status()
     report["authority_boundary"]["may_merge_review"] = True

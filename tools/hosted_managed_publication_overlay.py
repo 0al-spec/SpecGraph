@@ -201,11 +201,12 @@ def _review_identity(
 
 
 def _validate_review_object(report: dict[str, Any]) -> None:
-    _identity(report)
+    workspace_id, _candidate_id, _candidate_branch = _identity(report)
     _review_identity(
         review_url=report.get("review_url"),
         review_number=report.get("review_number"),
     )
+    workspace_binding = _record(report.get("workspace_binding"))
     if (
         report.get("artifact_kind") != REVIEW_OBJECT_KIND
         or report.get("schema_version") != 1
@@ -222,6 +223,12 @@ def _validate_review_object(report: dict[str, Any]) -> None:
         )
         or not _public_privacy(report.get("privacy_boundary"))
         or not _public_boundary(report.get("authority_boundary"))
+        or workspace_binding
+        != {
+            "status": "ready",
+            "workspace_id": workspace_id,
+            "binding_id": f"product-workspace-binding://{workspace_id}",
+        }
     ):
         raise OverlayError("review object public report is invalid")
 
