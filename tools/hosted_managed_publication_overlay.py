@@ -244,15 +244,20 @@ def _validate_review_status(report: dict[str, Any]) -> None:
     graph_summary = _record(graph_review.get("summary"))
     summary = _record(report.get("summary"))
     review_state = report.get("review_state")
+    review_probe_only = report.get("review_probe_only")
     expected_pull_request_state = {
         "open": "OPEN",
         "closed": "CLOSED",
         "merged": "MERGED",
     }.get(review_state)
     expected_summary_status = (
-        "ready_for_read_model_publication"
-        if review_state == "merged"
-        else "waiting_for_review_merge"
+        "review_probe_completed"
+        if review_probe_only is True
+        else (
+            "ready_for_read_model_publication"
+            if review_state == "merged"
+            else "waiting_for_review_merge"
+        )
     )
     review_merged = review_state == "merged"
     if (
@@ -261,7 +266,7 @@ def _validate_review_status(report: dict[str, Any]) -> None:
         or report.get("ok") is not True
         or report.get("workflow_lane") != "product_idea_to_spec"
         or expected_pull_request_state is None
-        or report.get("review_probe_only") is not False
+        or not isinstance(review_probe_only, bool)
         or report.get("promotion_execution_report_ref")
         != "runs/product_candidate_promotion_execution_report.json"
         or report.get("review_object_evidence_ref") != REVIEW_OBJECT_REF
