@@ -259,6 +259,7 @@ def _validate_review_status(report: dict[str, Any]) -> None:
             else "waiting_for_review_merge"
         )
     )
+    expected_graph_summary_status = expected_summary_status
     review_merged = review_state == "merged"
     if (
         report.get("artifact_kind") != REVIEW_STATUS_KIND
@@ -278,6 +279,7 @@ def _validate_review_status(report: dict[str, Any]) -> None:
         or graph_review.get("ok") is not True
         or graph_review.get("review_state") != review_state
         or graph_review.get("review_url") != review_url
+        or graph_summary.get("status") != expected_graph_summary_status
         or graph_summary.get("review_merged") is not review_merged
         or summary.get("status") != expected_summary_status
         or summary.get("review_merged") is not review_merged
