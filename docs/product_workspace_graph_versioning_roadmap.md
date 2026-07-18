@@ -22,6 +22,13 @@ Follow-ups:
 - reduce producer-side timestamp churn without treating timestamps as
   deployment authority or weakening manifest digest checks.
 
+Proposal `0217` adds the missing hosted-report visibility handoff. Platform can
+dispatch one bounded public-safe review-object or review-status projection for
+`hosted-operation-canary`; SpecGraph validates and overlays it before proposal
+`0215` performs checksum-aware workspace publication. Private worker reports
+remain authoritative and private. SpecSpace receives only sanitized lifecycle
+evidence through its existing artifact consumer.
+
 ## Current Near-Term Producer Priorities
 
 1. **External SpecSpace state coordination.** The next production managed-mode
@@ -34,10 +41,13 @@ Follow-ups:
    authoritative reports survive the production rollout without falling back
    to shared `runs/*`, local absolute paths, or demo workspace artifacts. This
    is compatibility evidence, not SpecGraph execution authority.
-3. **Deterministic public-safe outputs.** Reduce timestamp-only bundle churn
+3. **Hosted report publication evidence.** Verify proposal `0217` in production
+   with fresh open-PR provenance, one attempt, a drained queue, one changed
+   workspace payload, and post-upload digest verification.
+4. **Deterministic public-safe outputs.** Reduce timestamp-only bundle churn
    while preserving generated-at evidence where it is semantically required.
    Deployment manifests and digest verification remain authoritative.
-4. **Ontology applicability review.** Done in proposal `0144` for package and
+5. **Ontology applicability review.** Done in proposal `0144` for package and
    compatibility-diff imports, and proposal `0216` for Candidate Overview.
    SpecGraph reuses the compiler-backed ONT-040 vocabulary for scopes,
    assumptions, exclusions, invalidation triggers, and classified changes. It

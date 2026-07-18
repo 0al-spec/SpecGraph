@@ -7,6 +7,11 @@ every manifest-authorized artifact from the public HTTPS base and fails on any
 missing or mismatched payload. Deployment still treats the local public-safe
 manifest as authority and never deletes the shared remote webroot.
 
+Proposal 0217 adds `hosted_managed_publication_overlay.py`. It consumes one
+bounded Platform publication packet for `hosted-operation-canary`, validates
+the public-safe review artifact, and atomically overlays only the allowlisted
+top-level run file before bundle construction.
+
 For a practical operator/contributor guide to the supervisor, see
 [docs/supervisor_manual.md](../docs/supervisor_manual.md).
 For a visualizer-facing compact report and overlay guide, see

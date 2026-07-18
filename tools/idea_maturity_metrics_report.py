@@ -1575,6 +1575,11 @@ def _review_status(artifacts: dict[str, dict[str, Any]]) -> str:
             if _promotion_execution_state(artifacts) == "not_reached"
             else "not_available"
         )
+    review_state = _text(review.get("review_state"))
+    if review_state in {"open", "merged"}:
+        return review_state
+    if review_state == "closed":
+        return "blocked"
     summary = _summary(artifacts, "review_status")
     status = _text(summary.get("review_status")) or _text(summary.get("status"))
     if status in {"open", "merged", "blocked", "unknown"}:
@@ -1591,7 +1596,11 @@ def _review_status(artifacts: dict[str, dict[str, Any]]) -> str:
 def _review_pr_number(artifacts: dict[str, dict[str, Any]]) -> int | None:
     review = _dict(artifacts.get("review_status"))
     summary = _summary(artifacts, "review_status")
-    value = summary.get("review_pr_number") or _dict(review.get("review")).get("number")
+    value = (
+        summary.get("review_pr_number")
+        or _dict(review.get("review")).get("number")
+        or _dict(review.get("pull_request")).get("number")
+    )
     return _int(value) if value is not None else None
 
 
@@ -1601,6 +1610,7 @@ def _review_merge_commit_sha(artifacts: dict[str, dict[str, Any]]) -> str | None
     return (
         _text(summary.get("review_merge_commit_sha"))
         or _text(_dict(review.get("review")).get("merge_commit_sha"))
+        or _text(_dict(_dict(review.get("pull_request")).get("mergeCommit")).get("oid"))
         or None
     )
 

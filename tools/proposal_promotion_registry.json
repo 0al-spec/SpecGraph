@@ -2793,5 +2793,18 @@
     "required_provenance_links": [
       "source_draft_ref"
     ]
+  },
+  {
+    "proposal_id": "0217",
+    "source_artifact_class": "working_draft",
+    "source_refs": [
+      "docs/archive/proposal_sources/0217_hosted_managed_public_report_publication.md"
+    ],
+    "motivating_concern": "Hosted Platform reports remain private on the VPS while production SpecSpace reads a static workspace bundle, so successful queue execution can remain invisible to the lifecycle without a bounded public-safe publication handoff.",
+    "normalized_title": "Hosted Managed Public Report Publication",
+    "bounded_scope": "Validate and atomically overlay exactly one public-safe hosted review-object or review-status projection for hosted-operation-canary before existing checksum-aware static publication, without exposing commands, request payloads, secrets, or local paths, granting SFTP authority to the worker, accepting arbitrary workspaces or reports, executing managed operations, mutating canonical specs or Ontology, creating or merging Git reviews, or publishing read models.",
+    "required_provenance_links": [
+      "source_draft_ref"
+    ]
   }
 ]

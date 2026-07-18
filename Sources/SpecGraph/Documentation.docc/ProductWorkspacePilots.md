@@ -10,9 +10,17 @@ measurement still shows timestamp-only churn in otherwise stable reports, so
 producer-side deterministic output remains a follow-up rather than weakening
 digest verification.
 
-The current producer priorities are to measure the bounded-parallel publication
-effect, reduce timestamp-only public bundle churn, and reconcile the remaining
-custom-run promotion handoff. Compiler-backed Ontology applicability is already
+Proposal `0217` adds a bounded hosted-report handoff for
+`hosted-operation-canary`. An authenticated workflow dispatch may carry one
+sanitized review-object or review-status packet. SpecGraph verifies its digest,
+workspace identity, privacy, authority, and GitHub review identity before the
+existing incremental workspace publication runs. Worker commands, local paths,
+secrets, and raw request payloads are never copied into the public bundle.
+
+The current producer priorities are to verify the bounded hosted report
+publication with fresh review provenance, measure the bounded-parallel
+publication effect, and reduce timestamp-only public bundle churn.
+Compiler-backed Ontology applicability is already
 consumed by proposal `0144` and projected into Candidate Overview by proposal
 `0216`. Durable SpecSpace-owned drafts and execution
 requests belong to an external SpecSpace/Platform state service; SpecGraph
