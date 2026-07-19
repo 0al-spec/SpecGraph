@@ -40,7 +40,7 @@
     "review_status": "not_available"
   },
   "findings": [],
-  "generated_at": "2026-07-15T15:33:23.147447+00:00",
+  "generated_at": "2026-07-19T09:59:22.556180+00:00",
   "groups": {
     "answer_materialization": {
       "accepted_answer_count": 16,
@@ -252,14 +252,14 @@
       "last_progress_at": "2026-07-14T20:20:40.079862+00:00",
       "no_progress_rerun_count": 0,
       "phase_dwell_seconds": {
-        "approval_materialized": 0.12,
+        "approval_materialized": 69382.558,
         "intake_ready": 0.048,
-        "promotion_requested": 69162.947,
+        "promotion_requested": 325339.918,
         "repair_required": 2050.827,
         "repair_rerun_requested": 323086.983,
         "repaired_candidate_ready": 13708.245
       },
-      "stalled_phase": null,
+      "stalled_phase": "promotion_requested",
       "temporal_clock_source": "artifact_generated_at_or_event_timestamp",
       "time_to_approval_ready_seconds": 325137.859,
       "time_to_first_candidate_seconds": 0.048,
@@ -437,9 +437,9 @@
     "ordinary_unmaterialized_answer_count": 0,
     "per_gap_materialized_answer_count": 15,
     "phase_dwell_seconds": {
-      "approval_materialized": 0.12,
+      "approval_materialized": 69382.558,
       "intake_ready": 0.048,
-      "promotion_requested": 69162.947,
+      "promotion_requested": 325339.918,
       "repair_required": 2050.827,
       "repair_rerun_requested": 323086.983,
       "repaired_candidate_ready": 13708.245
@@ -504,7 +504,7 @@
     "risk_accepted_count": 0,
     "stale_answer_count": 0,
     "stale_ref_count": 0,
-    "stalled_phase": null,
+    "stalled_phase": "promotion_requested",
     "temporal_clock_source": "artifact_generated_at_or_event_timestamp",
     "time_to_approval_ready_seconds": 325137.859,
     "time_to_first_candidate_seconds": 0.048,
@@ -513,7 +513,7 @@
       "approval_materialized_at": "2026-07-14T20:20:40.079862+00:00",
       "intake_ready_at": "2026-07-10T22:13:13.976396+00:00",
       "last_progress_at": "2026-07-14T20:20:40.079862+00:00",
-      "promotion_requested_at": "2026-07-14T20:20:40.200139+00:00",
+      "promotion_requested_at": "2026-07-15T15:37:02.637370+00:00",
       "repair_required_at": "2026-07-10T22:13:14.024891+00:00",
       "repair_rerun_requested_at": "2026-07-10T22:47:24.851894+00:00",
       "repaired_candidate_ready_at": "2026-07-14T16:32:11.834917+00:00"
@@ -822,7 +822,7 @@
     },
     "promotion_execution": {
       "artifact_key": "promotion_execution",
-      "source_ref": "runs/hosted-operation-canary/absent-post-approval/product_candidate_promotion_execution_report.json",
+      "source_ref": "runs/hosted-operation-canary/product_candidate_promotion_execution_report.json",
       "status": "not_available"
     },
     "promotion_gate": {
@@ -855,7 +855,7 @@
       "artifact_key": "promotion_request",
       "artifact_kind": "platform_graph_repository_promotion_request",
       "contract_ref": null,
-      "generated_at": "2026-07-14T20:20:40.200139+00:00",
+      "generated_at": "2026-07-15T15:37:02.637370+00:00",
       "proposal_id": null,
       "readiness": {},
       "schema_version": 1,
@@ -869,7 +869,7 @@
     },
     "read_model_publication": {
       "artifact_key": "read_model_publication",
-      "source_ref": "runs/hosted-operation-canary/absent-post-approval/product_candidate_promotion_read_model_publication_report.json",
+      "source_ref": "runs/hosted-operation-canary/product_candidate_promotion_read_model_publication_report.json",
       "status": "not_available"
     },
     "repair_rerun_execution": {
@@ -1189,7 +1189,7 @@
     },
     "review_status": {
       "artifact_key": "review_status",
-      "source_ref": "runs/hosted-operation-canary/absent-post-approval/product_candidate_promotion_review_status_report.json",
+      "source_ref": "runs/hosted-operation-canary/product_candidate_promotion_review_status_report.json",
       "status": "not_available"
     },
     "specspace_draft_import_preview": {
@@ -1329,7 +1329,7 @@
     "review_required_question_count": 15,
     "review_status": "not_available",
     "stale_ref_count": 0,
-    "stalled_phase": null,
+    "stalled_phase": "promotion_requested",
     "time_to_approval_ready_seconds": 325137.859,
     "time_to_first_candidate_seconds": 0.048,
     "time_to_first_materialization_seconds": 2050.877,
@@ -1339,7 +1339,7 @@
     "approval_materialized_at": "2026-07-14T20:20:40.079862+00:00",
     "intake_ready_at": "2026-07-10T22:13:13.976396+00:00",
     "last_progress_at": "2026-07-14T20:20:40.079862+00:00",
-    "promotion_requested_at": "2026-07-14T20:20:40.200139+00:00",
+    "promotion_requested_at": "2026-07-15T15:37:02.637370+00:00",
     "repair_required_at": "2026-07-10T22:13:14.024891+00:00",
     "repair_rerun_requested_at": "2026-07-10T22:47:24.851894+00:00",
     "repaired_candidate_ready_at": "2026-07-14T16:32:11.834917+00:00"

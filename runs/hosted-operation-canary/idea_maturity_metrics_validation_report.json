@@ -1,7 +1,7 @@
 {
   "artifact_kind": "idea_maturity_metrics_validation_report",
   "schema_version": 1,
-  "generated_at": "2026-07-14T20:20:55.446636+00:00",
+  "generated_at": "2026-07-19T09:59:22.587649+00:00",
   "metric_pack_id": "idea_to_spec_maturity",
   "validator": {
     "id": "metrics.idea_maturity_metrics.validator.v0.1",
