@@ -15,7 +15,9 @@ construction.
 Completed read-model publication additionally pins the validated, non-probe
 merged review status already available at the fixed public Hosted Operation
 Canary route. A fresh workflow checkout does not treat tracked historical
-review state as the current public lifecycle authority.
+review state as the current public lifecycle authority. It rehydrates the
+validated public predecessor before lifecycle refresh so the final workspace
+manifest includes a coherent review-to-publication chain.
 
 For a practical operator/contributor guide to the supervisor, see
 [docs/supervisor_manual.md](../docs/supervisor_manual.md).
