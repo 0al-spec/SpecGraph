@@ -67,7 +67,9 @@ refreshes scoped Idea Maturity and Candidate Overview projections before its
 workspace bundle is built. The validator rejects command data, local paths,
 foreign workspace identity, digest drift, and unaccounted write-capable
 authority. Final publication evidence must match the current merged review
-status. Empty manual inputs and ordinary push/PR builds do not apply an overlay.
+status fetched from the fixed public Hosted Operation Canary route; packet input
+cannot provide the URL. Empty manual inputs and ordinary push/PR builds do not
+apply an overlay.
 Upload remains checksum-aware through proposal `0215`; the worker never
 receives SFTP credentials.
 

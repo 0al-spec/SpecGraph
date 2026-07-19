@@ -149,6 +149,14 @@ def test_publish_workflow_applies_bounded_hosted_report_before_workspace_build()
     assert "tools/hosted_managed_publication_overlay.py" in overlay_block
     assert "--workspace-id hosted-operation-canary" in overlay_block
     assert "--run-dir runs/hosted-operation-canary" in overlay_block
+    assert "current-public-review-status.json" in overlay_block
+    assert (
+        "https://specgraph.tech/workspaces/hosted-operation-canary/runs/"
+        "hosted-operation-canary/product_candidate_promotion_review_status_report.json"
+        in overlay_block
+    )
+    assert "--current-review-status" in overlay_block
+    assert "--proto '=https'" in overlay_block
     assert workflow.index("Apply hosted managed public report overlay") < workflow.index(
         "Build Hosted Operation Canary product workspace bundle"
     )

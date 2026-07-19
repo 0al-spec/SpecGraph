@@ -124,12 +124,31 @@ jobs:
           set -euo pipefail
           packet="$RUNNER_TEMP/hosted-managed-publication-packet.json"
           report="$RUNNER_TEMP/hosted-managed-publication-overlay-report.json"
+          current_review_status_args=()
           printf '%s' "$HOSTED_MANAGED_PUBLICATION_PACKET_B64" \
             | base64 --decode > "$packet"
+          logical_ref="$(jq -r '.logical_ref // ""' "$packet")"
+          if [ "$logical_ref" = \
+            "runs/product_candidate_promotion_read_model_publication_report.json" ]; then
+            current_review_status="$RUNNER_TEMP/current-public-review-status.json"
+            curl \
+              --fail \
+              --silent \
+              --show-error \
+              --max-time 30 \
+              --proto '=https' \
+              --header 'Cache-Control: no-cache' \
+              --output "$current_review_status" \
+              "https://specgraph.tech/workspaces/hosted-operation-canary/runs/hosted-operation-canary/product_candidate_promotion_review_status_report.json"
+            current_review_status_args=(
+              --current-review-status "$current_review_status"
+            )
+          fi
           python tools/hosted_managed_publication_overlay.py \
             --input "$packet" \
             --workspace-id hosted-operation-canary \
             --run-dir runs/hosted-operation-canary \
+            "${current_review_status_args[@]}" \
             --output "$report"
           make hosted-managed-publication-lifecycle-refresh \
             HOSTED_MANAGED_PUBLICATION_RUN_DIR=runs/hosted-operation-canary

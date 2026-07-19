@@ -12,6 +12,10 @@ bounded Platform publication packet for `hosted-operation-canary`, validates
 the public-safe review or completed read-model publication artifact, and
 atomically overlays only the allowlisted top-level run file before bundle
 construction.
+Completed read-model publication additionally pins the validated, non-probe
+merged review status already available at the fixed public Hosted Operation
+Canary route. A fresh workflow checkout does not treat tracked historical
+review state as the current public lifecycle authority.
 
 For a practical operator/contributor guide to the supervisor, see
 [docs/supervisor_manual.md](../docs/supervisor_manual.md).

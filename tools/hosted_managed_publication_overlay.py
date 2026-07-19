@@ -114,6 +114,27 @@ def load_packet(path: Path) -> dict[str, Any]:
     return payload
 
 
+def load_current_public_review_status(path: Path) -> tuple[dict[str, Any], str]:
+    if not path.is_absolute():
+        raise OverlayError("current public review status path must be absolute")
+    if path.is_symlink() or not path.is_file():
+        raise OverlayError("current public review status must be a regular file")
+    try:
+        data = path.read_bytes()
+        if len(data) > MAX_PACKET_BYTES:
+            raise OverlayError("current public review status exceeds its bounded size")
+        payload = json.loads(
+            data.decode("utf-8"),
+            parse_constant=_reject_json_constant,
+        )
+    except (OSError, UnicodeDecodeError, ValueError, json.JSONDecodeError) as exc:
+        raise OverlayError("current public review status is unreadable") from exc
+    if not isinstance(payload, dict):
+        raise OverlayError("current public review status must contain an object")
+    _validate_review_status(payload)
+    return payload, hashlib.sha256(data).hexdigest()
+
+
 def _public_boundary(value: Any) -> bool:
     boundary = _record(value)
     required = (
@@ -439,6 +460,7 @@ def apply_packet(
     packet_path: Path,
     run_dir: Path,
     workspace_id: str,
+    current_review_status_path: Path | None = None,
 ) -> dict[str, Any]:
     packet = load_packet(packet_path)
     logical_ref, report = validate_packet(packet, workspace_id=workspace_id)
@@ -451,13 +473,22 @@ def apply_packet(
         raise OverlayError("publication logical ref is not a bounded top-level run artifact")
     destination = run_dir / relative.as_posix()
     if logical_ref == READ_MODEL_PUBLICATION_REF:
-        review_status_path = run_dir / Path(REVIEW_STATUS_REF).name
+        if current_review_status_path is None:
+            raise OverlayError("read-model publication requires the current public review status")
+        current_review_status, current_review_status_digest = load_current_public_review_status(
+            current_review_status_path
+        )
         expected_review_status_digest = report.get("product_review_status_report_sha256")
+        pull_request = _record(current_review_status.get("pull_request"))
+        review = _record(report.get("review"))
         if (
-            review_status_path.is_symlink()
-            or not review_status_path.is_file()
-            or hashlib.sha256(review_status_path.read_bytes()).hexdigest()
-            != expected_review_status_digest
+            current_review_status_digest != expected_review_status_digest
+            or current_review_status.get("review_probe_only") is not False
+            or current_review_status.get("review_state") != "merged"
+            or pull_request.get("url") != review.get("url")
+            or pull_request.get("number") != review.get("number")
+            or pull_request.get("headRefName") != report.get("candidate_branch")
+            or _record(pull_request.get("mergeCommit")).get("oid") != review.get("merge_commit_sha")
         ):
             raise OverlayError(
                 "read-model publication does not match the current public review status"
@@ -515,6 +546,7 @@ def parser() -> argparse.ArgumentParser:
     root.add_argument("--input", type=Path, required=True)
     root.add_argument("--workspace-id", required=True)
     root.add_argument("--run-dir", type=Path, required=True)
+    root.add_argument("--current-review-status", type=Path)
     root.add_argument("--output", type=Path, required=True)
     return root
 
@@ -526,6 +558,11 @@ def main() -> int:
             packet_path=args.input.resolve(),
             run_dir=args.run_dir.resolve(),
             workspace_id=args.workspace_id,
+            current_review_status_path=(
+                args.current_review_status.resolve()
+                if args.current_review_status is not None
+                else None
+            ),
         )
         write_report(args.output.resolve(), report)
         print(json.dumps(report, indent=2, sort_keys=True))

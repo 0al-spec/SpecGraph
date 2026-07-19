@@ -49,8 +49,12 @@ execution report.
 Read-model publication evidence requires the current non-probe merged
 review-status report, its digest-pinned bounded worker window at `attempt=1`,
 and a private publication report that pins the same source review-status
-SHA-256. SpecGraph compares the incoming public projection with the currently
-tracked public review-status digest before atomically applying it. The
+SHA-256. Because each manual publication runs in a fresh GitHub checkout,
+SpecGraph downloads the current review-status artifact from the fixed
+`hosted-operation-canary` public HTTPS route, validates its full report
+contract, and compares its exact digest, PR, branch, and merge commit with the
+incoming publication projection before atomically applying it. Packet input
+cannot select another URL. The
 projection retains `publishes_read_models=true` only as historical evidence of
 the already completed Platform operation; the packet and overlay authority
 boundaries remain read-only.
