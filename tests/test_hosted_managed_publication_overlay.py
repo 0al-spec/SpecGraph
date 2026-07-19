@@ -135,12 +135,17 @@ def merged_review_status() -> dict:
     report["review_state"] = "merged"
     report["pull_request"].update(
         {
+            "number": 701,
+            "url": "https://github.com/0al-spec/SpecGraph/pull/701",
             "state": "MERGED",
             "mergedAt": "2026-07-19T10:08:00Z",
             "mergeCommit": {"oid": "d" * 40},
         }
     )
     report["graph_repository_review_status"]["review_state"] = "merged"
+    report["graph_repository_review_status"]["review_url"] = (
+        "https://github.com/0al-spec/SpecGraph/pull/701"
+    )
     report["graph_repository_review_status"]["summary"] = {
         "status": "ready_for_read_model_publication",
         "review_merged": True,
@@ -492,23 +497,23 @@ def test_apply_is_atomic_and_invalid_packet_preserves_existing_artifact() -> Non
 
 def test_apply_publication_requires_current_review_status_digest() -> None:
     tracked_run_dir = ROOT / "runs" / overlay.WORKSPACE_ID
-    review_destination = tracked_run_dir / Path(overlay.REVIEW_STATUS_REF).name
     publication_destination = tracked_run_dir / Path(overlay.READ_MODEL_PUBLICATION_REF).name
-    original_review = review_destination.read_bytes() if review_destination.exists() else None
     original_publication = (
         publication_destination.read_bytes() if publication_destination.exists() else None
     )
     try:
         status = merged_review_status()
-        review_destination.write_bytes(json_bytes(status))
         report = read_model_publication(hashlib.sha256(json_bytes(status)).hexdigest())
         with tempfile.TemporaryDirectory() as temp_dir:
             packet_path = Path(temp_dir) / "packet.json"
+            current_review_status_path = Path(temp_dir) / "current-review-status.json"
+            current_review_status_path.write_bytes(json_bytes(status))
             packet_path.write_bytes(json_bytes(packet(report, overlay.READ_MODEL_PUBLICATION_REF)))
             result = overlay.apply_packet(
                 packet_path=packet_path.resolve(),
                 run_dir=tracked_run_dir.resolve(),
                 workspace_id=overlay.WORKSPACE_ID,
+                current_review_status_path=current_review_status_path.resolve(),
             )
             assert result["logical_ref"] == overlay.READ_MODEL_PUBLICATION_REF
             applied = publication_destination.read_bytes()
@@ -520,13 +525,60 @@ def test_apply_publication_requires_current_review_status_digest() -> None:
                     packet_path=packet_path.resolve(),
                     run_dir=tracked_run_dir.resolve(),
                     workspace_id=overlay.WORKSPACE_ID,
+                    current_review_status_path=current_review_status_path.resolve(),
                 )
             assert publication_destination.read_bytes() == applied
     finally:
-        if original_review is None:
-            review_destination.unlink(missing_ok=True)
+        if original_publication is None:
+            publication_destination.unlink(missing_ok=True)
         else:
-            review_destination.write_bytes(original_review)
+            publication_destination.write_bytes(original_publication)
+
+
+def test_apply_publication_requires_current_public_review_status_input() -> None:
+    tracked_run_dir = ROOT / "runs" / overlay.WORKSPACE_ID
+    status = merged_review_status()
+    report = read_model_publication(hashlib.sha256(json_bytes(status)).hexdigest())
+    with tempfile.TemporaryDirectory() as temp_dir:
+        packet_path = Path(temp_dir) / "packet.json"
+        packet_path.write_bytes(json_bytes(packet(report, overlay.READ_MODEL_PUBLICATION_REF)))
+        with pytest.raises(overlay.OverlayError, match="requires the current public"):
+            overlay.apply_packet(
+                packet_path=packet_path.resolve(),
+                run_dir=tracked_run_dir.resolve(),
+                workspace_id=overlay.WORKSPACE_ID,
+            )
+
+
+def test_apply_publication_rejects_probe_only_current_public_review_status() -> None:
+    tracked_run_dir = ROOT / "runs" / overlay.WORKSPACE_ID
+    publication_destination = tracked_run_dir / Path(overlay.READ_MODEL_PUBLICATION_REF).name
+    original_publication = (
+        publication_destination.read_bytes() if publication_destination.exists() else None
+    )
+    try:
+        status = merged_review_status()
+        status["review_probe_only"] = True
+        status["graph_repository_review_status"]["summary"]["status"] = "review_probe_completed"
+        status["summary"]["status"] = "review_probe_completed"
+        report = read_model_publication(hashlib.sha256(json_bytes(status)).hexdigest())
+        with tempfile.TemporaryDirectory() as temp_dir:
+            packet_path = Path(temp_dir) / "packet.json"
+            current_review_status_path = Path(temp_dir) / "current-review-status.json"
+            packet_path.write_bytes(json_bytes(packet(report, overlay.READ_MODEL_PUBLICATION_REF)))
+            current_review_status_path.write_bytes(json_bytes(status))
+            with pytest.raises(overlay.OverlayError, match="does not match"):
+                overlay.apply_packet(
+                    packet_path=packet_path.resolve(),
+                    run_dir=tracked_run_dir.resolve(),
+                    workspace_id=overlay.WORKSPACE_ID,
+                    current_review_status_path=current_review_status_path.resolve(),
+                )
+        if original_publication is None:
+            assert not publication_destination.exists()
+        else:
+            assert publication_destination.read_bytes() == original_publication
+    finally:
         if original_publication is None:
             publication_destination.unlink(missing_ok=True)
         else:
