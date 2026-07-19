@@ -301,6 +301,26 @@ def test_accepts_probe_status_without_read_model_publication_authority() -> None
     assert projected["summary"]["review_merged"] is False
 
 
+def test_accepts_closed_review_as_non_publishable_terminal_evidence() -> None:
+    report = review_status()
+    report["review_state"] = "closed"
+    report["pull_request"]["state"] = "CLOSED"
+    report["summary"]["status"] = "review_closed_without_merge"
+    report["graph_repository_review_status"]["review_state"] = "closed"
+    report["graph_repository_review_status"]["summary"]["status"] = "review_closed_without_merge"
+
+    logical_ref, projected = overlay.validate_packet(
+        packet(report, overlay.REVIEW_STATUS_REF),
+        workspace_id=overlay.WORKSPACE_ID,
+    )
+
+    assert logical_ref == overlay.REVIEW_STATUS_REF
+    assert projected["review_state"] == "closed"
+    assert projected["summary"]["status"] == "review_closed_without_merge"
+    assert projected["summary"]["review_merged"] is False
+    assert projected["summary"]["read_model_published"] is False
+
+
 def test_probe_status_rejects_nested_publication_readiness() -> None:
     report = review_status()
     report["review_probe_only"] = True

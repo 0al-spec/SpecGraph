@@ -256,7 +256,11 @@ def _validate_review_status(report: dict[str, Any]) -> None:
         else (
             "ready_for_read_model_publication"
             if review_state == "merged"
-            else "waiting_for_review_merge"
+            else (
+                "review_closed_without_merge"
+                if review_state == "closed"
+                else "waiting_for_review_merge"
+            )
         )
     )
     expected_graph_summary_status = expected_summary_status
