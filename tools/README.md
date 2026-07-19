@@ -9,8 +9,9 @@ manifest as authority and never deletes the shared remote webroot.
 
 Proposal 0217 adds `hosted_managed_publication_overlay.py`. It consumes one
 bounded Platform publication packet for `hosted-operation-canary`, validates
-the public-safe review artifact, and atomically overlays only the allowlisted
-top-level run file before bundle construction.
+the public-safe review or completed read-model publication artifact, and
+atomically overlays only the allowlisted top-level run file before bundle
+construction.
 
 For a practical operator/contributor guide to the supervisor, see
 [docs/supervisor_manual.md](../docs/supervisor_manual.md).

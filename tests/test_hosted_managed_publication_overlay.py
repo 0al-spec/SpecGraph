@@ -130,6 +130,80 @@ def review_status() -> dict:
     }
 
 
+def merged_review_status() -> dict:
+    report = review_status()
+    report["review_state"] = "merged"
+    report["pull_request"].update(
+        {
+            "state": "MERGED",
+            "mergedAt": "2026-07-19T10:08:00Z",
+            "mergeCommit": {"oid": "d" * 40},
+        }
+    )
+    report["graph_repository_review_status"]["review_state"] = "merged"
+    report["graph_repository_review_status"]["summary"] = {
+        "status": "ready_for_read_model_publication",
+        "review_merged": True,
+    }
+    report["summary"] = {
+        "status": "ready_for_read_model_publication",
+        "review_merged": True,
+        "read_model_published": False,
+        "error_count": 0,
+    }
+    return report
+
+
+def read_model_publication(review_status_digest: str) -> dict:
+    authority = public_authority()
+    authority["publishes_read_models"] = True
+    return {
+        "schema_version": 1,
+        "artifact_kind": overlay.READ_MODEL_PUBLICATION_KIND,
+        "generated_at": "2026-07-19T10:10:00+00:00",
+        "ok": True,
+        "dry_run": False,
+        "workflow_lane": "product_idea_to_spec",
+        "workspace_id": overlay.WORKSPACE_ID,
+        "candidate_id": overlay.WORKSPACE_ID,
+        "candidate_branch": overlay.CANDIDATE_BRANCH,
+        "review_state": "merged",
+        "product_review_status_report_ref": overlay.REVIEW_STATUS_REF,
+        "product_review_status_report_sha256": review_status_digest,
+        "review": {
+            "url": "https://github.com/0al-spec/SpecGraph/pull/701",
+            "number": 701,
+            "merge_commit_sha": "d" * 40,
+        },
+        "graph_repository_publish_read_model": {
+            "artifact_kind": overlay.GRAPH_READ_MODEL_PUBLICATION_KIND,
+            "ok": True,
+            "dry_run": False,
+            "review_state": "merged",
+            "summary": {
+                "published": True,
+                "file_count": 1530,
+                "error_count": 0,
+            },
+        },
+        "authority_boundary": authority,
+        "privacy_boundary": {
+            "public_safe": True,
+            "raw_idea_included": False,
+            "local_paths_included": False,
+        },
+        "diagnostics": [],
+        "summary": {
+            "status": "published",
+            "review_merged": True,
+            "read_model_published": True,
+            "published_file_count": 1530,
+            "published_manifest_ref": "artifact_manifest.json",
+            "error_count": 0,
+        },
+    }
+
+
 def packet(report: dict, logical_ref: str) -> dict:
     return {
         "schema_version": 1,
@@ -137,7 +211,11 @@ def packet(report: dict, logical_ref: str) -> dict:
         "contract_ref": overlay.PACKET_CONTRACT_REF,
         "generated_at": "2026-07-18T12:10:00+00:00",
         "workspace_id": overlay.WORKSPACE_ID,
-        "operation_id": overlay.OPERATION_ID,
+        "operation_id": (
+            overlay.READ_MODEL_PUBLICATION_OPERATION_ID
+            if logical_ref == overlay.READ_MODEL_PUBLICATION_REF
+            else overlay.REVIEW_STATUS_OPERATION_ID
+        ),
         "logical_ref": logical_ref,
         "public_report_sha256": hashlib.sha256(json_bytes(report)).hexdigest(),
         "report": report,
@@ -171,6 +249,36 @@ def test_validate_review_object_and_status_packets() -> None:
         )
         assert selected_ref == logical_ref
         assert selected_report == report
+
+
+def test_validate_read_model_publication_packet() -> None:
+    status = merged_review_status()
+    report = read_model_publication(hashlib.sha256(json_bytes(status)).hexdigest())
+    selected_ref, selected_report = overlay.validate_packet(
+        packet(report, overlay.READ_MODEL_PUBLICATION_REF),
+        workspace_id=overlay.WORKSPACE_ID,
+    )
+
+    assert selected_ref == overlay.READ_MODEL_PUBLICATION_REF
+    assert selected_report == report
+    assert selected_report["authority_boundary"]["publishes_read_models"] is True
+
+
+def test_rejects_read_model_publication_authority_and_operation_drift() -> None:
+    status = merged_review_status()
+    report = read_model_publication(hashlib.sha256(json_bytes(status)).hexdigest())
+    report["authority_boundary"]["opens_pull_requests"] = True
+    with pytest.raises(overlay.OverlayError, match="invalid"):
+        overlay.validate_packet(
+            packet(report, overlay.READ_MODEL_PUBLICATION_REF),
+            workspace_id=overlay.WORKSPACE_ID,
+        )
+
+    report = read_model_publication(hashlib.sha256(json_bytes(status)).hexdigest())
+    payload = packet(report, overlay.READ_MODEL_PUBLICATION_REF)
+    payload["operation_id"] = overlay.REVIEW_STATUS_OPERATION_ID
+    with pytest.raises(overlay.OverlayError, match="contract"):
+        overlay.validate_packet(payload, workspace_id=overlay.WORKSPACE_ID)
 
 
 def test_rejects_digest_drift_foreign_workspace_and_authority_expansion() -> None:
@@ -380,3 +488,46 @@ def test_apply_is_atomic_and_invalid_packet_preserves_existing_artifact() -> Non
             destination.unlink(missing_ok=True)
         else:
             destination.write_bytes(original)
+
+
+def test_apply_publication_requires_current_review_status_digest() -> None:
+    tracked_run_dir = ROOT / "runs" / overlay.WORKSPACE_ID
+    review_destination = tracked_run_dir / Path(overlay.REVIEW_STATUS_REF).name
+    publication_destination = tracked_run_dir / Path(overlay.READ_MODEL_PUBLICATION_REF).name
+    original_review = review_destination.read_bytes() if review_destination.exists() else None
+    original_publication = (
+        publication_destination.read_bytes() if publication_destination.exists() else None
+    )
+    try:
+        status = merged_review_status()
+        review_destination.write_bytes(json_bytes(status))
+        report = read_model_publication(hashlib.sha256(json_bytes(status)).hexdigest())
+        with tempfile.TemporaryDirectory() as temp_dir:
+            packet_path = Path(temp_dir) / "packet.json"
+            packet_path.write_bytes(json_bytes(packet(report, overlay.READ_MODEL_PUBLICATION_REF)))
+            result = overlay.apply_packet(
+                packet_path=packet_path.resolve(),
+                run_dir=tracked_run_dir.resolve(),
+                workspace_id=overlay.WORKSPACE_ID,
+            )
+            assert result["logical_ref"] == overlay.READ_MODEL_PUBLICATION_REF
+            applied = publication_destination.read_bytes()
+
+            report["product_review_status_report_sha256"] = "e" * 64
+            packet_path.write_bytes(json_bytes(packet(report, overlay.READ_MODEL_PUBLICATION_REF)))
+            with pytest.raises(overlay.OverlayError, match="current public review"):
+                overlay.apply_packet(
+                    packet_path=packet_path.resolve(),
+                    run_dir=tracked_run_dir.resolve(),
+                    workspace_id=overlay.WORKSPACE_ID,
+                )
+            assert publication_destination.read_bytes() == applied
+    finally:
+        if original_review is None:
+            review_destination.unlink(missing_ok=True)
+        else:
+            review_destination.write_bytes(original_review)
+        if original_publication is None:
+            publication_destination.unlink(missing_ok=True)
+        else:
+            publication_destination.write_bytes(original_publication)

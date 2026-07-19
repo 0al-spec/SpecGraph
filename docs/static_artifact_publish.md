@@ -61,13 +61,15 @@ they simply stop being authoritative.
 
 Proposal `0217` adds one optional manual-dispatch input for a bounded hosted
 managed-operation publication packet. The input may overlay exactly one
-public-safe review-object or review-status projection into the
-`hosted-operation-canary` run directory. The workflow refreshes scoped Idea
-Maturity and Candidate Overview projections before its workspace bundle is built.
-The validator rejects command data, local paths, foreign workspace identity,
-digest drift, and write-capable authority. Empty manual inputs and ordinary
-push/PR builds do not apply an overlay. Upload remains checksum-aware through
-proposal `0215`; the worker never receives SFTP credentials.
+public-safe review-object, review-status, or completed read-model publication
+projection into the `hosted-operation-canary` run directory. The workflow
+refreshes scoped Idea Maturity and Candidate Overview projections before its
+workspace bundle is built. The validator rejects command data, local paths,
+foreign workspace identity, digest drift, and unaccounted write-capable
+authority. Final publication evidence must match the current merged review
+status. Empty manual inputs and ordinary push/PR builds do not apply an overlay.
+Upload remains checksum-aware through proposal `0215`; the worker never
+receives SFTP credentials.
 
 The repository landing page is deployed by a separate workflow job from
 `landing/` into the same `SFTP_REMOTE_ROOT`. That job is also non-destructive and

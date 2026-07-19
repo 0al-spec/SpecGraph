@@ -23,7 +23,8 @@ Platform emits a bounded
 one sanitized report projection. The only accepted logical refs are:
 
 - `runs/product_candidate_promotion_review_object_evidence.json`;
-- `runs/product_candidate_promotion_review_status_report.json`.
+- `runs/product_candidate_promotion_review_status_report.json`;
+- `runs/product_candidate_promotion_read_model_publication_report.json`.
 
 The packet is sent through authenticated `workflow_dispatch`. SpecGraph
 validates packet identity, report kind, SHA-256, privacy, authority, GitHub
@@ -44,6 +45,15 @@ Review-status publication requires a completed bounded worker window with one
 queue, and one digest-pinned authoritative report. Review-object publication
 requires fresh open-PR evidence pinned to the selected non-dry-run promotion
 execution report.
+
+Read-model publication evidence requires the current non-probe merged
+review-status report, its digest-pinned bounded worker window at `attempt=1`,
+and a private publication report that pins the same source review-status
+SHA-256. SpecGraph compares the incoming public projection with the currently
+tracked public review-status digest before atomically applying it. The
+projection retains `publishes_read_models=true` only as historical evidence of
+the already completed Platform operation; the packet and overlay authority
+boundaries remain read-only.
 
 An external review-object probe may publish
 `review_probe_only=true` as diagnostic lifecycle evidence. Its status may show
@@ -69,10 +79,13 @@ authoritative reports remain the execution authority.
 
 ## Acceptance Criteria
 
-- A valid review-object or review-status packet overlays exactly one allowlisted
-  Hosted Operation Canary report.
+- A valid review-object, review-status, or read-model publication packet
+  overlays exactly one allowlisted Hosted Operation Canary report.
 - A probe-only review status can produce waiting-for-review evidence but cannot
   produce read-model publication readiness.
+- Read-model publication evidence is accepted only when it pins the current
+  public merged review status and the private source pins the same
+  execution-backed review-status artifact.
 - Digest drift, foreign workspace identity, local paths, private fields, and
   authority expansion fail closed.
 - Invalid packets preserve any previously tracked report.
