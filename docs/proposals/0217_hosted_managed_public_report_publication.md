@@ -54,7 +54,10 @@ SpecGraph downloads the current review-status artifact from the fixed
 `hosted-operation-canary` public HTTPS route, validates its full report
 contract, and compares its exact digest, PR, branch, and merge commit with the
 incoming publication projection before atomically applying it. Packet input
-cannot select another URL. The
+cannot select another URL. The validated predecessor is rehydrated into the
+ephemeral scoped run directory before lifecycle refresh, so the new workspace
+manifest cannot publish final evidence while omitting its merged-review
+predecessor. The
 projection retains `publishes_read_models=true` only as historical evidence of
 the already completed Platform operation; the packet and overlay authority
 boundaries remain read-only.

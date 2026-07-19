@@ -472,6 +472,7 @@ def apply_packet(
     if relative.is_absolute() or ".." in relative.parts or len(relative.parts) != 1:
         raise OverlayError("publication logical ref is not a bounded top-level run artifact")
     destination = run_dir / relative.as_posix()
+    current_review_status_data: bytes | None = None
     if logical_ref == READ_MODEL_PUBLICATION_REF:
         if current_review_status_path is None:
             raise OverlayError("read-model publication requires the current public review status")
@@ -493,21 +494,14 @@ def apply_packet(
             raise OverlayError(
                 "read-model publication does not match the current public review status"
             )
+        current_review_status_data = _json_bytes(current_review_status)
     data = _json_bytes(report)
-    fd, temporary_name = tempfile.mkstemp(
-        prefix=f".{destination.name}.",
-        suffix=".tmp",
-        dir=destination.parent,
-    )
-    temporary = Path(temporary_name)
-    try:
-        with os.fdopen(fd, "wb") as stream:
-            stream.write(data)
-            stream.flush()
-            os.fsync(stream.fileno())
-        os.replace(temporary, destination)
-    finally:
-        temporary.unlink(missing_ok=True)
+    if current_review_status_data is not None:
+        _atomic_write(
+            run_dir / Path(REVIEW_STATUS_REF).name,
+            current_review_status_data,
+        )
+    _atomic_write(destination, data)
     return {
         "schema_version": 1,
         "artifact_kind": "specgraph_hosted_managed_publication_overlay_report",
@@ -517,6 +511,7 @@ def apply_packet(
         "public_report_sha256": hashlib.sha256(data).hexdigest(),
         "summary": {
             "applied_report_count": 1,
+            "rehydrated_predecessor_count": (1 if current_review_status_data is not None else 0),
             "bounded_workspace_overlay": True,
         },
         "privacy_boundary": {
@@ -534,6 +529,23 @@ def apply_packet(
             "publishes_read_models": False,
         },
     }
+
+
+def _atomic_write(destination: Path, data: bytes) -> None:
+    fd, temporary_name = tempfile.mkstemp(
+        prefix=f".{destination.name}.",
+        suffix=".tmp",
+        dir=destination.parent,
+    )
+    temporary = Path(temporary_name)
+    try:
+        with os.fdopen(fd, "wb") as stream:
+            stream.write(data)
+            stream.flush()
+            os.fsync(stream.fileno())
+        os.replace(temporary, destination)
+    finally:
+        temporary.unlink(missing_ok=True)
 
 
 def write_report(path: Path, report: dict[str, Any]) -> None:

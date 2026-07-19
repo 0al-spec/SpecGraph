@@ -497,7 +497,9 @@ def test_apply_is_atomic_and_invalid_packet_preserves_existing_artifact() -> Non
 
 def test_apply_publication_requires_current_review_status_digest() -> None:
     tracked_run_dir = ROOT / "runs" / overlay.WORKSPACE_ID
+    review_destination = tracked_run_dir / Path(overlay.REVIEW_STATUS_REF).name
     publication_destination = tracked_run_dir / Path(overlay.READ_MODEL_PUBLICATION_REF).name
+    original_review = review_destination.read_bytes() if review_destination.exists() else None
     original_publication = (
         publication_destination.read_bytes() if publication_destination.exists() else None
     )
@@ -516,6 +518,8 @@ def test_apply_publication_requires_current_review_status_digest() -> None:
                 current_review_status_path=current_review_status_path.resolve(),
             )
             assert result["logical_ref"] == overlay.READ_MODEL_PUBLICATION_REF
+            assert result["summary"]["rehydrated_predecessor_count"] == 1
+            assert review_destination.read_bytes() == json_bytes(status)
             applied = publication_destination.read_bytes()
 
             report["product_review_status_report_sha256"] = "e" * 64
@@ -529,6 +533,10 @@ def test_apply_publication_requires_current_review_status_digest() -> None:
                 )
             assert publication_destination.read_bytes() == applied
     finally:
+        if original_review is None:
+            review_destination.unlink(missing_ok=True)
+        else:
+            review_destination.write_bytes(original_review)
         if original_publication is None:
             publication_destination.unlink(missing_ok=True)
         else:
@@ -552,7 +560,9 @@ def test_apply_publication_requires_current_public_review_status_input() -> None
 
 def test_apply_publication_rejects_probe_only_current_public_review_status() -> None:
     tracked_run_dir = ROOT / "runs" / overlay.WORKSPACE_ID
+    review_destination = tracked_run_dir / Path(overlay.REVIEW_STATUS_REF).name
     publication_destination = tracked_run_dir / Path(overlay.READ_MODEL_PUBLICATION_REF).name
+    original_review = review_destination.read_bytes() if review_destination.exists() else None
     original_publication = (
         publication_destination.read_bytes() if publication_destination.exists() else None
     )
@@ -578,7 +588,15 @@ def test_apply_publication_rejects_probe_only_current_public_review_status() -> 
             assert not publication_destination.exists()
         else:
             assert publication_destination.read_bytes() == original_publication
+        if original_review is None:
+            assert not review_destination.exists()
+        else:
+            assert review_destination.read_bytes() == original_review
     finally:
+        if original_review is None:
+            review_destination.unlink(missing_ok=True)
+        else:
+            review_destination.write_bytes(original_review)
         if original_publication is None:
             publication_destination.unlink(missing_ok=True)
         else:
