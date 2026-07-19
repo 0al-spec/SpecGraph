@@ -77,14 +77,15 @@
   "deployment_profile_id": "product_idea_to_spec_workbench",
   "diagnostics": [],
   "dry_run": false,
-  "generated_at": "2026-07-15T15:37:02.637370+00:00",
+  "generated_at": "2026-07-19T10:01:51.168294+00:00",
   "git_commands_executed": [],
   "local_files_written": [
     "/tmp/specgraph-production-canary.g5JHZI/runs/hosted-operation-canary/graph_repository_promotion_request.json"
   ],
   "merges_performed": [],
   "ok": true,
-  "plan_ref": "/tmp/specgraph-production-canary.g5JHZI/runs/hosted-operation-canary/graph_repository_execution_plan.json",
+  "plan_ref": "runs/hosted-operation-canary/graph_repository_execution_plan.json",
+  "plan_sha256": "8a15832861bd8d6ac399d3e3772b526e40b91f20e15fca5b282c15e459de1d22",
   "pull_requests_opened": [],
   "read_models_published": [],
   "requested_operations": [
@@ -94,7 +95,7 @@
   ],
   "review": {
     "base_branch": "main",
-    "body": "Rebuild approval after candidate-scoped materialization proposal 0213.",
+    "body": "Refresh the candidate-scoped review packet and complete the controlled publication lifecycle.",
     "title": "Promote Hosted Operation Canary candidate spec graph"
   },
   "schema_version": 1,
