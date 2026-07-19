@@ -21,12 +21,14 @@ public-safety authority.
 
 Proposal `0217` adds a bounded hosted-report handoff for
 `hosted-operation-canary`. An authenticated workflow dispatch may carry one
-sanitized review-object or review-status packet. SpecGraph verifies its digest,
-workspace identity, privacy, authority, and GitHub review identity before the
-existing incremental workspace publication runs. Worker commands, local paths,
-secrets, and raw request payloads are never copied into the public bundle.
-Probe-only review status is diagnostic evidence: it may show that the workspace
-is waiting for review or merge, but it cannot authorize read-model publication.
+sanitized review-object, review-status, or completed read-model publication
+packet. SpecGraph verifies its digest, workspace identity, privacy, authority,
+and GitHub review identity before the existing incremental workspace
+publication runs. Final publication evidence must pin the current
+execution-backed merged review status. Worker commands, local paths, secrets,
+and raw request payloads are never copied into the public bundle. Probe-only
+review status is diagnostic evidence: it may show that the workspace is waiting
+for review or merge, but it cannot authorize read-model publication.
 
 The current producer priorities are to verify the bounded hosted report
 publication with fresh review provenance, measure the bounded-parallel

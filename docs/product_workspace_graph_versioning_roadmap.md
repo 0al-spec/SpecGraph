@@ -47,11 +47,13 @@ public-safety validation, payload-first metadata finalization, and post-upload
 digest verification remain mandatory.
 
 Proposal `0217` adds the missing hosted-report visibility handoff. Platform can
-dispatch one bounded public-safe review-object or review-status projection for
-`hosted-operation-canary`; SpecGraph validates and overlays it before proposal
-`0215` performs checksum-aware workspace publication. Private worker reports
-remain authoritative and private. SpecSpace receives only sanitized lifecycle
-evidence through its existing artifact consumer.
+dispatch one bounded public-safe review-object, review-status, or completed
+read-model publication projection for `hosted-operation-canary`; SpecGraph
+validates and overlays it before proposal `0215` performs checksum-aware
+workspace publication. Final publication evidence must pin the current
+execution-backed merged review status. Private worker reports remain
+authoritative and private. SpecSpace receives only sanitized lifecycle evidence
+through its existing artifact consumer.
 
 ## Current Near-Term Producer Priorities
 
@@ -65,11 +67,12 @@ evidence through its existing artifact consumer.
    authoritative reports survive the production rollout without falling back
    to shared `runs/*`, local absolute paths, or demo workspace artifacts. This
    is compatibility evidence, not SpecGraph execution authority.
-3. **Hosted report publication evidence.** Verify proposal `0217` in production
-   with fresh open-PR provenance, one attempt, a drained queue, one changed
-   workspace payload, and post-upload digest verification. Probe-only review
-   evidence may move the public workspace to waiting-for-review, but must never
-   authorize read-model publication.
+3. **Hosted report publication evidence.** Complete proposal `0217` production
+   evidence with one final read-model publication projection pinned to the
+   current merged review, one attempt, a drained queue, one changed workspace
+   payload, and post-upload digest verification. Probe-only review evidence may
+   move the public workspace to waiting-for-review, but must never authorize
+   read-model publication.
 4. **Deterministic public-safe outputs.** Reduce timestamp-only bundle churn
    while preserving generated-at evidence where it is semantically required.
    Deployment manifests and digest verification remain authoritative.

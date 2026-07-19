@@ -16,12 +16,17 @@ from typing import Any
 PACKET_ARTIFACT_KIND = "platform_hosted_managed_publication_packet"
 PACKET_CONTRACT_REF = "platform.hosted-managed.public-report-publication.v1"
 WORKSPACE_ID = "hosted-operation-canary"
-OPERATION_ID = "review_status_execute"
+REVIEW_STATUS_OPERATION_ID = "review_status_execute"
+READ_MODEL_PUBLICATION_OPERATION_ID = "read_model_publication_execute"
+OPERATION_ID = REVIEW_STATUS_OPERATION_ID
 CANDIDATE_BRANCH = "graph-candidate/hosted-operation-canary"
 REVIEW_OBJECT_REF = "runs/product_candidate_promotion_review_object_evidence.json"
 REVIEW_STATUS_REF = "runs/product_candidate_promotion_review_status_report.json"
+READ_MODEL_PUBLICATION_REF = "runs/product_candidate_promotion_read_model_publication_report.json"
 REVIEW_OBJECT_KIND = "platform_product_candidate_promotion_review_object_evidence"
 REVIEW_STATUS_KIND = "platform_product_candidate_promotion_review_status_report"
+READ_MODEL_PUBLICATION_KIND = "platform_product_candidate_promotion_read_model_publication_report"
+GRAPH_READ_MODEL_PUBLICATION_KIND = "platform_graph_repository_publish_read_model_report"
 MAX_PACKET_BYTES = 32 * 1024
 SHA256_RE = re.compile(r"^[0-9a-f]{64}$")
 REVIEW_URL_RE = re.compile(r"^https://github\.com/0al-spec/SpecGraph/pull/([1-9][0-9]*)$")
@@ -123,6 +128,28 @@ def _public_boundary(value: Any) -> bool:
     )
     return all(boundary.get(key) is False for key in required) and all(
         isinstance(key, str) and item is False for key, item in boundary.items()
+    )
+
+
+def _publication_boundary(value: Any) -> bool:
+    boundary = _record(value)
+    required_false = (
+        "accepts_arbitrary_commands",
+        "creates_git_commits",
+        "merges_pull_requests",
+        "mutates_canonical_specs",
+        "opens_pull_requests",
+        "writes_ontology_packages",
+        "accepts_ontology_terms",
+    )
+    return (
+        boundary.get("publishes_read_models") is True
+        and all(boundary.get(key) is False for key in required_false)
+        and all(
+            isinstance(key, str)
+            and (item is False or (key == "publishes_read_models" and item is True))
+            for key, item in boundary.items()
+        )
     )
 
 
@@ -300,6 +327,56 @@ def _validate_review_status(report: dict[str, Any]) -> None:
             raise OverlayError("review status public report contains an invalid Git SHA")
 
 
+def _validate_read_model_publication(report: dict[str, Any]) -> None:
+    _workspace_id, _candidate_id, candidate_branch = _identity(report)
+    review = _record(report.get("review"))
+    review_url, review_number = _review_identity(
+        review_url=review.get("url"),
+        review_number=review.get("number"),
+    )
+    merge_sha = _text(review.get("merge_commit_sha"))
+    child = _record(report.get("graph_repository_publish_read_model"))
+    child_summary = _record(child.get("summary"))
+    summary = _record(report.get("summary"))
+    review_status_digest = _text(report.get("product_review_status_report_sha256"))
+    if (
+        report.get("artifact_kind") != READ_MODEL_PUBLICATION_KIND
+        or report.get("schema_version") != 1
+        or report.get("ok") is not True
+        or report.get("dry_run") is not False
+        or report.get("workflow_lane") != "product_idea_to_spec"
+        or report.get("candidate_branch") != candidate_branch
+        or report.get("review_state") != "merged"
+        or report.get("product_review_status_report_ref") != REVIEW_STATUS_REF
+        or review_url != f"https://github.com/0al-spec/SpecGraph/pull/{review_number}"
+        or merge_sha is None
+        or not re.fullmatch(r"[0-9a-f]{40}", merge_sha)
+        or review_status_digest is None
+        or SHA256_RE.fullmatch(review_status_digest) is None
+        or child.get("artifact_kind") != GRAPH_READ_MODEL_PUBLICATION_KIND
+        or child.get("ok") is not True
+        or child.get("dry_run") is not False
+        or child.get("review_state") != "merged"
+        or child_summary.get("published") is not True
+        or _integer(child_summary.get("file_count")) is None
+        or child_summary.get("file_count") <= 0
+        or child_summary.get("error_count") != 0
+        or summary
+        != {
+            "status": "published",
+            "review_merged": True,
+            "read_model_published": True,
+            "published_file_count": child_summary.get("file_count"),
+            "published_manifest_ref": "artifact_manifest.json",
+            "error_count": 0,
+        }
+        or not _public_privacy(report.get("privacy_boundary"))
+        or not _publication_boundary(report.get("authority_boundary"))
+        or report.get("diagnostics") != []
+    ):
+        raise OverlayError("read-model publication public report is invalid")
+
+
 def validate_packet(
     packet: dict[str, Any],
     *,
@@ -310,6 +387,12 @@ def validate_packet(
     expected_kind = {
         REVIEW_OBJECT_REF: REVIEW_OBJECT_KIND,
         REVIEW_STATUS_REF: REVIEW_STATUS_KIND,
+        READ_MODEL_PUBLICATION_REF: READ_MODEL_PUBLICATION_KIND,
+    }.get(logical_ref)
+    expected_operation_id = {
+        REVIEW_OBJECT_REF: REVIEW_STATUS_OPERATION_ID,
+        REVIEW_STATUS_REF: REVIEW_STATUS_OPERATION_ID,
+        READ_MODEL_PUBLICATION_REF: READ_MODEL_PUBLICATION_OPERATION_ID,
     }.get(logical_ref)
     scope = _record(packet.get("publication_scope"))
     summary = _record(packet.get("summary"))
@@ -319,7 +402,7 @@ def validate_packet(
         or packet.get("schema_version") != 1
         or packet.get("workspace_id") != workspace_id
         or workspace_id != WORKSPACE_ID
-        or packet.get("operation_id") != OPERATION_ID
+        or packet.get("operation_id") != expected_operation_id
         or expected_kind is None
         or report.get("artifact_kind") != expected_kind
         or scope
@@ -344,8 +427,10 @@ def validate_packet(
     _scan_public(packet)
     if logical_ref == REVIEW_OBJECT_REF:
         _validate_review_object(report)
-    else:
+    elif logical_ref == REVIEW_STATUS_REF:
         _validate_review_status(report)
+    else:
+        _validate_read_model_publication(report)
     return logical_ref, report
 
 
@@ -365,6 +450,18 @@ def apply_packet(
     if relative.is_absolute() or ".." in relative.parts or len(relative.parts) != 1:
         raise OverlayError("publication logical ref is not a bounded top-level run artifact")
     destination = run_dir / relative.as_posix()
+    if logical_ref == READ_MODEL_PUBLICATION_REF:
+        review_status_path = run_dir / Path(REVIEW_STATUS_REF).name
+        expected_review_status_digest = report.get("product_review_status_report_sha256")
+        if (
+            review_status_path.is_symlink()
+            or not review_status_path.is_file()
+            or hashlib.sha256(review_status_path.read_bytes()).hexdigest()
+            != expected_review_status_digest
+        ):
+            raise OverlayError(
+                "read-model publication does not match the current public review status"
+            )
     data = _json_bytes(report)
     fd, temporary_name = tempfile.mkstemp(
         prefix=f".{destination.name}.",
