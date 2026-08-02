@@ -1348,6 +1348,15 @@ def test_repaired_promotion_handoff_preserves_explicit_scoped_inputs() -> None:
         'IDEA_MATURITY_METRICS_REPAIRED_HANDOFF="runs/hosted-operation-canary/repaired_candidate_promotion_handoff_report.json"'
         in output
     )
+    for filename in (
+        "candidate_spec_graph.json",
+        "pre_sib_coherence_report.json",
+        "idea_to_spec_promotion_gate.json",
+        "idea_to_spec_repair_session.json",
+    ):
+        assert f'"runs/hosted-operation-canary/{filename}"' in output
+    assert '"runs/candidate_spec_graph.json"' not in output
+    assert '"runs/pre_sib_coherence_report.json"' not in output
 
 
 def test_repaired_promotion_handoff_threads_scoped_producer_outputs() -> None:
@@ -1371,7 +1380,52 @@ def test_repaired_promotion_handoff_threads_scoped_producer_outputs() -> None:
         'IDEA_MATURITY_METRICS_RERUN_MATERIALIZATION="runs/hosted-operation-canary/idea_to_spec_rerun_materialization.json"'
         in output
     )
-    assert '--repaired-handoff "runs/repaired_candidate_promotion_handoff_report.json"' in output
+    scoped_output_paths = (
+        "repaired_candidate_spec_graph.json",
+        "repaired_pre_sib_coherence_report.json",
+        "repaired_candidate_repair_loop_report.json",
+        "repaired_materialized_candidate_specs",
+        "repaired_candidate_spec_materialization_report.json",
+        "repaired_idea_to_spec_promotion_gate.json",
+        "repaired_active_idea_to_spec_candidate.json",
+        "repaired_idea_to_spec_repair_session.json",
+        "repaired_candidate_promotion_handoff_report.json",
+        "idea_maturity_metrics_report.json",
+        "idea_maturity_metrics_validation_report.json",
+    )
+    for filename in scoped_output_paths:
+        assert f"runs/hosted-operation-canary/{filename}" in output
+    assert '"runs/repaired_candidate_promotion_handoff_report.json"' not in output
+    assert '"runs/idea_maturity_metrics_report.json"' not in output
+
+
+def test_repaired_promotion_handoff_preserves_explicit_scoped_outputs() -> None:
+    output = _make_dry_run_target(
+        "product-workspace-repaired-promotion-handoff",
+        "IDEA_EVENT_STORMING_INTAKE_OUTPUT=runs/mac-product/idea_event_storming_intake.json",
+        "REPAIRED_CANDIDATE_PROMOTION_HANDOFF_OUTPUT=runs/operator-selected/handoff.json",
+        "IDEA_MATURITY_METRICS_OUTPUT=runs/operator-selected/maturity.json",
+        "IDEA_MATURITY_METRICS_VALIDATION_OUTPUT=runs/operator-selected/validation.json",
+    )
+
+    assert '--output "runs/operator-selected/handoff.json"' in output
+    assert '--output "runs/operator-selected/maturity.json"' in output
+    assert '--output "runs/operator-selected/validation.json"' in output
+
+
+def test_happy_path_repair_pack_scopes_every_maturity_output() -> None:
+    output = _make_dry_run_target(
+        "product-workspace-happy-path-repair-pack",
+        "IDEA_EVENT_STORMING_INTAKE_OUTPUT=runs/mac-product/idea_event_storming_intake.json",
+    )
+
+    assert output.count('--output "runs/mac-product/idea_maturity_metrics_report.json"') == 3
+    assert (
+        output.count('--output "runs/mac-product/idea_maturity_metrics_validation_report.json"')
+        == 3
+    )
+    assert '--output "runs/idea_maturity_metrics_report.json"' not in output
+    assert '--output "runs/idea_maturity_metrics_validation_report.json"' not in output
 
 
 def test_idea_maturity_metrics_report_counts_materialized_request_once(
