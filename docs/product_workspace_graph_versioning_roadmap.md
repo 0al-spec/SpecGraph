@@ -82,10 +82,12 @@ through its existing artifact consumer.
    assumptions, exclusions, invalidation triggers, and classified changes. It
    does not invent a local applicability schema or turn review evidence into a
    score, gate, or runtime policy.
-5. **Custom-run handoff reconciliation.** Close the remaining cash-flow
-   follow-up by verifying the existing workspace-bound Platform promotion
-   dry-run path or adding only the smallest missing producer handoff. Do not
-   copy custom-run artifacts into shared `runs/*.json`.
+6. **Custom-run handoff reconciliation.** Done for repaired product outputs.
+   `product-workspace-repaired-promotion-handoff` now derives repaired graph,
+   materialization, handoff, Idea Maturity, and validation outputs from the
+   selected workspace intake directory while preserving explicit output
+   overrides. A scoped Mac or hosted run no longer falls back to shared
+   `runs/*.json` for those artifacts.
 
 ## Cross-Repo Transition Gates
 

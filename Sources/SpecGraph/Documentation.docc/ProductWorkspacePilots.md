@@ -40,6 +40,13 @@ requests belong to an external SpecSpace/Platform state service; SpecGraph
 preserves workspace-bound handoff evidence but does not become their storage
 authority.
 
+Workspace-scoped repaired flows also keep their generated graph,
+materialization, handoff, Idea Maturity, and validation artifacts beside the
+selected intake. Explicit output overrides remain authoritative, while ordinary
+shared-run invocations retain their existing defaults. This prevents Mac-local
+and hosted product runs from silently publishing repaired outputs into another
+workspace's shared `runs/*.json` surface.
+
 SpecGraph can run in `product_workspace` mode when it should develop a user's
 product graph instead of improving SpecGraph itself.
 

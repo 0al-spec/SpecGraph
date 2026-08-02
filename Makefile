@@ -203,6 +203,13 @@ REPAIRED_CANDIDATE_PROMOTION_HANDOFF_STRICT_ARG := $(if $(filter 1 true yes,$(st
 # A scoped product flow normally overrides producer outputs. A caller can instead
 # supply a direct repaired-handoff input; command-line and environment values win.
 product_workspace_repaired_handoff_input = $(if $(filter file,$(origin $(1))),$($(2)),$($(1)))
+# Repaired outputs follow the selected intake directory unless the caller supplies
+# an explicit output. This keeps managed workspace runs isolated without changing
+# the ordinary shared-runs defaults.
+product_workspace_repaired_output_dir = $(patsubst %/,%,$(dir $(call product_workspace_repaired_handoff_input,REPAIRED_CANDIDATE_PROMOTION_HANDOFF_INTAKE,IDEA_EVENT_STORMING_INTAKE_OUTPUT)))
+product_workspace_repaired_output = $(if $(filter file,$(origin $(1))),$(product_workspace_repaired_output_dir)/$(2),$($(1)))
+product_workspace_repaired_maturity_output_dir = $(patsubst %/,%,$(dir $(call product_workspace_repaired_output,REPAIRED_CANDIDATE_PROMOTION_HANDOFF_OUTPUT,repaired_candidate_promotion_handoff_report.json)))
+product_workspace_repaired_maturity_output = $(if $(filter file,$(origin $(1))),$(product_workspace_repaired_maturity_output_dir)/$(2),$($(1)))
 IDEA_TO_SPEC_REPAIR_SESSION_ACTIVE_CANDIDATE ?= runs/active_idea_to_spec_candidate.json
 IDEA_TO_SPEC_REPAIR_SESSION_CLARIFICATION_REQUESTS ?= runs/idea_to_spec_clarification_requests.json
 IDEA_TO_SPEC_REPAIR_SESSION_CLARIFICATION_ANSWERS ?= runs/idea_to_spec_clarification_answers.json
@@ -1233,7 +1240,16 @@ product-workspace-repaired-promotion-handoff:
 		REPAIRED_CANDIDATE_PROMOTION_HANDOFF_ONTOLOGY_DECISIONS="$(call product_workspace_repaired_handoff_input,REPAIRED_CANDIDATE_PROMOTION_HANDOFF_ONTOLOGY_DECISIONS,PRODUCT_ONTOLOGY_GAP_REVIEW_DECISIONS_OUTPUT)" \
 		REPAIRED_CANDIDATE_PROMOTION_HANDOFF_RERUN_INPUT="$(call product_workspace_repaired_handoff_input,REPAIRED_CANDIDATE_PROMOTION_HANDOFF_RERUN_INPUT,IDEA_TO_SPEC_ANSWER_RERUN_INPUT_OUTPUT)" \
 		REPAIRED_CANDIDATE_PROMOTION_HANDOFF_RERUN_PREVIEW="$(call product_workspace_repaired_handoff_input,REPAIRED_CANDIDATE_PROMOTION_HANDOFF_RERUN_PREVIEW,IDEA_TO_SPEC_RERUN_PREVIEW_OUTPUT)" \
-		REPAIRED_CANDIDATE_PROMOTION_HANDOFF_RERUN_MATERIALIZATION="$(call product_workspace_repaired_handoff_input,REPAIRED_CANDIDATE_PROMOTION_HANDOFF_RERUN_MATERIALIZATION,IDEA_TO_SPEC_RERUN_MATERIALIZATION_OUTPUT)"
+		REPAIRED_CANDIDATE_PROMOTION_HANDOFF_RERUN_MATERIALIZATION="$(call product_workspace_repaired_handoff_input,REPAIRED_CANDIDATE_PROMOTION_HANDOFF_RERUN_MATERIALIZATION,IDEA_TO_SPEC_RERUN_MATERIALIZATION_OUTPUT)" \
+		REPAIRED_CANDIDATE_PROMOTION_HANDOFF_CANDIDATE_GRAPH_OUTPUT="$(call product_workspace_repaired_output,REPAIRED_CANDIDATE_PROMOTION_HANDOFF_CANDIDATE_GRAPH_OUTPUT,repaired_candidate_spec_graph.json)" \
+		REPAIRED_CANDIDATE_PROMOTION_HANDOFF_PRE_SIB_OUTPUT="$(call product_workspace_repaired_output,REPAIRED_CANDIDATE_PROMOTION_HANDOFF_PRE_SIB_OUTPUT,repaired_pre_sib_coherence_report.json)" \
+		REPAIRED_CANDIDATE_PROMOTION_HANDOFF_REPAIR_LOOP_OUTPUT="$(call product_workspace_repaired_output,REPAIRED_CANDIDATE_PROMOTION_HANDOFF_REPAIR_LOOP_OUTPUT,repaired_candidate_repair_loop_report.json)" \
+		REPAIRED_CANDIDATE_PROMOTION_HANDOFF_MATERIALIZATION_OUTPUT_DIR="$(call product_workspace_repaired_output,REPAIRED_CANDIDATE_PROMOTION_HANDOFF_MATERIALIZATION_OUTPUT_DIR,repaired_materialized_candidate_specs)" \
+		REPAIRED_CANDIDATE_PROMOTION_HANDOFF_MATERIALIZATION_OUTPUT="$(call product_workspace_repaired_output,REPAIRED_CANDIDATE_PROMOTION_HANDOFF_MATERIALIZATION_OUTPUT,repaired_candidate_spec_materialization_report.json)" \
+		REPAIRED_CANDIDATE_PROMOTION_HANDOFF_PROMOTION_GATE_OUTPUT="$(call product_workspace_repaired_output,REPAIRED_CANDIDATE_PROMOTION_HANDOFF_PROMOTION_GATE_OUTPUT,repaired_idea_to_spec_promotion_gate.json)" \
+		REPAIRED_CANDIDATE_PROMOTION_HANDOFF_ACTIVE_CANDIDATE_OUTPUT="$(call product_workspace_repaired_output,REPAIRED_CANDIDATE_PROMOTION_HANDOFF_ACTIVE_CANDIDATE_OUTPUT,repaired_active_idea_to_spec_candidate.json)" \
+		REPAIRED_CANDIDATE_PROMOTION_HANDOFF_REPAIR_SESSION_OUTPUT="$(call product_workspace_repaired_output,REPAIRED_CANDIDATE_PROMOTION_HANDOFF_REPAIR_SESSION_OUTPUT,repaired_idea_to_spec_repair_session.json)" \
+		REPAIRED_CANDIDATE_PROMOTION_HANDOFF_OUTPUT="$(call product_workspace_repaired_output,REPAIRED_CANDIDATE_PROMOTION_HANDOFF_OUTPUT,repaired_candidate_promotion_handoff_report.json)"
 	@$(MAKE) product-workspace-idea-maturity \
 		IDEA_MATURITY_METRICS_INTAKE="$(call product_workspace_repaired_handoff_input,REPAIRED_CANDIDATE_PROMOTION_HANDOFF_INTAKE,IDEA_EVENT_STORMING_INTAKE_OUTPUT)" \
 		IDEA_MATURITY_METRICS_CANDIDATE_GRAPH="$(CANDIDATE_SPEC_GRAPH_OUTPUT)" \
@@ -1246,12 +1262,14 @@ product-workspace-repaired-promotion-handoff:
 		IDEA_MATURITY_METRICS_RERUN_MATERIALIZATION="$(call product_workspace_repaired_handoff_input,REPAIRED_CANDIDATE_PROMOTION_HANDOFF_RERUN_MATERIALIZATION,IDEA_TO_SPEC_RERUN_MATERIALIZATION_OUTPUT)" \
 		IDEA_MATURITY_METRICS_PROMOTION_GATE="$(IDEA_TO_SPEC_PROMOTION_GATE_OUTPUT)" \
 		IDEA_MATURITY_METRICS_REPAIR_SESSION="$(IDEA_TO_SPEC_REPAIR_SESSION_OUTPUT)" \
-		IDEA_MATURITY_METRICS_REPAIRED_HANDOFF="$(REPAIRED_CANDIDATE_PROMOTION_HANDOFF_OUTPUT)" \
-		IDEA_MATURITY_METRICS_REPAIRED_CANDIDATE_GRAPH="$(REPAIRED_CANDIDATE_PROMOTION_HANDOFF_CANDIDATE_GRAPH_OUTPUT)" \
-		IDEA_MATURITY_METRICS_REPAIRED_PRE_SIB="$(REPAIRED_CANDIDATE_PROMOTION_HANDOFF_PRE_SIB_OUTPUT)" \
-		IDEA_MATURITY_METRICS_REPAIRED_ACTIVE_CANDIDATE="$(REPAIRED_CANDIDATE_PROMOTION_HANDOFF_ACTIVE_CANDIDATE_OUTPUT)" \
-		IDEA_MATURITY_METRICS_REPAIRED_PROMOTION_GATE="$(REPAIRED_CANDIDATE_PROMOTION_HANDOFF_PROMOTION_GATE_OUTPUT)" \
-		IDEA_MATURITY_METRICS_REPAIRED_REPAIR_SESSION="$(REPAIRED_CANDIDATE_PROMOTION_HANDOFF_REPAIR_SESSION_OUTPUT)"
+		IDEA_MATURITY_METRICS_REPAIRED_HANDOFF="$(call product_workspace_repaired_output,REPAIRED_CANDIDATE_PROMOTION_HANDOFF_OUTPUT,repaired_candidate_promotion_handoff_report.json)" \
+		IDEA_MATURITY_METRICS_REPAIRED_CANDIDATE_GRAPH="$(call product_workspace_repaired_output,REPAIRED_CANDIDATE_PROMOTION_HANDOFF_CANDIDATE_GRAPH_OUTPUT,repaired_candidate_spec_graph.json)" \
+		IDEA_MATURITY_METRICS_REPAIRED_PRE_SIB="$(call product_workspace_repaired_output,REPAIRED_CANDIDATE_PROMOTION_HANDOFF_PRE_SIB_OUTPUT,repaired_pre_sib_coherence_report.json)" \
+		IDEA_MATURITY_METRICS_REPAIRED_ACTIVE_CANDIDATE="$(call product_workspace_repaired_output,REPAIRED_CANDIDATE_PROMOTION_HANDOFF_ACTIVE_CANDIDATE_OUTPUT,repaired_active_idea_to_spec_candidate.json)" \
+		IDEA_MATURITY_METRICS_REPAIRED_PROMOTION_GATE="$(call product_workspace_repaired_output,REPAIRED_CANDIDATE_PROMOTION_HANDOFF_PROMOTION_GATE_OUTPUT,repaired_idea_to_spec_promotion_gate.json)" \
+		IDEA_MATURITY_METRICS_REPAIRED_REPAIR_SESSION="$(call product_workspace_repaired_output,REPAIRED_CANDIDATE_PROMOTION_HANDOFF_REPAIR_SESSION_OUTPUT,repaired_idea_to_spec_repair_session.json)" \
+		IDEA_MATURITY_METRICS_OUTPUT="$(call product_workspace_repaired_maturity_output,IDEA_MATURITY_METRICS_OUTPUT,idea_maturity_metrics_report.json)" \
+		IDEA_MATURITY_METRICS_VALIDATION_OUTPUT="$(call product_workspace_repaired_maturity_output,IDEA_MATURITY_METRICS_VALIDATION_OUTPUT,idea_maturity_metrics_validation_report.json)"
 
 .PHONY: metrics-delivery
 metrics-delivery:
