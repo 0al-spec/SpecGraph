@@ -797,6 +797,15 @@ def build_parser() -> argparse.ArgumentParser:
             "candidate approval readiness stays false until rerun artifacts exist."
         ),
     )
+    parser.add_argument(
+        "--initialize-repair-session",
+        action="store_true",
+        help=(
+            "Create a fresh initial repair session and record every post-request "
+            "repair stage as missing even when stale files already exist at the "
+            "selected paths."
+        ),
+    )
     parser.add_argument("--strict", action="store_true")
     return parser
 
@@ -807,9 +816,9 @@ def main(argv: list[str] | None = None) -> int:
 
     def load_stage(key: str, path: Path) -> dict[str, Any]:
         if (
-            args.allow_missing_repair_artifacts
+            (args.allow_missing_repair_artifacts or args.initialize_repair_session)
             and key in OPTIONAL_REPAIR_STAGE_KEYS
-            and not path.exists()
+            and (args.initialize_repair_session or not path.exists())
         ):
             missing_stages.add(key)
             return _missing_optional_artifact(key)

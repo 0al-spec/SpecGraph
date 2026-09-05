@@ -577,6 +577,56 @@ def test_repair_session_journal_cli_writes_output(tmp_path: Path) -> None:
     assert report["session"]["operator_ref"] == "operator:cli-test"
 
 
+def test_repair_session_journal_cli_initialization_ignores_stale_optional_stage(
+    tmp_path: Path,
+) -> None:
+    artifacts = valid_artifacts()
+    paths = {}
+    for key, artifact in artifacts.items():
+        path = tmp_path / f"{key}.json"
+        write_json(path, artifact)
+        paths[key] = path
+    output = tmp_path / "idea_to_spec_repair_session.json"
+
+    result = subprocess.run(
+        [
+            sys.executable,
+            str(TOOL_PATH),
+            "--active-candidate",
+            str(paths["active_candidate"]),
+            "--clarification-requests",
+            str(paths["clarification_requests"]),
+            "--clarification-answers",
+            str(paths["clarification_answers"]),
+            "--ontology-decisions",
+            str(paths["ontology_decisions"]),
+            "--rerun-input",
+            str(paths["rerun_input"]),
+            "--rerun-preview",
+            str(paths["rerun_preview"]),
+            "--rerun-materialization",
+            str(paths["rerun_materialization"]),
+            "--promotion-gate",
+            str(paths["promotion_gate"]),
+            "--output",
+            str(output),
+            "--initialize-repair-session",
+        ],
+        cwd=ROOT,
+        check=False,
+        capture_output=True,
+        text=True,
+    )
+
+    assert result.returncode == 0, result.stderr
+    report = load_json(output)
+    answers = report["source_artifacts"]["clarification_answers"]
+    assert answers["status"] == "artifact_missing"
+    assert answers["sha256"] is None
+    assert answers["source_ref"] == str(paths["clarification_answers"])
+    assert report["summary"]["accepted_answer_count"] == 0
+
+
 def test_repair_session_journal_cli_strict_returns_nonzero_for_review_required(
     tmp_path: Path,
 ) -> None:

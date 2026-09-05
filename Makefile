@@ -1047,7 +1047,7 @@ idea-to-spec-repair-session-journal:
 
 .PHONY: idea-to-spec-initial-repair-session-journal
 idea-to-spec-initial-repair-session-journal:
-	@$(PYTHON) tools/idea_to_spec_repair_session_journal.py $(IDEA_TO_SPEC_REPAIR_SESSION_JOURNAL_ARGS) --allow-missing-repair-artifacts
+	@$(PYTHON) tools/idea_to_spec_repair_session_journal.py $(IDEA_TO_SPEC_REPAIR_SESSION_JOURNAL_ARGS) --initialize-repair-session
 
 .PHONY: specspace-repair-draft-import-preview
 specspace-repair-draft-import-preview:
@@ -1221,6 +1221,16 @@ endif
 	@$(PYTHON) tools/candidate_spec_materialization.py --candidate-graph "$(CANDIDATE_SPEC_GRAPH_OUTPUT)" --repair-loop "$(CANDIDATE_REPAIR_LOOP_OUTPUT)" --output-dir "$(CANDIDATE_SPEC_MATERIALIZATION_OUTPUT_DIR)" --output "$(CANDIDATE_SPEC_MATERIALIZATION_OUTPUT)"
 	@$(PYTHON) tools/idea_to_spec_promotion_gate.py --pre-sib "$(PRE_SIB_COHERENCE_OUTPUT)" --repair-loop "$(CANDIDATE_REPAIR_LOOP_OUTPUT)" --materialization "$(CANDIDATE_SPEC_MATERIALIZATION_OUTPUT)" --output "$(IDEA_TO_SPEC_PROMOTION_GATE_OUTPUT)"
 	@$(PYTHON) tools/active_idea_to_spec_candidate_source.py $(PRODUCT_WORKSPACE_ACTIVE_CANDIDATE_CONFIG_ARGS) $(PRODUCT_WORKSPACE_ACTIVE_CANDIDATE_ARTIFACT_ARGS) --output "$(ACTIVE_IDEA_TO_SPEC_CANDIDATE_OUTPUT)"
+	@$(MAKE) idea-to-spec-initial-repair-session-journal \
+		IDEA_TO_SPEC_REPAIR_SESSION_ACTIVE_CANDIDATE="$(ACTIVE_IDEA_TO_SPEC_CANDIDATE_OUTPUT)" \
+		IDEA_TO_SPEC_REPAIR_SESSION_CLARIFICATION_REQUESTS="$(IDEA_TO_SPEC_CLARIFICATION_OUTPUT)" \
+		IDEA_TO_SPEC_REPAIR_SESSION_CLARIFICATION_ANSWERS="$(dir $(ACTIVE_IDEA_TO_SPEC_CANDIDATE_OUTPUT))idea_to_spec_clarification_answers.json" \
+		IDEA_TO_SPEC_REPAIR_SESSION_ONTOLOGY_DECISIONS="$(dir $(ACTIVE_IDEA_TO_SPEC_CANDIDATE_OUTPUT))product_ontology_gap_review_decisions.json" \
+		IDEA_TO_SPEC_REPAIR_SESSION_RERUN_INPUT="$(dir $(ACTIVE_IDEA_TO_SPEC_CANDIDATE_OUTPUT))idea_to_spec_answer_rerun_input.json" \
+		IDEA_TO_SPEC_REPAIR_SESSION_RERUN_PREVIEW="$(dir $(ACTIVE_IDEA_TO_SPEC_CANDIDATE_OUTPUT))idea_to_spec_rerun_preview.json" \
+		IDEA_TO_SPEC_REPAIR_SESSION_RERUN_MATERIALIZATION="$(dir $(ACTIVE_IDEA_TO_SPEC_CANDIDATE_OUTPUT))idea_to_spec_rerun_materialization.json" \
+		IDEA_TO_SPEC_REPAIR_SESSION_PROMOTION_GATE="$(IDEA_TO_SPEC_PROMOTION_GATE_OUTPUT)" \
+		IDEA_TO_SPEC_REPAIR_SESSION_OUTPUT="$(dir $(ACTIVE_IDEA_TO_SPEC_CANDIDATE_OUTPUT))idea_to_spec_repair_session.json"
 
 .PHONY: product-workspace-decision-backed-repair-chain
 product-workspace-decision-backed-repair-chain:

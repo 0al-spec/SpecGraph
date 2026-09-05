@@ -111,6 +111,7 @@ def test_promotion_gate_allows_resolved_repair_preview(tmp_path: Path) -> None:
     assert report["readiness"]["ready"] is True
     assert report["readiness"]["review_state"] == "ready_for_platform_promotion_request"
     assert report["summary"]["promotion_path_count"] == 2
+    assert report["summary"]["candidate_id"] == materialization["candidate_scope"]["namespace"]
     assert report["authority_boundary"]["may_open_pull_request"] is False
     assert "pre_sib_findings_repaired_by_preview" in warning_ids(report)
     assert report["promotion_request"]["paths"] == [
@@ -130,6 +131,7 @@ def test_promotion_gate_blocks_unresolved_context(tmp_path: Path) -> None:
     )
 
     assert report["readiness"]["ready"] is False
+    assert report["summary"]["candidate_id"] == materialization["candidate_scope"]["namespace"]
     assert "repair_context_required" in finding_ids(report)
     assert report["promotion_request"]["paths"] == []
 

@@ -110,10 +110,12 @@ def test_product_workspace_active_candidate_runs_from_generic_user_idea_source()
         candidate_graph = RUN_DIR / "candidate_spec_graph.json"
         pre_sib = RUN_DIR / "pre_sib_coherence_report.json"
         repair_loop = RUN_DIR / "candidate_repair_loop_report.json"
+        clarification_requests = RUN_DIR / "idea_to_spec_clarification_requests.json"
         materialized_dir = RUN_DIR / "materialized_candidate_specs"
         materialization = RUN_DIR / "candidate_spec_materialization_report.json"
         promotion_gate = RUN_DIR / "idea_to_spec_promotion_gate.json"
         active_candidate = RUN_DIR / "active_idea_to_spec_candidate.json"
+        repair_session = RUN_DIR / "idea_to_spec_repair_session.json"
 
         result = subprocess.run(
             [
@@ -128,6 +130,8 @@ def test_product_workspace_active_candidate_runs_from_generic_user_idea_source()
                 f"CANDIDATE_SPEC_GRAPH_OUTPUT={candidate_graph.relative_to(ROOT).as_posix()}",
                 f"PRE_SIB_COHERENCE_OUTPUT={pre_sib.relative_to(ROOT).as_posix()}",
                 f"CANDIDATE_REPAIR_LOOP_OUTPUT={repair_loop.relative_to(ROOT).as_posix()}",
+                "IDEA_TO_SPEC_CLARIFICATION_OUTPUT="
+                f"{clarification_requests.relative_to(ROOT).as_posix()}",
                 "CANDIDATE_SPEC_MATERIALIZATION_OUTPUT_DIR="
                 f"{materialized_dir.relative_to(ROOT).as_posix()}",
                 "CANDIDATE_SPEC_MATERIALIZATION_OUTPUT="
@@ -161,6 +165,19 @@ def test_product_workspace_active_candidate_runs_from_generic_user_idea_source()
         assert gate["artifact_kind"] == "idea_to_spec_promotion_gate"
         assert gate["readiness"]["review_state"] == "idea_to_spec_promotion_blocked"
         assert "team-decision-log" not in json.dumps(active)
+        session = load_json(repair_session)
+        assert session["artifact_kind"] == "idea_to_spec_repair_session_journal"
+        assert session["readiness"]["ready"] is True
+        assert session["session"]["candidate_id"] == "support-triage-log"
+        assert session["session"]["session_id"] == "repair-session.support-triage-log"
+        assert (
+            session["source_artifacts"]["clarification_requests"]["source_ref"]
+            == clarification_requests.relative_to(ROOT).as_posix()
+        )
+        assert (
+            session["source_artifacts"]["clarification_answers"]["source_ref"]
+            == (RUN_DIR / "idea_to_spec_clarification_answers.json").relative_to(ROOT).as_posix()
+        )
     finally:
         if RUN_DIR.exists():
             shutil.rmtree(RUN_DIR)
