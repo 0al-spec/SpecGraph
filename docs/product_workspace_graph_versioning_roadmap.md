@@ -2051,6 +2051,16 @@ consumers to distinguish a partial repair result from foreign candidate
 evidence. A later rerun can continue from the same scoped repair lifecycle after
 the operator supplies the missing decision.
 
+## Workspace-Scoped Repair Publication
+
+Status: implemented in proposal `0218`.
+
+Bound repair publication now derives its run directory and workspace bundle
+from the durable Platform binding. It no longer refreshes the root demo product
+surfaces, and root Team Decision Log artifacts cannot satisfy publication or
+Idea Maturity evidence for another workspace. Legacy unbound publication keeps
+the existing root-bundle behavior.
+
 ## Related Documents
 
 - `docs/product_workspace_stable_mode_guide.md`

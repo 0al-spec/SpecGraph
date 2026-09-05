@@ -1041,3 +1041,8 @@ the SpecGraph product workspace initialization receipt. The descriptor pins
 workspace identity, relative layout roots, project-config digest, and
 repository-role hints without exposing absolute local paths or granting
 Platform, Git, spec, or Ontology mutation authority.
+
+Proposal `0218` applies that binding to repair publication. Bound repair and
+Idea Maturity evidence is selected from `runs/<workspace-id>` and published
+under `workspaces/<workspace-id>` without refreshing default product fixtures.
+Root demo artifacts cannot satisfy another workspace's publication evidence.

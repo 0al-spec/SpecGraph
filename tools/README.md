@@ -19,6 +19,10 @@ review state as the current public lifecycle authority. It rehydrates the
 validated public predecessor before lifecycle refresh so the final workspace
 manifest includes a coherent review-to-publication chain.
 
+Proposal 0218 adds the `publish-workspace-bundle` Make target for bound repair
+publication. It consumes explicit durable workspace run and output paths and
+does not refresh root product fixtures before building the public-safe bundle.
+
 For a practical operator/contributor guide to the supervisor, see
 [docs/supervisor_manual.md](../docs/supervisor_manual.md).
 For a visualizer-facing compact report and overlay guide, see
