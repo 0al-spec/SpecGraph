@@ -296,6 +296,9 @@ def build_idea_to_spec_promotion_gate(
         materialization=materialization,
     )
     promotion_paths = _promotion_paths(materialization)
+    candidate_id = _dict(materialization.get("candidate_scope")).get("namespace")
+    if not isinstance(candidate_id, str) or not candidate_id.strip():
+        candidate_id = None
     ready = not findings
     return {
         "artifact_kind": "idea_to_spec_promotion_gate",
@@ -341,6 +344,7 @@ def build_idea_to_spec_promotion_gate(
         "findings": findings,
         "warnings": warnings,
         "summary": {
+            "candidate_id": candidate_id,
             "status": "ready_for_platform_promotion_request"
             if ready
             else "idea_to_spec_promotion_blocked",

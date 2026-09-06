@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import importlib.util
 import json
+import subprocess
 import sys
 from pathlib import Path
 
@@ -39,13 +40,52 @@ def test_workspace_bootstrap_alias_uses_scoped_initialization_report(
         repo_root=repo,
         output_dir=repo / "dist" / "workspace",
         workspace_bootstrap_run_dir=Path("runs/example"),
+        require_verified_agent_passports=False,
     )
 
     bootstrap = json.loads((result.output_dir / "runs" / surface).read_text())
-    scoped = json.loads((result.output_dir / "runs" / "example" / surface).read_text())
     assert bootstrap["workspace"]["workspace_id"] == "example"
-    assert scoped == bootstrap
     assert [entry["path"] for entry in result.manifest["files"]].count(f"runs/{surface}") == 1
+
+
+def test_workspace_bundle_uses_only_selected_run_directory(
+    bundle_module: object, tmp_path: Path
+) -> None:
+    repo = make_repo(tmp_path / "repo")
+    surface = "platform_product_workspace_initialization_execution_report.json"
+    write_json(repo / "runs" / surface, {"workspace": {"workspace_id": "foreign"}})
+    write_json(repo / "runs" / "root-only-product.json", {"candidate_id": "foreign"})
+    write_json(repo / "runs" / "example" / surface, {"workspace": {"workspace_id": "example"}})
+    write_json(repo / "runs" / "example" / "candidate.json", {"candidate_id": "example"})
+
+    result = bundle_module.build_public_bundle(
+        repo_root=repo,
+        output_dir=repo / "dist" / "workspace",
+        workspace_bootstrap_run_dir=Path("runs/example"),
+        require_verified_agent_passports=False,
+    )
+
+    assert json.loads((result.output_dir / "runs" / "candidate.json").read_text()) == {
+        "candidate_id": "example"
+    }
+    assert not (result.output_dir / "runs" / "root-only-product.json").exists()
+    assert not (result.output_dir / "runs" / "example").exists()
+
+
+def test_workspace_bundle_rejects_mismatched_initialization_identity(
+    bundle_module: object, tmp_path: Path
+) -> None:
+    repo = make_repo(tmp_path / "repo")
+    surface = "platform_product_workspace_initialization_execution_report.json"
+    write_json(repo / "runs" / "example" / surface, {"workspace": {"workspace_id": "foreign"}})
+
+    with pytest.raises(bundle_module.PublishBundleError, match="workspace_id"):
+        bundle_module.build_public_bundle(
+            repo_root=repo,
+            output_dir=repo / "dist" / "workspace",
+            workspace_bootstrap_run_dir=Path("runs/example"),
+            require_verified_agent_passports=False,
+        )
 
 
 def test_workspace_bootstrap_run_dir_must_stay_below_runs(
@@ -1437,3 +1477,57 @@ def test_main_prints_compact_summary(
     summary = json.loads(capsys.readouterr().out)
     assert summary["file_count"] >= 6
     assert summary["safety_gate"]["status"] == "passed"
+
+
+def test_workspace_bundle_make_target_does_not_refresh_root_product_surfaces() -> None:
+    repo_root = Path(__file__).resolve().parents[1]
+    completed = subprocess.run(
+        [
+            "make",
+            "-n",
+            "publish-workspace-bundle",
+            "PRODUCT_WORKSPACE_PUBLICATION_RUN_DIR=runs/idea-alpha",
+            (
+                "PRODUCT_WORKSPACE_PUBLICATION_OUTPUT_DIR="
+                "dist/specgraph-public/workspaces/idea-alpha"
+            ),
+        ],
+        cwd=repo_root,
+        check=True,
+        capture_output=True,
+        text=True,
+    )
+
+    assert '--workspace-bootstrap-run-dir "runs/idea-alpha"' in completed.stdout
+    assert '--output-dir "dist/specgraph-public/workspaces/idea-alpha"' in completed.stdout
+    assert "--refresh-publish-surfaces" not in completed.stdout
+
+
+def test_repaired_handoff_maturity_inputs_follow_workspace_output_scope() -> None:
+    makefile = (Path(__file__).resolve().parents[1] / "Makefile").read_text(encoding="utf-8")
+    target = makefile.split(".PHONY: product-workspace-repaired-promotion-handoff", 1)[1].split(
+        "\n.PHONY: metrics-delivery", 1
+    )[0]
+
+    for variable, filename in (
+        ("IDEA_MATURITY_METRICS_APPROVAL_INTENT", "idea_to_spec_candidate_approval_intents.json"),
+        (
+            "IDEA_MATURITY_METRICS_REPAIR_RERUN_EXECUTION",
+            "platform_product_repair_rerun_execution_report.json",
+        ),
+        (
+            "IDEA_MATURITY_METRICS_REPAIR_RERUN_PUBLICATION",
+            "platform_product_repair_rerun_publication_report.json",
+        ),
+        ("IDEA_MATURITY_METRICS_CANDIDATE_APPROVAL_DECISION", "candidate_approval_decision.json"),
+        ("IDEA_MATURITY_METRICS_PROMOTION_REQUEST", "graph_repository_promotion_request.json"),
+        (
+            "IDEA_MATURITY_METRICS_REVIEW_STATUS",
+            "product_candidate_promotion_review_status_report.json",
+        ),
+        (
+            "IDEA_MATURITY_METRICS_READ_MODEL_PUBLICATION",
+            "product_candidate_promotion_read_model_publication_report.json",
+        ),
+    ):
+        assert f"$(call product_workspace_repaired_maturity_output,{variable},{filename})" in target

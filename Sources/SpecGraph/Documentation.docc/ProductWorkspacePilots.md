@@ -850,6 +850,13 @@ resolved and unresolved ontology gap counts, and whether the candidate can move
 to approval or Platform promotion. `make product-workspace-decision-backed-repair-chain`
 writes the journal as its final step.
 
+`make product-workspace-active-candidate` also writes an initial repair-session
+journal immediately after producing the active candidate. That initial journal
+resolves the promotion gate from the active candidate's recorded provenance and
+treats optional downstream repair artifacts as absent even if stale files remain
+at their usual paths. It is review-only lifecycle evidence: it does not approve
+the candidate, publish artifacts, or authorize Platform execution.
+
 The journal remains audit/read-model state only. It does not apply answers,
 accept ontology terms, mutate candidate artifacts, write canonical specs,
 create branches, open pull requests, or publish read models.
@@ -1041,3 +1048,8 @@ the SpecGraph product workspace initialization receipt. The descriptor pins
 workspace identity, relative layout roots, project-config digest, and
 repository-role hints without exposing absolute local paths or granting
 Platform, Git, spec, or Ontology mutation authority.
+
+Proposal `0218` applies that binding to repair publication. Bound repair and
+Idea Maturity evidence is selected from `runs/<workspace-id>` and published
+under `workspaces/<workspace-id>` without refreshing default product fixtures.
+Root demo artifacts cannot satisfy another workspace's publication evidence.

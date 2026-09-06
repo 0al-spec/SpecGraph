@@ -248,6 +248,7 @@ def valid_artifacts() -> dict[str, dict[str, object]]:
             },
             "authority_boundary": {"may_create_branch_or_commit": False},
             "summary": {
+                "candidate_id": "team-decision-log",
                 "status": "idea_to_spec_promotion_blocked",
                 "promotion_path_count": 0,
             },
@@ -528,6 +529,43 @@ def test_repair_session_journal_detects_stale_active_candidate_refs() -> None:
     assert "active_candidate_promotion_gate_source_ref_mismatch" in finding_ids(report)
 
 
+def test_repair_session_journal_rejects_foreign_promotion_gate_candidate() -> None:
+    artifacts = valid_artifacts()
+    artifacts["promotion_gate"]["summary"]["candidate_id"] = "foreign-candidate"
+
+    report = build_report(artifacts)
+
+    assert report["readiness"]["ready"] is False
+    assert "promotion_gate_candidate_id_mismatch" in finding_ids(report)
+
+
+def test_repair_session_journal_requires_promotion_gate_candidate_identity() -> None:
+    artifacts = valid_artifacts()
+    artifacts["promotion_gate"]["summary"].pop("candidate_id")
+
+    report = build_report(artifacts)
+
+    assert report["readiness"]["ready"] is False
+    assert "promotion_gate_candidate_id_missing" in finding_ids(report)
+
+
+def test_initial_journal_resolves_configured_promotion_gate_from_active_candidate(
+    tmp_path: Path,
+) -> None:
+    module = load_module(TOOL_PATH, "idea_to_spec_repair_session_journal_provenance_test")
+    module.ROOT = tmp_path
+    promotion_gate_path = tmp_path / "runs" / "configured" / "promotion-gate.json"
+    write_json(promotion_gate_path, valid_artifacts()["promotion_gate"])
+    active_candidate = valid_artifacts()["active_candidate"]
+    active_candidate["source_artifacts"]["promotion_gate"]["source_ref"] = (
+        "runs/configured/promotion-gate.json"
+    )
+
+    assert module._promotion_gate_path_from_active_candidate(active_candidate) == (
+        promotion_gate_path.resolve()
+    )
+
+
 def test_repair_session_journal_cli_writes_output(tmp_path: Path) -> None:
     artifacts = valid_artifacts()
     paths = {}
@@ -575,6 +613,56 @@ def test_repair_session_journal_cli_writes_output(tmp_path: Path) -> None:
     assert report["artifact_kind"] == "idea_to_spec_repair_session_journal"
     assert report["session"]["session_id"] == "repair-session.test"
     assert report["session"]["operator_ref"] == "operator:cli-test"
+
+
+def test_repair_session_journal_cli_initialization_ignores_stale_optional_stage(
+    tmp_path: Path,
+) -> None:
+    artifacts = valid_artifacts()
+    paths = {}
+    for key, artifact in artifacts.items():
+        path = tmp_path / f"{key}.json"
+        write_json(path, artifact)
+        paths[key] = path
+    output = tmp_path / "idea_to_spec_repair_session.json"
+
+    result = subprocess.run(
+        [
+            sys.executable,
+            str(TOOL_PATH),
+            "--active-candidate",
+            str(paths["active_candidate"]),
+            "--clarification-requests",
+            str(paths["clarification_requests"]),
+            "--clarification-answers",
+            str(paths["clarification_answers"]),
+            "--ontology-decisions",
+            str(paths["ontology_decisions"]),
+            "--rerun-input",
+            str(paths["rerun_input"]),
+            "--rerun-preview",
+            str(paths["rerun_preview"]),
+            "--rerun-materialization",
+            str(paths["rerun_materialization"]),
+            "--promotion-gate",
+            str(paths["promotion_gate"]),
+            "--output",
+            str(output),
+            "--initialize-repair-session",
+        ],
+        cwd=ROOT,
+        check=False,
+        capture_output=True,
+        text=True,
+    )
+
+    assert result.returncode == 0, result.stderr
+    report = load_json(output)
+    answers = report["source_artifacts"]["clarification_answers"]
+    assert answers["status"] == "artifact_missing"
+    assert answers["sha256"] is None
+    assert answers["source_ref"] == str(paths["clarification_answers"])
+    assert report["summary"]["accepted_answer_count"] == 0
 
 
 def test_repair_session_journal_cli_strict_returns_nonzero_for_review_required(

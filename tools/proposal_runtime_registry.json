@@ -12434,5 +12434,49 @@
       }
     ],
     "notes": "Hosted managed review-object and review-status reports can now enter the tracked canary workspace only through one digest-bound public-safe packet before existing checksum-aware static publication."
+  },
+  {
+    "proposal_id": "0218",
+    "posture": "synchronous_runtime_slice",
+    "runtime_surfaces": [
+      "docs/proposals/0218_workspace_scoped_repair_publication.md",
+      "docs/archive/proposal_sources/0218_workspace_scoped_repair_publication.md",
+      "Makefile",
+      "tests/test_static_artifact_bundle.py",
+      "docs/product_workspace_graph_versioning_roadmap.md",
+      "Sources/SpecGraph/Documentation.docc/ProductWorkspacePilots.md",
+      "tools/README.md"
+    ],
+    "runtime_markers": [
+      {
+        "path": "Makefile",
+        "pattern": "publish-workspace-bundle:"
+      },
+      {
+        "path": "Makefile",
+        "pattern": "--workspace-bootstrap-run-dir \"$(PRODUCT_WORKSPACE_PUBLICATION_RUN_DIR)\""
+      }
+    ],
+    "validation_markers": [
+      {
+        "path": "tests/test_static_artifact_bundle.py",
+        "pattern": "test_workspace_bundle_make_target_does_not_refresh_root_product_surfaces"
+      }
+    ],
+    "observation_markers": [
+      {
+        "path": "docs/product_workspace_graph_versioning_roadmap.md",
+        "pattern": "Status: implemented in proposal `0218`."
+      },
+      {
+        "path": "Sources/SpecGraph/Documentation.docc/ProductWorkspacePilots.md",
+        "pattern": "Proposal `0218` applies that binding to repair publication."
+      },
+      {
+        "path": "tools/README.md",
+        "pattern": "Proposal 0218 adds the `publish-workspace-bundle` Make target"
+      }
+    ],
+    "notes": "Bound repair publication now builds from explicit durable workspace paths without refreshing root demo product fixtures."
   }
 ]

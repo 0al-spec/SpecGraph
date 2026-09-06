@@ -2033,6 +2033,34 @@ external binding across artifact routing, SpecSpace state namespace, execution
 run directory, and repository resolution; SpecGraph owns only initialized
 workspace identity, layout semantics, and project-config evidence.
 
+## Initial Repair Session And Partial Rerun Continuation
+
+Status: implemented and verified against the Mac single-operator workspace
+`idea-4cfafedbf9`.
+
+An active candidate now emits its initial workspace-scoped
+`idea_to_spec_repair_session.json`. Initial journal construction ignores stale
+optional downstream artifacts, so a new candidate cannot inherit an old rerun,
+approval, or publication state merely because those files remain on disk.
+
+The real operator smoke imported 18 preserved SpecSpace drafts and removed 17
+of 18 gaps. A remaining ontology decision for `add own ID` correctly keeps the
+candidate in repair instead of being inferred or auto-accepted. Promotion-gate
+reports preserve the current candidate id even while blocked, allowing
+consumers to distinguish a partial repair result from foreign candidate
+evidence. A later rerun can continue from the same scoped repair lifecycle after
+the operator supplies the missing decision.
+
+## Workspace-Scoped Repair Publication
+
+Status: implemented in proposal `0218`.
+
+Bound repair publication now derives its run directory and workspace bundle
+from the durable Platform binding. It no longer refreshes the root demo product
+surfaces, and root Team Decision Log artifacts cannot satisfy publication or
+Idea Maturity evidence for another workspace. Legacy unbound publication keeps
+the existing root-bundle behavior.
+
 ## Related Documents
 
 - `docs/product_workspace_stable_mode_guide.md`

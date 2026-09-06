@@ -2806,5 +2806,18 @@
     "required_provenance_links": [
       "source_draft_ref"
     ]
+  },
+  {
+    "proposal_id": "0218",
+    "source_artifact_class": "working_draft",
+    "source_refs": [
+      "docs/archive/proposal_sources/0218_workspace_scoped_repair_publication.md"
+    ],
+    "motivating_concern": "Bound repair publication refreshed and validated root demo artifacts instead of proving publication from the selected workspace run directory.",
+    "normalized_title": "Workspace-Scoped Repair Publication",
+    "bounded_scope": "Build repair publication from validated durable workspace run and bundle paths without refreshing default product fixtures or changing canonical specs, Ontology packages, approval, Git, or read-model authority.",
+    "required_provenance_links": [
+      "source_draft_ref"
+    ]
   }
 ]

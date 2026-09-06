@@ -4,6 +4,8 @@ SUPERVISOR ?= tools/supervisor.py
 PYTEST ?= $(PYTHON) -m pytest
 CHECK_PYTHON ?= tools/check_python_version.py
 PUBLISH_BUNDLE_FLAGS ?= --allow-unverified-agent-passports
+PRODUCT_WORKSPACE_PUBLICATION_RUN_DIR ?=
+PRODUCT_WORKSPACE_PUBLICATION_OUTPUT_DIR ?=
 PRODUCT_WORKSPACE_PROJECT_ID ?=
 PRODUCT_WORKSPACE_DISPLAY_NAME ?=
 PRODUCT_WORKSPACE_ROOT ?=
@@ -222,8 +224,10 @@ IDEA_TO_SPEC_REPAIR_SESSION_PROMOTION_GATE ?= runs/idea_to_spec_promotion_gate.j
 IDEA_TO_SPEC_REPAIR_SESSION_OUTPUT ?= runs/idea_to_spec_repair_session.json
 IDEA_TO_SPEC_REPAIR_SESSION_ID ?=
 IDEA_TO_SPEC_REPAIR_SESSION_ID_ARG := $(if $(strip $(IDEA_TO_SPEC_REPAIR_SESSION_ID)),--session-id "$(IDEA_TO_SPEC_REPAIR_SESSION_ID)",)
+IDEA_TO_SPEC_REPAIR_SESSION_PROMOTION_GATE_FROM_ACTIVE_CANDIDATE ?=
+IDEA_TO_SPEC_REPAIR_SESSION_PROMOTION_GATE_FROM_ACTIVE_CANDIDATE_ARG := $(if $(filter 1 true yes,$(strip $(IDEA_TO_SPEC_REPAIR_SESSION_PROMOTION_GATE_FROM_ACTIVE_CANDIDATE))),--promotion-gate-from-active-candidate,)
 IDEA_TO_SPEC_REPAIR_SESSION_OPERATOR_REF ?= local_operator:unattributed
-IDEA_TO_SPEC_REPAIR_SESSION_JOURNAL_ARGS := --active-candidate "$(IDEA_TO_SPEC_REPAIR_SESSION_ACTIVE_CANDIDATE)" --clarification-requests "$(IDEA_TO_SPEC_REPAIR_SESSION_CLARIFICATION_REQUESTS)" --clarification-answers "$(IDEA_TO_SPEC_REPAIR_SESSION_CLARIFICATION_ANSWERS)" --ontology-decisions "$(IDEA_TO_SPEC_REPAIR_SESSION_ONTOLOGY_DECISIONS)" --rerun-input "$(IDEA_TO_SPEC_REPAIR_SESSION_RERUN_INPUT)" --rerun-preview "$(IDEA_TO_SPEC_REPAIR_SESSION_RERUN_PREVIEW)" --rerun-materialization "$(IDEA_TO_SPEC_REPAIR_SESSION_RERUN_MATERIALIZATION)" --promotion-gate "$(IDEA_TO_SPEC_REPAIR_SESSION_PROMOTION_GATE)" --operator-ref "$(IDEA_TO_SPEC_REPAIR_SESSION_OPERATOR_REF)" $(IDEA_TO_SPEC_REPAIR_SESSION_ID_ARG) --output "$(IDEA_TO_SPEC_REPAIR_SESSION_OUTPUT)"
+IDEA_TO_SPEC_REPAIR_SESSION_JOURNAL_ARGS := --active-candidate "$(IDEA_TO_SPEC_REPAIR_SESSION_ACTIVE_CANDIDATE)" --clarification-requests "$(IDEA_TO_SPEC_REPAIR_SESSION_CLARIFICATION_REQUESTS)" --clarification-answers "$(IDEA_TO_SPEC_REPAIR_SESSION_CLARIFICATION_ANSWERS)" --ontology-decisions "$(IDEA_TO_SPEC_REPAIR_SESSION_ONTOLOGY_DECISIONS)" --rerun-input "$(IDEA_TO_SPEC_REPAIR_SESSION_RERUN_INPUT)" --rerun-preview "$(IDEA_TO_SPEC_REPAIR_SESSION_RERUN_PREVIEW)" --rerun-materialization "$(IDEA_TO_SPEC_REPAIR_SESSION_RERUN_MATERIALIZATION)" --promotion-gate "$(IDEA_TO_SPEC_REPAIR_SESSION_PROMOTION_GATE)" $(IDEA_TO_SPEC_REPAIR_SESSION_PROMOTION_GATE_FROM_ACTIVE_CANDIDATE_ARG) --operator-ref "$(IDEA_TO_SPEC_REPAIR_SESSION_OPERATOR_REF)" $(IDEA_TO_SPEC_REPAIR_SESSION_ID_ARG) --output "$(IDEA_TO_SPEC_REPAIR_SESSION_OUTPUT)"
 SPECSPACE_REPAIR_DRAFT_IMPORT_DRAFTS ?= runs/idea_to_spec_repair_drafts.json
 SPECSPACE_REPAIR_DRAFT_IMPORT_REPAIR_SESSION ?= runs/idea_to_spec_repair_session.json
 SPECSPACE_REPAIR_DRAFT_IMPORT_CLARIFICATION_REQUESTS ?= runs/idea_to_spec_clarification_requests.json
@@ -1047,7 +1051,7 @@ idea-to-spec-repair-session-journal:
 
 .PHONY: idea-to-spec-initial-repair-session-journal
 idea-to-spec-initial-repair-session-journal:
-	@$(PYTHON) tools/idea_to_spec_repair_session_journal.py $(IDEA_TO_SPEC_REPAIR_SESSION_JOURNAL_ARGS) --allow-missing-repair-artifacts
+	@$(PYTHON) tools/idea_to_spec_repair_session_journal.py $(IDEA_TO_SPEC_REPAIR_SESSION_JOURNAL_ARGS) --initialize-repair-session
 
 .PHONY: specspace-repair-draft-import-preview
 specspace-repair-draft-import-preview:
@@ -1221,6 +1225,17 @@ endif
 	@$(PYTHON) tools/candidate_spec_materialization.py --candidate-graph "$(CANDIDATE_SPEC_GRAPH_OUTPUT)" --repair-loop "$(CANDIDATE_REPAIR_LOOP_OUTPUT)" --output-dir "$(CANDIDATE_SPEC_MATERIALIZATION_OUTPUT_DIR)" --output "$(CANDIDATE_SPEC_MATERIALIZATION_OUTPUT)"
 	@$(PYTHON) tools/idea_to_spec_promotion_gate.py --pre-sib "$(PRE_SIB_COHERENCE_OUTPUT)" --repair-loop "$(CANDIDATE_REPAIR_LOOP_OUTPUT)" --materialization "$(CANDIDATE_SPEC_MATERIALIZATION_OUTPUT)" --output "$(IDEA_TO_SPEC_PROMOTION_GATE_OUTPUT)"
 	@$(PYTHON) tools/active_idea_to_spec_candidate_source.py $(PRODUCT_WORKSPACE_ACTIVE_CANDIDATE_CONFIG_ARGS) $(PRODUCT_WORKSPACE_ACTIVE_CANDIDATE_ARTIFACT_ARGS) --output "$(ACTIVE_IDEA_TO_SPEC_CANDIDATE_OUTPUT)"
+	@$(MAKE) idea-to-spec-initial-repair-session-journal \
+		IDEA_TO_SPEC_REPAIR_SESSION_ACTIVE_CANDIDATE="$(ACTIVE_IDEA_TO_SPEC_CANDIDATE_OUTPUT)" \
+		IDEA_TO_SPEC_REPAIR_SESSION_CLARIFICATION_REQUESTS="$(IDEA_TO_SPEC_CLARIFICATION_OUTPUT)" \
+		IDEA_TO_SPEC_REPAIR_SESSION_CLARIFICATION_ANSWERS="$(dir $(ACTIVE_IDEA_TO_SPEC_CANDIDATE_OUTPUT))idea_to_spec_clarification_answers.json" \
+		IDEA_TO_SPEC_REPAIR_SESSION_ONTOLOGY_DECISIONS="$(dir $(ACTIVE_IDEA_TO_SPEC_CANDIDATE_OUTPUT))product_ontology_gap_review_decisions.json" \
+		IDEA_TO_SPEC_REPAIR_SESSION_RERUN_INPUT="$(dir $(ACTIVE_IDEA_TO_SPEC_CANDIDATE_OUTPUT))idea_to_spec_answer_rerun_input.json" \
+		IDEA_TO_SPEC_REPAIR_SESSION_RERUN_PREVIEW="$(dir $(ACTIVE_IDEA_TO_SPEC_CANDIDATE_OUTPUT))idea_to_spec_rerun_preview.json" \
+		IDEA_TO_SPEC_REPAIR_SESSION_RERUN_MATERIALIZATION="$(dir $(ACTIVE_IDEA_TO_SPEC_CANDIDATE_OUTPUT))idea_to_spec_rerun_materialization.json" \
+		IDEA_TO_SPEC_REPAIR_SESSION_PROMOTION_GATE="$(IDEA_TO_SPEC_PROMOTION_GATE_OUTPUT)" \
+		IDEA_TO_SPEC_REPAIR_SESSION_PROMOTION_GATE_FROM_ACTIVE_CANDIDATE=1 \
+		IDEA_TO_SPEC_REPAIR_SESSION_OUTPUT="$(dir $(ACTIVE_IDEA_TO_SPEC_CANDIDATE_OUTPUT))idea_to_spec_repair_session.json"
 
 .PHONY: product-workspace-decision-backed-repair-chain
 product-workspace-decision-backed-repair-chain:
@@ -1271,6 +1286,18 @@ product-workspace-repaired-promotion-handoff:
 		IDEA_MATURITY_METRICS_REPAIRED_ACTIVE_CANDIDATE="$(call product_workspace_repaired_output,REPAIRED_CANDIDATE_PROMOTION_HANDOFF_ACTIVE_CANDIDATE_OUTPUT,repaired_active_idea_to_spec_candidate.json)" \
 		IDEA_MATURITY_METRICS_REPAIRED_PROMOTION_GATE="$(call product_workspace_repaired_output,REPAIRED_CANDIDATE_PROMOTION_HANDOFF_PROMOTION_GATE_OUTPUT,repaired_idea_to_spec_promotion_gate.json)" \
 		IDEA_MATURITY_METRICS_REPAIRED_REPAIR_SESSION="$(call product_workspace_repaired_output,REPAIRED_CANDIDATE_PROMOTION_HANDOFF_REPAIR_SESSION_OUTPUT,repaired_idea_to_spec_repair_session.json)" \
+		IDEA_MATURITY_METRICS_SPECSPACE_DRAFT_IMPORT_PREVIEW="$(call product_workspace_repaired_maturity_output,IDEA_MATURITY_METRICS_SPECSPACE_DRAFT_IMPORT_PREVIEW,specspace_repair_draft_import_preview.json)" \
+		IDEA_MATURITY_METRICS_SPECSPACE_RERUN_REQUEST="$(call product_workspace_repaired_maturity_output,IDEA_MATURITY_METRICS_SPECSPACE_RERUN_REQUEST,idea_to_spec_repair_rerun_requests.json)" \
+		IDEA_MATURITY_METRICS_PROJECT_LOCAL_ONTOLOGY_DECISION_EFFECT="$(call product_workspace_repaired_maturity_output,IDEA_MATURITY_METRICS_PROJECT_LOCAL_ONTOLOGY_DECISION_EFFECT,project_local_ontology_decision_effect_report.json)" \
+		IDEA_MATURITY_METRICS_APPROVAL_INTENT="$(call product_workspace_repaired_maturity_output,IDEA_MATURITY_METRICS_APPROVAL_INTENT,idea_to_spec_candidate_approval_intents.json)" \
+		IDEA_MATURITY_METRICS_REPAIR_RERUN_EXECUTION="$(call product_workspace_repaired_maturity_output,IDEA_MATURITY_METRICS_REPAIR_RERUN_EXECUTION,platform_product_repair_rerun_execution_report.json)" \
+		IDEA_MATURITY_METRICS_REPAIR_RERUN_PUBLICATION="$(call product_workspace_repaired_maturity_output,IDEA_MATURITY_METRICS_REPAIR_RERUN_PUBLICATION,platform_product_repair_rerun_publication_report.json)" \
+		IDEA_MATURITY_METRICS_APPROVAL_EXECUTION="$(call product_workspace_repaired_maturity_output,IDEA_MATURITY_METRICS_APPROVAL_EXECUTION,platform_candidate_approval_execution_report.json)" \
+		IDEA_MATURITY_METRICS_CANDIDATE_APPROVAL_DECISION="$(call product_workspace_repaired_maturity_output,IDEA_MATURITY_METRICS_CANDIDATE_APPROVAL_DECISION,candidate_approval_decision.json)" \
+		IDEA_MATURITY_METRICS_PROMOTION_REQUEST="$(call product_workspace_repaired_maturity_output,IDEA_MATURITY_METRICS_PROMOTION_REQUEST,graph_repository_promotion_request.json)" \
+		IDEA_MATURITY_METRICS_PROMOTION_EXECUTION="$(call product_workspace_repaired_maturity_output,IDEA_MATURITY_METRICS_PROMOTION_EXECUTION,product_candidate_promotion_execution_report.json)" \
+		IDEA_MATURITY_METRICS_REVIEW_STATUS="$(call product_workspace_repaired_maturity_output,IDEA_MATURITY_METRICS_REVIEW_STATUS,product_candidate_promotion_review_status_report.json)" \
+		IDEA_MATURITY_METRICS_READ_MODEL_PUBLICATION="$(call product_workspace_repaired_maturity_output,IDEA_MATURITY_METRICS_READ_MODEL_PUBLICATION,product_candidate_promotion_read_model_publication_report.json)" \
 		IDEA_MATURITY_METRICS_OUTPUT="$(call product_workspace_repaired_maturity_output,IDEA_MATURITY_METRICS_OUTPUT,idea_maturity_metrics_report.json)" \
 		IDEA_MATURITY_METRICS_VALIDATION_OUTPUT="$(call product_workspace_repaired_maturity_output,IDEA_MATURITY_METRICS_VALIDATION_OUTPUT,idea_maturity_metrics_validation_report.json)"
 
@@ -1454,6 +1481,12 @@ docc-sync:
 .PHONY: publish-bundle
 publish-bundle:
 	@PRODUCT_WORKSPACE_IDEA_SOURCE="$(PRODUCT_WORKSPACE_IDEA_SOURCE)" USER_IDEA_EVENT_STORMING_SEED_OUTPUT="$(USER_IDEA_EVENT_STORMING_SEED_OUTPUT)" PRODUCT_WORKSPACE_INTAKE_SOURCE="$(PRODUCT_WORKSPACE_INTAKE_SOURCE)" PRODUCT_WORKSPACE_CANDIDATE_SEED="$(PRODUCT_WORKSPACE_CANDIDATE_SEED)" PRODUCT_WORKSPACE_CANDIDATE_SEED_INPUT="$(PRODUCT_WORKSPACE_CANDIDATE_SEED_INPUT)" PRODUCT_WORKSPACE_CANDIDATE_SEED_OUTPUT="$(PRODUCT_WORKSPACE_CANDIDATE_SEED_OUTPUT)" PRODUCT_WORKSPACE_ACTIVE_CANDIDATE_CONFIG="$(PRODUCT_WORKSPACE_ACTIVE_CANDIDATE_CONFIG)" PRODUCT_WORKSPACE_ACTIVE_CANDIDATE_REFRESH="$(PRODUCT_WORKSPACE_ACTIVE_CANDIDATE_REFRESH)" $(PYTHON) tools/build_static_artifact_bundle.py --refresh-publish-surfaces $(PUBLISH_BUNDLE_FLAGS)
+
+.PHONY: publish-workspace-bundle
+publish-workspace-bundle:
+	@test -n "$(PRODUCT_WORKSPACE_PUBLICATION_RUN_DIR)" || (echo "PRODUCT_WORKSPACE_PUBLICATION_RUN_DIR is required" >&2; exit 2)
+	@test -n "$(PRODUCT_WORKSPACE_PUBLICATION_OUTPUT_DIR)" || (echo "PRODUCT_WORKSPACE_PUBLICATION_OUTPUT_DIR is required" >&2; exit 2)
+	@$(PYTHON) tools/build_static_artifact_bundle.py --workspace-bootstrap-run-dir "$(PRODUCT_WORKSPACE_PUBLICATION_RUN_DIR)" --output-dir "$(PRODUCT_WORKSPACE_PUBLICATION_OUTPUT_DIR)" $(PUBLISH_BUNDLE_FLAGS)
 
 .PHONY: test
 test:
