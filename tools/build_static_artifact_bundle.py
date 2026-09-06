@@ -56,6 +56,7 @@ CANDIDATE_APPROVAL_DECISION_SURFACE = "candidate_approval_decision.json"
 WORKSPACE_INITIALIZATION_EXECUTION_SURFACE = (
     "platform_product_workspace_initialization_execution_report.json"
 )
+WORKSPACE_REQUIRED_RUN_SURFACES = (WORKSPACE_INITIALIZATION_EXECUTION_SURFACE,)
 PRODUCT_WORKSPACE_ACTIVE_CANDIDATE_REFRESH_ENV = "PRODUCT_WORKSPACE_ACTIVE_CANDIDATE_REFRESH"
 PLATFORM_HANDOFF_PLACEHOLDER_REASON = "no_active_candidate"
 PLATFORM_HANDOFF_MATERIALIZATION_CONTRACT_REF = (
@@ -191,6 +192,20 @@ def resolve_workspace_bootstrap_run_dir(repo_root: Path, value: Path | None) -> 
         raise PublishBundleError(
             "workspace bootstrap initialization execution report is missing or symlinked"
         )
+    try:
+        payload = json.loads(surface.read_text(encoding="utf-8"))
+    except json.JSONDecodeError as exc:
+        raise PublishBundleError(
+            "workspace bootstrap initialization execution report is malformed"
+        ) from exc
+    workspace_id = (
+        payload.get("workspace", {}).get("workspace_id") if isinstance(payload, dict) else None
+    )
+    if workspace_id != candidate.name:
+        raise PublishBundleError(
+            "workspace bootstrap initialization execution report workspace_id does not "
+            "match its run directory"
+        )
     return candidate
 
 
@@ -199,10 +214,11 @@ def iter_publish_sources(
     *,
     workspace_bootstrap_run_dir: Path | None = None,
 ) -> Iterable[tuple[str, Path, PurePosixPath]]:
-    active_candidate_ready = is_publishable_active_candidate_source(repo_root)
-    approval_ready = is_publishable_candidate_approval_decision(repo_root)
+    selected_run_dir = workspace_bootstrap_run_dir or (repo_root / "runs")
+    active_candidate_ready = is_publishable_active_candidate_source(repo_root, selected_run_dir)
+    approval_ready = is_publishable_candidate_approval_decision(repo_root, selected_run_dir)
     for root_name in PUBLISHED_ROOTS:
-        source_root = repo_root / root_name
+        source_root = selected_run_dir if root_name == "runs" else repo_root / root_name
         if not source_root.exists():
             continue
         for path in sorted(source_root.rglob("*")):
@@ -215,11 +231,6 @@ def iter_publish_sources(
             rel = PurePosixPath(root_name, path.relative_to(source_root).as_posix())
             if root_name == "runs":
                 run_rel = rel.relative_to("runs").as_posix()
-                if (
-                    workspace_bootstrap_run_dir is not None
-                    and run_rel == WORKSPACE_INITIALIZATION_EXECUTION_SURFACE
-                ):
-                    continue
                 if is_local_only_run_path(run_rel) or is_local_only_json_artifact(path):
                     continue
                 if run_rel == ACTIVE_IDEA_TO_SPEC_CANDIDATE_SURFACE and not active_candidate_ready:
@@ -227,13 +238,6 @@ def iter_publish_sources(
                 if run_rel == CANDIDATE_APPROVAL_DECISION_SURFACE and not approval_ready:
                     continue
             yield root_name, path, rel
-    if workspace_bootstrap_run_dir is not None:
-        source = workspace_bootstrap_run_dir / WORKSPACE_INITIALIZATION_EXECUTION_SURFACE
-        yield (
-            "runs",
-            source,
-            PurePosixPath("runs", WORKSPACE_INITIALIZATION_EXECUTION_SURFACE),
-        )
 
 
 def is_local_only_run_path(run_rel: str) -> bool:
@@ -264,8 +268,10 @@ def safe_repo_relative_path(value: object, *, field: str) -> PurePosixPath:
     return rel
 
 
-def ontology_materialized_ir_refs(repo_root: Path) -> list[PurePosixPath]:
-    package_index_path = repo_root / "runs" / "ontology_package_index.json"
+def ontology_materialized_ir_refs(
+    repo_root: Path, run_dir: Path | None = None
+) -> list[PurePosixPath]:
+    package_index_path = (run_dir or repo_root / "runs") / "ontology_package_index.json"
     if not package_index_path.is_file():
         return []
     try:
@@ -358,8 +364,11 @@ def file_sha256(path: Path) -> str:
     return digest.hexdigest()
 
 
-def ensure_required_surfaces(output_dir: Path) -> dict[str, bool]:
-    return {surface: (output_dir / "runs" / surface).is_file() for surface in REQUIRED_RUN_SURFACES}
+def ensure_required_surfaces(
+    output_dir: Path,
+    required_surfaces: tuple[str, ...] = REQUIRED_RUN_SURFACES,
+) -> dict[str, bool]:
+    return {surface: (output_dir / "runs" / surface).is_file() for surface in required_surfaces}
 
 
 def load_published_run_json(output_dir: Path, relative_path: str) -> dict[str, object]:
@@ -381,8 +390,8 @@ def load_published_run_json(output_dir: Path, relative_path: str) -> dict[str, o
     return data
 
 
-def load_run_json_if_present(repo_root: Path, relative_path: str) -> dict[str, object] | None:
-    path = repo_root / "runs" / relative_path
+def load_run_json_if_present(run_dir: Path, relative_path: str) -> dict[str, object] | None:
+    path = run_dir / relative_path
     if not path.is_file():
         return None
     try:
@@ -469,6 +478,8 @@ def build_manifest(
     copied_files: list[PublishFile],
     warnings: list[str],
     redacted_local_path_occurrences: int,
+    run_dir: Path,
+    workspace_mode: bool,
 ) -> dict[str, object]:
     root_summary: dict[str, dict[str, int]] = {
         root: {"file_count": 0, "byte_count": 0} for root in PUBLISHED_ROOTS
@@ -478,8 +489,11 @@ def build_manifest(
         root_info["file_count"] += 1
         root_info["byte_count"] += file_info.size_bytes
 
-    required_surfaces = ensure_required_surfaces(output_dir)
-    active_candidate_source = active_candidate_source_manifest_entry(repo_root)
+    required_surfaces = ensure_required_surfaces(
+        output_dir,
+        WORKSPACE_REQUIRED_RUN_SURFACES if workspace_mode else REQUIRED_RUN_SURFACES,
+    )
+    active_candidate_source = active_candidate_source_manifest_entry(repo_root, run_dir)
     platform_handoff_surfaces = {
         surface: {
             "path": f"runs/{surface}",
@@ -577,8 +591,11 @@ def platform_handoff_placeholder_readiness() -> dict[str, object]:
     }
 
 
-def is_publishable_active_candidate_source(repo_root: Path) -> bool:
-    active_source = load_run_json_if_present(repo_root, ACTIVE_IDEA_TO_SPEC_CANDIDATE_SURFACE)
+def is_publishable_active_candidate_source(repo_root: Path, run_dir: Path | None = None) -> bool:
+    selected_run_dir = run_dir or repo_root / "runs"
+    active_source = load_run_json_if_present(
+        selected_run_dir, ACTIVE_IDEA_TO_SPEC_CANDIDATE_SURFACE
+    )
     if not active_source:
         return False
     readiness = active_source.get("readiness")
@@ -598,9 +615,9 @@ def is_publishable_active_candidate_source(repo_root: Path) -> bool:
     if candidate.get("governance_profile") != "product_workspace":
         return False
     materialization = load_run_json_if_present(
-        repo_root, "candidate_spec_materialization_report.json"
+        selected_run_dir, "candidate_spec_materialization_report.json"
     )
-    promotion_gate = load_run_json_if_present(repo_root, "idea_to_spec_promotion_gate.json")
+    promotion_gate = load_run_json_if_present(selected_run_dir, "idea_to_spec_promotion_gate.json")
     for artifact in (materialization, promotion_gate):
         if not isinstance(artifact, dict):
             return False
@@ -614,16 +631,19 @@ def is_publishable_active_candidate_source(repo_root: Path) -> bool:
     return True
 
 
-def run_file_sha256_if_present(repo_root: Path, surface: str) -> str | None:
-    path = repo_root / "runs" / surface
+def run_file_sha256_if_present(run_dir: Path, surface: str) -> str | None:
+    path = run_dir / surface
     return file_sha256(path) if path.is_file() else None
 
 
-def is_publishable_candidate_approval_decision(repo_root: Path) -> bool:
-    approval = load_run_json_if_present(repo_root, CANDIDATE_APPROVAL_DECISION_SURFACE)
+def is_publishable_candidate_approval_decision(
+    repo_root: Path, run_dir: Path | None = None
+) -> bool:
+    selected_run_dir = run_dir or repo_root / "runs"
+    approval = load_run_json_if_present(selected_run_dir, CANDIDATE_APPROVAL_DECISION_SURFACE)
     if not approval:
         return False
-    if not is_publishable_active_candidate_source(repo_root):
+    if not is_publishable_active_candidate_source(repo_root, selected_run_dir):
         return False
     if approval.get("artifact_kind") != "candidate_approval_decision":
         return False
@@ -644,9 +664,10 @@ def is_publishable_candidate_approval_decision(repo_root: Path) -> bool:
         source = source_artifacts.get(key)
         if not isinstance(source, dict):
             return False
-        if source.get("source_ref") != f"runs/{surface}":
+        expected_ref = _relative_run_source_ref(repo_root, selected_run_dir, surface)
+        if source.get("source_ref") != expected_ref:
             return False
-        if source.get("sha256") != run_file_sha256_if_present(repo_root, surface):
+        if source.get("sha256") != run_file_sha256_if_present(selected_run_dir, surface):
             return False
     return True
 
@@ -658,9 +679,18 @@ def should_refresh_product_workspace_active_candidate(repo_root: Path) -> bool:
     return not is_publishable_active_candidate_source(repo_root)
 
 
-def active_candidate_source_manifest_entry(repo_root: Path) -> dict[str, object]:
-    active_source = load_run_json_if_present(repo_root, ACTIVE_IDEA_TO_SPEC_CANDIDATE_SURFACE)
-    if not active_source or not is_publishable_active_candidate_source(repo_root):
+def _relative_run_source_ref(repo_root: Path, run_dir: Path, surface: str) -> str:
+    return (run_dir / surface).resolve().relative_to(repo_root.resolve()).as_posix()
+
+
+def active_candidate_source_manifest_entry(
+    repo_root: Path, run_dir: Path | None = None
+) -> dict[str, object]:
+    selected_run_dir = run_dir or repo_root / "runs"
+    active_source = load_run_json_if_present(
+        selected_run_dir, ACTIVE_IDEA_TO_SPEC_CANDIDATE_SURFACE
+    )
+    if not active_source or not is_publishable_active_candidate_source(repo_root, selected_run_dir):
         return {
             "path": f"runs/{ACTIVE_IDEA_TO_SPEC_CANDIDATE_SURFACE}",
             "present": False,
@@ -812,6 +842,9 @@ def build_public_bundle(
         repo_root, workspace_bootstrap_run_dir
     )
 
+    if refresh_surfaces and workspace_bootstrap_run_dir is not None:
+        raise PublishBundleError("workspace bundle cannot refresh root publish surfaces")
+
     if refresh_surfaces:
         refresh_publish_surfaces(repo_root)
 
@@ -857,7 +890,7 @@ def build_public_bundle(
             )
         )
 
-    for rel_path in ontology_materialized_ir_refs(repo_root):
+    for rel_path in ontology_materialized_ir_refs(repo_root, workspace_bootstrap_run_dir):
         if rel_path.parts and rel_path.parts[0] == "runs":
             run_rel = rel_path.relative_to("runs").as_posix()
             if is_local_only_run_path(run_rel):
@@ -907,6 +940,8 @@ def build_public_bundle(
         copied_files=copied_files,
         warnings=warnings,
         redacted_local_path_occurrences=redacted_total,
+        run_dir=workspace_bootstrap_run_dir or repo_root / "runs",
+        workspace_mode=workspace_bootstrap_run_dir is not None,
     )
     required_surfaces = manifest["required_surfaces"]
     if not isinstance(required_surfaces, dict):

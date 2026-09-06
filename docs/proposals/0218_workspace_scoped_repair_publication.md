@@ -15,7 +15,8 @@ Decision Log repair artifacts and Idea Maturity telemetry.
 
 Add `publish-workspace-bundle` for durable product workspace bindings. The
 target requires an explicit workspace run directory and output directory and
-builds the public-safe bundle without `--refresh-publish-surfaces`.
+builds the public-safe `runs/` tree exclusively from that selected directory,
+without `--refresh-publish-surfaces` or fallback to root run artifacts.
 
 Platform remains responsible for validating the binding and proving that the
 selected paths are exactly:
@@ -39,6 +40,8 @@ execute Git operations, or publish a read model.
 ## Acceptance Criteria
 
 - Bound repair publication does not refresh default product fixtures.
+- The workspace bundle flattens only the selected run directory into its public
+  `runs/` tree and excludes every other root or sibling workspace run artifact.
 - The command consumes the run and bundle paths from a validated durable binding.
 - Published repair and maturity evidence is checked only under the bound run path.
 - Root Team Decision Log artifacts cannot satisfy a bound workspace publication.

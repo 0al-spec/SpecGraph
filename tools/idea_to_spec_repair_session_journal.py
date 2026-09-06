@@ -6,7 +6,7 @@ import argparse
 import hashlib
 import json
 from datetime import datetime, timezone
-from pathlib import Path
+from pathlib import Path, PurePosixPath
 from typing import Any
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -394,6 +394,62 @@ def _source_ref_mismatch_findings(
     return findings
 
 
+def _candidate_identity_findings(
+    *,
+    active_candidate: dict[str, Any],
+    promotion_gate: dict[str, Any],
+) -> list[dict[str, Any]]:
+    active_candidate_id = _text(_dict(active_candidate.get("candidate")).get("candidate_id"))
+    promotion_candidate_id = _text(_dict(promotion_gate.get("summary")).get("candidate_id"))
+    findings: list[dict[str, Any]] = []
+    if not active_candidate_id:
+        findings.append(
+            _finding(
+                finding_id="active_candidate_candidate_id_missing",
+                severity="review_required",
+                message="Active candidate must declare candidate.candidate_id.",
+                evidence={},
+            )
+        )
+    if not promotion_candidate_id:
+        findings.append(
+            _finding(
+                finding_id="promotion_gate_candidate_id_missing",
+                severity="review_required",
+                message="Promotion gate must declare summary.candidate_id.",
+                evidence={},
+            )
+        )
+    elif active_candidate_id and promotion_candidate_id != active_candidate_id:
+        findings.append(
+            _finding(
+                finding_id="promotion_gate_candidate_id_mismatch",
+                severity="review_required",
+                message="Promotion gate candidate identity must match the active candidate.",
+                evidence={
+                    "active_candidate_id": active_candidate_id,
+                    "promotion_gate_candidate_id": promotion_candidate_id,
+                },
+            )
+        )
+    return findings
+
+
+def _promotion_gate_path_from_active_candidate(active_candidate: dict[str, Any]) -> Path:
+    source_ref = _text(
+        _dict(_dict(active_candidate.get("source_artifacts")).get("promotion_gate")).get(
+            "source_ref"
+        )
+    )
+    rel = PurePosixPath(source_ref)
+    if not source_ref or rel.is_absolute() or ".." in rel.parts:
+        raise ValueError("active candidate promotion-gate source_ref must be repository-relative")
+    path = (ROOT / rel.as_posix()).resolve()
+    if ROOT.resolve() not in path.parents or not path.is_file():
+        raise ValueError("active candidate promotion-gate source_ref must name an existing file")
+    return path
+
+
 def _missing_optional_artifact(key: str) -> dict[str, Any]:
     expected_kind, expected_contract = EXPECTED_ARTIFACTS[key]
     return {
@@ -648,6 +704,12 @@ def build_idea_to_spec_repair_session_journal(
             missing_stages=missing_stage_keys,
         )
     )
+    findings.extend(
+        _candidate_identity_findings(
+            active_candidate=active_candidate,
+            promotion_gate=promotion_gate,
+        )
+    )
 
     source_artifacts = {
         key: _source_artifact(
@@ -785,6 +847,11 @@ def build_parser() -> argparse.ArgumentParser:
         type=Path,
     )
     parser.add_argument("--promotion-gate", default=DEFAULT_PROMOTION_GATE_PATH, type=Path)
+    parser.add_argument(
+        "--promotion-gate-from-active-candidate",
+        action="store_true",
+        help="Resolve the promotion gate from active-candidate provenance.",
+    )
     parser.add_argument("--session-id")
     parser.add_argument("--operator-ref", default="local_operator:unattributed")
     parser.add_argument("--output", default=DEFAULT_OUTPUT_PATH, type=Path)
@@ -813,6 +880,12 @@ def build_parser() -> argparse.ArgumentParser:
 def main(argv: list[str] | None = None) -> int:
     args = build_parser().parse_args(argv)
     missing_stages: set[str] = set()
+    active_candidate = load_json(args.active_candidate)
+    promotion_gate_path = (
+        _promotion_gate_path_from_active_candidate(active_candidate)
+        if args.promotion_gate_from_active_candidate
+        else args.promotion_gate
+    )
 
     def load_stage(key: str, path: Path) -> dict[str, Any]:
         if (
@@ -825,14 +898,14 @@ def main(argv: list[str] | None = None) -> int:
         return load_json(path)
 
     report = build_idea_to_spec_repair_session_journal(
-        active_candidate=load_json(args.active_candidate),
+        active_candidate=active_candidate,
         clarification_requests=load_json(args.clarification_requests),
         clarification_answers=load_stage("clarification_answers", args.clarification_answers),
         ontology_decisions=load_stage("ontology_decisions", args.ontology_decisions),
         rerun_input=load_stage("rerun_input", args.rerun_input),
         rerun_preview=load_stage("rerun_preview", args.rerun_preview),
         rerun_materialization=load_stage("rerun_materialization", args.rerun_materialization),
-        promotion_gate=load_json(args.promotion_gate),
+        promotion_gate=load_json(promotion_gate_path),
         active_candidate_path=args.active_candidate,
         clarification_requests_path=args.clarification_requests,
         clarification_answers_path=args.clarification_answers,
@@ -840,7 +913,7 @@ def main(argv: list[str] | None = None) -> int:
         rerun_input_path=args.rerun_input,
         rerun_preview_path=args.rerun_preview,
         rerun_materialization_path=args.rerun_materialization,
-        promotion_gate_path=args.promotion_gate,
+        promotion_gate_path=promotion_gate_path,
         session_id=args.session_id,
         operator_ref=args.operator_ref,
         missing_stages=missing_stages,
