@@ -311,7 +311,11 @@ def promotion_gate() -> dict:
             "blocked_by": ["promotion_paths_missing"],
         },
         "authority_boundary": {"may_create_branch_or_commit": False},
-        "summary": {"status": "idea_to_spec_promotion_blocked", "promotion_path_count": 0},
+        "summary": {
+            "status": "idea_to_spec_promotion_blocked",
+            "candidate_id": "team-decision-log",
+            "promotion_path_count": 0,
+        },
     }
 
 

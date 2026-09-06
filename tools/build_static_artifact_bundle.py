@@ -950,7 +950,7 @@ def build_public_bundle(
     if strict_required_surfaces and missing_required:
         shutil.rmtree(output_dir)
         raise PublishBundleError("missing required run surfaces: " + ", ".join(missing_required))
-    if require_verified_agent_passports:
+    if require_verified_agent_passports and workspace_bootstrap_run_dir is None:
         try:
             validate_agent_passport_publish_surfaces(output_dir)
         except PublishBundleError:
