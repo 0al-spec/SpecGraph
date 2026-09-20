@@ -12,86 +12,108 @@ The archived source is a snapshot; the proposal owns its bounded decision scope.
 
 ---
 
-# Hypercode, UML Viewer и SpecGraph: композиция, генерация и проверка реализации
+# Hypercode, UML Viewer, and SpecGraph: Composition, Generation, and Implementation Verification
 
-> **Статус:** временный source draft для последующей подготовки и декомпозиции proposals. Это структурирование обсуждения, а не утверждённая спецификация, proposal или описание уже реализованной интеграции. Первый выделенный proposal: [SG-RFC-0219](https://github.com/0al-spec/SpecGraph/blob/main/docs/proposals/0219_composition_observation_contract.md). Остальные темы не имеют назначенных IDs.
+> **Status:** Temporary source draft for subsequent proposal preparation and decomposition. This is a structured discussion, not an approved specification, proposal, or description of an integration that has already been implemented. The first proposal extracted from it is [SG-RFC-0219](https://github.com/0al-spec/SpecGraph/blob/main/docs/proposals/0219_composition_observation_contract.md). No IDs have been assigned to the other topics.
 >
-> **Источники:** чат ChatGPT «Транспиляция UML Hypercode» от 2026-09-19 и последующая дискуссия с автором Hypercode 2026-09-20 о композиции, направленности, внешнем контракте генерации и quality policies. Исходные проекты: [UML Viewer](https://github.com/unclebob/uml-viewer), [Hypercode](https://github.com/0al-spec/Hypercode).
+> **Sources:** ChatGPT conversation “UML Hypercode Transpilation” from 2026-09-19 and the follow-up discussion with the Hypercode author on 2026-09-20 about composition, directionality, the external generation contract, and quality policies. Source projects: [UML Viewer](https://github.com/unclebob/uml-viewer), [Hypercode](https://github.com/0al-spec/Hypercode).
 >
-> Уточнения автора Hypercode определяют направление этого draft. Варианты реализации, схема сравнения, каскад quality policies и MVP ниже остаются предложениями для исследования. Текущие грамматика, IR и возможности инструментов здесь не проходили аудит.
+> The Hypercode author's clarifications guide this draft. Implementation options, comparison schema, quality-policy cascade, and MVP below remain proposals for investigation. The current grammar, IR, and tool capabilities have not been audited here.
 
-## Ядро идеи после уточнения
+## Core idea after clarification
 
-Hypercode должен сохранять ограниченную декларативную модель архитектуры: композицию и иерархию, чтение от целого к деталям, направленное предоставление данных и зависимостей. Эти ограничения являются частью замысла языка и авторского видения Elegant Objects. Возможность выразить дополнительные сведения через HCS сама по себе не служит основанием добавлять произвольные архитектурные связи.
+Hypercode should preserve a constrained declarative architecture model: composition
+and hierarchy, reading from whole to details, and directed provision of data and
+dependencies. These constraints are part of the language's intent and the author's
+vision of Elegant Objects. The ability to express additional information through
+HCS alone is not a reason to add arbitrary architectural relations.
 
-Целевая интеграция позволяет генерировать и проверять реализацию такой модели:
+The intended integration enables generation and verification of an implementation
+of that model:
 
-- **Hypercode** задаёт состав программы и композиционную структуру.
-- **Внешний контракт генерации** определяет, как воплотить структуру на конкретной платформе. Первой формой контракта может быть системный prompt LLM-агента.
-- **Quality policies** задают требования к качеству и условия проверок; место их хранения и связь с HCS ещё не выбраны.
-- **Scanners и измерительные инструменты** извлекают факты из кода и результаты измерений с provenance.
-- **SpecGraph** потенциально сопоставляет реализацию со структурой Hypercode, внешним контрактом и quality policies, объясняя результаты через evidence.
-- **UML Viewer** может стать visual consumer и внешним форматом для ограниченного adapter, не определяя выразительные возможности Hypercode.
+- **Hypercode** defines program composition and structure.
+- An **external generation contract** defines how to realize that structure on a
+  specific platform. An LLM agent's system prompt could be its first form.
+- **Quality policies** define quality requirements and check conditions; their
+  location and relationship to HCS have not been chosen.
+- **Scanners and measurement tools** extract code facts and measurements with
+  provenance.
+- **SpecGraph** could map an implementation to Hypercode structure, the external
+  contract, and quality policies, and explain results through evidence.
+- **UML Viewer** could serve as a visual consumer and an external format for a
+  constrained adapter, without defining Hypercode's expressive capabilities.
 
 ```text
-.hc / применимые .hcs ──► Desired composition ───────┐
+.hc / applicable .hcs ──► Desired composition ─────┐
                                                    │
-Внешний контракт генерации ─────────────────────────┤
+External generation contract ──────────────────────┤
                                                    ├─► SpecGraph
 Quality policies ──────────────────────────────────┤   compare / explain
                                                    │
-Код ──► scanners ──► Observed Graph ────────────────┤
-Проверки и измерения ──► evidence / metrics ─────────┘
+Code ──► scanners ──► Observed Graph ──────────────┤
+Checks and measurements ──► evidence / metrics ────┘
 ```
 
-Формула **Desired Graph ↔ Observed Graph** сохраняется, но не означает равенство двух произвольных графов. Desired Graph может быть деревом композиции. Observed Graph может содержать более богатые отношения, необходимые для анализа фактического кода, без переноса этих отношений в язык Hypercode.
+The **Desired Graph ↔ Observed Graph** formulation remains, but it does not mean
+that two arbitrary graphs must be equal. The Desired Graph may be a composition
+tree. The Observed Graph may contain richer relations needed to analyze actual
+code, without transferring those relations into the Hypercode language.
 
-## Уточнение после сверки репозиториев
+## Clarification after repository review
 
-В Hypercode уже определены consumer-owned adapters и IR boundary
-([Backends.md](https://github.com/0al-spec/Hypercode/blob/0661903e94c8e3d0ea47cf9971fe4911cebace9c/DOCS/Backends.md)), а HCS property contracts уже накапливаются по
-пересечению и только сужаются ([Usage.md](https://github.com/0al-spec/Hypercode/blob/0661903e94c8e3d0ea47cf9971fe4911cebace9c/DOCS/Usage.md#2-guardrails-contracts-as-a-ci-gate)).
-Предложенный каскад quality policies ниже не заменяет эти правила: применение
-измерений и code-level проверок требует отдельного consumer contract.
-[Codegen demo](https://github.com/0al-spec/Hypercode/blob/0661903e94c8e3d0ea47cf9971fe4911cebace9c/Examples/codegen-demo/README.md) уже иллюстрирует генерацию и
-проверку freshness/CONFIG, но не произвольный architecture comparison.
+Hypercode already defines consumer-owned adapters and an IR boundary
+([Backends.md](https://github.com/0al-spec/Hypercode/blob/0661903e94c8e3d0ea47cf9971fe4911cebace9c/DOCS/Backends.md)), and HCS property contracts already accumulate by intersection and only narrow
+([Usage.md](https://github.com/0al-spec/Hypercode/blob/0661903e94c8e3d0ea47cf9971fe4911cebace9c/DOCS/Usage.md#2-guardrails-contracts-as-a-ci-gate)). The proposed quality-policy cascade below does not replace those rules: applying measurements and code-level checks requires a separate consumer contract. The [codegen demo](https://github.com/0al-spec/Hypercode/blob/0661903e94c8e3d0ea47cf9971fe4911cebace9c/Examples/codegen-demo/README.md) already illustrates generation and freshness/CONFIG checks, but not arbitrary architecture comparison.
 
-Основной контракт сопоставления вынесен в SpecGraph; Hypercode получает только
-уточнение композиционных принципов и ответственности consumers. Внешний
-контракт генерации первоначально может жить рядом с приложением. Возможный
-следующий эксперимент — отдельный Clojure-репозиторий для проверки scanner и
-UML Viewer output. Его создание и совместимость пока не проверены и не входят
-в текущие изменения. Reusable metric packs относятся к Metrics, пороги — к
-явно выбранной policy приложения, их оценка — к consumer проверки.
+The main comparison contract belongs in SpecGraph; Hypercode only receives a
+clarification of composition principles and consumer responsibilities. The
+external generation contract could initially live alongside the application. A
+possible later experiment is a separate Clojure repository to evaluate a scanner
+and UML Viewer output. Creating it and checking its compatibility have been
+deferred and are outside the current changes. Reusable metric packs belong to
+Metrics, thresholds to an explicitly selected application policy, and their
+evaluation to the checking consumer.
 
-## 1. От транспиляции EDN к сохранению модели Hypercode
+## 1. From EDN transpilation to preserving the Hypercode model
 
-Исходная идея возникла из примера UML Viewer на EDN: packages, classes, fields, operations, типизированные edges, namespace identity и overlay metrics. Первой гипотезой был сохранный перенос этой структуры в Hypercode с обратным экспортом в EDN.
+The original idea came from a UML Viewer EDN example: packages, classes, fields,
+operations, typed edges, namespace identity, and metric overlays. The initial
+hypothesis was to transfer this structure losslessly into Hypercode and export it
+back to EDN.
 
-После обсуждения эта гипотеза перестала быть исходным требованием. Полный EDN round-trip может вынуждать Hypercode выражать наследование, associations и другие связи, которые автор сознательно не хочет вводить в архитектурную модель.
+After discussion, that hypothesis was no longer a requirement. A complete EDN
+round-trip could force Hypercode to express inheritance, associations, and other
+relations the author deliberately does not want in the architecture model.
 
-Новая последовательность: сначала определить допустимую композиционную модель Hypercode, затем исследовать её отображение во внешние представления. Для ограниченного adapter нужно явно описать поддерживаемое подмножество и обработку неподдерживаемых элементов. Нельзя молча терять связи или объявлять полный round-trip доказанным по одному подмножеству.
+The revised sequence is to define the permitted Hypercode composition model first,
+then investigate mappings to external representations. A constrained adapter must
+describe its supported subset and how it handles unsupported elements. Relations
+must not be silently lost, and a complete round-trip must not be claimed based on
+one subset.
 
-В исходной беседе рассматривался путь:
+The original discussion considered this path:
 
 ```text
 .hc + .hcs → resolved graph → canonical IR → adapter → target
 ```
 
-Это ориентир для исследования. Его соответствие текущему коду и схемам Hypercode необходимо проверить перед реализационным proposal. Даже если внутренний IR способен хранить произвольные связи, из этого не следует, что они должны стать разрешёнными конструкциями авторского языка.
+This is a direction for investigation. Its correspondence to current Hypercode
+code and schemas must be checked before an implementation proposal. Even if the
+internal IR can store arbitrary relations, that does not mean they should become
+permitted constructs in the authoring language.
 
-## 2. Архитектурное намерение автора Hypercode
+## 2. Hypercode author's architectural intent
 
-В дискуссии сформулированы четыре взаимосвязанных принципа:
+The discussion formulated four related principles:
 
-| Принцип | Целевой смысл |
+| Principle | Intended meaning |
 |---|---|
-| Пользователь читает сверху вниз | Описание раскрывает целое через состав его частей |
-| Программа инициализируется от App к Button | Корень организует создание вложенной композиции |
-| Данные входят через корень | Внешние входы принадлежат границе системы и маршрутизируются внутрь |
-| Крупное зависит от меньшего, но не наоборот | Составной компонент использует части; часть не должна знать устройство включающего её целого |
+| Users read top-down | A description unfolds the whole through its constituent parts |
+| A program initializes from App to Button | The root organizes construction of the nested composition |
+| Data enters through the root | External inputs belong to the system boundary and are routed inward |
+| The larger depends on the smaller, not vice versa | A composite uses its parts; a part should not know the structure of the whole that contains it |
 
-Иллюстрация структуры, не пример синтаксиса `.hc`:
+Illustration of structure, not `.hc` syntax:
 
 ```text
 App
@@ -100,212 +122,338 @@ App
         └── Button
 ```
 
-Желаемые свойства — декларативность, каскадность, линейность чтения и локальная понятность. Для понимания части не должно требоваться восстановление произвольной сети связей со всем приложением.
+Desired properties are declarativity, cascading structure, linear reading, and
+local comprehensibility. Understanding a part should not require reconstructing an
+arbitrary network of relations across the application.
 
-Наследование и произвольное переплетение сущностей не являются целями расширения Hypercode. Почти императивные сценарии и ручное описание temporal coupling также не должны появляться только ради совместимости с внешним форматом.
+Inheritance and arbitrary interweaving of entities are not goals for expanding
+Hypercode. Nearly imperative scenarios and manually described temporal coupling
+should not be introduced just to achieve compatibility with an external format.
 
-При этом порядок создания и temporal coupling следует различать. Runtime может вывести порядок сборки из декларативной композиции. Отдельная проблема — скрытая обязанность пользователя компонента вызывать `prepare → attach → start` в правильном порядке. Конкретные ограничения такого рода могут принадлежать внешнему контракту генерации.
+However, construction order and temporal coupling should be distinguished. A
+runtime may derive assembly order from declarative composition. A separate problem
+is a hidden obligation for a component's user to call `prepare → attach → start`
+in the right order. Specific constraints of this kind may belong in the external
+generation contract.
 
-Эти принципы пока не определяют формально, что считается зависимостью, как устроены shared dependencies, переиспользование, асинхронность и lifecycle. «От App к Button» выражает направление организации сборки, а не утверждает уже выбранный порядок вызовов конструкторов на каждой платформе.
+These principles do not yet formally define what counts as a dependency, or how
+shared dependencies, reuse, asynchrony, and lifecycle work. “From App to Button”
+expresses the direction of assembly organization; it does not assert that a
+platform-specific constructor-call order has already been selected.
 
-## 3. Внешний input, маршрутизация и результаты
+## 3. External input, routing, and results
 
-Обсуждение UIKit уточнило смысл входа через корень. Касание не появляется в Button как независимый внешний input: hit-testing начинается от корня view hierarchy, обычно UIWindow, и определяет получателя через вложенные views. Это пример маршрутизации, организованной runtime. См. [Apple: Delivering touch events](https://developer.apple.com/library/archive/qa/qa2013/qa1812.html).
+The UIKit discussion clarified what it means for input to enter through the root.
+A touch does not arrive at a Button as an independent external input: hit-testing
+starts at the root of the view hierarchy, usually `UIWindow`, and identifies its
+recipient through nested views. This is an example of runtime-organized routing.
+See [Apple: Delivering touch events](https://developer.apple.com/library/archive/qa/qa2013/qa1812.html).
 
-Дальнейшая обработка имеет несколько механизмов. Необработанные touch events могут передаваться по responder chain; действие UIControl доставляется через target–action, а при `nil` target обработчик ищется через responder chain. Это не обязательный обратный проход по тому же дереву для каждого нажатия. См. [Apple: UIResponder](https://developer.apple.com/documentation/uikit/uiresponder) и [Target–action](https://developer.apple.com/documentation/uikit/responding-to-control-based-events-using-target-action).
+Further handling uses several mechanisms. Unhandled touch events may travel along
+the responder chain; a `UIControl` action is delivered through target–action, and
+when its target is `nil`, a handler is searched for through the responder chain.
+This is not a required reverse traversal of the same tree for every tap. See
+[Apple: UIResponder](https://developer.apple.com/documentation/uikit/uiresponder)
+and [Target–action](https://developer.apple.com/documentation/uikit/responding-to-control-based-events-using-target-action).
 
-Архитектурный ориентир:
+Architectural direction:
 
 ```text
-Внешний input
-    → граница системы / runtime
-    → маршрутизация по композиции
-    → обработка компонентом
-    → результат через контракт компонента
+External input
+    → system boundary / runtime
+    → routing through composition
+    → component handling
+    → result through the component contract
 ```
 
-Возврат результата сам по себе не требует знания конкретного родителя. Аналогия — функция, возвращающая значение вызывающей стороне без знания её реализации. Для событий конкретный механизм должен определяться контрактом генератора.
+Returning a result does not itself require knowledge of a specific parent. One
+analogy is a function returning a value to its caller without knowing the caller's
+implementation. For events, the concrete mechanism should be defined by the
+generator contract.
 
-Корень маршрутизации может принадлежать платформенному runtime. Это не требует вручную описывать диспетчеризацию каждого события внутри App или переносить responder chain, callbacks и target–action в `.hc`.
+The platform runtime may own the routing root. This does not require manually
+describing dispatch for every event inside App or moving the responder chain,
+callbacks, and target–action into `.hc`.
 
-## 4. Внешний контракт генерации
+## 4. External generation contract
 
-Детали воплощения композиции могут находиться снаружи Hypercode. Например, системный prompt агента, генерирующего код по `.hc`, может предписывать:
+Details for realizing composition may live outside Hypercode. For example, an
+agent's system prompt for generating code from `.hc` could say:
 
-> Собирай компоненты через композицию сверху вниз. Предоставляй зависимости при создании. Дочерний компонент не должен знать конкретный тип родителя. Подключай внешние входы через механизмы платформы. Возвращай результаты через контракт компонента. Избегай обязательных многошаговых протоколов настройки, когда готовность можно обеспечить при создании.
+> Assemble components through top-down composition. Provide dependencies during
+> construction. A child component must not know its parent's concrete type. Connect
+> external inputs through platform mechanisms. Return results through the
+> component contract. Avoid required multi-step setup protocols when readiness
+> can be guaranteed during construction.
 
-Это иллюстрация возможного контракта, не принятый platform profile. Конкретные механизмы доставки событий, lifecycle, state management и ограничения наследования в генерируемом коде требуют отдельного решения. Отсутствие наследования в архитектурном языке не означает автоматически запрет любого платформенного subclassing, например UIKit.
+This illustrates a possible contract; it is not an accepted platform profile.
+Specific event-delivery mechanisms, lifecycle, state management, and restrictions
+on inheritance in generated code require separate decisions. The absence of
+inheritance in the architecture language does not automatically prohibit all
+platform subclassing, such as UIKit subclassing.
 
 ```text
-.hc + применимые .hcs + внешний контракт генерации
+.hc + applicable .hcs + external generation contract
                          ↓
-                  LLM-агент-генератор
+                    LLM generator
                          ↓
-                    исходный код
+                    source code
 ```
 
-Prompt направляет генерацию, но не гарантирует соблюдение правил. Для значимых требований нужны review, scanner checks, тесты или runtime evidence. Правила, пока сформулированные только естественным языком, нельзя выдавать за механически проверенный контракт.
+A prompt guides generation but does not guarantee compliance. Important
+requirements need review, scanner checks, tests, or runtime evidence. Rules stated
+only in natural language must not be presented as mechanically verified
+contracts.
 
-Для прослеживаемости полезно связывать результат генерации с revision Hypercode source и версией внешнего контракта. Сам контракт не обязан находиться в `.hc`; расположение, формат, версии и приоритеты нескольких контрактов остаются предметом проектирования.
+For traceability, it is useful to link generated output to the Hypercode source
+revision and external-contract version. The contract need not live in `.hc`; its
+location, format, versions, and the precedence of multiple contracts remain to be
+designed.
 
-## 5. Desired composition и Observed Graph имеют разные роли
+## 5. Desired composition and Observed Graph have different roles
 
-Hypercode задаёт намерение автора. Scanner фиксирует обнаруженное в реализации. Ни один источник не должен автоматически подменять другой.
+Hypercode defines authorial intent. A scanner records what it detects in an
+implementation. Neither source should automatically replace the other.
 
-Observed Graph может содержать inheritance, calls, references, imports, cycles и другие отношения, если scanner умеет их извлекать. Это словарь наблюдений, а не перечень новых конструкций Hypercode.
+An Observed Graph may contain inheritance, calls, references, imports, cycles, and
+other relations if the scanner can extract them. This is a vocabulary of
+observations, not a list of new Hypercode constructs.
 
-Например, scanner обнаружил ссылку из Button на конкретный Form. Для сообщения об этом не нужно добавлять такую связь в `.hc`. SpecGraph может сопоставить наблюдение с внешним правилом независимости дочернего компонента от конкретного родителя.
+For example, a scanner detects a reference from Button to a concrete Form. This
+does not require adding that relation to `.hc`. SpecGraph can compare the
+observation with an external rule requiring a child component to remain
+independent of its concrete parent.
 
-Наличие дополнительной связи не всегда является нарушением. Сначала нужно определить её семантику, архитектурную значимость и применимое правило. Платформенные детали могут быть допустимыми согласно контракту генератора.
+An additional relation is not always a violation. First determine its semantics,
+architectural significance, and applicable rule. Platform details may be
+permitted by the generator contract.
 
-Сравнение должно отвечать на вопросы:
+Comparison should answer these questions:
 
-- Реализованы ли ожидаемые компоненты и композиция?
-- Какие наблюдения подтверждают соответствие выбранным правилам?
-- Какие связи нарушают конкретный контракт или policy?
-- Для каких утверждений данных недостаточно?
+- Are the expected components and composition implemented?
+- Which observations support conformance to the selected rules?
+- Which relations violate a specific contract or policy?
+- Is there enough data to make each claim?
 
-Проекция Observed Graph на дерево не должна молча отбрасывать оставшиеся связи: иначе проверка скроет именно нежелательные переплетения. Нужно сохранять их как наблюдения и явно показывать результат их рассмотрения или границы проверки.
+Projecting the Observed Graph onto a tree must not silently discard remaining
+relations; otherwise the check could hide precisely the unwanted entanglement. The
+relations should be retained as observations, and the outcome of reviewing them or
+the limits of that review should be explicit.
 
-## 6. Identity, provenance и объяснение результатов
+## 6. Identity, provenance, and explaining results
 
-Общая схема ещё не согласована. Нужна совместимость идентичности и сопоставления, а не обязательно единый универсальный словарь отношений.
+A common schema has not been agreed. Identity and mapping must be compatible, but a
+single universal vocabulary of relations is not necessarily required.
 
-Для каждого типа данных следует сохранять своё основание:
+Each data type should retain its own basis:
 
-| Данные | Необходимая прослеживаемость |
+| Data | Required traceability |
 |---|---|
-| Desired component / composition | Identity, источник в `.hc` или применимом `.hcs`, revision |
-| Правило генерации | Источник и версия внешнего контракта, идентифицируемое правило |
-| Quality requirement | Источник policy, область действия, версия |
-| Наблюдаемая сущность / связь | Источник в коде, source span при наличии, revision, scanner и его версия |
-| Результат проверки | Применённое правило, mapping, evidence и ограничения проверки |
+| Desired component / composition | Identity, source in `.hc` or applicable `.hcs`, revision |
+| Generation rule | External-contract source and version, identifiable rule |
+| Quality requirement | Policy source, scope, version |
+| Observed entity / relation | Code source, source span if available, revision, scanner and version |
+| Check result | Applied rule, mapping, evidence, and check limitations |
 
-Отображаемая метка не должна автоматически считаться identity. Namespace, aliases, неоднозначность и случаи соответствия одного компонента нескольким сущностям кода требуют отдельного контракта. Упомянутое в исходном примере правило UML Viewer для `:ns` нужно учитывать при разработке adapter, не превращая его автоматически в универсальную identity Hypercode.
+A display label should not automatically be treated as identity. Namespaces,
+aliases, ambiguity, and cases where one component corresponds to multiple code
+entities need a separate contract. The `:ns` rule mentioned in the original UML
+Viewer example should be considered when developing the adapter, without
+automatically turning it into a universal Hypercode identity rule.
 
-Пример объяснения, не схема данных:
+Example explanation, not a data schema:
 
 ```text
-Структура .hc:
-  Form содержит Button
+.hc structure:
+  Form contains Button
 
-Внешний контракт генерации:
-  дочерний компонент не зависит от конкретного типа родителя
+External generation contract:
+  a child component does not depend on its parent's concrete type
 
-Наблюдение:
-  Button хранит ссылку типа Form
+Observation:
+  Button stores a reference typed as Form
   evidence: Button.swift:47, revision R, scanner S
 
-Результат:
-  нарушение правила внешнего контракта
-  область: компонент Button из .hc
+Result:
+  violation of the external-contract rule
+  scope: Button component from .hc
 ```
 
-«Не обнаружено» не означает «отсутствует». Проверка должна учитывать охват scanner и возможность состояния `unknown` / «недостаточно evidence». Статическое сканирование само по себе не доказывает порядок инициализации, доставку всех runtime events или корректность программы.
+“Not detected” does not mean “absent.” A check must account for scanner coverage
+and allow an `unknown` / “insufficient evidence” state. Static scanning alone does
+not prove initialization order, delivery of all runtime events, or program
+correctness.
 
-## 7. Метрики и quality policies
+## 7. Metrics and quality policies
 
-Метрики остаются отдельным слоем наблюдений: coverage, CRAP, cyclomatic complexity, mutation testing и другие измерения. Они не являются ни структурой композиции, ни автоматически требованиями к ней.
+Metrics remain a separate layer of observations: coverage, CRAP, cyclomatic
+complexity, mutation testing, and other measurements. They are neither composition
+structure nor automatically requirements on that structure.
 
-Нужно различать:
+Distinguish:
 
 ```text
-Структура:     Form состоит из Button
-Policy:        для выбранной области действует порог mutation score
-Observation:   на revision R инструментом T измерено значение M
-Check result:  значение оценено по policy P с учётом области и полноты
+Structure:     Form consists of Button
+Policy:        a mutation-score threshold applies to the selected scope
+Observation:   tool T measured value M on revision R
+Check result:  value evaluated against policy P with scope and completeness considered
 ```
 
-Для измерения нужны источник, revision/timestamp, версия инструмента, единицы, область применимости и сведения о полноте. Измеренное значение нельзя записывать как authored requirement или переносить в overlay без provenance.
+A measurement needs a source, revision or timestamp, tool version, units,
+applicable scope, and completeness information. A measured value must not be
+recorded as an authored requirement or moved into an overlay without provenance.
 
-**Каскад quality policies по дереву композиции — возможное развитие идеи, ещё не принятое решение.** Корень мог бы задавать базовые требования, а вложенные области получать и уточнять их. Необходимо определить, разрешено ли ослабление родительских требований, как выражаются исключения и как разрешаются конфликты.
+**Cascading quality policies through a composition tree is a possible future
+direction, not an accepted decision.** The root could define baseline requirements
+that nested scopes inherit and refine. It remains necessary to decide whether
+parent requirements may be weakened, how exceptions are expressed, and how
+conflicts are resolved.
 
-Каскад требований не задаёт способ агрегации измерений. Например, coverage родителя нельзя в общем случае получить простым средним процентов дочерних компонентов; нужно учитывать исходные числители, знаменатели и пересечение областей.
+Cascading requirements does not define how measurements are aggregated. For
+example, a parent's coverage cannot generally be computed as a simple average of
+its children's percentages; the underlying numerators, denominators, and scope
+overlap must be considered.
 
-Хранение policies снаружи Hypercode, в HCS или в отдельном overlay следует исследовать. Не следует заранее расширять `.hc` деталями метрик. Quality gates и их полномочия также требуют отдельного контракта.
+Storing policies outside Hypercode, in HCS, or in a separate overlay needs
+investigation. Do not expand `.hc` with metric details in advance. Quality gates
+and their authority also require a separate contract.
 
-## 8. Роль UML Viewer и Clojure
+## 8. UML Viewer and Clojure roles
 
-UML Viewer может использоваться независимо в нескольких ролях:
+UML Viewer could be used independently in several roles:
 
-1. **Visual consumer** композиции Hypercode.
-2. **Ограниченный adapter** для явно выбранного подмножества EDN.
-3. **Review surface** для desired structure, observed facts и результатов проверок.
-4. **Источник scanner observations и metric overlays**, если реальные контракты и лицензирование допускают такое использование.
+1. A **visual consumer** of Hypercode composition.
+2. A **constrained adapter** for an explicitly selected EDN subset.
+3. A **review surface** for desired structure, observed facts, and check results.
+4. A **source of scanner observations and metric overlays**, if actual contracts
+   and licensing permit this use.
 
-Ни одна из этих ролей не требует полного переноса UML-семантики в Hypercode. Отображение двух состояний и diff остаётся гипотезой интеграции, а не подтверждённой возможностью готового adapter.
+None of these roles requires transferring full UML semantics into Hypercode.
+Displaying two states and their diff remains an integration hypothesis, not a
+confirmed capability of an existing adapter.
 
-Clojure концептуально близок части намерений: functional programming, immutable data и полиморфизм без implementation inheritance в собственной модели типов. Но язык реализации viewer не гарантирует линейную архитектуру, отсутствие temporal coupling или соответствие ограничениям Hypercode. Сам UML Viewer описывает namespaces и зависимости между ними. См. [Clojure: Functional Programming](https://clojure.org/about/functional_programming), [Runtime Polymorphism](https://clojure.org/about/runtime_polymorphism), [UML Viewer README](https://github.com/unclebob/uml-viewer).
+Clojure is conceptually close to some of the intent: functional programming,
+immutable data, and polymorphism without implementation inheritance in its own
+type model. However, the viewer's implementation language does not guarantee a
+linear architecture, absence of temporal coupling, or conformance to Hypercode
+constraints. UML Viewer itself describes namespaces and dependencies between
+them. See [Clojure: Functional Programming](https://clojure.org/about/functional_programming),
+[Runtime Polymorphism](https://clojure.org/about/runtime_polymorphism), and the
+[UML Viewer README](https://github.com/unclebob/uml-viewer).
 
-Наследование семантики UML Viewer через adapter не является целью. Перед реализацией всё ещё требуется аудит актуальных EDN schema, scanner pipeline, UI, лицензирования и стабильности форматов.
+Inheriting UML Viewer semantics through an adapter is not a goal. Before
+implementation, the current EDN schema, scanner pipeline, UI, licensing, and
+format stability still need to be audited.
 
-## 9. Возможный feedback loop
+## 9. Possible feedback loop
 
-Дальняя цель — генерация или исправление кода с проверкой относительно явно указанных оснований:
+The longer-term goal is code generation or repair with verification against
+explicitly identified grounds:
 
 ```text
-Hypercode + внешний контракт генерации
+Hypercode + external generation contract
                   ↓
-             генерация / patch
+             generation / patch
                   ↓
-                 код
+                 code
                   ↓
         scan + tests + measurements
                   ↓
-     SpecGraph: структура + правила + policies
+     SpecGraph: structure + rules + policies
                   ↓
-       объяснимые результаты → review
+       explainable results → review
                   ↓
-       ограниченная задача агенту, если разрешена
+       bounded agent task, if authorized
 ```
 
-Агент получает локализованную проблему, затронутую композиционную область, применимое правило и evidence. После изменения повторяются необходимые проверки.
+The agent receives a localized issue, the affected composition scope, the
+applicable rule, and evidence. Necessary checks run again after a change.
 
-Отсутствие найденных нарушений не равно доказанной корректности. Результат должен показывать охват, непроверенные требования и использованную revision. Полномочия агента, gates и критерии завершения здесь не утверждены.
+Failure to find violations is not proof of correctness. Results should show
+coverage, unchecked requirements, and the revision used. Agent authority, gates,
+and completion criteria are not approved here.
 
-## Возможная декомпозиция будущих proposals
+## Possible decomposition into future proposals
 
-Это темы для исследования и proposal shaping, без зарезервированных IDs:
+These are topics for investigation and proposal shaping; no IDs are reserved:
 
-1. **Граница композиционной модели Hypercode.** Сверить авторское намерение с текущими грамматикой, HCS и IR; определить допустимые структуры без расширения языка ради UML.
-2. **Внешний контракт генерации.** Выбрать один platform profile, описать правила, версионирование и проверяемое подмножество; системный prompt может быть первой формой.
-3. **Identity, mapping и provenance.** Связать authored composition, правила и наблюдения, включая неоднозначные соответствия.
-4. **Observed graph ingestion.** Зафиксировать scanner capabilities, полноту и сохранение связей за пределами композиционного дерева.
-5. **Проверка в SpecGraph.** Разделить соответствие структуре, нарушения внешних правил и недостаток evidence.
-6. **Композиционный adapter / viewer.** Проверить отображение выбранного подмножества, не обещая полный EDN round-trip.
-7. **Metric observations и quality policies.** Определить области, thresholds, возможный каскад, исключения и агрегацию отдельно от структуры.
-8. **Ограниченный agent feedback loop.** После появления проверяемых контрактов определить review, полномочия и повторную проверку.
+1. **Hypercode composition-model boundary.** Compare the author's intent with the
+   current grammar, HCS, and IR; define permitted structures without expanding the
+   language for UML's sake.
+2. **External generation contract.** Select one platform profile and describe its
+   rules, versioning, and checkable subset; a system prompt may be the first form.
+3. **Identity, mapping, and provenance.** Link authored composition, rules, and
+   observations, including ambiguous correspondences.
+4. **Observed graph ingestion.** Specify scanner capabilities, completeness, and
+   retention of relations beyond the composition tree.
+5. **SpecGraph checking.** Separate structural conformance, external-rule
+   violations, and insufficient evidence.
+6. **Composition adapter / viewer.** Check rendering of a selected subset without
+   promising a complete EDN round-trip.
+7. **Metric observations and quality policies.** Define scope, thresholds,
+   possible cascading, exceptions, and aggregation separately from structure.
+8. **Constrained agent feedback loop.** Once checkable contracts exist, define
+   review, authority, and rechecking.
 
-## Варианты первого bounded MVP
+## Options for a first bounded MVP
 
-Предлагаемый первый шаг — один пример композиции, один внешний контракт и одна проверяемая реализация. Например:
+The proposed first step is one composition example, one external contract, and one
+implementation that can be checked. For example:
 
-- небольшой `.hc` fixture с вложенными компонентами;
-- внешнее правило, запрещающее дочернему компоненту зависеть от конкретного типа родителя;
-- два code fixtures: соответствующий правилу и содержащий намеренное нарушение;
-- scanner observations и явный mapping к компонентам;
-- результат с указанием правила, источника нарушения и ограничений проверки;
-- неполное наблюдение как отдельный случай, который не должен давать ложный результат соответствия.
+- a small `.hc` fixture with nested components;
+- an external rule prohibiting a child component from depending on its parent's
+  concrete type;
+- two code fixtures: one conforming to the rule and one with an intentional
+  violation;
+- scanner observations and an explicit mapping to components;
+- a result naming the rule, violation source, and check limitations;
+- an incomplete observation as a separate case that must not produce a false
+  conformance result.
 
-Это проверит ограниченное сопоставление структуры и внешнего правила. Генерацию LLM можно подключить отдельным экспериментом; её не требуется включать в первый тест comparison contract. Такой MVP не доказывает все четыре архитектурных принципа, полноценную conformance или универсальность scanner.
+This would check bounded comparison of structure and an external rule. LLM
+generation could be connected as a separate experiment; it need not be part of
+the first comparison-contract test. Such an MVP would not prove all four
+architectural principles, full conformance, or scanner universality.
 
-Если первичная цель — исследовать визуальное представление, альтернативный MVP: экспорт одной композиции в поддерживаемое подмножество EDN и визуальная проверка. Он проверит adapter и отображение, но не scanner→SpecGraph цикл. Round-trip возможен только для явно определённого подмножества.
+If the first goal is to investigate visual representation, an alternative MVP is
+to export one composition to a supported EDN subset and inspect the rendering. It
+would check the adapter and display, but not the scanner-to-SpecGraph loop. A
+round-trip is possible only for a clearly defined subset.
 
-Метрики, каскад policies, интерактивное редактирование и автоматическое исправление кода не следует объединять с этими шагами в один MVP.
+Metrics, policy cascading, interactive editing, and automatic code repair should
+not be combined with these steps into one MVP.
 
-## Открытые вопросы и границы
+## Open questions and boundaries
 
-- Что уже выражают текущие `.hc`, `.hcs` и IR, и где они расходятся с уточнённым намерением автора?
-- Какая иерархия является определяющей: композиция, ownership, создание или namespace? Не считать их тождественными без контракта.
-- Что именно считается зависимостью части от целого? Как учитывать shared services, callbacks, interfaces и platform runtime?
-- Как задаются корни входа для нескольких окон, фоновых событий, сетевого input и других платформенных границ?
-- Какие требования относятся к Hypercode, какие — к генератору, какие — к quality policies? Как разрешаются конфликты?
-- Какие правила можно проверить статически, какие требуют runtime evidence, какие остаются предметом review?
-- Как сравнивать композицию с кодом при неоднозначном mapping и неполном scan, сохраняя дополнительные наблюдения?
-- Нужен ли каскад policies, разрешено ли их ослабление и где хранить исключения?
-- Не преобразовывать observations автоматически в авторитетный Hypercode source и не выдавать prompt за enforcement.
-- Не трактовать этот source draft как принятый контракт, реализованную интеграцию или основание для назначения proposal IDs без штатного intake.
+- What can the current `.hc`, `.hcs`, and IR already express, and where do they
+  differ from the author's clarified intent?
+- Which hierarchy is authoritative: composition, ownership, construction, or
+  namespace? Do not treat them as equivalent without a contract.
+- What exactly counts as a part depending on its whole? How should shared
+  services, callbacks, interfaces, and platform runtime be handled?
+- How are input roots defined for multiple windows, background events, network
+  input, and other platform boundaries?
+- Which requirements belong to Hypercode, the generator, or quality policies?
+  How are conflicts resolved?
+- Which rules can be checked statically, which need runtime evidence, and which
+  remain subject to review?
+- How can composition be compared with code under ambiguous mapping and incomplete
+  scans while preserving additional observations?
+- Are cascading policies needed, may they be weakened, and where should
+  exceptions live?
+- Do not automatically transform observations into authoritative Hypercode
+  source or present a prompt as enforcement.
+- Do not treat this source draft as an accepted contract, implemented integration,
+  or basis for assigning proposal IDs outside the normal intake process.
 
-## Короткая формулировка для последующего proposal intake
+## Short formulation for later proposal intake
 
-Исследовать проверяемую генерацию и анализ программ, в которых Hypercode задаёт ограниченную декларативную композицию и иерархию, а внешний контракт определяет детали реализации. SpecGraph потенциально сопоставляет код со структурой Hypercode, правилами генерации и quality policies, сохраняя identity, provenance и границы evidence. Более богатый Observed Graph не расширяет автоматически семантику Hypercode. UML Viewer рассматривается как consumer и adapter выбранного подмножества. Первый bounded шаг должен проверить один контракт сравнения либо одно отображение композиции; метрики, каскад policies и agent feedback loop исследуются отдельно.
+Investigate verifiable generation and analysis of programs where Hypercode defines
+a constrained declarative composition and hierarchy, while an external contract
+defines implementation details. SpecGraph could compare code with Hypercode
+structure, generation rules, and quality policies while preserving identity,
+provenance, and evidence boundaries. A richer Observed Graph does not
+automatically expand Hypercode semantics. UML Viewer is considered as a consumer
+and an adapter for a selected subset. The first bounded step should check one
+comparison contract or one composition rendering; metrics, policy cascading, and
+the agent feedback loop should be investigated separately.
