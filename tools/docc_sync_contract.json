@@ -383,6 +383,24 @@
       "docc_required_terms": [
         "Canonical Sources"
       ]
+    },
+    {
+      "id": "composition-observation-contract",
+      "description": "Deferred composition comparison proposal and DocC must preserve ownership and evidence boundaries.",
+      "docs": [
+        "docs/proposals/0219_composition_observation_contract.md"
+      ],
+      "docc": [
+        "Sources/SpecGraph/Documentation.docc/CompositionObservation.md"
+      ],
+      "required_terms": [
+        "comparison contract only",
+        "deferred_until_canonicalized",
+        "Observed Graph",
+        "generation contract",
+        "unknown",
+        "canonical_mutations_allowed: false"
+      ]
     }
   ]
 }

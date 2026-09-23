@@ -2819,5 +2819,18 @@
     "required_provenance_links": [
       "source_draft_ref"
     ]
+  },
+  {
+    "proposal_id": "0219",
+    "source_artifact_class": "working_draft",
+    "source_refs": [
+      "docs/archive/proposal_sources/0219_composition_observation_contract.md"
+    ],
+    "motivating_concern": "Compare implementation observations against minimal Hypercode composition and external generation rules without importing arbitrary UML relations into the language.",
+    "normalized_title": "Composition and Observation Comparison Contract",
+    "bounded_scope": "Define a consumer-side comparison contract and fixture acceptance plan with explicit unknown/evidence semantics; defer comparator implementation, scanners, code generation, metric gates, viewer integration, and a future Clojure application.",
+    "required_provenance_links": [
+      "source_draft_ref"
+    ]
   }
 ]

@@ -12478,5 +12478,43 @@
       }
     ],
     "notes": "Bound repair publication now builds from explicit durable workspace paths without refreshing root demo product fixtures."
+  },
+  {
+    "proposal_id": "0219",
+    "posture": "deferred_until_canonicalized",
+    "runtime_surfaces": [
+      "docs/proposals/0219_composition_observation_contract.md",
+      "docs/archive/proposal_sources/0219_composition_observation_contract.md"
+    ],
+    "runtime_markers": [
+      {
+        "path": "docs/proposals/0219_composition_observation_contract.md",
+        "pattern": "This document defines a comparison contract only"
+      },
+      {
+        "path": "docs/proposals/0219_composition_observation_contract.md",
+        "pattern": "Desired composition is not required to share the Observed Graph edge vocabulary"
+      }
+    ],
+    "validation_markers": [
+      {
+        "path": "docs/proposals/0219_composition_observation_contract.md",
+        "pattern": "proposal tracking gate passes"
+      },
+      {
+        "path": "docs/proposals/0219_composition_observation_contract.md",
+        "pattern": "This contract slice is complete"
+      }
+    ],
+    "observation_markers": [
+      {
+        "path": "docs/proposals/0219_composition_observation_contract.md",
+        "pattern": "canonical_mutations_allowed: false"
+      },
+      {
+        "path": "docs/proposals/0219_composition_observation_contract.md",
+        "pattern": "No current artifact grants code-generation"
+      }
+    ]
   }
 ]

@@ -59,3 +59,7 @@ The canonical source files remain in the repository:
 - <doc:OntologyCAdapterReport>
 - <doc:ProposalsAndRuntime>
 - <doc:ProductWorkspacePilots>
+
+### Proposed composition comparison
+
+- <doc:CompositionObservation>
