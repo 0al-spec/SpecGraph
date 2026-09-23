@@ -2832,5 +2832,18 @@
     "required_provenance_links": [
       "source_draft_ref"
     ]
+  },
+  {
+    "proposal_id": "0220",
+    "source_artifact_class": "working_draft",
+    "source_refs": [
+      "docs/archive/proposal_sources/0220_decision_nodes_in_product_workspaces.md"
+    ],
+    "motivating_concern": "The documented canonical Decision node format cannot currently be loaded, validated or targeted through the product-workspace project-spec Supervisor path.",
+    "normalized_title": "Canonical Decision Nodes in Product Workspaces",
+    "bounded_scope": "Specify a narrow product-workspace bridge for canonical Decision parsing, schema-aware validation, identity indexing and deterministic target resolution, with the Zeusus decision-ledger pilot as acceptance evidence; defer implementation to a separately authorized slice and do not alter ontology, approval policy or unrelated project-spec behavior.",
+    "required_provenance_links": [
+      "source_draft_ref"
+    ]
   }
 ]

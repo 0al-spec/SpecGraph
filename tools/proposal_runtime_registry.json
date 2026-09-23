@@ -12516,5 +12516,44 @@
         "pattern": "No current artifact grants code-generation"
       }
     ]
+  },
+  {
+    "proposal_id": "0220",
+    "posture": "deferred_until_canonicalized",
+    "runtime_surfaces": [
+      "docs/proposals/0220_decision_nodes_in_product_workspaces.md",
+      "docs/archive/proposal_sources/0220_decision_nodes_in_product_workspaces.md"
+    ],
+    "runtime_markers": [
+      {
+        "path": "docs/proposals/0220_decision_nodes_in_product_workspaces.md",
+        "pattern": "Runtime realization is deferred until the contract is canonicalized and scheduled."
+      },
+      {
+        "path": "docs/proposals/0220_decision_nodes_in_product_workspaces.md",
+        "pattern": "one canonical Decision kind in product-workspace parsing"
+      }
+    ],
+    "validation_markers": [
+      {
+        "path": "docs/proposals/0220_decision_nodes_in_product_workspaces.md",
+        "pattern": "A valid canonical Decision node passes a dedicated schema-aware validator"
+      },
+      {
+        "path": "docs/proposals/0220_decision_nodes_in_product_workspaces.md",
+        "pattern": "Tests distinguish parser/validator evidence from an actual targeted workflow observation."
+      }
+    ],
+    "observation_markers": [
+      {
+        "path": "docs/proposals/0220_decision_nodes_in_product_workspaces.md",
+        "pattern": "only the proposal and source evidence currently exist"
+      },
+      {
+        "path": "docs/proposals/0220_decision_nodes_in_product_workspaces.md",
+        "pattern": "The tracking gate and generated proposal trace are validation surfaces, not evidence that Decision-node support has been implemented."
+      }
+    ],
+    "notes": "Proposal-only slice. Canonical Decision nodes remain unsupported by the current product-workspace Supervisor path until a separately authorized implementation."
   }
 ]
