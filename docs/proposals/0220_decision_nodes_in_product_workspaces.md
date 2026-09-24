@@ -2,18 +2,18 @@
 
 ## Status
 
-Draft proposal; the initial read-only runtime slice is implemented in this PR.
-Full product-workspace integration and the Zeusus compatibility pilot remain
-follow-up work. This proposal records a gap between the existing SpecGraph
+Draft proposal; the standalone Decision index and Supervisor-facing
+product-workspace read model are implemented. The Zeusus compatibility pilot
+remains follow-up work. This proposal records a gap between the existing SpecGraph
 ontology and the current product-workspace implementation. It does not change
 the ontology or Zeusus decision authority.
 
-The initial slice adds a standalone, read-only index over canonical Decision
-nodes under a product workspace `specs_root`. It validates Decision envelopes,
-indexes `metadata.id` and `metadata.key` independently, and supports lookup.
-It does not connect Decisions to ordinary Supervisor refinement or executor
-selection. Full project-workspace integration and the Zeusus compatibility
-pilot remain follow-up work.
+The runtime slice adds a standalone, read-only index over canonical Decision
+nodes under a product workspace `specs_root`, and exposes it through
+`load_product_workspace_index`. The combined read model returns legacy
+project-spec `SpecNode` values and canonical Decisions in separate collections.
+It does not connect Decisions to ordinary refinement or executor selection.
+The Zeusus compatibility pilot remains follow-up work.
 
 ## Source Material
 
@@ -134,6 +134,10 @@ documents.
 - Legacy project-spec files are excluded from Decision indexing and retain
   their existing parsing, validation, selection, and refinement behavior.
 - The index is immutable and lookup has no write, adoption, or executor path.
+- `load_product_workspace_index(specs_root)` returns legacy `SpecNode` values
+  separately from a validated `DecisionIndex`; canonical Decisions are not
+  included in the ordinary spec collection.
+- Loading the combined workspace index does not modify source files.
 - The initial slice is parser/index API and CLI evidence only; it does not prove
   owner-approved rule adoption or the Zeusus migration contract.
 - No canonical Decision formatter or write path is introduced by this proposal.
@@ -162,9 +166,9 @@ documents.
 
 In scope for this proposal: canonicalizing the authority boundary and defining
 one Decision-kind product-workspace recognition, validation, indexing, lookup,
-and compatibility pilot. Runtime realization proceeds in stages, beginning
-with the standalone read-only index. Supervisor integration and the
-compatibility pilot remain separate bounded follow-ups.
+and compatibility pilot. The standalone index and Supervisor-facing
+read-only workspace integration are implemented in stages. The Zeusus
+compatibility mapping and pilot remain a separate bounded follow-up.
 
 Out of scope: changing the seed ontology, importing every canonical kind,
 automatically accepting or migrating Zeusus decisions, modifying Zeusus rules,

@@ -41385,3 +41385,35 @@ def test_supervisor_problem_diagnosis_run_schema_guard(supervisor_module: object
     sparse_errors = supervisor_module.supervisor_problem_diagnosis_run_schema_errors({})
     assert "missing required run field: run_id" in sparse_errors
     assert "missing required run field: spec_id" in sparse_errors
+
+
+def test_product_workspace_index_excludes_non_decision_canonical_nodes(
+    supervisor_module: object,
+    tmp_path: Path,
+) -> None:
+    specs_root = tmp_path / "specs"
+    canonical_node = {
+        "apiVersion": "specgraph.io/v0alpha1",
+        "kind": "Node",
+        "metadata": {
+            "id": "01JQ4M8N7QAZP6Y4N2M8T5V9KS",
+            "key": "spec.workspace.canonical",
+            "type": "spec",
+            "title": "Canonical spec node",
+            "status": "specified",
+            "createdAt": "2026-09-24T06:00:00Z",
+            "updatedAt": "2026-09-24T06:00:00Z",
+            "revision": 1,
+        },
+        "spec": {"statement": "Canonical Specs are not legacy project specs."},
+        "provenance": {"authority": "authored", "sources": []},
+    }
+    canonical_path = specs_root / "nodes" / "canonical-spec.yaml"
+    canonical_path.parent.mkdir(parents=True)
+    canonical_path.write_text(supervisor_module.dump_yaml_text(canonical_node), encoding="utf-8")
+
+    index = supervisor_module.load_product_workspace_index(specs_root)
+
+    assert index.specs == ()
+    assert index.decisions.by_id == {}
+    assert index.decisions.by_key == {}

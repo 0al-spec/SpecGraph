@@ -12523,7 +12523,10 @@
     "runtime_surfaces": [
       "tools/decision_nodes.py",
       "tests/test_decision_nodes.py",
+      "tools/supervisor.py",
+      "tests/test_product_workspace_index.py",
       "docs/proposals/0220_decision_nodes_in_product_workspaces.md",
+      "docs/product_workspace_graph_versioning_roadmap.md",
       "docs/archive/proposal_sources/0220_decision_nodes_in_product_workspaces.md"
     ],
     "runtime_markers": [
@@ -12534,6 +12537,10 @@
       {
         "path": "tools/decision_nodes.py",
         "pattern": "def index_decisions(nodes: list[DecisionNode]) -> DecisionIndex:"
+      },
+      {
+        "path": "tools/supervisor.py",
+        "pattern": "def load_product_workspace_index(specs_root: Path) -> ProductWorkspaceIndex:"
       }
     ],
     "validation_markers": [
@@ -12548,6 +12555,14 @@
       {
         "path": "tests/test_decision_nodes.py",
         "pattern": "def test_alternatives_considered_requires_a_list_of_objects"
+      },
+      {
+        "path": "tests/test_product_workspace_index.py",
+        "pattern": "def test_product_workspace_index_propagates_invalid_decision_error"
+      },
+      {
+        "path": "tests/test_supervisor.py",
+        "pattern": "def test_product_workspace_index_excludes_non_decision_canonical_nodes"
       }
     ],
     "observation_markers": [
@@ -12562,8 +12577,16 @@
       {
         "path": "tests/test_decision_nodes.py",
         "pattern": "def test_cli_rejects_empty_lookup_identity_instead_of_listing"
+      },
+      {
+        "path": "tests/test_product_workspace_index.py",
+        "pattern": "def test_product_workspace_index_separates_decisions_from_legacy_specs"
+      },
+      {
+        "path": "tests/test_supervisor.py",
+        "pattern": "def test_product_workspace_index_excludes_non_decision_canonical_nodes"
       }
     ],
-    "notes": "Initial standalone read-only Decision validation and index slice is implemented. Supervisor integration, Zeusus compatibility/migration, and all adoption or executor behavior remain deferred. Zeusus's embedded ledger is a temporary workaround, not a permanent authority model."
+    "notes": "Standalone Decision validation/indexing and the Supervisor-facing read-only product-workspace index are implemented. Canonical Decisions are returned separately from legacy SpecNode values, with no refinement, executor, adoption, or authority-transfer path. Zeusus field mapping, owner-approved migration, and the compatibility pilot remain deferred."
   }
 ]
