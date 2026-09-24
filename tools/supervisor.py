@@ -5286,15 +5286,7 @@ def load_product_workspace_index(specs_root: Path) -> ProductWorkspaceIndex:
             sys.path.remove(tools_path)
 
     legacy_specs = load_specs_from_dir(specs_root / "nodes")
-    legacy_specs = [
-        spec
-        for spec in legacy_specs
-        if not (
-            spec.data.get("kind") == "Node"
-            and isinstance(spec.data.get("metadata"), dict)
-            and spec.data["metadata"].get("type") == "decision"
-        )
-    ]
+    legacy_specs = [spec for spec in legacy_specs if spec.data.get("kind") != "Node"]
     return ProductWorkspaceIndex(
         specs=tuple(legacy_specs),
         decisions=decision_nodes.load_decision_index(specs_root),

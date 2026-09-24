@@ -52,12 +52,18 @@ def test_product_workspace_index_separates_decisions_from_legacy_specs(
     specs_root = tmp_path / "specs"
     legacy_path = specs_root / "nodes" / "APP-SPEC-001.yaml"
     decision_path = specs_root / "nodes" / "decision.yaml"
+    canonical_spec_path = specs_root / "nodes" / "canonical-spec.yaml"
+    canonical_spec = decision_document()
+    canonical_spec["metadata"]["type"] = "spec"  # type: ignore[index]
+    canonical_spec["metadata"]["id"] = "01JQ4M8N7QAZP6Y4N2M8T5V9KS"  # type: ignore[index]
+    canonical_spec["metadata"]["key"] = "spec.workspace.canonical"  # type: ignore[index]
     write_yaml(
         legacy_path,
         {"id": "APP-SPEC-001", "title": "Legacy product spec", "kind": "spec"},
     )
     write_yaml(decision_path, decision_document())
-    before = {path: path.read_bytes() for path in (legacy_path, decision_path)}
+    write_yaml(canonical_spec_path, canonical_spec)
+    before = {path: path.read_bytes() for path in (legacy_path, decision_path, canonical_spec_path)}
 
     index = supervisor.load_product_workspace_index(specs_root)
 

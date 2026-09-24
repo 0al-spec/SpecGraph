@@ -12559,6 +12559,10 @@
       {
         "path": "tests/test_product_workspace_index.py",
         "pattern": "def test_product_workspace_index_propagates_invalid_decision_error"
+      },
+      {
+        "path": "tests/test_supervisor.py",
+        "pattern": "def test_product_workspace_index_excludes_non_decision_canonical_nodes"
       }
     ],
     "observation_markers": [
@@ -12577,6 +12581,10 @@
       {
         "path": "tests/test_product_workspace_index.py",
         "pattern": "def test_product_workspace_index_separates_decisions_from_legacy_specs"
+      },
+      {
+        "path": "tests/test_supervisor.py",
+        "pattern": "def test_product_workspace_index_excludes_non_decision_canonical_nodes"
       }
     ],
     "notes": "Standalone Decision validation/indexing and the Supervisor-facing read-only product-workspace index are implemented. Canonical Decisions are returned separately from legacy SpecNode values, with no refinement, executor, adoption, or authority-transfer path. Zeusus field mapping, owner-approved migration, and the compatibility pilot remain deferred."
