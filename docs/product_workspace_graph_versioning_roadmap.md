@@ -89,6 +89,20 @@ through its existing artifact consumer.
    overrides. A scoped Mac or hosted run no longer falls back to shared
    `runs/*.json` for those artifacts.
 
+## Canonical Decision Read Path
+
+Proposal `0220` exposes canonical Decision records to product-workspace
+consumers through a Supervisor read model. The API keeps legacy project specs
+in the existing `SpecNode` collection and returns canonical Decisions in a
+separate validated index keyed by `metadata.id` and `metadata.key`. This path
+is read-only: it does not schedule Decisions for refinement, select an
+executor, or transfer authority from a workspace's existing sources.
+
+The next #0220 follow-up is the owner-approved Zeusus compatibility mapping.
+Until its open fields and authority contract are resolved, Zeusus's ledger,
+constitution, and ADRs retain their current role; no migration is implied by
+the index.
+
 ## Cross-Repo Transition Gates
 
 The producer sequence is intentionally gated:

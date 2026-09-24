@@ -2841,7 +2841,7 @@
     ],
     "motivating_concern": "The existing canonical Decision kind cannot currently be loaded, validated or queried through the product-workspace project-spec Supervisor path; Zeusus uses an embedded ledger as a temporary workaround.",
     "normalized_title": "Canonical Decision Nodes in Product Workspaces",
-    "bounded_scope": "Clarify canonical Decision authority and realize the first product-workspace read-only slice for validation, indexing and lookup; preserve legacy project-spec behavior. Supervisor integration, the Zeusus compatibility fixture, and any owner-approved authority migration remain separate follow-up work.",
+    "bounded_scope": "Clarify canonical Decision authority and realize a read-only product-workspace read model for validation, indexing and lookup; preserve legacy project-spec behavior. The Zeusus compatibility fixture and any owner-approved authority migration remain separate follow-up work.",
     "required_provenance_links": [
       "source_draft_ref"
     ]

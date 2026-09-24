@@ -127,7 +127,10 @@ from contextlib import contextmanager
 from dataclasses import asdict, dataclass
 from pathlib import Path, PurePosixPath
 from types import ModuleType
-from typing import Any
+from typing import TYPE_CHECKING, Any
+
+if TYPE_CHECKING:
+    from decision_nodes import DecisionIndex
 
 try:
     import yaml
@@ -5252,6 +5255,50 @@ def load_specs_from_dir(specs_dir: Path) -> list[SpecNode]:
             data = yaml_module.safe_load(file) or {}
         nodes.append(SpecNode(path=path, data=data))
     return nodes
+
+
+@dataclass(frozen=True)
+class ProductWorkspaceIndex:
+    """Read model separating legacy project specs from canonical Decisions."""
+
+    specs: tuple[SpecNode, ...]
+    decisions: DecisionIndex
+
+
+def load_product_workspace_index(specs_root: Path) -> ProductWorkspaceIndex:
+    """Load a workspace's legacy specs and canonical Decisions without writes.
+
+    The legacy Supervisor loader remains unchanged for existing callers. This
+    combined product-workspace boundary keeps canonical Decision Nodes out of
+    the ordinary ``SpecNode`` collection and indexes them through their own
+    validated read model.
+    """
+    try:
+        decision_nodes = importlib.import_module("decision_nodes")
+    except ModuleNotFoundError as import_error:
+        if import_error.name != "decision_nodes":
+            raise
+        tools_path = str(Path(__file__).resolve().parent)
+        sys.path.insert(0, tools_path)
+        try:
+            decision_nodes = importlib.import_module("decision_nodes")
+        finally:
+            sys.path.remove(tools_path)
+
+    legacy_specs = load_specs_from_dir(specs_root / "nodes")
+    legacy_specs = [
+        spec
+        for spec in legacy_specs
+        if not (
+            spec.data.get("kind") == "Node"
+            and isinstance(spec.data.get("metadata"), dict)
+            and spec.data["metadata"].get("type") == "decision"
+        )
+    ]
+    return ProductWorkspaceIndex(
+        specs=tuple(legacy_specs),
+        decisions=decision_nodes.load_decision_index(specs_root),
+    )
 
 
 def index_specs(specs: list[SpecNode]) -> dict[str, SpecNode]:

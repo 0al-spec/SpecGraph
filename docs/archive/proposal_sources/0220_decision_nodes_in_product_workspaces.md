@@ -51,6 +51,30 @@ The referenced pilot evidence is pinned to Zeusus commit
 `docs/evidence/specgraph-decision-ledger-pilot.md` at that commit has SHA-256
 `710bc7bdc9a82c9c868252bf968a9f6cc7069b3140f286cb092665fea34710b7`.
 
+## Supervisor read-model follow-up on 2026-09-24
+
+The operator authorized the next bounded #0220 slice: expose the canonical
+Decision index through a product-workspace API while retaining legacy project
+specs as a separate collection. `load_product_workspace_index(specs_root)` now
+returns legacy `SpecNode` values plus the validated read-only Decision index;
+canonical Decisions are excluded from the ordinary spec collection. Focused
+tests cover lookup, separation, invalid-document propagation, and unchanged
+source bytes. This adds no refinement, executor, adoption, or authority
+transfer behavior. The Zeusus field mapping and owner-approved migration
+contract remain open.
+
+## Supervisor read-model follow-up on 2026-09-24
+
+The operator authorized the next bounded #0220 slice: expose the canonical
+Decision index through a product-workspace API while retaining legacy project
+specs as a separate collection. `load_product_workspace_index(specs_root)` now
+returns legacy `SpecNode` values plus the validated read-only Decision index;
+canonical Decisions are excluded from the ordinary spec collection. Focused
+tests cover lookup, separation, invalid-document propagation, and unchanged
+source bytes. This adds no refinement, executor, adoption, or authority
+transfer behavior. The Zeusus field mapping and owner-approved migration
+contract remain open.
+
 ## Review follow-up on 2026-09-24
 
 PR #708 review threads `PRRT_kwDORZze8s6leZtb` and

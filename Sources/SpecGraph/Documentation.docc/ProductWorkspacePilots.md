@@ -50,6 +50,15 @@ workspace's shared `runs/*.json` surface.
 SpecGraph can run in `product_workspace` mode when it should develop a user's
 product graph instead of improving SpecGraph itself.
 
+Canonical Decision Nodes have a separate read path in product workspaces.
+`load_product_workspace_index(specs_root)` returns legacy project specs and
+the validated Decision index in separate collections. This read model does not
+put Decisions into ordinary Supervisor refinement or executor selection, and
+does not transfer authority from existing workspace sources. See proposal
+[`0220`](../../docs/proposals/0220_decision_nodes_in_product_workspaces.md) and
+the [Product Workspace roadmap](../../docs/product_workspace_graph_versioning_roadmap.md)
+for the scope and remaining Zeusus compatibility questions.
+
 ## First Pilot
 
 The first real `product_idea_to_spec` pilot is Team Decision Log. It is a
