@@ -375,6 +375,25 @@ Team Decision Log happy-path repair pack so `specgraph.space/team-decision-log`
 can consume product workspace artifacts without falling back to the bootstrap
 SpecGraph root bundle.
 
+Each product workspace bundle names its canonical Decision source root
+explicitly with `--decision-specs-root`. The publisher scans only that selected
+root, which must stay inside the published `specs/` tree, so a Decision assigned
+to one workspace is not repeated in unrelated workspace indexes. The Team
+Decision Log workflow selects `specs/`; the Hosted Operation Canary selects its
+own empty `specs/workspaces/hosted-operation-canary/` root. A bundle that names
+a workspace identity without a source root fails closed. The artifact derives
+`runs/product_workspace_decisions.json` from canonical
+`apiVersion: specgraph.io/v0alpha1`, `kind: Node`,
+`metadata.type: decision` records in that selected root. The versioned
+`specgraph.product-workspace-decisions.v0.1` read model preserves canonical ID
+and key as separate fields, source provenance, and a repository-relative source
+ref plus the source SHA-256. It is listed in that workspace's manifest and
+checksums. An empty workspace publishes an empty ready index; invalid or
+ambiguous Decisions fail the bundle build. Decision lifecycle status and
+provenance authority describe the source record and do not imply adoption or
+approval. This artifact is a read-only Decision projection, not the general
+canonical graph.
+
 The workflow also publishes the tracked Hosted Operation Canary review packet
 at its durable binding URL:
 
