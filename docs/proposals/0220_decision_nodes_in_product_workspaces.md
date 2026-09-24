@@ -2,10 +2,17 @@
 
 ## Status
 
-Draft proposal. Runtime realization is deferred until the contract is
-canonicalized and scheduled. This proposal records a gap between the existing
-SpecGraph ontology and the current product-workspace implementation. It does
-not change the ontology, tooling, or Zeusus decision authority.
+Draft proposal. The contract is canonicalized, and its initial runtime slice is
+being implemented. This proposal records a gap between the existing SpecGraph
+ontology and the current product-workspace implementation. It does not change
+the ontology or Zeusus decision authority.
+
+The initial slice adds a standalone, read-only index over canonical Decision
+nodes under a product workspace `specs_root`. It validates Decision envelopes,
+indexes `metadata.id` and `metadata.key` independently, and supports lookup.
+It does not connect Decisions to ordinary Supervisor refinement or executor
+selection. Full project-workspace integration and the Zeusus compatibility
+pilot remain follow-up work.
 
 ## Source Material
 
@@ -105,7 +112,20 @@ lost or if `reviewed`, `authored`, or an imported file is presented as proof of
 product-rule adoption. Until that mapping and owner acceptance exist, Zeusus
 continues to use its present ledger and source documents.
 
-## Acceptance Criteria for a Later Implementation
+## Initial Runtime Slice
+
+- A product workspace can point the read-only indexer at its `specs_root`.
+- Canonical Decision nodes are validated independently of legacy project-spec
+  timestamp fields.
+- Duplicate IDs and keys, invalid lifecycle values, malformed provenance, and
+  unknown lookup identities fail deterministically with actionable diagnostics.
+- Legacy project-spec files are excluded from Decision indexing and retain
+  their existing parsing, validation, selection, and refinement behavior.
+- The index is immutable and lookup has no write, adoption, or executor path.
+- The initial slice is parser/index API and CLI evidence only; it does not prove
+  owner-approved rule adoption or the Zeusus migration contract.
+
+## Acceptance Criteria for Full Product-Workspace Integration
 
 - A valid canonical Decision passes a dedicated schema-aware validator without
   legacy top-level project-spec timestamps.
@@ -125,7 +145,9 @@ continues to use its present ledger and source documents.
 
 In scope for this proposal: canonicalizing the authority boundary and defining
 one Decision-kind product-workspace recognition, validation, indexing, lookup,
-and compatibility pilot. Runtime realization remains deferred.
+and compatibility pilot. Runtime realization proceeds in stages, beginning
+with the standalone read-only index. Supervisor integration and the
+compatibility pilot remain separate bounded follow-ups.
 
 Out of scope: changing the seed ontology, importing every canonical kind,
 automatically accepting or migrating Zeusus decisions, modifying Zeusus rules,
@@ -137,5 +159,6 @@ adapter.
 ## Tracking
 
 The promotion registry links the source discussion to this proposal. The
-runtime registry records proposal-only evidence and the deferred posture.
-Proposal tracking and trace gates do not establish Decision runtime support.
+runtime registry records the initial index slice and remaining integration
+scope. Proposal tracking and trace gates do not establish Decision adoption or
+authority transfer.

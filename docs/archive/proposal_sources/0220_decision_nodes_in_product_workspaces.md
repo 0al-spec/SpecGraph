@@ -34,3 +34,12 @@ evidence of an implementation gap, and avoid turning a product-specific
 workaround into a general rule. Any move from existing Zeusus sources to a
 canonical Decision record needs an explicit owner-approved authority and
 migration contract; parsing alone cannot make that move.
+
+## Initial implementation direction on 2026-09-24
+
+The operator authorized starting the proposal's initial runtime slice. Begin
+with a standalone, read-only product-workspace index that validates canonical
+Decision envelopes and supports separate lookup by immutable machine ID and
+stable key. Keep ordinary project-spec parsing and Supervisor refinement
+unchanged. Do not enable authoring, adoption, executor selection, or migration
+of the Zeusus ledger in this slice.

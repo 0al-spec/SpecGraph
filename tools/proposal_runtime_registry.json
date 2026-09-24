@@ -12519,41 +12519,43 @@
   },
   {
     "proposal_id": "0220",
-    "posture": "deferred_until_canonicalized",
+    "posture": "bounded_runtime_followup",
     "runtime_surfaces": [
+      "tools/decision_nodes.py",
+      "tests/test_decision_nodes.py",
       "docs/proposals/0220_decision_nodes_in_product_workspaces.md",
       "docs/archive/proposal_sources/0220_decision_nodes_in_product_workspaces.md"
     ],
     "runtime_markers": [
       {
-        "path": "docs/proposals/0220_decision_nodes_in_product_workspaces.md",
-        "pattern": "Runtime realization is deferred until the contract is"
+        "path": "tools/decision_nodes.py",
+        "pattern": "def load_decision_index(specs_root: Path) -> DecisionIndex:"
       },
       {
-        "path": "docs/proposals/0220_decision_nodes_in_product_workspaces.md",
-        "pattern": "Decision is already a seed node kind in SpecGraph."
+        "path": "tools/decision_nodes.py",
+        "pattern": "def index_decisions(nodes: list[DecisionNode]) -> DecisionIndex:"
       }
     ],
     "validation_markers": [
       {
-        "path": "docs/proposals/0220_decision_nodes_in_product_workspaces.md",
-        "pattern": "A valid canonical Decision passes a dedicated schema-aware validator"
+        "path": "tools/decision_nodes.py",
+        "pattern": "def parse_decision_document(data: Mapping[str, Any], path: Path) -> DecisionNode:"
       },
       {
-        "path": "docs/proposals/0220_decision_nodes_in_product_workspaces.md",
-        "pattern": "Tests distinguish parser and validator evidence from a real product-workspace"
+        "path": "tests/test_decision_nodes.py",
+        "pattern": "def test_invalid_lifecycle_and_provenance_are_reported"
       }
     ],
     "observation_markers": [
       {
-        "path": "docs/proposals/0220_decision_nodes_in_product_workspaces.md",
-        "pattern": "The promotion registry links the source discussion to this proposal."
+        "path": "tools/decision_nodes.py",
+        "pattern": "def main(argv: list[str] | None = None) -> int:"
       },
       {
-        "path": "docs/proposals/0220_decision_nodes_in_product_workspaces.md",
-        "pattern": "Proposal tracking and trace gates do not establish Decision runtime support."
+        "path": "tests/test_decision_nodes.py",
+        "pattern": "def test_cli_lists_and_queries_decisions_read_only"
       }
     ],
-    "notes": "Proposal-only slice. Decision is an existing ontology kind, but product-workspace support remains deferred. Zeusus's embedded ledger is a temporary workaround, not a permanent authority model."
+    "notes": "Initial standalone read-only Decision validation and index slice is implemented. Supervisor integration, Zeusus compatibility/migration, and all adoption or executor behavior remain deferred. Zeusus's embedded ledger is a temporary workaround, not a permanent authority model."
   }
 ]
