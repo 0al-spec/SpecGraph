@@ -109,6 +109,38 @@ def test_invalid_lifecycle_and_provenance_are_reported(tmp_path: Path) -> None:
     assert "lifecycle.validFrom" in message
 
 
+@pytest.mark.parametrize(
+    ("alternatives", "issue"),
+    [
+        (["not an object"], "spec.alternativesConsidered[1] must be a mapping"),
+        ([{"option": "valid"}, "not an object"], "spec.alternativesConsidered[2]"),
+        (None, "spec.alternativesConsidered must be a list"),
+    ],
+)
+def test_alternatives_considered_requires_a_list_of_objects(
+    tmp_path: Path,
+    alternatives: object,
+    issue: str,
+) -> None:
+    invalid = decision_document()
+    invalid["spec"]["alternativesConsidered"] = alternatives  # type: ignore[index]
+
+    with pytest.raises(decision_nodes.DecisionDocumentError) as error:
+        decision_nodes.parse_decision_document(invalid, tmp_path / "bad-alternatives.yaml")
+    assert issue in str(error.value)
+
+
+def test_alternatives_considered_accepts_object_entries(tmp_path: Path) -> None:
+    valid = decision_document()
+    valid["spec"]["alternativesConsidered"] = [  # type: ignore[index]
+        {"option": "Keep ADR-only records", "rejected": "No workspace lookup"}
+    ]
+
+    node = decision_nodes.parse_decision_document(valid, tmp_path / "decision.yaml")
+
+    assert node.key == "decision.workspace.read-only-index"
+
+
 def test_unknown_key_is_rejected_without_falling_back_to_id(tmp_path: Path) -> None:
     path = tmp_path / "specs" / "decision.yaml"
     write_yaml(path, decision_document())
@@ -129,3 +161,28 @@ def test_cli_lists_and_queries_decisions_read_only(
     assert decision_nodes.main([str(root), "--key", "decision.workspace.read-only-index"]) == 0
     assert '"id": "01JQ4M8N7QAZP6Y4N2M8T5V9KR"' in capsys.readouterr().out
     assert (root / "decision.yaml").read_bytes() == before
+
+
+@pytest.mark.parametrize(
+    ("flag", "value", "diagnostic"),
+    [
+        ("--key", "", "--key must be a non-empty Decision key"),
+        ("--key", "  ", "--key must be a non-empty Decision key"),
+        ("--id", "", "--id must be a non-empty Decision id"),
+        ("--id", "  ", "--id must be a non-empty Decision id"),
+    ],
+)
+def test_cli_rejects_empty_lookup_identity_instead_of_listing(
+    tmp_path: Path,
+    capsys: pytest.CaptureFixture[str],
+    flag: str,
+    value: str,
+    diagnostic: str,
+) -> None:
+    root = tmp_path / "specs"
+    write_yaml(root / "decision.yaml", decision_document())
+
+    assert decision_nodes.main([str(root), flag, value]) == 2
+    captured = capsys.readouterr()
+    assert captured.out == ""
+    assert diagnostic in captured.err

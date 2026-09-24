@@ -2,8 +2,9 @@
 
 ## Status
 
-Draft proposal. The contract is canonicalized, and its initial runtime slice is
-being implemented. This proposal records a gap between the existing SpecGraph
+Draft proposal; the initial read-only runtime slice is implemented in this PR.
+Full product-workspace integration and the Zeusus compatibility pilot remain
+follow-up work. This proposal records a gap between the existing SpecGraph
 ontology and the current product-workspace implementation. It does not change
 the ontology or Zeusus decision authority.
 
@@ -72,12 +73,13 @@ The following terms must remain distinct:
 
 ## Proposed Contract
 
-Canonicalize the authority and operation boundary before implementing a
-Decision-specific adapter:
+The standalone index establishes the read-only authority and operation
+boundary. The following contract points govern broader workspace integration
+and the Zeusus compatibility pilot:
 
-1. Define how a product workspace recognizes the existing canonical Decision
-   kind while preserving legacy project-spec records. Resolve the documented
-   Node envelope versus flat runtime representation explicitly; do not make a
+1. Integrate canonical Decision recognition with the product-workspace path
+   while preserving legacy project-spec records. Resolve the documented Node
+   envelope versus flat runtime representation explicitly; do not make a
    Decision-only format exception appear to solve that broader gap.
 2. Validate the documented Decision payload (`statement` and `rationale`),
    identity, lifecycle, and provenance without requiring legacy top-level
@@ -119,8 +121,12 @@ continues to use its present ledger and source documents.
 - A product workspace can point the read-only indexer at its `specs_root`.
 - Canonical Decision nodes are validated independently of legacy project-spec
   timestamp fields.
+- When present, `spec.alternativesConsidered` is a list whose entries are
+  objects; malformed entries fail with their position in the diagnostic.
 - Duplicate IDs and keys, invalid lifecycle values, malformed provenance, and
   unknown lookup identities fail deterministically with actionable diagnostics.
+- Explicit empty or whitespace-only `--key` and `--id` arguments fail instead
+  of falling through to list-all behavior.
 - Legacy project-spec files are excluded from Decision indexing and retain
   their existing parsing, validation, selection, and refinement behavior.
 - The index is immutable and lookup has no write, adoption, or executor path.

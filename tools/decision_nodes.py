@@ -129,9 +129,14 @@ def parse_decision_document(data: Mapping[str, Any], path: Path) -> DecisionNode
         issues.append("spec must be a mapping")
     statement = _required_text(spec, "statement", "spec.statement", issues)
     rationale = _required_text(spec, "rationale", "spec.rationale", issues)
-    alternatives = spec.get("alternativesConsidered")
-    if alternatives is not None and not isinstance(alternatives, list):
-        issues.append("spec.alternativesConsidered must be a list when provided")
+    if "alternativesConsidered" in spec:
+        alternatives = spec["alternativesConsidered"]
+        if not isinstance(alternatives, list):
+            issues.append("spec.alternativesConsidered must be a list when provided")
+        else:
+            for index, alternative in enumerate(alternatives, start=1):
+                if _mapping(alternative) is None:
+                    issues.append(f"spec.alternativesConsidered[{index}] must be a mapping")
 
     provenance = _mapping(data.get("provenance"))
     if provenance is None:
@@ -270,11 +275,17 @@ def build_parser() -> argparse.ArgumentParser:
 
 def main(argv: list[str] | None = None) -> int:
     args = build_parser().parse_args(argv)
+    if args.key is not None and not args.key.strip():
+        print("--key must be a non-empty Decision key", file=sys.stderr)
+        return 2
+    if args.id is not None and not args.id.strip():
+        print("--id must be a non-empty Decision id", file=sys.stderr)
+        return 2
     try:
         index = load_decision_index(args.specs_root)
-        if args.key:
+        if args.key is not None:
             records = [index.get_by_key(args.key)]
-        elif args.id:
+        elif args.id is not None:
             records = [index.get_by_id(args.id)]
         else:
             records = [index.by_key[key] for key in sorted(index.by_key)]

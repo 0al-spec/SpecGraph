@@ -12544,6 +12544,10 @@
       {
         "path": "tests/test_decision_nodes.py",
         "pattern": "def test_invalid_lifecycle_and_provenance_are_reported"
+      },
+      {
+        "path": "tests/test_decision_nodes.py",
+        "pattern": "def test_alternatives_considered_requires_a_list_of_objects"
       }
     ],
     "observation_markers": [
@@ -12554,6 +12558,10 @@
       {
         "path": "tests/test_decision_nodes.py",
         "pattern": "def test_cli_lists_and_queries_decisions_read_only"
+      },
+      {
+        "path": "tests/test_decision_nodes.py",
+        "pattern": "def test_cli_rejects_empty_lookup_identity_instead_of_listing"
       }
     ],
     "notes": "Initial standalone read-only Decision validation and index slice is implemented. Supervisor integration, Zeusus compatibility/migration, and all adoption or executor behavior remain deferred. Zeusus's embedded ledger is a temporary workaround, not a permanent authority model."

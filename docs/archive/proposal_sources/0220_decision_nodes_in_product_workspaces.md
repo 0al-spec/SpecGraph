@@ -50,3 +50,14 @@ The referenced pilot evidence is pinned to Zeusus commit
 `bc425a7295be2bf5b6b58b8a770047a441019e93`; the file
 `docs/evidence/specgraph-decision-ledger-pilot.md` at that commit has SHA-256
 `710bc7bdc9a82c9c868252bf968a9f6cc7069b3140f286cb092665fea34710b7`.
+
+## Review follow-up on 2026-09-24
+
+PR #708 review threads `PRRT_kwDORZze8s6leZtb` and
+`PRRT_kwDORZze8s6leZtg` reproduced two gaps in the initial implementation:
+the validator checked the outer `alternativesConsidered` list but not its
+entries, and CLI truthiness checks conflated an omitted selector with an
+explicitly empty one. The implementation now rejects non-object entries and
+blank `--key` / `--id` values, with focused regression tests. Proposal status
+wording was also updated to mark the initial slice implemented while keeping
+workspace integration and the Zeusus pilot as follow-up work.
