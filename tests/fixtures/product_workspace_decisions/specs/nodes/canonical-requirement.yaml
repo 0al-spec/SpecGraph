@@ -1,0 +1,8 @@
+apiVersion: specgraph.io/v0alpha1
+kind: Node
+metadata:
+  id: 01JQ4M8N7QAZP6Y4N2M8T5V9KT
+  key: requirement.alpha
+  type: requirement
+  title: A requirement that is not a Decision
+  status: outlined

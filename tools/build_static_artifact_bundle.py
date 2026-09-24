@@ -13,6 +13,13 @@ from dataclasses import dataclass, field
 from datetime import datetime, timezone
 from pathlib import Path, PurePosixPath
 
+from decision_nodes import (
+    DecisionDocumentError,
+    index_decisions,
+    parse_decision_document,
+)
+from spec_yaml import load_yaml_text
+
 DEFAULT_OUTPUT_DIR = Path("dist/specgraph-public")
 PUBLISHED_ROOTS = ("specs", "runs")
 REQUIRED_RUN_SURFACES = (
@@ -65,6 +72,8 @@ PLATFORM_HANDOFF_MATERIALIZATION_CONTRACT_REF = (
 PLATFORM_HANDOFF_PROMOTION_GATE_CONTRACT_REF = "specgraph.idea-to-spec.promotion-gate.v0.1"
 ACTIVE_IDEA_TO_SPEC_CANDIDATE_CONTRACT_REF = "specgraph.idea-to-spec.active-candidate-source.v0.1"
 CANDIDATE_APPROVAL_DECISION_CONTRACT_REF = "specgraph.idea-to-spec.candidate-approval-decision.v0.1"
+PRODUCT_WORKSPACE_DECISIONS_SURFACE = "product_workspace_decisions.json"
+PRODUCT_WORKSPACE_DECISIONS_CONTRACT_REF = "specgraph.product-workspace-decisions.v0.1"
 LOCAL_ONLY_RUN_SURFACES = {
     "local_operator_executor_readiness.json",
     "local_operator_executor_smoke.json",
@@ -194,12 +203,13 @@ def resolve_workspace_bootstrap_run_dir(repo_root: Path, value: Path | None) -> 
         )
     try:
         payload = json.loads(surface.read_text(encoding="utf-8"))
-    except json.JSONDecodeError as exc:
+    except (OSError, json.JSONDecodeError) as exc:
         raise PublishBundleError(
             "workspace bootstrap initialization execution report is malformed"
         ) from exc
+    workspace_payload = payload.get("workspace") if isinstance(payload, dict) else None
     workspace_id = (
-        payload.get("workspace", {}).get("workspace_id") if isinstance(payload, dict) else None
+        workspace_payload.get("workspace_id") if isinstance(workspace_payload, dict) else None
     )
     if workspace_id != candidate.name:
         raise PublishBundleError(
@@ -207,6 +217,163 @@ def resolve_workspace_bootstrap_run_dir(repo_root: Path, value: Path | None) -> 
             "match its run directory"
         )
     return candidate
+
+
+def _safe_decision_source_ref(value: object, *, label: str) -> str:
+    if not isinstance(value, str) or not value.strip():
+        raise PublishBundleError(f"{label} must be a non-empty repository-relative path")
+    path = PurePosixPath(value)
+    if path.is_absolute() or ".." in path.parts or "\\" in value or ":" in value:
+        raise PublishBundleError(
+            f"{label} must be a safe repository-relative POSIX path: {value!r}"
+        )
+    return path.as_posix()
+
+
+def _decision_json_value(value: object) -> object:
+    if isinstance(value, datetime):
+        return value.isoformat().replace("+00:00", "Z")
+    if isinstance(value, dict):
+        return {str(key): _decision_json_value(nested) for key, nested in value.items()}
+    if isinstance(value, list):
+        return [_decision_json_value(item) for item in value]
+    return value
+
+
+def build_product_workspace_decision_index(repo_root: Path, workspace_id: str) -> dict[str, object]:
+    """Build a public-safe read model from canonical Decision YAML in specs/."""
+    specs_root = repo_root / "specs"
+    if not specs_root.is_dir() or specs_root.is_symlink():
+        raise PublishBundleError(
+            f"canonical Decision discovery requires specs/ directory: {specs_root}"
+        )
+    records: list[tuple[str, dict[str, object]]] = []
+    parsed_nodes = []
+    for path in sorted((*specs_root.rglob("*.yaml"), *specs_root.rglob("*.yml"))):
+        if (
+            has_symlink_component(path, specs_root)
+            or not path.is_file()
+            or should_skip_file(path, repo_root)
+        ):
+            continue
+        try:
+            source_bytes = path.read_bytes()
+            source_text = source_bytes.decode("utf-8")
+            raw = load_yaml_text(source_text)
+        except Exception as exc:
+            raise PublishBundleError(
+                f"{path}: unable to inspect YAML for canonical Decisions: {exc}"
+            ) from exc
+        if not isinstance(raw, dict):
+            continue
+        metadata = raw.get("metadata")
+        if not isinstance(metadata, dict) or metadata.get("type") != "decision":
+            continue
+        if path.relative_to(repo_root).parts[0] not in PUBLISHED_ROOTS:
+            raise PublishBundleError(
+                f"canonical Decision source is outside published roots: {path}"
+            )
+        safe_source_text, _ = redact_local_paths(source_text)
+        if safe_source_text != source_text:
+            raise PublishBundleError(
+                f"canonical Decision source requires local-path redaction and cannot be indexed "
+                f"without changing its source digest: {path.relative_to(repo_root).as_posix()}"
+            )
+        source_ref = _safe_decision_source_ref(
+            path.relative_to(repo_root).as_posix(), label="Decision source path"
+        )
+        try:
+            node = parse_decision_document(raw, Path(source_ref))
+        except DecisionDocumentError as exc:
+            raise PublishBundleError(f"invalid canonical Decision: {exc}") from exc
+        provenance_raw = raw.get("provenance", {})
+        sources: list[dict[str, str]] | None = None
+        if "sources" in provenance_raw:
+            sources = []
+            for index, source in enumerate(provenance_raw["sources"], start=1):
+                source_doc = _safe_decision_source_ref(
+                    source.get("doc") if isinstance(source, dict) else None,
+                    label=f"{source_ref}: provenance.sources[{index}].doc",
+                )
+                projected_source = {"doc": source_doc}
+                if "section" in source:
+                    projected_source["section"] = source["section"]
+                sources.append(projected_source)
+        provenance: dict[str, object] = {"authority": node.authority}
+        if "authoredBy" in provenance_raw:
+            provenance["authored_by"] = provenance_raw["authoredBy"]
+        if sources is not None:
+            provenance["sources"] = sources
+        spec = raw["spec"]
+        item: dict[str, object] = {
+            "id": node.id,
+            "key": node.key,
+            "title": node.title,
+            "status": node.status,
+            "created_at": node.created_at,
+            "updated_at": node.updated_at,
+            "revision": node.revision,
+            "statement": node.statement,
+            "rationale": node.rationale,
+            "provenance": provenance,
+            "source_ref": source_ref,
+            "source_sha256": hashlib.sha256(source_bytes).hexdigest(),
+        }
+        if "alternativesConsidered" in spec:
+            item["alternatives_considered"] = _decision_json_value(spec["alternativesConsidered"])
+        if "lifecycle" in raw:
+            if contains_adoption_or_approval_field(raw["lifecycle"]):
+                raise PublishBundleError(
+                    f"{source_ref}: lifecycle must not contain adoption or approval fields"
+                )
+            item["lifecycle"] = _decision_json_value(raw["lifecycle"])
+        records.append((source_ref, item))
+        parsed_nodes.append(node)
+    try:
+        index_decisions(parsed_nodes)
+    except Exception as exc:
+        raise PublishBundleError(f"canonical Decision index is ambiguous: {exc}") from exc
+    decisions = [item for _, item in sorted(records, key=lambda entry: entry[0])]
+    artifact = {
+        "artifact_kind": "specgraph_product_workspace_decision_index",
+        "schema_version": 1,
+        "contract_ref": PRODUCT_WORKSPACE_DECISIONS_CONTRACT_REF,
+        "workspace_id": workspace_id,
+        "status": "ready",
+        "summary": {"decision_count": len(decisions)},
+        "decisions": decisions,
+    }
+    artifact_text = json.dumps(artifact, indent=2, sort_keys=True) + "\n"
+    safe_artifact_text, artifact_redactions = redact_local_paths(artifact_text)
+    if artifact_redactions:
+        raise PublishBundleError(
+            "canonical Decision projection requires local-path redaction; refusing to publish "
+            "a projection that diverges from its source"
+        )
+    findings = detect_secret_like_content(
+        PurePosixPath("runs", PRODUCT_WORKSPACE_DECISIONS_SURFACE), safe_artifact_text
+    )
+    findings.extend(
+        detect_demo_ontology_fixture_content(
+            PurePosixPath("runs", PRODUCT_WORKSPACE_DECISIONS_SURFACE), safe_artifact_text
+        )
+    )
+    if findings:
+        raise PublishBundleError("; ".join(sorted(set(findings))))
+    return artifact
+
+
+def contains_adoption_or_approval_field(value: object) -> bool:
+    if isinstance(value, dict):
+        for key, nested in value.items():
+            normalized = str(key).replace("_", "").replace("-", "").lower()
+            if "adopt" in normalized or "approv" in normalized:
+                return True
+            if contains_adoption_or_approval_field(nested):
+                return True
+    elif isinstance(value, list):
+        return any(contains_adoption_or_approval_field(item) for item in value)
+    return False
 
 
 def iter_publish_sources(
@@ -852,6 +1019,23 @@ def build_public_bundle(
     if output_dir == repo_root or output_dir == git_dir or git_dir in output_dir.parents:
         raise PublishBundleError(f"unsafe output directory: {output_dir}")
 
+    decision_index: dict[str, object] | None = None
+    if workspace_bootstrap_run_dir is not None:
+        report_path = workspace_bootstrap_run_dir / WORKSPACE_INITIALIZATION_EXECUTION_SURFACE
+        try:
+            report = json.loads(report_path.read_text(encoding="utf-8"))
+        except (OSError, json.JSONDecodeError) as exc:
+            raise PublishBundleError(
+                "workspace bootstrap initialization execution report is malformed"
+            ) from exc
+        workspace = report.get("workspace") if isinstance(report, dict) else None
+        workspace_id = workspace.get("workspace_id") if isinstance(workspace, dict) else None
+        if not isinstance(workspace_id, str) or not workspace_id.strip():
+            raise PublishBundleError(
+                "workspace bootstrap initialization execution report is missing workspace_id"
+            )
+        decision_index = build_product_workspace_decision_index(repo_root, workspace_id)
+
     if output_dir.exists():
         shutil.rmtree(output_dir)
     output_dir.mkdir(parents=True, exist_ok=True)
@@ -885,6 +1069,25 @@ def build_public_bundle(
             PublishFile(
                 path=rel_path.as_posix(),
                 root=root_name,
+                size_bytes=target_path.stat().st_size,
+                sha256=file_sha256(target_path),
+            )
+        )
+
+    if decision_index is not None:
+        decision_index_path = PurePosixPath("runs", PRODUCT_WORKSPACE_DECISIONS_SURFACE)
+        target_path = output_dir / decision_index_path.as_posix()
+        write_text_atomic(target_path, json.dumps(decision_index, indent=2, sort_keys=True) + "\n")
+        copied_paths.add(decision_index_path.as_posix())
+        copied_files = [
+            file_info
+            for file_info in copied_files
+            if file_info.path != decision_index_path.as_posix()
+        ]
+        copied_files.append(
+            PublishFile(
+                path=decision_index_path.as_posix(),
+                root="runs",
                 size_bytes=target_path.stat().st_size,
                 sha256=file_sha256(target_path),
             )

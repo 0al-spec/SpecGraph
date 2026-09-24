@@ -1,0 +1,25 @@
+apiVersion: specgraph.io/v0alpha1
+kind: Node
+metadata:
+  id: 01JQ4M8N7QAZP6Y4N2M8T5V9KR
+  key: decision.alpha
+  type: decision
+  title: Title decision.alpha
+  status: reviewed
+  createdAt: '2026-09-24T06:00:00Z'
+  updatedAt: '2026-09-24T06:00:00Z'
+  revision: 1
+spec:
+  statement: Statement decision.alpha
+  rationale: Rationale decision.alpha
+  alternativesConsidered:
+    - name: Alternative
+      disposition: rejected
+provenance:
+  authority: authored
+  authoredBy: workspace-owner
+  sources:
+    - doc: docs/adr/decision.md
+      section: Choice
+lifecycle:
+  supersededBy: null

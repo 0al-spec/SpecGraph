@@ -1,7 +1,9 @@
 from __future__ import annotations
 
+import hashlib
 import importlib.util
 import json
+import shutil
 import subprocess
 import sys
 from pathlib import Path
@@ -23,6 +25,138 @@ def bundle_module() -> object:
 def write_json(path: Path, payload: object) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(json.dumps(payload, indent=2), encoding="utf-8")
+
+
+def write_workspace_initialization(repo: Path, workspace_id: str = "example") -> None:
+    write_json(
+        repo
+        / "runs"
+        / workspace_id
+        / "platform_product_workspace_initialization_execution_report.json",
+        {"workspace": {"workspace_id": workspace_id}},
+    )
+
+
+def test_workspace_bundle_publishes_decision_projection_and_manifest(
+    bundle_module: object, tmp_path: Path
+) -> None:
+    repo = make_repo(tmp_path / "repo")
+    write_workspace_initialization(repo)
+    fixture_specs = Path(__file__).parent / "fixtures" / "product_workspace_decisions" / "specs"
+    shutil.copytree(fixture_specs, repo / "specs", dirs_exist_ok=True)
+    first_path = repo / "specs" / "nodes" / "decision-alpha.yaml"
+
+    result = bundle_module.build_public_bundle(
+        repo_root=repo,
+        output_dir=repo / "dist" / "workspace",
+        workspace_bootstrap_run_dir=Path("runs/example"),
+        require_verified_agent_passports=False,
+    )
+
+    relative = "runs/product_workspace_decisions.json"
+    artifact_path = result.output_dir / relative
+    artifact = json.loads(artifact_path.read_text(encoding="utf-8"))
+    assert artifact["artifact_kind"] == "specgraph_product_workspace_decision_index"
+    assert artifact["contract_ref"] == "specgraph.product-workspace-decisions.v0.1"
+    assert artifact["workspace_id"] == "example"
+    assert artifact["summary"] == {"decision_count": 2}
+    decisions = artifact["decisions"]
+    assert [item["source_ref"] for item in decisions] == [
+        "specs/nested/decision-zed.yaml",
+        "specs/nodes/decision-alpha.yaml",
+    ]
+    first = next(item for item in decisions if item["key"] == "decision.alpha")
+    assert first["id"] == "01JQ4M8N7QAZP6Y4N2M8T5V9KR"
+    assert first["key"] == "decision.alpha"
+    assert first["provenance"] == {
+        "authority": "authored",
+        "authored_by": "workspace-owner",
+        "sources": [{"doc": "docs/adr/decision.md", "section": "Choice"}],
+    }
+    assert first["source_sha256"] == hashlib.sha256(first_path.read_bytes()).hexdigest()
+    assert str(repo) not in artifact_path.read_text(encoding="utf-8")
+    manifest_entry = next(item for item in result.manifest["files"] if item["path"] == relative)
+    assert manifest_entry["sha256"] == hashlib.sha256(artifact_path.read_bytes()).hexdigest()
+    assert f"{manifest_entry['sha256']}  {relative}" in result.checksums_path.read_text()
+
+
+def test_workspace_bundle_publishes_empty_decision_index(
+    bundle_module: object, tmp_path: Path
+) -> None:
+    repo = make_repo(tmp_path / "repo")
+    write_workspace_initialization(repo)
+
+    result = bundle_module.build_public_bundle(
+        repo_root=repo,
+        output_dir=repo / "dist" / "workspace",
+        workspace_bootstrap_run_dir=Path("runs/example"),
+        require_verified_agent_passports=False,
+    )
+
+    artifact = json.loads((result.output_dir / "runs/product_workspace_decisions.json").read_text())
+    assert artifact["status"] == "ready"
+    assert artifact["summary"] == {"decision_count": 0}
+    assert artifact["decisions"] == []
+
+
+@pytest.mark.parametrize(
+    ("mutation", "message"),
+    [
+        ("malformed", "invalid canonical Decision"),
+        ("wrong_api_version", "apiVersion must be specgraph.io/v0alpha1"),
+        ("wrong_kind", "kind must be Node"),
+        ("duplicate_id", "duplicate Decision id"),
+        ("duplicate_key", "duplicate Decision key"),
+        ("unsafe_source", "safe repository-relative"),
+        ("approval_field", "must not contain adoption or approval"),
+    ],
+)
+def test_workspace_bundle_rejects_invalid_decision_index_without_partial_output(
+    bundle_module: object, tmp_path: Path, mutation: str, message: str
+) -> None:
+    repo = make_repo(tmp_path / "repo")
+    write_workspace_initialization(repo)
+    fixture_specs = Path(__file__).parent / "fixtures" / "product_workspace_decisions" / "specs"
+    shutil.copytree(fixture_specs, repo / "specs", dirs_exist_ok=True)
+    first_path = repo / "specs" / "nodes" / "decision-alpha.yaml"
+    second_path = repo / "specs" / "nested" / "decision-zed.yaml"
+    import yaml
+
+    first = yaml.safe_load(first_path.read_text())
+    second = yaml.safe_load(second_path.read_text())
+    if mutation == "malformed":
+        first_path.write_text(
+            "apiVersion: specgraph.io/v0alpha1\nkind: Node\nmetadata:\n  type: decision\n"
+        )
+    elif mutation in {"wrong_api_version", "wrong_kind"}:
+        if mutation == "wrong_api_version":
+            first["apiVersion"] = "specgraph.io/v1"
+        else:
+            first["kind"] = "Specification"
+        first_path.write_text(yaml.safe_dump(first, sort_keys=False))
+    elif mutation == "unsafe_source":
+        first["provenance"]["sources"][0]["doc"] = "../../private.md"
+        first_path.write_text(yaml.safe_dump(first, sort_keys=False))
+    elif mutation in {"duplicate_id", "duplicate_key"}:
+        if mutation == "duplicate_id":
+            second["metadata"]["id"] = first["metadata"]["id"]
+        else:
+            second["metadata"]["key"] = first["metadata"]["key"]
+        second_path.write_text(yaml.safe_dump(second, sort_keys=False))
+    elif mutation == "approval_field":
+        first["lifecycle"]["approval_state"] = "approved"
+        first_path.write_text(yaml.safe_dump(first, sort_keys=False))
+    output = repo / "dist" / "workspace"
+
+    with pytest.raises(bundle_module.PublishBundleError, match=message):
+        bundle_module.build_public_bundle(
+            repo_root=repo,
+            output_dir=output,
+            workspace_bootstrap_run_dir=Path("runs/example"),
+            require_verified_agent_passports=False,
+        )
+
+    assert not output.exists()
 
 
 def test_workspace_bootstrap_alias_uses_scoped_initialization_report(
@@ -454,6 +588,7 @@ def test_build_public_bundle_copies_specs_and_runs_with_manifest(
     )
 
     assert (result.output_dir / "specs" / "nodes" / "SG-SPEC-0001.yaml").is_file()
+    assert not (result.output_dir / "runs" / "product_workspace_decisions.json").exists()
     assert (result.output_dir / "runs" / "graph_dashboard.json").is_file()
     assert (result.output_dir / "runs" / "custom_public_surface.json").is_file()
     assert (result.output_dir / "runs" / "ontology_future_surface.json").is_file()
