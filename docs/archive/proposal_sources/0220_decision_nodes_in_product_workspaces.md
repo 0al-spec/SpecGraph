@@ -61,3 +61,12 @@ explicitly empty one. The implementation now rejects non-object entries and
 blank `--key` / `--id` values, with focused regression tests. Proposal status
 wording was also updated to mark the initial slice implemented while keeping
 workspace integration and the Zeusus pilot as follow-up work.
+
+Earlier review threads `PRRT_kwDORZze8s6lXMdX` and
+`PRRT_kwDORZze8s6lXMdc` are addressed by explicitly deferring formatter/write
+round-trip requirements and by validating duplicate canonical machine IDs with
+a focused test. Threads `PRRT_kwDORZze8s6lXMdg` and
+`PRRT_kwDORZze8s6lXMdj` are addressed by keeping the tracking posture aligned
+with the registered bounded runtime follow-up and by stating that unmapped
+review triggers are unresolved, not guaranteed queryable in the current
+Decision payload.

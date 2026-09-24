@@ -113,8 +113,12 @@ Decision payload does not define all of these fields. Before any migration,
 decide which information belongs in a governed graph contract, an explicit
 relation, or linked source evidence. The pilot fails if these distinctions are
 lost or if `reviewed`, `authored`, or an imported file is presented as proof of
-product-rule adoption. Until that mapping and owner acceptance exist, Zeusus
-continues to use its present ledger and source documents.
+product-rule adoption. In particular, this pilot does not promise to retain or
+query `review triggers` through the current Decision payload. They, along with
+the other unmapped fields, remain explicit unresolved migration items until an
+owner-approved representation is defined. Until that mapping and owner
+acceptance exist, Zeusus continues to use its present ledger and source
+documents.
 
 ## Initial Runtime Slice
 
@@ -132,6 +136,10 @@ continues to use its present ledger and source documents.
 - The index is immutable and lookup has no write, adoption, or executor path.
 - The initial slice is parser/index API and CLI evidence only; it does not prove
   owner-approved rule adoption or the Zeusus migration contract.
+- No canonical Decision formatter or write path is introduced by this proposal.
+  Before a future formatter or writer is added, its acceptance checks must prove
+  that `metadata.createdAt` / `metadata.updatedAt` survive a round trip and that
+  legacy top-level project-spec timestamps are not injected.
 
 ## Acceptance Criteria for Full Product-Workspace Integration
 
@@ -145,7 +153,8 @@ continues to use its present ledger and source documents.
   treating it as `kind: spec` or scheduling ordinary spec refinement.
 - Key lookup rejects duplicate or unknown identities before any executor path.
 - The Zeusus fixture preserves source links and `ZEU-DEC` references; fields
-  without a canonical mapping remain explicit unresolved migration items.
+  without a canonical mapping remain explicit unresolved migration items and
+  are not claimed as queryable through the current Decision payload.
 - Tests distinguish parser and validator evidence from a real product-workspace
   lookup observation and from any later owner-approved authority transition.
 
