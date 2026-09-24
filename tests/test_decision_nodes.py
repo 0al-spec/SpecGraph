@@ -95,6 +95,32 @@ def test_index_rejects_duplicate_identity_deterministically(
         decision_nodes.index_decisions([second, first])
 
 
+@pytest.mark.parametrize(
+    "node_id",
+    [
+        "x",
+        "550e8400-e29b-41d4-a716-446655440000",
+        "81JQ4M8N7QAZP6Y4N2M8T5V9KR",
+        "01JQ4M8N7QAZP6Y4N2M8T5V9KI",
+    ],
+)
+def test_metadata_id_requires_ulid_or_uuidv7(tmp_path: Path, node_id: str) -> None:
+    invalid = decision_document(node_id=node_id)
+
+    with pytest.raises(decision_nodes.DecisionDocumentError) as error:
+        decision_nodes.parse_decision_document(invalid, tmp_path / "bad-id.yaml")
+
+    assert "metadata.id must be a ULID or UUIDv7" in str(error.value)
+
+
+def test_metadata_id_accepts_uuidv7(tmp_path: Path) -> None:
+    valid = decision_document(node_id="01912345-6789-7abc-8def-0123456789ab")
+
+    node = decision_nodes.parse_decision_document(valid, tmp_path / "uuidv7.yaml")
+
+    assert node.id == "01912345-6789-7abc-8def-0123456789ab"
+
+
 def test_invalid_lifecycle_and_provenance_are_reported(tmp_path: Path) -> None:
     invalid = decision_document(status="adopted")
     invalid["lifecycle"] = {"validFrom": "not-a-time"}

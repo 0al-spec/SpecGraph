@@ -5,6 +5,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import re
 import sys
 from collections.abc import Mapping
 from dataclasses import dataclass
@@ -18,6 +19,11 @@ from spec_yaml import canonical_timestamp_text, load_yaml_text
 API_VERSION = "specgraph.io/v0alpha1"
 NODE_STATUSES = {"idea", "stub", "outlined", "specified", "linked", "reviewed", "frozen"}
 AUTHORITIES = {"authored", "imported", "inferred", "distilled"}
+ULID_ID_PATTERN = re.compile(r"[0-7][0-9A-HJKMNP-TV-Z]{25}", re.IGNORECASE | re.ASCII)
+UUIDV7_ID_PATTERN = re.compile(
+    r"[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}",
+    re.IGNORECASE | re.ASCII,
+)
 
 
 @dataclass(frozen=True)
@@ -81,6 +87,10 @@ def _required_text(mapping: Mapping[str, Any], field: str, label: str, issues: l
     return value.strip()
 
 
+def _is_canonical_node_id(value: str) -> bool:
+    return bool(ULID_ID_PATTERN.fullmatch(value) or UUIDV7_ID_PATTERN.fullmatch(value))
+
+
 def _timestamp(mapping: Mapping[str, Any], field: str, label: str, issues: list[str]) -> str:
     value = mapping.get(field)
     if not isinstance(value, (str, datetime)):
@@ -105,7 +115,10 @@ def parse_decision_document(data: Mapping[str, Any], path: Path) -> DecisionNode
     if metadata is None:
         metadata = {}
         issues.append("metadata must be a mapping")
+    raw_node_id = metadata.get("id")
     node_id = _required_text(metadata, "id", "metadata.id", issues)
+    if node_id and (raw_node_id != node_id or not _is_canonical_node_id(node_id)):
+        issues.append("metadata.id must be a ULID or UUIDv7")
     key = _required_text(metadata, "key", "metadata.key", issues)
     node_type = _required_text(metadata, "type", "metadata.type", issues)
     title = _required_text(metadata, "title", "metadata.title", issues)
