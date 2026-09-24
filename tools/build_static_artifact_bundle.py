@@ -96,7 +96,7 @@ LOCAL_ONLY_RUN_PREFIXES = ("local_operator_", "idea_event_storming_seed")
 JUNK_FILENAMES = {".DS_Store", ".gitkeep"}
 JUNK_DIRNAMES = {"__pycache__", ".pytest_cache", ".ruff_cache"}
 LOCAL_PATH_RE = re.compile(
-    r"(?<![A-Za-z0-9._~:/?#\[\]@!$&'()*+,;=%-])"
+    r"(?<![A-Za-z0-9._~:/?#\[\]@!$&'()*+,;%-])"
     r"(?P<prefix>(?:/Users/|/home/runner/|/github/workspace/|/private/var/|"
     r"/var/folders/|/tmp/))[^\s\\\"'<>]+"
 )

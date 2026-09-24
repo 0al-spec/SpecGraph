@@ -213,6 +213,8 @@ def test_public_projection_handles_yaml_dates_null_sources_urls_and_crlf(
         ("duplicate_id", "duplicate Decision id"),
         ("duplicate_key", "duplicate Decision key"),
         ("unsafe_source", "safe repository-relative"),
+        ("local_path_assignment_tmp", "requires local-path redaction"),
+        ("local_path_assignment_users", "requires local-path redaction"),
         ("approval_field", "must not contain adoption or approval"),
     ],
 )
@@ -241,6 +243,11 @@ def test_workspace_bundle_rejects_invalid_decision_index_without_partial_output(
         first_path.write_text(yaml.safe_dump(first, sort_keys=False))
     elif mutation == "unsafe_source":
         first["provenance"]["sources"][0]["doc"] = "../../private.md"
+        first_path.write_text(yaml.safe_dump(first, sort_keys=False))
+    elif mutation in {"local_path_assignment_tmp", "local_path_assignment_users"}:
+        local_path = "/tmp/private" if mutation.endswith("tmp") else "/Users/alice/project"
+        prefix = "config=" if mutation.endswith("tmp") else "cwd="
+        first["spec"]["rationale"] = f"{prefix}{local_path}"
         first_path.write_text(yaml.safe_dump(first, sort_keys=False))
     elif mutation in {"duplicate_id", "duplicate_key"}:
         if mutation == "duplicate_id":
