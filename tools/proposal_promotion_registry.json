@@ -2839,9 +2839,9 @@
     "source_refs": [
       "docs/archive/proposal_sources/0220_decision_nodes_in_product_workspaces.md"
     ],
-    "motivating_concern": "The documented canonical Decision node format cannot currently be loaded, validated or targeted through the product-workspace project-spec Supervisor path.",
+    "motivating_concern": "The existing canonical Decision kind cannot currently be loaded, validated or queried through the product-workspace project-spec Supervisor path; Zeusus uses an embedded ledger as a temporary workaround.",
     "normalized_title": "Canonical Decision Nodes in Product Workspaces",
-    "bounded_scope": "Specify a narrow product-workspace bridge for canonical Decision parsing, schema-aware validation, identity indexing and deterministic target resolution, with the Zeusus decision-ledger pilot as acceptance evidence; defer implementation to a separately authorized slice and do not alter ontology, approval policy or unrelated project-spec behavior.",
+    "bounded_scope": "Clarify canonical Decision authority and a narrow product-workspace read-only bridge for parsing, validation, indexing and lookup; use the Zeusus ledger as a compatibility fixture, preserve legacy project-spec behavior, and defer implementation and any owner-approved authority migration to separate work.",
     "required_provenance_links": [
       "source_draft_ref"
     ]

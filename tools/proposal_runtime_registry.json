@@ -12527,33 +12527,33 @@
     "runtime_markers": [
       {
         "path": "docs/proposals/0220_decision_nodes_in_product_workspaces.md",
-        "pattern": "Runtime realization is deferred until the contract is canonicalized and scheduled."
+        "pattern": "Runtime realization is deferred until the contract is"
       },
       {
         "path": "docs/proposals/0220_decision_nodes_in_product_workspaces.md",
-        "pattern": "one canonical Decision kind in product-workspace parsing"
+        "pattern": "Decision is already a seed node kind in SpecGraph."
       }
     ],
     "validation_markers": [
       {
         "path": "docs/proposals/0220_decision_nodes_in_product_workspaces.md",
-        "pattern": "A valid canonical Decision node passes a dedicated schema-aware validator"
+        "pattern": "A valid canonical Decision passes a dedicated schema-aware validator"
       },
       {
         "path": "docs/proposals/0220_decision_nodes_in_product_workspaces.md",
-        "pattern": "Tests distinguish parser/validator evidence from an actual targeted workflow observation."
+        "pattern": "Tests distinguish parser and validator evidence from a real product-workspace"
       }
     ],
     "observation_markers": [
       {
         "path": "docs/proposals/0220_decision_nodes_in_product_workspaces.md",
-        "pattern": "only the proposal and source evidence currently exist"
+        "pattern": "The promotion registry links the source discussion to this proposal."
       },
       {
         "path": "docs/proposals/0220_decision_nodes_in_product_workspaces.md",
-        "pattern": "The tracking gate and generated proposal trace are validation surfaces, not evidence that Decision-node support has been implemented."
+        "pattern": "Proposal tracking and trace gates do not establish Decision runtime support."
       }
     ],
-    "notes": "Proposal-only slice. Canonical Decision nodes remain unsupported by the current product-workspace Supervisor path until a separately authorized implementation."
+    "notes": "Proposal-only slice. Decision is an existing ontology kind, but product-workspace support remains deferred. Zeusus's embedded ledger is a temporary workaround, not a permanent authority model."
   }
 ]

@@ -3,107 +3,139 @@
 ## Status
 
 Draft proposal. Runtime realization is deferred until the contract is
-canonicalized and scheduled. This proposal records an integration gap; it does
-not add Decision nodes to Zeusus or change SpecGraph tooling.
+canonicalized and scheduled. This proposal records a gap between the existing
+SpecGraph ontology and the current product-workspace implementation. It does
+not change the ontology, tooling, or Zeusus decision authority.
 
 ## Source Material
 
 - [Discussion and inspection evidence](../archive/proposal_sources/0220_decision_nodes_in_product_workspaces.md)
+- [SG-SPEC-0001](../../specs/nodes/SG-SPEC-0001.yaml): Decision is an existing
+  Specification-layer node kind; canonical records are user-owned and portable.
 - [Canonical Node format](../schema/node-format.md), especially “Kind: decision”
 - [Product Workspace stable-mode guide](../product_workspace_stable_mode_guide.md)
 - Zeusus pilot: `docs/evidence/specgraph-decision-ledger-pilot.md` in the Zeusus repository
 
 ## Problem
 
-SpecGraph documents a canonical Node envelope with `metadata.type: decision`,
-but its current `product_workspace` authoring and Supervisor path consumes the
-older project-spec envelope (`id`, `title`, `kind`, `created_at`, and
-`updated_at` at the top level). A canonical Decision document therefore fails
-the project-spec timestamp linter and has no top-level identity for targeted
-Supervisor operations. Keeping decisions embedded in a project spec works as a
-traceability pilot, but does not exercise the documented Decision node format.
+Decision is already a seed node kind in SpecGraph. The product-workspace
+Supervisor currently operates on a flat project-spec envelope (`id`, `title`,
+`kind`, `created_at`, and `updated_at` at the top level), while the documented
+canonical Node envelope places identity and timestamps under `metadata`. A
+canonical Decision document fails the project-spec timestamp linter and has no
+top-level identity for Supervisor selection. The current implementation gap
+must not be mistaken for a request to add Decision to the ontology.
+
+Zeusus temporarily records three accepted decisions inside a project `kind:
+spec` node and retains its ADRs and constitution as the detailed project
+contracts. This is an implementation workaround while canonical Decision nodes
+cannot be used in that workspace. It is not a proposed permanent hierarchy in
+which a canonical SpecGraph Decision is subordinate to a second decision
+ledger. The workaround demonstrates traceability, not canonical Decision-node
+support or a reason to change SpecGraph governance for one product.
+
+## Intended Authority Boundary
+
+The target follows the existing SpecGraph model: a Decision node is a
+user-owned canonical record in the project graph, traceable to intent and
+connected through the governed edge and lifecycle contracts. Whether that
+record carries an adopted product rule requires a separate, explicit project
+authority contract. A source ADR or constitution section can supply provenance
+or a human-readable expression of a rule. A graph record and a source document
+must not become competing authorities through an implicit import or copy.
+
+For Zeusus, the existing ADRs and constitution retain their current authority
+until the project owner explicitly accepts an authority transition. Merely
+loading or indexing a Decision node does not enact that transition. A future
+transition must state which accepted rule is canonical, how source documents
+relate to it, how conflicts are detected, and how subsequent changes and
+supersession are governed. This proposal does not perform or authorize that
+transition.
+
+The following terms must remain distinct:
+
+- `metadata.status` is a SpecGraph node lifecycle value; it is not automatically
+  Zeusus's `adopted` decision state.
+- `provenance.authority` / `authority_class` describes record provenance; it
+  does not itself grant authority to adopt a product rule.
+- An embedded `spec.decisions` entry, an operator approval, and an ontology
+  review decision are not automatically canonical Decision nodes.
 
 ## Proposed Contract
 
-Define a narrow interoperability contract for canonical Decision nodes in a
-product workspace:
+Canonicalize the authority and operation boundary before implementing a
+Decision-specific adapter:
 
-1. The workspace loader, formatter/linter and graph index recognize the
-   canonical Node envelope for `metadata.type: decision` without confusing it
-   with a legacy project-spec record.
-2. Canonical identity comes from `metadata.id` and `metadata.key`; display name,
-   status and revision come from their documented `metadata` fields. A targeted
-   operation resolves the canonical key deterministically and reports unknown
-   or duplicate identities before executor launch.
-3. Decision payload validation requires the documented `statement` and
-   `rationale`; optional alternatives remain optional and are never synthesized
-   from missing historical discussion.
-4. Provenance and lifecycle fields retain the canonical schema's authority and
-   source semantics. ADRs and project constitution remain authoritative for
-   detailed rules unless a separate accepted change explicitly transfers that
-   authority.
-5. The compatibility boundary is explicit: project-spec records remain valid
-   for their existing product-workspace use, and no silent rewrite or inferred
-   migration occurs.
-
-The exact operation surface (read-only cataloging versus Decision-node
-refinement) must be canonicalized before implementation. A Decision record must
-not be sent through ordinary spec refinement unless its contract explicitly
-permits that lifecycle.
+1. Define how a product workspace recognizes the existing canonical Decision
+   kind while preserving legacy project-spec records. Resolve the documented
+   Node envelope versus flat runtime representation explicitly; do not make a
+   Decision-only format exception appear to solve that broader gap.
+2. Validate the documented Decision payload (`statement` and `rationale`),
+   identity, lifecycle, and provenance without requiring legacy top-level
+   project-spec timestamps. Missing historical alternatives remain unknown;
+   the optional `alternativesConsidered` field is never synthesized.
+3. Index `metadata.id` and `metadata.key` separately from legacy spec IDs.
+   Reject duplicate or unknown keys deterministically. Expose read-only lookup
+   first; a Decision must not enter ordinary spec refinement or an executor
+   merely because it is indexed.
+4. Specify an explicit owner-approved migration or linking contract before
+   promoting an external decision ledger to canonical graph authority. Preserve
+   the previous sources and stable project-facing references, and report
+   disagreement instead of silently selecting one version of a rule.
+5. Keep the implementation slice bounded to Decision recognition, validation,
+   indexing, and read-only addressing. Decision authoring, adoption, refinement,
+   approval, and authority transfer require their own reviewed lifecycle
+   contract before any executor is enabled.
 
 ## Zeusus Acceptance Pilot
 
-After the bridge exists, migrate or mirror Zeusus's three already accepted
-records as canonical Decision nodes and demonstrate that the workspace can
-load, validate, index and address them. Preserve `ZEU-DEC-0001` through
-`ZEU-DEC-0003` as stable project-facing identifiers with an explicit mapping
-to canonical machine identity; do not invent alternatives or change the
-accepted rules. The ledger remains subordinate to the Zeusus ADRs and
-constitution.
+Use `ZEU-DEC-0001` through `ZEU-DEC-0003` as a compatibility fixture for the
+three existing records. Demonstrate that their statements, rationales, source
+links, and stable project-facing references can be represented and queried
+without inventing alternatives or changing accepted project rules. Keep an
+explicit mapping between each project-facing reference, canonical key, and
+immutable machine ID.
 
-## Acceptance Criteria
+The existing ledger also carries `adopted`, decision authority, consequences,
+review triggers, and an explicit unknown-history marker. The current canonical
+Decision payload does not define all of these fields. Before any migration,
+decide which information belongs in a governed graph contract, an explicit
+relation, or linked source evidence. The pilot fails if these distinctions are
+lost or if `reviewed`, `authored`, or an imported file is presented as proof of
+product-rule adoption. Until that mapping and owner acceptance exist, Zeusus
+continues to use its present ledger and source documents.
 
-- A valid canonical Decision node passes a dedicated schema-aware validator
-  without requiring legacy top-level project-spec timestamps.
-- Missing required decision fields, duplicate canonical keys, invalid lifecycle
-  values and malformed provenance fail with actionable diagnostics.
-- Existing project-spec fixtures retain their current parsing and validation
-  behavior.
-- Supervisor indexing can discover canonical Decision identity without silently
-  treating it as an ordinary `kind: spec` node.
-- Target resolution is deterministic and rejects duplicate or unknown keys
-  before starting an executor.
-- The Zeusus pilot can be represented and queried through the canonical format
-  while retaining source links, authority, status, review trigger, unknown
-  historical alternatives and the three stable `ZEU-DEC` references.
-- Tests distinguish parser/validator evidence from an actual targeted workflow
-  observation.
+## Acceptance Criteria for a Later Implementation
+
+- A valid canonical Decision passes a dedicated schema-aware validator without
+  legacy top-level project-spec timestamps.
+- Missing required Decision fields, duplicate IDs or keys, invalid lifecycle
+  values, and malformed provenance fail with actionable diagnostics.
+- Existing project-spec fixtures retain their parsing, validation, selection,
+  and refinement behavior.
+- A read-only graph index discovers canonical Decision identity without
+  treating it as `kind: spec` or scheduling ordinary spec refinement.
+- Key lookup rejects duplicate or unknown identities before any executor path.
+- The Zeusus fixture preserves source links and `ZEU-DEC` references; fields
+  without a canonical mapping remain explicit unresolved migration items.
+- Tests distinguish parser and validator evidence from a real product-workspace
+  lookup observation and from any later owner-approved authority transition.
 
 ## Bounded Scope
 
-In scope: one canonical Decision kind in product-workspace parsing,
-schema-aware validation, identity indexing, target resolution and the Zeusus
-acceptance fixture.
+In scope for this proposal: canonicalizing the authority boundary and defining
+one Decision-kind product-workspace recognition, validation, indexing, lookup,
+and compatibility pilot. Runtime realization remains deferred.
 
-Out of scope: redefining the canonical Node schema, importing every canonical
-node kind, changing ontology or approval policy, making a Decision node
-automatically authoritative, editing Zeusus gameplay, generating historical
-alternatives, immutable event-store semantics, or changing unrelated
-Supervisor workflows.
-
-## Authority and Review Boundary
-
-This proposal does not authorize ontology or policy mutation, direct canonical
-SpecGraph changes, automated acceptance of decisions, or executor authority
-expansion. Any lifecycle or governance change discovered during canonicalization
-must be split into a separately reviewed proposal. Implementation must preserve
-legacy project-spec behavior and establish a failing validation/selection
-scenario before code changes.
+Out of scope: changing the seed ontology, importing every canonical kind,
+automatically accepting or migrating Zeusus decisions, modifying Zeusus rules,
+inventing historical alternatives, immutable event-store semantics, and
+expanding Supervisor executor authority. Any needed schema, governance, or
+Decision lifecycle change must be reviewed separately rather than hidden in an
+adapter.
 
 ## Tracking
 
-Runtime realization is deferred in this slice. The promotion registry links the
-source discussion to this proposal; the runtime registry records that only the
-proposal and source evidence currently exist. The tracking gate and generated
-proposal trace are validation surfaces, not evidence that Decision-node support
-has been implemented.
+The promotion registry links the source discussion to this proposal. The
+runtime registry records proposal-only evidence and the deferred posture.
+Proposal tracking and trace gates do not establish Decision runtime support.

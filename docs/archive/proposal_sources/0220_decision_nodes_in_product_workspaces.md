@@ -22,3 +22,15 @@ This is implementation evidence for the current checkout, not a claim that the
 canonical Decision schema is absent. The operator requested that the proposal
 cover a narrow bridge and validation path, without changing SpecGraph core in
 this proposal-authoring task.
+
+## Follow-up clarification on 2026-09-24
+
+The operator clarified that Zeusus's embedded project-spec ledger and reliance
+on ADRs and constitution as the detailed authority are a forced workaround for
+the missing product-workspace Decision path, not an intended permanent
+SpecGraph authority model. Decision was already present in SG-SPEC-0001's seed
+ontology. The proposal should preserve that ontology, treat the Zeusus pilot as
+evidence of an implementation gap, and avoid turning a product-specific
+workaround into a general rule. Any move from existing Zeusus sources to a
+canonical Decision record needs an explicit owner-approved authority and
+migration contract; parsing alone cannot make that move.
