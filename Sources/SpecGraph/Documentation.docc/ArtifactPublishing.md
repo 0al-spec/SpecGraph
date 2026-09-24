@@ -20,16 +20,17 @@ The specgraph.tech static host owns product-facing landing content and generated
 public artifact bundles. Static-host uploads must remain non-destructive so
 separate jobs do not delete each other's files.
 
-Product workspace bundles derive
-`runs/product_workspace_decisions.json` from canonical Decision nodes under
-`specs/`. Contract `specgraph.product-workspace-decisions.v0.1` preserves the
-canonical ID and key separately, source provenance, a repository-relative source
-ref, and the source SHA-256. The artifact is included in the workspace manifest
-and checksums. Empty workspaces publish an empty ready index, while malformed or
-ambiguous Decisions fail bundle construction. Lifecycle status and provenance
-authority describe the source node and do not imply adoption or approval. The
-artifact provides a Decision projection and does not replace the general
-canonical graph.
+Product workspace bundles name their canonical Decision source root explicitly
+with `--decision-specs-root`. The publisher scans only that selected directory
+inside `specs/`, so a Decision assigned to one workspace is not repeated in an
+unrelated workspace index. Contract
+`specgraph.product-workspace-decisions.v0.1` preserves the canonical ID and key
+separately, source provenance, a repository-relative source ref, and the source
+SHA-256. The artifact is included in the workspace manifest and checksums. Empty
+workspaces publish an empty ready index, while malformed or ambiguous Decisions
+fail bundle construction. Lifecycle status and provenance authority describe
+the source node and do not imply adoption or approval. The artifact provides a
+Decision projection and does not replace the general canonical graph.
 
 `make publish-bundle` is the canonical build command for the public artifact
 bundle. It refreshes product-facing surfaces before packaging `specs/` and

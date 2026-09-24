@@ -110,6 +110,8 @@ jobs:
         run: |
           make product-workspace-team-decision-log-happy-path-repair-pack
           python tools/build_static_artifact_bundle.py \
+            --workspace-id team-decision-log \
+            --decision-specs-root specs \
             --output-dir dist/specgraph-public/workspaces/team-decision-log
 
       - name: Apply hosted managed public report overlay
@@ -155,8 +157,10 @@ jobs:
 
       - name: Build Hosted Operation Canary product workspace bundle
         run: |
+          mkdir -p specs/workspaces/hosted-operation-canary
           python tools/build_static_artifact_bundle.py \
             --workspace-bootstrap-run-dir runs/hosted-operation-canary \
+            --decision-specs-root specs/workspaces/hosted-operation-canary \
             --output-dir dist/specgraph-public/workspaces/hosted-operation-canary
 
       - name: Upload bundle as GitHub Actions artifact

@@ -107,6 +107,8 @@ def test_publish_workflow_builds_team_decision_log_workspace_bundle() -> None:
         build_workspace_block
     )
     assert "tools/build_static_artifact_bundle.py" in build_workspace_block
+    assert "--workspace-id team-decision-log" in build_workspace_block
+    assert "--decision-specs-root specs" in build_workspace_block
     assert "--output-dir dist/specgraph-public/workspaces/team-decision-log" in (
         build_workspace_block
     )
@@ -123,6 +125,10 @@ def test_publish_workflow_builds_hosted_operation_canary_workspace_bundle() -> N
 
     assert "tools/build_static_artifact_bundle.py" in build_workspace_block
     assert "--workspace-bootstrap-run-dir runs/hosted-operation-canary" in (build_workspace_block)
+    assert "--decision-specs-root specs/workspaces/hosted-operation-canary" in (
+        build_workspace_block
+    )
+    assert "mkdir -p specs/workspaces/hosted-operation-canary" in build_workspace_block
     assert (
         "--output-dir dist/specgraph-public/workspaces/hosted-operation-canary"
         in build_workspace_block

@@ -14,6 +14,9 @@ import pytest
 @pytest.fixture()
 def bundle_module() -> object:
     module_path = Path(__file__).resolve().parents[1] / "tools" / "build_static_artifact_bundle.py"
+    tools_path = str(module_path.parent)
+    if tools_path not in sys.path:
+        sys.path.insert(0, tools_path)
     spec = importlib.util.spec_from_file_location("test_static_artifact_bundle_module", module_path)
     assert spec and spec.loader
     module = importlib.util.module_from_spec(spec)
@@ -50,6 +53,7 @@ def test_workspace_bundle_publishes_decision_projection_and_manifest(
         repo_root=repo,
         output_dir=repo / "dist" / "workspace",
         workspace_bootstrap_run_dir=Path("runs/example"),
+        decision_specs_root=Path("specs"),
         require_verified_agent_passports=False,
     )
 
@@ -90,6 +94,7 @@ def test_workspace_bundle_publishes_empty_decision_index(
         repo_root=repo,
         output_dir=repo / "dist" / "workspace",
         workspace_bootstrap_run_dir=Path("runs/example"),
+        decision_specs_root=Path("specs"),
         require_verified_agent_passports=False,
     )
 
@@ -97,6 +102,106 @@ def test_workspace_bundle_publishes_empty_decision_index(
     assert artifact["status"] == "ready"
     assert artifact["summary"] == {"decision_count": 0}
     assert artifact["decisions"] == []
+
+
+def test_workspace_decision_specs_root_selects_only_its_decisions(
+    bundle_module: object, tmp_path: Path
+) -> None:
+    repo = make_repo(tmp_path / "repo")
+    workspace_specs = repo / "specs" / "workspaces" / "team-decision-log"
+    workspace_specs.mkdir(parents=True)
+    shutil.copy(
+        Path(__file__).parent
+        / "fixtures/product_workspace_decisions/specs/nodes/decision-alpha.yaml",
+        workspace_specs / "decision-alpha.yaml",
+    )
+    other_workspace_specs = repo / "specs" / "workspaces" / "another-workspace"
+    other_workspace_specs.mkdir(parents=True)
+    shutil.copy(
+        Path(__file__).parent
+        / "fixtures/product_workspace_decisions/specs/nested/decision-zed.yaml",
+        other_workspace_specs / "decision-zed.yaml",
+    )
+
+    result = bundle_module.build_public_bundle(
+        repo_root=repo,
+        output_dir=repo / "dist/workspace",
+        workspace_id="team-decision-log",
+        decision_specs_root=Path("specs/workspaces/team-decision-log"),
+        require_verified_agent_passports=False,
+    )
+
+    artifact = json.loads((result.output_dir / "runs/product_workspace_decisions.json").read_text())
+    assert artifact["workspace_id"] == "team-decision-log"
+    assert [item["key"] for item in artifact["decisions"]] == ["decision.alpha"]
+    assert artifact["decisions"][0]["source_ref"] == (
+        "specs/workspaces/team-decision-log/decision-alpha.yaml"
+    )
+
+
+@pytest.mark.parametrize(
+    ("mutation", "expected"),
+    [
+        ("yaml_date", "2026-09-23"),
+        ("null_sources", None),
+        ("url_path", "https://example.com/tmp/design"),
+        ("crlf", "preserved"),
+    ],
+)
+def test_public_projection_handles_yaml_dates_null_sources_urls_and_crlf(
+    bundle_module: object,
+    tmp_path: Path,
+    mutation: str,
+    expected: str | None,
+) -> None:
+    repo = make_repo(tmp_path / "repo")
+    write_workspace_initialization(repo)
+    fixture_specs = Path(__file__).parent / "fixtures" / "product_workspace_decisions" / "specs"
+    shutil.copytree(fixture_specs, repo / "specs", dirs_exist_ok=True)
+    source_path = repo / "specs/nodes/decision-alpha.yaml"
+    text = source_path.read_text(encoding="utf-8")
+    if mutation == "yaml_date":
+        text = text.replace(
+            "    - name: Alternative\n", "    - name: Alternative\n      rejectedOn: 2026-09-23\n"
+        )
+        source_path.write_text(text, encoding="utf-8")
+    elif mutation == "null_sources":
+        source_path.write_text(
+            text.replace(
+                "  sources:\n    - doc: docs/adr/decision.md\n      section: Choice\n",
+                "  sources: null\n",
+            ),
+            encoding="utf-8",
+        )
+    elif mutation == "url_path":
+        source_path.write_text(
+            text.replace("Rationale decision.alpha", expected or ""), encoding="utf-8"
+        )
+    elif mutation == "crlf":
+        source_path.write_bytes(source_path.read_bytes().replace(b"\n", b"\r\n"))
+
+    result = bundle_module.build_public_bundle(
+        repo_root=repo,
+        output_dir=repo / "dist/workspace",
+        workspace_bootstrap_run_dir=Path("runs/example"),
+        decision_specs_root=Path("specs"),
+        require_verified_agent_passports=False,
+    )
+    artifact = json.loads((result.output_dir / "runs/product_workspace_decisions.json").read_text())
+    decision = next(item for item in artifact["decisions"] if item["key"] == "decision.alpha")
+    if mutation == "yaml_date":
+        assert decision["alternatives_considered"][0]["rejectedOn"] == expected
+    elif mutation == "null_sources":
+        assert "sources" not in decision["provenance"]
+    elif mutation == "url_path":
+        assert decision["rationale"] == expected
+        assert (result.output_dir / decision["source_ref"]).read_text(encoding="utf-8").find(
+            expected or ""
+        ) >= 0
+    elif mutation == "crlf":
+        emitted = (result.output_dir / decision["source_ref"]).read_bytes()
+        assert b"\r\n" in emitted and b"\n" not in emitted.replace(b"\r\n", b"")
+        assert decision["source_sha256"] == hashlib.sha256(emitted).hexdigest()
 
 
 @pytest.mark.parametrize(
@@ -153,6 +258,7 @@ def test_workspace_bundle_rejects_invalid_decision_index_without_partial_output(
             repo_root=repo,
             output_dir=output,
             workspace_bootstrap_run_dir=Path("runs/example"),
+            decision_specs_root=Path("specs"),
             require_verified_agent_passports=False,
         )
 
@@ -174,6 +280,7 @@ def test_workspace_bootstrap_alias_uses_scoped_initialization_report(
         repo_root=repo,
         output_dir=repo / "dist" / "workspace",
         workspace_bootstrap_run_dir=Path("runs/example"),
+        decision_specs_root=Path("specs"),
         require_verified_agent_passports=False,
     )
 
@@ -196,6 +303,7 @@ def test_workspace_bundle_uses_only_selected_run_directory(
         repo_root=repo,
         output_dir=repo / "dist" / "workspace",
         workspace_bootstrap_run_dir=Path("runs/example"),
+        decision_specs_root=Path("specs"),
         require_verified_agent_passports=False,
     )
 

@@ -10,7 +10,7 @@ import subprocess
 import sys
 from collections.abc import Iterable
 from dataclasses import dataclass, field
-from datetime import datetime, timezone
+from datetime import date, datetime, timezone
 from pathlib import Path, PurePosixPath
 
 from decision_nodes import (
@@ -96,6 +96,7 @@ LOCAL_ONLY_RUN_PREFIXES = ("local_operator_", "idea_event_storming_seed")
 JUNK_FILENAMES = {".DS_Store", ".gitkeep"}
 JUNK_DIRNAMES = {"__pycache__", ".pytest_cache", ".ruff_cache"}
 LOCAL_PATH_RE = re.compile(
+    r"(?<![A-Za-z0-9._~:/?#\[\]@!$&'()*+,;=%-])"
     r"(?P<prefix>(?:/Users/|/home/runner/|/github/workspace/|/private/var/|"
     r"/var/folders/|/tmp/))[^\s\\\"'<>]+"
 )
@@ -233,6 +234,8 @@ def _safe_decision_source_ref(value: object, *, label: str) -> str:
 def _decision_json_value(value: object) -> object:
     if isinstance(value, datetime):
         return value.isoformat().replace("+00:00", "Z")
+    if isinstance(value, date):
+        return value.isoformat()
     if isinstance(value, dict):
         return {str(key): _decision_json_value(nested) for key, nested in value.items()}
     if isinstance(value, list):
@@ -240,12 +243,28 @@ def _decision_json_value(value: object) -> object:
     return value
 
 
-def build_product_workspace_decision_index(repo_root: Path, workspace_id: str) -> dict[str, object]:
-    """Build a public-safe read model from canonical Decision YAML in specs/."""
-    specs_root = repo_root / "specs"
-    if not specs_root.is_dir() or specs_root.is_symlink():
+def build_product_workspace_decision_index(
+    repo_root: Path,
+    workspace_id: str,
+    decision_specs_root: Path,
+) -> dict[str, object]:
+    """Build a public-safe read model from the selected workspace's specs root."""
+    selected_root = (
+        decision_specs_root
+        if decision_specs_root.is_absolute()
+        else repo_root / decision_specs_root
+    )
+    specs_root = Path(os.path.abspath(selected_root))
+    published_specs_root = Path(os.path.abspath(repo_root / "specs"))
+    if specs_root != published_specs_root and published_specs_root not in specs_root.parents:
+        raise PublishBundleError("Decision specs root must stay within the published specs/ tree")
+    if (
+        published_specs_root.is_symlink()
+        or not specs_root.is_dir()
+        or has_symlink_component(specs_root, published_specs_root)
+    ):
         raise PublishBundleError(
-            f"canonical Decision discovery requires specs/ directory: {specs_root}"
+            f"selected workspace Decision specs root is missing or symlinked: {specs_root}"
         )
     records: list[tuple[str, dict[str, object]]] = []
     parsed_nodes = []
@@ -288,7 +307,7 @@ def build_product_workspace_decision_index(repo_root: Path, workspace_id: str) -
             raise PublishBundleError(f"invalid canonical Decision: {exc}") from exc
         provenance_raw = raw.get("provenance", {})
         sources: list[dict[str, str]] | None = None
-        if "sources" in provenance_raw:
+        if provenance_raw.get("sources") is not None:
             sources = []
             for index, source in enumerate(provenance_raw["sources"], start=1):
                 source_doc = _safe_decision_source_ref(
@@ -516,6 +535,13 @@ def write_text_atomic(path: Path, text: str) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     tmp_path = path.with_suffix(path.suffix + ".tmp")
     tmp_path.write_text(text, encoding="utf-8")
+    tmp_path.replace(path)
+
+
+def write_bytes_atomic(path: Path, data: bytes) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    tmp_path = path.with_suffix(path.suffix + ".tmp")
+    tmp_path.write_bytes(data)
     tmp_path.replace(path)
 
 
@@ -1000,6 +1026,8 @@ def build_public_bundle(
     strict_required_surfaces: bool = True,
     require_verified_agent_passports: bool = True,
     workspace_bootstrap_run_dir: Path | None = None,
+    workspace_id: str | None = None,
+    decision_specs_root: Path | None = None,
 ) -> BuildResult:
     repo_root = repo_root.resolve()
     output_dir = (
@@ -1019,7 +1047,7 @@ def build_public_bundle(
     if output_dir == repo_root or output_dir == git_dir or git_dir in output_dir.parents:
         raise PublishBundleError(f"unsafe output directory: {output_dir}")
 
-    decision_index: dict[str, object] | None = None
+    selected_workspace_id: str | None = None
     if workspace_bootstrap_run_dir is not None:
         report_path = workspace_bootstrap_run_dir / WORKSPACE_INITIALIZATION_EXECUTION_SURFACE
         try:
@@ -1029,12 +1057,34 @@ def build_public_bundle(
                 "workspace bootstrap initialization execution report is malformed"
             ) from exc
         workspace = report.get("workspace") if isinstance(report, dict) else None
-        workspace_id = workspace.get("workspace_id") if isinstance(workspace, dict) else None
-        if not isinstance(workspace_id, str) or not workspace_id.strip():
+        selected_workspace_id = (
+            workspace.get("workspace_id") if isinstance(workspace, dict) else None
+        )
+        if not isinstance(selected_workspace_id, str) or not selected_workspace_id.strip():
             raise PublishBundleError(
                 "workspace bootstrap initialization execution report is missing workspace_id"
             )
-        decision_index = build_product_workspace_decision_index(repo_root, workspace_id)
+    if (
+        selected_workspace_id is not None
+        and workspace_id is not None
+        and workspace_id != selected_workspace_id
+    ):
+        raise PublishBundleError("explicit workspace_id does not match workspace bootstrap report")
+    selected_workspace_id = workspace_id or selected_workspace_id
+    if (
+        selected_workspace_id is not None
+        and re.fullmatch(r"[a-z0-9][a-z0-9-]{1,62}[a-z0-9]", selected_workspace_id) is None
+    ):
+        raise PublishBundleError("workspace_id must be a safe lowercase workspace slug")
+    decision_index: dict[str, object] | None = None
+    if selected_workspace_id is not None:
+        if decision_specs_root is None:
+            raise PublishBundleError(
+                "workspace bundle requires an explicit decision_specs_root for workspace scoping"
+            )
+        decision_index = build_product_workspace_decision_index(
+            repo_root, selected_workspace_id, decision_specs_root
+        )
 
     if output_dir.exists():
         shutil.rmtree(output_dir)
@@ -1047,11 +1097,27 @@ def build_public_bundle(
     secret_findings: list[str] = []
     ontology_fixture_findings: list[str] = []
 
+    decision_source_refs = (
+        {
+            item["source_ref"]
+            for item in decision_index["decisions"]
+            if isinstance(item, dict) and isinstance(item.get("source_ref"), str)
+        }
+        if decision_index is not None
+        else set()
+    )
     for root_name, source_path, rel_path in iter_publish_sources(
         repo_root,
         workspace_bootstrap_run_dir=workspace_bootstrap_run_dir,
     ):
-        text = load_text(source_path)
+        preserve_source_bytes = rel_path.as_posix() in decision_source_refs
+        source_bytes = source_path.read_bytes() if preserve_source_bytes else None
+        try:
+            text = (
+                source_bytes.decode("utf-8") if source_bytes is not None else load_text(source_path)
+            )
+        except UnicodeDecodeError as exc:
+            raise PublishBundleError(f"unsupported non-utf8 artifact: {source_path}") from exc
         if root_name == "runs" and source_path.suffix == ".json":
             validate_json_artifact(source_path, text)
 
@@ -1063,7 +1129,15 @@ def build_public_bundle(
         )
 
         target_path = output_dir / rel_path.as_posix()
-        write_text_atomic(target_path, redacted_text)
+        if preserve_source_bytes:
+            if redacted_text != text:
+                raise PublishBundleError(
+                    f"canonical Decision source changed during publication: {rel_path.as_posix()}"
+                )
+            assert source_bytes is not None
+            write_bytes_atomic(target_path, source_bytes)
+        else:
+            write_text_atomic(target_path, redacted_text)
         copied_paths.add(rel_path.as_posix())
         copied_files.append(
             PublishFile(
@@ -1198,6 +1272,15 @@ def parse_args(argv: list[str]) -> argparse.Namespace:
         ),
     )
     parser.add_argument(
+        "--workspace-id",
+        help="Explicit product workspace identity for workspace bundle publication.",
+    )
+    parser.add_argument(
+        "--decision-specs-root",
+        type=Path,
+        help="Selected workspace canonical specs directory, relative to repo root or absolute.",
+    )
+    parser.add_argument(
         "--refresh-publish-surfaces",
         action="store_true",
         dest="refresh_publish_surfaces",
@@ -1244,6 +1327,8 @@ def main(argv: list[str] | None = None) -> int:
             strict_required_surfaces=not args.allow_missing_required_surfaces,
             require_verified_agent_passports=not args.allow_unverified_agent_passports,
             workspace_bootstrap_run_dir=args.workspace_bootstrap_run_dir,
+            workspace_id=args.workspace_id,
+            decision_specs_root=args.decision_specs_root,
         )
     except PublishBundleError as exc:
         print(f"ERROR: {exc}", file=sys.stderr)
