@@ -43,3 +43,10 @@ Decision envelopes and supports separate lookup by immutable machine ID and
 stable key. Keep ordinary project-spec parsing and Supervisor refinement
 unchanged. Do not enable authoring, adoption, executor selection, or migration
 of the Zeusus ledger in this slice.
+
+## Zeusus pilot snapshot pin on 2026-09-24
+
+The referenced pilot evidence is pinned to Zeusus commit
+`bc425a7295be2bf5b6b58b8a770047a441019e93`; the file
+`docs/evidence/specgraph-decision-ledger-pilot.md` at that commit has SHA-256
+`710bc7bdc9a82c9c868252bf968a9f6cc7069b3140f286cb092665fea34710b7`.

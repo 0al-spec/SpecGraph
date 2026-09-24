@@ -21,7 +21,9 @@ pilot remain follow-up work.
   Specification-layer node kind; canonical records are user-owned and portable.
 - [Canonical Node format](../schema/node-format.md), especially “Kind: decision”
 - [Product Workspace stable-mode guide](../product_workspace_stable_mode_guide.md)
-- Zeusus pilot: `docs/evidence/specgraph-decision-ledger-pilot.md` in the Zeusus repository
+- Zeusus pilot snapshot: `docs/evidence/specgraph-decision-ledger-pilot.md` at
+  Zeusus commit `bc425a7295be2bf5b6b58b8a770047a441019e93`, SHA-256
+  `710bc7bdc9a82c9c868252bf968a9f6cc7069b3140f286cb092665fea34710b7`.
 
 ## Problem
 
