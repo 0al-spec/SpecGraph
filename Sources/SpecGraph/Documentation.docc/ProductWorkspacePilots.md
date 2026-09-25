@@ -1050,6 +1050,17 @@ The full planning contracts remain in repository Markdown:
 
 - `docs/product_workspace_graph_versioning_roadmap.md`
 - `docs/product_workspace_stable_mode_guide.md`
+
+## Product Workspace Next Moves
+
+`tools/product_workspace_next_moves.py --workspace-root <path>` builds a
+read-only product advisory from `specgraph.project.yaml` and
+`specs/nodes/*.yaml`. An optional `--target-spec` limits it to a `refines`
+subtree. The result is written only to
+`runs/product_workspace_next_moves.json` in that product workspace. Core
+review-feedback and SpecPM registries are outside its input contract, and
+product governance places forbidden core targets in `blocked_moves`.
+
 ## Durable workspace binding evidence
 
 Proposal `0211` adds a public-safe `workspace_binding_evidence` descriptor to

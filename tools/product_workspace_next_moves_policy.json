@@ -1,0 +1,42 @@
+{
+  "artifact_kind": "product_workspace_next_moves_policy",
+  "schema_version": 1,
+  "input_contract": {
+    "required": [
+      "specgraph.project.yaml",
+      "specs/nodes/"
+    ],
+    "scanned": ["specs/nodes/*.yaml"],
+    "optional": [],
+    "excluded_core_inputs": [
+      "tools/review_feedback_records.json",
+      "tools/specpm_export_registry.json",
+      "tools/proposal_runtime_registry.json"
+    ],
+    "output": "runs/product_workspace_next_moves.json"
+  },
+  "priority": {
+    "gates": [
+      "review_pending",
+      "split_required",
+      "retry_pending",
+      "blocked"
+    ],
+    "refinable_statuses": [
+      "outlined",
+      "specified",
+      "linked"
+    ]
+  },
+  "authority": {
+    "required_governance_profile": "product_workspace",
+    "canonical_mutations_allowed": false,
+    "tracked_artifacts_written": false,
+    "recommendations_are_advisory": true
+  },
+  "source_proposals": [
+    "docs/proposals/0041_graph_next_moves_game_master_surface.md",
+    "docs/proposals/0052_product_workspace_governance_profile.md",
+    "docs/proposals/0054_product_workspace_initialization.md"
+  ]
+}

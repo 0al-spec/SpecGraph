@@ -136,17 +136,47 @@ or debug override.
 In `product_workspace`:
 
 - `project_environment` exposes `core_locked=true`.
-- `graph_next_moves` filters SpecGraph-core/self-evolution moves into
-  `blocked_moves`.
+- the core `graph_next_moves` selector filters SpecGraph-core/self-evolution
+  moves when supplied with a product environment; its default source builders
+  still require SpecGraph-owned registries and are not a product-workspace CLI.
 - explicit supervisor targets against SpecGraph core nodes fail before executor
   launch.
 - blocked moves use `blocked_by_governance_profile`.
 
+## Product Workspace Next Moves
+
+Use the separate read-only product advisor with an explicit workspace root:
+
+```bash
+python3 tools/product_workspace_next_moves.py \
+  --workspace-root /path/to/product-workspace \
+  --target-spec PRODUCT-SPEC-0001
+```
+
+`--target-spec` limits advice to that node and its `refines` descendants; omit
+it to inspect the entire product graph. The required inputs are the product's
+`specgraph.project.yaml` and `specs/nodes/`; it scans that directory's YAML
+nodes, including nodes outside a requested subtree to resolve its membership.
+The command reads no
+SpecGraph-core review-feedback, SpecPM, or proposal-runtime registry. It writes
+only `runs/product_workspace_next_moves.json` under the selected workspace and
+never changes canonical specs.
+
+The artifact identifies the selected config and spec bytes by SHA-256 digest.
+It prioritizes pending gates, then `outlined`, `specified`, and `linked` nodes
+for bounded targeted refinement. Each candidate passes the existing product
+governance authorization check. Forbidden `SG-SPEC-*` targets appear in
+`blocked_moves`, not as executable recommendations. A missing or invalid
+product config fails without writing an advisory artifact. The output remains
+advice; gate approval and refinement still use their existing review workflow.
+
 ## SpecSpace / Viewer Expectations
 
-SpecSpace should read `runs/project_environment.json` and
+SpecSpace's existing core selector reads `runs/project_environment.json` and
 `runs/graph_next_moves.json` rather than inferring mode from URLs or repository
-names.
+names. Product-workspace consumers should use the separate
+`runs/product_workspace_next_moves.json` advisory introduced above; wiring it
+into the viewer is separate work.
 
 The important viewer-facing fields are:
 
