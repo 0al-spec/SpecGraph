@@ -6,6 +6,9 @@ import subprocess
 import sys
 from pathlib import Path
 
+import pytest
+from specification_core import TraceRecorder
+
 ROOT = Path(__file__).resolve().parents[1]
 TOOL_PATH = ROOT / "tools" / "idea_to_spec_promotion_gate.py"
 REPAIR_TOOL_PATH = ROOT / "tools" / "candidate_repair_loop.py"
@@ -119,6 +122,78 @@ def test_promotion_gate_allows_resolved_repair_preview(tmp_path: Path) -> None:
     ]
 
 
+@pytest.mark.parametrize(
+    ("pre_sib_ready", "materialization_source", "expected_state", "expected_trace"),
+    [
+        (
+            True,
+            "direct",
+            "ready",
+            [
+                ("pre_sib_state", "selected"),
+                ("pre_sib.ready", "satisfied"),
+                ("pair[1]:pre_sib.blocked", "skipped"),
+                ("pair[2]:pre_sib.repaired_preview", "skipped"),
+            ],
+        ),
+        (
+            False,
+            "direct",
+            "blocked",
+            [
+                ("pre_sib_state", "selected"),
+                ("pre_sib.ready", "unsatisfied"),
+                ("pre_sib.blocked", "satisfied"),
+                ("pair[2]:pre_sib.repaired_preview", "skipped"),
+            ],
+        ),
+        (
+            False,
+            "repair_loop_preview",
+            "repaired_preview",
+            [
+                ("pre_sib_state", "selected"),
+                ("pre_sib.ready", "unsatisfied"),
+                ("pre_sib.blocked", "unsatisfied"),
+                ("pre_sib.repaired_preview", "satisfied"),
+            ],
+        ),
+    ],
+)
+def test_pre_sib_state_decision_and_trace(
+    pre_sib_ready: bool,
+    materialization_source: str,
+    expected_state: str,
+    expected_trace: list[tuple[str, str]],
+) -> None:
+    module = load_module(TOOL_PATH, "idea_to_spec_promotion_gate_state_test")
+    pre_sib = {"readiness": {"ready": pre_sib_ready}}
+    materialization = {"materialization_source": materialization_source}
+    recorder = TraceRecorder()
+
+    result = module._pre_sib_state(pre_sib, materialization, recorder=recorder)
+
+    assert result.value == expected_state
+    assert [(event.name, event.outcome.value) for event in recorder.events] == expected_trace
+
+
+def test_promotion_gate_blocks_original_pre_sib_without_repair_preview(tmp_path: Path) -> None:
+    module = load_module(TOOL_PATH, "idea_to_spec_promotion_gate_original_block_test")
+    repair = build_repair_report(context_resolved=True)
+    materialization = build_materialization_report(repair, tmp_path)
+    materialization["materialization_source"] = "direct"
+
+    report = module.build_idea_to_spec_promotion_gate(
+        pre_sib=load_json(PRE_SIB_REPAIR_REQUIRED),
+        repair_loop=repair,
+        materialization=materialization,
+    )
+
+    assert report["readiness"]["ready"] is False
+    assert "pre_sib_not_ready_without_repair_preview" in finding_ids(report)
+    assert "pre_sib_findings_repaired_by_preview" not in warning_ids(report)
+
+
 def test_promotion_gate_blocks_unresolved_context(tmp_path: Path) -> None:
     module = load_module(TOOL_PATH, "idea_to_spec_promotion_gate_context_test")
     repair = build_repair_report(context_resolved=False)
@@ -184,6 +259,57 @@ def test_promotion_gate_cli_strict_exits_nonzero_for_unresolved_context(
     )
 
     assert result.returncode == 1
+    assert result.stderr == ""
     report = load_json(output)
     assert report["readiness"]["ready"] is False
     assert "repair_context_required" in finding_ids(report)
+
+
+def test_promotion_gate_cli_trace_is_opt_in_and_does_not_change_report(
+    tmp_path: Path,
+) -> None:
+    repair = build_repair_report(context_resolved=True)
+    materialization = build_materialization_report(repair, tmp_path)
+    repair_path = tmp_path / "candidate_repair_loop_report.json"
+    materialization_path = tmp_path / "candidate_spec_materialization_report.json"
+    repair_path.write_text(json.dumps(repair), encoding="utf-8")
+    materialization_path.write_text(json.dumps(materialization), encoding="utf-8")
+    default_output = tmp_path / "default_gate.json"
+    traced_output = tmp_path / "traced_gate.json"
+
+    args = [
+        sys.executable,
+        str(TOOL_PATH),
+        "--pre-sib",
+        str(PRE_SIB_REPAIR_REQUIRED),
+        "--repair-loop",
+        str(repair_path),
+        "--materialization",
+        str(materialization_path),
+    ]
+    default_result = subprocess.run(
+        [*args, "--output", str(default_output)],
+        cwd=ROOT,
+        check=False,
+        capture_output=True,
+        text=True,
+    )
+    traced_result = subprocess.run(
+        [*args, "--output", str(traced_output), "--trace-decisions"],
+        cwd=ROOT,
+        check=False,
+        capture_output=True,
+        text=True,
+    )
+
+    assert default_result.returncode == traced_result.returncode == 0
+    assert default_result.stderr == ""
+    assert default_result.stdout == traced_result.stdout
+    assert "decision trace: pre_sib_state -> selected" in traced_result.stderr
+    assert "decision trace: pre_sib.repaired_preview -> satisfied" in traced_result.stderr
+    assert "decision trace: pair[0]:pre_sib.ready -> skipped" not in traced_result.stderr
+    default_report = load_json(default_output)
+    traced_report = load_json(traced_output)
+    default_report.pop("generated_at")
+    traced_report.pop("generated_at")
+    assert default_report == traced_report
