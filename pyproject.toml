@@ -9,7 +9,10 @@ description = "Default Python project scaffold for SpecGraph"
 readme = "README.md"
 requires-python = ">=3.10"
 authors = [{ name = "SpecGraph" }]
-dependencies = ["pyyaml==6.0.3"]
+dependencies = [
+    "pyyaml==6.0.3",
+    "specification-core @ git+https://github.com/SoundBlaster/SpycificationCore.git@6113d773e78cb94c4eb0ce31e8439877fef45494",
+]
 
 [project.optional-dependencies]
 dev = ["pytest==9.0.2", "ruff==0.15.9"]

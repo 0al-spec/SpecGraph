@@ -4,9 +4,14 @@ from __future__ import annotations
 
 import argparse
 import json
+import sys
+from dataclasses import dataclass
 from datetime import datetime, timezone
+from enum import Enum
 from pathlib import Path
 from typing import Any
+
+from specification_core import FirstMatch, PredicateSpec, TraceRecorder
 
 ROOT = Path(__file__).resolve().parents[1]
 PROPOSAL_ID = "0154"
@@ -152,10 +157,62 @@ def _readiness_ready(artifact: dict[str, Any]) -> bool:
     return _dict(artifact.get("readiness")).get("ready") is True
 
 
-def _pre_sib_original_blocked(pre_sib: dict[str, Any], materialization: dict[str, Any]) -> bool:
-    if _readiness_ready(pre_sib):
-        return False
-    return _text(materialization.get("materialization_source")) != "repair_loop_preview"
+class _PreSibState(str, Enum):
+    READY = "ready"
+    BLOCKED = "blocked"
+    REPAIRED_PREVIEW = "repaired_preview"
+
+
+@dataclass(frozen=True)
+class _PreSibDecisionContext:
+    pre_sib_ready: bool
+    materialization_source: str
+
+
+_PRE_SIB_STATE_DECISION = FirstMatch(
+    (
+        (
+            PredicateSpec(lambda context: context.pre_sib_ready, name="pre_sib.ready"),
+            _PreSibState.READY,
+        ),
+        (
+            PredicateSpec(
+                lambda context: (
+                    not context.pre_sib_ready
+                    and context.materialization_source != "repair_loop_preview"
+                ),
+                name="pre_sib.blocked",
+            ),
+            _PreSibState.BLOCKED,
+        ),
+        (
+            PredicateSpec(
+                lambda context: (
+                    not context.pre_sib_ready
+                    and context.materialization_source == "repair_loop_preview"
+                ),
+                name="pre_sib.repaired_preview",
+            ),
+            _PreSibState.REPAIRED_PREVIEW,
+        ),
+    ),
+    name="pre_sib_state",
+)
+
+
+def _pre_sib_state(
+    pre_sib: dict[str, Any],
+    materialization: dict[str, Any],
+    *,
+    recorder: TraceRecorder | None = None,
+) -> _PreSibState:
+    context = _PreSibDecisionContext(
+        pre_sib_ready=_readiness_ready(pre_sib),
+        materialization_source=_text(materialization.get("materialization_source")),
+    )
+    result = _PRE_SIB_STATE_DECISION.decide(context, recorder=recorder)
+    assert result.matched and result.value is not None
+    return result.value
 
 
 def _gate_findings(
@@ -163,6 +220,7 @@ def _gate_findings(
     pre_sib: dict[str, Any],
     repair_loop: dict[str, Any],
     materialization: dict[str, Any],
+    decision_recorder: TraceRecorder | None = None,
 ) -> tuple[list[dict[str, Any]], list[dict[str, Any]]]:
     findings = (
         _validate_artifact(
@@ -186,7 +244,8 @@ def _gate_findings(
     )
     warnings: list[dict[str, Any]] = []
 
-    if _pre_sib_original_blocked(pre_sib, materialization):
+    pre_sib_state = _pre_sib_state(pre_sib, materialization, recorder=decision_recorder)
+    if pre_sib_state is _PreSibState.BLOCKED:
         blocked_by = _text_list(_dict(pre_sib.get("readiness")).get("blocked_by"))
         findings.append(
             _finding(
@@ -199,7 +258,7 @@ def _gate_findings(
                 evidence={"blocked_by": blocked_by},
             )
         )
-    elif not _readiness_ready(pre_sib):
+    elif pre_sib_state is _PreSibState.REPAIRED_PREVIEW:
         blocked_by = _text_list(_dict(pre_sib.get("readiness")).get("blocked_by"))
         warnings.append(
             _finding(
@@ -289,11 +348,13 @@ def build_idea_to_spec_promotion_gate(
     pre_sib_path: Path | None = None,
     repair_loop_path: Path | None = None,
     materialization_path: Path | None = None,
+    decision_recorder: TraceRecorder | None = None,
 ) -> dict[str, Any]:
     findings, warnings = _gate_findings(
         pre_sib=pre_sib,
         repair_loop=repair_loop,
         materialization=materialization,
+        decision_recorder=decision_recorder,
     )
     promotion_paths = _promotion_paths(materialization)
     candidate_id = _dict(materialization.get("candidate_scope")).get("namespace")
@@ -373,6 +434,11 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--materialization", default=DEFAULT_MATERIALIZATION_PATH, type=Path)
     parser.add_argument("--output", default=DEFAULT_OUTPUT_PATH, type=Path)
     parser.add_argument("--strict", action="store_true")
+    parser.add_argument(
+        "--trace-decisions",
+        action="store_true",
+        help="write the pre-SIB decision trace to stderr",
+    )
     return parser
 
 
@@ -381,6 +447,7 @@ def main(argv: list[str] | None = None) -> int:
     pre_sib = load_json(args.pre_sib)
     repair_loop = load_json(args.repair_loop)
     materialization = load_json(args.materialization)
+    decision_recorder = TraceRecorder() if args.trace_decisions else None
     report = build_idea_to_spec_promotion_gate(
         pre_sib=pre_sib,
         repair_loop=repair_loop,
@@ -388,7 +455,11 @@ def main(argv: list[str] | None = None) -> int:
         pre_sib_path=args.pre_sib,
         repair_loop_path=args.repair_loop,
         materialization_path=args.materialization,
+        decision_recorder=decision_recorder,
     )
+    if decision_recorder is not None:
+        for event in decision_recorder.events:
+            print(f"decision trace: {event.name} -> {event.outcome.value}", file=sys.stderr)
     write_json(report, args.output)
     print(
         f"{report['readiness']['review_state']}: "
