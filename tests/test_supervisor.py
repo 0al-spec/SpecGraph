@@ -14307,6 +14307,27 @@ def test_build_specpm_feedback_index_emits_observed_and_blocked_entries(
     ]
 
 
+def test_build_specpm_feedback_index_handles_null_package_preview(
+    supervisor_module: object,
+) -> None:
+    export_preview = {
+        "entries": [
+            {
+                "export_id": "not_emitted_export",
+                "review_state": "not_emitted",
+                "package_preview": None,
+            }
+        ]
+    }
+
+    report = supervisor_module.build_specpm_feedback_index(
+        export_preview,
+        {"entries": []},
+    )
+
+    assert report["entries"] == []
+
+
 def test_build_specpm_feedback_index_blocks_stale_checkout_hint(
     supervisor_module: object,
     repo_fixture: Path,

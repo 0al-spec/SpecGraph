@@ -39073,9 +39073,8 @@ def build_specpm_feedback_index(
         export_id = str(raw_entry.get("export_id", "")).strip()
         if export_id:
             preview_by_export_id[export_id] = raw_entry
-        package_id = str(
-            raw_entry.get("package_preview", {}).get("metadata", {}).get("id", "")
-        ).strip()
+        package_preview = raw_entry.get("package_preview") or {}
+        package_id = str(package_preview.get("metadata", {}).get("id", "")).strip()
         if package_id:
             preview_by_package_id[package_id] = raw_entry
 
