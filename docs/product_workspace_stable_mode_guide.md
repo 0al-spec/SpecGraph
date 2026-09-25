@@ -161,14 +161,19 @@ The command reads no
 SpecGraph-core review-feedback, SpecPM, or proposal-runtime registry. It writes
 only `runs/product_workspace_next_moves.json` under the selected workspace and
 never changes canonical specs.
+Its installed policy dependency is `tools/project_environment_policy.json`;
+the report records that policy's digest alongside the product inputs. Importing
+the advisor does not load unrelated supervisor policies.
 
 The artifact identifies the selected config and spec bytes by SHA-256 digest.
-It prioritizes pending gates, then `outlined`, `specified`, and `linked` nodes
-for bounded targeted refinement. Each candidate passes the existing product
-governance authorization check. Forbidden `SG-SPEC-*` targets appear in
-`blocked_moves`, not as executable recommendations. A missing or invalid
-product config fails without writing an advisory artifact. The output remains
-advice; gate approval and refinement still use their existing review workflow.
+It prioritizes gate actions, then `outlined`, `specified`, and `linked` nodes
+for bounded targeted refinement. Each candidate passes the product governance
+policy and `allow_project_spec_refinement` authority checks. Forbidden
+`SG-SPEC-*` targets appear in `blocked_moves`, not as executable recommendations.
+A missing or invalid product config fails without writing an advisory artifact.
+The output remains advice; gate approval and refinement still use their existing
+review workflow.
+The advisor rejects unknown spec statuses and refuses a symlinked output path.
 
 ## SpecSpace / Viewer Expectations
 

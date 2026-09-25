@@ -1060,6 +1060,8 @@ subtree. The result is written only to
 `runs/product_workspace_next_moves.json` in that product workspace. Core
 review-feedback and SpecPM registries are outside its input contract, and
 product governance places forbidden core targets in `blocked_moves`.
+The installed `tools/project_environment_policy.json` is its explicit
+governance dependency, recorded by digest in the advisory artifact.
 
 ## Durable workspace binding evidence
 

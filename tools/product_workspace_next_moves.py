@@ -3,15 +3,51 @@
 from __future__ import annotations
 
 import argparse
+import datetime as dt
 import hashlib
 import json
+import os
 import sys
+import tempfile
 from pathlib import Path
 from typing import Any
 
-import supervisor as sg
+import product_workspace_next_moves_support as workspace
 
 POLICY_PATH = Path(__file__).with_name("product_workspace_next_moves_policy.json")
+VALID_STATUSES = {"idea", "stub", "outlined", "specified", "linked", "reviewed", "frozen"}
+GATE_ACTIONS = {
+    "review_pending": (
+        "review_gate",
+        "review_exact_gate_candidate",
+        "Read the exact run and candidate for {spec_id}, then resolve its review gate.",
+    ),
+    "split_required": (
+        "split_spec",
+        "structural_split",
+        "Review the structural split requirement for {spec_id} before rerunning refinement.",
+    ),
+    "retry_pending": (
+        "retry_refinement",
+        "repair_then_retry",
+        "Repair the failed condition for {spec_id}, then rerun targeted refinement.",
+    ),
+    "blocked": (
+        "resolve_blocker",
+        "resolve_blocker",
+        "Identify and resolve the recorded blocker for {spec_id} before retrying.",
+    ),
+    "redirected": (
+        "redirect_refinement",
+        "update_prompt_scope_and_rerun",
+        "Update the prompt or scope for {spec_id}, then rerun targeted refinement.",
+    ),
+    "escalated": (
+        "manual_escalation",
+        "manual_escalation",
+        "Review the manual escalation for {spec_id} before further refinement.",
+    ),
+}
 
 
 def file_digest(path: Path) -> str:
@@ -23,22 +59,21 @@ def load_policy() -> dict[str, Any]:
 
 
 def candidate_move(
-    node: sg.SpecNode,
+    node: workspace.SpecNode,
     *,
     source_path: str,
     gate_order: list[str],
     status_order: list[str],
 ) -> tuple[int, dict[str, Any]] | None:
+    if node.status not in VALID_STATUSES:
+        raise ValueError(f"unsupported canonical status for {node.id}: {node.status}")
     gate = node.gate_state
     if gate != "none":
-        if gate not in gate_order:
+        if gate not in gate_order or gate not in GATE_ACTIONS:
             raise ValueError(f"unsupported gate state for {node.id}: {gate}")
-        next_gap = "review_exact_gate_candidate"
-        command_hint = (
-            f"Read the exact run and candidate for {node.id}, then resolve its {gate} gate."
-        )
+        kind, next_gap, hint_template = GATE_ACTIONS[gate]
+        command_hint = hint_template.format(spec_id=node.id)
         rank = gate_order.index(gate)
-        kind = "review_gate"
     elif node.status in status_order:
         next_gap = "targeted_refinement"
         command_hint = f"Run a targeted dry-run for {node.id}, then refine one bounded concern."
@@ -72,16 +107,15 @@ def build_product_workspace_next_moves(
     config_path = root / "specgraph.project.yaml"
     if not config_path.is_file():
         raise ValueError("product_workspace requires specgraph.project.yaml")
-    environment = sg.build_project_environment(config_path=config_path)
-    project = environment.get("project", {})
-    profile = project.get("governance_profile") if isinstance(project, dict) else None
-    if environment.get("summary", {}).get("status") != "valid" or profile != "product_workspace":
-        raise ValueError("a valid product_workspace project config is required")
+    project_policy = workspace.load_product_policy()
+    environment = workspace.product_environment(config_path, project_policy)
+    project = environment["project"]
+    profile = project["governance_profile"]
 
     specs_dir = root / "specs" / "nodes"
     if not specs_dir.is_dir():
         raise ValueError("product_workspace requires specs/nodes directory")
-    specs = sg.load_specs_from_dir(specs_dir)
+    specs = workspace.load_specs_from_dir(specs_dir)
     if any(not isinstance(node.data, dict) for node in specs):
         raise ValueError("canonical spec nodes must be mappings with nonempty IDs")
     ids = [node.id for node in specs]
@@ -97,12 +131,18 @@ def build_product_workspace_next_moves(
         target = next((node for node in specs if node.id == target_spec), None)
         if target is None:
             raise ValueError(f"target spec is absent from product workspace: {target_spec}")
-        selected_specs = sg.subtree_nodes(target, specs)
+        selected_specs = workspace.subtree_nodes(target, specs)
     else:
         selected_specs = specs
 
     gate_order = list(policy["priority"]["gates"])
     status_order = list(policy["priority"]["refinable_statuses"])
+    if set(gate_order) != set(GATE_ACTIONS):
+        raise ValueError("product next-move policy must rank every canonical gate state")
+    authority = environment.get("supervisor_authority", {})
+    refinement_allowed = (
+        isinstance(authority, dict) and authority.get("allow_project_spec_refinement") is True
+    )
     eligible: list[tuple[int, dict[str, Any]]] = []
     blocked: list[dict[str, Any]] = []
     for node in selected_specs:
@@ -116,21 +156,24 @@ def build_product_workspace_next_moves(
         if candidate is None:
             continue
         rank, move = candidate
-        authorization = sg.authorize_project_workspace_target(
+        authorization = workspace.authorize_target(
             target_spec_id=node.id,
-            target_paths=sg.effective_allowed_paths_for_run(node),
-            project_environment=environment,
+            target_paths=workspace.effective_allowed_paths_for_run(node, root),
+            environment=environment,
         )
-        if authorization["authorized"]:
+        blocked_by = list(authorization["blocked_by"])
+        if not refinement_allowed:
+            blocked_by.append("blocked_by_project_spec_refinement_disabled")
+        if not blocked_by:
             eligible.append((rank, move))
         else:
             blocked.append(
                 {
                     **move,
                     "command_hint": (
-                        f"Resolve governance for {node.id} before running targeted refinement."
+                        f"Resolve governance and workspace authority for {node.id} before action."
                     ),
-                    "blocked_by": authorization["blocked_by"],
+                    "blocked_by": blocked_by,
                     "target_domain": authorization["target_domain"],
                 }
             )
@@ -138,9 +181,7 @@ def build_product_workspace_next_moves(
     blocked.sort(key=lambda move: move["spec_id"])
     recommended = eligible[0][1] if eligible else None
     current_scene = (
-        "review_gate"
-        if recommended and recommended["kind"] == "review_gate"
-        else "refinement_ready"
+        ("refinement_ready" if recommended["kind"] == "refine_spec" else recommended["kind"])
         if recommended
         else "governance_blocked"
         if blocked
@@ -150,10 +191,14 @@ def build_product_workspace_next_moves(
     return {
         "artifact_kind": "product_workspace_next_moves",
         "schema_version": 1,
-        "generated_at": sg.utc_now_iso(),
+        "generated_at": dt.datetime.now(dt.timezone.utc).isoformat(),
         "policy_reference": {
             "artifact_path": "tools/product_workspace_next_moves_policy.json",
             "sha256": file_digest(POLICY_PATH),
+        },
+        "project_environment_policy_reference": {
+            "artifact_path": "tools/project_environment_policy.json",
+            "sha256": file_digest(workspace.PROJECT_POLICY_PATH),
         },
         "project": {
             "project_id": project["project_id"],
@@ -188,6 +233,21 @@ def build_product_workspace_next_moves(
     }
 
 
+def atomic_write_json(path: Path, payload: dict[str, Any]) -> None:
+    encoded = json.dumps(payload, ensure_ascii=False, indent=2)
+    temporary_path: Path | None = None
+    try:
+        with tempfile.NamedTemporaryFile(
+            mode="w", encoding="utf-8", dir=path.parent, prefix=f".{path.name}.", delete=False
+        ) as temporary:
+            temporary.write(encoded)
+            temporary_path = Path(temporary.name)
+        os.replace(temporary_path, path)
+    finally:
+        if temporary_path is not None:
+            temporary_path.unlink(missing_ok=True)
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--workspace-root", type=Path, required=True)
@@ -197,13 +257,15 @@ def main() -> int:
         report = build_product_workspace_next_moves(
             args.workspace_root, target_spec=args.target_spec
         )
-        output_path = (
-            args.workspace_root.expanduser().resolve()
-            / "runs"
-            / ("product_workspace_next_moves.json")
-        )
-        output_path.parent.mkdir(parents=True, exist_ok=True)
-        sg.atomic_write_json(output_path, report)
+        root = args.workspace_root.expanduser().resolve(strict=True)
+        output_dir = root / "runs"
+        output_path = output_dir / "product_workspace_next_moves.json"
+        if output_dir.is_symlink() or output_path.is_symlink():
+            raise ValueError("product advisory output must not traverse symlinks")
+        output_dir.mkdir(parents=True, exist_ok=True)
+        if not output_dir.resolve(strict=True).is_relative_to(root):
+            raise ValueError("product advisory output escapes the selected workspace")
+        atomic_write_json(output_path, report)
     except (OSError, ValueError) as exc:
         print(str(exc), file=sys.stderr)
         return 1

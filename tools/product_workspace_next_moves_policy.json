@@ -6,6 +6,7 @@
       "specgraph.project.yaml",
       "specs/nodes/"
     ],
+    "installed_tool_policies": ["tools/project_environment_policy.json"],
     "scanned": ["specs/nodes/*.yaml"],
     "optional": [],
     "excluded_core_inputs": [
@@ -20,7 +21,9 @@
       "review_pending",
       "split_required",
       "retry_pending",
-      "blocked"
+      "blocked",
+      "redirected",
+      "escalated"
     ],
     "refinable_statuses": [
       "outlined",
