@@ -10,6 +10,7 @@ PRODUCT_WORKSPACE_PROJECT_ID ?=
 PRODUCT_WORKSPACE_DISPLAY_NAME ?=
 PRODUCT_WORKSPACE_ROOT ?=
 PRODUCT_WORKSPACE_ROOT_INTENT ?=
+PRODUCT_WORKSPACE_TARGET_SPEC ?=
 IMPLEMENTATION_TARGET_SCOPE_KIND ?= active_subtree
 IMPLEMENTATION_TARGET_SPEC_IDS ?= SG-SPEC-0001
 IMPLEMENTATION_OPERATOR_INTENT ?= Build publishable implementation work surface for SpecSpace static artifact consumers.
@@ -528,6 +529,7 @@ help:
 		'  make swift-typed-tooling      Refresh Swift typed tooling lane index' \
 		'  make project-environment      Refresh project environment governance profile JSON' \
 			'  make init-product-workspace PRODUCT_WORKSPACE_PROJECT_ID=<id> PRODUCT_WORKSPACE_ROOT=<path>' \
+			'  make product-workspace-next-move PRODUCT_WORKSPACE_ROOT=<path> [PRODUCT_WORKSPACE_TARGET_SPEC=<id>]' \
 			'  make review-feedback          Refresh review feedback index' \
 			'  make executor-adapters        Refresh supervisor executor adapter index' \
 			'  make executor-readiness       Refresh local operator executor readiness JSON' \
@@ -1397,6 +1399,11 @@ init-product-workspace:
 	@test -n "$(PRODUCT_WORKSPACE_PROJECT_ID)" || (echo 'PRODUCT_WORKSPACE_PROJECT_ID is required' >&2; exit 2)
 	@test -n "$(PRODUCT_WORKSPACE_ROOT)" || (echo 'PRODUCT_WORKSPACE_ROOT is required' >&2; exit 2)
 	@$(PYTHON) $(SUPERVISOR) --init-product-workspace --project-id "$(PRODUCT_WORKSPACE_PROJECT_ID)" --workspace-root "$(PRODUCT_WORKSPACE_ROOT)" $(if $(PRODUCT_WORKSPACE_DISPLAY_NAME),--display-name "$(PRODUCT_WORKSPACE_DISPLAY_NAME)") $(if $(PRODUCT_WORKSPACE_ROOT_INTENT),--root-intent "$(PRODUCT_WORKSPACE_ROOT_INTENT)")
+
+.PHONY: product-workspace-next-move
+product-workspace-next-move:
+	@test -n "$(PRODUCT_WORKSPACE_ROOT)" || (echo 'PRODUCT_WORKSPACE_ROOT is required' >&2; exit 2)
+	@$(PYTHON) tools/product_workspace_next_moves.py --workspace-root "$(PRODUCT_WORKSPACE_ROOT)" $(if $(PRODUCT_WORKSPACE_TARGET_SPEC),--target-spec "$(PRODUCT_WORKSPACE_TARGET_SPEC)")
 
 .PHONY: review-feedback
 review-feedback:
