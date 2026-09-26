@@ -4338,6 +4338,8 @@ COMPLETION_STATUS_OK = "ok"
 COMPLETION_STATUS_PROGRESSED = "progressed"
 COMPLETION_STATUS_FAILED = "failed"
 SPEC_ID_PATTERN = re.compile(r"^SG-SPEC-(\d+)$")
+NAMESPACED_SPEC_ID_PATTERN = re.compile(r"^([A-Z][A-Z0-9]*(?:-[A-Z0-9]+)*-SPEC)-(\d+)$")
+SPEC_ID_POLICY_PATH_NAME = ".specgraph/spec-id-policy.json"
 SEMANTIC_WORD_RE = re.compile(r"[A-Za-z0-9][A-Za-z0-9_-]*")
 BACKTICK_TOKEN_RE = re.compile(r"`([^`]+)`")
 UPPER_IDENTIFIER_RE = re.compile(r"\b[A-Z]{2,}(?:-[A-Z0-9]+)+\b")
@@ -6240,13 +6242,83 @@ def snapshot_sync_digests(paths: list[str], base_dir: Path) -> dict[str, str | N
     return digests
 
 
+def parse_namespaced_spec_id(spec_id: str) -> tuple[str, int] | None:
+    match = NAMESPACED_SPEC_ID_PATTERN.fullmatch(spec_id)
+    if not match:
+        return None
+    return match.group(1), int(match.group(2))
+
+
+def load_spec_id_policy() -> tuple[str, dict[str, str]]:
+    path = ROOT / SPEC_ID_POLICY_PATH_NAME
+    if not path.exists():
+        return "SG-SPEC", {}
+    payload, error = load_json_object_report(path, artifact_kind="spec-id policy")
+    if payload is None or set(payload) != {"schema_version", "prefix", "aliases"}:
+        raise RuntimeError(
+            error or "Malformed spec-id policy: expected schema_version, prefix, aliases"
+        )
+    if type(payload.get("schema_version")) is not int or payload.get("schema_version") != 1:
+        raise RuntimeError("Malformed spec-id policy: schema_version must be 1")
+    prefix = payload.get("prefix")
+    # Prefix is the complete ID namespace through SPEC, without its numeric suffix.
+    if not isinstance(prefix, str) or not re.fullmatch(
+        r"[A-Z][A-Z0-9]*(?:-[A-Z0-9]+)*-SPEC", prefix
+    ):
+        raise RuntimeError("Malformed spec-id policy: prefix must be a safe uppercase identifier")
+    aliases = payload.get("aliases")
+    if not isinstance(aliases, dict):
+        raise RuntimeError("Malformed spec-id policy: aliases must be an object")
+    normalized: dict[str, str] = {}
+    for key, value in aliases.items():
+        if not isinstance(key, str) or not isinstance(value, str):
+            raise RuntimeError(
+                "Malformed spec-id policy: aliases must map string IDs to string IDs"
+            )
+        parsed_key = parse_namespaced_spec_id(key)
+        parsed_value = parse_namespaced_spec_id(value)
+        if not parsed_key or not parsed_value:
+            raise RuntimeError(
+                "Malformed spec-id policy: alias IDs must use PREFIX-SPEC-number format"
+            )
+        if parsed_value[0] != prefix:
+            raise RuntimeError(
+                "Malformed spec-id policy: alias targets must use the selected prefix"
+            )
+        if key == value:
+            raise RuntimeError("Malformed spec-id policy: self aliases are not allowed")
+        normalized[key] = value
+    for alias_start in normalized:
+        seen: set[str] = set()
+        current = alias_start
+        while current in normalized:
+            if current in seen:
+                raise RuntimeError("Malformed spec-id policy: alias cycles are not allowed")
+            seen.add(current)
+            current = normalized[current]
+    return prefix, normalized
+
+
+def spec_id_is_supported(spec_id: str) -> bool:
+    return parse_namespaced_spec_id(spec_id) is not None
+
+
+def is_spec_id_allocation_error(error: RuntimeError) -> bool:
+    message = str(error)
+    return message.startswith(
+        ("Malformed spec-id policy:", "Malformed spec-id reservation registry:")
+    )
+
+
 def next_sequential_spec_id(specs: list[SpecNode]) -> str:
+    prefix, aliases = load_spec_id_policy()
+    reserved = all_reserved_child_spec_ids(specs)
     max_number = 0
-    for spec in specs:
-        match = SPEC_ID_PATTERN.match(spec.id)
-        if match:
-            max_number = max(max_number, int(match.group(1)))
-    return f"SG-SPEC-{max_number + 1:04d}"
+    for spec_id in {spec.id for spec in specs} | reserved | set(aliases) | set(aliases.values()):
+        parsed = parse_namespaced_spec_id(spec_id)
+        if parsed and parsed[0] == prefix:
+            max_number = max(max_number, parsed[1])
+    return f"{prefix}-{max_number + 1:04d}"
 
 
 def spec_id_from_relpath(rel_path: str) -> str:
@@ -6254,7 +6326,15 @@ def spec_id_from_relpath(rel_path: str) -> str:
     if not path_text:
         return ""
     stem = Path(path_text).stem
-    return stem if SPEC_ID_PATTERN.match(stem) else ""
+    return stem if spec_id_is_supported(stem) else ""
+
+
+def all_reserved_child_spec_ids(specs: list[SpecNode]) -> set[str]:
+    reserved = pending_review_reserved_spec_ids(specs)
+    reservations_path = spec_id_reservations_path()
+    if reservations_path.exists():
+        reserved.update(item["spec_id"] for item in load_spec_id_reservations())
+    return reserved
 
 
 def pending_review_reserved_spec_ids(specs: list[SpecNode]) -> set[str]:
@@ -6297,9 +6377,10 @@ def load_spec_id_reservations() -> list[dict[str, str]]:
         run_id = str(raw.get("run_id", "")).strip()
         source_spec_id = str(raw.get("source_spec_id", "")).strip()
         reserved_at = str(raw.get("reserved_at", "")).strip()
-        if not spec_id or not SPEC_ID_PATTERN.match(spec_id):
+        if not spec_id or not spec_id_is_supported(spec_id):
             raise RuntimeError(
-                "Malformed spec-id reservation registry: reservation spec_id must be SG-SPEC-XXXX"
+                "Malformed spec-id reservation registry: reservation spec_id must be "
+                "PREFIX-SPEC-number"
             )
         if spec_path != f"specs/nodes/{spec_id}.yaml":
             raise RuntimeError(
@@ -6328,24 +6409,22 @@ def reserve_child_materialization_spec_id(
     source_spec_id: str,
     run_id: str,
 ) -> dict[str, str]:
+    prefix, aliases = load_spec_id_policy()
     path = spec_id_reservations_path()
     RUNS_DIR.mkdir(parents=True, exist_ok=True)
     with artifact_lock(path):
         reservations = load_spec_id_reservations()
-        canonical_ids = {spec.id for spec in specs if SPEC_ID_PATTERN.match(spec.id)}
-        pending_ids = pending_review_reserved_spec_ids(specs)
-        active_ids = {
-            str(item.get("spec_id", "")).strip()
-            for item in reservations
-            if str(item.get("spec_id", "")).strip()
+        all_reserved = pending_review_reserved_spec_ids(specs) | {
+            str(item.get("spec_id", "")).strip() for item in reservations
         }
+        used_ids = {spec.id for spec in specs} | all_reserved | set(aliases) | set(aliases.values())
         used_numbers = {
-            int(match.group(1))
-            for spec_id in canonical_ids | pending_ids | active_ids
-            if (match := SPEC_ID_PATTERN.match(spec_id))
+            parsed[1]
+            for spec_id in used_ids
+            if (parsed := parse_namespaced_spec_id(spec_id)) and parsed[0] == prefix
         }
         next_number = max(used_numbers, default=0) + 1
-        child_id = f"SG-SPEC-{next_number:04d}"
+        child_id = f"{prefix}-{next_number:04d}"
         child_path = f"specs/nodes/{child_id}.yaml"
         reservations.append(
             {
@@ -12173,7 +12252,12 @@ def proposal_item_path(item: dict[str, Any]) -> Path:
 
 
 def run_log_paths() -> list[Path]:
-    return sorted(RUNS_DIR.glob("*-SG-SPEC-*.json"))
+    run_log_pattern = re.compile(r".+-([A-Z][A-Z0-9]*(?:-[A-Z0-9]+)*-SPEC-\d+)(?:-[^/]*)?\.json")
+    return sorted(
+        path
+        for path in RUNS_DIR.glob("*-SPEC-*.json")
+        if (match := run_log_pattern.fullmatch(path.name)) and spec_id_is_supported(match.group(1))
+    )
 
 
 def classify_refactor_work_item(signal: str) -> str:
@@ -15794,7 +15878,7 @@ def branch_rewrite_missing_relation_refs(
     for spec in selected_specs:
         for field in ("depends_on", "relates_to", "refines"):
             for ref in relation_ids(spec.data, field):
-                if SPEC_ID_PATTERN.match(ref) and ref not in index:
+                if spec_id_is_supported(ref) and ref not in index:
                     missing_refs.append(
                         {
                             "source": spec.id,
@@ -54769,8 +54853,15 @@ def _process_one_spec_with_recoverable_retry(
     max_retries: int = AUTO_RETRY_RECOVERABLE_VALIDATION_LIMIT,
 ) -> tuple[int, str, str, str] | int:
     """Run one spec and immediately retry once for known recoverable validator misses."""
+    try:
+        process_result = _process_one_spec(**process_kwargs)
+    except RuntimeError as exc:
+        if not is_spec_id_allocation_error(exc):
+            raise
+        print(str(exc), file=sys.stderr)
+        return 1, "", COMPLETION_STATUS_FAILED, "none"
     exit_code, outcome, completion_status, gate_state = normalize_process_one_spec_result(
-        _process_one_spec(**process_kwargs)
+        process_result
     )
     retry_count = 0
     current_kwargs = dict(process_kwargs)
@@ -54796,8 +54887,15 @@ def _process_one_spec_with_recoverable_retry(
         current_kwargs = dict(current_kwargs)
         current_kwargs["node"] = retry_node
         current_kwargs["specs"] = retry_specs
+        try:
+            process_result = _process_one_spec(**current_kwargs)
+        except RuntimeError as exc:
+            if not is_spec_id_allocation_error(exc):
+                raise
+            print(str(exc), file=sys.stderr)
+            return 1, "", COMPLETION_STATUS_FAILED, "none"
         exit_code, outcome, completion_status, gate_state = normalize_process_one_spec_result(
-            _process_one_spec(**current_kwargs)
+            process_result
         )
 
     return exit_code, outcome, completion_status, gate_state
@@ -59158,7 +59256,13 @@ def main(
             proposal_kwargs["supervisor_prompt_overlay"] = supervisor_prompt_overlay
         if callable_supports_keyword(_process_split_refactor_proposal, "verbose"):
             proposal_kwargs["verbose"] = verbose
-        exit_code, _outcome = _process_split_refactor_proposal(**proposal_kwargs)
+        try:
+            exit_code, _outcome = _process_split_refactor_proposal(**proposal_kwargs)
+        except RuntimeError as exc:
+            if not is_spec_id_allocation_error(exc):
+                raise
+            print(str(exc), file=sys.stderr)
+            return 1
         return exit_code
 
     if apply_split_proposal:
@@ -59217,13 +59321,19 @@ def main(
             operator_target=True,
         )
         print(f"Selected spec node: {node.id} — {node.title}")
-        preflight_errors = child_materialization_preflight_errors(
-            node=node,
-            specs=specs,
-            operator_target=True,
-            operator_note=operator_note,
-            run_authority=run_authority,
-        )
+        try:
+            preflight_errors = child_materialization_preflight_errors(
+                node=node,
+                specs=specs,
+                operator_target=True,
+                operator_note=operator_note,
+                run_authority=run_authority,
+            )
+        except RuntimeError as exc:
+            if not is_spec_id_allocation_error(exc):
+                raise
+            print(str(exc), file=sys.stderr)
+            return 1
         if preflight_errors:
             for error in preflight_errors:
                 print(error, file=sys.stderr)
@@ -59236,14 +59346,20 @@ def main(
                 f"Status: {node.status} | Maturity: {node.maturity:.2f} | Gate: {node.gate_state}"
             )
             print(f"Selection context: {json.dumps(selected_by_rule, ensure_ascii=False)}")
-            prompt = build_prompt(
-                node,
-                operator_target=True,
-                operator_note=operator_note,
-                mutation_budget=mutation_budget,
-                run_authority=run_authority,
-                supervisor_prompt_overlay=supervisor_prompt_overlay,
-            )
+            try:
+                prompt = build_prompt(
+                    node,
+                    operator_target=True,
+                    operator_note=operator_note,
+                    mutation_budget=mutation_budget,
+                    run_authority=run_authority,
+                    supervisor_prompt_overlay=supervisor_prompt_overlay,
+                )
+            except RuntimeError as exc:
+                if not is_spec_id_allocation_error(exc):
+                    raise
+                print(str(exc), file=sys.stderr)
+                return 1
             print(f"\n{prompt}")
             return 0
 
@@ -59378,13 +59494,19 @@ def main(
             "recommended_action": str(refactor_work_item.get("recommended_action", "")),
             "source_run_id": str(refactor_work_item.get("source_run_id", "")),
         }
-    selected_by_rule["execution_profile"] = infer_ordinary_execution_profile_name(
-        node=node,
-        specs=specs,
-        requested_profile=execution_profile,
-        operator_target=False,
-        run_authority=(),
-    )
+    try:
+        selected_by_rule["execution_profile"] = infer_ordinary_execution_profile_name(
+            node=node,
+            specs=specs,
+            requested_profile=execution_profile,
+            operator_target=False,
+            run_authority=(),
+        )
+    except RuntimeError as exc:
+        if not is_spec_id_allocation_error(exc):
+            raise
+        print(str(exc), file=sys.stderr)
+        return 1
 
     print(f"Selected spec node: {node.id} — {node.title}")
 
@@ -59393,11 +59515,17 @@ def main(
         print(f"Would execute prompt for: {node.id}")
         print(f"Status: {node.status} | Maturity: {node.maturity:.2f} | Gate: {node.gate_state}")
         print(f"Selection context: {json.dumps(selected_by_rule, ensure_ascii=False)}")
-        prompt = build_prompt(
-            node,
-            refactor_work_item,
-            supervisor_prompt_overlay=supervisor_prompt_overlay,
-        )
+        try:
+            prompt = build_prompt(
+                node,
+                refactor_work_item,
+                supervisor_prompt_overlay=supervisor_prompt_overlay,
+            )
+        except RuntimeError as exc:
+            if not is_spec_id_allocation_error(exc):
+                raise
+            print(str(exc), file=sys.stderr)
+            return 1
         print(f"\n{prompt}")
         return 0
 
