@@ -41584,3 +41584,21 @@ def test_product_workspace_index_excludes_non_decision_canonical_nodes(
     assert index.specs == ()
     assert index.decisions.by_id == {}
     assert index.decisions.by_key == {}
+
+
+@pytest.mark.parametrize("field", ["depends_on", "relates_to", "refines"])
+def test_branch_rewrite_reports_missing_product_reference(
+    supervisor_module: object, field: str
+) -> None:
+    node = supervisor_module.SpecNode(
+        path=Path("ZEU-SPEC-0006.yaml"),
+        data={"id": "ZEU-SPEC-0006", field: ["ZEU-SPEC-0008"]},
+    )
+    assert supervisor_module.branch_rewrite_missing_relation_refs([node], [node]) == [
+        {
+            "source": "ZEU-SPEC-0006",
+            "field": field,
+            "target": "ZEU-SPEC-0008",
+            "finding": "missing_spec_reference",
+        }
+    ]

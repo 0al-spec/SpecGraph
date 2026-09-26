@@ -15866,7 +15866,7 @@ def branch_rewrite_missing_relation_refs(
     for spec in selected_specs:
         for field in ("depends_on", "relates_to", "refines"):
             for ref in relation_ids(spec.data, field):
-                if SPEC_ID_PATTERN.match(ref) and ref not in index:
+                if spec_id_is_supported(ref) and ref not in index:
                     missing_refs.append(
                         {
                             "source": spec.id,
