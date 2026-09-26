@@ -1598,7 +1598,11 @@ the migration map in the selected namespace. Alias records retire identifiers;
 they do not create nodes, rewrite references, or grant approval authority.
 Keep the migration map structured and versioned rather than relying on prose
 or historical run logs. Invalid configuration fails before a reservation is
-written. Changing the namespace does not rewrite an existing review candidate:
+written. This failure is scoped to child-ID allocation and hinting; unrelated
+gate resolution and read-only artifact builders remain available. Run-log
+discovery includes supported product namespaces alongside SG-SPEC. Malformed
+reservation history encountered during hinting returns a normal CLI error.
+Changing the namespace does not rewrite an existing review candidate:
 reject that candidate for retry and materialize again under the new policy.
 
 Current high-value authority:

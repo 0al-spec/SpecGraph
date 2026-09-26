@@ -1570,6 +1570,24 @@ def test_child_spec_id_reservations_skip_pending_review_and_active_reservations(
     assert [item["spec_id"] for item in payload["reservations"]] == ["SG-SPEC-0005"]
 
 
+def test_run_log_paths_include_product_namespace_and_ignore_invalid_spec_suffixes(
+    supervisor_module: object,
+    repo_fixture: Path,
+) -> None:
+    run_ids = [
+        "20260926T000000Z-SG-SPEC-0001-a1b2c3d4",
+        "20260926T000001Z-ZEU-SPEC-0002-e5f6a7b8",
+        "20260926T000002Z-ZEU-SPEC-invalid-11223344",
+    ]
+    for run_id in run_ids:
+        (repo_fixture / "runs" / f"{run_id}.json").write_text("{}", encoding="utf-8")
+
+    assert [path.name for path in supervisor_module.run_log_paths()] == [
+        f"{run_ids[0]}.json",
+        f"{run_ids[1]}.json",
+    ]
+
+
 def test_spec_id_policy_default_prefix_and_namespaced_allocation(
     supervisor_module: object,
     repo_fixture: Path,
@@ -7862,6 +7880,53 @@ def test_main_builds_vocabulary_drift_report_as_standalone_command(
         (repo_fixture / "runs" / "vocabulary_drift_report.json").read_text(encoding="utf-8")
     )
     assert persisted["artifact_kind"] == "vocabulary_drift_report"
+
+
+def test_main_vocabulary_report_ignores_invalid_allocation_policy(
+    supervisor_module: object,
+    repo_fixture: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    policy_path = repo_fixture / ".specgraph" / "spec-id-policy.json"
+    policy_path.parent.mkdir()
+    policy_path.write_text('{"schema_version": 99}', encoding="utf-8")
+    monkeypatch.setattr(
+        supervisor_module,
+        "build_vocabulary_drift_report",
+        lambda _specs: {"artifact_kind": "vocabulary_drift_report", "findings": []},
+    )
+
+    exit_code = supervisor_module.main(build_vocabulary_drift_report_mode=True)
+
+    assert exit_code == 0
+    assert json.loads(capsys.readouterr().out)["artifact_kind"] == "vocabulary_drift_report"
+
+
+@pytest.mark.parametrize(
+    "execution_profile,dry_run", [(None, True), ("standard", True), (None, False)]
+)
+def test_main_ordinary_run_reports_malformed_reservation_registry_cleanly(
+    supervisor_module: object,
+    repo_fixture: Path,
+    capsys: pytest.CaptureFixture[str],
+    execution_profile: str | None,
+    dry_run: bool,
+) -> None:
+    node_path = repo_fixture / "specs" / "nodes" / "SG-SPEC-0001.yaml"
+    data = supervisor_module.get_yaml_module().safe_load(node_path.read_text(encoding="utf-8"))
+    data["prompt"] = "This spec is a seed ontology. Use child specs to refine unresolved areas."
+    data["allowed_paths"] = ["specs/nodes/*.yaml"]
+    node_path.write_text(json.dumps(data), encoding="utf-8")
+    reservation_path = repo_fixture / "runs" / "spec_id_reservations.json"
+    reservation_path.write_text('{"reservations": "invalid"}', encoding="utf-8")
+
+    exit_code = supervisor_module.main(dry_run=dry_run, execution_profile=execution_profile)
+
+    captured = capsys.readouterr()
+    assert exit_code == 1
+    assert "Malformed spec-id reservation registry" in captured.err
+    assert "Traceback" not in captured.err
 
 
 def test_main_builds_pre_spec_semantics_index_as_standalone_command(

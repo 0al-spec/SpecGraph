@@ -6303,6 +6303,13 @@ def spec_id_is_supported(spec_id: str) -> bool:
     return parse_namespaced_spec_id(spec_id) is not None
 
 
+def is_spec_id_allocation_error(error: RuntimeError) -> bool:
+    message = str(error)
+    return message.startswith(
+        ("Malformed spec-id policy:", "Malformed spec-id reservation registry:")
+    )
+
+
 def next_sequential_spec_id(specs: list[SpecNode]) -> str:
     prefix, aliases = load_spec_id_policy()
     reserved = all_reserved_child_spec_ids(specs)
@@ -12245,7 +12252,12 @@ def proposal_item_path(item: dict[str, Any]) -> Path:
 
 
 def run_log_paths() -> list[Path]:
-    return sorted(RUNS_DIR.glob("*-SG-SPEC-*.json"))
+    run_log_pattern = re.compile(r".+-([A-Z][A-Z0-9]*(?:-[A-Z0-9]+)*-SPEC-\d+)(?:-[^/]*)?\.json")
+    return sorted(
+        path
+        for path in RUNS_DIR.glob("*-SPEC-*.json")
+        if (match := run_log_pattern.fullmatch(path.name)) and spec_id_is_supported(match.group(1))
+    )
 
 
 def classify_refactor_work_item(signal: str) -> str:
@@ -54841,8 +54853,15 @@ def _process_one_spec_with_recoverable_retry(
     max_retries: int = AUTO_RETRY_RECOVERABLE_VALIDATION_LIMIT,
 ) -> tuple[int, str, str, str] | int:
     """Run one spec and immediately retry once for known recoverable validator misses."""
+    try:
+        process_result = _process_one_spec(**process_kwargs)
+    except RuntimeError as exc:
+        if not is_spec_id_allocation_error(exc):
+            raise
+        print(str(exc), file=sys.stderr)
+        return 1, "", COMPLETION_STATUS_FAILED, "none"
     exit_code, outcome, completion_status, gate_state = normalize_process_one_spec_result(
-        _process_one_spec(**process_kwargs)
+        process_result
     )
     retry_count = 0
     current_kwargs = dict(process_kwargs)
@@ -54868,8 +54887,15 @@ def _process_one_spec_with_recoverable_retry(
         current_kwargs = dict(current_kwargs)
         current_kwargs["node"] = retry_node
         current_kwargs["specs"] = retry_specs
+        try:
+            process_result = _process_one_spec(**current_kwargs)
+        except RuntimeError as exc:
+            if not is_spec_id_allocation_error(exc):
+                raise
+            print(str(exc), file=sys.stderr)
+            return 1, "", COMPLETION_STATUS_FAILED, "none"
         exit_code, outcome, completion_status, gate_state = normalize_process_one_spec_result(
-            _process_one_spec(**current_kwargs)
+            process_result
         )
 
     return exit_code, outcome, completion_status, gate_state
@@ -57012,7 +57038,6 @@ def main(
 
     try:
         specs = load_specs()
-        load_spec_id_policy()
     except RuntimeError as exc:
         print(str(exc), file=sys.stderr)
         return 1
@@ -59231,7 +59256,13 @@ def main(
             proposal_kwargs["supervisor_prompt_overlay"] = supervisor_prompt_overlay
         if callable_supports_keyword(_process_split_refactor_proposal, "verbose"):
             proposal_kwargs["verbose"] = verbose
-        exit_code, _outcome = _process_split_refactor_proposal(**proposal_kwargs)
+        try:
+            exit_code, _outcome = _process_split_refactor_proposal(**proposal_kwargs)
+        except RuntimeError as exc:
+            if not is_spec_id_allocation_error(exc):
+                raise
+            print(str(exc), file=sys.stderr)
+            return 1
         return exit_code
 
     if apply_split_proposal:
@@ -59290,13 +59321,19 @@ def main(
             operator_target=True,
         )
         print(f"Selected spec node: {node.id} — {node.title}")
-        preflight_errors = child_materialization_preflight_errors(
-            node=node,
-            specs=specs,
-            operator_target=True,
-            operator_note=operator_note,
-            run_authority=run_authority,
-        )
+        try:
+            preflight_errors = child_materialization_preflight_errors(
+                node=node,
+                specs=specs,
+                operator_target=True,
+                operator_note=operator_note,
+                run_authority=run_authority,
+            )
+        except RuntimeError as exc:
+            if not is_spec_id_allocation_error(exc):
+                raise
+            print(str(exc), file=sys.stderr)
+            return 1
         if preflight_errors:
             for error in preflight_errors:
                 print(error, file=sys.stderr)
@@ -59309,14 +59346,20 @@ def main(
                 f"Status: {node.status} | Maturity: {node.maturity:.2f} | Gate: {node.gate_state}"
             )
             print(f"Selection context: {json.dumps(selected_by_rule, ensure_ascii=False)}")
-            prompt = build_prompt(
-                node,
-                operator_target=True,
-                operator_note=operator_note,
-                mutation_budget=mutation_budget,
-                run_authority=run_authority,
-                supervisor_prompt_overlay=supervisor_prompt_overlay,
-            )
+            try:
+                prompt = build_prompt(
+                    node,
+                    operator_target=True,
+                    operator_note=operator_note,
+                    mutation_budget=mutation_budget,
+                    run_authority=run_authority,
+                    supervisor_prompt_overlay=supervisor_prompt_overlay,
+                )
+            except RuntimeError as exc:
+                if not is_spec_id_allocation_error(exc):
+                    raise
+                print(str(exc), file=sys.stderr)
+                return 1
             print(f"\n{prompt}")
             return 0
 
@@ -59451,13 +59494,19 @@ def main(
             "recommended_action": str(refactor_work_item.get("recommended_action", "")),
             "source_run_id": str(refactor_work_item.get("source_run_id", "")),
         }
-    selected_by_rule["execution_profile"] = infer_ordinary_execution_profile_name(
-        node=node,
-        specs=specs,
-        requested_profile=execution_profile,
-        operator_target=False,
-        run_authority=(),
-    )
+    try:
+        selected_by_rule["execution_profile"] = infer_ordinary_execution_profile_name(
+            node=node,
+            specs=specs,
+            requested_profile=execution_profile,
+            operator_target=False,
+            run_authority=(),
+        )
+    except RuntimeError as exc:
+        if not is_spec_id_allocation_error(exc):
+            raise
+        print(str(exc), file=sys.stderr)
+        return 1
 
     print(f"Selected spec node: {node.id} — {node.title}")
 
@@ -59466,11 +59515,17 @@ def main(
         print(f"Would execute prompt for: {node.id}")
         print(f"Status: {node.status} | Maturity: {node.maturity:.2f} | Gate: {node.gate_state}")
         print(f"Selection context: {json.dumps(selected_by_rule, ensure_ascii=False)}")
-        prompt = build_prompt(
-            node,
-            refactor_work_item,
-            supervisor_prompt_overlay=supervisor_prompt_overlay,
-        )
+        try:
+            prompt = build_prompt(
+                node,
+                refactor_work_item,
+                supervisor_prompt_overlay=supervisor_prompt_overlay,
+            )
+        except RuntimeError as exc:
+            if not is_spec_id_allocation_error(exc):
+                raise
+            print(str(exc), file=sys.stderr)
+            return 1
         print(f"\n{prompt}")
         return 0
 

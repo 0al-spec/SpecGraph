@@ -1070,7 +1070,10 @@ Product child allocation can use `.specgraph/spec-id-policy.json` with
 retired IDs to current IDs. Without this file, the supervisor retains the
 `SG-SPEC` default. Canonical nodes, pending-review children, active reservations,
 and alias keys and values reserve their identifiers in the selected namespace.
-Malformed policy stops allocation before writing a reservation. Aliases are
+Malformed policy stops allocation before writing a reservation; unrelated gate
+resolution and read-only builders remain available. Run discovery includes
+supported product namespaces, and malformed reservation history during hinting
+returns a normal CLI error. Aliases are
 allocation history, not lookup aliases or approval authority. Existing review
 candidates keep their original identity and must be retried after a policy
 change; the allocator does not migrate them automatically.
