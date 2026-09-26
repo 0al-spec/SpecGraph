@@ -1,6 +1,15 @@
 {
   "groups": [
     {
+      "id": "product-spec-id-allocation",
+      "description": "Product child allocation namespaces and migration history stay aligned across operator docs and DocC.",
+      "docs": ["docs/supervisor_manual.md", "CONTRIBUTING.md"],
+      "docc": ["Sources/SpecGraph/Documentation.docc/ProductWorkspacePilots.md"],
+      "required_terms": [".specgraph/spec-id-policy.json", "namespace", "pending-review"],
+      "docs_required_terms": ["aliases", "ZEU-SPEC"],
+      "docc_required_terms": ["aliases", "ZEU-SPEC"]
+    },
+    {
       "id": "static-artifact-publishing",
       "description": "Static artifact and GitHub Pages publication rules must stay aligned between repository docs and DocC.",
       "docs": [

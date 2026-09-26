@@ -1570,6 +1570,173 @@ def test_child_spec_id_reservations_skip_pending_review_and_active_reservations(
     assert [item["spec_id"] for item in payload["reservations"]] == ["SG-SPEC-0005"]
 
 
+def test_spec_id_policy_default_prefix_and_namespaced_allocation(
+    supervisor_module: object,
+    repo_fixture: Path,
+) -> None:
+    specs = supervisor_module.load_specs()
+    assert supervisor_module.next_sequential_spec_id(specs) == "SG-SPEC-0002"
+    policy_path = repo_fixture / ".specgraph" / "spec-id-policy.json"
+    policy_path.parent.mkdir(parents=True)
+    policy_path.write_text(
+        json.dumps({"schema_version": 1, "prefix": "ZEU-SPEC", "aliases": {}}),
+        encoding="utf-8",
+    )
+    # Existing SG-SPEC nodes do not occupy the product namespace.
+    specs.extend(
+        [
+            supervisor_module.SpecNode(data={"id": f"ZEU-SPEC-{number:04d}"}, path=Path("."))
+            for number in range(1, 8)
+        ]
+    )
+    assert supervisor_module.next_sequential_spec_id(specs) == "ZEU-SPEC-0008"
+
+
+def test_spec_id_policy_aliases_retire_both_alias_ids(
+    supervisor_module: object,
+    repo_fixture: Path,
+) -> None:
+    policy_path = repo_fixture / ".specgraph" / "spec-id-policy.json"
+    policy_path.parent.mkdir(parents=True)
+    policy_path.write_text(
+        json.dumps(
+            {
+                "schema_version": 1,
+                "prefix": "ZEU-SPEC",
+                "aliases": {
+                    "SG-SPEC-0001": "ZEU-SPEC-0005",
+                    "ZEU-SPEC-0012": "ZEU-SPEC-0005",
+                },
+            }
+        ),
+        encoding="utf-8",
+    )
+    assert (
+        supervisor_module.reserve_child_materialization_spec_id(
+            specs=supervisor_module.load_specs(), source_spec_id="SG-SPEC-0001", run_id="RUN-ALIAS"
+        )["id"]
+        == "ZEU-SPEC-0013"
+    )
+
+
+def test_spec_id_policy_skips_active_and_pending_product_reservations(
+    supervisor_module: object,
+    repo_fixture: Path,
+) -> None:
+    policy_path = repo_fixture / ".specgraph" / "spec-id-policy.json"
+    policy_path.parent.mkdir(parents=True)
+    policy_path.write_text(
+        json.dumps({"schema_version": 1, "prefix": "ZEU-SPEC", "aliases": {}}), encoding="utf-8"
+    )
+    specs = supervisor_module.load_specs()
+    specs[0].data.update(
+        {
+            "gate_state": "review_pending",
+            "last_materialized_child_paths": ["specs/nodes/ZEU-SPEC-0003.yaml"],
+        }
+    )
+    reservation_path = repo_fixture / "runs" / "spec_id_reservations.json"
+    reservation_path.write_text(
+        json.dumps(
+            {
+                "reservations": [
+                    {
+                        "spec_id": "ZEU-SPEC-0002",
+                        "spec_path": "specs/nodes/ZEU-SPEC-0002.yaml",
+                        "run_id": "RUN-A",
+                        "source_spec_id": "SG-SPEC-0001",
+                        "reserved_at": "now",
+                    }
+                ]
+            }
+        ),
+        encoding="utf-8",
+    )
+    assert supervisor_module.next_sequential_spec_id(specs) == "ZEU-SPEC-0004"
+    assert (
+        supervisor_module.reserve_child_materialization_spec_id(
+            specs=specs, source_spec_id="SG-SPEC-0001", run_id="RUN-B"
+        )["id"]
+        == "ZEU-SPEC-0004"
+    )
+
+
+@pytest.mark.parametrize(
+    "policy",
+    [
+        {"schema_version": 2, "prefix": "ZEU-SPEC", "aliases": {}},
+        {"schema_version": True, "prefix": "ZEU-SPEC", "aliases": {}},
+        {"schema_version": 1, "prefix": "../tmp", "aliases": {}},
+        {"schema_version": 1, "prefix": "ZEU-SPEC", "aliases": {"bad": "ZEU-SPEC-0001"}},
+        {"schema_version": 1, "prefix": "ZEU-SPEC", "aliases": {"SG-SPEC-0001": "OTHER-SPEC-0001"}},
+        {"schema_version": 1, "prefix": "ZEU-SPEC", "aliases": {"ZEU-SPEC-0001": "ZEU-SPEC-0001"}},
+        {
+            "schema_version": 1,
+            "prefix": "ZEU-SPEC",
+            "aliases": {"ZEU-SPEC-0001": "ZEU-SPEC-0002", "ZEU-SPEC-0002": "ZEU-SPEC-0001"},
+        },
+    ],
+)
+def test_malformed_spec_id_policy_fails_closed_without_mutation(
+    supervisor_module: object,
+    repo_fixture: Path,
+    policy: dict[str, object],
+) -> None:
+    policy_path = repo_fixture / ".specgraph" / "spec-id-policy.json"
+    policy_path.parent.mkdir(parents=True)
+    policy_path.write_text(json.dumps(policy), encoding="utf-8")
+    reservations_path = repo_fixture / "runs" / "spec_id_reservations.json"
+    reservations_path.write_text(
+        json.dumps(
+            {
+                "reservations": [
+                    {
+                        "spec_id": "SG-SPEC-0009",
+                        "spec_path": "specs/nodes/SG-SPEC-0009.yaml",
+                        "run_id": "RUN-EXISTING",
+                        "source_spec_id": "SG-SPEC-0001",
+                        "reserved_at": "now",
+                    }
+                ]
+            }
+        ),
+        encoding="utf-8",
+    )
+    before = reservations_path.read_bytes() if reservations_path.exists() else None
+    with pytest.raises(RuntimeError, match="Malformed spec-id policy"):
+        supervisor_module.reserve_child_materialization_spec_id(
+            specs=supervisor_module.load_specs(), source_spec_id="SG-SPEC-0001", run_id="RUN-BAD"
+        )
+    assert (reservations_path.read_bytes() if reservations_path.exists() else None) == before
+
+
+@pytest.mark.parametrize("dry_run", [True, False])
+def test_cli_rejects_invalid_id_policy_before_child_hint_or_executor(
+    supervisor_module: object,
+    repo_fixture: Path,
+    capsys: pytest.CaptureFixture[str],
+    dry_run: bool,
+) -> None:
+    policy_path = repo_fixture / ".specgraph" / "spec-id-policy.json"
+    policy_path.parent.mkdir(parents=True)
+    policy_path.write_text(
+        json.dumps({"schema_version": True, "prefix": "ZEU-SPEC", "aliases": {}}),
+        encoding="utf-8",
+    )
+    calls: list[object] = []
+    result = supervisor_module.main(
+        executor=lambda *args: calls.append(args),
+        dry_run=dry_run,
+        target_spec="SG-SPEC-0001",
+        operator_note="Materialize one bounded child spec.",
+        run_authority=(supervisor_module.RUN_AUTHORITY_MATERIALIZE_ONE_CHILD,),
+    )
+    assert result == 1
+    assert "Malformed spec-id policy: schema_version must be 1" in capsys.readouterr().err
+    assert calls == []
+    assert not (repo_fixture / "runs" / "spec_id_reservations.json").exists()
+
+
 def test_sanitize_spec_sync_text_removes_runtime_only_keys(supervisor_module: object) -> None:
     source = """id: SG-SPEC-9999
 title: Draft

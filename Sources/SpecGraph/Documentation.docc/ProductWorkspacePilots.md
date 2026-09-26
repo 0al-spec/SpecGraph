@@ -1065,6 +1065,16 @@ governance dependency, recorded by digest in the advisory artifact.
 
 ## Durable workspace binding evidence
 
+Product child allocation can use `.specgraph/spec-id-policy.json` with
+`schema_version: 1`, `prefix: "ZEU-SPEC"`, and an `aliases` object mapping
+retired IDs to current IDs. Without this file, the supervisor retains the
+`SG-SPEC` default. Canonical nodes, pending-review children, active reservations,
+and alias keys and values reserve their identifiers in the selected namespace.
+Malformed policy stops allocation before writing a reservation. Aliases are
+allocation history, not lookup aliases or approval authority. Existing review
+candidates keep their original identity and must be retried after a policy
+change; the allocator does not migrate them automatically.
+
 Proposal `0211` adds a public-safe `workspace_binding_evidence` descriptor to
 the SpecGraph product workspace initialization receipt. The descriptor pins
 workspace identity, relative layout roots, project-config digest, and

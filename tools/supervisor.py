@@ -4338,6 +4338,8 @@ COMPLETION_STATUS_OK = "ok"
 COMPLETION_STATUS_PROGRESSED = "progressed"
 COMPLETION_STATUS_FAILED = "failed"
 SPEC_ID_PATTERN = re.compile(r"^SG-SPEC-(\d+)$")
+NAMESPACED_SPEC_ID_PATTERN = re.compile(r"^([A-Z][A-Z0-9]*(?:-[A-Z0-9]+)*-SPEC)-(\d+)$")
+SPEC_ID_POLICY_PATH_NAME = ".specgraph/spec-id-policy.json"
 SEMANTIC_WORD_RE = re.compile(r"[A-Za-z0-9][A-Za-z0-9_-]*")
 BACKTICK_TOKEN_RE = re.compile(r"`([^`]+)`")
 UPPER_IDENTIFIER_RE = re.compile(r"\b[A-Z]{2,}(?:-[A-Z0-9]+)+\b")
@@ -6240,13 +6242,76 @@ def snapshot_sync_digests(paths: list[str], base_dir: Path) -> dict[str, str | N
     return digests
 
 
+def parse_namespaced_spec_id(spec_id: str) -> tuple[str, int] | None:
+    match = NAMESPACED_SPEC_ID_PATTERN.fullmatch(spec_id)
+    if not match:
+        return None
+    return match.group(1), int(match.group(2))
+
+
+def load_spec_id_policy() -> tuple[str, dict[str, str]]:
+    path = ROOT / SPEC_ID_POLICY_PATH_NAME
+    if not path.exists():
+        return "SG-SPEC", {}
+    payload, error = load_json_object_report(path, artifact_kind="spec-id policy")
+    if payload is None or set(payload) != {"schema_version", "prefix", "aliases"}:
+        raise RuntimeError(
+            error or "Malformed spec-id policy: expected schema_version, prefix, aliases"
+        )
+    if type(payload.get("schema_version")) is not int or payload.get("schema_version") != 1:
+        raise RuntimeError("Malformed spec-id policy: schema_version must be 1")
+    prefix = payload.get("prefix")
+    # Prefix is the complete ID namespace through SPEC, without its numeric suffix.
+    if not isinstance(prefix, str) or not re.fullmatch(
+        r"[A-Z][A-Z0-9]*(?:-[A-Z0-9]+)*-SPEC", prefix
+    ):
+        raise RuntimeError("Malformed spec-id policy: prefix must be a safe uppercase identifier")
+    aliases = payload.get("aliases")
+    if not isinstance(aliases, dict):
+        raise RuntimeError("Malformed spec-id policy: aliases must be an object")
+    normalized: dict[str, str] = {}
+    for key, value in aliases.items():
+        if not isinstance(key, str) or not isinstance(value, str):
+            raise RuntimeError(
+                "Malformed spec-id policy: aliases must map string IDs to string IDs"
+            )
+        parsed_key = parse_namespaced_spec_id(key)
+        parsed_value = parse_namespaced_spec_id(value)
+        if not parsed_key or not parsed_value:
+            raise RuntimeError(
+                "Malformed spec-id policy: alias IDs must use PREFIX-SPEC-number format"
+            )
+        if parsed_value[0] != prefix:
+            raise RuntimeError(
+                "Malformed spec-id policy: alias targets must use the selected prefix"
+            )
+        if key == value:
+            raise RuntimeError("Malformed spec-id policy: self aliases are not allowed")
+        normalized[key] = value
+    for alias_start in normalized:
+        seen: set[str] = set()
+        current = alias_start
+        while current in normalized:
+            if current in seen:
+                raise RuntimeError("Malformed spec-id policy: alias cycles are not allowed")
+            seen.add(current)
+            current = normalized[current]
+    return prefix, normalized
+
+
+def spec_id_is_supported(spec_id: str) -> bool:
+    return parse_namespaced_spec_id(spec_id) is not None
+
+
 def next_sequential_spec_id(specs: list[SpecNode]) -> str:
+    prefix, aliases = load_spec_id_policy()
+    reserved = all_reserved_child_spec_ids(specs)
     max_number = 0
-    for spec in specs:
-        match = SPEC_ID_PATTERN.match(spec.id)
-        if match:
-            max_number = max(max_number, int(match.group(1)))
-    return f"SG-SPEC-{max_number + 1:04d}"
+    for spec_id in {spec.id for spec in specs} | reserved | set(aliases) | set(aliases.values()):
+        parsed = parse_namespaced_spec_id(spec_id)
+        if parsed and parsed[0] == prefix:
+            max_number = max(max_number, parsed[1])
+    return f"{prefix}-{max_number + 1:04d}"
 
 
 def spec_id_from_relpath(rel_path: str) -> str:
@@ -6254,7 +6319,15 @@ def spec_id_from_relpath(rel_path: str) -> str:
     if not path_text:
         return ""
     stem = Path(path_text).stem
-    return stem if SPEC_ID_PATTERN.match(stem) else ""
+    return stem if spec_id_is_supported(stem) else ""
+
+
+def all_reserved_child_spec_ids(specs: list[SpecNode]) -> set[str]:
+    reserved = pending_review_reserved_spec_ids(specs)
+    reservations_path = spec_id_reservations_path()
+    if reservations_path.exists():
+        reserved.update(item["spec_id"] for item in load_spec_id_reservations())
+    return reserved
 
 
 def pending_review_reserved_spec_ids(specs: list[SpecNode]) -> set[str]:
@@ -6297,9 +6370,10 @@ def load_spec_id_reservations() -> list[dict[str, str]]:
         run_id = str(raw.get("run_id", "")).strip()
         source_spec_id = str(raw.get("source_spec_id", "")).strip()
         reserved_at = str(raw.get("reserved_at", "")).strip()
-        if not spec_id or not SPEC_ID_PATTERN.match(spec_id):
+        if not spec_id or not spec_id_is_supported(spec_id):
             raise RuntimeError(
-                "Malformed spec-id reservation registry: reservation spec_id must be SG-SPEC-XXXX"
+                "Malformed spec-id reservation registry: reservation spec_id must be "
+                "PREFIX-SPEC-number"
             )
         if spec_path != f"specs/nodes/{spec_id}.yaml":
             raise RuntimeError(
@@ -6328,24 +6402,22 @@ def reserve_child_materialization_spec_id(
     source_spec_id: str,
     run_id: str,
 ) -> dict[str, str]:
+    prefix, aliases = load_spec_id_policy()
     path = spec_id_reservations_path()
     RUNS_DIR.mkdir(parents=True, exist_ok=True)
     with artifact_lock(path):
         reservations = load_spec_id_reservations()
-        canonical_ids = {spec.id for spec in specs if SPEC_ID_PATTERN.match(spec.id)}
-        pending_ids = pending_review_reserved_spec_ids(specs)
-        active_ids = {
-            str(item.get("spec_id", "")).strip()
-            for item in reservations
-            if str(item.get("spec_id", "")).strip()
+        all_reserved = pending_review_reserved_spec_ids(specs) | {
+            str(item.get("spec_id", "")).strip() for item in reservations
         }
+        used_ids = {spec.id for spec in specs} | all_reserved | set(aliases) | set(aliases.values())
         used_numbers = {
-            int(match.group(1))
-            for spec_id in canonical_ids | pending_ids | active_ids
-            if (match := SPEC_ID_PATTERN.match(spec_id))
+            parsed[1]
+            for spec_id in used_ids
+            if (parsed := parse_namespaced_spec_id(spec_id)) and parsed[0] == prefix
         }
         next_number = max(used_numbers, default=0) + 1
-        child_id = f"SG-SPEC-{next_number:04d}"
+        child_id = f"{prefix}-{next_number:04d}"
         child_path = f"specs/nodes/{child_id}.yaml"
         reservations.append(
             {
@@ -56940,6 +57012,7 @@ def main(
 
     try:
         specs = load_specs()
+        load_spec_id_policy()
     except RuntimeError as exc:
         print(str(exc), file=sys.stderr)
         return 1

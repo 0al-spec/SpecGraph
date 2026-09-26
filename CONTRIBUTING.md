@@ -391,6 +391,12 @@ make next-move
 
 ## Practical Lessons
 
+- Product workspace child IDs need an explicit namespace and structured migration
+  history. Use `.specgraph/spec-id-policy.json` (for example, `prefix: ZEU-SPEC`);
+  reserve alias keys and values as
+  well as canonical, pending-review, and active IDs. A migration written only in
+  Markdown cannot prevent the allocator from reusing a retired identifier.
+
 - Brittle string markers are a common source of false evidence gaps. Prefer stable phrases, IDs, or structured anchors.
 - Live trace tests that assert `implementation_state.status = verified` must control dirty-worktree inputs, usually by stubbing `git_status_changed_files`, because local edits to declared code or test surfaces legitimately produce `in_progress`.
 - If generated artifacts show old data, rebuild the specific surface before assuming the viewer is wrong.

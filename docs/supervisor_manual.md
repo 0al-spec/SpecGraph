@@ -1579,6 +1579,28 @@ child spec id and adds that reserved child path to the run-local allowed paths.
 The parent spec's canonical `allowed_paths` remains node-local after sync-back;
 the child gets its own `allowed_paths` in the materialized child file.
 
+A product workspace can declare its allocation namespace in
+`.specgraph/spec-id-policy.json`:
+
+```json
+{
+  "schema_version": 1,
+  "prefix": "ZEU-SPEC",
+  "aliases": {
+    "SG-SPEC-0001": "ZEU-SPEC-0005"
+  }
+}
+```
+
+Without this file, allocation retains the `SG-SPEC` default. Allocation skips
+canonical IDs, pending-review children, active reservations, and both sides of
+the migration map in the selected namespace. Alias records retire identifiers;
+they do not create nodes, rewrite references, or grant approval authority.
+Keep the migration map structured and versioned rather than relying on prose
+or historical run logs. Invalid configuration fails before a reservation is
+written. Changing the namespace does not rewrite an existing review candidate:
+reject that candidate for retry and materialize again under the new policy.
+
 Current high-value authority:
 
 - `materialize_one_child`
