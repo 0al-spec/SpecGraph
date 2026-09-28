@@ -63,16 +63,13 @@ jobs:
             > "${RUNNER_TEMP}/pull-request.json"
           echo "base_sha=$(jq -r '.base.sha' "${RUNNER_TEMP}/pull-request.json")" \
             >> "${GITHUB_ENV}"
-          echo "base_ref=$(jq -r '.base.ref' "${RUNNER_TEMP}/pull-request.json")" \
-            >> "${GITHUB_ENV}"
 
       - name: Fetch PR revisions as Git objects
         env:
           PR_NUMBER: ${{ matrix.pr_number }}
         run: |
-          git check-ref-format --branch "${base_ref}"
-          git fetch --no-tags origin \
-            "+refs/heads/${base_ref}:refs/remotes/pr-base/${PR_NUMBER}"
+          # Fetch the exact recorded base revision; the checkout is intentionally shallow.
+          git fetch --no-tags origin "${base_sha}"
           git fetch --no-tags --depth=1 origin \
             "+refs/pull/${PR_NUMBER}/head:refs/remotes/pull/${PR_NUMBER}/head"
           git cat-file -e "${base_sha}^{commit}"
