@@ -433,7 +433,7 @@
     },
     {
       "id": "evidence-claim-admission",
-      "description": "Bounded source admission must not promote runtime claims.",
+      "description": "Bounded source and runtime admission must derive results from pinned live Feature Passport verification.",
       "docs": [
         "docs/evidence_claim_admission.md"
       ],
@@ -443,6 +443,8 @@
       "required_terms": [
         "0047",
         "local_source_v1",
+        "runtime_verified_v1",
+        "verify-decision",
         "evidence_claims",
         "source_anchored",
         "evidence_evaluator_unavailable"

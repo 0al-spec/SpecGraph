@@ -235,7 +235,7 @@ def test_adapter_report_digest_covers_raw_stdout_bytes(cli_inputs, inputs):
         "#!/usr/bin/env python3\nimport sys\nsys.stdout.buffer.write(" + repr(raw_report) + ")\n"
     )
     code, result = invoke_cli(cli_inputs)
-    assert code == 0
+    assert code == 0, result
     assert result["adapter"]["report_sha256"] == hashlib.sha256(raw_report).hexdigest()
 
 
@@ -348,3 +348,489 @@ def test_cli_requires_trusted_binary_digest(cli_inputs):
     )
     assert process.returncode == 1
     assert "untrusted" in json.loads(process.stdout)["error"]
+
+
+@pytest.fixture
+def runtime_cli_inputs(tmp_path):
+    import hashlib
+    import json
+
+    def raw_digest(raw):
+        return hashlib.sha256(raw).hexdigest()
+
+    mapping = {
+        "feature_id": "feature.demo",
+        "passport_id": "fp.demo",
+        "passport_version": "1",
+        "claim_id": "runtime-1",
+        "claim_policy_id": "policy.demo",
+        "claim_policy_version": "1",
+        "claim_policy_digest": "",
+        "predicate_profile": "local-aggregate-claim-evaluation-v1",
+        "authority_id": "authority.demo",
+        "key_id": "key.demo",
+    }
+    passport_path = tmp_path / "passport.json"
+    passport_path.write_text(
+        json.dumps(
+            {
+                "metadata": {"passport_id": "fp.demo", "version": "1"},
+                "spec": {"intent": {"acceptance_criteria": [{"id": "rule", "text": "Rule"}]}},
+            }
+        )
+    )
+    policy_path = tmp_path / "policy.json"
+    policy_raw = b'{"id":"policy.demo","version":"1"}'
+    policy_path.write_bytes(policy_raw)
+    mapping["claim_policy_digest"] = "sha256:" + raw_digest(policy_raw)
+    bundle_path = tmp_path / "bundle.json"
+    bundle_raw = b'{"artifact_kind":"local_aggregate_claim_bundle","schema_version":1,"pairs":[]}'
+    bundle_path.write_bytes(bundle_raw)
+    receipt_trust_path = tmp_path / "receipt-trust.json"
+    receipt_trust_raw = b'{"trusted_keys":[]}'
+    receipt_trust_path.write_bytes(receipt_trust_raw)
+    decision_trust_path = tmp_path / "decision-trust.json"
+    decision_trust_path.write_bytes(b'{"trusted_keys":[]}')
+    decision = {
+        "artifact_kind": "aggregate_claim_decision",
+        "schema_version": 1,
+        "decision_profile": "fp-aggregate-decision-v1-fields",
+        "decision_digest": "sha256:" + "a" * 64,
+        "decision": "accepted",
+        "feature_id": mapping["feature_id"],
+        "passport_id": mapping["passport_id"],
+        "passport_version": mapping["passport_version"],
+        "claim_id": mapping["claim_id"],
+        "claim_policy_id": mapping["claim_policy_id"],
+        "claim_policy_version": mapping["claim_policy_version"],
+        "claim_policy_digest": mapping["claim_policy_digest"],
+        "predicate_profile": mapping["predicate_profile"],
+        "evaluation_time": "2026-09-28T00:00:00Z",
+        "passport_digest": "sha256:" + raw_digest(passport_path.read_bytes()),
+        "bundle_digest": "sha256:" + raw_digest(bundle_raw),
+        "receipt_trust_store_digest": "sha256:" + raw_digest(receipt_trust_raw),
+        "pair_digests": [],
+        "issuer": {"authority_id": mapping["authority_id"], "key_id": mapping["key_id"]},
+        "signature": {"algorithm": "test", "profile": "test", "value": "pinned-fixture-signature"},
+    }
+    decision_path = tmp_path / "decision.json"
+    decision_path.write_text(json.dumps(decision))
+    spec_path = tmp_path / "spec.yaml"
+    spec_path.write_text(
+        "id: ZEU-SPEC-0016\nkind: spec\nstatus: reviewed\ngate_state: none\n"
+        "evidence_claims:\n- id: runtime-1\n  kind: runtime_verified\n"
+        "  passport_criterion_ids: [rule]\n  feature_passport_decision:\n"
+        + "".join(f"    {key}: {json.dumps(value)}\n" for key, value in mapping.items())
+    )
+    request = {
+        "artifact_kind": "evidence_claim_admission_request",
+        "schema_version": 1,
+        "claims": [
+            {
+                "id": "runtime-1",
+                "kind": "runtime_verified",
+                "passport_criterion_ids": ["rule"],
+                "feature_passport_decision": mapping,
+            }
+        ],
+        "source": {
+            "spec_id": "ZEU-SPEC-0016",
+            "spec_sha256": raw_digest(spec_path.read_bytes()),
+            "passport_sha256": raw_digest(passport_path.read_bytes()),
+            "runtime": {
+                "claim_policy_sha256": raw_digest(policy_raw),
+                "bundle_sha256": raw_digest(bundle_raw),
+                "decision_sha256": raw_digest(decision_path.read_bytes()),
+                "receipt_trust_store_sha256": raw_digest(receipt_trust_raw),
+                "decision_trust_store_sha256": raw_digest(decision_trust_path.read_bytes()),
+                "feature_passport_cli_sha256": "",
+                "pair_files": [],
+            },
+        },
+    }
+    request_path = tmp_path / "request.json"
+    executable = tmp_path / "feature-passport"
+    accepted_report = json.dumps(
+        {"trusted": True, "decision": "accepted", "claim_id": "runtime-1", "issues": []}
+    )
+    executable.write_text("#!/usr/bin/env python3\nprint(" + repr(accepted_report) + ")\n")
+    executable.chmod(0o755)
+    request["source"]["runtime"]["feature_passport_cli_sha256"] = raw_digest(
+        executable.read_bytes()
+    )
+    request_path.write_text(json.dumps(request))
+    return {
+        "request": request_path,
+        "passport": passport_path,
+        "spec": spec_path,
+        "cli": executable,
+        "policy": policy_path,
+        "bundle": bundle_path,
+        "decision": decision_path,
+        "receipt_trust": receipt_trust_path,
+        "decision_trust": decision_trust_path,
+    }
+
+
+def invoke_runtime_cli(paths):
+    import json
+    import subprocess
+
+    completed = subprocess.run(
+        [
+            sys.executable,
+            str(TOOL),
+            "--request",
+            str(paths["request"]),
+            "--passport",
+            str(paths["passport"]),
+            "--spec",
+            str(paths["spec"]),
+            "--feature-passport-cli",
+            str(paths["cli"]),
+            "--feature-passport-cli-sha256",
+            gate.digest(paths["cli"].read_bytes()),
+            "--claim-policy",
+            str(paths["policy"]),
+            "--bundle",
+            str(paths["bundle"]),
+            "--decision",
+            str(paths["decision"]),
+            "--receipt-trust-store",
+            str(paths["receipt_trust"]),
+            "--decision-trust-store",
+            str(paths["decision_trust"]),
+        ],
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    return completed.returncode, json.loads(completed.stdout)
+
+
+def set_runtime_cli_output(paths, output, exit_code=0, mutate_path=None):
+    import json
+
+    script = "#!/usr/bin/env python3\nprint(" + repr(output) + ")\n"
+    if mutate_path is not None:
+        target = repr(str(mutate_path))
+        script += (
+            "from pathlib import Path\n"
+            f"Path({target}).write_bytes(Path({target}).read_bytes() + b' ')\n"
+        )
+    if exit_code:
+        script += f"raise SystemExit({exit_code})\n"
+    paths["cli"].write_text(script)
+    paths["cli"].chmod(0o755)
+    request = json.loads(paths["request"].read_text())
+    request["source"]["runtime"]["feature_passport_cli_sha256"] = gate.digest(
+        paths["cli"].read_bytes()
+    )
+    paths["request"].write_text(json.dumps(request))
+
+
+def test_runtime_verified_requires_fresh_trusted_accepted_decision(runtime_cli_inputs):
+    code, result = invoke_runtime_cli(runtime_cli_inputs)
+    assert code == 0, result
+    assert result["claims"][0]["state"] == "satisfied"
+    assert result["claims"][0]["scope"] == "signed_feature_passport_runtime_predicate"
+    assert result["runtime_verification"]["executable_sha256"] == gate.digest(
+        runtime_cli_inputs["cli"].read_bytes()
+    )
+    assert result["feature_passport_decision_trusted"] is True
+
+
+def test_runtime_claim_rejects_criterion_missing_from_pinned_passport(runtime_cli_inputs):
+    import json
+
+    paths = runtime_cli_inputs
+    paths["spec"].write_text(paths["spec"].read_text().replace("[rule]", "[typo]"))
+    request = json.loads(paths["request"].read_text())
+    request["claims"][0]["passport_criterion_ids"] = ["typo"]
+    request["source"]["spec_sha256"] = gate.digest(paths["spec"].read_bytes())
+    paths["request"].write_text(json.dumps(request))
+    code, result = invoke_runtime_cli(paths)
+    assert code == 1 and result["admitted"] is False
+    assert "unknown pinned passport criterion" in result["error"]
+
+
+def test_bundle_pair_cannot_overwrite_decision_trust_snapshot(runtime_cli_inputs):
+    import json
+
+    paths = runtime_cli_inputs
+    observation = b'{"trusted_keys":["attacker"]}'
+    receipt = b'{"receipt":"fixture"}'
+    (paths["bundle"].parent / "decision_trust.json").write_bytes(observation)
+    (paths["bundle"].parent / "receipt.json").write_bytes(receipt)
+    bundle = {
+        "artifact_kind": "local_aggregate_claim_bundle",
+        "schema_version": 1,
+        "pairs": [{"observation": "decision_trust.json", "receipt": "receipt.json"}],
+    }
+    bundle_raw = json.dumps(bundle, separators=(",", ":")).encode()
+    paths["bundle"].write_bytes(bundle_raw)
+    decision = json.loads(paths["decision"].read_text())
+    decision["bundle_digest"] = gate.prefixed_digest(bundle_raw)
+    decision["pair_digests"] = [
+        {
+            "observation_path": "decision_trust.json",
+            "receipt_path": "receipt.json",
+            "observation_digest": gate.prefixed_digest(observation),
+            "receipt_digest": gate.prefixed_digest(receipt),
+        }
+    ]
+    decision_raw = json.dumps(decision, separators=(",", ":")).encode()
+    paths["decision"].write_bytes(decision_raw)
+    script = (
+        "#!/usr/bin/env python3\nimport json,sys\nfrom pathlib import Path\n"
+        "store=Path(sys.argv[sys.argv.index('--decision-trust')+1])\n"
+        "trusted=store.read_bytes()==b'{\"trusted_keys\":[]}'\n"
+        "report={'trusted':trusted,'decision':'accepted' if trusted else None,"
+        "'claim_id':'runtime-1' if trusted else None,'issues':[] if trusted else "
+        "[{'code':'decision_trust_store_invalid'}]}\n"
+        "print(json.dumps(report))\n"
+    )
+    paths["cli"].write_text(script)
+    paths["cli"].chmod(0o755)
+    request = json.loads(paths["request"].read_text())
+    runtime = request["source"]["runtime"]
+    runtime["bundle_sha256"] = gate.digest(bundle_raw)
+    runtime["decision_sha256"] = gate.digest(decision_raw)
+    runtime["feature_passport_cli_sha256"] = gate.digest(paths["cli"].read_bytes())
+    runtime["pair_files"] = [
+        {
+            "observation_path": "decision_trust.json",
+            "observation_sha256": gate.digest(observation),
+            "receipt_path": "receipt.json",
+            "receipt_sha256": gate.digest(receipt),
+        }
+    ]
+    paths["request"].write_text(json.dumps(request))
+    code, result = invoke_runtime_cli(paths)
+    assert code == 0, result
+    assert result["claims"][0]["state"] == "satisfied"
+
+
+def test_runtime_verified_not_satisfied_remains_unknown(runtime_cli_inputs):
+    import json
+
+    decision_path = runtime_cli_inputs["decision"]
+    decision = json.loads(decision_path.read_text())
+    decision["decision"] = "not_satisfied"
+    decision_path.write_text(json.dumps(decision))
+    request_path = runtime_cli_inputs["request"]
+    request = json.loads(request_path.read_text())
+    request["source"]["runtime"]["decision_sha256"] = gate.digest(decision_path.read_bytes())
+    request_path.write_text(json.dumps(request))
+    set_runtime_cli_output(
+        runtime_cli_inputs,
+        json.dumps(
+            {"trusted": True, "decision": "not_satisfied", "claim_id": "runtime-1", "issues": []}
+        ),
+    )
+    code, result = invoke_runtime_cli(runtime_cli_inputs)
+    assert code == 2
+    assert result["claims"][0]["state"] == "unknown"
+    assert result["claims"][0]["reason"] == "signed_decision_not_accepted"
+    assert result["feature_passport_decision_trusted"] is True
+
+
+def test_runtime_verified_rejects_stale_decision_pin(runtime_cli_inputs):
+    runtime_cli_inputs["decision"].write_bytes(runtime_cli_inputs["decision"].read_bytes() + b" ")
+    code, result = invoke_runtime_cli(runtime_cli_inputs)
+    assert code == 1 and result["admitted"] is False
+    assert "stale runtime input digest" in result["error"]
+
+
+def test_runtime_review_pending_remains_blocker(runtime_cli_inputs):
+    import json
+
+    paths = runtime_cli_inputs
+    paths["spec"].write_text(
+        paths["spec"].read_text().replace("gate_state: none", "gate_state: review_pending")
+    )
+    request = json.loads(paths["request"].read_text())
+    request["source"]["spec_sha256"] = gate.digest(paths["spec"].read_bytes())
+    paths["request"].write_text(json.dumps(request))
+    code, result = invoke_runtime_cli(paths)
+    assert code == 2 and not result["admitted"]
+    assert result["claims"][0]["state"] == "satisfied"
+    assert result["blockers"] == ["source_gate:review_pending"]
+
+
+def test_runtime_cli_report_and_exit_are_both_required(runtime_cli_inputs):
+    paths = runtime_cli_inputs
+    set_runtime_cli_output(
+        paths,
+        '{"trusted":true,"decision":"accepted","claim_id":"runtime-1","issues":[]}',
+        exit_code=1,
+    )
+    code, result = invoke_runtime_cli(paths)
+    assert code == 2 and not result["admitted"]
+    assert result["claims"][0]["reason"] == "runtime_decision_untrusted"
+
+
+def test_runtime_false_trust_report_remains_unknown(runtime_cli_inputs):
+    paths = runtime_cli_inputs
+    set_runtime_cli_output(
+        paths,
+        '{"trusted":false,"decision":null,"claim_id":null,"issues":[{"code":"decision_trust_store_invalid"}]}',
+    )
+    code, result = invoke_runtime_cli(paths)
+    assert code == 2 and not result["admitted"]
+    assert result["claims"][0]["reason"] == "runtime_decision_untrusted"
+
+
+def test_runtime_invalid_report_remains_unknown(runtime_cli_inputs):
+    paths = runtime_cli_inputs
+    set_runtime_cli_output(paths, '{"trusted":true,"trusted":true}')
+    code, result = invoke_runtime_cli(paths)
+    assert code == 2 and not result["admitted"]
+    assert result["claims"][0]["reason"] == "invalid_runtime_verification_report"
+
+
+def test_runtime_canonical_identity_mismatch_fails_closed(runtime_cli_inputs):
+    import json
+
+    paths = runtime_cli_inputs
+    source = (
+        paths["spec"]
+        .read_text()
+        .replace('feature_id: "feature.demo"', 'feature_id: "feature.other"')
+    )
+    paths["spec"].write_text(source)
+    request = json.loads(paths["request"].read_text())
+    request["source"]["spec_sha256"] = gate.digest(paths["spec"].read_bytes())
+    paths["request"].write_text(json.dumps(request))
+    code, result = invoke_runtime_cli(paths)
+    assert code == 1 and not result["admitted"]
+    assert "exact canonical" in result["error"]
+
+
+def test_runtime_request_must_pin_the_same_cli_bytes(runtime_cli_inputs):
+    import json
+
+    paths = runtime_cli_inputs
+    request = json.loads(paths["request"].read_text())
+    request["source"]["runtime"]["feature_passport_cli_sha256"] = "0" * 64
+    paths["request"].write_text(json.dumps(request))
+    code, result = invoke_runtime_cli(paths)
+    assert code == 1 and not result["admitted"]
+    assert "CLI digest pin" in result["error"]
+
+
+def test_runtime_signed_identity_must_match_canonical_mapping(runtime_cli_inputs):
+    import json
+
+    paths = runtime_cli_inputs
+    decision = json.loads(paths["decision"].read_text())
+    decision["feature_id"] = "feature.other"
+    paths["decision"].write_text(json.dumps(decision))
+    request = json.loads(paths["request"].read_text())
+    request["source"]["runtime"]["decision_sha256"] = gate.digest(paths["decision"].read_bytes())
+    paths["request"].write_text(json.dumps(request))
+    code, result = invoke_runtime_cli(paths)
+    assert code == 1 and not result["admitted"]
+    assert "identity does not match canonical" in result["error"]
+
+
+def test_runtime_original_inputs_are_checked_after_cli(runtime_cli_inputs):
+    paths = runtime_cli_inputs
+    output = '{"trusted":true,"decision":"accepted","claim_id":"runtime-1","issues":[]}'
+    set_runtime_cli_output(paths, output, mutate_path=paths["decision"])
+    code, result = invoke_runtime_cli(paths)
+    assert code == 1 and not result["admitted"]
+    assert "inputs changed during evaluation" in result["error"]
+
+
+def test_runtime_subprocess_stdout_is_bounded(runtime_cli_inputs):
+    import json
+
+    paths = runtime_cli_inputs
+    paths["cli"].write_text(
+        "#!/usr/bin/env python3\nimport sys\nsys.stdout.write('x' * 1_000_001)\n"
+    )
+    paths["cli"].chmod(0o755)
+    request = json.loads(paths["request"].read_text())
+    request["source"]["runtime"]["feature_passport_cli_sha256"] = gate.digest(
+        paths["cli"].read_bytes()
+    )
+    paths["request"].write_text(json.dumps(request))
+    code, result = invoke_runtime_cli(paths)
+    assert code == 1 and not result["admitted"]
+    assert "stdout exceeds output limit" in result["error"]
+
+
+def test_aggregate_pair_sizes_are_rejected_before_reading(tmp_path):
+    observation = tmp_path / "large-observation.json"
+    receipt = tmp_path / "receipt.json"
+    with observation.open("wb") as stream:
+        stream.truncate(9_500_000)
+    receipt.write_bytes(b"")
+    pair_sources = [(None, None, observation, receipt)] * 7
+    with pytest.raises(ValueError, match="aggregate limit"):
+        gate._validate_pair_file_sizes(pair_sources)
+
+
+def test_runtime_and_source_adapters_use_the_same_pinned_cli_snapshot(runtime_cli_inputs, tmp_path):
+    import json
+
+    paths = runtime_cli_inputs
+    source_marker, runtime_marker = tmp_path / "source-cli-path", tmp_path / "runtime-cli-path"
+    spec_text = paths["spec"].read_text()
+    spec_text += "- id: source-1\n  kind: source_anchored\n  passport_criterion_ids: [rule]\n"
+    paths["spec"].write_text(spec_text)
+    request = json.loads(paths["request"].read_text())
+    request["claims"].append(
+        {"id": "source-1", "kind": "source_anchored", "passport_criterion_ids": ["rule"]}
+    )
+    request["source"]["spec_sha256"] = gate.digest(paths["spec"].read_bytes())
+    script = (
+        "#!/usr/bin/env python3\nimport sys\nfrom pathlib import Path\n"
+        f"source_marker = Path({str(source_marker)!r})\n"
+        f"runtime_marker = Path({str(runtime_marker)!r})\n"
+        "if sys.argv[1] == 'resolve-sources': source_marker.write_text(sys.argv[0])\n"
+        "if sys.argv[1] == 'verify-decision': runtime_marker.write_text(sys.argv[0])\n"
+        'print(\'{"trusted":true,"decision":"accepted","claim_id":"runtime-1","issues":[]}\')\n'
+    )
+    paths["cli"].write_text(script)
+    paths["cli"].chmod(0o755)
+    request["source"]["runtime"]["feature_passport_cli_sha256"] = gate.digest(
+        paths["cli"].read_bytes()
+    )
+    paths["request"].write_text(json.dumps(request))
+    code, result = invoke_runtime_cli(paths)
+    assert code == 2  # The fixture passport has no source anchors for source-1.
+    assert source_marker.read_text() == runtime_marker.read_text()
+    assert source_marker.read_text() != str(paths["cli"].resolve())
+
+
+def test_bounded_reads_reject_fifo_without_blocking(tmp_path):
+    import os
+
+    fifo = tmp_path / "input.fifo"
+    os.mkfifo(fifo)
+    with pytest.raises(ValueError, match="regular file"):
+        gate.read_bounded(fifo, 100, "test input")
+
+
+def test_subprocess_stderr_is_bounded():
+    command = [sys.executable, "-c", "import sys; sys.stderr.write('x' * 1_000_001)"]
+    with pytest.raises(ValueError, match="stderr exceeds output limit"):
+        gate.run_bounded(command, 2, 100, 1_000_000)
+
+
+def test_subprocess_timeout_kills_child_holding_pipes():
+    import subprocess
+    import time
+
+    command = [
+        sys.executable,
+        "-c",
+        "import subprocess,sys; "
+        "subprocess.Popen([sys.executable, '-c', 'import time; time.sleep(15)'])",
+    ]
+    started = time.monotonic()
+    with pytest.raises(subprocess.TimeoutExpired):
+        gate.run_bounded(command, 0.2, 100, 100)
+    assert time.monotonic() - started < 3

@@ -1516,7 +1516,7 @@ test-supervisor:
 
 .PHONY: evidence-claim-gate test-evidence-claim-gate
 evidence-claim-gate:
-	@$(PYTHON) tools/evidence_claim_gate.py --request '$(CLAIM_REQUEST)' --passport '$(CLAIM_PASSPORT)' --spec '$(CLAIM_SPEC)' --feature-passport-cli '$(CLAIM_FP_CLI)' --feature-passport-cli-sha256 '$(CLAIM_FP_CLI_SHA256)' --repository '$(CLAIM_REPOSITORY)'
+	@$(PYTHON) tools/evidence_claim_gate.py --request '$(CLAIM_REQUEST)' --passport '$(CLAIM_PASSPORT)' --spec '$(CLAIM_SPEC)' --feature-passport-cli '$(CLAIM_FP_CLI)' --feature-passport-cli-sha256 '$(CLAIM_FP_CLI_SHA256)' $(if $(CLAIM_REPOSITORY),--repository '$(CLAIM_REPOSITORY)') $(if $(CLAIM_POLICY),--claim-policy '$(CLAIM_POLICY)') $(if $(CLAIM_BUNDLE),--bundle '$(CLAIM_BUNDLE)') $(if $(CLAIM_DECISION),--decision '$(CLAIM_DECISION)') $(if $(CLAIM_RECEIPT_TRUST_STORE),--receipt-trust-store '$(CLAIM_RECEIPT_TRUST_STORE)') $(if $(CLAIM_DECISION_TRUST_STORE),--decision-trust-store '$(CLAIM_DECISION_TRUST_STORE)')
 
 test-evidence-claim-gate:
 	@$(PYTHON) -m pytest -q tests/test_evidence_claim_gate.py
