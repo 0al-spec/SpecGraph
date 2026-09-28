@@ -6,9 +6,13 @@ import argparse
 import copy
 import json
 import re
+from collections.abc import Callable
+from dataclasses import dataclass
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
+
+from specification_core import FirstMatch, PredicateSpec
 
 ROOT = Path(__file__).resolve().parents[1]
 PROPOSAL_ID = "0152"
@@ -469,6 +473,81 @@ def _node_by_id(candidate_graph: dict[str, Any], node_id: str) -> dict[str, Any]
     return None
 
 
+@dataclass(frozen=True)
+class _PreviewOperationContext:
+    operation: dict[str, Any]
+
+
+_PreviewOperationHandler = Callable[[dict[str, Any], dict[str, Any]], None]
+
+
+def _ignore_preview_operation(_preview: dict[str, Any], _operation: dict[str, Any]) -> None:
+    return None
+
+
+def _append_preview_edge(preview: dict[str, Any], operation: dict[str, Any]) -> None:
+    preview.setdefault("edges", []).append(operation["value"])
+
+
+def _add_preview_acceptance_criterion(preview: dict[str, Any], operation: dict[str, Any]) -> None:
+    node = _node_by_id(preview, _text(operation.get("node_id")))
+    if node is None:
+        return
+    node.setdefault("acceptance_criteria", []).append(operation["value"])
+    for requirement in _list(node.get("requirements")):
+        if not isinstance(requirement, dict):
+            continue
+        if _text(requirement.get("id")) == _text(operation.get("requirement_id")):
+            refs = _text_list(requirement.get("acceptance_criteria_refs"))
+            if operation["value"]["id"] not in refs:
+                refs.append(operation["value"]["id"])
+            requirement["acceptance_criteria_refs"] = refs
+
+
+def _replace_preview_claim_type(preview: dict[str, Any], operation: dict[str, Any]) -> None:
+    node = _node_by_id(preview, _text(operation.get("node_id")))
+    if node is None:
+        return
+    for claim in _list(node.get("claims")):
+        if isinstance(claim, dict) and _text(claim.get("id")) == _text(operation.get("claim_id")):
+            claim["type"] = operation["value"]
+            if _text(claim.get("strength")) == "strong":
+                claim["strength"] = operation["value"]
+            claim["repair_generated_type_change"] = True
+
+
+_PREVIEW_OPERATION_DECISION = FirstMatch.with_fallback(
+    (
+        (
+            PredicateSpec(
+                lambda context: (
+                    context.operation.get("op") == "append"
+                    and context.operation.get("path") == "/edges"
+                ),
+                name="preview.append_edge",
+            ),
+            _append_preview_edge,
+        ),
+        (
+            PredicateSpec(
+                lambda context: context.operation.get("op") == "add_acceptance_criterion",
+                name="preview.add_acceptance_criterion",
+            ),
+            _add_preview_acceptance_criterion,
+        ),
+        (
+            PredicateSpec(
+                lambda context: context.operation.get("op") == "replace_claim_type",
+                name="preview.replace_claim_type",
+            ),
+            _replace_preview_claim_type,
+        ),
+    ),
+    _ignore_preview_operation,
+    name="preview_operation",
+)
+
+
 def _apply_preview_actions(
     candidate_graph: dict[str, Any],
     actions: list[dict[str, Any]],
@@ -489,34 +568,9 @@ def _apply_preview_actions(
         if action["status"] != "applied_to_preview":
             continue
         operation = _dict(action.get("operation"))
-        op = _text(operation.get("op"))
-        if op == "append" and operation.get("path") == "/edges":
-            preview.setdefault("edges", []).append(operation["value"])
-        elif op == "add_acceptance_criterion":
-            node = _node_by_id(preview, _text(operation.get("node_id")))
-            if node is None:
-                continue
-            node.setdefault("acceptance_criteria", []).append(operation["value"])
-            for requirement in _list(node.get("requirements")):
-                if not isinstance(requirement, dict):
-                    continue
-                if _text(requirement.get("id")) == _text(operation.get("requirement_id")):
-                    refs = _text_list(requirement.get("acceptance_criteria_refs"))
-                    if operation["value"]["id"] not in refs:
-                        refs.append(operation["value"]["id"])
-                    requirement["acceptance_criteria_refs"] = refs
-        elif op == "replace_claim_type":
-            node = _node_by_id(preview, _text(operation.get("node_id")))
-            if node is None:
-                continue
-            for claim in _list(node.get("claims")):
-                if isinstance(claim, dict) and _text(claim.get("id")) == _text(
-                    operation.get("claim_id")
-                ):
-                    claim["type"] = operation["value"]
-                    if _text(claim.get("strength")) == "strong":
-                        claim["strength"] = operation["value"]
-                    claim["repair_generated_type_change"] = True
+        decision = _PREVIEW_OPERATION_DECISION.decide(_PreviewOperationContext(operation))
+        assert decision.matched and decision.value is not None
+        decision.value(preview, operation)
     return preview
 
 
