@@ -419,7 +419,7 @@ PYTHON_TARGETS := viewer-surfaces dashboard backlog next-move spec-activity grap
 	metrics-delivery metrics-feedback metrics-source-promotion metric-signals metric-thresholds \
 	metric-packs metric-pack-drift metric-pack-adapters metric-pack-runs metric-pricing model-usage \
 	conversation-memory conversation-memory-map conversation-memory-pressure pre-spec-semantics \
-	implementation-delta implementation-work supervisor-evidence-packet supervisor-stalled-run-salvage \
+	implementation-delta implementation-work implementation-contract-pack test-implementation-contract-pack supervisor-evidence-packet supervisor-stalled-run-salvage \
 	factory-architecture swift-typed-tooling project-environment init-product-workspace review-feedback \
 	executor-adapters executor-readiness executor-smoke executor-task-smoke \
 	executor-report-contract executor-report-smoke executor-report-review-packet \
@@ -524,6 +524,7 @@ help:
 		'  make pre-spec-semantics       Refresh pre-spec semantics index JSON only' \
 		'  make implementation-delta     Refresh latest implementation delta snapshot' \
 		'  make implementation-work      Refresh latest implementation work index' \
+		'  make implementation-contract-pack CONTRACT_WORKSPACE_ROOT=<path> CONTRACT_TARGET_SPEC=<id>' \
 		'  make supervisor-evidence-packet SUPERVISOR_RUN_PATH=<run-id-or-path>' \
 		'  make factory-architecture     Refresh multi-service factory architecture index' \
 		'  make swift-typed-tooling      Refresh Swift typed tooling lane index' \
@@ -1370,6 +1371,15 @@ implementation-delta:
 .PHONY: implementation-work
 implementation-work:
 	@$(PYTHON) $(SUPERVISOR) --build-implementation-work-index
+
+CONTRACT_WORKSPACE_ROOT ?= .
+CONTRACT_TARGET_SPEC ?=
+.PHONY: implementation-contract-pack test-implementation-contract-pack
+implementation-contract-pack:
+	@$(PYTHON) tools/implementation_contract_pack.py --workspace-root '$(CONTRACT_WORKSPACE_ROOT)' --target-spec '$(CONTRACT_TARGET_SPEC)'
+
+test-implementation-contract-pack:
+	@$(PYTHON) -m pytest -q tests/test_implementation_contract_pack.py
 
 .PHONY: supervisor-evidence-packet
 supervisor-evidence-packet:

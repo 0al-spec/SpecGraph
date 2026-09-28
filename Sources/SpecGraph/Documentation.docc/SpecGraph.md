@@ -58,6 +58,7 @@ The canonical source files remain in the repository:
 - <doc:ExecutorAdapterGateway>
 - <doc:OntologyCAdapterReport>
 - <doc:ProposalsAndRuntime>
+- <doc:ImplementationContractPack>
 - <doc:ProductWorkspacePilots>
 
 ### Proposed composition comparison

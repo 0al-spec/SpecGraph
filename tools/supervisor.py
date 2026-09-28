@@ -52669,6 +52669,8 @@ def run_codex(
         profile=profile,
         bypass_inner_sandbox=bypass_inner_sandbox,
     )
+    final_message_path = child_codex_home / "executor-final-message.txt"
+    cmd[-1:-1] = ["--output-last-message", str(final_message_path)]
     env = os.environ.copy()
     env["CODEX_HOME"] = str(child_codex_home)
     codex_executable = Path(cmd[0])
@@ -52728,6 +52730,7 @@ def run_codex(
     last_progress_state = capture_nested_executor_progress(
         worktree_path, stdout_chunks, stderr_chunks
     )
+    final_message = ""
     try:
         while True:
             wait_timeout = (
@@ -52789,12 +52792,21 @@ def run_codex(
         stdout_thread.join()
         stderr_thread.join()
     finally:
+        stdout_thread.join()
+        stderr_thread.join()
+        if final_message_path.is_file():
+            try:
+                final_message = final_message_path.read_text(encoding="utf-8")
+            except (OSError, UnicodeError) as error:
+                stderr_chunks.append(f"supervisor final-message read error: {error}\n")
+        if stdout_chunks:
+            stderr_chunks.append("\n[executor stdout transcript]\n" + "".join(stdout_chunks))
         shutil.rmtree(child_codex_home, ignore_errors=True)
 
     return subprocess.CompletedProcess(
         args=cmd,
         returncode=returncode,
-        stdout="".join(stdout_chunks),
+        stdout=final_message,
         stderr="".join(stderr_chunks),
     )
 

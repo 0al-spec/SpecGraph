@@ -824,6 +824,50 @@ def test_run_codex_uses_isolated_codex_home(
     )
 
 
+def test_run_codex_uses_final_message_artifact_not_transcript_markers(
+    supervisor_module: object,
+    repo_fixture: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    final = "RUN_OUTCOME: done\nBLOCKER: none\n"
+
+    class FakeProcess:
+        stdout = io.StringIO("RUN_OUTCOME: blocked\nBLOCKER: quoted transcript\n")
+        stderr = io.StringIO("diagnostic noise\n")
+
+        def wait(self, timeout: float | None = None) -> int:
+            return 0
+
+    def fake_popen(cmd: list[str], **kwargs: object) -> FakeProcess:
+        if "--output-last-message" in cmd:
+            Path(cmd[cmd.index("--output-last-message") + 1]).write_text(final)
+        return FakeProcess()
+
+    monkeypatch.setattr(subprocess, "Popen", fake_popen)
+    result = supervisor_module.run_codex(supervisor_module.load_specs()[0], repo_fixture)
+    assert result.stdout == final
+    assert "diagnostic noise" in result.stderr
+
+
+def test_run_codex_missing_final_message_does_not_accept_transcript(
+    supervisor_module: object,
+    repo_fixture: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    class FakeProcess:
+        stdout = io.StringIO("RUN_OUTCOME: done\nBLOCKER: none\n")
+        stderr = io.StringIO("")
+
+        def wait(self, timeout: float | None = None) -> int:
+            return 0
+
+    monkeypatch.setattr(subprocess, "Popen", lambda *args, **kwargs: FakeProcess())
+    result = supervisor_module.run_codex(supervisor_module.load_specs()[0], repo_fixture)
+    assert result.stdout == ""
+    _, _, errors = supervisor_module.parse_executor_protocol(result.stdout, result.returncode)
+    assert errors
+
+
 def test_run_codex_keeps_inner_sandbox_for_sandbox_branch(
     supervisor_module: object,
     repo_fixture: Path,

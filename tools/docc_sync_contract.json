@@ -410,6 +410,26 @@
         "unknown",
         "canonical_mutations_allowed: false"
       ]
+    },
+    {
+      "id": "implementation-contract-pack",
+      "description": "Explicit-node observability preview authority remains aligned.",
+      "docs": [
+        "docs/implementation_contract_pack.md"
+      ],
+      "docc": [
+        "Sources/SpecGraph/Documentation.docc/ImplementationContractPack.md"
+      ],
+      "required_terms": [
+        "0047",
+        "explicit_node_observability_v1",
+        "implementation_contract_pack_preview",
+        "review_required",
+        "blocked",
+        "not_evaluated",
+        "canonical_mutations_allowed: false",
+        "runtime_code_mutations_allowed: false"
+      ]
     }
   ]
 }
