@@ -449,33 +449,79 @@ def _repair_missing_ontology(candidate_graph: dict[str, Any]) -> list[dict[str, 
     return actions
 
 
+@dataclass(frozen=True)
+class _UnsupportedClaimContext:
+    node_id: str
+    claim: Any
+
+
+class _UnsupportedClaimDisposition(Enum):
+    IGNORE = "ignore"
+    DOWNGRADE = "downgrade"
+
+
+def _downgrade_claim_action(context: _UnsupportedClaimContext) -> dict[str, Any]:
+    claim = _dict(context.claim)
+    claim_id = _text(claim.get("id"), "claim")
+    return _action(
+        action_id=f"repair.downgrade-claim.{_slug(claim_id, 'claim')}",
+        kind="downgrade_claim",
+        status="applied_to_preview",
+        target_ref=claim_id,
+        source_findings=["pre_sib_unsupported_strong_claims"],
+        rationale="Low-reliability strong claims without evidence stay hypotheses.",
+        operation={
+            "op": "replace_claim_type",
+            "node_id": context.node_id,
+            "claim_id": claim_id,
+            "value": "hypothesis",
+        },
+    )
+
+
+_UNSUPPORTED_CLAIM_DECISION = FirstMatch.with_fallback(
+    (
+        (
+            PredicateSpec(
+                lambda context: not isinstance(context.claim, dict),
+                name="claim.invalid",
+            ),
+            _UnsupportedClaimDisposition.IGNORE,
+        ),
+        (
+            PredicateSpec(
+                lambda context: not _is_strong_claim(context.claim),
+                name="claim.not_strong",
+            ),
+            _UnsupportedClaimDisposition.IGNORE,
+        ),
+        (
+            PredicateSpec(
+                lambda context: (
+                    (_claim_reliability(context.claim) or 0) > 2
+                    or bool(_text_list(context.claim.get("evidence_refs")))
+                ),
+                name="claim.supported",
+            ),
+            _UnsupportedClaimDisposition.IGNORE,
+        ),
+    ),
+    _UnsupportedClaimDisposition.DOWNGRADE,
+    name="unsupported_claim_repair",
+)
+
+
 def _repair_unsupported_claims(candidate_graph: dict[str, Any]) -> list[dict[str, Any]]:
     actions: list[dict[str, Any]] = []
     for node in _nodes(candidate_graph):
         for claim in _list(node.get("claims")):
-            if not isinstance(claim, dict):
-                continue
-            if not _is_strong_claim(claim):
-                continue
-            if (_claim_reliability(claim) or 0) > 2 or _text_list(claim.get("evidence_refs")):
-                continue
-            claim_id = _text(claim.get("id"), "claim")
-            actions.append(
-                _action(
-                    action_id=f"repair.downgrade-claim.{_slug(claim_id, 'claim')}",
-                    kind="downgrade_claim",
-                    status="applied_to_preview",
-                    target_ref=claim_id,
-                    source_findings=["pre_sib_unsupported_strong_claims"],
-                    rationale="Low-reliability strong claims without evidence stay hypotheses.",
-                    operation={
-                        "op": "replace_claim_type",
-                        "node_id": _text(node.get("id")),
-                        "claim_id": claim_id,
-                        "value": "hypothesis",
-                    },
-                )
+            context = _UnsupportedClaimContext(
+                node_id=_text(node.get("id")),
+                claim=claim,
             )
+            decision = _UNSUPPORTED_CLAIM_DECISION.decide(context)
+            if decision.value == _UnsupportedClaimDisposition.DOWNGRADE:
+                actions.append(_downgrade_claim_action(context))
     return actions
 
 

@@ -132,6 +132,42 @@ def test_acceptance_criterion_spec_adds_only_uncovered_requirements() -> None:
     assert all(action["operation"]["node_id"] == "criteria-node" for action in actions)
 
 
+def test_unsupported_claim_spec_downgrades_only_unsupported_strong_claims() -> None:
+    module = load_module()
+    graph = {
+        "nodes": [
+            {
+                "id": "claims-node",
+                "claims": [
+                    {"id": "unsupported", "type": "security_claim", "calibration": {"R": "R2"}},
+                    {
+                        "id": "evidenced",
+                        "type": "security_claim",
+                        "evidence_refs": ["evidence-1"],
+                    },
+                    {
+                        "id": "high-reliability",
+                        "type": "security_claim",
+                        "calibration": {"R": "R3"},
+                    },
+                    {"id": "weak", "type": "hypothesis", "calibration": {"R": "R1"}},
+                    "invalid-claim",
+                ],
+            }
+        ]
+    }
+
+    actions = module._repair_unsupported_claims(graph)
+
+    assert [action["target_ref"] for action in actions] == ["unsupported"]
+    assert actions[0]["operation"] == {
+        "op": "replace_claim_type",
+        "node_id": "claims-node",
+        "claim_id": "unsupported",
+        "value": "hypothesis",
+    }
+
+
 def test_candidate_repair_loop_preview_applies_explicit_node_gap_action() -> None:
     module = load_module()
     candidate_graph = {
