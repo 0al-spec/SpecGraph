@@ -530,7 +530,7 @@ def test_runtime_verified_requires_fresh_trusted_accepted_decision(runtime_cli_i
     assert result["runtime_verification"]["executable_sha256"] == gate.digest(
         runtime_cli_inputs["cli"].read_bytes()
     )
-    assert result["receipt_signature_verified"] is True
+    assert result["feature_passport_decision_trusted"] is True
 
 
 def test_runtime_verified_not_satisfied_remains_unknown(runtime_cli_inputs):
@@ -554,7 +554,7 @@ def test_runtime_verified_not_satisfied_remains_unknown(runtime_cli_inputs):
     assert code == 2
     assert result["claims"][0]["state"] == "unknown"
     assert result["claims"][0]["reason"] == "signed_decision_not_accepted"
-    assert result["receipt_signature_verified"] is True
+    assert result["feature_passport_decision_trusted"] is True
 
 
 def test_runtime_verified_rejects_stale_decision_pin(runtime_cli_inputs):
@@ -663,3 +663,32 @@ def test_runtime_original_inputs_are_checked_after_cli(runtime_cli_inputs):
     code, result = invoke_runtime_cli(paths)
     assert code == 1 and not result["admitted"]
     assert "inputs changed during evaluation" in result["error"]
+
+
+def test_runtime_subprocess_stdout_is_bounded(runtime_cli_inputs):
+    import json
+
+    paths = runtime_cli_inputs
+    paths["cli"].write_text(
+        "#!/usr/bin/env python3\nimport sys\nsys.stdout.write('x' * 1_000_001)\n"
+    )
+    paths["cli"].chmod(0o755)
+    request = json.loads(paths["request"].read_text())
+    request["source"]["runtime"]["feature_passport_cli_sha256"] = gate.digest(
+        paths["cli"].read_bytes()
+    )
+    paths["request"].write_text(json.dumps(request))
+    code, result = invoke_runtime_cli(paths)
+    assert code == 1 and not result["admitted"]
+    assert "stdout exceeds output limit" in result["error"]
+
+
+def test_aggregate_pair_sizes_are_rejected_before_reading(tmp_path):
+    observation = tmp_path / "large-observation.json"
+    receipt = tmp_path / "receipt.json"
+    with observation.open("wb") as stream:
+        stream.truncate(9_500_000)
+    receipt.write_bytes(b"")
+    pair_sources = [(None, None, observation, receipt)] * 7
+    with pytest.raises(ValueError, match="aggregate limit"):
+        gate._validate_pair_file_sizes(pair_sources)

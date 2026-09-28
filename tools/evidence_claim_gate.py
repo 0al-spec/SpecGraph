@@ -5,10 +5,13 @@ from __future__ import annotations
 import argparse
 import hashlib
 import json
+import os
 import re
-import shutil
+import selectors
+import signal
 import subprocess
 import tempfile
+import time
 from pathlib import Path
 
 KINDS = {
@@ -226,6 +229,60 @@ def prefixed_digest(raw):
     return "sha256:" + digest(raw)
 
 
+def read_bounded(path, limit, label):
+    with Path(path).open("rb") as stream:
+        raw = stream.read(limit + 1)
+    if len(raw) > limit:
+        raise ValueError(f"{label} exceeds {limit}-byte limit")
+    return raw
+
+
+def run_bounded(command, timeout, stdout_limit, stderr_limit):
+    process = subprocess.Popen(
+        command,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+        start_new_session=True,
+    )
+    selector = selectors.DefaultSelector()
+    buffers = {"stdout": bytearray(), "stderr": bytearray()}
+    limits = {"stdout": stdout_limit, "stderr": stderr_limit}
+    selector.register(process.stdout, selectors.EVENT_READ, "stdout")
+    selector.register(process.stderr, selectors.EVENT_READ, "stderr")
+    deadline = time.monotonic() + timeout
+    try:
+        while selector.get_map():
+            remaining = deadline - time.monotonic()
+            if remaining <= 0:
+                raise subprocess.TimeoutExpired(command, timeout)
+            for key, _ in selector.select(remaining):
+                chunk = os.read(key.fileobj.fileno(), 65_536)
+                if not chunk:
+                    selector.unregister(key.fileobj)
+                    continue
+                buffer = buffers[key.data]
+                if len(buffer) + len(chunk) > limits[key.data]:
+                    raise ValueError(f"Feature Passport {key.data} exceeds output limit")
+                buffer.extend(chunk)
+        return subprocess.CompletedProcess(
+            command,
+            process.wait(timeout=max(0.01, deadline - time.monotonic())),
+            bytes(buffers["stdout"]),
+            bytes(buffers["stderr"]),
+        )
+    except BaseException:
+        try:
+            os.killpg(process.pid, signal.SIGKILL)
+        except ProcessLookupError:
+            pass
+        process.wait()
+        raise
+    finally:
+        selector.close()
+        process.stdout.close()
+        process.stderr.close()
+
+
 def _runtime_inputs(runtime):
     if not isinstance(runtime, dict) or set(runtime) != RUNTIME_PIN_FIELDS:
         raise ValueError(
@@ -252,6 +309,18 @@ def _relative_pair_file(root, relative):
     if not resolved.is_relative_to(root) or not resolved.is_file():
         raise ValueError("bundle pair file is not a regular file below the bundle directory")
     return resolved
+
+
+def _validate_pair_file_sizes(pair_sources):
+    total = 0
+    for _, _, observation, receipt in pair_sources:
+        observation_size = observation.stat().st_size
+        receipt_size = receipt.stat().st_size
+        if observation_size > 10_000_000 or receipt_size > 256_000:
+            raise ValueError("runtime pair file exceeds Feature Passport limit")
+        total += observation_size + receipt_size
+        if total > 64_000_000:
+            raise ValueError("runtime pair files exceed Feature Passport aggregate limit")
 
 
 def _validate_runtime_decision(
@@ -399,11 +468,13 @@ def run_admission(
 
     from implementation_contract_pack import UniqueKeyLoader
 
-    request_raw, passport_raw, spec_raw = (
-        p.read_bytes() for p in (request_path, passport_path, spec_path)
-    )
+    request_raw = read_bounded(request_path, 1_000_000, "admission request")
+    passport_raw = read_bounded(passport_path, 10_000_000, "passport")
+    spec_raw = read_bounded(spec_path, 10_000_000, "source spec")
     request, passport = read_json(request_raw), read_json(passport_raw)
-    policy_digest = digest(Path(__file__).read_bytes())
+    policy_path = Path(__file__)
+    policy_raw = read_bounded(policy_path, 2_000_000, "admission policy")
+    policy_digest = digest(policy_raw)
     try:
         node = yaml.load(spec_raw, Loader=UniqueKeyLoader)
     except yaml.YAMLError as error:
@@ -438,7 +509,8 @@ def run_admission(
     if "evidence_claims" in node and request["claims"] != node["evidence_claims"]:
         raise ValueError("request must cover the exact canonical claim declarations")
     cli = executable.expanduser().resolve(strict=True)
-    cli_digest = digest(cli.read_bytes())
+    cli_raw = read_bounded(cli, 64_000_000, "Feature Passport executable")
+    cli_digest = digest(cli_raw)
     if cli_digest != expected_executable_digest:
         raise ValueError("untrusted Feature Passport executable digest")
     mapped = [
@@ -448,6 +520,7 @@ def run_admission(
     ]
     runtime_results, runtime_process = {}, None
     runtime_inputs, pair_originals, normalized_pairs = {}, [], []
+    pair_limits = {}
     runtime_paths = {}
     bundle = None
     signed_decision = None
@@ -465,8 +538,6 @@ def run_admission(
             raise ValueError(
                 "runtime_verified requires claim policy, bundle, decision, and both trust stores"
             )
-        if len(passport_raw) > 10_000_000:
-            raise ValueError("runtime passport exceeds Feature Passport limit")
         pins = _runtime_inputs(source.get("runtime"))
         if pins["feature_passport_cli_sha256"] != expected_executable_digest:
             raise ValueError("runtime request CLI digest pin does not match invocation")
@@ -485,10 +556,7 @@ def run_admission(
             "decision_trust": 1_000_000,
         }
         for name, path in runtime_paths.items():
-            raw = path.read_bytes()
-            if len(raw) > limits[name]:
-                raise ValueError(f"runtime input exceeds Feature Passport limit: {name}")
-            runtime_inputs[name] = raw
+            runtime_inputs[name] = read_bounded(path, limits[name], f"runtime {name}")
         pin_names = {
             "claim_policy": "claim_policy_sha256",
             "bundle": "bundle_sha256",
@@ -516,7 +584,7 @@ def run_admission(
             or len(pair_pins) != len(pairs)
         ):
             raise ValueError("runtime pair pins must cover the bounded bundle exactly")
-        aggregate_pair_bytes = 0
+        pair_sources = []
         for index in range(len(pairs)):
             pair, pin = pairs[index], pair_pins[index]
             if not isinstance(pair, dict) or set(pair) != {"observation", "receipt"}:
@@ -531,9 +599,12 @@ def run_admission(
                 raise ValueError("runtime pair file pin does not match bundle")
             observed = _relative_pair_file(runtime_paths["bundle"].parent, pair["observation"])
             receipt = _relative_pair_file(runtime_paths["bundle"].parent, pair["receipt"])
-            observed_raw, receipt_raw = observed.read_bytes(), receipt.read_bytes()
-            if len(observed_raw) > 10_000_000 or len(receipt_raw) > 256_000:
-                raise ValueError("runtime pair file exceeds Feature Passport limit")
+            pair_sources.append((pair, pin, observed, receipt))
+        _validate_pair_file_sizes(pair_sources)
+        aggregate_pair_bytes = 0
+        for pair, pin, observed, receipt in pair_sources:
+            observed_raw = read_bounded(observed, 10_000_000, "observation")
+            receipt_raw = read_bounded(receipt, 256_000, "receipt")
             aggregate_pair_bytes += len(observed_raw) + len(receipt_raw)
             if aggregate_pair_bytes > 64_000_000:
                 raise ValueError("runtime pair files exceed Feature Passport aggregate limit")
@@ -548,6 +619,8 @@ def run_admission(
                 ):
                     raise ValueError(f"stale runtime pair file digest: {field}")
             pair_originals.extend([(observed, observed_raw), (receipt, receipt_raw)])
+            pair_limits[observed] = max(pair_limits.get(observed, 0), 10_000_000)
+            pair_limits[receipt] = max(pair_limits.get(receipt, 0), 256_000)
             normalized_pairs.append(
                 (pair["observation"], pair["receipt"], observed_raw, receipt_raw)
             )
@@ -588,7 +661,7 @@ def run_admission(
             command = [str(cli), "resolve-sources", str(snapshot)]
             for name, path in sorted(repositories.items()):
                 command.extend(["--repository", f"{name}={path}"])
-            process = subprocess.run(command, capture_output=True, timeout=120)
+            process = run_bounded(command, 120, 16_000_000, 1_000_000)
             if process.returncode not in {0, 1}:
                 raise ValueError("Feature Passport source adapter execution failed")
             resolution = read_json(process.stdout)
@@ -596,9 +669,12 @@ def run_admission(
                 raise ValueError("invalid Feature Passport source response")
         if mapped:
             copied_cli = root / "feature-passport"
-            shutil.copyfile(cli, copied_cli)
+            copied_cli.write_bytes(cli_raw)
             copied_cli.chmod(0o700)
-            if digest(copied_cli.read_bytes()) != cli_digest:
+            if (
+                digest(read_bounded(copied_cli, 64_000_000, "Feature Passport executable snapshot"))
+                != cli_digest
+            ):
                 raise ValueError("Feature Passport executable snapshot digest mismatch")
             snapshots = {}
             for name in runtime_paths:
@@ -623,8 +699,11 @@ def run_admission(
                 "--decision-trust",
                 str(snapshots["decision_trust"]),
             ]
-            runtime_process = subprocess.run(command, capture_output=True, timeout=120)
-            if digest(copied_cli.read_bytes()) != cli_digest:
+            runtime_process = run_bounded(command, 120, 1_000_000, 1_000_000)
+            if (
+                digest(read_bounded(copied_cli, 64_000_000, "Feature Passport executable snapshot"))
+                != cli_digest
+            ):
                 raise ValueError("Feature Passport executable snapshot changed during evaluation")
             runtime_results[mapped[0]["id"]] = _runtime_decision_result(
                 runtime_process.stdout,
@@ -653,13 +732,34 @@ def run_admission(
     ]
     watched.extend((path, runtime_inputs[name]) for name, path in runtime_paths.items())
     watched.extend(pair_originals)
-    if any(path.read_bytes() != raw for path, raw in watched):
+    watched_limits = {
+        request_path: 1_000_000,
+        passport_path: 10_000_000,
+        spec_path: 10_000_000,
+        **{
+            path: {
+                "claim_policy": 256_000,
+                "bundle": 256_000,
+                "decision": 1_000_000,
+                "receipt_trust": 1_000_000,
+                "decision_trust": 1_000_000,
+            }[name]
+            for name, path in runtime_paths.items()
+        },
+        **pair_limits,
+    }
+    if any(
+        read_bounded(path, watched_limits[path], "watched evidence input") != raw
+        for path, raw in watched
+    ):
         raise ValueError("evidence inputs changed during evaluation")
-    if digest(Path(__file__).read_bytes()) != policy_digest:
+    if digest(read_bounded(policy_path, 2_000_000, "admission policy")) != policy_digest:
         raise ValueError("admission policy changed during evaluation")
-    if digest(cli.read_bytes()) != cli_digest:
+    if digest(read_bounded(cli, 64_000_000, "Feature Passport executable")) != cli_digest:
         raise ValueError("Feature Passport executable changed during evaluation")
-    if any(p.read_bytes() != raw for p, raw in watched):
+    if any(
+        read_bounded(p, watched_limits[p], "watched evidence input") != raw for p, raw in watched
+    ):
         raise ValueError("evidence inputs changed during evaluation")
     result = evaluate_claims(request, passport, resolution, runtime_results)
     blockers = []
@@ -699,7 +799,7 @@ def run_admission(
         **result,
         "canonical_mutations_allowed": False,
         "runtime_code_mutations_allowed": False,
-        "receipt_signature_verified": bool(
+        "feature_passport_decision_trusted": bool(
             mapped
             and runtime_process is not None
             and runtime_results[mapped[0]["id"]] in {None, "signed_decision_not_accepted"}

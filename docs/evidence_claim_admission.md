@@ -102,11 +102,12 @@ current inputs instead of replaying old admission. `review_pending` remains an
 aggregate blocker even if source/runtime claims individually pass.
 
 The tool is read-only (`canonical_mutations_allowed: false`,
-`runtime_code_mutations_allowed: false`). `receipt_signature_verified` is true
-only when live `verify-decision` returns a trusted report; source-only admission
-does not verify receipt signatures. No lifecycle mutation endpoint consumes this
-report yet. Future lifecycle enforcement must invoke current admission rather than
-trust an authored flag or a report filename.
+`runtime_code_mutations_allowed: false`). `feature_passport_decision_trusted` is
+true only when live `verify-decision` returns a trusted report for the mapped
+claim. It can be true for a trusted `not_satisfied` result even though that claim
+remains unknown; source-only admission does not verify receipt signatures. No
+lifecycle mutation endpoint consumes this report yet. Future lifecycle enforcement
+must invoke current admission rather than trust an authored flag or a report filename.
 
 Validation: `make test-evidence-claim-gate PYTHON=.venv/bin/python` plus the
 Supervisor regression `test_canonical_evidence_claims_cannot_assert_verdict`.
