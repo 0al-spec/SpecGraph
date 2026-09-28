@@ -159,7 +159,10 @@ def unique_object(pairs):
 
 
 def read_json(raw):
-    return json.loads(raw, object_pairs_hook=unique_object)
+    def reject_constant(value):
+        raise ValueError(f"non-finite JSON number: {value}")
+
+    return json.loads(raw, object_pairs_hook=unique_object, parse_constant=reject_constant)
 
 
 def run_admission(
@@ -218,7 +221,7 @@ def run_admission(
         command = [str(cli), "resolve-sources", str(snapshot)]
         for name, path in sorted(repositories.items()):
             command.extend(["--repository", f"{name}={path}"])
-        process = subprocess.run(command, capture_output=True, text=True, timeout=120)
+        process = subprocess.run(command, capture_output=True, timeout=120)
     if any(
         p.read_bytes() != raw
         for p, raw in (
@@ -260,7 +263,7 @@ def run_admission(
             "executable_sha256": cli_digest,
             "profile": "pinned_swift_source_resolution",
             "exit_code": process.returncode,
-            "report_sha256": digest(process.stdout.encode()),
+            "report_sha256": digest(process.stdout),
         },
         "source_resolution": resolution,
         "blockers": blockers,
@@ -296,7 +299,7 @@ def main(argv=None):
             args.feature_passport_cli_sha256,
             repositories,
         )
-        print(json.dumps(result, indent=2, sort_keys=True))
+        print(json.dumps(result, indent=2, sort_keys=True, allow_nan=False))
         return 0 if result["admitted"] else 2
     except (OSError, ValueError, TypeError, subprocess.SubprocessError) as error:
         print(

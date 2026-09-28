@@ -224,6 +224,38 @@ def test_cli_live_adapter_is_deterministic(cli_inputs):
     assert first[1]["canonical_mutations_allowed"] is False
 
 
+def test_adapter_report_digest_covers_raw_stdout_bytes(cli_inputs, inputs):
+    import hashlib
+    import json
+
+    report = inputs[2]
+    raw_report = json.dumps(report, sort_keys=True).encode() + b"\r\n"
+    executable = cli_inputs[3]
+    executable.write_text(
+        "#!/usr/bin/env python3\nimport sys\nsys.stdout.buffer.write(" + repr(raw_report) + ")\n"
+    )
+    code, result = invoke_cli(cli_inputs)
+    assert code == 0
+    assert result["adapter"]["report_sha256"] == hashlib.sha256(raw_report).hexdigest()
+
+
+@pytest.mark.parametrize("constant", ["NaN", "Infinity", "-Infinity"])
+def test_json_boundary_rejects_nonfinite_numbers(constant):
+    with pytest.raises(ValueError, match="non-finite JSON number"):
+        gate.read_json('{"unused":' + constant + "}")
+
+
+def test_cli_rejects_nonfinite_adapter_response(cli_inputs):
+    raw_response = '{"unused": NaN}\n'
+    executable = cli_inputs[3]
+    executable.write_text(
+        "#!/usr/bin/env python3\nimport sys\nsys.stdout.write(" + repr(raw_response) + ")\n"
+    )
+    code, result = invoke_cli(cli_inputs)
+    assert code == 1 and not result["admitted"]
+    assert "non-finite JSON number" in result["error"]
+
+
 @pytest.mark.parametrize("target", [1, 2])
 def test_cli_rejects_stale_subject(cli_inputs, target):
     path = cli_inputs[target]
