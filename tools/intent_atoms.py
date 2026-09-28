@@ -79,7 +79,7 @@ def _read_tree_documents(
         "--",
         f":(literal){spec_root}",
     )
-    documents: dict[str, bytes] = {}
+    blob_paths: list[tuple[str, str]] = []
     diagnostics: list[dict[str, str]] = []
     for entry in listing.split(b"\0"):
         if not entry:
@@ -109,7 +109,35 @@ def _read_tree_documents(
                 )
             )
             continue
-        documents[path] = _git(repo, "cat-file", "blob", object_id)
+        blob_paths.append((path, object_id))
+
+    documents: dict[str, bytes] = {}
+    if blob_paths:
+        request = b"".join(object_id.encode("ascii") + b"\n" for _, object_id in blob_paths)
+        output = subprocess.run(
+            ["git", "-C", repo, "cat-file", "--batch"],
+            input=request,
+            check=True,
+            capture_output=True,
+        ).stdout
+        offset = 0
+        for path, object_id in blob_paths:
+            header_end = output.find(b"\n", offset)
+            if header_end < 0:
+                raise ValueError("Git returned a truncated cat-file batch header")
+            header = output[offset:header_end].split()
+            if len(header) != 3 or header[0].decode("ascii") != object_id or header[1] != b"blob":
+                raise ValueError("Git returned an unexpected cat-file batch header")
+            try:
+                size = int(header[2])
+            except ValueError as exc:
+                raise ValueError("Git returned an invalid cat-file blob size") from exc
+            content_start = header_end + 1
+            content_end = content_start + size
+            if content_end >= len(output) or output[content_end : content_end + 1] != b"\n":
+                raise ValueError("Git returned a truncated cat-file batch blob")
+            documents[path] = output[content_start:content_end]
+            offset = content_end + 1
     return documents, diagnostics
 
 
