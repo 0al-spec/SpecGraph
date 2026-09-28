@@ -52703,6 +52703,8 @@ def run_codex(
         profile=profile,
         bypass_inner_sandbox=bypass_inner_sandbox,
     )
+    final_message_path = child_codex_home / "executor-final-message.txt"
+    cmd[-1:-1] = ["--output-last-message", str(final_message_path)]
     env = os.environ.copy()
     env["CODEX_HOME"] = str(child_codex_home)
     codex_executable = Path(cmd[0])
@@ -52759,10 +52761,13 @@ def run_codex(
     quiet_progress_windows_allowed = quiet_progress_windows_for_reasoning(profile.reasoning_effort)
     base_timeout_remaining = timeout_seconds
     quiet_windows_without_progress = 0
-    last_progress_state = capture_nested_executor_progress(
-        worktree_path, stdout_chunks, stderr_chunks
-    )
+    last_progress_state = None
+    final_message = ""
+    process_reaped = False
     try:
+        last_progress_state = capture_nested_executor_progress(
+            worktree_path, stdout_chunks, stderr_chunks
+        )
         while True:
             wait_timeout = (
                 poll_seconds
@@ -52771,6 +52776,7 @@ def run_codex(
             )
             try:
                 returncode = process.wait(timeout=wait_timeout)
+                process_reaped = True
                 break
             except subprocess.TimeoutExpired:
                 if base_timeout_remaining > 0:
@@ -52820,15 +52826,31 @@ def run_codex(
         stderr_chunks.append(timeout_message)
         emit(f"[codex stderr] {timeout_message.rstrip()}", file=sys.stderr)
         process.wait()
+        process_reaped = True
         stdout_thread.join()
         stderr_thread.join()
     finally:
+        if not process_reaped:
+            try:
+                process.kill()
+            except ProcessLookupError:
+                pass
+            process.wait()
+        stdout_thread.join()
+        stderr_thread.join()
+        if final_message_path.is_file():
+            try:
+                final_message = final_message_path.read_text(encoding="utf-8")
+            except (OSError, UnicodeError) as error:
+                stderr_chunks.append(f"supervisor final-message read error: {error}\n")
+        if stdout_chunks:
+            stderr_chunks.append("\n[executor stdout transcript]\n" + "".join(stdout_chunks))
         shutil.rmtree(child_codex_home, ignore_errors=True)
 
     return subprocess.CompletedProcess(
         args=cmd,
         returncode=returncode,
-        stdout="".join(stdout_chunks),
+        stdout=final_message,
         stderr="".join(stderr_chunks),
     )
 

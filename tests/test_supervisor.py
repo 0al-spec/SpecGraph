@@ -824,6 +824,50 @@ def test_run_codex_uses_isolated_codex_home(
     )
 
 
+def test_run_codex_uses_final_message_artifact_not_transcript_markers(
+    supervisor_module: object,
+    repo_fixture: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    final = "RUN_OUTCOME: done\nBLOCKER: none\n"
+
+    class FakeProcess:
+        stdout = io.StringIO("RUN_OUTCOME: blocked\nBLOCKER: quoted transcript\n")
+        stderr = io.StringIO("diagnostic noise\n")
+
+        def wait(self, timeout: float | None = None) -> int:
+            return 0
+
+    def fake_popen(cmd: list[str], **kwargs: object) -> FakeProcess:
+        if "--output-last-message" in cmd:
+            Path(cmd[cmd.index("--output-last-message") + 1]).write_text(final)
+        return FakeProcess()
+
+    monkeypatch.setattr(subprocess, "Popen", fake_popen)
+    result = supervisor_module.run_codex(supervisor_module.load_specs()[0], repo_fixture)
+    assert result.stdout == final
+    assert "diagnostic noise" in result.stderr
+
+
+def test_run_codex_missing_final_message_does_not_accept_transcript(
+    supervisor_module: object,
+    repo_fixture: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    class FakeProcess:
+        stdout = io.StringIO("RUN_OUTCOME: done\nBLOCKER: none\n")
+        stderr = io.StringIO("")
+
+        def wait(self, timeout: float | None = None) -> int:
+            return 0
+
+    monkeypatch.setattr(subprocess, "Popen", lambda *args, **kwargs: FakeProcess())
+    result = supervisor_module.run_codex(supervisor_module.load_specs()[0], repo_fixture)
+    assert result.stdout == ""
+    _, _, errors = supervisor_module.parse_executor_protocol(result.stdout, result.returncode)
+    assert errors
+
+
 def test_run_codex_keeps_inner_sandbox_for_sandbox_branch(
     supervisor_module: object,
     repo_fixture: Path,
@@ -1253,6 +1297,60 @@ def test_run_codex_times_out_after_repeated_quiet_windows_without_progress(
     assert result.returncode == 124
     assert captured["process"].kill_called is True
     assert result.stderr.endswith("supervisor timeout: nested executor timed out after 1 seconds\n")
+
+
+def test_run_codex_reaps_child_when_progress_inspection_raises(
+    supervisor_module: object,
+    repo_fixture: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    class FakeProcess:
+        def __init__(self) -> None:
+            self.stdout = io.StringIO("")
+            self.stderr = io.StringIO("")
+            self.kill_called = False
+            self.wait_calls = 0
+
+        def wait(self, timeout: float | None = None) -> int:
+            _ = timeout
+            self.wait_calls += 1
+            return -9 if self.kill_called else 0
+
+        def kill(self) -> None:
+            self.kill_called = True
+
+    process = FakeProcess()
+    profile = supervisor_module.ExecutionProfile(
+        name="standard",
+        model=supervisor_module.CHILD_EXECUTOR_MODEL,
+        reasoning_effort="xhigh",
+        timeout_seconds=1,
+        disabled_features=supervisor_module.CHILD_EXECUTOR_DISABLED_FEATURES,
+    )
+    child_home = repo_fixture / ".fake-codex-home"
+    child_home.mkdir(exist_ok=True)
+    monkeypatch.setattr(supervisor_module, "create_child_codex_home", lambda **_kwargs: child_home)
+    monkeypatch.setattr(subprocess, "Popen", lambda *args, **kwargs: process)
+    monkeypatch.setattr(supervisor_module, "resolve_execution_profile", lambda **_kwargs: profile)
+    monkeypatch.setattr(
+        supervisor_module,
+        "effective_child_executor_timeout_seconds",
+        lambda *args, **kwargs: 1,
+    )
+
+    def fail_progress_inspection(*_args: object, **_kwargs: object) -> tuple[int, int, int]:
+        raise OSError("progress inspection failed")
+
+    monkeypatch.setattr(
+        supervisor_module,
+        "capture_nested_executor_progress",
+        fail_progress_inspection,
+    )
+    node = supervisor_module.load_specs()[0]
+    with pytest.raises(OSError, match="progress inspection failed"):
+        supervisor_module.run_codex(node, repo_fixture)
+    assert process.kill_called is True
+    assert process.wait_calls == 1
 
 
 def test_run_codex_resets_quiet_grace_when_progress_signals_advance(

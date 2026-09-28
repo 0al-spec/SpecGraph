@@ -2178,6 +2178,9 @@
     "proposal_id": "0047",
     "posture": "synchronous_runtime_slice",
     "runtime_surfaces": [
+      "tools/implementation_contract_pack.py",
+      "tests/test_implementation_contract_pack.py",
+      "docs/implementation_contract_pack.md",
       "tools/supervisor.py",
       "tests/test_supervisor.py",
       "tools/supervisor_evidence_packet_policy.json",
@@ -2186,6 +2189,10 @@
       "Makefile"
     ],
     "runtime_markers": [
+      {
+        "path": "tools/implementation_contract_pack.py",
+        "pattern": "def build_contract_pack("
+      },
       {
         "path": "tools/supervisor_evidence_packet_policy.json",
         "pattern": "\"artifact_kind\": \"supervisor_evidence_packet_policy\""
@@ -2205,6 +2212,10 @@
     ],
     "validation_markers": [
       {
+        "path": "tests/test_implementation_contract_pack.py",
+        "pattern": "def test_handoff_preserves_obligations_without_granting_execution("
+      },
+      {
         "path": "tests/test_supervisor.py",
         "pattern": "def test_main_builds_supervisor_evidence_packet_as_standalone_command("
       },
@@ -2218,6 +2229,10 @@
       }
     ],
     "observation_markers": [
+      {
+        "path": "Makefile",
+        "pattern": "implementation-contract-pack:"
+      },
       {
         "path": "tools/supervisor.py",
         "pattern": "write_supervisor_evidence_packet(packet)"

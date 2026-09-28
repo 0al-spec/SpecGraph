@@ -1891,6 +1891,12 @@ Important fields:
 
 Machine-protocol invariant:
 
+- Nested Codex refinement captures its final response with `--output-last-message`
+  in the isolated child home and joins stdout/stderr readers before cleanup.
+  Only that final response supplies protocol markers. Missing or empty response
+  artifacts fail the existing protocol gate; transcript copies of markers do not
+  authorize a candidate. The response is retained as run stdout before cleanup.
+
 - a successful child executor run must emit both `RUN_OUTCOME:` and `BLOCKER:`
   markers on stdout
 - missing markers are treated as executor protocol failure, not as an implicit
