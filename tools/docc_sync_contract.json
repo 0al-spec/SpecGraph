@@ -410,6 +410,23 @@
         "unknown",
         "canonical_mutations_allowed: false"
       ]
+    },
+    {
+      "id": "intent-atoms-profile",
+      "description": "The SpecGraph Intent Atoms v1 counting profile and DocC explanation must stay aligned.",
+      "docs": [
+        "docs/intent_atoms.md"
+      ],
+      "docc": [
+        "Sources/SpecGraph/Documentation.docc/IntentAtoms.md"
+      ],
+      "required_terms": [
+        "specgraph-intent-atoms-v1",
+        "atoms.intents[]",
+        "specgraph_intent_atoms_snapshot",
+        "human authorship",
+        "zero-atom"
+      ]
     }
   ]
 }
