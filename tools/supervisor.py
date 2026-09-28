@@ -8019,7 +8019,7 @@ def validate_status_format(node_data: dict[str, Any]) -> list[str]:
     acceptance = node_data.get("acceptance")
     if not isinstance(acceptance, list):
         return ["acceptance list must be present"]
-    return []
+    return get_spec_yaml_module().validate_evidence_claim_declarations(node_data)
 
 
 def validate_acceptance_evidence(node_data: dict[str, Any]) -> list[str]:

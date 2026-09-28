@@ -27,3 +27,13 @@ request. Preserve that chronology. The first realization projects explicit-node
 observability obligations into a reviewable contract pack; it does not infer
 requirements from implementation or introduce a Feature Passport dependency on
 SpecGraph. Inherited principles and automatic task dispatch remain future work.
+
+
+## Evidence admission follow-up — 2026-09-28
+
+The owner clarified that implementation/runtime claims must require deterministic
+formal evidence through Feature Passport. Source inspection found a working
+upstream pinned-source resolver but no runtime receipt evaluator. The first
+realization therefore gates source identity, reserves declaration-only claims,
+and fails closed for unsupported runtime/test/effect/outcome evidence. Spec
+maturity and implementation proof remain separate; no graph status is promoted.

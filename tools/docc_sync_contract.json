@@ -430,6 +430,23 @@
         "canonical_mutations_allowed: false",
         "runtime_code_mutations_allowed: false"
       ]
+    },
+    {
+      "id": "evidence-claim-admission",
+      "description": "Bounded source admission must not promote runtime claims.",
+      "docs": [
+        "docs/evidence_claim_admission.md"
+      ],
+      "docc": [
+        "Sources/SpecGraph/Documentation.docc/ImplementationContractPack.md"
+      ],
+      "required_terms": [
+        "0047",
+        "local_source_v1",
+        "evidence_claims",
+        "source_anchored",
+        "evidence_evaluator_unavailable"
+      ]
     }
   ]
 }

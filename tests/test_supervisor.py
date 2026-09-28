@@ -41732,3 +41732,22 @@ def test_branch_rewrite_reports_missing_product_reference(
             "finding": "missing_spec_reference",
         }
     ]
+
+
+def test_canonical_evidence_claims_cannot_assert_verdict(supervisor_module):
+    node = {
+        "status": "reviewed",
+        "acceptance": ["criterion"],
+        "evidence_claims": [
+            {
+                "id": "runtime",
+                "kind": "runtime_verified",
+                "passport_criterion_ids": ["rule"],
+                "state": "satisfied",
+            }
+        ],
+    }
+    assert any(
+        "verdicts are derived" in message
+        for message in supervisor_module.validate_status_format(node)
+    )
