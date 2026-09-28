@@ -1,5 +1,8 @@
 name: Intent Atoms PR report
 
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
 on:
   workflow_run:
     workflows: [Python CI]
