@@ -692,3 +692,67 @@ def test_aggregate_pair_sizes_are_rejected_before_reading(tmp_path):
     pair_sources = [(None, None, observation, receipt)] * 7
     with pytest.raises(ValueError, match="aggregate limit"):
         gate._validate_pair_file_sizes(pair_sources)
+
+
+def test_runtime_and_source_adapters_use_the_same_pinned_cli_snapshot(runtime_cli_inputs, tmp_path):
+    import json
+
+    paths = runtime_cli_inputs
+    source_marker, runtime_marker = tmp_path / "source-cli-path", tmp_path / "runtime-cli-path"
+    spec_text = paths["spec"].read_text()
+    spec_text += "- id: source-1\n  kind: source_anchored\n  passport_criterion_ids: [rule]\n"
+    paths["spec"].write_text(spec_text)
+    request = json.loads(paths["request"].read_text())
+    request["claims"].append(
+        {"id": "source-1", "kind": "source_anchored", "passport_criterion_ids": ["rule"]}
+    )
+    request["source"]["spec_sha256"] = gate.digest(paths["spec"].read_bytes())
+    script = (
+        "#!/usr/bin/env python3\nimport sys\nfrom pathlib import Path\n"
+        f"source_marker = Path({str(source_marker)!r})\n"
+        f"runtime_marker = Path({str(runtime_marker)!r})\n"
+        "if sys.argv[1] == 'resolve-sources': source_marker.write_text(sys.argv[0])\n"
+        "if sys.argv[1] == 'verify-decision': runtime_marker.write_text(sys.argv[0])\n"
+        'print(\'{"trusted":true,"decision":"accepted","claim_id":"runtime-1","issues":[]}\')\n'
+    )
+    paths["cli"].write_text(script)
+    paths["cli"].chmod(0o755)
+    request["source"]["runtime"]["feature_passport_cli_sha256"] = gate.digest(
+        paths["cli"].read_bytes()
+    )
+    paths["request"].write_text(json.dumps(request))
+    code, result = invoke_runtime_cli(paths)
+    assert code == 2  # The fixture passport has no source anchors for source-1.
+    assert source_marker.read_text() == runtime_marker.read_text()
+    assert source_marker.read_text() != str(paths["cli"].resolve())
+
+
+def test_bounded_reads_reject_fifo_without_blocking(tmp_path):
+    import os
+
+    fifo = tmp_path / "input.fifo"
+    os.mkfifo(fifo)
+    with pytest.raises(ValueError, match="regular file"):
+        gate.read_bounded(fifo, 100, "test input")
+
+
+def test_subprocess_stderr_is_bounded():
+    command = [sys.executable, "-c", "import sys; sys.stderr.write('x' * 1_000_001)"]
+    with pytest.raises(ValueError, match="stderr exceeds output limit"):
+        gate.run_bounded(command, 2, 100, 1_000_000)
+
+
+def test_subprocess_timeout_kills_child_holding_pipes():
+    import subprocess
+    import time
+
+    command = [
+        sys.executable,
+        "-c",
+        "import subprocess,sys; "
+        "subprocess.Popen([sys.executable, '-c', 'import time; time.sleep(15)'])",
+    ]
+    started = time.monotonic()
+    with pytest.raises(subprocess.TimeoutExpired):
+        gate.run_bounded(command, 0.2, 100, 100)
+    assert time.monotonic() - started < 3

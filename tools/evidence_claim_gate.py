@@ -9,6 +9,7 @@ import os
 import re
 import selectors
 import signal
+import stat
 import subprocess
 import tempfile
 import time
@@ -230,8 +231,14 @@ def prefixed_digest(raw):
 
 
 def read_bounded(path, limit, label):
-    with Path(path).open("rb") as stream:
-        raw = stream.read(limit + 1)
+    descriptor = os.open(path, os.O_RDONLY | getattr(os, "O_NONBLOCK", 0))
+    try:
+        if not stat.S_ISREG(os.fstat(descriptor).st_mode):
+            raise ValueError(f"{label} must be a regular file")
+        with os.fdopen(descriptor, "rb", closefd=False) as stream:
+            raw = stream.read(limit + 1)
+    finally:
+        os.close(descriptor)
     if len(raw) > limit:
         raise ValueError(f"{label} exceeds {limit}-byte limit")
     return raw
@@ -655,27 +662,32 @@ def run_admission(
         root = Path(directory)
         snapshot = root / "passport.json"
         snapshot.write_bytes(passport_raw)
+        copied_cli = root / "feature-passport"
+        copied_cli.write_bytes(cli_raw)
+        copied_cli.chmod(0o700)
+        if (
+            digest(read_bounded(copied_cli, 64_000_000, "Feature Passport executable snapshot"))
+            != cli_digest
+        ):
+            raise ValueError("Feature Passport executable snapshot digest mismatch")
         process = None
         resolution = {"validation_issues": [], "anchors": []}
         if any(c["kind"] == "source_anchored" for c in request["claims"]):
-            command = [str(cli), "resolve-sources", str(snapshot)]
+            command = [str(copied_cli), "resolve-sources", str(snapshot)]
             for name, path in sorted(repositories.items()):
                 command.extend(["--repository", f"{name}={path}"])
             process = run_bounded(command, 120, 16_000_000, 1_000_000)
+            if (
+                digest(read_bounded(copied_cli, 64_000_000, "Feature Passport executable snapshot"))
+                != cli_digest
+            ):
+                raise ValueError("Feature Passport executable snapshot changed during evaluation")
             if process.returncode not in {0, 1}:
                 raise ValueError("Feature Passport source adapter execution failed")
             resolution = read_json(process.stdout)
             if not isinstance(resolution, dict):
                 raise ValueError("invalid Feature Passport source response")
         if mapped:
-            copied_cli = root / "feature-passport"
-            copied_cli.write_bytes(cli_raw)
-            copied_cli.chmod(0o700)
-            if (
-                digest(read_bounded(copied_cli, 64_000_000, "Feature Passport executable snapshot"))
-                != cli_digest
-            ):
-                raise ValueError("Feature Passport executable snapshot digest mismatch")
             snapshots = {}
             for name in runtime_paths:
                 snapshots[name] = root / (name + ".json")
