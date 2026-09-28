@@ -1,11 +1,11 @@
 # Evidence claim admission
 
-Proposal `0047` now supplies the bounded `local_source_v1` gate. This is a
-SpecGraph consumer of Feature Passport's existing pinned Swift source-resolution
-contract. Feature Passport acquires no dependency on SpecGraph. The runtime
-receipt model in upstream proposal `0001` v0.3.0 remains future evaluator work;
-this adapter does not create a competing receipt schema or update proposal
-`0203`'s historical upstream adoption snapshot implicitly.
+Proposal `0047` now supplies bounded `local_source_v1` and
+`runtime_verified_v1` admission profiles. SpecGraph consumes Feature Passport's
+pinned source-resolution and signed aggregate-decision contracts; Feature
+Passport acquires no dependency on SpecGraph. This does not change upstream
+proposal `0203`'s historical adoption snapshot or create a competing receipt
+schema.
 
 ## Declarations and derived verdicts
 
@@ -18,11 +18,13 @@ evidence_claims:
   passport_criterion_ids: [ordered-composition, deterministic-selection]
 ```
 
-Every declaration has exactly these three fields; IDs and criterion references
-must be unique and nonempty. Supervisor validation and YAML lint reject authored
-verdicts such as `state`, `verified` or `satisfied` in this surface. Existing nodes
-without declarations remain valid. This is an additive reserved surface, not a
-scan for arbitrary product fields named `verified` elsewhere in a specification.
+Every declaration requires `id`, `kind`, and `passport_criterion_ids`; IDs and
+criterion references must be unique and nonempty. `runtime_verified` may add an
+exact `feature_passport_decision` identity mapping (`feature_id`, passport and
+claim-policy identity/version, `claim_id`, policy digest, predicate profile,
+authority ID, and key ID). It contains no verdict. Supervisor validation and YAML
+lint reject additional fields and authored verdicts such as `state`, `verified`,
+or `satisfied`. Existing nodes without declarations remain valid.
 
 Claims are orthogonal to spec maturity (`linked`, `reviewed`, `frozen`). No source
 resolution result changes those statuses. Declarations require the same normal
@@ -46,11 +48,20 @@ make evidence-claim-gate PYTHON=.venv/bin/python \
   CLAIM_REPOSITORY=zeusus=/path/Zeusus
 ```
 
-The tool snapshots and hashes inputs, invokes the explicitly digest-pinned
-Feature Passport executable against those exact passport bytes, checks for
-concurrent input/binary changes, and interprets its live source-resolution report.
-It accepts no cached success-report path. CLI repository flags may be repeated;
-the Make shortcut covers the single-repository pilot.
+The tool snapshots and hashes inputs and invokes the explicitly digest-pinned
+Feature Passport executable. Source claims use `resolve-sources`; a mapped runtime
+claim invokes `verify-decision` against snapshots of passport, claim policy,
+bundle, signed decision, both trust stores, and every referenced observation and
+receipt. The request pins their raw-byte SHA-256 digests, including the CLI bytes.
+Bundle pair paths must stay below the bundle directory. Input mutations during
+evaluation fail closed. Reports are never loaded from a cache. CLI repository
+flags may be repeated; the Make shortcut covers the single-repository pilot.
+
+For runtime admission, also pass `CLAIM_POLICY`, `CLAIM_BUNDLE`, `CLAIM_DECISION`,
+`CLAIM_RECEIPT_TRUST_STORE`, and `CLAIM_DECISION_TRUST_STORE`. Their raw-byte
+digests and the ordered `pair_files` (`observation_path`, `observation_sha256`,
+`receipt_path`, `receipt_sha256`) belong in `source.runtime` alongside the
+`feature_passport_cli_sha256` pin.
 
 Output is sorted JSON on stdout. Exit `0` means all requested claims admitted;
 `2` means a derived denial/unknown or a source review blocker; `1` means invalid
@@ -64,9 +75,16 @@ request, adapter binary, policy source, and raw adapter report by SHA-256.
   exact anchor coverage, and matching resolved identities and blob IDs for every
   explicitly bound implementation/test element at pinned commits. It confirms
   **syntactic source identity only**. Finding a test symbol does not run the test.
-- `tests_verified`, `runtime_verified`, `effect_committed`, and `outcome_completed`
-  yield `unknown / evidence_evaluator_unavailable`. A source pass cannot promote
-  these claims. Unsupported kinds are rejected at declaration validation.
+- An unmapped `runtime_verified` claim remains
+  `unknown / evidence_evaluator_unavailable`. A mapped runtime claim is satisfied
+  only when the live pinned CLI exits zero, emits strict JSON with `trusted: true`
+  and `decision: accepted`, and the signed decision identity, digest links,
+  predicate profile, authority and key exactly match the canonical declaration.
+  A trusted `not_satisfied` decision remains unknown. Signature and receipt trust
+  verification are performed by Feature Passport's live `verify-decision` call.
+- `tests_verified`, `effect_committed`, and `outcome_completed` remain
+  `unknown / evidence_evaluator_unavailable`. A source pass cannot promote them.
+  Unsupported kinds are rejected at declaration validation.
 - Missing, duplicate, unresolved, stale, or mismatched evidence never passes.
   Claims may individually be satisfied while aggregate admission is denied.
 - All requested claims must pass. No parent/child graph propagation or transitive
@@ -75,17 +93,20 @@ request, adapter binary, policy source, and raw adapter report by SHA-256.
 - Source gate must be `none`, with status `linked`, `reviewed`, or `frozen`.
   Pending source review remains a blocker even when anchors resolve.
 
-This local profile trusts the operator-selected executable and host. It is not a
-signed receipt, hermetic build attestation, production trace evaluation, typecheck,
-module-membership proof, or test result. The pure evaluator is deterministic for
-fixed inputs; the CLI also depends on pinned Git object availability and the host
-adapter environment. Missing objects fail closed. Reports are historical evidence:
-consumers must rerun against current inputs instead of replaying old admission.
+These local profiles trust the operator-selected executable and host. Runtime
+admission reruns signed aggregate-decision verification, but is not a hermetic
+build attestation, production trace evaluation, typecheck, module-membership proof,
+or test result. The source CLI depends on pinned Git object availability; missing
+objects fail closed. Reports are historical evidence: consumers must rerun against
+current inputs instead of replaying old admission. `review_pending` remains an
+aggregate blocker even if source/runtime claims individually pass.
 
 The tool is read-only (`canonical_mutations_allowed: false`,
-`runtime_code_mutations_allowed: false`, `receipt_signature_verified: false`).
-No lifecycle mutation endpoint consumes it yet. Future lifecycle enforcement must
-invoke current admission rather than trust an authored flag or a report filename.
+`runtime_code_mutations_allowed: false`). `receipt_signature_verified` is true
+only when live `verify-decision` returns a trusted report; source-only admission
+does not verify receipt signatures. No lifecycle mutation endpoint consumes this
+report yet. Future lifecycle enforcement must invoke current admission rather than
+trust an authored flag or a report filename.
 
 Validation: `make test-evidence-claim-gate PYTHON=.venv/bin/python` plus the
 Supervisor regression `test_canonical_evidence_claims_cannot_assert_verdict`.

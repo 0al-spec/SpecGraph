@@ -2216,6 +2216,10 @@
       {
         "path": "tools/evidence_claim_gate.py",
         "pattern": "def run_admission("
+      },
+      {
+        "path": "tools/evidence_claim_gate.py",
+        "pattern": "verify-decision"
       }
     ],
     "validation_markers": [
@@ -2238,6 +2242,10 @@
       {
         "path": "tests/test_evidence_claim_gate.py",
         "pattern": "def test_source_success_cannot_promote_runtime_claim("
+      },
+      {
+        "path": "tests/test_evidence_claim_gate.py",
+        "pattern": "def test_runtime_verified_requires_fresh_trusted_accepted_decision("
       }
     ],
     "observation_markers": [

@@ -37,10 +37,14 @@ Supervisor and YAML lint reject self-authored verdicts. Exact spec/passport/requ
 and adapter/policy digests bind each derived report. Canonical declarations require
 complete request coverage; legacy explicit requests are exploratory only.
 
-`source_anchored` confirms pinned syntactic source identity. Tests, runtime,
-effect and outcome claims remain `unknown / evidence_evaluator_unavailable`.
-A review-pending source blocks aggregate admission even when anchors resolve.
-Exit codes are 0 admitted, 2 denied/unknown, 1 invalid input/execution failure.
-This local profile trusts the chosen host/executable, verifies no receipt signature,
-and never mutates canonical lifecycle status. It adds no Feature Passport dependency
-on SpecGraph. See repository `docs/evidence_claim_admission.md` for the full contract.
+`source_anchored` confirms pinned syntactic source identity. A canonical
+`runtime_verified` declaration may pin the bounded `runtime_verified_v1`
+Feature Passport aggregate-decision
+identity; the gate freshly invokes the digest-pinned `verify-decision` CLI and
+admits only a trusted `accepted` result whose signed identity and digest links
+match. Trusted `not_satisfied` remains unknown. Tests, effect and outcome claims
+remain `unknown / evidence_evaluator_unavailable`. A review-pending source blocks
+aggregate admission even when claims resolve. Exit codes are 0 admitted, 2
+denied/unknown, 1 invalid input/execution failure. The local gate never mutates
+canonical lifecycle status and adds no Feature Passport dependency on SpecGraph.
+See repository `docs/evidence_claim_admission.md` for the full contract.

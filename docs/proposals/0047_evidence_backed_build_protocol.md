@@ -543,8 +543,14 @@ live Feature Passport pinned source resolution under a digest-pinned local
 adapter policy. Optional canonical `evidence_claims` declare requirements only;
 Supervisor and YAML lint reject self-authored verdicts in that surface.
 
-Only `source_anchored` is currently evaluable. Runtime/test/effect/outcome claims
-remain unknown without their corresponding evaluators. Source review gates still
+`source_anchored` remains limited to pinned syntactic source identity. A bounded
+`runtime_verified_v1` path now freshly invokes Feature Passport `verify-decision`
+for one explicitly mapped claim. The request pins the CLI, claim policy, bundle,
+decision, trust stores, and raw referenced pair files; the gate snapshots and
+checks inputs around execution. Admission requires exit zero, strict trusted JSON,
+an accepted decision, and exact signed identity/digest/profile/authority/key
+matches. A trusted `not_satisfied` result remains unknown. Test/effect/outcome
+claims remain unknown without their own evaluators. Source review gates still
 block aggregate admission. No lifecycle state is mutated, no cross-spec inheritance
 is inferred, and no upstream runtime receipt contract is fabricated. This bounded
 slice precedes the full build/review/acceptance protocol described above.
