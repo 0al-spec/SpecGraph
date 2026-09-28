@@ -43107,15 +43107,21 @@ METRIC_PACK_ADAPTER_INPUT_CATALOG: dict[str, dict[str, Any]] = {
                 "source_artifact": "runs/intent_atoms_snapshot.json",
                 "source_field": "summary.atom_count",
                 "profile_id": "specgraph-intent-atoms-v1",
+                "spec_root": "specs/nodes",
                 "required_provenance": [
                     "commit_sha",
+                    "spec_root",
                     "profile.profile_id",
                     "profile.version",
                     "profile.sha256",
                     "analyzer_version",
+                    "analyzer_sha256",
                     "completeness",
                 ],
-                "usable_when": "complete and commit SHA matches the measured revision",
+                "usable_when": (
+                    "complete, spec_root is specs/nodes, and commit SHA matches "
+                    "the measured revision"
+                ),
             },
             {
                 "source_id": "legacy_acceptance_proxy",

@@ -491,7 +491,7 @@ def _text_atom_key(atom: dict[str, Any]) -> tuple[str, str, str]:
     return (
         str(atom.get("node_id", "")),
         str(atom.get("origin", "")),
-        str(atom.get("text", "").strip()),
+        _normalise_text(str(atom.get("text", ""))),
     )
 
 

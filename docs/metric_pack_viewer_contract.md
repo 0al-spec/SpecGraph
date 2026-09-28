@@ -309,7 +309,7 @@ Top-level shape:
       "generated_at": "...",
       "entry_count": 3
     },
-    "input_catalog_version": 4
+    "input_catalog_version": 5
   },
   "summary": {
     "pack_count": 3,

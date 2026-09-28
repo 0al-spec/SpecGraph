@@ -27,4 +27,7 @@ specification authority. See the [repository contract](https://github.com/0al-sp
 for counting rules, the `snapshot`, `diff`, and `replay` commands, and the
 optional versioned metric-pack source. Consumers use a snapshot only when its
 completeness is `complete` and its commit SHA matches the measured revision.
-The legacy `acceptance[]` binding stays available and is labeled as a proxy.
+Consumers accept the versioned snapshot only when it is complete, uses
+`specs/nodes`, carries analyzer and profile digests, and matches the measured
+commit SHA. The legacy `acceptance[]` binding stays available and is labeled as
+a proxy.

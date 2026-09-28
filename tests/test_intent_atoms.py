@@ -358,6 +358,8 @@ spec:
         "ambiguous_field_declaration",
         "missing_node_id",
     }
+    ambiguous_node = next(node for node in report["nodes"] if node["node_id"] == "SG-1")
+    assert ambiguous_node["mode"] == "ambiguous"
 
 
 def test_spec_root_rejects_absolute_and_traversal_paths() -> None:
@@ -581,3 +583,48 @@ def test_replay_does_not_report_net_delta_from_an_incomplete_window(tmp_path: Pa
     assert manifest["completeness"] == "incomplete"
     assert manifest["summary"]["incomplete_snapshot_count"] == 1
     assert manifest["summary"]["net_atom_count_delta"] is None
+
+
+def test_replay_keeps_commits_before_spec_root_as_incomplete_checkpoints(
+    tmp_path: Path,
+) -> None:
+    module = load_module()
+    repo = make_repo(tmp_path, {"README.md": "Before the spec tree existed.\n"})
+    before_spec_root = git(repo, "rev-parse", "HEAD")
+    (repo / "specs/nodes/one.yaml").parent.mkdir(parents=True)
+    (repo / "specs/nodes/one.yaml").write_text("id: SG-1\nacceptance: [one]\n", encoding="utf-8")
+    git(repo, "add", "specs/nodes/one.yaml")
+    git(repo, "commit", "-qm", "add the spec tree")
+    output_dir = tmp_path / "replay-before-spec-root"
+
+    manifest = module.build_replay(repo=str(repo), revision="HEAD", count=2, output_dir=output_dir)
+
+    assert manifest["completeness"] == "incomplete"
+    assert manifest["selection"]["commit_shas_oldest_to_newest"][0] == before_spec_root
+    assert manifest["summary"]["incomplete_snapshot_count"] == 1
+    assert manifest["summary"]["net_atom_count_delta"] is None
+    earlier = json.loads((output_dir / manifest["snapshot_files"][0]).read_text())
+    assert earlier["diagnostics"][0]["code"] == "missing_spec_root"
+
+
+def test_diff_normalises_line_endings_before_matching_unkeyed_atoms(tmp_path: Path) -> None:
+    module = load_module()
+    repo = make_repo(
+        tmp_path,
+        {"specs/nodes/one.yaml": 'id: SG-1\nacceptance: ["first\\r\\nsecond"]\n'},
+    )
+    before_sha = git(repo, "rev-parse", "HEAD")
+    (repo / "specs/nodes/one.yaml").write_text(
+        'id: SG-1\nacceptance: ["first\\nsecond"]\n', encoding="utf-8"
+    )
+    git(repo, "add", "specs/nodes/one.yaml")
+    git(repo, "commit", "-qm", "normalize line endings")
+
+    before = module.build_snapshot(repo=str(repo), revision=before_sha)
+    after = module.build_snapshot(repo=str(repo), revision="HEAD")
+    diff = module.diff_snapshots(before, after)
+
+    assert diff["summary"]["added_count"] == 0
+    assert diff["summary"]["removed_count"] == 0
+    assert diff["summary"]["modified_count"] == 0
+    assert diff["summary"]["unchanged_count"] == 1
