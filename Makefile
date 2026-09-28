@@ -1512,3 +1512,11 @@ test:
 .PHONY: test-supervisor
 test-supervisor:
 	@$(PYTEST) -q tests/test_supervisor.py
+
+
+.PHONY: evidence-claim-gate test-evidence-claim-gate
+evidence-claim-gate:
+	@$(PYTHON) tools/evidence_claim_gate.py --request '$(CLAIM_REQUEST)' --passport '$(CLAIM_PASSPORT)' --spec '$(CLAIM_SPEC)' --feature-passport-cli '$(CLAIM_FP_CLI)' --feature-passport-cli-sha256 '$(CLAIM_FP_CLI_SHA256)' --repository '$(CLAIM_REPOSITORY)'
+
+test-evidence-claim-gate:
+	@$(PYTHON) -m pytest -q tests/test_evidence_claim_gate.py

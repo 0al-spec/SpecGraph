@@ -27,3 +27,20 @@ storage, inherited-policy propagation and automatic task dispatch are future wor
 
 Nested Codex refinement reads the explicit `--output-last-message` artifact;
 diagnostic transcript text cannot replace final executor protocol markers.
+
+
+## Evidence claim admission
+
+`make evidence-claim-gate` invokes the bounded `local_source_v1` consumer of live
+Feature Passport source resolution. Optional `evidence_claims` are declarations;
+Supervisor and YAML lint reject self-authored verdicts. Exact spec/passport/request
+and adapter/policy digests bind each derived report. Canonical declarations require
+complete request coverage; legacy explicit requests are exploratory only.
+
+`source_anchored` confirms pinned syntactic source identity. Tests, runtime,
+effect and outcome claims remain `unknown / evidence_evaluator_unavailable`.
+A review-pending source blocks aggregate admission even when anchors resolve.
+Exit codes are 0 admitted, 2 denied/unknown, 1 invalid input/execution failure.
+This local profile trusts the chosen host/executable, verifies no receipt signature,
+and never mutates canonical lifecycle status. It adds no Feature Passport dependency
+on SpecGraph. See repository `docs/evidence_claim_admission.md` for the full contract.

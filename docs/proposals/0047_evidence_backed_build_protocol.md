@@ -533,3 +533,20 @@ unimplemented by this slice. See [the operator contract](../implementation_contr
 - The proposal defines parent composition contracts.
 - The proposal includes risk-based evidence ceremony.
 - The proposal preserves external anchors and source/license provenance.
+
+
+### Bounded evidence admission follow-up — 2026-09-28
+
+The Zeusus owner requested deterministic admission for implementation claims,
+separate from specification maturity. `tools/evidence_claim_gate.py` now consumes
+live Feature Passport pinned source resolution under a digest-pinned local
+adapter policy. Optional canonical `evidence_claims` declare requirements only;
+Supervisor and YAML lint reject self-authored verdicts in that surface.
+
+Only `source_anchored` is currently evaluable. Runtime/test/effect/outcome claims
+remain unknown without their corresponding evaluators. Source review gates still
+block aggregate admission. No lifecycle state is mutated, no cross-spec inheritance
+is inferred, and no upstream runtime receipt contract is fabricated. This bounded
+slice precedes the full build/review/acceptance protocol described above.
+See [evidence claim admission](../evidence_claim_admission.md) for trust boundaries,
+CLI, failure modes, and the external provider contract.

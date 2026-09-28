@@ -4,6 +4,8 @@
 from __future__ import annotations
 
 import datetime as dt
+import importlib.util
+import sys
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
@@ -144,8 +146,23 @@ def canonicalize_text(text: str) -> str:
     return dump_canonical_yaml(data)
 
 
+def validate_evidence_claim_declarations(data: dict[str, Any]) -> list[str]:
+    """Share the gate's declaration-only contract with lint and Supervisor."""
+    name = "_specgraph_evidence_claim_gate"
+    module = sys.modules.get(name)
+    if module is None:
+        spec = importlib.util.spec_from_file_location(
+            name, Path(__file__).with_name("evidence_claim_gate.py")
+        )
+        assert spec and spec.loader
+        module = importlib.util.module_from_spec(spec)
+        sys.modules[name] = module
+        spec.loader.exec_module(module)
+    return module.canonical_claim_errors(data)
+
+
 def _validate_spec_shape(data: dict[str, Any]) -> list[str]:
-    messages: list[str] = []
+    messages: list[str] = validate_evidence_claim_declarations(data)
 
     for field in SPEC_TIMESTAMP_FIELDS:
         value = data.get(field)

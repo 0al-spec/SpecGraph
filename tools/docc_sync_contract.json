@@ -432,6 +432,23 @@
       ]
     },
     {
+      "id": "evidence-claim-admission",
+      "description": "Bounded source admission must not promote runtime claims.",
+      "docs": [
+        "docs/evidence_claim_admission.md"
+      ],
+      "docc": [
+        "Sources/SpecGraph/Documentation.docc/ImplementationContractPack.md"
+      ],
+      "required_terms": [
+        "0047",
+        "local_source_v1",
+        "evidence_claims",
+        "source_anchored",
+        "evidence_evaluator_unavailable"
+        ]
+      },
+      {
       "id": "intent-atoms-profile",
       "description": "The SpecGraph Intent Atoms v1 counting profile and DocC explanation must stay aligned.",
       "docs": [

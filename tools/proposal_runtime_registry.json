@@ -2186,7 +2186,11 @@
       "tools/supervisor_evidence_packet_policy.json",
       "docs/supervisor_manual.md",
       "docs/proposals/0047_evidence_backed_build_protocol.md",
-      "Makefile"
+      "Makefile",
+      "tools/evidence_claim_gate.py",
+      "tools/spec_yaml.py",
+      "tests/test_evidence_claim_gate.py",
+      "docs/evidence_claim_admission.md"
     ],
     "runtime_markers": [
       {
@@ -2208,6 +2212,10 @@
       {
         "path": "tools/supervisor.py",
         "pattern": "\"--build-supervisor-evidence-packet\""
+      },
+      {
+        "path": "tools/evidence_claim_gate.py",
+        "pattern": "def run_admission("
       }
     ],
     "validation_markers": [
@@ -2226,6 +2234,10 @@
       {
         "path": "tests/test_supervisor.py",
         "pattern": "packet[\"raw_artifact_reference\"][\"content_sha256\"]"
+      },
+      {
+        "path": "tests/test_evidence_claim_gate.py",
+        "pattern": "def test_source_success_cannot_promote_runtime_claim("
       }
     ],
     "observation_markers": [
@@ -2244,6 +2256,10 @@
       {
         "path": "Makefile",
         "pattern": "supervisor-evidence-packet:"
+      },
+      {
+        "path": "Makefile",
+        "pattern": "evidence-claim-gate:"
       }
     ]
   },
