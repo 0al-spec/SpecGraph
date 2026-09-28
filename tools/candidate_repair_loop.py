@@ -9,6 +9,7 @@ import re
 from collections.abc import Callable
 from dataclasses import dataclass
 from datetime import datetime, timezone
+from enum import Enum
 from pathlib import Path
 from typing import Any
 
@@ -38,6 +39,73 @@ STRONG_CLAIM_TYPES = {
     "security_claim",
     "security_constraint",
 }
+
+
+@dataclass(frozen=True)
+class _AcceptanceCriterionContext:
+    node_id: str
+    requirement: Any
+    existing_acceptance_criteria: frozenset[str]
+
+
+class _AcceptanceCriterionDisposition(Enum):
+    IGNORE = "ignore"
+    ADD_PLACEHOLDER = "add_placeholder"
+
+
+def _acceptance_criterion_action(context: _AcceptanceCriterionContext) -> dict[str, Any]:
+    requirement = _dict(context.requirement)
+    req_id = _text(requirement.get("id"), "requirement")
+    ac_id = f"ac.repair.{_slug(req_id, 'requirement')}"
+    return _action(
+        action_id=f"repair.add-ac.{_slug(req_id, 'requirement')}",
+        kind="add_acceptance_criterion",
+        status="applied_to_preview",
+        target_ref=req_id,
+        source_findings=["pre_sib_acceptance_criteria_gap"],
+        rationale=("Add a reviewable placeholder acceptance criterion for uncovered requirement."),
+        operation={
+            "op": "add_acceptance_criterion",
+            "node_id": context.node_id,
+            "requirement_id": req_id,
+            "value": {
+                "id": ac_id,
+                "statement": (
+                    "Review criterion needed for requirement: "
+                    f"{_text(requirement.get('statement'), req_id)}"
+                ),
+                "repair_generated": True,
+            },
+        },
+    )
+
+
+_ACCEPTANCE_CRITERION_DECISION = FirstMatch.with_fallback(
+    (
+        (
+            PredicateSpec(
+                lambda context: not isinstance(context.requirement, dict),
+                name="acceptance_criterion.invalid_requirement",
+            ),
+            _AcceptanceCriterionDisposition.IGNORE,
+        ),
+        (
+            PredicateSpec(
+                lambda context: (
+                    bool(_text_list(context.requirement.get("acceptance_criteria_refs")))
+                    and all(
+                        ref in context.existing_acceptance_criteria
+                        for ref in _text_list(context.requirement.get("acceptance_criteria_refs"))
+                    )
+                ),
+                name="acceptance_criterion.already_covered",
+            ),
+            _AcceptanceCriterionDisposition.IGNORE,
+        ),
+    ),
+    _AcceptanceCriterionDisposition.ADD_PLACEHOLDER,
+    name="acceptance_criterion_repair",
+)
 
 
 def _now_iso() -> str:
@@ -335,46 +403,20 @@ def _repair_orphans(candidate_graph: dict[str, Any]) -> list[dict[str, Any]]:
 def _repair_acceptance_criteria(candidate_graph: dict[str, Any]) -> list[dict[str, Any]]:
     actions: list[dict[str, Any]] = []
     for node in _nodes(candidate_graph):
-        node_id = _text(node.get("id"))
         existing_ac = {
             _text(ac.get("id"))
             for ac in _list(node.get("acceptance_criteria"))
             if isinstance(ac, dict)
         }
         for requirement in _list(node.get("requirements")):
-            if not isinstance(requirement, dict):
-                continue
-            refs = _text_list(requirement.get("acceptance_criteria_refs"))
-            if refs and all(ref in existing_ac for ref in refs):
-                continue
-            req_id = _text(requirement.get("id"), "requirement")
-            ac_id = f"ac.repair.{_slug(req_id, 'requirement')}"
-            actions.append(
-                _action(
-                    action_id=f"repair.add-ac.{_slug(req_id, 'requirement')}",
-                    kind="add_acceptance_criterion",
-                    status="applied_to_preview",
-                    target_ref=req_id,
-                    source_findings=["pre_sib_acceptance_criteria_gap"],
-                    rationale=(
-                        "Add a reviewable placeholder acceptance criterion for "
-                        "uncovered requirement."
-                    ),
-                    operation={
-                        "op": "add_acceptance_criterion",
-                        "node_id": node_id,
-                        "requirement_id": req_id,
-                        "value": {
-                            "id": ac_id,
-                            "statement": (
-                                "Review criterion needed for requirement: "
-                                f"{_text(requirement.get('statement'), req_id)}"
-                            ),
-                            "repair_generated": True,
-                        },
-                    },
-                )
+            context = _AcceptanceCriterionContext(
+                node_id=_text(node.get("id")),
+                requirement=requirement,
+                existing_acceptance_criteria=frozenset(existing_ac),
             )
+            decision = _ACCEPTANCE_CRITERION_DECISION.decide(context)
+            if decision.value == _AcceptanceCriterionDisposition.ADD_PLACEHOLDER:
+                actions.append(_acceptance_criterion_action(context))
     return actions
 
 

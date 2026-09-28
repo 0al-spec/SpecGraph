@@ -99,6 +99,39 @@ def test_candidate_repair_loop_preview_applies_safe_repairs() -> None:
     assert product["claims"][0]["repair_generated_type_change"] is True
 
 
+def test_acceptance_criterion_spec_adds_only_uncovered_requirements() -> None:
+    module = load_module()
+    graph = {
+        "nodes": [
+            {
+                "id": "criteria-node",
+                "acceptance_criteria": [{"id": "ac-existing"}],
+                "requirements": [
+                    {
+                        "id": "fully-covered",
+                        "acceptance_criteria_refs": ["ac-existing"],
+                    },
+                    {
+                        "id": "partially-covered",
+                        "acceptance_criteria_refs": ["ac-existing", "ac-missing"],
+                    },
+                    {"id": "without-refs", "acceptance_criteria_refs": []},
+                    "invalid-requirement",
+                ],
+            }
+        ]
+    }
+
+    actions = module._repair_acceptance_criteria(graph)
+
+    assert [action["target_ref"] for action in actions] == [
+        "partially-covered",
+        "without-refs",
+    ]
+    assert all(action["status"] == "applied_to_preview" for action in actions)
+    assert all(action["operation"]["node_id"] == "criteria-node" for action in actions)
+
+
 def test_candidate_repair_loop_preview_applies_explicit_node_gap_action() -> None:
     module = load_module()
     candidate_graph = {
