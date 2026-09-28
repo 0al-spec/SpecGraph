@@ -1,0 +1,119 @@
+name: Intent Atoms PR report
+
+on:
+  workflow_run:
+    workflows: [Python CI]
+    types: [completed]
+
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+  resolve:
+    if: github.event.workflow_run.event == 'pull_request'
+    runs-on: ubuntu-latest
+    outputs:
+      pr_numbers: ${{ steps.resolve.outputs.pr_numbers }}
+    steps:
+      - name: Resolve PRs associated with the completed CI head
+        id: resolve
+        env:
+          GH_TOKEN: ${{ github.token }}
+          HEAD_SHA: ${{ github.event.workflow_run.head_sha }}
+          REPOSITORY: ${{ github.repository }}
+        run: |
+          pr_numbers="$(gh api --paginate \
+            "repos/${REPOSITORY}/commits/${HEAD_SHA}/pulls" \
+            --jq '.[].number' | sort -nu | jq -Rsc 'split("\n") | map(select(length > 0) | tonumber)')"
+          echo "pr_numbers=${pr_numbers}" >> "${GITHUB_OUTPUT}"
+
+  report:
+    needs: resolve
+    if: needs.resolve.outputs.pr_numbers != '[]'
+    strategy:
+      fail-fast: false
+      matrix:
+        pr_number: ${{ fromJSON(needs.resolve.outputs.pr_numbers) }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    concurrency:
+      group: intent-atoms-pr-${{ matrix.pr_number }}
+      cancel-in-progress: true
+    steps:
+      - name: Checkout trusted default branch
+        uses: actions/checkout@v6
+        with:
+          ref: ${{ github.event.repository.default_branch }}
+          fetch-depth: 1
+
+      - name: Read current pull request revisions
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PR_NUMBER: ${{ matrix.pr_number }}
+          REPOSITORY: ${{ github.repository }}
+          RUNNER_TEMP: ${{ runner.temp }}
+        run: |
+          gh api "repos/${REPOSITORY}/pulls/${PR_NUMBER}" \
+            > "${RUNNER_TEMP}/pull-request.json"
+          echo "base_sha=$(jq -r '.base.sha' "${RUNNER_TEMP}/pull-request.json")" \
+            >> "${GITHUB_ENV}"
+          echo "base_ref=$(jq -r '.base.ref' "${RUNNER_TEMP}/pull-request.json")" \
+            >> "${GITHUB_ENV}"
+
+      - name: Fetch PR revisions as Git objects
+        env:
+          PR_NUMBER: ${{ matrix.pr_number }}
+        run: |
+          git check-ref-format --branch "${base_ref}"
+          git fetch --no-tags origin \
+            "+refs/heads/${base_ref}:refs/remotes/pr-base/${PR_NUMBER}"
+          git fetch --no-tags --depth=1 origin \
+            "+refs/pull/${PR_NUMBER}/head:refs/remotes/pull/${PR_NUMBER}/head"
+          git cat-file -e "${base_sha}^{commit}"
+          echo "head_sha=$(git rev-parse "refs/remotes/pull/${PR_NUMBER}/head")" \
+            >> "${GITHUB_ENV}"
+
+      - name: Set up Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: "3.10"
+
+      - name: Install analyzer dependency
+        run: python -m pip install pyyaml==6.0.3
+
+      - name: Calculate Intent Atoms diff
+        env:
+          PR_NUMBER: ${{ matrix.pr_number }}
+          RUNNER_TEMP: ${{ runner.temp }}
+        run: |
+          python tools/intent_atoms.py diff \
+            --repo . \
+            --base "${base_sha}" \
+            --head "${head_sha}" \
+            --output "${RUNNER_TEMP}/intent-atoms-diff.json"
+          python tools/intent_atoms_pr_comment.py \
+            --report "${RUNNER_TEMP}/intent-atoms-diff.json" \
+            --payload "${RUNNER_TEMP}/intent-atoms-comment.json"
+
+      - name: Update the PR report comment
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PR_NUMBER: ${{ matrix.pr_number }}
+          RUNNER_TEMP: ${{ runner.temp }}
+          REPOSITORY: ${{ github.repository }}
+        run: |
+          existing_id="$(gh api --paginate \
+            "repos/${REPOSITORY}/issues/${PR_NUMBER}/comments?per_page=100" \
+            --jq '.[] | select(.user.login == "github-actions[bot]" and (.body | contains("<!-- specgraph-intent-atoms-v1 -->"))) | .id' \
+            | sed -n '1p')"
+
+          if [ -n "${existing_id}" ]; then
+            gh api --method PATCH \
+              "repos/${REPOSITORY}/issues/comments/${existing_id}" \
+              --input "${RUNNER_TEMP}/intent-atoms-comment.json" >/dev/null
+          else
+            gh api --method POST \
+              "repos/${REPOSITORY}/issues/${PR_NUMBER}/comments" \
+              --input "${RUNNER_TEMP}/intent-atoms-comment.json" >/dev/null
+          fi
