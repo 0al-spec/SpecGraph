@@ -1,0 +1,29 @@
+{
+  "profile_id": "specgraph-intent-atoms-v1",
+  "version": 1,
+  "included_fields": [
+    "acceptance[]",
+    "spec.acceptance[]",
+    "atoms.intents[]",
+    "spec.atoms.intents[]"
+  ],
+  "excluded_fields": [
+    "objective",
+    "scope",
+    "premises",
+    "decisions.rationale",
+    "acceptance_evidence",
+    "metadata",
+    "provenance",
+    "links and references"
+  ],
+  "rules": {
+    "explicit_intents_precede_acceptance": true,
+    "explicit_intent_statement_field": "statement",
+    "acceptance_item_type": "string",
+    "split_compound_sentences": false,
+    "semantic_deduplication": false,
+    "preserve_repetitions": true,
+    "normalize": ["line_endings", "trim_outer_whitespace"]
+  }
+}

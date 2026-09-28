@@ -309,7 +309,7 @@ Top-level shape:
       "generated_at": "...",
       "entry_count": 3
     },
-    "input_catalog_version": 4
+    "input_catalog_version": 5
   },
   "summary": {
     "pack_count": 3,
@@ -331,10 +331,14 @@ Top-level shape:
 }
 ```
 
-Catalog version 4 includes proxy/read-only bindings for SIB_FULL research
+Catalog version 5 includes proxy/read-only bindings for SIB_FULL research
 inputs:
 
-- `intent_atoms` -> `specs/nodes` via `acceptance[]`
+- `intent_atoms` keeps `acceptance[]` from `specs/nodes` as a labeled legacy
+  proxy and advertises `runs/intent_atoms_snapshot.json` from the
+  `specgraph-intent-atoms-v1` profile as an optional versioned source. A
+  snapshot is usable only when complete and tied to the measured commit; its
+  profile digest and analyzer version are required provenance.
 - `spec_verifiability_coverage` -> `runs/metric_signal_index.json` via
   `metrics.specification_verifiability`
 - `expected_implementation_potential` -> `runs/implementation_work_index.json`
