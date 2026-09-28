@@ -31,6 +31,8 @@ and does not check out or execute the historical revision:
 
 ```sh
 python3 tools/intent_atoms.py snapshot --repo . --revision main
+python3 tools/intent_atoms.py snapshot --repo . --revision HEAD \
+  --output runs/intent_atoms_snapshot.json
 python3 tools/intent_atoms.py snapshot --repo . --revision <commit> \
   --spec-root specs/nodes --output runs/intent_atoms_snapshot.json
 ```
@@ -55,3 +57,36 @@ The selected fields define v1 coverage. Specs with no supported declaration are
 reported as zero-atom nodes with mode `absent`; this is a coverage fact, not a
 claim that the node expresses no intent. Other semantic fields remain outside
 the v1 count.
+
+## Diff and history replay
+
+Compare revisions using the same current analyzer and profile:
+
+```sh
+python3 tools/intent_atoms.py diff --repo . --base <base-commit> --head <head-commit>
+python3 tools/intent_atoms.py replay --repo . --revision main --count 30 \
+  --output-dir runs/intent_atoms_replay_example
+```
+
+Diffs match explicit atoms by node ID and atom ID. Acceptance entries and
+explicit atoms without IDs match by node ID, origin, and normalized text;
+changed acceptance text appears as a removal and an addition. Cross-node moves
+and semantic rewrites are not inferred. A change between acceptance and
+explicit-atom modes is called out in `diagnostics.mode_transitions` so source
+representation changes are distinguishable from ordinary edits. Incomplete
+input remains visible in the diff's completeness state and diagnostics.
+
+Replay records the resolved tip SHA and the oldest-to-newest SHA list for up to
+30 first-parent commits, including commits without spec changes. It writes one
+snapshot per commit, one diff per adjacent pair, and a manifest into an empty
+output directory. The manifest pins the exact history window, profile digest,
+and analyzer source digest. To reproduce the window, use its recorded tip SHA
+and commit count with the analyzer version recorded in the manifest. Its summary
+includes accumulated additions, removals, modifications, and source-mode
+transitions as well as the net atom-count change.
+
+The metric-pack adapter advertises the versioned snapshot as an optional source.
+A consumer may use it only when its completeness is `complete`, its `spec_root`
+is `specs/nodes`, its analyzer and profile digests are present, and its commit
+SHA matches the measured revision. The pre-existing `acceptance[]` binding
+remains labeled as a `legacy proxy` for compatibility.

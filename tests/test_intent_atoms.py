@@ -116,6 +116,7 @@ acceptance:
     assert legacy["status"] == "reviewed"
     assert legacy["provenance"] == {"authority": None, "authored_by": None}
     assert len(report["profile"]["sha256"]) == 64
+    assert len(report["analyzer_sha256"]) == 64
     explicit = next(atom for atom in report["atoms"] if atom["atom_id"] == "A-1")
     assert explicit["text"] == "Explicit intent."
     assert explicit["premises"] == ["P-1"]
@@ -303,6 +304,62 @@ def test_snapshot_reports_absent_profile_fields_as_zero_atom_nodes(tmp_path: Pat
     assert report["nodes"][0]["mode"] == "absent"
 
 
+def test_invalid_optional_atom_metadata_marks_partial_without_breaking_json(
+    tmp_path: Path,
+) -> None:
+    module = load_module()
+    repo = make_repo(
+        tmp_path,
+        {
+            "specs/nodes/one.yaml": """
+id: SG-1
+kind: spec
+atoms:
+  intents:
+    - id: A-1
+      statement: Countable intent.
+      premises: [2026-01-01]
+"""
+        },
+    )
+
+    report = module.build_snapshot(repo=str(repo), revision="HEAD")
+
+    assert report["completeness"] == "incomplete"
+    assert report["summary"]["atom_count"] == 1
+    assert report["atoms"][0]["atom_id"] == "A-1"
+    assert report["diagnostics"][0]["code"] == "invalid_intent_atom_attribute"
+    json.dumps(report)
+
+
+def test_snapshot_marks_ambiguous_fields_and_missing_node_identity_incomplete(
+    tmp_path: Path,
+) -> None:
+    module = load_module()
+    repo = make_repo(
+        tmp_path,
+        {
+            "specs/nodes/ambiguous.yaml": """
+id: SG-1
+kind: spec
+acceptance: [legacy]
+spec:
+  acceptance: [envelope]
+""",
+            "specs/nodes/missing-id.yaml": "acceptance: [unlinked]\n",
+        },
+    )
+
+    report = module.build_snapshot(repo=str(repo), revision="HEAD")
+
+    assert report["completeness"] == "incomplete"
+    assert report["summary"]["atom_count"] == 0
+    assert {item["code"] for item in report["diagnostics"]} == {
+        "ambiguous_field_declaration",
+        "missing_node_id",
+    }
+
+
 def test_spec_root_rejects_absolute_and_traversal_paths() -> None:
     module = load_module()
 
@@ -313,3 +370,214 @@ def test_spec_root_rejects_absolute_and_traversal_paths() -> None:
             pass
         else:
             raise AssertionError(f"accepted invalid spec root: {path!r}")
+
+
+def test_snapshot_cli_creates_output_parent_and_writes_artifact(tmp_path: Path) -> None:
+    module = load_module()
+    repo = make_repo(
+        tmp_path,
+        {"specs/nodes/one.yaml": "id: SG-1\nkind: spec\nacceptance: [one]\n"},
+    )
+    output = tmp_path / "runs" / "nested" / "snapshot.json"
+
+    result = module.main(
+        ["snapshot", "--repo", str(repo), "--revision", "HEAD", "--output", str(output)]
+    )
+
+    assert result == 0
+    assert json.loads(output.read_text(encoding="utf-8"))["summary"]["atom_count"] == 1
+
+
+def test_diff_ignores_reordering_and_file_moves_but_reports_changes(tmp_path: Path) -> None:
+    module = load_module()
+    first = """
+id: SG-1
+kind: spec
+acceptance:
+  - First criterion.
+  - Second criterion.
+"""
+    explicit_first = """
+id: SG-2
+kind: spec
+atoms:
+  intents:
+    - id: A-1
+      statement: Original explicit intent.
+"""
+    repo = make_repo(
+        tmp_path,
+        {
+            "specs/nodes/original.yaml": first,
+            "specs/nodes/explicit.yaml": explicit_first,
+        },
+    )
+    before_sha = git(repo, "rev-parse", "HEAD")
+    old_path = repo / "specs/nodes/original.yaml"
+    new_path = repo / "specs/nodes/renamed.yaml"
+    old_path.rename(new_path)
+    new_path.write_text(
+        """
+id: SG-1
+kind: spec
+acceptance:
+  - " Second criterion. "
+  - Third criterion.
+""",
+        encoding="utf-8",
+    )
+    (repo / "specs/nodes/explicit.yaml").write_text(
+        """id: SG-2
+kind: spec
+atoms:
+  intents:
+    - id: A-1
+      statement: Revised explicit intent.
+""",
+        encoding="utf-8",
+    )
+    git(repo, "add", "-A")
+    git(repo, "commit", "-qm", "revise intent")
+    after_sha = git(repo, "rev-parse", "HEAD")
+
+    before = module.build_snapshot(repo=str(repo), revision=before_sha)
+    after = module.build_snapshot(repo=str(repo), revision=after_sha)
+    report = module.diff_snapshots(before, after)
+
+    assert report["completeness"] == "complete"
+    assert report["summary"] == {
+        "counts_are_partial": False,
+        "before_atom_count": 3,
+        "after_atom_count": 3,
+        "added_count": 1,
+        "removed_count": 1,
+        "modified_count": 1,
+        "unchanged_count": 1,
+        "net_count_delta": 0,
+    }
+    assert report["added"][0]["text"] == "Third criterion."
+    assert report["removed"][0]["text"] == "First criterion."
+    assert report["modified"][0]["atom_id"] == "A-1"
+    assert report["modified"][0]["before"]["source_path"] == "specs/nodes/explicit.yaml"
+    assert report["modified"][0]["after"]["source_path"] == "specs/nodes/explicit.yaml"
+
+
+def test_diff_marks_incomplete_snapshots_and_rejects_incompatible_profiles(
+    tmp_path: Path,
+) -> None:
+    module = load_module()
+    repo = make_repo(
+        tmp_path,
+        {"specs/nodes/one.yaml": "id: SG-1\nkind: spec\nacceptance: [one]\n"},
+    )
+    snapshot = module.build_snapshot(repo=str(repo), revision="HEAD")
+    incomplete = dict(snapshot)
+    incomplete["completeness"] = "incomplete"
+    report = module.diff_snapshots(snapshot, incomplete)
+    assert report["completeness"] == "incomplete"
+    assert report["summary"]["counts_are_partial"] is True
+
+    incompatible = dict(snapshot)
+    incompatible["profile"] = {**snapshot["profile"], "sha256": "0" * 64}
+    try:
+        module.diff_snapshots(snapshot, incompatible)
+    except ValueError as error:
+        assert "different profile" in str(error)
+    else:
+        raise AssertionError("accepted snapshots with different profile digests")
+
+
+def test_diff_marks_a_change_from_acceptance_to_explicit_atom_mode(tmp_path: Path) -> None:
+    module = load_module()
+    repo = make_repo(
+        tmp_path,
+        {"specs/nodes/one.yaml": "id: SG-1\nkind: spec\nacceptance: [one]\n"},
+    )
+    before_sha = git(repo, "rev-parse", "HEAD")
+    (repo / "specs/nodes/one.yaml").write_text(
+        "id: SG-1\nkind: spec\natoms:\n  intents:\n    - id: A-1\n      statement: one\n",
+        encoding="utf-8",
+    )
+    git(repo, "add", "specs/nodes/one.yaml")
+    git(repo, "commit", "-qm", "make atom declaration explicit")
+
+    before = module.build_snapshot(repo=str(repo), revision=before_sha)
+    after = module.build_snapshot(repo=str(repo), revision="HEAD")
+    report = module.diff_snapshots(before, after)
+
+    assert report["summary"]["added_count"] == 1
+    assert report["summary"]["removed_count"] == 1
+    assert report["diagnostics"]["mode_transitions"] == [
+        {"node_id": "SG-1", "before": "acceptance", "after": "explicit_intents"}
+    ]
+
+
+def test_replay_pins_first_parent_commits_and_writes_scoped_artifacts(
+    tmp_path: Path,
+) -> None:
+    module = load_module()
+    repo = make_repo(
+        tmp_path,
+        {"specs/nodes/one.yaml": "id: SG-1\nkind: spec\nacceptance: [one]\n"},
+    )
+    first_sha = git(repo, "rev-parse", "HEAD")
+    git(repo, "commit", "--allow-empty", "-qm", "no spec change")
+    middle_sha = git(repo, "rev-parse", "HEAD")
+    (repo / "specs/nodes/one.yaml").write_text(
+        "id: SG-1\nkind: spec\nacceptance: [one, two]\n", encoding="utf-8"
+    )
+    git(repo, "add", "specs/nodes/one.yaml")
+    git(repo, "commit", "-qm", "add criterion")
+    final_sha = git(repo, "rev-parse", "HEAD")
+    output_dir = tmp_path / "runs" / "intent-atoms-replay"
+
+    manifest = module.build_replay(repo=str(repo), revision="HEAD", count=30, output_dir=output_dir)
+
+    assert manifest["selection"]["tip_commit_sha"] == final_sha
+    assert len(manifest["analyzer_sha256"]) == 64
+    assert manifest["selection"]["commit_shas_oldest_to_newest"] == [
+        first_sha,
+        middle_sha,
+        final_sha,
+    ]
+    assert manifest["summary"] == {
+        "snapshot_count": 3,
+        "diff_count": 2,
+        "incomplete_snapshot_count": 0,
+        "net_atom_count_delta": 1,
+        "added_count_total": 1,
+        "removed_count_total": 0,
+        "modified_count_total": 0,
+        "source_mode_transition_count": 0,
+    }
+    assert (output_dir / "manifest.json").is_file()
+    assert len(list(output_dir.glob("snapshot-*.json"))) == 3
+    assert len(list(output_dir.glob("diff-*.json"))) == 2
+
+    try:
+        module.build_replay(repo=str(repo), revision="HEAD", count=1, output_dir=output_dir)
+    except ValueError as error:
+        assert "must be empty" in str(error)
+    else:
+        raise AssertionError("mixed a second replay into an existing output directory")
+
+
+def test_replay_does_not_report_net_delta_from_an_incomplete_window(tmp_path: Path) -> None:
+    module = load_module()
+    repo = make_repo(
+        tmp_path,
+        {"specs/nodes/one.yaml": "id: SG-1\nkind: spec\nacceptance: [one]\n"},
+    )
+    (repo / "specs/nodes/one.yaml").write_text(
+        "id: SG-1\nkind: spec\nacceptance: [unterminated\n", encoding="utf-8"
+    )
+    git(repo, "add", "specs/nodes/one.yaml")
+    git(repo, "commit", "-qm", "introduce malformed historical spec")
+
+    manifest = module.build_replay(
+        repo=str(repo), revision="HEAD", count=2, output_dir=tmp_path / "partial-replay"
+    )
+
+    assert manifest["completeness"] == "incomplete"
+    assert manifest["summary"]["incomplete_snapshot_count"] == 1
+    assert manifest["summary"]["net_atom_count_delta"] is None

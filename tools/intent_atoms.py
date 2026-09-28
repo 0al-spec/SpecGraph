@@ -15,6 +15,7 @@ from typing import Any
 import yaml
 
 PROFILE_FILE = Path(__file__).with_name("intent_atoms_profile.json")
+ANALYZER_FILE = Path(__file__)
 ANALYZER_VERSION = "1.0.1"
 
 
@@ -110,6 +111,10 @@ def _read_tree_documents(
             continue
         documents[path] = _git(repo, "cat-file", "blob", object_id)
     return documents, diagnostics
+
+
+def _analyzer_digest() -> str:
+    return hashlib.sha256(ANALYZER_FILE.read_bytes()).hexdigest()
 
 
 def _node_identity(document: dict[str, Any]) -> tuple[str | None, str | None, str | None]:
@@ -440,6 +445,7 @@ def build_snapshot(*, repo: str, revision: str, spec_root: str = "specs/nodes") 
             "sha256": _profile_digest(profile),
         },
         "analyzer_version": ANALYZER_VERSION,
+        "analyzer_sha256": _analyzer_digest(),
         "commit_sha": commit,
         "spec_root": spec_root,
         "completeness": (
@@ -461,6 +467,249 @@ def build_snapshot(*, repo: str, revision: str, spec_root: str = "specs/nodes") 
     }
 
 
+def _snapshot_compatibility(snapshot: dict[str, Any]) -> tuple[Any, ...]:
+    profile = snapshot.get("profile")
+    profile = profile if isinstance(profile, dict) else {}
+    return (
+        profile.get("profile_id"),
+        profile.get("version"),
+        profile.get("sha256"),
+        snapshot.get("analyzer_version"),
+        snapshot.get("analyzer_sha256"),
+        snapshot.get("spec_root"),
+    )
+
+
+def _explicit_atom_key(atom: dict[str, Any]) -> tuple[str, str, str] | None:
+    atom_id = atom.get("atom_id")
+    if atom.get("origin") != "explicit_intent" or not isinstance(atom_id, str) or not atom_id:
+        return None
+    return (str(atom.get("node_id", "")), "explicit_intent", atom_id)
+
+
+def _text_atom_key(atom: dict[str, Any]) -> tuple[str, str, str]:
+    return (
+        str(atom.get("node_id", "")),
+        str(atom.get("origin", "")),
+        str(atom.get("text", "").strip()),
+    )
+
+
+def _atom_sort_key(atom: dict[str, Any]) -> tuple[str, str, int, str]:
+    return (
+        str(atom.get("node_id", "")),
+        str(atom.get("source_path", "")),
+        int(atom.get("element_index", 0)),
+        str(atom.get("text", "")),
+    )
+
+
+def _node_modes(snapshot: dict[str, Any]) -> dict[str, str]:
+    return {
+        str(item["node_id"]): str(item["mode"])
+        for item in snapshot.get("nodes", [])
+        if isinstance(item, dict) and item.get("node_id") and item.get("mode")
+    }
+
+
+def diff_snapshots(before: dict[str, Any], after: dict[str, Any]) -> dict[str, Any]:
+    """Compare two compatible snapshots without guessing cross-node identity."""
+    if _snapshot_compatibility(before) != _snapshot_compatibility(after):
+        raise ValueError("snapshots use different profile, analyzer, or spec-root contracts")
+
+    before_atoms = [item for item in before.get("atoms", []) if isinstance(item, dict)]
+    after_atoms = [item for item in after.get("atoms", []) if isinstance(item, dict)]
+    before_explicit = {
+        key: atom for atom in before_atoms if (key := _explicit_atom_key(atom)) is not None
+    }
+    after_explicit = {
+        key: atom for atom in after_atoms if (key := _explicit_atom_key(atom)) is not None
+    }
+
+    added: list[dict[str, Any]] = []
+    removed: list[dict[str, Any]] = []
+    modified: list[dict[str, Any]] = []
+    matched_explicit = set(before_explicit) & set(after_explicit)
+    for key in sorted(matched_explicit):
+        old_atom = before_explicit[key]
+        new_atom = after_explicit[key]
+        if old_atom.get("text") != new_atom.get("text"):
+            modified.append(
+                {
+                    "node_id": key[0],
+                    "atom_id": key[2],
+                    "before": {
+                        "text": old_atom.get("text"),
+                        "source_path": old_atom.get("source_path"),
+                        "source_field": old_atom.get("source_field"),
+                    },
+                    "after": {
+                        "text": new_atom.get("text"),
+                        "source_path": new_atom.get("source_path"),
+                        "source_field": new_atom.get("source_field"),
+                    },
+                }
+            )
+    for key in sorted(set(before_explicit) - matched_explicit):
+        removed.append(before_explicit[key])
+    for key in sorted(set(after_explicit) - matched_explicit):
+        added.append(after_explicit[key])
+
+    before_text_counts: Counter[tuple[str, str, str]] = Counter()
+    after_text_counts: Counter[tuple[str, str, str]] = Counter()
+    before_text_records: dict[tuple[str, str, str], list[dict[str, Any]]] = {}
+    after_text_records: dict[tuple[str, str, str], list[dict[str, Any]]] = {}
+    for atom in before_atoms:
+        if _explicit_atom_key(atom) is None:
+            key = _text_atom_key(atom)
+            before_text_counts[key] += 1
+            before_text_records.setdefault(key, []).append(atom)
+    for atom in after_atoms:
+        if _explicit_atom_key(atom) is None:
+            key = _text_atom_key(atom)
+            after_text_counts[key] += 1
+            after_text_records.setdefault(key, []).append(atom)
+
+    for key in sorted(set(before_text_counts) | set(after_text_counts)):
+        removed_count = max(0, before_text_counts[key] - after_text_counts[key])
+        added_count = max(0, after_text_counts[key] - before_text_counts[key])
+        removed.extend(sorted(before_text_records.get(key, []), key=_atom_sort_key)[:removed_count])
+        added.extend(sorted(after_text_records.get(key, []), key=_atom_sort_key)[:added_count])
+
+    added.sort(key=_atom_sort_key)
+    removed.sort(key=_atom_sort_key)
+    modified.sort(key=lambda item: (item["node_id"], item["atom_id"]))
+    is_complete = (
+        before.get("completeness") == "complete" and after.get("completeness") == "complete"
+    )
+    before_count = len(before_atoms)
+    after_count = len(after_atoms)
+    before_modes = _node_modes(before)
+    after_modes = _node_modes(after)
+    mode_transitions = [
+        {"node_id": node_id, "before": before_modes[node_id], "after": after_modes[node_id]}
+        for node_id in sorted(set(before_modes) & set(after_modes))
+        if before_modes[node_id] != after_modes[node_id]
+    ]
+    return {
+        "artifact_kind": "specgraph_intent_atoms_diff",
+        "schema_version": 1,
+        "profile": before.get("profile"),
+        "analyzer_version": before.get("analyzer_version"),
+        "analyzer_sha256": before.get("analyzer_sha256"),
+        "spec_root": before.get("spec_root"),
+        "before_commit_sha": before.get("commit_sha"),
+        "after_commit_sha": after.get("commit_sha"),
+        "completeness": "complete" if is_complete else "incomplete",
+        "summary": {
+            "counts_are_partial": not is_complete,
+            "before_atom_count": before_count,
+            "after_atom_count": after_count,
+            "added_count": len(added),
+            "removed_count": len(removed),
+            "modified_count": len(modified),
+            "unchanged_count": before_count - len(removed) - len(modified),
+            "net_count_delta": after_count - before_count,
+        },
+        "added": added,
+        "removed": removed,
+        "modified": modified,
+        "diagnostics": {
+            "before": before.get("diagnostics", []),
+            "after": after.get("diagnostics", []),
+            "mode_transitions": mode_transitions,
+        },
+    }
+
+
+def _first_parent_revisions(repo: str, revision: str, count: int) -> tuple[str, list[str]]:
+    tip = _git(repo, "rev-parse", "--verify", f"{revision}^{{commit}}").decode().strip()
+    output = _git(repo, "rev-list", "--first-parent", f"--max-count={count}", tip)
+    commits = [item for item in output.decode().splitlines() if item]
+    commits.reverse()
+    return tip, commits
+
+
+def _write_json(path: Path, payload: dict[str, Any]) -> None:
+    path.write_text(
+        json.dumps(payload, ensure_ascii=False, indent=2, sort_keys=True) + "\n",
+        encoding="utf-8",
+    )
+
+
+def build_replay(
+    *, repo: str, revision: str, count: int, output_dir: str | Path, spec_root: str = "specs/nodes"
+) -> dict[str, Any]:
+    """Write snapshots and adjacent diffs for a pinned first-parent history window."""
+    if count < 1:
+        raise ValueError("replay count must be at least 1")
+    destination = Path(output_dir)
+    destination.mkdir(parents=True, exist_ok=True)
+    if any(destination.iterdir()):
+        raise ValueError("replay output directory must be empty")
+
+    tip, commits = _first_parent_revisions(repo, revision, count)
+    snapshots: list[dict[str, Any]] = []
+    snapshot_files: list[str] = []
+    for commit in commits:
+        snapshot = build_snapshot(repo=repo, revision=commit, spec_root=spec_root)
+        filename = f"snapshot-{commit}.json"
+        _write_json(destination / filename, snapshot)
+        snapshots.append(snapshot)
+        snapshot_files.append(filename)
+
+    diff_files: list[str] = []
+    diffs: list[dict[str, Any]] = []
+    for before, after in zip(snapshots, snapshots[1:], strict=False):
+        diff = diff_snapshots(before, after)
+        filename = f"diff-{before['commit_sha']}-{after['commit_sha']}.json"
+        _write_json(destination / filename, diff)
+        diffs.append(diff)
+        diff_files.append(filename)
+
+    manifest = {
+        "artifact_kind": "specgraph_intent_atoms_replay_manifest",
+        "schema_version": 1,
+        "selection": {
+            "tip_revision": revision,
+            "tip_commit_sha": tip,
+            "first_parent": True,
+            "requested_count": count,
+            "actual_count": len(commits),
+            "commit_shas_oldest_to_newest": commits,
+        },
+        "profile": snapshots[-1]["profile"] if snapshots else None,
+        "analyzer_version": ANALYZER_VERSION,
+        "analyzer_sha256": _analyzer_digest(),
+        "spec_root": spec_root,
+        "completeness": "complete"
+        if all(item["completeness"] == "complete" for item in snapshots)
+        else "incomplete",
+        "snapshot_files": snapshot_files,
+        "diff_files": diff_files,
+        "summary": {
+            "snapshot_count": len(snapshots),
+            "diff_count": len(diffs),
+            "incomplete_snapshot_count": sum(
+                item["completeness"] != "complete" for item in snapshots
+            ),
+            "net_atom_count_delta": (
+                snapshots[-1]["summary"]["atom_count"] - snapshots[0]["summary"]["atom_count"]
+                if snapshots and all(item["completeness"] == "complete" for item in snapshots)
+                else None
+            ),
+            "added_count_total": sum(item["summary"]["added_count"] for item in diffs),
+            "removed_count_total": sum(item["summary"]["removed_count"] for item in diffs),
+            "modified_count_total": sum(item["summary"]["modified_count"] for item in diffs),
+            "source_mode_transition_count": sum(
+                len(item["diagnostics"]["mode_transitions"]) for item in diffs
+            ),
+        },
+    }
+    _write_json(destination / "manifest.json", manifest)
+    return manifest
+
+
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(description=__doc__)
     subparsers = parser.add_subparsers(dest="command", required=True)
@@ -469,17 +718,48 @@ def build_parser() -> argparse.ArgumentParser:
     snapshot.add_argument("--revision", required=True, help="commit, tag, or ref to inspect")
     snapshot.add_argument("--spec-root", default="specs/nodes")
     snapshot.add_argument("--output", help="write JSON here; stdout when omitted")
+    diff = subparsers.add_parser("diff", help="compare two exact Git revisions")
+    diff.add_argument("--repo", required=True)
+    diff.add_argument("--base", required=True)
+    diff.add_argument("--head", required=True)
+    diff.add_argument("--spec-root", default="specs/nodes")
+    diff.add_argument("--output", help="write JSON here; stdout when omitted")
+    replay = subparsers.add_parser("replay", help="replay a first-parent history window")
+    replay.add_argument("--repo", required=True)
+    replay.add_argument("--revision", default="main")
+    replay.add_argument("--count", type=int, default=30)
+    replay.add_argument("--spec-root", default="specs/nodes")
+    replay.add_argument("--output-dir", required=True)
     return parser
 
 
 def main(argv: list[str] | None = None) -> int:
     args = build_parser().parse_args(argv)
     try:
-        report = build_snapshot(repo=args.repo, revision=args.revision, spec_root=args.spec_root)
+        if args.command == "snapshot":
+            report = build_snapshot(
+                repo=args.repo, revision=args.revision, spec_root=args.spec_root
+            )
+        elif args.command == "diff":
+            before = build_snapshot(repo=args.repo, revision=args.base, spec_root=args.spec_root)
+            after = build_snapshot(repo=args.repo, revision=args.head, spec_root=args.spec_root)
+            report = diff_snapshots(before, after)
+        else:
+            report = build_replay(
+                repo=args.repo,
+                revision=args.revision,
+                count=args.count,
+                output_dir=args.output_dir,
+                spec_root=args.spec_root,
+            )
         encoded = json.dumps(report, ensure_ascii=False, indent=2, sort_keys=True) + "\n"
-        if args.output:
-            with open(args.output, "w", encoding="utf-8") as output:
-                output.write(encoded)
+        output_path = getattr(args, "output", None)
+        if output_path:
+            destination = Path(output_path)
+            destination.parent.mkdir(parents=True, exist_ok=True)
+            destination.write_text(encoded, encoding="utf-8")
+        elif args.command == "replay":
+            sys.stdout.write(encoded)
         else:
             sys.stdout.write(encoded)
     except (ValueError, OSError, subprocess.CalledProcessError, json.JSONDecodeError) as exc:

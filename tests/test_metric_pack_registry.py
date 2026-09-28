@@ -554,7 +554,31 @@ def test_metric_pack_adapter_index_maps_sib_full_inputs_to_proxy_surfaces(
     entry = report["entries"][0]
     by_input = {item["input_id"]: item for item in entry["inputs"]}
     assert by_input["intent_atoms"]["source_artifact"] == "specs/nodes"
-    assert by_input["intent_atoms"]["source_field"] == "acceptance[]"
+    assert by_input["intent_atoms"]["source_field"] == "acceptance[] (legacy proxy)"
+    assert by_input["intent_atoms"]["source_options"] == [
+        {
+            "source_id": "intent_atoms_snapshot_v1",
+            "status": "optional_versioned_source",
+            "source_artifact": "runs/intent_atoms_snapshot.json",
+            "source_field": "summary.atom_count",
+            "profile_id": "specgraph-intent-atoms-v1",
+            "required_provenance": [
+                "commit_sha",
+                "profile.profile_id",
+                "profile.version",
+                "profile.sha256",
+                "analyzer_version",
+                "completeness",
+            ],
+            "usable_when": "complete and commit SHA matches the measured revision",
+        },
+        {
+            "source_id": "legacy_acceptance_proxy",
+            "status": "legacy_proxy",
+            "source_artifact": "specs/nodes",
+            "source_field": "acceptance[]",
+        },
+    ]
     assert by_input["spec_verifiability_coverage"]["source_field"] == (
         "metrics.specification_verifiability"
     )
@@ -566,7 +590,7 @@ def test_metric_pack_adapter_index_maps_sib_full_inputs_to_proxy_surfaces(
     assert entry["adapter_status"] == "ready_for_adapter_review"
     assert entry["missing_inputs"] == []
     assert report["summary"]["missing_input_counts"] == {}
-    assert report["source_snapshot"]["input_catalog_version"] == 4
+    assert report["source_snapshot"]["input_catalog_version"] == 5
 
 
 def test_metric_pack_runs_computes_available_signal_and_preserves_gaps(
