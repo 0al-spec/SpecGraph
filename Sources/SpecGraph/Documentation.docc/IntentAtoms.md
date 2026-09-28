@@ -31,3 +31,13 @@ Consumers accept the versioned snapshot only when it is complete, uses
 `specs/nodes`, carries analyzer and profile digests, and matches the measured
 commit SHA. The legacy `acceptance[]` binding stays available and is labeled as
 a proxy.
+
+GitHub Actions posts one informational Intent Atoms comment per pull request
+after the existing `Python CI` workflow completes for a PR. Later CI runs update
+that same comment. The report compares the PR's current base and head trees
+using the analyzer from the trusted default branch. It resolves the PR from the
+CI head SHA, fetches the target base and PR head as Git objects, and does not
+consume CI artifacts or check out or execute PR-authored code while it has
+permission to write comments. This also supports stacked PRs. An incomplete
+comparison reports diagnostics and withholds atom counts. The comment is review
+feedback, not a merge gate or the durable post-merge metric history.
