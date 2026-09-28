@@ -25,6 +25,7 @@ credentials, private keys, or machine-local tokens to `.0al`.
 - During review, distinguish artifact presence from artifact readiness: trace producer lifecycle states, repaired-vs-original artifact authority, run-local paths, and explicit gate failure modes.
 - Work in bounded slices. One PR should change one spec node, one proposal realization, one evidence mapping, one viewer contract, or one architectural seam.
 - Prefer façade-preserving refactors. Keep compatibility shims such as `tools/supervisor.py` stable while extracting typed package code behind them.
+- In SpecificationCore refactoring pilots, put every newly introduced SpecificationCore specification in its own new source module. Keep typed decision context in a separate context module when it is shared or substantial; do not accumulate unrelated policy specifications in the business-logic file or one catch-all specification module.
 - Make dependencies explicit. Pass roots, policies, clocks, executors, and artifact paths as values instead of reading hidden globals in domain logic.
 - Close every process lesson through code, tests, docs, or policy. Do not leave reusable workflow knowledge only in chat history.
 

@@ -54,6 +54,11 @@ additionally gives the predicates explicit names. The source experiment at
 `docs/experiments/ontology_decision_counts.md` records the behavior matrix,
 pinned benchmark tools, absolute clone counts, and change-footprint limits.
 
+For SpecificationCore refactoring pilots, each newly introduced policy
+specification lives in its own source module. Shared or substantial typed
+decision context belongs in a separate context module so the policy boundary
+and import direction stay visible in review.
+
 The current public surfaces are:
 
 - a GitHub Pages technical root;
