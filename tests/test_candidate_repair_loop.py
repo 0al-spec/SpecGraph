@@ -99,6 +99,38 @@ def test_candidate_repair_loop_preview_applies_safe_repairs() -> None:
     assert product["claims"][0]["repair_generated_type_change"] is True
 
 
+def test_candidate_repair_loop_preview_applies_explicit_node_gap_action() -> None:
+    module = load_module()
+    candidate_graph = {
+        "nodes": [{"id": "needs-ontology-review", "ontology_refs": [], "gaps": []}],
+        "edges": [],
+    }
+    generated_action = module._repair_missing_ontology(candidate_graph)[0]
+    assert generated_action["status"] == "requires_context"
+    skipped_preview = module._apply_preview_actions(
+        candidate_graph,
+        [generated_action],
+        preview_source_ref="runs/preview.json#revised_candidate_graph_preview",
+    )
+    assert skipped_preview["nodes"][0]["gaps"] == []
+
+    applied_action = {**generated_action, "status": "applied_to_preview"}
+    missing_target_action = {
+        **applied_action,
+        "operation": {**generated_action["operation"], "node_id": "missing"},
+    }
+
+    preview = module._apply_preview_actions(
+        candidate_graph,
+        [applied_action, missing_target_action],
+        preview_source_ref="runs/preview.json#revised_candidate_graph_preview",
+    )
+
+    assert generated_action["status"] == "requires_context"
+    assert candidate_graph["nodes"][0]["gaps"] == []
+    assert preview["nodes"][0]["gaps"] == [generated_action["operation"]["value"]]
+
+
 def test_candidate_repair_loop_preview_ignores_unsupported_operations() -> None:
     module = load_module()
     candidate_graph = {"nodes": [{"id": "existing"}], "edges": []}
