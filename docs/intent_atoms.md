@@ -35,9 +35,19 @@ python3 tools/intent_atoms.py snapshot --repo . --revision <commit> \
   --spec-root specs/nodes --output runs/intent_atoms_snapshot.json
 ```
 
+The analyzer reads Git tree entries and blob contents directly. Archive
+attributes such as `export-ignore` and `export-subst` therefore cannot omit or
+rewrite evidence. A missing or non-directory `--spec-root` produces an
+incomplete snapshot with a diagnostic; this is expected for historical commits
+that predate the specification tree. The root is passed as a literal Git
+pathspec, so option-like names cannot alter the Git command.
+
 The `specgraph_intent_atoms_snapshot` artifact records the commit SHA, analyzer
 and profile versions, profile digest, node kind, lifecycle status, provenance,
-atom counts, source field and path for each atom, and diagnostics. It reports `completeness: incomplete`
+atom counts, source field and path for each atom, and diagnostics. The profile
+digest is calculated from canonical JSON, so whitespace and key ordering do not
+change it. Atom text normalizes CRLF and CR to LF and trims outer whitespace.
+It reports `completeness: incomplete`
 when malformed or ambiguous input prevents a trustworthy full count. A partial
 subtotal must not be treated as the project's full `N_spec`.
 

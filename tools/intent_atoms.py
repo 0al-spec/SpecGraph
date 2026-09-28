@@ -5,11 +5,9 @@ from __future__ import annotations
 
 import argparse
 import hashlib
-import io
 import json
 import subprocess
 import sys
-import tarfile
 from collections import Counter
 from pathlib import Path, PurePosixPath
 from typing import Any
@@ -17,7 +15,7 @@ from typing import Any
 import yaml
 
 PROFILE_FILE = Path(__file__).with_name("intent_atoms_profile.json")
-ANALYZER_VERSION = "1.0.0"
+ANALYZER_VERSION = "1.0.1"
 
 
 def _git(repo: str, *args: str) -> bytes:
@@ -37,6 +35,81 @@ def _valid_spec_root(spec_root: str) -> str:
 
 def _mapping(value: Any) -> dict[str, Any]:
     return value if isinstance(value, dict) else {}
+
+
+def _profile_digest(profile: dict[str, Any]) -> str:
+    canonical = json.dumps(profile, ensure_ascii=False, sort_keys=True, separators=(",", ":"))
+    return hashlib.sha256(canonical.encode("utf-8")).hexdigest()
+
+
+def _normalise_text(value: str) -> str:
+    return value.replace("\r\n", "\n").replace("\r", "\n").strip()
+
+
+def _read_tree_documents(
+    *, repo: str, commit: str, spec_root: str
+) -> tuple[dict[str, bytes], list[dict[str, str]]]:
+    try:
+        root_type = _git(repo, "cat-file", "-t", f"{commit}:{spec_root}").decode().strip()
+    except subprocess.CalledProcessError:
+        return {}, [
+            _diagnostic(
+                "missing_spec_root",
+                spec_root,
+                "the selected revision does not contain this tracked specification directory",
+            )
+        ]
+    if root_type != "tree":
+        return {}, [
+            _diagnostic(
+                "invalid_spec_root",
+                spec_root,
+                f"the selected revision contains a {root_type}, not a directory, at this path",
+            )
+        ]
+
+    listing = _git(
+        repo,
+        "ls-tree",
+        "-r",
+        "-z",
+        "--full-tree",
+        commit,
+        "--",
+        f":(literal){spec_root}",
+    )
+    documents: dict[str, bytes] = {}
+    diagnostics: list[dict[str, str]] = []
+    for entry in listing.split(b"\0"):
+        if not entry:
+            continue
+        header, separator, path_bytes = entry.partition(b"\t")
+        if not separator:
+            diagnostics.append(
+                _diagnostic("invalid_tree_entry", spec_root, "could not parse a Git tree entry")
+            )
+            continue
+        try:
+            mode, object_type, object_id = header.decode("ascii").split(" ")
+        except ValueError:
+            diagnostics.append(
+                _diagnostic("invalid_tree_entry", spec_root, "could not parse a Git tree entry")
+            )
+            continue
+        path = path_bytes.decode("utf-8", errors="replace")
+        if not path.endswith((".yaml", ".yml")):
+            continue
+        if object_type != "blob" or mode not in {"100644", "100755"}:
+            diagnostics.append(
+                _diagnostic(
+                    "unsupported_yaml_entry",
+                    path,
+                    f"expected a regular tracked file, found mode {mode} and type {object_type}",
+                )
+            )
+            continue
+        documents[path] = _git(repo, "cat-file", "blob", object_id)
+    return documents, diagnostics
 
 
 def _node_identity(document: dict[str, Any]) -> tuple[str | None, str | None, str | None]:
@@ -74,7 +147,7 @@ def _atom(
         "source_path": path,
         "source_field": source_field,
         "element_index": index,
-        "text": text.strip(),
+        "text": _normalise_text(text),
         "origin": origin,
         "atom_id": atom_id,
     }
@@ -104,17 +177,37 @@ def _first_declared_field(
 
 def _extract_node(
     *, document: dict[str, Any], path: str
-) -> tuple[list[dict[str, Any]], list[dict[str, str]], str | None]:
+) -> tuple[list[dict[str, Any]], list[dict[str, str]], str]:
     diagnostics: list[dict[str, str]] = []
     node_id, _kind, _status = _node_identity(document)
     if node_id is None:
-        return [], [_diagnostic("missing_node_id", path, "node has no non-empty stable id")], None
+        return (
+            [],
+            [_diagnostic("missing_node_id", path, "node has no non-empty stable id")],
+            "invalid",
+        )
 
-    payload = _mapping(document.get("spec"))
-    if not payload:
-        payload = _mapping(document.get("specification"))
-    explicit = _first_declared_field(document, payload, "atoms")
-    acceptance = _first_declared_field(document, payload, "acceptance")
+    payload: dict[str, Any] = {}
+    for envelope in ("spec", "specification"):
+        if envelope not in document:
+            continue
+        value = document[envelope]
+        if not isinstance(value, dict):
+            diagnostics.append(
+                _diagnostic(
+                    "invalid_spec_envelope",
+                    path,
+                    f"{envelope} must be a mapping when present",
+                )
+            )
+        elif not payload:
+            payload = value
+    try:
+        explicit = _first_declared_field(document, payload, "atoms")
+        acceptance = _first_declared_field(document, payload, "acceptance")
+    except ValueError as exc:
+        diagnostics.append(_diagnostic("ambiguous_field_declaration", path, str(exc)))
+        return [], diagnostics, "ambiguous"
     atoms: list[dict[str, Any]] = []
     origin_mode = "absent"
 
@@ -170,11 +263,44 @@ def _extract_node(
                         "duplicate_atom_id", path, f"duplicate explicit atom id {atom_id!r}"
                     )
                 )
-                continue
-            if atom_id is not None:
+            elif atom_id is not None:
                 seen_ids.add(atom_id)
-            declared_type = item.get("type")
-            scope = item.get("scope")
+            optional_strings: dict[str, str | None] = {}
+            for attribute in ("type", "scope"):
+                value = item.get(attribute)
+                if value is None:
+                    optional_strings[attribute] = None
+                elif isinstance(value, str) and value.strip():
+                    optional_strings[attribute] = value.strip()
+                else:
+                    diagnostics.append(
+                        _diagnostic(
+                            "invalid_intent_atom_attribute",
+                            path,
+                            f"{explicit[0]}.intents[{index}].{attribute} must be a "
+                            "non-empty string",
+                        )
+                    )
+                    optional_strings[attribute] = None
+            optional_references: dict[str, list[str] | None] = {}
+            for attribute in ("premises", "verifiable_by"):
+                value = item.get(attribute)
+                if value is None:
+                    optional_references[attribute] = None
+                elif isinstance(value, list) and all(
+                    isinstance(reference, str) and reference.strip() for reference in value
+                ):
+                    optional_references[attribute] = [reference.strip() for reference in value]
+                else:
+                    diagnostics.append(
+                        _diagnostic(
+                            "invalid_intent_atom_attribute",
+                            path,
+                            f"{explicit[0]}.intents[{index}].{attribute} must be a list of "
+                            "non-empty strings",
+                        )
+                    )
+                    optional_references[attribute] = None
             atoms.append(
                 _atom(
                     node_id=node_id,
@@ -184,10 +310,10 @@ def _extract_node(
                     text=statement,
                     origin="explicit_intent",
                     atom_id=atom_id,
-                    declared_type=declared_type if isinstance(declared_type, str) else None,
-                    scope=scope if isinstance(scope, str) else None,
-                    premises=item.get("premises"),
-                    verifiable_by=item.get("verifiable_by"),
+                    declared_type=optional_strings["type"],
+                    scope=optional_strings["scope"],
+                    premises=optional_references["premises"],
+                    verifiable_by=optional_references["verifiable_by"],
                 )
             )
         if acceptance is not None:
@@ -240,26 +366,16 @@ def build_snapshot(*, repo: str, revision: str, spec_root: str = "specs/nodes") 
     commit = _git(repo, "rev-parse", "--verify", f"{revision}^{{commit}}").decode().strip()
     # Pin the profile to this analyzer checkout so older commits can be replayed
     # without requiring them to contain this tool or its profile.
-    profile_bytes = PROFILE_FILE.read_bytes()
-    profile = json.loads(profile_bytes)
+    profile = json.loads(PROFILE_FILE.read_text(encoding="utf-8"))
     if profile.get("profile_id") != "specgraph-intent-atoms-v1" or profile.get("version") != 1:
         raise ValueError("unsupported Intent Atoms profile")
-    archive = _git(repo, "archive", "--format=tar", commit, spec_root)
-    with tarfile.open(fileobj=io.BytesIO(archive), mode="r:") as bundle:
-        yaml_members = [
-            member
-            for member in bundle.getmembers()
-            if member.isfile() and member.name.endswith((".yaml", ".yml"))
-        ]
-        documents = {
-            member.name: bundle.extractfile(member).read()
-            for member in yaml_members
-            if bundle.extractfile(member) is not None
-        }
+    documents, tree_diagnostics = _read_tree_documents(
+        repo=repo, commit=commit, spec_root=spec_root
+    )
     relative_paths = sorted(documents)
 
     all_atoms: list[dict[str, Any]] = []
-    diagnostics: list[dict[str, str]] = []
+    diagnostics: list[dict[str, str]] = list(tree_diagnostics)
     seen_nodes: set[str] = set()
     node_records: list[dict[str, Any]] = []
     modes: Counter[str] = Counter()
@@ -321,7 +437,7 @@ def build_snapshot(*, repo: str, revision: str, spec_root: str = "specs/nodes") 
         "profile": {
             "profile_id": profile["profile_id"],
             "version": profile["version"],
-            "sha256": hashlib.sha256(profile_bytes).hexdigest(),
+            "sha256": _profile_digest(profile),
         },
         "analyzer_version": ANALYZER_VERSION,
         "commit_sha": commit,
