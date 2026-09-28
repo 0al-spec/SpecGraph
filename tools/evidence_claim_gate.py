@@ -113,10 +113,15 @@ def canonical_claim_errors(node):
     return errors
 
 
+def passport_criterion_ids(passport):
+    spec = passport["spec"]
+    return {item["id"] for item in spec["intent"]["acceptance_criteria"]}
+
+
 def source_claim_reason(claim, passport, resolution):
     """Interpret only the upstream pinned Swift source-resolution contract."""
     spec = passport["spec"]
-    criteria = {item["id"] for item in spec["intent"]["acceptance_criteria"]}
+    criteria = passport_criterion_ids(passport)
     requested = set(claim["passport_criterion_ids"])
     if not requested <= criteria:
         return "unknown_passport_criterion"
@@ -515,6 +520,14 @@ def run_admission(
         raise ValueError("invalid requested claim declarations")
     if "evidence_claims" in node and request["claims"] != node["evidence_claims"]:
         raise ValueError("request must cover the exact canonical claim declarations")
+    criteria = passport_criterion_ids(passport)
+    for claim in request["claims"]:
+        if (
+            claim["kind"] == "runtime_verified"
+            and claim.get("feature_passport_decision")
+            and not set(claim["passport_criterion_ids"]) <= criteria
+        ):
+            raise ValueError("runtime claim references an unknown pinned passport criterion")
     cli = executable.expanduser().resolve(strict=True)
     cli_raw = read_bounded(cli, 64_000_000, "Feature Passport executable")
     cli_digest = digest(cli_raw)
@@ -689,11 +702,23 @@ def run_admission(
                 raise ValueError("invalid Feature Passport source response")
         if mapped:
             snapshots = {}
+            input_root = root / "inputs"
+            bundle_root = root / "bundle"
+            input_root.mkdir()
+            bundle_root.mkdir()
             for name in runtime_paths:
-                snapshots[name] = root / (name + ".json")
+                snapshots[name] = (
+                    bundle_root / "bundle.json"
+                    if name == "bundle"
+                    else input_root / (name + ".json")
+                )
                 snapshots[name].write_bytes(runtime_inputs[name])
-            snapshots["bundle"].write_bytes(runtime_inputs["bundle"])
             bundle_root = snapshots["bundle"].parent
+            if any(
+                observation == snapshots["bundle"].name or receipt == snapshots["bundle"].name
+                for observation, receipt, _, _ in normalized_pairs
+            ):
+                raise ValueError("bundle pair path collides with its temporary bundle snapshot")
             for observation, receipt, observation_raw, receipt_raw in normalized_pairs:
                 for relative, raw in ((observation, observation_raw), (receipt, receipt_raw)):
                     target = bundle_root / relative

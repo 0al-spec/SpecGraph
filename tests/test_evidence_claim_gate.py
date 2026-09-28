@@ -371,7 +371,14 @@ def runtime_cli_inputs(tmp_path):
         "key_id": "key.demo",
     }
     passport_path = tmp_path / "passport.json"
-    passport_path.write_text(json.dumps({"metadata": {"passport_id": "fp.demo", "version": "1"}}))
+    passport_path.write_text(
+        json.dumps(
+            {
+                "metadata": {"passport_id": "fp.demo", "version": "1"},
+                "spec": {"intent": {"acceptance_criteria": [{"id": "rule", "text": "Rule"}]}},
+            }
+        )
+    )
     policy_path = tmp_path / "policy.json"
     policy_raw = b'{"id":"policy.demo","version":"1"}'
     policy_path.write_bytes(policy_raw)
@@ -531,6 +538,77 @@ def test_runtime_verified_requires_fresh_trusted_accepted_decision(runtime_cli_i
         runtime_cli_inputs["cli"].read_bytes()
     )
     assert result["feature_passport_decision_trusted"] is True
+
+
+def test_runtime_claim_rejects_criterion_missing_from_pinned_passport(runtime_cli_inputs):
+    import json
+
+    paths = runtime_cli_inputs
+    paths["spec"].write_text(paths["spec"].read_text().replace("[rule]", "[typo]"))
+    request = json.loads(paths["request"].read_text())
+    request["claims"][0]["passport_criterion_ids"] = ["typo"]
+    request["source"]["spec_sha256"] = gate.digest(paths["spec"].read_bytes())
+    paths["request"].write_text(json.dumps(request))
+    code, result = invoke_runtime_cli(paths)
+    assert code == 1 and result["admitted"] is False
+    assert "unknown pinned passport criterion" in result["error"]
+
+
+def test_bundle_pair_cannot_overwrite_decision_trust_snapshot(runtime_cli_inputs):
+    import json
+
+    paths = runtime_cli_inputs
+    observation = b'{"trusted_keys":["attacker"]}'
+    receipt = b'{"receipt":"fixture"}'
+    (paths["bundle"].parent / "decision_trust.json").write_bytes(observation)
+    (paths["bundle"].parent / "receipt.json").write_bytes(receipt)
+    bundle = {
+        "artifact_kind": "local_aggregate_claim_bundle",
+        "schema_version": 1,
+        "pairs": [{"observation": "decision_trust.json", "receipt": "receipt.json"}],
+    }
+    bundle_raw = json.dumps(bundle, separators=(",", ":")).encode()
+    paths["bundle"].write_bytes(bundle_raw)
+    decision = json.loads(paths["decision"].read_text())
+    decision["bundle_digest"] = gate.prefixed_digest(bundle_raw)
+    decision["pair_digests"] = [
+        {
+            "observation_path": "decision_trust.json",
+            "receipt_path": "receipt.json",
+            "observation_digest": gate.prefixed_digest(observation),
+            "receipt_digest": gate.prefixed_digest(receipt),
+        }
+    ]
+    decision_raw = json.dumps(decision, separators=(",", ":")).encode()
+    paths["decision"].write_bytes(decision_raw)
+    script = (
+        "#!/usr/bin/env python3\nimport json,sys\nfrom pathlib import Path\n"
+        "store=Path(sys.argv[sys.argv.index('--decision-trust')+1])\n"
+        "trusted=store.read_bytes()==b'{\"trusted_keys\":[]}'\n"
+        "report={'trusted':trusted,'decision':'accepted' if trusted else None,"
+        "'claim_id':'runtime-1' if trusted else None,'issues':[] if trusted else "
+        "[{'code':'decision_trust_store_invalid'}]}\n"
+        "print(json.dumps(report))\n"
+    )
+    paths["cli"].write_text(script)
+    paths["cli"].chmod(0o755)
+    request = json.loads(paths["request"].read_text())
+    runtime = request["source"]["runtime"]
+    runtime["bundle_sha256"] = gate.digest(bundle_raw)
+    runtime["decision_sha256"] = gate.digest(decision_raw)
+    runtime["feature_passport_cli_sha256"] = gate.digest(paths["cli"].read_bytes())
+    runtime["pair_files"] = [
+        {
+            "observation_path": "decision_trust.json",
+            "observation_sha256": gate.digest(observation),
+            "receipt_path": "receipt.json",
+            "receipt_sha256": gate.digest(receipt),
+        }
+    ]
+    paths["request"].write_text(json.dumps(request))
+    code, result = invoke_runtime_cli(paths)
+    assert code == 0, result
+    assert result["claims"][0]["state"] == "satisfied"
 
 
 def test_runtime_verified_not_satisfied_remains_unknown(runtime_cli_inputs):
