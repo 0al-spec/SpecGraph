@@ -1,6 +1,13 @@
 from __future__ import annotations
 
-from tools.intent_atoms_pr_comment import COMMENT_MARKER, render_comment
+from pathlib import Path
+from runpy import run_path
+
+_HELPER = run_path(
+    str(Path(__file__).resolve().parents[1] / "tools" / "intent_atoms_pr_comment.py")
+)
+COMMENT_MARKER = _HELPER["COMMENT_MARKER"]
+render_comment = _HELPER["render_comment"]
 
 
 def test_complete_report_renders_aggregates_without_atom_text() -> None:
