@@ -9,6 +9,7 @@ import os
 import re
 import sys
 import tempfile
+from datetime import date, datetime
 from pathlib import Path
 
 import yaml
@@ -36,13 +37,26 @@ def text(value: object, label: str) -> str:
     return value
 
 
-def strings(value: object, label: str, *, allow_empty: bool = False) -> list[str]:
+def strings(
+    value: object, label: str, *, allow_empty: bool = False, unique: bool = True
+) -> list[str]:
     if not isinstance(value, list) or (not value and not allow_empty):
         raise ValueError(f"{label} must be a {'possibly empty ' if allow_empty else ''}string list")
     result = [text(item, label) for item in value]
-    if len(result) != len(set(result)):
+    if unique and len(result) != len(set(result)):
         raise ValueError(f"{label} contains duplicates")
     return result
+
+
+def normalize_yaml_scalars(value: object) -> object:
+    """Convert YAML-only date values to JSON-compatible ISO strings."""
+    if isinstance(value, (date, datetime)):
+        return value.isoformat()
+    if isinstance(value, list):
+        return [normalize_yaml_scalars(item) for item in value]
+    if isinstance(value, dict):
+        return {key: normalize_yaml_scalars(item) for key, item in value.items()}
+    return value
 
 
 def validate_observability(contract: object, scenario_ids: set[str]) -> dict:
@@ -82,17 +96,17 @@ def contained(root: Path, relative: str) -> Path:
 
 def build_contract_pack(workspace_root: Path, target_spec: str) -> dict:
     """Project one explicit node; no inherited-policy inference or readiness grant."""
-    if not re.fullmatch(r"[A-Z][A-Z0-9-]*-SPEC-[0-9]{4,}", target_spec):
+    if not re.fullmatch(r"[A-Za-z0-9][A-Za-z0-9_-]*", target_spec):
         raise ValueError("invalid target spec ID")
     root = workspace_root.expanduser().resolve(strict=True)
     relative = f"specs/nodes/{target_spec}.yaml"
     raw = contained(root, relative).read_bytes()
-    node = yaml.load(raw, Loader=UniqueKeyLoader)
+    node = normalize_yaml_scalars(yaml.load(raw, Loader=UniqueKeyLoader))
     if not isinstance(node, dict) or node.get("id") != target_spec or node.get("kind") != "spec":
         raise ValueError("source must be the requested canonical spec node")
     title = text(node.get("title"), "title")
     status = text(node.get("status"), "status")
-    gate = text(node.get("gate_state"), "gate_state")
+    gate = text(node.get("gate_state") or "none", "gate_state")
     acceptance = strings(node.get("acceptance"), "acceptance")
     specification = node.get("specification")
     if not isinstance(specification, dict):
@@ -105,7 +119,7 @@ def build_contract_pack(workspace_root: Path, target_spec: str) -> dict:
         if not isinstance(scenario, dict):
             raise ValueError("scenario must be an object")
         identity = text(scenario.get("id"), "scenario.id")
-        strings(scenario.get("steps"), "scenario.steps")
+        strings(scenario.get("steps"), "scenario.steps", unique=False)
         if identity in scenario_ids:
             raise ValueError(f"duplicate scenario: {identity}")
         scenario_ids.add(identity)

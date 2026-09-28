@@ -52761,11 +52761,13 @@ def run_codex(
     quiet_progress_windows_allowed = quiet_progress_windows_for_reasoning(profile.reasoning_effort)
     base_timeout_remaining = timeout_seconds
     quiet_windows_without_progress = 0
-    last_progress_state = capture_nested_executor_progress(
-        worktree_path, stdout_chunks, stderr_chunks
-    )
+    last_progress_state = None
     final_message = ""
+    process_reaped = False
     try:
+        last_progress_state = capture_nested_executor_progress(
+            worktree_path, stdout_chunks, stderr_chunks
+        )
         while True:
             wait_timeout = (
                 poll_seconds
@@ -52774,6 +52776,7 @@ def run_codex(
             )
             try:
                 returncode = process.wait(timeout=wait_timeout)
+                process_reaped = True
                 break
             except subprocess.TimeoutExpired:
                 if base_timeout_remaining > 0:
@@ -52823,9 +52826,16 @@ def run_codex(
         stderr_chunks.append(timeout_message)
         emit(f"[codex stderr] {timeout_message.rstrip()}", file=sys.stderr)
         process.wait()
+        process_reaped = True
         stdout_thread.join()
         stderr_thread.join()
     finally:
+        if not process_reaped:
+            try:
+                process.kill()
+            except ProcessLookupError:
+                pass
+            process.wait()
         stdout_thread.join()
         stderr_thread.join()
         if final_message_path.is_file():
