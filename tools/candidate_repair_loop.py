@@ -489,6 +489,12 @@ def _append_preview_edge(preview: dict[str, Any], operation: dict[str, Any]) -> 
     preview.setdefault("edges", []).append(operation["value"])
 
 
+def _append_preview_node_gap(preview: dict[str, Any], operation: dict[str, Any]) -> None:
+    node = _node_by_id(preview, _text(operation.get("node_id")))
+    if node is not None:
+        node.setdefault("gaps", []).append(operation["value"])
+
+
 def _add_preview_acceptance_criterion(preview: dict[str, Any], operation: dict[str, Any]) -> None:
     node = _node_by_id(preview, _text(operation.get("node_id")))
     if node is None:
@@ -534,6 +540,13 @@ _PREVIEW_OPERATION_DECISION = FirstMatch.with_fallback(
                 name="preview.add_acceptance_criterion",
             ),
             _add_preview_acceptance_criterion,
+        ),
+        (
+            PredicateSpec(
+                lambda context: context.operation.get("op") == "append_node_gap",
+                name="preview.append_node_gap",
+            ),
+            _append_preview_node_gap,
         ),
         (
             PredicateSpec(
