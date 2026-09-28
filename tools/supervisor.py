@@ -43028,7 +43028,7 @@ def write_metric_pricing_provenance(report: dict[str, Any]) -> Path:
     return path
 
 
-METRIC_PACK_ADAPTER_INPUT_CATALOG: dict[str, dict[str, str]] = {
+METRIC_PACK_ADAPTER_INPUT_CATALOG: dict[str, dict[str, Any]] = {
     "spec_graph": {
         "computability": "available",
         "source_artifact": "specs/nodes",
@@ -43098,8 +43098,38 @@ METRIC_PACK_ADAPTER_INPUT_CATALOG: dict[str, dict[str, str]] = {
     "intent_atoms": {
         "computability": "available",
         "source_artifact": "specs/nodes",
-        "source_field": "acceptance[]",
-        "next_gap": "review_intent_atom_proxy_adapter",
+        "source_field": "acceptance[] (legacy proxy)",
+        "next_gap": "review_intent_atoms_snapshot_adapter",
+        "source_options": [
+            {
+                "source_id": "intent_atoms_snapshot_v1",
+                "status": "optional_versioned_source",
+                "source_artifact": "runs/intent_atoms_snapshot.json",
+                "source_field": "summary.atom_count",
+                "profile_id": "specgraph-intent-atoms-v1",
+                "spec_root": "specs/nodes",
+                "required_provenance": [
+                    "commit_sha",
+                    "spec_root",
+                    "profile.profile_id",
+                    "profile.version",
+                    "profile.sha256",
+                    "analyzer_version",
+                    "analyzer_sha256",
+                    "completeness",
+                ],
+                "usable_when": (
+                    "complete, spec_root is specs/nodes, and commit SHA matches "
+                    "the measured revision"
+                ),
+            },
+            {
+                "source_id": "legacy_acceptance_proxy",
+                "status": "legacy_proxy",
+                "source_artifact": "specs/nodes",
+                "source_field": "acceptance[]",
+            },
+        ],
     },
     "spec_verifiability_coverage": {
         "computability": "available",
@@ -43175,7 +43205,7 @@ def metric_pack_adapter_input_record(input_id: str, metric_ids: list[str]) -> di
             input_id,
             "define_metric_pack_input_adapter",
         )
-    return {
+    record = {
         "input_id": input_id,
         "computability": computability,
         "source_artifact": source_artifact,
@@ -43184,6 +43214,10 @@ def metric_pack_adapter_input_record(input_id: str, metric_ids: list[str]) -> di
         "required_by_pack": "__pack__" in metric_ids,
         "next_gap": next_gap,
     }
+    source_options = catalog_entry.get("source_options") if catalog_entry else None
+    if isinstance(source_options, list):
+        record["source_options"] = copy.deepcopy(source_options)
+    return record
 
 
 def metric_pack_adapter_status(input_records: list[dict[str, Any]]) -> str:
@@ -43349,7 +43383,7 @@ def build_metric_pack_adapter_index(metric_pack_index: dict[str, Any]) -> dict[s
                 "generated_at": metric_pack_index.get("generated_at"),
                 "entry_count": metric_pack_index.get("entry_count"),
             },
-            "input_catalog_version": 4,
+            "input_catalog_version": 5,
         },
         "summary": {
             "pack_count": len(entries),
@@ -52727,11 +52761,13 @@ def run_codex(
     quiet_progress_windows_allowed = quiet_progress_windows_for_reasoning(profile.reasoning_effort)
     base_timeout_remaining = timeout_seconds
     quiet_windows_without_progress = 0
-    last_progress_state = capture_nested_executor_progress(
-        worktree_path, stdout_chunks, stderr_chunks
-    )
+    last_progress_state = None
     final_message = ""
+    process_reaped = False
     try:
+        last_progress_state = capture_nested_executor_progress(
+            worktree_path, stdout_chunks, stderr_chunks
+        )
         while True:
             wait_timeout = (
                 poll_seconds
@@ -52740,6 +52776,7 @@ def run_codex(
             )
             try:
                 returncode = process.wait(timeout=wait_timeout)
+                process_reaped = True
                 break
             except subprocess.TimeoutExpired:
                 if base_timeout_remaining > 0:
@@ -52789,9 +52826,16 @@ def run_codex(
         stderr_chunks.append(timeout_message)
         emit(f"[codex stderr] {timeout_message.rstrip()}", file=sys.stderr)
         process.wait()
+        process_reaped = True
         stdout_thread.join()
         stderr_thread.join()
     finally:
+        if not process_reaped:
+            try:
+                process.kill()
+            except ProcessLookupError:
+                pass
+            process.wait()
         stdout_thread.join()
         stderr_thread.join()
         if final_message_path.is_file():

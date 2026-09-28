@@ -5,6 +5,7 @@ import importlib.util
 import json
 import subprocess
 import sys
+from datetime import date
 from pathlib import Path
 
 import pytest
@@ -117,6 +118,42 @@ def test_source_change_invalidates_pinned_pack(workspace):
     original = pack.build_contract_pack(root, node["id"])
     path.write_text(path.read_text() + "\n# changed revision\n")
     assert pack.build_contract_pack(root, node["id"])["source"] != original["source"]
+
+
+def test_absent_gate_state_uses_supervisor_default(workspace):
+    root, path, node = workspace
+    del node["gate_state"]
+    path.write_text(yaml.safe_dump(node))
+    result = pack.build_contract_pack(root, node["id"])
+    assert result["source"]["gate_state"] == "none"
+    assert result["status"] == "review_required"
+
+
+def test_repeated_ordered_scenario_steps_are_preserved(workspace):
+    root, path, node = workspace
+    node["specification"]["bdd_scenarios"][0]["steps"] = ["When retrying", "When retrying"]
+    path.write_text(yaml.safe_dump(node))
+    result = pack.build_contract_pack(root, node["id"])
+    steps = result["specification"]["bdd_scenarios"][0]["steps"]
+    assert steps == ["When retrying", "When retrying"]
+
+
+@pytest.mark.parametrize("target", ["APP-SPEC-001", "SG-SPEC-LEGACY-001"])
+def test_existing_product_spec_id_forms_are_accepted(workspace, target):
+    root, path, node = workspace
+    node["id"] = target
+    path = root / f"specs/nodes/{target}.yaml"
+    path.write_text(yaml.safe_dump(node))
+    assert pack.build_contract_pack(root, target)["source"]["spec_id"] == target
+
+
+def test_yaml_dates_are_normalized_before_json_serialization(workspace):
+    root, path, node = workspace
+    node["specification"]["rollout_date"] = date(2026, 9, 28)
+    path.write_text(yaml.safe_dump(node))
+    result = pack.build_contract_pack(root, node["id"])
+    assert result["specification"]["rollout_date"] == "2026-09-28"
+    json.dumps(result)
 
 
 @pytest.mark.parametrize("target", ["../bad", "", "ZEU-SPEC-0016/../../bad"])
