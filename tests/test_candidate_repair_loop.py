@@ -99,6 +99,49 @@ def test_candidate_repair_loop_preview_applies_safe_repairs() -> None:
     assert product["claims"][0]["repair_generated_type_change"] is True
 
 
+def test_candidate_repair_loop_preview_ignores_unsupported_operations() -> None:
+    module = load_module()
+    candidate_graph = {"nodes": [{"id": "existing"}], "edges": []}
+    actions = [
+        {
+            "status": "applied_to_preview",
+            "operation": {"op": "unsupported"},
+        },
+        {
+            "status": "applied_to_preview",
+            "operation": {"op": "append", "path": "/nodes", "value": {"id": "new"}},
+        },
+        {
+            "status": "applied_to_preview",
+            "operation": {
+                "op": "add_acceptance_criterion",
+                "node_id": "missing",
+                "value": {"id": "ac.missing"},
+            },
+        },
+        {
+            "status": "applied_to_preview",
+            "operation": {
+                "op": "replace_claim_type",
+                "node_id": "missing",
+                "claim_id": "claim.missing",
+                "value": "hypothesis",
+            },
+        },
+    ]
+
+    preview = module._apply_preview_actions(
+        candidate_graph,
+        actions,
+        preview_source_ref="runs/preview.json#revised_candidate_graph_preview",
+    )
+
+    assert preview["nodes"] == candidate_graph["nodes"]
+    assert preview["edges"] == []
+    assert preview["canonical_mutations_allowed"] is False
+    assert preview["tracked_artifacts_written"] is False
+
+
 def test_candidate_repair_loop_downgrades_strength_marker() -> None:
     module = load_module()
     candidate_graph = load_json(CANDIDATE_REPAIRABLE)
