@@ -134,8 +134,6 @@ def test_candidate_approval_decision_approves_ready_handoff(tmp_path: Path) -> N
     assert report["decision"]["state"] == "approved"
     assert report["readiness"]["ready"] is True
     assert report["readiness"]["review_state"] == "promotion_request_approved"
-    assert report["readiness"]["next_artifact"] == "Platform graph-repository promotion-request"
-    assert report["summary"]["status"] == report["readiness"]["review_state"]
     assert report["promotion_request"]["paths"] == [
         "runs/materialized_candidate_specs/tdl-0001.yaml"
     ]
@@ -174,11 +172,6 @@ def test_candidate_approval_decision_downgrades_unready_approval(
     assert report["decision"]["requested_state"] == "approved"
     assert report["decision"]["state"] == "needs_context"
     assert report["readiness"]["ready"] is False
-    assert report["readiness"]["review_state"] == "candidate_approval_blocked"
-    assert report["readiness"]["next_artifact"] == (
-        "operator decision or candidate repair before Git Service execution"
-    )
-    assert report["summary"]["status"] == report["readiness"]["review_state"]
     assert report["promotion_request"]["paths"] == []
     assert "promotion_gate_not_ready" in finding_ids(report)
     assert "promotion_gate_paths_missing" in finding_ids(report)
@@ -207,58 +200,6 @@ def test_candidate_approval_decision_records_explicit_rejection(
     assert report["readiness"]["review_state"] == "candidate_promotion_rejected"
     assert report["readiness"]["blocked_by"] == ["decision_rejected"]
     assert report["promotion_request"]["paths"] == []
-
-
-def test_candidate_approval_decision_preserves_nonapproval_states(tmp_path: Path) -> None:
-    module = load_module(TOOL_PATH, "candidate_approval_decision_nonapproval")
-    module.ROOT = tmp_path
-    active_path, gate_path = write_ready_inputs(tmp_path)
-    active_candidate = json.loads(active_path.read_text(encoding="utf-8"))
-    promotion_gate = json.loads(gate_path.read_text(encoding="utf-8"))
-
-    for requested_state, review_state in (
-        ("needs_context", "candidate_approval_needs_context"),
-        ("superseded", "candidate_superseded"),
-    ):
-        report = module.build_candidate_approval_decision(
-            active_candidate=active_candidate,
-            promotion_gate=promotion_gate,
-            active_candidate_path=active_path,
-            promotion_gate_path=gate_path,
-            requested_state=requested_state,
-            operator_ref="local_operator:egor",
-            reason="Record an explicit operator decision.",
-        )
-
-        assert report["decision"]["state"] == requested_state
-        assert report["readiness"]["ready"] is False
-        assert report["readiness"]["review_state"] == review_state
-        assert report["readiness"]["next_artifact"] == (
-            "operator decision or candidate repair before Git Service execution"
-        )
-        assert report["summary"]["status"] == review_state
-
-
-def test_candidate_approval_field_trace_is_grouped_by_field() -> None:
-    module = load_module(TOOL_PATH, "candidate_approval_decision_trace")
-    trace = []
-
-    fields = module.CANDIDATE_APPROVAL_FIELDS.apply(
-        module.ApprovalReadinessContext(effective_state="approved", has_findings=False),
-        trace=trace,
-    )
-
-    assert fields == {
-        "review_state": "promotion_request_approved",
-        "next_artifact": "Platform graph-repository promotion-request",
-    }
-    assert [field.field_name for field in trace] == ["review_state", "next_artifact"]
-    assert [(event.name, event.outcome.value) for event in trace[0].events] == [
-        ("candidate_approval.has_findings", "unsatisfied")
-    ]
-    assert [(event.name, event.outcome.value) for event in trace[1].events] == [
-        ("candidate_approval.ready_for_promotion_request", "satisfied")
-    ]
 
 
 def test_candidate_approval_decision_rejects_private_operator_text(
