@@ -4,7 +4,7 @@
 
 **Draft discussion aid; non-authoritative and not an adoption decision.** This
 packet records recommended resolutions and a possible follow-up sequence for
-review of [RFC 0221](0221_stable_requirement_identity_and_lineage.md). It does
+review of [RFC 0221](../proposals/0221_stable_requirement_identity_and_lineage.md). It does
 not amend a canonical specification, settle ontology authority, authorize
 implementation, or establish that any requirement below has been accepted.
 The existing RFC and its source draft remain the proposal record.
@@ -34,7 +34,7 @@ before adoption.
 The identity must not derive from the statement, owner, path, order, or scenario
 ID. A move changes containment and provenance only. This choice preserves the
 relationship proposed by RFC 0221 while leaving physical serialization open
-until schema review. See [RFC 0221, Identity scope](0221_stable_requirement_identity_and_lineage.md#identity-scope)
+until schema review. See [RFC 0221, Identity scope](../proposals/0221_stable_requirement_identity_and_lineage.md#identity-scope)
 and [node format](../schema/node-format.md).
 
 ### 2. Workspace identity and local ID allocation
@@ -56,19 +56,20 @@ this packet does not select a serialization format or reserve example IDs.
 **Recommendation:** use a per-subject positive integer revision, starting at
 `1`, with every governed content change creating the next revision and an
 explicit reference to the immediately preceding revision in that same
-identity's 1:1 revision chain. Mark the first revision as the lineage origin
-only when there is no separately governed canonical supersession predecessor.
-Keep the stable subject ID separate from both revision and optional content
-digest. Use explicit typed transition records for moves, replacements,
-Requirement decomposition, composition, and withdrawals, including provenance
-and subject-level effects. Relation participants do not become one another's
+identity's 1:1 revision chain. Each subject ID begins at revision 1 as the
+origin of that identity's sequence, with no same-identity predecessor. Keep the
+stable subject ID separate from both revision and optional content digest. Use
+explicit typed transition records for moves, replacements, Requirement and
+criterion decomposition/composition, and withdrawals, including provenance and
+subject-level effects. Relation participants do not become one another's
 revision predecessors. Mark decomposition and composition as distinct directed
 subject relations; neither relation is inferred by reversing or mirroring the
 other. Only a separate SG-SPEC-0019-compliant canonical node/edge transition
 determines canonical topology presence. Its cross-identity
 `predecessor_reference` to one predecessor node's terminal revision is a
-supersession link, not an additional per-identity revision predecessor. Do not
-infer lineage or presence from a digest or storage history.
+supersession link, separate from the successor identity's revision-1 origin
+and per-identity revision chain. Do not infer lineage or presence from a digest
+or storage history.
 
 Integer sequencing is inspectable and does not imply semantic versioning. The
 refinement must define atomicity and uniqueness for revision creation and
@@ -92,7 +93,7 @@ Keep existing BDD scenario IDs as scenario identities. A scenario may cite one
 or more Requirement or criterion references only through an authored,
 reviewable relation. Evidence for a criterion must be keyed by its full
 workspace-scoped reference and pin a revision when it asserts wording-specific
-behavior. See [RFC 0221, Backward-compatible migration](0221_stable_requirement_identity_and_lineage.md#backward-compatible-migration).
+behavior. See [RFC 0221, Backward-compatible migration](../proposals/0221_stable_requirement_identity_and_lineage.md#backward-compatible-migration).
 
 ## Compatibility with SG-SPEC-0019
 
@@ -102,9 +103,14 @@ within its scope. Its frozen boundary says further canonical change must
 preserve both subject identities. The confirmed direction preserves this rule
 without exception or reinterpretation. Requirement decomposition and
 composition are separate explicit subject relations, named `decomposes_into`
-and `composed_from` in the RFC draft. `decomposes_into` points from one source
-Requirement to each resulting Requirement; `composed_from` points from one
-resulting Requirement to each contributor. These are distinct authored relation
+and `composed_from` in the RFC draft. Both Requirement and acceptance-criterion
+subjects may participate. `decomposes_into` points from one source subject to
+each resulting subject; `composed_from` points from one resulting subject to
+each contributor. Endpoints within either relation must share one subject type:
+Requirement-to-Requirement or criterion-to-criterion. Cross-kind endpoints are
+invalid for these relation types; `acceptance_criteria_refs` remains a distinct,
+explicitly specified Requirement-to-criterion relation. Any other cross-kind
+relation requires separate specification. These are distinct authored relation
 types, not inverse storage assumptions. They do not encode 1:N or N:1
 `supersedes` mappings, do not create canonical `supersedes` edges, and do not
 silently change canonical node or edge identity, lifecycle, dependency role, or
@@ -144,10 +150,14 @@ semantics needed to make identity reviewable and usable:
 - Revision contract: stable identity versus revision versus optional digest;
   origin marker; immediate predecessor; provenance for each governed change.
 - Transition contract: identity-preserving editorial change and move;
-  replacement; `decomposes_into` and `composed_from` subject relations; and
-  withdrawal. State the independent subject-disposition and canonical
-  lifecycle/presence effects for each; decomposition and composition do not
-  alter participant disposition, revision chains, or canonical active topology.
+  replacement; same-kind Requirement and criterion `decomposes_into` and
+  `composed_from` subject relations; and withdrawal. State the independent
+  subject-disposition and canonical lifecycle/presence effects for each;
+  decomposition and composition do not alter participant disposition, revision
+  chains, or canonical active topology. Withdrawing a Requirement explicitly
+  retires its subject and excludes it from Requirement-level readiness and
+  dependency satisfaction, while its canonical node remains queryable and
+  graph-level topology follows the unchanged SG-SPEC-0019 presence.
 - Lookup contract: resolve an exact subject/revision and its complete relation
   history; direct lookup preserves the requested identity, and relation
   traversal returns every endpoint with its directed role for the requested
@@ -173,13 +183,34 @@ Scenario: Requirement decomposition preserves every subject and endpoint
   And neither target is treated as semantically equivalent to the source
   And neither relation changes participant disposition or revision chains
   And canonical node and edge active topology is unchanged by the relation
+
+Scenario: Successor revision 1 has a separate canonical supersession link
+  Given a canonical Requirement node with terminal revision 4
+  When one successor replaces it through SG-SPEC-0019
+  Then the successor's revision 1 is the origin of its own identity sequence
+  And the supersession event separately references the predecessor's revision 4
+  And that link does not add a predecessor to the successor's revision chain
+
+Scenario: Criterion composition cannot link Requirement endpoints
+  Given two acceptance-criterion subjects and one Requirement subject
+  When a composed_from relation connects the Requirement to the criteria
+  Then validation rejects the cross-kind relation endpoints
+  And acceptance_criteria_refs remains a distinct relation
+
+Scenario: Retired Requirement stays queryable but cannot satisfy dependencies
+  Given a canonical Requirement node with an explicitly retired subject
+  When graph-level traversal and Requirement-level dependency evaluation run
+  Then graph traversal follows the unchanged canonical node presence
+  And historical lineage lookup still resolves the node
+  And the retired Requirement is excluded from readiness evaluation
+  And it cannot satisfy another Requirement's dependency
 ```
 
 Additional examples should cover an editorial wording change retaining identity,
-a move retaining identity while changing containment, composition returning every
-contributor, canonical 1:1 supersession, a withdrawal with no relation target,
-ambiguous legacy evidence failing closed, and two workspaces using the same
-local ID without collision.
+a move retaining identity while changing containment, criterion decomposition
+returning every criterion target, composition returning every contributor,
+canonical 1:1 supersession, ambiguous legacy evidence failing closed, and two
+workspaces using the same local ID without collision.
 
 ## Staged Implementation Assignment and Gates
 
