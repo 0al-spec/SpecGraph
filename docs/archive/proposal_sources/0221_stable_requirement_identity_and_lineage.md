@@ -15,7 +15,8 @@ addresses for individual requirements as an immediate concern.
   scenario IDs do not give every acceptance criterion its own identity.
 - `SG-SPEC-0019` defines revision and supersession lineage for canonical nodes
   and explicit edges. Its successor mapping is one-to-one and explicitly
-  leaves one-to-many and many-to-one mappings for future refinement.
+  remains one-to-one; Requirement decomposition and composition are separate
+  subject relations and do not alter that canonical-node contract.
 
 ## Discussion outcome
 
@@ -24,27 +25,51 @@ nodes and distinct acceptance-criterion subjects when containing specifications
 change. A Requirement node and each criterion need separate stable IDs, linked
 through `acceptance_criteria_refs`; evidence is keyed to the criterion. A
 subject may move between nodes without changing identity when its meaning is
-preserved. A substantial normative change should create a successor identity.
-Decomposition and combination should retire predecessor identities while
-recording explicit one-to-many or many-to-one lineage; those relationships must
-not imply semantic equivalence. Requirement identity extends the existing
-canonical `requirement` node kind; the criterion representation remains a
-separate design decision.
+preserved. A substantial normative change should create a successor identity
+under an explicit subject-disposition transition. Requirement decomposition and
+composition should be recorded as separately authored, directed subject
+relations: `decomposes_into` points from one source Requirement to each
+resulting Requirement, while `composed_from` points from one resulting
+Requirement to each contributor. They are distinct event types, not inferred
+inverse records, and do not alter participants' disposition or revision chains.
+Relation participants must not become revision predecessors of one another.
+These relations must not imply semantic equivalence or silently change
+canonical node/edge identity, lifecycle, or active-topology presence. Any
+canonical node supersession remains a separate 1:1 event under frozen
+SG-SPEC-0019.
+
+Each identity's non-origin revision points only to its immediately preceding
+revision in that identity's 1:1 revision chain. A canonical node replacement
+may separately connect exactly one predecessor node to exactly one successor
+under SG-SPEC-0019. Its cross-identity `predecessor_reference` to the prior
+node's terminal revision is a supersession link, not an additional predecessor
+in the successor's per-identity revision chain. Retirement or activation of a
+subject requires an explicit disposition transition; decomposition and
+composition relations do not infer it. Requirement identity extends the
+existing canonical `requirement` node kind; the criterion representation
+remains a separate design decision.
 
 Every evidence reference and lookup uses the immutable workspace identity with
 the local subject ID, or explicitly binds the artifact/request to that
 immutable workspace. Retired subjects continue resolving to their historical
-record and successor relationships. Lifecycle retirement is separate from
-`historical_lineage_only` topology presence: replacement, split, merge, and
-withdrawal retire their predecessors, mark them historical in topology, and
-keep them resolvable; only the first three have successor mappings. Every
-governed content change advances revision and records its predecessor, while a
-content digest remains optional and separate from identity.
+record and all subject relations. Subject disposition is separate from
+canonical node/edge lifecycle and `historical_lineage_only` topology presence;
+decomposition and composition relations do not by themselves change subject
+disposition, revision history, or canonical active topology. Any canonical node
+supersession remains a separate 1:1 event under SG-SPEC-0019. Every governed
+content change advances that identity's revision and records its single
+immediate predecessor, while a content digest remains optional and separate
+from identity.
 
 For backward-compatible adoption, existing acceptance strings and existing
 BDD scenario IDs should remain usable during migration. Split tooling should map
 Requirement and criterion subjects by their separate full references, preserve
-`acceptance_criteria_refs`, and key acceptance evidence by criterion reference
-instead of list position, Requirement ID, or text equality.
+`acceptance_criteria_refs`, represent Requirement decomposition and composition
+with their distinct explicit relations and endpoint roles, and key acceptance
+evidence by criterion reference instead of list position, Requirement ID, or
+text equality. Lookup returns exact records and all relation endpoints without
+redirecting to a related subject or selecting one successor; reverse queries
+enumerate authored relations and do not infer the other relation type by
+reversing an edge.
 
 No Hypercode syntax or integration is requested in this proposal.

@@ -12643,6 +12643,18 @@
       {
         "path": "docs/proposals/0221_stable_requirement_identity_and_lineage.md",
         "pattern": "Hypercode syntax, adapters, or integration"
+      },
+      {
+        "path": "docs/proposals/0221_stable_requirement_identity_and_lineage.md",
+        "pattern": "do not create or rewrite canonical `supersedes` edges"
+      },
+      {
+        "path": "docs/proposals/0221_stable_requirement_identity_and_lineage.md",
+        "pattern": "`decomposes_into` is directed from one source"
+      },
+      {
+        "path": "docs/proposals/0221_stable_requirement_identity_and_lineage.md",
+        "pattern": "not an additional predecessor in the successor's per-identity revision chain"
       }
     ],
     "validation_markers": [
@@ -12656,6 +12668,10 @@
       }
     ],
     "observation_markers": [
+      {
+        "path": "docs/proposals/0221_stable_requirement_identity_and_lineage.md",
+        "pattern": "do not change any participant's subject disposition, revision chain"
+      },
       {
         "path": "docs/proposals/0221_stable_requirement_identity_and_lineage.md",
         "pattern": "successor without silent redirection."
