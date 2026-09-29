@@ -16,13 +16,9 @@ if str(ROOT) not in sys.path:
 
 from tools.idea_to_spec_candidate_quality_context import (  # noqa: E402
     CandidateQualityContext,
-    GapResolutionContext,
 )
-from tools.idea_to_spec_candidate_quality_review_spec import (  # noqa: E402
-    candidate_quality_review_state,
-)
-from tools.idea_to_spec_gap_resolution_spec import (  # noqa: E402
-    gap_resolution_state,
+from tools.idea_to_spec_candidate_quality_fields import (  # noqa: E402
+    CANDIDATE_QUALITY_FIELDS,
 )
 
 PROPOSAL_ID = "0166"
@@ -1472,23 +1468,7 @@ def _candidate_quality_preview(
         unresolved_candidate_count=unresolved_candidate_count,
     )
     return {
-        "review_state": candidate_quality_review_state(context),
-        "ontology_gap_state": gap_resolution_state(
-            GapResolutionContext(
-                resolved_count=resolved_ontology_count,
-                unresolved_count=unresolved_ontology_count,
-                aggregate_resolved_count=context.resolved_count,
-                no_gaps_state="no_ontology_gaps",
-            )
-        ),
-        "candidate_gap_state": gap_resolution_state(
-            GapResolutionContext(
-                resolved_count=resolved_candidate_count,
-                unresolved_count=unresolved_candidate_count,
-                aggregate_resolved_count=context.resolved_count,
-                no_gaps_state="no_candidate_gaps",
-            )
-        ),
+        **CANDIDATE_QUALITY_FIELDS.apply(context),
         "resolved_ontology_gap_count": resolved_ontology_count,
         "unresolved_ontology_gap_count": unresolved_ontology_count,
         "resolved_candidate_gap_count": resolved_candidate_count,
