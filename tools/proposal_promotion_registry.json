@@ -2845,5 +2845,18 @@
     "required_provenance_links": [
       "source_draft_ref"
     ]
+  },
+  {
+    "proposal_id": "0221",
+    "source_artifact_class": "working_draft",
+    "source_refs": [
+      "docs/archive/proposal_sources/0221_stable_requirement_identity_and_lineage.md"
+    ],
+    "motivating_concern": "Individual acceptance criteria lack stable identity independent of their containing specification node, making precise lineage and historical lookup across edits, moves, splits and merges unreliable.",
+    "normalized_title": "Stable Identity and Lineage for Individual Requirements",
+    "bounded_scope": "Propose stable workspace-unique identities, revision/digest separation, 1:1 move preservation, successor and retirement lineage for normative change, split and merge, historical read-only lookup, and backward-compatible migration expectations for split mapping and acceptance evidence. Do not mutate canonical specs, implement runtime behavior, or introduce Hypercode work.",
+    "required_provenance_links": [
+      "source_draft_ref"
+    ]
   }
 ]
