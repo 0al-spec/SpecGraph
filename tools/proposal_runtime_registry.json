@@ -12627,5 +12627,43 @@
       }
     ],
     "notes": "Standalone Decision validation/indexing and the Supervisor-facing read-only product-workspace index are implemented. Canonical Decisions are returned separately from legacy SpecNode values, with no refinement, executor, adoption, or authority-transfer path. Zeusus field mapping, owner-approved migration, and the compatibility pilot remain deferred."
+  },
+  {
+    "proposal_id": "0221",
+    "posture": "deferred_until_canonicalized",
+    "runtime_surfaces": [
+      "docs/proposals/0221_stable_requirement_identity_and_lineage.md",
+      "docs/archive/proposal_sources/0221_stable_requirement_identity_and_lineage.md"
+    ],
+    "runtime_markers": [
+      {
+        "path": "docs/proposals/0221_stable_requirement_identity_and_lineage.md",
+        "pattern": "Draft proposal. This document proposes an identity and lineage contract"
+      },
+      {
+        "path": "docs/proposals/0221_stable_requirement_identity_and_lineage.md",
+        "pattern": "Hypercode syntax, adapters, or integration"
+      }
+    ],
+    "validation_markers": [
+      {
+        "path": "docs/proposals/0221_stable_requirement_identity_and_lineage.md",
+        "pattern": "A proposal tracking gate passes"
+      },
+      {
+        "path": "docs/proposals/0221_stable_requirement_identity_and_lineage.md",
+        "pattern": "explicit fixtures for"
+      }
+    ],
+    "observation_markers": [
+      {
+        "path": "docs/proposals/0221_stable_requirement_identity_and_lineage.md",
+        "pattern": "successor without silent redirection."
+      },
+      {
+        "path": "docs/proposals/0221_stable_requirement_identity_and_lineage.md",
+        "pattern": "implements none of those behaviors."
+      }
+    ]
   }
 ]
