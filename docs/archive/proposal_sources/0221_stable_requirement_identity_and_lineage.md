@@ -19,23 +19,32 @@ addresses for individual requirements as an immediate concern.
 
 ## Discussion outcome
 
-The desired capability is to keep a precise reference to a normative
-requirement when its containing specification changes. A requirement may move
-between nodes without changing identity when its meaning is preserved. A
-substantial normative change should create a successor identity. Decomposition
-and combination should retire predecessor identities while recording explicit
-one-to-many or many-to-one lineage; those relationships must not imply semantic
-equivalence.
+The desired capability is to keep precise references to canonical Requirement
+nodes and distinct acceptance-criterion subjects when containing specifications
+change. A Requirement node and each criterion need separate stable IDs, linked
+through `acceptance_criteria_refs`; evidence is keyed to the criterion. A
+subject may move between nodes without changing identity when its meaning is
+preserved. A substantial normative change should create a successor identity.
+Decomposition and combination should retire predecessor identities while
+recording explicit one-to-many or many-to-one lineage; those relationships must
+not imply semantic equivalence. Requirement identity extends the existing
+canonical `requirement` node kind; the criterion representation remains a
+separate design decision.
 
-References to retired requirements should continue resolving to their
-historical record, status, and successor relationships. Revision or content
-digests identify a specific version of a requirement's content and remain
-separate from its stable identity. Consumers should be able to look up this
-information read-only.
+Every evidence reference and lookup uses the immutable workspace identity with
+the local subject ID, or explicitly binds the artifact/request to that
+immutable workspace. Retired subjects continue resolving to their historical
+record and successor relationships. Lifecycle retirement is separate from
+`historical_lineage_only` topology presence: replacement, split, merge, and
+withdrawal retire their predecessors, mark them historical in topology, and
+keep them resolvable; only the first three have successor mappings. Every
+governed content change advances revision and records its predecessor, while a
+content digest remains optional and separate from identity.
 
 For backward-compatible adoption, existing acceptance strings and existing
 BDD scenario IDs should remain usable during migration. Split tooling should map
-criteria by stable requirement ID, and acceptance evidence should eventually
-key by that ID instead of list position or text equality.
+Requirement and criterion subjects by their separate full references, preserve
+`acceptance_criteria_refs`, and key acceptance evidence by criterion reference
+instead of list position, Requirement ID, or text equality.
 
 No Hypercode syntax or integration is requested in this proposal.
