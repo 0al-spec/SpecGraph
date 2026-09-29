@@ -7,7 +7,9 @@ _GAP_RESOLUTION_SPEC = FirstMatch.with_fallback(
     (
         (
             PredicateSpec(
-                lambda context: context.resolved_count > 0 and context.unresolved_count > 0,
+                lambda context: (
+                    context.unresolved_count > 0 and context.aggregate_resolved_count > 0
+                ),
                 name="gap_resolution.partially_resolved",
             ),
             "partially_preview_resolved",

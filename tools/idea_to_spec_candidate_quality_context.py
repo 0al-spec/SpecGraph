@@ -25,4 +25,5 @@ class CandidateQualityContext:
 class GapResolutionContext:
     resolved_count: int
     unresolved_count: int
+    aggregate_resolved_count: int
     no_gaps_state: str

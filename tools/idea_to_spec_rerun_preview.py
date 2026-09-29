@@ -1479,6 +1479,7 @@ def _candidate_quality_preview(
             GapResolutionContext(
                 resolved_count=resolved_ontology_count,
                 unresolved_count=unresolved_ontology_count,
+                aggregate_resolved_count=context.resolved_count,
                 no_gaps_state="no_ontology_gaps",
             )
         ),
@@ -1486,6 +1487,7 @@ def _candidate_quality_preview(
             GapResolutionContext(
                 resolved_count=resolved_candidate_count,
                 unresolved_count=unresolved_candidate_count,
+                aggregate_resolved_count=context.resolved_count,
                 no_gaps_state="no_candidate_gaps",
             )
         ),
