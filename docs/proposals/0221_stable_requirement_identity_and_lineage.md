@@ -16,8 +16,8 @@ approve a new ontology contract.
 - [SG-SPEC-0001](../../specs/nodes/SG-SPEC-0001.yaml): canonical node and
   specification boundaries
 - [SG-SPEC-0019](../../specs/nodes/SG-SPEC-0019.yaml): canonical revision,
-  supersession, and historical-presence semantics; its current 1:1 successor
-  mapping is narrower than the relationship proposed here
+  supersession, and historical-presence semantics; its frozen 1:1 canonical
+  node and explicit-edge successor mapping remains unchanged by this proposal
 - [Canonical Node format](../schema/node-format.md): current acceptance and
   `acceptance_evidence` representation
 
@@ -74,42 +74,67 @@ revision.
 ### Revision, movement, and retirement
 
 1. Every governed content change MUST advance that subject's revision and
-   identify the immediately preceding governed revision. The first revision is
-   explicitly marked as the lineage origin and has no predecessor. This applies
+   identify the immediately preceding revision in that same subject identity's
+   revision chain. Each non-origin revision has exactly one such predecessor;
+   the origin has none. A first revision is marked as an origin only when there
+   is no separately governed canonical supersession predecessor. This applies
    to editorial wording changes even when normative meaning is unchanged; such
-   changes retain the subject ID. A replacement, split, or merge transition
-   MUST link each new successor revision to the terminal revision of every
-   predecessor it replaces; that transition is not a lineage origin. Producing
-   a content digest is optional.
+   changes retain the subject ID. A canonical node replacement is a separate
+   SG-SPEC-0019 supersession event with exactly one predecessor node and one
+   successor node. Its cross-identity `predecessor_reference` to the predecessor
+   node's terminal revision is the canonical supersession link, not an
+   additional predecessor in the successor's per-identity revision chain.
+   Decomposition and composition relations MUST NOT add revision predecessors
+   or join the revision chains of distinct subject IDs. Producing a content
+   digest is optional.
 2. A one-to-one move between specification nodes retains the requirement ID
    when the normative meaning is unchanged. The move is recorded as a
    containment change with provenance; it does not create an identity alias.
-3. A substantial normative change creates a new subject ID. The predecessor
-   enters retired lifecycle disposition and `historical_lineage_only` presence;
-   the successor has its own identity and is active in current topology. An
-   explicit successor relationship preserves the change scope and provenance.
-4. Splitting one subject retires its predecessor and records an explicit 1:N
-   decomposition mapping. Merging subjects retires every predecessor and
-   records an explicit N:1 composition mapping. In both cases predecessors
-   become `historical_lineage_only`, while new successors are active. These
-   mappings establish lineage, not equivalence: no successor may be
-   substituted for a predecessor as though it had identical meaning.
-5. Withdrawal or loss of applicability retires the subject without a successor
-   and moves its presence to `historical_lineage_only`. The canonical node
-   `status` continues to use the lifecycle vocabulary governed by SG-SPEC-0001;
-   identity retirement is a separate lifecycle disposition, and presence is
-   topology state. These concepts are separate, and retired IDs remain
-   resolvable. Retirement never deletes or recycles an ID.
+3. A substantial normative change creates a new subject ID. An explicit
+   disposition transition retires the predecessor subject and activates the
+   successor subject, preserving change scope and provenance. These subject
+   dispositions do not by themselves set canonical node/edge presence. If the
+   subjects are canonical nodes, any topology replacement is a separate
+   SG-SPEC-0019 supersession event with exactly one predecessor and one
+   successor; only that event places the superseded node in
+   `historical_lineage_only` and the successor in active topology.
+4. Requirement decomposition and composition are represented by separate,
+   explicitly authored, typed subject relations, distinct from canonical
+   `supersedes` relations. `decomposes_into` is directed from one source
+   Requirement subject to each of two or more resulting Requirement subjects.
+   `composed_from` is directed from one resulting Requirement subject to each
+   of two or more contributing Requirement subjects. The two relation kinds
+   describe distinct events; neither is inferred by reversing or mirroring the
+   other. These relations establish subject lineage, not equivalence: no
+   related subject may be substituted for another as though it had identical
+   meaning. They do not constitute 1:N or N:1 canonical-node successor
+   mappings, do not create or rewrite canonical `supersedes` edges, and do not
+   change any participant's subject disposition, revision chain, canonical
+   node or edge identity, lifecycle, active-topology presence, or dependency
+   role. Retirement or activation requires a separate explicit subject
+   disposition transition; canonical node or edge presence changes only under
+   SG-SPEC-0019's independent 1:1 rules.
+5. Withdrawal or loss of applicability retires the subject without a successor.
+   Subject lifecycle disposition is distinct from canonical node lifecycle and
+   topology presence; it does not itself set node presence to
+   `historical_lineage_only`. Canonical node `status` continues to use the
+   lifecycle vocabulary governed by SG-SPEC-0001, and canonical presence
+   transitions remain governed by SG-SPEC-0019. Retired IDs remain resolvable;
+   retirement never deletes or recycles an ID.
 6. A same-identity editorial revision or one-to-one containment move advances
-   revision, retains active identity disposition and active presence, and
-   preserves the predecessor revision. Replacement, split, and merge retire
-   predecessor identities and mark them `historical_lineage_only`; withdrawal
-   does the same without successors. No transition may infer presence solely
-   from lifecycle status.
+   the subject revision and preserves its subject identity and single
+   immediately preceding revision. A decomposition or composition relation
+   preserves its participants and relation history but does not itself update
+   their subject-level disposition or revisions. Any subject retirement or
+   activation is a separate explicit disposition transition. Canonical
+   node/edge presence is independent and may change only through a separately
+   governed canonical transition. No transition may infer presence solely from
+   lifecycle status or a subject relation.
 7. A subject's historical record MUST preserve its identity, revisions,
-   lifecycle disposition, topology presence, and all successor relationships.
-   Lookup MUST return that record and its lineage; it MUST NOT silently
-   redirect to an active successor or an unpinned `latest` revision.
+   lifecycle disposition, workspace scope, and every incoming and outgoing
+   subject relation. Lookup MUST return that record and its lineage; it MUST
+   NOT silently redirect to a related subject, an active canonical successor,
+   or an unpinned `latest` revision.
 
 ### Evidence and read-only lookup
 
@@ -124,13 +149,24 @@ revision.
    alongside the local subject ID or explicitly target a workspace by its
    immutable identity. Local IDs or mutable workspace slugs alone are never
    sufficient. Lookup MUST resolve the subject to its identity record, requested
-   or current revision, containment history, lifecycle disposition, topology
-   presence, and explicit successor lineage. Unknown IDs or unavailable
-   revisions are unresolved, not replaced by another record.
-3. A split consumer MUST map requirement and criterion subjects by their full
+   or current revision, containment history, lifecycle disposition, canonical
+   node/edge presence when applicable, and explicit subject relations. A query
+   from a decomposition source MUST return every directed `decomposes_into`
+   target; a query from a composition result MUST return every directed
+   `composed_from` contributor. Reverse queries MUST enumerate every matching
+   authored relation in which the subject participates, with endpoint roles
+   intact; they MUST NOT infer the other relation kind by reversing an edge.
+   Results MUST label subject relations separately from canonical supersession,
+   MUST NOT select a single related subject as a replacement, and MUST NOT
+   infer disposition changes. Unknown IDs or unavailable revisions are
+   unresolved, not replaced by another record.
+3. A split consumer MUST map Requirement and criterion subjects by their full
    references, preserve the `acceptance_criteria_refs` relation, and classify
-   each source as retained, moved, decomposed, merged, or retired. It MUST NOT
-   infer identity continuity from text similarity or array order.
+   each source as retained, moved, decomposed, composed, or retired. It MUST
+   represent decomposition and composition with their respective explicit
+   subject relations; it MUST NOT encode them as multi-successor or
+   multi-predecessor `supersedes` mappings. It MUST NOT infer identity
+   continuity from text similarity or array order.
 
 ### Backward-compatible migration
 
@@ -195,7 +231,8 @@ In scope:
 - Identity and lifecycle semantics for canonical Requirement nodes and
   distinct acceptance-criterion subjects
 - Identity preservation across editorial revision and one-to-one moves
-- Successor lineage for substantial change, split, merge, and retirement
+- Explicit successor lineage for substantial change and distinct subject
+  relations for Requirement decomposition/composition and retirement
 - Historical resolution and digest-versus-identity boundaries
 - Backward-compatible migration and expected consumer behavior for split
   mapping, criterion-keyed evidence, and workspace-scoped read-only lookup
@@ -212,14 +249,29 @@ Out of scope:
 ## Relationship to Existing Lineage
 
 SG-SPEC-0019 governs canonical node and explicit-edge revision lineage and
-currently requires one-to-one successor mapping in its bounded scope. This
-proposal applies that canonical Requirement-node identity model and its
-revision/predecessor discipline, while proposing requirement/criterion lineage
-that can be 1:N or N:1. If adopted, those mappings require an explicit
-refinement or extension of SG-SPEC-0019; they are not implied by its current
-1:1 contract. Lifecycle retirement remains distinct from the
-`historical_lineage_only` topology-presence state. The model preserves
-append-only history, provenance, and inspectable predecessors.
+requires exactly one successor for each canonical supersession event in its
+frozen scope. This proposal preserves that 1:1 rule without exception or
+reinterpretation. Requirement `decomposes_into` and `composed_from` relations
+are a separate subject-lineage relation class: they do not assert canonical
+node replacement, do not create `supersedes` edges, and do not change active
+canonical node/edge topology. If a canonical node is separately superseded,
+that event still has exactly one successor and follows SG-SPEC-0019. Subject
+disposition and relation history are distinct from canonical node lifecycle
+and `historical_lineage_only` presence. Decomposition and composition relations
+neither change participant disposition nor link revision chains; either effect
+requires its own explicit transition within the applicable contract. The model
+preserves append-only history, provenance, source identities, every related
+subject, and explicit workspace scope.
+
+For queries, callers address a subject by immutable workspace identity plus
+local ID and optionally pin a revision. A direct lookup returns that exact
+subject record and its revision/containment history. Relation traversal returns
+all endpoints with their directed roles for the requested relation kind:
+`decomposes_into` from source to results and `composed_from` from result to
+contributors. Reverse queries enumerate every matching authored relation and
+preserve endpoint roles; they do not infer one relation kind by reversing the
+other. Neither direct nor relation lookup redirects to a related identity, and
+relation results never stand in for canonical `supersedes` traversal.
 
 ## Open Questions
 
@@ -241,17 +293,23 @@ append-only history, provenance, and inspectable predecessors.
 - A Requirement node and its acceptance criteria have distinct IDs, with
   criteria linked through `acceptance_criteria_refs` and evidence keyed by
   criterion reference.
-- Every governed content change advances revision and records its predecessor;
-  an optional digest identifies exact content.
+- Every governed content change advances that identity's revision and records
+  its single immediate predecessor; decomposition/composition relations never
+  add revision predecessors. An optional digest identifies exact content.
 - Editorial wording changes and one-to-one containment moves preserve identity
   when normative meaning is unchanged.
 - A substantial change receives a new ID and a historical lookup returns the
   old record, status and revision, optional digest, and successor without
   silent redirection.
-- Split and merge examples preserve all predecessor IDs and explicitly encode
-  1:N and N:1 lineage without asserting equivalence.
-- After a split, lookup by the predecessor's full reference returns its
-  historical record and every successor; it never silently selects one child.
+- Decomposition and composition examples preserve every participant ID and
+  endpoint role. `decomposes_into` points from source to each result;
+  `composed_from` points from result to each contributor. The separately
+  authored relations do not imply equivalence, change disposition/revision
+  chains, or alter canonical active topology.
+- After decomposition or composition, lookup by any participant's full
+  reference returns that subject and its complete relation history; traversal
+  returns every related subject and never selects one or performs silent
+  substitution.
 - Legacy string criteria and current BDD scenario IDs remain readable during a
   staged migration; no read path fabricates IDs.
 - Split mapping and evidence address subjects by full workspace-scoped ID, and
