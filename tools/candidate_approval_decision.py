@@ -6,11 +6,18 @@ import argparse
 import hashlib
 import json
 import re
+import sys
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
 ROOT = Path(__file__).resolve().parents[1]
+if str(ROOT) not in sys.path:
+    sys.path.insert(0, str(ROOT))
+
+from tools.candidate_approval_fields import CANDIDATE_APPROVAL_FIELDS  # noqa: E402
+from tools.candidate_approval_readiness_context import ApprovalReadinessContext  # noqa: E402
+
 PROPOSAL_ID = "0157"
 SCHEMA_VERSION = 1
 CONTRACT_REF = "specgraph.idea-to-spec.candidate-approval-decision.v0.1"
@@ -22,12 +29,6 @@ DEFAULT_OUTPUT_PATH = ROOT / "runs" / "candidate_approval_decision.json"
 DEFAULT_REASON = "awaiting explicit operator approval"
 DECISION_STATES = ("approved", "rejected", "needs_context", "superseded")
 PROMOTION_PATH_PREFIXES = ("specs/", "docs/proposals/", "runs/")
-REVIEW_STATE_BY_DECISION = {
-    "approved": "promotion_request_approved",
-    "rejected": "candidate_promotion_rejected",
-    "needs_context": "candidate_approval_needs_context",
-    "superseded": "candidate_superseded",
-}
 OPERATOR_REF_RE = re.compile(r"^[A-Za-z0-9][A-Za-z0-9_.:@-]{2,119}$")
 PRIVATE_TEXT_MARKERS = (
     "/Users/",
@@ -569,7 +570,12 @@ def build_candidate_approval_decision(
             )
         )
         effective_state = "needs_context"
-    approval_ready = effective_state == "approved" and not findings
+    readiness_context = ApprovalReadinessContext(
+        effective_state=effective_state,
+        has_findings=bool(findings),
+    )
+    approval_ready = readiness_context.approval_ready
+    readiness_fields = CANDIDATE_APPROVAL_FIELDS.apply(readiness_context)
     blocked_by = [finding["finding_id"] for finding in findings]
     if not approval_ready and not blocked_by:
         blocked_by = [f"decision_{effective_state}"]
@@ -606,13 +612,9 @@ def build_candidate_approval_decision(
         },
         "readiness": {
             "ready": approval_ready,
-            "review_state": REVIEW_STATE_BY_DECISION[effective_state]
-            if not findings
-            else "candidate_approval_blocked",
+            "review_state": readiness_fields["review_state"],
             "blocked_by": blocked_by,
-            "next_artifact": "Platform graph-repository promotion-request"
-            if approval_ready
-            else "operator decision or candidate repair before Git Service execution",
+            "next_artifact": readiness_fields["next_artifact"],
         },
         "promotion_request": {
             "platform_artifact_kind": "platform_graph_repository_promotion_request",
@@ -635,9 +637,7 @@ def build_candidate_approval_decision(
         "findings": findings,
         "warnings": [],
         "summary": {
-            "status": REVIEW_STATE_BY_DECISION[effective_state]
-            if not findings
-            else "candidate_approval_blocked",
+            "status": readiness_fields["review_state"],
             "requested_state": requested_state,
             "effective_state": effective_state,
             "candidate_id": candidate.get("candidate_id"),
