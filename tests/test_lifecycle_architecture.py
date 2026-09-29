@@ -1,6 +1,8 @@
 from __future__ import annotations
 
 import importlib.util
+import shutil
+import subprocess
 import sys
 from pathlib import Path
 
@@ -117,9 +119,41 @@ def test_lifecycle_architecture_rejects_a_layer_violation(tmp_path: Path) -> Non
     assert snapshot["repeated_dispatch_candidates"][0]["site_count"] == 2
 
 
-def test_lifecycle_architecture_compares_legacy_functions_with_current_owners() -> None:
+def test_lifecycle_architecture_compares_legacy_functions_with_current_owners(
+    tmp_path: Path,
+) -> None:
     module = _load_module()
-    report = module.build_report(ROOT, module.load_policy(), base_ref="HEAD^")
+    policy = module.load_policy()
+    tools_dir = tmp_path / "tools"
+    tools_dir.mkdir()
+    legacy_symbols = [item["legacy_symbol"] for item in policy["decisions"]]
+    legacy_source = "\n\n".join(
+        f"def {symbol}(context):\n    return context" for symbol in legacy_symbols
+    )
+    legacy_report = tools_dir / "idea_maturity_metrics_report.py"
+    legacy_report.write_text(legacy_source, encoding="utf-8")
+    subprocess.run(["git", "init", str(tmp_path)], check=True, capture_output=True)
+    subprocess.run(
+        ["git", "-C", str(tmp_path), "config", "user.name", "Lifecycle Test"],
+        check=True,
+    )
+    subprocess.run(
+        ["git", "-C", str(tmp_path), "config", "user.email", "lifecycle-test@example.invalid"],
+        check=True,
+    )
+    subprocess.run(["git", "-C", str(tmp_path), "add", "tools"], check=True)
+    subprocess.run(
+        ["git", "-C", str(tmp_path), "commit", "-m", "add legacy decision baseline"],
+        check=True,
+        capture_output=True,
+    )
+    subprocess.run(["git", "-C", str(tmp_path), "tag", "legacy-baseline"], check=True)
+    for item in policy["modules"]:
+        destination = tmp_path / item["path"]
+        destination.parent.mkdir(parents=True, exist_ok=True)
+        shutil.copyfile(ROOT / item["path"], destination)
+
+    report = module.build_report(tmp_path, policy, base_ref="legacy-baseline")
 
     assert report["gate_status"] == "pass"
     assert report["base"]["role"] == "legacy_decision_owner"
