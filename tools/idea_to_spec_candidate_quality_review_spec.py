@@ -1,6 +1,6 @@
 """SpecificationCore decision for the aggregate candidate-quality review state."""
 
-from specification_core import FirstMatch, PredicateSpec
+from specification_core import FirstMatch, PredicateSpec, TraceRecorder
 from tools.idea_to_spec_candidate_quality_context import CandidateQualityContext
 
 _CANDIDATE_QUALITY_REVIEW_SPEC = FirstMatch.with_fallback(
@@ -48,7 +48,11 @@ _CANDIDATE_QUALITY_REVIEW_SPEC = FirstMatch.with_fallback(
 )
 
 
-def candidate_quality_review_state(context: CandidateQualityContext) -> str:
-    decision = _CANDIDATE_QUALITY_REVIEW_SPEC.decide(context)
+def candidate_quality_review_state(
+    context: CandidateQualityContext,
+    *,
+    recorder: TraceRecorder | None = None,
+) -> str:
+    decision = _CANDIDATE_QUALITY_REVIEW_SPEC.decide(context, recorder=recorder)
     assert decision.matched and decision.value is not None
     return decision.value

@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from specification_core import PredicateSpec
+from specification_core import PredicateSpec, TraceRecorder
 from tools.candidate_approval_readiness_context import ApprovalReadinessContext
 
 REVIEW_STATE_BY_DECISION = {
@@ -18,7 +18,11 @@ _HAS_FINDINGS_SPEC = PredicateSpec(
 )
 
 
-def candidate_approval_review_state(context: ApprovalReadinessContext) -> str:
-    if _HAS_FINDINGS_SPEC.is_satisfied_by(context):
+def candidate_approval_review_state(
+    context: ApprovalReadinessContext,
+    *,
+    recorder: TraceRecorder | None = None,
+) -> str:
+    if _HAS_FINDINGS_SPEC.is_satisfied_by(context, recorder=recorder):
         return "candidate_approval_blocked"
     return REVIEW_STATE_BY_DECISION[context.effective_state]

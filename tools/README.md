@@ -576,7 +576,10 @@ Supervisor modes:
   Proposal 0176 adds `candidate_gap_preview`: accepted `candidate_gap` answers
   can preview-resolve explicitly targeted product/spec gaps, while deferred
   candidate answers remain unresolved and no fuzzy candidate-gap matching is
-  performed.
+  performed. Run `python tools/idea_to_spec_rerun_preview.py --trace-decisions`
+  to write the selected candidate-quality field values and
+  SpecificationCore rule outcomes, including skipped branches, to `stderr`.
+  The flag leaves the JSON report and normal `stdout` unchanged.
 - `tools/idea_to_spec_rerun_materialization.py`: review-only rerun
   materialization builder introduced by proposal 0167. Use
   `make idea-to-spec-rerun-materialization` to consume a ready

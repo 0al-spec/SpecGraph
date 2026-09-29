@@ -5,6 +5,7 @@ from __future__ import annotations
 from collections.abc import Callable
 from dataclasses import dataclass
 
+from specification_core import TraceRecorder
 from tools.idea_to_spec_candidate_quality_context import (
     CandidateQualityContext,
     GapResolutionContext,
@@ -20,14 +21,20 @@ class GapFamilyDecision:
     unresolved_count: Callable[[CandidateQualityContext], int]
     no_gaps_state: str
 
-    def __call__(self, context: CandidateQualityContext) -> str:
+    def __call__(
+        self,
+        context: CandidateQualityContext,
+        *,
+        recorder: TraceRecorder | None = None,
+    ) -> str:
         return gap_resolution_state(
             GapResolutionContext(
                 resolved_count=self.resolved_count(context),
                 unresolved_count=self.unresolved_count(context),
                 aggregate_resolved_count=context.resolved_count,
                 no_gaps_state=self.no_gaps_state,
-            )
+            ),
+            recorder=recorder,
         )
 
 

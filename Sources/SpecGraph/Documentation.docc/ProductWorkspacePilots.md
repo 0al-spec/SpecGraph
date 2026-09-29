@@ -573,6 +573,11 @@ does not apply answers to source artifacts, mutate candidate graphs, accept
 ontology terms, write ontology packages, approve candidates, create Git
 branches, or publish read models.
 
+Use `python tools/idea_to_spec_rerun_preview.py --trace-decisions` for an opt-in
+candidate-quality trace on `stderr`. It groups the selected value and
+SpecificationCore rule outcomes, including skipped branches, by report field.
+The JSON report and normal `stdout` keep the same content.
+
 Proposal `0167` adds `idea_to_spec_rerun_materialization`:
 
 ```bash

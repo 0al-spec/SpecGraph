@@ -239,6 +239,28 @@ def test_candidate_approval_decision_preserves_nonapproval_states(tmp_path: Path
         assert report["summary"]["status"] == review_state
 
 
+def test_candidate_approval_field_trace_is_grouped_by_field() -> None:
+    module = load_module(TOOL_PATH, "candidate_approval_decision_trace")
+    trace = []
+
+    fields = module.CANDIDATE_APPROVAL_FIELDS.apply(
+        module.ApprovalReadinessContext(effective_state="approved", has_findings=False),
+        trace=trace,
+    )
+
+    assert fields == {
+        "review_state": "promotion_request_approved",
+        "next_artifact": "Platform graph-repository promotion-request",
+    }
+    assert [field.field_name for field in trace] == ["review_state", "next_artifact"]
+    assert [(event.name, event.outcome.value) for event in trace[0].events] == [
+        ("candidate_approval.has_findings", "unsatisfied")
+    ]
+    assert [(event.name, event.outcome.value) for event in trace[1].events] == [
+        ("candidate_approval.ready_for_promotion_request", "satisfied")
+    ]
+
+
 def test_candidate_approval_decision_rejects_private_operator_text(
     tmp_path: Path,
 ) -> None:
