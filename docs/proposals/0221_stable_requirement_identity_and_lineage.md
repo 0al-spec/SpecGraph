@@ -73,20 +73,19 @@ revision.
 
 ### Revision, movement, and retirement
 
-1. Every governed content change MUST advance that subject's revision and
-   identify the immediately preceding revision in that same subject identity's
-   revision chain. Each non-origin revision has exactly one such predecessor;
-   the origin has none. A first revision is marked as an origin only when there
-   is no separately governed canonical supersession predecessor. This applies
-   to editorial wording changes even when normative meaning is unchanged; such
-   changes retain the subject ID. A canonical node replacement is a separate
-   SG-SPEC-0019 supersession event with exactly one predecessor node and one
-   successor node. Its cross-identity `predecessor_reference` to the predecessor
-   node's terminal revision is the canonical supersession link, not an
-   additional predecessor in the successor's per-identity revision chain.
-   Decomposition and composition relations MUST NOT add revision predecessors
-   or join the revision chains of distinct subject IDs. Producing a content
-   digest is optional.
+1. Every subject ID begins at revision 1, which is the origin of that identity's
+   revision sequence and has no same-identity revision predecessor. Each later
+   governed content revision MUST identify exactly one immediately preceding
+   revision in that same identity's chain. If a canonical node at revision 1
+   succeeds another node, its SG-SPEC-0019 supersession event separately
+   preserves exactly one cross-identity `predecessor_reference` to the prior
+   node's terminal revision. That canonical supersession link does not erase
+   the new identity's revision-1 origin or become an additional predecessor in
+   its per-identity revision chain. This separation preserves both facts
+   without changing frozen SG-SPEC-0019. Editorial wording changes retain the
+   subject ID. Decomposition and composition relations MUST NOT add revision
+   predecessors or join revision chains of distinct subject IDs. Producing a
+   content digest is optional.
 2. A one-to-one move between specification nodes retains the requirement ID
    when the normative meaning is unchanged. The move is recorded as a
    containment change with provenance; it does not create an identity alias.
@@ -98,28 +97,37 @@ revision.
    SG-SPEC-0019 supersession event with exactly one predecessor and one
    successor; only that event places the superseded node in
    `historical_lineage_only` and the successor in active topology.
-4. Requirement decomposition and composition are represented by separate,
-   explicitly authored, typed subject relations, distinct from canonical
-   `supersedes` relations. `decomposes_into` is directed from one source
-   Requirement subject to each of two or more resulting Requirement subjects.
-   `composed_from` is directed from one resulting Requirement subject to each
-   of two or more contributing Requirement subjects. The two relation kinds
-   describe distinct events; neither is inferred by reversing or mirroring the
-   other. These relations establish subject lineage, not equivalence: no
-   related subject may be substituted for another as though it had identical
-   meaning. They do not constitute 1:N or N:1 canonical-node successor
-   mappings, do not create or rewrite canonical `supersedes` edges, and do not
-   change any participant's subject disposition, revision chain, canonical
-   node or edge identity, lifecycle, active-topology presence, or dependency
-   role. Retirement or activation requires a separate explicit subject
-   disposition transition; canonical node or edge presence changes only under
-   SG-SPEC-0019's independent 1:1 rules.
+4. Requirement and acceptance-criterion decomposition and composition are
+   represented by separate, explicitly authored, typed subject relations,
+   distinct from canonical `supersedes` relations. `decomposes_into` is
+   directed from one source subject to each of two or more resulting subjects;
+   `composed_from` is directed from one resulting subject to each of two or
+   more contributing subjects. For either relation type, every endpoint MUST
+   have the same subject class: Requirement-to-Requirement or
+   criterion-to-criterion. A cross-kind Requirement/criterion endpoint is
+   invalid for these relation types; the existing `acceptance_criteria_refs`
+   relation remains the separately specified owner/reference relation, and any
+   other cross-kind relation requires its own specification. The two relation
+   kinds describe distinct events; neither is inferred by reversing or
+   mirroring the other. These relations establish subject lineage, not
+   equivalence: no related subject may be substituted for another as though it
+   had identical meaning. They do not constitute 1:N or N:1 canonical-node
+   successor mappings, do not create or rewrite canonical `supersedes` edges,
+   and do not change any participant's subject disposition, revision chain,
+   canonical node or edge identity, lifecycle, active-topology presence, or
+   dependency role. Retirement or activation requires a separate explicit
+   subject disposition transition; canonical node or edge presence changes
+   only under SG-SPEC-0019's independent 1:1 rules.
 5. Withdrawal or loss of applicability retires the subject without a successor.
-   Subject lifecycle disposition is distinct from canonical node lifecycle and
-   topology presence; it does not itself set node presence to
-   `historical_lineage_only`. Canonical node `status` continues to use the
-   lifecycle vocabulary governed by SG-SPEC-0001, and canonical presence
-   transitions remain governed by SG-SPEC-0019. Retired IDs remain resolvable;
+   A retired Requirement subject is excluded from Requirement-level readiness
+   evaluation and MUST NOT satisfy another Requirement's dependency. This
+   subject disposition does not change canonical node lifecycle or topology,
+   and does not set canonical presence to `historical_lineage_only`:
+   the canonical Requirement node remains queryable for historical lineage and
+   graph-level traversal follows its unchanged presence under SG-SPEC-0019.
+   Only a separate SG-SPEC-0019-compliant 1:1 node transition can change that
+   topology presence. Canonical node `status` continues to use the lifecycle
+   vocabulary governed by SG-SPEC-0001. Retired IDs remain resolvable;
    retirement never deletes or recycles an ID.
 6. A same-identity editorial revision or one-to-one containment move advances
    the subject revision and preserves its subject identity and single
@@ -150,12 +158,15 @@ revision.
    immutable identity. Local IDs or mutable workspace slugs alone are never
    sufficient. Lookup MUST resolve the subject to its identity record, requested
    or current revision, containment history, lifecycle disposition, canonical
-   node/edge presence when applicable, and explicit subject relations. A query
-   from a decomposition source MUST return every directed `decomposes_into`
-   target; a query from a composition result MUST return every directed
-   `composed_from` contributor. Reverse queries MUST enumerate every matching
-   authored relation in which the subject participates, with endpoint roles
-   intact; they MUST NOT infer the other relation kind by reversing an edge.
+   node/edge presence when applicable, and explicitly typed subject relations.
+   Relation traversal MUST return all endpoints and their subject classes for
+   the requested relation kind; reverse queries MUST enumerate all matching
+   authored relations and preserve endpoint roles, without inferring the other
+   relation kind by reversing an edge. Cross-kind endpoints are invalid for
+   decomposition/composition. Graph-level traversal uses canonical node/edge
+   presence under SG-SPEC-0019; Requirement-level readiness and dependency
+   evaluation excludes retired Requirement subjects, and a retired subject
+   cannot satisfy a dependency even when its canonical node remains traversable.
    Results MUST label subject relations separately from canonical supersession,
    MUST NOT select a single related subject as a replacement, and MUST NOT
    infer disposition changes. Unknown IDs or unavailable revisions are
@@ -231,8 +242,9 @@ In scope:
 - Identity and lifecycle semantics for canonical Requirement nodes and
   distinct acceptance-criterion subjects
 - Identity preservation across editorial revision and one-to-one moves
-- Explicit successor lineage for substantial change and distinct subject
-  relations for Requirement decomposition/composition and retirement
+- Explicit successor lineage for substantial change and distinct same-kind
+  subject relations for Requirement and acceptance-criterion
+  decomposition/composition and retirement
 - Historical resolution and digest-versus-identity boundaries
 - Backward-compatible migration and expected consumer behavior for split
   mapping, criterion-keyed evidence, and workspace-scoped read-only lookup
@@ -273,6 +285,39 @@ preserve endpoint roles; they do not infer one relation kind by reversing the
 other. Neither direct nor relation lookup redirects to a related identity, and
 relation results never stand in for canonical `supersedes` traversal.
 
+### Observable Examples
+
+```gherkin
+Scenario: A canonical successor begins its own revision sequence
+  Given a canonical Requirement node with terminal revision 4
+  When one successor Requirement node replaces it under SG-SPEC-0019
+  Then the successor identity begins at revision 1 as its own sequence origin
+  And the supersession event separately points to the predecessor's revision 4
+  And the cross-identity link is not an additional predecessor in the successor's revision chain
+
+Scenario: Acceptance-criterion decomposition preserves endpoint types
+  Given one acceptance-criterion subject with a workspace-scoped ID
+  When it has decomposes_into relations to two criterion subjects
+  Then both targets are returned as acceptance-criterion subjects
+  And no Requirement subject is an endpoint of that relation
+  And the relation does not change participant disposition or revision chains
+
+Scenario: Acceptance-criterion composition returns every typed contributor
+  Given one resulting acceptance-criterion subject and two contributing criterion subjects
+  When the result has composed_from relations to each contributor
+  Then lookup returns both criterion contributors with their endpoint roles
+  And the relation has no Requirement subject endpoint
+  And it does not change participant disposition or revision chains
+
+Scenario: A retired Requirement is excluded from Requirement-level evaluation
+  Given a canonical Requirement node whose subject disposition is explicitly retired
+  When graph-level traversal and Requirement-level dependency evaluation run
+  Then graph traversal follows the node's unchanged canonical presence
+  And the retired Requirement is not readiness-evaluated
+  And the retired Requirement cannot satisfy another Requirement's dependency
+  And historical lineage lookup still resolves the canonical node
+```
+
 ## Open Questions
 
 - What canonical representation should acceptance-criterion subjects use
@@ -296,6 +341,9 @@ relation results never stand in for canonical `supersedes` traversal.
 - Every governed content change advances that identity's revision and records
   its single immediate predecessor; decomposition/composition relations never
   add revision predecessors. An optional digest identifies exact content.
+- A successor identity begins revision 1 as its own sequence origin; a canonical
+  1:1 SG-SPEC-0019 supersession link separately identifies its predecessor's
+  terminal revision.
 - Editorial wording changes and one-to-one containment moves preserve identity
   when normative meaning is unchanged.
 - A substantial change receives a new ID and a historical lookup returns the
@@ -304,8 +352,14 @@ relation results never stand in for canonical `supersedes` traversal.
 - Decomposition and composition examples preserve every participant ID and
   endpoint role. `decomposes_into` points from source to each result;
   `composed_from` points from result to each contributor. The separately
-  authored relations do not imply equivalence, change disposition/revision
-  chains, or alter canonical active topology.
+  authored relations apply to Requirement-to-Requirement or
+  criterion-to-criterion subjects only, do not imply equivalence, change
+  disposition/revision chains, or alter canonical active topology. Cross-kind
+  endpoints fail validation unless another relation type is separately specified.
+- Withdrawing a Requirement explicitly retires its Requirement subject and
+  excludes it from Requirement-level readiness and dependency satisfaction;
+  graph-level traversal and canonical historical lookup continue to follow the
+  unchanged node/edge presence under SG-SPEC-0019.
 - After decomposition or composition, lookup by any participant's full
   reference returns that subject and its complete relation history; traversal
   returns every related subject and never selects one or performs silent
