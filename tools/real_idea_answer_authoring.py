@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import argparse
+import copy
 import hashlib
 import json
 import re
@@ -434,30 +435,40 @@ def _default_action(request: dict[str, Any]) -> str:
     return actions[0] if actions else ""
 
 
-def _value_template(action: str, request: dict[str, Any]) -> Any:
+_FIXED_ACTION_PRESENTATIONS: dict[str, tuple[dict[str, Any], tuple[str, ...]]] = {
+    "bind_existing_term": ({"term": "", "ontology_ref": ""}, ("value.term", "value.ontology_ref")),
+    "alias": ({"term": "", "alias_of": ""}, ("value.term", "value.alias_of")),
+    "propose_project_local_term": (
+        {"terms": [""], "term_scope": "project_local"},
+        ("value.terms[]",),
+    ),
+    "reject": ({"reason": ""}, ("value.reason",)),
+    "reject_candidate": ({"reason": ""}, ("value.reason",)),
+    "defer": ({"follow_up": ""}, ("value.follow_up",)),
+    "defer_candidate": ({"follow_up": ""}, ("value.follow_up",)),
+}
+
+
+def _action_presentation(action: str, request: dict[str, Any]) -> tuple[dict[str, Any], list[str]]:
+    fixed = _FIXED_ACTION_PRESENTATIONS.get(action)
+    if fixed is not None:
+        template, fields = fixed
+        return copy.deepcopy(template), list(fields)
     shape = _text(request.get("suggested_answer_shape"))
     kind = _text(request.get("kind"))
     target_ref = _text(request.get("target_ref"))
-    if action == "bind_existing_term":
-        return {"term": "", "ontology_ref": ""}
-    if action == "alias":
-        return {"term": "", "alias_of": ""}
-    if action == "propose_project_local_term":
-        return {"terms": [""], "term_scope": "project_local"}
-    if action in {"reject", "reject_candidate"}:
-        return {"reason": ""}
-    if action in {"defer", "defer_candidate"}:
-        return {"follow_up": ""}
     if action == "provide_candidate_context":
         return {
             "resolution_intent": "add_enforcement_mechanism",
             "affected_refs": [target_ref] if target_ref else [],
             "context": "",
             "evidence_refs": [],
-        }
+        }, ["value.context"]
     if action == "answer_question":
         if "event_storming_relation[]" in shape or kind == "workflow_topology_gap":
-            return {"relations": [{"relation": "", "source_ref": "", "target_ref": ""}]}
+            return {"relations": [{"relation": "", "source_ref": "", "target_ref": ""}]}, [
+                "value.relations[]"
+            ]
         if (
             "ontology_ref[]" in shape
             or "domain_ref[]" in shape
@@ -465,33 +476,18 @@ def _value_template(action: str, request: dict[str, Any]) -> Any:
             or "ontology_layer_ref[]" in shape
             or "model_applicability_ref[]" in shape
         ):
-            return {"refs": [""]}
+            return {"refs": [""]}, ["value"]
         if "event_storming_entry[]" in shape or kind == "missing_event_storming_context":
-            return {"entries": [""]}
-        return {"answer": ""}
-    return {"answer": ""}
+            return {"entries": [""]}, ["value"]
+    return {"answer": ""}, ["value"]
+
+
+def _value_template(action: str, request: dict[str, Any]) -> Any:
+    return _action_presentation(action, request)[0]
 
 
 def _required_fields(action: str, request: dict[str, Any]) -> list[str]:
-    if action == "bind_existing_term":
-        return ["value.term", "value.ontology_ref"]
-    if action == "alias":
-        return ["value.term", "value.alias_of"]
-    if action == "propose_project_local_term":
-        return ["value.terms[]"]
-    if action in {"reject", "reject_candidate"}:
-        return ["value.reason"]
-    if action in {"defer", "defer_candidate"}:
-        return ["value.follow_up"]
-    if action == "provide_candidate_context":
-        return ["value.context"]
-    if action == "answer_question":
-        shape = _text(request.get("suggested_answer_shape"))
-        kind = _text(request.get("kind"))
-        if "event_storming_relation[]" in shape or kind == "workflow_topology_gap":
-            return ["value.relations[]"]
-        return ["value"]
-    return ["value"]
+    return _action_presentation(action, request)[1]
 
 
 def _substantive(value: Any) -> bool:
