@@ -77,6 +77,9 @@ def test_quality_tool_versions_are_pinned_and_aligned() -> None:
     assert "python -m pip install -e .[dev]" in python_ci
     assert "python tools/python_quality.py" in python_ci
     assert "tools/validate_architecture_style.py" in python_quality
+    assert 'tools/lifecycle_architecture.py", "--check' in python_quality
+    assert "Report lifecycle decision ownership delta" in python_ci
+    assert "fetch-depth: 0" in python_ci
 
 
 def test_python_ci_runs_fast_gates_before_full_test_suite() -> None:

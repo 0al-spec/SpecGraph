@@ -1961,6 +1961,7 @@ python tools/spec_yaml_lint.py
 python tools/python_quality.py
 python tools/validate_architecture_style.py
 python tools/architecture_metrics.py
+python tools/lifecycle_architecture.py --check
 ```
 
 The spec YAML formatter and linter default to `specs/nodes/*.yaml`. The formatter
@@ -1984,6 +1985,22 @@ python tools/spec_backfill_timestamps.py
 
 The same project-wide gate is also installed in `.pre-commit-config.yaml` as the
 `python-quality` hook.
+
+`lifecycle_architecture.py` checks the versioned lifecycle ownership and import
+contract in `tools/lifecycle_architecture_policy.json`. Its PR workflow report
+compares the eight legacy state functions at the base ref with their declared
+owners at the head ref, reports imports by architectural role, and fails on
+undeclared lifecycle imports, dependency cycles, missing owners, syntax errors,
+or new `idea_maturity_*.py` modules that have not been classified. Run it with
+`--base-ref <sha> --head-ref <sha>` to inspect a comparison locally.
+
+The report's `branch_points_proxy.v1` counts AST control-flow constructs and
+short-circuit operands, including `PredicateSpec` lambda bodies. This is a
+structural proxy, not Ruff C901 or Cognitive Complexity. Its baseline and head
+scopes are reported explicitly because extraction changes which helpers and
+predicates belong to a decision owner. Repeated `match` or simple `if`/`elif`
+selectors are discovery candidates only; they do not fail the gate until a
+reviewed ownership rule identifies them.
 
 `validate_architecture_style.py` is intentionally baseline-friendly. It does not
 try to grade the legacy `tools/supervisor.py` monolith; it applies architecture

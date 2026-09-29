@@ -24,6 +24,13 @@ code-shape and EO-inspired trend metrics. The long-running supervisor refactor
 roadmap is tracked in `docs/supervisor_refactor_roadmap.md` as engineering
 governance rather than a SpecGraph semantic specification.
 
+The lifecycle pilot also has a versioned decision-ownership contract. Its PR
+report checks import direction and cycles, identifies unclassified lifecycle
+modules, and measures branch structure in declared decision owners, including
+`PredicateSpec` lambdas. Repeated selector matches are review candidates, not
+automatic failures; the AST branch-point proxy is not C901 or Cognitive
+Complexity.
+
 The current public surfaces are:
 
 - a GitHub Pages technical root;
