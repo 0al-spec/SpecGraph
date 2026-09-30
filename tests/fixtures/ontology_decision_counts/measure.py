@@ -56,10 +56,15 @@ def measure(sources: dict[str, str]) -> dict[str, object]:
     }
 
 
-def main() -> None:
-    parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--output-dir", type=Path, required=True)
-    args = parser.parse_args()
+def source_cohorts(input_dir: Path | None) -> dict[str, dict[str, str]]:
+    if input_dir is not None:
+        return {
+            variant: {
+                name: (input_dir / variant / name).read_text()
+                for name in (CONSUMERS if variant == "baseline" else (*CONSUMERS, MODULE))
+            }
+            for variant in ("baseline", "conventional", "specification")
+        }
     baseline = {
         name: subprocess.check_output(
             ["git", "show", f"{BASE_REF}:tools/{name}"], cwd=ROOT, text=True
@@ -71,10 +76,21 @@ def main() -> None:
         **specification,
         MODULE: (Path(__file__).parent / "conventional.py").read_text(),
     }
-    variants = {"baseline": baseline, "conventional": conventional, "specification": specification}
+    return {"baseline": baseline, "conventional": conventional, "specification": specification}
+
+
+def main() -> None:
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--output-dir", type=Path, required=True)
+    parser.add_argument(
+        "--input-dir", type=Path, help="Read isolated cohorts created by change_exercise.py"
+    )
+    args = parser.parse_args()
+    variants = source_cohorts(args.input_dir)
     report = {
         "baseline_ref": BASE_REF,
         "versions": {name: version(name) for name in ("complexipy", "radon")},
+        "source_origin": "working_tree" if args.input_dir is None else str(args.input_dir),
     }
     for name, sources in variants.items():
         output = args.output_dir / name

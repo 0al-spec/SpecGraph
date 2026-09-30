@@ -124,6 +124,10 @@ production dependencies or the blocking CI test environment.
 
 ## Next experiment
 
+The criterion-only exercise is now recorded in
+[Controlled change to an ontology count criterion](ontology_decision_change.md).
+It measures real patches and distinguishes edit surface from behavioral impact.
+
 Choose a repeated behavioral dispatch, rather than another three-counter
 aggregate. Confirm semantic equivalence first, then use the same before/ordinary/
 SpecificationCore comparison. Exercise a controlled change to an existing rule

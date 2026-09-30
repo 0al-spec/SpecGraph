@@ -1,0 +1,233 @@
+{
+  "exercise_sha256": "fcb4676d79df267a00c2811dcd8d7e9904aa9be5ea681a1eb6e8da363ff256c1",
+  "baseline_ref": "425078cc74e1c2cccbff259b5505b1b958b8e904",
+  "extracted_ref": "38d85167d59f4a77f67235154d8ce3d4caa577a5",
+  "criterion": "accepted also counts accepted_with_conditions",
+  "ruff_version": "0.15.9",
+  "scope": "counting regions only; synthetic alias is not adopted into product taxonomy",
+  "variants": {
+    "baseline": {
+      "source_sha256": {
+        "before": {
+          "ontology_imports.py": "6e236d9a1f52b4c017b8bf2811401d9be6f64d7bc8b26228deeabe80f118ae0a",
+          "ontology_owner_decision_import_v2.py": "1039bd888fc80f73c31dd7ec9d334dafdd39fba84923284c151c61be03064aa0"
+        },
+        "after": {
+          "ontology_imports.py": "99e650a1bbe954a4265f06bfbbf39f4424e0d6f621a624e07601f1214de03577",
+          "ontology_owner_decision_import_v2.py": "bfb018c2b753c010013ddf206744eeefa12817a25924107d0d4d2e126e9bdc1f"
+        }
+      },
+      "footprint": {
+        "files": [
+          {
+            "path": "ontology_imports.py",
+            "added": 10,
+            "removed": 2
+          },
+          {
+            "path": "ontology_owner_decision_import_v2.py",
+            "added": 5,
+            "removed": 1
+          }
+        ],
+        "changed_files": 2,
+        "added": 15,
+        "removed": 3
+      },
+      "edited_criteria": 3,
+      "edge_checks_passed": true,
+      "before_matrix": {
+        "cases_per_consumer": 1555,
+        "failures": {
+          "build_ontology_owner_decision_report": 0,
+          "build_ontology_decision_import_preview": 0,
+          "build_owner_decision_import_v2": 0
+        }
+      },
+      "after_matrix": {
+        "cases_per_consumer": 1555,
+        "failures": {
+          "build_ontology_owner_decision_report": 0,
+          "build_ontology_decision_import_preview": 0,
+          "build_owner_decision_import_v2": 0
+        }
+      },
+      "changed_consumers": [
+        "build_ontology_owner_decision_report",
+        "build_ontology_decision_import_preview",
+        "build_owner_decision_import_v2"
+      ]
+    },
+    "conventional": {
+      "source_sha256": {
+        "before": {
+          "ontology_imports.py": "c85a21922b68117e590ca06b142ae798b36b1a96dd7d054bcf4ea7b05e9ff045",
+          "ontology_owner_decision_import_v2.py": "0fa72cd34974f1150e944d0e0b7e34f9742db26ddb4409caa6d7b2cc41da8acf",
+          "ontology_decision_state_spec.py": "78e0c12906ee1a083008c775f3ab6d6c977ec5631b1bbc941ce5937d86135995"
+        },
+        "after": {
+          "ontology_imports.py": "c85a21922b68117e590ca06b142ae798b36b1a96dd7d054bcf4ea7b05e9ff045",
+          "ontology_owner_decision_import_v2.py": "0fa72cd34974f1150e944d0e0b7e34f9742db26ddb4409caa6d7b2cc41da8acf",
+          "ontology_decision_state_spec.py": "de884ca930f8f1411ff7e516ed85d19c281f61fa652ab032564cb472209f6dba"
+        }
+      },
+      "footprint": {
+        "files": [
+          {
+            "path": "ontology_decision_state_spec.py",
+            "added": 5,
+            "removed": 1
+          }
+        ],
+        "changed_files": 1,
+        "added": 5,
+        "removed": 1
+      },
+      "edited_criteria": 1,
+      "edge_checks_passed": true,
+      "before_matrix": {
+        "cases_per_consumer": 1555,
+        "failures": {
+          "build_ontology_owner_decision_report": 0,
+          "build_ontology_decision_import_preview": 0,
+          "build_owner_decision_import_v2": 0
+        }
+      },
+      "after_matrix": {
+        "cases_per_consumer": 1555,
+        "failures": {
+          "build_ontology_owner_decision_report": 0,
+          "build_ontology_decision_import_preview": 0,
+          "build_owner_decision_import_v2": 0
+        }
+      },
+      "changed_consumers": [
+        "build_ontology_owner_decision_report",
+        "build_ontology_decision_import_preview",
+        "build_owner_decision_import_v2"
+      ]
+    },
+    "specification": {
+      "source_sha256": {
+        "before": {
+          "ontology_imports.py": "c85a21922b68117e590ca06b142ae798b36b1a96dd7d054bcf4ea7b05e9ff045",
+          "ontology_owner_decision_import_v2.py": "0fa72cd34974f1150e944d0e0b7e34f9742db26ddb4409caa6d7b2cc41da8acf",
+          "ontology_decision_state_spec.py": "ac43e6555fe3d0514dbf75168ccfa460ced2434e84af1dcbbea142fa01edf6cf"
+        },
+        "after": {
+          "ontology_imports.py": "c85a21922b68117e590ca06b142ae798b36b1a96dd7d054bcf4ea7b05e9ff045",
+          "ontology_owner_decision_import_v2.py": "0fa72cd34974f1150e944d0e0b7e34f9742db26ddb4409caa6d7b2cc41da8acf",
+          "ontology_decision_state_spec.py": "18122aab1c614e2c89fad6f061e4d4e8b7e0305f9e9e60fe5e938d994069200b"
+        }
+      },
+      "footprint": {
+        "files": [
+          {
+            "path": "ontology_decision_state_spec.py",
+            "added": 4,
+            "removed": 1
+          }
+        ],
+        "changed_files": 1,
+        "added": 4,
+        "removed": 1
+      },
+      "edited_criteria": 1,
+      "edge_checks_passed": true,
+      "before_matrix": {
+        "cases_per_consumer": 1555,
+        "failures": {
+          "build_ontology_owner_decision_report": 0,
+          "build_ontology_decision_import_preview": 0,
+          "build_owner_decision_import_v2": 0
+        }
+      },
+      "after_matrix": {
+        "cases_per_consumer": 1555,
+        "failures": {
+          "build_ontology_owner_decision_report": 0,
+          "build_ontology_decision_import_preview": 0,
+          "build_owner_decision_import_v2": 0
+        }
+      },
+      "changed_consumers": [
+        "build_ontology_owner_decision_report",
+        "build_ontology_decision_import_preview",
+        "build_owner_decision_import_v2"
+      ]
+    }
+  },
+  "incomplete_change_probe": {
+    "cases_per_consumer": 1555,
+    "failures": {
+      "build_ontology_owner_decision_report": 0,
+      "build_ontology_decision_import_preview": 774,
+      "build_owner_decision_import_v2": 774
+    }
+  },
+  "status": "pass",
+  "classic_metrics": {
+    "versions": {
+      "complexipy": "8.0.1",
+      "radon": "6.0.1",
+      "jscpd": "5.0.11"
+    },
+    "scope": "selected-function CC/Cog sums; complete production cohort LOC and clones",
+    "variants": {
+      "baseline": {
+        "before": {
+          "cc_sum": 96,
+          "cog_sum": 118,
+          "production_lines": 8309,
+          "clones": 23,
+          "duplicatedLines": 161,
+          "duplicatedTokens": 978
+        },
+        "after": {
+          "cc_sum": 96,
+          "cog_sum": 118,
+          "production_lines": 8321,
+          "clones": 23,
+          "duplicatedLines": 161,
+          "duplicatedTokens": 978
+        }
+      },
+      "conventional": {
+        "before": {
+          "cc_sum": 85,
+          "cog_sum": 100,
+          "production_lines": 8330,
+          "clones": 23,
+          "duplicatedLines": 161,
+          "duplicatedTokens": 978
+        },
+        "after": {
+          "cc_sum": 85,
+          "cog_sum": 100,
+          "production_lines": 8334,
+          "clones": 23,
+          "duplicatedLines": 161,
+          "duplicatedTokens": 978
+        }
+      },
+      "specification": {
+        "before": {
+          "cc_sum": 85,
+          "cog_sum": 100,
+          "production_lines": 8344,
+          "clones": 23,
+          "duplicatedLines": 161,
+          "duplicatedTokens": 978
+        },
+        "after": {
+          "cc_sum": 85,
+          "cog_sum": 100,
+          "production_lines": 8347,
+          "clones": 23,
+          "duplicatedLines": 161,
+          "duplicatedTokens": 978
+        }
+      }
+    }
+  }
+}

@@ -54,6 +54,14 @@ additionally gives the predicates explicit names. The source experiment at
 `docs/experiments/ontology_decision_counts.md` records the behavior matrix,
 pinned benchmark tools, absolute clone counts, and change-footprint limits.
 
+The controlled exercise in `docs/experiments/ontology_decision_change.md` uses
+isolated source copies and a synthetic count alias. Both ordinary extraction and
+SpecificationCore reduce the criterion's edit surface to one file; all three
+counting consumers still change behavior. Refactoring experiments report edit
+surface and behavioral impact scope separately and distinguish criterion-only
+exercises from end-to-end taxonomy or schema changes. The application taxonomy
+remains unchanged; the curated measurement includes digests and a missed-edit probe.
+
 For SpecificationCore refactoring pilots, each newly introduced policy
 specification lives in its own source module. Shared or substantial typed
 decision context belongs in a separate context module so the policy boundary
