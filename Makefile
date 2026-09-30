@@ -1520,3 +1520,19 @@ evidence-claim-gate:
 
 test-evidence-claim-gate:
 	@$(PYTHON) -m pytest -q tests/test_evidence_claim_gate.py
+
+# Pin the real external HTTP consumer used to verify publication compatibility.
+WORKSPACE_BUNDLE_CONSUMER_REPO ?= ../SpecSpace
+WORKSPACE_BUNDLE_CONSUMER_COMMIT ?= bd3de6137ebe5c2fa2c53079b699f6d9d18f89da
+WORKSPACE_BUNDLE_SMOKE_DIR ?= dist/specgraph-public/workspaces/hosted-operation-canary
+WORKSPACE_BUNDLE_SMOKE_ID ?= hosted-operation-canary
+WORKSPACE_BUNDLE_SMOKE_OUTPUT ?= dist/workspace-bundle-consumer-smoke.json
+WORKSPACE_BUNDLE_SMOKE_FLAGS ?=
+.PHONY: workspace-bundle-consumer-smoke
+workspace-bundle-consumer-smoke:
+	@$(PYTHON) tools/workspace_bundle_consumer_smoke.py \
+		--bundle-dir "$(WORKSPACE_BUNDLE_SMOKE_DIR)" \
+		--consumer-repo "$(WORKSPACE_BUNDLE_CONSUMER_REPO)" \
+		--consumer-commit "$(WORKSPACE_BUNDLE_CONSUMER_COMMIT)" \
+		--workspace-id "$(WORKSPACE_BUNDLE_SMOKE_ID)" \
+		--output "$(WORKSPACE_BUNDLE_SMOKE_OUTPUT)" $(WORKSPACE_BUNDLE_SMOKE_FLAGS)

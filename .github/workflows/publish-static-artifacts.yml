@@ -163,6 +163,33 @@ jobs:
             --decision-specs-root specs/workspaces/hosted-operation-canary \
             --output-dir dist/specgraph-public/workspaces/hosted-operation-canary
 
+      - name: Checkout pinned SpecSpace publication consumer
+        uses: actions/checkout@v6
+        with:
+          repository: 0al-spec/SpecSpace
+          ref: bd3de6137ebe5c2fa2c53079b699f6d9d18f89da
+          path: external/SpecSpace
+
+      - name: Verify workspace bundles through real HTTP consumer
+        run: |
+          make workspace-bundle-consumer-smoke \
+            WORKSPACE_BUNDLE_CONSUMER_REPO=external/SpecSpace \
+            WORKSPACE_BUNDLE_SMOKE_OUTPUT=dist/canary-consumer-smoke.json
+          make workspace-bundle-consumer-smoke \
+            WORKSPACE_BUNDLE_CONSUMER_REPO=external/SpecSpace \
+            WORKSPACE_BUNDLE_SMOKE_DIR=dist/specgraph-public/workspaces/team-decision-log \
+            WORKSPACE_BUNDLE_SMOKE_ID=team-decision-log \
+            WORKSPACE_BUNDLE_SMOKE_FLAGS=--legacy-workspace \
+            WORKSPACE_BUNDLE_SMOKE_OUTPUT=dist/team-decision-log-consumer-smoke.json
+
+      - name: Retain workspace consumer checks
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: workspace-bundle-consumer-smoke
+          path: dist/*-consumer-smoke.json
+          if-no-files-found: warn
+
       - name: Upload bundle as GitHub Actions artifact
         uses: actions/upload-artifact@v7
         with:

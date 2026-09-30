@@ -189,3 +189,32 @@ with `make publish-bundle PUBLISH_BUNDLE_FLAGS=`.
 Do not deploy `landing/` to GitHub Pages root. That can hide the technical
 documentation entrypoint behind product navigation and create loops where
 documentation links return to a landing page.
+
+## Workspace artifact paths and consumer gate
+
+Proposal `0215` publication keeps a bound product workspace's logical run refs
+intact. For `--workspace-bootstrap-run-dir runs/<workspace-id>`, every selected,
+public-safe run file is listed at `runs/<workspace-id>/<file>` inside the
+workspace bundle. Existing `runs/<file>` aliases retain identical sanitized
+bytes and SHA-256 digests for legacy consumers. The bootstrap discovery report
+and `runs/product_workspace_decisions.json` keep their existing root addresses.
+Only the selected workspace's run files are copied; aliases cannot publish a
+foreign workspace, symlink, local-only artifact, or unredacted source.
+
+SpecSpace with a ready binding requires the scoped path to be present in the
+manifest and verifies its digest. An HTTP 200 for an unlisted file is not
+permission to read it, and a scoped read must not fall back to a flat alias.
+Aliases are compatibility locations, not independent readiness evidence.
+
+`make workspace-bundle-consumer-smoke` serves a temporary copy over loopback
+HTTP and invokes the real pinned SpecSpace consumer. It verifies a ready Canary
+workspace/binding and rejection of missing manifest entries, digest mismatch,
+and foreign workspace identity. The static publish workflow runs this check
+before uploading the bundle; it also checks the legacy Team Decision Log
+workspace with `WORKSPACE_BUNDLE_SMOKE_FLAGS=--legacy-workspace`. A complete
+read model may correctly remain domain-blocked; the check records that state
+without treating it as a missing artifact or promotion approval. This legacy
+check preserves current behavior and does not assert a valid Team Decision Log
+binding. The selected consumer commit is explicit and must be refreshed together
+with the checkout pin when the consumer changes. Local successful smoke is not
+production deployment or execution authority.
