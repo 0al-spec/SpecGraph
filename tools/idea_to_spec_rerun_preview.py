@@ -16,14 +16,11 @@ if str(ROOT) not in sys.path:
 
 from tools.idea_to_spec_candidate_quality_context import (  # noqa: E402
     CandidateQualityContext,
-    GapResolutionContext,
 )
-from tools.idea_to_spec_candidate_quality_review_spec import (  # noqa: E402
-    candidate_quality_review_state,
+from tools.idea_to_spec_candidate_quality_fields import (  # noqa: E402
+    CANDIDATE_QUALITY_FIELDS,
 )
-from tools.idea_to_spec_gap_resolution_spec import (  # noqa: E402
-    gap_resolution_state,
-)
+from tools.idea_to_spec_decision_set import SpecFieldTrace  # noqa: E402
 
 PROPOSAL_ID = "0166"
 DEPTH_REPAIR_EFFECT_PROPOSAL_ID = "0209"
@@ -1460,6 +1457,8 @@ def _candidate_review_preview(overlay: dict[str, Any]) -> dict[str, Any]:
 def _candidate_quality_preview(
     ontology_gap_preview: dict[str, Any],
     candidate_gap_preview: dict[str, Any],
+    *,
+    decision_trace: list[SpecFieldTrace] | None = None,
 ) -> dict[str, Any]:
     unresolved_ontology_count = _int(ontology_gap_preview.get("unresolved_ontology_gap_count"))
     resolved_ontology_count = _int(ontology_gap_preview.get("resolved_ontology_gap_count"))
@@ -1472,23 +1471,7 @@ def _candidate_quality_preview(
         unresolved_candidate_count=unresolved_candidate_count,
     )
     return {
-        "review_state": candidate_quality_review_state(context),
-        "ontology_gap_state": gap_resolution_state(
-            GapResolutionContext(
-                resolved_count=resolved_ontology_count,
-                unresolved_count=unresolved_ontology_count,
-                aggregate_resolved_count=context.resolved_count,
-                no_gaps_state="no_ontology_gaps",
-            )
-        ),
-        "candidate_gap_state": gap_resolution_state(
-            GapResolutionContext(
-                resolved_count=resolved_candidate_count,
-                unresolved_count=unresolved_candidate_count,
-                aggregate_resolved_count=context.resolved_count,
-                no_gaps_state="no_candidate_gaps",
-            )
-        ),
+        **CANDIDATE_QUALITY_FIELDS.apply(context, trace=decision_trace),
         "resolved_ontology_gap_count": resolved_ontology_count,
         "unresolved_ontology_gap_count": unresolved_ontology_count,
         "resolved_candidate_gap_count": resolved_candidate_count,
@@ -1510,6 +1493,7 @@ def build_idea_to_spec_rerun_preview(
     rerun_input_path: Path | None = None,
     intake_path: Path | None = None,
     candidate_graph_path: Path | None = None,
+    decision_trace: list[SpecFieldTrace] | None = None,
 ) -> dict[str, Any]:
     findings = _validate_inputs(
         rerun_input=rerun_input,
@@ -1537,6 +1521,7 @@ def build_idea_to_spec_rerun_preview(
     candidate_quality_preview = _candidate_quality_preview(
         ontology_gap_preview,
         candidate_gap_preview,
+        decision_trace=decision_trace,
     )
     ready = not findings
     structural_depth_delta = _structural_depth_delta(
@@ -1643,11 +1628,17 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--candidate-graph", default=DEFAULT_CANDIDATE_GRAPH_PATH, type=Path)
     parser.add_argument("--output", default=DEFAULT_OUTPUT_PATH, type=Path)
     parser.add_argument("--strict", action="store_true")
+    parser.add_argument(
+        "--trace-decisions",
+        action="store_true",
+        help="write candidate-quality decision traces to stderr",
+    )
     return parser
 
 
 def main(argv: list[str] | None = None) -> int:
     args = build_parser().parse_args(argv)
+    decision_trace: list[SpecFieldTrace] | None = [] if args.trace_decisions else None
     report = build_idea_to_spec_rerun_preview(
         rerun_input=load_json(args.rerun_input),
         intake=load_json(args.intake),
@@ -1655,7 +1646,20 @@ def main(argv: list[str] | None = None) -> int:
         rerun_input_path=args.rerun_input,
         intake_path=args.intake,
         candidate_graph_path=args.candidate_graph,
+        decision_trace=decision_trace,
     )
+    if decision_trace is not None:
+        for field_trace in decision_trace:
+            print(
+                f"decision trace: {field_trace.field_name} => {field_trace.value}",
+                file=sys.stderr,
+            )
+            for event in field_trace.events:
+                print(
+                    f"decision trace: {field_trace.field_name}: "
+                    f"{event.name} -> {event.outcome.value}",
+                    file=sys.stderr,
+                )
     write_json(report, args.output)
     summary = _dict(report.get("summary"))
     print(

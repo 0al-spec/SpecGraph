@@ -1045,6 +1045,7 @@ def test_rerun_preview_cli_writes_output(tmp_path: Path) -> None:
     intake_path = tmp_path / "idea_event_storming_intake.json"
     candidate_graph_path = tmp_path / "candidate_spec_graph.json"
     output = tmp_path / "idea_to_spec_rerun_preview.json"
+    traced_output = tmp_path / "idea_to_spec_rerun_preview_traced.json"
     write_json(rerun_input_path, ready_rerun_input())
     write_json(intake_path, intake_artifact())
     write_json(candidate_graph_path, candidate_graph_artifact())
@@ -1068,9 +1069,42 @@ def test_rerun_preview_cli_writes_output(tmp_path: Path) -> None:
         capture_output=True,
         text=True,
     )
+    traced_result = subprocess.run(
+        [
+            sys.executable,
+            str(PREVIEW_TOOL_PATH),
+            "--rerun-input",
+            str(rerun_input_path),
+            "--intake",
+            str(intake_path),
+            "--candidate-graph",
+            str(candidate_graph_path),
+            "--output",
+            str(traced_output),
+            "--strict",
+            "--trace-decisions",
+        ],
+        cwd=ROOT,
+        check=False,
+        capture_output=True,
+        text=True,
+    )
 
-    assert result.returncode == 0
+    assert result.returncode == traced_result.returncode == 0
+    assert result.stderr == ""
+    assert traced_result.stderr.count("decision trace: review_state:") > 0
+    assert "decision trace: ontology_gap_state:" in traced_result.stderr
+    assert "decision trace: candidate_gap_state:" in traced_result.stderr
+    assert "decision trace: candidate_gap_state => no_candidate_gaps" in traced_result.stderr
+    assert "-> skipped" in traced_result.stderr
     report = load_json(output)
+    traced_report = load_json(traced_output)
+    report.pop("generated_at")
+    traced_report.pop("generated_at")
+    assert report == traced_report
     assert report["artifact_kind"] == "idea_to_spec_rerun_preview"
     assert report["readiness"]["ready"] is True
     assert "rerun_preview_ready" in result.stdout
+    assert result.stdout.replace(output.as_posix(), "") == traced_result.stdout.replace(
+        traced_output.as_posix(), ""
+    )

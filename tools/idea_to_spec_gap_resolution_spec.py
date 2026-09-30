@@ -1,6 +1,6 @@
 """SpecificationCore decision for an individual gap-family state."""
 
-from specification_core import FirstMatch, PredicateSpec
+from specification_core import FirstMatch, PredicateSpec, TraceRecorder
 from tools.idea_to_spec_candidate_quality_context import GapResolutionContext
 
 _GAP_RESOLUTION_SPEC = FirstMatch.with_fallback(
@@ -34,8 +34,12 @@ _GAP_RESOLUTION_SPEC = FirstMatch.with_fallback(
 )
 
 
-def gap_resolution_state(context: GapResolutionContext) -> str:
-    decision = _GAP_RESOLUTION_SPEC.decide(context)
+def gap_resolution_state(
+    context: GapResolutionContext,
+    *,
+    recorder: TraceRecorder | None = None,
+) -> str:
+    decision = _GAP_RESOLUTION_SPEC.decide(context, recorder=recorder)
     if decision.value is not None:
         return decision.value
     return context.no_gaps_state
