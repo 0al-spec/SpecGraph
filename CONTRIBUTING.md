@@ -427,3 +427,13 @@ make next-move
   keep it as a watch item and revisit it when surrounding context changes, especially if
   the same root cause reappears or a viewer/CI surface starts consuming the affected contract.
 - A PR that only changes docs can still be a feature PR if it changes the operational contract.
+
+### Publisher-consumer path compatibility
+
+A ready workspace binding can make the HTTP consumer require scoped run paths
+while a standalone publisher test still accepts flattened files. Validate actual
+publisher output through the pinned real HTTP consumer before publishing; do
+not replace manifest/digest verification with a filesystem/HTTP-presence check.
+Preserve bootstrap discovery and legacy aliases, test rejection with the legacy
+alias still present, and distinguish a legacy-ready workspace from a valid
+workspace binding. See `make workspace-bundle-consumer-smoke`.

@@ -1,0 +1,14 @@
+{
+  "artifact_kind": "workspace_bundle_consumer_smoke",
+  "checks": {
+    "candidate_node_count": 6,
+    "domain_status": "blocked",
+    "foreign_workspace_rejected": true,
+    "readable_workspace": true,
+    "workspace_id": "team-decision-log",
+    "workspace_source_ready": true
+  },
+  "consumer_commit": "bd3de6137ebe5c2fa2c53079b699f6d9d18f89da",
+  "ok": true,
+  "workspace_id": "team-decision-log"
+}

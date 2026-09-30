@@ -48,6 +48,7 @@ def test_workspace_bundle_publishes_decision_projection_and_manifest(
     fixture_specs = Path(__file__).parent / "fixtures" / "product_workspace_decisions" / "specs"
     shutil.copytree(fixture_specs, repo / "specs", dirs_exist_ok=True)
     first_path = repo / "specs" / "nodes" / "decision-alpha.yaml"
+    write_json(repo / "runs/example/product_workspace_decisions.json", {"workspace_id": "stale"})
 
     result = bundle_module.build_public_bundle(
         repo_root=repo,
@@ -58,6 +59,7 @@ def test_workspace_bundle_publishes_decision_projection_and_manifest(
     )
 
     relative = "runs/product_workspace_decisions.json"
+    assert not (result.output_dir / "runs/example/product_workspace_decisions.json").exists()
     artifact_path = result.output_dir / relative
     artifact = json.loads(artifact_path.read_text(encoding="utf-8"))
     assert artifact["artifact_kind"] == "specgraph_product_workspace_decision_index"
@@ -318,7 +320,12 @@ def test_workspace_bundle_uses_only_selected_run_directory(
         "candidate_id": "example"
     }
     assert not (result.output_dir / "runs" / "root-only-product.json").exists()
-    assert not (result.output_dir / "runs" / "example").exists()
+    scoped = "runs/example/candidate.json"
+    assert json.loads((result.output_dir / scoped).read_text()) == {"candidate_id": "example"}
+    entries = {entry["path"]: entry for entry in result.manifest["files"]}
+    assert entries[scoped]["sha256"] == entries["runs/candidate.json"]["sha256"]
+    assert f"{entries[scoped]['sha256']}  {scoped}" in result.checksums_path.read_text()
+    assert not (result.output_dir / "runs/example/root-only-product.json").exists()
 
 
 def test_workspace_bundle_rejects_mismatched_initialization_identity(
