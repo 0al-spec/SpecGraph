@@ -123,3 +123,30 @@ regression run passed 1087 tests before the last three focused hardening cases.
 The final focused rerun passed all 38 gate/YAML tests. Live Zeusus evidence lives
 in its `docs/evidence/evidence-claim-admission.md`; four anchors resolved, runtime
 remained unknown, review_pending blocked admission, and two reports were identical.
+
+
+## Cross-repository receipt issuance handoff
+
+The 2026-09-30 amendment to proposal `0047` is `proposal_only`. Existing
+`runtime_verified_v1` verification does not implement receipt issuance.
+FeaturePassport owns the generic issuer API/CLI and signer abstraction, without
+any dependency on SpecGraph. Zeusus owns product requirements, trace adaptation
+and pilot runner orchestration. SpecificationCore owns generic tracing;
+SpecSpace only presents evidence. An explicit runner/CI role operates the
+authority and holds its signing capability outside Git; no new repository is
+required by the pilot.
+
+A receipt policy describes the authority's checks; a claim policy describes the
+evidence required for a bounded assertion; SpecGraph owns the admission policy
+and canonical mapping. Each verifier selects its own receipt/decision trust
+stores. A public key in the payload or a valid signature cannot install trust.
+The first proposed local receipt scope is exact contract-match acceptance, not
+independent origin, successful execution, production delivery or user outcomes.
+Historical unsigned observations are not issuer-controlled runs retroactively.
+
+Implementation order: FeaturePassport issuer contract/implementation PR ->
+Zeusus reviewed local configuration and fresh capture pilot -> SpecGraph reviewed
+claim mapping and live admission. Missing inputs, trusted `not_satisfied`, stale
+bytes or unresolved review gates cannot pass. This amendment creates no issuer,
+keys, adopted policies or lifecycle mutations. See the proposal's ownership table
+and bounded acceptance criteria before routing implementation work.

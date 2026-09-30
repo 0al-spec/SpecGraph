@@ -37,3 +37,25 @@ upstream pinned-source resolver but no runtime receipt evaluator. The first
 realization therefore gates source identity, reserves declaration-only claims,
 and fails closed for unsupported runtime/test/effect/outcome evidence. Spec
 maturity and implementation proof remain separate; no graph status is promoted.
+
+
+## Cross-repository ownership follow-up — 2026-09-30
+
+The owner approved preparing a proposal amendment after asking where the missing
+issuer and trust inputs should live in the multi-repository project. This source
+records authorization to prepare the proposal, not adoption of trust policy or
+permission to issue evidence. The requested ownership split is: Zeusus owns game
+instrumentation and product intent; SpecificationCore owns generic evaluation
+and tracing; FeaturePassport owns provider-neutral receipt issuance contracts and
+shared implementation; SpecGraph proposal 0047 owns orchestration, mapping and
+admission; SpecSpace presents the results; an explicit runner/CI deployment owns
+operated authority configuration and signer custody.
+
+The pilot already captured route/no-path calculations with six matched_untrusted
+observations and four resolved source anchors at Zeusus commit 28b3710. Retain
+that chronology and unsigned evidence. A signature of an old observation cannot
+retroactively prove controlled execution. The proposed first local receipt scope
+is acceptance of exact contract-matched bytes, not production or game outcomes.
+Receipt policy, claim policy, admission policy and verifier trust stores are
+separate responsibilities. No new repository, key, trust adoption, canonical
+claim mapping or runtime issuer is created by this documentation amendment.

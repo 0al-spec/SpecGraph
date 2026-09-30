@@ -447,7 +447,11 @@
         "verify-decision",
         "evidence_claims",
         "source_anchored",
-        "evidence_evaluator_unavailable"
+        "evidence_evaluator_unavailable",
+        "receipt issuance handoff",
+        "proposal_only",
+        "receipt policy",
+        "admission policy"
         ]
       },
       {
