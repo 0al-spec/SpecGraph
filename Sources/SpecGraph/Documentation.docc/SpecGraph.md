@@ -24,12 +24,27 @@ code-shape and EO-inspired trend metrics. The long-running supervisor refactor
 roadmap is tracked in `docs/supervisor_refactor_roadmap.md` as engineering
 governance rather than a SpecGraph semantic specification.
 
-The lifecycle pilot also has a versioned decision-ownership contract. Its PR
+The lifecycle pilot also has a versioned state-classification contract. Its PR
 report checks import direction and cycles, identifies unclassified lifecycle
-modules, and measures branch structure in declared decision owners, including
-`PredicateSpec` lambdas. Repeated selector matches are review candidates, not
-automatic failures; the AST branch-point proxy is not C901 or Cognitive
-Complexity.
+modules, and measures branch structure in declared state classifiers, including
+`PredicateSpec` lambdas. The approval decision is an operator action; the
+classifier projects resulting evidence into lifecycle state. Artifact
+producers create the evidence, and publication validation has a separate
+responsibility. Repeated selector matches are review candidates, not automatic
+failures; the AST branch-point proxy is not C901 or Cognitive Complexity.
+
+The `LAC007` rule fails the gate when it finds literal reads of
+policy-protected raw context inputs by sibling state classifiers. It excludes
+the input's classifier module, report adapters, and modules with other roles.
+Classifier modules use the first positional `PredicateSpec` argument as the
+context predicate, and function parameters annotated `LifecycleStateContext`
+are also context roots. The gate follows simple local aliases and direct calls
+to named helpers in the same module when a context name is passed positionally
+or by keyword. Computed artifact names, indirect or cross-module helper calls,
+starred arguments, attribute dispatch, returned callables, and nested lambda
+bodies, including immediately invoked nested lambdas, are outside its syntax
+scope. A finding blocks the gate for the declared input boundary, but does not
+prove that the read duplicates the classifier's semantics.
 
 The current public surfaces are:
 

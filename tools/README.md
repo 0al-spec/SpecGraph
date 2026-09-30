@@ -1986,21 +1986,39 @@ python tools/spec_backfill_timestamps.py
 The same project-wide gate is also installed in `.pre-commit-config.yaml` as the
 `python-quality` hook.
 
-`lifecycle_architecture.py` checks the versioned lifecycle ownership and import
-contract in `tools/lifecycle_architecture_policy.json`. Its PR workflow report
-compares the eight legacy state functions at the base ref with their declared
-owners at the head ref, reports imports by architectural role, and fails on
-undeclared lifecycle imports, dependency cycles, missing owners, syntax errors,
-or new `idea_maturity_*.py` modules that have not been classified. Run it with
-`--base-ref <sha> --head-ref <sha>` to inspect a comparison locally.
+`lifecycle_architecture.py` checks the versioned lifecycle state-classification
+and import contract in `tools/lifecycle_architecture_policy.json`. Its PR
+workflow report compares the eight legacy state functions at the base ref with
+their declared classifiers at the head ref, reports imports by architectural
+role, and fails on undeclared lifecycle imports, dependency cycles, missing
+classifiers, syntax errors, or new `idea_maturity_*.py` modules that have not
+been classified. The approval decision is an operator action; the classifier
+projects resulting evidence into lifecycle state. Artifact producers create
+evidence, and publication validation has its own readiness responsibility. Run
+it with `--base-ref <sha> --head-ref <sha>` to inspect a comparison locally.
+
+The `LAC007` rule fails the gate when it finds literal reads of
+policy-protected raw context inputs by sibling state classifiers. It excludes
+the input's classifier module, report adapters, and modules with other roles.
+The classifier module convention treats the first positional `PredicateSpec`
+argument as its context predicate and also recognizes parameters annotated
+`LifecycleStateContext`. Detection follows
+simple local name aliases and direct calls to named helpers defined in that
+module when a context name is passed as a positional or keyword argument. It
+does not resolve computed artifact names, indirect or cross-module helper
+calls, attribute-based dispatch, starred arguments, returned callables, or
+nested lambda bodies, including immediately invoked nested lambdas. It is a
+bounded syntax gate, not a full semantic proof. A finding blocks the gate for
+the declared input boundary, but does not establish that the read duplicates
+the classifier's semantics.
 
 The report's `branch_points_proxy.v1` counts AST control-flow constructs and
 short-circuit operands, including `PredicateSpec` lambda bodies. This is a
 structural proxy, not Ruff C901 or Cognitive Complexity. Its baseline and head
 scopes are reported explicitly because extraction changes which helpers and
-predicates belong to a decision owner. Repeated `match` or simple `if`/`elif`
+predicates belong to a state classifier. Repeated `match` or simple `if`/`elif`
 selectors are discovery candidates only; they do not fail the gate until a
-reviewed ownership rule identifies them.
+reviewed classification rule identifies them.
 
 `validate_architecture_style.py` is intentionally baseline-friendly. It does not
 try to grade the legacy `tools/supervisor.py` monolith; it applies architecture

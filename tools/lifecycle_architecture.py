@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Report and gate lifecycle decision ownership and import boundaries."""
+"""Report and gate lifecycle state classification and import boundaries."""
 
 from __future__ import annotations
 
@@ -42,8 +42,15 @@ def load_policy(path: Path = POLICY_PATH) -> dict[str, Any]:
         raise ValueError("module paths must be unique and decisions must be a list")
     known = set(names)
     for decision in decisions:
-        if decision.get("owner_module") not in known:
-            raise ValueError(f"unknown owner for decision {decision.get('id')!r}")
+        if decision.get("classifier_module") not in known:
+            raise ValueError(f"unknown classifier for decision {decision.get('id')!r}")
+        protected_raw_inputs = decision.get("protected_raw_inputs", [])
+        if not isinstance(protected_raw_inputs, list) or any(
+            not isinstance(name, str) or not name for name in protected_raw_inputs
+        ):
+            raise ValueError(
+                f"protected_raw_inputs for decision {decision.get('id')!r} must be a list of names"
+            )
     return policy
 
 
@@ -313,6 +320,147 @@ def _predicate_lambdas(tree: ast.Module) -> list[ast.Lambda]:
     return predicates
 
 
+def _protected_raw_context_reads(source: str, artifact_names: list[str]) -> list[dict[str, Any]]:
+    """Find protected reads from roots propagated through local classifier helpers.
+
+    Classifier modules use the first positional PredicateSpec argument as the
+    context predicate. Propagation is intentionally limited to simple aliases
+    and direct calls to named functions defined in this module.
+    """
+    tree = ast.parse(source)
+    protected = set(artifact_names)
+    reads = []
+    local_functions = {
+        node.name: node
+        for node in tree.body
+        if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef))
+    }
+    visited_scopes: set[tuple[int, frozenset[str]]] = set()
+
+    class ReadVisitor(ast.NodeVisitor):
+        def __init__(self, context_names: set[str]) -> None:
+            self.context_names = context_names
+
+        def visit_Call(self, node: ast.Call) -> None:
+            if isinstance(node.func, ast.Attribute) and node.func.attr in {"artifact", "summary"}:
+                receiver = node.func.value
+                if (
+                    isinstance(receiver, ast.Name)
+                    and receiver.id in self.context_names
+                    and node.args
+                    and isinstance(node.args[0], ast.Constant)
+                ):
+                    artifact = node.args[0].value
+                    if isinstance(artifact, str) and artifact in protected:
+                        reads.append(
+                            {
+                                "line": node.lineno,
+                                "artifact": artifact,
+                                "accessor": node.func.attr,
+                            }
+                        )
+            if isinstance(node.func, ast.Name):
+                helper = local_functions.get(node.func.id)
+                if helper is not None:
+                    positional_parameters = [*helper.args.posonlyargs, *helper.args.args]
+                    propagated = set()
+                    for index, argument in enumerate(node.args):
+                        if index >= len(positional_parameters):
+                            break
+                        parameter = positional_parameters[index]
+                        if isinstance(argument, ast.Name) and argument.id in self.context_names:
+                            propagated.add(parameter.arg)
+                    keyword_parameters = {
+                        argument.arg for argument in [*helper.args.args, *helper.args.kwonlyargs]
+                    }
+                    for keyword in node.keywords:
+                        if (
+                            keyword.arg in keyword_parameters
+                            and isinstance(keyword.value, ast.Name)
+                            and keyword.value.id in self.context_names
+                        ):
+                            propagated.add(keyword.arg)
+                    if propagated:
+                        scan_function(helper, propagated)
+            self.generic_visit(node)
+
+        def visit_FunctionDef(self, node: ast.FunctionDef) -> None:
+            return
+
+        visit_AsyncFunctionDef = visit_FunctionDef
+
+        def visit_Lambda(self, node: ast.Lambda) -> None:
+            return
+
+        def _visit_assignment(self, targets: list[ast.expr], value: ast.expr) -> None:
+            self.visit(value)
+            source_name = value.id if isinstance(value, ast.Name) else None
+            for target in targets:
+                if isinstance(target, ast.Name):
+                    if source_name in self.context_names:
+                        self.context_names.add(target.id)
+                    else:
+                        self.context_names.discard(target.id)
+
+        def visit_Assign(self, node: ast.Assign) -> None:
+            self._visit_assignment(node.targets, node.value)
+
+        def visit_AnnAssign(self, node: ast.AnnAssign) -> None:
+            if node.value is None:
+                return
+            self._visit_assignment([node.target], node.value)
+
+    def scan_function(
+        function: ast.FunctionDef | ast.AsyncFunctionDef, context_names: set[str]
+    ) -> None:
+        key = (id(function), frozenset(context_names))
+        if key in visited_scopes:
+            return
+        visited_scopes.add(key)
+        visitor = ReadVisitor(set(context_names))
+        for statement in function.body:
+            visitor.visit(statement)
+
+    for node in ast.walk(tree):
+        if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)):
+            parameters = [
+                *node.args.posonlyargs,
+                *node.args.args,
+                *node.args.kwonlyargs,
+                *([node.args.vararg] if node.args.vararg else []),
+                *([node.args.kwarg] if node.args.kwarg else []),
+            ]
+            context_names = {
+                argument.arg
+                for argument in parameters
+                if (
+                    isinstance(argument.annotation, ast.Name)
+                    and argument.annotation.id == "LifecycleStateContext"
+                )
+                or (
+                    isinstance(argument.annotation, ast.Attribute)
+                    and argument.annotation.attr == "LifecycleStateContext"
+                )
+            }
+            if context_names:
+                scan_function(node, context_names)
+
+    # The classifier-module convention is that PredicateSpec's predicate is
+    # its first positional argument; other call arguments are outside this gate.
+    for call in ast.walk(tree):
+        if (
+            isinstance(call, ast.Call)
+            and ast.unparse(call.func).split(".")[-1] == "PredicateSpec"
+            and call.args
+            and isinstance(call.args[0], ast.Lambda)
+            and call.args[0].args.args
+        ):
+            predicate = call.args[0]
+            visitor = ReadVisitor({predicate.args.args[0].arg})
+            visitor.visit(predicate.body)
+    return reads
+
+
 def _decision_metrics(
     source: str, symbol: str, *, include_module_predicates: bool = True
 ) -> dict[str, Any]:
@@ -320,18 +468,18 @@ def _decision_metrics(
     functions = [
         node for node in ast.walk(tree) if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef))
     ]
-    owner = next((node for node in functions if node.name == symbol), None)
-    if owner is None:
-        raise ValueError(f"owner symbol {symbol!r} not found")
-    scoped_functions = functions if include_module_predicates else [owner]
+    classifier = next((node for node in functions if node.name == symbol), None)
+    if classifier is None:
+        raise ValueError(f"classifier symbol {symbol!r} not found")
+    scoped_functions = functions if include_module_predicates else [classifier]
     callable_points = [_scope_points(node) for node in scoped_functions]
     predicates = _predicate_lambdas(tree) if include_module_predicates else []
     predicate_points = [_scope_points(node) for node in predicates]
     all_points = [*callable_points, *predicate_points]
     return {
-        "public_callable_branch_points": _scope_points(owner)[0],
-        "owned_callable_count": len(functions),
-        "owned_callable_branch_points": sum(points for points, _ in callable_points),
+        "public_callable_branch_points": _scope_points(classifier)[0],
+        "classifier_callable_count": len(functions),
+        "classifier_callable_branch_points": sum(points for points, _ in callable_points),
         "max_callable_branch_points": max((points for points, _ in callable_points), default=0),
         "max_control_nesting": max((depth for _, depth in callable_points), default=0),
         "predicate_lambda_count": len(predicates),
@@ -418,23 +566,52 @@ def _snapshot(
     missing_modules = sorted(known - set(sources))
     decisions = []
     for decision in policy["decisions"]:
-        owner_module = decision["owner_module"]
-        owner_source = sources.get(owner_module)
-        owner_metrics = None
-        owner_missing = owner_source is None
-        if owner_source is not None:
+        classifier_module = decision["classifier_module"]
+        classifier_source = sources.get(classifier_module)
+        classifier_metrics = None
+        classifier_missing = classifier_source is None
+        if classifier_source is not None:
             try:
-                owner_metrics = _decision_metrics(owner_source, decision["owner_symbol"])
+                classifier_metrics = _decision_metrics(
+                    classifier_source, decision["classifier_symbol"]
+                )
             except (SyntaxError, ValueError) as error:
-                syntax_errors.append({"module": owner_module, "message": str(error)})
+                syntax_errors.append({"module": classifier_module, "message": str(error)})
         decisions.append(
             {
                 "id": decision["id"],
-                "owner": {"module": owner_module, "symbol": decision["owner_symbol"]},
-                "owner_missing": owner_missing,
-                "owner_metrics": owner_metrics,
+                "classifier": {
+                    "module": classifier_module,
+                    "symbol": decision["classifier_symbol"],
+                },
+                "classifier_missing": classifier_missing,
+                "classifier_metrics": classifier_metrics,
             }
         )
+    classification_findings = []
+    for decision in policy["decisions"]:
+        protected_inputs = decision.get("protected_raw_inputs", [])
+        classifier_module = decision["classifier_module"]
+        if not protected_inputs:
+            continue
+        for name, source in sources.items():
+            module = modules.get(name)
+            if module is None or module.role != "state_classifier" or name == classifier_module:
+                continue
+            try:
+                reads = _protected_raw_context_reads(source, protected_inputs)
+            except SyntaxError:
+                continue
+            classification_findings.extend(
+                {
+                    "decision_id": decision["id"],
+                    "classifier": classifier_module,
+                    "module": name,
+                    **read,
+                    "message": "sibling state classifier reads a protected raw context artifact",
+                }
+                for read in reads
+            )
     metrics_by_role: dict[str, Counter[str]] = defaultdict(Counter)
     imports_by_role: Counter[str] = Counter()
     for source, target in edges:
@@ -443,8 +620,8 @@ def _snapshot(
         imports_by_role[f"{source_role}->{target_role}"] += 1
     decisions_by_id = {item["id"]: item for item in decisions}
     for decision in policy["decisions"]:
-        module = modules[decision["owner_module"]]
-        metrics = decisions_by_id[decision["id"]]["owner_metrics"]
+        module = modules[decision["classifier_module"]]
+        metrics = decisions_by_id[decision["id"]]["classifier_metrics"]
         if metrics:
             for field in (
                 "branch_points_total",
@@ -457,6 +634,7 @@ def _snapshot(
     findings.extend({"code": "LAC002", "cycle": cycle} for cycle in cycles)
     findings.extend({"code": "LAC003", "module": name} for name in missing_modules)
     findings.extend({"code": "LAC004", **item} for item in syntax_errors)
+    findings.extend({"code": "LAC007", **item} for item in classification_findings)
     findings.extend(
         {
             "code": "LAC006",
@@ -466,15 +644,15 @@ def _snapshot(
         for name in sorted(unregistered_sources)
     )
     findings.extend(
-        {"code": "LAC005", "decision_id": item["id"], "owner": item["owner"]}
+        {"code": "LAC005", "decision_id": item["id"], "classifier": item["classifier"]}
         for item in decisions
-        if item["owner_missing"] or item["owner_metrics"] is None
+        if item["classifier_missing"] or item["classifier_metrics"] is None
     )
     return {
         "ref": ref or "working_tree",
         "module_count": len(sources),
         "scope_basis": (
-            "registered decision owners and PredicateSpec lambdas; "
+            "registered state classifiers and PredicateSpec lambdas; "
             "unregistered lifecycle modules are reported"
         ),
         "internal_import_edge_count": len(edges),
@@ -533,9 +711,9 @@ def build_report(
         base = {
             "ref": base_ref,
             "module_count": 1 if legacy_source else 0,
-            "role": "legacy_decision_owner",
+            "role": "legacy_state_classifier",
             "scope_basis": "eight legacy function bodies, measured independently",
-            "decision_points_by_role": {"legacy_decision_owner": dict(role_points)},
+            "decision_points_by_role": {"legacy_state_classifier": dict(role_points)},
             "decisions": legacy_decisions,
         }
         baseline_metrics = {item["id"]: item["metrics"] for item in legacy_decisions}
@@ -570,17 +748,17 @@ def build_report(
 def _summary(report: dict[str, Any]) -> str:
     head = report["head"]
     lines = [
-        f"Lifecycle architecture gate: {report['gate_status']}",
+        f"Lifecycle state classification gate: {report['gate_status']}",
         f"Policy: {report['policy_id']} ({report['policy_sha256'][:12]})",
         "Head modules/imports/decisions: "
         f"{head['module_count']}/{head['internal_import_edge_count']}/{len(head['decisions'])}",
     ]
     if report["base"]:
         baseline = {item["id"]: item["metrics"] for item in report["base"]["decisions"]}
-        lines.append("Branch-point proxy by decision (baseline -> owner; scopes differ):")
+        lines.append("Branch-point proxy by decision (baseline -> classifier; scopes differ):")
         for decision in head["decisions"]:
             old = baseline.get(decision["id"])
-            current = decision["owner_metrics"]
+            current = decision["classifier_metrics"]
             if old and current:
                 lines.append(
                     f"  {decision['id']}: {old['branch_points_total']} -> "

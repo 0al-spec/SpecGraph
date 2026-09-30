@@ -53,7 +53,7 @@ jobs:
       - name: Run blocking Python and spec YAML quality checks
         run: python tools/python_quality.py
 
-      - name: Report lifecycle decision ownership delta
+      - name: Report lifecycle state classification delta
         if: github.event_name == 'pull_request'
         run: >
           python tools/lifecycle_architecture.py

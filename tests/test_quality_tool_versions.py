@@ -78,7 +78,7 @@ def test_quality_tool_versions_are_pinned_and_aligned() -> None:
     assert "python tools/python_quality.py" in python_ci
     assert "tools/validate_architecture_style.py" in python_quality
     assert 'tools/lifecycle_architecture.py", "--check' in python_quality
-    assert "Report lifecycle decision ownership delta" in python_ci
+    assert "Report lifecycle state classification delta" in python_ci
     assert "fetch-depth: 0" in python_ci
 
 
