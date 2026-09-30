@@ -576,6 +576,11 @@ def test_rerun_preview_resolves_targeted_candidate_gaps_without_fuzzy_matching()
     unresolved = candidate_gap_preview["unresolved_candidate_gaps"][0]
     assert unresolved["gap_id"] == "gap.required-fields.enforcement-mechanism"
     assert unresolved["deferral_preview"]["answer_kind"] == "defer_candidate"
+    for record in (*resolved_by_gap.values(), unresolved):
+        assert record["match_kind"] == "target_ref"
+        assert record["confidence"] == "explicit_target"
+        assert record["match"]["request_id"] == record["request_id"]
+        assert record["match"]["answer_kind"] == record["answer_kind"]
     quality = report["rerun_preview"]["candidate_quality_preview"]
     assert quality["candidate_quality_metric"] == "candidate_gap_resolution_preview"
     assert quality["review_state"] == "candidate_quality_partially_improved"
@@ -711,6 +716,9 @@ def test_rerun_preview_requires_substantive_candidate_gap_answer_content() -> No
     }
     local_storage = unresolved["gap.local-only-storage.enforcement-mechanism"]
     assert local_storage["review_preview"]["value"] == [{}, ""]
+    assert local_storage["match_kind"] == "target_ref"
+    assert local_storage["confidence"] == "explicit_target"
+    assert local_storage["match"]["request_id"] == local_storage["request_id"]
 
 
 def test_rerun_preview_prefers_stronger_match_over_first_match() -> None:

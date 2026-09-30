@@ -1396,15 +1396,21 @@ def _candidate_gap_preview(
             key: value for key, value in matching_hint.items() if value not in ("", None, [], {})
         }
         match_preview = _candidate_match_preview(hint=matching_hint, gap_item=gap_item)
+        matched_record = {
+            **base_record,
+            "request_id": _text(matching_hint.get("request_id")),
+            "answer_kind": _text(matching_hint.get("answer_kind")),
+        }
+        match_record = {
+            "match_kind": "target_ref",
+            "confidence": MATCH_CONFIDENCE_BY_KIND["target_ref"],
+            "match": match_preview,
+        }
         if _candidate_hint_is_deferred(matching_hint):
             unresolved.append(
                 {
-                    **base_record,
-                    "request_id": _text(matching_hint.get("request_id")),
-                    "answer_kind": _text(matching_hint.get("answer_kind")),
-                    "match_kind": "target_ref",
-                    "confidence": MATCH_CONFIDENCE_BY_KIND["target_ref"],
-                    "match": match_preview,
+                    **matched_record,
+                    **match_record,
                     "deferral_preview": hint_preview,
                 }
             )
@@ -1414,28 +1420,20 @@ def _candidate_gap_preview(
         ) and not _candidate_hint_has_resolution_value(matching_hint):
             unresolved.append(
                 {
-                    **base_record,
-                    "request_id": _text(matching_hint.get("request_id")),
-                    "answer_kind": _text(matching_hint.get("answer_kind")),
-                    "match_kind": "target_ref",
-                    "confidence": MATCH_CONFIDENCE_BY_KIND["target_ref"],
-                    "match": match_preview,
+                    **matched_record,
+                    **match_record,
                     "review_preview": hint_preview,
                 }
             )
             continue
         resolved.append(
             {
-                **base_record,
-                "request_id": _text(matching_hint.get("request_id")),
-                "answer_kind": _text(matching_hint.get("answer_kind")),
+                **matched_record,
                 "resolution_kind": _candidate_resolution_kind(
                     hint=matching_hint,
                     gap_item=gap_item,
                 ),
-                "match_kind": "target_ref",
-                "confidence": MATCH_CONFIDENCE_BY_KIND["target_ref"],
-                "match": match_preview,
+                **match_record,
                 "resolution_preview": hint_preview,
             }
         )
