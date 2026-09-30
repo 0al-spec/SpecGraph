@@ -359,6 +359,21 @@ def _protected_raw_context_reads(source: str, artifact_names: list[str]) -> list
                                 "accessor": node.func.attr,
                             }
                         )
+            if (
+                isinstance(node.func, ast.Attribute)
+                and node.func.attr == "get"
+                and isinstance(node.func.value, ast.Attribute)
+                and node.func.value.attr == "artifacts"
+                and isinstance(node.func.value.value, ast.Name)
+                and node.func.value.value.id in self.context_names
+                and node.args
+                and isinstance(node.args[0], ast.Constant)
+            ):
+                artifact = node.args[0].value
+                if isinstance(artifact, str) and artifact in protected:
+                    reads.append(
+                        {"line": node.lineno, "artifact": artifact, "accessor": "artifacts.get"}
+                    )
             if isinstance(node.func, ast.Name):
                 helper = local_functions.get(node.func.id)
                 if helper is not None:
@@ -382,6 +397,21 @@ def _protected_raw_context_reads(source: str, artifact_names: list[str]) -> list
                             propagated.add(keyword.arg)
                     if propagated:
                         scan_function(helper, propagated)
+            self.generic_visit(node)
+
+        def visit_Subscript(self, node: ast.Subscript) -> None:
+            if (
+                isinstance(node.value, ast.Attribute)
+                and node.value.attr == "artifacts"
+                and isinstance(node.value.value, ast.Name)
+                and node.value.value.id in self.context_names
+                and isinstance(node.slice, ast.Constant)
+            ):
+                artifact = node.slice.value
+                if isinstance(artifact, str) and artifact in protected:
+                    reads.append(
+                        {"line": node.lineno, "artifact": artifact, "accessor": "artifacts[]"}
+                    )
             self.generic_visit(node)
 
         def visit_FunctionDef(self, node: ast.FunctionDef) -> None:
@@ -680,8 +710,10 @@ def build_report(
     base = None
     if base_ref:
         legacy_source = _legacy_source(repo, base_ref)
-        legacy_decisions = []
-        role_points: Counter[str] = Counter()
+        base_decisions = []
+        role_points: dict[str, Counter[str]] = defaultdict(Counter)
+        source_kinds: set[str] = set()
+        legacy_functions: set[str] = set()
         if legacy_source:
             legacy_tree = ast.parse(legacy_source)
             legacy_functions = {
@@ -689,44 +721,86 @@ def build_report(
                 for node in ast.walk(legacy_tree)
                 if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef))
             }
-            for decision in policy["decisions"]:
-                metrics = (
-                    _decision_metrics(
-                        legacy_source,
-                        decision["legacy_symbol"],
-                        include_module_predicates=False,
-                    )
-                    if decision["legacy_symbol"] in legacy_functions
-                    else None
-                )
-                if metrics:
-                    role_points["branch_points_total"] += metrics["branch_points_total"]
-                legacy_decisions.append(
-                    {
-                        "id": decision["id"],
-                        "symbol": decision["legacy_symbol"],
-                        "metrics": metrics,
-                    }
-                )
+        for decision in policy["decisions"]:
+            classifier_module = modules[decision["classifier_module"]]
+            source = _source_for_ref(repo, base_ref, classifier_module.path)
+            source_kind = "classifier_module"
+            symbol = decision["classifier_symbol"]
+            role = classifier_module.role
+            metrics = None
+            if source is not None:
+                try:
+                    metrics = _decision_metrics(source, symbol)
+                except (SyntaxError, ValueError):
+                    metrics = None
+            if source is None and legacy_source and decision["legacy_symbol"] in legacy_functions:
+                source_kind = "legacy_report"
+                symbol = decision["legacy_symbol"]
+                role = "legacy_state_classifier"
+                metrics = _decision_metrics(legacy_source, symbol, include_module_predicates=False)
+            if metrics is not None:
+                source_kinds.add(source_kind)
+                role_points[role]["branch_points_total"] += metrics["branch_points_total"]
+            base_decisions.append(
+                {
+                    "id": decision["id"],
+                    "symbol": symbol,
+                    "source": {
+                        "kind": source_kind if metrics is not None else "unavailable",
+                        "module": (
+                            classifier_module.name
+                            if source_kind == "classifier_module"
+                            else "idea_maturity_metrics_report"
+                        ),
+                        "path": (
+                            classifier_module.path
+                            if source_kind == "classifier_module"
+                            else LEGACY_REPORT_PATH
+                        ),
+                        "symbol": symbol,
+                    },
+                    "metrics": metrics,
+                }
+            )
+        all_legacy = source_kinds == {"legacy_report"}
+        all_classifiers = source_kinds == {"classifier_module"}
+        base_role = (
+            "legacy_state_classifier"
+            if all_legacy
+            else "state_classifier"
+            if all_classifiers
+            else "mixed_lifecycle_baseline"
+        )
+        scope_basis = (
+            "eight legacy function bodies, measured independently"
+            if all_legacy
+            else "registered classifier symbols and PredicateSpec lambdas at base ref"
+            if all_classifiers
+            else "registered classifiers at base ref with per-decision legacy fallback"
+        )
         base = {
             "ref": base_ref,
-            "module_count": 1 if legacy_source else 0,
-            "role": "legacy_state_classifier",
-            "scope_basis": "eight legacy function bodies, measured independently",
-            "decision_points_by_role": {"legacy_state_classifier": dict(role_points)},
-            "decisions": legacy_decisions,
+            "module_count": len(
+                {item["source"]["path"] for item in base_decisions if item["metrics"] is not None}
+            ),
+            "role": base_role,
+            "scope_basis": scope_basis,
+            "decision_points_by_role": {role: dict(points) for role, points in role_points.items()},
+            "decisions": base_decisions,
         }
-        baseline_metrics = {item["id"]: item["metrics"] for item in legacy_decisions}
+        baseline_metrics = {item["id"]: item["metrics"] for item in base_decisions}
+        baseline_sources = {item["id"]: item["source"] for item in base_decisions}
         for decision in head["decisions"]:
-            decision["legacy"] = {
-                "module": "idea_maturity_metrics_report",
-                "symbol": next(
-                    item["legacy_symbol"]
-                    for item in policy["decisions"]
-                    if item["id"] == decision["id"]
-                ),
+            decision["baseline"] = {
+                **baseline_sources[decision["id"]],
                 "metrics": baseline_metrics.get(decision["id"]),
             }
+            if baseline_sources[decision["id"]]["kind"] == "legacy_report":
+                decision["legacy"] = {
+                    "module": "idea_maturity_metrics_report",
+                    "symbol": decision["baseline"]["symbol"],
+                    "metrics": baseline_metrics.get(decision["id"]),
+                }
     findings = head["findings"]
     policy_digest = hashlib.sha256(
         json.dumps(policy, sort_keys=True, separators=(",", ":")).encode("utf-8")
@@ -755,7 +829,7 @@ def _summary(report: dict[str, Any]) -> str:
     ]
     if report["base"]:
         baseline = {item["id"]: item["metrics"] for item in report["base"]["decisions"]}
-        lines.append("Branch-point proxy by decision (baseline -> classifier; scopes differ):")
+        lines.append("Branch-point proxy by decision (base -> head):")
         for decision in head["decisions"]:
             old = baseline.get(decision["id"])
             current = decision["classifier_metrics"]

@@ -37,6 +37,11 @@ def _has_execution(c):
     return bool(c.artifact("approval_execution"))
 
 
+def _has_decision_reference(c):
+    reference = c.artifact("approval_execution").get("candidate_approval_decision_ref")
+    return bool(c.mapping(reference))
+
+
 _SPEC = FirstMatch.with_fallback(
     (
         (
@@ -90,9 +95,7 @@ _SPEC = FirstMatch.with_fallback(
                 lambda c: (
                     _has_execution(c)
                     and (
-                        bool(
-                            c.artifact("approval_execution").get("candidate_approval_decision_ref")
-                        )
+                        _has_decision_reference(c)
                         or c.summary("approval_execution").get("decision_written") is True
                     )
                 ),

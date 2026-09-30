@@ -6,6 +6,8 @@ import subprocess
 import sys
 from pathlib import Path
 
+import pytest
+
 ROOT = Path(__file__).resolve().parents[1]
 TOOL_PATH = ROOT / "tools" / "idea_maturity_metrics_report.py"
 
@@ -1970,6 +1972,27 @@ def test_idea_maturity_metrics_report_reads_candidate_approval_decision(
         == "readiness-explainer.repair-session-platform-candidate-approval-decision-missing"
         for item in report["readiness_explainers"]
     )
+
+
+@pytest.mark.parametrize("reference", ["decision-123", ["decision-123"], True, {}])
+def test_candidate_approval_reference_requires_nonempty_mapping(reference: object) -> None:
+    module = load_module()
+
+    state = module._candidate_approval_decision_state(
+        {"approval_execution": {"candidate_approval_decision_ref": reference}}
+    )
+
+    assert state == "unknown"
+
+
+def test_candidate_approval_reference_accepts_nonempty_mapping() -> None:
+    module = load_module()
+
+    state = module._candidate_approval_decision_state(
+        {"approval_execution": {"candidate_approval_decision_ref": {"decision_id": "D-123"}}}
+    )
+
+    assert state == "materialized"
 
 
 def test_idea_maturity_metrics_report_suppresses_resolved_promotion_request_blocker(
