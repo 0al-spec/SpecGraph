@@ -430,6 +430,7 @@ def test_lifecycle_architecture_uses_classifier_modules_for_extracted_baseline(
     assert snapshot["base"]["role"] == "state_classifier"
     assert baseline["metrics"] == snapshot["head"]["decisions"][0]["classifier_metrics"]
     assert snapshot["head"]["decisions"][0]["baseline"]["path"] == classifier_path
+    assert snapshot["head"]["decisions"][0]["legacy"]["metrics"]["branch_points_total"] == 0
 
 
 def test_lifecycle_architecture_detects_import_cycles() -> None:

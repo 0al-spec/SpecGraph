@@ -790,17 +790,23 @@ def build_report(
         }
         baseline_metrics = {item["id"]: item["metrics"] for item in base_decisions}
         baseline_sources = {item["id"]: item["source"] for item in base_decisions}
+        legacy_symbols = {item["id"]: item["legacy_symbol"] for item in policy["decisions"]}
         for decision in head["decisions"]:
+            legacy_symbol = legacy_symbols[decision["id"]]
+            legacy_metrics = (
+                _decision_metrics(legacy_source, legacy_symbol, include_module_predicates=False)
+                if legacy_source and legacy_symbol in legacy_functions
+                else None
+            )
             decision["baseline"] = {
                 **baseline_sources[decision["id"]],
                 "metrics": baseline_metrics.get(decision["id"]),
             }
-            if baseline_sources[decision["id"]]["kind"] == "legacy_report":
-                decision["legacy"] = {
-                    "module": "idea_maturity_metrics_report",
-                    "symbol": decision["baseline"]["symbol"],
-                    "metrics": baseline_metrics.get(decision["id"]),
-                }
+            decision["legacy"] = {
+                "module": "idea_maturity_metrics_report",
+                "symbol": legacy_symbol,
+                "metrics": legacy_metrics,
+            }
     findings = head["findings"]
     policy_digest = hashlib.sha256(
         json.dumps(policy, sort_keys=True, separators=(",", ":")).encode("utf-8")
