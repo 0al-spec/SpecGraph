@@ -649,5 +649,90 @@
     "residual_risk": "The packet records a proposed contract and example; it does not implement or validate revision-chain runtime behavior.",
     "resolved_commit": "bb94dce9bccce89c3e8d62bb28470c362dc3f71d",
     "recorded_at": "2026-09-30T04:56:00Z"
+  },
+  {
+    "feedback_id": "pr-738-metrics-run-head-binding",
+    "source_pr": 738,
+    "source_thread_url": "https://github.com/0al-spec/SpecGraph/pull/738#discussion_r4143769716",
+    "reviewer": "chatgpt-codex-connector",
+    "review_comment_summary": "The report checked the current PR head against a later fetched head but did not bind it to the SHA that had passed the triggering Python CI run.",
+    "fix_summary": "The workflow now carries workflow_run.head_sha and skips reporting unless both the API head and fetched pull ref equal that tested SHA.",
+    "root_cause_class": "artifact_contract_validation_gap",
+    "prevention_action": "regression_test_added",
+    "verification": [
+      "targeted_test",
+      "lint_or_format_check"
+    ],
+    "residual_risk": "A newer push requires its own successful Python CI run before it receives an updated metrics comment.",
+    "resolved_commit": "950b63b47c5932c49a038a7b297ca11c8563bbb5",
+    "recorded_at": "2026-09-30T15:56:00Z"
+  },
+  {
+    "feedback_id": "pr-738-snapshot-scope-destination",
+    "source_pr": 738,
+    "source_thread_url": "https://github.com/0al-spec/SpecGraph/pull/738#discussion_r4143769726",
+    "reviewer": "chatgpt-codex-connector",
+    "review_comment_summary": "A pre-integration source snapshot may not contain the scopes directory required by the trusted metric manifest copy.",
+    "fix_summary": "The workflow creates the per-snapshot scopes directory before copying the trusted manifest; a regression test asserts the ordering.",
+    "root_cause_class": "scope_isolation_gap",
+    "prevention_action": "regression_test_added",
+    "verification": [
+      "targeted_test",
+      "lint_or_format_check"
+    ],
+    "residual_risk": "The workflow continues to rely on the checked-out trusted default branch for metric configuration.",
+    "resolved_commit": "950b63b47c5932c49a038a7b297ca11c8563bbb5",
+    "recorded_at": "2026-09-30T15:56:00Z"
+  },
+  {
+    "feedback_id": "pr-731-approval-reference-shape",
+    "source_pr": 731,
+    "source_thread_url": "https://github.com/0al-spec/SpecGraph/pull/731#discussion_r4141133619",
+    "reviewer": "chatgpt-codex-connector",
+    "review_comment_summary": "A truthy scalar or list candidate_approval_decision_ref was incorrectly interpreted as a materialized decision.",
+    "fix_summary": "The classifier now requires a nonempty mapping and regression tests cover strings, lists, booleans, empty mappings, and a valid mapping.",
+    "root_cause_class": "artifact_contract_validation_gap",
+    "prevention_action": "regression_test_added",
+    "verification": [
+      "targeted_test",
+      "lint_or_format_check"
+    ],
+    "residual_risk": "The reference remains a mapping-level contract; its internal identifier semantics are not validated here.",
+    "resolved_commit": "265490bdf2908c5773ae08f18190905ff0f98668",
+    "recorded_at": "2026-09-30T15:56:00Z"
+  },
+  {
+    "feedback_id": "pr-731-lifecycle-baseline-source",
+    "source_pr": 731,
+    "source_thread_url": "https://github.com/0al-spec/SpecGraph/pull/731#discussion_r4141133630",
+    "reviewer": "chatgpt-codex-connector",
+    "review_comment_summary": "After classifier extraction, the base-ref metric could read zero-branch compatibility wrappers from the old report instead of the classifier modules present at that ref.",
+    "fix_summary": "Base metrics now come from registered classifier modules and PredicateSpec lambdas whenever present, with per-decision legacy fallback only when the module is absent; a Git-backed regression test proves parity on an extracted baseline.",
+    "root_cause_class": "artifact_contract_validation_gap",
+    "prevention_action": "regression_test_added",
+    "verification": [
+      "targeted_test",
+      "lint_or_format_check"
+    ],
+    "residual_risk": "Pre-extraction refs still use legacy function bodies because classifier modules do not yet exist there.",
+    "resolved_commit": "265490bdf2908c5773ae08f18190905ff0f98668",
+    "recorded_at": "2026-09-30T15:56:00Z"
+  },
+  {
+    "feedback_id": "pr-731-protected-raw-artifact-reads",
+    "source_pr": 731,
+    "source_thread_url": "https://github.com/0al-spec/SpecGraph/pull/731#discussion_r4141133634",
+    "reviewer": "chatgpt-codex-connector",
+    "review_comment_summary": "LAC007 recognized context artifact accessor methods but missed protected reads through c.artifacts[...] and c.artifacts.get(...).",
+    "fix_summary": "The source gate now recognizes direct literal-key subscript and get access on typed context roots and predicate contexts; tests assert both findings.",
+    "root_cause_class": "test_coverage_gap",
+    "prevention_action": "regression_test_added",
+    "verification": [
+      "targeted_test",
+      "lint_or_format_check"
+    ],
+    "residual_risk": "Dynamic artifact keys and indirect container aliases are outside this static gate's recognized forms.",
+    "resolved_commit": "265490bdf2908c5773ae08f18190905ff0f98668",
+    "recorded_at": "2026-09-30T15:56:00Z"
   }
 ]
