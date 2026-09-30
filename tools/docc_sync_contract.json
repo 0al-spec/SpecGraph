@@ -472,7 +472,13 @@
         "atoms.intents[]",
         "specgraph_intent_atoms_snapshot",
         "human authorship",
-        "zero-atom"
+        "zero-atom",
+        "SpecificationMetrics",
+        "S/U",
+        "Radon 6.0.1",
+        "complexipy 8.0.1",
+        "jscpd 5.0.11",
+        "informational"
       ]
     }
   ]

@@ -68,7 +68,12 @@ def test_gate_accepts_existing_spec_id_from_pr_body(tmp_path: Path) -> None:
     result = spec_evidence_gate.evaluate_gate(
         repo,
         ["tools/supervisor.py"],
-        ["Spec-ID: SG-SPEC-0006\nSpec-Impact: tooling\n"],
+        [
+            "Spec-ID: SG-SPEC-0006\n"
+            "Proposal-ID:\n"
+            "Spec-Impact: tooling\n"
+            "Spec-Rationale: Advisory metric reporting only.\n"
+        ],
     )
 
     assert result.passed is True
