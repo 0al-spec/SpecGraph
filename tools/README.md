@@ -2127,3 +2127,13 @@ The conventional extraction control gives the same local complexity reduction;
 SpecificationCore additionally gives the predicates explicit names. See
 [the experiment](../docs/experiments/ontology_decision_counts.md) for the behavior
 matrix, pinned benchmark tools, absolute clone counts, and change-footprint limits.
+
+### Product structural budgets
+
+Proposal 0222 adds optional `supervisor.structural_limits` (schema version 1)
+to `specgraph.project.yaml`. Counts and graph-coverage ratios inherit repository
+defaults and may be explicitly overridden per workspace. Invalid configuration
+fails closed. `--build-project-environment` exposes effective values and source
+digests; run logs retain the same snapshot for historical diagnostics.
+See [the supervisor manual](../docs/supervisor_manual.md#workspace-structural-limits-proposal-0222).
+Run `make test-workspace-limits` for focused regressions.

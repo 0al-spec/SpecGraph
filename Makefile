@@ -1536,3 +1536,7 @@ workspace-bundle-consumer-smoke:
 		--consumer-commit "$(WORKSPACE_BUNDLE_CONSUMER_COMMIT)" \
 		--workspace-id "$(WORKSPACE_BUNDLE_SMOKE_ID)" \
 		--output "$(WORKSPACE_BUNDLE_SMOKE_OUTPUT)" $(WORKSPACE_BUNDLE_SMOKE_FLAGS)
+
+.PHONY: test-workspace-limits
+test-workspace-limits:
+	@$(PYTHON) -m pytest -q tests/test_workspace_structural_limits.py tests/test_supervisor_problem_diagnosis.py tests/test_supervisor_problem_diagnosis_policy.py

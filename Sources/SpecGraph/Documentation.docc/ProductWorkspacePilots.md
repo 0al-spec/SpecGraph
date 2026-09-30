@@ -1093,3 +1093,58 @@ Proposal `0218` applies that binding to repair publication. Bound repair and
 Idea Maturity evidence is selected from `runs/<workspace-id>` and published
 under `workspaces/<workspace-id>` without refreshing default product fixtures.
 Root demo artifacts cannot satisfy another workspace's publication evidence.
+
+## Workspace structural limits (proposal 0222)
+
+Use `supervisor.structural_limits` in `specgraph.project.yaml` for product-specific
+structural budgets (schema version 1). Repository
+`tools/supervisor_policy.json` supplies defaults; only explicit allowlisted values
+are overridden. This does not grant mutation, adoption, review or evidence
+admission authority. Existing canonical rules still apply.
+
+```yaml
+supervisor:
+  # Keep existing authority settings here.
+  structural_limits:
+    schema_version: 1
+    thresholds:
+      atomicity_max_acceptance: 8
+      atomicity_max_blocking_children: 5
+```
+
+Supported keys (repository defaults):
+
+| Key | Type | Default |
+| --- | --- | --- |
+| `atomicity_max_acceptance` | positive integer | 5 |
+| `atomicity_max_blocking_children` | positive integer | 3 |
+| `subtree_shape_one_child_chain` | positive integer | 4 |
+| `refinement_fan_out_direct_children` | positive integer | 4 |
+| `graph_layer_exhausted_chain` | positive integer | 5 |
+| `over_atomized_acceptance_max` | positive integer | 3 |
+| `refinement_fan_out_grouped_child_coverage` | finite ratio [0,1] | 0.75 |
+| `refinement_fan_out_parent_aggregate_floor` | finite ratio [0,1] | 0.5 |
+| `subtree_shape_min_single_child_ratio` | finite ratio [0,1] | 0.75 |
+
+Unknown keys or versions, bools, strings, nulls, invalid mappings and out-of-range
+values are errors. Counts may exceed defaults without an arbitrary ceiling;
+large budgets remain subject to computation resources and canonical constraints.
+Maturity cutoffs and governance thresholds are not workspace-overridable.
+
+Inspect with `make project-environment` from the product workspace, using the
+installed supervisor path, or run `tools/supervisor.py --build-project-environment`
+with that workspace as cwd. Its `structural_limits` field contains effective
+values, per-key sources, effective digest and source-config/policy digests.
+
+One supervisor invocation freezes the effective settings through validation,
+split/reconciliation/sync-back, prompt construction and run-log persistence.
+Each run log records `structural_limits`; historical diagnosis uses that recorded
+snapshot rather than today's config. Legacy logs without it use repository
+defaults, with no claim to reconstruct original workspace settings. Digests are
+provenance, not trust receipts. A config edit takes effect at the next invocation.
+
+Regression shortcut: `make test-workspace-limits`.
+
+The proposal 0222 verification record is `docs/evidence/workspace-structural-limits.md`:
+characterization, workspace-isolated overrides, immutable run snapshots,
+historical diagnostics and real CLI smoke are separate evidence observations.
