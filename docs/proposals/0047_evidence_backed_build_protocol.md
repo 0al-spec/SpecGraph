@@ -556,3 +556,102 @@ is inferred, and no upstream runtime receipt contract is fabricated. This bounde
 slice precedes the full build/review/acceptance protocol described above.
 See [evidence claim admission](../evidence_claim_admission.md) for trust boundaries,
 CLI, failure modes, and the external provider contract.
+
+
+### Cross-repository receipt issuance handoff — 2026-09-30
+
+**Status: `proposal_only`.** This follow-up owns coordination under proposal
+0047, not an implemented issuer, adopted trust configuration, or lifecycle
+permission. The earlier source-only follow-up is historical: the current bounded
+SpecGraph consumer also verifies externally supplied signed aggregate decisions
+through `runtime_verified_v1`. Issuance remains a separate gap.
+
+The Zeusus pilot captured two real headless route calculations at producer
+commit `28b3710857cd4fdc76e14a69ea924418dc19b9bb`. Six observations matched the
+FeaturePassport CLI built from `7e8ced31775b10c7274c47a66c3098cdde5335e4`;
+four source anchors resolved. The retained report is
+`Zeusus/docs/evidence/route-observation-capture/run-28b3710/report.json`.
+Its result is `matched_untrusted`, receipt `none`, admission `not_attempted`.
+These are motivating observations, not retrospective issuance or runtime proof.
+
+#### Ownership and dependency direction
+
+| Owner | Owned change | Boundary |
+| --- | --- | --- |
+| Zeusus | Product specs, SpecificationCore objects, product passport, probes, trace adapter, pilot capture and fixtures | Emits observations; does not grant itself SpecGraph admission |
+| SpecificationCore | Generic specification evaluation and diagnostic tracing | No game, receipt policy, or SpecGraph schema dependency |
+| FeaturePassport | Provider-neutral observation/receipt contracts, generic issuer API/CLI, signer abstraction, verification and aggregate evaluation | Must work without SpecGraph IDs, service or schemas |
+| SpecGraph | Evidence requirements, implementation handoff, provider adapter, canonical claim mapping and admission policy | Consumes verified artifacts; does not implement another receipt schema or signer |
+| SpecSpace | Read-only visualization of requirements, evidence and gate reasons | Does not issue receipts or decide trust |
+| Explicit runner/CI configuration | Operated authority, capture execution, signer access, selected policy and artifact publication | A role; this proposal creates no additional repository or hosted service |
+
+For the bounded pilot, runner orchestration may remain in Zeusus. Shared issuance
+code belongs in FeaturePassport. SpecGraph coordinates the work through this
+proposal and consumes the results through its existing adapter. No dependency
+`FeaturePassport -> SpecGraph` is introduced.
+
+#### Policy and trust are separate inputs
+
+- **Receipt policy:** describes exactly what the issuer checks and signs. The
+  generic supported profile belongs in FeaturePassport; a reviewed exact policy
+  and its deployment selection belong to the runner/authority configuration.
+- **Claim policy:** states the required evidence for one bounded assertion.
+  Product intent and scenarios originate in Zeusus specs; its provider-neutral
+  representation uses FeaturePassport contracts, with mapping/handoff owned by
+  the SpecGraph adapter. It must not invent probes or inherited requirements.
+- **Admission policy:** determines whether that assertion can be admitted for
+  the current canonical node. SpecGraph owns this decision and review boundary.
+- **Trust stores:** explicitly owned by each verifier/consumer. SpecGraph selects
+  receipt and decision authorities for its admission invocation; no issuer
+  registration or valid signature automatically grants trust.
+- **Private signing capability:** supplied by the authority deployment outside
+  Git (for example, Keychain or CI secret custody). FeaturePassport receives an
+  injected signer. This follow-up does not generate keys or edit trust stores.
+
+The first proposed receipt policy proves acceptance of exact contract-matched
+observation bytes only. It does not prove independent runtime origin, successful
+execution, delivery, game completion or production operation. A local headless
+run remains local headless evidence after signing. A stronger origin/execution
+claim needs a separately specified capture/attestation policy.
+
+#### Bounded work routing and review gates
+
+1. **FeaturePassport follow-up:** propose and implement a generic receipt issuer
+   compatible with `signed-observation-receipt-v1`, injected signer and explicit
+   policy authorization. It must validate inputs before signing and pass the
+   existing verifier. Rejected, tampered, expired or unauthorized inputs must
+   fail. Existing aggregate-decision issuance can be reused within its actual
+   scope; production key custody is not supplied by that library.
+2. **Zeusus pilot integration:** select an explicitly reviewed local authority
+   configuration, rerun capture under the issuer policy, retain exact passport,
+   observations, receipt pairs and executable/source pins. Historical unsigned
+   artifacts remain historical and do not become proof of issuer-controlled
+   execution by being signed later. Admission trust keys are provisioned by the
+   consumer, independently of the observation payload.
+3. **SpecGraph admission integration:** review the exact claim-policy scope and
+   canonical `feature_passport_decision` mapping, then run the existing live
+   `verify-decision` admission path with explicit receipt/decision trust stores.
+   A trusted `not_satisfied`, stale bytes or unresolved source gate cannot pass.
+4. **SpecSpace follow-up, only when needed:** expose the existing distinctions
+   between observed, matched, trusted and admitted; no viewer-owned authority.
+
+Each implementation has its own repository PR and evidence. Their dependency
+order is FeaturePassport issuer contract/implementation -> Zeusus bounded pilot
+-> SpecGraph admission evidence. Proposal review does not imply that those PRs
+exist, that authority/key configuration is approved, or that any spec gate is
+cleared. Proposed issuance and pilot wiring have **no runtime realization in
+this amendment**; existing admission tools remain unchanged.
+
+#### Acceptance for this proposal amendment
+
+- The ownership table routes every implementation task to one repository or
+  explicitly operated deployment role.
+- Receipt policy, claim policy and admission policy remain distinct; each
+  consumer controls its own trust inputs.
+- FeaturePassport remains provider-neutral and a passport without SpecGraph
+  remains valid under its own contracts.
+- The local receipt scope cannot be presented as production or game-outcome
+  proof, nor can historical observations be relabeled as issuer-controlled runs.
+- Source draft, promotion provenance, runtime classification and DocC remain
+  aligned. Issuer implementation, keys, policy adoption and lifecycle mutation
+  require subsequent bounded work and evidence.
