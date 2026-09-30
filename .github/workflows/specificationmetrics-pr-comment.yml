@@ -19,6 +19,7 @@ jobs:
       pull-requests: read
     outputs:
       pr_numbers: ${{ steps.resolve.outputs.pr_numbers }}
+      workflow_head_sha: ${{ steps.resolve.outputs.workflow_head_sha }}
     steps:
       - name: Resolve PRs associated with the completed CI head
         id: resolve
@@ -32,6 +33,7 @@ jobs:
             --jq '.[] | select(.state == "open") | .number' \
             | sort -nu | jq -Rsc 'split("\n") | map(select(length > 0) | tonumber)')"
           echo "pr_numbers=${pr_numbers}" >> "${GITHUB_OUTPUT}"
+          echo "workflow_head_sha=${HEAD_SHA}" >> "${GITHUB_OUTPUT}"
 
   report:
     needs: resolve
@@ -56,36 +58,40 @@ jobs:
           fetch-depth: 1
           persist-credentials: false
 
-      - name: Read current pull request revisions
+      - name: Pin current PR revisions to the successful CI head
+        id: snapshot
         env:
           GH_TOKEN: ${{ github.token }}
           PR_NUMBER: ${{ matrix.pr_number }}
           REPOSITORY: ${{ github.repository }}
           RUNNER_TEMP: ${{ runner.temp }}
+          EXPECTED_HEAD_SHA: ${{ needs.resolve.outputs.workflow_head_sha }}
         run: |
           gh api "repos/${REPOSITORY}/pulls/${PR_NUMBER}" \
             > "${RUNNER_TEMP}/specificationmetrics-pull-request.json"
-          echo "base_sha=$(jq -r '.base.sha' "${RUNNER_TEMP}/specificationmetrics-pull-request.json")" \
-            >> "${GITHUB_ENV}"
-          echo "head_sha=$(jq -r '.head.sha' "${RUNNER_TEMP}/specificationmetrics-pull-request.json")" \
-            >> "${GITHUB_ENV}"
-
-      - name: Fetch PR revisions as Git objects
-        env:
-          PR_NUMBER: ${{ matrix.pr_number }}
-        run: |
+          base_sha="$(jq -r '.base.sha' "${RUNNER_TEMP}/specificationmetrics-pull-request.json")"
+          api_head_sha="$(jq -r '.head.sha' "${RUNNER_TEMP}/specificationmetrics-pull-request.json")"
+          if [ "${api_head_sha}" != "${EXPECTED_HEAD_SHA}" ]; then
+            echo "is_current=false" >> "${GITHUB_OUTPUT}"
+            echo "::notice::Skipping stale metrics run for PR #${PR_NUMBER}; its head moved after Python CI."
+            exit 0
+          fi
           git fetch --no-tags --depth=1 origin "${base_sha}"
           git fetch --no-tags --depth=1 origin \
             "+refs/pull/${PR_NUMBER}/head:refs/remotes/pull/${PR_NUMBER}/head"
           git cat-file -e "${base_sha}^{commit}"
           fetched_head="$(git rev-parse "refs/remotes/pull/${PR_NUMBER}/head")"
-          if [ "${fetched_head}" != "${head_sha}" ]; then
-            echo "PR head moved during measurement setup; rerun on the latest CI head" >&2
-            exit 1
+          if [ "${fetched_head}" != "${EXPECTED_HEAD_SHA}" ]; then
+            echo "is_current=false" >> "${GITHUB_OUTPUT}"
+            echo "::notice::Skipping stale metrics run for PR #${PR_NUMBER}; its head moved during setup."
+            exit 0
           fi
+          echo "is_current=true" >> "${GITHUB_OUTPUT}"
+          echo "base_sha=${base_sha}" >> "${GITHUB_ENV}"
           echo "head_sha=${fetched_head}" >> "${GITHUB_ENV}"
 
       - name: Create read-only source snapshots
+        if: steps.snapshot.outputs.is_current == 'true'
         env:
           RUNNER_TEMP: ${{ runner.temp }}
         run: |
@@ -96,10 +102,12 @@ jobs:
             "${RUNNER_TEMP}/specificationmetrics/after" "${head_sha}"
 
       - name: Apply the trusted metric contract to both snapshots
+        if: steps.snapshot.outputs.is_current == 'true'
         env:
           RUNNER_TEMP: ${{ runner.temp }}
         run: |
           for tree in before after; do
+            mkdir -p "${RUNNER_TEMP}/specificationmetrics/${tree}/scopes"
             cp .specificationmetrics.toml \
               "${RUNNER_TEMP}/specificationmetrics/${tree}/.specificationmetrics.toml"
             cp scopes/specificationmetrics.toml \
@@ -107,9 +115,11 @@ jobs:
           done
 
       - name: Set up Rust
+        if: steps.snapshot.outputs.is_current == 'true'
         uses: dtolnay/rust-toolchain@stable
 
       - name: Install pinned SpecificationMetrics CLI
+        if: steps.snapshot.outputs.is_current == 'true'
         run: >
           cargo install --locked
           --git https://github.com/SoundBlaster/SpecificationMetrics.git
@@ -118,19 +128,23 @@ jobs:
           specification-metrics
 
       - name: Set up Python metric tools
+        if: steps.snapshot.outputs.is_current == 'true'
         uses: actions/setup-python@v6
         with:
           python-version: "3.12"
 
       - name: Install pinned Python metrics
+        if: steps.snapshot.outputs.is_current == 'true'
         run: python -m pip install -r tools/requirements-metrics.txt
 
       - name: Set up Node for pinned jscpd
+        if: steps.snapshot.outputs.is_current == 'true'
         uses: actions/setup-node@v4
         with:
           node-version: "22"
 
       - name: Collect base and PR metrics
+        if: steps.snapshot.outputs.is_current == 'true'
         env:
           RUNNER_TEMP: ${{ runner.temp }}
           WORKFLOW_RUN_ID: ${{ github.event.workflow_run.id }}
@@ -153,6 +167,7 @@ jobs:
             --run-url "https://github.com/${GITHUB_REPOSITORY}/actions/runs/${WORKFLOW_RUN_ID}"
 
       - name: Update the single PR metrics comment
+        if: steps.snapshot.outputs.is_current == 'true'
         env:
           GH_TOKEN: ${{ github.token }}
           PR_NUMBER: ${{ matrix.pr_number }}
