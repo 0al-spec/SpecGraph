@@ -2114,3 +2114,13 @@ Proposal 0211 adds digest-bound `workspace_binding_evidence` to
 `runs/product_workspace_initialization.json`. Platform can use it as
 producer-owned initialization evidence while retaining ownership of artifact
 routing, state namespaces, execution roots, and repository operations.
+
+## Ontology decision-state counts pilot
+
+`ontology_decision_state_spec.py` centralizes the three exact counting predicates
+used by the owner-decision report, import preview, and import v2 review. It has
+no approval or import authority. CLI behavior and report fields are preserved.
+The conventional extraction control gives the same local complexity reduction;
+SpecificationCore additionally gives the predicates explicit names. See
+[the experiment](../docs/experiments/ontology_decision_counts.md) for the behavior
+matrix, pinned benchmark tools, absolute clone counts, and change-footprint limits.

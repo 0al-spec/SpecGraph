@@ -34,7 +34,11 @@ def load_ontology_imports_module() -> object:
     assert spec and spec.loader
     module = importlib.util.module_from_spec(spec)
     sys.modules[spec.name] = module
-    spec.loader.exec_module(module)
+    sys.path.insert(0, str(module_path.parent))
+    try:
+        spec.loader.exec_module(module)
+    finally:
+        sys.path.remove(str(module_path.parent))
     return module
 
 
@@ -2099,6 +2103,24 @@ def test_ontology_owner_decision_report_builds_read_only_decision_contract() -> 
     assert report["consumer_boundary"]["may_import_into_specgraph"] is False
     assert report["consumer_boundary"]["may_close_semantic_gate"] is False
     assert report["authority_boundary"]["ontology_owner_decision_report_is_authority"] is False
+
+
+def test_decision_count_extraction_preserves_complete_ontology_artifacts(monkeypatch) -> None:
+    from dataclasses import make_dataclass
+
+    module = load_ontology_imports_module()
+    expected = module.build_ontology_import_surfaces(FIXTURE)
+    counts_type = make_dataclass("OriginalCounts", ["accepted", "rejected", "clarification"])
+
+    def original_counts(records):
+        return counts_type(
+            sum(1 for row in records if row["decision_state"] == "accepted"),
+            sum(1 for row in records if row["decision_state"] == "rejected"),
+            sum(1 for row in records if row["decision_state"] == "needs_clarification"),
+        )
+
+    monkeypatch.setattr(module, "count_decision_states", original_counts)
+    assert module.build_ontology_import_surfaces(FIXTURE) == expected
 
 
 def test_ontology_decision_import_preview_builds_read_only_preview() -> None:

@@ -13,6 +13,8 @@ from typing import Any
 
 import yaml
 
+from ontology_decision_state_spec import count_decision_states
+
 ROOT = Path(__file__).resolve().parents[1]
 POLICY_PATH = ROOT / "tools" / "ontology_import_policy.json"
 SEMANTIC_CONTROL_POLICY_PATH = Path("tools") / "ontology_semantic_control_policy.json"
@@ -6035,11 +6037,10 @@ def build_ontology_owner_decision_report(
     source_artifacts["ontology_closed_loop_evidence"] = require_surface_output_artifact(
         closed_loop_evidence, "ontology_closed_loop_evidence"
     )
-    accepted_count = sum(1 for decision in decisions if decision["decision_state"] == "accepted")
-    rejected_count = sum(1 for decision in decisions if decision["decision_state"] == "rejected")
-    clarification_count = sum(
-        1 for decision in decisions if decision["decision_state"] == "needs_clarification"
-    )
+    decision_counts = count_decision_states(decisions)
+    accepted_count = decision_counts.accepted
+    rejected_count = decision_counts.rejected
+    clarification_count = decision_counts.clarification
     status = "decisions_available" if decisions else "no_decisions"
     return {
         "artifact_kind": require_string(
@@ -6365,11 +6366,10 @@ def build_ontology_decision_import_preview(
             }
         )
 
-    accepted_count = sum(1 for preview in previews if preview["decision_state"] == "accepted")
-    rejected_count = sum(1 for preview in previews if preview["decision_state"] == "rejected")
-    clarification_count = sum(
-        1 for preview in previews if preview["decision_state"] == "needs_clarification"
-    )
+    decision_counts = count_decision_states(previews)
+    accepted_count = decision_counts.accepted
+    rejected_count = decision_counts.rejected
+    clarification_count = decision_counts.clarification
     importable_count = sum(1 for preview in previews if preview["import_recommended"])
     blocked_count = sum(
         1 for preview in previews if preview["preview_state"] == "blocked_by_semantic_gate"

@@ -10,6 +10,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
+from ontology_decision_state_spec import count_decision_states
 from ontology_gap_review_workflow import DEFAULT_OUTPUT_PATH as DEFAULT_GAP_REVIEW_PATH
 from ontology_gap_review_workflow import build_gap_review_workflow
 from ontology_imports import ROOT, relative_path, write_json
@@ -479,11 +480,10 @@ def build_owner_decision_import_v2(
             }
         )
 
-    accepted_count = sum(1 for review in reviews if review["decision_state"] == "accepted")
-    rejected_count = sum(1 for review in reviews if review["decision_state"] == "rejected")
-    clarification_count = sum(
-        1 for review in reviews if review["decision_state"] == "needs_clarification"
-    )
+    decision_counts = count_decision_states(reviews)
+    accepted_count = decision_counts.accepted
+    rejected_count = decision_counts.rejected
+    clarification_count = decision_counts.clarification
     importable_count = sum(1 for review in reviews if review["import_recommended"])
     unmatched_decision_count = sum(
         1
