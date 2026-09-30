@@ -698,7 +698,7 @@
       "lint_or_format_check"
     ],
     "residual_risk": "The reference remains a mapping-level contract; its internal identifier semantics are not validated here.",
-    "resolved_commit": "265490bdf2908c5773ae08f18190905ff0f98668",
+    "resolved_commit": "6397d612bd884d0eeb744caa839ed533030e42bf",
     "recorded_at": "2026-09-30T15:56:00Z"
   },
   {
@@ -715,7 +715,7 @@
       "lint_or_format_check"
     ],
     "residual_risk": "Pre-extraction refs still use legacy function bodies because classifier modules do not yet exist there.",
-    "resolved_commit": "265490bdf2908c5773ae08f18190905ff0f98668",
+    "resolved_commit": "6397d612bd884d0eeb744caa839ed533030e42bf",
     "recorded_at": "2026-09-30T15:56:00Z"
   },
   {
@@ -732,7 +732,7 @@
       "lint_or_format_check"
     ],
     "residual_risk": "Dynamic artifact keys and indirect container aliases are outside this static gate's recognized forms.",
-    "resolved_commit": "265490bdf2908c5773ae08f18190905ff0f98668",
+    "resolved_commit": "6397d612bd884d0eeb744caa839ed533030e42bf",
     "recorded_at": "2026-09-30T15:56:00Z"
   }
 ]
