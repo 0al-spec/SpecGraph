@@ -5,11 +5,26 @@ from __future__ import annotations
 import argparse
 import json
 import re
+import sys
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
 ROOT = Path(__file__).resolve().parents[1]
+if str(ROOT) not in sys.path:
+    sys.path.insert(0, str(ROOT))
+
+from tools.idea_to_spec_candidate_quality_context import (  # noqa: E402
+    CandidateQualityContext,
+    GapResolutionContext,
+)
+from tools.idea_to_spec_candidate_quality_review_spec import (  # noqa: E402
+    candidate_quality_review_state,
+)
+from tools.idea_to_spec_gap_resolution_spec import (  # noqa: E402
+    gap_resolution_state,
+)
+
 PROPOSAL_ID = "0166"
 DEPTH_REPAIR_EFFECT_PROPOSAL_ID = "0209"
 SCHEMA_VERSION = 1
@@ -1452,52 +1467,30 @@ def _candidate_quality_preview(
     resolved_ontology_count = _int(ontology_gap_preview.get("resolved_ontology_gap_count"))
     unresolved_candidate_count = _int(candidate_gap_preview.get("unresolved_candidate_gap_count"))
     resolved_candidate_count = _int(candidate_gap_preview.get("resolved_candidate_gap_count"))
-    unresolved_count = unresolved_ontology_count + unresolved_candidate_count
-    resolved_count = resolved_ontology_count + resolved_candidate_count
-    if unresolved_count == 0 and resolved_count > 0:
-        review_state = "candidate_quality_improved"
-        ontology_gap_state = (
-            "all_preview_resolved" if resolved_ontology_count > 0 else "no_ontology_gaps"
-        )
-        candidate_gap_state = (
-            "all_preview_resolved" if resolved_candidate_count > 0 else "no_candidate_gaps"
-        )
-    elif resolved_count > 0:
-        review_state = "candidate_quality_partially_improved"
-        ontology_gap_state = (
-            "partially_preview_resolved"
-            if unresolved_ontology_count
-            else "all_preview_resolved"
-            if resolved_ontology_count
-            else "no_ontology_gaps"
-        )
-        candidate_gap_state = (
-            "partially_preview_resolved"
-            if unresolved_candidate_count
-            else "all_preview_resolved"
-            if resolved_candidate_count
-            else "no_candidate_gaps"
-        )
-    elif unresolved_ontology_count > 0 and unresolved_candidate_count > 0:
-        review_state = "candidate_quality_blocked_by_gaps"
-        ontology_gap_state = "unresolved"
-        candidate_gap_state = "unresolved"
-    elif unresolved_ontology_count > 0:
-        review_state = "candidate_quality_blocked_by_ontology_gaps"
-        ontology_gap_state = "unresolved"
-        candidate_gap_state = "no_candidate_gaps"
-    elif unresolved_candidate_count > 0:
-        review_state = "candidate_quality_blocked_by_candidate_gaps"
-        ontology_gap_state = "no_ontology_gaps"
-        candidate_gap_state = "unresolved"
-    else:
-        review_state = "candidate_quality_unchanged"
-        ontology_gap_state = "no_ontology_gaps"
-        candidate_gap_state = "no_candidate_gaps"
+    context = CandidateQualityContext(
+        resolved_ontology_count=resolved_ontology_count,
+        unresolved_ontology_count=unresolved_ontology_count,
+        resolved_candidate_count=resolved_candidate_count,
+        unresolved_candidate_count=unresolved_candidate_count,
+    )
     return {
-        "review_state": review_state,
-        "ontology_gap_state": ontology_gap_state,
-        "candidate_gap_state": candidate_gap_state,
+        "review_state": candidate_quality_review_state(context),
+        "ontology_gap_state": gap_resolution_state(
+            GapResolutionContext(
+                resolved_count=resolved_ontology_count,
+                unresolved_count=unresolved_ontology_count,
+                aggregate_resolved_count=context.resolved_count,
+                no_gaps_state="no_ontology_gaps",
+            )
+        ),
+        "candidate_gap_state": gap_resolution_state(
+            GapResolutionContext(
+                resolved_count=resolved_candidate_count,
+                unresolved_count=unresolved_candidate_count,
+                aggregate_resolved_count=context.resolved_count,
+                no_gaps_state="no_candidate_gaps",
+            )
+        ),
         "resolved_ontology_gap_count": resolved_ontology_count,
         "unresolved_ontology_gap_count": unresolved_ontology_count,
         "resolved_candidate_gap_count": resolved_candidate_count,

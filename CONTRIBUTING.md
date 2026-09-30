@@ -16,6 +16,13 @@ Use [AGENTS.md](AGENTS.md) for executable agent rules. Use this file for the hum
 
 Do not treat this as a batch-edit repository. The graph is the coordination system, so the graph should remain explainable after every PR.
 
+For SpecificationCore refactoring pilots, place each newly introduced
+SpecificationCore specification in its own new source module. Keep typed
+decision context in a separate context module when it is shared or substantial.
+This makes the policy boundary and its imports visible during review, and keeps
+new specifications from accumulating inside the business-logic module or a
+catch-all policy file.
+
 ## Code Methodology and Style
 
 SpecGraph tooling should evolve by preserving observable contracts while moving
