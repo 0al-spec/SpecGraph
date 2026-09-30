@@ -46,6 +46,14 @@ bodies, including immediately invoked nested lambdas, are outside its syntax
 scope. A finding blocks the gate for the declared input boundary, but does not
 prove that the read duplicates the classifier's semantics.
 
+The ontology decision-state counts pilot centralizes three exact counting
+predicates in `ontology_decision_state_spec.py`, with no approval or import
+authority. CLI behavior and report fields are preserved. The conventional
+extraction control gives the same local complexity reduction; SpecificationCore
+additionally gives the predicates explicit names. The source experiment at
+`docs/experiments/ontology_decision_counts.md` records the behavior matrix,
+pinned benchmark tools, absolute clone counts, and change-footprint limits.
+
 The current public surfaces are:
 
 - a GitHub Pages technical root;

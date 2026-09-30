@@ -206,6 +206,33 @@ def test_owner_decision_import_v2_links_accepted_decision_to_gap_and_compliance(
     assert review["after_semantic_status"]["mutates_canonical_specs"] is False
 
 
+@pytest.mark.parametrize("state", ["accepted", "rejected", "needs_clarification"])
+def test_count_extraction_preserves_complete_import_v2_artifact(state, monkeypatch) -> None:
+    from dataclasses import make_dataclass
+
+    module = load_import_v2_module()
+    monkeypatch.setattr(module, "_now_iso", lambda: "2026-09-30T00:00:00+00:00")
+    inputs = {
+        "decision_import_preview": decision_import_preview(state),
+        "closed_loop_evidence": closed_loop_evidence(),
+        "gap_review_workflow": gap_review_workflow(),
+        "validation_report": validation_report(),
+        "write_gate_reports": [write_gate_report()],
+    }
+    expected = module.build_owner_decision_import_v2(**inputs)
+    counts_type = make_dataclass("OriginalCounts", ["accepted", "rejected", "clarification"])
+
+    def original_counts(records):
+        return counts_type(
+            sum(1 for row in records if row["decision_state"] == "accepted"),
+            sum(1 for row in records if row["decision_state"] == "rejected"),
+            sum(1 for row in records if row["decision_state"] == "needs_clarification"),
+        )
+
+    monkeypatch.setattr(module, "count_decision_states", original_counts)
+    assert module.build_owner_decision_import_v2(**inputs) == expected
+
+
 def test_owner_decision_import_v2_skips_write_gate_findings_without_generated_refs() -> None:
     module = load_import_v2_module()
     gap_workflow = gap_review_workflow()
