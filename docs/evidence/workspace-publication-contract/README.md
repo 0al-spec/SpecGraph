@@ -29,3 +29,9 @@ make workspace-bundle-consumer-smoke \
 For the legacy Team workspace, supply `WORKSPACE_BUNDLE_SMOKE_ID=team-decision-log` and `WORKSPACE_BUNDLE_SMOKE_FLAGS=--legacy-workspace`. Both commands use an exact consumer source pin and reject dirty consumer source. The local server backlog accommodates the consumer's twelve parallel artifact requests. No operation is executed; a temporary bundle copy is modified for negative checks and deleted afterward.
 
 Next gate: review/merge the producer fix, publish with normal safety gates, then rerun production smoke against the newly published manifest and deployed SpecSpace.
+
+## PR #741 review closure
+
+Thread [4146823908](https://github.com/0al-spec/SpecGraph/pull/741#discussion_r4146823908) exposed a `test_coverage_gap`: candidate corruption from the digest negative could mask a foreign-identity regression. Candidate bytes are now restored in `finally`, and the selected workspace must be readable before the independent identity check.
+
+Prevention: `test_identity_negative_uses_restored_candidate` exercises both rejecting and incorrectly accepting consumers, checks the healthy identity baseline, and verifies the original fixture is unchanged. Both cases failed against the original implementation; the incorrect accepting consumer previously produced no error. After the fix, 75 focused publisher/deploy-plan/smoke tests passed, Ruff passed, and the actual pinned SpecSpace HTTP Canary smoke passed again. The retained `canary-smoke.json` was refreshed from that corrected run. Production verification remains pending publication.
