@@ -15,17 +15,18 @@ PROPOSAL_ID_PATTERN = re.compile(r"\b(?:SG-PROP-|PROP-|PROPOSAL-)?(\d{4})\b")
 NO_SPEC_IMPACT = "NO-SPEC-IMPACT"
 
 SPEC_FIELD_PATTERN = re.compile(
-    r"(?im)^\s*(?:[-*]\s*)?(?:Spec-ID|Spec-IDs|Spec ID|Spec IDs)\s*:\s*(.+?)\s*$"
+    r"(?im)^[ \t]*(?:[-*][ \t]*)?(?:Spec-ID|Spec-IDs|Spec ID|Spec IDs)"
+    r"[ \t]*:[ \t]*(.+?)[ \t]*$"
 )
 PROPOSAL_FIELD_PATTERN = re.compile(
-    r"(?im)^\s*(?:[-*]\s*)?"
-    r"(?:Proposal-ID|Proposal-IDs|Proposal ID|Proposal IDs)\s*:\s*(.+?)\s*$"
+    r"(?im)^[ \t]*(?:[-*][ \t]*)?"
+    r"(?:Proposal-ID|Proposal-IDs|Proposal ID|Proposal IDs)[ \t]*:[ \t]*(.+?)[ \t]*$"
 )
 IMPACT_FIELD_PATTERN = re.compile(
-    r"(?im)^\s*(?:[-*]\s*)?(?:Spec-Impact|Spec Impact)\s*:\s*(.+?)\s*$"
+    r"(?im)^[ \t]*(?:[-*][ \t]*)?(?:Spec-Impact|Spec Impact)[ \t]*:[ \t]*(.+?)[ \t]*$"
 )
 RATIONALE_FIELD_PATTERN = re.compile(
-    r"(?im)^\s*(?:[-*]\s*)?(?:Spec-Rationale|Spec Rationale)\s*:\s*(.+?)\s*$"
+    r"(?im)^[ \t]*(?:[-*][ \t]*)?(?:Spec-Rationale|Spec Rationale)[ \t]*:[ \t]*(.+?)[ \t]*$"
 )
 
 LOGIC_PATH_PREFIXES = ("src/", "tools/")
