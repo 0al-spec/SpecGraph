@@ -1148,3 +1148,5 @@ Regression shortcut: `make test-workspace-limits`.
 The proposal 0222 verification record is `docs/evidence/workspace-structural-limits.md`:
 characterization, workspace-isolated overrides, immutable run snapshots,
 historical diagnostics and real CLI smoke are separate evidence observations.
+SpecificationCore classifies the configured threshold families and traces the
+named value predicates used for each accepted configuration.

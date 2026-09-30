@@ -8,6 +8,8 @@ import math
 from dataclasses import dataclass
 from typing import Any
 
+from specification_core import FirstMatch, PredicateSpec, TraceRecorder
+
 COUNT_KEYS = frozenset(
     {
         "atomicity_max_acceptance",
@@ -27,16 +29,58 @@ RATIO_KEYS = frozenset(
 )
 
 
-def validate_thresholds(values: dict[str, Any]) -> None:
+@dataclass(frozen=True)
+class ThresholdValue:
+    key: str
+    value: Any
+
+
+_THRESHOLD_KIND = FirstMatch.with_fallback(
+    (
+        (
+            PredicateSpec(
+                lambda key: key in COUNT_KEYS,
+                name="SG-RFC-0222.structural_limits.key.positive_integer",
+            ),
+            "positive_integer",
+        ),
+        (
+            PredicateSpec(
+                lambda key: key in RATIO_KEYS,
+                name="SG-RFC-0222.structural_limits.key.unit_interval_ratio",
+            ),
+            "unit_interval_ratio",
+        ),
+    ),
+    "unsupported",
+    name="SG-RFC-0222.structural_limits.key_kind",
+)
+
+
+def validate_thresholds(values: dict[str, Any]) -> tuple[tuple[str, str], ...]:
+    recorder = TraceRecorder()
     for key, value in values.items():
-        if key in COUNT_KEYS:
-            valid = type(value) is int and value > 0
-        elif key in RATIO_KEYS:
-            valid = type(value) in (int, float) and 0 <= value <= 1 and math.isfinite(value)
-        else:
+        kind = _THRESHOLD_KIND.decide(key, recorder=recorder).value
+        if kind == "unsupported":
             raise RuntimeError(f"unsupported structural limit: {key}")
-        if not valid:
+        candidate = ThresholdValue(key, value)
+        if kind == "positive_integer":
+            valid = PredicateSpec(
+                lambda item: type(item.value) is int and item.value > 0,
+                name=f"SG-RFC-0222.structural_limits.{key}.positive_integer",
+            )
+        else:
+            valid = PredicateSpec(
+                lambda item: (
+                    type(item.value) in (int, float)
+                    and 0 <= item.value <= 1
+                    and math.isfinite(item.value)
+                ),
+                name=f"SG-RFC-0222.structural_limits.{key}.unit_interval_ratio",
+            )
+        if not valid.is_satisfied_by(candidate, recorder=recorder):
             raise RuntimeError(f"invalid structural limit {key}: {value!r}")
+    return tuple((event.name, event.outcome.value) for event in recorder.events)
 
 
 def threshold_digest(values: dict[str, Any]) -> str:
@@ -51,6 +95,7 @@ class StructuralLimits:
     config_sha256: str
     config_status: str
     policy_sha256: str
+    specification_trace: tuple[tuple[str, str], ...]
 
     def value(self, key: str) -> int | float:
         return dict(self.thresholds)[key]
@@ -73,6 +118,10 @@ class StructuralLimits:
                 "artifact_path": "tools/supervisor_policy.json",
                 "artifact_sha256": self.policy_sha256,
             },
+            "specification_trace": [
+                {"rule_id": rule_id, "outcome": outcome}
+                for rule_id, outcome in self.specification_trace
+            ],
         }
 
 
@@ -101,12 +150,17 @@ def resolve_structural_limits(
         overrides = section["thresholds"]
         if not isinstance(overrides, dict):
             raise RuntimeError("structural_limits.thresholds must be a mapping")
-        validate_thresholds(overrides)
+    trace = validate_thresholds(overrides)
     values = {key: defaults[key] for key in sorted(COUNT_KEYS | RATIO_KEYS)}
     values.update(overrides)
-    validate_thresholds(values)
+    trace += validate_thresholds(values)
     return StructuralLimits(
-        tuple(values.items()), frozenset(overrides), config_sha256, config_status, policy_sha256
+        tuple(values.items()),
+        frozenset(overrides),
+        config_sha256,
+        config_status,
+        policy_sha256,
+        trace,
     )
 
 

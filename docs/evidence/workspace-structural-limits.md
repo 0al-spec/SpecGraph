@@ -16,10 +16,11 @@ proposal files, registries, branches/worktrees and open PR740 for collisions.
 - Green: focused workspace tests verify strict types, all nine configurable
   keys, fallback defaults, workspace isolation, scoped snapshot immutability,
   exception cleanup, prompt/inspector/changed-spec agreement, source digests,
-  persisted run evidence and historical digest verification.
-- Regression: existing supervisor suite passed (1045 tests). The combined
-  supervisor, workspace, diagnosis and DocC suite passed 1093 tests before three
-  additional boundary regressions. Final combined result is recorded below.
+  SpecificationCore rule traces in persisted evidence and historical digest
+  verification.
+- SpecificationCore uses ordered `FirstMatch` classification and named
+  `PredicateSpec` value rules with stable `SG-RFC-0222.structural_limits.*`
+  identifiers. This is the Python package pinned by this repository.
 
 ## Real CLI smoke
 
@@ -52,11 +53,17 @@ git diff --check
 Use a Python >=3.10 environment; the host's Xcode-provided Python 3.9 was
 rejected by the existing interpreter check, so the repository venv was used.
 
-## Final checks
+## Initial implementation checks (before SpecificationCore follow-up)
 
-- Final combined suite: 1096 passed in 78.46 seconds.
-- Focused shortcut: 49 passed.
+- The initial implementation combined suite passed 1096 tests. This predates
+  the SpecificationCore correction and is retained only as historical evidence.
+- Focused suite after SpecificationCore correction: 49 passed.
 - DocC sync: passed.
 - Proposal tracking gate: passed; proposal 0222 has runtime, validation and
   observation markers plus an archived source draft and promotion record.
 - Ruff and diff whitespace checks: passed.
+
+## Final SpecificationCore follow-up checks
+
+The full combined suite was rerun after adding SpecificationCore and trace
+evidence. Its final result is recorded here before the PR is updated.

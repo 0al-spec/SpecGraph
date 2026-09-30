@@ -615,6 +615,48 @@ def test_supervisor_policy_artifact_drives_execution_profiles_and_thresholds(
     )
 
 
+def test_workspace_structural_limits_are_specificationcore_traceable(
+    supervisor_module: object,
+) -> None:
+    limits_module = supervisor_module.get_structural_limits_module()
+    limits = limits_module.resolve_structural_limits(
+        {
+            "artifact_kind": "specgraph_project_config",
+            "schema_version": 1,
+            "supervisor": {
+                "structural_limits": {
+                    "schema_version": 1,
+                    "thresholds": {
+                        "atomicity_max_acceptance": 8,
+                        "refinement_fan_out_grouped_child_coverage": 0.8,
+                    },
+                }
+            },
+        },
+        supervisor_module.SUPERVISOR_POLICY["thresholds"],
+        config_sha256="c" * 64,
+        config_status="available",
+        policy_sha256="p" * 64,
+    )
+
+    trace = limits.evidence()["specification_trace"]
+    assert any(
+        event["rule_id"]
+        == "SG-RFC-0222.structural_limits.atomicity_max_acceptance.positive_integer"
+        and event["outcome"] == "satisfied"
+        for event in trace
+    )
+    assert any(
+        event["rule_id"]
+        == (
+            "SG-RFC-0222.structural_limits.refinement_fan_out_grouped_child_coverage."
+            "unit_interval_ratio"
+        )
+        and event["outcome"] == "satisfied"
+        for event in trace
+    )
+
+
 def test_infer_ordinary_execution_profile_uses_materialize_for_root_seed_like_node(
     supervisor_module: object,
     repo_fixture: Path,

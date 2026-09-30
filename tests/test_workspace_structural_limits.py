@@ -93,6 +93,17 @@ def test_run_log_records_effective_limits(supervisor_module, monkeypatch, tmp_pa
     assert evidence["sources"]["atomicity_max_acceptance"] == "workspace"
     assert len(evidence["source_config"]["artifact_sha256"]) == 64
     assert len(evidence["effective_sha256"]) == 64
+    assert {entry["outcome"] for entry in evidence["specification_trace"]} <= {
+        "selected",
+        "satisfied",
+        "unsatisfied",
+        "skipped",
+    }
+    assert any(
+        entry["rule_id"]
+        == "SG-RFC-0222.structural_limits.atomicity_max_acceptance.positive_integer"
+        for entry in evidence["specification_trace"]
+    )
     assert payload == {"run_id": "sample"}
 
 

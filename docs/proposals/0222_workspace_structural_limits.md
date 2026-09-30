@@ -43,6 +43,13 @@ sync-back validation, reconciliation, split proposals, graph-shape diagnostics,
 prompts and decision inspector. It does not change global defaults. Direct
 library calls resolve their current root or share an explicit scope.
 
+SpecificationCore for Python owns threshold-kind routing and value eligibility:
+an ordered `FirstMatch` classifies count and ratio inputs, then named
+`PredicateSpec` rules enforce their value contracts. The stable
+`SG-RFC-0222.structural_limits.*` rule identifiers and trace outcomes are
+included in the effective configuration evidence. YAML parsing and schema
+version extraction remain at the I/O boundary.
+
 Run evidence records effective thresholds and their deterministic digest,
 per-key source, source-config digest/status and repository-policy digest.
 Historical diagnosis consumes recorded limits and checks their digest. Legacy

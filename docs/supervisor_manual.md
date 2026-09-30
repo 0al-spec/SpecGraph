@@ -2225,4 +2225,9 @@ snapshot rather than today's config. Legacy logs without it use repository
 defaults, with no claim to reconstruct original workspace settings. Digests are
 provenance, not trust receipts. A config edit takes effect at the next invocation.
 
+Python SpecificationCore applies ordered threshold-kind decisions and named
+value predicates. The project environment and run evidence include their stable
+rule IDs and outcomes. YAML decoding and project schema framing remain at the
+configuration boundary.
+
 Regression shortcut: `make test-workspace-limits`.
