@@ -649,5 +649,22 @@
     "residual_risk": "The packet records a proposed contract and example; it does not implement or validate revision-chain runtime behavior.",
     "resolved_commit": "bb94dce9bccce89c3e8d62bb28470c362dc3f71d",
     "recorded_at": "2026-09-30T04:56:00Z"
+  },
+  {
+    "feedback_id": "pr-741-independent-identity-negative",
+    "source_pr": 741,
+    "source_thread_url": "https://github.com/0al-spec/SpecGraph/pull/741#discussion_r4146823908",
+    "reviewer": "chatgpt-codex-connector",
+    "review_comment_summary": "Digest corruption survived into the foreign workspace check, allowing false positive identity rejection evidence.",
+    "fix_summary": "Restore candidate bytes in finally and assert selected workspace content before testing foreign identity.",
+    "root_cause_class": "test_coverage_gap",
+    "prevention_action": "regression_test_added",
+    "verification": [
+      "targeted_test",
+      "lint_or_format_check",
+      "manual_contract_review"
+    ],
+    "residual_risk": "Local HTTP evidence does not prove production publication.",
+    "recorded_at": "2026-09-30T16:54:00Z"
   }
 ]

@@ -122,12 +122,20 @@ def run(
                     )
                 checks["unlisted_candidate_rejected_with_flat_alias_present"] = True
                 manifest_path.write_bytes(original_manifest)
-                for path in listed_candidates:
-                    artifact = root / path
-                    artifact.write_bytes(artifact.read_bytes() + b"\n")
-                if read().get("workspace", {}).get("available") is True:
-                    raise ValueError("Consumer accepted a candidate with mismatched digest")
-                checks["candidate_digest_mismatch_rejected"] = True
+                original_candidates = {
+                    path: (root / path).read_bytes() for path in listed_candidates
+                }
+                try:
+                    for path, content in original_candidates.items():
+                        (root / path).write_bytes(content + b"\n")
+                    if read().get("workspace", {}).get("available") is True:
+                        raise ValueError("Consumer accepted a candidate with mismatched digest")
+                    checks["candidate_digest_mismatch_rejected"] = True
+                finally:
+                    for path, content in original_candidates.items():
+                        (root / path).write_bytes(content)
+                # Establish a healthy baseline before the independent identity negative.
+                require_workspace_content(read(), workspace_id)
             if read("foreign-workspace").get("workspace", {}).get("available") is True:
                 raise ValueError("Consumer accepted candidate identity from another workspace")
             checks["foreign_workspace_rejected"] = True
