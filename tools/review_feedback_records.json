@@ -734,5 +734,56 @@
     "residual_risk": "Dynamic artifact keys and indirect container aliases are outside this static gate's recognized forms.",
     "resolved_commit": "6397d612bd884d0eeb744caa839ed533030e42bf",
     "recorded_at": "2026-09-30T15:56:00Z"
+  },
+  {
+    "feedback_id": "pr-740-baseline-role-predicate-totals",
+    "source_pr": 740,
+    "source_thread_url": "https://github.com/0al-spec/SpecGraph/pull/740#discussion_r4146739193",
+    "reviewer": "chatgpt-codex-connector",
+    "review_comment_summary": "Base role totals included branch_points_total but omitted predicate_lambda_count and predicate_lambda_branch_points that each classifier baseline already measured.",
+    "fix_summary": "Base aggregation now sums the same three decision metric fields as the head snapshot; a regression test compares all three totals for an extracted baseline.",
+    "root_cause_class": "artifact_contract_validation_gap",
+    "prevention_action": "regression_test_added",
+    "verification": [
+      "targeted_test",
+      "lint_or_format_check"
+    ],
+    "residual_risk": "The aggregate remains limited to the metric fields defined by the lifecycle report contract.",
+    "resolved_commit": "4ddbfda6c3d705bac95f14350393a3d8cadbcfd",
+    "recorded_at": "2026-09-30T16:16:30Z"
+  },
+  {
+    "feedback_id": "pr-740-incomplete-baseline-provenance",
+    "source_pr": 740,
+    "source_thread_url": "https://github.com/0al-spec/SpecGraph/pull/740#discussion_r4146739205",
+    "reviewer": "chatgpt-codex-connector",
+    "review_comment_summary": "Unavailable decision metrics were excluded from source_kinds, allowing a partial baseline to be labeled as a complete state_classifier baseline.",
+    "fix_summary": "The report now selects complete baseline roles only when every decision has metrics and labels any partial result incomplete; a regression test covers a missing historical symbol.",
+    "root_cause_class": "artifact_contract_validation_gap",
+    "prevention_action": "regression_test_added",
+    "verification": [
+      "targeted_test",
+      "lint_or_format_check"
+    ],
+    "residual_risk": "Unavailable historical decisions remain visible with null metrics and an incomplete top-level baseline role.",
+    "resolved_commit": "4ddbfda6c3d705bac95f14350393a3d8cadbcfd",
+    "recorded_at": "2026-09-30T16:16:30Z"
+  },
+  {
+    "feedback_id": "pr-740-historical-policy-module-path",
+    "source_pr": 740,
+    "source_thread_url": "https://github.com/0al-spec/SpecGraph/pull/740#discussion_r4146739213",
+    "reviewer": "chatgpt-codex-connector",
+    "review_comment_summary": "Base-source lookup used the head policy module path, so module moves could miss the registered historical classifier and fall back to an obsolete wrapper.",
+    "fix_summary": "The baseline now loads and validates the lifecycle policy at base_ref, matches decisions by stable ID, and resolves the historical module path and symbol; a Git-backed regression test covers a renamed module.",
+    "root_cause_class": "artifact_contract_validation_gap",
+    "prevention_action": "regression_test_added",
+    "verification": [
+      "targeted_test",
+      "lint_or_format_check"
+    ],
+    "residual_risk": "Refs predating the lifecycle policy file retain the compatibility path based on the current policy and legacy function fallback.",
+    "resolved_commit": "4ddbfda6c3d705bac95f14350393a3d8cadbcfd",
+    "recorded_at": "2026-09-30T16:16:30Z"
   }
 ]
