@@ -39,6 +39,10 @@ Practical method:
 5. Move domain decisions into typed values and objects with explicit serialization at the edge.
 6. Run focused tests first, then the broader gate matching the blast radius.
 
+For refactoring experiments, report the edit surface and behavioral impact scope
+separately: a shared criterion can need one edit while changing every consumer.
+Keep criterion-only exercises distinct from end-to-end taxonomy or schema changes.
+
 Style rules for new supervisor package code:
 
 - Use domain names such as `Policy`, `SpecNode`, `RefinementPass`, and `GateDecision`.
