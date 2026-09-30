@@ -585,5 +585,69 @@
     ],
     "residual_risk": "",
     "recorded_at": "2026-06-15T00:00:00Z"
+  },
+  {
+    "feedback_id": "pr-733-withdrawal-topology-readiness",
+    "source_pr": 733,
+    "source_thread_url": "https://github.com/0al-spec/SpecGraph/pull/733#discussion_r4139111004",
+    "reviewer": "chatgpt-codex-connector",
+    "review_comment_summary": "A no-successor withdrawn Requirement had no explicit presence transition and could remain active for traversal, readiness, and dependency satisfaction.",
+    "fix_summary": "The review packet distinguishes subject retirement from canonical graph topology: its BDD withdrawal example keeps historical lookup and unchanged node traversal while excluding the retired Requirement from readiness and dependency satisfaction.",
+    "root_cause_class": "artifact_contract_validation_gap",
+    "prevention_action": "documentation_rule_added",
+    "verification": [
+      "manual_contract_review"
+    ],
+    "residual_risk": "The packet records recommendations and BDD examples for the proposed child; it does not change canonical runtime behavior or topology.",
+    "resolved_commit": "bb94dce9bccce89c3e8d62bb28470c362dc3f71d",
+    "recorded_at": "2026-09-30T04:56:00Z"
+  },
+  {
+    "feedback_id": "pr-733-criterion-decomposition-composition",
+    "source_pr": 733,
+    "source_thread_url": "https://github.com/0al-spec/SpecGraph/pull/733#discussion_r4139111013",
+    "reviewer": "chatgpt-codex-connector",
+    "review_comment_summary": "The typed decomposition and composition relations excluded acceptance criteria even though the proposal's motivating scope and consumer mapping included criterion split and composition.",
+    "fix_summary": "The review packet extends both directed subject relations to Requirements and acceptance criteria, requires same-kind endpoints, preserves all directed participants, and includes a BDD example rejecting cross-kind composition.",
+    "root_cause_class": "artifact_contract_validation_gap",
+    "prevention_action": "documentation_rule_added",
+    "verification": [
+      "manual_contract_review"
+    ],
+    "residual_risk": "The packet is a review recommendation; it does not add runtime relation validation.",
+    "resolved_commit": "bb94dce9bccce89c3e8d62bb28470c362dc3f71d",
+    "recorded_at": "2026-09-30T04:56:00Z"
+  },
+  {
+    "feedback_id": "pr-733-proposal-namespace-duplicate-slug",
+    "source_pr": 733,
+    "source_thread_url": "https://github.com/0al-spec/SpecGraph/pull/733#discussion_r4139111017",
+    "reviewer": "chatgpt-codex-connector",
+    "review_comment_summary": "A second 0221 Markdown slug in docs/proposals caused the existing proposal ID allocator to block subsequent allocations.",
+    "fix_summary": "Moved the adoption discussion packet to docs/reviews, outside the numbered proposal namespace. The existing make proposal-id validator now reports ready with next ID 0222 and zero blockers; no validator change is claimed.",
+    "root_cause_class": "artifact_contract_validation_gap",
+    "prevention_action": "documentation_rule_added",
+    "verification": [
+      "manual_contract_review"
+    ],
+    "residual_risk": "Future numbered proposal documents must continue to use unique IDs and slugs in docs/proposals; the existing allocator check remains the verification path.",
+    "resolved_commit": "bb94dce9bccce89c3e8d62bb28470c362dc3f71d",
+    "recorded_at": "2026-09-30T04:56:00Z"
+  },
+  {
+    "feedback_id": "pr-733-successor-identity-origin",
+    "source_pr": 733,
+    "source_thread_url": "https://github.com/0al-spec/SpecGraph/pull/733#discussion_r4139111019",
+    "reviewer": "chatgpt-codex-connector",
+    "review_comment_summary": "A successor identity's first revision had a cross-identity supersession predecessor but no same-identity predecessor, conflicting with the per-identity origin and chain requirements.",
+    "fix_summary": "The review packet defines revision 1 as the origin of each identity sequence and treats the SG-SPEC-0019 cross-identity predecessor_reference as a separate supersession link, with a BDD example asserting the separation.",
+    "root_cause_class": "artifact_contract_validation_gap",
+    "prevention_action": "documentation_rule_added",
+    "verification": [
+      "manual_contract_review"
+    ],
+    "residual_risk": "The packet records a proposed contract and example; it does not implement or validate revision-chain runtime behavior.",
+    "resolved_commit": "bb94dce9bccce89c3e8d62bb28470c362dc3f71d",
+    "recorded_at": "2026-09-30T04:56:00Z"
   }
 ]
