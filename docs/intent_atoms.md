@@ -102,3 +102,30 @@ consume CI artifacts or check out or execute PR-authored code while it has
 permission to write comments. This also supports stacked PRs. An incomplete
 comparison reports diagnostics and withholds atom counts. The comment is review
 feedback, not a merge gate or the durable post-merge metric history.
+
+## Specification adoption and classic-code PR report
+
+SpecificationMetrics provides a separate live source measure: **S** is the
+count of distinct live or unknown Specification definitions and factory sites;
+**U** is the count of current control-flow opportunities outside those
+definitions. Report `S`, `U` and `S/U` together. A ratio is not a percentage or
+a capped score. Confirmed dead specifications leave S; unresolved liveness
+stays visible and makes the observation provisional. See the
+[SpecificationMetrics counting contract](https://github.com/SoundBlaster/SpecificationMetrics/blob/main/docs/counting-contract.md).
+
+SpecGraph records its source roles in `.specificationmetrics.toml` and
+`scopes/specificationmetrics.toml`. Application is the default source role,
+`tests/` is `test`, and the PR comment renderer is `framework`. More-specific
+roles override the root role. Unknown liveness remains counted because the
+manifest uses `closed_world = false`.
+
+After successful `Python CI`, the SpecificationMetrics PR workflow fetches the
+PR's current base and head as Git objects, overlays the same trusted counting
+contract onto both disposable source trees, and runs the CLI pinned to commit
+`c4d95427875d28870085c847852f7357859d164f`. It does not run PR-authored code.
+The comment updates one marker-owned PR comment with S, U, S/U, liveness counts,
+and supplementary Python SLOC, CC, Cog, and cross-language clone deltas from
+Radon 6.0.1, complexipy 8.0.1, and jscpd 5.0.11. The source cohort comes from
+the versioned manifest, so tests and the report renderer do not affect these
+measurements. Unknown liveness or failed supplements are labeled in the report;
+the comment is informational and does not gate merge readiness.

@@ -41,3 +41,27 @@ consume CI artifacts or check out or execute PR-authored code while it has
 permission to write comments. This also supports stacked PRs. An incomplete
 comparison reports diagnostics and withholds atom counts. The comment is review
 feedback, not a merge gate or the durable post-merge metric history.
+
+## Specification Adoption and Code Metrics
+
+SpecificationMetrics reports **S** (live or unknown Specification definitions
+and factory sites), **U** (current control-flow opportunities outside those
+definitions), and **S/U**. The ratio is not a percentage or a capped score.
+Confirmed dead Specifications leave S; unresolved liveness stays in S and
+makes the observation provisional. See the
+[SpecificationMetrics counting contract](https://github.com/SoundBlaster/SpecificationMetrics/blob/main/docs/counting-contract.md).
+
+SpecGraph records source roles in `.specificationmetrics.toml` and
+`scopes/specificationmetrics.toml`. Application is the default role, `tests/`
+is `test`, and the report renderer is `framework`. Unknown Specification
+liveness remains counted because `closed_world = false`.
+
+After successful `Python CI`, the PR workflow compares the current base and head
+Git trees using SpecificationMetrics pinned to commit
+`c4d95427875d28870085c847852f7357859d164f`. The trusted counter parses source
+data and does not execute PR-authored code. One informational comment reports
+S, U, S/U, dead and unknown Specifications, and supplementary Python SLOC,
+Cyclomatic Complexity (CC), Cognitive Complexity (Cog), and clone deltas.
+Supplementary tools are pinned to Radon 6.0.1, complexipy 8.0.1, and jscpd 5.0.11.
+Failed tools or unknown liveness remain explicit diagnostics; the
+comment does not gate merge readiness.

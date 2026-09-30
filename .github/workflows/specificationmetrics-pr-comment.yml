@@ -1,0 +1,174 @@
+name: SpecificationMetrics PR report
+
+on:
+  workflow_run:
+    workflows: [Python CI]
+    types: [completed]
+
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
+permissions: {}
+
+jobs:
+  resolve:
+    if: github.event.workflow_run.event == 'pull_request' && github.event.workflow_run.conclusion == 'success'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: none
+      pull-requests: read
+    outputs:
+      pr_numbers: ${{ steps.resolve.outputs.pr_numbers }}
+    steps:
+      - name: Resolve PRs associated with the completed CI head
+        id: resolve
+        env:
+          GH_TOKEN: ${{ github.token }}
+          HEAD_SHA: ${{ github.event.workflow_run.head_sha }}
+          REPOSITORY: ${{ github.repository }}
+        run: |
+          pr_numbers="$(gh api --paginate \
+            "repos/${REPOSITORY}/commits/${HEAD_SHA}/pulls" \
+            --jq '.[] | select(.state == "open") | .number' \
+            | sort -nu | jq -Rsc 'split("\n") | map(select(length > 0) | tonumber)')"
+          echo "pr_numbers=${pr_numbers}" >> "${GITHUB_OUTPUT}"
+
+  report:
+    needs: resolve
+    if: needs.resolve.outputs.pr_numbers != '[]'
+    strategy:
+      fail-fast: false
+      matrix:
+        pr_number: ${{ fromJSON(needs.resolve.outputs.pr_numbers) }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    permissions:
+      contents: read
+      pull-requests: write
+    concurrency:
+      group: specificationmetrics-pr-${{ matrix.pr_number }}
+      cancel-in-progress: true
+    steps:
+      - name: Checkout trusted default branch
+        uses: actions/checkout@v6
+        with:
+          ref: ${{ github.event.repository.default_branch }}
+          fetch-depth: 1
+          persist-credentials: false
+
+      - name: Read current pull request revisions
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PR_NUMBER: ${{ matrix.pr_number }}
+          REPOSITORY: ${{ github.repository }}
+          RUNNER_TEMP: ${{ runner.temp }}
+        run: |
+          gh api "repos/${REPOSITORY}/pulls/${PR_NUMBER}" \
+            > "${RUNNER_TEMP}/specificationmetrics-pull-request.json"
+          echo "base_sha=$(jq -r '.base.sha' "${RUNNER_TEMP}/specificationmetrics-pull-request.json")" \
+            >> "${GITHUB_ENV}"
+          echo "head_sha=$(jq -r '.head.sha' "${RUNNER_TEMP}/specificationmetrics-pull-request.json")" \
+            >> "${GITHUB_ENV}"
+
+      - name: Fetch PR revisions as Git objects
+        env:
+          PR_NUMBER: ${{ matrix.pr_number }}
+        run: |
+          git fetch --no-tags --depth=1 origin "${base_sha}"
+          git fetch --no-tags --depth=1 origin \
+            "+refs/pull/${PR_NUMBER}/head:refs/remotes/pull/${PR_NUMBER}/head"
+          git cat-file -e "${base_sha}^{commit}"
+          fetched_head="$(git rev-parse "refs/remotes/pull/${PR_NUMBER}/head")"
+          if [ "${fetched_head}" != "${head_sha}" ]; then
+            echo "PR head moved during measurement setup; rerun on the latest CI head" >&2
+            exit 1
+          fi
+          echo "head_sha=${fetched_head}" >> "${GITHUB_ENV}"
+
+      - name: Create read-only source snapshots
+        env:
+          RUNNER_TEMP: ${{ runner.temp }}
+        run: |
+          mkdir -p "${RUNNER_TEMP}/specificationmetrics"
+          git worktree add --detach \
+            "${RUNNER_TEMP}/specificationmetrics/before" "${base_sha}"
+          git worktree add --detach \
+            "${RUNNER_TEMP}/specificationmetrics/after" "${head_sha}"
+
+      - name: Apply the trusted metric contract to both snapshots
+        env:
+          RUNNER_TEMP: ${{ runner.temp }}
+        run: |
+          for tree in before after; do
+            cp .specificationmetrics.toml \
+              "${RUNNER_TEMP}/specificationmetrics/${tree}/.specificationmetrics.toml"
+            cp scopes/specificationmetrics.toml \
+              "${RUNNER_TEMP}/specificationmetrics/${tree}/scopes/specificationmetrics.toml"
+          done
+
+      - name: Set up Rust
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Install pinned SpecificationMetrics CLI
+        run: >
+          cargo install --locked
+          --git https://github.com/SoundBlaster/SpecificationMetrics.git
+          --rev c4d95427875d28870085c847852f7357859d164f
+          --root "${RUNNER_TEMP}/specificationmetrics/cli"
+          specification-metrics
+
+      - name: Set up Python metric tools
+        uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+
+      - name: Install pinned Python metrics
+        run: python -m pip install -r tools/requirements-metrics.txt
+
+      - name: Set up Node for pinned jscpd
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Collect base and PR metrics
+        env:
+          RUNNER_TEMP: ${{ runner.temp }}
+          WORKFLOW_RUN_ID: ${{ github.event.workflow_run.id }}
+        run: |
+          cli="${RUNNER_TEMP}/specificationmetrics/cli/bin/specification-metrics"
+          before="${RUNNER_TEMP}/specificationmetrics/before"
+          after="${RUNNER_TEMP}/specificationmetrics/after"
+          "${cli}" collect --config "${before}/.specificationmetrics.toml" \
+            --output "${RUNNER_TEMP}/specificationmetrics/before.json"
+          "${cli}" collect --config "${after}/.specificationmetrics.toml" \
+            --output "${RUNNER_TEMP}/specificationmetrics/after.json"
+          "${cli}" compare "${RUNNER_TEMP}/specificationmetrics/before.json" \
+            "${RUNNER_TEMP}/specificationmetrics/after.json" \
+            --output "${RUNNER_TEMP}/specificationmetrics/diff.json"
+          python tools/specificationmetrics_pr_comment.py \
+            --before "${RUNNER_TEMP}/specificationmetrics/before.json" \
+            --after "${RUNNER_TEMP}/specificationmetrics/after.json" \
+            --diff "${RUNNER_TEMP}/specificationmetrics/diff.json" \
+            --output "${RUNNER_TEMP}/specificationmetrics/comment.json" \
+            --run-url "https://github.com/${GITHUB_REPOSITORY}/actions/runs/${WORKFLOW_RUN_ID}"
+
+      - name: Update the single PR metrics comment
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PR_NUMBER: ${{ matrix.pr_number }}
+          REPOSITORY: ${{ github.repository }}
+          RUNNER_TEMP: ${{ runner.temp }}
+        run: |
+          existing_id="$(gh api --paginate \
+            "repos/${REPOSITORY}/issues/${PR_NUMBER}/comments?per_page=100" \
+            --jq '.[] | select(.user.login == "github-actions[bot]" and (.body | contains("<!-- specificationmetrics-pr-report-v1 -->"))) | .id' \
+            | sed -n '1p')"
+          if [ -n "${existing_id}" ]; then
+            gh api --method PATCH \
+              "repos/${REPOSITORY}/issues/comments/${existing_id}" \
+              --input "${RUNNER_TEMP}/specificationmetrics/comment.json" >/dev/null
+          else
+            gh api --method POST \
+              "repos/${REPOSITORY}/issues/${PR_NUMBER}/comments" \
+              --input "${RUNNER_TEMP}/specificationmetrics/comment.json" >/dev/null
+          fi

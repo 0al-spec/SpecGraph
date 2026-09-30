@@ -1,0 +1,17 @@
+schema_version = 1
+
+[liveness]
+# Unknown runtime use remains counted and makes the report provisional.
+closed_world = false
+
+[[source_sets]]
+role = "application"
+paths = ["."]
+
+[[source_sets]]
+role = "test"
+paths = ["tests"]
+
+[[source_sets]]
+role = "framework"
+paths = ["tools/specificationmetrics_pr_comment.py"]

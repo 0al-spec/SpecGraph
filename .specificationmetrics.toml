@@ -1,0 +1,8 @@
+schema_version = 1
+project = "0al-spec/SpecGraph"
+root = "."
+scope_manifest = "scopes/specificationmetrics.toml"
+
+[supplementary]
+python_complexity = true
+duplication = true
