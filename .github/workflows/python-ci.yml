@@ -37,6 +37,8 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
 
       - name: Set up Python
         uses: actions/setup-python@v6
@@ -50,6 +52,13 @@ jobs:
 
       - name: Run blocking Python and spec YAML quality checks
         run: python tools/python_quality.py
+
+      - name: Report lifecycle state classification delta
+        if: github.event_name == 'pull_request'
+        run: >
+          python tools/lifecycle_architecture.py
+          --base-ref "${{ github.event.pull_request.base.sha }}"
+          --head-ref "${{ github.event.pull_request.head.sha }}"
 
   test:
     runs-on: ubuntu-latest

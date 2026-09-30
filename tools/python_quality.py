@@ -17,6 +17,7 @@ def main() -> int:
         [sys.executable, "-m", "ruff", "format", "--check", "."],
         [sys.executable, "tools/spec_yaml_lint.py"],
         [sys.executable, "tools/validate_architecture_style.py"],
+        [sys.executable, "tools/lifecycle_architecture.py", "--check"],
     ]
     for step in steps:
         exit_code = run_step(step)

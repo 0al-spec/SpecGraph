@@ -11,6 +11,72 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
+from idea_maturity_candidate_approval_decision_spec import (
+    candidate_approval_decision_state as _candidate_approval_decision_state_spec,
+)
+from idea_maturity_candidate_approval_intent_spec import (
+    candidate_approval_intent_state as _candidate_approval_intent_state_spec,
+)
+from idea_maturity_candidate_approval_spec import (
+    candidate_approval_state as _candidate_approval_state_spec,
+)
+from idea_maturity_lifecycle_context import (
+    LifecycleStateContext,
+    _dict,
+    _int,
+    _status_is_blocked,
+    _status_is_failed,
+    _summary,
+    _text,
+)
+from idea_maturity_lifecycle_state_set import lifecycle_state_values
+from idea_maturity_platform_promotion_spec import (
+    platform_promotion_state as _platform_promotion_state_spec,
+)
+from idea_maturity_promotion_execution_spec import (
+    promotion_execution_state as _promotion_execution_state_spec,
+)
+from idea_maturity_promotion_request_spec import (
+    promotion_request_state as _promotion_request_state_spec,
+)
+from idea_maturity_read_model_publication_spec import (
+    read_model_publication_state as _read_model_publication_state_spec,
+)
+from idea_maturity_review_spec import review_status as _review_status_spec
+
+
+def _candidate_approval_state(artifacts):
+    return _candidate_approval_state_spec(LifecycleStateContext(artifacts))
+
+
+def _candidate_approval_intent_state(artifacts):
+    return _candidate_approval_intent_state_spec(LifecycleStateContext(artifacts))
+
+
+def _candidate_approval_decision_state(artifacts):
+    return _candidate_approval_decision_state_spec(LifecycleStateContext(artifacts))
+
+
+def _platform_promotion_state(artifacts):
+    return _platform_promotion_state_spec(LifecycleStateContext(artifacts))
+
+
+def _promotion_request_state(artifacts):
+    return _promotion_request_state_spec(LifecycleStateContext(artifacts))
+
+
+def _promotion_execution_state(artifacts):
+    return _promotion_execution_state_spec(LifecycleStateContext(artifacts))
+
+
+def _review_status(artifacts):
+    return _review_status_spec(LifecycleStateContext(artifacts))
+
+
+def _read_model_publication_state(artifacts):
+    return _read_model_publication_state_spec(LifecycleStateContext(artifacts))
+
+
 ROOT = Path(__file__).resolve().parents[1]
 PROPOSAL_ID = "0178"
 READINESS_EXPLAINERS_PROPOSAL_ID = "0180"
@@ -243,16 +309,8 @@ def _relative_ref(path: Path | None) -> str | None:
         return repo_path.as_posix()
 
 
-def _dict(value: Any) -> dict[str, Any]:
-    return value if isinstance(value, dict) else {}
-
-
 def _list(value: Any) -> list[Any]:
     return value if isinstance(value, list) else []
-
-
-def _text(value: Any, default: str = "") -> str:
-    return value.strip() if isinstance(value, str) and value.strip() else default
 
 
 def _text_list(value: Any) -> list[str]:
@@ -270,32 +328,6 @@ def _slug(value: str) -> str:
 
 def _tokenize(value: str) -> set[str]:
     return {token for token in re.split(r"[^a-z0-9]+", value.lower()) if token}
-
-
-def _status_has_token(status: str, token: str) -> bool:
-    tokens = _tokenize(status)
-    if not tokens:
-        return False
-    if token == "blocked" and ("unblocked" in tokens or tokens == {"not", "blocked"}):
-        return False
-    return token in tokens
-
-
-def _status_is_blocked(status: str) -> bool:
-    return _status_has_token(status, "blocked")
-
-
-def _status_is_failed(status: str) -> bool:
-    return _status_has_token(status, "failed") or _status_has_token(status, "failure")
-
-
-def _int(value: Any, default: int = 0) -> int:
-    if isinstance(value, bool):
-        return default
-    try:
-        return int(value)
-    except (TypeError, ValueError):
-        return default
 
 
 def _rate(numerator: int, denominator: int) -> float | None:
@@ -463,10 +495,6 @@ def _load_sources(paths: dict[str, Path]) -> tuple[dict[str, dict[str, Any]], di
         artifacts[key] = artifact
         source_artifacts[key] = _source_artifact(key, path, artifact, status="loaded")
     return artifacts, source_artifacts
-
-
-def _summary(artifacts: dict[str, dict[str, Any]], key: str) -> dict[str, Any]:
-    return _dict(_dict(artifacts.get(key)).get("summary"))
 
 
 def _readiness(artifacts: dict[str, dict[str, Any]], key: str) -> dict[str, Any]:
@@ -1116,17 +1144,10 @@ def _metrics(artifacts: dict[str, dict[str, Any]]) -> dict[str, Any]:
         "rerun_request_count": rerun_request_count,
         "approval_attempt_count": approval_attempt_count,
         **_temporal_metrics(artifacts),
-        "candidate_approval_state": _candidate_approval_state(artifacts),
-        "candidate_approval_intent_state": _candidate_approval_intent_state(artifacts),
-        "candidate_approval_decision_state": _candidate_approval_decision_state(artifacts),
-        "platform_promotion_state": _platform_promotion_state(artifacts),
+        **lifecycle_state_values(artifacts),
         "promotion_path_count": _promotion_path_count(artifacts),
-        "promotion_request_state": _promotion_request_state(artifacts),
-        "promotion_execution_state": _promotion_execution_state(artifacts),
-        "review_status": _review_status(artifacts),
         "review_pr_number": _review_pr_number(artifacts),
         "review_merge_commit_sha": _review_merge_commit_sha(artifacts),
-        "read_model_publication_state": _read_model_publication_state(artifacts),
         "published_file_count": _published_file_count(artifacts),
         "published_manifest_digest": _published_manifest_digest(artifacts),
         "candidate_node_count": candidate_node_count,
@@ -1441,158 +1462,12 @@ def _temporal_metrics(artifacts: dict[str, dict[str, Any]]) -> dict[str, Any]:
     }
 
 
-def _candidate_approval_state(artifacts: dict[str, dict[str, Any]]) -> str:
-    readiness_impact = _dict(
-        _dict(artifacts.get("repaired_repair_session")).get("readiness_impact")
-    )
-    repaired_session_summary = _summary(artifacts, "repaired_repair_session")
-    handoff_summary = _summary(artifacts, "repaired_handoff")
-    if (
-        readiness_impact.get("ready_for_candidate_approval") is True
-        or repaired_session_summary.get("ready_for_candidate_approval") is True
-        or handoff_summary.get("ready_for_candidate_approval") is True
-    ):
-        return "ready"
-    if artifacts.get("repaired_repair_session") or artifacts.get("repaired_handoff"):
-        return "blocked"
-    if artifacts.get("candidate_graph"):
-        return "not_reached"
-    return "not_available"
-
-
-def _candidate_approval_intent_state(artifacts: dict[str, dict[str, Any]]) -> str:
-    if "approval_intent" not in artifacts:
-        return "not_reached" if _candidate_approval_state(artifacts) != "ready" else "not_available"
-    summary = _summary(artifacts, "approval_intent")
-    status = _text(summary.get("status"))
-    if _int(summary.get("active_intent_count")) > 0 or "requested" in status:
-        return "requested"
-    if "blocked" in status:
-        return "blocked"
-    return "unknown"
-
-
-def _candidate_approval_decision_state(artifacts: dict[str, dict[str, Any]]) -> str:
-    decision = _dict(artifacts.get("candidate_approval_decision"))
-    if decision:
-        summary = _summary(artifacts, "candidate_approval_decision")
-        readiness = _dict(decision.get("readiness"))
-        decision_payload = _dict(decision.get("decision"))
-        state = _text(summary.get("effective_state")) or _text(decision_payload.get("state"))
-        status = (
-            _text(summary.get("status"))
-            or _text(readiness.get("review_state"))
-            or _text(decision.get("status"))
-        )
-        if state == "approved" and readiness.get("ready") is True:
-            return "materialized"
-        if decision.get("dry_run") is True or status == "dry_run":
-            return "dry_run"
-        if _status_is_failed(status):
-            return "failed"
-        if _status_is_blocked(status) or state in {"rejected", "needs_context", "superseded"}:
-            return "blocked"
-        return "unknown"
-    execution = _dict(artifacts.get("approval_execution"))
-    if execution:
-        summary = _summary(artifacts, "approval_execution")
-        status = _text(summary.get("status")) or _text(execution.get("status"))
-        if (
-            _dict(execution.get("candidate_approval_decision_ref"))
-            or summary.get("decision_written") is True
-        ):
-            return "materialized"
-        if execution.get("dry_run") is True:
-            return "dry_run"
-        if "failed" in status or "blocked" in status:
-            return "failed" if "failed" in status else "blocked"
-        return "unknown"
-    if _candidate_approval_intent_state(artifacts) in {"requested", "ready"}:
-        return "not_available"
-    return "not_reached"
-
-
-def _platform_promotion_state(artifacts: dict[str, dict[str, Any]]) -> str:
-    execution_state = _promotion_execution_state(artifacts)
-    if execution_state not in {"not_reached", "not_available"}:
-        return execution_state
-    request_state = _promotion_request_state(artifacts)
-    if request_state == "requested":
-        return "requested"
-    if _candidate_approval_decision_state(artifacts) == "materialized":
-        return "ready"
-    return "not_reached"
-
-
 def _promotion_path_count(artifacts: dict[str, dict[str, Any]]) -> int:
     return (
         _summary_int(artifacts, "repaired_promotion_gate", "promotion_path_count")
         or _summary_int(artifacts, "repaired_active_candidate", "promotion_path_count")
         or _summary_int(artifacts, "promotion_request", "commit_path_count")
     )
-
-
-def _promotion_request_state(artifacts: dict[str, dict[str, Any]]) -> str:
-    request = _dict(artifacts.get("promotion_request"))
-    if not request:
-        return (
-            "not_available"
-            if _candidate_approval_decision_state(artifacts) == "materialized"
-            else "not_reached"
-        )
-    summary = _summary(artifacts, "promotion_request")
-    if request.get("ok") is True or summary.get("promotion_ready") is True:
-        return "requested"
-    if _int(summary.get("error_count")) > 0:
-        return "blocked"
-    return "unknown"
-
-
-def _promotion_execution_state(artifacts: dict[str, dict[str, Any]]) -> str:
-    execution = _dict(artifacts.get("promotion_execution"))
-    if not execution:
-        return (
-            "not_available" if _promotion_request_state(artifacts) == "requested" else "not_reached"
-        )
-    summary = _summary(artifacts, "promotion_execution")
-    status = _text(summary.get("status")) or _text(execution.get("status"))
-    if execution.get("dry_run") is True or status == "dry_run":
-        return "dry_run"
-    if _int(summary.get("error_count")) > 0 or _status_is_failed(status):
-        return "failed"
-    if _status_is_blocked(status):
-        return "blocked"
-    if summary.get("commit_created") is True or summary.get("review_opened") is True:
-        return "executed"
-    return "unknown"
-
-
-def _review_status(artifacts: dict[str, dict[str, Any]]) -> str:
-    review = _dict(artifacts.get("review_status"))
-    if not review:
-        return (
-            "not_reached"
-            if _promotion_execution_state(artifacts) == "not_reached"
-            else "not_available"
-        )
-    review_state = _text(review.get("review_state"))
-    if review.get("review_probe_only") is True and review_state == "merged":
-        return "unknown"
-    if review_state in {"open", "merged"}:
-        return review_state
-    if review_state == "closed":
-        return "blocked"
-    summary = _summary(artifacts, "review_status")
-    status = _text(summary.get("review_status")) or _text(summary.get("status"))
-    if status in {"open", "merged", "blocked", "unknown"}:
-        return status
-    if "merged" in status:
-        return "merged"
-    if "open" in status:
-        return "open"
-    if "blocked" in status or "failed" in status:
-        return "blocked"
-    return "unknown"
 
 
 def _review_pr_number(artifacts: dict[str, dict[str, Any]]) -> int | None:
@@ -1615,25 +1490,6 @@ def _review_merge_commit_sha(artifacts: dict[str, dict[str, Any]]) -> str | None
         or _text(_dict(_dict(review.get("pull_request")).get("mergeCommit")).get("oid"))
         or None
     )
-
-
-def _read_model_publication_state(artifacts: dict[str, dict[str, Any]]) -> str:
-    if _dict(artifacts.get("review_status")).get("review_probe_only") is True:
-        return "not_reached"
-    publication = _dict(artifacts.get("read_model_publication"))
-    if not publication:
-        return "not_reached" if _review_status(artifacts) != "merged" else "not_available"
-    summary = _summary(artifacts, "read_model_publication")
-    status = _text(summary.get("status"))
-    if status == "published" or summary.get("published") is True:
-        return "published"
-    if publication.get("dry_run") is True or status == "dry_run":
-        return "dry_run"
-    if _int(summary.get("error_count")) > 0 or "failed" in status:
-        return "failed"
-    if "blocked" in status:
-        return "blocked"
-    return "unknown"
 
 
 def _published_file_count(artifacts: dict[str, dict[str, Any]]) -> int:

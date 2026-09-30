@@ -1,0 +1,43 @@
+{
+  "artifact_kind": "lifecycle_architecture_policy",
+  "schema_version": 1,
+  "policy_id": "specgraph.lifecycle_state_classification.v1",
+  "modules": [
+    {"name": "idea_maturity_lifecycle_context", "path": "tools/idea_maturity_lifecycle_context.py", "role": "domain_context"},
+    {"name": "idea_maturity_candidate_approval_spec", "path": "tools/idea_maturity_candidate_approval_spec.py", "role": "state_classifier"},
+    {"name": "idea_maturity_candidate_approval_intent_spec", "path": "tools/idea_maturity_candidate_approval_intent_spec.py", "role": "state_classifier"},
+    {"name": "idea_maturity_candidate_approval_decision_spec", "path": "tools/idea_maturity_candidate_approval_decision_spec.py", "role": "state_classifier"},
+    {"name": "idea_maturity_platform_promotion_spec", "path": "tools/idea_maturity_platform_promotion_spec.py", "role": "state_classifier"},
+    {"name": "idea_maturity_promotion_request_spec", "path": "tools/idea_maturity_promotion_request_spec.py", "role": "state_classifier"},
+    {"name": "idea_maturity_promotion_execution_spec", "path": "tools/idea_maturity_promotion_execution_spec.py", "role": "state_classifier"},
+    {"name": "idea_maturity_review_spec", "path": "tools/idea_maturity_review_spec.py", "role": "state_classifier"},
+    {"name": "idea_maturity_read_model_publication_spec", "path": "tools/idea_maturity_read_model_publication_spec.py", "role": "state_classifier"},
+    {"name": "idea_maturity_lifecycle_state_set", "path": "tools/idea_maturity_lifecycle_state_set.py", "role": "composition"},
+    {"name": "idea_maturity_metrics_report", "path": "tools/idea_maturity_metrics_report.py", "role": "report_adapter"}
+  ],
+  "role_dependencies": {
+    "domain_context": [],
+    "state_classifier": ["domain_context"],
+    "composition": ["domain_context", "state_classifier"],
+    "report_adapter": ["domain_context", "state_classifier", "composition"]
+  },
+  "decision_dependencies": {
+    "idea_maturity_candidate_approval_intent_spec": ["idea_maturity_candidate_approval_spec"],
+    "idea_maturity_candidate_approval_decision_spec": ["idea_maturity_candidate_approval_intent_spec"],
+    "idea_maturity_promotion_request_spec": ["idea_maturity_candidate_approval_decision_spec"],
+    "idea_maturity_promotion_execution_spec": ["idea_maturity_promotion_request_spec"],
+    "idea_maturity_platform_promotion_spec": ["idea_maturity_candidate_approval_decision_spec", "idea_maturity_promotion_execution_spec", "idea_maturity_promotion_request_spec"],
+    "idea_maturity_review_spec": ["idea_maturity_promotion_execution_spec"],
+    "idea_maturity_read_model_publication_spec": ["idea_maturity_review_spec"]
+  },
+  "decisions": [
+    {"id": "lifecycle.candidate_approval", "classifier_module": "idea_maturity_candidate_approval_spec", "classifier_symbol": "candidate_approval_state", "legacy_symbol": "_candidate_approval_state"},
+    {"id": "lifecycle.candidate_approval_intent", "classifier_module": "idea_maturity_candidate_approval_intent_spec", "classifier_symbol": "candidate_approval_intent_state", "legacy_symbol": "_candidate_approval_intent_state"},
+    {"id": "lifecycle.candidate_approval_decision", "classifier_module": "idea_maturity_candidate_approval_decision_spec", "classifier_symbol": "candidate_approval_decision_state", "legacy_symbol": "_candidate_approval_decision_state", "protected_raw_inputs": ["candidate_approval_decision", "approval_execution"]},
+    {"id": "lifecycle.platform_promotion", "classifier_module": "idea_maturity_platform_promotion_spec", "classifier_symbol": "platform_promotion_state", "legacy_symbol": "_platform_promotion_state"},
+    {"id": "lifecycle.promotion_request", "classifier_module": "idea_maturity_promotion_request_spec", "classifier_symbol": "promotion_request_state", "legacy_symbol": "_promotion_request_state"},
+    {"id": "lifecycle.promotion_execution", "classifier_module": "idea_maturity_promotion_execution_spec", "classifier_symbol": "promotion_execution_state", "legacy_symbol": "_promotion_execution_state"},
+    {"id": "lifecycle.review", "classifier_module": "idea_maturity_review_spec", "classifier_symbol": "review_status", "legacy_symbol": "_review_status"},
+    {"id": "lifecycle.read_model_publication", "classifier_module": "idea_maturity_read_model_publication_spec", "classifier_symbol": "read_model_publication_state", "legacy_symbol": "_read_model_publication_state"}
+  ]
+}

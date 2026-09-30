@@ -11,6 +11,7 @@ TOOL_PATH = ROOT / "tools" / "idea_maturity_metrics_report.py"
 
 
 def load_module() -> object:
+    sys.path.insert(0, str(ROOT / "tools"))
     spec = importlib.util.spec_from_file_location(
         "idea_maturity_metrics_report_under_test", TOOL_PATH
     )
@@ -2331,3 +2332,23 @@ def test_idea_maturity_metrics_does_not_double_count_deferred_project_local_deci
         if item["kind"] == "project_local_ontology_decision_deferred"
     ]
     assert len(deferred_explainers) == 1
+
+
+def test_lifecycle_spec_set_emits_named_states_and_decision_trace() -> None:
+    from idea_maturity_lifecycle_state_set import lifecycle_state_values
+
+    trace = []
+    states = lifecycle_state_values({}, trace=trace)
+
+    assert states == {
+        "candidate_approval_state": "not_available",
+        "candidate_approval_intent_state": "not_reached",
+        "candidate_approval_decision_state": "not_reached",
+        "platform_promotion_state": "not_reached",
+        "promotion_request_state": "not_reached",
+        "promotion_execution_state": "not_reached",
+        "review_status": "not_reached",
+        "read_model_publication_state": "not_reached",
+    }
+    assert [item.field_name for item in trace] == list(states)
+    assert all(item.value == states[item.field_name] and item.events for item in trace)
