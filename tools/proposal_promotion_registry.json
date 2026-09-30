@@ -605,7 +605,7 @@
     ],
     "motivating_concern": "raw supervisor runs are either ignored or over-treated as proof",
     "normalized_title": "Evidence-Backed Build Protocol",
-    "bounded_scope": "Define curated evidence packets and a build protocol bridge from mature specs to implementation work and runtime evidence without committing raw runs, auto-generating code, or replacing human PR review. The 2026-09-30 proposal-only amendment routes provider-neutral receipt issuance to FeaturePassport, product capture to Zeusus, and admission to SpecGraph; it adopts no authority configuration or keys.",
+    "bounded_scope": "Define curated evidence packets and a build protocol bridge from mature specs to implementation work and runtime evidence without committing raw runs, auto-generating code, or replacing human PR review. The 2026-09-30 proposal-only amendment routes provider-neutral receipt issuance to FeaturePassport, product capture to Zeusus, and admission to SpecGraph; it adopts no authority configuration or keys. Delivery planning separates FeaturePassport executable releases, Platform runner dependency/image pins and SpecGraph-to-SpecSpace read models, without installing binaries or authorizing deployment.",
     "required_provenance_links": [
       "source_draft_ref"
     ]

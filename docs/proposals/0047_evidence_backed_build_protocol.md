@@ -655,3 +655,129 @@ this amendment**; existing admission tools remain unchanged.
 - Source draft, promotion provenance, runtime classification and DocC remain
   aligned. Issuer implementation, keys, policy adoption and lifecycle mutation
   require subsequent bounded work and evidence.
+
+
+### CLI delivery and read-model publication — 2026-09-30
+
+**Status: `proposal_only`.** This extends the receipt issuance handoff with an
+explicit delivery seam. It does not install a binary, change Platform images,
+trigger a deployment, enable managed execution, or adopt a signing authority.
+
+#### Observed delivery gap
+
+At FeaturePassport source `7e8ced31775b10c7274c47a66c3098cdde5335e4`, the
+package declares a CLI and schema resources, but `.github/workflows/swift.yml`
+only exercises macOS package tests; no release packaging or supported CLI target
+matrix is implemented there. The inspected Platform
+`.github/workflows/publish-hosted-managed-images.yml` publishes
+`linux/amd64,linux/arm64` and its image-lock validator requires both targets.
+`Dockerfile.hosted-managed` installs the Python runner tooling, not FeaturePassport.
+These are source observations, not proof of current hosted deployment contents.
+The existing SpecGraph adapter pins a caller-selected executable; it does not
+implement release intake. A complete resource/dependency pinning policy is part
+of this future delivery seam, not existing adapter behavior.
+
+#### Two delivery paths
+
+```text
+FeaturePassport reviewed release (CLI + digest + release manifest)
+  -> Platform reviewed runner dependency lock
+  -> digest-pinned runner image + explicit authority configuration
+  -> Zeusus fresh observations -> receipts -> signed aggregate decision
+  -> SpecGraph live admission -> curated public-safe read model
+  -> SpecGraph artifact publication -> SpecSpace HTTP provider
+
+SpecSpace API/UI images -> service image lock -> Platform deployment publisher
+```
+
+The paths are distinct. FeaturePassport CLI is a runner dependency, not a browser
+asset or an implicit addition to the SpecSpace API/UI image lock. The static
+SpecGraph publication workflow delivers data, not a runnable receipt authority.
+The preceding local Zeusus pilot remains usable without a hosted Platform runner;
+hosted rollout is a subsequent gated step.
+
+#### Repository deliverables
+
+| Owner | Proposed deliverable | Acceptance boundary |
+| --- | --- | --- |
+| FeaturePassport | Versioned CLI release, exact executable digests and release manifest with source commit, supported target triple, runtime requirements, required resource/dependency inventory and contract/capability versions | Artifact is built and smoke-checked for its declared target; issuer capabilities are declared only after implementation |
+| Platform | Reviewed dependency lock for the selected FeaturePassport release/target/digest, installation in the appropriate runner image, image provenance and digest-pinned deployment selection | Install fails on digest/target/capability mismatch; no floating `latest` or silent fallback |
+| Zeusus | Product passport/probes, fresh pilot observations and implementation evidence | Product producer source/binary pins remain separate from runner/verifier pins |
+| SpecGraph | Implementation handoff, live admission inputs and curated read-model publication | Current canonical mapping and exact policy/trust/evidence bytes are verified before projection |
+| SpecSpace | Consumption/presentation of the published read model | Visible observed/matched/trusted/admitted distinctions; no receipt issuance or trust mutation |
+
+The future Platform dependency lock is separate from its existing
+`platform_service_image_lock` and `platform_hosted_managed_image_lock`. Reuse
+existing image delivery contracts after reviewing their compatibility; this
+proposal does not add undeclared fields to them or claim a new schema exists.
+Version, source commit, target and executable digest describe different facts.
+A checksum detects byte substitution against an approved pin; it does not by
+itself authenticate a release publisher or establish authority to issue evidence.
+The reviewed dependency lock chooses the acceptable release origin and pin.
+
+Platform owns consuming the reviewed executable release in its runner image;
+SpecGraph does not bundle a second issuer and SpecSpace does not download/execute
+the CLI. Provisioning the CLI grants no signing authority. Private keys and
+credentials stay outside release assets, image layers, locks, public read models
+and Git. Verifier trust configuration is provisioned explicitly by the consumer.
+
+#### Required operational contract
+
+- **Host compatibility:** select explicit OS/architecture target and runtime
+  requirements. A locally built macOS binary cannot be copied into the Linux
+  Platform runner. Each supported target has its own executable digest and
+  validation evidence. Builds from the same source need not have equal bytes.
+  Package required schema/resource bundles alongside the executable, pin their
+  bytes in the release manifest, and smoke-test the installed layout. Copying
+  only the executable is not sufficient evidence of a usable installation.
+- **Installation and upgrade:** verify exact approved bytes before installation;
+  fail closed for unsupported targets, absent required capabilities or digest
+  mismatch. Changing the release creates a reviewed lock/image update, reruns
+  the bounded pilot and records both old/new pins. No runtime auto-update.
+- **Run record:** preserve source commits and executable digests for the producer,
+  issuer and verifier separately; runner image digest when applicable; exact
+  passport/policy/trust-store and evidence digests; operation IDs; evaluator
+  identity and evaluation time. These are retained inputs, not self-authored
+  claims of build or deployment attestation.
+- **Exact-byte boundary:** transfers, storage and publication must not reformat
+  signed passport/observation/receipt/decision inputs. Re-serialization or policy
+  changes require new digest bindings and evaluation. Read-model summaries are
+  separate projections and cannot replace the full verification inputs.
+- **Failure/readiness:** missing CLI, incompatible target, unavailable signer,
+  absent/unapproved policy or trust store, unsupported claim, stale input, failed
+  verification or source review gate remains an explicit blocker. A deployed
+  image or a CLI help response is not evidence admission. Merely installing the
+  dependency must not enable managed execution.
+- **Publication:** SpecGraph curates and publishes a public-safe projection with
+  target spec/source identity, evaluation identity, relevant digests, evidence
+  level, gate reasons and next action. Full private evidence stays in controlled
+  storage. No raw trace, credential or private authority configuration is made
+  public by default. SpecSpace displays a publication's age and input identity;
+  it must not treat a cached historical report as current permission.
+- **Consumer verification:** SpecGraph's existing `verify-decision` path uses the
+  explicitly pinned live executable and exact receipt/decision trust inputs.
+  CLI delivery, issuance, admission and read-model publication each require
+  separate evidence. No automatic canonical lifecycle change is introduced.
+
+#### Bounded sequencing and evidence
+
+1. FeaturePassport owns a separate PR for the issuer API/CLI and release contract,
+   followed by a real target-specific release. Existing verifier-only builds do
+   not satisfy an issuer capability requirement.
+2. Run the bounded local Zeusus issuance pilot with reviewed authority inputs.
+   Record the actual receipt/decision scope before assigning any runtime claim.
+3. Platform owns a separate PR for the dependency lock, runner installation and
+   target-specific smoke/integrity checks. Hosted deployment requires its own
+   explicit execution authorization and credentials; proposal approval is not a
+   production rollout instruction.
+4. Repeat the pilot on the chosen runner, then SpecGraph owns live admission and
+   curated publication evidence. A local result is not silently promoted to a
+   hosted/production result. SpecSpace changes are needed only if its existing
+   provider cannot express the required evidence distinctions.
+
+Acceptance scenarios for subsequent implementation: correct target/pin installs;
+wrong digest and unsupported target fail before execution; verifier-only release
+cannot serve as issuer; missing signer does not fabricate a receipt; unavailable
+publication preserves the last snapshot as historical; a new CLI/image pin
+requires a fresh bounded run; an unsigned or merely matched observation cannot
+be presented as admitted. This documentation slice has **no runtime realization**.

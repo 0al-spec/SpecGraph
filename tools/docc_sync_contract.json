@@ -451,7 +451,11 @@
         "receipt issuance handoff",
         "proposal_only",
         "receipt policy",
-        "admission policy"
+        "admission policy",
+        "CLI delivery and read-model publication",
+        "runner dependency lock",
+        "target-specific",
+        "public-safe"
         ]
       },
       {
