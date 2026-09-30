@@ -66,4 +66,6 @@ rejected by the existing interpreter check, so the repository venv was used.
 ## Final SpecificationCore follow-up checks
 
 The full combined suite was rerun after adding SpecificationCore and trace
-evidence. Its final result is recorded here before the PR is updated.
+evidence: 1097 passed in 78.66 seconds. The three targeted SpecificationCore
+and trace regressions passed after the verification commit. The 49-test focused
+shortcut, DocC sync, proposal tracking gate, Ruff and git diff check all pass.
