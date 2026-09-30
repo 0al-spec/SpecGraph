@@ -1148,6 +1148,33 @@ def build_public_bundle(
             )
         )
 
+    if workspace_bootstrap_run_dir is not None:
+        # Bound consumers resolve logical run refs under the workspace namespace.
+        # Keep the flattened legacy aliases, including bootstrap discovery, while
+        # publishing identical sanitized bytes and manifest digests at scoped refs.
+        for file_info in tuple(copied_files):
+            if (
+                file_info.root != "runs"
+                or file_info.path == f"runs/{PRODUCT_WORKSPACE_DECISIONS_SURFACE}"
+            ):
+                continue
+            suffix = PurePosixPath(file_info.path).relative_to("runs")
+            scoped_path = PurePosixPath("runs", selected_workspace_id, suffix).as_posix()
+            if scoped_path in copied_paths:
+                raise PublishBundleError(f"workspace artifact alias collision: {scoped_path}")
+            source_alias = output_dir / file_info.path
+            target_path = output_dir / scoped_path
+            write_bytes_atomic(target_path, source_alias.read_bytes())
+            copied_paths.add(scoped_path)
+            copied_files.append(
+                PublishFile(
+                    path=scoped_path,
+                    root="runs",
+                    size_bytes=file_info.size_bytes,
+                    sha256=file_info.sha256,
+                )
+            )
+
     if decision_index is not None:
         decision_index_path = PurePosixPath("runs", PRODUCT_WORKSPACE_DECISIONS_SURFACE)
         target_path = output_dir / decision_index_path.as_posix()

@@ -12305,7 +12305,12 @@
       "docs/static_artifact_publish.md",
       "docs/product_workspace_graph_versioning_roadmap.md",
       "Sources/SpecGraph/Documentation.docc/ProductWorkspacePilots.md",
-      "tools/README.md"
+      "tools/README.md",
+      "tools/build_static_artifact_bundle.py",
+      "tools/workspace_bundle_consumer_smoke.py",
+      "tests/test_static_artifact_bundle.py",
+      "tests/test_workspace_bundle_consumer_smoke.py",
+      "docs/evidence/workspace-publication-contract/README.md"
     ],
     "runtime_markers": [
       {
