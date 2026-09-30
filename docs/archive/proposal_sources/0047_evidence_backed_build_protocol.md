@@ -59,3 +59,20 @@ is acceptance of exact contract-matched bytes, not production or game outcomes.
 Receipt policy, claim policy, admission policy and verifier trust stores are
 separate responsibilities. No new repository, key, trust adoption, canonical
 claim mapping or runtime issuer is created by this documentation amendment.
+
+
+## CLI delivery follow-up — 2026-09-30
+
+After the ownership amendment merged as SpecGraph PR 735, the owner asked whether
+new binaries would reach SpecSpace through Platform. The approved next task is
+to propose the delivery seam, not deploy it. Current publication separates
+SpecGraph static data from SpecSpace API/UI images delivered through Platform.
+The inspected Platform Python runner image does not install FeaturePassport CLI.
+
+The source intent is: FeaturePassport owns a versioned executable release;
+Platform explicitly pins and installs the target-compatible artifact into its
+runner; Zeusus supplies product observations; SpecGraph verifies admission and
+publishes curated read models; SpecSpace presents them. Preserve the local pilot
+as distinct from hosted execution. CLI digests, image digests, signing authority
+and trust configuration are separate boundaries. No automatic key provisioning,
+managed execution enablement or production rollout is authorized by this proposal.

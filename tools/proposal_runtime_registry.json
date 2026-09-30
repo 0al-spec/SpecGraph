@@ -2270,7 +2270,7 @@
         "pattern": "evidence-claim-gate:"
       }
     ],
-    "notes": "Existing observability projection and source/signed-decision admission are bounded runtime realizations. The 2026-09-30 cross-repository receipt issuance handoff is proposal_only: generic issuer work belongs to FeaturePassport, pilot wiring to Zeusus, trust configuration to explicit operators, and admission to SpecGraph. No issuer, key provisioning, trust adoption or lifecycle transition is implemented by this amendment."
+    "notes": "Existing observability projection and source/signed-decision admission are bounded runtime realizations. The 2026-09-30 cross-repository receipt issuance handoff is proposal_only: generic issuer work belongs to FeaturePassport, pilot wiring to Zeusus, trust configuration to explicit operators, and admission to SpecGraph. No issuer, key provisioning, trust adoption or lifecycle transition is implemented by this amendment. The CLI delivery amendment also remains proposal_only: FeaturePassport releases target-specific artifacts; Platform owns runner dependency/image delivery; SpecGraph owns curated read-model publication. No binary installation, release workflow or deployment is implemented by this documentation slice."
   },
   {
     "proposal_id": "0048",

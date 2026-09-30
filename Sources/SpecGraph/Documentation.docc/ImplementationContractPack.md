@@ -75,3 +75,29 @@ claim mapping and live admission. Missing inputs, trusted `not_satisfied`, stale
 bytes or unresolved review gates cannot pass. This amendment creates no issuer,
 keys, adopted policies or lifecycle mutations. See the proposal's ownership table
 and bounded acceptance criteria before routing implementation work.
+
+
+## CLI delivery and read-model publication
+
+Proposal `0047` extends the handoff with a `proposal_only` delivery contract.
+FeaturePassport owns the versioned CLI release and target-specific executable
+digests. Platform owns the reviewed runner dependency lock, compatible binary
+installation and digest-pinned runner image delivery. That dependency lock is
+separate from the existing SpecSpace API/UI service image lock. SpecGraph owns
+live admission and curated public-safe read-model publication; SpecSpace consumes
+the data through its provider and does not receive a runnable receipt authority.
+
+A macOS executable cannot serve a Linux runner. Source commit, executable digest,
+runner image digest, signing authority and verifier trust inputs are independent
+pins/roles. Installation verifies approved bytes and capabilities; unavailable
+signer, incompatible target or digest mismatch fails closed. A checksum alone
+does not authenticate the publisher or grant authority. Private keys stay outside
+images, release assets and Git. Installing a CLI does not enable managed execution.
+
+Retain exact signed input bytes, separate producer/issuer/verifier pins, and
+operation/evaluation identities. SpecGraph's publication is a public-safe
+projection, not a replacement for complete verification inputs. Historical
+published results do not authorize current admission. Local, hosted and
+production evidence remain distinct. Implementation PRs, target-specific release,
+authority configuration and deployment approval are still subsequent work; this
+documentation amendment installs no executable and triggers no deployment.
