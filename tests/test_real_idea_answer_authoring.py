@@ -583,6 +583,20 @@ def test_answer_template_uses_refs_for_active_frame_ref_questions(tmp_path: Path
     assert applicability == {"refs": [""]}
 
 
+def test_fixed_action_templates_are_independent_and_keep_required_fields() -> None:
+    module = load_module()
+    request: dict[str, object] = {}
+
+    first = module._value_template("propose_project_local_term", request)
+    first["terms"].append("Local term")
+    second = module._value_template("propose_project_local_term", request)
+
+    assert second == {"terms": [""], "term_scope": "project_local"}
+    assert module._required_fields("propose_project_local_term", request) == ["value.terms[]"]
+    assert module._required_fields("reject_candidate", request) == ["value.reason"]
+    assert module._required_fields("defer_candidate", request) == ["value.follow_up"]
+
+
 def test_answer_authoring_materializes_repair_stage_artifacts(tmp_path: Path) -> None:
     module = load_module()
     template_path = filled_repair_template(tmp_path)
