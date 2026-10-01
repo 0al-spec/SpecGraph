@@ -80,3 +80,11 @@ logs out of environment findings. Test both the classifier and the supervisor
 run artifact so narrative text cannot contaminate the executor-environment gate.
 Historical run artifacts and pending human review remain historical evidence;
 a classifier fix does not approve a previously retained candidate.
+
+### Curated contract completeness
+
+When curating a supervisor candidate from an RFC, compare every transition and
+lookup result with the source contract: preserve revision advancement, separate
+lineage from disposition, identify every relation endpoint, and define failure
+outcomes for ambiguous identity scopes. Update the curated artifact digest and
+record corrections as curation, not as evidence verified by the original run.

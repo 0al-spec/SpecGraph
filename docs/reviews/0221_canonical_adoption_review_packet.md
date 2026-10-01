@@ -37,7 +37,8 @@ embedded or separately stored, and specify their history and move semantics
 before adoption.
 
 The identity must not derive from the statement, owner, path, order, or scenario
-ID. A move changes containment and provenance only. This choice preserves the
+ID. A move changes containment and provenance, advances the same-identity revision
+by one, and retains the previous revision and containment. This choice preserves the
 relationship proposed by RFC 0221 while leaving physical serialization open
 until schema review. See [RFC 0221, Identity scope](../proposals/0221_stable_requirement_identity_and_lineage.md#identity-scope)
 and [node format](../schema/node-format.md).

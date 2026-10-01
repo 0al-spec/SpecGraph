@@ -19,7 +19,7 @@ from these records rather than replacing them with content-derived search IDs.
 | Concern | Proposed choice | Review boundary |
 | --- | --- | --- |
 | Workspace scope | Persist one immutable UUID in a versioned `.specgraph/subject-identity.json` declaration; keep `project_id` as display/routing data | This declaration and its clone/fork semantics require adoption; a URL or slug cannot substitute for identity |
-| Criterion storage | Versioned identified records embedded in the containing specification, separate from Requirement nodes and BDD scenarios | Moving a criterion moves its current containment; it retains its full subject identity |
+| Criterion storage | Versioned identified records embedded in the containing specification, separate from Requirement nodes and BDD scenarios | Moving a criterion retains identity, advances revision by one, and preserves prior containment |
 | Local IDs | Preserve reviewed existing candidate IDs when unique across the workspace; new authored IDs are collision-checked and never recycled | No ordinary parser, lookup, or materialization read allocates or remints an ID |
 | Revisions | Positive integers, starting at 1, with exactly one immediate same-identity predecessor for later revisions | Identity, revision, and optional digest are separate values |
 | History | Explicit retained revision records and typed containment/disposition/relation events | Git history alone is not a governed revision chain; the physical history layout needs separate review |
@@ -28,7 +28,10 @@ from these records rather than replacing them with content-derived search IDs.
 UUID uniqueness is not established by its syntax alone. Validate declarations
 and detect known workspace collisions when joining datasets. A checkout of the
 same workspace preserves identity; an independent product fork needs an explicit
-identity decision. Do not silently regenerate the declaration on clone or init.
+identity decision. Known independent datasets claiming the same UUID fail closed
+as `ambiguous_workspace_identity` before subject selection. A declared replica
+of the same workspace retains that identity; conflicting replica declarations
+also fail closed. Do not silently regenerate the declaration on clone or init.
 
 The embedded form is a storage recommendation for criterion subjects only.
 It does not convert embedded candidate requirements into canonical Requirement
@@ -67,6 +70,7 @@ canonical successor, matching text, or a criterion in another workspace.
 | --- | --- |
 | `resolved` | Exact identity/revision exists; return statement, provenance, disposition, containment and explicitly authored relations |
 | `unknown_workspace` | No matching immutable workspace declaration is available |
+| `ambiguous_workspace_identity` | Independent datasets claim the same immutable workspace ID, or replica declarations conflict; reject the scope before selecting a subject |
 | `unknown_subject` | Workspace exists but the subject ID is not registered |
 | `revision_unavailable` | Subject exists but the requested revision cannot be resolved |
 | `invalid_reference` | Missing scope, invalid revision, or a subject-kind mismatch |
@@ -80,6 +84,15 @@ evidence does not change lookup success and must remain an evidence state.
 `decomposes_into` and `composed_from` remain separately authored directed,
 same-kind relations. They do not change participant revisions, dispositions,
 or canonical topology and cannot be inferred by reversing each other.
+
+Every authored relation endpoint is returned with its full durable subject
+reference (workspace identity, subject class, local ID, and explicit exact/current
+revision selection) and directed role. Endpoint class alone cannot identify it.
+
+A one-to-one containment move advances the same subject revision by one and
+retains the previous revision and containment. Replacement creates successor
+revision 1 and records lineage without changing dispositions; activation and
+withdrawal remain separate explicit disposition transitions.
 
 ## Compatibility and migration preview
 
@@ -108,6 +121,12 @@ Acceptance cases:
   original authority scopes.
 - Reordering or moving an identified criterion preserves its full reference.
 - The same local ID in two declared workspaces resolves independently.
+- A declared replica preserves workspace identity; independent forks sharing
+  that identity return `ambiguous_workspace_identity` with no selected subject.
+- A containment move retains identity, advances revision, and preserves exact
+  lookup of both the old and new containment.
+- Replacement leaves dispositions unchanged; a separate activation is required.
+- Relation traversal returns the full reference and role of every endpoint.
 - A wording revision retains identity and exact old-revision lookup succeeds
   only when its explicit record is available.
 - Unknown IDs, unavailable revisions, duplicate definitions, missing workspace
@@ -158,10 +177,10 @@ physical schema before implementation. The candidate's embedded Requirement
 inputs remain candidate records; canonical Requirement subjects continue to use
 the existing node kind.
 
-The runtime classifier issue should be fixed in a separate PR with a regression
-for ordinary migration prose and a positive case for an actual state-runtime
-failure. It does not authorize changing canonical governance or bypassing this
-run's gate.
+The runtime classifier issue was fixed separately in PR #746 with regressions
+for ordinary migration prose and actual state-runtime failures. Replaying the
+recorded stderr yields no environment issue with the fixed classifier. This
+does not change the historical artifact, approve the gate, or adopt governance.
 
 ## Sources
 

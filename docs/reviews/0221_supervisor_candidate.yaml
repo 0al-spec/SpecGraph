@@ -38,7 +38,7 @@ acceptance_evidence:
   evidence: specification.revision_contract requires positive integer per-subject revisions beginning
     at 1, one same-identity predecessor for later revisions, and a separate canonical supersession reference
     when SG-SPEC-0019 applies. specification.transition_contract keeps editorial_revision, containment_move,
-    decomposes_into, composed_from, replacement, and withdrawal distinct from SG-SPEC-0019 topology; examples.successor_revision_one_with_separate_supersession_link
+    decomposes_into, composed_from, replacement, activation, and withdrawal distinct from SG-SPEC-0019 topology; examples.successor_revision_one_with_separate_supersession_link
     shows successor revision 1 preserving its own origin while a separate SG-SPEC-0019 event references
     the predecessor terminal revision.
 - criterion: Defines exact identity and revision lookup with explicit unresolved states and criterion-keyed
@@ -141,8 +141,8 @@ specification:
     rules:
     - Every Requirement or criterion subject starts at revision 1 as the origin of that subject identity.
     - Revision 1 has no same-identity predecessor.
-    - Every later governed content revision has exactly one immediately preceding revision in the same
-      subject identity.
+    - Every later governed content revision or one-to-one containment move advances the revision by one
+      and has exactly one immediately preceding revision in the same subject identity.
     - A revision number is local to one full subject reference and is not shared across Requirement and
       criterion subjects.
     - A substantial normative replacement creates a new subject identity; it does not continue the predecessor
@@ -163,8 +163,8 @@ specification:
       effect: Retains the same subject identity, advances that subject's revision by one, and records
         provenance and bounded change scope.
     - transition: containment_move
-      effect: Retains the same subject identity while changing containing specification or record location
-        with provenance; containment is not identity.
+      effect: Retains the same subject identity, advances its revision by one with the previous same-identity
+        revision as predecessor, and records changed containment and provenance; containment is not identity.
     - transition: decomposes_into
       effect: Records one source Requirement-to-Requirement or criterion-to-criterion subject relation
         to two or more resulting subjects without changing participant revisions, disposition, canonical
@@ -173,9 +173,13 @@ specification:
       effect: Records one resulting Requirement-to-Requirement or criterion-to-criterion subject relation
         to two or more contributing subjects without inferring the reverse of decomposes_into.
     - transition: replacement
-      effect: Creates or activates a successor subject identity and records the predecessor subject and
-        terminal revision. If the subjects are canonical nodes or explicit canonical edges, any active-topology
-        change remains a separate SG-SPEC-0019-compliant one-to-one event.
+      effect: Creates a successor subject identity at revision 1 and records the predecessor subject and
+        terminal revision without changing either subject disposition. Activation and withdrawal require
+        separate explicit transitions. If the subjects are canonical nodes or explicit canonical edges,
+        any active-topology change remains a separate SG-SPEC-0019-compliant one-to-one event.
+    - transition: activation
+      effect: Explicitly activates an existing subject for its applicable subject-level role with provenance,
+        without creating replacement lineage or changing SG-SPEC-0019 canonical presence.
     - transition: withdrawal
       effect: Retires the subject for Requirement-level readiness or dependency satisfaction while preserving
         lookup and lineage. Withdrawal alone does not change SG-SPEC-0019 canonical presence.
@@ -184,6 +188,7 @@ specification:
     - composed_from endpoints must all be Requirement subjects or all be criterion subjects.
     - Requirement-to-criterion ownership remains acceptance_criteria_refs and is not valid as a decomposition
       or composition endpoint mix.
+    - Every authored relation endpoint carries a full_subject_reference; role or class alone is insufficient.
     - No subject relation silently creates a canonical supersedes edge.
   lookup_contract:
     request_minimum:
@@ -196,12 +201,14 @@ specification:
     - resolved revision or unresolved state
     - current containment history
     - subject disposition
-    - typed subject relations with endpoint roles and subject classes
+    - typed subject relations with endpoint roles, subject classes, and the full_subject_reference of every
+      endpoint, including explicit exact or current revision selection
     - applicable SG-SPEC-0019 canonical presence when the subject is a canonical node or explicit canonical
       edge
     unresolved_states:
     - unknown_workspace_identity
     - ambiguous_workspace_slug
+    - ambiguous_workspace_identity
     - unknown_subject_id
     - subject_class_mismatch
     - unavailable_revision
@@ -215,6 +222,9 @@ specification:
       revision.
     - Do not infer identity from equal text, order, path, scenario ID, or content digest.
     - Do not treat a canonical SG-SPEC-0019 successor as the answer to an exact predecessor lookup.
+    workspace_collision: Known independent datasets claiming the same immutable workspace identity fail
+      closed as ambiguous_workspace_identity before subject selection. A declared replica of the same
+      workspace retains identity; declaration conflicts still fail closed rather than choosing a record.
     retired_subject_lookup: An existing retired subject remains resolved, with its requested revision,
       disposition and lineage. Retirement alone is not an unresolved lookup result.
   evidence_contract:
@@ -282,6 +292,34 @@ specification:
         supersession_reference: The separate canonical transition may reference REQ-0007 revision 4 as
           the superseded terminal revision.
         topology_effect: Only the SG-SPEC-0019 event can change canonical active topology.
+    containment_move_advances_revision:
+      input:
+        subject: AC-0031
+        revision: 2
+        transition: containment_move
+        old_container: REQ-0007
+        new_container: REQ-0012
+      output:
+        subject: AC-0031
+        revision: 3
+        same_identity_predecessor_revision: 2
+        previous_containment_retained: true
+    replacement_requires_explicit_activation:
+      input:
+        transition: replacement
+        predecessor: REQ-0007
+        successor: REQ-0012
+      output:
+        successor_revision: 1
+        participant_dispositions_changed: false
+        activation_requires_separate_transition: true
+    workspace_collision_fails_closed:
+      input:
+        datasets: independently forked products declaring the same immutable workspace identity
+      output:
+        state: ambiguous_workspace_identity
+        selected_subject: null
+        fallback_used: false
     criterion_keyed_evidence_output:
       input:
         evidence_artifact:

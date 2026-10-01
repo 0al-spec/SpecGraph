@@ -45,15 +45,19 @@
     "assessment": "false positive on specification and operator-note text containing the literal migration followed by a space",
     "source": "tools/supervisor.py:classify_executor_environment",
     "gate_approved": false,
-    "runtime_fix": "deferred to separate focused bugfix"
+    "runtime_fix": "PR #746 merged; recorded stderr replay has no environment issue; historical gate unchanged"
   },
   "raw_candidate_sha256": "bdd41eca5db7adc63395cd50b18e195a16dbb28f87b147a95ef637b4ea577dd0",
   "curated_candidate_path": "docs/reviews/0221_supervisor_candidate.yaml",
-  "curated_candidate_sha256": "488f1f6c8913094f2850f272ff0e4b7e1211be0acdd959ce752b5a24aad45162",
+  "curated_candidate_sha256": "cefc5088a14afff4c67e7959a35e59328b3a234a002d08835910dc694d3b8505",
   "curation_changes": [
     "Separate resolved retired-subject lookup from unsatisfied dependency evaluation.",
     "Clarify that subject class validates identity rather than partitioning local ID uniqueness.",
     "Require explicit exact or current operation; absence of a revision alone does not select latest.",
-    "Label illustrative examples as proposed contracts rather than runtime evidence."
+    "Label illustrative examples as proposed contracts rather than runtime evidence.",
+    "Require same-identity revision advancement and retained containment for moves.",
+    "Keep replacement disposition-neutral and define explicit activation.",
+    "Require full durable subject references for all relation endpoints.",
+    "Fail closed on ambiguous immutable workspace identities; distinguish replicas from independent forks."
   ]
 }
