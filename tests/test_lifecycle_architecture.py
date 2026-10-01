@@ -68,6 +68,12 @@ def positional(context: LifecycleStateContext, /):
 def keyword_only(*, context: LifecycleStateContext):
     return context.summary("approval_execution")
 
+def raw_artifacts(context: LifecycleStateContext):
+    return (
+        context.artifacts["candidate_approval_decision"],
+        context.artifacts.get("approval_execution"),
+    )
+
 def unrelated(c):
     return c.artifact("candidate_approval_decision")
 
@@ -95,6 +101,8 @@ _HELPER = PredicateSpec(lambda c: _state(c))
     assert [(read["artifact"], read["accessor"]) for read in reads] == [
         ("candidate_approval_decision", "artifact"),
         ("approval_execution", "summary"),
+        ("candidate_approval_decision", "artifacts[]"),
+        ("approval_execution", "artifacts.get"),
         ("approval_execution", "artifact"),
         ("candidate_approval_decision", "artifact"),
         ("approval_execution", "summary"),
@@ -166,6 +174,9 @@ def test_protected_raw_read_gate_flags_only_sibling_state_classifiers(tmp_path: 
             "from idea_maturity_classifier_spec import candidate_approval_decision_state\n"
             "def peer_state(context):\n"
             "    return candidate_approval_decision_state(context)\n"
+            "def raw_state(context: LifecycleStateContext):\n"
+            "    return context.artifacts['approval_execution'], "
+            "context.artifacts.get('candidate_approval_decision')\n"
         ),
         "idea_maturity_context.py": (
             "def read_context(context):\n    return context.artifact('approval_execution')\n"
@@ -191,7 +202,27 @@ def test_protected_raw_read_gate_flags_only_sibling_state_classifiers(tmp_path: 
             "artifact": "approval_execution",
             "accessor": "summary",
             "message": "sibling state classifier reads a protected raw context artifact",
-        }
+        },
+        {
+            "code": "LAC007",
+            "decision_id": "lifecycle.candidate_approval_decision",
+            "classifier": "idea_maturity_classifier_spec",
+            "module": "idea_maturity_api_peer_spec",
+            "line": 5,
+            "artifact": "approval_execution",
+            "accessor": "artifacts[]",
+            "message": "sibling state classifier reads a protected raw context artifact",
+        },
+        {
+            "code": "LAC007",
+            "decision_id": "lifecycle.candidate_approval_decision",
+            "classifier": "idea_maturity_classifier_spec",
+            "module": "idea_maturity_api_peer_spec",
+            "line": 5,
+            "artifact": "candidate_approval_decision",
+            "accessor": "artifacts.get",
+            "message": "sibling state classifier reads a protected raw context artifact",
+        },
     ]
 
 
@@ -331,6 +362,214 @@ def test_lifecycle_architecture_compares_legacy_functions_with_current_classifie
     assert report["base"]["scope_basis"] == "eight legacy function bodies, measured independently"
     assert len(report["base"]["decisions"]) == 8
     assert all(item["legacy"]["metrics"] for item in report["head"]["decisions"])
+
+
+def test_lifecycle_architecture_uses_classifier_modules_for_extracted_baseline(
+    tmp_path: Path,
+) -> None:
+    module = _load_module()
+    tools_dir = tmp_path / "tools"
+    tools_dir.mkdir()
+    classifier_path = "tools/classifier.py"
+    (tools_dir / "classifier.py").write_text(
+        "def classify(context):\n"
+        "    return context.ready if context.ready else context.waiting\n"
+        "_SPEC = PredicateSpec(lambda c: c.ready and c.waiting)\n",
+        encoding="utf-8",
+    )
+    (tools_dir / "idea_maturity_metrics_report.py").write_text(
+        "def _legacy_classify(context):\n    return classify(context)\n",
+        encoding="utf-8",
+    )
+    subprocess.run(["git", "init", str(tmp_path)], check=True, capture_output=True)
+    subprocess.run(
+        ["git", "-C", str(tmp_path), "config", "user.name", "Lifecycle Test"], check=True
+    )
+    subprocess.run(
+        ["git", "-C", str(tmp_path), "config", "user.email", "lifecycle-test@example.invalid"],
+        check=True,
+    )
+    subprocess.run(["git", "-C", str(tmp_path), "add", "tools"], check=True)
+    subprocess.run(
+        ["git", "-C", str(tmp_path), "commit", "-m", "add extracted classifier baseline"],
+        check=True,
+        capture_output=True,
+    )
+    policy = {
+        "artifact_kind": "lifecycle_architecture_policy",
+        "schema_version": 1,
+        "policy_id": "test.lifecycle_state_classification.v1",
+        "modules": [{"name": "classifier", "path": classifier_path, "role": "state_classifier"}],
+        "role_dependencies": {
+            "domain_context": [],
+            "state_classifier": ["domain_context"],
+            "composition": ["domain_context", "state_classifier"],
+            "report_adapter": ["domain_context", "state_classifier", "composition"],
+        },
+        "decision_dependencies": {},
+        "decisions": [
+            {
+                "id": "lifecycle.test",
+                "classifier_module": "classifier",
+                "classifier_symbol": "classify",
+                "legacy_symbol": "_legacy_classify",
+            }
+        ],
+    }
+    snapshot = module.build_report(
+        tmp_path,
+        policy,
+        base_ref="HEAD",
+    )
+    baseline = snapshot["base"]["decisions"][0]
+
+    assert baseline["source"] == {
+        "kind": "classifier_module",
+        "module": "classifier",
+        "path": classifier_path,
+        "symbol": "classify",
+    }
+    assert snapshot["base"]["role"] == "state_classifier"
+    assert baseline["metrics"] == snapshot["head"]["decisions"][0]["classifier_metrics"]
+    assert snapshot["head"]["decisions"][0]["baseline"]["path"] == classifier_path
+    base_totals = snapshot["base"]["decision_points_by_role"]["state_classifier"]
+    head_totals = snapshot["head"]["decision_points_by_role"]["state_classifier"]
+    assert base_totals["branch_points_total"] == head_totals["branch_points_total"]
+    assert base_totals["predicate_lambda_count"] == head_totals["predicate_lambda_count"]
+    assert (
+        base_totals["predicate_lambda_branch_points"]
+        == head_totals["predicate_lambda_branch_points"]
+    )
+    assert snapshot["head"]["decisions"][0]["legacy"]["metrics"]["branch_points_total"] == 0
+
+
+def test_lifecycle_architecture_uses_historical_policy_paths_and_marks_incomplete_base(
+    tmp_path: Path,
+) -> None:
+    module = _load_module()
+    tools_dir = tmp_path / "tools"
+    tools_dir.mkdir()
+    base_policy = {
+        "artifact_kind": "lifecycle_architecture_policy",
+        "schema_version": 1,
+        "policy_id": "test.lifecycle_state_classification.base.v1",
+        "modules": [
+            {
+                "name": "old_classifier",
+                "path": "tools/old_classifier.py",
+                "role": "state_classifier",
+            },
+            {
+                "name": "old_incomplete_classifier",
+                "path": "tools/old_incomplete_classifier.py",
+                "role": "state_classifier",
+            },
+        ],
+        "role_dependencies": {
+            "domain_context": [],
+            "state_classifier": ["domain_context"],
+            "composition": ["domain_context", "state_classifier"],
+            "report_adapter": ["domain_context", "state_classifier", "composition"],
+        },
+        "decision_dependencies": {},
+        "decisions": [
+            {
+                "id": "lifecycle.renamed",
+                "classifier_module": "old_classifier",
+                "classifier_symbol": "old_classify",
+                "legacy_symbol": "_old_classify",
+            },
+            {
+                "id": "lifecycle.incomplete",
+                "classifier_module": "old_incomplete_classifier",
+                "classifier_symbol": "missing_symbol",
+                "legacy_symbol": "_old_incomplete",
+            },
+        ],
+    }
+    (tools_dir / "old_classifier.py").write_text(
+        "def old_classify(context):\n"
+        "    return context.ready if context.ready else context.waiting\n"
+        "_SPEC = PredicateSpec(lambda c: c.ready and c.waiting)\n",
+        encoding="utf-8",
+    )
+    (tools_dir / "old_incomplete_classifier.py").write_text(
+        "def a_different_symbol(context):\n    return context.ready\n",
+        encoding="utf-8",
+    )
+    (tools_dir / "idea_maturity_metrics_report.py").write_text(
+        "def _old_classify(context):\n    return context\n"
+        "def _old_incomplete(context):\n    return context\n",
+        encoding="utf-8",
+    )
+    (tools_dir / "lifecycle_architecture_policy.json").write_text(
+        json.dumps(base_policy), encoding="utf-8"
+    )
+    subprocess.run(["git", "init", str(tmp_path)], check=True, capture_output=True)
+    subprocess.run(
+        ["git", "-C", str(tmp_path), "config", "user.name", "Lifecycle Test"], check=True
+    )
+    subprocess.run(
+        ["git", "-C", str(tmp_path), "config", "user.email", "lifecycle-test@example.invalid"],
+        check=True,
+    )
+    subprocess.run(["git", "-C", str(tmp_path), "add", "tools"], check=True)
+    subprocess.run(
+        ["git", "-C", str(tmp_path), "commit", "-m", "add historical lifecycle policy"],
+        check=True,
+        capture_output=True,
+    )
+
+    (tools_dir / "old_classifier.py").unlink()
+    (tools_dir / "old_incomplete_classifier.py").unlink()
+    (tools_dir / "new_classifier.py").write_text(
+        "def new_classify(context):\n    return context.ready\n",
+        encoding="utf-8",
+    )
+    (tools_dir / "new_incomplete_classifier.py").write_text(
+        "def new_incomplete(context):\n    return context.ready\n",
+        encoding="utf-8",
+    )
+    current_policy = {
+        **base_policy,
+        "policy_id": "test.lifecycle_state_classification.head.v1",
+        "modules": [
+            {
+                "name": "new_classifier",
+                "path": "tools/new_classifier.py",
+                "role": "state_classifier",
+            },
+            {
+                "name": "new_incomplete_classifier",
+                "path": "tools/new_incomplete_classifier.py",
+                "role": "state_classifier",
+            },
+        ],
+        "decisions": [
+            {
+                "id": "lifecycle.renamed",
+                "classifier_module": "new_classifier",
+                "classifier_symbol": "new_classify",
+                "legacy_symbol": "_old_classify",
+            },
+            {
+                "id": "lifecycle.incomplete",
+                "classifier_module": "new_incomplete_classifier",
+                "classifier_symbol": "new_incomplete",
+                "legacy_symbol": "_old_incomplete",
+            },
+        ],
+    }
+
+    report = module.build_report(tmp_path, current_policy, base_ref="HEAD")
+    base_decisions = {item["id"]: item for item in report["base"]["decisions"]}
+
+    assert base_decisions["lifecycle.renamed"]["source"]["path"] == "tools/old_classifier.py"
+    assert base_decisions["lifecycle.renamed"]["metrics"] is not None
+    assert base_decisions["lifecycle.incomplete"]["metrics"] is None
+    assert base_decisions["lifecycle.incomplete"]["source"]["kind"] == "unavailable"
+    assert report["base"]["role"] == "incomplete_lifecycle_baseline"
+    assert report["base"]["scope_basis"].startswith("incomplete:")
 
 
 def test_lifecycle_architecture_detects_import_cycles() -> None:
