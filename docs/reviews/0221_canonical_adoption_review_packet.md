@@ -9,6 +9,11 @@ not amend a canonical specification, settle ontology authority, authorize
 implementation, or establish that any requirement below has been accepted.
 The existing RFC and its source draft remain the proposal record.
 
+The [subject-address read model preparation](0221_subject_address_read_model.md)
+turns these recommendations into proposed boundary values, lookup outcomes,
+and a first implementation slice. It remains review-only and does not adopt
+the contract or authorize source-data migration.
+
 ## Decision Requested
 
 Review the four open design questions in RFC 0221, decide whether to adopt its

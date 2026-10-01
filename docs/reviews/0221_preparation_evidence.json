@@ -1,0 +1,59 @@
+{
+  "artifact_kind": "rfc0221_preparation_evidence",
+  "schema_version": 1,
+  "run_id": "20261001T202808Z-DRAFT-SPEC-0221-68a85911",
+  "source_revision": "aeabe4af7d3007ed23ccab90c0ab45bbd51ba448",
+  "temporary_target": "DRAFT-SPEC-0221",
+  "canonical_adoption": false,
+  "canonical_specs_changed": false,
+  "executor_exit_code": 0,
+  "executor_outcome": "done",
+  "supervisor_completion_status": "ok",
+  "supervisor_gate_state": "review_pending",
+  "proposed_status": "specified",
+  "final_status": "outlined",
+  "changed_files_in_run": [
+    "specs/nodes/DRAFT-SPEC-0221.yaml"
+  ],
+  "validator_results": {
+    "outputs": true,
+    "allowed_paths": true,
+    "reconciliation": true,
+    "atomicity": true,
+    "transition": true,
+    "executor_environment": true,
+    "runtime_artifacts": true,
+    "refinement_acceptance": true
+  },
+  "validation_summary": {
+    "finding_count": 1,
+    "families": {
+      "executor_environment": 1
+    },
+    "error_classes": {
+      "runtime_failure": 1
+    },
+    "severity_counts": {
+      "error": 1
+    },
+    "codes": {
+      "state_runtime_failure": 1
+    }
+  },
+  "runtime_diagnostic": {
+    "kind": "state_runtime_failure",
+    "assessment": "false positive on specification and operator-note text containing the literal migration followed by a space",
+    "source": "tools/supervisor.py:classify_executor_environment",
+    "gate_approved": false,
+    "runtime_fix": "deferred to separate focused bugfix"
+  },
+  "raw_candidate_sha256": "bdd41eca5db7adc63395cd50b18e195a16dbb28f87b147a95ef637b4ea577dd0",
+  "curated_candidate_path": "docs/reviews/0221_supervisor_candidate.yaml",
+  "curated_candidate_sha256": "488f1f6c8913094f2850f272ff0e4b7e1211be0acdd959ce752b5a24aad45162",
+  "curation_changes": [
+    "Separate resolved retired-subject lookup from unsatisfied dependency evaluation.",
+    "Clarify that subject class validates identity rather than partitioning local ID uniqueness.",
+    "Require explicit exact or current operation; absence of a revision alone does not select latest.",
+    "Label illustrative examples as proposed contracts rather than runtime evidence."
+  ]
+}
