@@ -6,6 +6,7 @@ import argparse
 import copy
 import json
 import re
+import sys
 from collections.abc import Callable
 from dataclasses import dataclass
 from datetime import datetime, timezone
@@ -14,6 +15,13 @@ from pathlib import Path
 from typing import Any
 
 from specification_core import FirstMatch, PredicateSpec
+
+TOOLS_DIR = Path(__file__).resolve().parent
+if str(TOOLS_DIR) not in sys.path:
+    sys.path.insert(0, str(TOOLS_DIR))
+
+from candidate_repair_readiness_context import CandidateRepairReadinessContext  # noqa: E402
+from candidate_repair_readiness_spec import candidate_repair_readiness  # noqa: E402
 
 ROOT = Path(__file__).resolve().parents[1]
 PROPOSAL_ID = "0152"
@@ -746,8 +754,6 @@ def build_candidate_repair_loop_report(
     )
     applied_count = sum(1 for action in actions if action["status"] == "applied_to_preview")
     context_required_count = sum(1 for action in actions if action["status"] == "requires_context")
-    pre_sib_ready = _dict(pre_sib_report.get("readiness")).get("ready") is True
-    no_op_ready = pre_sib_ready and not actions
     source_ref = _text(candidate_graph.get("source_ref"))
     if not source_ref and candidate_graph_path is not None:
         source_ref = _relative_ref(candidate_graph_path)
@@ -755,9 +761,17 @@ def build_candidate_repair_loop_report(
     if not pre_sib_ref and pre_sib_report_path is not None:
         pre_sib_ref = _relative_ref(pre_sib_report_path)
     findings = input_findings + pre_sib_findings
-    ready = not findings and (applied_count > 0 or no_op_ready)
-    status = "repair_preview_ready" if ready else "repair_review_required"
-    if no_op_ready:
+    readiness = candidate_repair_readiness(
+        CandidateRepairReadinessContext(
+            has_findings=bool(findings),
+            applied_action_count=applied_count,
+            action_count=len(actions),
+            pre_sib_ready=_dict(pre_sib_report.get("readiness")).get("ready") is True,
+        )
+    )
+    ready = readiness.ready
+    status = readiness.status
+    if readiness.no_op_repair_loop:
         preview["repair_preview"]["no_op_repair_loop"] = True
     return {
         "artifact_kind": "candidate_repair_loop_report",
@@ -818,7 +832,7 @@ def build_candidate_repair_loop_report(
             "applied_action_count": applied_count,
             "context_required_count": context_required_count,
             "finding_count": len(findings),
-            "no_op_repair_loop": no_op_ready,
+            "no_op_repair_loop": readiness.no_op_repair_loop,
         },
     }
 

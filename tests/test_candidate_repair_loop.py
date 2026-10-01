@@ -6,6 +6,9 @@ import subprocess
 import sys
 from pathlib import Path
 
+import pytest
+from specification_core import TraceRecorder
+
 ROOT = Path(__file__).resolve().parents[1]
 TOOL_PATH = ROOT / "tools" / "candidate_repair_loop.py"
 FIXTURE_DIR = ROOT / "tests" / "fixtures" / "candidate_repair_loop"
@@ -53,6 +56,51 @@ def build_repair_report() -> dict[str, object]:
         candidate_graph_path=CANDIDATE_REPAIRABLE,
         pre_sib_report_path=PRE_SIB_REPAIR_REQUIRED,
     )
+
+
+@pytest.mark.parametrize(
+    ("has_findings", "applied_count", "action_count", "pre_sib_ready", "ready", "no_op"),
+    [
+        (False, 3, 5, False, True, False),
+        (False, 0, 2, True, False, False),
+        (False, 0, 0, True, True, True),
+        (False, 0, 0, False, False, False),
+        (True, 3, 5, False, False, False),
+        (True, 0, 0, True, False, True),
+    ],
+    ids=[
+        "applied-with-context",
+        "context-only",
+        "clean-noop",
+        "unready-noop",
+        "findings-block-repairs",
+        "findings-with-noop-projection",
+    ],
+)
+def test_candidate_repair_readiness_policy_and_trace(
+    has_findings: bool,
+    applied_count: int,
+    action_count: int,
+    pre_sib_ready: bool,
+    ready: bool,
+    no_op: bool,
+) -> None:
+    module = load_module()
+    context = module.CandidateRepairReadinessContext(
+        has_findings=has_findings,
+        applied_action_count=applied_count,
+        action_count=action_count,
+        pre_sib_ready=pre_sib_ready,
+    )
+    recorder = TraceRecorder()
+    result = module.candidate_repair_readiness(context, recorder=recorder)
+    assert result.ready is ready
+    assert result.no_op_repair_loop is no_op
+    assert result.status == ("repair_preview_ready" if ready else "repair_review_required")
+    assert len(recorder.events) == 1
+    assert recorder.events[0].name == "candidate_repair.preview_ready"
+    assert recorder.events[0].outcome.value == ("satisfied" if ready else "unsatisfied")
+    assert module.candidate_repair_readiness(context) == result
 
 
 def test_candidate_repair_loop_builds_repair_preview() -> None:
@@ -321,6 +369,30 @@ def test_candidate_repair_loop_allows_clean_noop_repair_loop() -> None:
     assert report["summary"]["context_required_count"] == 0
     assert report["summary"]["no_op_repair_loop"] is True
     assert report["revised_candidate_graph_preview"]["repair_preview"]["no_op_repair_loop"] is True
+
+    pre_sib_report["readiness"]["ready"] = False
+    blocked_report = module.build_candidate_repair_loop_report(
+        candidate_graph=candidate_graph,
+        pre_sib_report=pre_sib_report,
+        candidate_graph_path=CLEAN_CANDIDATE,
+        pre_sib_report_path=ROOT / "runs" / "pre_sib_coherence_report.json",
+    )
+    assert blocked_report["readiness"]["ready"] is False
+    assert blocked_report["readiness"]["review_state"] == "repair_review_required"
+
+    pre_sib_report["readiness"]["ready"] = True
+    pre_sib_report["contract_ref"] = "unsupported"
+    invalid_report = module.build_candidate_repair_loop_report(
+        candidate_graph=candidate_graph,
+        pre_sib_report=pre_sib_report,
+    )
+    assert invalid_report["readiness"]["ready"] is False
+    assert "pre_sib_contract_ref_unsupported" in finding_ids(invalid_report)
+    assert invalid_report["summary"]["no_op_repair_loop"] is True
+    assert (
+        invalid_report["revised_candidate_graph_preview"]["repair_preview"]["no_op_repair_loop"]
+        is True
+    )
 
 
 def test_candidate_repair_loop_rejects_mismatched_pre_sib_report() -> None:

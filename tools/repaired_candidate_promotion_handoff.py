@@ -20,10 +20,6 @@ import candidate_spec_materialization  # noqa: E402
 import idea_to_spec_promotion_gate  # noqa: E402
 import idea_to_spec_repair_session_journal  # noqa: E402
 import pre_sib_coherence_report  # noqa: E402
-from repaired_handoff_context import RepairedHandoffContext  # noqa: E402
-from repaired_handoff_noop_passthrough_spec import (  # noqa: E402
-    CLEAN_PRE_SIB_NOOP_PASSTHROUGH,
-)
 
 ROOT = Path(__file__).resolve().parents[1]
 PROPOSAL_ID = "0177"
@@ -339,49 +335,6 @@ def _active_candidate_config(
     }
 
 
-def _repair_loop_for_repaired_handoff(
-    repair_loop: dict[str, Any],
-    *,
-    pre_sib_report: dict[str, Any],
-) -> dict[str, Any]:
-    summary = _dict(repair_loop.get("summary"))
-    context = RepairedHandoffContext(
-        pre_sib_ready=_dict(pre_sib_report.get("readiness")).get("ready") is True,
-        repair_loop_ready=_dict(repair_loop.get("readiness")).get("ready") is True,
-        has_findings=bool(_list(repair_loop.get("findings"))),
-        applied_action_count=summary.get("applied_action_count", 0),
-        context_required_count=summary.get("context_required_count", 0),
-    )
-    if not CLEAN_PRE_SIB_NOOP_PASSTHROUGH.is_satisfied_by(context):
-        return repair_loop
-
-    normalized = copy.deepcopy(repair_loop)
-    readiness = dict(_dict(normalized.get("readiness")))
-    readiness.update(
-        {
-            "ready": True,
-            "review_state": "repair_preview_ready",
-            "blocked_by": [],
-        }
-    )
-    normalized["readiness"] = readiness
-    normalized_summary = dict(summary)
-    normalized_summary.update(
-        {
-            "status": "repair_preview_ready",
-            "no_op_repair_loop": True,
-        }
-    )
-    normalized["summary"] = normalized_summary
-    normalized["repaired_candidate_promotion_handoff"] = {
-        "proposal_id": PROPOSAL_ID,
-        "contract_ref": CONTRACT_REF,
-        "state": "clean_pre_sib_pass_through",
-        "reason": "repaired pre-SIB report is already ready and no repair action is required",
-    }
-    return normalized
-
-
 def _readiness_findings(
     *,
     repaired_active_candidate: dict[str, Any],
@@ -500,10 +453,6 @@ def build_repaired_candidate_promotion_handoff(
             candidate_graph_path=_repo_path(repaired_candidate_graph_output),
             pre_sib_report_path=_repo_path(repaired_pre_sib_output),
             output_path=_repo_path(repaired_repair_loop_output),
-        )
-        repaired_repair_loop = _repair_loop_for_repaired_handoff(
-            repaired_repair_loop,
-            pre_sib_report=repaired_pre_sib,
         )
         write_json(repaired_repair_loop, repaired_repair_loop_output)
         repaired_materialization = (
