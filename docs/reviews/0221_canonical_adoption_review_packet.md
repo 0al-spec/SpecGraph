@@ -14,6 +14,10 @@ turns these recommendations into proposed boundary values, lookup outcomes,
 and a first implementation slice. It remains review-only and does not adopt
 the contract or authorize source-data migration.
 
+The [canonical contract approval packet](0221_canonical_contract_approval.md)
+now proposes SG-SPEC-0068 as a bounded child for explicit human review. Its
+preparation does not adopt the contract or authorize implementation.
+
 ## Decision Requested
 
 Review the four open design questions in RFC 0221, decide whether to adopt its

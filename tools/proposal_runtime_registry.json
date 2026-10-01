@@ -12646,7 +12646,9 @@
       "docs/archive/proposal_sources/0221_stable_requirement_identity_and_lineage.md",
       "docs/reviews/0221_subject_address_read_model.md",
       "docs/reviews/0221_supervisor_candidate.yaml",
-      "docs/reviews/0221_preparation_evidence.json"
+      "docs/reviews/0221_preparation_evidence.json",
+      "specs/nodes/SG-SPEC-0068.yaml",
+      "docs/reviews/0221_canonical_contract_approval.md"
     ],
     "runtime_markers": [
       {
@@ -12697,7 +12699,8 @@
         "path": "docs/proposals/0221_stable_requirement_identity_and_lineage.md",
         "pattern": "implements none of those behaviors."
       }
-    ]
+    ],
+    "notes": "SG-SPEC-0068 is an outlined canonical-contract candidate pending explicit human approval; preparation does not adopt RFC 0221, approve a supervisor gate, implement lookup or authorize migration. Parent SG-SPEC-0019 remains frozen and unchanged."
   },
   {
     "proposal_id": "0222",

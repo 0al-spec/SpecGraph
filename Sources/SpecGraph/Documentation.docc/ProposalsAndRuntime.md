@@ -88,3 +88,15 @@ lookup result with the source contract: preserve revision advancement, separate
 lineage from disposition, identify every relation endpoint, and define failure
 outcomes for ambiguous identity scopes. Update the curated artifact digest and
 record corrections as curation, not as evidence verified by the original run.
+
+## RFC 0221 canonical contract review
+
+SG-SPEC-0068 is the outlined RFC 0221 child candidate, pending human approval.
+The approval packet is `docs/reviews/0221_canonical_contract_approval.md`.
+It proposes workspace-scoped subject identity, revisions, transitions and exact
+lookup while preserving frozen SG-SPEC-0019 and its one-to-one canonical
+supersession contract. Preparation and passed checks are not adoption.
+
+Review must record explicit human approval of the exact bounded contract before
+merge. Storage, allocator, physical history and source migration remain deferred.
+Read-model implementation follows separately; no runtime conformance is claimed.
