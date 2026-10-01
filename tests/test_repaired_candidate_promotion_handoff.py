@@ -10,6 +10,9 @@ import pytest
 
 ROOT = Path(__file__).resolve().parents[1]
 TOOL_PATH = ROOT / "tools" / "repaired_candidate_promotion_handoff.py"
+sys.path.insert(0, str(ROOT / "tools"))
+
+from repaired_candidate_promotion_handoff import _repair_loop_for_repaired_handoff  # noqa: E402
 
 
 def write_json(path: Path, payload: object) -> None:
@@ -475,6 +478,55 @@ def test_repaired_candidate_promotion_handoff_allows_clean_noop_repair_loop(
     assert promotion_gate["readiness"]["ready"] is True
     report = load_json(outputs["handoff"])
     assert report["readiness"]["ready"] is True
+
+
+@pytest.mark.parametrize(
+    ("pre_sib_ready", "repair_loop", "expected_passthrough"),
+    [
+        (True, {"readiness": {"ready": False}, "summary": {}}, True),
+        (False, {"readiness": {"ready": False}, "summary": {}}, False),
+        (True, {"readiness": {"ready": True}, "summary": {}}, False),
+        (
+            True,
+            {"readiness": {"ready": False}, "findings": [{"id": "gap"}], "summary": {}},
+            False,
+        ),
+        (
+            True,
+            {"readiness": {"ready": False}, "summary": {"applied_action_count": 1}},
+            False,
+        ),
+        (
+            True,
+            {"readiness": {"ready": False}, "summary": {"context_required_count": 1}},
+            False,
+        ),
+    ],
+)
+def test_repaired_handoff_noop_passthrough_policy_preserves_existing_outcomes(
+    pre_sib_ready: bool,
+    repair_loop: dict[str, object],
+    expected_passthrough: bool,
+) -> None:
+    result = _repair_loop_for_repaired_handoff(
+        repair_loop,
+        pre_sib_report={"readiness": {"ready": pre_sib_ready}},
+    )
+
+    if expected_passthrough:
+        assert result is not repair_loop
+        assert result["readiness"] == {
+            "ready": True,
+            "review_state": "repair_preview_ready",
+            "blocked_by": [],
+        }
+        assert result["summary"]["status"] == "repair_preview_ready"
+        assert result["summary"]["no_op_repair_loop"] is True
+        assert result["repaired_candidate_promotion_handoff"]["state"] == (
+            "clean_pre_sib_pass_through"
+        )
+    else:
+        assert result is repair_loop
 
 
 def test_repaired_candidate_promotion_handoff_blocks_unresolved_repaired_gaps(
