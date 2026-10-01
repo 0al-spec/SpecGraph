@@ -322,6 +322,16 @@ def test_candidate_repair_loop_allows_clean_noop_repair_loop() -> None:
     assert report["summary"]["no_op_repair_loop"] is True
     assert report["revised_candidate_graph_preview"]["repair_preview"]["no_op_repair_loop"] is True
 
+    pre_sib_report["readiness"]["ready"] = False
+    blocked_report = module.build_candidate_repair_loop_report(
+        candidate_graph=candidate_graph,
+        pre_sib_report=pre_sib_report,
+        candidate_graph_path=CLEAN_CANDIDATE,
+        pre_sib_report_path=ROOT / "runs" / "pre_sib_coherence_report.json",
+    )
+    assert blocked_report["readiness"]["ready"] is False
+    assert blocked_report["readiness"]["review_state"] == "repair_review_required"
+
 
 def test_candidate_repair_loop_rejects_mismatched_pre_sib_report() -> None:
     module = load_module()

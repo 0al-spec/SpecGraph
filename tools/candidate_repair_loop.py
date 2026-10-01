@@ -6,6 +6,7 @@ import argparse
 import copy
 import json
 import re
+import sys
 from collections.abc import Callable
 from dataclasses import dataclass
 from datetime import datetime, timezone
@@ -14,6 +15,16 @@ from pathlib import Path
 from typing import Any
 
 from specification_core import FirstMatch, PredicateSpec
+
+TOOLS_DIR = Path(__file__).resolve().parent
+if str(TOOLS_DIR) not in sys.path:
+    sys.path.insert(0, str(TOOLS_DIR))
+
+from candidate_repair_readiness_context import CandidateRepairReadinessContext  # noqa: E402
+from candidate_repair_readiness_spec import (  # noqa: E402
+    CandidateRepairReadiness,
+    candidate_repair_readiness,
+)
 
 ROOT = Path(__file__).resolve().parents[1]
 PROPOSAL_ID = "0152"
@@ -755,8 +766,15 @@ def build_candidate_repair_loop_report(
     if not pre_sib_ref and pre_sib_report_path is not None:
         pre_sib_ref = _relative_ref(pre_sib_report_path)
     findings = input_findings + pre_sib_findings
-    ready = not findings and (applied_count > 0 or no_op_ready)
-    status = "repair_preview_ready" if ready else "repair_review_required"
+    readiness = candidate_repair_readiness(
+        CandidateRepairReadinessContext(
+            has_findings=bool(findings),
+            applied_action_count=applied_count,
+            no_op_ready=no_op_ready,
+        )
+    )
+    ready = readiness is CandidateRepairReadiness.PREVIEW_READY
+    status = readiness.value
     if no_op_ready:
         preview["repair_preview"]["no_op_repair_loop"] = True
     return {
