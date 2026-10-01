@@ -5686,8 +5686,12 @@ def test_main_targeted_refinement_shows_executor_transcript_in_verbose_mode(
     assert "executor stderr detail" in captured.err
 
 
+@pytest.mark.parametrize(
+    "executor_stderr", ["", "Prepare migration history; no runtime changes.\n"]
+)
 def test_main_explicit_targeted_refinement_reruns_review_pending_spec(
     supervisor_module: object,
+    executor_stderr: str,
     repo_fixture: Path,
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
@@ -5734,7 +5738,7 @@ def test_main_explicit_targeted_refinement_reruns_review_pending_spec(
             args=["codex"],
             returncode=0,
             stdout="RUN_OUTCOME: done\nBLOCKER: none\n",
-            stderr="",
+            stderr=executor_stderr,
         )
 
     exit_code = supervisor_module.main(
@@ -5760,6 +5764,8 @@ def test_main_explicit_targeted_refinement_reruns_review_pending_spec(
         payload["selected_by_rule"]["operator_note"]
         == "Refine only one bounded concern for targeted rerun."
     )
+    assert payload["executor_environment"]["issues"] == []
+    assert payload["validator_results"]["executor_environment"] is True
     assert payload["outcome"] == "done"
     assert payload["decision_inspector"]["selection"]["mode"] == "explicit_target_refine"
     assert payload["decision_inspector"]["gate"]["required_human_action"] == (
@@ -6175,6 +6181,44 @@ def test_main_interrupted_multi_file_refinement_cleans_parent_runtime_tail(
         "specs/nodes/SG-SPEC-0002.yaml",
     ]
     assert payload["executor_environment"]["issue_kinds"] == ["executor_timeout_failure"]
+
+
+@pytest.mark.parametrize(
+    "stderr",
+    [
+        "operator note: prepare a migration plan without changing runtime.\n",
+        "+  - Preserve migration history when renaming subject IDs.\n",
+        "The migration failed in an earlier example; document its recovery.\n",
+        "2026-10-01T20:28:08Z INFO codex_state::runtime: migration 21 completed\n",
+    ],
+)
+def test_classify_executor_environment_ignores_migration_narrative(
+    supervisor_module: object,
+    stderr: str,
+) -> None:
+    environment = supervisor_module.classify_executor_environment(stderr)
+
+    assert environment == {"issues": [], "issue_kinds": [], "primary_failure": False}
+
+
+@pytest.mark.parametrize(
+    "stderr",
+    [
+        "ERROR codex_state::runtime: failed to open state db at /tmp/state.sqlite: "
+        "migration 21 was previously applied but is missing in the resolved migrations\n",
+        "ERROR codex_state::runtime: failed to initialize state runtime\n",
+        "ERROR codex_state::runtime: state db discrepancy\n",
+    ],
+)
+def test_classify_executor_environment_preserves_explicit_state_failures(
+    supervisor_module: object,
+    stderr: str,
+) -> None:
+    environment = supervisor_module.classify_executor_environment(stderr)
+
+    assert environment["issue_kinds"] == ["state_runtime_failure"]
+    assert environment["issues"][0]["evidence"] == [stderr.strip()]
+    assert environment["primary_failure"] is False
 
 
 def test_classify_executor_environment_detects_supervisor_timeout(
