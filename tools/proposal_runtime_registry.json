@@ -12691,5 +12691,36 @@
         "pattern": "implements none of those behaviors."
       }
     ]
+  },
+  {
+    "proposal_id": "0222",
+    "posture": "synchronous_runtime_slice",
+    "runtime_surfaces": [
+      "tools/supervisor.py",
+      "tools/supervisor_structural_limits.py",
+      "tests/test_workspace_structural_limits.py"
+    ],
+    "runtime_markers": [
+      {
+        "path": "tools/supervisor_structural_limits.py",
+        "pattern": "class StructuralLimits:"
+      },
+      {
+        "path": "tools/supervisor.py",
+        "pattern": "def structural_limits_scope("
+      }
+    ],
+    "validation_markers": [
+      {
+        "path": "tests/test_workspace_structural_limits.py",
+        "pattern": "def test_workspace_override_and_default_fallback("
+      }
+    ],
+    "observation_markers": [
+      {
+        "path": "tools/supervisor.py",
+        "pattern": "\"structural_limits\": limits_evidence"
+      }
+    ]
   }
 ]

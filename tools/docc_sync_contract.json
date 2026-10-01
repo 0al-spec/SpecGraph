@@ -480,6 +480,23 @@
         "jscpd 5.0.11",
         "informational"
       ]
+    },
+    {
+      "id": "workspace-structural-limits",
+      "description": "Workspace limits configuration and provenance remain documented in both operator manual and DocC.",
+      "docs": [
+        "docs/supervisor_manual.md",
+        "tools/README.md"
+      ],
+      "docc": [
+        "Sources/SpecGraph/Documentation.docc/ProductWorkspacePilots.md"
+      ],
+      "required_terms": [
+        "supervisor.structural_limits",
+        "schema version 1",
+        "structural_limits",
+        "digests"
+      ]
     }
   ]
 }

@@ -124,7 +124,9 @@ import urllib.request
 from collections import deque
 from collections.abc import Callable
 from contextlib import contextmanager
+from contextvars import ContextVar
 from dataclasses import asdict, dataclass
+from functools import wraps
 from pathlib import Path, PurePosixPath
 from types import ModuleType
 from typing import TYPE_CHECKING, Any
@@ -2496,7 +2498,13 @@ def policy_rule(
 ) -> dict[str, Any]:
     if matched_value is None:
         try:
-            matched_value = policy_lookup(policy_path)
+            matched_value = (
+                structural_threshold(policy_path.removeprefix("thresholds."))
+                if policy_path.removeprefix("thresholds.")
+                in get_structural_limits_module().COUNT_KEYS
+                | get_structural_limits_module().RATIO_KEYS
+                else policy_lookup(policy_path)
+            )
         except KeyError:
             matched_value = None
     return {
@@ -2552,6 +2560,7 @@ def supervisor_policy_reference() -> dict[str, Any]:
         "artifact_path": SUPERVISOR_POLICY_RELATIVE_PATH,
         "artifact_sha256": SUPERVISOR_POLICY_SHA256,
         "version": SUPERVISOR_POLICY.get("version"),
+        "structural_limits": structural_limits().evidence(),
     }
 
 
@@ -5557,10 +5566,13 @@ def fan_out_legibility_profile(node: SpecNode, specs: list[SpecNode]) -> dict[st
     aggregate_text = f"{node.title} {node.prompt}".lower()
     parent_reads_as_aggregate = any(marker in aggregate_text for marker in AGGREGATE_ROLE_MARKERS)
     classification = "not_applicable"
-    if direct_child_count >= REFINEMENT_FAN_OUT_DIRECT_CHILDREN_THRESHOLD:
-        if dominant_token_coverage >= REFINEMENT_FAN_OUT_GROUPED_CHILD_COVERAGE_THRESHOLD or (
+    if direct_child_count >= structural_threshold("refinement_fan_out_direct_children"):
+        if dominant_token_coverage >= structural_threshold(
+            "refinement_fan_out_grouped_child_coverage"
+        ) or (
             parent_reads_as_aggregate
-            and dominant_token_coverage >= REFINEMENT_FAN_OUT_PARENT_AGGREGATE_FLOOR
+            and dominant_token_coverage
+            >= structural_threshold("refinement_fan_out_parent_aggregate_floor")
         ):
             classification = "healthy_multi_child_aggregate"
         else:
@@ -7548,7 +7560,14 @@ def build_prompt(
         )
         or "- (not specified)"
     )
-    refinement_section = """
+    limits_evidence = structural_limits().evidence()
+    limits_section = (
+        "\nEffective structural limits (fixed for this run):\n"
+        + json.dumps(limits_evidence, sort_keys=True)
+        + "\nThese structural settings do not grant mutation or status authority.\n"
+    )
+    refinement_section = (
+        """
 
 Refinement policy:
 - Treat the current spec as one bounded piece of a larger puzzle graph.
@@ -7569,6 +7588,8 @@ Refinement policy:
 - If decomposition is clearly needed, you may create multiple sibling child specs in one run.
 - If the node remains non-atomic after your edits, end with RUN_OUTCOME: split_required.
 """.rstrip()
+        + limits_section
+    )
     mode_section = ""
     operator_section = ""
     if operator_note.strip():
@@ -7666,7 +7687,8 @@ Refinement mode: split_refactor_proposal
 - Every current parent acceptance criterion must be mapped exactly once
   to parent_retained or one child slot.
 - Cross-cutting acceptance stays on the parent and must not be duplicated across children.
-- parent_after_split.intended_depends_on must not exceed {ATOMICITY_MAX_BLOCKING_CHILDREN}
+- parent_after_split.intended_depends_on must not exceed
+  {structural_threshold("atomicity_max_blocking_children")}
   blocking child slots; if a clean split needs more, end with RUN_OUTCOME: escalate.
 {retrospective_section}
 - Suggested child IDs and paths are advisory snapshot outputs only;
@@ -8258,23 +8280,25 @@ def validate_atomicity(node: SpecNode) -> list[str]:
         return []
 
     errors: list[str] = []
+    acceptance_limit = structural_threshold("atomicity_max_acceptance")
+    children_limit = structural_threshold("atomicity_max_blocking_children")
     acceptance = node.data.get("acceptance")
-    if isinstance(acceptance, list) and len(acceptance) > ATOMICITY_MAX_ACCEPTANCE:
+    if isinstance(acceptance, list) and len(acceptance) > acceptance_limit:
         errors.append(
             "Atomicity gate exceeded: "
-            f"{len(acceptance)} acceptance criteria > {ATOMICITY_MAX_ACCEPTANCE}. "
+            f"{len(acceptance)} acceptance criteria > {acceptance_limit}. "
             "Split independent concerns into child specs."
         )
 
     depends_on = node.data.get("depends_on")
     if (
         isinstance(depends_on, list)
-        and len(depends_on) > ATOMICITY_MAX_BLOCKING_CHILDREN
+        and len(depends_on) > children_limit
         and not depends_only_on_declared_cluster_members(node)
     ):
         errors.append(
             "Atomicity gate exceeded: "
-            f"{len(depends_on)} blocking children > {ATOMICITY_MAX_BLOCKING_CHILDREN}. "
+            f"{len(depends_on)} blocking children > {children_limit}. "
             "Prefer smaller sibling specs or an intermediate overview node."
         )
 
@@ -9019,10 +9043,9 @@ def observe_graph_health(
             shape_pressure = False
             fan_out_profile = fan_out_legibility_profile(reconciled_node, worktree_specs)
             shape_details.update(fan_out_profile)
-            if (
-                fan_out_profile["classification"] == "healthy_multi_child_aggregate"
-                and metrics["direct_child_count"] >= REFINEMENT_FAN_OUT_DIRECT_CHILDREN_THRESHOLD
-            ):
+            if fan_out_profile["classification"] == "healthy_multi_child_aggregate" and metrics[
+                "direct_child_count"
+            ] >= structural_threshold("refinement_fan_out_direct_children"):
                 observations.append(
                     {
                         "kind": "healthy_multi_child_aggregate",
@@ -9055,7 +9078,9 @@ def observe_graph_health(
                 recommended_actions.append("introduce_semantic_cluster_parent")
                 shape_pressure = True
 
-            if metrics["longest_one_child_chain"] >= SUBTREE_SHAPE_ONE_CHILD_CHAIN_THRESHOLD:
+            if metrics["longest_one_child_chain"] >= structural_threshold(
+                "subtree_shape_one_child_chain"
+            ):
                 observations.append(
                     {
                         "kind": "serial_refinement_ladder",
@@ -9074,9 +9099,10 @@ def observe_graph_health(
                 shape_pressure = True
 
             if (
-                metrics["max_depth"] >= SUBTREE_SHAPE_ONE_CHILD_CHAIN_THRESHOLD
+                metrics["max_depth"] >= structural_threshold("subtree_shape_one_child_chain")
                 and metrics["max_width"] <= 2
-                and metrics["single_child_internal_ratio"] >= SUBTREE_SHAPE_MIN_SINGLE_CHILD_RATIO
+                and metrics["single_child_internal_ratio"]
+                >= structural_threshold("subtree_shape_min_single_child_ratio")
             ):
                 observations.append(
                     {
@@ -9093,9 +9119,12 @@ def observe_graph_health(
                 shape_pressure = True
 
             if (
-                metrics["longest_one_child_chain"] >= SUBTREE_SHAPE_ONE_CHILD_CHAIN_THRESHOLD
-                and metrics["median_acceptance_count"] <= OVER_ATOMIZED_ACCEPTANCE_MAX
-                and metrics["single_child_internal_ratio"] >= SUBTREE_SHAPE_MIN_SINGLE_CHILD_RATIO
+                metrics["longest_one_child_chain"]
+                >= structural_threshold("subtree_shape_one_child_chain")
+                and metrics["median_acceptance_count"]
+                <= structural_threshold("over_atomized_acceptance_max")
+                and metrics["single_child_internal_ratio"]
+                >= structural_threshold("subtree_shape_min_single_child_ratio")
             ):
                 observations.append(
                     {
@@ -9115,7 +9144,8 @@ def observe_graph_health(
                 shape_pressure = True
 
             if (
-                metrics["longest_one_child_chain"] >= SUBTREE_SHAPE_ONE_CHILD_CHAIN_THRESHOLD
+                metrics["longest_one_child_chain"]
+                >= structural_threshold("subtree_shape_one_child_chain")
                 and metrics["max_width"] == 1
             ):
                 observations.append(
@@ -9136,7 +9166,8 @@ def observe_graph_health(
                 shape_pressure = True
 
             if (
-                metrics["longest_one_child_chain"] >= SUBTREE_SHAPE_ONE_CHILD_CHAIN_THRESHOLD
+                metrics["longest_one_child_chain"]
+                >= structural_threshold("subtree_shape_one_child_chain")
                 and metrics["delegation_marker_ratio"] >= TEXT_MARKER_RATIO_THRESHOLD
             ):
                 observations.append(
@@ -9226,7 +9257,8 @@ def observe_graph_health(
 
             if (
                 outcome == "split_required"
-                and metrics["longest_one_child_chain"] >= GRAPH_LAYER_EXHAUSTED_CHAIN_THRESHOLD
+                and metrics["longest_one_child_chain"]
+                >= structural_threshold("graph_layer_exhausted_chain")
                 and metrics["max_width"] == 1
                 and metrics["execution_marker_ratio"] >= TEXT_MARKER_RATIO_THRESHOLD
             ):
@@ -9977,12 +10009,13 @@ def make_run_id(spec_id: str) -> str:
 
 
 def write_run_log(run_id: str, payload: dict[str, Any]) -> Path:
+    recorded = {**payload, "structural_limits": structural_limits().evidence()}
     RUNS_DIR.mkdir(parents=True, exist_ok=True)
     path = RUNS_DIR / f"{run_id}.json"
     with artifact_lock(path):
         if path.exists():
             raise RuntimeError(f"run log already exists for run_id: {run_id}")
-        atomic_write_json(path, payload)
+        atomic_write_json(path, recorded)
     return path
 
 
@@ -10639,6 +10672,81 @@ def safe_project_environment_path_text(
     return text
 
 
+_STRUCTURAL_LIMITS: ContextVar[Any] = ContextVar("supervisor_structural_limits", default=None)
+
+
+def get_structural_limits_module() -> ModuleType:
+    module_name = "_specgraph_supervisor_structural_limits"
+    existing = sys.modules.get(module_name)
+    if isinstance(existing, ModuleType):
+        return existing
+    path = TOOLS_DIR / "supervisor_structural_limits.py"
+    spec = importlib.util.spec_from_file_location(module_name, path)
+    if spec is None or spec.loader is None:
+        raise RuntimeError(f"Failed to load structural limits from {path}")
+    module = importlib.util.module_from_spec(spec)
+    sys.modules[module_name] = module
+    spec.loader.exec_module(module)
+    return module
+
+
+def structural_limits() -> Any:
+    scoped = _STRUCTURAL_LIMITS.get()
+    if scoped is not None:
+        return scoped
+    config, digest, status = load_project_config()
+    return get_structural_limits_module().resolve_structural_limits(
+        config,
+        SUPERVISOR_POLICY["thresholds"],
+        config_sha256=digest,
+        config_status=status,
+        config_path=repo_relative_or_absolute_path(project_config_path()),
+        policy_sha256=SUPERVISOR_POLICY_SHA256,
+    )
+
+
+def structural_threshold(key: str) -> int | float:
+    return structural_limits().value(key)
+
+
+def run_structural_threshold(payload: dict[str, Any], key: str) -> int | float:
+    if "structural_limits" in payload and payload["structural_limits"] is None:
+        raise RuntimeError("malformed recorded structural_limits: null")
+    return get_structural_limits_module().recorded_threshold(
+        payload.get("structural_limits"), key, SUPERVISOR_POLICY["thresholds"][key]
+    )
+
+
+@contextmanager
+def structural_limits_scope():
+    token = _STRUCTURAL_LIMITS.set(structural_limits())
+    try:
+        yield
+    finally:
+        _STRUCTURAL_LIMITS.reset(token)
+
+
+def with_structural_limits(function):
+    @wraps(function)
+    def scoped(*args, **kwargs):
+        # This standalone diagnostic command must be able to report invalid limits
+        # from the project config instead of failing before main() can emit findings.
+        if kwargs.get("build_project_environment_mode"):
+            return function(*args, **kwargs)
+        try:
+            limits = structural_limits()
+        except RuntimeError as exc:
+            print(str(exc), file=sys.stderr)
+            return 1
+        token = _STRUCTURAL_LIMITS.set(limits)
+        try:
+            return function(*args, **kwargs)
+        finally:
+            _STRUCTURAL_LIMITS.reset(token)
+
+    return scoped
+
+
 def load_project_config(config_path: Path | None = None) -> tuple[dict[str, Any], str, str]:
     path = config_path or project_config_path()
     try:
@@ -10959,6 +11067,35 @@ def build_project_environment(
             validation_findings=validation_findings,
         ),
     }
+    try:
+        scoped_limits = _STRUCTURAL_LIMITS.get() if config_path is None else None
+        if scoped_limits is not None:
+            limits_evidence = scoped_limits.evidence()
+        else:
+            limits_evidence = (
+                get_structural_limits_module()
+                .resolve_structural_limits(
+                    config,
+                    SUPERVISOR_POLICY["thresholds"],
+                    config_sha256=config_sha256,
+                    config_status=config_status,
+                    config_path=repo_relative_or_absolute_path(
+                        config_path or project_config_path()
+                    ),
+                    policy_sha256=SUPERVISOR_POLICY_SHA256,
+                )
+                .evidence()
+            )
+    except RuntimeError as exc:
+        limits_evidence = {"status": "invalid", "error": str(exc)}
+        validation_findings.append(
+            {
+                "finding_id": "invalid_structural_limits",
+                "severity": "error",
+                "message": str(exc),
+                "next_gap": "repair_project_config",
+            }
+        )
     summary_status = "valid" if not validation_findings else "needs_attention"
     return {
         "artifact_kind": PROJECT_ENVIRONMENT_ARTIFACT_KIND,
@@ -10987,6 +11124,7 @@ def build_project_environment(
             "core_locked": core_locked,
         },
         "workspace": normalized_workspace,
+        "structural_limits": limits_evidence,
         "supervisor_authority": supervisor_authority,
         "governance_enforcement": governance_enforcement,
         "active_profile": active_profile,
@@ -43971,7 +44109,11 @@ def supervisor_run_has_split_required_candidate_without_proposal_path(
     canonical_count = canonical_acceptance_count_for_spec(spec_id)
     if canonical_count is None:
         return False, None, f"unknown target spec: {spec_id}"
-    return canonical_count <= ATOMICITY_MAX_ACCEPTANCE, canonical_count, ""
+    return (
+        canonical_count <= run_structural_threshold(payload, "atomicity_max_acceptance"),
+        canonical_count,
+        "",
+    )
 
 
 def supervisor_problem_diagnosis_problem(
@@ -44076,7 +44218,8 @@ def build_supervisor_problem_diagnosis(
                     evidence=[
                         "run_log.atomicity_pressure_observed",
                         f"canonical_acceptance_count={canonical_acceptance_count}",
-                        f"atomicity_max_acceptance={ATOMICITY_MAX_ACCEPTANCE}",
+                        "atomicity_max_acceptance="
+                        f"{run_structural_threshold(run_payload, 'atomicity_max_acceptance')}",
                         "proposal_queue.emitted_ids empty_or_absent",
                     ],
                 )
@@ -51163,10 +51306,10 @@ def validate_split_proposal_artifact(
     if not isinstance(intended_depends_on, list):
         errors.append("parent_after_split.intended_depends_on must be a list")
         intended_depends_on = []
-    elif len(intended_depends_on) > ATOMICITY_MAX_BLOCKING_CHILDREN:
+    elif len(intended_depends_on) > structural_threshold("atomicity_max_blocking_children"):
         errors.append(
             "parent_after_split.intended_depends_on must not exceed "
-            f"{ATOMICITY_MAX_BLOCKING_CHILDREN} blocking child slots"
+            f"{structural_threshold('atomicity_max_blocking_children')} blocking child slots"
         )
 
     suggested_children = artifact.get("suggested_children")
@@ -51384,9 +51527,9 @@ def split_application_parent_dependency_additions(
         return []
     current_depends_on = [str(dep).strip() for dep in node.depends_on if str(dep).strip()]
     tentative = merge_unique_strings(current_depends_on, normalized)
-    if len(
-        tentative
-    ) > ATOMICITY_MAX_BLOCKING_CHILDREN and depends_only_on_declared_cluster_members(node):
+    if len(tentative) > structural_threshold(
+        "atomicity_max_blocking_children"
+    ) and depends_only_on_declared_cluster_members(node):
         return []
     return normalized
 
@@ -54956,6 +55099,7 @@ def _process_one_spec_with_recoverable_retry(
     return exit_code, outcome, completion_status, gate_state
 
 
+@with_structural_limits
 def main(
     *,
     executor: Callable[[SpecNode, Path], subprocess.CompletedProcess[str]] | None = None,
