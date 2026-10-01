@@ -9754,7 +9754,9 @@ def classify_executor_environment(stderr: str) -> dict[str, Any]:
     """Classify runtime/environment issues from nested executor stderr.
 
     These signals are operational diagnostics about the child executor runtime,
-    not graph-health findings about the current spec.
+    not graph-health findings about the current spec. The transcript can also
+    contain operator notes, spec prose, and diffs: migration vocabulary alone
+    is not evidence of a state runtime failure.
     """
     lines = [line.strip() for line in stderr.splitlines() if line.strip()]
     lowered = [line.lower() for line in lines]
@@ -9812,7 +9814,6 @@ def classify_executor_environment(stderr: str) -> dict[str, Any]:
             for fragment in (
                 "failed to open state db",
                 "failed to initialize state runtime",
-                "migration ",
                 "state db discrepancy",
             )
         ),
