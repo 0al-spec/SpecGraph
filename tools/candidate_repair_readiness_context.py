@@ -9,4 +9,5 @@ from dataclasses import dataclass
 class CandidateRepairReadinessContext:
     has_findings: bool
     applied_action_count: int
-    no_op_ready: bool
+    action_count: int
+    pre_sib_ready: bool

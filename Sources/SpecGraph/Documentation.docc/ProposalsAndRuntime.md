@@ -38,3 +38,17 @@ Use the proposal tracking gate when proposal documentation changes:
 ```bash
 make proposal-tracking-gate
 ```
+
+## Readiness policy refactors
+
+Trace current producer guarantees before extracting a fallback into a
+specification. The repaired handoff no-op fallback was redundant because the
+repair-loop producer already handled clean no-op readiness. Artificial input
+tests alone did not establish reachability through that production chain.
+
+Candidate repair readiness now consumes source facts and returns a typed
+outcome from one boolean specification. `no_op_repair_loop` remains independent
+of `ready`: findings can block a ready pre-SIB graph with no actions while the
+no-op observation stays true. Preserve those projections and test optional
+decision traces. Evaluate confirmed redundant decisions and restored policy
+boundaries alongside complexity measurements.

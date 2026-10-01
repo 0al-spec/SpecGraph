@@ -8271,6 +8271,8 @@
       "docs/archive/proposal_sources/0152_candidate_repair_loop.md",
       "docs/product_workspace_graph_versioning_roadmap.md",
       "tools/candidate_repair_loop.py",
+      "tools/candidate_repair_readiness_context.py",
+      "tools/candidate_repair_readiness_spec.py",
       "tests/test_candidate_repair_loop.py",
       "tests/fixtures/candidate_repair_loop/candidate_graph_repairable.json",
       "tests/fixtures/candidate_repair_loop/pre_sib_repair_required.json",
@@ -10884,6 +10886,8 @@
       "tools/ontology_bound_candidate_graph_seed.py",
       "tests/test_candidate_repair_loop.py",
       "tools/candidate_repair_loop.py",
+      "tools/candidate_repair_readiness_context.py",
+      "tools/candidate_repair_readiness_spec.py",
       "tests/test_ontology_bound_candidate_graph_seed.py",
       "docs/product_workspace_graph_versioning_roadmap.md",
       "Sources/SpecGraph/Documentation.docc/ProductWorkspacePilots.md",
@@ -10903,8 +10907,8 @@
         "pattern": "decomposes_to"
       },
       {
-        "path": "tools/candidate_repair_loop.py",
-        "pattern": "no_op_ready"
+        "path": "tools/candidate_repair_readiness_spec.py",
+        "pattern": "_is_noop_repair_loop"
       },
       {
         "path": "tools/candidate_repair_loop.py",

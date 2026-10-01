@@ -437,3 +437,20 @@ not replace manifest/digest verification with a filesystem/HTTP-presence check.
 Preserve bootstrap discovery and legacy aliases, test rejection with the legacy
 alias still present, and distinguish a legacy-ready workspace from a valid
 workspace binding. See `make workspace-bundle-consumer-smoke`.
+
+### Readiness policy refactors
+
+Before extracting a fallback into a specification, trace the current producer
+and prove that its inputs can reach the fallback. The repaired handoff no-op
+fallback became redundant once the repair-loop producer handled clean no-op
+readiness itself; tests of artificial reports alone did not expose that overlap.
+Keep readiness policy in the producer's specification and have downstream
+handoffs consume the produced outcome.
+
+Pass source facts into the policy and return a typed outcome. For candidate
+repair readiness, `no_op_repair_loop` is an observation independent of `ready`:
+findings can block a ready pre-SIB graph with no actions while its no-op flag
+remains true. Preserve both projections. Use a boolean specification when all
+successful alternatives have the same outcome, and test its optional trace.
+Record confirmed redundant decisions and restored policy boundaries alongside
+complexity measurements when evaluating refactoring pilots.
