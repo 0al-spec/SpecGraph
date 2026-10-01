@@ -10700,6 +10700,7 @@ def structural_limits() -> Any:
         SUPERVISOR_POLICY["thresholds"],
         config_sha256=digest,
         config_status=status,
+        config_path=repo_relative_or_absolute_path(project_config_path()),
         policy_sha256=SUPERVISOR_POLICY_SHA256,
     )
 
@@ -10728,6 +10729,10 @@ def structural_limits_scope():
 def with_structural_limits(function):
     @wraps(function)
     def scoped(*args, **kwargs):
+        # This standalone diagnostic command must be able to report invalid limits
+        # from the project config instead of failing before main() can emit findings.
+        if kwargs.get("build_project_environment_mode"):
+            return function(*args, **kwargs)
         try:
             limits = structural_limits()
         except RuntimeError as exc:
@@ -11074,6 +11079,9 @@ def build_project_environment(
                     SUPERVISOR_POLICY["thresholds"],
                     config_sha256=config_sha256,
                     config_status=config_status,
+                    config_path=repo_relative_or_absolute_path(
+                        config_path or project_config_path()
+                    ),
                     policy_sha256=SUPERVISOR_POLICY_SHA256,
                 )
                 .evidence()

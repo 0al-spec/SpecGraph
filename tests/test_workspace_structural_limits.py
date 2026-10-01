@@ -202,6 +202,32 @@ def test_environment_discovery_uses_explicit_config_path(supervisor_module, tmp_
     )
     report = supervisor_module.build_project_environment(config_path=path)
     assert report["structural_limits"]["effective_thresholds"]["atomicity_max_acceptance"] == 9
+    assert report["structural_limits"]["source_config"]["artifact_path"] == (
+        path.resolve().as_posix()
+    )
+
+
+def test_project_environment_reports_invalid_structural_limits(
+    supervisor_module, monkeypatch, tmp_path, capsys
+):
+    configure(supervisor_module, monkeypatch, tmp_path, {"atomicity_max_acceptance": True})
+    runs_dir = tmp_path / "runs"
+    monkeypatch.setattr(supervisor_module, "RUNS_DIR", runs_dir)
+
+    exit_code = supervisor_module.main(
+        build_project_environment_mode=True,
+        output_mode="full",
+    )
+
+    assert exit_code == 0
+    report = json.loads(capsys.readouterr().out)
+    assert report["structural_limits"]["status"] == "invalid"
+    assert any(
+        finding["finding_id"] == "invalid_structural_limits"
+        for finding in report["validation_findings"]
+    )
+    saved = json.loads((runs_dir / "project_environment.json").read_text(encoding="utf-8"))
+    assert saved["structural_limits"]["status"] == "invalid"
 
 
 def test_corrupt_historical_digest_is_rejected(supervisor_module, monkeypatch, tmp_path):

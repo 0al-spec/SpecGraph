@@ -94,6 +94,7 @@ class StructuralLimits:
     overrides: frozenset[str]
     config_sha256: str
     config_status: str
+    config_path: str
     policy_sha256: str
     specification_trace: tuple[tuple[str, str], ...]
 
@@ -110,7 +111,7 @@ class StructuralLimits:
                 key: "workspace" if key in self.overrides else "repository" for key in values
             },
             "source_config": {
-                "artifact_path": "specgraph.project.yaml",
+                "artifact_path": self.config_path,
                 "artifact_sha256": self.config_sha256,
                 "status": self.config_status,
             },
@@ -131,6 +132,7 @@ def resolve_structural_limits(
     *,
     config_sha256: str,
     config_status: str,
+    config_path: str,
     policy_sha256: str,
 ) -> StructuralLimits:
     supervisor = config.get("supervisor", {})
@@ -159,6 +161,7 @@ def resolve_structural_limits(
         frozenset(overrides),
         config_sha256,
         config_status,
+        config_path,
         policy_sha256,
         trace,
     )

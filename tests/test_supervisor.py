@@ -636,6 +636,7 @@ def test_workspace_structural_limits_are_specificationcore_traceable(
         supervisor_module.SUPERVISOR_POLICY["thresholds"],
         config_sha256="c" * 64,
         config_status="available",
+        config_path="specgraph.project.yaml",
         policy_sha256="p" * 64,
     )
 
