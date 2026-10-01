@@ -20,6 +20,10 @@ import candidate_spec_materialization  # noqa: E402
 import idea_to_spec_promotion_gate  # noqa: E402
 import idea_to_spec_repair_session_journal  # noqa: E402
 import pre_sib_coherence_report  # noqa: E402
+from repaired_handoff_context import RepairedHandoffContext  # noqa: E402
+from repaired_handoff_noop_passthrough_spec import (  # noqa: E402
+    CLEAN_PRE_SIB_NOOP_PASSTHROUGH,
+)
 
 ROOT = Path(__file__).resolve().parents[1]
 PROPOSAL_ID = "0177"
@@ -340,16 +344,15 @@ def _repair_loop_for_repaired_handoff(
     *,
     pre_sib_report: dict[str, Any],
 ) -> dict[str, Any]:
-    if _dict(pre_sib_report.get("readiness")).get("ready") is not True:
-        return repair_loop
-    if _dict(repair_loop.get("readiness")).get("ready") is True:
-        return repair_loop
-    if _list(repair_loop.get("findings")):
-        return repair_loop
     summary = _dict(repair_loop.get("summary"))
-    if summary.get("applied_action_count", 0) != 0:
-        return repair_loop
-    if summary.get("context_required_count", 0) != 0:
+    context = RepairedHandoffContext(
+        pre_sib_ready=_dict(pre_sib_report.get("readiness")).get("ready") is True,
+        repair_loop_ready=_dict(repair_loop.get("readiness")).get("ready") is True,
+        has_findings=bool(_list(repair_loop.get("findings"))),
+        applied_action_count=summary.get("applied_action_count", 0),
+        context_required_count=summary.get("context_required_count", 0),
+    )
+    if not CLEAN_PRE_SIB_NOOP_PASSTHROUGH.is_satisfied_by(context):
         return repair_loop
 
     normalized = copy.deepcopy(repair_loop)
