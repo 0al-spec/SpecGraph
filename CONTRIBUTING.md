@@ -454,3 +454,15 @@ remains true. Preserve both projections. Use a boolean specification when all
 successful alternatives have the same outcome, and test its optional trace.
 Record confirmed redundant decisions and restored policy boundaries alongside
 complexity measurements when evaluating refactoring pilots.
+
+## Executor transcript diagnostics
+
+Nested executor stderr can include operator notes, specification text, and
+diffs alongside runtime logs. Migration vocabulary alone is not evidence of a
+runtime failure. Require explicit state failure diagnostics such as
+`failed to open state db`, `failed to initialize state runtime`, or
+`state db discrepancy`; keep ordinary migration plans and successful migration
+logs out of environment findings. Test both the classifier and the supervisor
+run artifact so narrative text cannot contaminate the executor-environment gate.
+Historical run artifacts and pending human review remain historical evidence;
+a classifier fix does not approve a previously retained candidate.
