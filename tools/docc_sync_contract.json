@@ -497,6 +497,31 @@
         "structural_limits",
         "digests"
       ]
+    },
+    {
+      "id": "rfc0221-subject-address-preparation",
+      "description": "Review-only subject-address preparation remains distinct from canonical adoption in DocC.",
+      "docs": [
+        "docs/reviews/0221_subject_address_read_model.md"
+      ],
+      "docc": [
+        "Sources/SpecGraph/Documentation.docc/ProposalsAndRuntime.md"
+      ],
+      "required_terms": [
+        "0221",
+        "review-only",
+        "workspace",
+        "criterion",
+        "revision"
+      ],
+      "docs_required_terms": [
+        "lookup_exact",
+        "lookup_current"
+      ],
+      "docc_required_terms": [
+        "lookup_exact",
+        "lookup_current"
+      ]
     }
   ]
 }

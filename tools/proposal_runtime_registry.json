@@ -12643,7 +12643,10 @@
     "posture": "deferred_until_canonicalized",
     "runtime_surfaces": [
       "docs/proposals/0221_stable_requirement_identity_and_lineage.md",
-      "docs/archive/proposal_sources/0221_stable_requirement_identity_and_lineage.md"
+      "docs/archive/proposal_sources/0221_stable_requirement_identity_and_lineage.md",
+      "docs/reviews/0221_subject_address_read_model.md",
+      "docs/reviews/0221_supervisor_candidate.yaml",
+      "docs/reviews/0221_preparation_evidence.json"
     ],
     "runtime_markers": [
       {

@@ -39,6 +39,22 @@ Use the proposal tracking gate when proposal documentation changes:
 make proposal-tracking-gate
 ```
 
+## RFC 0221 subject-address preparation
+
+RFC 0221 remains review-only, not canonical adoption. Its subject-address read
+model preparation builds on existing candidate Requirement and criterion IDs
+and `acceptance_criteria_refs`. It proposes immutable workspace scope,
+identified criterion records, separate identity/revision/containment,
+`lookup_exact` and `lookup_current`, and explicit unresolved outcomes.
+
+Reads must not allocate IDs or silently match legacy strings to identities.
+Candidate-local references require reviewed workspace binding before becoming
+durable subject references. Migration, runtime implementation and Hypercode
+integration remain separate stages. The preparation and supervisor evidence
+are documented in `docs/reviews/0221_subject_address_read_model.md` and the
+RFC 0221 canonical adoption review packet. A successful draft refinement does
+not adopt the proposal or change frozen SG-SPEC-0019.
+
 ## Readiness policy refactors
 
 Trace current producer guarantees before extracting a fallback into a
@@ -64,3 +80,11 @@ logs out of environment findings. Test both the classifier and the supervisor
 run artifact so narrative text cannot contaminate the executor-environment gate.
 Historical run artifacts and pending human review remain historical evidence;
 a classifier fix does not approve a previously retained candidate.
+
+### Curated contract completeness
+
+When curating a supervisor candidate from an RFC, compare every transition and
+lookup result with the source contract: preserve revision advancement, separate
+lineage from disposition, identify every relation endpoint, and define failure
+outcomes for ambiguous identity scopes. Update the curated artifact digest and
+record corrections as curation, not as evidence verified by the original run.

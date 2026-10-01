@@ -1,0 +1,375 @@
+id: DRAFT-SPEC-0221
+title: 'Review draft: workspace-scoped requirement and criterion identity'
+kind: spec
+created_at: '2026-10-01T20:27:00Z'
+updated_at: '2026-10-01T20:29:04Z'
+status: specified
+maturity: 0.55
+depends_on: []
+refines:
+- SG-SPEC-0019
+inputs:
+- specs/nodes/SG-SPEC-0019.yaml
+- docs/proposals/0221_stable_requirement_identity_and_lineage.md
+- docs/reviews/0221_canonical_adoption_review_packet.md
+- tools/candidate_spec_graph.py
+- tools/candidate_spec_materialization.py
+outputs:
+- specs/nodes/DRAFT-SPEC-0221.yaml
+allowed_paths:
+- specs/nodes/DRAFT-SPEC-0221.yaml
+acceptance:
+- Defines separate workspace-scoped identities for Requirement and criterion subjects independent of location,
+  wording, order, and scenarios.
+- Defines per-identity revision chains and independent subject relations and disposition without changing
+  frozen SG-SPEC-0019 topology.
+- Defines exact identity and revision lookup with explicit unresolved states and criterion-keyed evidence.
+- Defines backward-compatible preparation from existing candidate IDs with reviewed migration and no identity
+  allocation on ordinary reads.
+acceptance_evidence:
+- criterion: Defines separate workspace-scoped identities for Requirement and criterion subjects independent
+    of location, wording, order, and scenarios.
+  evidence: specification.subject_reference_contract defines immutable_workspace_identity, Requirement
+    subjects, criterion subjects, full_subject_reference, and acceptance_criteria_refs. specification.identity_rules
+    state that identities are independent of location, wording, order, and scenarios, and examples.separate_requirement_and_criterion_identity
+    shows REQ-0007 and AC-0031 sharing one immutable workspace scope while remaining separate subjects.
+- criterion: Defines per-identity revision chains and independent subject relations and disposition without
+    changing frozen SG-SPEC-0019 topology.
+  evidence: specification.revision_contract requires positive integer per-subject revisions beginning
+    at 1, one same-identity predecessor for later revisions, and a separate canonical supersession reference
+    when SG-SPEC-0019 applies. specification.transition_contract keeps editorial_revision, containment_move,
+    decomposes_into, composed_from, replacement, activation, and withdrawal distinct from SG-SPEC-0019 topology; examples.successor_revision_one_with_separate_supersession_link
+    shows successor revision 1 preserving its own origin while a separate SG-SPEC-0019 event references
+    the predecessor terminal revision.
+- criterion: Defines exact identity and revision lookup with explicit unresolved states and criterion-keyed
+    evidence.
+  evidence: specification.lookup_contract defines exact/current requests, resolved retired subjects and
+    explicit unresolved states. specification.dependency_evaluation_contract independently prevents a
+    retired Requirement from satisfying dependencies. specification.evidence_contract binds evidence to
+    the full criterion reference and revision; examples are proposed contract illustrations, not runtime
+    evidence.
+- criterion: Defines backward-compatible preparation from existing candidate IDs with reviewed migration
+    and no identity allocation on ordinary reads.
+  evidence: specification.migration_contract preserves existing candidate identities, legacy acceptance
+    strings, and BDD scenario IDs during dual-read. It requires source-controlled reviewed migration,
+    rejects duplicate or conflicting candidate mappings, and forbids ordinary reads from allocating identities;
+    examples.legacy_dual_read_without_allocation shows CANDIDATE-WORKSPACE-AUTH-CHECK retaining its candidate
+    ID while legacy acceptance text remains unassigned.
+prompt: Prepare an explicitly unadopted review draft under RFC0221, preserving frozen SG-SPEC-0019 and
+  existing candidate identities. This DRAFT namespace is temporary and is not a reserved canonical ID.
+  Do not introduce runtime code, new node kinds, Hypercode syntax, or adoption claims.
+specification:
+  objective: Prepare a bounded, explicitly unadopted RFC0221 review draft for workspace-scoped Requirement
+    and criterion subject references, with concrete review examples and unresolved schema decisions surfaced
+    rather than hidden.
+  review_status: not_adopted
+  authority_boundary:
+    draft_namespace: DRAFT-SPEC-0221 is a temporary review namespace only and is not a reserved canonical
+      SG-SPEC ID.
+    canonical_parent: SG-SPEC-0019 remains frozen; this draft does not edit, reinterpret, or weaken its
+      one-to-one canonical node and explicit-edge successor mapping.
+    adoption: This draft records a possible contract for review under RFC0221 and does not adopt RFC0221,
+      allocate a canonical child ID, or authorize implementation.
+    excluded_authority:
+    - No runtime code or migration tooling is introduced.
+    - No new canonical node kind is introduced.
+    - No Hypercode syntax, adapter contract, or integration is introduced.
+    - No existing candidate identity is silently reminted.
+  scope:
+    in:
+    - Subject-reference semantics for Requirement subjects and acceptance-criterion subjects
+    - Versioned embedded criterion records as a review candidate
+    - Immutable workspace identity and local subject identity separation
+    - Per-subject integer revisions and same-identity predecessor chains
+    - Typed transitions distinct from SG-SPEC-0019 canonical topology transitions
+    - Exact lookup, unresolved states, and criterion-keyed evidence
+    - Legacy dual-read and reviewed migration preparation for existing candidate IDs
+    out:
+    - Canonical adoption
+    - Runtime implementation
+    - Automatic migration
+    - Schema file mutation outside this draft
+    - New canonical node kinds
+    - Hypercode integration
+    - Allocator service or URI format
+    - Changing SG-SPEC-0019
+  subject_reference_contract:
+    immutable_workspace_identity: A persisted workspace identity that scopes every local subject ID. Mutable
+      repository names, slugs, remotes, paths, and display labels are not identity.
+    requirement_subject: An existing canonical Requirement node addressed by immutable_workspace_identity
+      plus its local Requirement ID. This draft does not create a second embedded Requirement representation.
+    criterion_subject: A distinct acceptance-criterion subject addressed by immutable_workspace_identity
+      plus a local criterion ID. A criterion is not a Requirement, scenario, list index, or statement
+      digest.
+    full_subject_reference:
+      workspace_identity: required immutable workspace identity
+      subject_class: Requirement or criterion
+      local_subject_id: workspace-local immutable subject ID
+      revision: optional exact positive integer revision; omitted only when the caller explicitly requests
+        current revision
+    acceptance_criteria_refs: The authored Requirement-to-criterion reference relation from a Requirement
+      subject to one or more criterion subjects. It remains distinct from decomposition, composition,
+      evidence, and scenario relations.
+  identity_rules:
+  - A Requirement subject and a criterion subject have separate identities even when they appear in the
+    same canonical specification file.
+  - Local subject identity is independent of containing node, file path, list position, title, wording,
+    scenario ID, and content digest.
+  - Two workspaces may use the same local_subject_id without collision when their immutable_workspace_identity
+    values differ.
+  - A mutable workspace slug may be accepted only as a display alias or an unambiguous lookup hint; it
+    is never the persisted identity.
+  - A content digest may identify exact bytes for one revision but must not replace subject identity or
+    prove semantic continuity.
+  - subject_class validates the referenced record; it does not permit two distinct subjects to share one
+    workspace-local ID.
+  proposed_representation:
+    criterion_records: Versioned identified criterion records embedded with their containing canonical
+      specification for the first review shape; physical containment remains separate from identity and
+      may change through reviewed schema work.
+    workspace_identity: Persisted immutable workspace identity declared separately from mutable display
+      names and repository location.
+    revision: Positive integer per subject beginning at 1. Later governed content revisions point to exactly
+      one same-identity predecessor revision.
+    typed_transitions: Editorial changes, containment moves, replacements, decomposition, composition,
+      withdrawal, and activation are separate typed subject transitions with provenance and explicit subject-level
+      effects.
+    migration: Legacy acceptance strings remain readable; existing candidate IDs are reviewed for collision
+      and scope before adoption and are never silently minted, reminted, or rewritten during ordinary
+      reads.
+  revision_contract:
+    rules:
+    - Every Requirement or criterion subject starts at revision 1 as the origin of that subject identity.
+    - Revision 1 has no same-identity predecessor.
+    - Every later governed content revision or one-to-one containment move advances the revision by one
+      and has exactly one immediately preceding revision in the same subject identity.
+    - A revision number is local to one full subject reference and is not shared across Requirement and
+      criterion subjects.
+    - A substantial normative replacement creates a new subject identity; it does not continue the predecessor
+      subject's revision chain.
+    - When a canonical Requirement node replacement also requires SG-SPEC-0019 topology supersession,
+      that canonical supersession event is separate from the successor subject's revision-1 origin.
+    - Decomposition and composition relations do not add revision predecessors and do not join revision
+      chains.
+    origin_marker: The first revision record is marked as the subject origin rather than pointing to a
+      predecessor.
+    same_identity_predecessor: A non-origin revision points only to the previous revision of the same
+      full subject reference.
+    cross_identity_predecessor: A replacement may cite another subject's terminal revision through a separate
+      transition or SG-SPEC-0019 supersession reference, but that citation is not a same-identity predecessor.
+  transition_contract:
+    subject_transitions:
+    - transition: editorial_revision
+      effect: Retains the same subject identity, advances that subject's revision by one, and records
+        provenance and bounded change scope.
+    - transition: containment_move
+      effect: Retains the same subject identity, advances its revision by one with the previous same-identity
+        revision as predecessor, and records changed containment and provenance; containment is not identity.
+    - transition: decomposes_into
+      effect: Records one source Requirement-to-Requirement or criterion-to-criterion subject relation
+        to two or more resulting subjects without changing participant revisions, disposition, canonical
+        lifecycle, or topology presence.
+    - transition: composed_from
+      effect: Records one resulting Requirement-to-Requirement or criterion-to-criterion subject relation
+        to two or more contributing subjects without inferring the reverse of decomposes_into.
+    - transition: replacement
+      effect: Creates a successor subject identity at revision 1 and records the predecessor subject and
+        terminal revision without changing either subject disposition. Activation and withdrawal require
+        separate explicit transitions. If the subjects are canonical nodes or explicit canonical edges,
+        any active-topology change remains a separate SG-SPEC-0019-compliant one-to-one event.
+    - transition: activation
+      effect: Explicitly activates an existing subject for its applicable subject-level role with provenance,
+        without creating replacement lineage or changing SG-SPEC-0019 canonical presence.
+    - transition: withdrawal
+      effect: Retires the subject for Requirement-level readiness or dependency satisfaction while preserving
+        lookup and lineage. Withdrawal alone does not change SG-SPEC-0019 canonical presence.
+    relation_endpoint_rules:
+    - decomposes_into endpoints must all be Requirement subjects or all be criterion subjects.
+    - composed_from endpoints must all be Requirement subjects or all be criterion subjects.
+    - Requirement-to-criterion ownership remains acceptance_criteria_refs and is not valid as a decomposition
+      or composition endpoint mix.
+    - Every authored relation endpoint carries a full_subject_reference; role or class alone is insufficient.
+    - No subject relation silently creates a canonical supersedes edge.
+  lookup_contract:
+    request_minimum:
+    - immutable_workspace_identity
+    - subject_class
+    - local_subject_id
+    - exact requested_revision or explicitly separate current-revision operation
+    response_minimum:
+    - full_subject_reference
+    - resolved revision or unresolved state
+    - current containment history
+    - subject disposition
+    - typed subject relations with endpoint roles, subject classes, and the full_subject_reference of every
+      endpoint, including explicit exact or current revision selection
+    - applicable SG-SPEC-0019 canonical presence when the subject is a canonical node or explicit canonical
+      edge
+    unresolved_states:
+    - unknown_workspace_identity
+    - ambiguous_workspace_slug
+    - ambiguous_workspace_identity
+    - unknown_subject_id
+    - subject_class_mismatch
+    - unavailable_revision
+    - ambiguous_legacy_acceptance_occurrence
+    - ambiguous_legacy_evidence_mapping
+    - duplicate_candidate_identity
+    - conflicting_candidate_definition
+    forbidden_fallbacks:
+    - Do not redirect an unknown subject to a related subject.
+    - Do not redirect an unavailable revision to latest unless the request explicitly asked for current
+      revision.
+    - Do not infer identity from equal text, order, path, scenario ID, or content digest.
+    - Do not treat a canonical SG-SPEC-0019 successor as the answer to an exact predecessor lookup.
+    workspace_collision: Known independent datasets claiming the same immutable workspace identity fail
+      closed as ambiguous_workspace_identity before subject selection. A declared replica of the same
+      workspace retains identity; declaration conflicts still fail closed rather than choosing a record.
+    retired_subject_lookup: An existing retired subject remains resolved, with its requested revision,
+      disposition and lineage. Retirement alone is not an unresolved lookup result.
+  evidence_contract:
+    criterion_keyed_evidence: Acceptance evidence is keyed to the full criterion reference, not to the
+      Requirement ID or a text position.
+    revision_pinning: Evidence that asserts behavior for exact wording pins the criterion revision; evidence
+      that asserts current semantics must say it targets the current revision.
+    legacy_evidence: Evidence without a resolvable criterion reference remains legacy evidence until a
+      reviewed migration maps it; ordinary reads do not guess.
+  migration_contract:
+    legacy_dual_read:
+    - Readers accept existing string-valued acceptance criteria as legacy unassigned criterion subjects.
+    - Readers accept identified criterion records after review introduces them.
+    - During dual-read, duplicate IDs, conflicting definitions, and ambiguous evidence mappings fail closed
+      with diagnostics.
+    candidate_identity_preservation:
+    - Existing candidate graph node IDs and materialized candidate IDs remain candidate identities during
+      review.
+    - A reviewed migration may map one candidate identity or legacy criterion occurrence to one full subject
+      reference.
+    - A migration must record the source candidate ID or legacy occurrence, destination full subject reference,
+      reviewer authority, and provenance.
+    - Ordinary reads must not allocate, remint, or rewrite candidate IDs.
+    scenario_boundary: Existing BDD scenario IDs remain scenario identities. They may reference Requirement
+      or criterion subjects only through authored reviewable relations.
+  examples:
+    separate_requirement_and_criterion_identity:
+      input:
+        workspace_identity: workspace:01JRF0221REVIEW000000000000
+        requirement:
+          subject_class: Requirement
+          local_subject_id: REQ-0007
+          revision: 3
+          acceptance_criteria_refs:
+          - subject_class: criterion
+            local_subject_id: AC-0031
+            revision: 2
+        criterion_record:
+          subject_class: criterion
+          local_subject_id: AC-0031
+          revision: 2
+          statement: Evidence lookup is keyed by full criterion reference.
+      output:
+        identity_result: REQ-0007 and AC-0031 are separate subjects scoped by workspace:01JRF0221REVIEW000000000000.
+        not_identity_sources:
+        - criterion statement
+        - array position
+        - containing file
+        - scenario ID
+    successor_revision_one_with_separate_supersession_link:
+      input:
+        predecessor_subject:
+          workspace_identity: workspace:01JRF0221REVIEW000000000000
+          subject_class: Requirement
+          local_subject_id: REQ-0007
+          terminal_revision: 4
+        successor_subject:
+          workspace_identity: workspace:01JRF0221REVIEW000000000000
+          subject_class: Requirement
+          local_subject_id: REQ-0012
+          revision: 1
+        canonical_transition: separate SG-SPEC-0019 one-to-one supersession event
+      output:
+        successor_revision_chain: REQ-0012 revision 1 is an origin with no same-identity predecessor.
+        supersession_reference: The separate canonical transition may reference REQ-0007 revision 4 as
+          the superseded terminal revision.
+        topology_effect: Only the SG-SPEC-0019 event can change canonical active topology.
+    containment_move_advances_revision:
+      input:
+        subject: AC-0031
+        revision: 2
+        transition: containment_move
+        old_container: REQ-0007
+        new_container: REQ-0012
+      output:
+        subject: AC-0031
+        revision: 3
+        same_identity_predecessor_revision: 2
+        previous_containment_retained: true
+    replacement_requires_explicit_activation:
+      input:
+        transition: replacement
+        predecessor: REQ-0007
+        successor: REQ-0012
+      output:
+        successor_revision: 1
+        participant_dispositions_changed: false
+        activation_requires_separate_transition: true
+    workspace_collision_fails_closed:
+      input:
+        datasets: independently forked products declaring the same immutable workspace identity
+      output:
+        state: ambiguous_workspace_identity
+        selected_subject: null
+        fallback_used: false
+    criterion_keyed_evidence_output:
+      input:
+        evidence_artifact:
+          workspace_identity: workspace:01JRF0221REVIEW000000000000
+          acceptance_evidence:
+          - criterion_id: AC-0031
+            criterion_revision: 2
+            evidence: A lookup fixture rejects text-position evidence for this criterion.
+      output:
+        resolved_evidence_key:
+          workspace_identity: workspace:01JRF0221REVIEW000000000000
+          subject_class: criterion
+          local_subject_id: AC-0031
+          revision: 2
+        legacy_status: not legacy because a full criterion reference is resolvable
+    legacy_dual_read_without_allocation:
+      input:
+        candidate_node_id: auth-check
+        materialized_candidate_id: CANDIDATE-WORKSPACE-AUTH-CHECK
+        legacy_acceptance:
+        - Reject writes without workspace identity.
+        ordinary_read: true
+      output:
+        candidate_identity: CANDIDATE-WORKSPACE-AUTH-CHECK remains the candidate identity under review.
+        legacy_acceptance_status: readable legacy unassigned criterion subject
+        allocated_subject_ids: []
+        required_next_step: reviewed migration before assigning a full criterion reference
+    ambiguous_legacy_evidence_fails_closed:
+      input:
+        workspace_identity: workspace:01JRF0221REVIEW000000000000
+        legacy_evidence: Requirement lookup preserves identity.
+        possible_criterion_matches:
+        - AC-0100
+        - AC-0101
+      output:
+        state: ambiguous_legacy_evidence_mapping
+        allocated_subject_ids: []
+        fallback_used: false
+  schema_gaps_and_unresolved_decisions:
+  - Review must decide whether versioned criterion records are embedded in canonical spec YAML or stored
+    separately with equivalent references.
+  - Review must choose the source-controlled owner and collision gate for immutable_workspace_identity
+    declarations.
+  - Review must choose local subject ID syntax and allocator policy; examples in this draft reserve no
+    tokens.
+  - Review must decide where typed transition records live and how they are reviewed before any runtime
+    consumer depends on them.
+  - Review must decide the staged compatibility policy for removing legacy string acceptance and legacy
+    evidence support.
+  - Review must decide whether any later canonical child of SG-SPEC-0019 is authorized; this draft does
+    not allocate that child ID.
+  dependency_evaluation_contract:
+    retired_requirement: cannot satisfy a Requirement dependency; lookup remains independently resolvable

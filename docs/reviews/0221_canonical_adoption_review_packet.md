@@ -9,6 +9,11 @@ not amend a canonical specification, settle ontology authority, authorize
 implementation, or establish that any requirement below has been accepted.
 The existing RFC and its source draft remain the proposal record.
 
+The [subject-address read model preparation](0221_subject_address_read_model.md)
+turns these recommendations into proposed boundary values, lookup outcomes,
+and a first implementation slice. It remains review-only and does not adopt
+the contract or authorize source-data migration.
+
 ## Decision Requested
 
 Review the four open design questions in RFC 0221, decide whether to adopt its
@@ -32,7 +37,8 @@ embedded or separately stored, and specify their history and move semantics
 before adoption.
 
 The identity must not derive from the statement, owner, path, order, or scenario
-ID. A move changes containment and provenance only. This choice preserves the
+ID. A move changes containment and provenance, advances the same-identity revision
+by one, and retains the previous revision and containment. This choice preserves the
 relationship proposed by RFC 0221 while leaving physical serialization open
 until schema review. See [RFC 0221, Identity scope](../proposals/0221_stable_requirement_identity_and_lineage.md#identity-scope)
 and [node format](../schema/node-format.md).
