@@ -31,6 +31,10 @@ It distinguishes absent, explicitly empty, present and invalid input. A
 recognized nonempty alternate container cannot be reported as an empty success.
 Migration previews preserve source and emit counts, mappings and findings;
 applying a migration requires separate authorization and review.
+Application must match the exact reviewed preview and all source-byte/revision/
+workspace bindings at a serialized mutation boundary. A `stale-preview` finding
+means no source writes. The check and publication must prevent a concurrent edit
+from being overwritten; validate the staged candidate before publishing it.
 
 The native input matrix explicitly accepts absence and `bdd_scenarios: []`,
 while rejecting null/wrong types, even an empty legacy `scenarios` container,
@@ -53,6 +57,13 @@ owning-node resolution: a scenario in a sibling, parent or other workspace
 cannot satisfy `observability.obligations[*].scenario_ids`. Equal local IDs in
 different workspaces are distinct identities. Partial inventories declare scope
 and cannot claim complete workspace uniqueness.
+
+Normalized scenario pins require a reviewed canonical byte contract before
+activation: included fields, serialization/encoding, text/Unicode policy, hash
+algorithm, digest-contract version and domain separation, with cross-adapter
+fixtures. Consumers reject unresolved/unknown contracts instead of making private
+pins. Exact source/payload SHA-256 does not define normalized scenario equivalence;
+historical pins retain their original contract.
 
 ## Exchange and evidence
 
@@ -98,6 +109,10 @@ received independent GPT 6 Astra / Ultra review with no P1/P2. Version 0.1.1
 clarifies its three P3 items; the author follow-up is recorded separately in
 `docs/reviews/0223_astra_review_followup.md`. New BDD-10/11/12 are future acceptance
 cases, not executed tests or an independent review of the follow-up itself.
+Separate GitHub review raised three P2 items. Version 0.1.2 retains the exchange
+envelope and adds canonical digest activation prerequisites and stale-preview
+write protection, with future BDD-13/14. Their process-evidence records live in
+`tools/review_feedback_records.json`; document fixes do not prove writer enforcement.
 
 `make proposal-tracking-gate` and `make docc-sync` check document preparation.
 They do not execute future BDD cases or grant implementation authority.

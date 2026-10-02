@@ -35,6 +35,20 @@ Current 0047 `UniqueKeyLoader`, string eligibility and node-local observability
 resolution were read as the compatibility baseline; behavior tests were not run.
 Document gates and JSON/link checks verify preparation coherence only.
 
+## Separate GitHub Review of the Original Head
+
+The GitHub `chatgpt-codex-connector` review of the same original head reported
+three P2 items. This is a separate review, not the Astra verdict above:
+
+- [Canonical scenario digest](https://github.com/0al-spec/SpecGraph/pull/753#discussion_r4167455778): version 0.1.2 makes field selection, canonical bytes/encoding, text policy, hash/version/domain separation and cross-adapter fixtures explicit prerequisites before activation or normalized evidence binding. BDD-14 names the future check; no serializer is selected or implemented by this PR.
+- [Exchange metadata envelope](https://github.com/0al-spec/SpecGraph/pull/753#discussion_r4167455789): version 0.1.1 already added the versioned envelope, bindings/digests, scoped metadata and comment provenance. BDD-05/11/12 name future checks.
+- [Stale migration previews](https://github.com/0al-spec/SpecGraph/pull/753#discussion_r4167455799): version 0.1.2 requires matching the reviewed preview and all input pins before any write, with serialized check/publication protection against concurrent edits. Mismatch emits `stale-preview` with no source writes. BDD-13 names the future check.
+
+All three are classified `artifact_contract_validation_gap` with prevention
+`documentation_rule_added` and `manual_contract_review` verification in
+`tools/review_feedback_records.json`. Runtime fixtures/enforcement remain future
+work, and documented fixes do not themselves resolve GitHub thread state.
+
 ## Remaining Work and Evidence Boundary
 
 The [proposal](../proposals/0223_bdd_scenario_contract_and_gherkin_exchange.md)
