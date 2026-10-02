@@ -2154,3 +2154,22 @@ fails closed. `--build-project-environment` exposes effective values and source
 digests; run logs retain the same snapshot for historical diagnostics.
 See [the supervisor manual](../docs/supervisor_manual.md#workspace-structural-limits-proposal-0222).
 Run `make test-workspace-limits` for focused regressions.
+
+## Subject refactoring binding pilot
+
+`subject_refactoring_pilot.py` exercises RFC 0221 on SpecGraph PRs 743 and 744.
+The explicit `subject_refactoring_pilot.json` plan maps four proposal acceptance
+statements to pilot criterion references, pinned implementation symbols and tests.
+
+```bash
+.venv/bin/python tools/subject_refactoring_pilot.py \
+  --execute --output-dir runs/subject-refactoring-pilot/my-run
+```
+
+Each run requires a new output directory. `--execute` runs the selected tests
+from isolated historical archives and collects a direct policy trace. Source
+checks without execution remain incomplete. Outputs include `subjects.json`,
+`report.json`, and checkpoint JUnit/log artifacts. The identity scope is an
+experimental pilot declaration; `canonical_requirement` remains unassigned and
+`canonical_readiness` is `not_evaluated`. See
+[the pilot report](../docs/reviews/0221_refactoring_binding_pilot.md).

@@ -560,6 +560,23 @@
         "source.workspace_identity",
         "exact criterion"
       ]
+    },
+    {
+      "id": "rfc0221-refactoring-binding-pilot",
+      "description": "Experimental source/test/trace bindings retain explicit criterion identity and canonical adoption gaps.",
+      "docs": [
+        "docs/reviews/0221_refactoring_binding_pilot.md",
+        "tools/README.md"
+      ],
+      "docc": [
+        "Sources/SpecGraph/Documentation.docc/ProposalsAndRuntime.md"
+      ],
+      "required_terms": [
+        "subject_refactoring_pilot",
+        "canonical_requirement",
+        "canonical_readiness",
+        "not_evaluated"
+      ]
     }
   ]
 }
