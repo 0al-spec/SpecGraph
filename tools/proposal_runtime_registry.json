@@ -12842,5 +12842,28 @@
         "pattern": "\"structural_limits\": limits_evidence"
       }
     ]
+  },
+  {
+    "proposal_id": "0223",
+    "posture": "deferred_until_canonicalized",
+    "runtime_surfaces": [
+      "docs/proposals/0223_bdd_scenario_contract_and_gherkin_exchange.md",
+      "docs/archive/proposal_sources/0223_bdd_scenario_contract_and_gherkin_exchange.md",
+      "docs/reviews/0223_zeusus_bdd_observation.json"
+    ],
+    "runtime_markers": [
+      {
+        "path": "docs/proposals/0223_bdd_scenario_contract_and_gherkin_exchange.md",
+        "pattern": "Draft proposal; contract preparation only."
+      }
+    ],
+    "validation_markers": [],
+    "observation_markers": [
+      {
+        "path": "docs/reviews/0223_zeusus_bdd_observation.json",
+        "pattern": "\"evidence_class\": \"curated_historical_observation\""
+      }
+    ],
+    "notes": "Proposal preparation only. Runtime realization and activation require a separately reviewed graph contract and implementation slice. Historical extraction counts and hashes do not demonstrate implemented shared validation, Gherkin exchange, gameplay execution or evidence admission."
   }
 ]

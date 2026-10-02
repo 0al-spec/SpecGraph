@@ -107,3 +107,7 @@ The canonical source files remain in the repository:
 ### Proposed composition comparison
 
 - <doc:CompositionObservation>
+
+### Proposed scenario contract
+
+- <doc:BDDScenarioContract>

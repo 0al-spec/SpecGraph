@@ -1,0 +1,176 @@
+{
+  "artifact_kind": "proposal_pilot_observation",
+  "schema_version": 1,
+  "proposal_id": "0223",
+  "evidence_class": "curated_historical_observation",
+  "source": {
+    "repository": "Zeusus",
+    "remote_available": false,
+    "repair_commit": "919320f7b0db246f2feee06cab01e62c20256ab0",
+    "input_review_commit": "93607cf024cb75f92cc711c90e3a1995bd612bad",
+    "packet_path": "docs/evidence/command-history-specgraph/bdd-amendment",
+    "tool_repository": "0al-spec/SpecGraph",
+    "tool_commit": "c72f4017212a02da70dc275edf3f5cf06a27893f",
+    "packet_file_digests": [
+      {
+        "path": "docs/evidence/command-history-specgraph/bdd-amendment/README.md",
+        "sha256": "01705c39fca3a9c2694f78da2278b683e35e3cd60d7175d45f16c1b2396d03d6"
+      },
+      {
+        "path": "docs/evidence/command-history-specgraph/bdd-amendment/normalization-report.json",
+        "sha256": "34dcf450774da541e510c94688553f59b3d613e289d523b8aea8472f5764ea1a"
+      },
+      {
+        "path": "docs/evidence/command-history-specgraph/bdd-amendment/cli-extraction-report.json",
+        "sha256": "a88162da90ec38ade4b119e47c8f7a761a0f9607f023fde2c0f2a143ad2363f8"
+      },
+      {
+        "path": "docs/evidence/command-history-specgraph/bdd-amendment/final-run.json",
+        "sha256": "9d4865a3416c953f42cb4e430f6dc98f0c36e9c1d6bffe70fce2ec7a8349126c"
+      }
+    ]
+  },
+  "observation": {
+    "authored_count": 100,
+    "before_extracted_count": 34,
+    "after_extracted_count": 100,
+    "all_ids_unique_and_preserved": true,
+    "clause_text_and_order_preserved": true,
+    "manual_normalization": [
+      {
+        "spec_id": "ZEU-SPEC-0019",
+        "converted_count": 26,
+        "source_commit": "d209502208fa92544ba08cc7058bc6f80f506a26",
+        "clauses_preserved": true,
+        "other_policy_fields_preserved": true
+      },
+      {
+        "spec_id": "ZEU-SPEC-0020",
+        "converted_count": 12,
+        "source_commit": "b5a6eb6949895a0882385e6b0e00c41d64e66ced",
+        "clauses_preserved": true,
+        "other_policy_fields_preserved": true
+      },
+      {
+        "spec_id": "ZEU-SPEC-0021",
+        "converted_count": 14,
+        "source_commit": "912037001e9909882055102aab14df4b60463a03",
+        "clauses_preserved": true,
+        "other_policy_fields_preserved": true
+      },
+      {
+        "spec_id": "ZEU-SPEC-0022",
+        "converted_count": 14,
+        "source_commit": "b70703b66b6d729da30d7da050c55563ad93fe43",
+        "clauses_preserved": true,
+        "other_policy_fields_preserved": true
+      }
+    ],
+    "cli_rows": [
+      {
+        "spec_id": "ZEU-SPEC-0018",
+        "exit_code": 2,
+        "scenario_count": 10,
+        "source_sha256": "0888edf709536c543454b5ace1a5ddfb0417f15dfac95067c2b6b37de95ee245",
+        "preview_status": "blocked",
+        "blockers": [
+          "source_gate:retry_pending",
+          "source_status:specified"
+        ],
+        "inheritance": "not_evaluated"
+      },
+      {
+        "spec_id": "ZEU-SPEC-0019",
+        "exit_code": 2,
+        "scenario_count": 26,
+        "source_sha256": "d10cc35d457b4ae9cb0e010063cd51850955a93ca0cd098aec753abb132c7dc0",
+        "preview_status": "blocked",
+        "blockers": [
+          "source_gate:retry_pending",
+          "source_status:specified",
+          "missing_observability_contract"
+        ],
+        "inheritance": "not_evaluated"
+      },
+      {
+        "spec_id": "ZEU-SPEC-0020",
+        "exit_code": 2,
+        "scenario_count": 12,
+        "source_sha256": "197c17217e5cda2cb2516166282ca7d276df3d9d88b974c84cc60df04a459144",
+        "preview_status": "blocked",
+        "blockers": [
+          "source_status:specified",
+          "missing_observability_contract"
+        ],
+        "inheritance": "not_evaluated"
+      },
+      {
+        "spec_id": "ZEU-SPEC-0021",
+        "exit_code": 2,
+        "scenario_count": 14,
+        "source_sha256": "baf672a281a95bbe9c0604f7a421e28c52fbe04492258b49a7d3ce3b29cab0f9",
+        "preview_status": "blocked",
+        "blockers": [
+          "source_status:specified",
+          "missing_observability_contract"
+        ],
+        "inheritance": "not_evaluated"
+      },
+      {
+        "spec_id": "ZEU-SPEC-0022",
+        "exit_code": 2,
+        "scenario_count": 14,
+        "source_sha256": "0a3352175cd64131d00813a78e5e4c0b634fa9f2186814dd8b6c748c157c2f4f",
+        "preview_status": "blocked",
+        "blockers": [
+          "source_status:specified",
+          "missing_observability_contract"
+        ],
+        "inheritance": "not_evaluated"
+      },
+      {
+        "spec_id": "ZEU-SPEC-0023",
+        "exit_code": 2,
+        "scenario_count": 24,
+        "source_sha256": "4b77adf1d9354a7719aa7fcc7763bd1338867dd7c7e62ddfcf498c0e256e4af4",
+        "preview_status": "blocked",
+        "blockers": [
+          "source_status:specified"
+        ],
+        "inheritance": "not_evaluated"
+      }
+    ],
+    "final_root_authoring_run": {
+      "run_id": "20261002T141348Z-ZEU-SPEC-0018-9b46c896",
+      "completion_status": "ok",
+      "outcome": "done",
+      "gate_state": "review_pending",
+      "validation_errors": [],
+      "validator_results": {
+        "outputs": true,
+        "allowed_paths": true,
+        "reconciliation": true,
+        "atomicity": true,
+        "transition": true,
+        "executor_environment": true,
+        "runtime_artifacts": true,
+        "refinement_acceptance": true
+      },
+      "accepted_canonical_diff": false
+    },
+    "title_review_correction": {
+      "superseded_title": "Clear Redo Only After a New Changing Root",
+      "final_title": "New Changing Root Invalidates Redo",
+      "original_steps_changed": false
+    }
+  },
+  "boundaries": {
+    "pilot_reproduced_in_this_pr": false,
+    "runtime_tests_executed": false,
+    "gherkin_adapter_implemented": false,
+    "canonical_adoption": false,
+    "implementation_authority_granted": false,
+    "trusted_receipt_issued": false,
+    "source_pin_meaning": "Hashes identify archived bytes; they are not signatures or evidence admission."
+  }
+}
