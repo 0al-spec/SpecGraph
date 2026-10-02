@@ -33,13 +33,19 @@ acceptance_evidence:
     is claimed.'
 - criterion: Defines per-identity revision chains and independent subject relations and disposition without
     changing frozen SG-SPEC-0019 topology.
-  evidence: 'Authored contract text only: specification.revision_contract, transition_contract and parent_compatibility
-    separate identity revisions from parent canonical supersession. No runtime conformance is claimed.'
+  evidence: 'Authored contract text only: specification.revision_contract defines per-identity revision
+    chains with revision-1 origins and immediate predecessors. specification.transition_contract keeps
+    independent subject relations and disposition separate from frozen SG-SPEC-0019 canonical topology.
+    specification.parent_compatibility preserves the SG-SPEC-0019 one-to-one canonical supersession event
+    and frozen-subject restrictions. No runtime conformance is claimed.'
 - criterion: Defines exact identity and revision lookup with explicit unresolved states and criterion-keyed
     evidence.
-  evidence: 'Authored contract text only: specification.lookup_contract, dependency_evaluation_contract
-    and evidence_contract define exact lookup, explicit failures and criterion-keyed evidence. No runtime
-    conformance is claimed.'
+  evidence: 'Authored contract text only: specification.lookup_contract defines exact identity and revision
+    lookup; unknown_subject_id, unavailable_revision and ambiguous_workspace_identity are explicit unresolved
+    states with no latest or successor fallback. specification.evidence_contract keys acceptance evidence
+    to the full criterion reference and pins the criterion revision. specification.dependency_evaluation_contract
+    excludes retired Requirements from dependency satisfaction independently of successful historical
+    lookup. No runtime conformance is claimed.'
 - criterion: Defines backward-compatible preparation from existing candidate IDs with reviewed migration
     and no identity allocation on ordinary reads.
   evidence: 'Authored contract text only: specification.migration_contract preserves legacy readability
