@@ -287,3 +287,23 @@ records as well as endpoint identities. Distinguish incomplete enumeration from
 an empty complete result. Define which references belong to a content revision
 before describing lookup as historical; test changing those links independently
 of the statement. These are contract invariants, not presentation details.
+
+## Recorded RFC 0221 physical-schema approval
+
+The actual human reply “Одобряю пакет PR #752” approves the delivered physical
+schema and mapping packet. `docs/reviews/0221_subject_storage_decision.json`
+records the quote, reviewer authority, delivered head, `approval_scope_sha256`
+and a review for each of the four exact mappings. The prior packet's
+`review_pending` state remains a historical preparation snapshot.
+
+SG-SPEC-0069 is now `human_approved` and `status: specified`; its native review
+gate is resolved after attribution is recorded. The workspace/ID plan remains
+unallocated. Bounded adapter/writer implementation is authorized, while
+`ready_for_materialization: false` and canonical subject adoption remain false.
+Runtime conformance is still `not_implemented` in this decision slice.
+SG-SPEC-0051 canonical transitions, source migration, destination evidence
+applicability and trusted runtime remain separate boundaries.
+
+See `docs/reviews/0221_subject_storage_decision.md`. Byte-exact reviewed snapshots
+keep prior schema/test hashes verifiable without rewriting prepared candidates,
+pending decision templates or the original pilot evidence.

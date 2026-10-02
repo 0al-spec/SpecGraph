@@ -1,0 +1,245 @@
+{
+  "schema_version": 1,
+  "artifact_kind": "rfc0221_subject_storage_human_decision",
+  "created_at": "2026-10-02T16:02:44Z",
+  "updated_at": "2026-10-02T16:02:44Z",
+  "packet_path": "docs/reviews/0221_subject_storage_approval.yaml",
+  "packet_sha256": "dc2982d6270db6c5b9448e8ad12b38935571ec5018ae5387f2cf73863e1ef92a",
+  "approval_scope_sha256": "dcaf235e3345ef09604245161b4f0e57c54954fdd0052272a5a0ea27494bd2e1",
+  "review": {
+    "reviewer": "human_project_author_in_current_codex_conversation",
+    "reviewer_authority": "human_project_author",
+    "decision_timestamp": "2026-10-02T15:54:37Z",
+    "decision_timestamp_basis": "First local observation of this approval; the user-message timestamp is unavailable.",
+    "recorded_at": "2026-10-02T16:02:44Z",
+    "outcome": "approve",
+    "rationale": "Explicit approval of the identified packet; no additional human rationale was supplied.",
+    "provenance": {
+      "source": "current_codex_conversation",
+      "source_quote": "Одобряю пакет PR #752",
+      "recorded_by": "agent:codex",
+      "github_review_submitted": false
+    },
+    "reviewed_pull_request": "https://github.com/0al-spec/SpecGraph/pull/752",
+    "reviewed_head": "6c88190d379b787661a47b07cf1279c25f0d585e",
+    "reviewed_commit": "ca3967e6b9d1b196c901ff6fcb0f77b7a98ecfc7",
+    "approval_scope_sha256": "dcaf235e3345ef09604245161b4f0e57c54954fdd0052272a5a0ea27494bd2e1"
+  },
+  "decisions": {
+    "physical_schema": {
+      "review_ref": "docs/reviews/0221_subject_storage_decision.json#/review",
+      "outcome": "approve"
+    },
+    "workspace_and_id_plan": {
+      "review_ref": "docs/reviews/0221_subject_storage_decision.json#/review",
+      "outcome": "approve"
+    },
+    "requirement_membership_and_mapping": {
+      "review_ref": "docs/reviews/0221_subject_storage_decision.json#/review",
+      "outcome": "approve"
+    },
+    "bounded_implementation_authorization": {
+      "review_ref": "docs/reviews/0221_subject_storage_decision.json#/review",
+      "outcome": "approve"
+    }
+  },
+  "mapping_decisions": [
+    {
+      "source": {
+        "subject": {
+          "workspace_identity": "pilot:baa72850-bf2e-42c6-a3a9-68930a1ba44e",
+          "subject_class": "criterion",
+          "local_subject_id": "ac.clean-noop"
+        },
+        "mode": "exact",
+        "revision": 1
+      },
+      "destination": {
+        "subject": {
+          "workspace_identity": "workspace:a2800523-3588-4820-a47f-9fddc0fed3f5",
+          "subject_class": "criterion",
+          "local_subject_id": "ac.clean-noop"
+        },
+        "mode": "exact",
+        "revision": 1
+      },
+      "requirement_id": "req.repaired-candidate-review-readiness",
+      "source_statement_sha256": "98f272e4fee9d5373b51f43112375e3776c4c42f823d3f2c5afcabb121bd406d",
+      "review": {
+        "reviewer": "human_project_author_in_current_codex_conversation",
+        "reviewer_authority": "human_project_author",
+        "decision_timestamp": "2026-10-02T15:54:37Z",
+        "decision_timestamp_basis": "First local observation of this approval; the user-message timestamp is unavailable.",
+        "recorded_at": "2026-10-02T16:02:44Z",
+        "outcome": "approve",
+        "rationale": "Explicit approval of the identified packet; no additional human rationale was supplied.",
+        "provenance": {
+          "source": "current_codex_conversation",
+          "source_quote": "Одобряю пакет PR #752",
+          "recorded_by": "agent:codex",
+          "github_review_submitted": false
+        },
+        "reviewed_pull_request": "https://github.com/0al-spec/SpecGraph/pull/752",
+        "reviewed_head": "6c88190d379b787661a47b07cf1279c25f0d585e",
+        "reviewed_commit": "ca3967e6b9d1b196c901ff6fcb0f77b7a98ecfc7",
+        "approval_scope_sha256": "dcaf235e3345ef09604245161b4f0e57c54954fdd0052272a5a0ea27494bd2e1"
+      }
+    },
+    {
+      "source": {
+        "subject": {
+          "workspace_identity": "pilot:baa72850-bf2e-42c6-a3a9-68930a1ba44e",
+          "subject_class": "criterion",
+          "local_subject_id": "ac.repaired-preview"
+        },
+        "mode": "exact",
+        "revision": 1
+      },
+      "destination": {
+        "subject": {
+          "workspace_identity": "workspace:a2800523-3588-4820-a47f-9fddc0fed3f5",
+          "subject_class": "criterion",
+          "local_subject_id": "ac.repaired-preview"
+        },
+        "mode": "exact",
+        "revision": 1
+      },
+      "requirement_id": "req.repaired-candidate-review-readiness",
+      "source_statement_sha256": "c841dd08156e87a375ac0a5727816db203f94248cd079d721639cc2c1a8162ae",
+      "review": {
+        "reviewer": "human_project_author_in_current_codex_conversation",
+        "reviewer_authority": "human_project_author",
+        "decision_timestamp": "2026-10-02T15:54:37Z",
+        "decision_timestamp_basis": "First local observation of this approval; the user-message timestamp is unavailable.",
+        "recorded_at": "2026-10-02T16:02:44Z",
+        "outcome": "approve",
+        "rationale": "Explicit approval of the identified packet; no additional human rationale was supplied.",
+        "provenance": {
+          "source": "current_codex_conversation",
+          "source_quote": "Одобряю пакет PR #752",
+          "recorded_by": "agent:codex",
+          "github_review_submitted": false
+        },
+        "reviewed_pull_request": "https://github.com/0al-spec/SpecGraph/pull/752",
+        "reviewed_head": "6c88190d379b787661a47b07cf1279c25f0d585e",
+        "reviewed_commit": "ca3967e6b9d1b196c901ff6fcb0f77b7a98ecfc7",
+        "approval_scope_sha256": "dcaf235e3345ef09604245161b4f0e57c54954fdd0052272a5a0ea27494bd2e1"
+      }
+    },
+    {
+      "source": {
+        "subject": {
+          "workspace_identity": "pilot:baa72850-bf2e-42c6-a3a9-68930a1ba44e",
+          "subject_class": "criterion",
+          "local_subject_id": "ac.unresolved-gaps"
+        },
+        "mode": "exact",
+        "revision": 1
+      },
+      "destination": {
+        "subject": {
+          "workspace_identity": "workspace:a2800523-3588-4820-a47f-9fddc0fed3f5",
+          "subject_class": "criterion",
+          "local_subject_id": "ac.unresolved-gaps"
+        },
+        "mode": "exact",
+        "revision": 1
+      },
+      "requirement_id": "req.repaired-candidate-review-readiness",
+      "source_statement_sha256": "222f21614140823644e9c1f550be3e0d9ac747157e9720fe65207cfc83c5c00d",
+      "review": {
+        "reviewer": "human_project_author_in_current_codex_conversation",
+        "reviewer_authority": "human_project_author",
+        "decision_timestamp": "2026-10-02T15:54:37Z",
+        "decision_timestamp_basis": "First local observation of this approval; the user-message timestamp is unavailable.",
+        "recorded_at": "2026-10-02T16:02:44Z",
+        "outcome": "approve",
+        "rationale": "Explicit approval of the identified packet; no additional human rationale was supplied.",
+        "provenance": {
+          "source": "current_codex_conversation",
+          "source_quote": "Одобряю пакет PR #752",
+          "recorded_by": "agent:codex",
+          "github_review_submitted": false
+        },
+        "reviewed_pull_request": "https://github.com/0al-spec/SpecGraph/pull/752",
+        "reviewed_head": "6c88190d379b787661a47b07cf1279c25f0d585e",
+        "reviewed_commit": "ca3967e6b9d1b196c901ff6fcb0f77b7a98ecfc7",
+        "approval_scope_sha256": "dcaf235e3345ef09604245161b4f0e57c54954fdd0052272a5a0ea27494bd2e1"
+      }
+    },
+    {
+      "source": {
+        "subject": {
+          "workspace_identity": "pilot:baa72850-bf2e-42c6-a3a9-68930a1ba44e",
+          "subject_class": "criterion",
+          "local_subject_id": "ac.approval-boundary"
+        },
+        "mode": "exact",
+        "revision": 1
+      },
+      "destination": {
+        "subject": {
+          "workspace_identity": "workspace:a2800523-3588-4820-a47f-9fddc0fed3f5",
+          "subject_class": "criterion",
+          "local_subject_id": "ac.approval-boundary"
+        },
+        "mode": "exact",
+        "revision": 1
+      },
+      "requirement_id": "req.platform-promotion-approval-boundary",
+      "source_statement_sha256": "da22d07188f724ef174bf2fdc8ee039ef055ec55ec679c7a1926b10523b91e11",
+      "review": {
+        "reviewer": "human_project_author_in_current_codex_conversation",
+        "reviewer_authority": "human_project_author",
+        "decision_timestamp": "2026-10-02T15:54:37Z",
+        "decision_timestamp_basis": "First local observation of this approval; the user-message timestamp is unavailable.",
+        "recorded_at": "2026-10-02T16:02:44Z",
+        "outcome": "approve",
+        "rationale": "Explicit approval of the identified packet; no additional human rationale was supplied.",
+        "provenance": {
+          "source": "current_codex_conversation",
+          "source_quote": "Одобряю пакет PR #752",
+          "recorded_by": "agent:codex",
+          "github_review_submitted": false
+        },
+        "reviewed_pull_request": "https://github.com/0al-spec/SpecGraph/pull/752",
+        "reviewed_head": "6c88190d379b787661a47b07cf1279c25f0d585e",
+        "reviewed_commit": "ca3967e6b9d1b196c901ff6fcb0f77b7a98ecfc7",
+        "approval_scope_sha256": "dcaf235e3345ef09604245161b4f0e57c54954fdd0052272a5a0ea27494bd2e1"
+      }
+    }
+  ],
+  "reviewed_snapshot_files": {
+    "specs/nodes/SG-SPEC-0069.yaml": "docs/reviews/0221_subject_storage_reviewed/SG-SPEC-0069.yaml",
+    "tests/test_subject_storage_preparation.py": "docs/reviews/0221_subject_storage_reviewed/test_subject_storage_preparation.py.txt"
+  },
+  "schema_adoption": "human_approved",
+  "workspace_and_id_plan": "approved_but_unallocated",
+  "implementation_authorization": [
+    "Read-only canonical-source adapter over explicitly selected source scope, preserving historical node metadata, revision_scope and exact acceptance pins.",
+    "Validating writer for origins and content revisions, with explicit authorization, digest conflict preconditions, portable collision rejection and atomic publication verification."
+  ],
+  "canonical_subject_adoption": false,
+  "canonical_materialization_authorization": null,
+  "canonical_readiness": "not_evaluated",
+  "ready_for_materialization": false,
+  "source_migration_authorized": false,
+  "evidence_transfer_authorized": false,
+  "platform_promotion_authorized": false,
+  "trusted_runtime_receipts_created": false,
+  "runtime_conformance": "not_implemented",
+  "gate_resolution": {
+    "command": "tools/supervisor.py --resolve-gate SG-SPEC-0069 --decision approve --note <actual decision record>",
+    "result": "Resolved gate for SG-SPEC-0069: approve",
+    "gate_at": "2026-10-02T16:02:56.943718+00:00",
+    "gate_state": "none",
+    "status": "specified",
+    "spec_checks": {
+      "outputs": [],
+      "allowed_paths": [],
+      "atomicity": [],
+      "reconciliation": []
+    },
+    "subject_materialization_performed": false
+  }
+}
