@@ -185,7 +185,8 @@ specification:
     - full_subject_reference
     - resolved revision or unresolved state
     - current containment history
-    - subject disposition
+    - explicit current_subject_disposition with observation provenance; not historical disposition at
+      the selected content revision
     - typed subject relations with endpoint roles, subject classes, and the full_subject_reference of
       every endpoint, including explicit exact or current revision selection
     - applicable SG-SPEC-0019 canonical presence when the subject is a canonical node or explicit canonical
@@ -213,6 +214,17 @@ specification:
       workspace retains identity; declaration conflicts still fail closed rather than choosing a record.
     retired_subject_lookup: An existing retired subject remains resolved, with its requested revision,
       disposition and lineage. Retirement alone is not an unresolved lookup result.
+    disposition_projection:
+      exact_revision: Exact/current revision selection determines content and revision-specific containment,
+        not an as-of cutoff for independent disposition events.
+      current_subject_disposition: Both exact and current lookup return the subject current disposition
+        explicitly labelled current, with the observed disposition event reference or origin disposition
+        and observation provenance. It may change after activation or withdrawal without changing the
+        selected content revision.
+      history: Retained authored disposition transitions remain inspectable. Historical as-of disposition
+        lookup is outside this slice and MUST NOT be inferred from a content revision alone.
+      dependency_evaluation: Requirement dependencies use current subject disposition, independently of
+        selected historical content.
   dependency_evaluation_contract:
     retired_requirement: cannot satisfy a Requirement dependency; lookup remains independently resolvable
   evidence_contract:
@@ -285,7 +297,16 @@ specification:
     then:
     - The next revision and immediate predecessor are atomic and unique.
     - Conflicting successors fail closed as conflicting_revision_successor; previous history remains inspectable.
-gate_state: none
+  - name: Exact content with current disposition
+    given: Requirement REQ-0007 revision 2 is activated and later withdrawn without a content revision.
+    when: Exact lookup of revision 2 is requested before and after withdrawal.
+    then:
+    - Selected content and revision-specific containment remain revision 2 in both results.
+    - The explicitly labelled current_subject_disposition changes from active to retired and cites the
+      observed disposition event.
+    - Neither response claims the disposition as of content revision 2; historical as-of evaluation requires
+      a separate contract.
+gate_state: review_pending
 proposed_status: null
 proposed_maturity: null
-required_human_action: Human approval of the canonical contract PR; adoption is pending.
+required_human_action: approve or amend the bounded RFC 0221 canonical contract
