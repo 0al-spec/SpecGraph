@@ -1,0 +1,1561 @@
+{
+  "artifact_kind": "subject_refactoring_pilot_report",
+  "schema_version": 1,
+  "status": "pilot_passed",
+  "canonical_mutations_allowed": false,
+  "canonical_readiness": "not_evaluated",
+  "mapping_authority": "experimental_agent_curated_mapping",
+  "identity_scope": "Isolated pilot declaration authored on 2026-10-02; not the canonical SpecGraph workspace. Revision 1 is authored now, not reconstructed as an adopted historical revision.",
+  "plan_sha256": "967ac15a84357c18c0c0f4dd206df27d3edf236c08056446823efe78f43def60",
+  "runner_sha256": "858397a7cce6a26b305b443c8d235581de2dfb3cc07316064b64cb5e7bf9f497",
+  "python_version": "3.12.11",
+  "dependencies": {
+    "pytest": "9.0.2",
+    "PyYAML": "6.0.3",
+    "specification-core": "0.1.0",
+    "specification_core_commit": "6113d773e78cb94c4eb0ce31e8439877fef45494"
+  },
+  "checkpoints": [
+    {
+      "checkpoint": {
+        "name": "before-743",
+        "commit": "0d3b0048055919e67b745cc2261977e5e4f76def",
+        "pull_request": null,
+        "implementation": {
+          "ac.clean-noop": [
+            "tools/candidate_repair_loop.py::build_candidate_repair_loop_report",
+            "tools/repaired_candidate_promotion_handoff.py::build_repaired_candidate_promotion_handoff"
+          ],
+          "ac.repaired-preview": [
+            "tools/candidate_repair_loop.py::build_candidate_repair_loop_report",
+            "tools/repaired_candidate_promotion_handoff.py::build_repaired_candidate_promotion_handoff"
+          ],
+          "ac.approval-boundary": [
+            "tools/repaired_candidate_promotion_handoff.py::_readiness_findings"
+          ],
+          "ac.unresolved-gaps": [
+            "tools/repaired_candidate_promotion_handoff.py::_readiness_findings"
+          ]
+        }
+      },
+      "source_bindings_valid": true,
+      "bindings": [
+        {
+          "criterion": {
+            "subject": {
+              "workspace_identity": "pilot:baa72850-bf2e-42c6-a3a9-68930a1ba44e",
+              "subject_class": "criterion",
+              "local_subject_id": "ac.clean-noop"
+            },
+            "mode": "exact",
+            "revision": 1
+          },
+          "lookup": {
+            "schema_version": 1,
+            "artifact_kind": "subject_lookup_result",
+            "status": "resolved",
+            "requested": {
+              "subject": {
+                "workspace_identity": "pilot:baa72850-bf2e-42c6-a3a9-68930a1ba44e",
+                "subject_class": "criterion",
+                "local_subject_id": "ac.clean-noop"
+              },
+              "mode": "exact",
+              "revision": 1
+            },
+            "canonical_mutations_allowed": false,
+            "resolved": {
+              "reference": {
+                "workspace_identity": "pilot:baa72850-bf2e-42c6-a3a9-68930a1ba44e",
+                "subject_class": "criterion",
+                "local_subject_id": "ac.clean-noop"
+              },
+              "revision": {
+                "number": 1,
+                "predecessor": null,
+                "statement": "A candidate graph with clean pre-SIB readiness and no repair actions produces a ready no-op repair loop instead of `repair_review_required`.",
+                "containment": "docs/proposals/0191_event_storming_candidate_topology_edges.md",
+                "provenance": "pilot-authoring:2026-10-02/ac.clean-noop",
+                "acceptance_criteria_refs": []
+              },
+              "current_revision": 1,
+              "retained_containment_history": [
+                {
+                  "revision": 1,
+                  "containment": "docs/proposals/0191_event_storming_candidate_topology_edges.md",
+                  "provenance": "pilot-authoring:2026-10-02/ac.clean-noop"
+                }
+              ],
+              "current_subject_disposition": {
+                "state": "active",
+                "basis_ref": "pilot-authoring:2026-10-02/ac.clean-noop",
+                "observation_provenance": "Active only inside this authored pilot dataset; no historical disposition inferred."
+              },
+              "retained_disposition_transitions": [],
+              "canonical_presence": null,
+              "acceptance_criteria_refs": [],
+              "authored_relations": [],
+              "relation_resolution": {
+                "status": "complete",
+                "scope": "supplied_snapshots",
+                "conflicts": []
+              }
+            }
+          },
+          "source": {
+            "commit": "0d3b0048055919e67b745cc2261977e5e4f76def",
+            "path": "docs/proposals/0191_event_storming_candidate_topology_edges.md",
+            "status": "unique_text_match",
+            "match_count": 1,
+            "blob_sha256": "00c22442bb9fcb0b329a5e9cb9add96ae98e23d74659e4dda1ddbd27da1b32ae",
+            "url": "https://github.com/0al-spec/SpecGraph/blob/0d3b0048055919e67b745cc2261977e5e4f76def/docs/proposals/0191_event_storming_candidate_topology_edges.md",
+            "scope": "verbatim_statement_presence_not_semantic_proof"
+          },
+          "implementation": [
+            {
+              "commit": "0d3b0048055919e67b745cc2261977e5e4f76def",
+              "path": "tools/candidate_repair_loop.py",
+              "symbol": "build_candidate_repair_loop_report",
+              "status": "source_anchored",
+              "blob_sha256": "65e74a8ea951b11edc541cf10d40cf7c074346a70c11c298e5095a0d75eb02f3",
+              "start_line": 729,
+              "end_line": 823,
+              "url": "https://github.com/0al-spec/SpecGraph/blob/0d3b0048055919e67b745cc2261977e5e4f76def/tools/candidate_repair_loop.py#L729"
+            },
+            {
+              "commit": "0d3b0048055919e67b745cc2261977e5e4f76def",
+              "path": "tools/repaired_candidate_promotion_handoff.py",
+              "symbol": "build_repaired_candidate_promotion_handoff",
+              "status": "source_anchored",
+              "blob_sha256": "47d5965ac9c3a213dc2f04ee92a2651f5885ee84fa03a753a68f3982e3d3c1e4",
+              "start_line": 449,
+              "end_line": 688,
+              "url": "https://github.com/0al-spec/SpecGraph/blob/0d3b0048055919e67b745cc2261977e5e4f76def/tools/repaired_candidate_promotion_handoff.py#L449"
+            }
+          ],
+          "tests": [
+            {
+              "commit": "0d3b0048055919e67b745cc2261977e5e4f76def",
+              "path": "tests/test_candidate_repair_loop.py",
+              "symbol": "test_candidate_repair_loop_allows_clean_noop_repair_loop",
+              "status": "source_anchored",
+              "blob_sha256": "3a6aca5c41a5fc17870a76a774061055c32ff512ad377130806a2407ee3c43d4",
+              "start_line": 281,
+              "end_line": 323,
+              "url": "https://github.com/0al-spec/SpecGraph/blob/0d3b0048055919e67b745cc2261977e5e4f76def/tests/test_candidate_repair_loop.py#L281"
+            },
+            {
+              "commit": "0d3b0048055919e67b745cc2261977e5e4f76def",
+              "path": "tests/test_repaired_candidate_promotion_handoff.py",
+              "symbol": "test_repaired_candidate_promotion_handoff_allows_clean_noop_repair_loop",
+              "status": "source_anchored",
+              "blob_sha256": "3d191389bbf2e5da9f5a91de535440a315153aaf8b0b3ae4846dff978630c530",
+              "start_line": 456,
+              "end_line": 477,
+              "url": "https://github.com/0al-spec/SpecGraph/blob/0d3b0048055919e67b745cc2261977e5e4f76def/tests/test_repaired_candidate_promotion_handoff.py#L456"
+            }
+          ],
+          "canonical_requirement": null,
+          "mapping_authority": "agent_curated_for_review"
+        },
+        {
+          "criterion": {
+            "subject": {
+              "workspace_identity": "pilot:baa72850-bf2e-42c6-a3a9-68930a1ba44e",
+              "subject_class": "criterion",
+              "local_subject_id": "ac.repaired-preview"
+            },
+            "mode": "exact",
+            "revision": 1
+          },
+          "lookup": {
+            "schema_version": 1,
+            "artifact_kind": "subject_lookup_result",
+            "status": "resolved",
+            "requested": {
+              "subject": {
+                "workspace_identity": "pilot:baa72850-bf2e-42c6-a3a9-68930a1ba44e",
+                "subject_class": "criterion",
+                "local_subject_id": "ac.repaired-preview"
+              },
+              "mode": "exact",
+              "revision": 1
+            },
+            "canonical_mutations_allowed": false,
+            "resolved": {
+              "reference": {
+                "workspace_identity": "pilot:baa72850-bf2e-42c6-a3a9-68930a1ba44e",
+                "subject_class": "criterion",
+                "local_subject_id": "ac.repaired-preview"
+              },
+              "revision": {
+                "number": 1,
+                "predecessor": null,
+                "statement": "If the repaired graph still has pre-SIB structural issues, the normal candidate repair loop may repair them in preview, and the promotion gate must preserve `pre_sib_findings_repaired_by_preview` evidence.",
+                "containment": "docs/proposals/0177_repaired_candidate_promotion_handoff.md",
+                "provenance": "pilot-authoring:2026-10-02/ac.repaired-preview",
+                "acceptance_criteria_refs": []
+              },
+              "current_revision": 1,
+              "retained_containment_history": [
+                {
+                  "revision": 1,
+                  "containment": "docs/proposals/0177_repaired_candidate_promotion_handoff.md",
+                  "provenance": "pilot-authoring:2026-10-02/ac.repaired-preview"
+                }
+              ],
+              "current_subject_disposition": {
+                "state": "active",
+                "basis_ref": "pilot-authoring:2026-10-02/ac.repaired-preview",
+                "observation_provenance": "Active only inside this authored pilot dataset; no historical disposition inferred."
+              },
+              "retained_disposition_transitions": [],
+              "canonical_presence": null,
+              "acceptance_criteria_refs": [],
+              "authored_relations": [],
+              "relation_resolution": {
+                "status": "complete",
+                "scope": "supplied_snapshots",
+                "conflicts": []
+              }
+            }
+          },
+          "source": {
+            "commit": "0d3b0048055919e67b745cc2261977e5e4f76def",
+            "path": "docs/proposals/0177_repaired_candidate_promotion_handoff.md",
+            "status": "unique_text_match",
+            "match_count": 1,
+            "blob_sha256": "b991fa09268851b6fe77fad100f26753a345da4a1b07ba6f9eaae1157a3ceda0",
+            "url": "https://github.com/0al-spec/SpecGraph/blob/0d3b0048055919e67b745cc2261977e5e4f76def/docs/proposals/0177_repaired_candidate_promotion_handoff.md",
+            "scope": "verbatim_statement_presence_not_semantic_proof"
+          },
+          "implementation": [
+            {
+              "commit": "0d3b0048055919e67b745cc2261977e5e4f76def",
+              "path": "tools/candidate_repair_loop.py",
+              "symbol": "build_candidate_repair_loop_report",
+              "status": "source_anchored",
+              "blob_sha256": "65e74a8ea951b11edc541cf10d40cf7c074346a70c11c298e5095a0d75eb02f3",
+              "start_line": 729,
+              "end_line": 823,
+              "url": "https://github.com/0al-spec/SpecGraph/blob/0d3b0048055919e67b745cc2261977e5e4f76def/tools/candidate_repair_loop.py#L729"
+            },
+            {
+              "commit": "0d3b0048055919e67b745cc2261977e5e4f76def",
+              "path": "tools/repaired_candidate_promotion_handoff.py",
+              "symbol": "build_repaired_candidate_promotion_handoff",
+              "status": "source_anchored",
+              "blob_sha256": "47d5965ac9c3a213dc2f04ee92a2651f5885ee84fa03a753a68f3982e3d3c1e4",
+              "start_line": 449,
+              "end_line": 688,
+              "url": "https://github.com/0al-spec/SpecGraph/blob/0d3b0048055919e67b745cc2261977e5e4f76def/tools/repaired_candidate_promotion_handoff.py#L449"
+            }
+          ],
+          "tests": [
+            {
+              "commit": "0d3b0048055919e67b745cc2261977e5e4f76def",
+              "path": "tests/test_repaired_candidate_promotion_handoff.py",
+              "symbol": "test_repaired_candidate_promotion_handoff_builds_approval_ready_chain",
+              "status": "source_anchored",
+              "blob_sha256": "3d191389bbf2e5da9f5a91de535440a315153aaf8b0b3ae4846dff978630c530",
+              "start_line": 420,
+              "end_line": 453,
+              "url": "https://github.com/0al-spec/SpecGraph/blob/0d3b0048055919e67b745cc2261977e5e4f76def/tests/test_repaired_candidate_promotion_handoff.py#L420"
+            }
+          ],
+          "canonical_requirement": null,
+          "mapping_authority": "agent_curated_for_review"
+        },
+        {
+          "criterion": {
+            "subject": {
+              "workspace_identity": "pilot:baa72850-bf2e-42c6-a3a9-68930a1ba44e",
+              "subject_class": "criterion",
+              "local_subject_id": "ac.approval-boundary"
+            },
+            "mode": "exact",
+            "revision": 1
+          },
+          "lookup": {
+            "schema_version": 1,
+            "artifact_kind": "subject_lookup_result",
+            "status": "resolved",
+            "requested": {
+              "subject": {
+                "workspace_identity": "pilot:baa72850-bf2e-42c6-a3a9-68930a1ba44e",
+                "subject_class": "criterion",
+                "local_subject_id": "ac.approval-boundary"
+              },
+              "mode": "exact",
+              "revision": 1
+            },
+            "canonical_mutations_allowed": false,
+            "resolved": {
+              "reference": {
+                "workspace_identity": "pilot:baa72850-bf2e-42c6-a3a9-68930a1ba44e",
+                "subject_class": "criterion",
+                "local_subject_id": "ac.approval-boundary"
+              },
+              "revision": {
+                "number": 1,
+                "predecessor": null,
+                "statement": "The repaired repair-session journal keeps `ready_for_platform_promotion: false` until a separate approval decision.",
+                "containment": "docs/proposals/0177_repaired_candidate_promotion_handoff.md",
+                "provenance": "pilot-authoring:2026-10-02/ac.approval-boundary",
+                "acceptance_criteria_refs": []
+              },
+              "current_revision": 1,
+              "retained_containment_history": [
+                {
+                  "revision": 1,
+                  "containment": "docs/proposals/0177_repaired_candidate_promotion_handoff.md",
+                  "provenance": "pilot-authoring:2026-10-02/ac.approval-boundary"
+                }
+              ],
+              "current_subject_disposition": {
+                "state": "active",
+                "basis_ref": "pilot-authoring:2026-10-02/ac.approval-boundary",
+                "observation_provenance": "Active only inside this authored pilot dataset; no historical disposition inferred."
+              },
+              "retained_disposition_transitions": [],
+              "canonical_presence": null,
+              "acceptance_criteria_refs": [],
+              "authored_relations": [],
+              "relation_resolution": {
+                "status": "complete",
+                "scope": "supplied_snapshots",
+                "conflicts": []
+              }
+            }
+          },
+          "source": {
+            "commit": "0d3b0048055919e67b745cc2261977e5e4f76def",
+            "path": "docs/proposals/0177_repaired_candidate_promotion_handoff.md",
+            "status": "unique_text_match",
+            "match_count": 1,
+            "blob_sha256": "b991fa09268851b6fe77fad100f26753a345da4a1b07ba6f9eaae1157a3ceda0",
+            "url": "https://github.com/0al-spec/SpecGraph/blob/0d3b0048055919e67b745cc2261977e5e4f76def/docs/proposals/0177_repaired_candidate_promotion_handoff.md",
+            "scope": "verbatim_statement_presence_not_semantic_proof"
+          },
+          "implementation": [
+            {
+              "commit": "0d3b0048055919e67b745cc2261977e5e4f76def",
+              "path": "tools/repaired_candidate_promotion_handoff.py",
+              "symbol": "_readiness_findings",
+              "status": "source_anchored",
+              "blob_sha256": "47d5965ac9c3a213dc2f04ee92a2651f5885ee84fa03a753a68f3982e3d3c1e4",
+              "start_line": 382,
+              "end_line": 446,
+              "url": "https://github.com/0al-spec/SpecGraph/blob/0d3b0048055919e67b745cc2261977e5e4f76def/tools/repaired_candidate_promotion_handoff.py#L382"
+            }
+          ],
+          "tests": [
+            {
+              "commit": "0d3b0048055919e67b745cc2261977e5e4f76def",
+              "path": "tests/test_repaired_candidate_promotion_handoff.py",
+              "symbol": "test_repaired_candidate_promotion_handoff_builds_approval_ready_chain",
+              "status": "source_anchored",
+              "blob_sha256": "3d191389bbf2e5da9f5a91de535440a315153aaf8b0b3ae4846dff978630c530",
+              "start_line": 420,
+              "end_line": 453,
+              "url": "https://github.com/0al-spec/SpecGraph/blob/0d3b0048055919e67b745cc2261977e5e4f76def/tests/test_repaired_candidate_promotion_handoff.py#L420"
+            }
+          ],
+          "canonical_requirement": null,
+          "mapping_authority": "agent_curated_for_review"
+        },
+        {
+          "criterion": {
+            "subject": {
+              "workspace_identity": "pilot:baa72850-bf2e-42c6-a3a9-68930a1ba44e",
+              "subject_class": "criterion",
+              "local_subject_id": "ac.unresolved-gaps"
+            },
+            "mode": "exact",
+            "revision": 1
+          },
+          "lookup": {
+            "schema_version": 1,
+            "artifact_kind": "subject_lookup_result",
+            "status": "resolved",
+            "requested": {
+              "subject": {
+                "workspace_identity": "pilot:baa72850-bf2e-42c6-a3a9-68930a1ba44e",
+                "subject_class": "criterion",
+                "local_subject_id": "ac.unresolved-gaps"
+              },
+              "mode": "exact",
+              "revision": 1
+            },
+            "canonical_mutations_allowed": false,
+            "resolved": {
+              "reference": {
+                "workspace_identity": "pilot:baa72850-bf2e-42c6-a3a9-68930a1ba44e",
+                "subject_class": "criterion",
+                "local_subject_id": "ac.unresolved-gaps"
+              },
+              "revision": {
+                "number": 1,
+                "predecessor": null,
+                "statement": "Unresolved repaired candidate gaps keep the handoff blocked.",
+                "containment": "docs/proposals/0177_repaired_candidate_promotion_handoff.md",
+                "provenance": "pilot-authoring:2026-10-02/ac.unresolved-gaps",
+                "acceptance_criteria_refs": []
+              },
+              "current_revision": 1,
+              "retained_containment_history": [
+                {
+                  "revision": 1,
+                  "containment": "docs/proposals/0177_repaired_candidate_promotion_handoff.md",
+                  "provenance": "pilot-authoring:2026-10-02/ac.unresolved-gaps"
+                }
+              ],
+              "current_subject_disposition": {
+                "state": "active",
+                "basis_ref": "pilot-authoring:2026-10-02/ac.unresolved-gaps",
+                "observation_provenance": "Active only inside this authored pilot dataset; no historical disposition inferred."
+              },
+              "retained_disposition_transitions": [],
+              "canonical_presence": null,
+              "acceptance_criteria_refs": [],
+              "authored_relations": [],
+              "relation_resolution": {
+                "status": "complete",
+                "scope": "supplied_snapshots",
+                "conflicts": []
+              }
+            }
+          },
+          "source": {
+            "commit": "0d3b0048055919e67b745cc2261977e5e4f76def",
+            "path": "docs/proposals/0177_repaired_candidate_promotion_handoff.md",
+            "status": "unique_text_match",
+            "match_count": 1,
+            "blob_sha256": "b991fa09268851b6fe77fad100f26753a345da4a1b07ba6f9eaae1157a3ceda0",
+            "url": "https://github.com/0al-spec/SpecGraph/blob/0d3b0048055919e67b745cc2261977e5e4f76def/docs/proposals/0177_repaired_candidate_promotion_handoff.md",
+            "scope": "verbatim_statement_presence_not_semantic_proof"
+          },
+          "implementation": [
+            {
+              "commit": "0d3b0048055919e67b745cc2261977e5e4f76def",
+              "path": "tools/repaired_candidate_promotion_handoff.py",
+              "symbol": "_readiness_findings",
+              "status": "source_anchored",
+              "blob_sha256": "47d5965ac9c3a213dc2f04ee92a2651f5885ee84fa03a753a68f3982e3d3c1e4",
+              "start_line": 382,
+              "end_line": 446,
+              "url": "https://github.com/0al-spec/SpecGraph/blob/0d3b0048055919e67b745cc2261977e5e4f76def/tools/repaired_candidate_promotion_handoff.py#L382"
+            }
+          ],
+          "tests": [
+            {
+              "commit": "0d3b0048055919e67b745cc2261977e5e4f76def",
+              "path": "tests/test_repaired_candidate_promotion_handoff.py",
+              "symbol": "test_repaired_candidate_promotion_handoff_blocks_unresolved_repaired_gaps",
+              "status": "source_anchored",
+              "blob_sha256": "3d191389bbf2e5da9f5a91de535440a315153aaf8b0b3ae4846dff978630c530",
+              "start_line": 480,
+              "end_line": 497,
+              "url": "https://github.com/0al-spec/SpecGraph/blob/0d3b0048055919e67b745cc2261977e5e4f76def/tests/test_repaired_candidate_promotion_handoff.py#L480"
+            }
+          ],
+          "canonical_requirement": null,
+          "mapping_authority": "agent_curated_for_review"
+        }
+      ],
+      "execution": {
+        "status": "passed",
+        "returncode": 0,
+        "cases": [
+          {
+            "nodeid": "tests/test_candidate_repair_loop.py::test_candidate_repair_loop_allows_clean_noop_repair_loop",
+            "status": "passed"
+          },
+          {
+            "nodeid": "tests/test_repaired_candidate_promotion_handoff.py::test_repaired_candidate_promotion_handoff_allows_clean_noop_repair_loop",
+            "status": "passed"
+          },
+          {
+            "nodeid": "tests/test_repaired_candidate_promotion_handoff.py::test_repaired_candidate_promotion_handoff_blocks_unresolved_repaired_gaps",
+            "status": "passed"
+          },
+          {
+            "nodeid": "tests/test_repaired_candidate_promotion_handoff.py::test_repaired_candidate_promotion_handoff_builds_approval_ready_chain",
+            "status": "passed"
+          }
+        ],
+        "log_sha256": "f6e6b8418565fbd6476bef4cd4eea6509c221f48d795a78ffe3933df059705b7",
+        "junit_sha256": "f29a3db0c5625767644f54e9a88602786f53ce654852f54cb3ad0a4fe2c7afe7",
+        "selected_tests": [
+          "tests/test_candidate_repair_loop.py::test_candidate_repair_loop_allows_clean_noop_repair_loop",
+          "tests/test_repaired_candidate_promotion_handoff.py::test_repaired_candidate_promotion_handoff_allows_clean_noop_repair_loop",
+          "tests/test_repaired_candidate_promotion_handoff.py::test_repaired_candidate_promotion_handoff_blocks_unresolved_repaired_gaps",
+          "tests/test_repaired_candidate_promotion_handoff.py::test_repaired_candidate_promotion_handoff_builds_approval_ready_chain"
+        ],
+        "runtime_trace": {
+          "status": "not_collected_at_this_checkpoint"
+        }
+      }
+    },
+    {
+      "checkpoint": {
+        "name": "after-743",
+        "commit": "7fc2836acf68815edfc68d0dc8a500ddb067f304",
+        "pull_request": 743,
+        "implementation": {
+          "ac.clean-noop": [
+            "tools/candidate_repair_loop.py::build_candidate_repair_loop_report",
+            "tools/repaired_candidate_promotion_handoff.py::build_repaired_candidate_promotion_handoff",
+            "tools/repaired_handoff_noop_passthrough_spec.py::_is_clean_pre_sib_noop_passthrough"
+          ],
+          "ac.repaired-preview": [
+            "tools/candidate_repair_loop.py::build_candidate_repair_loop_report",
+            "tools/repaired_candidate_promotion_handoff.py::build_repaired_candidate_promotion_handoff"
+          ],
+          "ac.approval-boundary": [
+            "tools/repaired_candidate_promotion_handoff.py::_readiness_findings"
+          ],
+          "ac.unresolved-gaps": [
+            "tools/repaired_candidate_promotion_handoff.py::_readiness_findings"
+          ]
+        }
+      },
+      "source_bindings_valid": true,
+      "bindings": [
+        {
+          "criterion": {
+            "subject": {
+              "workspace_identity": "pilot:baa72850-bf2e-42c6-a3a9-68930a1ba44e",
+              "subject_class": "criterion",
+              "local_subject_id": "ac.clean-noop"
+            },
+            "mode": "exact",
+            "revision": 1
+          },
+          "lookup": {
+            "schema_version": 1,
+            "artifact_kind": "subject_lookup_result",
+            "status": "resolved",
+            "requested": {
+              "subject": {
+                "workspace_identity": "pilot:baa72850-bf2e-42c6-a3a9-68930a1ba44e",
+                "subject_class": "criterion",
+                "local_subject_id": "ac.clean-noop"
+              },
+              "mode": "exact",
+              "revision": 1
+            },
+            "canonical_mutations_allowed": false,
+            "resolved": {
+              "reference": {
+                "workspace_identity": "pilot:baa72850-bf2e-42c6-a3a9-68930a1ba44e",
+                "subject_class": "criterion",
+                "local_subject_id": "ac.clean-noop"
+              },
+              "revision": {
+                "number": 1,
+                "predecessor": null,
+                "statement": "A candidate graph with clean pre-SIB readiness and no repair actions produces a ready no-op repair loop instead of `repair_review_required`.",
+                "containment": "docs/proposals/0191_event_storming_candidate_topology_edges.md",
+                "provenance": "pilot-authoring:2026-10-02/ac.clean-noop",
+                "acceptance_criteria_refs": []
+              },
+              "current_revision": 1,
+              "retained_containment_history": [
+                {
+                  "revision": 1,
+                  "containment": "docs/proposals/0191_event_storming_candidate_topology_edges.md",
+                  "provenance": "pilot-authoring:2026-10-02/ac.clean-noop"
+                }
+              ],
+              "current_subject_disposition": {
+                "state": "active",
+                "basis_ref": "pilot-authoring:2026-10-02/ac.clean-noop",
+                "observation_provenance": "Active only inside this authored pilot dataset; no historical disposition inferred."
+              },
+              "retained_disposition_transitions": [],
+              "canonical_presence": null,
+              "acceptance_criteria_refs": [],
+              "authored_relations": [],
+              "relation_resolution": {
+                "status": "complete",
+                "scope": "supplied_snapshots",
+                "conflicts": []
+              }
+            }
+          },
+          "source": {
+            "commit": "7fc2836acf68815edfc68d0dc8a500ddb067f304",
+            "path": "docs/proposals/0191_event_storming_candidate_topology_edges.md",
+            "status": "unique_text_match",
+            "match_count": 1,
+            "blob_sha256": "00c22442bb9fcb0b329a5e9cb9add96ae98e23d74659e4dda1ddbd27da1b32ae",
+            "url": "https://github.com/0al-spec/SpecGraph/blob/7fc2836acf68815edfc68d0dc8a500ddb067f304/docs/proposals/0191_event_storming_candidate_topology_edges.md",
+            "scope": "verbatim_statement_presence_not_semantic_proof"
+          },
+          "implementation": [
+            {
+              "commit": "7fc2836acf68815edfc68d0dc8a500ddb067f304",
+              "path": "tools/candidate_repair_loop.py",
+              "symbol": "build_candidate_repair_loop_report",
+              "status": "source_anchored",
+              "blob_sha256": "65e74a8ea951b11edc541cf10d40cf7c074346a70c11c298e5095a0d75eb02f3",
+              "start_line": 729,
+              "end_line": 823,
+              "url": "https://github.com/0al-spec/SpecGraph/blob/7fc2836acf68815edfc68d0dc8a500ddb067f304/tools/candidate_repair_loop.py#L729"
+            },
+            {
+              "commit": "7fc2836acf68815edfc68d0dc8a500ddb067f304",
+              "path": "tools/repaired_candidate_promotion_handoff.py",
+              "symbol": "build_repaired_candidate_promotion_handoff",
+              "status": "source_anchored",
+              "blob_sha256": "f18bc2d0798bf3bb8a43ac839729be4b304ff82a6dd7e281d4e9e439842b79dc",
+              "start_line": 452,
+              "end_line": 691,
+              "url": "https://github.com/0al-spec/SpecGraph/blob/7fc2836acf68815edfc68d0dc8a500ddb067f304/tools/repaired_candidate_promotion_handoff.py#L452"
+            },
+            {
+              "commit": "7fc2836acf68815edfc68d0dc8a500ddb067f304",
+              "path": "tools/repaired_handoff_noop_passthrough_spec.py",
+              "symbol": "_is_clean_pre_sib_noop_passthrough",
+              "status": "source_anchored",
+              "blob_sha256": "14c85d36a81e6d3ead2a4b03b0297246151d598df515148d71a27b63fd12bf3c",
+              "start_line": 8,
+              "end_line": 15,
+              "url": "https://github.com/0al-spec/SpecGraph/blob/7fc2836acf68815edfc68d0dc8a500ddb067f304/tools/repaired_handoff_noop_passthrough_spec.py#L8"
+            }
+          ],
+          "tests": [
+            {
+              "commit": "7fc2836acf68815edfc68d0dc8a500ddb067f304",
+              "path": "tests/test_candidate_repair_loop.py",
+              "symbol": "test_candidate_repair_loop_allows_clean_noop_repair_loop",
+              "status": "source_anchored",
+              "blob_sha256": "3a6aca5c41a5fc17870a76a774061055c32ff512ad377130806a2407ee3c43d4",
+              "start_line": 281,
+              "end_line": 323,
+              "url": "https://github.com/0al-spec/SpecGraph/blob/7fc2836acf68815edfc68d0dc8a500ddb067f304/tests/test_candidate_repair_loop.py#L281"
+            },
+            {
+              "commit": "7fc2836acf68815edfc68d0dc8a500ddb067f304",
+              "path": "tests/test_repaired_candidate_promotion_handoff.py",
+              "symbol": "test_repaired_candidate_promotion_handoff_allows_clean_noop_repair_loop",
+              "status": "source_anchored",
+              "blob_sha256": "c2190e755255df570911057bf3517c65fc81db2cc385c6cf6e58e57abc88223e",
+              "start_line": 459,
+              "end_line": 480,
+              "url": "https://github.com/0al-spec/SpecGraph/blob/7fc2836acf68815edfc68d0dc8a500ddb067f304/tests/test_repaired_candidate_promotion_handoff.py#L459"
+            }
+          ],
+          "canonical_requirement": null,
+          "mapping_authority": "agent_curated_for_review"
+        },
+        {
+          "criterion": {
+            "subject": {
+              "workspace_identity": "pilot:baa72850-bf2e-42c6-a3a9-68930a1ba44e",
+              "subject_class": "criterion",
+              "local_subject_id": "ac.repaired-preview"
+            },
+            "mode": "exact",
+            "revision": 1
+          },
+          "lookup": {
+            "schema_version": 1,
+            "artifact_kind": "subject_lookup_result",
+            "status": "resolved",
+            "requested": {
+              "subject": {
+                "workspace_identity": "pilot:baa72850-bf2e-42c6-a3a9-68930a1ba44e",
+                "subject_class": "criterion",
+                "local_subject_id": "ac.repaired-preview"
+              },
+              "mode": "exact",
+              "revision": 1
+            },
+            "canonical_mutations_allowed": false,
+            "resolved": {
+              "reference": {
+                "workspace_identity": "pilot:baa72850-bf2e-42c6-a3a9-68930a1ba44e",
+                "subject_class": "criterion",
+                "local_subject_id": "ac.repaired-preview"
+              },
+              "revision": {
+                "number": 1,
+                "predecessor": null,
+                "statement": "If the repaired graph still has pre-SIB structural issues, the normal candidate repair loop may repair them in preview, and the promotion gate must preserve `pre_sib_findings_repaired_by_preview` evidence.",
+                "containment": "docs/proposals/0177_repaired_candidate_promotion_handoff.md",
+                "provenance": "pilot-authoring:2026-10-02/ac.repaired-preview",
+                "acceptance_criteria_refs": []
+              },
+              "current_revision": 1,
+              "retained_containment_history": [
+                {
+                  "revision": 1,
+                  "containment": "docs/proposals/0177_repaired_candidate_promotion_handoff.md",
+                  "provenance": "pilot-authoring:2026-10-02/ac.repaired-preview"
+                }
+              ],
+              "current_subject_disposition": {
+                "state": "active",
+                "basis_ref": "pilot-authoring:2026-10-02/ac.repaired-preview",
+                "observation_provenance": "Active only inside this authored pilot dataset; no historical disposition inferred."
+              },
+              "retained_disposition_transitions": [],
+              "canonical_presence": null,
+              "acceptance_criteria_refs": [],
+              "authored_relations": [],
+              "relation_resolution": {
+                "status": "complete",
+                "scope": "supplied_snapshots",
+                "conflicts": []
+              }
+            }
+          },
+          "source": {
+            "commit": "7fc2836acf68815edfc68d0dc8a500ddb067f304",
+            "path": "docs/proposals/0177_repaired_candidate_promotion_handoff.md",
+            "status": "unique_text_match",
+            "match_count": 1,
+            "blob_sha256": "b991fa09268851b6fe77fad100f26753a345da4a1b07ba6f9eaae1157a3ceda0",
+            "url": "https://github.com/0al-spec/SpecGraph/blob/7fc2836acf68815edfc68d0dc8a500ddb067f304/docs/proposals/0177_repaired_candidate_promotion_handoff.md",
+            "scope": "verbatim_statement_presence_not_semantic_proof"
+          },
+          "implementation": [
+            {
+              "commit": "7fc2836acf68815edfc68d0dc8a500ddb067f304",
+              "path": "tools/candidate_repair_loop.py",
+              "symbol": "build_candidate_repair_loop_report",
+              "status": "source_anchored",
+              "blob_sha256": "65e74a8ea951b11edc541cf10d40cf7c074346a70c11c298e5095a0d75eb02f3",
+              "start_line": 729,
+              "end_line": 823,
+              "url": "https://github.com/0al-spec/SpecGraph/blob/7fc2836acf68815edfc68d0dc8a500ddb067f304/tools/candidate_repair_loop.py#L729"
+            },
+            {
+              "commit": "7fc2836acf68815edfc68d0dc8a500ddb067f304",
+              "path": "tools/repaired_candidate_promotion_handoff.py",
+              "symbol": "build_repaired_candidate_promotion_handoff",
+              "status": "source_anchored",
+              "blob_sha256": "f18bc2d0798bf3bb8a43ac839729be4b304ff82a6dd7e281d4e9e439842b79dc",
+              "start_line": 452,
+              "end_line": 691,
+              "url": "https://github.com/0al-spec/SpecGraph/blob/7fc2836acf68815edfc68d0dc8a500ddb067f304/tools/repaired_candidate_promotion_handoff.py#L452"
+            }
+          ],
+          "tests": [
+            {
+              "commit": "7fc2836acf68815edfc68d0dc8a500ddb067f304",
+              "path": "tests/test_repaired_candidate_promotion_handoff.py",
+              "symbol": "test_repaired_candidate_promotion_handoff_builds_approval_ready_chain",
+              "status": "source_anchored",
+              "blob_sha256": "c2190e755255df570911057bf3517c65fc81db2cc385c6cf6e58e57abc88223e",
+              "start_line": 423,
+              "end_line": 456,
+              "url": "https://github.com/0al-spec/SpecGraph/blob/7fc2836acf68815edfc68d0dc8a500ddb067f304/tests/test_repaired_candidate_promotion_handoff.py#L423"
+            }
+          ],
+          "canonical_requirement": null,
+          "mapping_authority": "agent_curated_for_review"
+        },
+        {
+          "criterion": {
+            "subject": {
+              "workspace_identity": "pilot:baa72850-bf2e-42c6-a3a9-68930a1ba44e",
+              "subject_class": "criterion",
+              "local_subject_id": "ac.approval-boundary"
+            },
+            "mode": "exact",
+            "revision": 1
+          },
+          "lookup": {
+            "schema_version": 1,
+            "artifact_kind": "subject_lookup_result",
+            "status": "resolved",
+            "requested": {
+              "subject": {
+                "workspace_identity": "pilot:baa72850-bf2e-42c6-a3a9-68930a1ba44e",
+                "subject_class": "criterion",
+                "local_subject_id": "ac.approval-boundary"
+              },
+              "mode": "exact",
+              "revision": 1
+            },
+            "canonical_mutations_allowed": false,
+            "resolved": {
+              "reference": {
+                "workspace_identity": "pilot:baa72850-bf2e-42c6-a3a9-68930a1ba44e",
+                "subject_class": "criterion",
+                "local_subject_id": "ac.approval-boundary"
+              },
+              "revision": {
+                "number": 1,
+                "predecessor": null,
+                "statement": "The repaired repair-session journal keeps `ready_for_platform_promotion: false` until a separate approval decision.",
+                "containment": "docs/proposals/0177_repaired_candidate_promotion_handoff.md",
+                "provenance": "pilot-authoring:2026-10-02/ac.approval-boundary",
+                "acceptance_criteria_refs": []
+              },
+              "current_revision": 1,
+              "retained_containment_history": [
+                {
+                  "revision": 1,
+                  "containment": "docs/proposals/0177_repaired_candidate_promotion_handoff.md",
+                  "provenance": "pilot-authoring:2026-10-02/ac.approval-boundary"
+                }
+              ],
+              "current_subject_disposition": {
+                "state": "active",
+                "basis_ref": "pilot-authoring:2026-10-02/ac.approval-boundary",
+                "observation_provenance": "Active only inside this authored pilot dataset; no historical disposition inferred."
+              },
+              "retained_disposition_transitions": [],
+              "canonical_presence": null,
+              "acceptance_criteria_refs": [],
+              "authored_relations": [],
+              "relation_resolution": {
+                "status": "complete",
+                "scope": "supplied_snapshots",
+                "conflicts": []
+              }
+            }
+          },
+          "source": {
+            "commit": "7fc2836acf68815edfc68d0dc8a500ddb067f304",
+            "path": "docs/proposals/0177_repaired_candidate_promotion_handoff.md",
+            "status": "unique_text_match",
+            "match_count": 1,
+            "blob_sha256": "b991fa09268851b6fe77fad100f26753a345da4a1b07ba6f9eaae1157a3ceda0",
+            "url": "https://github.com/0al-spec/SpecGraph/blob/7fc2836acf68815edfc68d0dc8a500ddb067f304/docs/proposals/0177_repaired_candidate_promotion_handoff.md",
+            "scope": "verbatim_statement_presence_not_semantic_proof"
+          },
+          "implementation": [
+            {
+              "commit": "7fc2836acf68815edfc68d0dc8a500ddb067f304",
+              "path": "tools/repaired_candidate_promotion_handoff.py",
+              "symbol": "_readiness_findings",
+              "status": "source_anchored",
+              "blob_sha256": "f18bc2d0798bf3bb8a43ac839729be4b304ff82a6dd7e281d4e9e439842b79dc",
+              "start_line": 385,
+              "end_line": 449,
+              "url": "https://github.com/0al-spec/SpecGraph/blob/7fc2836acf68815edfc68d0dc8a500ddb067f304/tools/repaired_candidate_promotion_handoff.py#L385"
+            }
+          ],
+          "tests": [
+            {
+              "commit": "7fc2836acf68815edfc68d0dc8a500ddb067f304",
+              "path": "tests/test_repaired_candidate_promotion_handoff.py",
+              "symbol": "test_repaired_candidate_promotion_handoff_builds_approval_ready_chain",
+              "status": "source_anchored",
+              "blob_sha256": "c2190e755255df570911057bf3517c65fc81db2cc385c6cf6e58e57abc88223e",
+              "start_line": 423,
+              "end_line": 456,
+              "url": "https://github.com/0al-spec/SpecGraph/blob/7fc2836acf68815edfc68d0dc8a500ddb067f304/tests/test_repaired_candidate_promotion_handoff.py#L423"
+            }
+          ],
+          "canonical_requirement": null,
+          "mapping_authority": "agent_curated_for_review"
+        },
+        {
+          "criterion": {
+            "subject": {
+              "workspace_identity": "pilot:baa72850-bf2e-42c6-a3a9-68930a1ba44e",
+              "subject_class": "criterion",
+              "local_subject_id": "ac.unresolved-gaps"
+            },
+            "mode": "exact",
+            "revision": 1
+          },
+          "lookup": {
+            "schema_version": 1,
+            "artifact_kind": "subject_lookup_result",
+            "status": "resolved",
+            "requested": {
+              "subject": {
+                "workspace_identity": "pilot:baa72850-bf2e-42c6-a3a9-68930a1ba44e",
+                "subject_class": "criterion",
+                "local_subject_id": "ac.unresolved-gaps"
+              },
+              "mode": "exact",
+              "revision": 1
+            },
+            "canonical_mutations_allowed": false,
+            "resolved": {
+              "reference": {
+                "workspace_identity": "pilot:baa72850-bf2e-42c6-a3a9-68930a1ba44e",
+                "subject_class": "criterion",
+                "local_subject_id": "ac.unresolved-gaps"
+              },
+              "revision": {
+                "number": 1,
+                "predecessor": null,
+                "statement": "Unresolved repaired candidate gaps keep the handoff blocked.",
+                "containment": "docs/proposals/0177_repaired_candidate_promotion_handoff.md",
+                "provenance": "pilot-authoring:2026-10-02/ac.unresolved-gaps",
+                "acceptance_criteria_refs": []
+              },
+              "current_revision": 1,
+              "retained_containment_history": [
+                {
+                  "revision": 1,
+                  "containment": "docs/proposals/0177_repaired_candidate_promotion_handoff.md",
+                  "provenance": "pilot-authoring:2026-10-02/ac.unresolved-gaps"
+                }
+              ],
+              "current_subject_disposition": {
+                "state": "active",
+                "basis_ref": "pilot-authoring:2026-10-02/ac.unresolved-gaps",
+                "observation_provenance": "Active only inside this authored pilot dataset; no historical disposition inferred."
+              },
+              "retained_disposition_transitions": [],
+              "canonical_presence": null,
+              "acceptance_criteria_refs": [],
+              "authored_relations": [],
+              "relation_resolution": {
+                "status": "complete",
+                "scope": "supplied_snapshots",
+                "conflicts": []
+              }
+            }
+          },
+          "source": {
+            "commit": "7fc2836acf68815edfc68d0dc8a500ddb067f304",
+            "path": "docs/proposals/0177_repaired_candidate_promotion_handoff.md",
+            "status": "unique_text_match",
+            "match_count": 1,
+            "blob_sha256": "b991fa09268851b6fe77fad100f26753a345da4a1b07ba6f9eaae1157a3ceda0",
+            "url": "https://github.com/0al-spec/SpecGraph/blob/7fc2836acf68815edfc68d0dc8a500ddb067f304/docs/proposals/0177_repaired_candidate_promotion_handoff.md",
+            "scope": "verbatim_statement_presence_not_semantic_proof"
+          },
+          "implementation": [
+            {
+              "commit": "7fc2836acf68815edfc68d0dc8a500ddb067f304",
+              "path": "tools/repaired_candidate_promotion_handoff.py",
+              "symbol": "_readiness_findings",
+              "status": "source_anchored",
+              "blob_sha256": "f18bc2d0798bf3bb8a43ac839729be4b304ff82a6dd7e281d4e9e439842b79dc",
+              "start_line": 385,
+              "end_line": 449,
+              "url": "https://github.com/0al-spec/SpecGraph/blob/7fc2836acf68815edfc68d0dc8a500ddb067f304/tools/repaired_candidate_promotion_handoff.py#L385"
+            }
+          ],
+          "tests": [
+            {
+              "commit": "7fc2836acf68815edfc68d0dc8a500ddb067f304",
+              "path": "tests/test_repaired_candidate_promotion_handoff.py",
+              "symbol": "test_repaired_candidate_promotion_handoff_blocks_unresolved_repaired_gaps",
+              "status": "source_anchored",
+              "blob_sha256": "c2190e755255df570911057bf3517c65fc81db2cc385c6cf6e58e57abc88223e",
+              "start_line": 532,
+              "end_line": 549,
+              "url": "https://github.com/0al-spec/SpecGraph/blob/7fc2836acf68815edfc68d0dc8a500ddb067f304/tests/test_repaired_candidate_promotion_handoff.py#L532"
+            }
+          ],
+          "canonical_requirement": null,
+          "mapping_authority": "agent_curated_for_review"
+        }
+      ],
+      "execution": {
+        "status": "passed",
+        "returncode": 0,
+        "cases": [
+          {
+            "nodeid": "tests/test_candidate_repair_loop.py::test_candidate_repair_loop_allows_clean_noop_repair_loop",
+            "status": "passed"
+          },
+          {
+            "nodeid": "tests/test_repaired_candidate_promotion_handoff.py::test_repaired_candidate_promotion_handoff_allows_clean_noop_repair_loop",
+            "status": "passed"
+          },
+          {
+            "nodeid": "tests/test_repaired_candidate_promotion_handoff.py::test_repaired_candidate_promotion_handoff_blocks_unresolved_repaired_gaps",
+            "status": "passed"
+          },
+          {
+            "nodeid": "tests/test_repaired_candidate_promotion_handoff.py::test_repaired_candidate_promotion_handoff_builds_approval_ready_chain",
+            "status": "passed"
+          }
+        ],
+        "log_sha256": "852b0f07d9df3d3c0087fe9db0b1431ab1ce1c3a16dcce79f358a32312370db1",
+        "junit_sha256": "6258e37b8b32ee0611d6ae7560a1f30e87615dbf4360a10bbf69135ba1453763",
+        "selected_tests": [
+          "tests/test_candidate_repair_loop.py::test_candidate_repair_loop_allows_clean_noop_repair_loop",
+          "tests/test_repaired_candidate_promotion_handoff.py::test_repaired_candidate_promotion_handoff_allows_clean_noop_repair_loop",
+          "tests/test_repaired_candidate_promotion_handoff.py::test_repaired_candidate_promotion_handoff_blocks_unresolved_repaired_gaps",
+          "tests/test_repaired_candidate_promotion_handoff.py::test_repaired_candidate_promotion_handoff_builds_approval_ready_chain"
+        ],
+        "runtime_trace": {
+          "status": "not_collected_at_this_checkpoint"
+        }
+      }
+    },
+    {
+      "checkpoint": {
+        "name": "after-744",
+        "commit": "aeabe4af7d3007ed23ccab90c0ab45bbd51ba448",
+        "pull_request": 744,
+        "implementation": {
+          "ac.clean-noop": [
+            "tools/candidate_repair_loop.py::build_candidate_repair_loop_report",
+            "tools/repaired_candidate_promotion_handoff.py::build_repaired_candidate_promotion_handoff",
+            "tools/candidate_repair_readiness_spec.py::candidate_repair_readiness"
+          ],
+          "ac.repaired-preview": [
+            "tools/candidate_repair_loop.py::build_candidate_repair_loop_report",
+            "tools/repaired_candidate_promotion_handoff.py::build_repaired_candidate_promotion_handoff",
+            "tools/candidate_repair_readiness_spec.py::candidate_repair_readiness"
+          ],
+          "ac.approval-boundary": [
+            "tools/repaired_candidate_promotion_handoff.py::_readiness_findings"
+          ],
+          "ac.unresolved-gaps": [
+            "tools/repaired_candidate_promotion_handoff.py::_readiness_findings"
+          ]
+        }
+      },
+      "source_bindings_valid": true,
+      "bindings": [
+        {
+          "criterion": {
+            "subject": {
+              "workspace_identity": "pilot:baa72850-bf2e-42c6-a3a9-68930a1ba44e",
+              "subject_class": "criterion",
+              "local_subject_id": "ac.clean-noop"
+            },
+            "mode": "exact",
+            "revision": 1
+          },
+          "lookup": {
+            "schema_version": 1,
+            "artifact_kind": "subject_lookup_result",
+            "status": "resolved",
+            "requested": {
+              "subject": {
+                "workspace_identity": "pilot:baa72850-bf2e-42c6-a3a9-68930a1ba44e",
+                "subject_class": "criterion",
+                "local_subject_id": "ac.clean-noop"
+              },
+              "mode": "exact",
+              "revision": 1
+            },
+            "canonical_mutations_allowed": false,
+            "resolved": {
+              "reference": {
+                "workspace_identity": "pilot:baa72850-bf2e-42c6-a3a9-68930a1ba44e",
+                "subject_class": "criterion",
+                "local_subject_id": "ac.clean-noop"
+              },
+              "revision": {
+                "number": 1,
+                "predecessor": null,
+                "statement": "A candidate graph with clean pre-SIB readiness and no repair actions produces a ready no-op repair loop instead of `repair_review_required`.",
+                "containment": "docs/proposals/0191_event_storming_candidate_topology_edges.md",
+                "provenance": "pilot-authoring:2026-10-02/ac.clean-noop",
+                "acceptance_criteria_refs": []
+              },
+              "current_revision": 1,
+              "retained_containment_history": [
+                {
+                  "revision": 1,
+                  "containment": "docs/proposals/0191_event_storming_candidate_topology_edges.md",
+                  "provenance": "pilot-authoring:2026-10-02/ac.clean-noop"
+                }
+              ],
+              "current_subject_disposition": {
+                "state": "active",
+                "basis_ref": "pilot-authoring:2026-10-02/ac.clean-noop",
+                "observation_provenance": "Active only inside this authored pilot dataset; no historical disposition inferred."
+              },
+              "retained_disposition_transitions": [],
+              "canonical_presence": null,
+              "acceptance_criteria_refs": [],
+              "authored_relations": [],
+              "relation_resolution": {
+                "status": "complete",
+                "scope": "supplied_snapshots",
+                "conflicts": []
+              }
+            }
+          },
+          "source": {
+            "commit": "aeabe4af7d3007ed23ccab90c0ab45bbd51ba448",
+            "path": "docs/proposals/0191_event_storming_candidate_topology_edges.md",
+            "status": "unique_text_match",
+            "match_count": 1,
+            "blob_sha256": "00c22442bb9fcb0b329a5e9cb9add96ae98e23d74659e4dda1ddbd27da1b32ae",
+            "url": "https://github.com/0al-spec/SpecGraph/blob/aeabe4af7d3007ed23ccab90c0ab45bbd51ba448/docs/proposals/0191_event_storming_candidate_topology_edges.md",
+            "scope": "verbatim_statement_presence_not_semantic_proof"
+          },
+          "implementation": [
+            {
+              "commit": "aeabe4af7d3007ed23ccab90c0ab45bbd51ba448",
+              "path": "tools/candidate_repair_loop.py",
+              "symbol": "build_candidate_repair_loop_report",
+              "status": "source_anchored",
+              "blob_sha256": "ccc6d0f1f32275c38272eac5fbf51c516eae7245ef83c83288e74b04d8953416",
+              "start_line": 737,
+              "end_line": 837,
+              "url": "https://github.com/0al-spec/SpecGraph/blob/aeabe4af7d3007ed23ccab90c0ab45bbd51ba448/tools/candidate_repair_loop.py#L737"
+            },
+            {
+              "commit": "aeabe4af7d3007ed23ccab90c0ab45bbd51ba448",
+              "path": "tools/repaired_candidate_promotion_handoff.py",
+              "symbol": "build_repaired_candidate_promotion_handoff",
+              "status": "source_anchored",
+              "blob_sha256": "ca2d59c856a8dbc10bd9de910f6b0e8c08391e72897cf1c434eafea49b1acc83",
+              "start_line": 405,
+              "end_line": 640,
+              "url": "https://github.com/0al-spec/SpecGraph/blob/aeabe4af7d3007ed23ccab90c0ab45bbd51ba448/tools/repaired_candidate_promotion_handoff.py#L405"
+            },
+            {
+              "commit": "aeabe4af7d3007ed23ccab90c0ab45bbd51ba448",
+              "path": "tools/candidate_repair_readiness_spec.py",
+              "symbol": "candidate_repair_readiness",
+              "status": "source_anchored",
+              "blob_sha256": "68a149c13a6fe3dcd0e21313815d0626995b8c776024ff533d7fca30efa825f9",
+              "start_line": 33,
+              "end_line": 41,
+              "url": "https://github.com/0al-spec/SpecGraph/blob/aeabe4af7d3007ed23ccab90c0ab45bbd51ba448/tools/candidate_repair_readiness_spec.py#L33"
+            }
+          ],
+          "tests": [
+            {
+              "commit": "aeabe4af7d3007ed23ccab90c0ab45bbd51ba448",
+              "path": "tests/test_candidate_repair_loop.py",
+              "symbol": "test_candidate_repair_loop_allows_clean_noop_repair_loop",
+              "status": "source_anchored",
+              "blob_sha256": "da66e83fcad4286ec79f505e6e88c89b08456e2f766d56d9b1d4543f281f12bd",
+              "start_line": 329,
+              "end_line": 395,
+              "url": "https://github.com/0al-spec/SpecGraph/blob/aeabe4af7d3007ed23ccab90c0ab45bbd51ba448/tests/test_candidate_repair_loop.py#L329"
+            },
+            {
+              "commit": "aeabe4af7d3007ed23ccab90c0ab45bbd51ba448",
+              "path": "tests/test_repaired_candidate_promotion_handoff.py",
+              "symbol": "test_repaired_candidate_promotion_handoff_allows_clean_noop_repair_loop",
+              "status": "source_anchored",
+              "blob_sha256": "c2dde7b0990cbe01fe82db03b68d2fe96555afa659f77ce765376a7f8d4c88b6",
+              "start_line": 456,
+              "end_line": 478,
+              "url": "https://github.com/0al-spec/SpecGraph/blob/aeabe4af7d3007ed23ccab90c0ab45bbd51ba448/tests/test_repaired_candidate_promotion_handoff.py#L456"
+            }
+          ],
+          "canonical_requirement": null,
+          "mapping_authority": "agent_curated_for_review"
+        },
+        {
+          "criterion": {
+            "subject": {
+              "workspace_identity": "pilot:baa72850-bf2e-42c6-a3a9-68930a1ba44e",
+              "subject_class": "criterion",
+              "local_subject_id": "ac.repaired-preview"
+            },
+            "mode": "exact",
+            "revision": 1
+          },
+          "lookup": {
+            "schema_version": 1,
+            "artifact_kind": "subject_lookup_result",
+            "status": "resolved",
+            "requested": {
+              "subject": {
+                "workspace_identity": "pilot:baa72850-bf2e-42c6-a3a9-68930a1ba44e",
+                "subject_class": "criterion",
+                "local_subject_id": "ac.repaired-preview"
+              },
+              "mode": "exact",
+              "revision": 1
+            },
+            "canonical_mutations_allowed": false,
+            "resolved": {
+              "reference": {
+                "workspace_identity": "pilot:baa72850-bf2e-42c6-a3a9-68930a1ba44e",
+                "subject_class": "criterion",
+                "local_subject_id": "ac.repaired-preview"
+              },
+              "revision": {
+                "number": 1,
+                "predecessor": null,
+                "statement": "If the repaired graph still has pre-SIB structural issues, the normal candidate repair loop may repair them in preview, and the promotion gate must preserve `pre_sib_findings_repaired_by_preview` evidence.",
+                "containment": "docs/proposals/0177_repaired_candidate_promotion_handoff.md",
+                "provenance": "pilot-authoring:2026-10-02/ac.repaired-preview",
+                "acceptance_criteria_refs": []
+              },
+              "current_revision": 1,
+              "retained_containment_history": [
+                {
+                  "revision": 1,
+                  "containment": "docs/proposals/0177_repaired_candidate_promotion_handoff.md",
+                  "provenance": "pilot-authoring:2026-10-02/ac.repaired-preview"
+                }
+              ],
+              "current_subject_disposition": {
+                "state": "active",
+                "basis_ref": "pilot-authoring:2026-10-02/ac.repaired-preview",
+                "observation_provenance": "Active only inside this authored pilot dataset; no historical disposition inferred."
+              },
+              "retained_disposition_transitions": [],
+              "canonical_presence": null,
+              "acceptance_criteria_refs": [],
+              "authored_relations": [],
+              "relation_resolution": {
+                "status": "complete",
+                "scope": "supplied_snapshots",
+                "conflicts": []
+              }
+            }
+          },
+          "source": {
+            "commit": "aeabe4af7d3007ed23ccab90c0ab45bbd51ba448",
+            "path": "docs/proposals/0177_repaired_candidate_promotion_handoff.md",
+            "status": "unique_text_match",
+            "match_count": 1,
+            "blob_sha256": "b991fa09268851b6fe77fad100f26753a345da4a1b07ba6f9eaae1157a3ceda0",
+            "url": "https://github.com/0al-spec/SpecGraph/blob/aeabe4af7d3007ed23ccab90c0ab45bbd51ba448/docs/proposals/0177_repaired_candidate_promotion_handoff.md",
+            "scope": "verbatim_statement_presence_not_semantic_proof"
+          },
+          "implementation": [
+            {
+              "commit": "aeabe4af7d3007ed23ccab90c0ab45bbd51ba448",
+              "path": "tools/candidate_repair_loop.py",
+              "symbol": "build_candidate_repair_loop_report",
+              "status": "source_anchored",
+              "blob_sha256": "ccc6d0f1f32275c38272eac5fbf51c516eae7245ef83c83288e74b04d8953416",
+              "start_line": 737,
+              "end_line": 837,
+              "url": "https://github.com/0al-spec/SpecGraph/blob/aeabe4af7d3007ed23ccab90c0ab45bbd51ba448/tools/candidate_repair_loop.py#L737"
+            },
+            {
+              "commit": "aeabe4af7d3007ed23ccab90c0ab45bbd51ba448",
+              "path": "tools/repaired_candidate_promotion_handoff.py",
+              "symbol": "build_repaired_candidate_promotion_handoff",
+              "status": "source_anchored",
+              "blob_sha256": "ca2d59c856a8dbc10bd9de910f6b0e8c08391e72897cf1c434eafea49b1acc83",
+              "start_line": 405,
+              "end_line": 640,
+              "url": "https://github.com/0al-spec/SpecGraph/blob/aeabe4af7d3007ed23ccab90c0ab45bbd51ba448/tools/repaired_candidate_promotion_handoff.py#L405"
+            },
+            {
+              "commit": "aeabe4af7d3007ed23ccab90c0ab45bbd51ba448",
+              "path": "tools/candidate_repair_readiness_spec.py",
+              "symbol": "candidate_repair_readiness",
+              "status": "source_anchored",
+              "blob_sha256": "68a149c13a6fe3dcd0e21313815d0626995b8c776024ff533d7fca30efa825f9",
+              "start_line": 33,
+              "end_line": 41,
+              "url": "https://github.com/0al-spec/SpecGraph/blob/aeabe4af7d3007ed23ccab90c0ab45bbd51ba448/tools/candidate_repair_readiness_spec.py#L33"
+            }
+          ],
+          "tests": [
+            {
+              "commit": "aeabe4af7d3007ed23ccab90c0ab45bbd51ba448",
+              "path": "tests/test_repaired_candidate_promotion_handoff.py",
+              "symbol": "test_repaired_candidate_promotion_handoff_builds_approval_ready_chain",
+              "status": "source_anchored",
+              "blob_sha256": "c2dde7b0990cbe01fe82db03b68d2fe96555afa659f77ce765376a7f8d4c88b6",
+              "start_line": 420,
+              "end_line": 453,
+              "url": "https://github.com/0al-spec/SpecGraph/blob/aeabe4af7d3007ed23ccab90c0ab45bbd51ba448/tests/test_repaired_candidate_promotion_handoff.py#L420"
+            }
+          ],
+          "canonical_requirement": null,
+          "mapping_authority": "agent_curated_for_review"
+        },
+        {
+          "criterion": {
+            "subject": {
+              "workspace_identity": "pilot:baa72850-bf2e-42c6-a3a9-68930a1ba44e",
+              "subject_class": "criterion",
+              "local_subject_id": "ac.approval-boundary"
+            },
+            "mode": "exact",
+            "revision": 1
+          },
+          "lookup": {
+            "schema_version": 1,
+            "artifact_kind": "subject_lookup_result",
+            "status": "resolved",
+            "requested": {
+              "subject": {
+                "workspace_identity": "pilot:baa72850-bf2e-42c6-a3a9-68930a1ba44e",
+                "subject_class": "criterion",
+                "local_subject_id": "ac.approval-boundary"
+              },
+              "mode": "exact",
+              "revision": 1
+            },
+            "canonical_mutations_allowed": false,
+            "resolved": {
+              "reference": {
+                "workspace_identity": "pilot:baa72850-bf2e-42c6-a3a9-68930a1ba44e",
+                "subject_class": "criterion",
+                "local_subject_id": "ac.approval-boundary"
+              },
+              "revision": {
+                "number": 1,
+                "predecessor": null,
+                "statement": "The repaired repair-session journal keeps `ready_for_platform_promotion: false` until a separate approval decision.",
+                "containment": "docs/proposals/0177_repaired_candidate_promotion_handoff.md",
+                "provenance": "pilot-authoring:2026-10-02/ac.approval-boundary",
+                "acceptance_criteria_refs": []
+              },
+              "current_revision": 1,
+              "retained_containment_history": [
+                {
+                  "revision": 1,
+                  "containment": "docs/proposals/0177_repaired_candidate_promotion_handoff.md",
+                  "provenance": "pilot-authoring:2026-10-02/ac.approval-boundary"
+                }
+              ],
+              "current_subject_disposition": {
+                "state": "active",
+                "basis_ref": "pilot-authoring:2026-10-02/ac.approval-boundary",
+                "observation_provenance": "Active only inside this authored pilot dataset; no historical disposition inferred."
+              },
+              "retained_disposition_transitions": [],
+              "canonical_presence": null,
+              "acceptance_criteria_refs": [],
+              "authored_relations": [],
+              "relation_resolution": {
+                "status": "complete",
+                "scope": "supplied_snapshots",
+                "conflicts": []
+              }
+            }
+          },
+          "source": {
+            "commit": "aeabe4af7d3007ed23ccab90c0ab45bbd51ba448",
+            "path": "docs/proposals/0177_repaired_candidate_promotion_handoff.md",
+            "status": "unique_text_match",
+            "match_count": 1,
+            "blob_sha256": "b991fa09268851b6fe77fad100f26753a345da4a1b07ba6f9eaae1157a3ceda0",
+            "url": "https://github.com/0al-spec/SpecGraph/blob/aeabe4af7d3007ed23ccab90c0ab45bbd51ba448/docs/proposals/0177_repaired_candidate_promotion_handoff.md",
+            "scope": "verbatim_statement_presence_not_semantic_proof"
+          },
+          "implementation": [
+            {
+              "commit": "aeabe4af7d3007ed23ccab90c0ab45bbd51ba448",
+              "path": "tools/repaired_candidate_promotion_handoff.py",
+              "symbol": "_readiness_findings",
+              "status": "source_anchored",
+              "blob_sha256": "ca2d59c856a8dbc10bd9de910f6b0e8c08391e72897cf1c434eafea49b1acc83",
+              "start_line": 338,
+              "end_line": 402,
+              "url": "https://github.com/0al-spec/SpecGraph/blob/aeabe4af7d3007ed23ccab90c0ab45bbd51ba448/tools/repaired_candidate_promotion_handoff.py#L338"
+            }
+          ],
+          "tests": [
+            {
+              "commit": "aeabe4af7d3007ed23ccab90c0ab45bbd51ba448",
+              "path": "tests/test_repaired_candidate_promotion_handoff.py",
+              "symbol": "test_repaired_candidate_promotion_handoff_builds_approval_ready_chain",
+              "status": "source_anchored",
+              "blob_sha256": "c2dde7b0990cbe01fe82db03b68d2fe96555afa659f77ce765376a7f8d4c88b6",
+              "start_line": 420,
+              "end_line": 453,
+              "url": "https://github.com/0al-spec/SpecGraph/blob/aeabe4af7d3007ed23ccab90c0ab45bbd51ba448/tests/test_repaired_candidate_promotion_handoff.py#L420"
+            }
+          ],
+          "canonical_requirement": null,
+          "mapping_authority": "agent_curated_for_review"
+        },
+        {
+          "criterion": {
+            "subject": {
+              "workspace_identity": "pilot:baa72850-bf2e-42c6-a3a9-68930a1ba44e",
+              "subject_class": "criterion",
+              "local_subject_id": "ac.unresolved-gaps"
+            },
+            "mode": "exact",
+            "revision": 1
+          },
+          "lookup": {
+            "schema_version": 1,
+            "artifact_kind": "subject_lookup_result",
+            "status": "resolved",
+            "requested": {
+              "subject": {
+                "workspace_identity": "pilot:baa72850-bf2e-42c6-a3a9-68930a1ba44e",
+                "subject_class": "criterion",
+                "local_subject_id": "ac.unresolved-gaps"
+              },
+              "mode": "exact",
+              "revision": 1
+            },
+            "canonical_mutations_allowed": false,
+            "resolved": {
+              "reference": {
+                "workspace_identity": "pilot:baa72850-bf2e-42c6-a3a9-68930a1ba44e",
+                "subject_class": "criterion",
+                "local_subject_id": "ac.unresolved-gaps"
+              },
+              "revision": {
+                "number": 1,
+                "predecessor": null,
+                "statement": "Unresolved repaired candidate gaps keep the handoff blocked.",
+                "containment": "docs/proposals/0177_repaired_candidate_promotion_handoff.md",
+                "provenance": "pilot-authoring:2026-10-02/ac.unresolved-gaps",
+                "acceptance_criteria_refs": []
+              },
+              "current_revision": 1,
+              "retained_containment_history": [
+                {
+                  "revision": 1,
+                  "containment": "docs/proposals/0177_repaired_candidate_promotion_handoff.md",
+                  "provenance": "pilot-authoring:2026-10-02/ac.unresolved-gaps"
+                }
+              ],
+              "current_subject_disposition": {
+                "state": "active",
+                "basis_ref": "pilot-authoring:2026-10-02/ac.unresolved-gaps",
+                "observation_provenance": "Active only inside this authored pilot dataset; no historical disposition inferred."
+              },
+              "retained_disposition_transitions": [],
+              "canonical_presence": null,
+              "acceptance_criteria_refs": [],
+              "authored_relations": [],
+              "relation_resolution": {
+                "status": "complete",
+                "scope": "supplied_snapshots",
+                "conflicts": []
+              }
+            }
+          },
+          "source": {
+            "commit": "aeabe4af7d3007ed23ccab90c0ab45bbd51ba448",
+            "path": "docs/proposals/0177_repaired_candidate_promotion_handoff.md",
+            "status": "unique_text_match",
+            "match_count": 1,
+            "blob_sha256": "b991fa09268851b6fe77fad100f26753a345da4a1b07ba6f9eaae1157a3ceda0",
+            "url": "https://github.com/0al-spec/SpecGraph/blob/aeabe4af7d3007ed23ccab90c0ab45bbd51ba448/docs/proposals/0177_repaired_candidate_promotion_handoff.md",
+            "scope": "verbatim_statement_presence_not_semantic_proof"
+          },
+          "implementation": [
+            {
+              "commit": "aeabe4af7d3007ed23ccab90c0ab45bbd51ba448",
+              "path": "tools/repaired_candidate_promotion_handoff.py",
+              "symbol": "_readiness_findings",
+              "status": "source_anchored",
+              "blob_sha256": "ca2d59c856a8dbc10bd9de910f6b0e8c08391e72897cf1c434eafea49b1acc83",
+              "start_line": 338,
+              "end_line": 402,
+              "url": "https://github.com/0al-spec/SpecGraph/blob/aeabe4af7d3007ed23ccab90c0ab45bbd51ba448/tools/repaired_candidate_promotion_handoff.py#L338"
+            }
+          ],
+          "tests": [
+            {
+              "commit": "aeabe4af7d3007ed23ccab90c0ab45bbd51ba448",
+              "path": "tests/test_repaired_candidate_promotion_handoff.py",
+              "symbol": "test_repaired_candidate_promotion_handoff_blocks_unresolved_repaired_gaps",
+              "status": "source_anchored",
+              "blob_sha256": "c2dde7b0990cbe01fe82db03b68d2fe96555afa659f77ce765376a7f8d4c88b6",
+              "start_line": 481,
+              "end_line": 498,
+              "url": "https://github.com/0al-spec/SpecGraph/blob/aeabe4af7d3007ed23ccab90c0ab45bbd51ba448/tests/test_repaired_candidate_promotion_handoff.py#L481"
+            }
+          ],
+          "canonical_requirement": null,
+          "mapping_authority": "agent_curated_for_review"
+        }
+      ],
+      "execution": {
+        "status": "passed",
+        "returncode": 0,
+        "cases": [
+          {
+            "nodeid": "tests/test_candidate_repair_loop.py::test_candidate_repair_loop_allows_clean_noop_repair_loop",
+            "status": "passed"
+          },
+          {
+            "nodeid": "tests/test_repaired_candidate_promotion_handoff.py::test_repaired_candidate_promotion_handoff_allows_clean_noop_repair_loop",
+            "status": "passed"
+          },
+          {
+            "nodeid": "tests/test_repaired_candidate_promotion_handoff.py::test_repaired_candidate_promotion_handoff_blocks_unresolved_repaired_gaps",
+            "status": "passed"
+          },
+          {
+            "nodeid": "tests/test_repaired_candidate_promotion_handoff.py::test_repaired_candidate_promotion_handoff_builds_approval_ready_chain",
+            "status": "passed"
+          }
+        ],
+        "log_sha256": "285a0fcb19d88aef8d3a8bf03456688755f33b03ab786144fe993e1bc0fc4738",
+        "junit_sha256": "78018571bdd3011c35c6190129f3ce3193bf5e613d27a012aec71a57ca1751a8",
+        "selected_tests": [
+          "tests/test_candidate_repair_loop.py::test_candidate_repair_loop_allows_clean_noop_repair_loop",
+          "tests/test_repaired_candidate_promotion_handoff.py::test_repaired_candidate_promotion_handoff_allows_clean_noop_repair_loop",
+          "tests/test_repaired_candidate_promotion_handoff.py::test_repaired_candidate_promotion_handoff_blocks_unresolved_repaired_gaps",
+          "tests/test_repaired_candidate_promotion_handoff.py::test_repaired_candidate_promotion_handoff_builds_approval_ready_chain"
+        ],
+        "runtime_trace": {
+          "status": "passed",
+          "criterion": {
+            "subject": {
+              "workspace_identity": "pilot:baa72850-bf2e-42c6-a3a9-68930a1ba44e",
+              "subject_class": "criterion",
+              "local_subject_id": "ac.clean-noop"
+            },
+            "mode": "exact",
+            "revision": 1
+          },
+          "scope": "direct_policy_probe_not_production_telemetry",
+          "observations": [
+            {
+              "scenario": "clean-noop",
+              "ready": true,
+              "no_op_repair_loop": true,
+              "events": [
+                {
+                  "name": "candidate_repair.preview_ready",
+                  "outcome": "satisfied"
+                }
+              ]
+            },
+            {
+              "scenario": "invalid-noop",
+              "ready": false,
+              "no_op_repair_loop": true,
+              "events": [
+                {
+                  "name": "candidate_repair.preview_ready",
+                  "outcome": "unsatisfied"
+                }
+              ]
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "negative_probes": {
+    "passed": true,
+    "historical_anchor": {
+      "commit": "7fc2836acf68815edfc68d0dc8a500ddb067f304",
+      "path": "tools/repaired_handoff_noop_passthrough_spec.py",
+      "symbol": "_is_clean_pre_sib_noop_passthrough",
+      "status": "source_anchored",
+      "blob_sha256": "14c85d36a81e6d3ead2a4b03b0297246151d598df515148d71a27b63fd12bf3c",
+      "start_line": 8,
+      "end_line": 15,
+      "url": "https://github.com/0al-spec/SpecGraph/blob/7fc2836acf68815edfc68d0dc8a500ddb067f304/tools/repaired_handoff_noop_passthrough_spec.py#L8"
+    },
+    "stale_anchor": {
+      "commit": "aeabe4af7d3007ed23ccab90c0ab45bbd51ba448",
+      "path": "tools/repaired_handoff_noop_passthrough_spec.py",
+      "symbol": "_is_clean_pre_sib_noop_passthrough",
+      "status": "missing_path"
+    },
+    "revision_2_results": [
+      "unavailable_revision",
+      "unavailable_revision",
+      "unavailable_revision",
+      "unavailable_revision"
+    ]
+  },
+  "gaps": [
+    "canonical_requirement_mapping_missing",
+    "historical_subject_revisions_not_adopted",
+    "only_clean_noop_has_direct_policy_trace_binding",
+    "no_production_telemetry_or_hypercode_binding"
+  ]
+}

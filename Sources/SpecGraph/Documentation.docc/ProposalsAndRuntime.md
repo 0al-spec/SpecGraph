@@ -150,6 +150,24 @@ evaluation, disposition/replacement writers, source migration, historical as-of
 queries and Hypercode remain separate work. See `docs/subject_read_model.md`
 and the fixture at `tests/fixtures/subject_read_model/snapshot.json`.
 
+### Subject refactoring binding pilot
+
+`tools/subject_refactoring_pilot.py` exercises RFC 0221 against SpecGraph PRs
+743 and 744. The explicit plan maps four existing proposal statements to exact
+pilot criterion references, pinned implementation symbols and test executions.
+`--execute --output-dir <new-directory>` runs four selected tests at each of
+three historical checkpoints in disposable archives, then collects a direct
+policy trace for `candidate_repair.preview_ready`. Missing old code anchors and
+unavailable criterion revisions remain unresolved.
+
+The pilot declaration is separate from canonical workspace identity. Criterion
+revision 1 was authored for the experiment, not reconstructed from Git history.
+`canonical_requirement` remains unassigned and `canonical_readiness` is
+`not_evaluated`; passing tests do not adopt the mapping. Source-only runs remain
+incomplete, and existing output directories are rejected to prevent reuse of
+stale test evidence. See `docs/reviews/0221_refactoring_binding_pilot.md` and its
+curated JSON report. The result is experimental evidence for this bounded family.
+
 ### Canonical approval gates and lookup projections
 
 A canonical contract awaiting human approval must use `gate_state: review_pending`
