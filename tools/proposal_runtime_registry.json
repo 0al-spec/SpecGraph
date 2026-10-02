@@ -12662,7 +12662,19 @@
       "docs/reviews/0221_requirement_mapping_input.yaml",
       "docs/reviews/0221_requirement_mapping_review.md",
       "docs/reviews/0221_requirement_mapping_review.json",
-      "docs/reviews/0221_requirement_mapping_evidence.json"
+      "docs/reviews/0221_requirement_mapping_evidence.json",
+      "specs/nodes/SG-SPEC-0069.yaml",
+      "docs/reviews/0221_subject_storage_preparation.md",
+      "docs/reviews/0221_subject_storage/manifest.yaml",
+      "tests/test_subject_storage_preparation.py",
+      "docs/reviews/0221_subject_storage/ac.approval-boundary.yaml",
+      "docs/reviews/0221_subject_storage/ac.clean-noop.yaml",
+      "docs/reviews/0221_subject_storage/ac.repaired-preview.yaml",
+      "docs/reviews/0221_subject_storage/ac.unresolved-gaps.yaml",
+      "docs/reviews/0221_subject_storage/req.platform-promotion-approval-boundary.yaml",
+      "docs/reviews/0221_subject_storage/req.repaired-candidate-review-readiness.yaml",
+      "docs/reviews/0221_subject_storage/workspace_identity.yaml",
+      "docs/reviews/0221_subject_storage_review_resolution.md"
     ],
     "runtime_markers": [
       {
@@ -12746,6 +12758,26 @@
       {
         "path": "tests/test_subject_refactoring_pilot.py",
         "pattern": "def test_previous_run_cannot_supply_stale_success("
+      },
+      {
+        "path": "tests/test_subject_storage_preparation.py",
+        "pattern": "def test_source_statements_and_pending_namespace_mapping_are_retained("
+      },
+      {
+        "path": "tests/test_subject_storage_preparation.py",
+        "pattern": "def test_requirement_provenance_retains_the_governing_node_envelope("
+      },
+      {
+        "path": "tests/test_subject_storage_preparation.py",
+        "pattern": "def test_revision_scope_is_authored_for_every_proposed_origin("
+      },
+      {
+        "path": "tests/test_subject_storage_preparation.py",
+        "pattern": "def test_case_aliases_collide_across_classes_and_grouping("
+      },
+      {
+        "path": "tests/test_subject_storage_preparation.py",
+        "pattern": "def test_disposition_vocabulary_matches_the_typed_model("
       }
     ],
     "observation_markers": [
@@ -12772,9 +12804,13 @@
       {
         "path": "docs/reviews/0221_requirement_mapping_review.md",
         "pattern": "Prepared for review; not adopted."
+      },
+      {
+        "path": "docs/reviews/0221_subject_storage_preparation.md",
+        "pattern": "Prepared for review; not adopted."
       }
     ],
-    "notes": "Human approved the bounded SG-SPEC-0068 semantic contract on 2026-10-02 (quote: Одобряю), reviewed head 9be7e294c52c0ae1fac40f61ac285fd1ee8e3fc6; PR #747 merged as ed8a00c7d34ab5df5f3c8c29460a8d9231a10311. Subsequent human instruction Делай authorized the first read-model slice. Typed explicit-snapshot parsing, current/exact lookup and candidate/legacy inventory now have focused tests. This is partial read-model evidence, not complete runtime conformance: canonical storage, allocator, transition writers, dependency evaluation, source migration and Hypercode remain deferred. Frozen SG-SPEC-0019 and existing writers are unchanged. Independent adversarial review corrections expose supplied-scope relation completeness and source bindings, and store exact acceptance reference pins in each Requirement revision; see the review-resolution record. An experimental PR 743/744 pilot maps four existing proposal criteria to isolated pilot addresses, pinned symbols, selected test executions and one direct policy trace; canonical Requirement mapping and historical subject adoption remain unassigned. A separate review-only mapping packet now proposes two standalone Requirement concerns with a 3 + 1 criterion partition and an explicit cross-workspace identity mapping. Destination IDs, storage conventions, reviewed provenance, validating writers and canonical adoption remain pending. The Sol 6.1 Medium supervisor attempt failed in the local CLI; independent structural preparation checks passed after correcting the input evidence collection, without claiming a successful refinement run."
+    "notes": "Human approved the bounded SG-SPEC-0068 semantic contract on 2026-10-02 (quote: Одобряю), reviewed head 9be7e294c52c0ae1fac40f61ac285fd1ee8e3fc6; PR #747 merged as ed8a00c7d34ab5df5f3c8c29460a8d9231a10311. Subsequent human instruction Делай authorized the first read-model slice. Typed explicit-snapshot parsing, current/exact lookup and candidate/legacy inventory now have focused tests. This is partial read-model evidence, not complete runtime conformance: canonical storage, allocator, transition writers, dependency evaluation, source migration and Hypercode remain deferred. Frozen SG-SPEC-0019 and existing writers are unchanged. Independent adversarial review corrections expose supplied-scope relation completeness and source bindings, and store exact acceptance reference pins in each Requirement revision; see the review-resolution record. An experimental PR 743/744 pilot maps four existing proposal criteria to isolated pilot addresses, pinned symbols, selected test executions and one direct policy trace; canonical Requirement mapping and historical subject adoption remain unassigned. A separate review-only mapping packet now proposes two standalone Requirement concerns with a 3 + 1 criterion partition and an explicit cross-workspace identity mapping. Destination IDs, storage conventions, reviewed provenance, validating writers and canonical adoption remain pending. The Sol 6.1 Medium supervisor attempt failed in the local CLI; independent structural preparation checks passed after correcting the input evidence collection, without claiming a successful refinement run. SG-SPEC-0069 now prepares a pending physical-storage child contract with standalone version-1 YAML node/criterion history and a workspace declaration; seven review-only candidate files preserve the 3 + 1 partition. Storage schema/ID approval and mapping provenance remain pending; origin provenance and disposition are deliberately null. No canonical-source adapter, validating writer, source migration or evidence transfer is implemented by this preparation. PR #751 review corrections add the SG-SPEC-0024 node provenance envelope in current and retained Requirement metadata, authored revision_scope for every proposed origin, workspace-wide portable ASCII case collision rejection and existing activation/withdrawal event tokens. Actual adoption attribution remains null in candidates; fixture checks do not implement canonical storage writers."
   },
   {
     "proposal_id": "0222",

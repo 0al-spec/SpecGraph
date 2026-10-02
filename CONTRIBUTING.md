@@ -484,6 +484,12 @@ aligned with the approved slice. An exact content revision does not select an
 as-of disposition when activation/withdrawal are independent events: label the
 current disposition explicitly and keep historical as-of claims separate.
 
+When defining a closed physical schema, inventory the inherited governance
+fields, including node provenance and bounded revision scope. Preserve them in
+historical records and current projections, check filename portability separately
+from logical identity, and test against the governing contracts rather than only
+the new draft's own field list.
+
 ### Read-model construction invariants
 
 Validate reference resolvability at the shared typed-index boundary so Python

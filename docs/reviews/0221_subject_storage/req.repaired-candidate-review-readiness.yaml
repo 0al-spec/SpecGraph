@@ -1,0 +1,87 @@
+schema_version: 1
+artifact_kind: subject_storage_candidate
+created_at: '2026-10-02T13:30:00Z'
+updated_at: '2026-10-02T14:51:03Z'
+source_lane: SpecDraft
+gate_state: review_pending
+canonical_adoption: false
+canonical_readiness: not_evaluated
+ready_for_materialization: false
+proposed_path: specs/requirements/req.repaired-candidate-review-readiness.yaml
+storage_contract: SG-SPEC-0069
+preparation_provenance:
+  authority: agent_prepared_for_human_review
+  mapping_packet: docs/reviews/0221_requirement_mapping_review.json
+  mapping_packet_sha256: e77d78cd15bf58b6820af41fb0b8842c9a23d64330a1b248577d348c8ed983c4
+adoption_fields_pending:
+- proposed_record.revisions[0].provenance
+- proposed_record.current_disposition
+- proposed_record.retained_disposition_transitions.origin_activation
+- proposed_record.provenance.actor_id
+- proposed_record.provenance.recorded_at
+- proposed_record.provenance.source_confidence
+- proposed_record.revisions[0].node_fields.provenance.actor_id
+- proposed_record.revisions[0].node_fields.provenance.recorded_at
+- proposed_record.revisions[0].node_fields.provenance.source_confidence
+proposed_record:
+  schema_version: 1
+  artifact_kind: requirement_node
+  id: req.repaired-candidate-review-readiness
+  title: Repaired candidate readiness for review
+  kind: requirement
+  status: outlined
+  authority_class: inferred
+  source_ref: docs/proposals/0177_repaired_candidate_promotion_handoff.md
+  subject:
+    workspace_identity: workspace:a2800523-3588-4820-a47f-9fddc0fed3f5
+    subject_class: Requirement
+    local_subject_id: req.repaired-candidate-review-readiness
+  current_revision: 1
+  revisions:
+  - number: 1
+    predecessor: null
+    node_fields:
+      title: Repaired candidate readiness for review
+      status: outlined
+      authority_class: inferred
+      source_ref: docs/proposals/0177_repaired_candidate_promotion_handoff.md
+      provenance:
+        actor_id: null
+        authority_class: inferred
+        recorded_at: null
+        source_ref: docs/proposals/0177_repaired_candidate_promotion_handoff.md
+        source_confidence: null
+    statement: The repair producer and handoff must preserve review readiness for a clean no-op or a valid
+      repaired preview, retain repair evidence, and keep unresolved candidate gaps blocking.
+    containment: specs/requirements/req.repaired-candidate-review-readiness.yaml
+    provenance: null
+    acceptance_criteria_refs:
+    - subject:
+        workspace_identity: workspace:a2800523-3588-4820-a47f-9fddc0fed3f5
+        subject_class: criterion
+        local_subject_id: ac.clean-noop
+      mode: exact
+      revision: 1
+    - subject:
+        workspace_identity: workspace:a2800523-3588-4820-a47f-9fddc0fed3f5
+        subject_class: criterion
+        local_subject_id: ac.repaired-preview
+      mode: exact
+      revision: 1
+    - subject:
+        workspace_identity: workspace:a2800523-3588-4820-a47f-9fddc0fed3f5
+        subject_class: criterion
+        local_subject_id: ac.unresolved-gaps
+      mode: exact
+      revision: 1
+    revision_scope: 'Proposed origin: req.repaired-candidate-review-readiness defines repair review readiness
+      and exact membership of ac.clean-noop, ac.repaired-preview and ac.unresolved-gaps; canonical adoption
+      is pending.'
+  current_disposition: null
+  retained_disposition_transitions: []
+  provenance:
+    actor_id: null
+    authority_class: inferred
+    recorded_at: null
+    source_ref: docs/proposals/0177_repaired_candidate_promotion_handoff.md
+    source_confidence: null
