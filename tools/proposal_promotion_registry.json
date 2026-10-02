@@ -2871,5 +2871,18 @@
     "required_provenance_links": [
       "source_draft_ref"
     ]
+  },
+  {
+    "proposal_id": "0223",
+    "source_artifact_class": "working_draft",
+    "source_refs": [
+      "docs/archive/proposal_sources/0223_bdd_scenario_contract_and_gherkin_exchange.md"
+    ],
+    "motivating_concern": "Authoring validation and downstream BDD extraction disagree on scenario shape; the Zeusus pilot lost 66 of 100 declared scenarios.",
+    "normalized_title": "BDD Scenario Contract and Gherkin Exchange",
+    "bounded_scope": "Prepare one shared native scenario contract, explicit compatibility/migration findings, identity and evidence pins, and a bounded Gherkin adapter acceptance plan. Runtime implementation, activation, canonical source migration, execution bindings and trusted evidence admission remain deferred.",
+    "required_provenance_links": [
+      "source_draft_ref"
+    ]
   }
 ]

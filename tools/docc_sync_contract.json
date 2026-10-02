@@ -623,6 +623,29 @@
         "activation",
         "withdrawal"
       ]
+    },
+    {
+      "id": "bdd-scenario-contract-preparation",
+      "description": "Deferred BDD scenario contract and Gherkin exchange preserve profile, compatibility and evidence boundaries.",
+      "docs": [
+        "docs/proposals/0223_bdd_scenario_contract_and_gherkin_exchange.md"
+      ],
+      "docc": [
+        "Sources/SpecGraph/Documentation.docc/BDDScenarioContract.md"
+      ],
+      "required_terms": [
+        "SG-RFC-0223",
+        "bdd_scenarios_v1",
+        "gherkin_basic_v1",
+        "100/100",
+        "review_pending",
+        "canonical_mutations_allowed: false",
+        "runtime_code_mutations_allowed: false",
+        "evidence_admission_allowed: false",
+        "make proposal-tracking-gate",
+        "make docc-sync",
+        "realization is deferred"
+      ]
     }
   ]
 }
