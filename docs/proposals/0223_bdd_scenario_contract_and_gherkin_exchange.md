@@ -1,7 +1,7 @@
 # 0223 BDD Scenario Contract and Gherkin Exchange
 
 RFC: SG-RFC-0223
-Version: 0.1.0
+Version: 0.1.1
 
 ## Status
 
@@ -21,6 +21,7 @@ evidence_admission_allowed: false
 
 - [Operator request and discovery](../archive/proposal_sources/0223_bdd_scenario_contract_and_gherkin_exchange.md)
 - [Curated Zeusus observation](../reviews/0223_zeusus_bdd_observation.json)
+- [Independent Astra review and clarification record](../reviews/0223_astra_review_followup.md)
 - [0047: Evidence-Backed Build Protocol](0047_evidence_backed_build_protocol.md)
 - [0006: Typed Validation](0006_typed_validation.md)
 - [0021: Deterministic Validation Profiles](0021_deterministic_transition_checks_and_validator_profiles.md)
@@ -81,9 +82,8 @@ specification:
 
 The ID MUST be a nonempty string. Steps MUST be a nonempty ordered list of
 nonempty strings; repeated text is legal and MUST NOT be deduplicated or sorted.
-`scenario` is
-an optional human title for backward compatibility; new authoring SHOULD
-supply a nonempty title. A missing title may be displayed as the ID without
+`scenario` is an optional human title for backward compatibility; new authoring
+SHOULD supply a nonempty title. A missing title may be displayed as the ID without
 writing a generated title into the source. A supplied malformed title is a
 finding. The v1 field allowlist and reserved extension rules must be finalized
 with a corpus audit before activation; unsupported fields cannot be silently
@@ -104,6 +104,35 @@ The loader MUST distinguish `absent`, `explicit_empty`, `present` and
 the readiness policy, not the loader, decides whether that is sufficient.
 The observation must report the selected profile, source container, authored
 count when identifiable, extracted count and findings.
+
+The proposed activated profile has the following explicit matrix. These are
+future shared-profile outcomes, not changes to the current 0047 implementation.
+YAML mapping keys MUST be checked for duplicates before constructing ordinary
+maps; a last-key-wins parse cannot be repaired by later scenario validation.
+This preserves the existing 0047 `UniqueKeyLoader` guard.
+
+| Authored input | Presence | Loader outcome |
+| --- | --- | --- |
+| Neither recognized container is supplied | `absent` | Valid absence; readiness is evaluated separately |
+| Only `bdd_scenarios: []` | `explicit_empty` | Valid explicit zero; no behavior coverage implied |
+| Only a nonempty `bdd_scenarios` list of valid entries | `present` | Preserve IDs and exact ordered steps |
+| `bdd_scenarios: null`, scalar, boolean or mapping | `invalid` | Container-type finding; do not coerce to `[]` |
+| Only `scenarios: []` | `invalid` | Unsupported-container finding, even though empty |
+| Only `scenarios`, with any other value | `invalid` | Unsupported-container finding; inspect clauses only in an explicit migration preview |
+| Both recognized containers, including two empty lists | `invalid` | Ambiguous-container finding; neither takes precedence |
+| Repeated YAML mapping key anywhere in the input, including `steps` or a container | `invalid` | Duplicate-key finding before mapping construction |
+| Null/non-mapping entry, missing ID/steps, or empty steps list | `invalid` | Entry/field finding; do not skip the entry |
+| ID, step or supplied title is non-string, empty or whitespace-only | `invalid` | Value finding; do not invent a replacement |
+| Repeated ID in the supplied identity scope | `invalid` | Duplicate-ID finding |
+| Repeated nonempty step strings in a valid list | `present` | Valid; preserve repetition and order |
+
+Known alternate keys explicitly declared by the profile follow the same
+unsupported/ambiguous rules as `scenarios`. Whitespace is used only to reject
+empty string content, not to trim valid values or collapse distinct IDs. An
+invalid input has no successful extracted count; a diagnostic partial count
+must be labeled separately and cannot be an implementation handoff. The corpus
+audit must include the empty legacy cases and record any migration requirement
+before activation. The matrix does not authorize a default/profile change.
 
 For the activated shared profile:
 
@@ -139,12 +168,28 @@ subjects. They MUST NOT be derived from titles, line numbers, array positions,
 test discovery order or a Gherkin parser's transient AST IDs.
 
 Existing Zeusus IDs remain unchanged. For cross-node exchange, a workspace
-identity and scenario ID provide a qualified declaration address; uniqueness
-is checked within the supplied workspace snapshot. The owning spec is explicit
+identity MUST be immutable and distinct from its mutable slug, display name,
+filesystem path or hosting URL. Missing identity requires an explicit binding
+decision; the adapter MUST NOT derive an identity from a directory name or
+silently allocate one. An identity supplied by an exchange manifest must agree
+with the selected workspace binding. Renaming or moving the workspace does not
+change the qualified scenario identity.
+
+This workspace identity and scenario ID provide a qualified declaration address;
+uniqueness is checked within the supplied workspace snapshot. The owning spec is explicit
 membership/provenance. Moving a scenario between specs requires a reviewed
 mapping, rather than silently granting the same evidence to a new owner.
 A partial snapshot must declare its scope and cannot claim workspace-wide
 uniqueness or complete references.
+
+The 0047 observability reference scope remains the owning node:
+`observability.obligations[*].scenario_ids` MUST resolve against that node's
+`specification.bdd_scenarios`. A scenario found only in a sibling, parent or
+another workspace does not satisfy the reference. Workspace-wide uniqueness
+checks and node-local reference resolution are separate checks. Equal local IDs
+in distinct workspaces are distinct qualified identities; duplicate active IDs
+in one supplied workspace snapshot require a finding. No cross-node or inherited
+reference syntax is introduced by this proposal.
 
 Pinned observations MUST carry the containing source revision/digest, native
 scenario ID, selected profile/version and normalized scenario digest. Renaming
@@ -171,6 +216,15 @@ Given/When/Then/And/But steps. Explicit IDs are transported through reserved
 scenario tags, provisionally `@specgraph-id=EXAMPLE-HISTORY-001`; the spec and
 workspace binding are supplied in the exchange manifest. IDs not representable
 by the selected tag profile produce a finding, not a rewritten identity.
+
+Exactly one reserved ID tag MUST be authored directly on each Scenario/Example
+declaration. Two reserved tags are invalid whether their values agree or differ.
+A reserved ID tag on Feature is invalid even if each scenario also supplies one;
+Feature tags cannot provide inherited scenario identity. Missing/empty values
+and conflicting envelope IDs also fail. Ordinary tags retain their authored
+Feature or Scenario scope, order and multiplicity; the adapter does not flatten
+them into an inherited list. Text resembling a tag inside a comment is not a
+tag declaration.
 
 For example, the native declaration above could be exchanged as follows. This
 is a proposed mapping, not an implemented export:
@@ -207,11 +261,57 @@ as successful imported scenarios. Their later support requires a richer
 versioned model and explicit compatibility fixtures. Metadata that cannot be
 retained/exported must be surfaced as loss before writing output.
 
-For supported inputs, native -> Gherkin -> native and Gherkin -> native ->
-Gherkin MUST preserve qualified IDs, titles, step keywords/text/order and
-retained metadata. Round-trip equivalence is structural, not byte-for-byte
-formatting identity. The original bytes and digest remain provenance. Exchange
-outputs are review-only candidates; import does not activate canonical specs.
+#### Exchange envelope and round-trip scope
+
+The lossless exchange unit is a native/Gherkin artifact plus a versioned
+`bdd_scenario_exchange_envelope`. Metadata is not injected into the minimal
+native scenario fields. A first import without an envelope needs an explicit
+workspace/spec binding and creates a new envelope from the actual source;
+it does not claim to recover earlier metadata or provenance.
+
+The proposed envelope carries these dimensions. Serialized key names and the
+strict allowlist require schema fixtures before activation.
+
+| Dimension | Required contract |
+| --- | --- |
+| Kind/version/profile | `bdd_scenario_exchange_envelope`, schema version 1 and the selected adapter/native profile versions |
+| Binding | Immutable workspace identity and owning spec; agreement with the selected snapshot and payload IDs |
+| Payload | Native YAML or Gherkin format and the exact current payload SHA-256; verify before consuming metadata |
+| Origin provenance | Original format/digest, source revision when available, recorded parser implementation/version and dialect for Gherkin; do not overwrite original pins with emitted-file positions |
+| Feature metadata | Nonempty name, description (possibly empty) and ordered directly authored ordinary tags |
+| Scenario metadata | Entries keyed by stable scenario ID, description (possibly empty), Scenario/Example declaration keyword and ordered directly authored ordinary tags; title agrees with the native declaration |
+| File comments | Ordered text occurrences, including duplicates, with original parser locations retained as provenance; no inferred scenario ownership |
+
+For a Gherkin payload, envelope metadata MUST agree with the actual parsed
+projection: scenario IDs, titles, steps and supported declarations/tags/
+descriptions, plus comment text/order. For a native payload, validate the
+representable fields against that payload and validate retained exchange-only
+metadata under the envelope schema; it cannot be claimed independently verified
+from native fields that do not carry it. A matching payload digest alone is
+insufficient if representable fields conflict. Stale digests, missing binding,
+duplicate metadata IDs, unknown profile versions or conflicting metadata produce
+findings before successful output. Envelope validity is not a trusted receipt
+or evidence admission.
+
+Comments are a file-level sequence. The official
+[Gherkin AST builder](https://github.com/cucumber/gherkin/blob/main/python/src/gherkin/ast_builder.py)
+collects comments separately with locations; proximity to a scenario does not
+establish membership. The adapter preserves parsed comment text and source
+order. Original locations identify the original bytes for diagnosis, not
+logical IDs or export positions. The first exporter uses one deterministic
+comment block before Feature, retaining that sequence; updated emitted locations
+are derived. No attachment of a comment to a Scenario is inferred by this policy.
+
+For supported exchange packages, native -> Gherkin -> native and Gherkin ->
+native -> Gherkin MUST preserve qualified IDs, titles, exact native step strings,
+parsed step keywords/text/order, declaration metadata and comment text/order.
+If a native value cannot survive the pinned grammar projection unchanged, export
+fails explicitly rather than trimming/rewording it. Round-trip comparison excludes
+formatting, emitted digests/parser locations and transient AST IDs. Original
+provenance stays retained in the accompanying envelope; it is not compared to
+the newly emitted file as if both were the same source revision. Without the
+envelope, retention of that historical provenance is not promised. Outputs are
+review-only candidates; import does not activate canonical specs.
 
 ### 5. Execution and ownership boundaries
 
@@ -265,13 +365,16 @@ These are future implementation checks, not tests executed by this PR.
 | --- | --- |
 | BDD-01 | Given recognized nonempty legacy `scenarios`, when strict extraction runs, then a typed incompatibility finding replaces the false empty success. |
 | BDD-02 | Given the curated six-spec pilot, when an approved migration is applied, then 100 unique IDs and exact clause order survive; independent source gates still block handoff. |
-| BDD-03 | Given absent, empty, malformed and mixed containers, when all shared consumers validate, then presence and findings agree. |
+| BDD-03 | Given every native input-matrix row, including null, empty legacy/both containers, whitespace-only values and duplicate YAML keys, when all shared consumers validate, then presence/findings agree and no last-key-wins map reaches policy validation. |
 | BDD-04 | Given duplicate IDs, repeated steps and dangling references, when loading, then duplicates/references fail and repeated ordered steps survive. |
-| BDD-05 | Given supported native and Gherkin fixtures with IDs, when exchanged both ways, then identity/title/step/metadata equivalence holds. |
+| BDD-05 | Given supported native/Gherkin packages and an envelope with Feature/Scenario metadata, repeated ordinary tags and comments between scenarios, when exchanged both ways, then identity/title/step/scoped-metadata/comment-order equivalence holds while original locations remain provenance. |
 | BDD-06 | Given malformed grammar, missing IDs, unsupported features or unexportable steps, when exchanging, then no success or partial canonical adoption is emitted. |
 | BDD-07 | Given a title edit, semantic edit, move, split or merge, when binding historical evidence, then identity and pinned content/membership are handled separately without automatic evidence transfer. |
 | BDD-08 | Given parse success and an unbound/skipped/pending/failed run, when projecting readiness, then it is not reported as executed-and-passed or admitted. |
 | BDD-09 | Given the same pinned input and profiles, when adapters repeat, then normalized results/findings are deterministic; diagnostics do not mutate source. |
+| BDD-10 | Given equal local IDs in different immutable workspaces, a renamed workspace, and a scenario found only outside an obligation's owning node, when resolving, then distinct workspace identities remain distinct, the rename preserves identity and the cross-node reference fails. |
+| BDD-11 | Given zero/one/two reserved Scenario ID tags, a Feature-level reserved ID, or an envelope/tag mismatch, when importing, then only exactly one direct matching Scenario ID is accepted and no identity is inherited or invented. |
+| BDD-12 | Given a stale envelope digest or conflicting metadata despite a matching digest, when exchanging, then a finding prevents successful output; comments cannot acquire inferred Scenario ownership. |
 
 ## Proposal Validation and Remaining Decisions
 
