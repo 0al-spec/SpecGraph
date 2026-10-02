@@ -721,6 +721,24 @@
         "partial_canonical_source_adapter",
         "ready_for_materialization"
       ]
+    },
+    {
+      "id": "rfc0221-subject-git-writer",
+      "docs": [
+        "docs/subject_source_write.md"
+      ],
+      "docc": [
+        "Sources/SpecGraph/Documentation.docc/ProposalsAndRuntime.md"
+      ],
+      "required_terms": [
+        "SG-SPEC-0069",
+        "git_commit_compare_and_swap_v1",
+        "request_sha256",
+        "refs/specgraph/subject-storage/",
+        "operator_supplied_not_attested",
+        "source_ref_updated",
+        "ready_for_materialization"
+      ]
     }
   ]
 }

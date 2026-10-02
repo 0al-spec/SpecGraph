@@ -107,6 +107,8 @@ This is `partial_canonical_source_adapter` evidence. Reports retain
 `canonical_readiness: not_evaluated`, `ready_for_materialization: false` and
 `canonical_mutations_allowed: false`. Repeated reads detect ordinary changes;
 they do not provide an atomic filesystem snapshot or trusted runtime receipt.
-Next is the validating origin/content-revision writer, enforcing prior digests,
-retained history immutability and isolated atomic publication. Canonical
-materialization, migration and evidence applicability remain separate decisions.
+The [bounded Git writer](subject_source_write.md) now enforces prior digests,
+retained history immutability and isolated atomic publication through a dedicated
+source ref. Its immutable commit export uses this reader for whole-source
+validation. Canonical materialization, migration and evidence applicability
+remain separate decisions.
