@@ -1,0 +1,84 @@
+{
+  "artifact_kind": "rfc0221_requirement_mapping_preparation_evidence",
+  "schema_version": 1,
+  "canonical_adoption": false,
+  "canonical_specs_changed": false,
+  "canonical_readiness": "not_evaluated",
+  "source_revision": "492171dc87c4f0b0a1559d0bb04292739ba227f1",
+  "supervisor_attempt": {
+    "run_id": "20261002T120836Z-DRAFT-SPEC-0221-MAPPING-05111f56",
+    "raw_run_sha256": "502e3cd90f6d250556da41ff24670c90eadb3a76bcdc1a8715639c1a4b9e4ea5",
+    "temporary_target": "DRAFT-SPEC-0221-MAPPING",
+    "child_model": "gpt-6.1-sol",
+    "execution_profile": "standard",
+    "reasoning_effort": "medium",
+    "completion_status": "failed",
+    "outcome": "escalate",
+    "gate_state": "escalated",
+    "exit_code": 1,
+    "accepted_canonical_diff": false,
+    "changed_files": [],
+    "validation_errors": [
+      "Missing executor machine protocol marker RUN_OUTCOME",
+      "Missing executor machine protocol marker BLOCKER",
+      "specs/nodes/DRAFT-SPEC-0221-MAPPING.yaml: acceptance_evidence size must match acceptance size (0 != 4)"
+    ],
+    "executor_error": "The 'gpt-6.1-sol' model is not supported when using Codex with a ChatGPT account.",
+    "local_cli_version": "0.156.1",
+    "catalog_client_version": "0.159.2",
+    "model_authored_output": false,
+    "original_input_sha256": "ac28fafbce4506f290c6195ec751d1f9cb499fa9a3ae32eebe41f92347da07e0",
+    "input_authoring_defect": "acceptance_evidence had zero entries for four acceptance criteria",
+    "no_model_substitution": true
+  },
+  "repaired_input": {
+    "path": "docs/reviews/0221_requirement_mapping_input.yaml",
+    "sha256": "5e435c05241ecf085f2a38ccb766410e53641b06a54f62a4494e90bab8b9d146",
+    "correction": "Added four aligned, grounded review-draft acceptance_evidence entries; no behavioral claim added.",
+    "supervisor_refinement_rerun": false
+  },
+  "prepared_packet": {
+    "path": "docs/reviews/0221_requirement_mapping_review.json",
+    "sha256": "e77d78cd15bf58b6820af41fb0b8842c9a23d64330a1b248577d348c8ed983c4",
+    "authorship": "agent_authored_not_model_generated"
+  },
+  "structural_checks": {
+    "status": "passed",
+    "errors": [],
+    "source_exact_criteria": 4,
+    "distinct_proposed_criteria": 4,
+    "proposed_requirements": 2,
+    "membership": {
+      "req.repaired-candidate-review-readiness": [
+        "ac.clean-noop",
+        "ac.repaired-preview",
+        "ac.unresolved-gaps"
+      ],
+      "req.platform-promotion-approval-boundary": [
+        "ac.approval-boundary"
+      ]
+    },
+    "source_statements": "verbatim",
+    "source_and_destination_identity": "distinct; local IDs retained explicitly",
+    "revision_specific_membership": "typed exact pins; revision 1 with no predecessor",
+    "pending_human_decisions": "unfilled",
+    "proposed_canonical_files": "absent",
+    "pilot_plan_and_historical_report": "byte_for_byte_unchanged",
+    "canonical_files": "68 byte_for_byte_unchanged",
+    "canonical_set_sha256": "d32104cb8ecf25a4c438ba33a9b3e6cb141d2eaf3b70f3d53f04388cd6a3d5f0",
+    "specgraph_yaml": "passed",
+    "specgraph_outputs": "passed",
+    "specgraph_allowed_paths": "passed",
+    "specgraph_atomicity": "passed",
+    "specgraph_reconciliation": {
+      "worktree_spec_count": 69,
+      "changed_spec_ids": [
+        "DRAFT-SPEC-0221-MAPPING"
+      ],
+      "semantic_dependencies_resolved": true,
+      "work_dependencies_ready": true,
+      "cycles": []
+    }
+  },
+  "evidence_boundary": "Structural preparation validation is separate from supervisor refinement success, canonical adoption, readiness, or production runtime evidence."
+}

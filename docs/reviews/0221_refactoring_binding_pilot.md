@@ -128,8 +128,11 @@ The pilot leaves `canonical_requirement: null` instead of manufacturing that
 relationship. Historical subject revisions, adoption of the pilot IDs, and
 Requirement-to-criterion links require their own explicit mapping/adoption step.
 
-The concrete next slice is to prepare one canonical Requirement mapping for the
-repair-readiness family through SpecGraph, review its four criterion links, and
-then decide how the production runtime carries full criterion references with
-its named decision events. Storage migration, lineage inference, Hypercode
-binding and longitudinal quality claims remain outside this experiment.
+The [Requirement mapping review](0221_requirement_mapping_review.md) prepares
+two separate concerns: review readiness with three criteria and separate
+promotion approval with one. Its namespace mapping is explicit and pending
+review; it does not populate this pilot's `canonical_requirement` fields or
+relocate historical evidence. Canonical storage and its validating writer must
+be approved and implemented before materialization. Production trace bindings,
+lineage inference, Hypercode binding and longitudinal quality claims remain
+outside this experiment.

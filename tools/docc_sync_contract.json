@@ -577,6 +577,25 @@
         "canonical_readiness",
         "not_evaluated"
       ]
+    },
+    {
+      "id": "rfc0221-requirement-mapping-review",
+      "description": "Review-only Requirement membership and namespace mapping preserve historical attribution and explicit adoption gaps.",
+      "docs": [
+        "docs/reviews/0221_requirement_mapping_review.md"
+      ],
+      "docc": [
+        "Sources/SpecGraph/Documentation.docc/ProposalsAndRuntime.md"
+      ],
+      "required_terms": [
+        "review_pending",
+        "canonical_readiness",
+        "not_evaluated",
+        "3 + 1",
+        "namespace mapping",
+        "distinct identity",
+        "historical"
+      ]
     }
   ]
 }
