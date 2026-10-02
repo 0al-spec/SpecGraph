@@ -1,0 +1,333 @@
+{
+  "artifact_kind": "rfc0221_requirement_mapping_review",
+  "schema_version": 1,
+  "authority": "agent_prepared_for_human_review",
+  "gate_state": "review_pending",
+  "canonical_adoption": false,
+  "canonical_mutations_allowed": false,
+  "canonical_readiness": "not_evaluated",
+  "ready_for_materialization": false,
+  "prepared_at": "2026-10-02T12:06:00Z",
+  "source_pilot": {
+    "path": "tools/subject_refactoring_pilot.json",
+    "source_revision": "492171dc87c4f0b0a1559d0bb04292739ba227f1",
+    "workspace_identity": "pilot:baa72850-bf2e-42c6-a3a9-68930a1ba44e",
+    "dataset_identity": "pilot:repair-readiness-743-744",
+    "revision_origin": "The four criterion revision-1 records were authored on 2026-10-02 for the pilot, not at historical refactoring commits."
+  },
+  "canonical_inventory": {
+    "git_revision": "492171dc87c4f0b0a1559d0bb04292739ba227f1",
+    "node_count": 68,
+    "kind_counts": {
+      "spec": 68
+    },
+    "existing_requirement_match": null,
+    "governance_only_context": [
+      "SG-SPEC-0001",
+      "SG-SPEC-0020",
+      "SG-SPEC-0051",
+      "SG-SPEC-0068"
+    ]
+  },
+  "proposed_workspace": {
+    "workspace_identity": "workspace:a2800523-3588-4820-a47f-9fddc0fed3f5",
+    "declaration_path": "specs/workspace_identity.yaml",
+    "declaration_status": "proposed_only_not_written",
+    "identity_allocation_status": "review_token_only_not_reserved",
+    "physical_schema_status": "deferred_implementation_decision_under_SG_SPEC_0068"
+  },
+  "proposed_requirements": [
+    {
+      "candidate_node": {
+        "id": "req.repaired-candidate-review-readiness",
+        "kind": "requirement",
+        "title": "Repaired candidate readiness for review",
+        "status": "outlined",
+        "authority_class": "inferred",
+        "source_ref": "docs/proposals/0177_repaired_candidate_promotion_handoff.md",
+        "statement": "The repair producer and handoff must preserve review readiness for a clean no-op or a valid repaired preview, retain repair evidence, and keep unresolved candidate gaps blocking.",
+        "source_refs": [
+          "docs/proposals/0177_repaired_candidate_promotion_handoff.md",
+          "docs/proposals/0191_event_storming_candidate_topology_edges.md"
+        ]
+      },
+      "proposed_subject": {
+        "subject": {
+          "workspace_identity": "workspace:a2800523-3588-4820-a47f-9fddc0fed3f5",
+          "subject_class": "Requirement",
+          "local_subject_id": "req.repaired-candidate-review-readiness"
+        },
+        "mode": "exact",
+        "revision": 1
+      },
+      "proposed_containment": "specs/requirements/req.repaired-candidate-review-readiness.yaml",
+      "proposed_revision": {
+        "number": 1,
+        "predecessor": null,
+        "acceptance_criteria_refs": [
+          {
+            "subject": {
+              "workspace_identity": "workspace:a2800523-3588-4820-a47f-9fddc0fed3f5",
+              "subject_class": "criterion",
+              "local_subject_id": "ac.clean-noop"
+            },
+            "mode": "exact",
+            "revision": 1
+          },
+          {
+            "subject": {
+              "workspace_identity": "workspace:a2800523-3588-4820-a47f-9fddc0fed3f5",
+              "subject_class": "criterion",
+              "local_subject_id": "ac.repaired-preview"
+            },
+            "mode": "exact",
+            "revision": 1
+          },
+          {
+            "subject": {
+              "workspace_identity": "workspace:a2800523-3588-4820-a47f-9fddc0fed3f5",
+              "subject_class": "criterion",
+              "local_subject_id": "ac.unresolved-gaps"
+            },
+            "mode": "exact",
+            "revision": 1
+          }
+        ]
+      },
+      "governance_context": [
+        "SG-SPEC-0020",
+        "SG-SPEC-0051",
+        "SG-SPEC-0068"
+      ],
+      "canonical_target": null,
+      "adoption": "pending_human_review_and_storage_implementation"
+    },
+    {
+      "candidate_node": {
+        "id": "req.platform-promotion-approval-boundary",
+        "kind": "requirement",
+        "title": "Separate approval for Platform promotion",
+        "status": "outlined",
+        "authority_class": "inferred",
+        "source_ref": "docs/proposals/0177_repaired_candidate_promotion_handoff.md",
+        "statement": "Repair readiness must not authorize Platform promotion; the repair-session journal retains ready_for_platform_promotion false until a separate approval decision.",
+        "source_refs": [
+          "docs/proposals/0177_repaired_candidate_promotion_handoff.md"
+        ]
+      },
+      "proposed_subject": {
+        "subject": {
+          "workspace_identity": "workspace:a2800523-3588-4820-a47f-9fddc0fed3f5",
+          "subject_class": "Requirement",
+          "local_subject_id": "req.platform-promotion-approval-boundary"
+        },
+        "mode": "exact",
+        "revision": 1
+      },
+      "proposed_containment": "specs/requirements/req.platform-promotion-approval-boundary.yaml",
+      "proposed_revision": {
+        "number": 1,
+        "predecessor": null,
+        "acceptance_criteria_refs": [
+          {
+            "subject": {
+              "workspace_identity": "workspace:a2800523-3588-4820-a47f-9fddc0fed3f5",
+              "subject_class": "criterion",
+              "local_subject_id": "ac.approval-boundary"
+            },
+            "mode": "exact",
+            "revision": 1
+          }
+        ]
+      },
+      "governance_context": [
+        "SG-SPEC-0051",
+        "SG-SPEC-0068"
+      ],
+      "canonical_target": null,
+      "adoption": "pending_human_review_and_storage_implementation"
+    }
+  ],
+  "criterion_mappings": [
+    {
+      "source": {
+        "subject": {
+          "workspace_identity": "pilot:baa72850-bf2e-42c6-a3a9-68930a1ba44e",
+          "subject_class": "criterion",
+          "local_subject_id": "ac.clean-noop"
+        },
+        "mode": "exact",
+        "revision": 1
+      },
+      "source_occurrence": "docs/proposals/0191_event_storming_candidate_topology_edges.md#acceptance-criteria",
+      "source_plan_revision": "492171dc87c4f0b0a1559d0bb04292739ba227f1",
+      "source_statement_sha256": "98f272e4fee9d5373b51f43112375e3776c4c42f823d3f2c5afcabb121bd406d",
+      "statement": "A candidate graph with clean pre-SIB readiness and no repair actions produces a ready no-op repair loop instead of `repair_review_required`.",
+      "proposed_destination": {
+        "subject": {
+          "workspace_identity": "workspace:a2800523-3588-4820-a47f-9fddc0fed3f5",
+          "subject_class": "criterion",
+          "local_subject_id": "ac.clean-noop"
+        },
+        "mode": "exact",
+        "revision": 1
+      },
+      "proposed_requirement_id": "req.repaired-candidate-review-readiness",
+      "identity_effect": "distinct_identity_due_to_workspace_change",
+      "same_identity_predecessor": null,
+      "review": {
+        "outcome": "pending",
+        "reviewer": null,
+        "reviewer_authority": null,
+        "decision_timestamp": null,
+        "rationale": null
+      },
+      "source_test_refs": [
+        "tests/test_candidate_repair_loop.py::test_candidate_repair_loop_allows_clean_noop_repair_loop",
+        "tests/test_repaired_candidate_promotion_handoff.py::test_repaired_candidate_promotion_handoff_allows_clean_noop_repair_loop"
+      ],
+      "evidence_transfer": "not_performed; original executions retain source references; destination applicability requires explicit review"
+    },
+    {
+      "source": {
+        "subject": {
+          "workspace_identity": "pilot:baa72850-bf2e-42c6-a3a9-68930a1ba44e",
+          "subject_class": "criterion",
+          "local_subject_id": "ac.repaired-preview"
+        },
+        "mode": "exact",
+        "revision": 1
+      },
+      "source_occurrence": "docs/proposals/0177_repaired_candidate_promotion_handoff.md#acceptance-criteria",
+      "source_plan_revision": "492171dc87c4f0b0a1559d0bb04292739ba227f1",
+      "source_statement_sha256": "c841dd08156e87a375ac0a5727816db203f94248cd079d721639cc2c1a8162ae",
+      "statement": "If the repaired graph still has pre-SIB structural issues, the normal candidate repair loop may repair them in preview, and the promotion gate must preserve `pre_sib_findings_repaired_by_preview` evidence.",
+      "proposed_destination": {
+        "subject": {
+          "workspace_identity": "workspace:a2800523-3588-4820-a47f-9fddc0fed3f5",
+          "subject_class": "criterion",
+          "local_subject_id": "ac.repaired-preview"
+        },
+        "mode": "exact",
+        "revision": 1
+      },
+      "proposed_requirement_id": "req.repaired-candidate-review-readiness",
+      "identity_effect": "distinct_identity_due_to_workspace_change",
+      "same_identity_predecessor": null,
+      "review": {
+        "outcome": "pending",
+        "reviewer": null,
+        "reviewer_authority": null,
+        "decision_timestamp": null,
+        "rationale": null
+      },
+      "source_test_refs": [
+        "tests/test_repaired_candidate_promotion_handoff.py::test_repaired_candidate_promotion_handoff_builds_approval_ready_chain"
+      ],
+      "evidence_transfer": "not_performed; original executions retain source references; destination applicability requires explicit review"
+    },
+    {
+      "source": {
+        "subject": {
+          "workspace_identity": "pilot:baa72850-bf2e-42c6-a3a9-68930a1ba44e",
+          "subject_class": "criterion",
+          "local_subject_id": "ac.unresolved-gaps"
+        },
+        "mode": "exact",
+        "revision": 1
+      },
+      "source_occurrence": "docs/proposals/0177_repaired_candidate_promotion_handoff.md#acceptance-criteria",
+      "source_plan_revision": "492171dc87c4f0b0a1559d0bb04292739ba227f1",
+      "source_statement_sha256": "222f21614140823644e9c1f550be3e0d9ac747157e9720fe65207cfc83c5c00d",
+      "statement": "Unresolved repaired candidate gaps keep the handoff blocked.",
+      "proposed_destination": {
+        "subject": {
+          "workspace_identity": "workspace:a2800523-3588-4820-a47f-9fddc0fed3f5",
+          "subject_class": "criterion",
+          "local_subject_id": "ac.unresolved-gaps"
+        },
+        "mode": "exact",
+        "revision": 1
+      },
+      "proposed_requirement_id": "req.repaired-candidate-review-readiness",
+      "identity_effect": "distinct_identity_due_to_workspace_change",
+      "same_identity_predecessor": null,
+      "review": {
+        "outcome": "pending",
+        "reviewer": null,
+        "reviewer_authority": null,
+        "decision_timestamp": null,
+        "rationale": null
+      },
+      "source_test_refs": [
+        "tests/test_repaired_candidate_promotion_handoff.py::test_repaired_candidate_promotion_handoff_blocks_unresolved_repaired_gaps"
+      ],
+      "evidence_transfer": "not_performed; original executions retain source references; destination applicability requires explicit review"
+    },
+    {
+      "source": {
+        "subject": {
+          "workspace_identity": "pilot:baa72850-bf2e-42c6-a3a9-68930a1ba44e",
+          "subject_class": "criterion",
+          "local_subject_id": "ac.approval-boundary"
+        },
+        "mode": "exact",
+        "revision": 1
+      },
+      "source_occurrence": "docs/proposals/0177_repaired_candidate_promotion_handoff.md#acceptance-criteria",
+      "source_plan_revision": "492171dc87c4f0b0a1559d0bb04292739ba227f1",
+      "source_statement_sha256": "da22d07188f724ef174bf2fdc8ee039ef055ec55ec679c7a1926b10523b91e11",
+      "statement": "The repaired repair-session journal keeps `ready_for_platform_promotion: false` until a separate approval decision.",
+      "proposed_destination": {
+        "subject": {
+          "workspace_identity": "workspace:a2800523-3588-4820-a47f-9fddc0fed3f5",
+          "subject_class": "criterion",
+          "local_subject_id": "ac.approval-boundary"
+        },
+        "mode": "exact",
+        "revision": 1
+      },
+      "proposed_requirement_id": "req.platform-promotion-approval-boundary",
+      "identity_effect": "distinct_identity_due_to_workspace_change",
+      "same_identity_predecessor": null,
+      "review": {
+        "outcome": "pending",
+        "reviewer": null,
+        "reviewer_authority": null,
+        "decision_timestamp": null,
+        "rationale": null
+      },
+      "source_test_refs": [
+        "tests/test_repaired_candidate_promotion_handoff.py::test_repaired_candidate_promotion_handoff_builds_approval_ready_chain"
+      ],
+      "evidence_transfer": "not_performed; original executions retain source references; destination applicability requires explicit review"
+    }
+  ],
+  "mapping_rules": [
+    "Preserve all four pilot records, full source references, their authored revision origins, and the historical checkpoint report unchanged.",
+    "A destination in another workspace is a distinct identity even when its local ID and statement are preserved. Record a reviewed source-to-destination mapping; do not encode it as a same-identity predecessor, relocation, replacement, or topology supersession by implication.",
+    "Proposed destination revision 1 begins only at explicit adoption. It has no same-identity predecessor and must not be backdated to the historical Git commits.",
+    "Destination acceptance_criteria_refs must pin full exact criterion references in each Requirement revision; prose lists and evidence text do not substitute for authored references.",
+    "Tests at pinned historical commits remain evidence for their source pilot references. Review may author explicit applicability links to destination refs without relabelling the original executions or claiming trusted runtime receipts.",
+    "A Requirement is a canonical kind requirement node, not a duplicate embedded Requirement record inside a kind spec node. This temporary spec describes proposed nodes without materializing them.",
+    "Neither review readiness, successful tests, a merge, nor a source-to-destination mapping grants separate Platform promotion approval."
+  ],
+  "adoption_decisions_required": [
+    "Human approval of the two Requirement statements and the 3-plus-1 criterion membership partition.",
+    "Explicit human approval of the canonical workspace declaration and local subject ID/storage conventions proposed here; SG-SPEC-0068 deferred these physical decisions.",
+    "Reviewed mapping records containing source occurrence, full exact source and destination references, reviewer identity/authority, decision time, outcome, rationale, and provenance.",
+    "A supported writer and validated canonical storage shape before materialization; the existing subject_read_snapshot is an exchange format, not an adopted storage schema.",
+    "A source-controlled transition record for SpecDraft-to-canonical materialization under SG-SPEC-0051, with no invented approval record."
+  ],
+  "implementation_prerequisites": [
+    "Review and adopt the physical workspace declaration, local ID conventions, standalone Requirement storage, and criterion storage shape.",
+    "Implement a validating writer and canonical-source adapter; subject_read_snapshot remains an exchange format.",
+    "Record reviewed source-to-destination mappings and a complete SG-SPEC-0051 materialization transition with genuine decision provenance.",
+    "Materialize only after those gates pass; adopt revision-1 origins at that time and author destination evidence applicability separately."
+  ],
+  "preparation_exclusions": [
+    "No new canonical nodes, workspace declarations, revisions, adoption events, or promotion approval.",
+    "No history reconstruction, graph parent edits, approval-boundary changes, or inferred readiness.",
+    "No new runtime or migration writer in this preparation pass."
+  ]
+}

@@ -168,6 +168,30 @@ incomplete, and existing output directories are rejected to prevent reuse of
 stale test evidence. See `docs/reviews/0221_refactoring_binding_pilot.md` and its
 curated JSON report. The result is experimental evidence for this bounded family.
 
+### Repaired-candidate Requirement mapping review
+
+`docs/reviews/0221_requirement_mapping_review.md` and its JSON packet prepare
+two standalone Requirement candidates: review readiness owns three exact pilot
+criteria, while separate Platform promotion approval owns one. This 3 + 1
+partition keeps readiness and authorization distinct. The packet is
+`review_pending`, with `canonical_readiness: not_evaluated`; merging preparation
+does not adopt the mapping or authorize materialization.
+
+The proposed namespace mapping retains the original pilot references. A different
+workspace creates a distinct identity, even when the local ID and statement are
+preserved. Destination revision 1 starts at actual adoption, with no same-identity
+predecessor. Historical test executions and policy events retain their source
+references; destination evidence applicability requires an explicit authored link.
+
+Physical workspace declaration, standalone Requirement and criterion storage,
+and a validating canonical-source writer/adapter remain deferred decisions under
+SG-SPEC-0068. Proposed files are absent. The attempted Sol 6.1 Medium supervisor
+run failed because the local CLI rejected the model and the initial input lacked
+aligned acceptance evidence. The corrected agent-authored packet passed separate
+structural checks; this is not successful supervisor refinement or canonical
+runtime readiness. See `0221_requirement_mapping_evidence.json` for those distinct
+statuses.
+
 ### Canonical approval gates and lookup projections
 
 A canonical contract awaiting human approval must use `gate_state: review_pending`

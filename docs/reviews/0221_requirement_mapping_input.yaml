@@ -1,0 +1,184 @@
+id: DRAFT-SPEC-0221-MAPPING
+title: 'Review draft: repaired-candidate Requirement mapping'
+kind: spec
+created_at: '2026-10-02T12:06:00Z'
+updated_at: '2026-10-02T12:06:00Z'
+status: outlined
+maturity: 0.3
+depends_on: []
+refines:
+- SG-SPEC-0068
+inputs:
+- specs/nodes/SG-SPEC-0001.yaml
+- specs/nodes/SG-SPEC-0020.yaml
+- specs/nodes/SG-SPEC-0051.yaml
+- specs/nodes/SG-SPEC-0068.yaml
+- docs/proposals/0177_repaired_candidate_promotion_handoff.md
+- docs/proposals/0191_event_storming_candidate_topology_edges.md
+- docs/reviews/0221_refactoring_binding_pilot.md
+- tools/subject_refactoring_pilot.json
+- tools/subject_read_model.py
+- tools/subject_read_model_io.py
+outputs:
+- specs/nodes/DRAFT-SPEC-0221-MAPPING.yaml
+allowed_paths:
+- specs/nodes/DRAFT-SPEC-0221-MAPPING.yaml
+acceptance:
+- Maps all four exact pilot criterion references to two proposed canonical Requirement concerns without
+  conflating review readiness with promotion approval.
+- Separates an explicit reviewed namespace mapping from same-identity revision history and preserves historical
+  evidence attribution.
+- Defines concrete proposed Requirement nodes and criterion destinations with adoption decisions and storage
+  gaps explicit.
+- Keeps canonical adoption, readiness evaluation, existing graph nodes, runtime behavior, and approval
+  authority unchanged during preparation.
+acceptance_evidence:
+- criterion: Maps all four exact pilot criterion references to two proposed canonical Requirement concerns
+    without conflating review readiness with promotion approval.
+  evidence: specification.proposed_requirements partitions ac.clean-noop, ac.repaired-preview, and ac.unresolved-gaps
+    under review readiness and ac.approval-boundary under separate promotion approval. specification.criterion_mapping
+    retains all four source revision-1 references and proposed destination references; these are proposed
+    links, not adopted nodes.
+- criterion: Separates an explicit reviewed namespace mapping from same-identity revision history and
+    preserves historical evidence attribution.
+  evidence: specification.mapping_rules states that another workspace produces a distinct identity, forbids
+    an implied same-identity predecessor, dates destination revision 1 at adoption, and retains original
+    historical execution attribution.
+- criterion: Defines concrete proposed Requirement nodes and criterion destinations with adoption decisions
+    and storage gaps explicit.
+  evidence: specification.proposed_requirements defines two kind requirement candidates, while specification.proposed_workspace
+    and specification.adoption_decisions_required identify proposed physical conventions, required review
+    provenance, and the missing validating writer. No Requirement subject snapshot with fabricated canonical
+    presence is constructed.
+- criterion: Keeps canonical adoption, readiness evaluation, existing graph nodes, runtime behavior, and
+    approval authority unchanged during preparation.
+  evidence: specification.review_status is not_adopted, canonical_mutations_allowed is false, and canonical_readiness
+    is not_evaluated. specification.preparation_exclusions forbids graph edits, runtime code, adoption
+    events, and promotion approval.
+prompt: Refine only this temporary review draft for RFC0221. Prepare a reviewable mapping for the four
+  pilot criteria. The temporary DRAFT ID and all proposed destination IDs are review labels, not canonical
+  reservations. Read source proposals, the pilot plan, and SG-SPEC-0068. Preserve criterion wording, distinguish
+  all identity and evidence roles, and surface unsupported schema choices. Do not change any other file
+  or allocate canonical subjects.
+specification:
+  objective: Prepare one explicit evidence-mapping review packet for the existing repaired-candidate readiness
+    and promotion-approval behavior demonstrated by PRs 743 and 744.
+  review_status: not_adopted
+  authority: agent_prepared_for_human_review
+  canonical_mutations_allowed: false
+  canonical_readiness: not_evaluated
+  source_pilot:
+    path: tools/subject_refactoring_pilot.json
+    source_revision: 492171dc87c4f0b0a1559d0bb04292739ba227f1
+    workspace_identity: pilot:baa72850-bf2e-42c6-a3a9-68930a1ba44e
+    dataset_identity: pilot:repair-readiness-743-744
+    revision_origin: The four criterion revision-1 records were authored on 2026-10-02 for the pilot,
+      not at historical refactoring commits.
+  proposed_workspace:
+    workspace_identity: workspace:a2800523-3588-4820-a47f-9fddc0fed3f5
+    declaration_path: specs/workspace_identity.yaml
+    declaration_status: proposed_only_not_written
+    identity_allocation_status: review_token_only_not_reserved
+    physical_schema_status: deferred_implementation_decision_under_SG_SPEC_0068
+  proposed_requirements:
+  - id: req.repaired-candidate-review-readiness
+    kind: requirement
+    title: Repaired candidate readiness for review
+    status: outlined
+    authority_class: inferred
+    source_ref: docs/proposals/0177_repaired_candidate_promotion_handoff.md
+    statement: The repair producer and handoff must preserve review readiness for a clean no-op or a valid
+      repaired preview, retain repair evidence, and keep unresolved candidate gaps blocking.
+    proposed_subject_revision: 1
+    proposed_containment: specs/requirements/req.repaired-candidate-review-readiness.yaml
+    proposed_acceptance_criterion_ids:
+    - ac.clean-noop
+    - ac.repaired-preview
+    - ac.unresolved-gaps
+    governance_context:
+    - SG-SPEC-0020
+    - SG-SPEC-0051
+    - SG-SPEC-0068
+  - id: req.platform-promotion-approval-boundary
+    kind: requirement
+    title: Separate approval for Platform promotion
+    status: outlined
+    authority_class: inferred
+    source_ref: docs/proposals/0177_repaired_candidate_promotion_handoff.md
+    statement: Repair readiness must not authorize Platform promotion; the repair-session journal retains
+      ready_for_platform_promotion false until a separate approval decision.
+    proposed_subject_revision: 1
+    proposed_containment: specs/requirements/req.platform-promotion-approval-boundary.yaml
+    proposed_acceptance_criterion_ids:
+    - ac.approval-boundary
+    governance_context:
+    - SG-SPEC-0051
+    - SG-SPEC-0068
+  criterion_mapping:
+  - local_criterion_id: ac.clean-noop
+    source_workspace_identity: pilot:baa72850-bf2e-42c6-a3a9-68930a1ba44e
+    source_subject_class: criterion
+    source_revision: 1
+    proposed_destination_workspace_identity: workspace:a2800523-3588-4820-a47f-9fddc0fed3f5
+    proposed_destination_subject_class: criterion
+    proposed_destination_revision: 1
+    proposed_requirement_id: req.repaired-candidate-review-readiness
+    source_occurrence: docs/proposals/0191_event_storming_candidate_topology_edges.md#acceptance-criteria
+  - local_criterion_id: ac.repaired-preview
+    source_workspace_identity: pilot:baa72850-bf2e-42c6-a3a9-68930a1ba44e
+    source_subject_class: criterion
+    source_revision: 1
+    proposed_destination_workspace_identity: workspace:a2800523-3588-4820-a47f-9fddc0fed3f5
+    proposed_destination_subject_class: criterion
+    proposed_destination_revision: 1
+    proposed_requirement_id: req.repaired-candidate-review-readiness
+    source_occurrence: docs/proposals/0177_repaired_candidate_promotion_handoff.md#acceptance-criteria
+  - local_criterion_id: ac.unresolved-gaps
+    source_workspace_identity: pilot:baa72850-bf2e-42c6-a3a9-68930a1ba44e
+    source_subject_class: criterion
+    source_revision: 1
+    proposed_destination_workspace_identity: workspace:a2800523-3588-4820-a47f-9fddc0fed3f5
+    proposed_destination_subject_class: criterion
+    proposed_destination_revision: 1
+    proposed_requirement_id: req.repaired-candidate-review-readiness
+    source_occurrence: docs/proposals/0177_repaired_candidate_promotion_handoff.md#acceptance-criteria
+  - local_criterion_id: ac.approval-boundary
+    source_workspace_identity: pilot:baa72850-bf2e-42c6-a3a9-68930a1ba44e
+    source_subject_class: criterion
+    source_revision: 1
+    proposed_destination_workspace_identity: workspace:a2800523-3588-4820-a47f-9fddc0fed3f5
+    proposed_destination_subject_class: criterion
+    proposed_destination_revision: 1
+    proposed_requirement_id: req.platform-promotion-approval-boundary
+    source_occurrence: docs/proposals/0177_repaired_candidate_promotion_handoff.md#acceptance-criteria
+  mapping_rules:
+  - Preserve all four pilot records, full source references, their authored revision origins, and the
+    historical checkpoint report unchanged.
+  - A destination in another workspace is a distinct identity even when its local ID and statement are
+    preserved. Record a reviewed source-to-destination mapping; do not encode it as a same-identity predecessor,
+    relocation, replacement, or topology supersession by implication.
+  - Proposed destination revision 1 begins only at explicit adoption. It has no same-identity predecessor
+    and must not be backdated to the historical Git commits.
+  - Destination acceptance_criteria_refs must pin full exact criterion references in each Requirement
+    revision; prose lists and evidence text do not substitute for authored references.
+  - Tests at pinned historical commits remain evidence for their source pilot references. Review may author
+    explicit applicability links to destination refs without relabelling the original executions or claiming
+    trusted runtime receipts.
+  - A Requirement is a canonical kind requirement node, not a duplicate embedded Requirement record inside
+    a kind spec node. This temporary spec describes proposed nodes without materializing them.
+  - Neither review readiness, successful tests, a merge, nor a source-to-destination mapping grants separate
+    Platform promotion approval.
+  adoption_decisions_required:
+  - Human approval of the two Requirement statements and the 3-plus-1 criterion membership partition.
+  - Explicit human approval of the canonical workspace declaration and local subject ID/storage conventions
+    proposed here; SG-SPEC-0068 deferred these physical decisions.
+  - Reviewed mapping records containing source occurrence, full exact source and destination references,
+    reviewer identity/authority, decision time, outcome, rationale, and provenance.
+  - A supported writer and validated canonical storage shape before materialization; the existing subject_read_snapshot
+    is an exchange format, not an adopted storage schema.
+  - A source-controlled transition record for SpecDraft-to-canonical materialization under SG-SPEC-0051,
+    with no invented approval record.
+  preparation_exclusions:
+  - No new canonical nodes, workspace declarations, revisions, adoption events, or promotion approval.
+  - No history reconstruction, graph parent edits, approval-boundary changes, or inferred readiness.
+  - No new runtime or migration writer in this preparation pass.
