@@ -57,11 +57,23 @@ specification:
     independent subject relations and disposition, and exact historical lookup without changing canonical
     topology supersession.
   adoption_boundary:
-    state: human_approved_pending_merge
+    state: human_approved
     proposal: '0221'
     preparation_authorization: Human requested this canonical contract PR and then approved its bounded
       semantics; approval is now recorded separately from merge and runtime evidence.
-    runtime_conformance: not_implemented
+    runtime_conformance: partial_read_model
+    runtime_evidence_ref: docs/subject_read_model.md
+    runtime_evidence_scope: Explicit-snapshot parsing and read-only exact/current lookup plus candidate-local
+      and legacy inventory; full runtime conformance, storage, writers, dependency evaluation and migration
+      remain deferred.
+    merge_record:
+      pull_request: https://github.com/0al-spec/SpecGraph/pull/747
+      commit: ed8a00c7d34ab5df5f3c8c29460a8d9231a10311
+    read_model_authorization:
+      source: Current Codex task conversation, subsequent user instruction on 2026-10-02
+      source_quote: Делай
+      scope: First read-only parsing, validation and lookup slice over explicit snapshots and compatibility
+        records; no source migration or existing writer changes.
     approval_record:
       decision: approve
       authority: human_project_author

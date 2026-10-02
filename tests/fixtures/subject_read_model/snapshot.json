@@ -1,0 +1,77 @@
+{
+  "artifact_kind": "subject_read_snapshot",
+  "schema_version": 1,
+  "workspaces": [
+    {
+      "workspace_identity": "workspace-a",
+      "dataset_identity": "source-a",
+      "subjects": [
+        {
+          "reference": {
+            "workspace_identity": "workspace-a",
+            "subject_class": "Requirement",
+            "local_subject_id": "REQ-1"
+          },
+          "current_revision": 1,
+          "revisions": [
+            {
+              "number": 1,
+              "predecessor": null,
+              "statement": "An explicit requirement",
+              "containment": "spec-a",
+              "provenance": "review:revision-1"
+            }
+          ],
+          "current_disposition": {
+            "state": "active",
+            "basis_ref": "origin:approved",
+            "observation_provenance": "fixture:reviewed-observation"
+          },
+          "canonical_presence": "active",
+          "acceptance_criteria_refs": [
+            {
+              "subject": {
+                "workspace_identity": "workspace-a",
+                "subject_class": "criterion",
+                "local_subject_id": "AC-1"
+              },
+              "mode": "current"
+            }
+          ]
+        },
+        {
+          "reference": {
+            "workspace_identity": "workspace-a",
+            "subject_class": "criterion",
+            "local_subject_id": "AC-1"
+          },
+          "current_revision": 3,
+          "revisions": [
+            {
+              "number": 1,
+              "predecessor": null,
+              "statement": "Original criterion",
+              "containment": "spec-a",
+              "provenance": "review:revision-1"
+            },
+            {
+              "number": 3,
+              "predecessor": 2,
+              "statement": "Moved criterion",
+              "containment": "spec-b",
+              "provenance": "review:revision-3"
+            }
+          ],
+          "current_disposition": {
+            "state": "active",
+            "basis_ref": "origin:approved",
+            "observation_provenance": "fixture:reviewed-observation"
+          },
+          "canonical_presence": null,
+          "acceptance_criteria_refs": []
+        }
+      ],
+      "relations": []
+    }
+  ]
+}

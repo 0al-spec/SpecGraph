@@ -36,6 +36,20 @@ For the ContextBuilder graph backlog drill-down viewer contract, see
 For the planned Implementation Work layer and delta/work-index viewer contract,
 see [docs/implementation_work_viewer_contract.md](../docs/implementation_work_viewer_contract.md).
 
+## Subject read model (RFC 0221)
+
+`subject_read_model_io.py` reads an explicit `subject_read_snapshot` YAML/JSON
+file and performs exact (`--revision N`) or current (`--current`) lookup. Supply
+`--snapshot`, `--workspace-identity`, `--subject-class` and `--subject-id`.
+It returns JSON on stdout: exit 0 resolved, 1 unresolved, 2 invalid input.
+The snapshot is an experimental exchange format, not canonical storage.
+
+`subject_legacy_reads.parse_compatibility_document` provides a separate Python
+inventory API for candidate-local records and legacy acceptance strings. Reads
+preserve original scope and never allocate IDs or migrate source data. See
+[Subject read model](../docs/subject_read_model.md) for the fixture, result fields,
+replica/collision behavior and the limits of this partial implementation.
+
 ## Minimal Spec-Node Supervisor MVP
 
 This repository includes a local MVP that orchestrates **specification nodes** (not tasks):
