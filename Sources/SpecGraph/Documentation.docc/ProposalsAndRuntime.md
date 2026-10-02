@@ -41,8 +41,8 @@ make proposal-tracking-gate
 
 ## RFC 0221 subject-address preparation
 
-RFC 0221 remains review-only, not canonical adoption. Its subject-address read
-model preparation builds on existing candidate Requirement and criterion IDs
+The historical RFC 0221 subject-address preparation was review-only. Its read
+model design builds on existing candidate Requirement and criterion IDs
 and `acceptance_criteria_refs`. It proposes immutable workspace scope,
 identified criterion records, separate identity/revision/containment,
 `lookup_exact` and `lookup_current`, and explicit unresolved outcomes.
@@ -92,16 +92,63 @@ record corrections as curation, not as evidence verified by the original run.
 ## RFC 0221 canonical contract review
 
 SG-SPEC-0068 was pending human approval; the human approved its bounded semantic
-contract on 2026-10-02. It is now specified and human_approved_pending_merge.
+contract on 2026-10-02. It is now specified and human_approved; PR #747 merged
+the semantic contract as `ed8a00c7d34ab5df5f3c8c29460a8d9231a10311`.
 The approval packet is `docs/reviews/0221_canonical_contract_approval.md`.
 It proposes workspace-scoped subject identity, revisions, transitions and exact
 lookup while preserving frozen SG-SPEC-0019 and its one-to-one canonical
 supersession contract. Preparation and passed checks alone are not adoption; the actual human approval
 source and reviewed commit are recorded in the packet and node.
 
-Human approval is recorded; merge remains a separate authorized action.
+Human approval and merge are recorded separately.
 Storage, allocator, physical history and source migration remain deferred.
-Read-model implementation follows separately; no runtime conformance is claimed.
+The first separately authorized implementation provides partial read-model
+evidence; full runtime conformance is not established.
+
+## Subject read model implementation
+
+`tools/subject_read_model_io.py` accepts an explicit `subject_read_snapshot`
+(schema version 1, YAML or JSON) and returns a JSON `subject_lookup_result`.
+Select exactly one of `--revision N` or `--current`, together with `--snapshot`,
+`--workspace-identity`, `--subject-class` and `--subject-id`. Exit codes are
+0 for resolved with complete supplied-scope relations, 1 for unresolved lookup
+or incomplete relations, and 2 for invalid input/arguments.
+
+Identity combines workspace and local subject ID; class validates the record.
+`dataset_identity` declares replicas, without establishing trust. Independent
+sources or conflicting replicas sharing a workspace fail closed before lookup.
+Exact lookup never falls back to current or reconstructs missing history.
+Results expose `current_subject_disposition` with provenance separately from
+exact content, and `retained_containment_history` without invented revisions.
+Authored relations preserve full endpoints and roles in both query directions.
+Every returned relation retains `source.workspace_identity` and
+`source.dataset_identity`; the stable relation key combines source workspace and
+local relation ID. `relation_resolution` exposes `complete`/`incomplete` and the
+conflicting sources within `supplied_snapshots`. Resolved subject content does
+not establish complete lineage. Unrelated source conflicts do not taint a query.
+One dataset declaring multiple workspaces makes every affected scope ambiguous.
+Unordered reference/endpoint collections are normalized for replica comparison.
+`retained_disposition_transitions` preserves supplied activation/withdrawal
+events and provenance. Duplicate event references and a retained basis event
+contradicting the current projection are rejected. Presentation order never
+selects the current state or asserts event chronology/as-of history.
+
+Each Requirement revision preserves its own `acceptance_criteria_refs` collection
+with exact criterion pins. Link membership or pin changes require a new governed
+Requirement revision. Exact lookup never substitutes current links; a criterion
+move does not rewrite ownership automatically. Historical collections remain
+readable after the affected Requirements acquire new revision-specific links.
+
+`subject_legacy_reads.parse_compatibility_document` inventories candidate-local
+records and unassigned legacy acceptance strings. It preserves source scopes,
+IDs, text and occurrence locators; diagnostics expose missing/duplicate IDs.
+It never promotes those records to workspace-bound canonical subjects.
+
+The snapshot is an experimental exchange/fixture format. Construction and lookup
+perform no writes or allocation; existing writers are unchanged. Dependency
+evaluation, disposition/replacement writers, source migration, historical as-of
+queries and Hypercode remain separate work. See `docs/subject_read_model.md`
+and the fixture at `tests/fixtures/subject_read_model/snapshot.json`.
 
 ### Canonical approval gates and lookup projections
 
@@ -111,3 +158,17 @@ recorded human decision provenance, and keep promotion/runtime scope description
 aligned with the approved slice. An exact content revision does not select an
 as-of disposition when activation/withdrawal are independent events: label the
 current disposition explicitly and keep historical as-of claims separate.
+
+### Read-model construction invariants
+
+Validate reference resolvability at the shared typed-index boundary so Python
+callers cannot bypass CLI checks. Frozen dataclasses need immutable nested
+collections as well. Test cross-workspace incoming relations, declared replica
+coalescing and retained history explicitly; a successful selected lookup alone
+does not prove those projections are complete.
+
+When querying across namespaces, carry the source binding of relationship
+records as well as endpoint identities. Distinguish incomplete enumeration from
+an empty complete result. Define which references belong to a content revision
+before describing lookup as historical; test changing those links independently
+of the statement. These are contract invariants, not presentation details.

@@ -12648,7 +12648,12 @@
       "docs/reviews/0221_supervisor_candidate.yaml",
       "docs/reviews/0221_preparation_evidence.json",
       "specs/nodes/SG-SPEC-0068.yaml",
-      "docs/reviews/0221_canonical_contract_approval.md"
+      "docs/reviews/0221_canonical_contract_approval.md",
+      "tools/subject_read_model.py",
+      "tools/subject_read_model_io.py",
+      "tools/subject_legacy_reads.py",
+      "docs/subject_read_model.md",
+      "docs/reviews/0221_read_model_review_resolution.md"
     ],
     "runtime_markers": [
       {
@@ -12670,6 +12675,22 @@
       {
         "path": "docs/proposals/0221_stable_requirement_identity_and_lineage.md",
         "pattern": "every endpoint MUST have the same subject class"
+      },
+      {
+        "path": "tools/subject_read_model.py",
+        "pattern": "class SubjectIndex:"
+      },
+      {
+        "path": "tools/subject_read_model_io.py",
+        "pattern": "def parse_subject_index("
+      },
+      {
+        "path": "tools/subject_legacy_reads.py",
+        "pattern": "def parse_compatibility_document("
+      },
+      {
+        "path": "tools/subject_read_model.py",
+        "pattern": "class RelationSourceConflict:"
       }
     ],
     "validation_markers": [
@@ -12680,6 +12701,30 @@
       {
         "path": "docs/proposals/0221_stable_requirement_identity_and_lineage.md",
         "pattern": "explicit fixtures for"
+      },
+      {
+        "path": "tests/test_subject_read_model.py",
+        "pattern": "def test_exact_and_current_select_authored_revisions_and_containment("
+      },
+      {
+        "path": "tests/test_subject_read_model.py",
+        "pattern": "def test_incoming_cross_workspace_relations_preserve_authored_roles("
+      },
+      {
+        "path": "tests/test_subject_legacy_reads.py",
+        "pattern": "parse_compatibility_document"
+      },
+      {
+        "path": "tests/test_subject_read_model.py",
+        "pattern": "def test_ambiguous_relation_source_reports_incomplete_enumeration("
+      },
+      {
+        "path": "tests/test_subject_read_model.py",
+        "pattern": "def test_relation_source_scope_survives_identical_cross_workspace_records("
+      },
+      {
+        "path": "tests/test_subject_read_model.py",
+        "pattern": "def test_requirement_revision_preserves_acceptance_pins_across_criterion_move("
       }
     ],
     "observation_markers": [
@@ -12700,7 +12745,7 @@
         "pattern": "implements none of those behaviors."
       }
     ],
-    "notes": "Human approved the bounded SG-SPEC-0068 semantic contract on 2026-10-02 in the current Codex conversation (quote: Одобряю), reviewed head 9be7e294c52c0ae1fac40f61ac285fd1ee8e3fc6. Approval is recorded in the node and approval packet, pending merge. Lookup runtime, storage/schema, allocator and source migration remain unimplemented and require separate work; frozen SG-SPEC-0019 is unchanged."
+    "notes": "Human approved the bounded SG-SPEC-0068 semantic contract on 2026-10-02 (quote: Одобряю), reviewed head 9be7e294c52c0ae1fac40f61ac285fd1ee8e3fc6; PR #747 merged as ed8a00c7d34ab5df5f3c8c29460a8d9231a10311. Subsequent human instruction Делай authorized the first read-model slice. Typed explicit-snapshot parsing, current/exact lookup and candidate/legacy inventory now have focused tests. This is partial read-model evidence, not complete runtime conformance: canonical storage, allocator, transition writers, dependency evaluation, source migration and Hypercode remain deferred. Frozen SG-SPEC-0019 and existing writers are unchanged. Independent adversarial review corrections expose supplied-scope relation completeness and source bindings, and store exact acceptance reference pins in each Requirement revision; see the review-resolution record."
   },
   {
     "proposal_id": "0222",

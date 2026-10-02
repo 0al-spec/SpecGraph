@@ -8,11 +8,14 @@ on 2026-10-02 with the message “Одобряю”, after delivery of PR #747 a
 not a GitHub review submitted on behalf of the human.
 
 [SG-SPEC-0068](../../specs/nodes/SG-SPEC-0068.yaml) now records
-`human_approved_pending_merge`, `status: specified`, and the decision provenance.
+`human_approved`, `status: specified`, and the decision provenance.
 Its previous state was pending human approval. The approval gate is cleared
 only after recording that decision. Neither lifecycle status nor semantic
-approval establishes runtime readiness; `runtime_conformance` is `not_implemented`.
-Merge, implementation, storage and migration authorization remain separate.
+approval establishes runtime readiness. PR #747 merged as
+`ed8a00c7d34ab5df5f3c8c29460a8d9231a10311`. A subsequent human instruction
+“Делай” authorized the first [read-model slice](../subject_read_model.md).
+`runtime_conformance: partial_read_model` records only that bounded evidence;
+full runtime conformance, storage and migration authorization remain separate.
 
 ## Review corrections recorded with approval
 

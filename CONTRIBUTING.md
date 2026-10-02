@@ -483,3 +483,17 @@ recorded human decision provenance, and keep promotion/runtime scope description
 aligned with the approved slice. An exact content revision does not select an
 as-of disposition when activation/withdrawal are independent events: label the
 current disposition explicitly and keep historical as-of claims separate.
+
+### Read-model construction invariants
+
+Validate reference resolvability at the shared typed-index boundary so Python
+callers cannot bypass CLI checks. Frozen dataclasses need immutable nested
+collections as well. Test cross-workspace incoming relations, declared replica
+coalescing and retained history explicitly; a successful selected lookup alone
+does not prove those projections are complete.
+
+When querying across namespaces, carry the source binding of relationship
+records as well as endpoint identities. Distinguish incomplete enumeration from
+an empty complete result. Define which references belong to a content revision
+before describing lookup as historical; test changing those links independently
+of the statement. These are contract invariants, not presentation details.

@@ -802,5 +802,53 @@
     ],
     "residual_risk": "Local HTTP evidence does not prove production publication.",
     "recorded_at": "2026-09-30T16:54:00Z"
+  },
+  {
+    "feedback_id": "pr-748-replica-reference-order",
+    "source_pr": 748,
+    "source_thread_url": "https://github.com/0al-spec/SpecGraph/pull/748#discussion_r4164479621",
+    "reviewer": "chatgpt-codex-connector",
+    "review_comment_summary": "Acceptance reference ordering made equivalent replicas ambiguous.",
+    "fix_summary": "Normalize unordered acceptance collections in typed revisions, with equivalent normalization for revision and endpoint presentation. Regression: test_replicas_coalesce_when_acceptance_reference_order_differs.",
+    "root_cause_class": "artifact_contract_validation_gap",
+    "prevention_action": "regression_test_added",
+    "verification": [
+      "targeted_test",
+      "manual_contract_review"
+    ],
+    "residual_risk": "Identical replica policy still rejects actual content divergence and replica lag.",
+    "recorded_at": "2026-10-02T10:07:00Z"
+  },
+  {
+    "feedback_id": "pr-748-retained-disposition-transitions",
+    "source_pr": 748,
+    "source_thread_url": "https://github.com/0al-spec/SpecGraph/pull/748#discussion_r4164479625",
+    "reviewer": "chatgpt-codex-connector",
+    "review_comment_summary": "The snapshot could retain only the current disposition and discarded earlier authored transitions.",
+    "fix_summary": "Store and return immutable retained_disposition_transitions with unique event references and provenance; reject contradiction with a retained current basis event. Regression: test_disposition_history_is_retained_without_inferring_current_or_as_of_state.",
+    "root_cause_class": "policy_runtime_drift",
+    "prevention_action": "regression_test_added",
+    "verification": [
+      "targeted_test",
+      "manual_contract_review"
+    ],
+    "residual_risk": "Event ordering, as-of lookup and history completeness are not inferred; writers remain deferred.",
+    "recorded_at": "2026-10-02T10:07:00Z"
+  },
+  {
+    "feedback_id": "pr-748-replica-workspace-binding",
+    "source_pr": 748,
+    "source_thread_url": "https://github.com/0al-spec/SpecGraph/pull/748#discussion_r4164479627",
+    "reviewer": "chatgpt-codex-connector",
+    "review_comment_summary": "One dataset identity could declare multiple immutable workspace identities.",
+    "fix_summary": "Detect reused dataset identities across workspace declarations and fail every affected scope closed. Regression: test_one_dataset_cannot_declare_multiple_workspace_identities.",
+    "root_cause_class": "scope_isolation_gap",
+    "prevention_action": "regression_test_added",
+    "verification": [
+      "targeted_test",
+      "manual_contract_review"
+    ],
+    "residual_risk": "Workspace and dataset declarations remain supplied metadata, not verified authority.",
+    "recorded_at": "2026-10-02T10:07:00Z"
   }
 ]

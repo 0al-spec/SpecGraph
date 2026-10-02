@@ -2,6 +2,12 @@
 
 ## Status and scope
 
+Historical preparation record: the bounded semantic contract was subsequently
+approved and merged in PR #747. The first separately authorized implementation
+is documented in [Subject read model](../subject_read_model.md); its status names
+follow SG-SPEC-0068. The recommendations and illustrative schema below record the
+earlier review stage, not an adopted physical storage layout.
+
 This is a review-only implementation design under RFC 0221. Not canonical adoption, an
 implemented schema, a migration authorization, or a runtime conformance claim.
 The frozen SG-SPEC-0019 remains unchanged. This design prepares the read-model
