@@ -68,3 +68,17 @@ This illustrates a semantic-review limit of structural checks.
 Primary exchange references: [Cucumber Gherkin reference](https://cucumber.io/docs/gherkin/reference/)
 and [official parser project](https://github.com/cucumber/gherkin). These were
 inspected as grammar/parser sources, not copied as application code.
+
+## Follow-up after independent review
+
+On 2026-10-02 the operator requested independent GPT 6 Astra / Ultra review of
+head `365b387973ac61df32cc8532b3f3caddc3719b18`. The read-only review reported no
+P1/P2 and three P3 clarifications before activation: the exact native input
+matrix, immutable workspace/reference scope, and metadata/reserved-ID handling
+for exchange. The operator then authorized clarification: "Уточни по замечаниям, да".
+
+Version 0.1.1 makes these proposed rules explicit and adds acceptance cases.
+The [author follow-up](../../reviews/0223_astra_review_followup.md) distinguishes
+the original independent review from subsequent edits and future implementation
+checks. This authorization does not activate a shared loader, migrate product
+sources or grant evidence admission. Historical pilot source hashes are unchanged.

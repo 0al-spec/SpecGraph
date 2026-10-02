@@ -12849,7 +12849,8 @@
     "runtime_surfaces": [
       "docs/proposals/0223_bdd_scenario_contract_and_gherkin_exchange.md",
       "docs/archive/proposal_sources/0223_bdd_scenario_contract_and_gherkin_exchange.md",
-      "docs/reviews/0223_zeusus_bdd_observation.json"
+      "docs/reviews/0223_zeusus_bdd_observation.json",
+      "docs/reviews/0223_astra_review_followup.md"
     ],
     "runtime_markers": [
       {
@@ -12864,6 +12865,6 @@
         "pattern": "\"evidence_class\": \"curated_historical_observation\""
       }
     ],
-    "notes": "Proposal preparation only. Runtime realization and activation require a separately reviewed graph contract and implementation slice. Historical extraction counts and hashes do not demonstrate implemented shared validation, Gherkin exchange, gameplay execution or evidence admission."
+    "notes": "Proposal preparation only. Runtime realization and activation require a separately reviewed graph contract and implementation slice. Historical extraction counts and hashes do not demonstrate implemented shared validation, Gherkin exchange, gameplay execution or evidence admission. Independent GPT 6 Astra / Ultra review of head 365b387973ac61df32cc8532b3f3caddc3719b18 found no P1/P2. The author clarified its three P3 items in proposal 0.1.1: explicit native input matrix, immutable workspace and owning-node reference scope, and a versioned exchange envelope with direct reserved IDs and file-level comment provenance. Documented acceptance cases are future checks, not executed runtime tests or independent approval of the follow-up."
   }
 ]

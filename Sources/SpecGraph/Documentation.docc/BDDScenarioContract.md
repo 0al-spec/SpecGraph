@@ -32,11 +32,27 @@ recognized nonempty alternate container cannot be reported as an empty success.
 Migration previews preserve source and emit counts, mappings and findings;
 applying a migration requires separate authorization and review.
 
+The native input matrix explicitly accepts absence and `bdd_scenarios: []`,
+while rejecting null/wrong types, even an empty legacy `scenarios` container,
+both containers (including two empty lists), malformed entries and whitespace-only
+ID/step/title values. Duplicate YAML mapping keys fail before ordinary maps are
+constructed, preserving the 0047 `UniqueKeyLoader` guard; repeated valid steps
+remain ordered. Invalid input cannot have a successful extraction count.
+These are proposed activated-profile rules; the
+current 0047 default does not change.
+
 Identity is independent of titles and parser-generated positions. Workspace
 scope, owning-spec membership and source/content digests accompany bindings.
 Moves, splits, merges and content edits do not silently transfer historical
 execution evidence. Scenario identity is distinct from 0221 Requirement and
 acceptance-criterion identity; no new canonical Scenario kind is introduced.
+
+Immutable workspace identity is separate from slug/path, display name and URL.
+It must agree with an explicit workspace binding. Observability references keep
+owning-node resolution: a scenario in a sibling, parent or other workspace
+cannot satisfy `observability.obligations[*].scenario_ids`. Equal local IDs in
+different workspaces are distinct identities. Partial inventories declare scope
+and cannot claim complete workspace uniqueness.
 
 ## Exchange and evidence
 
@@ -46,6 +62,23 @@ It uses a pinned parser. Background, Rule, outlines, tables, doc strings,
 non-English dialects and other unimplemented constructs produce findings.
 Round-trip checks preserve supported identity, title, steps and retained
 metadata structurally; they do not promise identical formatting bytes.
+
+The lossless exchange package includes `bdd_scenario_exchange_envelope` schema
+version 1 with workspace/spec binding, current payload digest, origin provenance,
+Feature metadata, metadata keyed by scenario ID and file-level comments. Validate
+the payload digest and agreement of representable fields before consuming the
+envelope; retained exchange-only metadata cannot be independently proved from
+the minimal native fields. Exactly one reserved ID tag must be directly on each
+Scenario/Example. Duplicate reserved tags, even identical, a Feature-level ID,
+and conflicting envelope IDs are invalid; ordinary tags retain scope and order.
+
+File-level comments preserve parsed text/order, including duplicates, with
+original locations retained as provenance. The first exporter uses one comment
+block before Feature; proximity never assigns a comment to a scenario. Round-trip
+comparison excludes emitted digests, locations, formatting and transient AST
+IDs. Original pins remain in the envelope; without it historical provenance
+retention is not promised. Native values that cannot round-trip unchanged through
+the pinned grammar receive an explicit export finding.
 
 Parsed, bound, executed and admitted evidence remain separate. Product test
 adapters, including Swift Testing, own behavior execution; SpecificationCore
@@ -60,6 +93,12 @@ one shared-loader slice reproducing the pilot failure. Approved migration and
 Gherkin exchange follow separately. Field allowlists, profile selection and
 reserved tag spelling remain decisions for activation review.
 
+The [source preparation](https://github.com/0al-spec/SpecGraph/blob/365b387973ac61df32cc8532b3f3caddc3719b18/docs/proposals/0223_bdd_scenario_contract_and_gherkin_exchange.md)
+received independent GPT 6 Astra / Ultra review with no P1/P2. Version 0.1.1
+clarifies its three P3 items; the author follow-up is recorded separately in
+`docs/reviews/0223_astra_review_followup.md`. New BDD-10/11/12 are future acceptance
+cases, not executed tests or an independent review of the follow-up itself.
+
 `make proposal-tracking-gate` and `make docc-sync` check document preparation.
 They do not execute future BDD cases or grant implementation authority.
 
@@ -68,3 +107,4 @@ They do not execute future BDD cases or grant implementation authority.
 - `docs/proposals/0223_bdd_scenario_contract_and_gherkin_exchange.md`
 - `docs/archive/proposal_sources/0223_bdd_scenario_contract_and_gherkin_exchange.md`
 - `docs/reviews/0223_zeusus_bdd_observation.json`
+- `docs/reviews/0223_astra_review_followup.md`

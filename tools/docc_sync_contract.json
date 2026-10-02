@@ -644,7 +644,10 @@
         "evidence_admission_allowed: false",
         "make proposal-tracking-gate",
         "make docc-sync",
-        "realization is deferred"
+        "realization is deferred",
+        "UniqueKeyLoader",
+        "observability.obligations[*].scenario_ids",
+        "bdd_scenario_exchange_envelope"
       ]
     }
   ]
