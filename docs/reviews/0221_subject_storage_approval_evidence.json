@@ -1,0 +1,52 @@
+{
+  "schema_version": 1,
+  "artifact_kind": "rfc0221_subject_storage_approval_validation",
+  "recorded_at": "2026-10-02T15:42:41Z",
+  "validation_scope": "Read-only native checks of the selected SG-SPEC-0069 node plus bounded backlog projection; unrelated proposal, delivery and consumer surfaces omitted. Scope/file digests checked by the preparation audit. No LLM refinement, gate resolution or canonical mutation.",
+  "reviewed_commit": "ca3967e6b9d1b196c901ff6fcb0f77b7a98ecfc7",
+  "spec_id": "SG-SPEC-0069",
+  "approval_packet_path": "docs/reviews/0221_subject_storage_approval.yaml",
+  "approval_packet_sha256": "dc2982d6270db6c5b9448e8ad12b38935571ec5018ae5387f2cf73863e1ef92a",
+  "approval_scope_sha256": "dcaf235e3345ef09604245161b4f0e57c54954fdd0052272a5a0ea27494bd2e1",
+  "reviewed_file_sha256": {
+    "specs/nodes/SG-SPEC-0069.yaml": "4e8820180dbe3d424c1f6ab3dae966250ef1b60ff9ff09aab36793597c0eefa3",
+    "docs/reviews/0221_subject_storage/manifest.yaml": "37def36bbc78ce78c026602f3f90d37fb4989201da2eb9ef2610fc8e98be2f96",
+    "docs/reviews/0221_requirement_mapping_review.json": "e77d78cd15bf58b6820af41fb0b8842c9a23d64330a1b248577d348c8ed983c4",
+    "docs/reviews/0221_subject_storage/workspace_identity.yaml": "d5a99ab533da5e3568601fb2d9c9934aeb3044dd5770c6bd442fd761a80b783b",
+    "docs/reviews/0221_subject_storage/req.repaired-candidate-review-readiness.yaml": "9c1e492bded55c9432ca0ed8106ff285e59364c6f80666ba5980d2c05d9ad4bf",
+    "docs/reviews/0221_subject_storage/req.platform-promotion-approval-boundary.yaml": "e73e5a6125dab67b2292b143fbf98eb980f9cd96a9f9cb5314473afd4214b66e",
+    "docs/reviews/0221_subject_storage/ac.clean-noop.yaml": "fb57d2ac6c61333a6b202a5272a9480a046c237e93ec95eafad2bf7ad44fa212",
+    "docs/reviews/0221_subject_storage/ac.repaired-preview.yaml": "dcd77117dad3261b4bdf61e92330f853d3f9004070037f72e62f2124fb683467",
+    "docs/reviews/0221_subject_storage/ac.unresolved-gaps.yaml": "2121814bc269271e2e5fd6a4d0884a6c5251eed084fcfc7f5b26fa9a1f6cdf4b",
+    "docs/reviews/0221_subject_storage/ac.approval-boundary.yaml": "e3869c3e2530f82b175ad7a53aa6ad0f787c0d65fe18bf870d9370de125c9e7c"
+  },
+  "spec_checks": {
+    "outputs": [],
+    "allowed_paths": [],
+    "atomicity": [],
+    "reconciliation": []
+  },
+  "graph_reconciliation": {
+    "worktree_spec_count": 69,
+    "changed_spec_ids": [],
+    "semantic_dependencies_resolved": true,
+    "work_dependencies_ready": true,
+    "cycles": []
+  },
+  "graph_health": {
+    "source_spec_id": "SG-SPEC-0069",
+    "observations": [],
+    "signals": [],
+    "recommended_actions": []
+  },
+  "diagnostic_outcome": "done",
+  "gate_state": "review_pending",
+  "backlog_status": "review_pending",
+  "next_gap": "resolve_review_gate",
+  "canonical_adoption": false,
+  "canonical_mutations_allowed": false,
+  "canonical_readiness": "not_evaluated",
+  "ready_for_materialization": false,
+  "writer_conformance": "not_evaluated",
+  "human_approval": "not_recorded"
+}

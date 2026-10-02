@@ -230,6 +230,35 @@ candidate manifest for the concrete review choices and remaining decisions.
 contract corrections and fixture-level prevention checks; writer enforcement
 remains deferred.
 
+### Physical schema and mapping approval packet
+
+`docs/reviews/0221_subject_storage_approval.md` and its YAML packet select the
+SG-SPEC-0069 version-1 physical schema merged in PR #751. `reviewed_commit` and
+ten reviewed-file digests bind the unchanged contract, preparation manifest,
+original mapping and seven candidates. `approval_scope_sha256` binds the complete
+review scope; it is a content digest, not a signature or proof of authorization.
+
+The packet names three decisions: physical schema, future workspace/ID plan and
+exact 3 + 1 Requirement membership with four cross-workspace mappings. It also
+requests bounded implementation authorization for the source adapter and writer.
+Decision templates remain null. `gate_state: review_pending`,
+`canonical_adoption: false` and `ready_for_materialization: false` retain the
+human decision boundary. Approval must cite the delivered scope, actual reviewer,
+authority, timestamp, outcome, rationale, provenance and source quote; changed
+reviewed content needs another explicit decision.
+
+Implementation permission does not authorize canonical subject publication.
+SG-SPEC-0051 materialization after a verified writer, source migration and evidence
+applicability retain separate authorization. Historical pilot identities and
+executions are unchanged. Record a genuine decision separately after human
+approval, preserving the prepared packet and original mapping as historical
+preparation. Only then resolve the appropriate review gate.
+
+`docs/reviews/0221_subject_storage_approval_evidence.json` records read-only native
+checks and the operational gate. Its diagnostic `done` does not establish approval,
+adoption, readiness or writer conformance. The first implementation slice after
+approval is the read-only canonical-source adapter.
+
 ### Canonical approval gates and lookup projections
 
 A canonical contract awaiting human approval must use `gate_state: review_pending`
