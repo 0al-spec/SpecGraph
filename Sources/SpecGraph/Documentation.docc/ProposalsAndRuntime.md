@@ -361,3 +361,8 @@ Temporary fixture origins prove bounded writer behavior, including late CAS
 conflicts and failure before publication. Production workspace/subject origins
 remain unallocated. Containment moves, disposition changes, relations, topology,
 migration and destination evidence applicability are separate slices.
+
+Writer diagnostics distinguish malformed expected commit IDs (`invalid_input`,
+exit 2) from deleted selected refs (`source_conflict`, exit 3), including deletion
+at the CAS boundary. PR #758 regression fixtures prevent both classification gaps;
+see the review prevention section in `docs/subject_source_write.md`.

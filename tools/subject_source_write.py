@@ -24,7 +24,12 @@ from subject_canonical_source import (
 )
 from subject_read_model import SubjectRecord, SubjectRef, require_text, require_tuple
 from subject_read_model_io import SubjectDocumentError, _list, _object, parse_subject_ref
-from subject_source_git import SubjectSourceCommit, SubjectSourceConflict, selected_source_commit
+from subject_source_git import (
+    SubjectSourceCommit,
+    SubjectSourceConflict,
+    require_commit_id,
+    selected_source_commit,
+)
 
 
 def _sha256(content: bytes) -> str:
@@ -72,6 +77,7 @@ class SubjectSourceWriteRequest:
 
     def __post_init__(self) -> None:
         require_text(self.source_ref, "source_ref")
+        require_commit_id(self.expected_commit)
         require_text(self.recorded_at, "recorded_at")
         if datetime.fromisoformat(self.recorded_at.replace("Z", "+00:00")).tzinfo is None:
             raise SubjectDocumentError("publication recorded_at requires a timezone")

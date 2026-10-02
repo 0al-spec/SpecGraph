@@ -57,7 +57,15 @@ def selected_source_commit(repository: Path, source_ref: str) -> str:
     symbolic = git_command(repository, "symbolic-ref", "--quiet", source_ref, check=False)
     if symbolic.returncode != 1:
         raise SubjectDocumentError("source ref must be an existing direct ref, not a symbolic ref")
-    commit = git_command(repository, "rev-parse", "--verify", source_ref).stdout.decode().strip()
+    selected = git_command(repository, "rev-parse", "--verify", source_ref, check=False)
+    if selected.returncode:
+        presence = git_command(
+            repository, "show-ref", "--verify", "--quiet", source_ref, check=False
+        )
+        if presence.returncode == 1:
+            raise SubjectSourceConflict("selected source ref no longer exists")
+        raise SubjectDocumentError(selected.stderr.decode("utf-8", errors="replace").strip())
+    commit = selected.stdout.decode().strip()
     require_commit_id(commit)
     kind = git_command(repository, "cat-file", "-t", commit).stdout.decode().strip()
     if kind != "commit":

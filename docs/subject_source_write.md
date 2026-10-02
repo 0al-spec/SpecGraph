@@ -132,3 +132,13 @@ with SubjectSourceCommit(repository, result['candidate_commit']).export() as roo
 false; the result is not a trusted runtime receipt. No production workspace or subject origin is allocated by this implementation
 PR. The next slice is a separately reviewed materialization packet using genuine
 SG-SPEC-0051 transition records and destination-specific evidence decisions.
+
+## Review prevention
+
+PR #758 found two `artifact_contract_validation_gap` cases in diagnostic
+classification. A deleted dedicated ref now produces `source_conflict`/3,
+including deletion before validation, before publication and at CAS. A malformed
+`expected_commit` is rejected by typed request construction as `invalid_input`/2.
+Prevention is `regression_test_added`: `test_deleted_ref_is_a_cli_source_conflict`
+and `test_malformed_expected_commit_is_invalid_input` in
+`tests/test_subject_source_write.py`. Neither failure publishes a source ref.

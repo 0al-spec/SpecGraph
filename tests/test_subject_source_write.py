@@ -392,6 +392,81 @@ def test_late_compare_and_swap_conflict_preserves_the_winner(repository, monkeyp
     )
 
 
+@pytest.mark.parametrize("phase", ["initial", "before_publish", "at_cas"])
+def test_deleted_ref_is_a_cli_source_conflict(repository, tmp_path, capsys, monkeypatch, phase):
+    root, _, base = repository
+    payload = request_payload(repository)
+    request_path = tmp_path / "request.yaml"
+    request_path.write_text(dump_canonical_yaml(payload))
+    request = parse_write_request(payload)
+    auth_path = tmp_path / "authorization.yaml"
+    from dataclasses import asdict
+
+    auth_path.write_text(
+        dump_canonical_yaml(
+            {
+                "schema_version": 1,
+                "artifact_kind": "subject_source_write_authorization",
+                **asdict(authorization(request)),
+            }
+        )
+    )
+    original = git_source.git_command
+    if phase == "initial":
+        original(root, "update-ref", "-d", SOURCE_REF, base)
+    elif phase == "before_publish":
+        publish = SubjectSourceCommit.publish
+
+        def deleted_before_publish(self, source_ref, candidate_commit):
+            original(root, "update-ref", "-d", SOURCE_REF, base)
+            return publish(self, source_ref, candidate_commit)
+
+        monkeypatch.setattr(SubjectSourceCommit, "publish", deleted_before_publish)
+    else:
+
+        def deleted_at_cas(repository, *arguments, **kwargs):
+            if arguments[0] == "update-ref":
+                original(root, "update-ref", "-d", SOURCE_REF, base)
+            return original(repository, *arguments, **kwargs)
+
+        monkeypatch.setattr(git_source, "git_command", deleted_at_cas)
+    assert (
+        main(
+            [
+                "--repository-root",
+                str(root),
+                "--request",
+                str(request_path),
+                "--authorization",
+                str(auth_path),
+            ]
+        )
+        == 3
+    )
+    result = json.loads(capsys.readouterr().out)
+    assert result["status"] == "source_conflict"
+    assert result["source_ref_updated"] is False
+    assert (
+        original(root, "show-ref", "--verify", "--quiet", SOURCE_REF, check=False).returncode == 1
+    )
+
+
+@pytest.mark.parametrize("commit", ["abc", "A" * 40, "not-a-commit", None, 123])
+def test_malformed_expected_commit_is_invalid_input(repository, tmp_path, capsys, commit):
+    root, _, base = repository
+    payload = request_payload(repository)
+    payload["expected_commit"] = commit
+    with pytest.raises(SubjectDocumentError, match="complete lowercase Git commit ID"):
+        parse_write_request(payload)
+    request_path = tmp_path / "request.yaml"
+    request_path.write_text(dump_canonical_yaml(payload))
+    assert main(["--repository-root", str(root), "--request", str(request_path), "--preview"]) == 2
+    result = json.loads(capsys.readouterr().out)
+    assert result["status"] == "invalid_input"
+    assert result["source_ref_updated"] is False
+    assert selected_source_commit(root, SOURCE_REF) == base
+
+
 def test_failure_preparing_git_objects_never_publishes_partial_records(
     repository, monkeypatch
 ) -> None:
