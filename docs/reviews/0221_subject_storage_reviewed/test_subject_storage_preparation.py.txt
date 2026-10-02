@@ -30,10 +30,7 @@ def preparation() -> tuple[dict, list[dict], dict, dict]:
     )
     candidates = [load_yaml_text((ROOT / path).read_text()) for path in manifest["candidate_paths"]]
     mapping = json.loads((ROOT / manifest["mapping_packet"]).read_text())
-    # Audit the immutable preparation, before the separately recorded approval.
-    decision = json.loads((ROOT / "docs/reviews/0221_subject_storage_decision.json").read_text())
-    contract_path = decision["reviewed_snapshot_files"][manifest["storage_contract"]]
-    contract = load_yaml_text((ROOT / contract_path).read_text())
+    contract = load_yaml_text((ROOT / manifest["storage_contract"]).read_text())
     return manifest, candidates, mapping, contract
 
 
@@ -134,10 +131,8 @@ def test_source_statements_and_pending_namespace_mapping_are_retained(preparatio
     manifest, candidates, mapping, _ = preparation
     digest = hashlib.sha256((ROOT / manifest["mapping_packet"]).read_bytes()).hexdigest()
     assert manifest["mapping_packet_sha256"] == digest
-    decision = json.loads((ROOT / "docs/reviews/0221_subject_storage_decision.json").read_text())
     for path, expected in manifest["validation_snapshot"]["checked_file_sha256"].items():
-        reviewed_path = decision["reviewed_snapshot_files"].get(path, path)
-        assert hashlib.sha256((ROOT / reviewed_path).read_bytes()).hexdigest() == expected
+        assert hashlib.sha256((ROOT / path).read_bytes()).hexdigest() == expected
     source_mappings = {
         m["source"]["subject"]["local_subject_id"]: m for m in mapping["criterion_mappings"]
     }

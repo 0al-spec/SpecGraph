@@ -2,17 +2,17 @@ id: SG-SPEC-0069
 title: SpecGraph - Standalone Subject Storage Preparation
 kind: spec
 created_at: '2026-10-02T13:30:00Z'
-updated_at: '2026-10-02T16:02:56Z'
-status: specified
-authority_class: authored
-source_ref: docs/reviews/0221_subject_storage_decision.json
+updated_at: '2026-10-02T14:48:00Z'
+status: outlined
+authority_class: inferred
+source_ref: docs/reviews/0221_subject_storage_review_resolution.md
 provenance:
-  actor_id: human:project-author
-  authority_class: authored
-  recorded_at: '2026-10-02T16:02:44Z'
-  source_ref: docs/reviews/0221_subject_storage_decision.json
-  notes: Actual packet approval in the current Codex conversation, recorded by agent:codex; no GitHub
-    review, subject origin or materialization is asserted.
+  actor_id: agent:codex
+  authority_class: inferred
+  recorded_at: '2026-10-02T14:48:00Z'
+  source_ref: docs/reviews/0221_subject_storage_review_resolution.md
+  source_confidence: high
+  notes: Attribution of pending contract corrections; not schema approval or subject adoption.
 maturity: 0.3
 depends_on: []
 relates_to: []
@@ -54,46 +54,33 @@ acceptance_evidence:
     distinguish prepared files from canonical records, retain the pilot mapping and require genuine decision
     provenance. Concrete examples are in docs/reviews/0221_subject_storage/. Their revision provenance
     and disposition are deliberately unfilled.'
-prompt: Maintain the human-approved SG-SPEC-0069 version-1 physical contract and exact 3 plus 1 mapping.
-  Implement and verify the bounded read-only source adapter, then a validating origin/content-revision
-  writer. Canonical materialization and evidence applicability need separate decisions. Preserve frozen
-  SG-SPEC-0019 and historical pilot/preparation evidence.
+prompt: Maintain one bounded physical-storage proposal under SG-SPEC-0068. Prepare concrete review candidates
+  without approving the schema, allocating canonical identities, migrating sources or implementing writers.
+  Preserve frozen SG-SPEC-0019 and the previously authored pilot evidence.
 specification:
   objective: Propose the smallest source-controlled storage contract that can materialize the two repaired-candidate
     Requirements and their four acceptance criteria after review.
   adoption_boundary:
-    state: human_approved
+    state: pending_human_approval
     proposal: '0221'
     preparation_authorization:
       source: Current Codex task conversation, user instruction on 2026-10-02
       source_quote: Отлично, давай делай.
       scope: Prepare this child storage contract and two Requirement candidates with a 3 plus 1 criterion
         partition.
-    schema_approval_record:
-      path: docs/reviews/0221_subject_storage_decision.json
-      decision_ref: docs/reviews/0221_subject_storage_decision.json#/decisions/physical_schema
-      reviewed_head: 6c88190d379b787661a47b07cf1279c25f0d585e
-      approval_scope_sha256: dcaf235e3345ef09604245161b4f0e57c54954fdd0052272a5a0ea27494bd2e1
-    requirement_mapping_approval_record:
-      path: docs/reviews/0221_subject_storage_decision.json
-      decision_ref: docs/reviews/0221_subject_storage_decision.json#/decisions/requirement_membership_and_mapping
-      mapping_decisions_ref: docs/reviews/0221_subject_storage_decision.json#/mapping_decisions
+    schema_approval_record: null
+    requirement_mapping_approval_record: null
     canonical_materialization_authorization: null
     runtime_conformance: not_implemented
     exclusions:
-    - No canonical workspace declaration, Requirement or criterion origin is allocated by schema/mapping
-      approval.
-    - Canonical materialization, source migration and destination evidence applicability remain separate
-      decisions.
-    - No Platform promotion, trusted runtime receipt or full runtime conformance is granted.
-    - No approval is inferred from PR merge or successful validation.
-    workspace_and_id_plan_approval_record: docs/reviews/0221_subject_storage_decision.json#/decisions/workspace_and_id_plan
-    bounded_implementation_authorization: docs/reviews/0221_subject_storage_decision.json#/decisions/bounded_implementation_authorization
+    - No canonical workspace declaration, Requirement or criterion origin is authored by this preparation.
+    - No source migration, storage adapter, validating writer or runtime evidence transfer.
+    - No approval inferred from PR merge, prior semantic approval or successful validation.
   parent_compatibility:
     parent: SG-SPEC-0068
     rules:
-    - This child selects approved physical conventions previously deferred by SG-SPEC-0068; schema approval
-      does not change the approved semantic parent or frozen SG-SPEC-0019.
+    - This child proposes physical conventions previously deferred by SG-SPEC-0068; its pending gate does
+      not change the approved semantic parent.
     - Requirement remains the existing kind requirement canonical node. A criterion remains a separate
       subject record, not a new seed node kind.
     - Frozen SG-SPEC-0019 and frozen canonical subjects cannot be revised or moved in place. Replacement
@@ -354,13 +341,8 @@ specification:
     then.
   - Author any destination evidence-applicability links separately from the original pilot executions;
     no new execution or runtime receipt is implied.
-gate_state: none
+gate_state: review_pending
 proposed_status: null
 proposed_maturity: null
-required_human_action: '-'
-last_worktree_path: ''
-last_branch: ''
-last_gate_decision: approve
-last_gate_note: 'Actual human approval: docs/reviews/0221_subject_storage_decision.json; reviewed PR #752
-  head 6c88190d379b787661a47b07cf1279c25f0d585e; schema/mapping and bounded adapter/writer only.'
-last_gate_at: '2026-10-02T16:02:56.943718+00:00'
+required_human_action: Review the concrete physical-storage contract and candidate files; preparation
+  is complete, but schema approval and canonical materialization are separate decisions.

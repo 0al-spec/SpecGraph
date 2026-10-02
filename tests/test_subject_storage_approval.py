@@ -35,7 +35,9 @@ def test_approval_packet_preserves_the_pending_human_boundary(packet) -> None:
     assert packet["canonical_readiness"] == "not_evaluated"
     assert packet["ready_for_materialization"] is False
     assert packet["preparation_authorization"]["source_quote"] == "Ок, готовь схему"
-    node = load_yaml_text((ROOT / "specs/nodes/SG-SPEC-0069.yaml").read_text())
+    node = load_yaml_text(
+        (ROOT / "docs/reviews/0221_subject_storage_reviewed/SG-SPEC-0069.yaml").read_text()
+    )
     assert node["gate_state"] == "review_pending"
     assert node["specification"]["adoption_boundary"]["schema_approval_record"] is None
     with pytest.raises(SubjectDocumentError):
@@ -64,8 +66,10 @@ def test_reviewed_file_digests_cover_schema_manifest_mapping_and_candidates(pack
         manifest["mapping_packet"],
         *manifest["candidate_paths"],
     }
+    decision = json.loads((ROOT / "docs/reviews/0221_subject_storage_decision.json").read_text())
     for path, digest in pins.items():
-        assert hashlib.sha256((ROOT / path).read_bytes()).hexdigest() == digest
+        reviewed_path = decision["reviewed_snapshot_files"].get(path, path)
+        assert hashlib.sha256((ROOT / reviewed_path).read_bytes()).hexdigest() == digest
 
 
 def test_review_scope_retains_the_complete_selected_physical_schema(packet) -> None:
