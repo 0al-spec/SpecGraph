@@ -74,6 +74,11 @@ specification:
       source_quote: Делай
       scope: First read-only parsing, validation and lookup slice over explicit snapshots and compatibility
         records; no source migration or existing writer changes.
+    read_model_review_resolution:
+      source: Current Codex task conversation, user instruction on 2026-10-02 after independent review
+      source_quote: Хорошо, исправляй
+      scope: Correct relation enumeration completeness, retain authored relation source scope, and make
+        acceptance reference collections part of governed Requirement revisions with exact criterion pins.
     approval_record:
       decision: approve
       authority: human_project_author
@@ -132,6 +137,16 @@ specification:
     acceptance_criteria_refs: The authored Requirement-to-criterion reference relation from a Requirement
       subject to one or more criterion subjects. It remains distinct from decomposition, composition,
       evidence, and scenario relations.
+    acceptance_reference_revision_scope:
+    - Each Requirement content revision preserves its own acceptance_criteria_refs collection. Every entry
+      pins an exact criterion revision; current selection is not valid in this collection.
+    - Adding, removing or repinning an acceptance reference is a governed Requirement content change.
+      It requires a new revision, or replacement where the existing normative-change rules require a new
+      identity. Previous collections remain immutable and readable through exact Requirement lookup.
+    - A criterion revision or containment_move never rewrites Requirement references automatically. Rebinding
+      the applicable Requirement requires an explicit new Requirement revision. An intended ownership
+      transfer updates both affected Requirements while preserving their old revision collections; storage
+      containment alone does not establish or transfer ownership.
   identity_rules:
   - A Requirement subject and a criterion subject have separate identities even when they appear in the
     same canonical specification file.
@@ -148,6 +163,10 @@ specification:
   - Workspace identity is a governed declaration controlled by the workspace authority; readers cannot
     allocate, regenerate or change it. The physical declaration and allocator policy require a separate
     implementation decision.
+  - A declared replica dataset preserves exactly one immutable workspace identity. Reusing its dataset
+    identity for another workspace is a declaration conflict; all affected workspace scopes fail closed.
+  - Ordering of acceptance references, relation endpoints or supplied history records does not determine
+    identity. Replica comparison uses their governed facts rather than serialization order.
   revision_contract:
     rules:
     - Every Requirement or criterion subject starts at revision 1 as the origin of that subject identity.
@@ -207,6 +226,10 @@ specification:
     - No subject relation silently creates a canonical supersedes edge.
     - Reverse queries enumerate all matching authored records and preserve endpoint roles; they MUST NOT
       infer another relation kind by reversing an edge.
+    - Every authored relation retains its immutable source workspace binding and a relation ID unique
+      within that workspace. The pair is the relation identity; endpoint workspace and provenance text
+      cannot substitute for the source binding. Returned records also retain the supplied dataset identity
+      as source provenance, not as a trust proof or a replacement for workspace identity.
   lookup_contract:
     request_minimum:
     - immutable_workspace_identity
@@ -221,6 +244,9 @@ specification:
       the selected content revision
     - typed subject relations with endpoint roles, subject classes, and the full_subject_reference of
       every endpoint, including explicit exact or current revision selection
+    - source workspace and dataset binding of each authored relation, plus explicit completeness of relation
+      enumeration within the supplied snapshot scope
+    - acceptance_criteria_refs belonging to the selected Requirement revision, with exact criterion pins
     - applicable SG-SPEC-0019 canonical presence when the subject is a canonical node or explicit canonical
       edge
     unresolved_states:
@@ -246,6 +272,17 @@ specification:
       workspace retains identity; declaration conflicts still fail closed rather than choosing a record.
     retired_subject_lookup: An existing retired subject remains resolved, with its requested revision,
       disposition and lineage. Retirement alone is not an unresolved lookup result.
+    relation_enumeration:
+      scope: Completeness is relative to the explicitly supplied snapshots, not a claim that all canonical
+        history or every external workspace has been supplied.
+      source_conflict: If any snapshot in an ambiguous source workspace contains a relation mentioning
+        the requested identity, return an incomplete relation result with the conflicting workspace and
+        dataset identities. Do not promote disputed relations or silently represent them as absent.
+      subject_resolution: A subject may remain resolved independently of incomplete relations. Consumers
+        must inspect relation completeness before claiming absence or complete lineage. The CLI returns
+        nonzero for incomplete relations even when the selected subject content is available.
+      unrelated_conflict: An ambiguous workspace with no supplied relation mentioning the requested identity
+        does not by itself make that subject's relation enumeration incomplete.
     disposition_projection:
       exact_revision: Exact/current revision selection determines content and revision-specific containment,
         not an as-of cutoff for independent disposition events.

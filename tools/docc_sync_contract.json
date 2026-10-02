@@ -543,7 +543,8 @@
       "id": "rfc0221-subject-read-model",
       "description": "Bounded read-only snapshot implementation and compatibility limits.",
       "docs": [
-        "docs/subject_read_model.md"
+        "docs/subject_read_model.md",
+        "docs/reviews/0221_read_model_review_resolution.md"
       ],
       "docc": [
         "Sources/SpecGraph/Documentation.docc/ProposalsAndRuntime.md"
@@ -554,7 +555,10 @@
         "retained_containment_history",
         "parse_compatibility_document",
         "partial read-model",
-        "dataset_identity"
+        "dataset_identity",
+        "relation_resolution",
+        "source.workspace_identity",
+        "exact criterion"
       ]
     }
   ]

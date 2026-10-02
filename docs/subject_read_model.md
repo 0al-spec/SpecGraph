@@ -26,8 +26,8 @@ The CLI writes JSON to stdout and leaves the source unchanged. Exit codes:
 
 | Code | Meaning |
 | --- | --- |
-| `0` | `resolved`; a retired subject can also resolve |
-| `1` | Unresolved lookup with an explicit status |
+| `0` | `resolved` with complete relation enumeration within the supplied snapshots; a retired subject can also resolve |
+| `1` | Unresolved lookup, or resolved subject with incomplete relation enumeration |
 | `2` | Invalid snapshot/reference, or invalid CLI arguments |
 
 Data failures return `status: invalid_input` with a diagnostic. Argument errors
@@ -47,9 +47,10 @@ missing identifiers and malformed values are rejected. See the complete
 | Workspace | `workspace_identity`, `dataset_identity`, `subjects`, `relations` |
 | Subject reference | `workspace_identity`, `subject_class`, `local_subject_id` |
 | Revision selection | `subject`, `mode: exact` + positive integer `revision`, or `mode: current` |
-| Subject | `reference`, `current_revision`, `revisions`, `current_disposition`, `canonical_presence`, `acceptance_criteria_refs` |
-| Revision | `number`, `predecessor`, `statement`, `containment`, `provenance` |
+| Subject | `reference`, `current_revision`, `revisions`, `current_disposition`, `canonical_presence`, `retained_disposition_transitions` |
+| Revision | `number`, `predecessor`, `statement`, `containment`, `provenance`, `acceptance_criteria_refs` |
 | Current disposition | `state: active/retired`, `basis_ref`, `observation_provenance` |
+| Retained disposition transition | `event_ref`, `transition: activation/withdrawal`, `provenance` |
 | Authored relation | `relation_id`, `kind`, `endpoints`, `provenance` |
 | Endpoint | `role`, `selection` |
 
@@ -61,6 +62,10 @@ declare replicas of one source; they do not prove authority or trust. Only
 identical declared replicas coalesce. Independent sources or conflicting
 replicas sharing a workspace identity return `ambiguous_workspace_identity`
 before subject selection.
+One dataset identity cannot declare multiple workspace identities: every
+affected workspace fails closed. Acceptance-reference order is not semantic;
+the typed model normalizes it before replica comparison, along with revision,
+endpoint and retained-transition presentation order.
 
 Revision 1 has `predecessor: null`; every later retained revision names its
 immediate predecessor number. Missing historical records stay missing. The
@@ -70,8 +75,14 @@ or the completeness of its history.
 
 Requirements declare canonical presence as `active` or
 `historical_lineage_only`; criteria use `null`. This is supplied metadata, not
-verification against the canonical graph. Requirement `acceptance_criteria_refs`
-contain full revision selections for criteria. Criteria have an empty list.
+verification against the canonical graph. Every Requirement revision owns its
+`acceptance_criteria_refs`: full references pinning exact criterion revisions.
+Current selection is rejected. Criterion revisions have an empty list.
+Adding/removing/repinning links requires a new Requirement revision; exact
+lookup preserves the previous collection. A criterion move never rewrites
+ownership automatically. An intended ownership transfer is recorded through
+new revisions of the affected Requirements; storage containment is separate.
+The earlier unmerged record-level layout is rejected, not assigned to history.
 All supplied references must resolve within the index; dangling references and
 unavailable pinned revisions reject construction through the Python API as well
 as the CLI.
@@ -81,6 +92,12 @@ as the CLI.
 Participants must have distinct identities and the same subject class. Incoming
 and outgoing queries return the authored relation and all its endpoint roles;
 they never generate an inverse relation kind or alter participant disposition.
+Each returned relation also carries `source.workspace_identity` and
+`source.dataset_identity`, inherited from its enclosing snapshot. The stable
+relation key is `(source.workspace_identity, relation_id)`; dataset identity is
+source provenance. Python construction rejects source bindings that disagree
+with the containing snapshot. Source identity is retained even when it differs
+from all endpoint workspaces.
 
 ## Lookup semantics
 
@@ -98,10 +115,28 @@ with a diagnostic instead of an arbitrary selected record.
 explicitly labelled `current_subject_disposition`, including its basis and
 observation provenance. Exact content selection is not historical as-of
 disposition. The result also exposes `current_revision`,
-`retained_containment_history`, canonical presence, authored relations and
-acceptance references from the supplied snapshot. Relation/acceptance metadata
-has no historical as-of claim. Retained history lists only supplied records;
+`retained_containment_history`, canonical presence, authored relations and the
+selected revision's acceptance references. Authored relation enumeration has no
+historical as-of claim. Retained history lists only supplied records;
 missing revisions are not reconstructed from Git, text similarity or filenames.
+
+`retained_disposition_transitions` preserves supplied activation/withdrawal
+facts independently of the current projection. Each has a subject-scoped
+`event_ref`, transition kind and provenance. Duplicate event references are
+rejected; if the current basis event is retained, its result must agree with
+the supplied current state. Current state is never inferred from list order.
+Presentation sorts by event reference and asserts no chronology, as-of cutoff
+or complete event history; the current basis may refer to an origin or event
+outside the retained subset. Both exact/current lookup return the retained
+facts. Empty retained history does not prove that no transitions occurred.
+
+`resolved.relation_resolution` states `complete` or `incomplete`, always scoped
+to `supplied_snapshots`. A source workspace conflict affecting the requested
+identity leaves the subject content available but reports the conflicting
+workspace/dataset identities. Disputed relations are excluded, with an explicit
+incomplete result and CLI exit 1. An unrelated workspace conflict does not imply
+missing relations. A complete supplied-scope result cannot establish that all
+canonical history or external workspaces have been supplied.
 
 Every result states `canonical_mutations_allowed: false`. A resolved retired
 Requirement still cannot satisfy a Requirement dependency under SG-SPEC-0068;

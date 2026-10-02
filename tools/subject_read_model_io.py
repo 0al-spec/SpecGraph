@@ -19,8 +19,10 @@ from yaml import YAMLError
 from spec_yaml import load_yaml_text
 from subject_read_model import (
     CurrentSubjectDisposition,
+    DispositionTransition,
     LookupResult,
     RelationEndpoint,
+    RelationSource,
     RevisionSelection,
     SubjectClass,
     SubjectIndex,
@@ -67,8 +69,27 @@ def _selection(value: object) -> RevisionSelection:
 
 
 def _revision(value: object) -> SubjectRevision:
-    data = _object(value, {"number", "predecessor", "statement", "containment", "provenance"})
-    return SubjectRevision(**data)
+    data = _object(
+        value,
+        {
+            "number",
+            "predecessor",
+            "statement",
+            "containment",
+            "provenance",
+            "acceptance_criteria_refs",
+        },
+    )
+    return SubjectRevision(
+        number=data["number"],
+        predecessor=data["predecessor"],
+        statement=data["statement"],
+        containment=data["containment"],
+        provenance=data["provenance"],
+        acceptance_criteria_refs=tuple(
+            _selection(v) for v in _list(data["acceptance_criteria_refs"])
+        ),
+    )
 
 
 def _record(value: object) -> SubjectRecord:
@@ -80,7 +101,7 @@ def _record(value: object) -> SubjectRecord:
             "revisions",
             "current_disposition",
             "canonical_presence",
-            "acceptance_criteria_refs",
+            "retained_disposition_transitions",
         },
     )
     disposition = _object(
@@ -89,18 +110,17 @@ def _record(value: object) -> SubjectRecord:
     return SubjectRecord(
         reference=parse_subject_ref(data["reference"]),
         current_revision=data["current_revision"],
-        revisions=tuple(
-            sorted((_revision(v) for v in _list(data["revisions"])), key=lambda r: r.number)
-        ),
+        revisions=tuple(_revision(v) for v in _list(data["revisions"])),
         current_disposition=CurrentSubjectDisposition(**disposition),
         canonical_presence=data["canonical_presence"],
-        acceptance_criteria_refs=tuple(
-            _selection(v) for v in _list(data["acceptance_criteria_refs"])
+        retained_disposition_transitions=tuple(
+            DispositionTransition(**_object(v, {"event_ref", "transition", "provenance"}))
+            for v in _list(data["retained_disposition_transitions"])
         ),
     )
 
 
-def _relation(value: object) -> SubjectRelation:
+def _relation(value: object, source: RelationSource) -> SubjectRelation:
     data = _object(value, {"relation_id", "kind", "endpoints", "provenance"})
     endpoints = []
     for value in _list(data["endpoints"]):
@@ -109,8 +129,9 @@ def _relation(value: object) -> SubjectRelation:
     return SubjectRelation(
         data["relation_id"],
         data["kind"],
-        tuple(sorted(endpoints, key=lambda e: (e.role, e.selection.subject.identity))),
+        tuple(endpoints),
         data["provenance"],
+        source,
     )
 
 
@@ -132,7 +153,15 @@ def parse_subject_index(value: object) -> SubjectIndex:
                     workspace["workspace_identity"],
                     workspace["dataset_identity"],
                     tuple(_record(v) for v in _list(workspace["subjects"])),
-                    tuple(_relation(v) for v in _list(workspace["relations"])),
+                    tuple(
+                        _relation(
+                            v,
+                            RelationSource(
+                                workspace["workspace_identity"], workspace["dataset_identity"]
+                            ),
+                        )
+                        for v in _list(workspace["relations"])
+                    ),
                 )
             )
         return SubjectIndex(tuple(workspaces))
@@ -166,11 +195,19 @@ def lookup_payload(result: LookupResult) -> dict[str, object]:
                 for r in sorted(result.record.revisions, key=lambda r: r.number)
             ],
             "current_subject_disposition": asdict(result.record.current_disposition),
+            "retained_disposition_transitions": [
+                asdict(event) for event in result.record.retained_disposition_transitions
+            ],
             "canonical_presence": result.record.canonical_presence,
             "acceptance_criteria_refs": [
-                asdict(ref) for ref in result.record.acceptance_criteria_refs
+                asdict(ref) for ref in result.selected_revision.acceptance_criteria_refs
             ],
             "authored_relations": [asdict(relation) for relation in result.relations],
+            "relation_resolution": {
+                "status": "incomplete" if result.relation_conflicts else "complete",
+                "scope": "supplied_snapshots",
+                "conflicts": [asdict(conflict) for conflict in result.relation_conflicts],
+            },
         }
     return payload
 
@@ -206,7 +243,7 @@ def main(argv: list[str] | None = None) -> int:
         )
         return 2
     print(json.dumps(lookup_payload(result), indent=2, sort_keys=True))
-    return 0 if result.status == "resolved" else 1
+    return 0 if result.status == "resolved" and not result.relation_conflicts else 1
 
 
 if __name__ == "__main__":

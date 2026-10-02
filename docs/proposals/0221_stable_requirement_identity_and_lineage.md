@@ -146,6 +146,38 @@ revision.
 
 ### Evidence and read-only lookup
 
+#### Review clarification: acceptance history and relation scope
+
+Each governed Requirement revision MUST retain its own
+`acceptance_criteria_refs` collection, with exact criterion revision pins.
+Changing membership or repinning a reference is a Requirement content change
+and requires a new revision (or replacement where the normative-change rules
+require a new identity). Exact Requirement lookup returns that revision's
+collection. It MUST NOT substitute the current Requirement's links.
+
+A criterion revision or `containment_move` MUST NOT automatically rewrite
+Requirement links. An intended ownership transfer requires explicit new
+revisions of the affected Requirements; their old reference collections remain
+retained. Storage containment alone does not establish or transfer ownership.
+
+An authored relation's identity is its immutable source workspace binding plus
+workspace-local relation ID. Lookup MUST preserve that binding and the supplied
+dataset identity as provenance, even when every endpoint belongs to a different
+workspace. Neither endpoint references nor opaque provenance text can replace
+the relation's own source scope. Dataset identity is not a trust proof.
+
+Subject resolution and relation completeness are separate results. Within the
+explicitly supplied snapshot scope, if an ambiguous source workspace contains
+any relation mentioning the requested identity, lookup MUST report incomplete
+relation enumeration and the conflicting workspace/dataset identities. It MUST
+NOT promote disputed records or silently report their absence. Unrelated
+ambiguous sources do not invalidate an otherwise complete supplied-scope result.
+Consumers MUST NOT interpret `resolved` subject content as proof of complete
+lineage; the CLI returns nonzero for incomplete relations. Supplied-scope
+completeness never proves that all external or canonical history was supplied.
+
+#### Lookup and evidence requirements
+
 1. Every evidence artifact MUST either carry the immutable workspace identity
    with each local subject ID it references, or declare an immutable workspace
    binding that scopes every reference in that artifact. Acceptance evidence is

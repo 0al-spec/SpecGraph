@@ -41,7 +41,10 @@ see [docs/implementation_work_viewer_contract.md](../docs/implementation_work_vi
 `subject_read_model_io.py` reads an explicit `subject_read_snapshot` YAML/JSON
 file and performs exact (`--revision N`) or current (`--current`) lookup. Supply
 `--snapshot`, `--workspace-identity`, `--subject-class` and `--subject-id`.
-It returns JSON on stdout: exit 0 resolved, 1 unresolved, 2 invalid input.
+It returns JSON on stdout: exit 0 resolved with complete supplied-scope
+relations, 1 unresolved or incomplete relations, 2 invalid input.
+Results retain relation source namespaces and report affected source conflicts.
+Each Requirement revision preserves exact acceptance criterion pins.
 The snapshot is an experimental exchange format, not canonical storage.
 
 `subject_legacy_reads.parse_compatibility_document` provides a separate Python

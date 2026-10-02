@@ -111,7 +111,8 @@ evidence; full runtime conformance is not established.
 (schema version 1, YAML or JSON) and returns a JSON `subject_lookup_result`.
 Select exactly one of `--revision N` or `--current`, together with `--snapshot`,
 `--workspace-identity`, `--subject-class` and `--subject-id`. Exit codes are
-0 for resolved, 1 for unresolved lookup, and 2 for invalid input/arguments.
+0 for resolved with complete supplied-scope relations, 1 for unresolved lookup
+or incomplete relations, and 2 for invalid input/arguments.
 
 Identity combines workspace and local subject ID; class validates the record.
 `dataset_identity` declares replicas, without establishing trust. Independent
@@ -120,6 +121,23 @@ Exact lookup never falls back to current or reconstructs missing history.
 Results expose `current_subject_disposition` with provenance separately from
 exact content, and `retained_containment_history` without invented revisions.
 Authored relations preserve full endpoints and roles in both query directions.
+Every returned relation retains `source.workspace_identity` and
+`source.dataset_identity`; the stable relation key combines source workspace and
+local relation ID. `relation_resolution` exposes `complete`/`incomplete` and the
+conflicting sources within `supplied_snapshots`. Resolved subject content does
+not establish complete lineage. Unrelated source conflicts do not taint a query.
+One dataset declaring multiple workspaces makes every affected scope ambiguous.
+Unordered reference/endpoint collections are normalized for replica comparison.
+`retained_disposition_transitions` preserves supplied activation/withdrawal
+events and provenance. Duplicate event references and a retained basis event
+contradicting the current projection are rejected. Presentation order never
+selects the current state or asserts event chronology/as-of history.
+
+Each Requirement revision preserves its own `acceptance_criteria_refs` collection
+with exact criterion pins. Link membership or pin changes require a new governed
+Requirement revision. Exact lookup never substitutes current links; a criterion
+move does not rewrite ownership automatically. Historical collections remain
+readable after the affected Requirements acquire new revision-specific links.
 
 `subject_legacy_reads.parse_compatibility_document` inventories candidate-local
 records and unassigned legacy acceptance strings. It preserves source scopes,
@@ -148,3 +166,9 @@ callers cannot bypass CLI checks. Frozen dataclasses need immutable nested
 collections as well. Test cross-workspace incoming relations, declared replica
 coalescing and retained history explicitly; a successful selected lookup alone
 does not prove those projections are complete.
+
+When querying across namespaces, carry the source binding of relationship
+records as well as endpoint identities. Distinguish incomplete enumeration from
+an empty complete result. Define which references belong to a content revision
+before describing lookup as historical; test changing those links independently
+of the statement. These are contract invariants, not presentation details.

@@ -12,7 +12,7 @@ import pytest
 TOOLS = Path(__file__).resolve().parents[1] / "tools"
 sys.path.insert(0, str(TOOLS))
 
-from subject_read_model import SubjectClass, SubjectRef  # noqa: E402
+from subject_read_model import RelationSource, SubjectClass, SubjectRef  # noqa: E402
 from subject_read_model_io import (  # noqa: E402
     SubjectDocumentError,
     lookup_payload,
@@ -71,8 +71,9 @@ def test_scope_class_and_missing_identity_are_explicit() -> None:
     second["dataset_identity"] = "independent-b"
     for subject in second["subjects"]:
         subject["reference"]["workspace_identity"] = "workspace-b"
-        for selection in subject["acceptance_criteria_refs"]:
-            selection["subject"]["workspace_identity"] = "workspace-b"
+        for revision in subject["revisions"]:
+            for selection in revision["acceptance_criteria_refs"]:
+                selection["subject"]["workspace_identity"] = "workspace-b"
     data["workspaces"].append(second)
     index = parse_subject_index(data)
     assert index.lookup_current(ref(workspace="workspace-b")).status == "resolved"
@@ -234,8 +235,9 @@ def test_cross_workspace_relation_enumeration_coalesces_only_declared_replicas()
     other["dataset_identity"] = "source-c"
     for subject in other["subjects"]:
         subject["reference"]["workspace_identity"] = "workspace-c"
-        for selection in subject["acceptance_criteria_refs"]:
-            selection["subject"]["workspace_identity"] = "workspace-c"
+        for revision in subject["revisions"]:
+            for selection in revision["acceptance_criteria_refs"]:
+                selection["subject"]["workspace_identity"] = "workspace-c"
     other["relations"][0]["endpoints"][0]["selection"]["subject"]["workspace_identity"] = (
         "workspace-c"
     )
@@ -342,3 +344,256 @@ def test_exact_result_exposes_retained_containment_history_without_fabricating_g
         (1, "spec-a"),
         (3, "spec-b"),
     ]
+
+
+@pytest.mark.parametrize("independent_dataset", [True, False])
+def test_ambiguous_relation_source_reports_incomplete_enumeration(
+    independent_dataset: bool,
+) -> None:
+    data = cross_workspace_snapshot()
+    request = ref("AC-2", workspace="workspace-b")
+    healthy = parse_subject_index(data).lookup_exact(request, 1)
+    assert len(healthy.relations) == 1
+    conflict = copy.deepcopy(data["workspaces"][0])
+    if independent_dataset:
+        conflict["dataset_identity"] = "independent-fork"
+    else:
+        conflict["relations"] = []
+    data["workspaces"].append(conflict)
+    result = parse_subject_index(data).lookup_exact(request, 1)
+    assert result.status == "resolved"
+    assert result.selected_revision == healthy.selected_revision
+    assert result.relations == ()  # Disputed records are not promoted as true.
+    projection = lookup_payload(result)["resolved"]["relation_resolution"]
+    assert projection == {
+        "status": "incomplete",
+        "scope": "supplied_snapshots",
+        "conflicts": [
+            {
+                "workspace_identity": "workspace-a",
+                "dataset_identities": (
+                    ("independent-fork", "source-a") if independent_dataset else ("source-a",)
+                ),
+                "reason": "ambiguous_workspace_identity",
+            }
+        ],
+    }
+    data["workspaces"].reverse()
+    assert parse_subject_index(data).lookup_exact(request, 1) == result
+
+
+def test_unrelated_workspace_conflict_does_not_imply_missing_relations() -> None:
+    data = cross_workspace_snapshot()
+    data["workspaces"][0]["relations"] = []
+    conflict = copy.deepcopy(data["workspaces"][0])
+    conflict["dataset_identity"] = "independent-fork"
+    data["workspaces"].append(conflict)
+    result = parse_subject_index(data).lookup_current(ref("AC-2", workspace="workspace-b"))
+    assert result.status == "resolved"
+    assert lookup_payload(result)["resolved"]["relation_resolution"] == {
+        "status": "complete",
+        "scope": "supplied_snapshots",
+        "conflicts": [],
+    }
+
+
+def test_relation_source_scope_survives_identical_cross_workspace_records() -> None:
+    data = cross_workspace_snapshot()
+    data["workspaces"].append(
+        {
+            "workspace_identity": "workspace-c",
+            "dataset_identity": "source-c",
+            "subjects": [],
+            "relations": copy.deepcopy(data["workspaces"][0]["relations"]),
+        }
+    )
+    index = parse_subject_index(data)
+    result = index.lookup_current(ref("AC-2", workspace="workspace-b"))
+    payloads = lookup_payload(result)["resolved"]["authored_relations"]
+    assert len(payloads) == 2
+    assert [p["source"] for p in payloads] == [
+        {"workspace_identity": "workspace-a", "dataset_identity": "source-a"},
+        {"workspace_identity": "workspace-c", "dataset_identity": "source-c"},
+    ]
+    assert payloads[0] != payloads[1]
+    assert {p["relation_id"] for p in payloads} == {"relation-1"}
+    assert payloads[0]["endpoints"] == payloads[1]["endpoints"]
+    workspace = index.snapshots[0]
+    bad_relation = replace(workspace.relations[0], source=RelationSource("other", "source-a"))
+    with pytest.raises(ValueError, match="relation source must match"):
+        replace(workspace, relations=(bad_relation,))
+
+
+def test_requirement_revision_preserves_acceptance_pins_across_criterion_move() -> None:
+    data = snapshot()
+    requirement = data["workspaces"][0]["subjects"][0]
+    request = ref("REQ-1", kind="Requirement")
+    before = parse_subject_index(data).lookup_exact(request, 1)
+    new_revision = copy.deepcopy(requirement["revisions"][0])
+    new_revision.update(number=2, predecessor=1, provenance="review:new-acceptance-link")
+    new_revision["acceptance_criteria_refs"][0]["revision"] = 3
+    requirement["revisions"].append(new_revision)
+    requirement["current_revision"] = 2
+    index = parse_subject_index(data)
+    old = index.lookup_exact(request, 1)
+    current = index.lookup_current(request)
+    assert old.selected_revision == before.selected_revision
+    assert old.selected_revision.acceptance_criteria_refs[0].revision == 1
+    assert current.selected_revision.acceptance_criteria_refs[0].revision == 3
+    assert lookup_payload(old)["resolved"]["acceptance_criteria_refs"][0]["revision"] == 1
+    assert lookup_payload(current)["resolved"]["acceptance_criteria_refs"][0]["revision"] == 3
+    assert index.lookup_exact(ref(), 1).selected_revision.containment == "spec-a"
+    assert index.lookup_exact(ref(), 3).selected_revision.containment == "spec-b"
+
+
+def test_acceptance_links_require_exact_criterion_pins_and_validate_retained_history() -> None:
+    data = snapshot()
+    requirement = data["workspaces"][0]["subjects"][0]
+    selection = requirement["revisions"][0]["acceptance_criteria_refs"][0]
+    selection.update(mode="current", revision=None)
+    with pytest.raises(SubjectDocumentError, match="pin exact criterion"):
+        parse_subject_index(data)
+    selection.update(mode="exact", revision=2)
+    with pytest.raises(SubjectDocumentError, match="unavailable_revision"):
+        parse_subject_index(data)
+    selection["revision"] = 1
+    selection["subject"]["subject_class"] = "Requirement"
+    with pytest.raises(SubjectDocumentError, match="pin exact criterion"):
+        parse_subject_index(data)
+
+
+def test_obsolete_record_level_acceptance_links_are_not_assigned_to_history() -> None:
+    data = snapshot()
+    requirement = data["workspaces"][0]["subjects"][0]
+    requirement["acceptance_criteria_refs"] = requirement["revisions"][0].pop(
+        "acceptance_criteria_refs"
+    )
+    with pytest.raises(SubjectDocumentError, match="unknown fields"):
+        parse_subject_index(data)
+
+
+def test_cli_incomplete_relations_exit_nonzero_with_resolved_content(
+    tmp_path: Path, capsys
+) -> None:
+    data = cross_workspace_snapshot()
+    conflict = copy.deepcopy(data["workspaces"][0])
+    conflict["dataset_identity"] = "independent-fork"
+    data["workspaces"].append(conflict)
+    source = json.dumps(data)
+    path = tmp_path / "conflict.json"
+    path.write_text(source)
+    code = main(
+        [
+            "--snapshot",
+            str(path),
+            "--workspace-identity",
+            "workspace-b",
+            "--subject-class",
+            "criterion",
+            "--subject-id",
+            "AC-2",
+            "--revision",
+            "1",
+        ]
+    )
+    payload = json.loads(capsys.readouterr().out)
+    assert code == 1
+    assert payload["status"] == "resolved"
+    assert payload["resolved"]["revision"]["number"] == 1
+    assert payload["resolved"]["relation_resolution"]["status"] == "incomplete"
+    assert path.read_text() == source
+
+
+def test_replicas_coalesce_when_acceptance_reference_order_differs() -> None:
+    data = related_snapshot()
+    source = data["workspaces"][0]
+    refs = source["subjects"][0]["revisions"][0]["acceptance_criteria_refs"]
+    second = copy.deepcopy(refs[0])
+    second["subject"]["local_subject_id"] = "AC-2"
+    refs.append(second)
+    replica = copy.deepcopy(source)
+    replica["subjects"][0]["revisions"][0]["acceptance_criteria_refs"].reverse()
+    data["workspaces"].append(replica)
+    index = parse_subject_index(data)
+    assert index.lookup_current(ref("REQ-1", kind="Requirement")).status == "resolved"
+    revision = index.snapshots[0].subjects[0].revisions[0]
+    assert (
+        replace(
+            revision, acceptance_criteria_refs=tuple(reversed(revision.acceptance_criteria_refs))
+        )
+        == revision
+    )
+
+
+def test_typed_replica_values_normalize_revision_and_endpoint_order() -> None:
+    workspace = parse_subject_index(related_snapshot()).snapshots[0]
+    criterion = workspace.subjects[1]
+    assert replace(criterion, revisions=tuple(reversed(criterion.revisions))) == criterion
+    relation_value = workspace.relations[0]
+    assert (
+        replace(relation_value, endpoints=tuple(reversed(relation_value.endpoints)))
+        == relation_value
+    )
+
+
+def test_one_dataset_cannot_declare_multiple_workspace_identities() -> None:
+    data = cross_workspace_snapshot()
+    data["workspaces"][1]["dataset_identity"] = "source-a"
+    index = parse_subject_index(data)
+    assert index.lookup_current(ref()).status == "ambiguous_workspace_identity"
+    assert index.lookup_current(ref("AC-2", workspace="workspace-b")).status == (
+        "ambiguous_workspace_identity"
+    )
+    data["workspaces"].reverse()
+    assert parse_subject_index(data).lookup_exact(ref(), 1).status == "ambiguous_workspace_identity"
+
+
+def test_disposition_history_is_retained_without_inferring_current_or_as_of_state() -> None:
+    data = snapshot()
+    record = data["workspaces"][0]["subjects"][1]
+    events = [
+        {"event_ref": "z-activation", "transition": "activation", "provenance": "review:1"},
+        {"event_ref": "a-withdrawal", "transition": "withdrawal", "provenance": "review:2"},
+        {"event_ref": "m-reactivation", "transition": "activation", "provenance": "review:3"},
+    ]
+    record["retained_disposition_transitions"] = events
+    record["current_disposition"] = {
+        "state": "active",
+        "basis_ref": "m-reactivation",
+        "observation_provenance": "obs:3",
+    }
+    index = parse_subject_index(data)
+    result = index.lookup_exact(ref(), 1)
+    payload = lookup_payload(result)["resolved"]
+    assert payload["current_subject_disposition"]["basis_ref"] == "m-reactivation"
+    assert {e["event_ref"] for e in payload["retained_disposition_transitions"]} == {
+        e["event_ref"] for e in events
+    }
+    replica = copy.deepcopy(data["workspaces"][0])
+    replica["subjects"][1]["retained_disposition_transitions"].reverse()
+    data["workspaces"].append(replica)
+    assert parse_subject_index(data).lookup_exact(ref(), 1) == result
+    with pytest.raises(FrozenInstanceError):
+        result.record.retained_disposition_transitions[0].provenance = "changed"
+    with pytest.raises(ValueError, match="immutable tuple"):
+        replace(
+            result.record,
+            retained_disposition_transitions=list(result.record.retained_disposition_transitions),
+        )
+
+
+def test_disposition_history_rejects_duplicate_and_contradictory_basis_events() -> None:
+    data = snapshot()
+    record = data["workspaces"][0]["subjects"][1]
+    event = {
+        "event_ref": record["current_disposition"]["basis_ref"],
+        "transition": "withdrawal",
+        "provenance": "review:withdrawal",
+    }
+    record["retained_disposition_transitions"] = [event]
+    with pytest.raises(SubjectDocumentError, match="contradicts its retained basis"):
+        parse_subject_index(data)
+    event["transition"] = "activation"
+    record["retained_disposition_transitions"].append(copy.deepcopy(event))
+    with pytest.raises(SubjectDocumentError, match="duplicate disposition event_ref"):
+        parse_subject_index(data)

@@ -19,7 +19,18 @@
               "predecessor": null,
               "statement": "An explicit requirement",
               "containment": "spec-a",
-              "provenance": "review:revision-1"
+              "provenance": "review:revision-1",
+              "acceptance_criteria_refs": [
+                {
+                  "subject": {
+                    "workspace_identity": "workspace-a",
+                    "subject_class": "criterion",
+                    "local_subject_id": "AC-1"
+                  },
+                  "mode": "exact",
+                  "revision": 1
+                }
+              ]
             }
           ],
           "current_disposition": {
@@ -28,16 +39,7 @@
             "observation_provenance": "fixture:reviewed-observation"
           },
           "canonical_presence": "active",
-          "acceptance_criteria_refs": [
-            {
-              "subject": {
-                "workspace_identity": "workspace-a",
-                "subject_class": "criterion",
-                "local_subject_id": "AC-1"
-              },
-              "mode": "current"
-            }
-          ]
+          "retained_disposition_transitions": []
         },
         {
           "reference": {
@@ -52,14 +54,16 @@
               "predecessor": null,
               "statement": "Original criterion",
               "containment": "spec-a",
-              "provenance": "review:revision-1"
+              "provenance": "review:revision-1",
+              "acceptance_criteria_refs": []
             },
             {
               "number": 3,
               "predecessor": 2,
               "statement": "Moved criterion",
               "containment": "spec-b",
-              "provenance": "review:revision-3"
+              "provenance": "review:revision-3",
+              "acceptance_criteria_refs": []
             }
           ],
           "current_disposition": {
@@ -68,7 +72,7 @@
             "observation_provenance": "fixture:reviewed-observation"
           },
           "canonical_presence": null,
-          "acceptance_criteria_refs": []
+          "retained_disposition_transitions": []
         }
       ],
       "relations": []
