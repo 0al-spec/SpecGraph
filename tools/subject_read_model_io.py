@@ -59,6 +59,18 @@ def _list(value: object) -> list:
     return value
 
 
+def _require_string_trace_keys(value: object) -> None:
+    """Reject YAML keys that JSON would rewrite, including in nested trace data."""
+    if isinstance(value, Mapping):
+        if any(not isinstance(key, str) for key in value):
+            raise SubjectDocumentError("trace_context mappings must use string keys")
+        for item in value.values():
+            _require_string_trace_keys(item)
+    elif isinstance(value, (list, tuple)):
+        for item in value:
+            _require_string_trace_keys(item)
+
+
 def parse_subject_ref(value: object) -> SubjectRef:
     data = _object(value, {"workspace_identity", "subject_class", "local_subject_id"})
     return SubjectRef(
@@ -116,6 +128,7 @@ def parse_node_fields(value: object) -> RequirementNodeFields | CriterionNodeFie
         sorted(set(provenance) - {"actor_id", "authority_class", "recorded_at"})
     )
     if "trace_context" in provenance:
+        _require_string_trace_keys(provenance["trace_context"])
         provenance["trace_context_json"] = json.dumps(
             provenance.pop("trace_context"), sort_keys=True, ensure_ascii=False, allow_nan=False
         )

@@ -511,6 +511,39 @@ def test_optional_provenance_nulls_and_nested_trace_are_retained_without_inventi
     assert "trace_context" not in old["node_fields"]["provenance"]
 
 
+@pytest.mark.parametrize(
+    "placement", ["current", "retained_current", "retained_history", "current_and_retained"]
+)
+@pytest.mark.parametrize(
+    "trace_context",
+    [
+        {1: "value"},
+        {True: "value"},
+        {None: "value"},
+        {1.5: "value"},
+        {"nested": {1: "value"}},
+        {"steps": [{1: "value"}]},
+        {1: "numeric", "1": "string"},
+    ],
+)
+def test_non_string_trace_keys_are_rejected_before_json_encoding(
+    source, placement, trace_context
+) -> None:
+    root, topology = source
+    document = get(root, REQ_PATH)
+    if placement in {"current", "current_and_retained"}:
+        provenance = document["provenance"]
+    else:
+        number = 1 if placement == "retained_current" else 0
+        provenance = document["revisions"][number]["node_fields"]["provenance"]
+    provenance["trace_context"] = trace_context
+    if placement == "current_and_retained":
+        document["revisions"][1]["node_fields"]["provenance"]["trace_context"] = trace_context
+    put(root, REQ_PATH, document)
+    with pytest.raises(SubjectDocumentError, match="trace_context.*string keys"):
+        read_canonical_source(root, topology)
+
+
 @pytest.mark.parametrize("change", ["content", "namespace"])
 def test_source_changes_during_read_fail_closed(source, monkeypatch, change) -> None:
     root, topology = source
