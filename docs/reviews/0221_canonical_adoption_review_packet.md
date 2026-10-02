@@ -15,8 +15,8 @@ and a first implementation slice. It remains review-only and does not adopt
 the contract or authorize source-data migration.
 
 The [canonical contract approval packet](0221_canonical_contract_approval.md)
-now proposes SG-SPEC-0068 as a bounded child for explicit human review. Its
-preparation does not adopt the contract or authorize implementation.
+records human approval of the bounded SG-SPEC-0068 semantic child on 2026-10-02,
+pending merge. That decision does not authorize runtime implementation or migration.
 
 ## Decision Requested
 

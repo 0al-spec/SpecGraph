@@ -2,18 +2,34 @@
 
 ## Status
 
-Status: pending human approval. This PR proposes [SG-SPEC-0068](../../specs/nodes/SG-SPEC-0068.yaml)
-as one child refinement of frozen SG-SPEC-0019. Its `outlined` status records
-preparation, not adoption, review completion or runtime readiness. No approval
-receipt, supervisor gate decision or runtime conformance is fabricated.
+Human approved the bounded semantic contract in the current Codex conversation
+on 2026-10-02 with the message “Одобряю”, after delivery of PR #747 at head
+`9be7e294c52c0ae1fac40f61ac285fd1ee8e3fc6`. This is the actual approval source,
+not a GitHub review submitted on behalf of the human.
 
-The human authorized preparation of this diff. Review must explicitly approve,
-amend, reject or defer the bounded contract before merge. Merely creating the
-file, passing checks or producing the earlier supervisor candidate is not approval.
+[SG-SPEC-0068](../../specs/nodes/SG-SPEC-0068.yaml) now records
+`human_approved_pending_merge`, `status: specified`, and the decision provenance.
+Its previous state was pending human approval. The approval gate is cleared
+only after recording that decision. Neither lifecycle status nor semantic
+approval establishes runtime readiness; `runtime_conformance` is `not_implemented`.
+Merge, implementation, storage and migration authorization remain separate.
 
-## Decision to review
+## Review corrections recorded with approval
 
-| Concern | Proposed semantic contract |
+- Pending contracts use `review_pending`; a read-only operational check confirmed
+  this node appeared in both the review queue and pending gate actions before
+  the human decision was recorded and resolved.
+- Exact content selection returns revision-specific content and containment,
+  plus explicitly labelled current_subject_disposition with observed event or
+  origin and observation provenance. This current projection may change after
+  withdrawal without changing historical content. An as-of disposition contract
+  is deferred rather than guessed from a content revision.
+- Promotion scope now names the bounded SG-SPEC-0068 child preparation and
+  semantic approval instead of forbidding the canonical artifact it tracks.
+
+## Approved semantic scope
+
+| Concern | Bounded semantic contract |
 | --- | --- |
 | Identity | Immutable governed workspace identity plus unique local subject ID; class validates the record, not a second ID namespace |
 | Criterion | Independently addressable subject associated with its Requirement through authored acceptance_criteria_refs; no new seed node kind |
@@ -43,17 +59,15 @@ After approval, the first implementation slice is read-only typed parsing and
 validation over fixtures. It cannot allocate identities, mutate source records,
 apply migration or claim complete runtime conformance.
 
-## Recording approval
+## Approval and remaining delivery steps
 
-1. Human reviews this PR's exact contract diff and records explicit approval
-   of SG-SPEC-0068 as the bounded RFC 0221 child; rejects or defers are valid.
-2. In the same PR, record the actual approval reference and bounded scope,
-   remove the pending adoption marker, and update proposal tracking to reflect
-   only the approved semantic slice. Do not invent a receipt in advance.
-3. Recheck YAML, graph linkage, parent immutability, spec evidence and tracking
-   gates, then merge only after user authorization and final-head checks.
-4. Open the separate read-model implementation PR. Schema and migration remain
-   deferred; semantic approval is not authorization to rewrite existing data.
+1. Human semantic approval is recorded in this packet and the node, with the
+   reviewed commit, exact source quote and recorded timestamp.
+2. Proposal tracking reflects the approved semantic slice with runtime follow-up
+   still unimplemented. The frozen parent and earlier run evidence are unchanged.
+3. Merge remains a separate action after user authorization and final-head checks.
+4. The next proposed task is read-only typed parsing/validation over fixtures.
+   Source migration, writer changes and physical schema decisions remain deferred.
 
 ## Preparation evidence
 

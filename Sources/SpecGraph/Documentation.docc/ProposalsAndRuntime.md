@@ -91,14 +91,16 @@ record corrections as curation, not as evidence verified by the original run.
 
 ## RFC 0221 canonical contract review
 
-SG-SPEC-0068 is the outlined RFC 0221 child candidate, pending human approval.
+SG-SPEC-0068 was pending human approval; the human approved its bounded semantic
+contract on 2026-10-02. It is now specified and human_approved_pending_merge.
 The approval packet is `docs/reviews/0221_canonical_contract_approval.md`.
 It proposes workspace-scoped subject identity, revisions, transitions and exact
 lookup while preserving frozen SG-SPEC-0019 and its one-to-one canonical
-supersession contract. Preparation and passed checks are not adoption.
+supersession contract. Preparation and passed checks alone are not adoption; the actual human approval
+source and reviewed commit are recorded in the packet and node.
 
-Review must record explicit human approval of the exact bounded contract before
-merge. Storage, allocator, physical history and source migration remain deferred.
+Human approval is recorded; merge remains a separate authorized action.
+Storage, allocator, physical history and source migration remain deferred.
 Read-model implementation follows separately; no runtime conformance is claimed.
 
 ### Canonical approval gates and lookup projections
