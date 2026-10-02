@@ -2,7 +2,9 @@
 
 from __future__ import annotations
 
+import json
 from dataclasses import dataclass
+from datetime import datetime
 from enum import Enum
 
 
@@ -57,6 +59,101 @@ class RevisionSelection:
 
 
 @dataclass(frozen=True)
+class NodeProvenance:
+    """Revision-specific SG-SPEC-0024 attribution; trace JSON is stored immutably."""
+
+    actor_id: str
+    authority_class: str
+    recorded_at: str
+    source_ref: str | None = None
+    source_system: str | None = None
+    source_confidence: str | None = None
+    notes: str | None = None
+    trace_context_json: str | None = None
+    present_optional_fields: tuple[str, ...] | None = None
+
+    def __post_init__(self) -> None:
+        if self.present_optional_fields is None:
+            supplied = [
+                field
+                for field in ("source_ref", "source_system", "source_confidence", "notes")
+                if getattr(self, field) is not None
+            ]
+            if self.trace_context_json is not None:
+                supplied.append("trace_context")
+            object.__setattr__(self, "present_optional_fields", tuple(sorted(supplied)))
+        if self.present_optional_fields is not None:
+            require_tuple(self.present_optional_fields, "present_optional_fields")
+            if len(self.present_optional_fields) != len(set(self.present_optional_fields)) or set(
+                self.present_optional_fields
+            ) - {"source_ref", "source_system", "source_confidence", "notes", "trace_context"}:
+                raise ValueError("invalid retained optional provenance fields")
+        require_text(self.actor_id, "provenance.actor_id")
+        require_text(self.recorded_at, "provenance.recorded_at")
+        if datetime.fromisoformat(self.recorded_at.replace("Z", "+00:00")).tzinfo is None:
+            raise ValueError("provenance.recorded_at must include a timezone")
+        if self.authority_class not in {"authored", "imported", "inferred", "distilled"}:
+            raise ValueError("invalid provenance.authority_class")
+        for field in ("source_ref", "source_system", "notes"):
+            value = getattr(self, field)
+            if value is not None:
+                require_text(value, f"provenance.{field}")
+        if self.authority_class in {"imported", "inferred"}:
+            require_text(self.source_ref, "provenance.source_ref")
+        if self.source_confidence is not None and self.source_confidence not in {
+            "low",
+            "medium",
+            "high",
+        }:
+            raise ValueError("invalid provenance.source_confidence")
+        if self.authority_class == "inferred" and self.source_confidence is None:
+            raise ValueError("inferred provenance requires source_confidence")
+        if self.trace_context_json is not None:
+            require_text(self.trace_context_json, "trace_context_json")
+            value = json.loads(self.trace_context_json)
+            encoded = json.dumps(value, sort_keys=True, ensure_ascii=False, allow_nan=False)
+            if encoded != self.trace_context_json:
+                raise ValueError("trace_context_json must use canonical JSON encoding")
+
+
+@dataclass(frozen=True)
+class CriterionNodeFields:
+    title: str
+
+    def __post_init__(self) -> None:
+        require_text(self.title, "node_fields.title")
+
+
+@dataclass(frozen=True)
+class RequirementNodeFields:
+    title: str
+    status: str
+    authority_class: str
+    source_ref: str | None
+    provenance: NodeProvenance
+
+    def __post_init__(self) -> None:
+        require_text(self.title, "node_fields.title")
+        if self.status not in {
+            "idea",
+            "stub",
+            "outlined",
+            "specified",
+            "linked",
+            "reviewed",
+            "frozen",
+        }:
+            raise ValueError("invalid Requirement lifecycle status")
+        if not isinstance(self.provenance, NodeProvenance):
+            raise ValueError("Requirement needs typed node provenance")
+        if (self.authority_class, self.source_ref) != (
+            self.provenance.authority_class,
+            self.provenance.source_ref,
+        ):
+            raise ValueError("Requirement metadata disagrees with its provenance envelope")
+
+
+@dataclass(frozen=True)
 class SubjectRevision:
     number: int
     predecessor: int | None
@@ -64,6 +161,8 @@ class SubjectRevision:
     containment: str
     provenance: str
     acceptance_criteria_refs: tuple[RevisionSelection, ...] = ()
+    node_fields: RequirementNodeFields | CriterionNodeFields | None = None
+    revision_scope: str | None = None
 
     def __post_init__(self) -> None:
         require_revision(self.number)
@@ -76,6 +175,12 @@ class SubjectRevision:
                 raise ValueError("revision must name its immediate same-identity predecessor")
         for label in ("statement", "containment", "provenance"):
             require_text(getattr(self, label), label)
+        if self.node_fields is not None:
+            if not isinstance(self.node_fields, (RequirementNodeFields, CriterionNodeFields)):
+                raise ValueError("node_fields must be immutable typed revision metadata")
+            require_text(self.revision_scope, "revision_scope")
+        elif self.revision_scope is not None:
+            raise ValueError("revision_scope requires retained node_fields")
         require_tuple(self.acceptance_criteria_refs, "acceptance_criteria_refs")
         if any(
             r.subject.subject_class != SubjectClass.CRITERION or r.mode != "exact"
@@ -186,6 +291,7 @@ class SubjectRecord:
     current_disposition: CurrentSubjectDisposition
     canonical_presence: str | None
     retained_disposition_transitions: tuple[DispositionTransition, ...] = ()
+    retained_disposition_order: tuple[str, ...] | None = None
 
     def __post_init__(self) -> None:
         require_tuple(self.revisions, "revisions")
@@ -199,6 +305,17 @@ class SubjectRecord:
             for event in events
         ):
             raise ValueError("current disposition contradicts its retained basis event")
+        if self.retained_disposition_order is not None:
+            require_tuple(self.retained_disposition_order, "retained_disposition_order")
+            order = self.retained_disposition_order
+            if (
+                not order
+                or len(order) != len(set(order))
+                or set(order) != {event.event_ref for event in events}
+            ):
+                raise ValueError("retained_disposition_order must cover every event exactly once")
+            if order[-1] != self.current_disposition.basis_ref:
+                raise ValueError("current disposition must select the last authored event")
         # Canonical presentation order is not event chronology or current-state selection.
         object.__setattr__(
             self,
@@ -215,6 +332,8 @@ class SubjectRecord:
                 "current_revision must identify the latest explicitly retained revision"
             )
         if self.reference.subject_class == SubjectClass.REQUIREMENT:
+            if any(isinstance(r.node_fields, CriterionNodeFields) for r in self.revisions):
+                raise ValueError("Requirement cannot retain criterion node_fields")
             if self.canonical_presence not in {"active", "historical_lineage_only"}:
                 raise ValueError("Requirement must state canonical presence")
         elif self.canonical_presence is not None or any(
@@ -223,6 +342,15 @@ class SubjectRecord:
             raise ValueError(
                 "criterion cannot declare canonical presence or own acceptance criteria"
             )
+        elif any(isinstance(r.node_fields, RequirementNodeFields) for r in self.revisions):
+            raise ValueError("criterion cannot retain Requirement node_fields")
+
+    @property
+    def disposition_history(self) -> tuple[DispositionTransition, ...]:
+        if self.retained_disposition_order is None:
+            return self.retained_disposition_transitions
+        events = {event.event_ref: event for event in self.retained_disposition_transitions}
+        return tuple(events[reference] for reference in self.retained_disposition_order)
 
 
 @dataclass(frozen=True)
