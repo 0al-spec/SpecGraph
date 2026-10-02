@@ -1,0 +1,625 @@
+schema_version: 1
+artifact_kind: rfc0221_subject_storage_approval_packet
+created_at: '2026-10-02T15:35:43Z'
+updated_at: '2026-10-02T15:40:45Z'
+prepared_at: '2026-10-02T15:35:43Z'
+authority: agent_prepared_for_human_review
+preparation_authorization:
+  source: Current Codex conversation on 2026-10-02
+  source_quote: Ок, готовь схему
+  scope: Prepare the corrected physical-schema and 3 plus 1 mapping approval packet.
+source_lane: SpecDraft
+gate_state: review_pending
+canonical_adoption: false
+canonical_mutations_allowed: false
+canonical_readiness: not_evaluated
+ready_for_materialization: false
+approval_scope:
+  reviewed_commit: ca3967e6b9d1b196c901ff6fcb0f77b7a98ecfc7
+  reviewed_pull_request: https://github.com/0al-spec/SpecGraph/pull/751
+  reviewed_file_sha256:
+    specs/nodes/SG-SPEC-0069.yaml: 4e8820180dbe3d424c1f6ab3dae966250ef1b60ff9ff09aab36793597c0eefa3
+    docs/reviews/0221_subject_storage/manifest.yaml: 37def36bbc78ce78c026602f3f90d37fb4989201da2eb9ef2610fc8e98be2f96
+    docs/reviews/0221_requirement_mapping_review.json: e77d78cd15bf58b6820af41fb0b8842c9a23d64330a1b248577d348c8ed983c4
+    docs/reviews/0221_subject_storage/workspace_identity.yaml: d5a99ab533da5e3568601fb2d9c9934aeb3044dd5770c6bd442fd761a80b783b
+    docs/reviews/0221_subject_storage/req.repaired-candidate-review-readiness.yaml: 9c1e492bded55c9432ca0ed8106ff285e59364c6f80666ba5980d2c05d9ad4bf
+    docs/reviews/0221_subject_storage/req.platform-promotion-approval-boundary.yaml: e73e5a6125dab67b2292b143fbf98eb980f9cd96a9f9cb5314473afd4214b66e
+    docs/reviews/0221_subject_storage/ac.clean-noop.yaml: fb57d2ac6c61333a6b202a5272a9480a046c237e93ec95eafad2bf7ad44fa212
+    docs/reviews/0221_subject_storage/ac.repaired-preview.yaml: dcd77117dad3261b4bdf61e92330f853d3f9004070037f72e62f2124fb683467
+    docs/reviews/0221_subject_storage/ac.unresolved-gaps.yaml: 2121814bc269271e2e5fd6a4d0884a6c5251eed084fcfc7f5b26fa9a1f6cdf4b
+    docs/reviews/0221_subject_storage/ac.approval-boundary.yaml: e3869c3e2530f82b175ad7a53aa6ad0f787c0d65fe18bf870d9370de125c9e7c
+  physical_schema:
+    spec_id: SG-SPEC-0069
+    path: specs/nodes/SG-SPEC-0069.yaml
+    schema_version: 1
+    governing_specs:
+    - SG-SPEC-0001
+    - SG-SPEC-0019
+    - SG-SPEC-0024
+    - SG-SPEC-0051
+    - SG-SPEC-0068
+    storage_layout:
+      schema_version: 1
+      format: Strict YAML mappings with duplicate keys rejected and repository canonical formatting.
+      workspace_declaration: specs/workspace_identity.yaml
+      requirement_nodes: specs/requirements/<optional grouping directories>/<local_subject_id>.yaml; the
+        first candidates use no grouping directory.
+      criterion_records: specs/criteria/<optional grouping directories>/<local_subject_id>.yaml; the first
+        candidates use no grouping directory.
+      history_placement: Retained content revisions and disposition events are inline in each subject
+        record; no separate mutable current-content file is authoritative.
+      local_id_convention: Case-sensitive ASCII IDs matching [A-Za-z0-9][A-Za-z0-9._-]*, excluding the
+        exact names dot and dot-dot. References retain exact spelling; portable allocation checks are
+        separate from logical identity.
+      portable_namespace:
+        collision_key: ASCII lowercase of local_subject_id
+        scope: Entire declared workspace, across Requirement and criterion classes, grouping directories,
+          retained history and active or retired disposition.
+        conflict_action: Reject distinct exact IDs with the same collision key before allocation or publication
+          and during whole-tree source validation; never coalesce, rename or overwrite them.
+        grouping_directories: Optional grouping components use lowercase ASCII matching [a-z0-9][a-z0-9._-]*;
+          dot and dot-dot are forbidden. Grouping does not create another identity namespace.
+        examples:
+        - local_ids:
+          - REQ.A
+          - req.a
+          outcome: reject_portable_collision
+        - local_ids:
+          - req.a
+          - ac.a
+          outcome: no_portable_collision
+      namespace: All Requirement and criterion local IDs share one workspace-local namespace. The req.
+        and ac. prefixes are conventions, not separate collision scopes.
+      workspace_identity_convention: workspace:<lowercase UUID>; the reviewed declaration is persisted
+        once and retained by replicas. A directory, repository remote or Git commit does not declare identity.
+      allocation: Explicit reviewed allocation only. Ordinary reads and validation allocate nothing. The
+        workspace UUID and local IDs in the examples are unreserved review tokens.
+      dataset_binding: A canonical-source adapter receives an explicit selected source root and dataset_identity.
+        Dataset binding is preserved when exporting a read snapshot; it is not derived from a mutable
+        repository name.
+    document_shapes:
+      workspace_declaration:
+        artifact_kind: subject_workspace_declaration
+        required_fields:
+        - schema_version
+        - artifact_kind
+        - workspace_identity
+        - provenance
+        provenance: Required non-empty reference to the genuine workspace declaration decision; a preparation
+          reference does not authorize allocation.
+      requirement_node:
+        artifact_kind: requirement_node
+        required_fields:
+        - schema_version
+        - artifact_kind
+        - id
+        - title
+        - kind
+        - status
+        - authority_class
+        - source_ref
+        - provenance
+        - subject
+        - current_revision
+        - revisions
+        - current_disposition
+        - retained_disposition_transitions
+        invariants:
+        - kind is requirement; subject.subject_class is Requirement; id equals subject.local_subject_id.
+        - subject.workspace_identity equals the selected workspace declaration.
+        - The required SG-SPEC-0001 node fields and SG-SPEC-0024 provenance envelope are preserved. Current
+          title, status, authority_class, source_ref and provenance must equal the selected revision node_fields
+          projection.
+        - This node owns its revision-specific acceptance_criteria_refs; it is not embedded in a kind
+          spec node.
+      node_provenance:
+        governing_contract: SG-SPEC-0024
+        required_fields:
+        - actor_id
+        - authority_class
+        - recorded_at
+        optional_fields:
+        - source_ref
+        - source_system
+        - source_confidence
+        - notes
+        - trace_context
+        conditional_required_fields:
+          imported:
+          - source_ref
+          inferred:
+          - source_ref
+          - source_confidence
+        authority_classes:
+        - authored
+        - imported
+        - inferred
+        - distilled
+        source_confidence_values:
+        - low
+        - medium
+        - high
+        rules:
+        - actor_id is non-empty and recorded_at is a timestamp attributable to the actual creation or
+          update.
+        - authority_class and any source_ref agree with the enclosing Requirement node metadata.
+        - imported and inferred source_ref is a stable deterministic pointer to the actual triggering
+          artifact; inferred source_confidence is one of the declared bounded values.
+        - Unknown envelope fields fail closed. Optional metadata remains representable, subject to the
+          declared conditional requirements.
+        - Every Requirement revision retains its full node provenance envelope in node_fields.provenance;
+          actor attribution and recorded_at reflect that revision. Earlier envelopes remain unchanged.
+        - This structured node envelope is distinct from the governed decision reference in revision.provenance.
+      criterion_record:
+        artifact_kind: acceptance_criterion_record
+        required_fields:
+        - schema_version
+        - artifact_kind
+        - id
+        - title
+        - subject
+        - current_revision
+        - revisions
+        - current_disposition
+        - retained_disposition_transitions
+        invariants:
+        - subject.subject_class is criterion; id equals subject.local_subject_id; workspace matches the
+          declaration.
+        - There is no kind criterion seed node declaration. The current title equals the selected revision
+          node_fields.title projection.
+        - Every criterion revision has an empty acceptance_criteria_refs collection.
+      revision:
+        required_fields:
+        - number
+        - predecessor
+        - node_fields
+        - statement
+        - containment
+        - provenance
+        - revision_scope
+        - acceptance_criteria_refs
+        node_fields: Requirement revisions retain title, status, authority_class, source_ref and the full
+          node_provenance envelope as provenance; criterion revisions retain title. These retained values
+          distinguish historical node metadata from the current projection.
+        statement: Required non-empty normative statement; criterion wording is retained verbatim from
+          the reviewed mapping.
+        containment: Source-root-relative canonical file path at that revision, not identity or ownership.
+        provenance: Required non-empty governed revision decision reference. Revision-1 provenance cites
+          the actual SpecDraft-to-canonical materialization record, never a historical test or Git checkpoint.
+        revision_scope: Required non-empty authored bounded change summary in every Requirement and criterion
+          revision, including the origin; retained unchanged with that revision. The summary identifies
+          affected semantic surfaces and is not reconstructed from a storage diff, statement or predecessor.
+      current_disposition:
+        required_fields:
+        - state
+        - basis_ref
+        - observation_provenance
+        rules:
+        - state is active or retired and is explicitly a current projection.
+        - basis_ref resolves to the last retained activation or withdrawal event in authored order, with
+          genuine decision provenance; the projection must agree with that event, never an older activation.
+        - Selecting an old content revision does not imply disposition as of that revision.
+      disposition_event:
+        required_fields:
+        - event_ref
+        - transition
+        - provenance
+        transition_values:
+        - activation
+        - withdrawal
+        rules:
+        - event_ref is unique within the subject record; transition is activation or withdrawal; provenance
+          is a genuine governed decision reference.
+        - Events are appended and retained in authored order; previous events cannot be removed, edited
+          or reordered. Content revisions and disposition events are independent.
+      reference:
+        shape: subject with workspace_identity, subject_class and local_subject_id, plus mode exact and
+          a positive integer revision.
+        compatibility: Uses the existing typed RevisionSelection shape; current selection is forbidden
+          in Requirement acceptance membership.
+      canonical_presence:
+        rule: The source adapter derives Requirement canonical_presence from the explicitly selected canonical
+          topology and its governance evidence, not from file existence, current_disposition or artifact_kind.
+          Canonical presence is not an author-writable field in these documents.
+    revision_storage:
+      rules:
+      - Each adopted subject starts at revision 1 with predecessor null. Revision numbers are positive
+        integers, never booleans.
+      - Each later revision is the next integer with the immediately preceding same-identity revision
+        number as predecessor. Retained earlier records cannot be removed, replaced or reworded.
+      - current_revision names the last retained content revision. Physical list order is not identity;
+        readers validate a complete contiguous chain by revision number.
+      - Adding, removing or repinning a Requirement acceptance reference creates a new Requirement revision.
+        Referenced criterion revisions must resolve exactly in the selected declared source scope.
+      - A containment move creates the next subject revision and retains earlier containment. Requirement
+        membership does not change merely because a criterion moves.
+      - Lifecycle/status changes follow existing governance and are retained in revision node_fields when
+        authored; title projections are not a second content authority.
+      - Retirement appends a disposition event and updates its labelled current projection without changing
+        content history. Successful historical lookup does not make a retired Requirement ready.
+    write_contract:
+      rules:
+      - Only an explicitly authorized writer may allocate identities or materialize canonical source files.
+        Files in docs/reviews are never scanned as canonical storage.
+      - Before writing, validate the workspace declaration, exact shared namespace and portable collision
+        keys, full references, node kind, schema fields, SG-SPEC-0024 node provenance, authored revision_scope,
+        history continuity, current projections and exact criterion pins. Unknown fields and unsupported
+        versions fail closed. Whole-tree validation applies the portable namespace rule even on a case-sensitive
+        host before accepting source trees authored elsewhere.
+      - Storage paths remain within the selected source root, with no traversal or symlink escape. Current
+        containment matches the physical record path. Grouping directories may change only through an
+        explicit containment_move; the filename preserves the local subject ID.
+      - Require an expected prior source digest for updates and a no-existing-subject precondition for
+        origins. Conflicting next revisions or concurrent allocations fail closed; do not overwrite another
+        writer's result.
+      - Prepare all affected records in one isolated candidate tree and validate it before publication.
+        A Requirement and newly referenced criterion origins, or both Requirements in a membership transfer,
+        publish atomically as one source-controlled change.
+      - Keep failed or partial writes outside the selected canonical source. An artifact or file on disk
+        does not prove readiness, adoption or approval.
+      - The first writer may support origins and revisions only; it must reject unsupported relation,
+        topology or migration operations rather than silently omit their history.
+  workspace_and_id_plan:
+    workspace_identity: workspace:a2800523-3588-4820-a47f-9fddc0fed3f5
+    declaration_path: specs/workspace_identity.yaml
+    allocation_state: unreserved_review_tokens
+    subject_refs:
+    - workspace_identity: workspace:a2800523-3588-4820-a47f-9fddc0fed3f5
+      subject_class: Requirement
+      local_subject_id: req.repaired-candidate-review-readiness
+    - workspace_identity: workspace:a2800523-3588-4820-a47f-9fddc0fed3f5
+      subject_class: Requirement
+      local_subject_id: req.platform-promotion-approval-boundary
+    - workspace_identity: workspace:a2800523-3588-4820-a47f-9fddc0fed3f5
+      subject_class: criterion
+      local_subject_id: ac.clean-noop
+    - workspace_identity: workspace:a2800523-3588-4820-a47f-9fddc0fed3f5
+      subject_class: criterion
+      local_subject_id: ac.repaired-preview
+    - workspace_identity: workspace:a2800523-3588-4820-a47f-9fddc0fed3f5
+      subject_class: criterion
+      local_subject_id: ac.unresolved-gaps
+    - workspace_identity: workspace:a2800523-3588-4820-a47f-9fddc0fed3f5
+      subject_class: criterion
+      local_subject_id: ac.approval-boundary
+    approval_effect: Approve the future declaration and exact local ID choices; allocation occurs only
+      through a separately authorized verified materialization.
+  requirements:
+  - candidate_path: docs/reviews/0221_subject_storage/req.repaired-candidate-review-readiness.yaml
+    proposed_path: specs/requirements/req.repaired-candidate-review-readiness.yaml
+    subject:
+      workspace_identity: workspace:a2800523-3588-4820-a47f-9fddc0fed3f5
+      subject_class: Requirement
+      local_subject_id: req.repaired-candidate-review-readiness
+    mode: exact
+    revision: 1
+    title: Repaired candidate readiness for review
+    statement: The repair producer and handoff must preserve review readiness for a clean no-op or a valid
+      repaired preview, retain repair evidence, and keep unresolved candidate gaps blocking.
+    statement_sha256: 8434e875c5f24bc2f91ee837ba63e36a8c9c9d07f08957f5fa6c5aa8b2125c14
+    acceptance_criteria_refs:
+    - subject:
+        workspace_identity: workspace:a2800523-3588-4820-a47f-9fddc0fed3f5
+        subject_class: criterion
+        local_subject_id: ac.clean-noop
+      mode: exact
+      revision: 1
+    - subject:
+        workspace_identity: workspace:a2800523-3588-4820-a47f-9fddc0fed3f5
+        subject_class: criterion
+        local_subject_id: ac.repaired-preview
+      mode: exact
+      revision: 1
+    - subject:
+        workspace_identity: workspace:a2800523-3588-4820-a47f-9fddc0fed3f5
+        subject_class: criterion
+        local_subject_id: ac.unresolved-gaps
+      mode: exact
+      revision: 1
+  - candidate_path: docs/reviews/0221_subject_storage/req.platform-promotion-approval-boundary.yaml
+    proposed_path: specs/requirements/req.platform-promotion-approval-boundary.yaml
+    subject:
+      workspace_identity: workspace:a2800523-3588-4820-a47f-9fddc0fed3f5
+      subject_class: Requirement
+      local_subject_id: req.platform-promotion-approval-boundary
+    mode: exact
+    revision: 1
+    title: Separate approval for Platform promotion
+    statement: Repair readiness must not authorize Platform promotion; the repair-session journal retains
+      ready_for_platform_promotion false until a separate approval decision.
+    statement_sha256: 002bf5ec82191d5e30818f3ce5b9ba6026370b7c19818a1d146ba940c7855322
+    acceptance_criteria_refs:
+    - subject:
+        workspace_identity: workspace:a2800523-3588-4820-a47f-9fddc0fed3f5
+        subject_class: criterion
+        local_subject_id: ac.approval-boundary
+      mode: exact
+      revision: 1
+  criterion_mappings:
+  - source:
+      subject:
+        workspace_identity: pilot:baa72850-bf2e-42c6-a3a9-68930a1ba44e
+        subject_class: criterion
+        local_subject_id: ac.clean-noop
+      mode: exact
+      revision: 1
+    source_occurrence: docs/proposals/0191_event_storming_candidate_topology_edges.md#acceptance-criteria
+    source_plan_revision: 492171dc87c4f0b0a1559d0bb04292739ba227f1
+    source_statement_sha256: 98f272e4fee9d5373b51f43112375e3776c4c42f823d3f2c5afcabb121bd406d
+    statement: A candidate graph with clean pre-SIB readiness and no repair actions produces a ready no-op
+      repair loop instead of `repair_review_required`.
+    proposed_destination:
+      subject:
+        workspace_identity: workspace:a2800523-3588-4820-a47f-9fddc0fed3f5
+        subject_class: criterion
+        local_subject_id: ac.clean-noop
+      mode: exact
+      revision: 1
+    proposed_requirement_id: req.repaired-candidate-review-readiness
+    identity_effect: distinct_identity_due_to_workspace_change
+    same_identity_predecessor: null
+    review:
+      outcome: pending
+      reviewer: null
+      reviewer_authority: null
+      decision_timestamp: null
+      rationale: null
+    source_test_refs:
+    - tests/test_candidate_repair_loop.py::test_candidate_repair_loop_allows_clean_noop_repair_loop
+    - tests/test_repaired_candidate_promotion_handoff.py::test_repaired_candidate_promotion_handoff_allows_clean_noop_repair_loop
+    evidence_transfer: not_performed; original executions retain source references; destination applicability
+      requires explicit review
+  - source:
+      subject:
+        workspace_identity: pilot:baa72850-bf2e-42c6-a3a9-68930a1ba44e
+        subject_class: criterion
+        local_subject_id: ac.repaired-preview
+      mode: exact
+      revision: 1
+    source_occurrence: docs/proposals/0177_repaired_candidate_promotion_handoff.md#acceptance-criteria
+    source_plan_revision: 492171dc87c4f0b0a1559d0bb04292739ba227f1
+    source_statement_sha256: c841dd08156e87a375ac0a5727816db203f94248cd079d721639cc2c1a8162ae
+    statement: If the repaired graph still has pre-SIB structural issues, the normal candidate repair
+      loop may repair them in preview, and the promotion gate must preserve `pre_sib_findings_repaired_by_preview`
+      evidence.
+    proposed_destination:
+      subject:
+        workspace_identity: workspace:a2800523-3588-4820-a47f-9fddc0fed3f5
+        subject_class: criterion
+        local_subject_id: ac.repaired-preview
+      mode: exact
+      revision: 1
+    proposed_requirement_id: req.repaired-candidate-review-readiness
+    identity_effect: distinct_identity_due_to_workspace_change
+    same_identity_predecessor: null
+    review:
+      outcome: pending
+      reviewer: null
+      reviewer_authority: null
+      decision_timestamp: null
+      rationale: null
+    source_test_refs:
+    - tests/test_repaired_candidate_promotion_handoff.py::test_repaired_candidate_promotion_handoff_builds_approval_ready_chain
+    evidence_transfer: not_performed; original executions retain source references; destination applicability
+      requires explicit review
+  - source:
+      subject:
+        workspace_identity: pilot:baa72850-bf2e-42c6-a3a9-68930a1ba44e
+        subject_class: criterion
+        local_subject_id: ac.unresolved-gaps
+      mode: exact
+      revision: 1
+    source_occurrence: docs/proposals/0177_repaired_candidate_promotion_handoff.md#acceptance-criteria
+    source_plan_revision: 492171dc87c4f0b0a1559d0bb04292739ba227f1
+    source_statement_sha256: 222f21614140823644e9c1f550be3e0d9ac747157e9720fe65207cfc83c5c00d
+    statement: Unresolved repaired candidate gaps keep the handoff blocked.
+    proposed_destination:
+      subject:
+        workspace_identity: workspace:a2800523-3588-4820-a47f-9fddc0fed3f5
+        subject_class: criterion
+        local_subject_id: ac.unresolved-gaps
+      mode: exact
+      revision: 1
+    proposed_requirement_id: req.repaired-candidate-review-readiness
+    identity_effect: distinct_identity_due_to_workspace_change
+    same_identity_predecessor: null
+    review:
+      outcome: pending
+      reviewer: null
+      reviewer_authority: null
+      decision_timestamp: null
+      rationale: null
+    source_test_refs:
+    - tests/test_repaired_candidate_promotion_handoff.py::test_repaired_candidate_promotion_handoff_blocks_unresolved_repaired_gaps
+    evidence_transfer: not_performed; original executions retain source references; destination applicability
+      requires explicit review
+  - source:
+      subject:
+        workspace_identity: pilot:baa72850-bf2e-42c6-a3a9-68930a1ba44e
+        subject_class: criterion
+        local_subject_id: ac.approval-boundary
+      mode: exact
+      revision: 1
+    source_occurrence: docs/proposals/0177_repaired_candidate_promotion_handoff.md#acceptance-criteria
+    source_plan_revision: 492171dc87c4f0b0a1559d0bb04292739ba227f1
+    source_statement_sha256: da22d07188f724ef174bf2fdc8ee039ef055ec55ec679c7a1926b10523b91e11
+    statement: 'The repaired repair-session journal keeps `ready_for_platform_promotion: false` until
+      a separate approval decision.'
+    proposed_destination:
+      subject:
+        workspace_identity: workspace:a2800523-3588-4820-a47f-9fddc0fed3f5
+        subject_class: criterion
+        local_subject_id: ac.approval-boundary
+      mode: exact
+      revision: 1
+    proposed_requirement_id: req.platform-promotion-approval-boundary
+    identity_effect: distinct_identity_due_to_workspace_change
+    same_identity_predecessor: null
+    review:
+      outcome: pending
+      reviewer: null
+      reviewer_authority: null
+      decision_timestamp: null
+      rationale: null
+    source_test_refs:
+    - tests/test_repaired_candidate_promotion_handoff.py::test_repaired_candidate_promotion_handoff_builds_approval_ready_chain
+    evidence_transfer: not_performed; original executions retain source references; destination applicability
+      requires explicit review
+  execution_boundary:
+    requested_implementation_scope:
+    - Read-only canonical-source adapter over explicitly selected source scope, preserving historical
+      node metadata, revision_scope and exact acceptance pins.
+    - Validating writer for origins and content revisions, with explicit authorization, digest conflict
+      preconditions, portable collision rejection and atomic publication verification.
+    separate_authorization_required:
+    - Canonical workspace declaration, subject allocation and SG-SPEC-0051 SpecDraft-to-canonical materialization
+      after writer verification.
+    - Any source migration or evidence-applicability transfer to destination identities.
+    not_granted:
+    - Platform promotion approval
+    - trusted runtime receipt
+    - complete runtime conformance
+approval_scope_sha256: dcaf235e3345ef09604245161b4f0e57c54954fdd0052272a5a0ea27494bd2e1
+digest_algorithm: SHA-256 of UTF-8 JSON of approval_scope, sorted keys, ensure_ascii=false, separators
+  comma/colon, no trailing newline.
+decision_templates:
+  physical_schema:
+    reviewer: null
+    reviewer_authority: null
+    decision_timestamp: null
+    outcome: null
+    rationale: null
+    provenance: null
+    source_quote: null
+  workspace_and_id_plan:
+    reviewer: null
+    reviewer_authority: null
+    decision_timestamp: null
+    outcome: null
+    rationale: null
+    provenance: null
+    source_quote: null
+  requirement_membership_and_mapping:
+    reviewer: null
+    reviewer_authority: null
+    decision_timestamp: null
+    outcome: null
+    rationale: null
+    provenance: null
+    source_quote: null
+  bounded_implementation_authorization:
+    reviewer: null
+    reviewer_authority: null
+    decision_timestamp: null
+    outcome: null
+    rationale: null
+    provenance: null
+    source_quote: null
+mapping_decision_templates:
+- source:
+    subject:
+      workspace_identity: pilot:baa72850-bf2e-42c6-a3a9-68930a1ba44e
+      subject_class: criterion
+      local_subject_id: ac.clean-noop
+    mode: exact
+    revision: 1
+  destination:
+    subject:
+      workspace_identity: workspace:a2800523-3588-4820-a47f-9fddc0fed3f5
+      subject_class: criterion
+      local_subject_id: ac.clean-noop
+    mode: exact
+    revision: 1
+  requirement_id: req.repaired-candidate-review-readiness
+  review:
+    reviewer: null
+    reviewer_authority: null
+    decision_timestamp: null
+    outcome: null
+    rationale: null
+    provenance: null
+    source_quote: null
+- source:
+    subject:
+      workspace_identity: pilot:baa72850-bf2e-42c6-a3a9-68930a1ba44e
+      subject_class: criterion
+      local_subject_id: ac.repaired-preview
+    mode: exact
+    revision: 1
+  destination:
+    subject:
+      workspace_identity: workspace:a2800523-3588-4820-a47f-9fddc0fed3f5
+      subject_class: criterion
+      local_subject_id: ac.repaired-preview
+    mode: exact
+    revision: 1
+  requirement_id: req.repaired-candidate-review-readiness
+  review:
+    reviewer: null
+    reviewer_authority: null
+    decision_timestamp: null
+    outcome: null
+    rationale: null
+    provenance: null
+    source_quote: null
+- source:
+    subject:
+      workspace_identity: pilot:baa72850-bf2e-42c6-a3a9-68930a1ba44e
+      subject_class: criterion
+      local_subject_id: ac.unresolved-gaps
+    mode: exact
+    revision: 1
+  destination:
+    subject:
+      workspace_identity: workspace:a2800523-3588-4820-a47f-9fddc0fed3f5
+      subject_class: criterion
+      local_subject_id: ac.unresolved-gaps
+    mode: exact
+    revision: 1
+  requirement_id: req.repaired-candidate-review-readiness
+  review:
+    reviewer: null
+    reviewer_authority: null
+    decision_timestamp: null
+    outcome: null
+    rationale: null
+    provenance: null
+    source_quote: null
+- source:
+    subject:
+      workspace_identity: pilot:baa72850-bf2e-42c6-a3a9-68930a1ba44e
+      subject_class: criterion
+      local_subject_id: ac.approval-boundary
+    mode: exact
+    revision: 1
+  destination:
+    subject:
+      workspace_identity: workspace:a2800523-3588-4820-a47f-9fddc0fed3f5
+      subject_class: criterion
+      local_subject_id: ac.approval-boundary
+    mode: exact
+    revision: 1
+  requirement_id: req.platform-promotion-approval-boundary
+  review:
+    reviewer: null
+    reviewer_authority: null
+    decision_timestamp: null
+    outcome: null
+    rationale: null
+    provenance: null
+    source_quote: null
+recording_rules:
+- Before recording a decision, revalidate every reviewed-file digest and approval_scope_sha256; changed
+  semantic content needs a new reviewed scope.
+- Record the actual human reviewer, authority, timestamp, outcome, rationale, provenance and exact source
+  quote with this reviewed commit and scope digest. Preparation authorization and merge are not approval.
+- Record a separate governed decision artifact after actual approval; preserve this prepared packet, the
+  original mapping packet and pilot history as historical preparation.
+- Each approved mapping must carry actual review attribution and provenance, directly or through its exact
+  governed decision reference. Pending source-packet review metadata is not silently rewritten.
+- Only a genuine schema decision may clear SG-SPEC-0069 review_pending. Schema and mapping approval permit
+  only the explicitly approved implementation scope, never canonical materialization by themselves.
+- Canonical adoption follows SG-SPEC-0051 after a verified writer and separate materialization authorization;
+  destination origins are not backdated and original pilot evidence is not relabelled.
+suggested_human_reply: 'Одобряю пакет SG-SPEC-0069 v1: схему, workspace/ID и mapping 3 + 1; разрешаю ограниченную
+  реализацию adapter/writer. Материализация и перенос evidence остаются отдельными решениями.'

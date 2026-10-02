@@ -651,6 +651,25 @@
         "digest-contract version",
         "stale-preview"
       ]
+    },
+    {
+      "id": "rfc0221-subject-storage-approval-packet",
+      "description": "Exact physical-schema and mapping review scopes stay distinct from human approval and canonical materialization.",
+      "docs": [
+        "docs/reviews/0221_subject_storage_approval.md"
+      ],
+      "docc": [
+        "Sources/SpecGraph/Documentation.docc/ProposalsAndRuntime.md"
+      ],
+      "required_terms": [
+        "SG-SPEC-0069",
+        "approval_scope_sha256",
+        "reviewed_commit",
+        "review_pending",
+        "canonical_adoption",
+        "ready_for_materialization",
+        "SG-SPEC-0051"
+      ]
     }
   ]
 }
