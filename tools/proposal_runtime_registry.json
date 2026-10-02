@@ -12640,13 +12640,15 @@
   },
   {
     "proposal_id": "0221",
-    "posture": "deferred_until_canonicalized",
+    "posture": "bounded_runtime_followup",
     "runtime_surfaces": [
       "docs/proposals/0221_stable_requirement_identity_and_lineage.md",
       "docs/archive/proposal_sources/0221_stable_requirement_identity_and_lineage.md",
       "docs/reviews/0221_subject_address_read_model.md",
       "docs/reviews/0221_supervisor_candidate.yaml",
-      "docs/reviews/0221_preparation_evidence.json"
+      "docs/reviews/0221_preparation_evidence.json",
+      "specs/nodes/SG-SPEC-0068.yaml",
+      "docs/reviews/0221_canonical_contract_approval.md"
     ],
     "runtime_markers": [
       {
@@ -12697,7 +12699,8 @@
         "path": "docs/proposals/0221_stable_requirement_identity_and_lineage.md",
         "pattern": "implements none of those behaviors."
       }
-    ]
+    ],
+    "notes": "Human approved the bounded SG-SPEC-0068 semantic contract on 2026-10-02 in the current Codex conversation (quote: Одобряю), reviewed head 9be7e294c52c0ae1fac40f61ac285fd1ee8e3fc6. Approval is recorded in the node and approval packet, pending merge. Lookup runtime, storage/schema, allocator and source migration remain unimplemented and require separate work; frozen SG-SPEC-0019 is unchanged."
   },
   {
     "proposal_id": "0222",

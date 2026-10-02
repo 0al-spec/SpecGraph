@@ -474,3 +474,12 @@ lookup result with the source contract: preserve revision advancement, separate
 lineage from disposition, identify every relation endpoint, and define failure
 outcomes for ambiguous identity scopes. Update the curated artifact digest and
 record corrections as curation, not as evidence verified by the original run.
+
+### Canonical approval gates and lookup projections
+
+A canonical contract awaiting human approval must use `gate_state: review_pending`
+so operational queues cannot classify it as ready. Resolve that state only with
+recorded human decision provenance, and keep promotion/runtime scope descriptions
+aligned with the approved slice. An exact content revision does not select an
+as-of disposition when activation/withdrawal are independent events: label the
+current disposition explicitly and keep historical as-of claims separate.

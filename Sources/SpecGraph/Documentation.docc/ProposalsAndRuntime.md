@@ -88,3 +88,26 @@ lookup result with the source contract: preserve revision advancement, separate
 lineage from disposition, identify every relation endpoint, and define failure
 outcomes for ambiguous identity scopes. Update the curated artifact digest and
 record corrections as curation, not as evidence verified by the original run.
+
+## RFC 0221 canonical contract review
+
+SG-SPEC-0068 was pending human approval; the human approved its bounded semantic
+contract on 2026-10-02. It is now specified and human_approved_pending_merge.
+The approval packet is `docs/reviews/0221_canonical_contract_approval.md`.
+It proposes workspace-scoped subject identity, revisions, transitions and exact
+lookup while preserving frozen SG-SPEC-0019 and its one-to-one canonical
+supersession contract. Preparation and passed checks alone are not adoption; the actual human approval
+source and reviewed commit are recorded in the packet and node.
+
+Human approval is recorded; merge remains a separate authorized action.
+Storage, allocator, physical history and source migration remain deferred.
+Read-model implementation follows separately; no runtime conformance is claimed.
+
+### Canonical approval gates and lookup projections
+
+A canonical contract awaiting human approval must use `gate_state: review_pending`
+so operational queues cannot classify it as ready. Resolve that state only with
+recorded human decision provenance, and keep promotion/runtime scope descriptions
+aligned with the approved slice. An exact content revision does not select an
+as-of disposition when activation/withdrawal are independent events: label the
+current disposition explicitly and keep historical as-of claims separate.

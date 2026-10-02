@@ -522,6 +522,22 @@
         "lookup_exact",
         "lookup_current"
       ]
+    },
+    {
+      "id": "rfc0221-canonical-contract-approval",
+      "description": "Canonical child preparation remains pending explicit human approval.",
+      "docs": [
+        "docs/reviews/0221_canonical_contract_approval.md"
+      ],
+      "docc": [
+        "Sources/SpecGraph/Documentation.docc/ProposalsAndRuntime.md"
+      ],
+      "required_terms": [
+        "SG-SPEC-0068",
+        "SG-SPEC-0019",
+        "pending human approval",
+        "allocator"
+      ]
     }
   ]
 }
