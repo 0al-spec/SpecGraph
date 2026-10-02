@@ -18,6 +18,9 @@ The child has `gate_state: review_pending`. Candidate files have
 | Criterion | Separate record in `specs/criteria/`; no new seed node kind |
 | Content history | Append-only inline `revisions`; `current_revision` selects the last revision |
 | Node metadata | Retained `node_fields` per revision; top-level fields are validated current projections |
+| Node provenance | SG-SPEC-0024 envelope in each Requirement revision and its current projection |
+| Revision scope | Authored bounded `revision_scope` for every origin and later revision |
+| Portable IDs | Exact case-sensitive identity plus workspace-wide ASCII case collision rejection |
 | Acceptance membership | Full exact criterion references in each Requirement revision |
 | Retirement | Separate retained disposition events and a labelled current projection |
 | Publication | Validate an isolated candidate tree and publish affected records atomically with conflict preconditions |
@@ -29,6 +32,23 @@ Historical pins remain readable. Exact lookup uses the selected revision's
 `node_fields`, rather than current title/status. Current disposition does not
 claim the disposition as of an old revision. Canonical topology presence comes
 from a governed source, not from file existence or an `active` disposition.
+
+Requirement `provenance` retains the SG-SPEC-0024 node envelope: `actor_id`,
+`authority_class`, `recorded_at`, conditional `source_ref` and
+`source_confidence`, and its defined optional metadata. Each revision retains
+this envelope in `node_fields.provenance`; the top-level envelope is a validated
+current projection. It is separate from the genuine governed decision reference
+in `revision.provenance`. Earlier envelopes and authored `revision_scope` values
+remain in history. Neither provenance attribution nor change scope is inferred
+from a file diff.
+
+IDs keep their exact case-sensitive spelling. Portable allocation and whole-tree
+validation reject distinct IDs sharing an ASCII lowercase collision key across
+the workspace, including different subject classes, grouping directories and
+retired records. `REQ.A` and `req.a` cannot both be allocated. Lowercase ASCII
+grouping components keep paths portable and do not create a new namespace.
+This rule is enforced before accepting a tree from a case-sensitive host.
+Disposition tokens use the typed model's existing `activation` and `withdrawal`.
 
 ## Prepared files
 
@@ -64,7 +84,11 @@ mode: exact
 revision: 1
 ```
 
-Candidate revision `provenance: null` deliberately exposes the adoption gap.
+Candidate revision decision `provenance: null` deliberately exposes the adoption
+gap. Requirement node `actor_id`, `recorded_at` and inferred `source_confidence`
+are also null in both current and retained envelopes, with explicit
+`adoption_fields_pending` paths. A proposed `revision_scope` names the intended
+origin and affected surfaces without claiming that adoption already happened.
 Candidate `created_at` dates preparation; destination revision 1 begins only at
 actual adoption. Copying a candidate cannot produce a valid canonical record.
 
@@ -86,7 +110,10 @@ does not relabel an original execution or create a trusted runtime receipt.
 
 `tests/test_subject_storage_preparation.py` protects preparation boundaries:
 3 + 1 exact membership, statement fidelity, distinct namespaces, shared-ID
-uniqueness, current metadata projections and unfilled adoption fields. It also
+uniqueness, portable case collision rejection, inherited node provenance,
+authored revision scopes, disposition vocabulary, current metadata projections
+and unfilled adoption fields. Its collision audit is a fixture check, not an
+implemented canonical writer. It also
 checks that the existing snapshot parser rejects candidate envelopes. These
 checks do not implement a canonical-source adapter or verify writer atomicity
 and durability.
@@ -101,6 +128,9 @@ checks validate the single new spec node. Read-only operational projections
 must preserve its pending review gate. No LLM refinement run is used here; the
 previous failed execution remains recorded in the
 [mapping evidence](0221_requirement_mapping_evidence.json).
+
+The [PR #751 review resolution](0221_subject_storage_review_resolution.md)
+records the independently confirmed contract gaps and the prevention checks.
 
 ## Next bounded slice
 

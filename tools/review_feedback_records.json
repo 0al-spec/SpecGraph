@@ -850,5 +850,69 @@
     ],
     "residual_risk": "Workspace and dataset declarations remain supplied metadata, not verified authority.",
     "recorded_at": "2026-10-02T10:07:00Z"
+  },
+  {
+    "feedback_id": "pr-751-node-provenance",
+    "source_pr": 751,
+    "source_thread_url": "https://github.com/0al-spec/SpecGraph/pull/751#discussion_r4166420279",
+    "reviewer": "chatgpt-codex-connector",
+    "review_comment_summary": "The closed physical Requirement schema omitted SG-SPEC-0024 node provenance and could not represent canonical actor, time and inferred confidence.",
+    "fix_summary": "Retain the structured envelope in Requirement revisions and current projections, with required and conditional metadata and explicit null candidate adoption fields. Regression: test_requirement_provenance_retains_the_governing_node_envelope.",
+    "root_cause_class": "artifact_contract_validation_gap",
+    "prevention_action": "regression_test_added",
+    "verification": [
+      "targeted_test",
+      "manual_contract_review"
+    ],
+    "residual_risk": "Physical schema remains pending human approval; the canonical-source adapter and validating writer are not implemented. Candidate fixture checks do not prove writer enforcement or adoption.",
+    "recorded_at": "2026-10-02T14:53:58Z"
+  },
+  {
+    "feedback_id": "pr-751-revision-scope",
+    "source_pr": 751,
+    "source_thread_url": "https://github.com/0al-spec/SpecGraph/pull/751#discussion_r4166420291",
+    "reviewer": "chatgpt-codex-connector",
+    "review_comment_summary": "The closed revision schema omitted the bounded revision_scope required by SG-SPEC-0019 and SG-SPEC-0068.",
+    "fix_summary": "Require and retain an authored bounded revision_scope in every Requirement and criterion revision, including proposed origins. Regression: test_revision_scope_is_authored_for_every_proposed_origin.",
+    "root_cause_class": "artifact_contract_validation_gap",
+    "prevention_action": "regression_test_added",
+    "verification": [
+      "targeted_test",
+      "manual_contract_review"
+    ],
+    "residual_risk": "Physical schema remains pending human approval; the canonical-source adapter and validating writer are not implemented. Candidate fixture checks do not prove writer enforcement or adoption.",
+    "recorded_at": "2026-10-02T14:53:58Z"
+  },
+  {
+    "feedback_id": "pr-751-portable-id-allocation",
+    "source_pr": 751,
+    "source_thread_url": "https://github.com/0al-spec/SpecGraph/pull/751#discussion_r4166420300",
+    "reviewer": "chatgpt-codex-connector",
+    "review_comment_summary": "Exact case-sensitive IDs were treated as automatically safe distinct filenames on case-insensitive filesystems.",
+    "fix_summary": "Preserve exact identity while rejecting workspace-wide ASCII case collision keys at allocation, publication and whole-tree source validation across classes, groups and disposition. Regression: test_case_aliases_collide_across_classes_and_grouping.",
+    "root_cause_class": "artifact_contract_validation_gap",
+    "prevention_action": "regression_test_added",
+    "verification": [
+      "targeted_test",
+      "manual_contract_review"
+    ],
+    "residual_risk": "Physical schema remains pending human approval; the canonical-source adapter and validating writer are not implemented. Candidate fixture checks do not prove writer enforcement or adoption.",
+    "recorded_at": "2026-10-02T14:53:58Z"
+  },
+  {
+    "feedback_id": "pr-751-disposition-vocabulary",
+    "source_pr": 751,
+    "source_thread_url": "https://github.com/0al-spec/SpecGraph/pull/751#discussion_r4166420272",
+    "reviewer": "chatgpt-codex-connector",
+    "review_comment_summary": "The pending physical schema introduced activate/withdraw aliases without specifying translation to the existing activation/withdrawal typed vocabulary.",
+    "fix_summary": "Use activation and withdrawal directly in the pending storage schema. Regression: test_disposition_vocabulary_matches_the_typed_model; no current source-adapter runtime regression is claimed.",
+    "root_cause_class": "artifact_contract_validation_gap",
+    "prevention_action": "regression_test_added",
+    "verification": [
+      "targeted_test",
+      "manual_contract_review"
+    ],
+    "residual_risk": "Physical schema remains pending human approval; the canonical-source adapter and validating writer are not implemented. Candidate fixture checks do not prove writer enforcement or adoption.",
+    "recorded_at": "2026-10-02T14:53:58Z"
   }
 ]

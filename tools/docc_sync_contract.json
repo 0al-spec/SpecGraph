@@ -615,7 +615,13 @@
         "review_pending",
         "canonical_readiness",
         "not_evaluated",
-        "ready_for_materialization"
+        "ready_for_materialization",
+        "SG-SPEC-0024",
+        "revision_scope",
+        "node_fields.provenance",
+        "REQ.A",
+        "activation",
+        "withdrawal"
       ]
     }
   ]

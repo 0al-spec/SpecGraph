@@ -1,7 +1,7 @@
 schema_version: 1
 artifact_kind: subject_storage_candidate
 created_at: '2026-10-02T13:30:00Z'
-updated_at: '2026-10-02T13:30:00Z'
+updated_at: '2026-10-02T14:51:03Z'
 source_lane: SpecDraft
 gate_state: review_pending
 canonical_adoption: false
@@ -17,6 +17,12 @@ adoption_fields_pending:
 - proposed_record.revisions[0].provenance
 - proposed_record.current_disposition
 - proposed_record.retained_disposition_transitions.origin_activation
+- proposed_record.provenance.actor_id
+- proposed_record.provenance.recorded_at
+- proposed_record.provenance.source_confidence
+- proposed_record.revisions[0].node_fields.provenance.actor_id
+- proposed_record.revisions[0].node_fields.provenance.recorded_at
+- proposed_record.revisions[0].node_fields.provenance.source_confidence
 proposed_record:
   schema_version: 1
   artifact_kind: requirement_node
@@ -39,6 +45,12 @@ proposed_record:
       status: outlined
       authority_class: inferred
       source_ref: docs/proposals/0177_repaired_candidate_promotion_handoff.md
+      provenance:
+        actor_id: null
+        authority_class: inferred
+        recorded_at: null
+        source_ref: docs/proposals/0177_repaired_candidate_promotion_handoff.md
+        source_confidence: null
     statement: The repair producer and handoff must preserve review readiness for a clean no-op or a valid
       repaired preview, retain repair evidence, and keep unresolved candidate gaps blocking.
     containment: specs/requirements/req.repaired-candidate-review-readiness.yaml
@@ -62,5 +74,14 @@ proposed_record:
         local_subject_id: ac.unresolved-gaps
       mode: exact
       revision: 1
+    revision_scope: 'Proposed origin: req.repaired-candidate-review-readiness defines repair review readiness
+      and exact membership of ac.clean-noop, ac.repaired-preview and ac.unresolved-gaps; canonical adoption
+      is pending.'
   current_disposition: null
   retained_disposition_transitions: []
+  provenance:
+    actor_id: null
+    authority_class: inferred
+    recorded_at: null
+    source_ref: docs/proposals/0177_repaired_candidate_promotion_handoff.md
+    source_confidence: null

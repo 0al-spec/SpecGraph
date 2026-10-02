@@ -2,9 +2,17 @@ id: SG-SPEC-0069
 title: SpecGraph - Standalone Subject Storage Preparation
 kind: spec
 created_at: '2026-10-02T13:30:00Z'
-updated_at: '2026-10-02T13:30:00Z'
+updated_at: '2026-10-02T14:48:00Z'
 status: outlined
 authority_class: inferred
+source_ref: docs/reviews/0221_subject_storage_review_resolution.md
+provenance:
+  actor_id: agent:codex
+  authority_class: inferred
+  recorded_at: '2026-10-02T14:48:00Z'
+  source_ref: docs/reviews/0221_subject_storage_review_resolution.md
+  source_confidence: high
+  notes: Attribution of pending contract corrections; not schema approval or subject adoption.
 maturity: 0.3
 depends_on: []
 relates_to: []
@@ -14,6 +22,8 @@ inputs:
 - specs/nodes/SG-SPEC-0001.yaml
 - specs/nodes/SG-SPEC-0051.yaml
 - specs/nodes/SG-SPEC-0068.yaml
+- specs/nodes/SG-SPEC-0019.yaml
+- specs/nodes/SG-SPEC-0024.yaml
 - docs/proposals/0221_stable_requirement_identity_and_lineage.md
 - docs/reviews/0221_requirement_mapping_review.json
 outputs:
@@ -88,7 +98,25 @@ specification:
     history_placement: Retained content revisions and disposition events are inline in each subject record;
       no separate mutable current-content file is authoritative.
     local_id_convention: Case-sensitive ASCII IDs matching [A-Za-z0-9][A-Za-z0-9._-]*, excluding the exact
-      names dot and dot-dot; the ID is safe as one filename component.
+      names dot and dot-dot. References retain exact spelling; portable allocation checks are separate
+      from logical identity.
+    portable_namespace:
+      collision_key: ASCII lowercase of local_subject_id
+      scope: Entire declared workspace, across Requirement and criterion classes, grouping directories,
+        retained history and active or retired disposition.
+      conflict_action: Reject distinct exact IDs with the same collision key before allocation or publication
+        and during whole-tree source validation; never coalesce, rename or overwrite them.
+      grouping_directories: Optional grouping components use lowercase ASCII matching [a-z0-9][a-z0-9._-]*;
+        dot and dot-dot are forbidden. Grouping does not create another identity namespace.
+      examples:
+      - local_ids:
+        - REQ.A
+        - req.a
+        outcome: reject_portable_collision
+      - local_ids:
+        - req.a
+        - ac.a
+        outcome: no_portable_collision
     namespace: All Requirement and criterion local IDs share one workspace-local namespace. The req. and
       ac. prefixes are conventions, not separate collision scopes.
     workspace_identity_convention: workspace:<lowercase UUID>; the reviewed declaration is persisted once
@@ -119,6 +147,7 @@ specification:
       - status
       - authority_class
       - source_ref
+      - provenance
       - subject
       - current_revision
       - revisions
@@ -127,10 +156,48 @@ specification:
       invariants:
       - kind is requirement; subject.subject_class is Requirement; id equals subject.local_subject_id.
       - subject.workspace_identity equals the selected workspace declaration.
-      - The required SG-SPEC-0001 node fields are preserved. Current title, status, authority_class and
-        source_ref must equal the selected revision node_fields projection.
+      - The required SG-SPEC-0001 node fields and SG-SPEC-0024 provenance envelope are preserved. Current
+        title, status, authority_class, source_ref and provenance must equal the selected revision node_fields
+        projection.
       - This node owns its revision-specific acceptance_criteria_refs; it is not embedded in a kind spec
         node.
+    node_provenance:
+      governing_contract: SG-SPEC-0024
+      required_fields:
+      - actor_id
+      - authority_class
+      - recorded_at
+      optional_fields:
+      - source_ref
+      - source_system
+      - source_confidence
+      - notes
+      - trace_context
+      conditional_required_fields:
+        imported:
+        - source_ref
+        inferred:
+        - source_ref
+        - source_confidence
+      authority_classes:
+      - authored
+      - imported
+      - inferred
+      - distilled
+      source_confidence_values:
+      - low
+      - medium
+      - high
+      rules:
+      - actor_id is non-empty and recorded_at is a timestamp attributable to the actual creation or update.
+      - authority_class and any source_ref agree with the enclosing Requirement node metadata.
+      - imported and inferred source_ref is a stable deterministic pointer to the actual triggering artifact;
+        inferred source_confidence is one of the declared bounded values.
+      - Unknown envelope fields fail closed. Optional metadata remains representable, subject to the declared
+        conditional requirements.
+      - Every Requirement revision retains its full node provenance envelope in node_fields.provenance;
+        actor attribution and recorded_at reflect that revision. Earlier envelopes remain unchanged.
+      - This structured node envelope is distinct from the governed decision reference in revision.provenance.
     criterion_record:
       artifact_kind: acceptance_criterion_record
       required_fields:
@@ -157,15 +224,19 @@ specification:
       - statement
       - containment
       - provenance
+      - revision_scope
       - acceptance_criteria_refs
-      node_fields: Requirement revisions retain title, status, authority_class and source_ref; criterion
-        revisions retain title. These retained values distinguish historical node metadata from the current
-        projection.
+      node_fields: Requirement revisions retain title, status, authority_class, source_ref and the full
+        node_provenance envelope as provenance; criterion revisions retain title. These retained values
+        distinguish historical node metadata from the current projection.
       statement: Required non-empty normative statement; criterion wording is retained verbatim from the
         reviewed mapping.
       containment: Source-root-relative canonical file path at that revision, not identity or ownership.
       provenance: Required non-empty governed revision decision reference. Revision-1 provenance cites
         the actual SpecDraft-to-canonical materialization record, never a historical test or Git checkpoint.
+      revision_scope: Required non-empty authored bounded change summary in every Requirement and criterion
+        revision, including the origin; retained unchanged with that revision. The summary identifies
+        affected semantic surfaces and is not reconstructed from a storage diff, statement or predecessor.
     current_disposition:
       required_fields:
       - state
@@ -181,8 +252,11 @@ specification:
       - event_ref
       - transition
       - provenance
+      transition_values:
+      - activation
+      - withdrawal
       rules:
-      - event_ref is unique within the subject record; transition is activate or withdraw; provenance
+      - event_ref is unique within the subject record; transition is activation or withdrawal; provenance
         is a genuine governed decision reference.
       - Events are appended and retained in authored order; previous events cannot be removed, edited
         or reordered. Content revisions and disposition events are independent.
@@ -215,9 +289,11 @@ specification:
     rules:
     - Only an explicitly authorized writer may allocate identities or materialize canonical source files.
       Files in docs/reviews are never scanned as canonical storage.
-    - Before writing, validate the workspace declaration, shared namespace, full references, node kind,
-      schema fields, history continuity, current projections and exact criterion pins. Unknown fields
-      and unsupported versions fail closed.
+    - Before writing, validate the workspace declaration, exact shared namespace and portable collision
+      keys, full references, node kind, schema fields, SG-SPEC-0024 node provenance, authored revision_scope,
+      history continuity, current projections and exact criterion pins. Unknown fields and unsupported
+      versions fail closed. Whole-tree validation applies the portable namespace rule even on a case-sensitive
+      host before accepting source trees authored elsewhere.
     - Storage paths remain within the selected source root, with no traversal or symlink escape. Current
       containment matches the physical record path. Grouping directories may change only through an explicit
       containment_move; the filename preserves the local subject ID.
@@ -240,9 +316,13 @@ specification:
       false, canonical_readiness not_evaluated and ready_for_materialization false.
     - proposed_path and proposed_record show the intended version-1 storage shape; they are not an allocation,
       canonical target or writer output.
-    - Candidate revision provenance, workspace declaration provenance and current disposition are null
-      until genuine decisions exist; adoption_fields_pending names these gaps. Canonical records reject
-      these null values.
+    - Candidate revision decision provenance, workspace declaration provenance and current disposition
+      are null until genuine decisions exist. Requirement node provenance actor_id, recorded_at and inferred
+      source_confidence remain null in both current and retained projections until actual adoption supplies
+      them; preparation dates or attribution do not fill those origin fields. adoption_fields_pending
+      names these gaps. Canonical records reject these null values.
+    - Candidate revision_scope describes the proposed origin and affected semantic surfaces; it does not
+      claim a past adoption or continue the pilot identity's revision chain.
     - Candidate envelopes retain their source mapping packet reference and exact source pilot references.
       They must not be relabelled subject_read_snapshot or normalized into canonical SubjectRecord values.
     - The prepared workspace identity is a review token. Destination revision 1 is proposed only and begins

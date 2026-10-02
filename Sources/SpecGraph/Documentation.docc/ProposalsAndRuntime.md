@@ -198,16 +198,27 @@ statuses.
 SG-SPEC-0069 is a pending child of SG-SPEC-0068 proposing the physical YAML
 format: `specs/workspace_identity.yaml`, one Requirement node per file in
 `specs/requirements/`, and separate criterion records in `specs/criteria/`.
-Append-only `revisions` retain statement, containment, node metadata and exact
-acceptance references. Top-level metadata is a validated current projection;
-disposition events remain independent. No new criterion seed node kind is added.
+Append-only `revisions` retain statement, containment, node metadata, authored
+`revision_scope` and exact acceptance references. Requirement `provenance` uses
+the SG-SPEC-0024 node envelope in each revision's `node_fields.provenance` and
+the validated current projection. That envelope is separate from the governed
+decision reference in `revision.provenance`. Disposition events remain independent
+and use `activation`/`withdrawal`. No new criterion seed node kind is added.
+
+Exact case-sensitive IDs remain distinct. Portable allocation and whole-tree
+validation reject workspace-wide ASCII case collisions such as `REQ.A`/`req.a`,
+across subject classes, grouping directories and retired records. Lowercase ASCII
+grouping components do not create additional identity scopes.
 
 Seven `subject_storage_candidate` envelopes in `docs/reviews/0221_subject_storage/`
 prepare the workspace declaration, two Requirements and four criteria with the
 same 3 + 1 partition. `gate_state: review_pending`,
 `canonical_readiness: not_evaluated` and `ready_for_materialization: false` keep
-preparation distinct from canonical adoption. Origin provenance and disposition
-are deliberately null. The workspace UUID is still an unreserved review token.
+preparation distinct from canonical adoption. Origin decision provenance and
+disposition are deliberately null. Requirement node actor, timestamp and inferred
+confidence are also null in current and retained envelopes, with explicit pending
+field paths. Authored scopes describe proposed origins rather than past adoption.
+The workspace UUID is still an unreserved review token.
 
 The canonical-source adapter and validating writer are `not_implemented`.
 Schema approval, reviewed namespace mapping and SG-SPEC-0051 materialization
@@ -215,6 +226,9 @@ decisions precede publication. Historical pilot references and evidence remain
 unchanged; candidate validation does not transfer them or prove runtime
 conformance. See `docs/reviews/0221_subject_storage_preparation.md` and the
 candidate manifest for the concrete review choices and remaining decisions.
+`docs/reviews/0221_subject_storage_review_resolution.md` records the PR #751
+contract corrections and fixture-level prevention checks; writer enforcement
+remains deferred.
 
 ### Canonical approval gates and lookup projections
 
@@ -224,6 +238,12 @@ recorded human decision provenance, and keep promotion/runtime scope description
 aligned with the approved slice. An exact content revision does not select an
 as-of disposition when activation/withdrawal are independent events: label the
 current disposition explicitly and keep historical as-of claims separate.
+
+When defining a closed physical schema, inventory the inherited governance
+fields, including node provenance and bounded revision scope. Preserve them in
+historical records and current projections, check filename portability separately
+from logical identity, and test against the governing contracts rather than only
+the new draft's own field list.
 
 ### Read-model construction invariants
 

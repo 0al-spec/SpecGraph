@@ -4,8 +4,10 @@ from __future__ import annotations
 
 import hashlib
 import json
+import re
 import sys
-from pathlib import Path
+from copy import deepcopy
+from pathlib import Path, PurePosixPath
 
 import pytest
 
@@ -13,7 +15,7 @@ ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "tools"))
 
 from spec_yaml import load_yaml_text  # noqa: E402
-from subject_read_model import RevisionSelection  # noqa: E402
+from subject_read_model import DispositionTransition, RevisionSelection  # noqa: E402
 from subject_read_model_io import (  # noqa: E402
     SubjectDocumentError,
     parse_subject_index,
@@ -163,3 +165,125 @@ def test_snapshot_parser_rejects_candidate_envelopes(preparation) -> None:
             parse_subject_index(
                 {"schema_version": 1, "artifact_kind": candidate["artifact_kind"], "workspaces": []}
             )
+
+
+def test_requirement_provenance_retains_the_governing_node_envelope(preparation) -> None:
+    _, candidates, _, contract = preparation
+    governing = load_yaml_text((ROOT / "specs/nodes/SG-SPEC-0024.yaml").read_text())
+    shape = contract["specification"]["document_shapes"]["node_provenance"]
+    inherited = governing["specification"]["provenance_contract"]
+    required = {name.removeprefix("provenance.") for name in inherited["required_for_all_records"]}
+    assert set(shape["required_fields"]) == required
+    optional = {name.removeprefix("provenance.") for name in inherited["optional_for_all_records"]}
+    assert optional <= set(shape["optional_fields"])
+    assert shape["source_confidence_values"] == ["low", "medium", "high"]
+    for rule in governing["specification"]["authority_rules"]:
+        expected = []
+        if rule["source_ref_required"]:
+            expected.append("source_ref")
+        if rule["source_confidence_required"]:
+            expected.append("source_confidence")
+        assert shape["conditional_required_fields"].get(rule["authority_class"], []) == expected
+    for candidate in candidates:
+        record = candidate["proposed_record"]
+        if record["artifact_kind"] != "requirement_node":
+            continue
+        provenance = record["provenance"]
+        assert required <= set(provenance) <= required | set(shape["optional_fields"])
+        assert provenance == record["revisions"][0]["node_fields"]["provenance"]
+        assert provenance["authority_class"] == record["authority_class"] == "inferred"
+        assert provenance["source_ref"] == record["source_ref"]
+        for name in ("actor_id", "recorded_at", "source_confidence"):
+            assert provenance[name] is None
+            for prefix in (
+                "proposed_record.provenance",
+                "proposed_record.revisions[0].node_fields.provenance",
+            ):
+                assert f"{prefix}.{name}" in candidate["adoption_fields_pending"]
+
+
+def test_revision_scope_is_authored_for_every_proposed_origin(preparation) -> None:
+    _, candidates, _, contract = preparation
+    revision_shape = contract["specification"]["document_shapes"]["revision"]
+    assert "revision_scope" in revision_shape["required_fields"]
+    governing = load_yaml_text((ROOT / "specs/nodes/SG-SPEC-0019.yaml").read_text())
+    assert any(
+        "bounded revision_scope" in rule
+        for rule in governing["specification"]["revision_contract"]["record_minimum_semantics"]
+    )
+    for candidate in candidates:
+        record = candidate["proposed_record"]
+        if "revisions" not in record:
+            continue
+        for revision in record["revisions"]:
+            assert revision["revision_scope"].startswith("Proposed origin:")
+            assert record["id"] in revision["revision_scope"]
+            assert revision["revision_scope"] != revision["statement"]
+            assert revision["revision_scope"] != revision["containment"]
+
+
+def _assert_portable_candidate_namespace(candidates: list[dict]) -> None:
+    """Audit preparation fixtures; this is not a canonical writer implementation."""
+    allocated: dict[tuple[str, str], str] = {}
+    for candidate in candidates:
+        record = candidate["proposed_record"]
+        if "subject" not in record:
+            continue
+        subject = parse_subject_ref(record["subject"])
+        local_id = subject.local_subject_id
+        assert re.fullmatch(r"[A-Za-z0-9][A-Za-z0-9._-]*", local_id)
+        key = (subject.workspace_identity, local_id.lower())
+        assert key not in allocated or allocated[key] == local_id, "portable ID collision"
+        allocated[key] = local_id
+        path = PurePosixPath(candidate["proposed_path"])
+        assert path.name == f"{local_id}.yaml"
+        assert all(re.fullmatch(r"[a-z0-9][a-z0-9._-]*", part) for part in path.parts[2:-1])
+
+
+def test_candidate_namespace_passes_portable_allocation_audit(preparation) -> None:
+    _, candidates, _, contract = preparation
+    portable = contract["specification"]["storage_layout"]["portable_namespace"]
+    assert portable["collision_key"] == "ASCII lowercase of local_subject_id"
+    assert portable["examples"][0] == {
+        "local_ids": ["REQ.A", "req.a"],
+        "outcome": "reject_portable_collision",
+    }
+    _assert_portable_candidate_namespace(candidates)
+
+
+@pytest.mark.parametrize(
+    "second_class,second_group",
+    [("Requirement", ""), ("Requirement", "other/"), ("criterion", "other/")],
+)
+def test_case_aliases_collide_across_classes_and_grouping(
+    preparation, second_class, second_group
+) -> None:
+    _, candidates, _, _ = preparation
+    first = deepcopy(
+        next(c for c in candidates if c["proposed_record"]["artifact_kind"] == "requirement_node")
+    )
+    second = deepcopy(first)
+    for candidate, local_id, subject_class, group in (
+        (first, "REQ.A", "Requirement", "feature/"),
+        (second, "req.a", second_class, second_group),
+    ):
+        record = candidate["proposed_record"]
+        record["id"] = record["subject"]["local_subject_id"] = local_id
+        record["subject"]["subject_class"] = subject_class
+        directory = "requirements" if subject_class == "Requirement" else "criteria"
+        candidate["proposed_path"] = f"specs/{directory}/{group}{local_id}.yaml"
+    assert parse_subject_ref(first["proposed_record"]["subject"]) != parse_subject_ref(
+        second["proposed_record"]["subject"]
+    )
+    with pytest.raises(AssertionError, match="portable ID collision"):
+        _assert_portable_candidate_namespace([first, second])
+
+
+@pytest.mark.parametrize("transition,state", [("activation", "active"), ("withdrawal", "retired")])
+def test_disposition_vocabulary_matches_the_typed_model(preparation, transition, state) -> None:
+    _, _, _, contract = preparation
+    values = contract["specification"]["document_shapes"]["disposition_event"]["transition_values"]
+    assert set(values) == {"activation", "withdrawal"}
+    assert transition in values
+    event = DispositionTransition("fixture:event", transition, "fixture:governed-decision")
+    assert event.resulting_state == state

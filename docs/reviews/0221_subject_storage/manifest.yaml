@@ -1,7 +1,7 @@
 schema_version: 1
 artifact_kind: rfc0221_subject_storage_preparation
 created_at: '2026-10-02T13:30:00Z'
-updated_at: '2026-10-02T13:30:00Z'
+updated_at: '2026-10-02T14:51:03Z'
 authority: agent_prepared_for_human_review
 gate_state: review_pending
 canonical_adoption: false
@@ -46,7 +46,7 @@ id_collision_audit:
   scope: Branch node trees, worktree node files and child paths, reservation registries, namespace aliases
     and open GitHub PR metadata. Subject destination IDs remain review tokens, not allocated identities.
 validation_snapshot:
-  recorded_at: '2026-10-02T13:47:39Z'
+  recorded_at: '2026-10-02T14:55:19Z'
   scope: Structural preparation and a bounded operational gate projection; not canonical storage adapter
     or writer conformance.
   spec_checks:
@@ -73,14 +73,14 @@ validation_snapshot:
   backlog_source_scope: Actual node graph; unrelated proposal, delivery and consumer backlog surfaces
     omitted.
   checked_file_sha256:
-    specs/nodes/SG-SPEC-0069.yaml: cef72ca84a1e8f8b96d53e789e1a8bc8bb2a33181d54d270ff705393d2149583
-    tests/test_subject_storage_preparation.py: 5de1c9aca1f799fe0d3fdc12d816f7ad9a785ce7996ee5fc1dfc45c358ef2f45
-    docs/reviews/0221_subject_storage/workspace_identity.yaml: c5eb8b38fa6e649d8625992cc1873e0379f6b36ddb60447c41320960b34292e1
-    docs/reviews/0221_subject_storage/req.repaired-candidate-review-readiness.yaml: 76066cf175e07ffe509f79396a026e24e066669d45f2fb5d01e4cc1cd89ef947
-    docs/reviews/0221_subject_storage/req.platform-promotion-approval-boundary.yaml: 8660d3ebf052bea469fd75cdfec2ae4505dfd0ad6a0600cd88070d6fd5608ce0
-    docs/reviews/0221_subject_storage/ac.clean-noop.yaml: ddfe1760192381e548f7df350f287b2835eb49bc82372937b4a3f17f705efaec
-    docs/reviews/0221_subject_storage/ac.repaired-preview.yaml: 0c46bfe769efa79f1b5fc2e5e7da5fb055af595ffa7e1e0edca45b9b0c94ba97
-    docs/reviews/0221_subject_storage/ac.unresolved-gaps.yaml: d3fabe029294a30cf3ffdc9ad31d4a2478dcdceec228d3bd78c1d84da7b892b1
-    docs/reviews/0221_subject_storage/ac.approval-boundary.yaml: 2fb07ad4d0bd4fd599ae45b93ddc8b65a646dd01be8cd51e7d9899ddda27336f
+    specs/nodes/SG-SPEC-0069.yaml: 4e8820180dbe3d424c1f6ab3dae966250ef1b60ff9ff09aab36793597c0eefa3
+    tests/test_subject_storage_preparation.py: 357d9e89d274d8d76825f043b945444de2af87a572d1a5e2e5799968c28a624a
+    docs/reviews/0221_subject_storage/workspace_identity.yaml: d5a99ab533da5e3568601fb2d9c9934aeb3044dd5770c6bd442fd761a80b783b
+    docs/reviews/0221_subject_storage/req.repaired-candidate-review-readiness.yaml: 9c1e492bded55c9432ca0ed8106ff285e59364c6f80666ba5980d2c05d9ad4bf
+    docs/reviews/0221_subject_storage/req.platform-promotion-approval-boundary.yaml: e73e5a6125dab67b2292b143fbf98eb980f9cd96a9f9cb5314473afd4214b66e
+    docs/reviews/0221_subject_storage/ac.clean-noop.yaml: fb57d2ac6c61333a6b202a5272a9480a046c237e93ec95eafad2bf7ad44fa212
+    docs/reviews/0221_subject_storage/ac.repaired-preview.yaml: dcd77117dad3261b4bdf61e92330f853d3f9004070037f72e62f2124fb683467
+    docs/reviews/0221_subject_storage/ac.unresolved-gaps.yaml: 2121814bc269271e2e5fd6a4d0884a6c5251eed084fcfc7f5b26fa9a1f6cdf4b
+    docs/reviews/0221_subject_storage/ac.approval-boundary.yaml: e3869c3e2530f82b175ad7a53aa6ad0f787c0d65fe18bf870d9370de125c9e7c
   llm_refinement: not_run
   canonical_materialization: not_performed
