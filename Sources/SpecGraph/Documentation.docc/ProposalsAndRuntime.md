@@ -307,3 +307,27 @@ applicability and trusted runtime remain separate boundaries.
 See `docs/reviews/0221_subject_storage_decision.md`. Byte-exact reviewed snapshots
 keep prior schema/test hashes verifiable without rewriting prepared candidates,
 pending decision templates or the original pilot evidence.
+
+## Read-only RFC 0221 canonical-source adapter
+
+`tools/subject_canonical_source.py` implements `read_canonical_source` against
+the approved SG-SPEC-0069 physical schema. Its explicit source root and selected
+topology/evidence binding produce an immutable index and source digest audit.
+Strict checks cover the complete revision chain, node provenance, authored
+`revision_scope`, exact criterion pins, current projections, portable collisions
+and containment paths. Reads allocate nothing and never publish source files.
+
+Snapshot exchange v1 optionally retains `node_fields`/`revision_scope` and
+`retained_disposition_order`. Exact lookup preserves historical metadata, while
+disposition is current and its authored event order remains available. Optional
+provenance and nested trace values survive export/reparse; legacy output remains
+unchanged. Canonical presence comes from the selected topology independently of
+file presence or disposition. `caller_selected_not_attested` labels its evidence
+boundary; external subject relations remain outside this supplied storage slice.
+
+See `docs/subject_canonical_source.md`. This is
+`partial_canonical_source_adapter` evidence, with
+`canonical_readiness: not_evaluated`, `ready_for_materialization: false` and
+`canonical_mutations_allowed: false`. Prior digest conflict enforcement, origin
+allocation and atomic publication remain the writer slice. Canonical
+materialization, migration and destination evidence applicability remain separate.

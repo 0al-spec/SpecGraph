@@ -702,6 +702,25 @@
         "ready_for_materialization",
         "SG-SPEC-0051"
       ]
+    },
+    {
+      "id": "rfc0221-canonical-source-adapter",
+      "description": "Bounded strict canonical-source reads preserve revision metadata and remain separate from writing and readiness.",
+      "docs": [
+        "docs/subject_canonical_source.md"
+      ],
+      "docc": [
+        "Sources/SpecGraph/Documentation.docc/ProposalsAndRuntime.md"
+      ],
+      "required_terms": [
+        "SG-SPEC-0069",
+        "read_canonical_source",
+        "revision_scope",
+        "retained_disposition_order",
+        "caller_selected_not_attested",
+        "partial_canonical_source_adapter",
+        "ready_for_materialization"
+      ]
     }
   ]
 }

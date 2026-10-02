@@ -6,6 +6,11 @@ The semantic contract was approved by the human and merged in PR #747 at
 `ed8a00c7d34ab5df5f3c8c29460a8d9231a10311`. The subsequent human instruction
 “Делай” authorized this bounded read-model implementation.
 
+The subsequent [canonical-source adapter](subject_canonical_source.md), authorized
+by the exact PR #752 packet approval, applies the stronger SG-SPEC-0069 storage
+checks. Snapshot v1 optionally retains paired `node_fields`/`revision_scope` and
+`retained_disposition_order`; legacy snapshots keep their existing output shape.
+
 ## Run a lookup
 
 Use the repository Python environment:

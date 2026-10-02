@@ -18,11 +18,14 @@ from yaml import YAMLError
 
 from spec_yaml import load_yaml_text
 from subject_read_model import (
+    CriterionNodeFields,
     CurrentSubjectDisposition,
     DispositionTransition,
     LookupResult,
+    NodeProvenance,
     RelationEndpoint,
     RelationSource,
+    RequirementNodeFields,
     RevisionSelection,
     SubjectClass,
     SubjectIndex,
@@ -56,6 +59,18 @@ def _list(value: object) -> list:
     return value
 
 
+def _require_string_trace_keys(value: object) -> None:
+    """Reject YAML keys that JSON would rewrite, including in nested trace data."""
+    if isinstance(value, Mapping):
+        if any(not isinstance(key, str) for key in value):
+            raise SubjectDocumentError("trace_context mappings must use string keys")
+        for item in value.values():
+            _require_string_trace_keys(item)
+    elif isinstance(value, (list, tuple)):
+        for item in value:
+            _require_string_trace_keys(item)
+
+
 def parse_subject_ref(value: object) -> SubjectRef:
     data = _object(value, {"workspace_identity", "subject_class", "local_subject_id"})
     return SubjectRef(
@@ -68,7 +83,7 @@ def _selection(value: object) -> RevisionSelection:
     return RevisionSelection(parse_subject_ref(data["subject"]), data["mode"], data.get("revision"))
 
 
-def _revision(value: object) -> SubjectRevision:
+def parse_subject_revision(value: object) -> SubjectRevision:
     data = _object(
         value,
         {
@@ -79,7 +94,10 @@ def _revision(value: object) -> SubjectRevision:
             "provenance",
             "acceptance_criteria_refs",
         },
+        {"node_fields", "revision_scope"},
     )
+    if ("node_fields" in data) != ("revision_scope" in data):
+        raise SubjectDocumentError("node_fields and revision_scope must be supplied together")
     return SubjectRevision(
         number=data["number"],
         predecessor=data["predecessor"],
@@ -89,6 +107,94 @@ def _revision(value: object) -> SubjectRevision:
         acceptance_criteria_refs=tuple(
             _selection(v) for v in _list(data["acceptance_criteria_refs"])
         ),
+        node_fields=parse_node_fields(data["node_fields"]) if "node_fields" in data else None,
+        revision_scope=data.get("revision_scope"),
+    )
+
+
+def parse_node_fields(value: object) -> RequirementNodeFields | CriterionNodeFields:
+    """Decode complete retained metadata; a title-only record denotes a criterion."""
+    if isinstance(value, Mapping) and set(value) == {"title"}:
+        return CriterionNodeFields(**value)
+    data = _object(value, {"title", "status", "authority_class", "source_ref", "provenance"})
+    provenance = dict(
+        _object(
+            data["provenance"],
+            {"actor_id", "authority_class", "recorded_at"},
+            {"source_ref", "source_system", "source_confidence", "notes", "trace_context"},
+        )
+    )
+    provenance["present_optional_fields"] = tuple(
+        sorted(set(provenance) - {"actor_id", "authority_class", "recorded_at"})
+    )
+    if "trace_context" in provenance:
+        _require_string_trace_keys(provenance["trace_context"])
+        provenance["trace_context_json"] = json.dumps(
+            provenance.pop("trace_context"), sort_keys=True, ensure_ascii=False, allow_nan=False
+        )
+    return RequirementNodeFields(
+        data["title"],
+        data["status"],
+        data["authority_class"],
+        data["source_ref"],
+        NodeProvenance(**provenance),
+    )
+
+
+def revision_payload(revision: SubjectRevision) -> dict:
+    """Keep legacy exchange output stable; export source metadata without losing trace shape."""
+    result = asdict(revision)
+    if revision.node_fields is None:
+        result.pop("node_fields")
+        result.pop("revision_scope")
+    elif isinstance(revision.node_fields, RequirementNodeFields):
+        provenance = result["node_fields"]["provenance"]
+        trace = provenance.pop("trace_context_json")
+        supplied = provenance.pop("present_optional_fields") or ()
+        for key in list(provenance):
+            if provenance[key] is None and key not in supplied:
+                provenance.pop(key)
+        if trace is not None:
+            provenance["trace_context"] = json.loads(trace)
+    return result
+
+
+def snapshot_payload(index: SubjectIndex) -> dict:
+    """Export an explicit exchange snapshot, preserving its declared dataset bindings."""
+    workspaces = []
+    for workspace in index.snapshots:
+        subjects = []
+        for subject in workspace.subjects:
+            record = asdict(subject)
+            record["revisions"] = [revision_payload(r) for r in subject.revisions]
+            record["retained_disposition_transitions"] = [
+                asdict(event) for event in subject.disposition_history
+            ]
+            if subject.retained_disposition_order is None:
+                record.pop("retained_disposition_order")
+            subjects.append(record)
+        relations = []
+        for relation in workspace.relations:
+            value = asdict(relation)
+            value.pop("source")
+            relations.append(value)
+        workspaces.append(
+            {
+                "workspace_identity": workspace.workspace_identity,
+                "dataset_identity": workspace.dataset_identity,
+                "subjects": subjects,
+                "relations": relations,
+            }
+        )
+    # JSON's array shape is part of this boundary; core collections remain tuples.
+    return json.loads(
+        json.dumps(
+            {
+                "schema_version": 1,
+                "artifact_kind": "subject_read_snapshot",
+                "workspaces": workspaces,
+            }
+        )
     )
 
 
@@ -103,6 +209,7 @@ def _record(value: object) -> SubjectRecord:
             "canonical_presence",
             "retained_disposition_transitions",
         },
+        {"retained_disposition_order"},
     )
     disposition = _object(
         data["current_disposition"], {"state", "basis_ref", "observation_provenance"}
@@ -110,12 +217,17 @@ def _record(value: object) -> SubjectRecord:
     return SubjectRecord(
         reference=parse_subject_ref(data["reference"]),
         current_revision=data["current_revision"],
-        revisions=tuple(_revision(v) for v in _list(data["revisions"])),
+        revisions=tuple(parse_subject_revision(v) for v in _list(data["revisions"])),
         current_disposition=CurrentSubjectDisposition(**disposition),
         canonical_presence=data["canonical_presence"],
         retained_disposition_transitions=tuple(
             DispositionTransition(**_object(v, {"event_ref", "transition", "provenance"}))
             for v in _list(data["retained_disposition_transitions"])
+        ),
+        retained_disposition_order=(
+            tuple(_list(data["retained_disposition_order"]))
+            if "retained_disposition_order" in data
+            else None
         ),
     )
 
@@ -188,7 +300,7 @@ def lookup_payload(result: LookupResult) -> dict[str, object]:
     if result.record is not None and result.selected_revision is not None:
         payload["resolved"] = {
             "reference": asdict(result.record.reference),
-            "revision": asdict(result.selected_revision),
+            "revision": revision_payload(result.selected_revision),
             "current_revision": result.record.current_revision,
             "retained_containment_history": [
                 {"revision": r.number, "containment": r.containment, "provenance": r.provenance}
@@ -196,7 +308,7 @@ def lookup_payload(result: LookupResult) -> dict[str, object]:
             ],
             "current_subject_disposition": asdict(result.record.current_disposition),
             "retained_disposition_transitions": [
-                asdict(event) for event in result.record.retained_disposition_transitions
+                asdict(event) for event in result.record.disposition_history
             ],
             "canonical_presence": result.record.canonical_presence,
             "acceptance_criteria_refs": [
