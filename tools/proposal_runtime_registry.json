@@ -12937,7 +12937,15 @@
       "docs/proposals/0223_bdd_scenario_contract_and_gherkin_exchange.md",
       "docs/archive/proposal_sources/0223_bdd_scenario_contract_and_gherkin_exchange.md",
       "docs/reviews/0223_zeusus_bdd_observation.json",
-      "docs/reviews/0223_astra_review_followup.md"
+      "docs/reviews/0223_astra_review_followup.md",
+      "docs/reviews/0223_native_bdd_contract_preparation.md",
+      "docs/reviews/0223_native_bdd_contract_input.yaml",
+      "docs/reviews/0223_native_bdd_supervisor_raw.yaml",
+      "docs/reviews/0223_native_bdd_supervisor_candidate.yaml",
+      "docs/reviews/0223_native_bdd_preparation_evidence.json",
+      "docs/reviews/0223_native_bdd_corpus_audit.json",
+      "docs/reviews/0223_executor_diagnostic_excerpt.txt",
+      "tests/test_native_bdd_characterization.py"
     ],
     "runtime_markers": [
       {
@@ -12945,13 +12953,30 @@
         "pattern": "Draft proposal; contract preparation only."
       }
     ],
-    "validation_markers": [],
+    "validation_markers": [
+      {
+        "path": "tests/test_native_bdd_characterization.py",
+        "pattern": "def test_alternate_container_is_retained_but_never_consumed("
+      },
+      {
+        "path": "tests/test_native_bdd_characterization.py",
+        "pattern": "def test_reference_lookup_does_not_search_related_nodes("
+      }
+    ],
     "observation_markers": [
       {
         "path": "docs/reviews/0223_zeusus_bdd_observation.json",
         "pattern": "\"evidence_class\": \"curated_historical_observation\""
+      },
+      {
+        "path": "docs/reviews/0223_native_bdd_preparation_evidence.json",
+        "pattern": "\"strict_profile_implemented\": false"
+      },
+      {
+        "path": "docs/reviews/0223_native_bdd_corpus_audit.json",
+        "pattern": "\"full_ecosystem_inventory\": false"
       }
     ],
-    "notes": "Proposal preparation only. Runtime realization and activation require a separately reviewed graph contract and implementation slice. Historical extraction counts and hashes do not demonstrate implemented shared validation, Gherkin exchange, gameplay execution or evidence admission. Independent GPT 6 Astra / Ultra review of head 365b387973ac61df32cc8532b3f3caddc3719b18 found no P1/P2. The author clarified its three P3 items in proposal 0.1.1: explicit native input matrix, immutable workspace and owning-node reference scope, and a versioned exchange envelope with direct reserved IDs and file-level comment provenance. Documented acceptance cases are future checks, not executed runtime tests or independent approval of the follow-up. A separate GitHub review of the original head reported three P2 items. Proposal 0.1.2 retains the envelope clarification and requires a reviewed canonical scenario-digest byte contract before activation plus fail-closed stale-preview source preconditions at the serialized write boundary. BDD-13/14 are future acceptance cases; the fourteen-case package and documentation prevention records do not prove runtime enforcement or resolve GitHub threads."
+    "notes": "Proposal preparation only. Runtime realization and activation require a separately reviewed graph contract and implementation slice. Historical extraction counts and hashes do not demonstrate implemented shared validation, Gherkin exchange, gameplay execution or evidence admission. Independent GPT 6 Astra / Ultra review of head 365b387973ac61df32cc8532b3f3caddc3719b18 found no P1/P2. The author clarified its three P3 items in proposal 0.1.1: explicit native input matrix, immutable workspace and owning-node reference scope, and a versioned exchange envelope with direct reserved IDs and file-level comment provenance. Documented acceptance cases are future checks, not executed runtime tests or independent approval of the follow-up. A separate GitHub review of the original head reported three P2 items. Proposal 0.1.2 retains the envelope clarification and requires a reviewed canonical scenario-digest byte contract before activation plus fail-closed stale-preview source preconditions at the serialized write boundary. BDD-13/14 are future acceptance cases; the fourteen-case package and documentation prevention records do not prove runtime enforcement or resolve GitHub threads. PR #753 merged after all three P2 threads were replied to and resolved with explicit operator authorization. The next preparation retains a raw and curated temporary DRAFT-SPEC-0223 candidate proposed under SG-SPEC-0062, a bounded source-pinned corpus audit and 71 passing current-compatibility tests. The candidate proposes six named SpecificationCore objects and eleven future BDD cases; canonical adoption, shared-loader implementation and strict activation remain absent. A state-runtime false positive from printed documentation is recorded separately without clearing the historical review gate."
   }
 ]

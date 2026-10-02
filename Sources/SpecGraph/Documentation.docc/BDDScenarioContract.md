@@ -99,10 +99,34 @@ readiness from scenario counts.
 
 ## Next bounded realization
 
-Review the shared native model and corpus compatibility first, then implement
-one shared-loader slice reproducing the pilot failure. Approved migration and
-Gherkin exchange follow separately. Field allowlists, profile selection and
-reserved tag spelling remain decisions for activation review.
+The native contract candidate is proposed under **SG-SPEC-0062**. One targeted
+Supervisor preparation used GPT 6 Luna Medium; its raw result and curated
+`DRAFT-SPEC-0223` copy stay outside canonical specs. The curated copy has five
+criteria, eleven future BDD cases and `review_pending`. It proposes an exact
+`id`/`scenario`/`steps` allowlist, no v1 extensions and six separately named
+SpecificationCore policies, including `BDDContainerPresenceSpec`, with RFC rule
+references. These bindings are intended obligations, not implemented code or
+canonical requirement identities.
+
+`make test-native-bdd-characterization` passed 71 current compatibility tests:
+50 new cases and 21 existing contract-pack cases. A bounded read-only audit pins
+69 canonical SpecGraph files and six normalized historical Zeusus specs with
+100 scenarios; the inspected scenario fields match the proposed allowlist. The
+tests preserve existing behavior, including ignored alternate containers and
+unchecked descriptive titles. They do not execute the future strict cases.
+
+The preparation retains a false `state_runtime_failure` finding on quoted
+diagnostic examples printed from documentation. Successful executor completion
+does not clear the historical gate; a separate runtime follow-up must distinguish
+actual diagnostics from transcript text. The raw/curated hashes, corpus scope
+and exact excerpt live under `docs/reviews/0223_native_bdd_*` and
+`docs/reviews/0223_executor_diagnostic_excerpt.txt`.
+
+Review and adopt the native contract explicitly before one shared-loader slice
+reproducing the pilot failure. Approved migration and Gherkin exchange follow
+separately. Profile activation, the normalized digest byte contract and reserved
+tag spelling remain separate decisions. Field policy is proposed for review,
+not activated by these documents.
 
 The [source preparation](https://github.com/0al-spec/SpecGraph/blob/365b387973ac61df32cc8532b3f3caddc3719b18/docs/proposals/0223_bdd_scenario_contract_and_gherkin_exchange.md)
 received independent GPT 6 Astra / Ultra review with no P1/P2. Version 0.1.1
@@ -113,6 +137,9 @@ Separate GitHub review raised three P2 items. Version 0.1.2 retains the exchange
 envelope and adds canonical digest activation prerequisites and stale-preview
 write protection, with future BDD-13/14. Their process-evidence records live in
 `tools/review_feedback_records.json`; document fixes do not prove writer enforcement.
+PR #753 merged after the three threads were resolved. Version 0.1.3 records the
+native preparation and executed compatibility tests; the original independent
+verdict does not extend to that follow-up candidate.
 
 `make proposal-tracking-gate` and `make docc-sync` check document preparation.
 They do not execute future BDD cases or grant implementation authority.
@@ -123,3 +150,6 @@ They do not execute future BDD cases or grant implementation authority.
 - `docs/archive/proposal_sources/0223_bdd_scenario_contract_and_gherkin_exchange.md`
 - `docs/reviews/0223_zeusus_bdd_observation.json`
 - `docs/reviews/0223_astra_review_followup.md`
+- `docs/reviews/0223_native_bdd_contract_preparation.md`
+- `docs/reviews/0223_native_bdd_preparation_evidence.json`
+- `docs/reviews/0223_native_bdd_corpus_audit.json`

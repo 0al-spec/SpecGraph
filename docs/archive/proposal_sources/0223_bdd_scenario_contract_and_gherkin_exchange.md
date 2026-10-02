@@ -99,3 +99,25 @@ Future BDD-13/14 supplement the existing twelve cases.
 See [the follow-up record](../../reviews/0223_astra_review_followup.md) and
 tools/review_feedback_records.json for provenance and prevention classification.
 This clarification does not implement or activate the proposed runtime.
+
+## Follow-up after proposal merge
+
+The operator authorized resolving the three P2 threads, then requested:
+"Ок, сливай сейчас и продолжай". PR #753 merged by rebase at
+`0a08e38a23fbbe5ad7450c0d31ed48cec84a094e`, with zero unresolved threads.
+This authorizes continuation of preparation; it does not silently adopt a
+canonical policy or activate a strict profile.
+
+The author prepared one native declaration candidate through a targeted
+Supervisor pass using GPT 6 Luna Medium and the RFC 0221 temporary-draft pattern.
+SG-SPEC-0062 is its proposed parent. Raw and curated candidates remain outside
+the canonical tree. Author curation proposes explicit fields, six named
+SpecificationCore policies with rule references, local observability and two
+additional future BDD cases. No implementation conformance is claimed.
+
+Fifty new compatibility characterization cases plus 21 existing contract-pack
+tests passed. A bounded audit pinned 69 canonical SpecGraph sources and six
+historical normalized Zeusus sources with 100 scenarios; it is not a complete
+workspace ecosystem inventory. The Supervisor's review gate remains pending.
+A false runtime finding on quoted documentation is retained as a separate
+diagnostic observation. See the [native preparation record](../../reviews/0223_native_bdd_contract_preparation.md).

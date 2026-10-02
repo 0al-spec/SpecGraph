@@ -1,0 +1,218 @@
+{
+  "artifact_kind": "rfc0223_native_bdd_bounded_corpus_audit",
+  "schema_version": 1,
+  "read_only": true,
+  "full_ecosystem_inventory": false,
+  "canonical_adoption": false,
+  "audit_scope": "Explicit canonical SpecGraph files and the six historical normalized Zeusus command-history source files only. No unrelated worktrees or product snapshots are scanned.",
+  "inventories": [
+    {
+      "workspace_alias": "specgraph",
+      "source_revision": "0a08e38a23fbbe5ad7450c0d31ed48cec84a094e",
+      "path_scope": "specs/nodes/*.yaml",
+      "source_byte_pins": true,
+      "file_count": 69,
+      "native_count": 0,
+      "alternate_container_file_count": 0,
+      "scenario_field_sets": [],
+      "title_missing_count": 0,
+      "title_invalid_count": 0,
+      "file_pins": {
+        "specs/nodes/SG-SPEC-0001.yaml": "a4a084ef61caba1881355638f65076f098a859967de34bd41ebfe9245ac9829e",
+        "specs/nodes/SG-SPEC-0002.yaml": "fb7d6d59ca852b9df2eb5b86e4b228f99d24db0020061c8c8b9a673c3451e541",
+        "specs/nodes/SG-SPEC-0003.yaml": "7a2f69060e4290f722bba4e8a1a58612f05a9479c85f49ea13158b6bbd4ab3f9",
+        "specs/nodes/SG-SPEC-0004.yaml": "bcd101881c0cb8d3ed47ee98bf7a3e488f1dffb915322fc755853993f9ce3766",
+        "specs/nodes/SG-SPEC-0005.yaml": "153f82de41b7349715241e03bb2374ae1f74baeb9628f107fef446673482d55c",
+        "specs/nodes/SG-SPEC-0006.yaml": "8300002d3fd5e16a607765ba43d3cd10a6d9b0bb426117fad0620e838f166715",
+        "specs/nodes/SG-SPEC-0007.yaml": "ea58f937a5dc2f7e3fc4a0d60651dabb2b3a5a571bf1f03218eab497a0efe92c",
+        "specs/nodes/SG-SPEC-0008.yaml": "dc9fbfe356344ac9ead4a4bee83df8fbe276bedf6bf15bc1112b7c644be1d43c",
+        "specs/nodes/SG-SPEC-0009.yaml": "06a8083bdbeda3cf5ea8dfc9036d98a63b5f9f741c4ce3a722c4708e7e1a9427",
+        "specs/nodes/SG-SPEC-0010.yaml": "4264c06c937aa23194cd998edf6c449bd5cd2dceaf8e932c90907c765b55aea6",
+        "specs/nodes/SG-SPEC-0011.yaml": "42664ac0295e12321e3b2fc14dd96c9be2d2fd9ddb0d79c5b3e6a83daa160f4d",
+        "specs/nodes/SG-SPEC-0012.yaml": "b8a6731c85a385ca6390e9dd3623f93d7cc4735c3662e8df796270f833d76694",
+        "specs/nodes/SG-SPEC-0013.yaml": "777bf8aa46e05e25e207dcdad6f0b9485a4dfb5b8d0a1f38b8c3118592daafd4",
+        "specs/nodes/SG-SPEC-0014.yaml": "a46aba564cf3e75842b6ea15626932a5b4642e11428d7464ad62bb1d4b552053",
+        "specs/nodes/SG-SPEC-0015.yaml": "8ec9bc580bd56ec2030346b754c56b0953e55a96d0c3ed422e00a9cc40a4f8e9",
+        "specs/nodes/SG-SPEC-0016.yaml": "7af80b087075001308858ee70a970983a018a3d340618f25bf8f016a85386b60",
+        "specs/nodes/SG-SPEC-0017.yaml": "47f8ba63cf7ff11d49669a02ac24e17263827922ee5956cc1891fe20c24662ca",
+        "specs/nodes/SG-SPEC-0018.yaml": "e598e1c907b1642a80764586590751793f8260422392520526e9e437d71781eb",
+        "specs/nodes/SG-SPEC-0019.yaml": "7aaeb8524819ec255e1d1f5bfb6a48ea81b5c1c13643b34cda77b4c38a5831fa",
+        "specs/nodes/SG-SPEC-0020.yaml": "e9f19d86fc5b4e2ff6ea4954f4a715a846bbf900416a64c36c9a24fd2ed4ce0a",
+        "specs/nodes/SG-SPEC-0021.yaml": "2e9a9df307fb040e5d6752b7e6ffd3c6a216b9de5d8d6662cb1d18bef636d77b",
+        "specs/nodes/SG-SPEC-0022.yaml": "1fd8a89c05207ac2aa621084b01de5e735fdee7af436c3a33d8e94c76b59e7e3",
+        "specs/nodes/SG-SPEC-0023.yaml": "605a520cef2e54961a48593427de9f1188898c4910c6c8c4895ef70af0b2bf30",
+        "specs/nodes/SG-SPEC-0024.yaml": "dddc2beaf839cbef47d5f9221bdd3992a5865b73b16de5b5277e8ab89b6a9889",
+        "specs/nodes/SG-SPEC-0025.yaml": "e1476281a75190c74b1b324e1aaaa07cc16020120efe59e0e5650bcb9f650f6e",
+        "specs/nodes/SG-SPEC-0026.yaml": "3dd02b693c915fcb843809167bbbb93d712917724765008b6ad855ca297e60fa",
+        "specs/nodes/SG-SPEC-0027.yaml": "93bfa7d57f70a6ee7e8e68679d74ca1c8fbfe4ecec0a8848427f2d110f253c6b",
+        "specs/nodes/SG-SPEC-0028.yaml": "3227e047fb3d1a04de42fe11e6dd35e50cf1160cf5996431ed500cea61250877",
+        "specs/nodes/SG-SPEC-0029.yaml": "381e7d49cf3bfecf272e246e166345fd871190987fe8a521a612f358615f689b",
+        "specs/nodes/SG-SPEC-0030.yaml": "b73e92a7536fa513aaa56d1e72c7025dbcd9754f099296a0482a29a3c6acd173",
+        "specs/nodes/SG-SPEC-0031.yaml": "29a64251833eceee5e475104c61135c3243ccbb1b1b322069adb7c8d7d4efe40",
+        "specs/nodes/SG-SPEC-0032.yaml": "636f573b11c8f621dea2a1a5aa0ec1eb64cc9155087419e4f48b1a86a3ae356f",
+        "specs/nodes/SG-SPEC-0033.yaml": "774ac5c9adb434abdda492542f3ddab657196a4339654ff23b0d1addbec07868",
+        "specs/nodes/SG-SPEC-0034.yaml": "8e71fc0ff6eb98cd6533dc77889df319fa8b4fd6fcdac7d34801b5076ce9c05b",
+        "specs/nodes/SG-SPEC-0035.yaml": "785209e6abfd23e0fc32867210a2a83799cc4ce83579fa369e8a4fe99c9273eb",
+        "specs/nodes/SG-SPEC-0036.yaml": "67a6b6f596df9139afd10945c8d1d57cb73cf87886ec6c806ca54deab51422b8",
+        "specs/nodes/SG-SPEC-0037.yaml": "9560eea9259ca9776a0a485fcf8d45b4f5989af268c4b9f42841c823ae5df0e0",
+        "specs/nodes/SG-SPEC-0038.yaml": "b8c8b86533ad94d4a248d758b73202de73127f0f57942e47b86c73f79b0d55e6",
+        "specs/nodes/SG-SPEC-0039.yaml": "47adf00967f07428d3960986a7ff9bc25f0dd737871078d04deee39285e4168e",
+        "specs/nodes/SG-SPEC-0040.yaml": "ae70ba6cdfeb6c6125e8cc7a984b85b4e7183296bb57a6c3de88d81ab4c09122",
+        "specs/nodes/SG-SPEC-0041.yaml": "fc8f10ce88e9118c3e95137881b6dad2c1b58f371db0f75f08990cca1560d73b",
+        "specs/nodes/SG-SPEC-0042.yaml": "9aad26157f1b769a7006e0c33b43aa026c33943962c239813bb00edd530051d6",
+        "specs/nodes/SG-SPEC-0043.yaml": "ee2f466820b2b2a341a1acd9234671bcfc9512fdeac5c366ac31a2c97ab04618",
+        "specs/nodes/SG-SPEC-0044.yaml": "f01ba8e0aca1b04d13a7926a1aeeed648738409e6c4fc3652747284aa17c5357",
+        "specs/nodes/SG-SPEC-0045.yaml": "073dee9f337eff3c88416e7f1fb6c3bc37ef179fb314d213f64d20c731bebd05",
+        "specs/nodes/SG-SPEC-0046.yaml": "b679c3472ddb14a8fb8b9bc80e007fb2e455697ba4a2e38abc81a77f77b5953e",
+        "specs/nodes/SG-SPEC-0047.yaml": "8753dc53744084b4dfc3c9cb0774d3eb7f836ca3a5c2490d97c3c368d8236f46",
+        "specs/nodes/SG-SPEC-0048.yaml": "d58426385234eaa38345121d6edb097e363cd5898170079ca7c1d4cc86f02c87",
+        "specs/nodes/SG-SPEC-0049.yaml": "c1686aa007929623e8ff6caa1976d1989e700822e0200e0b37fa0fc36aef28ab",
+        "specs/nodes/SG-SPEC-0050.yaml": "5a56fc509889dd1721e6b26bae7c58529a342f933a54b2c108c3f0247af32257",
+        "specs/nodes/SG-SPEC-0051.yaml": "4869849286711830bba3bf19aa45526f96e535f4633949a0deb18ada071daceb",
+        "specs/nodes/SG-SPEC-0052.yaml": "c70b4f94e0244eb1e4bf7191e11e887dcc70c957dce85e7927fc5e220398b229",
+        "specs/nodes/SG-SPEC-0053.yaml": "e7e7cd2c7d667cdce2a0627f19e7192be1ce4e78365d0b9586bc712df920ee63",
+        "specs/nodes/SG-SPEC-0054.yaml": "7f0e3a73b62fedcb4b8a497417323d3827cffee32c6d16f3e338a0eec824cf6f",
+        "specs/nodes/SG-SPEC-0055.yaml": "d1634433b84d8c59ba58fda810cbd54e1156d41d8597a8a0635208f1473088b4",
+        "specs/nodes/SG-SPEC-0056.yaml": "51e3681bc7e3e7c0c5e3ddb1a825c2e573de2b92938c4d93a925616c63f87e1d",
+        "specs/nodes/SG-SPEC-0057.yaml": "0dd4911c766c597dafd3d3e0b3f25c0d0780e0598329980d65a9827b01dd540f",
+        "specs/nodes/SG-SPEC-0058.yaml": "9f22e23e5d888b20807f0cc5f6fc87d8333eedd5e17135a0da6afc2696efb819",
+        "specs/nodes/SG-SPEC-0059.yaml": "06b3b7961778ce0745db1d973ade08e98588a235a12afff7a73e846b03de1b11",
+        "specs/nodes/SG-SPEC-0060.yaml": "938e5c6d3aa1619544db49b3d67f176840abd885d99b626d49926689918b33f2",
+        "specs/nodes/SG-SPEC-0061.yaml": "cc0b058383ce70b25471cc3ae65f259eddd38145fb7197dcc62b9c0b83206608",
+        "specs/nodes/SG-SPEC-0062.yaml": "81cefcd3dae7450e5339ea5ce777e09e9e92f8a057188e0a166fe5c32b603c50",
+        "specs/nodes/SG-SPEC-0063.yaml": "78577bb7e6c7ed03b76df92eb62fe984073b49345e0bb854e939bece225bbbf9",
+        "specs/nodes/SG-SPEC-0064.yaml": "b5b9eb8886ec01d3b8b937ce4ce1652be13e738433b675cb0d77098baad122fc",
+        "specs/nodes/SG-SPEC-0065.yaml": "c8dc47610c9dc0fe7a880ed6462ff26ada44ce11f7fad39b34463a58e7377274",
+        "specs/nodes/SG-SPEC-0066.yaml": "c92478f407673dd78b22b71f6bf0f6e8066fe4913a5543707bb037177cbe9e69",
+        "specs/nodes/SG-SPEC-0067.yaml": "007bbaa911a5ff4f56ffba62027373d3fdeaf6fc190046bfd84139b0e6f97de5",
+        "specs/nodes/SG-SPEC-0068.yaml": "9b523386b9678acfcf8dfac3675ee700b107655896c0e6d8187f44561adbafd1",
+        "specs/nodes/SG-SPEC-0069.yaml": "4e8820180dbe3d424c1f6ab3dae966250ef1b60ff9ff09aab36793597c0eefa3"
+      },
+      "native_declarations": []
+    },
+    {
+      "workspace_alias": "zeusus",
+      "source_revision": "919320f7b0db246f2feee06cab01e62c20256ab0",
+      "path_scope": "docs/evidence/command-history-specgraph/bdd-amendment/specs/*.yaml",
+      "source_byte_pins": true,
+      "file_count": 6,
+      "native_count": 100,
+      "alternate_container_file_count": 0,
+      "scenario_field_sets": [
+        [
+          "id",
+          "scenario",
+          "steps"
+        ]
+      ],
+      "title_missing_count": 0,
+      "title_invalid_count": 0,
+      "file_pins": {
+        "docs/evidence/command-history-specgraph/bdd-amendment/specs/ZEU-SPEC-0018.yaml": "0888edf709536c543454b5ace1a5ddfb0417f15dfac95067c2b6b37de95ee245",
+        "docs/evidence/command-history-specgraph/bdd-amendment/specs/ZEU-SPEC-0019.yaml": "d10cc35d457b4ae9cb0e010063cd51850955a93ca0cd098aec753abb132c7dc0",
+        "docs/evidence/command-history-specgraph/bdd-amendment/specs/ZEU-SPEC-0020.yaml": "197c17217e5cda2cb2516166282ca7d276df3d9d88b974c84cc60df04a459144",
+        "docs/evidence/command-history-specgraph/bdd-amendment/specs/ZEU-SPEC-0021.yaml": "baf672a281a95bbe9c0604f7a421e28c52fbe04492258b49a7d3ce3b29cab0f9",
+        "docs/evidence/command-history-specgraph/bdd-amendment/specs/ZEU-SPEC-0022.yaml": "0a3352175cd64131d00813a78e5e4c0b634fa9f2186814dd8b6c748c157c2f4f",
+        "docs/evidence/command-history-specgraph/bdd-amendment/specs/ZEU-SPEC-0023.yaml": "4b77adf1d9354a7719aa7fcc7763bd1338867dd7c7e62ddfcf498c0e256e4af4"
+      },
+      "native_declarations": [
+        {
+          "path": "docs/evidence/command-history-specgraph/bdd-amendment/specs/ZEU-SPEC-0018.yaml",
+          "node_id": "ZEU-SPEC-0018",
+          "native_container_present": true,
+          "alternate_container_present": false,
+          "native_count": 10,
+          "scenario_field_sets": [
+            [
+              "id",
+              "scenario",
+              "steps"
+            ]
+          ],
+          "title_missing_count": 0,
+          "title_invalid_count": 0
+        },
+        {
+          "path": "docs/evidence/command-history-specgraph/bdd-amendment/specs/ZEU-SPEC-0019.yaml",
+          "node_id": "ZEU-SPEC-0019",
+          "native_container_present": true,
+          "alternate_container_present": false,
+          "native_count": 26,
+          "scenario_field_sets": [
+            [
+              "id",
+              "scenario",
+              "steps"
+            ]
+          ],
+          "title_missing_count": 0,
+          "title_invalid_count": 0
+        },
+        {
+          "path": "docs/evidence/command-history-specgraph/bdd-amendment/specs/ZEU-SPEC-0020.yaml",
+          "node_id": "ZEU-SPEC-0020",
+          "native_container_present": true,
+          "alternate_container_present": false,
+          "native_count": 12,
+          "scenario_field_sets": [
+            [
+              "id",
+              "scenario",
+              "steps"
+            ]
+          ],
+          "title_missing_count": 0,
+          "title_invalid_count": 0
+        },
+        {
+          "path": "docs/evidence/command-history-specgraph/bdd-amendment/specs/ZEU-SPEC-0021.yaml",
+          "node_id": "ZEU-SPEC-0021",
+          "native_container_present": true,
+          "alternate_container_present": false,
+          "native_count": 14,
+          "scenario_field_sets": [
+            [
+              "id",
+              "scenario",
+              "steps"
+            ]
+          ],
+          "title_missing_count": 0,
+          "title_invalid_count": 0
+        },
+        {
+          "path": "docs/evidence/command-history-specgraph/bdd-amendment/specs/ZEU-SPEC-0022.yaml",
+          "node_id": "ZEU-SPEC-0022",
+          "native_container_present": true,
+          "alternate_container_present": false,
+          "native_count": 14,
+          "scenario_field_sets": [
+            [
+              "id",
+              "scenario",
+              "steps"
+            ]
+          ],
+          "title_missing_count": 0,
+          "title_invalid_count": 0
+        },
+        {
+          "path": "docs/evidence/command-history-specgraph/bdd-amendment/specs/ZEU-SPEC-0023.yaml",
+          "node_id": "ZEU-SPEC-0023",
+          "native_container_present": true,
+          "alternate_container_present": false,
+          "native_count": 24,
+          "scenario_field_sets": [
+            [
+              "id",
+              "scenario",
+              "steps"
+            ]
+          ],
+          "title_missing_count": 0,
+          "title_invalid_count": 0
+        }
+      ]
+    }
+  ]
+}
