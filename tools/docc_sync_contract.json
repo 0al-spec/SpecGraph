@@ -596,6 +596,27 @@
         "distinct identity",
         "historical"
       ]
+    },
+    {
+      "id": "rfc0221-subject-storage-preparation",
+      "description": "Physical storage examples remain review-only with explicit schema, provenance and writer gaps.",
+      "docs": [
+        "docs/reviews/0221_subject_storage_preparation.md"
+      ],
+      "docc": [
+        "Sources/SpecGraph/Documentation.docc/ProposalsAndRuntime.md"
+      ],
+      "required_terms": [
+        "SG-SPEC-0069",
+        "subject_storage_candidate",
+        "specs/workspace_identity.yaml",
+        "specs/requirements/",
+        "specs/criteria/",
+        "review_pending",
+        "canonical_readiness",
+        "not_evaluated",
+        "ready_for_materialization"
+      ]
     }
   ]
 }

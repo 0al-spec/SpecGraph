@@ -1,0 +1,86 @@
+schema_version: 1
+artifact_kind: rfc0221_subject_storage_preparation
+created_at: '2026-10-02T13:30:00Z'
+updated_at: '2026-10-02T13:30:00Z'
+authority: agent_prepared_for_human_review
+gate_state: review_pending
+canonical_adoption: false
+canonical_mutations_allowed: false
+canonical_readiness: not_evaluated
+ready_for_materialization: false
+storage_contract: specs/nodes/SG-SPEC-0069.yaml
+semantic_parent: specs/nodes/SG-SPEC-0068.yaml
+mapping_packet: docs/reviews/0221_requirement_mapping_review.json
+mapping_packet_sha256: e77d78cd15bf58b6820af41fb0b8842c9a23d64330a1b248577d348c8ed983c4
+candidate_paths:
+- docs/reviews/0221_subject_storage/workspace_identity.yaml
+- docs/reviews/0221_subject_storage/req.repaired-candidate-review-readiness.yaml
+- docs/reviews/0221_subject_storage/req.platform-promotion-approval-boundary.yaml
+- docs/reviews/0221_subject_storage/ac.clean-noop.yaml
+- docs/reviews/0221_subject_storage/ac.repaired-preview.yaml
+- docs/reviews/0221_subject_storage/ac.unresolved-gaps.yaml
+- docs/reviews/0221_subject_storage/ac.approval-boundary.yaml
+decisions:
+  storage_schema: null
+  workspace_identity_allocation: null
+  requirement_membership_and_mapping: null
+  canonical_materialization: null
+implementation_status:
+  canonical_source_adapter: not_implemented
+  validating_writer: not_implemented
+  evidence_applicability_transfer: not_performed
+id_collision_audit:
+  base_revision: c72f4017212a02da70dc275edf3f5cf06a27893f
+  checked_at: '2026-10-02T13:30:00Z'
+  branch_refs: 1057
+  unique_branch_heads: 587
+  active_local_worktrees: 89
+  open_pull_requests: 0
+  highest_existing_spec_id: SG-SPEC-0068
+  reserved_spec_ids:
+  - SG-SPEC-0030
+  - SG-SPEC-0043
+  - SG-SPEC-0066
+  new_contract_id: SG-SPEC-0069
+  collision: false
+  scope: Branch node trees, worktree node files and child paths, reservation registries, namespace aliases
+    and open GitHub PR metadata. Subject destination IDs remain review tokens, not allocated identities.
+validation_snapshot:
+  recorded_at: '2026-10-02T13:47:39Z'
+  scope: Structural preparation and a bounded operational gate projection; not canonical storage adapter
+    or writer conformance.
+  spec_checks:
+    outputs: []
+    allowed_paths: []
+    atomicity: []
+    reconciliation: []
+  graph_reconciliation:
+    worktree_spec_count: 69
+    changed_spec_ids:
+    - SG-SPEC-0069
+    semantic_dependencies_resolved: true
+    work_dependencies_ready: true
+    cycles: []
+  graph_health:
+    source_spec_id: SG-SPEC-0069
+    observations: []
+    signals: []
+    recommended_actions: []
+  diagnostic_outcome: done
+  gate_state: review_pending
+  backlog_status: review_pending
+  next_gap: resolve_review_gate
+  backlog_source_scope: Actual node graph; unrelated proposal, delivery and consumer backlog surfaces
+    omitted.
+  checked_file_sha256:
+    specs/nodes/SG-SPEC-0069.yaml: cef72ca84a1e8f8b96d53e789e1a8bc8bb2a33181d54d270ff705393d2149583
+    tests/test_subject_storage_preparation.py: 5de1c9aca1f799fe0d3fdc12d816f7ad9a785ce7996ee5fc1dfc45c358ef2f45
+    docs/reviews/0221_subject_storage/workspace_identity.yaml: c5eb8b38fa6e649d8625992cc1873e0379f6b36ddb60447c41320960b34292e1
+    docs/reviews/0221_subject_storage/req.repaired-candidate-review-readiness.yaml: 76066cf175e07ffe509f79396a026e24e066669d45f2fb5d01e4cc1cd89ef947
+    docs/reviews/0221_subject_storage/req.platform-promotion-approval-boundary.yaml: 8660d3ebf052bea469fd75cdfec2ae4505dfd0ad6a0600cd88070d6fd5608ce0
+    docs/reviews/0221_subject_storage/ac.clean-noop.yaml: ddfe1760192381e548f7df350f287b2835eb49bc82372937b4a3f17f705efaec
+    docs/reviews/0221_subject_storage/ac.repaired-preview.yaml: 0c46bfe769efa79f1b5fc2e5e7da5fb055af595ffa7e1e0edca45b9b0c94ba97
+    docs/reviews/0221_subject_storage/ac.unresolved-gaps.yaml: d3fabe029294a30cf3ffdc9ad31d4a2478dcdceec228d3bd78c1d84da7b892b1
+    docs/reviews/0221_subject_storage/ac.approval-boundary.yaml: 2fb07ad4d0bd4fd599ae45b93ddc8b65a646dd01be8cd51e7d9899ddda27336f
+  llm_refinement: not_run
+  canonical_materialization: not_performed

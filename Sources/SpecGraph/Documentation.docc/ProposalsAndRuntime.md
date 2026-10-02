@@ -183,14 +183,38 @@ preserved. Destination revision 1 starts at actual adoption, with no same-identi
 predecessor. Historical test executions and policy events retain their source
 references; destination evidence applicability requires an explicit authored link.
 
-Physical workspace declaration, standalone Requirement and criterion storage,
-and a validating canonical-source writer/adapter remain deferred decisions under
-SG-SPEC-0068. Proposed files are absent. The attempted Sol 6.1 Medium supervisor
+At that packet's preparation, physical workspace declaration, standalone
+Requirement and criterion storage, and a validating canonical-source
+writer/adapter were deferred decisions under SG-SPEC-0068. Proposed canonical
+files remain absent. The attempted Sol 6.1 Medium supervisor
 run failed because the local CLI rejected the model and the initial input lacked
 aligned acceptance evidence. The corrected agent-authored packet passed separate
 structural checks; this is not successful supervisor refinement or canonical
 runtime readiness. See `0221_requirement_mapping_evidence.json` for those distinct
 statuses.
+
+### Standalone subject storage preparation
+
+SG-SPEC-0069 is a pending child of SG-SPEC-0068 proposing the physical YAML
+format: `specs/workspace_identity.yaml`, one Requirement node per file in
+`specs/requirements/`, and separate criterion records in `specs/criteria/`.
+Append-only `revisions` retain statement, containment, node metadata and exact
+acceptance references. Top-level metadata is a validated current projection;
+disposition events remain independent. No new criterion seed node kind is added.
+
+Seven `subject_storage_candidate` envelopes in `docs/reviews/0221_subject_storage/`
+prepare the workspace declaration, two Requirements and four criteria with the
+same 3 + 1 partition. `gate_state: review_pending`,
+`canonical_readiness: not_evaluated` and `ready_for_materialization: false` keep
+preparation distinct from canonical adoption. Origin provenance and disposition
+are deliberately null. The workspace UUID is still an unreserved review token.
+
+The canonical-source adapter and validating writer are `not_implemented`.
+Schema approval, reviewed namespace mapping and SG-SPEC-0051 materialization
+decisions precede publication. Historical pilot references and evidence remain
+unchanged; candidate validation does not transfer them or prove runtime
+conformance. See `docs/reviews/0221_subject_storage_preparation.md` and the
+candidate manifest for the concrete review choices and remaining decisions.
 
 ### Canonical approval gates and lookup projections
 
