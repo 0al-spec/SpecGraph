@@ -16,7 +16,7 @@ Proposal numbers are not canonical spec IDs; SG-SPEC-0047 is not proposal 0047.
 
 The [candidate](0223_native_bdd_supervisor_candidate.yaml) keeps the temporary
 `DRAFT-SPEC-0223` identity outside `specs/nodes`. It has **five acceptance criteria
-and eleven future BDD cases**, with `review_pending`. A canonical ID is not
+and thirteen future BDD cases**, with `review_pending`. A canonical ID is not
 allocated or reserved by this document. `CONSTITUTION.md` requires explicit
 human approval before proposed policy becomes authoritative.
 
@@ -48,12 +48,18 @@ objects, defining unknown-profile and invalid-count behavior, adding two future
 BDD cases and specifying read-only observability. The tracked review copy's gate
 is explicitly pending; the historical Supervisor gate was not resolved.
 
+Independent GPT 6 Astra / Max audited head `13ed5d0` and reported one P2 and two
+P3 findings, with no P1. The author follow-up adds timestamp compatibility tests,
+original-type strict validation, explicit composition aggregation/skips, two
+additional future cases and narrower diagnostic claims. These corrections are
+separate from the original independent verdict; see the [audit record](0223_astra_native_contract_audit.md).
+
 Input, raw result, curated result and exact byte hashes are retained in
 [preparation evidence](0223_native_bdd_preparation_evidence.json). The raw result
 and curated result are different evidence artifacts. The original Zeusus pilot
 observation and its source hashes remain unchanged.
 
-A read-only 0047 preview of the curated candidate resolves all eleven local
+A read-only 0047 preview of the curated candidate resolves all thirteen local
 scenario references, then reports `blocked` on `review_pending` and `outlined`.
 It retains `evidence_status: not_evaluated` and denies code/canonical mutations.
 This checks declaration structure and handoff boundaries, not scenario execution.
@@ -64,7 +70,7 @@ This checks declaration structure and handoff boundaries, not scenario execution
 | --- | --- |
 | Representation | `specification.bdd_scenarios`; each item has `id`, optional `scenario`, and `steps`. |
 | Field policy | Allow exactly `id`, `scenario`, `steps`; reject unknown fields. V1 has no extension field. |
-| Values | IDs, supplied titles and steps are nonempty strings; whitespace-only is invalid. Retain meaningful text exactly. |
+| Values | Validate original decoded YAML types before legacy timestamp normalization. IDs, supplied titles, steps and references must be strings; date/datetime scalars are invalid. Retain meaningful strings exactly. |
 | Steps | Nonempty ordered list; repetition is allowed. Do not infer executable grammar. |
 | Presence | Distinguish `absent`, `explicit_empty`, `present`, `invalid`. Absence and explicit empty imply no coverage. |
 | Alternate container | Recognized `scenarios`, including `[]`, is unsupported; two recognized containers are ambiguous. Neither wins. |
@@ -78,6 +84,12 @@ The allowlist is an **author proposal for this candidate**, not an activated
 schema. A future extension profile must define typed namespaced fields before
 accepting them. Existing 0047 compatibility preserves its current behavior until
 a separately reviewed consumer integration.
+
+The legacy consumer recursively applies `normalize_yaml_scalars` before BDD
+validation: YAML date/datetime becomes an ISO string in IDs, titles, steps and
+references. A timestamp ID can collide with its quoted ISO string. Strict v1
+checks the original decoded types first; quoted strings stay strings. Generic
+metadata normalization must not silently make a strict declaration valid.
 
 Normalized scenario digests remain outside this slice. Exact source-byte
 SHA-256 is available for provenance, but normalized pins require the separately
@@ -109,11 +121,26 @@ IDs: declaration classification and policy attribution. Traces exclude step
 text, titles and absolute paths. They cannot write source, change decisions,
 activate a profile or supply trusted admission receipts.
 
+Composition accumulates findings from eligible checks instead of globally
+stopping at the first error. Prerequisite failures produce explicit `skipped`
+reasons: invalid YAML/profile/container prevents dependent checks; invalid or
+duplicate IDs prevent reference resolution. Unknown fields, invalid steps or
+titles do not suppress otherwise eligible ID checks. Empty/absent declarations
+still validate supplied references against an empty inventory. Findings follow
+policy order and source indices, with explicit field order in each policy;
+steps and findings are not deduplicated.
+
+For `{id: A, steps: [], extra: true}`, the future composition reports
+`unsupported_field` for `extra`, then `invalid_value` for `steps`; Fields and
+Values are unsatisfied and eligible ID checks run. Final presence is invalid
+and successful extracted count is unavailable. This is a future case, not an
+executed SpecificationCore implementation.
+
 ## Current compatibility evidence
 
 `make test-native-bdd-characterization` runs the new characterization file and
-existing implementation-contract tests: **71 passed, 0 failed**. The new file
-adds 50 cases; the existing suite supplies 21. These tests call the current
+existing implementation-contract tests: **75 passed, 0 failed**. The new file
+adds 54 cases; the existing suite supplies 21. These tests call the current
 consumer and preserve its behavior; they are not Red/Green evidence for the
 future strict profile.
 
@@ -127,6 +154,7 @@ future strict profile.
 | Repeated steps or meaningful whitespace | Retained exactly; IDs use exact equality. | Preserve the same values and ordering. |
 | Sibling/parent/other-workspace reference | Cannot satisfy a local obligation. | Preserve the local boundary with typed findings. |
 | Same local ID in another node | No workspace inventory is scanned. | Explicit inventory scope is separate; no full-workspace uniqueness claim. |
+| YAML date/datetime in BDD fields/references | Converted to ISO strings before validation; IDs may collide with matching strings. | Validate original types; timestamp scalars are invalid, quoted strings remain exact. |
 
 The [bounded corpus audit](0223_native_bdd_corpus_audit.json) pins all inspected
 source bytes. It covers 69 canonical SpecGraph files (no scenario containers)
@@ -138,10 +166,17 @@ proving compatibility across every workspace or producer.
 ## Runtime diagnostic observation
 
 The run recorded `state_runtime_failure` despite successful executor completion
-and a structurally valid candidate. Its matched evidence consists only of
-backticked example diagnostics printed from `CONTRIBUTING.md` into the nested
-transcript. The [exact excerpt](0223_executor_diagnostic_excerpt.txt) retains the
-context. No actual state-runtime failure line is among the matched evidence.
+and a structurally valid candidate. The pinned [excerpt](0223_executor_diagnostic_excerpt.txt)
+contains backticked diagnostics from `CONTRIBUTING.md`; that excerpt alone
+reproducibly triggers the classifier. This establishes a false-positive trigger,
+not the absence of every real diagnostic in the historical run.
+
+The historical assessment that its matches were quoted text is an author
+observation. The packet does not preserve a full pinned transcript or complete
+match inventory. Since classifier evidence is truncated to three lines, repeated
+quoted examples can hide a subsequent genuine error in that projection. The
+author reproduced this ambiguity as well; historical completeness remains
+unproved and the gate stays pending.
 
 PR #746 removed the earlier match on ordinary migration vocabulary, but the
 current classifier still searches the entire transcript for literal diagnostic

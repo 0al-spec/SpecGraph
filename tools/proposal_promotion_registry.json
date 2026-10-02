@@ -2880,7 +2880,7 @@
     ],
     "motivating_concern": "Authoring validation and downstream BDD extraction disagree on scenario shape; the Zeusus pilot lost 66 of 100 declared scenarios.",
     "normalized_title": "BDD Scenario Contract and Gherkin Exchange",
-    "bounded_scope": "Prepare one shared native scenario contract, explicit compatibility/migration findings, identity and evidence pins, and a bounded Gherkin adapter acceptance plan. Runtime implementation, activation, canonical source migration, execution bindings and trusted evidence admission remain deferred. Prepare one review-only native child contract under proposed SG-SPEC-0062 with explicit field policy, named SpecificationCore bindings, local observability, bounded corpus pins and characterization of unchanged 0047 compatibility. No canonical ID allocation, adoption or strict-profile activation is implied.",
+    "bounded_scope": "Prepare one shared native scenario contract, explicit compatibility/migration findings, identity and evidence pins, and a bounded Gherkin adapter acceptance plan. Runtime implementation, activation, canonical source migration, execution bindings and trusted evidence admission remain deferred. Prepare one review-only native child contract under proposed SG-SPEC-0062 with explicit field policy, named SpecificationCore bindings, local observability, bounded corpus pins and characterization of unchanged 0047 compatibility. No canonical ID allocation, adoption or strict-profile activation is implied. Record independent Astra Max findings and author corrections for timestamp compatibility, compositional findings/skips and diagnostic provenance; preserve separate approval and implementation boundaries.",
     "required_provenance_links": [
       "source_draft_ref"
     ]

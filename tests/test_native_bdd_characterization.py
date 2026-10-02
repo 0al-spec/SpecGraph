@@ -5,6 +5,7 @@ from __future__ import annotations
 import copy
 import importlib.util
 import sys
+from datetime import date, datetime, timezone
 from pathlib import Path
 
 import pytest
@@ -196,6 +197,50 @@ def test_meaningful_whitespace_makes_ids_distinct_in_current_consumer(node_sourc
         " NATIVE-001 ",
         "NATIVE-001",
     ]
+
+
+@pytest.mark.parametrize(
+    "timestamp",
+    [date(2026, 10, 2), datetime(2026, 10, 2, 12, 34, 56, tzinfo=timezone.utc)],
+)
+def test_yaml_timestamps_are_normalized_before_bdd_validation(node_source, timestamp):
+    root, path, node = node_source
+    node["specification"]["bdd_scenarios"] = [
+        {"id": timestamp, "scenario": timestamp, "steps": [timestamp, timestamp]}
+    ]
+    node["specification"]["observability"] = observability([timestamp])
+    write_node(path, node)
+    before = path.read_bytes()
+    decoded = yaml.safe_load(before)["specification"]["bdd_scenarios"][0]
+    assert isinstance(decoded["id"], (date, datetime))
+
+    result = pack.build_contract_pack(root, node["id"])
+
+    normalized = timestamp.isoformat()
+    assert result["status"] == "review_required"
+    assert result["specification"]["bdd_scenarios"] == [
+        {"id": normalized, "scenario": normalized, "steps": [normalized, normalized]}
+    ]
+    assert result["observability"]["obligations"][0]["scenario_ids"] == [normalized]
+    assert result["implementation_work_preview"]["required_tests"] == [normalized]
+    assert path.read_bytes() == before
+
+
+@pytest.mark.parametrize(
+    "timestamp",
+    [date(2026, 10, 2), datetime(2026, 10, 2, 12, 34, 56, tzinfo=timezone.utc)],
+)
+def test_timestamp_and_string_ids_collide_after_legacy_normalization(node_source, timestamp):
+    root, path, node = node_source
+    node["specification"]["bdd_scenarios"] = [
+        {"id": timestamp, "steps": ["Given an unquoted timestamp ID"]},
+        {"id": timestamp.isoformat(), "steps": ["Given a quoted string ID"]},
+    ]
+    write_node(path, node)
+    before = path.read_bytes()
+    with pytest.raises(ValueError, match="duplicate scenario"):
+        pack.build_contract_pack(root, node["id"])
+    assert path.read_bytes() == before
 
 
 @pytest.mark.parametrize("related_node", ["parent", "sibling", "other_workspace"])
