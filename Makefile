@@ -1374,12 +1374,15 @@ implementation-work:
 
 CONTRACT_WORKSPACE_ROOT ?= .
 CONTRACT_TARGET_SPEC ?=
-.PHONY: implementation-contract-pack test-implementation-contract-pack
+.PHONY: implementation-contract-pack test-implementation-contract-pack test-native-bdd-characterization
 implementation-contract-pack:
 	@$(PYTHON) tools/implementation_contract_pack.py --workspace-root '$(CONTRACT_WORKSPACE_ROOT)' --target-spec '$(CONTRACT_TARGET_SPEC)'
 
 test-implementation-contract-pack:
 	@$(PYTHON) -m pytest -q tests/test_implementation_contract_pack.py
+
+test-native-bdd-characterization:
+	@$(PYTHON) -m pytest -q tests/test_native_bdd_characterization.py tests/test_implementation_contract_pack.py
 
 .PHONY: supervisor-evidence-packet
 supervisor-evidence-packet:

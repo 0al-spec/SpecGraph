@@ -1,13 +1,14 @@
 # 0223 BDD Scenario Contract and Gherkin Exchange
 
 RFC: SG-RFC-0223
-Version: 0.1.2
+Version: 0.1.3
 
 ## Status
 
 Draft proposal; contract preparation only. Runtime realization is deferred
 until the bounded contract is reviewed and adopted through the existing graph
-process. This PR registers the proposal and historical pilot observations; it
+process. Preparation records the proposal, historical pilot observations and
+current compatibility tests; it
 does not enable a new validator, import scenarios, change canonical specs, or
 grant implementation/admission authority.
 
@@ -22,6 +23,7 @@ evidence_admission_allowed: false
 - [Operator request and discovery](../archive/proposal_sources/0223_bdd_scenario_contract_and_gherkin_exchange.md)
 - [Curated Zeusus observation](../reviews/0223_zeusus_bdd_observation.json)
 - [Independent Astra review and clarification record](../reviews/0223_astra_review_followup.md)
+- [Native contract preparation and compatibility evidence](../reviews/0223_native_bdd_contract_preparation.md)
 - [0047: Evidence-Backed Build Protocol](0047_evidence_backed_build_protocol.md)
 - [0006: Typed Validation](0006_typed_validation.md)
 - [0021: Deterministic Validation Profiles](0021_deterministic_transition_checks_and_validator_profiles.md)
@@ -58,6 +60,30 @@ normative requirement/criterion identity. This proposal fills the scenario
 representation and exchange gap without replacing those contracts.
 
 ## Proposed Contract
+
+### Current bounded preparation
+
+After PR #753 merged, one targeted Supervisor pass on GPT 6 Luna Medium prepared
+a temporary native contract candidate under proposed parent **SG-SPEC-0062**.
+The curated copy stays outside canonical `specs/nodes`, with five criteria,
+eleven future BDD cases and `review_pending`. No canonical ID is allocated.
+
+The candidate proposes an allowlist of `id`, `scenario`, `steps`, with unknown
+fields rejected and no v1 extension field. It names six SpecificationCore policy
+objects, including `BDDContainerPresenceSpec`, with RFC rule references and
+read-only observability. These are proposed bindings, not implemented objects or
+canonical subject identities. The field policy still needs explicit adoption.
+
+`make test-native-bdd-characterization` passed **71 current compatibility tests**.
+The bounded corpus audit pins 69 canonical SpecGraph files and six normalized
+Zeusus files containing 100 scenarios; all inspected scenario fields match the
+proposed allowlist. This is not a full ecosystem audit or strict-profile
+conformance. The [preparation record](../reviews/0223_native_bdd_contract_preparation.md)
+retains raw/curated candidates, hashes and the runtime diagnostic caveat.
+
+Normalized digest bytes, source migration, exchange implementation and activation
+remain separate review prerequisites. The original fourteen proposal acceptance
+cases remain future cases; the candidate's eleven native cases refine one slice.
 
 ### 1. Shared native scenario model
 

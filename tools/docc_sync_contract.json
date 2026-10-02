@@ -664,7 +664,30 @@
         "observability.obligations[*].scenario_ids",
         "bdd_scenario_exchange_envelope",
         "digest-contract version",
-        "stale-preview"
+        "stale-preview",
+        "SG-SPEC-0062",
+        "BDDContainerPresenceSpec",
+        "make test-native-bdd-characterization"
+      ]
+    },
+    {
+      "id": "native-bdd-contract-preparation",
+      "description": "Native-only preparation distinguishes current compatibility tests from future strict policy and canonical adoption.",
+      "docs": [
+        "docs/reviews/0223_native_bdd_contract_preparation.md"
+      ],
+      "docc": [
+        "Sources/SpecGraph/Documentation.docc/BDDScenarioContract.md"
+      ],
+      "required_terms": [
+        "SG-SPEC-0062",
+        "DRAFT-SPEC-0223",
+        "BDDContainerPresenceSpec",
+        "review_pending",
+        "make test-native-bdd-characterization",
+        "71",
+        "100 scenarios",
+        "state_runtime_failure"
       ]
     },
     {

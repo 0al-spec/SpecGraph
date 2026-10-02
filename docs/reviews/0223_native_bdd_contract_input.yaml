@@ -1,0 +1,179 @@
+id: DRAFT-SPEC-0223
+title: SpecGraph - Native BDD Scenario Declaration Contract Preparation
+kind: spec
+status: outlined
+maturity: 0.15
+depends_on: []
+refines:
+- SG-SPEC-0062
+inputs:
+- docs/proposals/0223_bdd_scenario_contract_and_gherkin_exchange.md
+- docs/reviews/0223_zeusus_bdd_observation.json
+- docs/schema/node-format.md
+- specs/nodes/SG-SPEC-0062.yaml
+- specs/nodes/SG-SPEC-0016.yaml
+- specs/nodes/SG-SPEC-0024.yaml
+- tools/implementation_contract_pack.py
+- tools/spec_yaml.py
+- tools/candidate_spec_graph.py
+- tools/candidate_spec_materialization.py
+- tests/test_implementation_contract_pack.py
+outputs:
+- specs/nodes/DRAFT-SPEC-0223.yaml
+allowed_paths:
+- specs/nodes/DRAFT-SPEC-0223.yaml
+acceptance:
+- Defines one shared native BDD declaration model with stable exact IDs, an optional descriptive title
+  and ordered nonempty string steps, retaining repetition without inferring executable grammar.
+- Defines deterministic absent, explicit_empty, present and invalid outcomes with the complete native
+  input matrix, duplicate-key checks before ordinary maps, typed findings and fail-closed invalid handoff.
+- Preserves owning-node scenario-reference resolution and distinguishes that local check from any explicitly
+  supplied workspace inventory and immutable workspace binding.
+- Characterizes current 0047 compatibility separately from the proposed strict profile, requiring explicit
+  reviewed profile activation and recorded profile/version rather than silently changing existing defaults
+  or source bytes.
+- Defines SpecificationCore policy materialization and observable loader findings while separating validated
+  declarations from readiness, execution, admitted evidence and the unresolved normalized-digest contract.
+acceptance_evidence: []
+prompt: Prepare one bounded native BDD scenario declaration contract from RFC 0223 v0.1.2. Refine this
+  temporary review-only draft, with canonical parent SG-SPEC-0062 proposed for later review. Keep current
+  consumers and profiles unchanged.
+specification:
+  objective: Prepare graph-owned native scenario input semantics used consistently by authoring validation
+    and implementation extraction, without adopting or implementing the new profile.
+  preparation_only: true
+  source_proposal: '0223'
+  proposed_canonical_parent: SG-SPEC-0062
+  scope:
+    in:
+    - Native declaration values and exact ordered steps
+    - Typed presence and validation findings for the declared input matrix
+    - Node-local scenario IDs and observability references
+    - Legacy compatibility characterization and explicit strict-profile rollout boundary
+    - Named SpecificationCore policy objects and traceable classification obligations
+    out:
+    - Canonical Scenario node kind
+    - Gherkin adapter and exchange schema implementation
+    - Source transformation or writer implementation
+    - Profile activation, default changes or canonical adoption
+    - Step execution bindings, trusted receipts or evidence admission
+    - Canonical byte serializer selection or normalized digest generation
+  baseline:
+    consumer: tools/implementation_contract_pack.py
+    absent_container: Missing specification.bdd_scenarios currently extracts an empty list.
+    alternate_container: Current 0047 does not consume specification.scenarios; even a nonempty alternate
+      can result in zero extracted IDs.
+    native_values: IDs and steps must be nonempty strings; repeated steps are legal and exact ordered
+      strings are retained.
+    supplied_title: The current consumer does not validate the optional scenario title.
+    reference_scope: observability.obligations[*].scenario_ids resolves against the same node's native
+      scenario IDs.
+    yaml_keys: UniqueKeyLoader rejects repeated YAML mapping keys before constructing ordinary maps.
+  proposed_native_profile:
+    name: bdd_scenarios_v1
+    values: id is exact nonempty string; scenario title is optional, but supplied values must be nonempty
+      strings; steps is a nonempty ordered list of nonempty strings. Whitespace-only values are invalid,
+      meaningful strings are not trimmed.
+    presence:
+    - absent
+    - explicit_empty
+    - present
+    - invalid
+    matrix:
+    - 'No recognized container: valid absent; readiness remains separate.'
+    - 'Only bdd_scenarios: []: valid explicit_empty; no coverage implied.'
+    - 'Only nonempty valid bdd_scenarios: present with retained exact IDs and ordered/repeated steps.'
+    - 'Null, scalar, boolean or mapping native container: invalid; no coercion to [].'
+    - 'Only known alternate scenarios, including []: invalid unsupported container.'
+    - 'Both recognized containers, including two empty lists: invalid ambiguity; neither wins.'
+    - 'Duplicate YAML mapping key anywhere: invalid before ordinary map construction.'
+    - 'Non-mapping entry, missing ID/steps, empty steps or malformed supplied title: invalid without skipping.'
+    - 'Duplicate node-local scenario IDs or dangling owning-node observability references: invalid.'
+    - Invalid input has no successful extraction count; separately labeled diagnostic inventories cannot
+      authorize handoff.
+    activation: The strict profile is a proposal, not a current default. Corpus audit, reviewed field
+      allowlist/extension policy and explicit activation are prerequisites.
+    field_policy: Unsupported fields cannot be silently discarded during future exchange; the native allowlist
+      remains a decision for activation, not a guess by this draft.
+  identity_boundary:
+  - Scenario identity is distinct from Requirement/criterion identity and does not derive from title,
+    line, order, AST IDs or content digests.
+  - Owning-node references cannot be satisfied by a scenario found only in a sibling, parent or different
+    workspace.
+  - Equal local IDs in distinct explicitly bound immutable workspaces are distinct; partial inventories
+    cannot claim full workspace uniqueness.
+  - Unknown or unresolved canonical digest contracts cannot produce normalized evidence pins; exact source-byte
+    SHA-256 remains a separate source pin.
+  materialization_expectation:
+  - Domain branching and classification materialize as named SpecificationCore specifications using typed
+    immutable context and composition.
+  - Parsing, duplicate-key checks and byte/file I/O stay at boundaries; domain constructors and imports
+    remain inert.
+  - Each policy object needs a stable declaration/rule reference so future FeaturePassport bindings and
+    traces can identify it without making FeaturePassport depend on SpecGraph.
+  - Loader success is declaration validation only, not readiness, test execution, canonical adoption or
+    evidence admission.
+  bdd_scenarios:
+  - id: BDD-NATIVE-ABSENT
+    scenario: Absent declarations do not imply coverage
+    steps:
+    - Given no recognized scenario container
+    - When the proposed native profile inspects the node
+    - Then presence is absent and readiness is evaluated separately
+  - id: BDD-NATIVE-EMPTY
+    scenario: Explicit zero remains visible
+    steps:
+    - 'Given only bdd_scenarios: []'
+    - When the proposed native profile inspects the node
+    - Then presence is explicit_empty with zero authored declarations and no coverage claim
+  - id: BDD-NATIVE-ALTERNATE
+    scenario: Legacy shape cannot masquerade as empty success
+    steps:
+    - Given only a recognized alternate scenarios container, empty or nonempty
+    - When strict-profile validation runs
+    - Then a typed unsupported-container finding prevents successful handoff
+  - id: BDD-NATIVE-AMBIGUOUS
+    scenario: Mixed containers have no precedence
+    steps:
+    - Given both recognized containers, including two empty lists
+    - When validation runs
+    - Then input is invalid and neither container supplies successful extraction
+  - id: BDD-NATIVE-DUPLICATE-KEY
+    scenario: Duplicate YAML keys are rejected before maps
+    steps:
+    - Given duplicate mapping keys including a repeated steps field
+    - When YAML is read
+    - Then a duplicate-key finding precedes ordinary-map policy validation
+  - id: BDD-NATIVE-EXACT-STEPS
+    scenario: Repeated exact steps survive
+    steps:
+    - Given valid exact IDs and repeated nonempty step strings
+    - When native declarations are loaded
+    - Then source values, list order and repetition remain unchanged
+  - id: BDD-NATIVE-LOCAL-REFERENCE
+    scenario: Sibling scenarios cannot satisfy an obligation
+    steps:
+    - Given an obligation whose scenario exists only in a sibling node
+    - When node-local reference checks run
+    - Then the reference is unresolved even if a workspace inventory contains that ID
+  - id: BDD-NATIVE-COMPATIBILITY
+    scenario: Current behavior stays distinct from strict rollout
+    steps:
+    - Given current 0047 compatibility and an unactivated strict profile proposal
+    - When current extraction runs
+    - Then existing defaults stay unchanged and characterization results do not claim strict-profile conformance
+  - id: BDD-NATIVE-NO-AUTHORITY
+    scenario: Declaration validation grants no execution or evidence authority
+    steps:
+    - Given a valid authored scenario declaration
+    - When the loader reports success
+    - Then execution, readiness and evidence admission remain separate states
+  source_pin:
+    revision: 0a08e38a23fbbe5ad7450c0d31ed48cec84a094e
+    proposal_sha256: 95ddbf49b38274fe255d4bf8f9fe11447fc56e66ad02fbcb4b766f0c850da870
+gate_state: none
+proposed_status: null
+proposed_maturity: null
+required_human_action: '-'
+created_at: '2026-10-02T17:08:38Z'
+updated_at: '2026-10-02T17:08:38Z'

@@ -1,0 +1,108 @@
+{
+  "artifact_kind": "rfc0223_native_bdd_preparation_evidence",
+  "schema_version": 1,
+  "source_revision": "0a08e38a23fbbe5ad7450c0d31ed48cec84a094e",
+  "proposal_source_sha256": "95ddbf49b38274fe255d4bf8f9fe11447fc56e66ad02fbcb4b766f0c850da870",
+  "run_id": "20261002T170949Z-DRAFT-SPEC-0223-c1fbfbe7",
+  "temporary_target": "DRAFT-SPEC-0223",
+  "proposed_canonical_parent": "SG-SPEC-0062",
+  "canonical_adoption": false,
+  "canonical_specs_changed": false,
+  "strict_profile_implemented": false,
+  "strict_profile_activated": false,
+  "evidence_admission_allowed": false,
+  "executor_model": "gpt-6-luna",
+  "execution_profile": "materialize",
+  "executor_exit_code": 0,
+  "executor_outcome": "done",
+  "supervisor_completion_status": "ok",
+  "supervisor_gate_state": "review_pending",
+  "proposed_status": "specified",
+  "final_status": "outlined",
+  "changed_files_in_run": [
+    "specs/nodes/DRAFT-SPEC-0223.yaml"
+  ],
+  "validator_results": {
+    "outputs": true,
+    "allowed_paths": true,
+    "reconciliation": true,
+    "atomicity": true,
+    "transition": true,
+    "executor_environment": true,
+    "runtime_artifacts": true,
+    "refinement_acceptance": true
+  },
+  "validation_summary": {
+    "finding_count": 1,
+    "families": {
+      "executor_environment": 1
+    },
+    "error_classes": {
+      "runtime_failure": 1
+    },
+    "severity_counts": {
+      "error": 1
+    },
+    "codes": {
+      "state_runtime_failure": 1
+    }
+  },
+  "runtime_diagnostic": {
+    "kind": "state_runtime_failure",
+    "assessment": "False positive: all matched state-failure fragments are quoted diagnostic examples printed from CONTRIBUTING.md in the nested transcript, not actual state-runtime errors.",
+    "source": "tools/supervisor.py:classify_executor_environment",
+    "matched_excerpt_path": "docs/reviews/0223_executor_diagnostic_excerpt.txt",
+    "matched_excerpt_sha256": "419a842318a341e32a83c5705c0c96ca242084778cef47b7ee7c5b170a38db70",
+    "historical_gate_modified": false,
+    "runtime_fix_status": "Not implemented in this contract preparation; retain a separate runtime follow-up."
+  },
+  "raw_candidate_path": "docs/reviews/0223_native_bdd_supervisor_raw.yaml",
+  "raw_candidate_sha256": "62f3ea0cfc845a0e5d24a72138b8509b0d5d946b602d0af9e8db9f8ae3a3383d",
+  "curated_candidate_path": "docs/reviews/0223_native_bdd_supervisor_candidate.yaml",
+  "curated_candidate_sha256": "cba087ff776f7edef8cdcebe418963f4c8d98e9c607d2cb8de28d9192ff4cf31",
+  "curation_changes": [
+    "Label the tracked review copy review_pending without resolving the historical Supervisor gate.",
+    "Propose an explicit id/scenario/steps allowlist and reject unsupported fields in v1; preserve current compatibility behavior.",
+    "Specify unknown profile failure and absent successful extraction count for invalid input.",
+    "Name six proposed SpecificationCore objects and RFC rule references without claiming code conformance or canonical subject identity.",
+    "Add future BDD cases for unknown fields and profiles, and a node-local read-only observability contract."
+  ],
+  "characterization": {
+    "consumer": "tools/implementation_contract_pack.py",
+    "test_paths": [
+      "tests/test_native_bdd_characterization.py",
+      "tests/test_implementation_contract_pack.py"
+    ],
+    "command": "make test-native-bdd-characterization PYTHON=<repository-venv-python>",
+    "passed": 71,
+    "failed": 0,
+    "evidence_class": "current_0047_compatibility_tests",
+    "future_strict_scenarios_executed": false,
+    "gameplay_scenarios_executed": false,
+    "trusted_receipt_issued": false,
+    "test_file_pins": {
+      "tests/test_native_bdd_characterization.py": "28ca0b986e3e686781bbf529ea4ebd862910ad2d7f38aa21efa8f3ded0e1668e",
+      "tests/test_implementation_contract_pack.py": "b867a96126d910ba27fea0c90aa86a4f5f3352bff00bfdb5f43e59cb14ca4335"
+    },
+    "consumer_sha256": "0e81f0c350b53f553e6c97b4cead4d6e710caee2c7efa04fb01cd5e320a5c19a"
+  },
+  "input_path": "docs/reviews/0223_native_bdd_contract_input.yaml",
+  "input_sha256": "c03adc4df232ab093efb7c354587f895ad24d9e62e858d6217604bd5cfe482cf",
+  "corpus_audit_path": "docs/reviews/0223_native_bdd_corpus_audit.json",
+  "corpus_audit_sha256": "ef2bd0df8d680008a2f7729debe93c23a67906b579fe6a791c4f6ac0d1dcfdf3",
+  "curated_0047_preview": {
+    "status": "blocked",
+    "blockers": [
+      "source_gate:review_pending",
+      "source_status:outlined"
+    ],
+    "declared_scenario_count": 11,
+    "referenced_scenario_count": 11,
+    "evidence_status": "not_evaluated",
+    "runtime_code_mutations_allowed": false,
+    "canonical_mutations_allowed": false,
+    "source_sha256": "cba087ff776f7edef8cdcebe418963f4c8d98e9c607d2cb8de28d9192ff4cf31",
+    "evidence_class": "read_only_current_consumer_structural_preview",
+    "future_scenarios_executed": false
+  }
+}
