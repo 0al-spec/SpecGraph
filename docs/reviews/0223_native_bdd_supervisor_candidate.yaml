@@ -97,8 +97,8 @@ specification:
     absent_container: Missing specification.bdd_scenarios currently extracts an empty list.
     alternate_container: Current 0047 does not consume specification.scenarios; even a nonempty alternate
       can result in zero extracted IDs.
-    native_values: IDs and steps must be nonempty strings; repeated steps are legal and exact ordered
-      strings are retained.
+    native_values: After recursive normalize_yaml_scalars, IDs and steps must be nonempty strings; repeated
+      steps are legal and normalized string values retain exact order and text. Source bytes are unchanged.
     supplied_title: The current consumer does not validate the optional scenario title.
     reference_scope: observability.obligations[*].scenario_ids resolves against the same node's native
       scenario IDs.
@@ -106,7 +106,11 @@ specification:
     current_shape_detail: The 0047 consumer defaults a missing bdd_scenarios key to an empty list, requires
       the container to be a list, validates each id and steps value, permits repeated step strings, and
       rejects duplicate IDs. It neither reads specification.scenarios nor inspects the optional scenario
-      title. These are observed compatibility facts, not strict-profile conformance.
+      title. These are observed compatibility facts, not strict-profile conformance. Its string checks
+      occur after recursive date/datetime normalization, not on the original decoded YAML scalar types.
+    yaml_timestamps: Before scenario and observability validation, the existing 0047 consumer recursively
+      converts YAML date/datetime scalars to isoformat strings, including ID, title, steps and scenario
+      references. A timestamp ID and its quoted ISO string can therefore collide after normalization.
   proposed_native_profile:
     name: bdd_scenarios_v1
     values: id is exact nonempty string; scenario title is optional, but supplied values must be nonempty
@@ -142,6 +146,10 @@ specification:
       review_status: Proposed for explicit contract review; not activated.
       audit_scope: Pinned canonical SpecGraph inventory and the six normalized Zeusus history specs are
         an initial bounded corpus, not an ecosystem-wide compatibility guarantee.
+    scalar_type_boundary: Strict v1 validates the original decoded YAML types of scenario ID, supplied
+      title, step entries and scenario references before any legacy date/datetime normalization. YAML
+      date/datetime values are invalid_value; explicitly quoted strings remain exact strings. Compatibility
+      retains 0047 coercion, and no global normalizer may silently make strict input valid.
   finding_contract:
     presence_type: BDDScenarioPresence
     presence_values:
@@ -257,6 +265,21 @@ specification:
     - Given an explicitly requested unknown native profile version
     - When profile selection runs
     - Then a typed unsupported_profile finding prevents silent compatibility fallback
+  - id: BDD-NATIVE-TIMESTAMP
+    scenario: Strict original types stay distinct from legacy timestamp coercion
+    steps:
+    - Given a YAML date or datetime scalar in a scenario ID, title, step or reference and its explicitly
+      quoted string counterpart
+    - When the explicitly selected strict profile validates original decoded types before legacy normalization
+    - Then the timestamp value is invalid_value while the quoted string retains exact text, and the legacy
+      compatibility adapter continues its recorded ISO coercion
+  - id: BDD-NATIVE-COMBINED-ERROR
+    scenario: Eligible policies accumulate errors in fixed order
+    steps:
+    - Given a native scenario entry with id A, empty steps and unsupported field extra
+    - When the fixed SpecificationCore composition validates the entry
+    - Then findings are unsupported_field for extra followed by invalid_value for steps, Fields and Values
+      are unsatisfied, eligible ID checks still run, and successful extracted_count is unavailable
   source_pin:
     revision: 0a08e38a23fbbe5ad7450c0d31ed48cec84a094e
     proposal_sha256: 95ddbf49b38274fe255d4bf8f9fe11447fc56e66ad02fbcb4b766f0c850da870
@@ -304,6 +327,36 @@ specification:
     - BDDScenarioValuesSpec
     - BDDScenarioIDsSpec
     - BDDScenarioReferencesSpec
+    decision_semantics:
+      aggregation: Accumulate findings from every eligible policy; a failed policy does not automatically
+        skip independent later checks.
+      policy_outcome: unsatisfied if that policy emits an error; satisfied if its eligible checks pass;
+        skipped only when its stated prerequisite is unavailable. Emit one outcome per policy in composition
+        order; entry-level skips are separately attributed.
+      prerequisites:
+      - Duplicate-key/boundary failure prevents ordinary-map construction and skips all domain policies
+        with invalid_yaml_boundary.
+      - Unsupported profile skips all later policies with unsupported_profile.
+      - Invalid or ambiguous container skips all entry, ID and reference policies with invalid_container.
+      - With absent/explicit_empty, Fields/Values/IDs skip with no_scenarios; References still validates
+        supplied references against the empty complete ID inventory.
+      - For a native list, Fields checks each entry shape, supplied title and unknown fields. Values runs
+        for every mapping entry even when Fields found unsupported fields; non-mapping entries receive
+        an attributed invalid_entry skip.
+      - IDs requires every ID value to be a valid original string; invalid_id_values skips IDs and reference
+        resolution. Steps/title/unknown-field errors do not suppress otherwise eligible ID checks.
+      - References requires a complete unique valid ID inventory; duplicate_scenario_ids skips reference
+        resolution. With that inventory it checks supplied reference types and owning-node membership;
+        no supplied references is a satisfied empty check.
+      finding_order: Policy composition order, then input entry/obligation/reference index. Fields checks
+        entry shape, supplied title, then unknown field names in Unicode code-point order. Values checks
+        ID then steps in list order. IDs emits later duplicate occurrences in input order. Do not sort
+        or deduplicate step text or findings.
+      final_result: Any error makes final presence invalid and successful extracted_count unavailable.
+        Findings from eligible policies remain ordered even though no successful declaration projection
+        is returned.
+      trace_skips: bdd.policy.evaluated includes nullable skip_reason; skipped outcomes require the stated
+        prerequisite reason, without exposing source values.
   observability:
     obligations:
     - id: native-declaration-classification
@@ -331,12 +384,15 @@ specification:
       - BDD-NATIVE-NO-AUTHORITY
       - BDD-NATIVE-UNKNOWN-FIELD
       - BDD-NATIVE-UNKNOWN-PROFILE
+      - BDD-NATIVE-TIMESTAMP
+      - BDD-NATIVE-COMBINED-ERROR
     - id: native-policy-attribution
       event: bdd.policy.evaluated
       boundary: SpecificationCore composition result
       attributes:
       - rule_ref
       - outcome
+      - skip_reason
       expected_outcomes:
       - satisfied
       - unsatisfied
@@ -346,6 +402,8 @@ specification:
       - BDD-NATIVE-LOCAL-REFERENCE
       - BDD-NATIVE-UNKNOWN-FIELD
       - BDD-NATIVE-UNKNOWN-PROFILE
+      - BDD-NATIVE-TIMESTAMP
+      - BDD-NATIVE-COMBINED-ERROR
     non_interference:
     - Validation and tracing do not write source, authorize implementation, grant evidence admission or
       change profile defaults.
@@ -360,4 +418,4 @@ proposed_maturity: 0.35
 required_human_action: Review this preparation candidate and explicitly adopt a bounded canonical contract
   before strict-profile implementation.
 created_at: '2026-10-02T17:08:38Z'
-updated_at: '2026-10-02T17:08:38Z'
+updated_at: '2026-10-02T18:07:00Z'

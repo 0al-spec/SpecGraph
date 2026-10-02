@@ -685,7 +685,7 @@
         "BDDContainerPresenceSpec",
         "review_pending",
         "make test-native-bdd-characterization",
-        "71",
+        "75",
         "100 scenarios",
         "state_runtime_failure"
       ]
@@ -761,6 +761,24 @@
         "operator_supplied_not_attested",
         "source_ref_updated",
         "ready_for_materialization"
+      ]
+    },
+    {
+      "id": "native-bdd-audit-followup",
+      "description": "Independent native BDD audit and author corrections retain exact snapshot and evidence bounds.",
+      "docs": [
+        "docs/reviews/0223_astra_native_contract_audit.md"
+      ],
+      "docc": [
+        "Sources/SpecGraph/Documentation.docc/BDDScenarioContract.md"
+      ],
+      "required_terms": [
+        "13ed5d0",
+        "normalize_yaml_scalars",
+        "75",
+        "accumulate",
+        "historical",
+        "review_pending"
       ]
     }
   ]

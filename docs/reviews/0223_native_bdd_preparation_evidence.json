@@ -49,23 +49,28 @@
   },
   "runtime_diagnostic": {
     "kind": "state_runtime_failure",
-    "assessment": "False positive: all matched state-failure fragments are quoted diagnostic examples printed from CONTRIBUTING.md in the nested transcript, not actual state-runtime errors.",
+    "assessment": "The pinned documentation excerpt alone reproducibly triggers state_runtime_failure; it is not evidence of an actual runtime-state failure.",
     "source": "tools/supervisor.py:classify_executor_environment",
     "matched_excerpt_path": "docs/reviews/0223_executor_diagnostic_excerpt.txt",
     "matched_excerpt_sha256": "419a842318a341e32a83c5705c0c96ca242084778cef47b7ee7c5b170a38db70",
     "historical_gate_modified": false,
-    "runtime_fix_status": "Not implemented in this contract preparation; retain a separate runtime follow-up."
+    "runtime_fix_status": "Not implemented in this contract preparation; retain a separate runtime follow-up.",
+    "historical_author_observation": "During preparation the author observed quoted documentation among historical transcript matches.",
+    "historical_completeness": "Not independently established by the curated packet: only an excerpt is pinned, and the classifier truncates its evidence list. Other historical matches or real diagnostics cannot be excluded from this packet alone."
   },
   "raw_candidate_path": "docs/reviews/0223_native_bdd_supervisor_raw.yaml",
   "raw_candidate_sha256": "62f3ea0cfc845a0e5d24a72138b8509b0d5d946b602d0af9e8db9f8ae3a3383d",
   "curated_candidate_path": "docs/reviews/0223_native_bdd_supervisor_candidate.yaml",
-  "curated_candidate_sha256": "cba087ff776f7edef8cdcebe418963f4c8d98e9c607d2cb8de28d9192ff4cf31",
+  "curated_candidate_sha256": "d48f654b338e0eb438d73f47a7570531b98a178c1d96d297a53d195c69c02076",
   "curation_changes": [
     "Label the tracked review copy review_pending without resolving the historical Supervisor gate.",
     "Propose an explicit id/scenario/steps allowlist and reject unsupported fields in v1; preserve current compatibility behavior.",
     "Specify unknown profile failure and absent successful extraction count for invalid input.",
     "Name six proposed SpecificationCore objects and RFC rule references without claiming code conformance or canonical subject identity.",
-    "Add future BDD cases for unknown fields and profiles, and a node-local read-only observability contract."
+    "Add future BDD cases for unknown fields and profiles, and a node-local read-only observability contract.",
+    "After independent audit, distinguish original YAML types from legacy timestamp-to-ISO coercion and add timestamp/collision compatibility tests.",
+    "Specify accumulation, prerequisite skips and deterministic findings/trace order; add a future combined-error case.",
+    "Narrow historical diagnosis claims to a reproduced false-positive trigger and separately labeled author observation."
   ],
   "characterization": {
     "consumer": "tools/implementation_contract_pack.py",
@@ -74,14 +79,14 @@
       "tests/test_implementation_contract_pack.py"
     ],
     "command": "make test-native-bdd-characterization PYTHON=<repository-venv-python>",
-    "passed": 71,
+    "passed": 75,
     "failed": 0,
     "evidence_class": "current_0047_compatibility_tests",
     "future_strict_scenarios_executed": false,
     "gameplay_scenarios_executed": false,
     "trusted_receipt_issued": false,
     "test_file_pins": {
-      "tests/test_native_bdd_characterization.py": "28ca0b986e3e686781bbf529ea4ebd862910ad2d7f38aa21efa8f3ded0e1668e",
+      "tests/test_native_bdd_characterization.py": "aaba1fbf19def08243792bfe7b0255e3f49e5a088de1bb0f81f0bcf5cbcd4134",
       "tests/test_implementation_contract_pack.py": "b867a96126d910ba27fea0c90aa86a4f5f3352bff00bfdb5f43e59cb14ca4335"
     },
     "consumer_sha256": "0e81f0c350b53f553e6c97b4cead4d6e710caee2c7efa04fb01cd5e320a5c19a"
@@ -96,13 +101,28 @@
       "source_gate:review_pending",
       "source_status:outlined"
     ],
-    "declared_scenario_count": 11,
-    "referenced_scenario_count": 11,
+    "declared_scenario_count": 13,
+    "referenced_scenario_count": 13,
     "evidence_status": "not_evaluated",
     "runtime_code_mutations_allowed": false,
     "canonical_mutations_allowed": false,
-    "source_sha256": "cba087ff776f7edef8cdcebe418963f4c8d98e9c607d2cb8de28d9192ff4cf31",
+    "source_sha256": "d48f654b338e0eb438d73f47a7570531b98a178c1d96d297a53d195c69c02076",
     "evidence_class": "read_only_current_consumer_structural_preview",
     "future_scenarios_executed": false
+  },
+  "independent_audit": {
+    "model": "gpt-6-astra",
+    "reasoning_effort": "max",
+    "reviewed_head": "13ed5d072d44a08eaf3bb9fe4c487ec4b159e5a7",
+    "reviewed_base": "9283e69f25a4a7cd0e3cef8dbbb32f15561f204f",
+    "verdict": "needs_changes",
+    "finding_counts": {
+      "P1": 0,
+      "P2": 1,
+      "P3": 2
+    },
+    "followup_independently_approved": false,
+    "report_path": "docs/reviews/0223_astra_native_contract_audit.md",
+    "report_sha256": "60997e2e86dcf9b535f4fdb016a782e22a9a476e34feb6558837209cd0b30e78"
   }
 }

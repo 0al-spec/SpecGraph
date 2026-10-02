@@ -121,3 +121,21 @@ historical normalized Zeusus sources with 100 scenarios; it is not a complete
 workspace ecosystem inventory. The Supervisor's review gate remains pending.
 A false runtime finding on quoted documentation is retained as a separate
 diagnostic observation. See the [native preparation record](../../reviews/0223_native_bdd_contract_preparation.md).
+
+## Follow-up after native preparation audit
+
+The operator requested "Запусти аудит на Astra Max" and later asked for status.
+Independent GPT 6 Astra / Max reviewed PR #757 head
+`13ed5d072d44a08eaf3bb9fe4c487ec4b159e5a7` against
+`9283e69f25a4a7cd0e3cef8dbbb32f15561f204f`, returning needs changes: one P2,
+two P3, no P1. This is a different review from the original Astra / Ultra proposal
+audit. Both verdicts retain their exact snapshot scope.
+
+The author prepared version 0.1.4 corrections: characterize legacy YAML timestamp
+coercion, validate original types in future strict mode, define accumulation and
+prerequisite skips, and narrow historical diagnosis claims to reproduced triggers
+plus separately attributed observations. Four added compatibility cases produce
+75 passing cases; two future native cases bring the candidate to thirteen.
+See the [audit record](../../reviews/0223_astra_native_contract_audit.md).
+These author corrections do not claim independent approval, canonical adoption,
+strict implementation or authority to activate/migrate.

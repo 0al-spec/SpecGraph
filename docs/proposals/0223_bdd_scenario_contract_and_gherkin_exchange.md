@@ -1,7 +1,7 @@
 # 0223 BDD Scenario Contract and Gherkin Exchange
 
 RFC: SG-RFC-0223
-Version: 0.1.3
+Version: 0.1.4
 
 ## Status
 
@@ -66,7 +66,7 @@ representation and exchange gap without replacing those contracts.
 After PR #753 merged, one targeted Supervisor pass on GPT 6 Luna Medium prepared
 a temporary native contract candidate under proposed parent **SG-SPEC-0062**.
 The curated copy stays outside canonical `specs/nodes`, with five criteria,
-eleven future BDD cases and `review_pending`. No canonical ID is allocated.
+thirteen future BDD cases and `review_pending`. No canonical ID is allocated.
 
 The candidate proposes an allowlist of `id`, `scenario`, `steps`, with unknown
 fields rejected and no v1 extension field. It names six SpecificationCore policy
@@ -74,7 +74,7 @@ objects, including `BDDContainerPresenceSpec`, with RFC rule references and
 read-only observability. These are proposed bindings, not implemented objects or
 canonical subject identities. The field policy still needs explicit adoption.
 
-`make test-native-bdd-characterization` passed **71 current compatibility tests**.
+`make test-native-bdd-characterization` passed **75 current compatibility tests**.
 The bounded corpus audit pins 69 canonical SpecGraph files and six normalized
 Zeusus files containing 100 scenarios; all inspected scenario fields match the
 proposed allowlist. This is not a full ecosystem audit or strict-profile
@@ -83,7 +83,13 @@ retains raw/curated candidates, hashes and the runtime diagnostic caveat.
 
 Normalized digest bytes, source migration, exchange implementation and activation
 remain separate review prerequisites. The original fourteen proposal acceptance
-cases remain future cases; the candidate's eleven native cases refine one slice.
+cases remain future cases; the candidate's thirteen native cases refine one slice.
+
+Independent Astra / Max audit of preparation head `13ed5d0` found one P2 and two
+P3, with no P1. Author corrections record existing timestamp-to-ISO coercion,
+require strict validation of original YAML types, specify accumulation and
+prerequisite skips, and distinguish a reproduced diagnostic false-positive
+trigger from unproved historical completeness. See the [audit record](../reviews/0223_astra_native_contract_audit.md).
 
 ### 1. Shared native scenario model
 
@@ -122,6 +128,13 @@ Profile/version selection and effective configuration are recorded in derived
 evidence. Missing selection means the documented legacy profile during rollout;
 unknown versions fail closed once this resolver is implemented. This proposal
 does not add a configuration key or change the current default.
+
+The compatibility path retains existing recursive date/datetime normalization
+before validation, including BDD IDs, titles, steps and references. Strict v1
+validates original decoded string types before that coercion; explicit quoted
+strings retain their exact text. In the proposed composition, eligible policies
+accumulate ordered findings, while unavailable prerequisites produce attributed
+skips. The native child candidate defines the policy and field ordering.
 
 ### 2. Presence, incompatible shapes and migration
 

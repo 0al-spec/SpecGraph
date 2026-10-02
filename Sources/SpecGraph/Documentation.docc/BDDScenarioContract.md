@@ -102,24 +102,34 @@ readiness from scenario counts.
 The native contract candidate is proposed under **SG-SPEC-0062**. One targeted
 Supervisor preparation used GPT 6 Luna Medium; its raw result and curated
 `DRAFT-SPEC-0223` copy stay outside canonical specs. The curated copy has five
-criteria, eleven future BDD cases and `review_pending`. It proposes an exact
+criteria, thirteen future BDD cases and `review_pending`. It proposes an exact
 `id`/`scenario`/`steps` allowlist, no v1 extensions and six separately named
 SpecificationCore policies, including `BDDContainerPresenceSpec`, with RFC rule
 references. These bindings are intended obligations, not implemented code or
 canonical requirement identities.
 
-`make test-native-bdd-characterization` passed 71 current compatibility tests:
-50 new cases and 21 existing contract-pack cases. A bounded read-only audit pins
+`make test-native-bdd-characterization` passed 75 current compatibility tests:
+54 new cases and 21 existing contract-pack cases. A bounded read-only audit pins
 69 canonical SpecGraph files and six normalized historical Zeusus specs with
 100 scenarios; the inspected scenario fields match the proposed allowlist. The
 tests preserve existing behavior, including ignored alternate containers and
 unchecked descriptive titles. They do not execute the future strict cases.
 
-The preparation retains a false `state_runtime_failure` finding on quoted
-diagnostic examples printed from documentation. Successful executor completion
-does not clear the historical gate; a separate runtime follow-up must distinguish
-actual diagnostics from transcript text. The raw/curated hashes, corpus scope
-and exact excerpt live under `docs/reviews/0223_native_bdd_*` and
+The legacy consumer applies `normalize_yaml_scalars` to YAML date/datetime in BDD fields and references,
+converting them to
+ISO strings before validation; timestamp and matching string IDs can collide.
+Strict v1 validates original decoded types before that coercion. Its composed
+policies accumulate findings from eligible checks and attribute prerequisite
+skips. Finding order follows policies, source indices and explicit field order.
+An unsupported field plus empty steps produces both ordered errors, without
+skipping otherwise eligible ID checks.
+
+The pinned documentation excerpt alone reproduces a `state_runtime_failure`
+false-positive trigger. Historical completeness is an author observation rather
+than independently established evidence: a full transcript/inventory is absent,
+and the classifier truncates its evidence list. Successful executor completion
+does not clear the historical gate. Raw/curated hashes, corpus scope and exact
+excerpt remain under `docs/reviews/0223_native_bdd_*` and
 `docs/reviews/0223_executor_diagnostic_excerpt.txt`.
 
 Review and adopt the native contract explicitly before one shared-loader slice
@@ -140,6 +150,10 @@ write protection, with future BDD-13/14. Their process-evidence records live in
 PR #753 merged after the three threads were resolved. Version 0.1.3 records the
 native preparation and executed compatibility tests; the original independent
 verdict does not extend to that follow-up candidate.
+Independent Astra / Max audited preparation head `13ed5d0`: one P2, two P3,
+no P1. Version 0.1.4 records the author's corrections and 75 compatibility tests;
+it does not extend that independent verdict to the changed candidate. The review
+and evidence bounds are recorded in `docs/reviews/0223_astra_native_contract_audit.md`.
 
 `make proposal-tracking-gate` and `make docc-sync` check document preparation.
 They do not execute future BDD cases or grant implementation authority.
@@ -153,3 +167,4 @@ They do not execute future BDD cases or grant implementation authority.
 - `docs/reviews/0223_native_bdd_contract_preparation.md`
 - `docs/reviews/0223_native_bdd_preparation_evidence.json`
 - `docs/reviews/0223_native_bdd_corpus_audit.json`
+- `docs/reviews/0223_astra_native_contract_audit.md`

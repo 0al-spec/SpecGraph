@@ -12945,7 +12945,8 @@
       "docs/reviews/0223_native_bdd_preparation_evidence.json",
       "docs/reviews/0223_native_bdd_corpus_audit.json",
       "docs/reviews/0223_executor_diagnostic_excerpt.txt",
-      "tests/test_native_bdd_characterization.py"
+      "tests/test_native_bdd_characterization.py",
+      "docs/reviews/0223_astra_native_contract_audit.md"
     ],
     "runtime_markers": [
       {
@@ -12961,6 +12962,10 @@
       {
         "path": "tests/test_native_bdd_characterization.py",
         "pattern": "def test_reference_lookup_does_not_search_related_nodes("
+      },
+      {
+        "path": "tests/test_native_bdd_characterization.py",
+        "pattern": "def test_yaml_timestamps_are_normalized_before_bdd_validation("
       }
     ],
     "observation_markers": [
@@ -12977,6 +12982,6 @@
         "pattern": "\"full_ecosystem_inventory\": false"
       }
     ],
-    "notes": "Proposal preparation only. Runtime realization and activation require a separately reviewed graph contract and implementation slice. Historical extraction counts and hashes do not demonstrate implemented shared validation, Gherkin exchange, gameplay execution or evidence admission. Independent GPT 6 Astra / Ultra review of head 365b387973ac61df32cc8532b3f3caddc3719b18 found no P1/P2. The author clarified its three P3 items in proposal 0.1.1: explicit native input matrix, immutable workspace and owning-node reference scope, and a versioned exchange envelope with direct reserved IDs and file-level comment provenance. Documented acceptance cases are future checks, not executed runtime tests or independent approval of the follow-up. A separate GitHub review of the original head reported three P2 items. Proposal 0.1.2 retains the envelope clarification and requires a reviewed canonical scenario-digest byte contract before activation plus fail-closed stale-preview source preconditions at the serialized write boundary. BDD-13/14 are future acceptance cases; the fourteen-case package and documentation prevention records do not prove runtime enforcement or resolve GitHub threads. PR #753 merged after all three P2 threads were replied to and resolved with explicit operator authorization. The next preparation retains a raw and curated temporary DRAFT-SPEC-0223 candidate proposed under SG-SPEC-0062, a bounded source-pinned corpus audit and 71 passing current-compatibility tests. The candidate proposes six named SpecificationCore objects and eleven future BDD cases; canonical adoption, shared-loader implementation and strict activation remain absent. A state-runtime false positive from printed documentation is recorded separately without clearing the historical review gate."
+    "notes": "Proposal preparation only. Runtime realization and activation require a separately reviewed graph contract and implementation slice. Historical extraction counts and hashes do not demonstrate implemented shared validation, Gherkin exchange, gameplay execution or evidence admission. Independent GPT 6 Astra / Ultra review of head 365b387973ac61df32cc8532b3f3caddc3719b18 found no P1/P2. The author clarified its three P3 items in proposal 0.1.1: explicit native input matrix, immutable workspace and owning-node reference scope, and a versioned exchange envelope with direct reserved IDs and file-level comment provenance. Documented acceptance cases are future checks, not executed runtime tests or independent approval of the follow-up. A separate GitHub review of the original head reported three P2 items. Proposal 0.1.2 retains the envelope clarification and requires a reviewed canonical scenario-digest byte contract before activation plus fail-closed stale-preview source preconditions at the serialized write boundary. BDD-13/14 are future acceptance cases; the fourteen-case package and documentation prevention records do not prove runtime enforcement or resolve GitHub threads. PR #753 merged after all three P2 threads were replied to and resolved with explicit operator authorization. The next preparation retains a raw and curated temporary DRAFT-SPEC-0223 candidate proposed under SG-SPEC-0062, a bounded source-pinned corpus audit and initially 71 passing current-compatibility tests. The initial candidate proposes six named SpecificationCore objects and eleven future BDD cases; canonical adoption, shared-loader implementation and strict activation remain absent. A reproduced state-runtime false-positive trigger from printed documentation is recorded separately without clearing the historical review gate. Independent GPT 6 Astra / Max audited PR #757 head 13ed5d072d44a08eaf3bb9fe4c487ec4b159e5a7: needs changes, one P2 and two P3, no P1. Author corrections in 0.1.4 characterize legacy timestamp coercion (75 compatibility cases), define strict original-type validation, accumulation/prerequisite skips/finding order, and narrow historical diagnostic completeness claims. The curated candidate now has thirteen future native cases; author corrections do not extend the independent verdict or adopt/activate the profile."
   }
 ]
