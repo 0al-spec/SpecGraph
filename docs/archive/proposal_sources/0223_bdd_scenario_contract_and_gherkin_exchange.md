@@ -82,3 +82,20 @@ The [author follow-up](../../reviews/0223_astra_review_followup.md) distinguishe
 the original independent review from subsequent edits and future implementation
 checks. This authorization does not activate a shared loader, migrate product
 sources or grant evidence admission. Historical pilot source hashes are unchanged.
+
+## Follow-up during final PR verification
+
+The operator requested "Хорошо, проверяй" after the 0.1.1 clarification.
+A live GraphQL check found three open P2 threads from the separate
+chatgpt-codex-connector review of original head
+365b387973ac61df32cc8532b3f3caddc3719b18: canonical digest bytes,
+exchange metadata and stale migration previews. The independent Astra verdict
+and this GitHub review are different evidence sources.
+
+The author prepared version 0.1.2: retain the envelope, make canonical digest
+decisions required before activation/binding, and require current source pins
+at the serialized migration write boundary with no writes on stale input.
+Future BDD-13/14 supplement the existing twelve cases.
+See [the follow-up record](../../reviews/0223_astra_review_followup.md) and
+tools/review_feedback_records.json for provenance and prevention classification.
+This clarification does not implement or activate the proposed runtime.

@@ -1,7 +1,7 @@
 # 0223 BDD Scenario Contract and Gherkin Exchange
 
 RFC: SG-RFC-0223
-Version: 0.1.1
+Version: 0.1.2
 
 ## Status
 
@@ -152,8 +152,20 @@ one scalar string each for `given`, `when`, `then` into three prefixed steps.
 It MUST preserve IDs, exact clause strings and order, emit before/after counts,
 source digests, mapping and unsupported fields, and leave source files intact.
 Ambiguous or richer inputs require review rather than guessed conversion.
-Applying the preview is a separate authorized source change, followed by the
-same loader checks; extraction success does not resolve source review gates.
+Applying the preview is a separate authorized source change. Before any source
+write, application MUST bind that authorization to the exact reviewed preview
+and match every input's workspace/path binding, exact source-byte digest and
+source revision when pinned. Re-read the current source at the serialized
+mutation boundary; a mismatch emits a `stale-preview` finding and performs no
+source writes. An obsolete authorization cannot be silently reused for a new
+preview; regenerate and review that preview separately.
+
+The precondition check and publication MUST be protected against concurrent
+source changes: a source edited after the check cannot be overwritten by the
+old candidate. Validate the staged candidate with the same loader before
+publication and retain the checked source pins in the application record.
+Extraction success still does not resolve source review gates. These are
+requirements for the future migration writer, not a claim about current tooling.
 
 Diagnostic commands may emit a partial inventory with findings and a failure
 status. An implementation handoff MUST fail closed on invalid scenario input.
@@ -197,6 +209,29 @@ a title preserves identity; changes to source or scenario content cannot
 automatically transfer an old execution result to the new contract. Historical
 results retain their original pins. Split, merge or replacement needs explicit
 mapping; neither an import nor a matching title invents lineage or adoption.
+
+The normalized scenario digest needs a separately reviewed, versioned canonical
+byte contract before shared-profile activation or evidence handoff uses that
+digest. Finalize all of the following together, with pinned fixtures:
+
+- Included/excluded fields: ID, optional title, ordered steps, qualified
+  workspace/spec binding and exchange metadata each need an explicit decision.
+- Canonical serialization and encoding, including key order, absent versus null
+  values, and preservation of list order and repeated steps.
+- Text/Unicode handling consistent with this profile's exact ID and step-value
+  preservation; normalization cannot silently rewrite authored content.
+- Hash algorithm, digest-contract version and domain separation from source-file
+  or exchange-payload hashes.
+- Cross-adapter fixtures for equivalent supported native/Gherkin projections,
+  plus content changes that must yield different digests.
+
+Consumers MUST record the selected digest-contract version and reject an unknown
+or unresolved contract instead of generating implementation-private pins. Until
+the canonical contract is reviewed, normalized digest binding remains unavailable;
+exact byte SHA-256 pins still describe sources/payloads, not normalized scenario
+equivalence. Existing historical pins keep their original contract and are not
+silently recomputed. This proposal deliberately makes the canonical byte choice
+an activation prerequisite rather than selecting an untested serializer here.
 
 Requirement/criterion references use the adopted 0221 contract where available.
 This proposal does not create a canonical Scenario node kind, allocate new
@@ -375,6 +410,8 @@ These are future implementation checks, not tests executed by this PR.
 | BDD-10 | Given equal local IDs in different immutable workspaces, a renamed workspace, and a scenario found only outside an obligation's owning node, when resolving, then distinct workspace identities remain distinct, the rename preserves identity and the cross-node reference fails. |
 | BDD-11 | Given zero/one/two reserved Scenario ID tags, a Feature-level reserved ID, or an envelope/tag mismatch, when importing, then only exactly one direct matching Scenario ID is accepted and no identity is inherited or invented. |
 | BDD-12 | Given a stale envelope digest or conflicting metadata despite a matching digest, when exchanging, then a finding prevents successful output; comments cannot acquire inferred Scenario ownership. |
+| BDD-13 | Given a reviewed migration preview and a changed source, binding or pinned revision, when application is attempted, then `stale-preview` prevents all source writes; a concurrent edit cannot be overwritten by an old candidate. |
+| BDD-14 | Given an unresolved or unknown canonical digest contract, when normalized scenario pins are requested, then binding fails explicitly; after review, pinned equivalent native/Gherkin fixtures agree across consumers and semantic changes follow the declared field/text policy. |
 
 ## Proposal Validation and Remaining Decisions
 
@@ -384,7 +421,9 @@ tracking/document coherence only; they do not validate the future scenario
 implementation, Gherkin exchange or gameplay.
 
 Before implementation activation, finalize the v1 field allowlist/extension
-policy, profile selection location and reserved tag spelling with fixtures.
+policy, profile selection location, reserved tag spelling and the versioned
+canonical scenario-digest byte contract with fixtures. The digest decisions in
+section 3 are required activation gates, not optional implementation details.
 Select and pin the parser after the dependency/license check. Full Gherkin
 coverage, a universal execution DSL, mandatory Cucumber, source migration and
 canonical Scenario ontology are outside this preparation slice.

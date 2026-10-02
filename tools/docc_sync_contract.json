@@ -647,7 +647,9 @@
         "realization is deferred",
         "UniqueKeyLoader",
         "observability.obligations[*].scenario_ids",
-        "bdd_scenario_exchange_envelope"
+        "bdd_scenario_exchange_envelope",
+        "digest-contract version",
+        "stale-preview"
       ]
     }
   ]

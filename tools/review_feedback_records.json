@@ -914,5 +914,50 @@
     ],
     "residual_risk": "Physical schema remains pending human approval; the canonical-source adapter and validating writer are not implemented. Candidate fixture checks do not prove writer enforcement or adoption.",
     "recorded_at": "2026-10-02T14:53:58Z"
+  },
+  {
+    "feedback_id": "pr-753-scenario-digest-contract",
+    "source_pr": 753,
+    "source_thread_url": "https://github.com/0al-spec/SpecGraph/pull/753#discussion_r4167455778",
+    "reviewer": "chatgpt-codex-connector",
+    "review_comment_summary": "Normalized scenario digest lacked canonical fields, serialization, text policy and versioned hash semantics.",
+    "fix_summary": "Make a reviewed canonical byte contract with explicit field/text/encoding/hash/version/domain-separation decisions and cross-adapter fixtures a prerequisite before activation or normalized binding. Future BDD-14; no runtime serializer added.",
+    "root_cause_class": "artifact_contract_validation_gap",
+    "prevention_action": "documentation_rule_added",
+    "verification": [
+      "manual_contract_review"
+    ],
+    "residual_risk": "Contract preparation only. Native/exchange fixtures, activation and writer enforcement are separate work; documentation gates do not execute these scenarios or establish trusted evidence. GitHub thread state must be checked separately.",
+    "recorded_at": "2026-10-02T16:40:42Z"
+  },
+  {
+    "feedback_id": "pr-753-gherkin-exchange-envelope",
+    "source_pr": 753,
+    "source_thread_url": "https://github.com/0al-spec/SpecGraph/pull/753#discussion_r4167455789",
+    "reviewer": "chatgpt-codex-connector",
+    "review_comment_summary": "Minimal native scenarios could not preserve Feature metadata, scoped tags or file comments during Gherkin round-trip.",
+    "fix_summary": "Proposal 0.1.1 defines bdd_scenario_exchange_envelope schema/version/bindings, current payload digest, origin provenance, Feature/Scenario metadata, direct ID tags and ordered file comments. Future BDD-05/11/12; no exchange runtime added.",
+    "root_cause_class": "artifact_contract_validation_gap",
+    "prevention_action": "documentation_rule_added",
+    "verification": [
+      "manual_contract_review"
+    ],
+    "residual_risk": "Contract preparation only. Native/exchange fixtures, activation and writer enforcement are separate work; documentation gates do not execute these scenarios or establish trusted evidence. GitHub thread state must be checked separately.",
+    "recorded_at": "2026-10-02T16:40:42Z"
+  },
+  {
+    "feedback_id": "pr-753-stale-migration-preview",
+    "source_pr": 753,
+    "source_thread_url": "https://github.com/0al-spec/SpecGraph/pull/753#discussion_r4167455799",
+    "reviewer": "chatgpt-codex-connector",
+    "review_comment_summary": "Applying an authorized migration preview lacked a source-digest precondition and could overwrite a source changed after preview review.",
+    "fix_summary": "Require the exact reviewed preview and all input bindings/source pins to match at the serialized mutation boundary before writing; stale-preview means no source writes. Protect check/publication against concurrent edits and validate the staged candidate. Future BDD-13; writer enforcement remains future work.",
+    "root_cause_class": "artifact_contract_validation_gap",
+    "prevention_action": "documentation_rule_added",
+    "verification": [
+      "manual_contract_review"
+    ],
+    "residual_risk": "Contract preparation only. Native/exchange fixtures, activation and writer enforcement are separate work; documentation gates do not execute these scenarios or establish trusted evidence. GitHub thread state must be checked separately.",
+    "recorded_at": "2026-10-02T16:40:42Z"
   }
 ]
