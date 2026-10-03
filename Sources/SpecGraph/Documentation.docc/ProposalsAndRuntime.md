@@ -329,5 +329,40 @@ See `docs/subject_canonical_source.md`. This is
 `partial_canonical_source_adapter` evidence, with
 `canonical_readiness: not_evaluated`, `ready_for_materialization: false` and
 `canonical_mutations_allowed: false`. Prior digest conflict enforcement, origin
-allocation and atomic publication remain the writer slice. Canonical
+allocation and atomic publication belong to the bounded writer slice below. Canonical
 materialization, migration and destination evidence applicability remain separate.
+
+## Bounded RFC 0221 subject-source Git writer
+
+SG-SPEC-0069 now has a validating origin/content-revision writer in
+`tools/subject_source_write.py`, with Git I/O in `tools/subject_source_git.py`.
+The `git_commit_compare_and_swap_v1` backend selects an existing direct ref under
+`refs/specgraph/subject-storage/`. The request binds an expected commit and the
+complete prior source SHA256 map. New origins require an unused identity;
+revisions retain all prior content and disposition history unchanged.
+
+All changed records are prepared together outside the canonical source and
+validated through the strict reader. A private Git index produces one commit;
+the actual parent, changed paths and committed source bytes are checked before
+publication. An expected-old-value ref update publishes the entire source tree
+atomically and rejects concurrent winners. The operator checkout, index and
+ordinary branches are untouched. This is Git-ref atomicity, not an atomic
+multi-file filesystem checkout.
+
+Publication requires an explicit authorization bound to `request_sha256` and
+the exact transition decision references. `operator_supplied_not_attested`
+labels that evidence; schema approval does not supply materialization authority.
+Preview reports `source_ref_updated: false`; successful publication reports true.
+Both retain `canonical_readiness: not_evaluated`, `ready_for_materialization: false`
+and `trusted_runtime_receipt: false`.
+
+See `docs/subject_source_write.md` and `tests/test_subject_source_write.py`.
+Temporary fixture origins prove bounded writer behavior, including late CAS
+conflicts and failure before publication. Production workspace/subject origins
+remain unallocated. Containment moves, disposition changes, relations, topology,
+migration and destination evidence applicability are separate slices.
+
+Writer diagnostics distinguish malformed expected commit IDs (`invalid_input`,
+exit 2) from deleted selected refs (`source_conflict`, exit 3), including deletion
+at the CAS boundary. PR #758 regression fixtures prevent both classification gaps;
+see the review prevention section in `docs/subject_source_write.md`.

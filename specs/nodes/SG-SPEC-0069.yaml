@@ -2,7 +2,7 @@ id: SG-SPEC-0069
 title: SpecGraph - Standalone Subject Storage Preparation
 kind: spec
 created_at: '2026-10-02T13:30:00Z'
-updated_at: '2026-10-02T16:33:52Z'
+updated_at: '2026-10-02T22:44:00Z'
 status: specified
 authority_class: authored
 source_ref: docs/reviews/0221_subject_storage_decision.json
@@ -32,6 +32,10 @@ outputs:
 - tools/subject_canonical_source.py
 - tests/test_subject_canonical_source.py
 - docs/subject_canonical_source.md
+- tools/subject_source_git.py
+- tools/subject_source_write.py
+- tests/test_subject_source_write.py
+- docs/subject_source_write.md
 allowed_paths:
 - specs/nodes/SG-SPEC-0069.yaml
 - tools/subject_canonical_source.py
@@ -43,6 +47,10 @@ allowed_paths:
 - Sources/SpecGraph/Documentation.docc/ProposalsAndRuntime.md
 - tools/docc_sync_contract.json
 - tools/proposal_runtime_registry.json
+- tools/subject_source_git.py
+- tools/subject_source_write.py
+- tests/test_subject_source_write.py
+- docs/subject_source_write.md
 acceptance:
 - Defines a versioned workspace declaration and standalone Requirement and criterion record layout without
   creating a new seed kind or duplicate embedded Requirements.
@@ -53,16 +61,15 @@ acceptance:
 acceptance_evidence:
 - criterion: Defines a versioned workspace declaration and standalone Requirement and criterion record
     layout without creating a new seed kind or duplicate embedded Requirements.
-  evidence: 'Approved authored contract: storage_layout and document_shapes define version-1 YAML storage.
-    Bounded reader evidence in tests/test_subject_canonical_source.py and docs/subject_canonical_source.md
-    checks standalone source shapes, namespace and node provenance. No canonical origin allocation or
-    writer conformance is claimed.'
+  evidence: 'Approved authored contract plus bounded reader/writer fixture evidence: tests/test_subject_canonical_source.py
+    and tests/test_subject_source_write.py check standalone source shapes, namespace and node provenance
+    before publication. No production canonical origin is allocated.'
 - criterion: Defines retained revision records, exact acceptance references and independent disposition
     with guarded append-only writes.
-  evidence: 'Approved authored contract plus bounded read-only evidence: tests/test_subject_canonical_source.py
-    checks complete revision chains, exact pins, authored scope and ordered disposition projections; read-model
-    tests preserve historical metadata and legacy snapshot behavior. Write conflict, append-only comparison
-    and atomic publication implementation remain pending.'
+  evidence: Bounded reader and Git writer fixture evidence checks complete retained revisions, exact pins,
+    authored scope, immutable historical metadata and disposition, prior digests, concurrent conflicts,
+    whole-candidate validation and atomic dedicated-ref publication. See docs/subject_source_write.md;
+    no full runtime conformance is claimed.
 - criterion: Defines review-only candidate envelopes and explicit canonical materialization prerequisites
     without treating preparation or historical tests as adoption.
   evidence: 'Authored contract only: specification.candidate_contract and materialization_prerequisites
@@ -94,7 +101,7 @@ specification:
       decision_ref: docs/reviews/0221_subject_storage_decision.json#/decisions/requirement_membership_and_mapping
       mapping_decisions_ref: docs/reviews/0221_subject_storage_decision.json#/mapping_decisions
     canonical_materialization_authorization: null
-    runtime_conformance: partial_canonical_source_adapter
+    runtime_conformance: partial_canonical_source_adapter_and_git_writer
     exclusions:
     - No canonical workspace declaration, Requirement or criterion origin is allocated by schema/mapping
       approval.
@@ -104,18 +111,20 @@ specification:
     - No approval is inferred from PR merge or successful validation.
     workspace_and_id_plan_approval_record: docs/reviews/0221_subject_storage_decision.json#/decisions/workspace_and_id_plan
     bounded_implementation_authorization: docs/reviews/0221_subject_storage_decision.json#/decisions/bounded_implementation_authorization
-    runtime_evidence_ref: docs/subject_canonical_source.md
-    runtime_evidence_scope: Strict read-only complete-source parsing, exact/current lookup and exchange
-      export with retained metadata/scope and authored disposition order over temporary fixtures. Caller-selected
-      topology references are not attested. No validating writer, canonical materialization, migration
-      or destination evidence applicability.
+    runtime_evidence_ref: docs/subject_source_write.md
+    runtime_evidence_scope: Strict complete-source reader plus bounded origin/content-revision writer
+      over temporary Git fixtures. Prior commit and complete source digests, retained history, exact pins,
+      candidate commit scope and atomic dedicated-ref publication are checked. Operator-supplied authorization
+      and caller-selected topology are not attested. No canonical materialization, migration or destination
+      evidence applicability.
     runtime_evidence_provenance:
       actor_id: agent:codex
       authority_class: inferred
-      recorded_at: '2026-10-02T16:33:52Z'
-      source_ref: docs/subject_canonical_source.md
+      recorded_at: '2026-10-02T22:44:00Z'
+      source_ref: docs/subject_source_write.md
       source_confidence: high
-      notes: Bounded executable reader evidence; separate from the recorded human schema/mapping decision.
+      notes: Bounded executable reader and Git writer fixture evidence; separate from recorded human schema/mapping
+        decisions and future production materialization.
   parent_compatibility:
     parent: SG-SPEC-0068
     rules:
