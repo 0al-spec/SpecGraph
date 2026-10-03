@@ -1007,5 +1007,53 @@
     ],
     "residual_risk": "Intent lineage is unresolved and genuine decisions are absent. Governed decision-to-request gate remains unimplemented; no materialization is authorized.",
     "recorded_at": "2026-10-03T11:43:00Z"
+  },
+  {
+    "feedback_id": "pr-761-complete-reviewed-record",
+    "source_pr": 761,
+    "source_thread_url": "https://github.com/0al-spec/SpecGraph/pull/761#discussion_r4173430314",
+    "reviewer": "chatgpt-codex-connector",
+    "review_comment_summary": "Partial equality omitted status, authority, node provenance, containment and disposition from reviewed candidate binding.",
+    "fix_summary": "Reuse the complete_reviewed_record SpecificationCore policy for canonical JSON scope equality of all candidate fields; later publication approval cannot replace packet review.",
+    "root_cause_class": "artifact_contract_validation_gap",
+    "prevention_action": "regression_test_added",
+    "verification": [
+      "targeted_test",
+      "lint_or_format_check"
+    ],
+    "residual_risk": "Covered by tests/test_subject_publication.py::test_late_approval_cannot_replace_complete_reviewed_record. Recorded attribution remains un-attested; production lineage and materialization decisions are unresolved.",
+    "recorded_at": "2026-10-03T14:12:00Z"
+  },
+  {
+    "feedback_id": "pr-761-reviewed-workspace-declaration",
+    "source_pr": 761,
+    "source_thread_url": "https://github.com/0al-spec/SpecGraph/pull/761#discussion_r4173430318",
+    "reviewer": "chatgpt-codex-connector",
+    "review_comment_summary": "Inventoried declaration was resolved but its content was not compared with the bootstrap request.",
+    "fix_summary": "Apply the same complete_reviewed_record policy to the full workspace declaration; reject a late allocation/provenance replacement.",
+    "root_cause_class": "artifact_contract_validation_gap",
+    "prevention_action": "regression_test_added",
+    "verification": [
+      "targeted_test",
+      "lint_or_format_check"
+    ],
+    "residual_risk": "Covered by tests/test_subject_publication.py::test_late_allocation_cannot_replace_reviewed_declaration. Recorded attribution remains un-attested; production lineage and materialization decisions are unresolved.",
+    "recorded_at": "2026-10-03T14:12:00Z"
+  },
+  {
+    "feedback_id": "pr-761-governance-selection-diagnostics",
+    "source_pr": 761,
+    "source_thread_url": "https://github.com/0al-spec/SpecGraph/pull/761#discussion_r4173430322",
+    "reviewer": "chatgpt-codex-connector",
+    "review_comment_summary": "Evidence-selection parsing escaped as generic invalid_input instead of the governance failure contract.",
+    "fix_summary": "Normalize selection parsing, SHA validation and file I/O failures to PublicationGovernanceError; preserve invalid_input for malformed requests.",
+    "root_cause_class": "artifact_contract_validation_gap",
+    "prevention_action": "regression_test_added",
+    "verification": [
+      "targeted_test",
+      "lint_or_format_check"
+    ],
+    "residual_risk": "Covered by tests/test_subject_publication.py::test_cli_classifies_selection_failures_as_governance_blocked. Recorded attribution remains un-attested; production lineage and materialization decisions are unresolved.",
+    "recorded_at": "2026-10-03T14:12:00Z"
   }
 ]

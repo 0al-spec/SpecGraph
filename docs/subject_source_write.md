@@ -96,12 +96,14 @@ to obtain it.
 new revision decision references, origin activation provenance and any new workspace
 declaration provenance. Authorization for a different request is rejected.
 
-Authorization and topology are operator-supplied assertions. Structural checks
-and digest binding do not authenticate the reviewer or attest external decisions;
-the result labels `authorization_verification: operator_supplied_not_attested`.
-The tool does not read the schema approval as permission to materialize subjects.
-Actual SpecDraft-to-canonical transition records, destination origins and evidence
-applicability still require their separately authored decisions.
+Publication now also requires the [governed publication gate](subject_publication.md).
+Pass immutable `subject_publication_evidence` through `--governance` or the API's
+`governance` argument. Before candidate creation the gate resolves the reviewed
+packet, actual attributed human decisions, Intent lineage, paired transitions,
+workspace allocation, activation, topology and exact request permission. Schema
+approval cannot substitute for permission to materialize subjects. Success is
+labelled `scope_bound_recorded_decisions_verified_not_attested`; reviewer identity
+and external cryptographic attestation remain outside this boundary.
 
 ## CLI and reading a published source
 
@@ -111,7 +113,8 @@ applicability still require their separately authored decisions.
 
 .venv/bin/python tools/subject_source_write.py \
   --repository-root /path/to/repository --request /path/to/write-request.yaml \
-  --authorization /path/to/exact-write-authorization.yaml
+  --authorization /path/to/exact-write-authorization.yaml \
+  --governance /path/to/immutable-evidence-selection.yaml
 ```
 
 Preview returns a validated candidate commit and request digest without updating
@@ -119,7 +122,9 @@ the ref. It can leave unreachable immutable objects for ordinary Git cleanup;
 candidate files and the private index are temporary. The result distinguishes
 `status: prepared` from `status: published` and reports `source_ref_updated`.
 Exit codes are `0` for preparation/publication, `2` for invalid input or a preparation
-failure, and `3` for stale source/digest or publication conflicts. JSON goes to stdout.
+failure, `3` for stale source/digest or publication conflicts, and `4` for
+`governance_blocked`. Existing publication calls without governance fail closed;
+preview remains available. JSON goes to stdout.
 Read the exact published commit through the existing source adapter:
 
 ```python
