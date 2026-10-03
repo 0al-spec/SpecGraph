@@ -330,6 +330,29 @@ def test_authorization_alone_cannot_publish(governed):
     assert selected_source_commit(root, SOURCE_REF) == request.expected_commit
 
 
+def test_approval_cannot_resolve_null_lineage_in_reviewed_packet(governed):
+    root, request, authorization, _, decisions, author = governed
+    packet = json.loads((root / PACKET).read_text())
+    packet["transition_records"][0]["intent_lineage_ref"] = None
+    packet["approval_scope_sha256"] = scope_digest(
+        {k: v for k, v in packet.items() if k != "approval_scope_sha256"}
+    )
+    write_json(root, PACKET, packet)
+    binding = decisions["packet_binding"]
+    binding.update(
+        reviewed_head=commit(root),
+        packet_sha256=hashlib.sha256((root / PACKET).read_bytes()).hexdigest(),
+        approval_scope_sha256=packet["approval_scope_sha256"],
+    )
+    author.approve(decisions["packet_approval"])
+    decisions["transition_decisions"][0]["intent_lineage_ref"] = None
+    author.approve(decisions["transition_decisions"][0])
+    evidence = author.save(decisions)
+    with pytest.raises(PublicationGovernanceError, match="Intent lineage is unresolved"):
+        write_subject_source(root, request, authorization=authorization, governance=evidence)
+    assert selected_source_commit(root, SOURCE_REF) == request.expected_commit
+
+
 @pytest.mark.parametrize("effect_name", ["activation", "workspace_allocation"])
 def test_bootstrap_requires_explicit_activation_and_allocation(governed, effect_name):
     root, request, authorization, _, decisions, author = governed

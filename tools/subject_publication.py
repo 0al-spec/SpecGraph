@@ -207,6 +207,11 @@ def _input(packet: dict, reviewed: DecisionSnapshot, reference: str) -> object:
 def _lineage(
     packet: dict, reviewed: DecisionSnapshot, transition: dict, snapshot: DecisionSnapshot
 ) -> None:
+    require(
+        isinstance(transition.get("intent_lineage_ref"), str)
+        and bool(transition["intent_lineage_ref"].strip()),
+        "motivating Intent lineage is unresolved",
+    )
     lineage = _input(packet, reviewed, transition["intent_lineage_ref"])
     require(lineage["artifact_kind"] == "subject_intent_lineage", "missing authored Intent lineage")
     require(
