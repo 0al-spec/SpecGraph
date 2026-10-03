@@ -87,7 +87,11 @@ files. Pending decision fields, absent Intent lineage and missing topology
 decisions must remain explicit blockers. A consistency validator proves that a
 review snapshot agrees with its inputs; it does not authenticate approval or
 authorize a writer. The RFC 0221 prevention check is
-`make materialization-packet-check`; its publication gate remains separate.
+`make materialization-packet-check`. Publication additionally requires the
+mandatory [recorded-decision gate](docs/subject_publication.md) and an immutable
+evidence selection; preview does not grant permission. Record actual human
+decisions and their original sources, never synthetic fixture approvals in a
+production workspace. Successful scope verification does not attest identity.
 
 ## Local Python Environment
 

@@ -22,6 +22,12 @@ from subject_canonical_source import (
     parse_topology_selection,
     read_canonical_source,
 )
+from subject_publication import (
+    PublicationGovernanceError,
+    SubjectPublicationEvidence,
+    parse_publication_evidence,
+    verify_publication,
+)
 from subject_read_model import SubjectRecord, SubjectRef, require_text, require_tuple
 from subject_read_model_io import SubjectDocumentError, _list, _object, parse_subject_ref
 from subject_source_git import (
@@ -250,6 +256,7 @@ def write_subject_source(
     *,
     authorization: SubjectWriteAuthorization | None = None,
     preview: bool = False,
+    governance: SubjectPublicationEvidence | None = None,
 ) -> dict:
     """Validate the full candidate, verify its immutable commit, then optionally publish one ref."""
     if not isinstance(request, SubjectSourceWriteRequest):
@@ -258,6 +265,10 @@ def write_subject_source(
         raise SubjectDocumentError("publication requires an explicit typed authorization")
     if authorization is not None and authorization.request_sha256 != request.digest():
         raise SubjectDocumentError("authorization does not bind this exact write request")
+    # Resolve permission before candidate export, object creation or the final ref CAS.
+    governance_result = (
+        verify_publication(governance, request, authorization) if not preview else {}
+    )
     commit_id = selected_source_commit(repository, request.source_ref)
     if commit_id != request.expected_commit:
         raise SubjectSourceConflict("expected source commit no longer matches the selected ref")
@@ -364,6 +375,7 @@ def write_subject_source(
             "canonical_readiness": "not_evaluated",
             "ready_for_materialization": False,
             "trusted_runtime_receipt": False,
+            **governance_result,
         }
     # Cleanup completes before the authoritative mutation; no fallible I/O follows CAS.
     if not preview:
@@ -378,6 +390,9 @@ def main(argv: list[str] | None = None) -> int:
     mode = parser.add_mutually_exclusive_group(required=True)
     mode.add_argument("--preview", action="store_true")
     mode.add_argument("--authorization", type=Path)
+    parser.add_argument(
+        "--governance", type=Path, help="Immutable publication evidence selection YAML"
+    )
     args = parser.parse_args(argv)
     try:
         request = parse_write_request(load_yaml_text(args.request.read_text(encoding="utf-8")))
@@ -389,19 +404,30 @@ def main(argv: list[str] | None = None) -> int:
             else None
         )
         payload = write_subject_source(
-            args.repository_root, request, authorization=authorization, preview=args.preview
+            args.repository_root,
+            request,
+            authorization=authorization,
+            preview=args.preview,
+            governance=parse_publication_evidence(load_yaml_text(args.governance.read_text()))
+            if args.governance
+            else None,
         )
         code = 0
     except (OSError, ValueError, TypeError, KeyError, UnicodeError, YAMLError) as exc:
         conflict = isinstance(exc, SubjectSourceConflict)
+        governance_failure = isinstance(exc, PublicationGovernanceError)
         payload = {
             "schema_version": 1,
             "artifact_kind": "subject_source_write_result",
-            "status": "source_conflict" if conflict else "invalid_input",
+            "status": "source_conflict"
+            if conflict
+            else "governance_blocked"
+            if governance_failure
+            else "invalid_input",
             "diagnostic": str(exc),
             "source_ref_updated": False,
         }
-        code = 3 if conflict else 2
+        code = 3 if conflict else 4 if governance_failure else 2
     print(json.dumps(payload, indent=2, sort_keys=True))
     return code
 

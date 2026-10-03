@@ -50,6 +50,12 @@ DECISION = "fixture:write-decision"
 RECORDED_AT = "2026-10-02T18:06:00Z"
 
 
+@pytest.fixture(autouse=True)
+def storage_boundary_only(monkeypatch):
+    """These tests isolate storage/CAS. Real mandatory governance is tested separately."""
+    monkeypatch.setattr("subject_source_write.verify_publication", lambda *args: {})
+
+
 def seed_repository(root: Path) -> str:
     git_command(root, "init", "--quiet")
     for key, value in (

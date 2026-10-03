@@ -40,6 +40,9 @@ outputs:
 - docs/reviews/0221_canonical_materialization_packet.json
 - tools/validate_materialization_packet.py
 - tests/test_materialization_packet.py
+- tools/subject_publication.py
+- tests/test_subject_publication.py
+- docs/subject_publication.md
 allowed_paths:
 - specs/nodes/SG-SPEC-0069.yaml
 - tools/subject_canonical_source.py
@@ -63,6 +66,9 @@ allowed_paths:
 - Makefile
 - CONTRIBUTING.md
 - tools/review_feedback_records.json
+- tools/subject_publication.py
+- tests/test_subject_publication.py
+- docs/subject_publication.md
 acceptance:
 - Defines a versioned workspace declaration and standalone Requirement and criterion record layout without
   creating a new seed kind or duplicate embedded Requirements.
@@ -88,9 +94,11 @@ acceptance_evidence:
     prepares the six subject origins and required SG-SPEC-0051 proposal-ingress/canonical transitions
     with all decision fields pending. tools/validate_materialization_packet.py and mutation regressions
     check the exact pending scope, all candidate/input digests, paired transitions and explicit unresolved
-    Intent/topology/provenance blockers. Consistency is not approval verification; the governed publication
-    gate remains unimplemented. It does not authorize canonical materialization; ready_for_materialization
-    remains false.'
+    Intent/topology/provenance blockers. tools/subject_publication.py now resolves immutable packet and
+    scope-bound recorded human decisions before writer publication; synthetic integration tests cover
+    origins, revisions and blocked permission paths. Reviewer identity is not attested. The historical
+    review packet still lacks genuine lineage and decisions; this implementation does not authorize its
+    canonical materialization. ready_for_materialization remains false.'
 prompt: Maintain the human-approved SG-SPEC-0069 version-1 physical contract and exact 3 plus 1 mapping.
   Implement and verify the bounded read-only source adapter, then a validating origin/content-revision
   writer. Canonical materialization and evidence applicability need separate decisions. Preserve frozen
@@ -116,7 +124,7 @@ specification:
       decision_ref: docs/reviews/0221_subject_storage_decision.json#/decisions/requirement_membership_and_mapping
       mapping_decisions_ref: docs/reviews/0221_subject_storage_decision.json#/mapping_decisions
     canonical_materialization_authorization: null
-    runtime_conformance: partial_canonical_source_adapter_and_git_writer
+    runtime_conformance: partial_source_adapter_git_writer_and_recorded_decision_gate
     exclusions:
     - No canonical workspace declaration, Requirement or criterion origin is allocated by schema/mapping
       approval.
