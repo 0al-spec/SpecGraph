@@ -526,3 +526,19 @@ records as well as endpoint identities. Distinguish incomplete enumeration from
 an empty complete result. Define which references belong to a content revision
 before describing lookup as historical; test changing those links independently
 of the statement. These are contract invariants, not presentation details.
+
+
+## Informational policy measurements
+
+Use the bounded [publication policy diagnostics](docs/publication_policy_diagnostics.md)
+to distinguish proposed policy obligations from parsing and dispatch mechanics.
+A complete AST inventory does not approve its semantic classification. Keep the
+classification profile, source hashes and architectural locations in the report.
+Report unclassified or changed sites as incomplete, with unavailable authoritative
+counts; do not interpret missing evidence as zero.
+
+Test collectors against an independent syntax corpus. Do not hard-code live
+project totals or current classification completeness into blocking tests for an
+informational report. CI artifacts belong to the current run's temporary directory.
+Diff stable violation IDs as well as totals so removing an old violation cannot
+hide a new one. Report classification-contract changes for review.

@@ -87,5 +87,24 @@ jobs:
       - name: Check pending materialization review packet integrity
         run: make materialization-packet-check
 
+      - name: Publication policy diagnostics (informational)
+        if: github.event_name == 'pull_request'
+        continue-on-error: true
+        run: >
+          python tools/publication_policy_diagnostics.py
+          --revision "${{ github.event.pull_request.head.sha }}"
+          --base-ref "${{ github.event.pull_request.base.sha }}"
+          --summary
+          --output "${{ runner.temp }}/publication-policy-diagnostics.json"
+
+      - name: Upload publication policy diagnostics
+        if: always() && github.event_name == 'pull_request'
+        continue-on-error: true
+        uses: actions/upload-artifact@v4
+        with:
+          name: publication-policy-diagnostics
+          path: ${{ runner.temp }}/publication-policy-diagnostics.json
+          if-no-files-found: warn
+
       - name: Run tests
         run: pytest -q
