@@ -38,6 +38,8 @@ outputs:
 - docs/subject_source_write.md
 - docs/reviews/0221_canonical_materialization_packet.md
 - docs/reviews/0221_canonical_materialization_packet.json
+- tools/validate_materialization_packet.py
+- tests/test_materialization_packet.py
 allowed_paths:
 - specs/nodes/SG-SPEC-0069.yaml
 - tools/subject_canonical_source.py
@@ -55,6 +57,12 @@ allowed_paths:
 - docs/subject_source_write.md
 - docs/reviews/0221_canonical_materialization_packet.md
 - docs/reviews/0221_canonical_materialization_packet.json
+- tools/validate_materialization_packet.py
+- tests/test_materialization_packet.py
+- .github/workflows/python-ci.yml
+- Makefile
+- CONTRIBUTING.md
+- tools/review_feedback_records.json
 acceptance:
 - Defines a versioned workspace declaration and standalone Requirement and criterion record layout without
   creating a new seed kind or duplicate embedded Requirements.
@@ -78,7 +86,10 @@ acceptance_evidence:
     without treating preparation or historical tests as adoption.
   evidence: 'Approved authored storage contract plus review-only materialization packet: docs/reviews/0221_canonical_materialization_packet.json
     prepares the six subject origins and required SG-SPEC-0051 proposal-ingress/canonical transitions
-    with all decision fields pending. It does not authorize canonical materialization; ready_for_materialization
+    with all decision fields pending. tools/validate_materialization_packet.py and mutation regressions
+    check the exact pending scope, all candidate/input digests, paired transitions and explicit unresolved
+    Intent/topology/provenance blockers. Consistency is not approval verification; the governed publication
+    gate remains unimplemented. It does not authorize canonical materialization; ready_for_materialization
     remains false.'
 prompt: Maintain the human-approved SG-SPEC-0069 version-1 physical contract and exact 3 plus 1 mapping.
   Implement and verify the bounded read-only source adapter, then a validating origin/content-revision

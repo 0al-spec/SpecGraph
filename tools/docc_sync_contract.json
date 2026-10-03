@@ -797,7 +797,8 @@
         "review_pending",
         "proposal -> spec_draft",
         "spec_draft -> canonical_artifact",
-        "ready_for_materialization"
+        "ready_for_materialization",
+        "29bb79bae19e096671aab6ababe34ff32c37002b9e3255b283d2001398c97fa6"
       ]
     }
   ]

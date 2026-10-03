@@ -65,6 +65,8 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
 
       - name: Set up Python
         uses: actions/setup-python@v6
@@ -81,6 +83,9 @@ jobs:
 
       - name: Check DocC documentation sync
         run: make docc-sync
+
+      - name: Check pending materialization review packet integrity
+        run: make materialization-packet-check
 
       - name: Run tests
         run: pytest -q

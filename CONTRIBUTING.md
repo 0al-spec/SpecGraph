@@ -77,6 +77,18 @@ For the long-running supervisor refactor plan, see
 [docs/supervisor_refactor_roadmap.md](docs/supervisor_refactor_roadmap.md).
 The roadmap is engineering governance, not a SpecGraph semantic specification.
 
+## Digest-bound review artifacts
+
+Keep an approved review packet immutable. Store actual decisions separately,
+binding the packet path, raw-file hash, approval scope hash and reviewed head;
+scope changes require a new packet version and new approval. Validate every
+input, including bootstrap declarations and secondary sources, not just subject
+files. Pending decision fields, absent Intent lineage and missing topology
+decisions must remain explicit blockers. A consistency validator proves that a
+review snapshot agrees with its inputs; it does not authenticate approval or
+authorize a writer. The RFC 0221 prevention check is
+`make materialization-packet-check`; its publication gate remains separate.
+
 ## Local Python Environment
 
 SpecGraph tooling requires Python 3.10 or newer. GitHub Actions installs Python
