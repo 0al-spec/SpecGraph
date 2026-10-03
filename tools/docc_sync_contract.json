@@ -822,6 +822,24 @@
         "subject_publication.human_approval",
         "subject_publication.reviewed_transition"
       ]
+    },
+    {
+      "id": "publication-policy-diagnostics",
+      "docs": [
+        "docs/publication_policy_diagnostics.md"
+      ],
+      "docc": [
+        "Sources/SpecGraph/Documentation.docc/ProposalsAndRuntime.md"
+      ],
+      "required_terms": [
+        "publication_policy_classification",
+        "publication_policy_diagnostics",
+        "Inline policies",
+        "Duplicate policy definitions",
+        "Policy boundary violations",
+        "counts: null",
+        "merge_gate_enabled: false"
+      ]
     }
   ]
 }

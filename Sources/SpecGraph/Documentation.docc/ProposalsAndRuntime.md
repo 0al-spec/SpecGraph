@@ -436,3 +436,27 @@ Policy tests verify their stable trace names. Parsing, Git I/O and publication
 remain outside specifications. New decision-heavy tooling requires this
 SpecificationCore policy review beyond refactoring pilots; deliberate
 non-extraction belongs in the PR rationale.
+
+
+## Publication policy diagnostics
+
+The proposed `publication_policy_classification` v1 manifest binds 75 guard and
+dispatch sites in the publication gate to categories, stable IDs, AST predicate
+hashes and architectural locations. `publication_policy_diagnostics` reports
+Inline policies (49), Duplicate policy definitions (0) and Policy boundary violations (0) for the initial scoped snapshot. Three specifications implement
+four sites through reuse. These are proposed classifications, not human approval
+or whole-project semantic discovery.
+
+Run `make publication-policy-diagnostics`. Changed, missing or unclassified
+sites produce `counts: null`; an absent historical classification makes the
+diff unavailable. Diffs enumerate new/removed violation IDs, so a net zero cannot
+hide a new violation. The versioned classification and source hashes identify
+the interpretation used by each snapshot. Classification changes require review.
+
+Python CI uploads the run-local `publication-policy-diagnostics` JSON artifact.
+The diagnostic has `merge_gate_enabled: false`; it does not block merge.
+See `docs/publication_policy_diagnostics.md` for scope and interpretation.
+
+
+Collector tests use an independent syntax corpus, avoiding a blocking threshold
+on live project totals or classification completeness for this informational report.

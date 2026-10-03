@@ -1498,6 +1498,10 @@ agent-runtime-evidence:
 docc-sync:
 	@$(PYTHON) tools/validate_docc_sync.py
 
+.PHONY: publication-policy-diagnostics
+publication-policy-diagnostics:
+	@$(PYTHON) tools/publication_policy_diagnostics.py --summary $(if $(PUBLICATION_POLICY_REPORT_OUTPUT),--output "$(PUBLICATION_POLICY_REPORT_OUTPUT)",)
+
 .PHONY: materialization-packet-check
 materialization-packet-check:
 	@$(PYTHON) tools/validate_materialization_packet.py

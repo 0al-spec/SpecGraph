@@ -48,6 +48,10 @@ outputs:
 - tools/subject_human_approval_spec.py
 - tools/subject_transition_approval_spec.py
 - tests/test_subject_publication_specs.py
+- tools/publication_policy_diagnostics.py
+- tools/publication_policy_classification.json
+- tests/test_publication_policy_diagnostics.py
+- docs/publication_policy_diagnostics.md
 allowed_paths:
 - specs/nodes/SG-SPEC-0069.yaml
 - tools/subject_canonical_source.py
@@ -80,6 +84,10 @@ allowed_paths:
 - tools/subject_human_approval_spec.py
 - tools/subject_transition_approval_spec.py
 - tests/test_subject_publication_specs.py
+- tools/publication_policy_diagnostics.py
+- tools/publication_policy_classification.json
+- tests/test_publication_policy_diagnostics.py
+- docs/publication_policy_diagnostics.md
 acceptance:
 - Defines a versioned workspace declaration and standalone Requirement and criterion record layout without
   creating a new seed kind or duplicate embedded Requirements.
