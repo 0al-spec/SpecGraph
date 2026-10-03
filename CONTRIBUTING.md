@@ -23,6 +23,13 @@ This makes the policy boundary and its imports visible during review, and keeps
 new specifications from accumulating inside the business-logic module or a
 catch-all policy file.
 
+For new decision-heavy tooling, perform a SpecificationCore policy review,
+including work outside refactoring pilots. Name decisions about approval,
+authority, readiness and lifecycle, prepare immutable typed facts, and place
+stable policies in individual specification modules. Keep parsing, I/O and
+exception mechanics in adapters. Explain a deliberate non-extraction in the PR;
+raw S/U counts neither require converting every branch nor replace this review.
+
 ## Code Methodology and Style
 
 SpecGraph tooling should evolve by preserving observable contracts while moving

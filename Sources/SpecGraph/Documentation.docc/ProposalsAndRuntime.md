@@ -421,3 +421,18 @@ Schema approval cannot authorize origins. Tests use synthetic decisions in
 temporary repositories. The old materialization packet still lacks Intent
 lineage and approval; see `docs/subject_publication.md` for the artifact
 contract, trust boundary and compatibility change.
+
+
+The gate binds the complete reviewed subject record and workspace declaration.
+Version 1 permits no post-review substitutions, including status, authority,
+provenance or containment changes. New candidates require a new reviewed packet.
+Malformed or unreadable governance selections also yield `governance_blocked`/4;
+malformed request input remains `invalid_input`/2.
+
+Three policies have separate modules and immutable typed contexts:
+`subject_publication.complete_reviewed_record` (reused for declarations),
+`subject_publication.human_approval` and `subject_publication.reviewed_transition`.
+Policy tests verify their stable trace names. Parsing, Git I/O and publication
+remain outside specifications. New decision-heavy tooling requires this
+SpecificationCore policy review beyond refactoring pilots; deliberate
+non-extraction belongs in the PR rationale.

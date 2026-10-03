@@ -571,3 +571,149 @@ def test_cli_blocks_publication_without_governance(governed, capsys):
     assert code == 4
     assert json.loads(capsys.readouterr().out)["status"] == "governance_blocked"
     assert selected_source_commit(root, SOURCE_REF) == request.expected_commit
+
+
+@pytest.mark.parametrize("field", ["status", "authority", "actor", "containment", "trace_context"])
+def test_late_approval_cannot_replace_complete_reviewed_record(governed, field, monkeypatch):
+    root, request, authorization, _, decisions, author = governed
+    from spec_yaml import load_yaml_text
+
+    change = request.changes[0]
+    document = load_yaml_text(change.document_yaml)
+    revision = document["revisions"][-1]
+    if field == "status":
+        document["status"] = revision["node_fields"]["status"] = "frozen"
+    elif field == "authority":
+        document["authority_class"] = revision["node_fields"]["authority_class"] = "derived"
+    elif field == "actor":
+        document["provenance"]["actor_id"] = "human:other-author"
+        revision["node_fields"]["provenance"]["actor_id"] = "human:other-author"
+    elif field == "containment":
+        revision["containment"] = ["unreviewed:parent"]
+    else:
+        document["provenance"]["trace_context"] = {"flag": True}
+        revision["node_fields"]["provenance"]["trace_context"] = {"flag": True}
+    modified = replace(
+        request,
+        changes=(
+            replace(change, document_yaml=dump_canonical_yaml(document)),
+            *request.changes[1:],
+        ),
+    )
+    decisions["publication"]["request_sha256"] = modified.digest()
+    author.approve(decisions["publication"])
+    evidence = author.save(decisions)
+
+    def forbidden(*args):
+        pytest.fail("candidate creation occurred before complete reviewed-record verification")
+
+    monkeypatch.setattr("subject_source_write.SubjectSourceCommit.candidate_commit", forbidden)
+    with pytest.raises(
+        PublicationGovernanceError, match="complete record differs from reviewed draft"
+    ):
+        write_subject_source(
+            root,
+            modified,
+            authorization=replace(authorization, request_sha256=modified.digest()),
+            governance=evidence,
+        )
+    assert selected_source_commit(root, SOURCE_REF) == request.expected_commit
+
+
+def test_late_allocation_cannot_replace_reviewed_declaration(governed, monkeypatch):
+    root, request, authorization, _, decisions, author = governed
+    if request.workspace_declaration_yaml is None:
+        pytest.skip("bootstrap-only")
+    from spec_yaml import load_yaml_text
+
+    effects = decisions["effects"]
+    allocation_index = next(
+        i for i, e in enumerate(effects) if e["effect"] == "workspace_allocation"
+    )
+    topology_index = next(i for i, e in enumerate(effects) if e["effect"] == "topology")
+    effects[allocation_index], effects[topology_index] = (
+        effects[topology_index],
+        effects[allocation_index],
+    )
+    old_ref = DECISION + f"#/effects/{allocation_index}"
+    new_ref = DECISION + f"#/effects/{topology_index}"
+    declaration = load_yaml_text(request.workspace_declaration_yaml)
+    declaration["provenance"] = new_ref
+    modified = replace(request, workspace_declaration_yaml=dump_canonical_yaml(declaration))
+    effects[topology_index]["declaration_sha256"] = hashlib.sha256(
+        modified.workspace_declaration_yaml.encode()
+    ).hexdigest()
+    author.approve(effects[topology_index])
+    decisions["topology_decision_ref"] = old_ref
+    refs = tuple(sorted(new_ref if r == old_ref else r for r in authorization.transition_refs))
+    decisions["publication"]["transition_refs"] = list(refs)
+    decisions["publication"]["request_sha256"] = modified.digest()
+    author.approve(decisions["publication"])
+    evidence = author.save(decisions)
+
+    def forbidden(*args):
+        pytest.fail("candidate creation occurred before reviewed-declaration verification")
+
+    monkeypatch.setattr("subject_source_write.SubjectSourceCommit.candidate_commit", forbidden)
+    with pytest.raises(
+        PublicationGovernanceError, match="declaration differs from reviewed candidate"
+    ):
+        write_subject_source(
+            root,
+            modified,
+            authorization=replace(
+                authorization, request_sha256=modified.digest(), transition_refs=refs
+            ),
+            governance=evidence,
+        )
+    assert selected_source_commit(root, SOURCE_REF) == request.expected_commit
+
+
+@pytest.mark.parametrize(
+    "failure", ["sha", "unknown_field", "version", "root", "missing", "yaml", "encoding", "mapping"]
+)
+def test_cli_classifies_selection_failures_as_governance_blocked(governed, capsys, failure):
+    root, request, authorization, evidence, _, _ = governed
+    write_request_and_authorization(root, request, authorization)
+    payload = {
+        "schema_version": 1,
+        "artifact_kind": "subject_publication_evidence",
+        "repository_root": str(root),
+        "evidence_commit": evidence.evidence_commit,
+        "decision_path": DECISION,
+    }
+    path = root / "governance.json"
+    if failure == "sha":
+        payload["evidence_commit"] = "bad"
+    elif failure == "unknown_field":
+        payload["unrecognized"] = True
+    elif failure == "version":
+        payload["schema_version"] = True
+    elif failure == "root":
+        payload["repository_root"] = None
+    write_json(root, "governance.json", payload)
+    if failure == "missing":
+        path.unlink()
+    elif failure == "yaml":
+        path.write_text("[unclosed")
+    elif failure == "encoding":
+        path.write_bytes(b"\xff")
+    elif failure == "mapping":
+        path.write_text("[]")
+    code = main(
+        [
+            "--repository-root",
+            str(root),
+            "--request",
+            str(root / "request.json"),
+            "--authorization",
+            str(root / "authorization.json"),
+            "--governance",
+            str(path),
+        ]
+    )
+    result = json.loads(capsys.readouterr().out)
+    assert code == 4
+    assert result["status"] == "governance_blocked"
+    assert result["source_ref_updated"] is False
+    assert selected_source_commit(root, SOURCE_REF) == request.expected_commit

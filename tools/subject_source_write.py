@@ -25,7 +25,7 @@ from subject_canonical_source import (
 from subject_publication import (
     PublicationGovernanceError,
     SubjectPublicationEvidence,
-    parse_publication_evidence,
+    load_publication_evidence,
     verify_publication,
 )
 from subject_read_model import SubjectRecord, SubjectRef, require_text, require_tuple
@@ -408,9 +408,7 @@ def main(argv: list[str] | None = None) -> int:
             request,
             authorization=authorization,
             preview=args.preview,
-            governance=parse_publication_evidence(load_yaml_text(args.governance.read_text()))
-            if args.governance
-            else None,
+            governance=load_publication_evidence(args.governance) if args.governance else None,
         )
         code = 0
     except (OSError, ValueError, TypeError, KeyError, UnicodeError, YAMLError) as exc:

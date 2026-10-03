@@ -110,9 +110,14 @@ the gate does not infer Intent or perform an LLM semantic assessment.
   `decision_path#/publication`, matches reviewer/timestamp and covers exactly
   the new revision, activation and declaration provenance refs.
 
-Gate checks preserve the reviewed identity, title, exact revision, statement,
-authored revision scope and criterion membership. A later publication approval
-cannot silently replace those reviewed semantics. The existing writer then
+Gate checks preserve the **complete reviewed record**, including identity, title,
+status, authority class, node provenance, containment, disposition, all retained
+revisions and criterion membership. The bootstrap declaration must also match
+its complete reviewed proposed record. Canonical JSON scope hashes distinguish
+missing fields, nulls and JSON scalar types while ignoring mapping key order.
+Version 1 permits no post-review substitutions: resolve pending adoption fields
+in a new candidate and review that new packet before publication. A later
+allocation or publication approval does not replace packet review. The existing writer then
 checks complete physical schema, unchanged historical records, metadata,
 namespace, prior digests, candidate commit scope and atomic publication.
 
@@ -146,3 +151,23 @@ transitions, lineage, revisions, effects, topology, request digests and review
 sources. Missing governance is checked before candidate creation. The older
 `test_subject_source_write.py` suite isolates storage/CAS with a scoped test
 stub for this new seam; it makes no governance claim.
+
+
+## SpecificationCore policy boundary
+
+The gate uses three named SpecificationCore policies, each in its own source
+module, with immutable facts in `tools/subject_publication_context.py`:
+
+- `subject_publication.complete_reviewed_record` in
+  `tools/subject_reviewed_record_spec.py`, reused for subjects and workspace declarations.
+- `subject_publication.human_approval` in `tools/subject_human_approval_spec.py`.
+- `subject_publication.reviewed_transition` in `tools/subject_transition_approval_spec.py`.
+
+Adapters resolve Git evidence, parse documents and prepare context values.
+Specifications only evaluate those facts; they do not read, write or grant
+permission themselves. The gate enforces their outcomes before candidate
+creation. Policy tests use `TraceRecorder` to verify stable semantic names;
+normal CLI output and publication-result fields remain unchanged.
+
+Missing, unreadable, malformed or inconsistent governance selections all produce
+`governance_blocked`/4. Malformed request input remains `invalid_input`/2.

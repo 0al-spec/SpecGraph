@@ -815,7 +815,12 @@
         "scope_bound_recorded_decisions_verified_not_attested",
         "reviewer_identity_attested",
         "governance_blocked",
-        "--governance"
+        "--governance",
+        "complete reviewed",
+        "no post-review substitutions",
+        "subject_publication.complete_reviewed_record",
+        "subject_publication.human_approval",
+        "subject_publication.reviewed_transition"
       ]
     }
   ]

@@ -12700,7 +12700,12 @@
       "tests/test_materialization_packet.py",
       "tools/subject_publication.py",
       "tests/test_subject_publication.py",
-      "docs/subject_publication.md"
+      "docs/subject_publication.md",
+      "tools/subject_publication_context.py",
+      "tools/subject_reviewed_record_spec.py",
+      "tools/subject_human_approval_spec.py",
+      "tools/subject_transition_approval_spec.py",
+      "tests/test_subject_publication_specs.py"
     ],
     "runtime_markers": [
       {

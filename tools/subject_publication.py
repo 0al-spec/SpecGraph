@@ -18,8 +18,16 @@ from yaml import YAMLError
 
 from spec_yaml import load_yaml_text
 from subject_canonical_source import parse_topology_selection
+from subject_human_approval_spec import HUMAN_APPROVAL_SPEC
+from subject_publication_context import (
+    HumanApprovalContext,
+    ReviewedRecordContext,
+    TransitionApprovalContext,
+)
 from subject_read_model_io import SubjectDocumentError, _object
+from subject_reviewed_record_spec import REVIEWED_RECORD_SPEC
 from subject_source_git import git_command, require_commit_id
+from subject_transition_approval_spec import TRANSITION_APPROVAL_SPEC
 
 
 class PublicationGovernanceError(SubjectDocumentError):
@@ -50,24 +58,52 @@ class SubjectPublicationEvidence:
     decision_path: str
 
     def __post_init__(self) -> None:
-        require_commit_id(self.evidence_commit)
+        try:
+            require_commit_id(self.evidence_commit)
+        except SubjectDocumentError as exc:
+            raise PublicationGovernanceError(f"publication governance: {exc}") from exc
         require(isinstance(self.repository_root, Path), "evidence repository must be explicit")
         _path(self.decision_path)
 
 
 def parse_publication_evidence(value: object) -> SubjectPublicationEvidence:
-    data = _object(
-        value,
-        {"schema_version", "artifact_kind", "repository_root", "evidence_commit", "decision_path"},
-    )
-    require(
-        type(data["schema_version"]) is int and data["schema_version"] == 1,
-        "unsupported evidence version",
-    )
-    require(data["artifact_kind"] == "subject_publication_evidence", "wrong evidence kind")
-    return SubjectPublicationEvidence(
-        Path(data["repository_root"]), data["evidence_commit"], data["decision_path"]
-    )
+    try:
+        data = _object(
+            value,
+            {
+                "schema_version",
+                "artifact_kind",
+                "repository_root",
+                "evidence_commit",
+                "decision_path",
+            },
+        )
+        require(
+            type(data["schema_version"]) is int and data["schema_version"] == 1,
+            "unsupported evidence version",
+        )
+        require(data["artifact_kind"] == "subject_publication_evidence", "wrong evidence kind")
+        return SubjectPublicationEvidence(
+            Path(data["repository_root"]), data["evidence_commit"], data["decision_path"]
+        )
+    except PublicationGovernanceError:
+        raise
+    except (ValueError, TypeError, KeyError) as exc:
+        raise PublicationGovernanceError(
+            f"publication governance: invalid selection: {exc}"
+        ) from exc
+
+
+def load_publication_evidence(path: Path) -> SubjectPublicationEvidence:
+    """Classify all selection-file failures at the governance I/O boundary."""
+    try:
+        return parse_publication_evidence(load_yaml_text(path.read_text(encoding="utf-8")))
+    except PublicationGovernanceError:
+        raise
+    except (OSError, ValueError, TypeError, UnicodeError, YAMLError) as exc:
+        raise PublicationGovernanceError(
+            f"publication governance: unreadable selection: {exc}"
+        ) from exc
 
 
 def _path(value: str) -> str:
@@ -131,7 +167,9 @@ def _review(record: dict, snapshot: DecisionSnapshot) -> dict:
     scope = {key: value for key, value in record.items() if key != "review"}
     require(review["scope_sha256"] == scope_digest(scope), "human review covers a different scope")
     require(
-        review["reviewer_authority"] == "human_project_author" and review["outcome"] == "approved",
+        HUMAN_APPROVAL_SPEC.is_satisfied_by(
+            HumanApprovalContext(review["reviewer_authority"], review["outcome"])
+        ),
         "human approval required",
     )
     for field in ("reviewer", "decision_timestamp", "rationale", "source_quote", "source_ref"):
@@ -284,11 +322,18 @@ def _transitions(
         )
         review = _review(record, snapshot)
         require(
-            record["gate_type"] == "review"
-            and record["outcome"] == "approved"
-            and record["reviewer_or_decider"] == review["reviewer"]
-            and record["decision_timestamp"] == review["decision_timestamp"]
-            and record["rationale"] == review["rationale"],
+            TRANSITION_APPROVAL_SPEC.is_satisfied_by(
+                TransitionApprovalContext(
+                    record["gate_type"],
+                    record["outcome"],
+                    record["reviewer_or_decider"],
+                    review["reviewer"],
+                    record["decision_timestamp"],
+                    review["decision_timestamp"],
+                    record["rationale"],
+                    review["rationale"],
+                )
+            ),
             "incomplete or unapproved transition",
         )
         if record["promotion_edge"] == "proposal -> spec_draft":
@@ -389,19 +434,19 @@ def _verify_publication(
             "request revision differs from reviewed exact target",
         )
         draft = _input(packet, reviewed, subject["source_draft_ref"])
-        draft_revision = draft["revisions"][-1]
         require(
             subject["source_draft_ref"] == subject["candidate_file"] + "#/proposed_record"
             and subject["candidate_sha256"]
             == packet["inputs"]["review_tree_file_sha256"][subject["candidate_file"]]
             and subject["canonical_target_ref"] == change.path + "#/subject"
-            and draft["subject"] == document["subject"]
-            and draft["title"] == document["title"]
-            and draft_revision["number"] == revision["number"]
-            and draft_revision["statement"] == revision["statement"] == subject["statement"]
-            and draft_revision["revision_scope"] == revision["revision_scope"]
-            and draft_revision["acceptance_criteria_refs"] == revision["acceptance_criteria_refs"],
-            "request content/membership differs from reviewed draft",
+            and revision["statement"] == subject["statement"],
+            "request target differs from reviewed draft",
+        )
+        require(
+            REVIEWED_RECORD_SPEC.is_satisfied_by(
+                ReviewedRecordContext(scope_digest(draft), scope_digest(document))
+            ),
+            "request complete record differs from reviewed draft",
         )
         ingress = [
             r
@@ -461,7 +506,13 @@ def _verify_publication(
             == hashlib.sha256(request.workspace_declaration_yaml.encode()).hexdigest(),
             "workspace allocation covers a different bootstrap",
         )
-        _input(packet, reviewed, workspace["proposed_declaration"])
+        reviewed_declaration = _input(packet, reviewed, workspace["proposed_declaration"])
+        require(
+            REVIEWED_RECORD_SPEC.is_satisfied_by(
+                ReviewedRecordContext(scope_digest(reviewed_declaration), scope_digest(declaration))
+            ),
+            "request declaration differs from reviewed candidate",
+        )
         used.add(declaration["provenance"])
     topology = _effect(
         snapshot, decisions, evidence, decisions["topology_decision_ref"], "topology"
