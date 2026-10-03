@@ -371,6 +371,58 @@ def test_bootstrap_requires_explicit_activation_and_allocation(governed, effect_
     assert selected_source_commit(root, SOURCE_REF) == request.expected_commit
 
 
+def assert_allocation_rejected_before_candidate(governed, monkeypatch, field, value):
+    root, request, authorization, _, decisions, author = governed
+    allocation = next(e for e in decisions["effects"] if e["effect"] == "workspace_allocation")
+    allocation[field] = value
+    # Re-approve the changed record so stale review evidence cannot mask a
+    # missing allocation-scope check. The request and reviewed draft stay fixed.
+    author.approve(allocation)
+    evidence = author.save(decisions)
+    refs_before = git_command(root, "for-each-ref", "--format=%(refname) %(objectname)").stdout
+
+    def forbidden(*args):
+        pytest.fail("candidate creation occurred before allocation verification")
+
+    monkeypatch.setattr("subject_source_write.SubjectSourceCommit.candidate_commit", forbidden)
+    with pytest.raises(
+        PublicationGovernanceError, match="workspace allocation covers a different bootstrap"
+    ):
+        write_subject_source(root, request, authorization=authorization, governance=evidence)
+    assert selected_source_commit(root, SOURCE_REF) == request.expected_commit
+    assert (
+        git_command(root, "for-each-ref", "--format=%(refname) %(objectname)").stdout == refs_before
+    )
+
+
+@pytest.mark.parametrize("governed", [True], indirect=True, ids=["bootstrap_origins"])
+@pytest.mark.parametrize(
+    ("field", "value"),
+    [
+        ("workspace_identity", "another-workspace"),
+        ("source_ref", "refs/heads/another-source"),
+        ("expected_commit", "0" * 40),
+        ("identity_allocation_authorized", False),
+        ("source_ref_initialization_authorized", False),
+        ("declaration_sha256", "0" * 64),
+    ],
+    ids=["workspace", "source-ref", "commit", "identity-permission", "ref-permission", "digest"],
+)
+def test_workspace_allocation_requires_each_scope_binding(governed, monkeypatch, field, value):
+    assert_allocation_rejected_before_candidate(governed, monkeypatch, field, value)
+
+
+@pytest.mark.parametrize("governed", [True], indirect=True, ids=["bootstrap_origins"])
+@pytest.mark.parametrize(
+    "field", ["identity_allocation_authorized", "source_ref_initialization_authorized"]
+)
+@pytest.mark.parametrize(
+    "value", [1, 0, "true", None, []], ids=["one", "zero", "string", "null", "list"]
+)
+def test_workspace_allocation_permissions_require_literal_true(governed, monkeypatch, field, value):
+    assert_allocation_rejected_before_candidate(governed, monkeypatch, field, value)
+
+
 def test_missing_governance_creates_no_candidate_objects(governed, monkeypatch):
     root, request, authorization, _, _, _ = governed
 
