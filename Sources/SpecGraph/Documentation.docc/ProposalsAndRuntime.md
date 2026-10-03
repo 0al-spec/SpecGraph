@@ -366,3 +366,18 @@ Writer diagnostics distinguish malformed expected commit IDs (`invalid_input`,
 exit 2) from deleted selected refs (`source_conflict`, exit 3), including deletion
 at the CAS boundary. PR #758 regression fixtures prevent both classification gaps;
 see the review prevention section in `docs/subject_source_write.md`.
+
+## RFC 0221 canonical materialization review packet
+
+`docs/reviews/0221_canonical_materialization_packet.json` is a digest-bound,
+review-only `rfc0221_canonical_materialization_packet` with
+`gate_state: review_pending`. It maps two Requirement
+and four criterion SpecDraft candidates to six proposed canonical origins and
+lists the twelve required `proposal -> spec_draft` and
+`spec_draft -> canonical_artifact` review transitions under SG-SPEC-0051.
+Every decision field remains pending; the packet is not a writer request or
+publication authorization. `canonical_mutations_allowed: false` and
+`ready_for_materialization: false` remain in force. The workspace declaration,
+source-ref initialization, identity allocation and destination evidence links
+also need their own genuine provenance. See
+`docs/reviews/0221_canonical_materialization_packet.md` for the decision sequence.

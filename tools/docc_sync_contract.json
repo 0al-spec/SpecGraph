@@ -780,6 +780,25 @@
         "historical",
         "review_pending"
       ]
+    },
+    {
+      "id": "rfc0221-canonical-materialization-review-packet",
+      "description": "Review-only SG-SPEC-0051 transition inventory for the six RFC 0221 subject candidates; no materialization authorization.",
+      "docs": [
+        "docs/reviews/0221_canonical_materialization_packet.md",
+        "docs/reviews/0221_canonical_materialization_packet.json"
+      ],
+      "docc": [
+        "Sources/SpecGraph/Documentation.docc/ProposalsAndRuntime.md"
+      ],
+      "required_terms": [
+        "rfc0221_canonical_materialization_packet",
+        "approval_scope_sha256",
+        "review_pending",
+        "proposal -> spec_draft",
+        "spec_draft -> canonical_artifact",
+        "ready_for_materialization"
+      ]
     }
   ]
 }
