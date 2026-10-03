@@ -177,8 +177,17 @@ ordered findings and prerequisite skips. The immutable result distinguishes
 absence, explicit empty, present and invalid input. Strict validation uses original
 YAML scalar types; legacy timestamp normalization remains in the unchanged consumer.
 
-The focused strict suite has 34 passing tests after observed module-absence Red
+The focused strict suite has 35 passing tests after observed module-absence Red
 and initial 26-case Green. The separate compatibility suite has 75 tests.
 See `docs/reviews/0223_native_bdd_contract_adoption.md` for decision provenance,
 allocation coverage and per-policy/scenario mapping. Consumer defaults, source
 migration, Gherkin, normalized digests and trusted admission remain deferred.
+
+
+Reflective proposal tracking now uses a supported bounded-runtime posture and
+registers strict-loader validation plus the post-implementation index observation.
+The observed `runtime_realization` is partial (8/9 markers); validation and
+observation coverage are complete, and `next_gap` is `runtime_realization` because
+the legacy implementation-contract consumer has not yet called the loader. This
+is a local runtime-index observation, not a canonical graph mutation or consumer
+integration claim.

@@ -372,7 +372,7 @@ PRODUCT_WORKSPACE_ACTIVE_CANDIDATE_REFRESH ?= $(PRODUCT_WORKSPACE_ACTIVE_CANDIDA
 .DEFAULT_GOAL := help
 
 PYTHON_TARGETS := viewer-surfaces dashboard backlog next-move spec-activity graph-diagnostics \
-	proposal-spec-trace proposal-tracking proposal-tracking-gate spec-evidence-gate architecture-style architecture-metrics external-consumers external-handoffs \
+	proposal-spec-trace proposal-runtime-index proposal-tracking proposal-tracking-gate spec-evidence-gate architecture-style architecture-metrics external-consumers external-handoffs \
 	external-consumer-evidence ontology-imports ontology-imports-public \
 	ontology-package-validate ontology-package-preview ontology-package-gaps \
 	spec-ontology-bindings spec-ontology-validation \
@@ -598,6 +598,10 @@ graph-diagnostics:
 .PHONY: proposal-spec-trace
 proposal-spec-trace:
 	@$(PYTHON) $(SUPERVISOR) --build-proposal-spec-trace-index
+
+.PHONY: proposal-runtime-index
+proposal-runtime-index:
+	@$(PYTHON) $(SUPERVISOR) --build-proposal-runtime-index
 
 .PHONY: proposal-tracking
 proposal-tracking:

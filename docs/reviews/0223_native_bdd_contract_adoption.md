@@ -69,3 +69,15 @@ policy outcomes, not titles, steps or absolute paths. Durations never affect res
 Integrate an explicitly selected strict profile into one consumer, with existing
 compatibility mode preserved and tests for profile provenance and failed handoff.
 Source migration, Gherkin and evidence admission follow separately.
+
+
+## Review fixes on PR #759
+
+Four threads identified: include implementation artifacts in node outputs/allowed
+paths; preserve the selected safe profile on YAML boundary failures; use a supported
+proposal posture; and register strict tests plus actual post-implementation
+observation. Focused regressions reproduced both code defects before fixes.
+The proposal runtime index now intentionally reports runtime `partial`, validation
+`covered`, observation `covered`, and `next_gap: runtime_realization` because the
+legacy implementation-contract consumer has not yet been integrated. See the
+loader observation JSON for the generated index evidence.

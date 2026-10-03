@@ -18,9 +18,32 @@ inputs:
 - tools/candidate_spec_graph.py
 - tools/candidate_spec_materialization.py
 - tests/test_implementation_contract_pack.py
-outputs: &id001
+outputs:
 - specs/nodes/SG-SPEC-0070.yaml
-allowed_paths: *id001
+- tools/native_bdd/__init__.py
+- tools/native_bdd/boundary.py
+- tools/native_bdd/composition.py
+- tools/native_bdd/context.py
+- tools/native_bdd/fields_spec.py
+- tools/native_bdd/ids_spec.py
+- tools/native_bdd/policy.py
+- tools/native_bdd/presence_spec.py
+- tools/native_bdd/profile_spec.py
+- tools/native_bdd/references_spec.py
+- tools/native_bdd/values_spec.py
+- tests/test_native_bdd_loader.py
+- Sources/SpecGraph/Documentation.docc/BDDScenarioContract.md
+- docs/reviews/0223_native_bdd_contract_adoption.md
+- docs/reviews/0223_native_bdd_loader_observation.json
+- tests/test_supervisor.py
+allowed_paths:
+- specs/nodes/SG-SPEC-0070.yaml
+- tools/native_bdd/*.py
+- tests/test_native_bdd_loader.py
+- Sources/SpecGraph/Documentation.docc/BDDScenarioContract.md
+- docs/reviews/0223_native_bdd_contract_adoption.md
+- docs/reviews/0223_native_bdd_loader_observation.json
+- tests/test_supervisor.py
 acceptance:
 - Defines one shared native BDD declaration model with exact nonempty string IDs, an optional descriptive
   title, and a nonempty ordered list of nonempty string steps; it preserves step repetition and source

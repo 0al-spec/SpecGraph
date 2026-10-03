@@ -91,5 +91,6 @@ def load_native_bdd(source: str, *, profile: str, recorder=None) -> BDDResult:
             tuple(PolicyOutcome(p.rule_ref, "skipped", "invalid_yaml_boundary") for p in POLICIES),
             (),
             digest,
+            POLICIES[0].safe_trace_label(profile),
         )
     return evaluate(facts, digest, recorder=recorder)

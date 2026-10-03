@@ -219,3 +219,8 @@ def test_unknown_profile_does_not_expose_path_in_events():
 def test_profile_selection_is_required_at_api_boundary():
     with pytest.raises(TypeError):
         native_load(source([]))
+
+
+def test_selected_supported_profile_survives_yaml_boundary_failure():
+    result = load_native_bdd("specification: {}\nspecification: {}\n", profile="bdd_scenarios_v1")
+    assert result.events[0]["profile"] == "bdd_scenarios_v1"
