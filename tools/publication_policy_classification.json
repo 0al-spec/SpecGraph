@@ -3,7 +3,7 @@
   "schema_version": 1,
   "profile_id": "specgraph.publication_policy_diagnostics.v1",
   "classification_status": "proposed",
-  "scope_note": "All require(...) guards and if dispatch sites in subject_publication.py; three registered PredicateSpec modules. This is a bounded proposed classification, not repository-wide semantic discovery or human approval.",
+  "scope_note": "All require(...) guards and if dispatch sites in subject_publication.py; four registered PredicateSpec modules. This is a bounded proposed classification, not repository-wide semantic discovery or human approval.",
   "modules": [
     {
       "path": "tools/subject_publication.py",
@@ -19,6 +19,10 @@
     },
     {
       "path": "tools/subject_transition_approval_spec.py",
+      "inventory_guards": false
+    },
+    {
+      "path": "tools/subject_workspace_allocation_spec.py",
       "inventory_guards": false
     }
   ],
@@ -308,8 +312,10 @@
     {
       "id": "publication.rule.069",
       "question": "workspace allocation covers a different bootstrap",
-      "canonical_definition": "inline:publication.site.069",
-      "allowed_definition_paths": []
+      "canonical_definition": "spec:tools/subject_workspace_allocation_spec.py:WORKSPACE_ALLOCATION_SPEC",
+      "allowed_definition_paths": [
+        "tools/subject_workspace_allocation_spec.py"
+      ]
     },
     {
       "id": "publication.rule.071",
@@ -360,6 +366,12 @@
       "symbol": "REVIEWED_RECORD_SPEC",
       "family_id": "publication.complete_reviewed_record",
       "predicate_sha256": "19820fae72d9b9153b9f19715e5ce88b24defb9635baeb08d0381cda389f5269"
+    },
+    {
+      "path": "tools/subject_workspace_allocation_spec.py",
+      "symbol": "WORKSPACE_ALLOCATION_SPEC",
+      "family_id": "publication.rule.069",
+      "predicate_sha256": "378d027e6cc61378f163abe3ebce60df71f93012642f65adf6274d35008bf001"
     }
   ],
   "sites": [
@@ -1230,7 +1242,7 @@
       "path": "tools/subject_publication.py",
       "kind": "require",
       "label": "workspace allocation covers a different bootstrap",
-      "predicate_sha256": "69d9b01998785a6f6b2fad877a59024fddb53299a60126818ad0ff1391a5ce05",
+      "predicate_sha256": "ccfc977da04d6a5f8e74a444e047bb9850cf6b76db06ad966e60750ebea0999d",
       "category": "policy",
       "rationale": "Governed invariant: workspace allocation covers a different bootstrap. Changing it changes admitted publication/evidence scope.",
       "allowed_locations": [
