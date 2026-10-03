@@ -1543,3 +1543,7 @@ workspace-bundle-consumer-smoke:
 .PHONY: test-workspace-limits
 test-workspace-limits:
 	@$(PYTHON) -m pytest -q tests/test_workspace_structural_limits.py tests/test_supervisor_problem_diagnosis.py tests/test_supervisor_problem_diagnosis_policy.py
+
+.PHONY: test-native-bdd-loader
+test-native-bdd-loader: check-python
+	@$(PYTHON) -m pytest -q tests/test_native_bdd_loader.py tests/test_native_bdd_characterization.py tests/test_implementation_contract_pack.py
