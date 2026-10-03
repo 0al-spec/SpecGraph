@@ -70,6 +70,30 @@ complete reviewed record is reused for subjects and workspace declarations.
 Zeros apply only to this scope and proposed family assignments. They do not
 prove absence of equivalent rules or boundary problems elsewhere.
 
+The workspace-allocation extraction keeps `publication.site.069` and its
+semantic family ID while changing that family's canonical definition from the
+inline guard to `subject_publication.workspace_allocation` in
+`tools/subject_workspace_allocation_spec.py`. Its caller and architectural
+location stay in `_verify_publication`. Against PR #762's 49-inline baseline,
+the new complete snapshot should show that one violation ID removed and no
+replacement boundary or duplicate-definition violation. This targeted change
+predicts 48 inline policies; it does not alter the other scope totals or
+reclassify any site.
+
+The measured post-extraction worktree snapshot is complete at 75/75 sites.
+Inline policies (48) remain, all resolved in the versioned proposed profile.
+
+| Diagnostic | Current count |
+| --- | ---: |
+| Inline policies | 48 |
+| Duplicate policy definitions | 0 |
+| Policy boundary violations | 0 |
+
+Against PR #762, the violation-ID diff removes only
+`inline:publication.site.069` and adds none. The classification contract change
+is explicit in the report because the family now points to its canonical
+Specification definition.
+
 ## Run and compare
 
 ```bash

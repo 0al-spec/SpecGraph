@@ -437,15 +437,34 @@ remain outside specifications. New decision-heavy tooling requires this
 SpecificationCore policy review beyond refactoring pilots; deliberate
 non-extraction belongs in the PR rationale.
 
+The workspace allocation policy is also a separate specification:
+`subject_publication.workspace_allocation`. It compares the reviewed effect with
+the request's workspace identity, source ref, expected commit, both literal-true
+permission flags and exact declaration digest. The writer keeps its conditional
+bootstrap dispatch and governance failure message. Its dedicated context is
+immutable and its predicate test covers each mismatch.
+
 
 ## Publication policy diagnostics
 
 The proposed `publication_policy_classification` v1 manifest binds 75 guard and
 dispatch sites in the publication gate to categories, stable IDs, AST predicate
-hashes and architectural locations. `publication_policy_diagnostics` reports
-Inline policies (49), Duplicate policy definitions (0) and Policy boundary violations (0) for the initial scoped snapshot. Three specifications implement
-four sites through reuse. These are proposed classifications, not human approval
-or whole-project semantic discovery.
+hashes and architectural locations. The initial PR #762 snapshot reported 49
+inline policies. The workspace-allocation extraction moves stable site
+`publication.site.069` to its named specification. The complete current
+classification should report 48 inline policies, no duplicate definitions and
+no selected boundary violations. Four specifications now implement five sites
+through reuse. These are proposed classifications, not human approval or
+whole-project semantic discovery.
+
+Initial scoped diagnostics counted **Inline policies (49)**, **Duplicate policy
+definitions (0)** and **Policy boundary violations (0)**. The measured
+post-extraction classification reports **Inline policies (48)**, **Duplicate
+policy definitions (0)** and **Policy boundary violations (0)**. Its stable-ID
+diff removes `inline:publication.site.069` with no added violation.
+
+The diagnostic labels are Inline policies, Duplicate policy definitions and
+Policy boundary violations; their complete-scope counts remain 48, 0 and 0.
 
 Run `make publication-policy-diagnostics`. Changed, missing or unclassified
 sites produce `counts: null`; an absent historical classification makes the
