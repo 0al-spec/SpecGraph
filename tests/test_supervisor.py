@@ -41892,3 +41892,34 @@ def test_canonical_evidence_claims_cannot_assert_verdict(supervisor_module):
         "verdicts are derived" in message
         for message in supervisor_module.validate_status_format(node)
     )
+
+
+def test_sg_spec_0070_paths_cover_materialized_loader_and_evidence(
+    supervisor_module: object,
+) -> None:
+    node = next(node for node in supervisor_module.load_specs() if node.id == "SG-SPEC-0070")
+    changed = [
+        "specs/nodes/SG-SPEC-0070.yaml",
+        "tools/native_bdd/composition.py",
+        "tests/test_native_bdd_loader.py",
+        "Sources/SpecGraph/Documentation.docc/BDDScenarioContract.md",
+        "docs/reviews/0223_native_bdd_contract_adoption.md",
+    ]
+    assert supervisor_module.validate_allowed_paths(node, changed) == []
+    assert supervisor_module.validate_outputs(node, node.path.parents[2]) == []
+
+
+def test_proposal_0223_reflective_index_tracks_native_loader_gap(
+    supervisor_module: object,
+) -> None:
+    index = supervisor_module.build_proposal_runtime_index()
+    entry = next(item for item in index["entries"] if item["proposal_id"] == "0223")
+    assert entry["posture"] == "bounded_runtime_followup"
+    assert entry["runtime_realization"]["status"] == "partial"
+    assert entry["validation_closure"]["status"] == "covered"
+    assert entry["observation_coverage"]["status"] == "covered"
+    assert entry["reflective_chain"]["next_gap"] == "runtime_realization"
+    assert any(
+        marker["path"] == "tools/implementation_contract_pack.py"
+        for marker in entry["runtime_realization"]["missing_markers"]
+    )
