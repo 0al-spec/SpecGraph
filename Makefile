@@ -372,7 +372,7 @@ PRODUCT_WORKSPACE_ACTIVE_CANDIDATE_REFRESH ?= $(PRODUCT_WORKSPACE_ACTIVE_CANDIDA
 .DEFAULT_GOAL := help
 
 PYTHON_TARGETS := viewer-surfaces dashboard backlog next-move spec-activity graph-diagnostics \
-	proposal-spec-trace proposal-tracking proposal-tracking-gate spec-evidence-gate architecture-style architecture-metrics external-consumers external-handoffs \
+	proposal-spec-trace proposal-runtime-index proposal-tracking proposal-tracking-gate spec-evidence-gate architecture-style architecture-metrics external-consumers external-handoffs \
 	external-consumer-evidence ontology-imports ontology-imports-public \
 	ontology-package-validate ontology-package-preview ontology-package-gaps \
 	spec-ontology-bindings spec-ontology-validation \
@@ -598,6 +598,10 @@ graph-diagnostics:
 .PHONY: proposal-spec-trace
 proposal-spec-trace:
 	@$(PYTHON) $(SUPERVISOR) --build-proposal-spec-trace-index
+
+.PHONY: proposal-runtime-index
+proposal-runtime-index:
+	@$(PYTHON) $(SUPERVISOR) --build-proposal-runtime-index
 
 .PHONY: proposal-tracking
 proposal-tracking:
@@ -1547,3 +1551,7 @@ workspace-bundle-consumer-smoke:
 .PHONY: test-workspace-limits
 test-workspace-limits:
 	@$(PYTHON) -m pytest -q tests/test_workspace_structural_limits.py tests/test_supervisor_problem_diagnosis.py tests/test_supervisor_problem_diagnosis_policy.py
+
+.PHONY: test-native-bdd-loader
+test-native-bdd-loader: check-python
+	@$(PYTHON) -m pytest -q tests/test_native_bdd_loader.py tests/test_native_bdd_characterization.py tests/test_implementation_contract_pack.py

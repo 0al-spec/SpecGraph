@@ -822,6 +822,24 @@
         "subject_publication.human_approval",
         "subject_publication.reviewed_transition"
       ]
+    },
+    {
+      "id": "native-bdd-adoption-loader",
+      "docs": [
+        "docs/reviews/0223_native_bdd_contract_adoption.md"
+      ],
+      "docc": [
+        "Sources/SpecGraph/Documentation.docc/BDDScenarioContract.md"
+      ],
+      "required_terms": [
+        "SG-SPEC-0070",
+        "load_native_bdd",
+        "34",
+        "75",
+        "defaults",
+        "Gherkin",
+        "runtime_realization"
+      ]
     }
   ]
 }

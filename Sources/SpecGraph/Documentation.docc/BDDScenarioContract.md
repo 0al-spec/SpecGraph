@@ -168,3 +168,26 @@ They do not execute future BDD cases or grant implementation authority.
 - `docs/reviews/0223_native_bdd_preparation_evidence.json`
 - `docs/reviews/0223_native_bdd_corpus_audit.json`
 - `docs/reviews/0223_astra_native_contract_audit.md`
+
+## Adopted native loader slice
+
+SG-SPEC-0070 records human approval on 2026-10-03. The explicit
+`load_native_bdd` API evaluates six SpecificationCore policies and accumulates
+ordered findings and prerequisite skips. The immutable result distinguishes
+absence, explicit empty, present and invalid input. Strict validation uses original
+YAML scalar types; legacy timestamp normalization remains in the unchanged consumer.
+
+The focused strict suite has 35 passing tests after observed module-absence Red
+and initial 26-case Green. The separate compatibility suite has 75 tests.
+See `docs/reviews/0223_native_bdd_contract_adoption.md` for decision provenance,
+allocation coverage and per-policy/scenario mapping. Consumer defaults, source
+migration, Gherkin, normalized digests and trusted admission remain deferred.
+
+
+Reflective proposal tracking now uses a supported bounded-runtime posture and
+registers strict-loader validation plus the post-implementation index observation.
+The observed `runtime_realization` is partial (8/9 markers); validation and
+observation coverage are complete, and `next_gap` is `runtime_realization` because
+the legacy implementation-contract consumer has not yet called the loader. This
+is a local runtime-index observation, not a canonical graph mutation or consumer
+integration claim.
