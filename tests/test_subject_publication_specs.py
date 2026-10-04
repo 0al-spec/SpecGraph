@@ -96,15 +96,17 @@ def test_complete_record_scope_ignores_mapping_key_order():
 
 def workspace_allocation_context(**changes):
     values = {
-        "allocation_workspace_identity": "workspace-a",
+        "allocation": {
+            "workspace_identity": "workspace-a",
+            "source_ref": "refs/heads/main",
+            "expected_commit": "a" * 40,
+            "identity_allocation_authorized": True,
+            "source_ref_initialization_authorized": True,
+            "declaration_sha256": "b" * 64,
+        },
         "requested_workspace_identity": "workspace-a",
-        "allocation_source_ref": "refs/heads/main",
         "requested_source_ref": "refs/heads/main",
-        "allocation_expected_commit": "a" * 40,
         "requested_expected_commit": "a" * 40,
-        "identity_allocation_authorized": True,
-        "source_ref_initialization_authorized": True,
-        "allocation_declaration_sha256": "b" * 64,
         "requested_declaration_sha256": "b" * 64,
     }
     return WorkspaceAllocationContext(**(values | changes))
@@ -121,16 +123,18 @@ def test_workspace_allocation_policy_accepts_exact_reviewed_bootstrap():
 @pytest.mark.parametrize(
     "field",
     [
-        "allocation_workspace_identity",
-        "allocation_source_ref",
-        "allocation_expected_commit",
+        "workspace_identity",
+        "source_ref",
+        "expected_commit",
         "identity_allocation_authorized",
         "source_ref_initialization_authorized",
-        "allocation_declaration_sha256",
+        "declaration_sha256",
     ],
 )
 def test_workspace_allocation_policy_rejects_each_mismatch(field):
-    context = workspace_allocation_context(**{field: "mismatch"})
+    context = workspace_allocation_context(
+        allocation={**workspace_allocation_context().allocation, field: "mismatch"}
+    )
     assert not WORKSPACE_ALLOCATION_SPEC.is_satisfied_by(context)
 
 
@@ -139,6 +143,19 @@ def test_workspace_allocation_policy_rejects_each_mismatch(field):
 )
 @pytest.mark.parametrize("value", [False, 1, 0, "true", None, []])
 def test_workspace_allocation_policy_requires_literal_true(field, value):
+    allocation = workspace_allocation_context().allocation
+    allocation = {**allocation, field: value}
     assert not WORKSPACE_ALLOCATION_SPEC.is_satisfied_by(
-        workspace_allocation_context(**{field: value})
+        workspace_allocation_context(allocation=allocation)
+    )
+
+
+def test_workspace_allocation_preserves_short_circuit_before_missing_later_field():
+    allocation = {
+        **workspace_allocation_context().allocation,
+        "workspace_identity": "another-workspace",
+    }
+    allocation.pop("declaration_sha256")
+    assert not WORKSPACE_ALLOCATION_SPEC.is_satisfied_by(
+        workspace_allocation_context(allocation=allocation)
     )

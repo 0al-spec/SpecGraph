@@ -122,9 +122,11 @@ The Python CI publishes a run-local JSON artifact named
 `merge_gate_enabled: false` is explicit. No new PR comment or canonical record is
 created. Existing tests and quality gates retain their roles.
 
-Next bounded refactor: extract the workspace allocation rule into its own typed
-Specification, preserve its behavioral tests, update its existing family/site
-bindings and measure removal of that inline violation. Only after validating
-classification on changes should a separately approved policy gate be considered.
-System One models may later suggest annotations for human review; they are not
-an authority for blocking merge in this pilot.
+Next bounded refactor candidate: characterize `publication.site.071`, the
+authorization check for the reviewed dataset/topology selection, then extract
+its typed comparison into a dedicated Specification. Keep topology parsing in
+the adapter and preserve malformed-input behavior. Compare its site-level
+violation and the full diagnostic snapshot before and after the change. Only
+after validating classification on changes should a separately approved policy
+gate be considered. System One models may later suggest annotations for human
+review; they are not an authority for blocking merge in this pilot.

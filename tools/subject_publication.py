@@ -501,17 +501,10 @@ def _verify_publication(
         require(
             WORKSPACE_ALLOCATION_SPEC.is_satisfied_by(
                 WorkspaceAllocationContext(
-                    allocation_workspace_identity=allocation["workspace_identity"],
+                    allocation=allocation,
                     requested_workspace_identity=request.topology.workspace_identity,
-                    allocation_source_ref=allocation["source_ref"],
                     requested_source_ref=request.source_ref,
-                    allocation_expected_commit=allocation["expected_commit"],
                     requested_expected_commit=request.expected_commit,
-                    identity_allocation_authorized=allocation["identity_allocation_authorized"],
-                    source_ref_initialization_authorized=allocation[
-                        "source_ref_initialization_authorized"
-                    ],
-                    allocation_declaration_sha256=allocation["declaration_sha256"],
                     requested_declaration_sha256=hashlib.sha256(
                         request.workspace_declaration_yaml.encode()
                     ).hexdigest(),
