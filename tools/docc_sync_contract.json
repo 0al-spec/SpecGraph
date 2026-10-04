@@ -879,6 +879,24 @@
         "rule_reuse_snapshots",
         "merge_gate_enabled: false"
       ]
+    },
+    {
+      "id": "compositional-test-context",
+      "description": "Test context preparation and DocC preserve scoped composition and evidence ownership.",
+      "docs": [
+        "docs/proposals/0224_compositional_test_context_and_evidence_binding.md"
+      ],
+      "docc": [
+        "Sources/SpecGraph/Documentation.docc/CompositionalTestContext.md"
+      ],
+      "required_terms": [
+        "contract preparation only",
+        "deferred_until_canonicalized",
+        "SpecificationCore",
+        "FeaturePassport",
+        "canonical_mutations_allowed: false",
+        "evidence_admission_allowed: false"
+      ]
     }
   ]
 }

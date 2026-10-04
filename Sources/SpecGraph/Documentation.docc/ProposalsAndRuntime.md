@@ -2,6 +2,15 @@
 
 SpecGraph treats proposal records and runtime evidence as connected surfaces.
 
+## Compositional test bindings
+
+RFC 0224 prepares an execution-binding follow-up to RFC 0223. A proposed
+`SpecificationTest` composition retains immutable provenance and local bindings
+across evaluation, assertions and snapshot artifacts. SDK realization remains
+deferred; document checks do not establish runtime conformance or accepted
+evidence. See <doc:CompositionalTestContext> and
+`docs/proposals/0224_compositional_test_context_and_evidence_binding.md`.
+
 ## Proposal Records
 
 Proposal markdown under `docs/proposals/` describes bounded changes and their
