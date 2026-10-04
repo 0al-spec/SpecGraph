@@ -1,0 +1,24 @@
+# Reviewed-template pilot; extending scope/templates requires code review.
+schema_version = 1
+project = "SpecGraph"
+
+[[rules]]
+id = "subject_publication.workspace_allocation"
+bounded_context = "subject_publication"
+paths = ["tools"]
+canonical_path = "tools/subject_workspace_allocation_spec.py"
+canonical_symbol = "WORKSPACE_ALLOCATION_SPEC"
+canonical_digest = "blake3:a1ed24ae156ec56942ecebc7c7fb34bfbaea9d2820e21f6857cababb0eec3692"
+
+[[rules.templates]]
+id = "pr762-workspace-binding"
+renameable_identifiers = ["allocation", "request"]
+source_url = "https://github.com/0al-spec/SpecGraph/blob/9b285a2e018331460c1a6bee46a697b24a26d3fb/tools/subject_publication.py#L499-L508"
+expression = '''
+allocation["workspace_identity"] == request.topology.workspace_identity
+and allocation["source_ref"] == request.source_ref
+and allocation["expected_commit"] == request.expected_commit
+and allocation["identity_allocation_authorized"] is True
+and allocation["source_ref_initialization_authorized"] is True
+and allocation["declaration_sha256"] == hashlib.sha256(request.workspace_declaration_yaml.encode()).hexdigest()
+'''
