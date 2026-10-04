@@ -29,7 +29,7 @@ Static name matching does not resolve a shadowed `scope_digest` function or
 prove runtime identity; this reviewed scope remains `tools/`, not arbitrary
 project-wide digest comparisons.
 
-CI pins analyzer commit `13d972babae3c98f64fe7e1c71fa576e2f9aa60a` and builds it
+CI pins analyzer commit `6aca21ca37c64740326f5c19bccd6464712f1185` and builds it
 with `cargo build --locked`. The adapter `tools/check_rule_reuse.sh` extracts the
 catalog from the PR **base** revision. Before comparison it independently
 validates the effective head catalog against that same effective head commit
