@@ -51,15 +51,17 @@ def smoke(repo: Path, analyzer: Path, output: Path) -> dict:
 
     save()
     revision = summary["source_revision"]
-    fixture = subprocess.check_output(
-        [
-            "git",
-            "-C",
-            str(repo),
-            "show",
-            f"{revision}:tests/fixtures/rule_reuse/workspace_allocation_copy.py",
-        ]
-    ).decode("utf-8")
+
+    def fixture(name: str) -> str:
+        return subprocess.check_output(
+            ["git", "-C", str(repo), "show", f"{revision}:tests/fixtures/rule_reuse/{name}.py"]
+        ).decode("utf-8")
+
+    workspace = fixture("workspace_allocation_copy")
+    record_copy = fixture("reviewed_record_copy")
+    record_reuse = fixture("reviewed_record_reuse")
+    partial = fixture("reviewed_record_partial")
+    unrelated = fixture("unrelated_digest")
     with tempfile.TemporaryDirectory(prefix="specgraph-rule-reuse-smoke-") as directory:
         root = Path(directory)
         git(root, "init", "-q")
@@ -77,11 +79,29 @@ def smoke(repo: Path, analyzer: Path, output: Path) -> dict:
             )
         base = commit(root)
         cases = [
-            ("clean", None, 0, 0),
-            ("exact_copy", fixture, 1, 0),
-            ("changed_authority", fixture.replace("is True", "is False", 1), 0, 1),
+            ("clean", None, 0, 0, None, 0),
+            ("exact_copy", workspace, 1, 0, "subject_publication.workspace_allocation", 0),
+            (
+                "changed_authority",
+                workspace.replace("is True", "is False", 1),
+                0,
+                1,
+                "subject_publication.workspace_allocation",
+                0,
+            ),
+            ("reviewed_record_reuse", record_reuse, 0, 0, None, 1),
+            (
+                "reviewed_record_exact",
+                record_copy,
+                1,
+                0,
+                "subject_publication.complete_reviewed_record",
+                0,
+            ),
+            ("reviewed_record_partial_gap", partial, 0, 0, None, 0),
+            ("unrelated_digest", unrelated, 0, 0, None, 0),
         ]
-        for name, code, exact, near in cases:
+        for name, code, exact, near, rule_id, reuse in cases:
             if code is not None:
                 (root / "tools/smoke_copy.py").write_text(code, encoding="utf-8")
             head = commit(root)
@@ -128,11 +148,12 @@ def smoke(repo: Path, analyzer: Path, output: Path) -> dict:
                     f"{name}: rejection is not the registered-copy gate",
                 )
             findings = report["findings"]
-            if code is not None:
+            require(report["reused_specifications"] == reuse, f"{name}: wrong reuse count")
+            if rule_id is not None:
                 expected_kind = "reimplementation" if exact else "near_match"
                 require(
                     any(
-                        f["rule_id"] == "subject_publication.workspace_allocation"
+                        f["rule_id"] == rule_id
                         and f["path"] == "tools/smoke_copy.py"
                         and f["introduced"]
                         and f["kind"] == expected_kind
@@ -149,9 +170,13 @@ def smoke(repo: Path, analyzer: Path, output: Path) -> dict:
                     "new_reimplementations": exact,
                     "new_near_matches": near,
                     "report": f"{name}/report.json",
+                    "reused_specifications": reuse,
                 }
             )
             save()
+    summary["coverage_gaps"] = [
+        "reviewed_record_partial_gap: partial field checks are not detected"
+    ]
     summary["status"] = "complete"
     save()
     return summary
