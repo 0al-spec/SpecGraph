@@ -1091,5 +1091,22 @@
     "residual_risk": "A stale or mismatched GitHub merge snapshot fails closed and needs a new CI run.",
     "recorded_at": "2026-10-04T08:39:19Z",
     "prevention_path": "tests/test_rule_reuse_ci.py::test_stale_branch_uses_valid_merge_result_containing_base_catalog; test_merge_from_other_pr_is_rejected_before_analysis; real analyzer verifies enforcing merge-result comparison."
+  },
+  {
+    "feedback_id": "pr-766-smoke-fixture-snapshot",
+    "source_pr": 766,
+    "source_thread_url": "https://github.com/0al-spec/SpecGraph/pull/766#discussion_r4177249681",
+    "reviewer": "chatgpt-codex-connector",
+    "review_comment_summary": "Working-tree fixture bytes could be attributed to a committed source revision.",
+    "fix_summary": "Load the fixture from the same recorded Git revision as the remaining snapshot files, preserving exact text bytes.",
+    "root_cause_class": "scope_isolation_gap",
+    "prevention_action": "regression_test_added",
+    "verification": [
+      "targeted_test",
+      "lint_or_format_check"
+    ],
+    "residual_risk": "The regression simulates only the external gate; real analyzer matching is covered separately by the enforcing smoke run.",
+    "recorded_at": "2026-10-04T12:48:00Z",
+    "prevention_path": "tests/test_rule_reuse_ci_smoke.py::test_dirty_fixture_does_not_change_recorded_snapshot"
   }
 ]

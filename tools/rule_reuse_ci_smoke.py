@@ -50,10 +50,16 @@ def smoke(repo: Path, analyzer: Path, output: Path) -> dict:
         summary_path.write_text(json.dumps(summary, indent=2) + "\n", encoding="utf-8")
 
     save()
-    fixture = (repo / "tests/fixtures/rule_reuse/workspace_allocation_copy.py").read_text(
-        encoding="utf-8"
-    )
     revision = summary["source_revision"]
+    fixture = subprocess.check_output(
+        [
+            "git",
+            "-C",
+            str(repo),
+            "show",
+            f"{revision}:tests/fixtures/rule_reuse/workspace_allocation_copy.py",
+        ]
+    ).decode("utf-8")
     with tempfile.TemporaryDirectory(prefix="specgraph-rule-reuse-smoke-") as directory:
         root = Path(directory)
         git(root, "init", "-q")
