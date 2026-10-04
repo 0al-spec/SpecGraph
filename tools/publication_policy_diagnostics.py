@@ -7,6 +7,7 @@ import argparse
 import ast
 import hashlib
 import json
+import sys
 from collections import Counter, defaultdict
 from dataclasses import dataclass
 from pathlib import Path, PurePosixPath
@@ -22,6 +23,17 @@ def digest(value: object) -> str:
     return hashlib.sha256(
         json.dumps(value, sort_keys=True, separators=(",", ":"), ensure_ascii=False).encode()
     ).hexdigest()
+
+
+def stable_ast_dump(node: ast.AST) -> str:
+    """Keep Python 3.10's empty-field serialization on runtimes that omit it by default."""
+    if sys.version_info >= (3, 13):
+        return ast.dump(node, include_attributes=False, show_empty=True)
+    return ast.dump(node, include_attributes=False)
+
+
+def ast_digest(node: ast.AST) -> str:
+    return digest(stable_ast_dump(node))
 
 
 def relative_path(value: str) -> str:
@@ -69,6 +81,7 @@ class Site:
     kind: str
     label: str
     line: int
+    column: int
     expression: ast.AST
 
     @property
@@ -77,7 +90,7 @@ class Site:
 
     @property
     def predicate_sha256(self) -> str:
-        return digest(ast.dump(self.expression, include_attributes=False))
+        return ast_digest(self.expression)
 
 
 class Sites(ast.NodeVisitor):
@@ -97,7 +110,13 @@ class Sites(ast.NodeVisitor):
     def add(self, node: ast.AST, kind: str, label: str, expression: ast.AST) -> None:
         self.sites.append(
             Site(
-                self.path, ".".join(self.scope) or "<module>", kind, label, node.lineno, expression
+                self.path,
+                ".".join(self.scope) or "<module>",
+                kind,
+                label,
+                node.lineno,
+                node.col_offset,
+                expression,
             )
         )
 
@@ -154,7 +173,13 @@ def validate_manifest(manifest: dict) -> dict:
             raise ValueError("policy sites need a declared semantic family")
         if site["path"] not in paths or site["kind"] not in {"require", "if"}:
             raise ValueError("site is outside the supported guard/dispatch scope")
-        if not site["allowed_locations"] or not site["predicate_sha256"]:
+        locations = site["allowed_locations"]
+        if (
+            not isinstance(locations, list)
+            or not locations
+            or any(not isinstance(location, str) or not location.strip() for location in locations)
+            or not site["predicate_sha256"]
+        ):
             raise ValueError("site needs architectural locations and a predicate binding")
     for spec in manifest["specifications"]:
         if spec["path"] not in paths or spec["family_id"] not in family_ids:
@@ -198,7 +223,7 @@ def factory_present(tree: ast.Module, symbol: str, expected_sha256: str) -> bool
         and isinstance(values[0].func, ast.Name)
         and imports.get(values[0].func.id) == ("specification_core", "PredicateSpec")
         and values[0].func.id not in {name for name, _ in assignments}
-        and digest(ast.dump(values[0], include_attributes=False)) == expected_sha256
+        and ast_digest(values[0]) == expected_sha256
     )
 
 
@@ -239,8 +264,11 @@ def snapshot(root: Path, manifest: dict, revision: str | None = None) -> dict:
             specifications[(Path(spec["path"]).stem, spec["symbol"])] = spec
         else:
             diagnostics.append({"code": "unresolved_specification", "definition": spec})
+    definitions: dict[str, set[str]] = defaultdict(set)
+    for spec in specifications.values():
+        definitions[spec["family_id"]].add(f"spec:{spec['path']}:{spec['symbol']}")
     resolved = []
-    matched: set[tuple[str, int, str]] = set()
+    matched: set[tuple[str, int, int, str]] = set()
     for classified in manifest["sites"]:
         matches = [
             site
@@ -255,7 +283,7 @@ def snapshot(root: Path, manifest: dict, revision: str | None = None) -> dict:
             )
             continue
         site = matches[0]
-        matched.add((site.path, site.line, site.kind))
+        matched.add((site.path, site.line, site.column, site.kind))
         if site.predicate_sha256 != classified["predicate_sha256"]:
             diagnostics.append({"code": "changed_predicate", "site_id": classified["id"]})
             continue
@@ -300,7 +328,7 @@ def snapshot(root: Path, manifest: dict, revision: str | None = None) -> dict:
             }
         )
     for site in discovered:
-        if (site.path, site.line, site.kind) not in matched:
+        if (site.path, site.line, site.column, site.kind) not in matched:
             diagnostics.append(
                 {
                     "code": "unclassified_site",
@@ -310,7 +338,6 @@ def snapshot(root: Path, manifest: dict, revision: str | None = None) -> dict:
                     "label": site.label,
                 }
             )
-    definitions: dict[str, set[str]] = defaultdict(set)
     violations = []
     for site in resolved:
         if site["category"] != "policy":

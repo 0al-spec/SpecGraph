@@ -14,9 +14,11 @@ sys.path.insert(0, str(ROOT / "tools"))
 from publication_policy_diagnostics import (  # noqa: E402
     MANIFEST,
     Sites,
+    ast_digest,
     compare,
     main,
     snapshot,
+    stable_ast_dump,
     validate_manifest,
 )
 
@@ -91,8 +93,6 @@ TRANSITION_APPROVAL_SPEC = PredicateSpec(lambda context: context.outcome == "app
     }
     import hashlib
 
-    from publication_policy_diagnostics import digest
-
     # Explicit semantic assignments; source parsing never infers these categories.
     assignments = {
         "missing actual human review": ("mechanics", None),
@@ -128,7 +128,7 @@ TRANSITION_APPROVAL_SPEC = PredicateSpec(lambda context: context.outcome == "app
                         "path": path,
                         "symbol": node.targets[0].id,
                         "family_id": spec_families[node.targets[0].id],
-                        "predicate_sha256": digest(ast.dump(node.value, include_attributes=False)),
+                        "predicate_sha256": ast_digest(node.value),
                     }
                 )
     visitor = Sites("tools/subject_publication.py")
@@ -220,7 +220,7 @@ def test_source_drift_is_incomplete_instead_of_zero(classified, mutation):
     assert report["diagnostics"]
 
 
-def add_site(manifest, source, label, family):
+def add_site(manifest, source, label, family, category="policy"):
     visitor = Sites("tools/subject_publication.py")
     visitor.visit(ast.parse(source))
     site = next(s for s in visitor.sites if s.label == label)
@@ -231,7 +231,7 @@ def add_site(manifest, source, label, family):
             "kind": site.kind,
             "label": site.label,
             "predicate_sha256": site.predicate_sha256,
-            "category": "policy",
+            "category": category,
             "rationale": "Synthetic equivalent policy definition.",
             "allowed_locations": [site.location],
             "family_id": family,
@@ -316,6 +316,63 @@ def test_duplicate_selector_cannot_inflate_counts(classified):
     manifest["sites"].append(other)
     with pytest.raises(ValueError):
         validate_manifest(manifest)
+
+
+@pytest.mark.parametrize(
+    "locations",
+    ["tools/subject_publication.py::_review", [], ["", "valid"], [1]],
+)
+def test_allowed_locations_must_be_a_nonempty_array_of_locations(classified, locations):
+    _, manifest = classified
+    malformed = copy.deepcopy(manifest)
+    malformed["sites"][0]["allowed_locations"] = locations
+    with pytest.raises(ValueError, match="architectural locations"):
+        validate_manifest(malformed)
+
+
+def test_same_line_guards_are_matched_independently(classified):
+    root, manifest = classified
+    path = root / "tools/subject_publication.py"
+    source = path.read_text() + (
+        "\ndef same_line(value):\n"
+        "    require(value, 'same-line known'); require(value, 'same-line new')\n"
+    )
+    path.write_text(source)
+    add_site(manifest, source, "same-line known", None, category="mechanics")
+    report = snapshot(root, manifest)
+    assert report["completeness"] == "incomplete"
+    assert report["counts"] is None
+    assert report["coverage"]["discovered_sites"] > report["coverage"]["resolved_sites"]
+    assert any(diagnostic["code"] == "unclassified_site" for diagnostic in report["diagnostics"])
+
+
+def test_unreferenced_registered_specification_is_counted(classified):
+    root, manifest = classified
+    source_path = "tools/subject_human_approval_spec.py"
+    copied_path = "tools/unreferenced_approval_spec.py"
+    original = (root / source_path).read_text()
+    (root / copied_path).write_text(original.replace("HUMAN_APPROVAL_SPEC", "UNREFERENCED_SPEC"))
+    manifest["modules"].append({"path": copied_path, "inventory_guards": False})
+    original_binding = next(
+        spec for spec in manifest["specifications"] if spec["symbol"] == "HUMAN_APPROVAL_SPEC"
+    )
+    manifest["specifications"].append(
+        {
+            "path": copied_path,
+            "symbol": "UNREFERENCED_SPEC",
+            "family_id": original_binding["family_id"],
+            "predicate_sha256": original_binding["predicate_sha256"],
+        }
+    )
+    report = snapshot(root, manifest)
+    assert report["completeness"] == "complete"
+    assert report["counts"]["duplicate_policy_definitions"] == 1
+    assert report["counts"]["policy_boundary_violations"] == 1
+
+
+def test_ast_fingerprint_serialization_includes_empty_fields():
+    expression = ast.parse("call(value)").body[0].value
+    assert "keywords=[]" in stable_ast_dump(expression)
 
 
 def test_missing_baseline_classification_does_not_report_zero(classified, capsys):
