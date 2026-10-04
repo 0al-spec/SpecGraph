@@ -1,0 +1,662 @@
+{
+  "schema_version": 1,
+  "artifact_kind": "rfc0221_canonical_materialization_packet",
+  "prepared_at": "2026-10-03T07:00:00Z",
+  "prepared_against_commit": "a5ab64363d054bae759b81441da6b79dbd4a9e86",
+  "authority": "agent_prepared_for_human_review",
+  "gate_state": "review_pending",
+  "canonical_adoption": false,
+  "canonical_mutations_allowed": false,
+  "canonical_readiness": "not_evaluated",
+  "ready_for_materialization": false,
+  "source_proposal": "docs/proposals/0221_stable_requirement_identity_and_lineage.md",
+  "governing_contract": "specs/nodes/SG-SPEC-0051.yaml",
+  "storage_contract": "specs/nodes/SG-SPEC-0069.yaml",
+  "prior_approval_ref": "docs/reviews/0221_subject_storage_decision.json#/review",
+  "prior_approval_scope_sha256": "dcaf235e3345ef09604245161b4f0e57c54954fdd0052272a5a0ea27494bd2e1",
+  "approved_mapping_ref": "docs/reviews/0221_subject_storage_decision.json#/mapping_decisions",
+  "workspace": {
+    "workspace_identity": "workspace:a2800523-3588-4820-a47f-9fddc0fed3f5",
+    "proposed_declaration": "docs/reviews/0221_subject_storage/workspace_identity.yaml#/proposed_record",
+    "declaration_provenance": null,
+    "allocation_state": "approved_plan_unallocated",
+    "source_ref": "refs/specgraph/subject-storage/a2800523-3588-4820-a47f-9fddc0fed3f5",
+    "source_ref_initialization": {
+      "base_commit": null,
+      "decision_ref": null,
+      "state": "pending"
+    },
+    "candidate_sha256": "d5a99ab533da5e3568601fb2d9c9934aeb3044dd5770c6bd442fd761a80b783b"
+  },
+  "subjects": [
+    {
+      "subject_class": "Requirement",
+      "local_subject_id": "req.repaired-candidate-review-readiness",
+      "title": "Repaired candidate readiness for review",
+      "source_draft_ref": "docs/reviews/0221_subject_storage/req.repaired-candidate-review-readiness.yaml#/proposed_record",
+      "source_proposal_ref": "docs/proposals/0177_repaired_candidate_promotion_handoff.md",
+      "additional_source_refs": [
+        "docs/proposals/0191_event_storming_candidate_topology_edges.md"
+      ],
+      "canonical_target_ref": "specs/requirements/req.repaired-candidate-review-readiness.yaml#/subject",
+      "candidate_file": "docs/reviews/0221_subject_storage/req.repaired-candidate-review-readiness.yaml",
+      "statement": "The repair producer and handoff must preserve review readiness for a clean no-op or a valid repaired preview, retain repair evidence, and keep unresolved candidate gaps blocking.",
+      "requirement_membership": [
+        "ac.clean-noop",
+        "ac.repaired-preview",
+        "ac.unresolved-gaps"
+      ],
+      "candidate_sha256": "9c1e492bded55c9432ca0ed8106ff285e59364c6f80666ba5980d2c05d9ad4bf",
+      "source_proposal_sha256": "b991fa09268851b6fe77fad100f26753a345da4a1b07ba6f9eaae1157a3ceda0",
+      "source_statement_sha256": null,
+      "canonical_revision_selection": {
+        "subject": {
+          "workspace_identity": "workspace:a2800523-3588-4820-a47f-9fddc0fed3f5",
+          "subject_class": "Requirement",
+          "local_subject_id": "req.repaired-candidate-review-readiness"
+        },
+        "mode": "exact",
+        "revision": 1
+      }
+    },
+    {
+      "subject_class": "Requirement",
+      "local_subject_id": "req.platform-promotion-approval-boundary",
+      "title": "Separate approval for Platform promotion",
+      "source_draft_ref": "docs/reviews/0221_subject_storage/req.platform-promotion-approval-boundary.yaml#/proposed_record",
+      "source_proposal_ref": "docs/proposals/0177_repaired_candidate_promotion_handoff.md",
+      "additional_source_refs": [],
+      "canonical_target_ref": "specs/requirements/req.platform-promotion-approval-boundary.yaml#/subject",
+      "candidate_file": "docs/reviews/0221_subject_storage/req.platform-promotion-approval-boundary.yaml",
+      "statement": "Repair readiness must not authorize Platform promotion; the repair-session journal retains ready_for_platform_promotion false until a separate approval decision.",
+      "requirement_membership": [
+        "ac.approval-boundary"
+      ],
+      "candidate_sha256": "e73e5a6125dab67b2292b143fbf98eb980f9cd96a9f9cb5314473afd4214b66e",
+      "source_proposal_sha256": "b991fa09268851b6fe77fad100f26753a345da4a1b07ba6f9eaae1157a3ceda0",
+      "source_statement_sha256": null,
+      "canonical_revision_selection": {
+        "subject": {
+          "workspace_identity": "workspace:a2800523-3588-4820-a47f-9fddc0fed3f5",
+          "subject_class": "Requirement",
+          "local_subject_id": "req.platform-promotion-approval-boundary"
+        },
+        "mode": "exact",
+        "revision": 1
+      }
+    },
+    {
+      "subject_class": "criterion",
+      "local_subject_id": "ac.clean-noop",
+      "title": "Clean noop",
+      "source_draft_ref": "docs/reviews/0221_subject_storage/ac.clean-noop.yaml#/proposed_record",
+      "source_proposal_ref": "docs/proposals/0191_event_storming_candidate_topology_edges.md",
+      "additional_source_refs": [],
+      "canonical_target_ref": "specs/criteria/ac.clean-noop.yaml#/subject",
+      "candidate_file": "docs/reviews/0221_subject_storage/ac.clean-noop.yaml",
+      "statement": "A candidate graph with clean pre-SIB readiness and no repair actions produces a ready no-op repair loop instead of `repair_review_required`.",
+      "requirement_membership": [],
+      "candidate_sha256": "fb57d2ac6c61333a6b202a5272a9480a046c237e93ec95eafad2bf7ad44fa212",
+      "source_proposal_sha256": "00c22442bb9fcb0b329a5e9cb9add96ae98e23d74659e4dda1ddbd27da1b32ae",
+      "source_statement_sha256": "98f272e4fee9d5373b51f43112375e3776c4c42f823d3f2c5afcabb121bd406d",
+      "canonical_revision_selection": {
+        "subject": {
+          "workspace_identity": "workspace:a2800523-3588-4820-a47f-9fddc0fed3f5",
+          "subject_class": "criterion",
+          "local_subject_id": "ac.clean-noop"
+        },
+        "mode": "exact",
+        "revision": 1
+      }
+    },
+    {
+      "subject_class": "criterion",
+      "local_subject_id": "ac.repaired-preview",
+      "title": "Repaired preview",
+      "source_draft_ref": "docs/reviews/0221_subject_storage/ac.repaired-preview.yaml#/proposed_record",
+      "source_proposal_ref": "docs/proposals/0177_repaired_candidate_promotion_handoff.md",
+      "additional_source_refs": [],
+      "canonical_target_ref": "specs/criteria/ac.repaired-preview.yaml#/subject",
+      "candidate_file": "docs/reviews/0221_subject_storage/ac.repaired-preview.yaml",
+      "statement": "If the repaired graph still has pre-SIB structural issues, the normal candidate repair loop may repair them in preview, and the promotion gate must preserve `pre_sib_findings_repaired_by_preview` evidence.",
+      "requirement_membership": [],
+      "candidate_sha256": "dcd77117dad3261b4bdf61e92330f853d3f9004070037f72e62f2124fb683467",
+      "source_proposal_sha256": "b991fa09268851b6fe77fad100f26753a345da4a1b07ba6f9eaae1157a3ceda0",
+      "source_statement_sha256": "c841dd08156e87a375ac0a5727816db203f94248cd079d721639cc2c1a8162ae",
+      "canonical_revision_selection": {
+        "subject": {
+          "workspace_identity": "workspace:a2800523-3588-4820-a47f-9fddc0fed3f5",
+          "subject_class": "criterion",
+          "local_subject_id": "ac.repaired-preview"
+        },
+        "mode": "exact",
+        "revision": 1
+      }
+    },
+    {
+      "subject_class": "criterion",
+      "local_subject_id": "ac.unresolved-gaps",
+      "title": "Unresolved gaps",
+      "source_draft_ref": "docs/reviews/0221_subject_storage/ac.unresolved-gaps.yaml#/proposed_record",
+      "source_proposal_ref": "docs/proposals/0177_repaired_candidate_promotion_handoff.md",
+      "additional_source_refs": [],
+      "canonical_target_ref": "specs/criteria/ac.unresolved-gaps.yaml#/subject",
+      "candidate_file": "docs/reviews/0221_subject_storage/ac.unresolved-gaps.yaml",
+      "statement": "Unresolved repaired candidate gaps keep the handoff blocked.",
+      "requirement_membership": [],
+      "candidate_sha256": "2121814bc269271e2e5fd6a4d0884a6c5251eed084fcfc7f5b26fa9a1f6cdf4b",
+      "source_proposal_sha256": "b991fa09268851b6fe77fad100f26753a345da4a1b07ba6f9eaae1157a3ceda0",
+      "source_statement_sha256": "222f21614140823644e9c1f550be3e0d9ac747157e9720fe65207cfc83c5c00d",
+      "canonical_revision_selection": {
+        "subject": {
+          "workspace_identity": "workspace:a2800523-3588-4820-a47f-9fddc0fed3f5",
+          "subject_class": "criterion",
+          "local_subject_id": "ac.unresolved-gaps"
+        },
+        "mode": "exact",
+        "revision": 1
+      }
+    },
+    {
+      "subject_class": "criterion",
+      "local_subject_id": "ac.approval-boundary",
+      "title": "Approval boundary",
+      "source_draft_ref": "docs/reviews/0221_subject_storage/ac.approval-boundary.yaml#/proposed_record",
+      "source_proposal_ref": "docs/proposals/0177_repaired_candidate_promotion_handoff.md",
+      "additional_source_refs": [],
+      "canonical_target_ref": "specs/criteria/ac.approval-boundary.yaml#/subject",
+      "candidate_file": "docs/reviews/0221_subject_storage/ac.approval-boundary.yaml",
+      "statement": "The repaired repair-session journal keeps `ready_for_platform_promotion: false` until a separate approval decision.",
+      "requirement_membership": [],
+      "candidate_sha256": "e3869c3e2530f82b175ad7a53aa6ad0f787c0d65fe18bf870d9370de125c9e7c",
+      "source_proposal_sha256": "b991fa09268851b6fe77fad100f26753a345da4a1b07ba6f9eaae1157a3ceda0",
+      "source_statement_sha256": "da22d07188f724ef174bf2fdc8ee039ef055ec55ec679c7a1926b10523b91e11",
+      "canonical_revision_selection": {
+        "subject": {
+          "workspace_identity": "workspace:a2800523-3588-4820-a47f-9fddc0fed3f5",
+          "subject_class": "criterion",
+          "local_subject_id": "ac.approval-boundary"
+        },
+        "mode": "exact",
+        "revision": 1
+      }
+    }
+  ],
+  "transition_records": [
+    {
+      "transition_record_id": "0221-ingress-req.repaired-candidate-review-readiness",
+      "transition_identifier": "rfc0221:proposal_ingress:req.repaired-candidate-review-readiness:v1",
+      "promotion_edge": "proposal -> spec_draft",
+      "gate_type": "review",
+      "reviewer_or_decider": null,
+      "decision_timestamp": null,
+      "outcome": null,
+      "rationale": null,
+      "source_ref": "docs/proposals/0177_repaired_candidate_promotion_handoff.md",
+      "target_ref": "docs/reviews/0221_subject_storage/req.repaired-candidate-review-readiness.yaml#/proposed_record",
+      "review_record": {
+        "reviewer": null,
+        "reviewer_authority": null,
+        "decision_timestamp": null,
+        "outcome": null,
+        "rationale": null,
+        "provenance": null
+      },
+      "state": "review_pending",
+      "intent_lineage_ref": null,
+      "intent_lineage_state": "unresolved"
+    },
+    {
+      "transition_record_id": "0221-canonical-req.repaired-candidate-review-readiness",
+      "transition_identifier": "rfc0221:canonical_materialization:req.repaired-candidate-review-readiness:v1",
+      "promotion_edge": "spec_draft -> canonical_artifact",
+      "gate_type": "review",
+      "reviewer_or_decider": null,
+      "decision_timestamp": null,
+      "outcome": null,
+      "rationale": null,
+      "source_ref": "docs/reviews/0221_subject_storage/req.repaired-candidate-review-readiness.yaml#/proposed_record",
+      "target_ref": "specs/requirements/req.repaired-candidate-review-readiness.yaml#/subject",
+      "review_record": {
+        "reviewer": null,
+        "reviewer_authority": null,
+        "decision_timestamp": null,
+        "outcome": null,
+        "rationale": null,
+        "provenance": null
+      },
+      "state": "review_pending",
+      "ingress_record_ref": "docs/reviews/0221_canonical_materialization_packet.json#/transition_records/0",
+      "target_revision_selection": {
+        "subject": {
+          "workspace_identity": "workspace:a2800523-3588-4820-a47f-9fddc0fed3f5",
+          "subject_class": "Requirement",
+          "local_subject_id": "req.repaired-candidate-review-readiness"
+        },
+        "mode": "exact",
+        "revision": 1
+      }
+    },
+    {
+      "transition_record_id": "0221-ingress-req.platform-promotion-approval-boundary",
+      "transition_identifier": "rfc0221:proposal_ingress:req.platform-promotion-approval-boundary:v1",
+      "promotion_edge": "proposal -> spec_draft",
+      "gate_type": "review",
+      "reviewer_or_decider": null,
+      "decision_timestamp": null,
+      "outcome": null,
+      "rationale": null,
+      "source_ref": "docs/proposals/0177_repaired_candidate_promotion_handoff.md",
+      "target_ref": "docs/reviews/0221_subject_storage/req.platform-promotion-approval-boundary.yaml#/proposed_record",
+      "review_record": {
+        "reviewer": null,
+        "reviewer_authority": null,
+        "decision_timestamp": null,
+        "outcome": null,
+        "rationale": null,
+        "provenance": null
+      },
+      "state": "review_pending",
+      "intent_lineage_ref": null,
+      "intent_lineage_state": "unresolved"
+    },
+    {
+      "transition_record_id": "0221-canonical-req.platform-promotion-approval-boundary",
+      "transition_identifier": "rfc0221:canonical_materialization:req.platform-promotion-approval-boundary:v1",
+      "promotion_edge": "spec_draft -> canonical_artifact",
+      "gate_type": "review",
+      "reviewer_or_decider": null,
+      "decision_timestamp": null,
+      "outcome": null,
+      "rationale": null,
+      "source_ref": "docs/reviews/0221_subject_storage/req.platform-promotion-approval-boundary.yaml#/proposed_record",
+      "target_ref": "specs/requirements/req.platform-promotion-approval-boundary.yaml#/subject",
+      "review_record": {
+        "reviewer": null,
+        "reviewer_authority": null,
+        "decision_timestamp": null,
+        "outcome": null,
+        "rationale": null,
+        "provenance": null
+      },
+      "state": "review_pending",
+      "ingress_record_ref": "docs/reviews/0221_canonical_materialization_packet.json#/transition_records/2",
+      "target_revision_selection": {
+        "subject": {
+          "workspace_identity": "workspace:a2800523-3588-4820-a47f-9fddc0fed3f5",
+          "subject_class": "Requirement",
+          "local_subject_id": "req.platform-promotion-approval-boundary"
+        },
+        "mode": "exact",
+        "revision": 1
+      }
+    },
+    {
+      "transition_record_id": "0221-ingress-ac.clean-noop",
+      "transition_identifier": "rfc0221:proposal_ingress:ac.clean-noop:v1",
+      "promotion_edge": "proposal -> spec_draft",
+      "gate_type": "review",
+      "reviewer_or_decider": null,
+      "decision_timestamp": null,
+      "outcome": null,
+      "rationale": null,
+      "source_ref": "docs/proposals/0191_event_storming_candidate_topology_edges.md",
+      "target_ref": "docs/reviews/0221_subject_storage/ac.clean-noop.yaml#/proposed_record",
+      "review_record": {
+        "reviewer": null,
+        "reviewer_authority": null,
+        "decision_timestamp": null,
+        "outcome": null,
+        "rationale": null,
+        "provenance": null
+      },
+      "state": "review_pending",
+      "intent_lineage_ref": null,
+      "intent_lineage_state": "unresolved"
+    },
+    {
+      "transition_record_id": "0221-canonical-ac.clean-noop",
+      "transition_identifier": "rfc0221:canonical_materialization:ac.clean-noop:v1",
+      "promotion_edge": "spec_draft -> canonical_artifact",
+      "gate_type": "review",
+      "reviewer_or_decider": null,
+      "decision_timestamp": null,
+      "outcome": null,
+      "rationale": null,
+      "source_ref": "docs/reviews/0221_subject_storage/ac.clean-noop.yaml#/proposed_record",
+      "target_ref": "specs/criteria/ac.clean-noop.yaml#/subject",
+      "review_record": {
+        "reviewer": null,
+        "reviewer_authority": null,
+        "decision_timestamp": null,
+        "outcome": null,
+        "rationale": null,
+        "provenance": null
+      },
+      "state": "review_pending",
+      "ingress_record_ref": "docs/reviews/0221_canonical_materialization_packet.json#/transition_records/4",
+      "target_revision_selection": {
+        "subject": {
+          "workspace_identity": "workspace:a2800523-3588-4820-a47f-9fddc0fed3f5",
+          "subject_class": "criterion",
+          "local_subject_id": "ac.clean-noop"
+        },
+        "mode": "exact",
+        "revision": 1
+      }
+    },
+    {
+      "transition_record_id": "0221-ingress-ac.repaired-preview",
+      "transition_identifier": "rfc0221:proposal_ingress:ac.repaired-preview:v1",
+      "promotion_edge": "proposal -> spec_draft",
+      "gate_type": "review",
+      "reviewer_or_decider": null,
+      "decision_timestamp": null,
+      "outcome": null,
+      "rationale": null,
+      "source_ref": "docs/proposals/0177_repaired_candidate_promotion_handoff.md",
+      "target_ref": "docs/reviews/0221_subject_storage/ac.repaired-preview.yaml#/proposed_record",
+      "review_record": {
+        "reviewer": null,
+        "reviewer_authority": null,
+        "decision_timestamp": null,
+        "outcome": null,
+        "rationale": null,
+        "provenance": null
+      },
+      "state": "review_pending",
+      "intent_lineage_ref": null,
+      "intent_lineage_state": "unresolved"
+    },
+    {
+      "transition_record_id": "0221-canonical-ac.repaired-preview",
+      "transition_identifier": "rfc0221:canonical_materialization:ac.repaired-preview:v1",
+      "promotion_edge": "spec_draft -> canonical_artifact",
+      "gate_type": "review",
+      "reviewer_or_decider": null,
+      "decision_timestamp": null,
+      "outcome": null,
+      "rationale": null,
+      "source_ref": "docs/reviews/0221_subject_storage/ac.repaired-preview.yaml#/proposed_record",
+      "target_ref": "specs/criteria/ac.repaired-preview.yaml#/subject",
+      "review_record": {
+        "reviewer": null,
+        "reviewer_authority": null,
+        "decision_timestamp": null,
+        "outcome": null,
+        "rationale": null,
+        "provenance": null
+      },
+      "state": "review_pending",
+      "ingress_record_ref": "docs/reviews/0221_canonical_materialization_packet.json#/transition_records/6",
+      "target_revision_selection": {
+        "subject": {
+          "workspace_identity": "workspace:a2800523-3588-4820-a47f-9fddc0fed3f5",
+          "subject_class": "criterion",
+          "local_subject_id": "ac.repaired-preview"
+        },
+        "mode": "exact",
+        "revision": 1
+      }
+    },
+    {
+      "transition_record_id": "0221-ingress-ac.unresolved-gaps",
+      "transition_identifier": "rfc0221:proposal_ingress:ac.unresolved-gaps:v1",
+      "promotion_edge": "proposal -> spec_draft",
+      "gate_type": "review",
+      "reviewer_or_decider": null,
+      "decision_timestamp": null,
+      "outcome": null,
+      "rationale": null,
+      "source_ref": "docs/proposals/0177_repaired_candidate_promotion_handoff.md",
+      "target_ref": "docs/reviews/0221_subject_storage/ac.unresolved-gaps.yaml#/proposed_record",
+      "review_record": {
+        "reviewer": null,
+        "reviewer_authority": null,
+        "decision_timestamp": null,
+        "outcome": null,
+        "rationale": null,
+        "provenance": null
+      },
+      "state": "review_pending",
+      "intent_lineage_ref": null,
+      "intent_lineage_state": "unresolved"
+    },
+    {
+      "transition_record_id": "0221-canonical-ac.unresolved-gaps",
+      "transition_identifier": "rfc0221:canonical_materialization:ac.unresolved-gaps:v1",
+      "promotion_edge": "spec_draft -> canonical_artifact",
+      "gate_type": "review",
+      "reviewer_or_decider": null,
+      "decision_timestamp": null,
+      "outcome": null,
+      "rationale": null,
+      "source_ref": "docs/reviews/0221_subject_storage/ac.unresolved-gaps.yaml#/proposed_record",
+      "target_ref": "specs/criteria/ac.unresolved-gaps.yaml#/subject",
+      "review_record": {
+        "reviewer": null,
+        "reviewer_authority": null,
+        "decision_timestamp": null,
+        "outcome": null,
+        "rationale": null,
+        "provenance": null
+      },
+      "state": "review_pending",
+      "ingress_record_ref": "docs/reviews/0221_canonical_materialization_packet.json#/transition_records/8",
+      "target_revision_selection": {
+        "subject": {
+          "workspace_identity": "workspace:a2800523-3588-4820-a47f-9fddc0fed3f5",
+          "subject_class": "criterion",
+          "local_subject_id": "ac.unresolved-gaps"
+        },
+        "mode": "exact",
+        "revision": 1
+      }
+    },
+    {
+      "transition_record_id": "0221-ingress-ac.approval-boundary",
+      "transition_identifier": "rfc0221:proposal_ingress:ac.approval-boundary:v1",
+      "promotion_edge": "proposal -> spec_draft",
+      "gate_type": "review",
+      "reviewer_or_decider": null,
+      "decision_timestamp": null,
+      "outcome": null,
+      "rationale": null,
+      "source_ref": "docs/proposals/0177_repaired_candidate_promotion_handoff.md",
+      "target_ref": "docs/reviews/0221_subject_storage/ac.approval-boundary.yaml#/proposed_record",
+      "review_record": {
+        "reviewer": null,
+        "reviewer_authority": null,
+        "decision_timestamp": null,
+        "outcome": null,
+        "rationale": null,
+        "provenance": null
+      },
+      "state": "review_pending",
+      "intent_lineage_ref": null,
+      "intent_lineage_state": "unresolved"
+    },
+    {
+      "transition_record_id": "0221-canonical-ac.approval-boundary",
+      "transition_identifier": "rfc0221:canonical_materialization:ac.approval-boundary:v1",
+      "promotion_edge": "spec_draft -> canonical_artifact",
+      "gate_type": "review",
+      "reviewer_or_decider": null,
+      "decision_timestamp": null,
+      "outcome": null,
+      "rationale": null,
+      "source_ref": "docs/reviews/0221_subject_storage/ac.approval-boundary.yaml#/proposed_record",
+      "target_ref": "specs/criteria/ac.approval-boundary.yaml#/subject",
+      "review_record": {
+        "reviewer": null,
+        "reviewer_authority": null,
+        "decision_timestamp": null,
+        "outcome": null,
+        "rationale": null,
+        "provenance": null
+      },
+      "state": "review_pending",
+      "ingress_record_ref": "docs/reviews/0221_canonical_materialization_packet.json#/transition_records/10",
+      "target_revision_selection": {
+        "subject": {
+          "workspace_identity": "workspace:a2800523-3588-4820-a47f-9fddc0fed3f5",
+          "subject_class": "criterion",
+          "local_subject_id": "ac.approval-boundary"
+        },
+        "mode": "exact",
+        "revision": 1
+      }
+    }
+  ],
+  "writer_request": {
+    "artifact_kind": "subject_source_write_request",
+    "schema_version": 1,
+    "source_ref": "refs/specgraph/subject-storage/a2800523-3588-4820-a47f-9fddc0fed3f5",
+    "expected_commit": null,
+    "recorded_at": null,
+    "expected_source_file_sha256": null,
+    "changes": null,
+    "workspace_declaration": null,
+    "request_sha256": null,
+    "state": "not_prepared_pending_transition_decisions",
+    "topology_selection": null
+  },
+  "publication_authorization": null,
+  "separate_boundaries": {
+    "canonical_readiness": "not_evaluated",
+    "source_migration_authorized": false,
+    "evidence_transfer_authorized": false,
+    "platform_promotion_authorized": false,
+    "trusted_runtime_receipts_created": false
+  },
+  "review_blockers": [
+    "Motivating IntentDraft or Intent lineage is unresolved for all six proposal ingresses; approval alone cannot satisfy SG-SPEC-0051.",
+    "All six proposal -> spec_draft ingress review records lack explicit approved decisions.",
+    "All six spec_draft -> canonical_artifact review records lack explicit approved decisions.",
+    "Workspace declaration provenance, source-ref initialization decision and identity allocation are pending.",
+    "The exact writer request cannot be prepared until decisions supply genuine provenance and an actual source ref base commit.",
+    "Destination evidence applicability requires a separate authored decision.",
+    "Dataset/topology selection and per-Requirement canonical presence require an explicit reviewed decision.",
+    "Declaration, origin and activation provenance references must resolve to decisions explicitly covering their respective effects.",
+    "A governed decision-to-request publication gate is not implemented; structural packet validation and the operator-trusted writer are not approval verification."
+  ],
+  "inputs": {
+    "canonical_snapshot_commit": "a5ab64363d054bae759b81441da6b79dbd4a9e86",
+    "approved_mapping_scope_sha256": "dcaf235e3345ef09604245161b4f0e57c54954fdd0052272a5a0ea27494bd2e1",
+    "candidate_digests": "SHA256 over exact UTF-8 YAML file bytes; see each subjects[].candidate_sha256",
+    "proposal_digests": "SHA256 over exact UTF-8 Markdown file bytes; see each subjects[].source_proposal_sha256",
+    "review_tree_file_sha256": {
+      "docs/proposals/0177_repaired_candidate_promotion_handoff.md": "b991fa09268851b6fe77fad100f26753a345da4a1b07ba6f9eaae1157a3ceda0",
+      "docs/proposals/0191_event_storming_candidate_topology_edges.md": "00c22442bb9fcb0b329a5e9cb9add96ae98e23d74659e4dda1ddbd27da1b32ae",
+      "docs/proposals/0221_stable_requirement_identity_and_lineage.md": "083ab3f68dbd9fb340b4495bcb0d38b73c797443415033c44ec0226a2987ad9f",
+      "docs/reviews/0221_subject_storage/ac.approval-boundary.yaml": "e3869c3e2530f82b175ad7a53aa6ad0f787c0d65fe18bf870d9370de125c9e7c",
+      "docs/reviews/0221_subject_storage/ac.clean-noop.yaml": "fb57d2ac6c61333a6b202a5272a9480a046c237e93ec95eafad2bf7ad44fa212",
+      "docs/reviews/0221_subject_storage/ac.repaired-preview.yaml": "dcd77117dad3261b4bdf61e92330f853d3f9004070037f72e62f2124fb683467",
+      "docs/reviews/0221_subject_storage/ac.unresolved-gaps.yaml": "2121814bc269271e2e5fd6a4d0884a6c5251eed084fcfc7f5b26fa9a1f6cdf4b",
+      "docs/reviews/0221_subject_storage/manifest.yaml": "37def36bbc78ce78c026602f3f90d37fb4989201da2eb9ef2610fc8e98be2f96",
+      "docs/reviews/0221_subject_storage/req.platform-promotion-approval-boundary.yaml": "e73e5a6125dab67b2292b143fbf98eb980f9cd96a9f9cb5314473afd4214b66e",
+      "docs/reviews/0221_subject_storage/req.repaired-candidate-review-readiness.yaml": "9c1e492bded55c9432ca0ed8106ff285e59364c6f80666ba5980d2c05d9ad4bf",
+      "docs/reviews/0221_subject_storage/workspace_identity.yaml": "d5a99ab533da5e3568601fb2d9c9934aeb3044dd5770c6bd442fd761a80b783b",
+      "docs/reviews/0221_subject_storage_decision.json": "b334cb084e9f65edd8ba0934aa38cccce776166ed2e19b9c12c91e16dfa55760"
+    },
+    "contract_snapshot": {
+      "commit": "a5ab64363d054bae759b81441da6b79dbd4a9e86",
+      "file_sha256": {
+        "specs/nodes/SG-SPEC-0051.yaml": "4869849286711830bba3bf19aa45526f96e535f4633949a0deb18ada071daceb",
+        "specs/nodes/SG-SPEC-0068.yaml": "9b523386b9678acfcf8dfac3675ee700b107655896c0e6d8187f44561adbafd1",
+        "specs/nodes/SG-SPEC-0069.yaml": "1db0d1cc3be4d5805c38326059292f7a0096574204d68c995bd7146ec9e3d8f5"
+      }
+    },
+    "binding_rule": "Validate review-tree bytes for all candidate, proposal, manifest and prior-decision inputs. Resolve governing contract bytes at the explicit historical commit, never substitute current main. Missing history fails validation."
+  },
+  "updated_at": "2026-10-03T11:40:00Z",
+  "decision_lifecycle": {
+    "packet_mutation_after_approval": "forbidden",
+    "decision_storage": "separate_artifact",
+    "decision_binding": [
+      "packet_path",
+      "packet_sha256",
+      "approval_scope_sha256",
+      "reviewed_head"
+    ],
+    "scope_change": "new_packet_version_requires_new_approval",
+    "writer_request_storage": "separate_artifact_with_its_own_digest"
+  },
+  "topology_review": {
+    "state": "pending",
+    "selection": null,
+    "decision_ref": null,
+    "required_selection_fields": [
+      "workspace_identity",
+      "dataset_identity",
+      "topology_ref",
+      "governance_evidence_ref",
+      "requirements"
+    ],
+    "rule": "Explicitly approve canonical presence for each Requirement in the selected dataset; do not infer presence from files or disposition."
+  },
+  "provenance_binding_review": {
+    "state": "pending",
+    "declaration_decision_ref": null,
+    "subject_bindings": [
+      {
+        "local_subject_id": "req.repaired-candidate-review-readiness",
+        "origin_decision_ref": null,
+        "activation_decision_ref": null
+      },
+      {
+        "local_subject_id": "req.platform-promotion-approval-boundary",
+        "origin_decision_ref": null,
+        "activation_decision_ref": null
+      },
+      {
+        "local_subject_id": "ac.clean-noop",
+        "origin_decision_ref": null,
+        "activation_decision_ref": null
+      },
+      {
+        "local_subject_id": "ac.repaired-preview",
+        "origin_decision_ref": null,
+        "activation_decision_ref": null
+      },
+      {
+        "local_subject_id": "ac.unresolved-gaps",
+        "origin_decision_ref": null,
+        "activation_decision_ref": null
+      },
+      {
+        "local_subject_id": "ac.approval-boundary",
+        "origin_decision_ref": null,
+        "activation_decision_ref": null
+      }
+    ],
+    "rule": "Resolve actual decision records. One decision may cover origin and activation only when its approved scope explicitly authorizes both."
+  },
+  "governed_publication_gate": {
+    "state": "not_implemented",
+    "may_publish": false,
+    "writer_authorization_verification": "operator_supplied_not_attested",
+    "required_checks": [
+      "immutable_packet_and_input_bindings",
+      "authentic_human_decision_scope",
+      "intent_lineage_and_approved_ingress",
+      "approved_canonical_transitions_and_exact_origin_targets",
+      "approved_workspace_allocation_and_topology",
+      "origin_activation_and_declaration_provenance_resolution",
+      "exact_writer_request_and_publication_authorization"
+    ],
+    "rule": "This consistency validator cannot authorize publication. Implement and verify the decision-to-request gate before automated materialization; current writer verifies structure and operator-supplied references only."
+  },
+  "review_blocker_codes": [
+    "intent_lineage_unresolved",
+    "ingress_decisions_pending",
+    "canonical_decisions_pending",
+    "workspace_allocation_pending",
+    "topology_selection_pending",
+    "provenance_bindings_pending",
+    "writer_request_pending",
+    "evidence_applicability_pending",
+    "governed_publication_gate_missing"
+  ],
+  "approval_scope_sha256": "29bb79bae19e096671aab6ababe34ff32c37002b9e3255b283d2001398c97fa6"
+}

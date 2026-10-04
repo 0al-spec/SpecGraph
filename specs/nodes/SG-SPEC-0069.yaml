@@ -2,7 +2,7 @@ id: SG-SPEC-0069
 title: SpecGraph - Standalone Subject Storage Preparation
 kind: spec
 created_at: '2026-10-02T13:30:00Z'
-updated_at: '2026-10-02T22:44:00Z'
+updated_at: '2026-10-03T07:00:00Z'
 status: specified
 authority_class: authored
 source_ref: docs/reviews/0221_subject_storage_decision.json
@@ -36,6 +36,10 @@ outputs:
 - tools/subject_source_write.py
 - tests/test_subject_source_write.py
 - docs/subject_source_write.md
+- docs/reviews/0221_canonical_materialization_packet.md
+- docs/reviews/0221_canonical_materialization_packet.json
+- tools/validate_materialization_packet.py
+- tests/test_materialization_packet.py
 allowed_paths:
 - specs/nodes/SG-SPEC-0069.yaml
 - tools/subject_canonical_source.py
@@ -51,6 +55,14 @@ allowed_paths:
 - tools/subject_source_write.py
 - tests/test_subject_source_write.py
 - docs/subject_source_write.md
+- docs/reviews/0221_canonical_materialization_packet.md
+- docs/reviews/0221_canonical_materialization_packet.json
+- tools/validate_materialization_packet.py
+- tests/test_materialization_packet.py
+- .github/workflows/python-ci.yml
+- Makefile
+- CONTRIBUTING.md
+- tools/review_feedback_records.json
 acceptance:
 - Defines a versioned workspace declaration and standalone Requirement and criterion record layout without
   creating a new seed kind or duplicate embedded Requirements.
@@ -72,10 +84,13 @@ acceptance_evidence:
     no full runtime conformance is claimed.
 - criterion: Defines review-only candidate envelopes and explicit canonical materialization prerequisites
     without treating preparation or historical tests as adoption.
-  evidence: 'Authored contract only: specification.candidate_contract and materialization_prerequisites
-    distinguish prepared files from canonical records, retain the pilot mapping and require genuine decision
-    provenance. Concrete examples are in docs/reviews/0221_subject_storage/. Their revision provenance
-    and disposition are deliberately unfilled.'
+  evidence: 'Approved authored storage contract plus review-only materialization packet: docs/reviews/0221_canonical_materialization_packet.json
+    prepares the six subject origins and required SG-SPEC-0051 proposal-ingress/canonical transitions
+    with all decision fields pending. tools/validate_materialization_packet.py and mutation regressions
+    check the exact pending scope, all candidate/input digests, paired transitions and explicit unresolved
+    Intent/topology/provenance blockers. Consistency is not approval verification; the governed publication
+    gate remains unimplemented. It does not authorize canonical materialization; ready_for_materialization
+    remains false.'
 prompt: Maintain the human-approved SG-SPEC-0069 version-1 physical contract and exact 3 plus 1 mapping.
   Implement and verify the bounded read-only source adapter, then a validating origin/content-revision
   writer. Canonical materialization and evidence applicability need separate decisions. Preserve frozen

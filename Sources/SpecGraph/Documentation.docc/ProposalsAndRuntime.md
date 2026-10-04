@@ -366,3 +366,36 @@ Writer diagnostics distinguish malformed expected commit IDs (`invalid_input`,
 exit 2) from deleted selected refs (`source_conflict`, exit 3), including deletion
 at the CAS boundary. PR #758 regression fixtures prevent both classification gaps;
 see the review prevention section in `docs/subject_source_write.md`.
+
+## RFC 0221 canonical materialization review packet
+
+`docs/reviews/0221_canonical_materialization_packet.json` is a digest-bound,
+review-only `rfc0221_canonical_materialization_packet` with
+`gate_state: review_pending`. It maps two Requirement
+and four criterion SpecDraft candidates to six proposed canonical origins and
+lists the twelve required `proposal -> spec_draft` and
+`spec_draft -> canonical_artifact` review transitions under SG-SPEC-0051.
+Every decision field remains pending; the packet is not a writer request or
+publication authorization. `canonical_mutations_allowed: false` and
+`ready_for_materialization: false` remain in force. The workspace declaration,
+source-ref initialization, identity allocation and destination evidence links
+also need their own genuine provenance. See
+`docs/reviews/0221_canonical_materialization_packet.md` for the decision sequence.
+
+Its exact `approval_scope_sha256` is
+`29bb79bae19e096671aab6ababe34ff32c37002b9e3255b283d2001398c97fa6`.
+After approval keep the packet immutable and store actual decisions in a
+separate artifact binding packet path, raw-file digest, scope digest and reviewed
+head; a changed scope requires a new packet version and new approval.
+Intent lineage remains unresolved for all six ingresses and explicitly blocks
+SG-SPEC-0051 advancement. Dataset/topology selection and origin, activation and
+declaration provenance also need actual decisions covering those effects.
+
+`make materialization-packet-check` checks all seven candidate inputs, proposal
+and prior-decision bytes, pinned historical contract bytes, exact revision-1
+targets, the 3 + 1 membership and twelve pending transition templates. CI runs
+it with mutation regressions. Success proves a consistent pending snapshot only.
+The writer still reports `operator_supplied_not_attested`; a governed
+decision-to-request publication gate is not implemented and remains a blocker
+before automated materialization. Merge, digest consistency and structurally
+valid storage do not supply human decision provenance or permission to publish.

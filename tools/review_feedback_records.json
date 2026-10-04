@@ -959,5 +959,53 @@
     ],
     "residual_risk": "Contract preparation only. Native/exchange fixtures, activation and writer enforcement are separate work; documentation gates do not execute these scenarios or establish trusted evidence. GitHub thread state must be checked separately.",
     "recorded_at": "2026-10-02T16:40:42Z"
+  },
+  {
+    "feedback_id": "pr-760-intent-lineage",
+    "source_pr": 760,
+    "source_thread_url": "https://github.com/0al-spec/SpecGraph/pull/760#discussion_r4172120359",
+    "reviewer": "chatgpt-codex-connector",
+    "review_comment_summary": "Ingress templates omitted mandatory motivating Intent lineage.",
+    "fix_summary": "Added unresolved lineage fields and blockers; forbids guessed lineage and in-place template approval.",
+    "root_cause_class": "artifact_contract_validation_gap",
+    "prevention_action": "regression_test_added",
+    "verification": [
+      "targeted_test",
+      "lint_or_format_check"
+    ],
+    "residual_risk": "Intent lineage is unresolved and genuine decisions are absent. Governed decision-to-request gate remains unimplemented; no materialization is authorized.",
+    "recorded_at": "2026-10-03T11:43:00Z"
+  },
+  {
+    "feedback_id": "pr-760-docc-scope",
+    "source_pr": 760,
+    "source_thread_url": "https://github.com/0al-spec/SpecGraph/pull/760#discussion_r4172120362",
+    "reviewer": "chatgpt-codex-connector",
+    "review_comment_summary": "Generic DocC term matching did not bind this packet digest.",
+    "fix_summary": "Published exact revised scope digest in DocC and require it in the sync contract and focused regression.",
+    "root_cause_class": "artifact_contract_validation_gap",
+    "prevention_action": "regression_test_added",
+    "verification": [
+      "targeted_test",
+      "lint_or_format_check"
+    ],
+    "residual_risk": "Intent lineage is unresolved and genuine decisions are absent. Governed decision-to-request gate remains unimplemented; no materialization is authorized.",
+    "recorded_at": "2026-10-03T11:43:00Z"
+  },
+  {
+    "feedback_id": "pr-760-packet-integrity",
+    "source_pr": 760,
+    "source_thread_url": "https://github.com/0al-spec/SpecGraph/pull/760#discussion_r4172120366",
+    "reviewer": "chatgpt-codex-connector",
+    "review_comment_summary": "CI checked surface markers without recomputing packet and input hashes.",
+    "fix_summary": "Added a CI validator and mutation tests covering complete inputs, paired transitions and pending authority boundaries.",
+    "root_cause_class": "artifact_contract_validation_gap",
+    "prevention_action": "regression_test_added",
+    "verification": [
+      "targeted_test",
+      "lint_or_format_check"
+    ],
+    "residual_risk": "Intent lineage is unresolved and genuine decisions are absent. Governed decision-to-request gate remains unimplemented; no materialization is authorized.",
+    "recorded_at": "2026-10-03T11:43:00Z"
   }
 ]
