@@ -56,6 +56,7 @@ def adapter(tmp_path: Path):
     output.mkdir()
     report = {
         "artifact_kind": "rule_reuse_report",
+        "schema_version": 1,
         "status": "complete",
         "before_reimplementations": 0,
         "after_reimplementations": 1,
@@ -67,8 +68,10 @@ def adapter(tmp_path: Path):
     }
     (output / "fixture.json").write_text(json.dumps(report), encoding="utf-8")
 
-    def run(base: str, head: str, *, status="complete", exit_code="0"):
+    def run(base: str, head: str, *, status="complete", exit_code="0", stale=False):
         report["status"] = status
+        report["base_revision"] = base
+        report["head_revision"] = "stale-head" if stale else head
         (output / "fixture.json").write_text(json.dumps(report), encoding="utf-8")
         return subprocess.run(
             ["bash", str(SCRIPT), str(root), str(analyzer), base, head, str(output)],
@@ -128,4 +131,12 @@ def test_bootstrap_incomplete_evidence_is_not_success(adapter):
     base = commit(root)
     catalog.write_text("head\n", encoding="utf-8")
     assert run(base, commit(root), status="incomplete").returncode != 0
+    assert not (output / "summary.md").exists()
+
+
+def test_complete_report_for_other_revisions_is_rejected(adapter):
+    root, catalog, output, run = adapter
+    base = commit(root)
+    catalog.write_text("head\n", encoding="utf-8")
+    assert run(base, commit(root), stale=True).returncode != 0
     assert not (output / "summary.md").exists()

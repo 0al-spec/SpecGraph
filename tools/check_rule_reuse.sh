@@ -32,7 +32,10 @@ set -- check-rule-reuse "$root" \
 if [[ "$strict" == yes ]]; then set -- "$@" --strict; fi
 "$analyzer" "$@"
 # Bootstrap is not enforcement, but unavailable/invalid evidence still fails.
-jq -e '.artifact_kind == "rule_reuse_report" and .status == "complete"' "$output/report.json" >/dev/null
+jq -e --arg base "$base" --arg head "$head" '
+  .artifact_kind == "rule_reuse_report" and .schema_version == 1
+  and .status == "complete" and .base_revision == $base and .head_revision == $head
+' "$output/report.json" >/dev/null
 jq --arg mode "$mode" -r '
   "## Registered rule reuse (" + $mode + ")",
   "Changed-file procedural copies: \(.before_reimplementations) → \(.after_reimplementations)",

@@ -24,7 +24,7 @@ under the base catalog, even when the head updates its own digest.
 For first-time activation, the base has no catalog. The job validates and reports
 using the head catalog, labels its mode **bootstrap**, and does not enforce new
 copy counts. After the catalog lands in the base, mode **enforcing** passes
-`--strict`. Bootstrap still rejects incomplete/missing evidence. An artifact's
+`--strict`. Bootstrap still rejects incomplete/missing evidence and reports for other base/head revisions. An artifact's
 presence alone does not establish readiness.
 
 ## What blocks

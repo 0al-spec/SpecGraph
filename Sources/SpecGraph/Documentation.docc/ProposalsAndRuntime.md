@@ -488,7 +488,8 @@ with `tools/rule_reuse_catalog.toml` for the reviewed workspace allocation rule.
 It uses the PR base catalog and a pinned SpecificationMetrics commit. First-time
 activation is explicitly **bootstrap** and report-only; after the catalog lands
 in the base, mode **enforcing** blocks `new_reimplementations > 0`, incomplete
-parsing and stale canonical digests. Deleting the head catalog fails. Catalog
+parsing and stale canonical digests. Report readiness and exact base/head revisions
+are checked even in bootstrap. Deleting the head catalog fails. Catalog
 migrations need explicit review. Existing publication diagnostics retain
 `merge_gate_enabled: false`; their informational classification is unchanged.
 
