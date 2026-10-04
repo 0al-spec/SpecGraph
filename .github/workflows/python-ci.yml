@@ -32,7 +32,7 @@ jobs:
         uses: actions/checkout@v6
         with:
           repository: SoundBlaster/SpecificationMetrics
-          ref: 797dc648e62a14a208cf058af32a996de44cdc91
+          ref: 13d972babae3c98f64fe7e1c71fa576e2f9aa60a
           path: .rule-reuse-analyzer
           persist-credentials: false
 

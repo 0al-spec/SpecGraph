@@ -530,10 +530,19 @@ The second catalog rule binds `REVIEWED_RECORD_SPEC` and its full-record
 extraction: the original partial-field checks were strengthened in `06efdb7e`.
 Only record binders may be renamed; ordinary hash equality is a negative control.
 Additional enforcing cases accept aliased Specification reuse, reject a full
-record procedural copy, and record the historical partial-field check as a
-known detection gap. The short digest policy lacks the three shared features
-required by the current near-match matcher. `coverage_gaps` in the separate
-smoke summary records this limitation; success does not approve partial checks.
+record procedural copy, and identify the historical partial-field check through an explicit
+`review_templates` entry. It produces a non-blocking near match with
+`match_basis: review_template` and the pattern ID, not an equivalent-copy finding.
+The short digest policy still lacks the three shared features required by the
+generic overlap heuristic. Only this registered structural partial pattern is
+covered; `coverage_limits` in the separate smoke summary records that restriction.
+Success and warnings do not approve partial checks. Exact copies take precedence
+and cannot be downgraded by a review template.
 All fixture bytes are loaded from the recorded Git revision, including in dirty
 checkouts. Stronger policies must not register weaker historical checks as exact
 blocking equivalents; distinguish missing detection from negative controls.
+
+Known non-equivalent partial predicates belong in reviewed `review_templates`
+with source evidence; preserve exact-copy precedence, non-blocking warning
+semantics and explicit match basis rather than globally lowering similarity
+thresholds.
