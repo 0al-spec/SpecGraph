@@ -70,6 +70,30 @@ complete reviewed record is reused for subjects and workspace declarations.
 Zeros apply only to this scope and proposed family assignments. They do not
 prove absence of equivalent rules or boundary problems elsewhere.
 
+The workspace-allocation extraction keeps `publication.site.069` and its
+semantic family ID while changing that family's canonical definition from the
+inline guard to `subject_publication.workspace_allocation` in
+`tools/subject_workspace_allocation_spec.py`. Its caller and architectural
+location stay in `_verify_publication`. Against PR #762's 49-inline baseline,
+the new complete snapshot should show that one violation ID removed and no
+replacement boundary or duplicate-definition violation. This targeted change
+predicts 48 inline policies; it does not alter the other scope totals or
+reclassify any site.
+
+The measured post-extraction worktree snapshot is complete at 75/75 sites.
+Inline policies (48) remain, all resolved in the versioned proposed profile.
+
+| Diagnostic | Current count |
+| --- | ---: |
+| Inline policies | 48 |
+| Duplicate policy definitions | 0 |
+| Policy boundary violations | 0 |
+
+Against PR #762, the violation-ID diff removes only
+`inline:publication.site.069` and adds none. The classification contract change
+is explicit in the report because the family now points to its canonical
+Specification definition.
+
 ## Run and compare
 
 ```bash
@@ -98,9 +122,11 @@ The Python CI publishes a run-local JSON artifact named
 `merge_gate_enabled: false` is explicit. No new PR comment or canonical record is
 created. Existing tests and quality gates retain their roles.
 
-Next bounded refactor: extract the workspace allocation rule into its own typed
-Specification, preserve its behavioral tests, update its existing family/site
-bindings and measure removal of that inline violation. Only after validating
-classification on changes should a separately approved policy gate be considered.
-System One models may later suggest annotations for human review; they are not
-an authority for blocking merge in this pilot.
+Next bounded refactor candidate: characterize `publication.site.071`, the
+authorization check for the reviewed dataset/topology selection, then extract
+its typed comparison into a dedicated Specification. Keep topology parsing in
+the adapter and preserve malformed-input behavior. Compare its site-level
+violation and the full diagnostic snapshot before and after the change. Only
+after validating classification on changes should a separately approved policy
+gate be considered. System One models may later suggest annotations for human
+review; they are not an authority for blocking merge in this pilot.

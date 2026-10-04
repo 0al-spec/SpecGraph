@@ -155,7 +155,7 @@ stub for this new seam; it makes no governance claim.
 
 ## SpecificationCore policy boundary
 
-The gate uses three named SpecificationCore policies, each in its own source
+The gate uses four named SpecificationCore policies, each in its own source
 module, with immutable facts in `tools/subject_publication_context.py`:
 
 - `subject_publication.complete_reviewed_record` in
@@ -168,6 +168,17 @@ Specifications only evaluate those facts; they do not read, write or grant
 permission themselves. The gate enforces their outcomes before candidate
 creation. Policy tests use `TraceRecorder` to verify stable semantic names;
 normal CLI output and publication-result fields remain unchanged.
+
+- `subject_publication.workspace_allocation` in
+  `tools/subject_workspace_allocation_spec.py` binds allocation to the exact
+  workspace identity, source ref, expected commit, literal-`True` authorization
+  flags and declaration digest supplied by the request.
+
+The request adapter prepares these immutable facts in
+`WorkspaceAllocationContext`. The Specification returns only a Boolean; the
+existing caller retains the governance error message and checks the reviewed
+declaration before publication. Workspace allocation remains conditional on a
+workspace declaration being present.
 
 Missing, unreadable, malformed or inconsistent governance selections all produce
 `governance_blocked`/4. Malformed request input remains `invalid_input`/2.

@@ -28,6 +28,7 @@ inputs:
 - docs/reviews/0221_requirement_mapping_review.json
 - docs/reviews/0221_subject_storage_decision.json
 outputs:
+- tools/subject_workspace_allocation_spec.py
 - specs/nodes/SG-SPEC-0069.yaml
 - tools/subject_canonical_source.py
 - tests/test_subject_canonical_source.py
@@ -53,6 +54,7 @@ outputs:
 - tests/test_publication_policy_diagnostics.py
 - docs/publication_policy_diagnostics.md
 allowed_paths:
+- tools/subject_workspace_allocation_spec.py
 - specs/nodes/SG-SPEC-0069.yaml
 - tools/subject_canonical_source.py
 - tools/subject_read_model.py

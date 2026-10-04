@@ -1,5 +1,6 @@
 """Immutable facts for publication policies; parsing and Git I/O stay in adapters."""
 
+from collections.abc import Mapping
 from dataclasses import dataclass
 
 
@@ -25,3 +26,12 @@ class TransitionApprovalContext:
     review_timestamp: str
     rationale: str
     review_rationale: str
+
+
+@dataclass(frozen=True)
+class WorkspaceAllocationContext:
+    allocation: Mapping[str, object]
+    requested_workspace_identity: str
+    requested_source_ref: str
+    requested_expected_commit: str
+    requested_declaration_sha256: str

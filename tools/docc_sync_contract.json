@@ -820,7 +820,8 @@
         "no post-review substitutions",
         "subject_publication.complete_reviewed_record",
         "subject_publication.human_approval",
-        "subject_publication.reviewed_transition"
+        "subject_publication.reviewed_transition",
+        "subject_publication.workspace_allocation"
       ]
     },
     {
@@ -838,7 +839,8 @@
         "Duplicate policy definitions",
         "Policy boundary violations",
         "counts: null",
-        "merge_gate_enabled: false"
+        "merge_gate_enabled: false",
+        "Inline policies (48)"
       ]
     },
     {

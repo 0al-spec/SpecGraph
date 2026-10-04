@@ -23,11 +23,13 @@ from subject_publication_context import (
     HumanApprovalContext,
     ReviewedRecordContext,
     TransitionApprovalContext,
+    WorkspaceAllocationContext,
 )
 from subject_read_model_io import SubjectDocumentError, _object
 from subject_reviewed_record_spec import REVIEWED_RECORD_SPEC
 from subject_source_git import git_command, require_commit_id
 from subject_transition_approval_spec import TRANSITION_APPROVAL_SPEC
+from subject_workspace_allocation_spec import WORKSPACE_ALLOCATION_SPEC
 
 
 class PublicationGovernanceError(SubjectDocumentError):
@@ -497,13 +499,17 @@ def _verify_publication(
             snapshot, decisions, evidence, declaration["provenance"], "workspace_allocation"
         )
         require(
-            allocation["workspace_identity"] == request.topology.workspace_identity
-            and allocation["source_ref"] == request.source_ref
-            and allocation["expected_commit"] == request.expected_commit
-            and allocation["identity_allocation_authorized"] is True
-            and allocation["source_ref_initialization_authorized"] is True
-            and allocation["declaration_sha256"]
-            == hashlib.sha256(request.workspace_declaration_yaml.encode()).hexdigest(),
+            WORKSPACE_ALLOCATION_SPEC.is_satisfied_by(
+                WorkspaceAllocationContext(
+                    allocation=allocation,
+                    requested_workspace_identity=request.topology.workspace_identity,
+                    requested_source_ref=request.source_ref,
+                    requested_expected_commit=request.expected_commit,
+                    requested_declaration_sha256=hashlib.sha256(
+                        request.workspace_declaration_yaml.encode()
+                    ).hexdigest(),
+                )
+            ),
             "workspace allocation covers a different bootstrap",
         )
         reviewed_declaration = _input(packet, reviewed, workspace["proposed_declaration"])

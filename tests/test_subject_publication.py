@@ -413,6 +413,23 @@ def test_workspace_allocation_requires_each_scope_binding(governed, monkeypatch,
 
 
 @pytest.mark.parametrize("governed", [True], indirect=True, ids=["bootstrap_origins"])
+def test_workspace_mismatch_precedes_missing_later_allocation_field(governed):
+    root, request, authorization, _, decisions, author = governed
+    if request.workspace_declaration_yaml is None:
+        pytest.skip("bootstrap-only decisions")
+    allocation = next(e for e in decisions["effects"] if e["effect"] == "workspace_allocation")
+    allocation["workspace_identity"] = "another-workspace"
+    allocation.pop("declaration_sha256")
+    author.approve(allocation)
+    evidence = author.save(decisions)
+
+    with pytest.raises(
+        PublicationGovernanceError, match="workspace allocation covers a different bootstrap"
+    ):
+        write_subject_source(root, request, authorization=authorization, governance=evidence)
+
+
+@pytest.mark.parametrize("governed", [True], indirect=True, ids=["bootstrap_origins"])
 @pytest.mark.parametrize(
     "field", ["identity_allocation_authorized", "source_ref_initialization_authorized"]
 )
