@@ -100,3 +100,42 @@ candidate and registered declaration. Local optional Jev classification uses
 `same_rule / different_rule / needs_review`, with model/prompt/input provenance.
 It requires explicit hosted-source opt-in. CI makes no Jev calls and needs no
 API key. A semantic suggestion never changes the blocking count.
+
+
+## Enforcing CI smoke
+
+Before analyzing the PR, `tools/rule_reuse_ci_smoke.py` exercises the pinned
+analyzer against committed, isolated Git fixtures in **enforcing** mode. It
+copies the selected committed Python snapshot and reviewed catalog without
+executing application source. The intentional historical copy lives only in
+`tests/fixtures/rule_reuse/workspace_allocation_copy.py` and a temporary fixture
+repository, never production tooling.
+
+Three cases are required:
+
+| Case | New exact | New near | Expected exit |
+| --- | ---: | ---: | --- |
+| clean | 0 | 0 | success |
+| exact_copy | 1 | 0 | failure from the registered-copy gate |
+| changed_authority | 0 | 1 | success; review suggestion |
+
+A nonzero exit alone is insufficient proof of a blocked copy: reports must be
+complete, bind the exact fixture revisions and identify the registered rule.
+The smoke summary starts `incomplete` and becomes `complete` only after all cases
+pass. Unexpected failures fail the CI job; expected rejection of the exact copy
+is a passing smoke case. No Jev calls or keys are used.
+
+CI uploads fixture evidence separately as `registered-rule-reuse-smoke`.
+Its `summary.json` has `production_metrics: false`; these counts must not enter
+production metric history. The ordinary `registered-rule-reuse` artifact remains
+the authoritative PR comparison with no fixture reports mixed into it.
+
+```bash
+python tools/rule_reuse_ci_smoke.py --root /path/to/SpecGraph \
+  --analyzer /path/to/specification-metrics --output /tmp/new-unique-smoke-directory
+```
+
+The output directory must be new. Keep `execution.json`, reports, selected
+catalogs and SQLite evidence scoped to that run. Expanding the registered catalog
+requires reviewing smoke coverage and the expected outcomes, not silently
+relaxing its assertions.

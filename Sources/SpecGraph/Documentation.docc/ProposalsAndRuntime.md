@@ -514,3 +514,13 @@ the merge revision. Independently validating the future head catalog with a
 head-to-head comparison prevents malformed catalogs from poisoning subsequent
 PRs. This validation retains `head-catalog-validation.json` and does not weaken
 the authoritative base-catalog comparison. See `docs/registered_rule_reuse.md`.
+
+
+The pinned analyzer also runs `tools/rule_reuse_ci_smoke.py` with three isolated
+**enforcing** cases: clean passes, exact_copy has one new registered copy and is
+rejected, changed_authority has one review-only near match and passes. Complete
+reports and correct fixture revisions are required; arbitrary parser failures do
+not prove enforcement. The separate `registered-rule-reuse-smoke` artifact has
+`production_metrics: false` and never contributes to production counts. Only an
+all-passed smoke summary becomes complete. The original production PR artifact
+remains separate. See `docs/registered_rule_reuse.md` for invocation and evidence.
