@@ -1,0 +1,37 @@
+{
+  "schema_version": 1,
+  "artifact_kind": "native_bdd_loader_post_implementation_observation",
+  "proposal_id": "0223",
+  "spec_id": "SG-SPEC-0070",
+  "observed_at": "2026-10-03T07:37:38Z",
+  "loader_test_passes": 35,
+  "compatibility_test_passes": 75,
+  "loader_test_total": 110,
+  "observation_scope": "Local deterministic validation of the standalone native BDD loader and proposal runtime index on the PR #759 working tree.",
+  "commands": [
+    {
+      "command": "make test-native-bdd-loader PYTHON=/Users/egor/Development/GitHub/0AL/SpecGraph/.venv/bin/python",
+      "result": "passed",
+      "passed": 110,
+      "strict_loader_cases": 35,
+      "compatibility_cases": 75
+    },
+    {
+      "command": "make proposal-runtime-index",
+      "result": "passed",
+      "proposal_runtime_index": "runs/proposal_runtime_index.json",
+      "generated_at": "2026-10-03T07:37:38.161159+00:00"
+    }
+  ],
+  "runtime_index_observation": {
+    "posture": "bounded_runtime_followup",
+    "runtime_realization": "partial",
+    "runtime_markers_satisfied": 8,
+    "runtime_markers_required": 9,
+    "validation_closure": "covered",
+    "observation_coverage": "covered",
+    "next_gap": "runtime_realization",
+    "remaining_runtime_marker": "tools/implementation_contract_pack.py: load_native_bdd("
+  },
+  "authority_boundary": "This observation records local validation only. It does not mutate canonical SpecGraph state, approve consumer integration, activate defaults, establish trusted evidence admission, or claim CI/device execution."
+}
