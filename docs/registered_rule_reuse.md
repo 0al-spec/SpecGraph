@@ -1,7 +1,8 @@
 # Registered Specification rule reuse
 
 The Python CI `registered-rule-reuse` job detects new procedural copies of the
-reviewed `subject_publication.workspace_allocation` rule with
+reviewed `subject_publication.workspace_allocation` and
+`subject_publication.complete_reviewed_record` rules with
 `check-rule-reuse` from SpecificationMetrics. This is separate from the
 informational publication policy classification and the primary S/U counters.
 
@@ -13,6 +14,20 @@ bounded context, the `tools/` source scope and the historical six-condition
 workspace binding predicate at PR #762's exact commit. Tests and examples outside
 `tools/` are not analyzed. A reviewed template is a narrow reuse contract;
 source field names alone do not establish semantic equivalence.
+
+The second rule binds `REVIEWED_RECORD_SPEC` in its separate canonical module
+and registers `scope_digest(reviewed_record) == scope_digest(requested_record)`.
+Only the two record identifiers may be renamed; `scope_digest` stays fixed.
+This template is a reviewed adapter-equivalent expansion of the existing
+Specification call, **not** a historical procedural implementation. The policy
+was introduced in commit `06efdb7ea0de52610211a72183d5866491e8b104` when earlier
+partial-field checks were strengthened; those older checks are not equivalent.
+The template source URL points to the full-record call and its adapter facts.
+The canonical attribute predicate is also indexed automatically. Ordinary
+comparisons such as `download_sha256 == cached_sha256` are not this rule.
+Static name matching does not resolve a shadowed `scope_digest` function or
+prove runtime identity; this reviewed scope remains `tools/`, not arbitrary
+project-wide digest comparisons.
 
 CI pins analyzer commit `797dc648e62a14a208cf058af32a996de44cdc91` and builds it
 with `cargo build --locked`. The adapter `tools/check_rule_reuse.sh` extracts the
@@ -107,17 +122,32 @@ API key. A semantic suggestion never changes the blocking count.
 Before analyzing the PR, `tools/rule_reuse_ci_smoke.py` exercises the pinned
 analyzer against committed, isolated Git fixtures in **enforcing** mode. It
 copies the selected committed Python snapshot and reviewed catalog without
-executing application source. The intentional historical copy lives only in
-`tests/fixtures/rule_reuse/workspace_allocation_copy.py` and a temporary fixture
-repository, never production tooling.
+executing application source. Fixture bytes, including the historical workspace copy and the adapter-equivalent
+full-record copy, come from that same recorded Git revision. They live under
+`tests/fixtures/rule_reuse/` and in a temporary fixture repository, never
+production tooling.
 
-Three cases are required:
+Seven cases are required:
 
-| Case | New exact | New near | Expected exit |
-| --- | ---: | ---: | --- |
-| clean | 0 | 0 | success |
-| exact_copy | 1 | 0 | failure from the registered-copy gate |
-| changed_authority | 0 | 1 | success; review suggestion |
+| Case | New exact | New near | Static reuse | Expected exit |
+| --- | ---: | ---: | ---: | --- |
+| clean | 0 | 0 | 0 | success |
+| exact_copy | 1 | 0 | 0 | failure from the registered-copy gate |
+| changed_authority | 0 | 1 | 0 | success; review suggestion |
+| reviewed_record_reuse | 0 | 0 | 1 | success; aliased explicit import |
+| reviewed_record_exact | 1 | 0 | 0 | failure from the registered-copy gate |
+| reviewed_record_partial_gap | 0 | 0 | 0 | success; known detection gap |
+| unrelated_digest | 0 | 0 | 0 | success; negative control |
+
+The partial fixture preserves the old content/membership conjuncts from
+`8bd61fb772141a7e7005429a275c0c161fd7c59d`, omitting source-target bindings.
+It does not verify the complete record and is **not** an approved alternative.
+The current near-match heuristic requires at least three shared attribute/string
+features; the short digest policy does not meet that threshold. This case records
+an undetected gap in `summary.json`'s `coverage_gaps`, rather than claiming a
+review warning was produced. A passing smoke means the declared analyzer
+contract was exercised, not that partial checks are safe. Semantic coverage
+requires a separate analyzer improvement/evaluation; CI still makes no LLM calls.
 
 A nonzero exit alone is insufficient proof of a blocked copy: reports must be
 complete, bind the exact fixture revisions and identify the registered rule.
