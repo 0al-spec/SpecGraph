@@ -371,7 +371,7 @@
       "path": "tools/subject_workspace_allocation_spec.py",
       "symbol": "WORKSPACE_ALLOCATION_SPEC",
       "family_id": "publication.rule.069",
-      "predicate_sha256": "378d027e6cc61378f163abe3ebce60df71f93012642f65adf6274d35008bf001"
+      "predicate_sha256": "bcaf13eddd29111ffc71eeac41db849f509a560016fc026080439e1a9ae6ca05"
     }
   ],
   "sites": [
@@ -1242,7 +1242,7 @@
       "path": "tools/subject_publication.py",
       "kind": "require",
       "label": "workspace allocation covers a different bootstrap",
-      "predicate_sha256": "ccfc977da04d6a5f8e74a444e047bb9850cf6b76db06ad966e60750ebea0999d",
+      "predicate_sha256": "2157997a7f3e776f0b91c7c920c26d8dbf856d81a65ca8be0c39afd63996ee86",
       "category": "policy",
       "rationale": "Governed invariant: workspace allocation covers a different bootstrap. Changing it changes admitted publication/evidence scope.",
       "allowed_locations": [
