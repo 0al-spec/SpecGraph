@@ -800,6 +800,24 @@
         "ready_for_materialization",
         "29bb79bae19e096671aab6ababe34ff32c37002b9e3255b283d2001398c97fa6"
       ]
+    },
+    {
+      "id": "native-bdd-adoption-loader",
+      "docs": [
+        "docs/reviews/0223_native_bdd_contract_adoption.md"
+      ],
+      "docc": [
+        "Sources/SpecGraph/Documentation.docc/BDDScenarioContract.md"
+      ],
+      "required_terms": [
+        "SG-SPEC-0070",
+        "load_native_bdd",
+        "34",
+        "75",
+        "defaults",
+        "Gherkin",
+        "runtime_realization"
+      ]
     }
   ]
 }
