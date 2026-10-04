@@ -758,7 +758,7 @@
         "git_commit_compare_and_swap_v1",
         "request_sha256",
         "refs/specgraph/subject-storage/",
-        "operator_supplied_not_attested",
+        "scope_bound_recorded_decisions_verified_not_attested",
         "source_ref_updated",
         "ready_for_materialization"
       ]
@@ -799,6 +799,28 @@
         "spec_draft -> canonical_artifact",
         "ready_for_materialization",
         "29bb79bae19e096671aab6ababe34ff32c37002b9e3255b283d2001398c97fa6"
+      ]
+    },
+    {
+      "id": "rfc0221-governed-subject-publication",
+      "docs": [
+        "docs/subject_publication.md"
+      ],
+      "docc": [
+        "Sources/SpecGraph/Documentation.docc/ProposalsAndRuntime.md"
+      ],
+      "required_terms": [
+        "subject_publication_evidence",
+        "subject_publication_decisions",
+        "scope_bound_recorded_decisions_verified_not_attested",
+        "reviewer_identity_attested",
+        "governance_blocked",
+        "--governance",
+        "complete reviewed",
+        "no post-review substitutions",
+        "subject_publication.complete_reviewed_record",
+        "subject_publication.human_approval",
+        "subject_publication.reviewed_transition"
       ]
     },
     {

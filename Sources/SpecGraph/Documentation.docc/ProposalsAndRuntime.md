@@ -395,7 +395,44 @@ declaration provenance also need actual decisions covering those effects.
 and prior-decision bytes, pinned historical contract bytes, exact revision-1
 targets, the 3 + 1 membership and twelve pending transition templates. CI runs
 it with mutation regressions. Success proves a consistent pending snapshot only.
-The writer still reports `operator_supplied_not_attested`; a governed
-decision-to-request publication gate is not implemented and remains a blocker
-before automated materialization. Merge, digest consistency and structurally
-valid storage do not supply human decision provenance or permission to publish.
+At this packet's preparation time the writer reported `operator_supplied_not_attested`
+and its decision-to-request gate was absent. Those historical blockers are
+retained in the immutable packet. The gate implementation below does not
+approve its missing Intent lineage or pending decisions. Merge, digest
+consistency and valid storage do not supply permission to publish.
+
+## Governed subject publication
+
+`tools/subject_publication.py` supplies a mandatory decision gate before writer
+candidate creation and ref publication. `subject_publication_evidence` selects
+an explicit repository, immutable evidence commit and decision artifact. The
+gate resolves packet bytes at their reviewed head and scope-bound recorded
+human decisions. `subject_publication_decisions` must cover paired ingress and
+canonical transitions, reviewed Intent lineage, exact subject revisions,
+workspace allocation, activation, topology and the exact writer request.
+
+Publication requires `--governance`; missing or inconsistent evidence produces
+`governance_blocked` with exit code 4 and no ref update. Preview remains
+preparation. The result is
+`scope_bound_recorded_decisions_verified_not_attested` with
+`reviewer_identity_attested: false`: recorded attribution is verified against
+selected sources, while identity/signature attestation is outside version 1.
+Schema approval cannot authorize origins. Tests use synthetic decisions in
+temporary repositories. The old materialization packet still lacks Intent
+lineage and approval; see `docs/subject_publication.md` for the artifact
+contract, trust boundary and compatibility change.
+
+
+The gate binds the complete reviewed subject record and workspace declaration.
+Version 1 permits no post-review substitutions, including status, authority,
+provenance or containment changes. New candidates require a new reviewed packet.
+Malformed or unreadable governance selections also yield `governance_blocked`/4;
+malformed request input remains `invalid_input`/2.
+
+Three policies have separate modules and immutable typed contexts:
+`subject_publication.complete_reviewed_record` (reused for declarations),
+`subject_publication.human_approval` and `subject_publication.reviewed_transition`.
+Policy tests verify their stable trace names. Parsing, Git I/O and publication
+remain outside specifications. New decision-heavy tooling requires this
+SpecificationCore policy review beyond refactoring pilots; deliberate
+non-extraction belongs in the PR rationale.

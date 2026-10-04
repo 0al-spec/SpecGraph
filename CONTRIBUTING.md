@@ -23,6 +23,13 @@ This makes the policy boundary and its imports visible during review, and keeps
 new specifications from accumulating inside the business-logic module or a
 catch-all policy file.
 
+For new decision-heavy tooling, perform a SpecificationCore policy review,
+including work outside refactoring pilots. Name decisions about approval,
+authority, readiness and lifecycle, prepare immutable typed facts, and place
+stable policies in individual specification modules. Keep parsing, I/O and
+exception mechanics in adapters. Explain a deliberate non-extraction in the PR;
+raw S/U counts neither require converting every branch nor replace this review.
+
 ## Code Methodology and Style
 
 SpecGraph tooling should evolve by preserving observable contracts while moving
@@ -87,7 +94,11 @@ files. Pending decision fields, absent Intent lineage and missing topology
 decisions must remain explicit blockers. A consistency validator proves that a
 review snapshot agrees with its inputs; it does not authenticate approval or
 authorize a writer. The RFC 0221 prevention check is
-`make materialization-packet-check`; its publication gate remains separate.
+`make materialization-packet-check`. Publication additionally requires the
+mandatory [recorded-decision gate](docs/subject_publication.md) and an immutable
+evidence selection; preview does not grant permission. Record actual human
+decisions and their original sources, never synthetic fixture approvals in a
+production workspace. Successful scope verification does not attest identity.
 
 ## Local Python Environment
 
