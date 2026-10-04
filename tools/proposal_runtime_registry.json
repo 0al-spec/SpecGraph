@@ -12705,7 +12705,11 @@
       "tools/subject_reviewed_record_spec.py",
       "tools/subject_human_approval_spec.py",
       "tools/subject_transition_approval_spec.py",
-      "tests/test_subject_publication_specs.py"
+      "tests/test_subject_publication_specs.py",
+      "tools/publication_policy_diagnostics.py",
+      "tools/publication_policy_classification.json",
+      "tests/test_publication_policy_diagnostics.py",
+      "docs/publication_policy_diagnostics.md"
     ],
     "runtime_markers": [
       {

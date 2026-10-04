@@ -1,0 +1,1320 @@
+{
+  "artifact_kind": "publication_policy_classification",
+  "schema_version": 1,
+  "profile_id": "specgraph.publication_policy_diagnostics.v1",
+  "classification_status": "proposed",
+  "scope_note": "All require(...) guards and if dispatch sites in subject_publication.py; three registered PredicateSpec modules. This is a bounded proposed classification, not repository-wide semantic discovery or human approval.",
+  "modules": [
+    {
+      "path": "tools/subject_publication.py",
+      "inventory_guards": true
+    },
+    {
+      "path": "tools/subject_human_approval_spec.py",
+      "inventory_guards": false
+    },
+    {
+      "path": "tools/subject_reviewed_record_spec.py",
+      "inventory_guards": false
+    },
+    {
+      "path": "tools/subject_transition_approval_spec.py",
+      "inventory_guards": false
+    }
+  ],
+  "families": [
+    {
+      "id": "publication.rule.008",
+      "question": "evidence repository must be a real directory",
+      "canonical_definition": "inline:publication.site.008",
+      "allowed_definition_paths": []
+    },
+    {
+      "id": "publication.rule.009",
+      "question": "evidence selection must be a commit",
+      "canonical_definition": "inline:publication.site.009",
+      "allowed_definition_paths": []
+    },
+    {
+      "id": "publication.rule.010",
+      "question": "missing evidence: {}",
+      "canonical_definition": "inline:publication.site.010",
+      "allowed_definition_paths": []
+    },
+    {
+      "id": "publication.rule.011",
+      "question": "evidence must be a regular Git blob, never a symlink",
+      "canonical_definition": "inline:publication.site.011",
+      "allowed_definition_paths": []
+    },
+    {
+      "id": "publication.rule.018",
+      "question": "human review covers a different scope",
+      "canonical_definition": "inline:publication.site.018",
+      "allowed_definition_paths": []
+    },
+    {
+      "id": "publication.human_approval",
+      "question": "human approval required",
+      "canonical_definition": "spec:tools/subject_human_approval_spec.py:HUMAN_APPROVAL_SPEC",
+      "allowed_definition_paths": [
+        "tools/subject_human_approval_spec.py"
+      ]
+    },
+    {
+      "id": "publication.rule.023",
+      "question": "review attribution disagrees with its recorded source",
+      "canonical_definition": "inline:publication.site.023",
+      "allowed_definition_paths": []
+    },
+    {
+      "id": "publication.rule.024",
+      "question": "reviewed packet bytes changed",
+      "canonical_definition": "inline:publication.site.024",
+      "allowed_definition_paths": []
+    },
+    {
+      "id": "publication.rule.026",
+      "question": "approval does not bind the exact packet scope",
+      "canonical_definition": "inline:publication.site.026",
+      "allowed_definition_paths": []
+    },
+    {
+      "id": "publication.rule.027",
+      "question": "review packet must be immutable pending preparation",
+      "canonical_definition": "inline:publication.site.027",
+      "allowed_definition_paths": []
+    },
+    {
+      "id": "publication.rule.028",
+      "question": "review input changed: {}",
+      "canonical_definition": "inline:publication.site.028",
+      "allowed_definition_paths": []
+    },
+    {
+      "id": "publication.rule.030",
+      "question": "governing contract snapshot differs from reviewed scope",
+      "canonical_definition": "inline:publication.site.030",
+      "allowed_definition_paths": []
+    },
+    {
+      "id": "publication.rule.031",
+      "question": "evidence is outside the reviewed input inventory: {}",
+      "canonical_definition": "inline:publication.site.031",
+      "allowed_definition_paths": []
+    },
+    {
+      "id": "publication.rule.032",
+      "question": "motivating Intent lineage is unresolved",
+      "canonical_definition": "inline:publication.site.032",
+      "allowed_definition_paths": []
+    },
+    {
+      "id": "publication.rule.033",
+      "question": "missing authored Intent lineage",
+      "canonical_definition": "inline:publication.site.033",
+      "allowed_definition_paths": []
+    },
+    {
+      "id": "publication.rule.034",
+      "question": "lineage belongs to another proposal",
+      "canonical_definition": "inline:publication.site.034",
+      "allowed_definition_paths": []
+    },
+    {
+      "id": "publication.rule.035",
+      "question": "lineage binds another proposal revision",
+      "canonical_definition": "inline:publication.site.035",
+      "allowed_definition_paths": []
+    },
+    {
+      "id": "publication.rule.036",
+      "question": "lineage must resolve a substantive IntentDraft",
+      "canonical_definition": "inline:publication.site.036",
+      "allowed_definition_paths": []
+    },
+    {
+      "id": "publication.rule.037",
+      "question": "IntentDraft attribution is absent",
+      "canonical_definition": "inline:publication.site.037",
+      "allowed_definition_paths": []
+    },
+    {
+      "id": "publication.rule.038",
+      "question": "Intent source must retain human attribution and text",
+      "canonical_definition": "inline:publication.site.038",
+      "allowed_definition_paths": []
+    },
+    {
+      "id": "publication.rule.039",
+      "question": "incomplete paired transition inventory",
+      "canonical_definition": "inline:publication.site.039",
+      "allowed_definition_paths": []
+    },
+    {
+      "id": "publication.rule.040",
+      "question": "duplicate transition records",
+      "canonical_definition": "inline:publication.site.040",
+      "allowed_definition_paths": []
+    },
+    {
+      "id": "publication.rule.041",
+      "question": "duplicate transition identifiers",
+      "canonical_definition": "inline:publication.site.041",
+      "allowed_definition_paths": []
+    },
+    {
+      "id": "publication.rule.042",
+      "question": "transition decision differs from the reviewed template",
+      "canonical_definition": "inline:publication.site.042",
+      "allowed_definition_paths": []
+    },
+    {
+      "id": "publication.rule.043",
+      "question": "packet templates cannot be rewritten as decisions",
+      "canonical_definition": "inline:publication.site.043",
+      "allowed_definition_paths": []
+    },
+    {
+      "id": "publication.reviewed_transition",
+      "question": "incomplete or unapproved transition",
+      "canonical_definition": "spec:tools/subject_transition_approval_spec.py:TRANSITION_APPROVAL_SPEC",
+      "allowed_definition_paths": [
+        "tools/subject_transition_approval_spec.py"
+      ]
+    },
+    {
+      "id": "publication.rule.046",
+      "question": "decision cannot silently supply unreviewed Intent lineage",
+      "canonical_definition": "inline:publication.site.046",
+      "allowed_definition_paths": []
+    },
+    {
+      "id": "publication.rule.047",
+      "question": "unsupported promotion shortcut",
+      "canonical_definition": "inline:publication.site.047",
+      "allowed_definition_paths": []
+    },
+    {
+      "id": "publication.rule.048",
+      "question": "canonical decision changes the reviewed revision target",
+      "canonical_definition": "inline:publication.site.048",
+      "allowed_definition_paths": []
+    },
+    {
+      "id": "publication.rule.049",
+      "question": "provenance must resolve an effect in the selected decision artifact",
+      "canonical_definition": "inline:publication.site.049",
+      "allowed_definition_paths": []
+    },
+    {
+      "id": "publication.rule.050",
+      "question": "decision does not authorize {}",
+      "canonical_definition": "inline:publication.site.050",
+      "allowed_definition_paths": []
+    },
+    {
+      "id": "publication.rule.052",
+      "question": "effect belongs to another subject/revision",
+      "canonical_definition": "inline:publication.site.052",
+      "allowed_definition_paths": []
+    },
+    {
+      "id": "publication.rule.053",
+      "question": "resolved publication evidence required",
+      "canonical_definition": "inline:publication.site.053",
+      "allowed_definition_paths": []
+    },
+    {
+      "id": "publication.rule.054",
+      "question": "schema approval is not subject-publication permission",
+      "canonical_definition": "inline:publication.site.054",
+      "allowed_definition_paths": []
+    },
+    {
+      "id": "publication.rule.055",
+      "question": "packet approval binding mismatch",
+      "canonical_definition": "inline:publication.site.055",
+      "allowed_definition_paths": []
+    },
+    {
+      "id": "publication.rule.056",
+      "question": "workspace/source ref scope mismatch",
+      "canonical_definition": "inline:publication.site.056",
+      "allowed_definition_paths": []
+    },
+    {
+      "id": "publication.rule.057",
+      "question": "request subject inventory differs from reviewed scope",
+      "canonical_definition": "inline:publication.site.057",
+      "allowed_definition_paths": []
+    },
+    {
+      "id": "publication.rule.058",
+      "question": "request contains an unreviewed subject",
+      "canonical_definition": "inline:publication.site.058",
+      "allowed_definition_paths": []
+    },
+    {
+      "id": "publication.rule.059",
+      "question": "request revision differs from reviewed exact target",
+      "canonical_definition": "inline:publication.site.059",
+      "allowed_definition_paths": []
+    },
+    {
+      "id": "publication.rule.060",
+      "question": "request target differs from reviewed draft",
+      "canonical_definition": "inline:publication.site.060",
+      "allowed_definition_paths": []
+    },
+    {
+      "id": "publication.complete_reviewed_record",
+      "question": "request complete record differs from reviewed draft",
+      "canonical_definition": "spec:tools/subject_reviewed_record_spec.py:REVIEWED_RECORD_SPEC",
+      "allowed_definition_paths": [
+        "tools/subject_reviewed_record_spec.py"
+      ]
+    },
+    {
+      "id": "publication.rule.062",
+      "question": "missing unique approved ingress/canonical transition",
+      "canonical_definition": "inline:publication.site.062",
+      "allowed_definition_paths": []
+    },
+    {
+      "id": "publication.rule.063",
+      "question": "canonical transition lacks its approved ingress or exact target",
+      "canonical_definition": "inline:publication.site.063",
+      "allowed_definition_paths": []
+    },
+    {
+      "id": "publication.rule.064",
+      "question": "revision provenance does not authorize this canonical transition",
+      "canonical_definition": "inline:publication.site.064",
+      "allowed_definition_paths": []
+    },
+    {
+      "id": "publication.rule.066",
+      "question": "origin needs one activation",
+      "canonical_definition": "inline:publication.site.066",
+      "allowed_definition_paths": []
+    },
+    {
+      "id": "publication.rule.067",
+      "question": "unused or mismatched transition decisions",
+      "canonical_definition": "inline:publication.site.067",
+      "allowed_definition_paths": []
+    },
+    {
+      "id": "publication.rule.069",
+      "question": "workspace allocation covers a different bootstrap",
+      "canonical_definition": "inline:publication.site.069",
+      "allowed_definition_paths": []
+    },
+    {
+      "id": "publication.rule.071",
+      "question": "unapproved dataset/topology selection",
+      "canonical_definition": "inline:publication.site.071",
+      "allowed_definition_paths": []
+    },
+    {
+      "id": "publication.rule.072",
+      "question": "publication decision covers another exact request",
+      "canonical_definition": "inline:publication.site.072",
+      "allowed_definition_paths": []
+    },
+    {
+      "id": "publication.rule.073",
+      "question": "writer authorization differs from the actual publication decision",
+      "canonical_definition": "inline:publication.site.073",
+      "allowed_definition_paths": []
+    },
+    {
+      "id": "publication.rule.074",
+      "question": "publication effect-reference coverage mismatch",
+      "canonical_definition": "inline:publication.site.074",
+      "allowed_definition_paths": []
+    },
+    {
+      "id": "publication.rule.075",
+      "question": "unrequested effects in publication decisions",
+      "canonical_definition": "inline:publication.site.075",
+      "allowed_definition_paths": []
+    }
+  ],
+  "specifications": [
+    {
+      "path": "tools/subject_human_approval_spec.py",
+      "symbol": "HUMAN_APPROVAL_SPEC",
+      "family_id": "publication.human_approval",
+      "predicate_sha256": "be2eac93097bc359b3c31f2789fea152d816225048c20eaa7a6fceeb97b9e7ee"
+    },
+    {
+      "path": "tools/subject_transition_approval_spec.py",
+      "symbol": "TRANSITION_APPROVAL_SPEC",
+      "family_id": "publication.reviewed_transition",
+      "predicate_sha256": "c76082ef42a712ecc90152f2f87e104973ab2d5dfc6121da2556c8feea162f2c"
+    },
+    {
+      "path": "tools/subject_reviewed_record_spec.py",
+      "symbol": "REVIEWED_RECORD_SPEC",
+      "family_id": "publication.complete_reviewed_record",
+      "predicate_sha256": "19820fae72d9b9153b9f19715e5ce88b24defb9635baeb08d0381cda389f5269"
+    }
+  ],
+  "sites": [
+    {
+      "id": "publication.site.001",
+      "path": "tools/subject_publication.py",
+      "kind": "if",
+      "label": "TYPE_CHECKING",
+      "predicate_sha256": "885c93359c8358ed508e0e3c6e953e46a0d2867ee4bbb94da9bf52d952e5f968",
+      "category": "mechanics",
+      "rationale": "Adapt an optional value, recognize pointer container shape or enforce a previously computed result.",
+      "allowed_locations": [
+        "tools/subject_publication.py::<module>"
+      ]
+    },
+    {
+      "id": "publication.site.002",
+      "path": "tools/subject_publication.py",
+      "kind": "if",
+      "label": "not condition",
+      "predicate_sha256": "02b7b75d1239877248a5824041feee5e55c53047f5f01974c175658e3b2ce75b",
+      "category": "mechanics",
+      "rationale": "Adapt an optional value, recognize pointer container shape or enforce a previously computed result.",
+      "allowed_locations": [
+        "tools/subject_publication.py::require"
+      ]
+    },
+    {
+      "id": "publication.site.003",
+      "path": "tools/subject_publication.py",
+      "kind": "require",
+      "label": "evidence repository must be explicit",
+      "predicate_sha256": "1c1bc0f89fb2848da1611a2978054a07892d781626acaac97bedc717ba906cf0",
+      "category": "mechanics",
+      "rationale": "Validate the DTO path type before adapting filesystem input.",
+      "allowed_locations": [
+        "tools/subject_publication.py::SubjectPublicationEvidence.__post_init__"
+      ]
+    },
+    {
+      "id": "publication.site.004",
+      "path": "tools/subject_publication.py",
+      "kind": "require",
+      "label": "unsupported evidence version",
+      "predicate_sha256": "9d7790eff387fab0d617a02ab35d89ae799507e795e578ada4d91a34fcf0b14a",
+      "category": "mechanics",
+      "rationale": "Recognize the supported exchange schema version.",
+      "allowed_locations": [
+        "tools/subject_publication.py::parse_publication_evidence"
+      ]
+    },
+    {
+      "id": "publication.site.005",
+      "path": "tools/subject_publication.py",
+      "kind": "require",
+      "label": "wrong evidence kind",
+      "predicate_sha256": "c8519ccc8acf4b4c56b342438b58d1a55f36a922ce53f88cc5d37d62eb7bfadf",
+      "category": "mechanics",
+      "rationale": "Recognize the evidence-selection exchange shape.",
+      "allowed_locations": [
+        "tools/subject_publication.py::parse_publication_evidence"
+      ]
+    },
+    {
+      "id": "publication.site.006",
+      "path": "tools/subject_publication.py",
+      "kind": "require",
+      "label": "missing repository-relative evidence path",
+      "predicate_sha256": "5eb90ae99e8a6fd1527457d71cfef50c5d7d78154175d1c8899174f3f67fe669",
+      "category": "mechanics",
+      "rationale": "Parse a nonempty path value.",
+      "allowed_locations": [
+        "tools/subject_publication.py::_path"
+      ]
+    },
+    {
+      "id": "publication.site.007",
+      "path": "tools/subject_publication.py",
+      "kind": "require",
+      "label": "evidence path must be canonical and repository-relative",
+      "predicate_sha256": "a68b15df4e9db4ce2285993360c6637f998639a13876774cebd838ea6e3a3667",
+      "category": "mechanics",
+      "rationale": "Reject malformed repository-relative path syntax at the adapter.",
+      "allowed_locations": [
+        "tools/subject_publication.py::_path"
+      ]
+    },
+    {
+      "id": "publication.site.008",
+      "path": "tools/subject_publication.py",
+      "kind": "require",
+      "label": "evidence repository must be a real directory",
+      "predicate_sha256": "9611daf1859fc8825fcb0d904c245ef01ba606b7ce50f4f416924c675e0bbd01",
+      "category": "policy",
+      "rationale": "Governed invariant: evidence repository must be a real directory. Changing it changes admitted publication/evidence scope.",
+      "allowed_locations": [
+        "tools/subject_publication.py::DecisionSnapshot.read"
+      ],
+      "family_id": "publication.rule.008"
+    },
+    {
+      "id": "publication.site.009",
+      "path": "tools/subject_publication.py",
+      "kind": "require",
+      "label": "evidence selection must be a commit",
+      "predicate_sha256": "4a0795d6e9557ec0ff7f6393345e6b4b5ea37ffdf704f1d4c07b3893cae65d56",
+      "category": "policy",
+      "rationale": "Governed invariant: evidence selection must be a commit. Changing it changes admitted publication/evidence scope.",
+      "allowed_locations": [
+        "tools/subject_publication.py::DecisionSnapshot.read"
+      ],
+      "family_id": "publication.rule.009"
+    },
+    {
+      "id": "publication.site.010",
+      "path": "tools/subject_publication.py",
+      "kind": "require",
+      "label": "missing evidence: {}",
+      "predicate_sha256": "53c75f8c85608b8e1406d647b4f2f115ffcc0ec7a062481fb5f67aadb3843baa",
+      "category": "policy",
+      "rationale": "Governed invariant: missing evidence: {}. Changing it changes admitted publication/evidence scope.",
+      "allowed_locations": [
+        "tools/subject_publication.py::DecisionSnapshot.read"
+      ],
+      "family_id": "publication.rule.010"
+    },
+    {
+      "id": "publication.site.011",
+      "path": "tools/subject_publication.py",
+      "kind": "require",
+      "label": "evidence must be a regular Git blob, never a symlink",
+      "predicate_sha256": "8bf8574db7f440cbfa78263d9c64421328bf482bf62e1031cc86e4254c4c2f41",
+      "category": "policy",
+      "rationale": "Governed invariant: evidence must be a regular Git blob, never a symlink. Changing it changes admitted publication/evidence scope.",
+      "allowed_locations": [
+        "tools/subject_publication.py::DecisionSnapshot.read"
+      ],
+      "family_id": "publication.rule.011"
+    },
+    {
+      "id": "publication.site.012",
+      "path": "tools/subject_publication.py",
+      "kind": "require",
+      "label": "missing evidence reference",
+      "predicate_sha256": "45526eb59320b3bb0d78fba25062b871bc696f92fb2505454610bd4c619c2cc1",
+      "category": "mechanics",
+      "rationale": "Parse a nonempty evidence reference.",
+      "allowed_locations": [
+        "tools/subject_publication.py::DecisionSnapshot.resolve"
+      ]
+    },
+    {
+      "id": "publication.site.013",
+      "path": "tools/subject_publication.py",
+      "kind": "if",
+      "label": "pointer",
+      "predicate_sha256": "d96677ffecdd1cbb4f718151062bc69978c5044061020b12d9bbf0740cf898a1",
+      "category": "mechanics",
+      "rationale": "Adapt an optional value, recognize pointer container shape or enforce a previously computed result.",
+      "allowed_locations": [
+        "tools/subject_publication.py::DecisionSnapshot.resolve"
+      ]
+    },
+    {
+      "id": "publication.site.014",
+      "path": "tools/subject_publication.py",
+      "kind": "require",
+      "label": "evidence fragment must be a JSON pointer",
+      "predicate_sha256": "cdcab16ac123c650c4a14a070cf1c7dcf64205a2abc7db28123c26b984b61e73",
+      "category": "mechanics",
+      "rationale": "Recognize JSON-pointer syntax.",
+      "allowed_locations": [
+        "tools/subject_publication.py::DecisionSnapshot.resolve"
+      ]
+    },
+    {
+      "id": "publication.site.015",
+      "path": "tools/subject_publication.py",
+      "kind": "if",
+      "label": "isinstance(value, list)",
+      "predicate_sha256": "12ede802400ab94ff29bdae0ebc5f3a91625c86a775a3d944578989e7932415a",
+      "category": "mechanics",
+      "rationale": "Adapt an optional value, recognize pointer container shape or enforce a previously computed result.",
+      "allowed_locations": [
+        "tools/subject_publication.py::DecisionSnapshot.resolve"
+      ]
+    },
+    {
+      "id": "publication.site.016",
+      "path": "tools/subject_publication.py",
+      "kind": "require",
+      "label": "array reference must use a canonical nonnegative index",
+      "predicate_sha256": "b7f131ceda62b5db41bc6f3902d74805403adc667a6e098ff7042866ba934970",
+      "category": "mechanics",
+      "rationale": "Parse a JSON-pointer array index without alternate spellings.",
+      "allowed_locations": [
+        "tools/subject_publication.py::DecisionSnapshot.resolve"
+      ]
+    },
+    {
+      "id": "publication.site.017",
+      "path": "tools/subject_publication.py",
+      "kind": "require",
+      "label": "missing actual human review",
+      "predicate_sha256": "8dd23c338ea4bb5811babfa81a9b34cd7bd9f1368bec3031953a1058b33ee56f",
+      "category": "mechanics",
+      "rationale": "Validate the review mapping shape before reading its fields.",
+      "allowed_locations": [
+        "tools/subject_publication.py::_review"
+      ]
+    },
+    {
+      "id": "publication.site.018",
+      "path": "tools/subject_publication.py",
+      "kind": "require",
+      "label": "human review covers a different scope",
+      "predicate_sha256": "fbbc865ed220269723827b1cb671b3bfb73484b9d3bd212bedcf6d4dc3608407",
+      "category": "policy",
+      "rationale": "Governed invariant: human review covers a different scope. Changing it changes admitted publication/evidence scope.",
+      "allowed_locations": [
+        "tools/subject_publication.py::_review"
+      ],
+      "family_id": "publication.rule.018"
+    },
+    {
+      "id": "publication.site.019",
+      "path": "tools/subject_publication.py",
+      "kind": "require",
+      "label": "human approval required",
+      "predicate_sha256": "153fd8da1009d8e83d656bec489f4c84489d913327939defc58105e55adcb7da",
+      "category": "policy",
+      "rationale": "Governed invariant: human approval required. Changing it changes admitted publication/evidence scope.",
+      "allowed_locations": [
+        "tools/subject_publication.py::_review"
+      ],
+      "family_id": "publication.human_approval"
+    },
+    {
+      "id": "publication.site.020",
+      "path": "tools/subject_publication.py",
+      "kind": "require",
+      "label": "review requires {}",
+      "predicate_sha256": "b5732f4fa4c8d99a17c1be3e6a78ca0b525508f922490c37cc6267fd802d22e7",
+      "category": "mechanics",
+      "rationale": "Validate required textual review fields.",
+      "allowed_locations": [
+        "tools/subject_publication.py::_review"
+      ]
+    },
+    {
+      "id": "publication.site.021",
+      "path": "tools/subject_publication.py",
+      "kind": "require",
+      "label": "review timestamp requires a timezone",
+      "predicate_sha256": "23847024920a60721bd4561be157ad32fb15245e3951c9b4d6aac6cb522ec1d2",
+      "category": "mechanics",
+      "rationale": "Parse the documented timezone-aware timestamp exchange.",
+      "allowed_locations": [
+        "tools/subject_publication.py::_review"
+      ]
+    },
+    {
+      "id": "publication.site.022",
+      "path": "tools/subject_publication.py",
+      "kind": "require",
+      "label": "human review source has wrong kind/version",
+      "predicate_sha256": "49bea82256e035880b2fff98dc8b18c007d4d86330065a2c00787008b5b7e57e",
+      "category": "mechanics",
+      "rationale": "Recognize the human-review source exchange shape.",
+      "allowed_locations": [
+        "tools/subject_publication.py::_review"
+      ]
+    },
+    {
+      "id": "publication.site.023",
+      "path": "tools/subject_publication.py",
+      "kind": "require",
+      "label": "review attribution disagrees with its recorded source",
+      "predicate_sha256": "b1caf717b3b92166eb97e3c14f09a05ac1421a36079176fdd2391db2e6e23812",
+      "category": "policy",
+      "rationale": "Governed invariant: review attribution disagrees with its recorded source. Changing it changes admitted publication/evidence scope.",
+      "allowed_locations": [
+        "tools/subject_publication.py::_review"
+      ],
+      "family_id": "publication.rule.023"
+    },
+    {
+      "id": "publication.site.024",
+      "path": "tools/subject_publication.py",
+      "kind": "require",
+      "label": "reviewed packet bytes changed",
+      "predicate_sha256": "042ce4fb7bd04f3784ce7fc789e31fe711f6256fa16feecf69f96d4e6f82cea9",
+      "category": "policy",
+      "rationale": "Governed invariant: reviewed packet bytes changed. Changing it changes admitted publication/evidence scope.",
+      "allowed_locations": [
+        "tools/subject_publication.py::_packet"
+      ],
+      "family_id": "publication.rule.024"
+    },
+    {
+      "id": "publication.site.025",
+      "path": "tools/subject_publication.py",
+      "kind": "require",
+      "label": "wrong review packet kind/version",
+      "predicate_sha256": "fe40b92ab85c3472eab285753ef53a016c9952151f2a06122298e2b2407dbb5e",
+      "category": "mechanics",
+      "rationale": "Recognize the supported review-packet exchange shapes.",
+      "allowed_locations": [
+        "tools/subject_publication.py::_packet"
+      ]
+    },
+    {
+      "id": "publication.site.026",
+      "path": "tools/subject_publication.py",
+      "kind": "require",
+      "label": "approval does not bind the exact packet scope",
+      "predicate_sha256": "b1848ef1cee660b41855960da702ea31c090cc5c8cffe87a30c59adcb3234e82",
+      "category": "policy",
+      "rationale": "Governed invariant: approval does not bind the exact packet scope. Changing it changes admitted publication/evidence scope.",
+      "allowed_locations": [
+        "tools/subject_publication.py::_packet"
+      ],
+      "family_id": "publication.rule.026"
+    },
+    {
+      "id": "publication.site.027",
+      "path": "tools/subject_publication.py",
+      "kind": "require",
+      "label": "review packet must be immutable pending preparation",
+      "predicate_sha256": "181a1a62fb70eb3329b7ae3185b0a2c72194e202c580bdc6d23a3df18b986bf8",
+      "category": "policy",
+      "rationale": "Governed invariant: review packet must be immutable pending preparation. Changing it changes admitted publication/evidence scope.",
+      "allowed_locations": [
+        "tools/subject_publication.py::_packet"
+      ],
+      "family_id": "publication.rule.027"
+    },
+    {
+      "id": "publication.site.028",
+      "path": "tools/subject_publication.py",
+      "kind": "require",
+      "label": "review input changed: {}",
+      "predicate_sha256": "c42ace19800048c9fc7740e0508b55ddd032dc88da5a7db92f46a629291d89fd",
+      "category": "policy",
+      "rationale": "Governed invariant: review input changed: {}. Changing it changes admitted publication/evidence scope.",
+      "allowed_locations": [
+        "tools/subject_publication.py::_packet"
+      ],
+      "family_id": "publication.rule.028"
+    },
+    {
+      "id": "publication.site.029",
+      "path": "tools/subject_publication.py",
+      "kind": "if",
+      "label": "'contract_snapshot' in packet['inputs']",
+      "predicate_sha256": "ecd6f9c62ffb8fb2b301ee88af903784a433fd3fdff35402620e136a445498fe",
+      "category": "mechanics",
+      "rationale": "Adapt an optional value, recognize pointer container shape or enforce a previously computed result.",
+      "allowed_locations": [
+        "tools/subject_publication.py::_packet"
+      ]
+    },
+    {
+      "id": "publication.site.030",
+      "path": "tools/subject_publication.py",
+      "kind": "require",
+      "label": "governing contract snapshot differs from reviewed scope",
+      "predicate_sha256": "f009d634e12fd0f80ce30deaa4173b953a794ab4a7e0ad1acbe200c8673a95e2",
+      "category": "policy",
+      "rationale": "Governed invariant: governing contract snapshot differs from reviewed scope. Changing it changes admitted publication/evidence scope.",
+      "allowed_locations": [
+        "tools/subject_publication.py::_packet"
+      ],
+      "family_id": "publication.rule.030"
+    },
+    {
+      "id": "publication.site.031",
+      "path": "tools/subject_publication.py",
+      "kind": "require",
+      "label": "evidence is outside the reviewed input inventory: {}",
+      "predicate_sha256": "e36490eba80dfd8282bd4a9ef85c17f178ce0136e2be5065826fded79515cc03",
+      "category": "policy",
+      "rationale": "Governed invariant: evidence is outside the reviewed input inventory: {}. Changing it changes admitted publication/evidence scope.",
+      "allowed_locations": [
+        "tools/subject_publication.py::_input"
+      ],
+      "family_id": "publication.rule.031"
+    },
+    {
+      "id": "publication.site.032",
+      "path": "tools/subject_publication.py",
+      "kind": "require",
+      "label": "motivating Intent lineage is unresolved",
+      "predicate_sha256": "010b5b37e1daf7300000e707da1fd437d61af97aed30dc56853d38a376a41d00",
+      "category": "policy",
+      "rationale": "Governed invariant: motivating Intent lineage is unresolved. Changing it changes admitted publication/evidence scope.",
+      "allowed_locations": [
+        "tools/subject_publication.py::_lineage"
+      ],
+      "family_id": "publication.rule.032"
+    },
+    {
+      "id": "publication.site.033",
+      "path": "tools/subject_publication.py",
+      "kind": "require",
+      "label": "missing authored Intent lineage",
+      "predicate_sha256": "f521eec9af0c6a3f83dba994b04b635718c6d31ebd723b982a4183d39de3ff60",
+      "category": "policy",
+      "rationale": "Governed invariant: missing authored Intent lineage. Changing it changes admitted publication/evidence scope.",
+      "allowed_locations": [
+        "tools/subject_publication.py::_lineage"
+      ],
+      "family_id": "publication.rule.033"
+    },
+    {
+      "id": "publication.site.034",
+      "path": "tools/subject_publication.py",
+      "kind": "require",
+      "label": "lineage belongs to another proposal",
+      "predicate_sha256": "e82c880f837cbca5bb72333a4a641a1876f1b7c0692df824bfd04073edac501f",
+      "category": "policy",
+      "rationale": "Governed invariant: lineage belongs to another proposal. Changing it changes admitted publication/evidence scope.",
+      "allowed_locations": [
+        "tools/subject_publication.py::_lineage"
+      ],
+      "family_id": "publication.rule.034"
+    },
+    {
+      "id": "publication.site.035",
+      "path": "tools/subject_publication.py",
+      "kind": "require",
+      "label": "lineage binds another proposal revision",
+      "predicate_sha256": "34fb8e86ada9f22e2c92c45126199a29c1daf064fc88f3aa6a2812066664c206",
+      "category": "policy",
+      "rationale": "Governed invariant: lineage binds another proposal revision. Changing it changes admitted publication/evidence scope.",
+      "allowed_locations": [
+        "tools/subject_publication.py::_lineage"
+      ],
+      "family_id": "publication.rule.035"
+    },
+    {
+      "id": "publication.site.036",
+      "path": "tools/subject_publication.py",
+      "kind": "require",
+      "label": "lineage must resolve a substantive IntentDraft",
+      "predicate_sha256": "bebba93ea480f2ae2360eb602e61915d7da0bf014ba1a1807325d6b2e0a1ae29",
+      "category": "policy",
+      "rationale": "Governed invariant: lineage must resolve a substantive IntentDraft. Changing it changes admitted publication/evidence scope.",
+      "allowed_locations": [
+        "tools/subject_publication.py::_lineage"
+      ],
+      "family_id": "publication.rule.036"
+    },
+    {
+      "id": "publication.site.037",
+      "path": "tools/subject_publication.py",
+      "kind": "require",
+      "label": "IntentDraft attribution is absent",
+      "predicate_sha256": "bbfd2b2a7d0294dcbb95e76f8dc50c6fea8449cdbdad67a9539bdd2b39a15c39",
+      "category": "policy",
+      "rationale": "Governed invariant: IntentDraft attribution is absent. Changing it changes admitted publication/evidence scope.",
+      "allowed_locations": [
+        "tools/subject_publication.py::_lineage"
+      ],
+      "family_id": "publication.rule.037"
+    },
+    {
+      "id": "publication.site.038",
+      "path": "tools/subject_publication.py",
+      "kind": "require",
+      "label": "Intent source must retain human attribution and text",
+      "predicate_sha256": "d5b4646fc371d486d42b5bd79bebc4e2e9217b69abb0af9ac5e60bd1a3f9310d",
+      "category": "policy",
+      "rationale": "Governed invariant: Intent source must retain human attribution and text. Changing it changes admitted publication/evidence scope.",
+      "allowed_locations": [
+        "tools/subject_publication.py::_lineage"
+      ],
+      "family_id": "publication.rule.038"
+    },
+    {
+      "id": "publication.site.039",
+      "path": "tools/subject_publication.py",
+      "kind": "require",
+      "label": "incomplete paired transition inventory",
+      "predicate_sha256": "be5d76d29042848b56965a5863c9a301c7bc5a276293e07b91a082f46f357c9d",
+      "category": "policy",
+      "rationale": "Governed invariant: incomplete paired transition inventory. Changing it changes admitted publication/evidence scope.",
+      "allowed_locations": [
+        "tools/subject_publication.py::_transitions"
+      ],
+      "family_id": "publication.rule.039"
+    },
+    {
+      "id": "publication.site.040",
+      "path": "tools/subject_publication.py",
+      "kind": "require",
+      "label": "duplicate transition records",
+      "predicate_sha256": "a85236f450e52b2e8c05a993795ad605be620b841a67f960b9fc4abd5e64394a",
+      "category": "policy",
+      "rationale": "Governed invariant: duplicate transition records. Changing it changes admitted publication/evidence scope.",
+      "allowed_locations": [
+        "tools/subject_publication.py::_transitions"
+      ],
+      "family_id": "publication.rule.040"
+    },
+    {
+      "id": "publication.site.041",
+      "path": "tools/subject_publication.py",
+      "kind": "require",
+      "label": "duplicate transition identifiers",
+      "predicate_sha256": "27122370092d13ad4070dc22f0f2cc6fe1090d43af875755ce3f8f3f86e45b12",
+      "category": "policy",
+      "rationale": "Governed invariant: duplicate transition identifiers. Changing it changes admitted publication/evidence scope.",
+      "allowed_locations": [
+        "tools/subject_publication.py::_transitions"
+      ],
+      "family_id": "publication.rule.041"
+    },
+    {
+      "id": "publication.site.042",
+      "path": "tools/subject_publication.py",
+      "kind": "require",
+      "label": "transition decision differs from the reviewed template",
+      "predicate_sha256": "5d3b1b0e10fa92bdae70b0898a6176588023536fdf16e38ce843814a485166ab",
+      "category": "policy",
+      "rationale": "Governed invariant: transition decision differs from the reviewed template. Changing it changes admitted publication/evidence scope.",
+      "allowed_locations": [
+        "tools/subject_publication.py::_transitions"
+      ],
+      "family_id": "publication.rule.042"
+    },
+    {
+      "id": "publication.site.043",
+      "path": "tools/subject_publication.py",
+      "kind": "require",
+      "label": "packet templates cannot be rewritten as decisions",
+      "predicate_sha256": "eea7bb4d0b753e5eb08da365282b2f95cce9432aa981e3803b7d1ceefd3482ac",
+      "category": "policy",
+      "rationale": "Governed invariant: packet templates cannot be rewritten as decisions. Changing it changes admitted publication/evidence scope.",
+      "allowed_locations": [
+        "tools/subject_publication.py::_transitions"
+      ],
+      "family_id": "publication.rule.043"
+    },
+    {
+      "id": "publication.site.044",
+      "path": "tools/subject_publication.py",
+      "kind": "require",
+      "label": "incomplete or unapproved transition",
+      "predicate_sha256": "cc9ebc498ecb2786e1ae451c920be60f767b06cb6ddda5109734016201972895",
+      "category": "policy",
+      "rationale": "Governed invariant: incomplete or unapproved transition. Changing it changes admitted publication/evidence scope.",
+      "allowed_locations": [
+        "tools/subject_publication.py::_transitions"
+      ],
+      "family_id": "publication.reviewed_transition"
+    },
+    {
+      "id": "publication.site.045",
+      "path": "tools/subject_publication.py",
+      "kind": "if",
+      "label": "record['promotion_edge'] == 'proposal -> spec_draft'",
+      "predicate_sha256": "23dc53adb796cd084e3df8a2397aaa78752e38b916c07e0ec309939eb8e0bff9",
+      "category": "variant_behavior",
+      "rationale": "Dispatch the already prepared operation/transition variant; no new eligibility decision.",
+      "allowed_locations": [
+        "tools/subject_publication.py::_transitions"
+      ]
+    },
+    {
+      "id": "publication.site.046",
+      "path": "tools/subject_publication.py",
+      "kind": "require",
+      "label": "decision cannot silently supply unreviewed Intent lineage",
+      "predicate_sha256": "cd38bb8857f02fe546a6bf2d687cfc92de66e68648a6850c9d66bc7c7c94d4fc",
+      "category": "policy",
+      "rationale": "Governed invariant: decision cannot silently supply unreviewed Intent lineage. Changing it changes admitted publication/evidence scope.",
+      "allowed_locations": [
+        "tools/subject_publication.py::_transitions"
+      ],
+      "family_id": "publication.rule.046"
+    },
+    {
+      "id": "publication.site.047",
+      "path": "tools/subject_publication.py",
+      "kind": "require",
+      "label": "unsupported promotion shortcut",
+      "predicate_sha256": "c5a448f97aa6e165e324a8fbdf4c950b27091981bce87cf4806a60aaa0839c29",
+      "category": "policy",
+      "rationale": "Governed invariant: unsupported promotion shortcut. Changing it changes admitted publication/evidence scope.",
+      "allowed_locations": [
+        "tools/subject_publication.py::_transitions"
+      ],
+      "family_id": "publication.rule.047"
+    },
+    {
+      "id": "publication.site.048",
+      "path": "tools/subject_publication.py",
+      "kind": "require",
+      "label": "canonical decision changes the reviewed revision target",
+      "predicate_sha256": "65f00208e341c99ed20fe51d7bbca7ea8397a50fb87d4032c7d1e935ae08906e",
+      "category": "policy",
+      "rationale": "Governed invariant: canonical decision changes the reviewed revision target. Changing it changes admitted publication/evidence scope.",
+      "allowed_locations": [
+        "tools/subject_publication.py::_transitions"
+      ],
+      "family_id": "publication.rule.048"
+    },
+    {
+      "id": "publication.site.049",
+      "path": "tools/subject_publication.py",
+      "kind": "require",
+      "label": "provenance must resolve an effect in the selected decision artifact",
+      "predicate_sha256": "7c935e70184ac2440aeae2f85ed4ab39d5109403a7d7abbe465201940648b8e8",
+      "category": "policy",
+      "rationale": "Governed invariant: provenance must resolve an effect in the selected decision artifact. Changing it changes admitted publication/evidence scope.",
+      "allowed_locations": [
+        "tools/subject_publication.py::_effect"
+      ],
+      "family_id": "publication.rule.049"
+    },
+    {
+      "id": "publication.site.050",
+      "path": "tools/subject_publication.py",
+      "kind": "require",
+      "label": "decision does not authorize {}",
+      "predicate_sha256": "5c2128e9352de99e2554eaeb4ecdaed238732eb62fa6614c2e13a280ab5db346",
+      "category": "policy",
+      "rationale": "Governed invariant: decision does not authorize {}. Changing it changes admitted publication/evidence scope.",
+      "allowed_locations": [
+        "tools/subject_publication.py::_effect"
+      ],
+      "family_id": "publication.rule.050"
+    },
+    {
+      "id": "publication.site.051",
+      "path": "tools/subject_publication.py",
+      "kind": "if",
+      "label": "selection is not None",
+      "predicate_sha256": "c7850c40d35e6611ced5adeb3e7ef5a0f9d5d8d6442f35a10321e18fb74b50ad",
+      "category": "mechanics",
+      "rationale": "Adapt an optional value, recognize pointer container shape or enforce a previously computed result.",
+      "allowed_locations": [
+        "tools/subject_publication.py::_effect"
+      ]
+    },
+    {
+      "id": "publication.site.052",
+      "path": "tools/subject_publication.py",
+      "kind": "require",
+      "label": "effect belongs to another subject/revision",
+      "predicate_sha256": "b1aa9a4a66004c23e4639272b4b672fee983151185f6e7aa52f43a030018a4c7",
+      "category": "policy",
+      "rationale": "Governed invariant: effect belongs to another subject/revision. Changing it changes admitted publication/evidence scope.",
+      "allowed_locations": [
+        "tools/subject_publication.py::_effect"
+      ],
+      "family_id": "publication.rule.052"
+    },
+    {
+      "id": "publication.site.053",
+      "path": "tools/subject_publication.py",
+      "kind": "require",
+      "label": "resolved publication evidence required",
+      "predicate_sha256": "19cc17366de8aa53c149dcad555fd76cf1035a0a22f51b73735fc6aa442881ec",
+      "category": "policy",
+      "rationale": "Governed invariant: resolved publication evidence required. Changing it changes admitted publication/evidence scope.",
+      "allowed_locations": [
+        "tools/subject_publication.py::_verify_publication"
+      ],
+      "family_id": "publication.rule.053"
+    },
+    {
+      "id": "publication.site.054",
+      "path": "tools/subject_publication.py",
+      "kind": "require",
+      "label": "schema approval is not subject-publication permission",
+      "predicate_sha256": "650ea226db6563f5ab5e48568f6ed638eb7ca11bae8256066a9a30d8613dda29",
+      "category": "policy",
+      "rationale": "Governed invariant: schema approval is not subject-publication permission. Changing it changes admitted publication/evidence scope.",
+      "allowed_locations": [
+        "tools/subject_publication.py::_verify_publication"
+      ],
+      "family_id": "publication.rule.054"
+    },
+    {
+      "id": "publication.site.055",
+      "path": "tools/subject_publication.py",
+      "kind": "require",
+      "label": "packet approval binding mismatch",
+      "predicate_sha256": "ec8ff9c948085a598ab50c70604839ed44941136dfc07ba0f5dc9da425240929",
+      "category": "policy",
+      "rationale": "Governed invariant: packet approval binding mismatch. Changing it changes admitted publication/evidence scope.",
+      "allowed_locations": [
+        "tools/subject_publication.py::_verify_publication"
+      ],
+      "family_id": "publication.rule.055"
+    },
+    {
+      "id": "publication.site.056",
+      "path": "tools/subject_publication.py",
+      "kind": "require",
+      "label": "workspace/source ref scope mismatch",
+      "predicate_sha256": "365e2b864e47814298f5339fe40a8454893ee0e8c04b6dc65a0463a995da1396",
+      "category": "policy",
+      "rationale": "Governed invariant: workspace/source ref scope mismatch. Changing it changes admitted publication/evidence scope.",
+      "allowed_locations": [
+        "tools/subject_publication.py::_verify_publication"
+      ],
+      "family_id": "publication.rule.056"
+    },
+    {
+      "id": "publication.site.057",
+      "path": "tools/subject_publication.py",
+      "kind": "require",
+      "label": "request subject inventory differs from reviewed scope",
+      "predicate_sha256": "cb64b2225d2607f1e095e4e744dd8683664cf4cd5fb64b49a3ebf1d45946554e",
+      "category": "policy",
+      "rationale": "Governed invariant: request subject inventory differs from reviewed scope. Changing it changes admitted publication/evidence scope.",
+      "allowed_locations": [
+        "tools/subject_publication.py::_verify_publication"
+      ],
+      "family_id": "publication.rule.057"
+    },
+    {
+      "id": "publication.site.058",
+      "path": "tools/subject_publication.py",
+      "kind": "require",
+      "label": "request contains an unreviewed subject",
+      "predicate_sha256": "203179a71221af1a228744e2389f4f8817303ac2e02ebc4ce1e174f5d7979f17",
+      "category": "policy",
+      "rationale": "Governed invariant: request contains an unreviewed subject. Changing it changes admitted publication/evidence scope.",
+      "allowed_locations": [
+        "tools/subject_publication.py::_verify_publication"
+      ],
+      "family_id": "publication.rule.058"
+    },
+    {
+      "id": "publication.site.059",
+      "path": "tools/subject_publication.py",
+      "kind": "require",
+      "label": "request revision differs from reviewed exact target",
+      "predicate_sha256": "b3d6d1abb97042084622785367fea1e1b2f14c73fa30cf5fa79bbc5354585bcd",
+      "category": "policy",
+      "rationale": "Governed invariant: request revision differs from reviewed exact target. Changing it changes admitted publication/evidence scope.",
+      "allowed_locations": [
+        "tools/subject_publication.py::_verify_publication"
+      ],
+      "family_id": "publication.rule.059"
+    },
+    {
+      "id": "publication.site.060",
+      "path": "tools/subject_publication.py",
+      "kind": "require",
+      "label": "request target differs from reviewed draft",
+      "predicate_sha256": "a9ade9cffae684c02fb2aef42f7a4e80a159cf102dca5d46f1d530c5ea8c5c44",
+      "category": "policy",
+      "rationale": "Governed invariant: request target differs from reviewed draft. Changing it changes admitted publication/evidence scope.",
+      "allowed_locations": [
+        "tools/subject_publication.py::_verify_publication"
+      ],
+      "family_id": "publication.rule.060"
+    },
+    {
+      "id": "publication.site.061",
+      "path": "tools/subject_publication.py",
+      "kind": "require",
+      "label": "request complete record differs from reviewed draft",
+      "predicate_sha256": "0f4cb4780fccd16ea14886a3433e494a852ab60449da4b49d60dedf6f6d2f71d",
+      "category": "policy",
+      "rationale": "Governed invariant: request complete record differs from reviewed draft. Changing it changes admitted publication/evidence scope.",
+      "allowed_locations": [
+        "tools/subject_publication.py::_verify_publication"
+      ],
+      "family_id": "publication.complete_reviewed_record"
+    },
+    {
+      "id": "publication.site.062",
+      "path": "tools/subject_publication.py",
+      "kind": "require",
+      "label": "missing unique approved ingress/canonical transition",
+      "predicate_sha256": "84fe5862af0736aee7c1fcadb10b3510980871b113a6c45e369ee75826b1290d",
+      "category": "policy",
+      "rationale": "Governed invariant: missing unique approved ingress/canonical transition. Changing it changes admitted publication/evidence scope.",
+      "allowed_locations": [
+        "tools/subject_publication.py::_verify_publication"
+      ],
+      "family_id": "publication.rule.062"
+    },
+    {
+      "id": "publication.site.063",
+      "path": "tools/subject_publication.py",
+      "kind": "require",
+      "label": "canonical transition lacks its approved ingress or exact target",
+      "predicate_sha256": "39ff780d1d26b75840ca2b5b527df3cc1fc301846b796171d6e222b040a004a0",
+      "category": "policy",
+      "rationale": "Governed invariant: canonical transition lacks its approved ingress or exact target. Changing it changes admitted publication/evidence scope.",
+      "allowed_locations": [
+        "tools/subject_publication.py::_verify_publication"
+      ],
+      "family_id": "publication.rule.063"
+    },
+    {
+      "id": "publication.site.064",
+      "path": "tools/subject_publication.py",
+      "kind": "require",
+      "label": "revision provenance does not authorize this canonical transition",
+      "predicate_sha256": "2f6731261d8469b122e1585d7a5ea27cbc67afc11e674f12484191d1861e1cfd",
+      "category": "policy",
+      "rationale": "Governed invariant: revision provenance does not authorize this canonical transition. Changing it changes admitted publication/evidence scope.",
+      "allowed_locations": [
+        "tools/subject_publication.py::_verify_publication"
+      ],
+      "family_id": "publication.rule.064"
+    },
+    {
+      "id": "publication.site.065",
+      "path": "tools/subject_publication.py",
+      "kind": "if",
+      "label": "change.operation == 'origin'",
+      "predicate_sha256": "153fe3252b5734e4fa4cbd09e4492f409efd18c75f27ce67c1ee6fc4c60bf43d",
+      "category": "variant_behavior",
+      "rationale": "Dispatch the already prepared operation/transition variant; no new eligibility decision.",
+      "allowed_locations": [
+        "tools/subject_publication.py::_verify_publication"
+      ]
+    },
+    {
+      "id": "publication.site.066",
+      "path": "tools/subject_publication.py",
+      "kind": "require",
+      "label": "origin needs one activation",
+      "predicate_sha256": "89828f82656f8cdd06533f2be5a77b0bf50de52cf992cc7b0d4110b91075a3a4",
+      "category": "policy",
+      "rationale": "Governed invariant: origin needs one activation. Changing it changes admitted publication/evidence scope.",
+      "allowed_locations": [
+        "tools/subject_publication.py::_verify_publication"
+      ],
+      "family_id": "publication.rule.066"
+    },
+    {
+      "id": "publication.site.067",
+      "path": "tools/subject_publication.py",
+      "kind": "require",
+      "label": "unused or mismatched transition decisions",
+      "predicate_sha256": "d68e6769fbc06d7ccaac87ea18a2133465df266ac28abe852bd3009a1d55e07b",
+      "category": "policy",
+      "rationale": "Governed invariant: unused or mismatched transition decisions. Changing it changes admitted publication/evidence scope.",
+      "allowed_locations": [
+        "tools/subject_publication.py::_verify_publication"
+      ],
+      "family_id": "publication.rule.067"
+    },
+    {
+      "id": "publication.site.068",
+      "path": "tools/subject_publication.py",
+      "kind": "if",
+      "label": "request.workspace_declaration_yaml is not None",
+      "predicate_sha256": "dae00a8a4870257a890840a6d7d00fd5199c2ffe1675aaebf93c0cd689ad974a",
+      "category": "variant_behavior",
+      "rationale": "Dispatch the already prepared operation/transition variant; no new eligibility decision.",
+      "allowed_locations": [
+        "tools/subject_publication.py::_verify_publication"
+      ]
+    },
+    {
+      "id": "publication.site.069",
+      "path": "tools/subject_publication.py",
+      "kind": "require",
+      "label": "workspace allocation covers a different bootstrap",
+      "predicate_sha256": "69d9b01998785a6f6b2fad877a59024fddb53299a60126818ad0ff1391a5ce05",
+      "category": "policy",
+      "rationale": "Governed invariant: workspace allocation covers a different bootstrap. Changing it changes admitted publication/evidence scope.",
+      "allowed_locations": [
+        "tools/subject_publication.py::_verify_publication"
+      ],
+      "family_id": "publication.rule.069"
+    },
+    {
+      "id": "publication.site.070",
+      "path": "tools/subject_publication.py",
+      "kind": "require",
+      "label": "request declaration differs from reviewed candidate",
+      "predicate_sha256": "a9a4cdb76e122e042557021e0ca779a6ebacb6431a1d96f3bbfb4a5fbc652ce4",
+      "category": "policy",
+      "rationale": "Governed invariant: request declaration differs from reviewed candidate. Changing it changes admitted publication/evidence scope.",
+      "allowed_locations": [
+        "tools/subject_publication.py::_verify_publication"
+      ],
+      "family_id": "publication.complete_reviewed_record"
+    },
+    {
+      "id": "publication.site.071",
+      "path": "tools/subject_publication.py",
+      "kind": "require",
+      "label": "unapproved dataset/topology selection",
+      "predicate_sha256": "aba19c5011121e57e798986667fc48da731cc3cafdb3ae3de9838e89acffdc63",
+      "category": "policy",
+      "rationale": "Governed invariant: unapproved dataset/topology selection. Changing it changes admitted publication/evidence scope.",
+      "allowed_locations": [
+        "tools/subject_publication.py::_verify_publication"
+      ],
+      "family_id": "publication.rule.071"
+    },
+    {
+      "id": "publication.site.072",
+      "path": "tools/subject_publication.py",
+      "kind": "require",
+      "label": "publication decision covers another exact request",
+      "predicate_sha256": "d14d2f75040321ceedb32c0371163d97ecc91277d91d58919b316e4d6f2a22d4",
+      "category": "policy",
+      "rationale": "Governed invariant: publication decision covers another exact request. Changing it changes admitted publication/evidence scope.",
+      "allowed_locations": [
+        "tools/subject_publication.py::_verify_publication"
+      ],
+      "family_id": "publication.rule.072"
+    },
+    {
+      "id": "publication.site.073",
+      "path": "tools/subject_publication.py",
+      "kind": "require",
+      "label": "writer authorization differs from the actual publication decision",
+      "predicate_sha256": "7c43b247307e6b0df36ef7aa99b67337c2c09e3528488b6b4cae12a703f63d1d",
+      "category": "policy",
+      "rationale": "Governed invariant: writer authorization differs from the actual publication decision. Changing it changes admitted publication/evidence scope.",
+      "allowed_locations": [
+        "tools/subject_publication.py::_verify_publication"
+      ],
+      "family_id": "publication.rule.073"
+    },
+    {
+      "id": "publication.site.074",
+      "path": "tools/subject_publication.py",
+      "kind": "require",
+      "label": "publication effect-reference coverage mismatch",
+      "predicate_sha256": "304d84e324627a9d48a84922cf7683eb485054698ac951373efbd920e31ebdb6",
+      "category": "policy",
+      "rationale": "Governed invariant: publication effect-reference coverage mismatch. Changing it changes admitted publication/evidence scope.",
+      "allowed_locations": [
+        "tools/subject_publication.py::_verify_publication"
+      ],
+      "family_id": "publication.rule.074"
+    },
+    {
+      "id": "publication.site.075",
+      "path": "tools/subject_publication.py",
+      "kind": "require",
+      "label": "unrequested effects in publication decisions",
+      "predicate_sha256": "325df5f9c261f7eb39cf54dca4891b6845f2a655dfe7d0611c635593f4eed31b",
+      "category": "policy",
+      "rationale": "Governed invariant: unrequested effects in publication decisions. Changing it changes admitted publication/evidence scope.",
+      "allowed_locations": [
+        "tools/subject_publication.py::_verify_publication"
+      ],
+      "family_id": "publication.rule.075"
+    }
+  ]
+}
