@@ -3,8 +3,8 @@
 Source: tools/subject_publication.py in commit
 8bd61fb772141a7e7005429a275c0c161fd7c59d (pre-06efdb7e).
 Only the content/membership conjuncts are reproduced; source-target bindings
-are intentionally omitted. The current static matcher does not recognize this
-as a near match. This fixture documents that coverage gap, not approval to use it.
+are intentionally omitted. An explicit review-only catalog template recognizes this
+as a near match. This warning does not establish equivalence or approve its use.
 """
 
 

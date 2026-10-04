@@ -46,7 +46,7 @@ def test_dirty_fixture_does_not_change_recorded_snapshot(tmp_path, monkeypatch):
         code = copied.read_text(encoding="utf-8") if copied.exists() else None
         observed.append(code)
         exact = int(output.name in {"exact_copy", "reviewed_record_exact"})
-        near = int(output.name == "changed_authority")
+        near = int(output.name in {"changed_authority", "reviewed_record_partial"})
         reuse = int(output.name == "reviewed_record_reuse")
         report = {
             "status": "complete",
@@ -60,11 +60,17 @@ def test_dirty_fixture_does_not_change_recorded_snapshot(tmp_path, monkeypatch):
             else [
                 {
                     "rule_id": "subject_publication.complete_reviewed_record"
-                    if output.name == "reviewed_record_exact"
+                    if output.name in {"reviewed_record_exact", "reviewed_record_partial"}
                     else "subject_publication.workspace_allocation",
                     "path": "tools/smoke_copy.py",
                     "introduced": True,
                     "kind": "reimplementation" if exact else "near_match",
+                    "match_basis": "review_template"
+                    if output.name == "reviewed_record_partial"
+                    else "equivalent_template",
+                    "template_id": "historical-partial-record-content"
+                    if output.name == "reviewed_record_partial"
+                    else None,
                 }
             ],
         }
@@ -93,7 +99,8 @@ def test_dirty_fixture_does_not_change_recorded_snapshot(tmp_path, monkeypatch):
         additional["reviewed_record_partial"],
         additional["unrelated_digest"],
     ]
-    assert "partial field checks are not detected" in result["coverage_gaps"][0]
+    assert result["coverage_gaps"] == []
+    assert "arbitrary partial checks may be missed" in result["coverage_limits"][0]
     for name in additional:
         assert (fixture.parent / f"{name}.py").read_text(
             encoding="utf-8"

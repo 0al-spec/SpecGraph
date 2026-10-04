@@ -570,3 +570,8 @@ production measurements; label their summaries `production_metrics: false`.
 When a stronger Specification replaces a partial check, do not register the old
 partial check as an equivalent blocking template. Separate measured detection
 gaps from negative controls; a passing smoke does not approve undetected code.
+
+Register known non-equivalent partial predicates under `review_templates` when
+there is reviewed source evidence. Preserve exact-copy precedence, keep these
+warnings non-blocking, and expose their template ID and match basis. This does
+not justify lowering the general similarity threshold for every rule.

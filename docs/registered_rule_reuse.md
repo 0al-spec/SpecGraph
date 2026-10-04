@@ -29,7 +29,7 @@ Static name matching does not resolve a shadowed `scope_digest` function or
 prove runtime identity; this reviewed scope remains `tools/`, not arbitrary
 project-wide digest comparisons.
 
-CI pins analyzer commit `797dc648e62a14a208cf058af32a996de44cdc91` and builds it
+CI pins analyzer commit `6aca21ca37c64740326f5c19bccd6464712f1185` and builds it
 with `cargo build --locked`. The adapter `tools/check_rule_reuse.sh` extracts the
 catalog from the PR **base** revision. Before comparison it independently
 validates the effective head catalog against that same effective head commit
@@ -111,7 +111,8 @@ static spec use, four changed scoped files and no new exact or near matches.
 This verifies the selected extraction, not every existing policy in SpecGraph.
 
 Near-match JSON includes bounded `semantic_review_requests` containing the
-candidate and registered declaration. Local optional Jev classification uses
+candidate and registered declaration, plus match basis and explicit review
+template provenance when present. Local optional Jev classification uses
 `same_rule / different_rule / needs_review`, with model/prompt/input provenance.
 It requires explicit hosted-source opt-in. CI makes no Jev calls and needs no
 API key. A semantic suggestion never changes the blocking count.
@@ -136,18 +137,26 @@ Seven cases are required:
 | changed_authority | 0 | 1 | 0 | success; review suggestion |
 | reviewed_record_reuse | 0 | 0 | 1 | success; aliased explicit import |
 | reviewed_record_exact | 1 | 0 | 0 | failure from the registered-copy gate |
-| reviewed_record_partial_gap | 0 | 0 | 0 | success; known detection gap |
+| reviewed_record_partial | 0 | 1 | 0 | success; explicit review warning |
 | unrelated_digest | 0 | 0 | 0 | success; negative control |
 
 The partial fixture preserves the old content/membership conjuncts from
 `8bd61fb772141a7e7005429a275c0c161fd7c59d`, omitting source-target bindings.
 It does not verify the complete record and is **not** an approved alternative.
-The current near-match heuristic requires at least three shared attribute/string
-features; the short digest policy does not meet that threshold. This case records
-an undetected gap in `summary.json`'s `coverage_gaps`, rather than claiming a
-review warning was produced. A passing smoke means the declared analyzer
-contract was exercised, not that partial checks are safe. Semantic coverage
-requires a separate analyzer improvement/evaluation; CI still makes no LLM calls.
+The catalog lists this exact predicate under `review_templates`, not equivalent
+`templates`: structural matches emit `near_match` with
+`match_basis: review_template` and `template_id: historical-partial-record-content`.
+Only its five registered binders may be renamed. A review pattern cannot
+downgrade an exact copy and does not participate in the generic overlap heuristic.
+
+The original near-match heuristic still requires at least three shared
+attribute/string features; the short digest policy does not meet that threshold.
+The explicit template closes the measured historical-pattern gap, without claiming
+to detect arbitrary incomplete checks. The tested cases have `coverage_gaps: []`;
+`coverage_limits` retains this restriction. A warning means inspect a known partial
+check; it does not prove a bug or semantic equivalence. Static warnings pass
+`--strict`, appear in `new_near_matches` and carry bounded semantic review input
+with the review-template expression and source URL. CI still makes no LLM calls.
 
 A nonzero exit alone is insufficient proof of a blocked copy: reports must be
 complete, bind the exact fixture revisions and identify the registered rule.

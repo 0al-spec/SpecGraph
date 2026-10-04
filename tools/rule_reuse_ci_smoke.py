@@ -98,7 +98,14 @@ def smoke(repo: Path, analyzer: Path, output: Path) -> dict:
                 "subject_publication.complete_reviewed_record",
                 0,
             ),
-            ("reviewed_record_partial_gap", partial, 0, 0, None, 0),
+            (
+                "reviewed_record_partial",
+                partial,
+                0,
+                1,
+                "subject_publication.complete_reviewed_record",
+                0,
+            ),
             ("unrelated_digest", unrelated, 0, 0, None, 0),
         ]
         for name, code, exact, near, rule_id, reuse in cases:
@@ -161,6 +168,17 @@ def smoke(repo: Path, analyzer: Path, output: Path) -> dict:
                     ),
                     f"{name}: missing expected registered rule finding",
                 )
+            if name == "reviewed_record_partial":
+                require(
+                    any(
+                        f.get("match_basis") == "review_template"
+                        and f["template_id"] == "historical-partial-record-content"
+                        and f["rule_id"] == rule_id
+                        and f["introduced"]
+                        for f in findings
+                    ),
+                    f"{name}: missing explicit review-template provenance",
+                )
             summary["cases"].append(
                 {
                     "case": name,
@@ -174,8 +192,10 @@ def smoke(repo: Path, analyzer: Path, output: Path) -> dict:
                 }
             )
             save()
-    summary["coverage_gaps"] = [
-        "reviewed_record_partial_gap: partial field checks are not detected"
+    summary["coverage_gaps"] = []
+    summary["coverage_limits"] = [
+        "Only registered structural partial checks are covered; "
+        "arbitrary partial checks may be missed"
     ]
     summary["status"] = "complete"
     save()
