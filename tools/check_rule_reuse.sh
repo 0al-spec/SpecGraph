@@ -14,6 +14,20 @@ mkdir -p "$output"
 catalog_path=tools/rule_reuse_catalog.toml
 # A deleted head catalog must not turn the following PR into another bootstrap.
 git -C "$root" show "${head}:${catalog_path}" > "$output/head-catalog.toml"
+
+verify_report() {
+  jq -e --arg base "$2" --arg head "$3" '
+    .artifact_kind == "rule_reuse_report" and .schema_version == 1
+    and .status == "complete" and .base_revision == $base and .head_revision == $head
+  ' "$1" >/dev/null
+}
+# Validate the catalog that will become authoritative after this change lands.
+# Comparing head to itself exercises schema, templates and canonical bindings
+# without letting the proposed catalog weaken the current base comparison.
+"$analyzer" check-rule-reuse "$root" \
+  --catalog "$output/head-catalog.toml" --base "$head" --head "$head" \
+  --output "$output/head-catalog-validation.json" --strict
+verify_report "$output/head-catalog-validation.json" "$head" "$head"
 strict=no
 mode=bootstrap
 base_catalog_entry=$(git -C "$root" ls-tree "$base" -- "$catalog_path")
@@ -32,10 +46,7 @@ set -- check-rule-reuse "$root" \
 if [[ "$strict" == yes ]]; then set -- "$@" --strict; fi
 "$analyzer" "$@"
 # Bootstrap is not enforcement, but unavailable/invalid evidence still fails.
-jq -e --arg base "$base" --arg head "$head" '
-  .artifact_kind == "rule_reuse_report" and .schema_version == 1
-  and .status == "complete" and .base_revision == $base and .head_revision == $head
-' "$output/report.json" >/dev/null
+verify_report "$output/report.json" "$base" "$head"
 jq --arg mode "$mode" -r '
   "## Registered rule reuse (" + $mode + ")",
   "Changed-file procedural copies: \(.before_reimplementations) → \(.after_reimplementations)",

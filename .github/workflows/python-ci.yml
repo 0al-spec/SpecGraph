@@ -19,13 +19,14 @@ jobs:
       contents: read
     env:
       RULE_BASE: ${{ github.event.pull_request.base.sha }}
-      RULE_HEAD: ${{ github.event.pull_request.head.sha }}
+      RULE_PR_HEAD: ${{ github.event.pull_request.head.sha }}
+      RULE_MERGE: ${{ github.sha }}
     steps:
-      - name: Checkout PR snapshots
+      - name: Checkout PR merge result
         uses: actions/checkout@v6
         with:
           fetch-depth: 0
-          ref: ${{ github.event.pull_request.head.sha }}
+          ref: ${{ github.sha }}
 
       - name: Checkout pinned rule analyzer
         uses: actions/checkout@v6
@@ -45,9 +46,9 @@ jobs:
         env:
           RULE_OUTPUT: ${{ runner.temp }}/registered-rule-reuse
         run: |
-          bash tools/check_rule_reuse.sh "$GITHUB_WORKSPACE" \
+          bash tools/check_rule_reuse_merge.sh "$GITHUB_WORKSPACE" \
             "$GITHUB_WORKSPACE/.rule-reuse-analyzer/target/debug/specification-metrics" \
-            "$RULE_BASE" "$RULE_HEAD" "$RULE_OUTPUT"
+            "$RULE_BASE" "$RULE_PR_HEAD" "$RULE_MERGE" "$RULE_OUTPUT"
           cat "$RULE_OUTPUT/summary.md" >> "$GITHUB_STEP_SUMMARY"
 
       - name: Upload run-local rule reuse evidence

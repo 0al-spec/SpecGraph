@@ -1055,5 +1055,41 @@
     ],
     "residual_risk": "Covered by tests/test_subject_publication.py::test_cli_classifies_selection_failures_as_governance_blocked. Recorded attribution remains un-attested; production lineage and materialization decisions are unresolved.",
     "recorded_at": "2026-10-03T14:12:00Z"
+  },
+  {
+    "feedback_id": "pr-765-future-catalog-validation",
+    "source_pr": 765,
+    "source_thread_url": "https://github.com/0al-spec/SpecGraph/pull/765#discussion_r4176399187",
+    "reviewer": "chatgpt-codex-connector",
+    "review_comment_summary": "Checking only the existence of the proposed catalog can land malformed configuration that poisons every subsequent base-catalog check.",
+    "fix_summary": "Independently validate the future catalog against the effective head snapshot before retaining base-catalog authority for the change comparison.",
+    "root_cause_class": "artifact_contract_validation_gap",
+    "prevention_action": "regression_test_added",
+    "verification": [
+      "targeted_test",
+      "lint_or_format_check",
+      "manual_contract_review"
+    ],
+    "residual_risk": "Catalog migration still requires explicit reviewed rollout; validation does not approve semantic equivalence.",
+    "recorded_at": "2026-10-04T08:39:19Z",
+    "prevention_path": "tests/test_rule_reuse_ci.py::test_bad_future_catalog_fails_before_base_comparison; real analyzer rejects malformed future TOML before producing comparison report."
+  },
+  {
+    "feedback_id": "pr-765-merge-snapshot-authority",
+    "source_pr": 765,
+    "source_thread_url": "https://github.com/0al-spec/SpecGraph/pull/765#discussion_r4176399190",
+    "reviewer": "chatgpt-codex-connector",
+    "review_comment_summary": "Raw PR-head analysis misreads later base-side additions as deletions and can reject otherwise valid merges.",
+    "fix_summary": "Analyze the GitHub merge result after binding its parents to the event base and PR head; retain all three revisions in comparison.json.",
+    "root_cause_class": "scope_isolation_gap",
+    "prevention_action": "regression_test_added",
+    "verification": [
+      "targeted_test",
+      "lint_or_format_check",
+      "manual_contract_review"
+    ],
+    "residual_risk": "A stale or mismatched GitHub merge snapshot fails closed and needs a new CI run.",
+    "recorded_at": "2026-10-04T08:39:19Z",
+    "prevention_path": "tests/test_rule_reuse_ci.py::test_stale_branch_uses_valid_merge_result_containing_base_catalog; test_merge_from_other_pr_is_rejected_before_analysis; real analyzer verifies enforcing merge-result comparison."
   }
 ]

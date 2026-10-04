@@ -505,3 +505,12 @@ retention bounds its availability; this is not a permanent cross-run database.
 Jev semantic review is opt-in, makes no CI calls and never authorizes a blocking
 match. Branch-protection requirements are separate GitHub settings. See
 `docs/registered_rule_reuse.md` for authority, coverage and rollout details.
+
+
+The reuse job analyzes the GitHub **merge result**, not the raw PR head, after
+`tools/check_rule_reuse_merge.sh` verifies its two parents against the event base
+and PR head. `comparison.json` retains all three identities; the report head is
+the merge revision. Independently validating the future head catalog with a
+head-to-head comparison prevents malformed catalogs from poisoning subsequent
+PRs. This validation retains `head-catalog-validation.json` and does not weaken
+the authoritative base-catalog comparison. See `docs/registered_rule_reuse.md`.

@@ -553,3 +553,10 @@ LLM comparisons remain suggestions. Consume the catalog from the PR base and
 verify report readiness and exact base/head revisions. Label first activation
 bootstrap rather than claiming enforcement. Test the CLI adapter on the local
 Bash as well as CI; empty arrays under `set -u` differ across supported versions.
+
+
+Validate both the current base catalog and the proposed future catalog. A head
+file's presence does not prove it is safe to become the next base. Compare the
+base with the verified merge result, preserving raw PR-head provenance
+separately: an older branch can lack a newly added base catalog without deleting
+it from what would actually land. Regression tests must cover both distinctions.

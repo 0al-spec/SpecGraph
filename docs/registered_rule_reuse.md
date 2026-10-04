@@ -16,8 +16,12 @@ source field names alone do not establish semantic equivalence.
 
 CI pins analyzer commit `797dc648e62a14a208cf058af32a996de44cdc91` and builds it
 with `cargo build --locked`. The adapter `tools/check_rule_reuse.sh` extracts the
-catalog from the PR **base** revision. Editing the head catalog does not weaken
-that PR's check. A deleted head catalog fails. Catalog or canonical rule changes
+catalog from the PR **base** revision. Before comparison it independently
+validates the effective head catalog against that same effective head commit
+(`head → head`), including TOML schema, templates and canonical declaration
+digests. An invalid proposed catalog cannot land and poison subsequent PRs.
+The base catalog still governs the current comparison. A deleted effective head
+catalog fails. Catalog or canonical rule changes
 require an explicit reviewed migration; a stale canonical digest fails closed
 under the base catalog, even when the head updates its own digest.
 
@@ -26,6 +30,22 @@ using the head catalog, labels its mode **bootstrap**, and does not enforce new
 copy counts. After the catalog lands in the base, mode **enforcing** passes
 `--strict`. Bootstrap still rejects incomplete/missing evidence and reports for other base/head revisions. An artifact's
 presence alone does not establish readiness.
+
+## Merge snapshot selection
+
+CI checks out `${{ github.sha }}`, the GitHub PR merge commit, and passes it
+through `tools/check_rule_reuse_merge.sh`. Its first parent must equal the event
+base SHA and its second parent must equal the event PR head SHA. Mismatches fail
+before analysis. The analyzer compares base to this **merge result**; it does not
+interpret changes already made on the base as deletions by an older PR branch.
+A genuine catalog deletion in the merge result still fails.
+
+`comparison.json` records base, original PR head and merge revisions. The report's
+`head_revision` is the effective merge revision. These identities are distinct;
+its report must match the exact selected base/merge revisions. For a local CI
+reproduction, create a merge commit with base and PR head in that order and run
+`tools/check_rule_reuse_merge.sh ROOT ANALYZER BASE PR_HEAD MERGE OUTPUT_DIRECTORY`.
+The direct snapshot adapter remains available for intentional local comparisons.
 
 ## What blocks
 
@@ -48,7 +68,8 @@ adapter does not prove runtime identity or resolve module aliases/re-exports.
 ## Reports and history
 
 The run-local `registered-rule-reuse` artifact contains `report.json`, selected
-catalog, head catalog, `mode.txt`, `summary.md` when successful and
+catalog, head catalog, `head-catalog-validation.json`, `comparison.json` in CI,
+`mode.txt`, `summary.md` when successful and
 `history.sqlite`. The SQLite `rule_reuse_snapshots` table is separate from S/U
 history; each snapshot records revisions, catalog digest and analyzer version.
 Artifacts are retained per Actions retention, not a permanent cross-run database.
