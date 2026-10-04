@@ -42,6 +42,18 @@ jobs:
       - name: Build pinned analyzer with locked dependencies
         run: cargo build --locked --manifest-path .rule-reuse-analyzer/Cargo.toml
 
+      - name: Set up Python for the isolated gate smoke
+        uses: actions/setup-python@v6
+        with:
+          python-version: "3.10"
+
+      - name: Verify enforcing rule reuse with the pinned analyzer
+        run: >
+          python tools/rule_reuse_ci_smoke.py
+          --root "$GITHUB_WORKSPACE"
+          --analyzer "$GITHUB_WORKSPACE/.rule-reuse-analyzer/target/debug/specification-metrics"
+          --output "${{ runner.temp }}/registered-rule-reuse-smoke"
+
       - name: Check registered rule reuse using the base catalog
         env:
           RULE_OUTPUT: ${{ runner.temp }}/registered-rule-reuse
@@ -57,6 +69,14 @@ jobs:
         with:
           name: registered-rule-reuse
           path: ${{ runner.temp }}/registered-rule-reuse/
+          if-no-files-found: warn
+
+      - name: Upload isolated rule reuse smoke evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: registered-rule-reuse-smoke
+          path: ${{ runner.temp }}/registered-rule-reuse-smoke/
           if-no-files-found: warn
 
   publication-diagnostic-compatibility:

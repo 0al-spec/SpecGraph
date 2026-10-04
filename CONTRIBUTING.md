@@ -560,3 +560,9 @@ file's presence does not prove it is safe to become the next base. Compare the
 base with the verified merge result, preserving raw PR-head provenance
 separately: an older branch can lack a newly added base catalog without deleting
 it from what would actually land. Regression tests must cover both distinctions.
+
+
+Exercise blocking gates with an explicit known violation as well as a clean
+change. Verify ready evidence, finding identity and intended rejection reason,
+not only a nonzero process exit. Isolate synthetic fixture artifacts from
+production measurements; label their summaries `production_metrics: false`.
