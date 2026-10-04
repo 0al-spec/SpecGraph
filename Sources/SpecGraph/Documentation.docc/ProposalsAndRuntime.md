@@ -479,3 +479,38 @@ See `docs/publication_policy_diagnostics.md` for scope and interpretation.
 
 Collector tests use an independent syntax corpus, avoiding a blocking threshold
 on live project totals or classification completeness for this informational report.
+
+
+## Registered Specification rule reuse
+
+The separate Python CI `registered-rule-reuse` job invokes `check-rule-reuse`
+with `tools/rule_reuse_catalog.toml` for the reviewed workspace allocation rule.
+It uses the PR base catalog and a pinned SpecificationMetrics commit. First-time
+activation is explicitly **bootstrap** and report-only; after the catalog lands
+in the base, mode **enforcing** blocks `new_reimplementations > 0`, incomplete
+parsing and stale canonical digests. Report readiness and exact base/head revisions
+are checked even in bootstrap. Deleting the head catalog fails. Catalog
+migrations need explicit review. Existing publication diagnostics retain
+`merge_gate_enabled: false`; their informational classification is unchanged.
+
+Only changed scoped Python predicates in if/elif/while/assert/require and lambda
+bodies are covered; this is not project-wide semantic equivalence. Near matches
+remain review-only. Static Specification call recognition is not runtime proof.
+The real workspace allocation pilot reports procedural copies **1 → 0**, one
+static spec use and four changed scoped files.
+
+Run-local evidence contains JSON, catalogs, mode and `history.sqlite`, whose
+`rule_reuse_snapshots` table stays separate from primary S/U history. Actions
+retention bounds its availability; this is not a permanent cross-run database.
+Jev semantic review is opt-in, makes no CI calls and never authorizes a blocking
+match. Branch-protection requirements are separate GitHub settings. See
+`docs/registered_rule_reuse.md` for authority, coverage and rollout details.
+
+
+The reuse job analyzes the GitHub **merge result**, not the raw PR head, after
+`tools/check_rule_reuse_merge.sh` verifies its two parents against the event base
+and PR head. `comparison.json` retains all three identities; the report head is
+the merge revision. Independently validating the future head catalog with a
+head-to-head comparison prevents malformed catalogs from poisoning subsequent
+PRs. This validation retains `head-catalog-validation.json` and does not weaken
+the authoritative base-catalog comparison. See `docs/registered_rule_reuse.md`.

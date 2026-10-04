@@ -542,3 +542,21 @@ project totals or current classification completeness into blocking tests for an
 informational report. CI artifacts belong to the current run's temporary directory.
 Diff stable violation IDs as well as totals so removing an old violation cannot
 hide a new one. Report classification-contract changes for review.
+
+
+### Registered Specification reuse checks
+
+Use [registered rule reuse](docs/registered_rule_reuse.md) to prevent a reviewed
+Specification rule from reappearing as a registered procedural copy. Register
+exact historical templates and production scopes explicitly; near matches and
+LLM comparisons remain suggestions. Consume the catalog from the PR base and
+verify report readiness and exact base/head revisions. Label first activation
+bootstrap rather than claiming enforcement. Test the CLI adapter on the local
+Bash as well as CI; empty arrays under `set -u` differ across supported versions.
+
+
+Validate both the current base catalog and the proposed future catalog. A head
+file's presence does not prove it is safe to become the next base. Compare the
+base with the verified merge result, preserving raw PR-head provenance
+separately: an older branch can lack a newly added base catalog without deleting
+it from what would actually land. Regression tests must cover both distinctions.

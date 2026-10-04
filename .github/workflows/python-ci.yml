@@ -12,6 +12,53 @@ env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
 
 jobs:
+  registered-rule-reuse:
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    env:
+      RULE_BASE: ${{ github.event.pull_request.base.sha }}
+      RULE_PR_HEAD: ${{ github.event.pull_request.head.sha }}
+      RULE_MERGE: ${{ github.sha }}
+    steps:
+      - name: Checkout PR merge result
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+          ref: ${{ github.sha }}
+
+      - name: Checkout pinned rule analyzer
+        uses: actions/checkout@v6
+        with:
+          repository: SoundBlaster/SpecificationMetrics
+          ref: 797dc648e62a14a208cf058af32a996de44cdc91
+          path: .rule-reuse-analyzer
+          persist-credentials: false
+
+      - name: Set up Rust
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Build pinned analyzer with locked dependencies
+        run: cargo build --locked --manifest-path .rule-reuse-analyzer/Cargo.toml
+
+      - name: Check registered rule reuse using the base catalog
+        env:
+          RULE_OUTPUT: ${{ runner.temp }}/registered-rule-reuse
+        run: |
+          bash tools/check_rule_reuse_merge.sh "$GITHUB_WORKSPACE" \
+            "$GITHUB_WORKSPACE/.rule-reuse-analyzer/target/debug/specification-metrics" \
+            "$RULE_BASE" "$RULE_PR_HEAD" "$RULE_MERGE" "$RULE_OUTPUT"
+          cat "$RULE_OUTPUT/summary.md" >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload run-local rule reuse evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: registered-rule-reuse
+          path: ${{ runner.temp }}/registered-rule-reuse/
+          if-no-files-found: warn
+
   publication-diagnostic-compatibility:
     runs-on: ubuntu-latest
     strategy:

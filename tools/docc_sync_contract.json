@@ -860,6 +860,25 @@
         "Gherkin",
         "runtime_realization"
       ]
+    },
+    {
+      "id": "registered-rule-reuse",
+      "description": "Registered template gate scope, authority and rollout stay aligned.",
+      "docs": [
+        "docs/registered_rule_reuse.md"
+      ],
+      "docc": [
+        "Sources/SpecGraph/Documentation.docc/ProposalsAndRuntime.md"
+      ],
+      "required_terms": [
+        "check-rule-reuse",
+        "tools/rule_reuse_catalog.toml",
+        "bootstrap",
+        "enforcing",
+        "new_reimplementations > 0",
+        "rule_reuse_snapshots",
+        "merge_gate_enabled: false"
+      ]
     }
   ]
 }
