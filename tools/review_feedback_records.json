@@ -1108,5 +1108,95 @@
     "residual_risk": "The regression simulates only the external gate; real analyzer matching is covered separately by the enforcing smoke run.",
     "recorded_at": "2026-10-04T12:48:00Z",
     "prevention_path": "tests/test_rule_reuse_ci_smoke.py::test_dirty_fixture_does_not_change_recorded_snapshot"
+  },
+  {
+    "feedback_id": "pr-768-cross-tree-correlation",
+    "source_pr": 768,
+    "source_thread_url": "https://github.com/0al-spec/SpecGraph/pull/768#discussion_r4178456249",
+    "reviewer": "chatgpt-codex-connector",
+    "review_comment_summary": "The proposal named correlation between rule evaluations and assertions but lacked an explicit cross-tree edge identity.",
+    "fix_summary": "Added stable attempt-scoped correlation_id edges from evaluation to assertion, with relation, obligation binding, closure inclusion, and rejection of dangling/conflicting edges.",
+    "root_cause_class": "artifact_contract_validation_gap",
+    "prevention_action": "documentation_rule_added",
+    "verification": [
+      "manual_contract_review",
+      "lint_or_format_check"
+    ],
+    "residual_risk": "Runtime realization and admission conformance remain deferred; the contract documents these as future obligations and does not claim implemented behavior.",
+    "resolved_commit": "813f78a36fcae46393c8ca3731c8c6769bd5c4c8",
+    "recorded_at": "2026-10-05T18:43:00Z",
+    "prevention_path": "CTX-01a plus synchronized DocC describe the correlation contract; manual contract review and proposal/DocC gates passed."
+  },
+  {
+    "feedback_id": "pr-768-zeusus-source-pin",
+    "source_pr": 768,
+    "source_thread_url": "https://github.com/0al-spec/SpecGraph/pull/768#discussion_r4178456253",
+    "reviewer": "chatgpt-codex-connector",
+    "review_comment_summary": "The motivating Zeusus spec node was described as current without an immutable checkout and content pin.",
+    "fix_summary": "Recorded the Zeusus checkout commit, branch, generated node path, Git blob identity, and SHA-256; explicitly notes that the source was untracked in that checkout.",
+    "root_cause_class": "artifact_contract_validation_gap",
+    "prevention_action": "documentation_rule_added",
+    "verification": [
+      "manual_contract_review",
+      "lint_or_format_check"
+    ],
+    "residual_risk": "Runtime realization and admission conformance remain deferred; the contract documents these as future obligations and does not claim implemented behavior.",
+    "resolved_commit": "813f78a36fcae46393c8ca3731c8c6769bd5c4c8",
+    "recorded_at": "2026-10-05T18:43:00Z",
+    "prevention_path": "Archived proposal source records the exact commit and node digests; manual source/digest review completed."
+  },
+  {
+    "feedback_id": "pr-768-bound-assertion-gate",
+    "source_pr": 768,
+    "source_thread_url": "https://github.com/0al-spec/SpecGraph/pull/768#discussion_r4178456256",
+    "reviewer": "chatgpt-codex-connector",
+    "review_comment_summary": "A passing test root could be projected against declared targets without successful target-bound assertions.",
+    "fix_summary": "Specified fail-closed target verification: each verified target needs a completed successful bound assertion plus required correlations and artifacts; a root pass alone verifies none.",
+    "root_cause_class": "policy_runtime_drift",
+    "prevention_action": "documentation_rule_added",
+    "verification": [
+      "manual_contract_review",
+      "lint_or_format_check"
+    ],
+    "residual_risk": "Runtime realization and admission conformance remain deferred; the contract documents these as future obligations and does not claim implemented behavior.",
+    "resolved_commit": "813f78a36fcae46393c8ca3731c8c6769bd5c4c8",
+    "recorded_at": "2026-10-05T18:43:00Z",
+    "prevention_path": "CTX-08a and synchronized DocC name the prevention contract; manual contract review and proposal/DocC gates passed."
+  },
+  {
+    "feedback_id": "pr-768-late-event-invalidation",
+    "source_pr": 768,
+    "source_thread_url": "https://github.com/0al-spec/SpecGraph/pull/768#discussion_r4178456260",
+    "reviewer": "chatgpt-codex-connector",
+    "review_comment_summary": "Finalization could publish success before an attributed asynchronous assertion failure arrived, leaving projected evidence valid.",
+    "fix_summary": "Required open scope leases to delay finalization and higher attempt-local revisions to invalidate prior success when attributed failures arrive late; consumers must honor the latest revision.",
+    "root_cause_class": "scope_isolation_gap",
+    "prevention_action": "documentation_rule_added",
+    "verification": [
+      "manual_contract_review",
+      "lint_or_format_check"
+    ],
+    "residual_risk": "Runtime realization and admission conformance remain deferred; the contract documents these as future obligations and does not claim implemented behavior.",
+    "resolved_commit": "813f78a36fcae46393c8ca3731c8c6769bd5c4c8",
+    "recorded_at": "2026-10-05T18:43:00Z",
+    "prevention_path": "CTX-06a and synchronized DocC specify lease and invalidation behavior; manual lifecycle review and proposal/DocC gates passed."
+  },
+  {
+    "feedback_id": "pr-768-admission-stages",
+    "source_pr": 768,
+    "source_thread_url": "https://github.com/0al-spec/SpecGraph/pull/768#discussion_r4178456264",
+    "reviewer": "chatgpt-codex-connector",
+    "review_comment_summary": "The pilot description implied an admission path unavailable to producer observations and the current tests_verified evaluator.",
+    "fix_summary": "Separated producer-observation inspection from future admission and listed issuance, pinned receipt, policy, trust-store, aggregate decision, and test evaluator as prerequisites.",
+    "root_cause_class": "artifact_contract_validation_gap",
+    "prevention_action": "documentation_rule_added",
+    "verification": [
+      "manual_contract_review",
+      "lint_or_format_check"
+    ],
+    "residual_risk": "Runtime realization and admission conformance remain deferred; the contract documents these as future obligations and does not claim implemented behavior.",
+    "resolved_commit": "813f78a36fcae46393c8ca3731c8c6769bd5c4c8",
+    "recorded_at": "2026-10-05T18:43:00Z",
+    "prevention_path": "CTX-10a and synchronized DocC state the unavailable boundary; manual contract review and proposal/DocC gates passed."
   }
 ]
