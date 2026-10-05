@@ -1,7 +1,8 @@
 # Registered Specification rule reuse
 
 The Python CI `registered-rule-reuse` job detects new procedural copies of the
-reviewed `subject_publication.workspace_allocation` rule with
+reviewed `subject_publication.workspace_allocation` and
+`subject_publication.complete_reviewed_record` rules with
 `check-rule-reuse` from SpecificationMetrics. This is separate from the
 informational publication policy classification and the primary S/U counters.
 
@@ -14,7 +15,21 @@ workspace binding predicate at PR #762's exact commit. Tests and examples outsid
 `tools/` are not analyzed. A reviewed template is a narrow reuse contract;
 source field names alone do not establish semantic equivalence.
 
-CI pins analyzer commit `797dc648e62a14a208cf058af32a996de44cdc91` and builds it
+The second rule binds `REVIEWED_RECORD_SPEC` in its separate canonical module
+and registers `scope_digest(reviewed_record) == scope_digest(requested_record)`.
+Only the two record identifiers may be renamed; `scope_digest` stays fixed.
+This template is a reviewed adapter-equivalent expansion of the existing
+Specification call, **not** a historical procedural implementation. The policy
+was introduced in commit `06efdb7ea0de52610211a72183d5866491e8b104` when earlier
+partial-field checks were strengthened; those older checks are not equivalent.
+The template source URL points to the full-record call and its adapter facts.
+The canonical attribute predicate is also indexed automatically. Ordinary
+comparisons such as `download_sha256 == cached_sha256` are not this rule.
+Static name matching does not resolve a shadowed `scope_digest` function or
+prove runtime identity; this reviewed scope remains `tools/`, not arbitrary
+project-wide digest comparisons.
+
+CI pins analyzer commit `6aca21ca37c64740326f5c19bccd6464712f1185` and builds it
 with `cargo build --locked`. The adapter `tools/check_rule_reuse.sh` extracts the
 catalog from the PR **base** revision. Before comparison it independently
 validates the effective head catalog against that same effective head commit
@@ -96,7 +111,8 @@ static spec use, four changed scoped files and no new exact or near matches.
 This verifies the selected extraction, not every existing policy in SpecGraph.
 
 Near-match JSON includes bounded `semantic_review_requests` containing the
-candidate and registered declaration. Local optional Jev classification uses
+candidate and registered declaration, plus match basis and explicit review
+template provenance when present. Local optional Jev classification uses
 `same_rule / different_rule / needs_review`, with model/prompt/input provenance.
 It requires explicit hosted-source opt-in. CI makes no Jev calls and needs no
 API key. A semantic suggestion never changes the blocking count.
@@ -107,17 +123,40 @@ API key. A semantic suggestion never changes the blocking count.
 Before analyzing the PR, `tools/rule_reuse_ci_smoke.py` exercises the pinned
 analyzer against committed, isolated Git fixtures in **enforcing** mode. It
 copies the selected committed Python snapshot and reviewed catalog without
-executing application source. The intentional historical copy lives only in
-`tests/fixtures/rule_reuse/workspace_allocation_copy.py` and a temporary fixture
-repository, never production tooling.
+executing application source. Fixture bytes, including the historical workspace copy and the adapter-equivalent
+full-record copy, come from that same recorded Git revision. They live under
+`tests/fixtures/rule_reuse/` and in a temporary fixture repository, never
+production tooling.
 
-Three cases are required:
+Seven cases are required:
 
-| Case | New exact | New near | Expected exit |
-| --- | ---: | ---: | --- |
-| clean | 0 | 0 | success |
-| exact_copy | 1 | 0 | failure from the registered-copy gate |
-| changed_authority | 0 | 1 | success; review suggestion |
+| Case | New exact | New near | Static reuse | Expected exit |
+| --- | ---: | ---: | ---: | --- |
+| clean | 0 | 0 | 0 | success |
+| exact_copy | 1 | 0 | 0 | failure from the registered-copy gate |
+| changed_authority | 0 | 1 | 0 | success; review suggestion |
+| reviewed_record_reuse | 0 | 0 | 1 | success; aliased explicit import |
+| reviewed_record_exact | 1 | 0 | 0 | failure from the registered-copy gate |
+| reviewed_record_partial | 0 | 1 | 0 | success; explicit review warning |
+| unrelated_digest | 0 | 0 | 0 | success; negative control |
+
+The partial fixture preserves the old content/membership conjuncts from
+`8bd61fb772141a7e7005429a275c0c161fd7c59d`, omitting source-target bindings.
+It does not verify the complete record and is **not** an approved alternative.
+The catalog lists this exact predicate under `review_templates`, not equivalent
+`templates`: structural matches emit `near_match` with
+`match_basis: review_template` and `template_id: historical-partial-record-content`.
+Only its five registered binders may be renamed. A review pattern cannot
+downgrade an exact copy and does not participate in the generic overlap heuristic.
+
+The original near-match heuristic still requires at least three shared
+attribute/string features; the short digest policy does not meet that threshold.
+The explicit template closes the measured historical-pattern gap, without claiming
+to detect arbitrary incomplete checks. The tested cases have `coverage_gaps: []`;
+`coverage_limits` retains this restriction. A warning means inspect a known partial
+check; it does not prove a bug or semantic equivalence. Static warnings pass
+`--strict`, appear in `new_near_matches` and carry bounded semantic review input
+with the review-template expression and source URL. CI still makes no LLM calls.
 
 A nonzero exit alone is insufficient proof of a blocked copy: reports must be
 complete, bind the exact fixture revisions and identify the registered rule.

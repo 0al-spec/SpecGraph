@@ -548,7 +548,7 @@ hide a new one. Report classification-contract changes for review.
 
 Use [registered rule reuse](docs/registered_rule_reuse.md) to prevent a reviewed
 Specification rule from reappearing as a registered procedural copy. Register
-exact historical templates and production scopes explicitly; near matches and
+exact historical or explicitly labeled adapter-equivalent templates and production scopes explicitly; near matches and
 LLM comparisons remain suggestions. Consume the catalog from the PR base and
 verify report readiness and exact base/head revisions. Label first activation
 bootstrap rather than claiming enforcement. Test the CLI adapter on the local
@@ -566,3 +566,12 @@ Exercise blocking gates with an explicit known violation as well as a clean
 change. Verify ready evidence, finding identity and intended rejection reason,
 not only a nonzero process exit. Isolate synthetic fixture artifacts from
 production measurements; label their summaries `production_metrics: false`.
+
+When a stronger Specification replaces a partial check, do not register the old
+partial check as an equivalent blocking template. Separate measured detection
+gaps from negative controls; a passing smoke does not approve undetected code.
+
+Register known non-equivalent partial predicates under `review_templates` when
+there is reviewed source evidence. Preserve exact-copy precedence, keep these
+warnings non-blocking, and expose their template ID and match basis. This does
+not justify lowering the general similarity threshold for every rule.

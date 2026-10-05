@@ -22,3 +22,30 @@ and allocation["identity_allocation_authorized"] is True
 and allocation["source_ref_initialization_authorized"] is True
 and allocation["declaration_sha256"] == hashlib.sha256(request.workspace_declaration_yaml.encode()).hexdigest()
 '''
+
+[[rules]]
+id = "subject_publication.complete_reviewed_record"
+bounded_context = "subject_publication"
+paths = ["tools"]
+canonical_path = "tools/subject_reviewed_record_spec.py"
+canonical_symbol = "REVIEWED_RECORD_SPEC"
+canonical_digest = "blake3:8606ca36eed21b4b8a78999fc023d8fee6a32db3c5261958cfe30557d9ea3cc8"
+
+# Reviewed adapter-equivalent template, not a historical procedural extraction.
+# Only records are renameable; the scope_digest operation remains fixed.
+[[rules.templates]]
+id = "reviewed-record-scope-digest-equivalent"
+renameable_identifiers = ["reviewed_record", "requested_record"]
+source_url = "https://github.com/0al-spec/SpecGraph/blob/06efdb7ea0de52610211a72183d5866491e8b104/tools/subject_publication.py#L447-L452"
+expression = '''
+scope_digest(reviewed_record) == scope_digest(requested_record)
+'''
+
+# Historical partial-field check: review only, explicitly not equivalent.
+[[rules.review_templates]]
+id = "historical-partial-record-content"
+renameable_identifiers = ["draft", "document", "draft_revision", "revision", "subject"]
+source_url = "https://github.com/0al-spec/SpecGraph/blob/8bd61fb772141a7e7005429a275c0c161fd7c59d/tools/subject_publication.py#L389-L410"
+expression = """
+draft['subject'] == document['subject'] and draft['title'] == document['title'] and (draft_revision['number'] == revision['number']) and (draft_revision['statement'] == revision['statement'] == subject['statement']) and (draft_revision['revision_scope'] == revision['revision_scope']) and (draft_revision['acceptance_criteria_refs'] == revision['acceptance_criteria_refs'])
+"""
