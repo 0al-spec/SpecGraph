@@ -15,6 +15,15 @@ is unavailable, so the pilot is limited to producer-observation inspection.
 See <doc:CompositionalTestContext> and
 `docs/proposals/0224_compositional_test_context_and_evidence_binding.md`.
 
+## `tests_verified` evidence admission plan
+
+Proposal 0225 prepares a bounded plan for a future `tests_verified_v1`
+evaluator. The claim remains `unknown / evidence_evaluator_unavailable`; the
+plan requires explicit bound assertions, pinned test-run artifacts and a
+trusted accepted receipt, and does not implement or activate admission. See
+<doc:TestsVerifiedEvidencePlan> and
+`docs/proposals/0225_tests_verified_evidence_admission_plan.md`.
+
 ## Proposal Records
 
 Proposal markdown under `docs/proposals/` describes bounded changes and their

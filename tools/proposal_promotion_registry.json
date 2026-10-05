@@ -2897,5 +2897,18 @@
     "required_provenance_links": [
       "source_draft_ref"
     ]
+  },
+  {
+    "proposal_id": "0225",
+    "source_artifact_class": "working_draft",
+    "source_refs": [
+      "docs/archive/proposal_sources/0225_tests_verified_evidence_admission_plan.md"
+    ],
+    "motivating_concern": "SpecGraph leaves tests_verified unknown because it lacks a reviewed, source-pinned and trusted test-evidence evaluator.",
+    "normalized_title": "Tests-Verified Evidence Admission Plan",
+    "bounded_scope": "Prepare a proposal-only delivery plan for tests_verified_v1 that composes 0224 assertion bindings, provider-neutral trusted receipt issuance and fresh SpecGraph admission; do not implement runners, issuers, schemas, evaluators, canonical claims or lifecycle changes.",
+    "required_provenance_links": [
+      "source_draft_ref"
+    ]
   }
 ]
