@@ -2884,5 +2884,18 @@
     "required_provenance_links": [
       "source_draft_ref"
     ]
+  },
+  {
+    "proposal_id": "0224",
+    "source_artifact_class": "working_draft",
+    "source_refs": [
+      "docs/archive/proposal_sources/0224_compositional_test_context_and_evidence_binding.md"
+    ],
+    "motivating_concern": "Zeusus needs explicit test/scenario bindings and immutable metadata lineage across composed SpecificationCore evaluations, assertions and snapshot artifacts.",
+    "normalized_title": "Compositional Test Context and Evidence Binding",
+    "bounded_scope": "Prepare a provider-neutral execution-binding and metadata propagation contract with repository ownership, scoped lifecycle, artifact pins and future BDD cases. SDKs, canonical adoption, runtime implementation and evidence admission remain deferred.",
+    "required_provenance_links": [
+      "source_draft_ref"
+    ]
   }
 ]
