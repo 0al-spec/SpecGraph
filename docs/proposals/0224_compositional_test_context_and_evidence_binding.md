@@ -69,6 +69,15 @@ The expression tree describes evaluation. The execution tree describes test
 steps and artifacts. Correlation connects the two without equating their
 semantics or forcing every test step to implement `Specification`.
 
+Cross-tree correlation uses a stable, producer-assigned `correlation_id` on each
+rule-evaluation-to-assertion edge. The edge also names its source evaluation,
+target assertion, relation (for example, `supports` or `contradicts`) and
+applicable obligation binding. IDs are unique within the immutable execution
+attempt and are preserved in the export closure; consumers MUST reject dangling
+or conflicting edges rather than infer correlation from shared ancestry,
+target IDs, names or timestamps. One assertion may cite several evaluations,
+and one evaluation may inform several assertions.
+
 | Owner | Responsibility |
 | --- | --- |
 | SpecificationCore | Provider-neutral rule bindings and compositional trace context; optional test-support surface whose packaging is reviewed in its repository. Core predicates stay independent of test runners. |
@@ -105,6 +114,14 @@ not dictionary last-write-wins. Root scenario context does not automatically
 declare that every descendant verifies that scenario. A rule binding identifies
 the rule; an assertion binding declares which obligation it checks.
 
+Declaring a verification target is not evidence that it was verified: each
+target projected as verified MUST have at least one completed, successful
+assertion binding explicitly addressing that target, with its applicable
+evaluation-to-assertion edges and required artifacts present. Missing, skipped,
+failed, ambiguous or incomplete assertions leave the target unverified, even
+when the root runner outcome is passed. A passing root with no bound assertion
+verifies no declared target.
+
 The metadata allowlist and serialization version MUST be reviewed before SDK
 implementation. Unknown extension namespaces are retained as opaque bounded
 data or explicitly rejected under the selected profile, never silently dropped.
@@ -122,9 +139,16 @@ Detached tasks and callbacks crossing an executor/process boundary require an
 explicit captured context; absent context produces uncorrelated diagnostics,
 not invented parentage or verification evidence.
 
-Test finalization waits for registered child work and runner completion. Late
-events after closure are rejected or retained as attributed late diagnostics;
-they cannot change a completed observation. Cancellation and thrown failures
+Test finalization waits for registered child work and runner completion. Work
+that may emit attributed events after the wait boundary must hold an outstanding
+scope lease; finalization cannot publish a successful observation while any
+lease remains open. If an attributable failure or assertion event nevertheless
+arrives after closure, the producer emits a superseding invalidation record
+with a strictly higher attempt-local revision. Admission consumers MUST use the
+latest revision and MUST invalidate any earlier successful observation in the
+same attempt; exports include both the prior observation and invalidation in
+their closure. Unattributed late events remain diagnostics and cannot be used
+as evidence. Cancellation and thrown failures
 preserve completed child observations and the actual terminal outcome. A
 short-circuited rule remains skipped. Export failure, overflow or dropped required
 events marks evidence incomplete; successful test behavior alone cannot hide
@@ -157,10 +181,16 @@ unresolved required targets and unavailable artifacts cannot become verified
 bindings. Numeric anchor assertions and renderer images remain different evidence.
 
 The export is a producer observation. A metadata binding, trace, passing test,
-valid schema or artifact hash does not issue an accepted receipt. FeaturePassport
-adapters validate declared probe/element mappings and preserve applicability pins;
-existing authorities separately evaluate admission. Split/merge lineage and newer
-spec revisions cannot silently inherit historical test evidence.
+valid schema or artifact hash does not issue an accepted receipt. The existing
+SpecGraph evidence path requires separate issuance, a pinned receipt, policy,
+trust-store and aggregate-decision inputs for `runtime_verified`; the current
+`tests_verified` evaluator is unavailable. Therefore this proposal's pilot can
+produce and inspect observations but cannot claim that test evidence has
+traversed admission. Any future end-to-end pilot must separately implement and
+validate those issuance, receipt, decision and trust stages. FeaturePassport
+adapters validate declared probe/element mappings and preserve applicability
+pins; existing authorities separately evaluate admission. Split/merge lineage
+and newer spec revisions cannot silently inherit historical test evidence.
 
 ## Zeusus Pilot and Bounded Realization
 
@@ -173,8 +203,10 @@ spec revisions cannot silently inherit historical test evidence.
    `ZEU-LEGACY-ANCHOR-001`, pinning the actual workspace identity and source digest
    at execution. Add separate preview/committed evidence for scenario
    `ZEU-LEGACY-ANCHOR-003` only when the fixture exercises both paths.
-4. Export producer observations and test the existing FeaturePassport/SpecGraph
-   adapter path. Report unresolved admission inputs explicitly.
+4. Export producer observations and inspect their mapping without claiming
+   accepted or `tests_verified` evidence. End-to-end admission remains blocked
+   until issuance, receipt, policy, trust-store, aggregate-decision and test
+   evaluator stages are implemented and validated independently.
 
 Synthetic asymmetric images and anchor markers are suitable committed fixtures.
 Extracted GOG assets and their golden snapshots remain local-only and outside
@@ -189,15 +221,19 @@ These cases specify future checks; none has been executed by this proposal.
 | ID | Given / When / Then obligation |
 | --- | --- |
 | CTX-01 | Given a test with two rule bindings and one snapshot binding, when composed and exported, then each node resolves its original root provenance and local binding without inferring coverage for sibling nodes. |
+| CTX-01a | Given several rule evaluations and assertions, when exported, then stable attempt-scoped correlation edges identify the evaluations supporting or contradicting each assertion; dangling or conflicting edges are rejected. |
 | CTX-02 | Given two concurrent tests and concurrent children, when evaluated, then run/recorder identities and immutable contexts prevent cross-test leakage while causal parentage survives. |
 | CTX-03 | Given a descendant overwrites root build provenance or conflicts with a binding ID, when scope creation is attempted, then an attributed finding prevents a valid bound observation. |
 | CTX-04 | Given an expected rejection and an unsatisfied rule, when the assertion confirms rejection, then the test passes; a non-throwing assertion issue instead produces failure. |
 | CTX-05 | Given short circuit, thrown failure or cancellation, when finalizing, then executed children and distinct skipped/error/cancelled outcomes survive without fabricated execution. |
 | CTX-06 | Given detached work without context or an event after finalization, when collecting, then it cannot inherit a verification binding or alter completed evidence. |
+| CTX-06a | Given registered asynchronous work holding a scope lease, when finalization begins, then no success is published until the lease closes; an attributed late failure creates a higher-revision invalidation that consumers must honor. |
 | CTX-07 | Given a retry or parameterized case, when recording, then stable test identity and distinct attempt/case identities preserve all prior results. |
 | CTX-08 | Given a snapshot with missing baseline, changed comparison policy, missing artifact or overflow/export failure, when emitting evidence, then applicability/incompleteness findings prevent verified snapshot evidence. |
+| CTX-08a | Given declared verification targets but no successful bound assertion for one target, when projecting a passing root test, then that target remains unverified. |
 | CTX-09 | Given a changed scenario revision, split/merge or unresolved target, when projecting an old passed result, then historical pins remain and no current applicability is inferred. |
 | CTX-10 | Given a provider-free test and supported namespaced annotations, when exported and adapted, then metadata survives without a SpecGraph dependency or an accepted receipt fabricated by the producer. |
+| CTX-10a | Given producer observations without issuance, pinned receipt, policy, trust-store, aggregate decision and an available test-evidence evaluator, when the pilot reports results, then admission remains unavailable and is not described as complete. |
 
 ## Preparation Validation and Remaining Decisions
 

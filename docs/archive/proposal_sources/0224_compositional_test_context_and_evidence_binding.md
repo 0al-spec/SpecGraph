@@ -31,10 +31,16 @@ observations and accepted receipts are distinct evidence kinds.
   RFC 0001 owns generic external references, observations and receipts; core
   schema validation does not establish behavior coverage. Existing uncommitted
   example changes were not used as contract authority or modified.
-- Zeusus current `ZEU-SPEC-0024` declares `ZEU-LEGACY-ANCHOR-001` for declared
-  anchor mapping and `ZEU-LEGACY-ANCHOR-003` for preview/committed parity. These
-  scenario labels motivate the pilot; actual execution must resolve and pin
-  the immutable workspace and exact source content independently.
+- Zeusus pilot inspection was performed in checkout `4d9100a433fc256a95b693fe00b0fdb6c03f73cc`
+  (`codex/composite-placement-atomicity`). The resolved source was the generated,
+  untracked workspace node `.specgraph-workspace/specs/nodes/ZEU-SPEC-0024.yaml`,
+  Git blob object `bee6a42a84913e1eacf4420672e49ac9406d9254`, SHA-256
+  `0779f50019f21bb61488b945e95f342bd6ca43d95adc70de5ace2b49290b57fb`.
+  The node declares `ZEU-LEGACY-ANCHOR-001` for declared anchor mapping and
+  `ZEU-LEGACY-ANCHOR-003` for preview/committed parity. The source was untracked
+  in that checkout, so the commit identifies its workspace baseline while the
+  content digest identifies the exact inspected node bytes; neither scenario
+  label substitutes for resolving and pinning source at actual execution.
 
 ## Preparation boundaries
 

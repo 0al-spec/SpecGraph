@@ -8,7 +8,11 @@ RFC 0224 prepares an execution-binding follow-up to RFC 0223. A proposed
 `SpecificationTest` composition retains immutable provenance and local bindings
 across evaluation, assertions and snapshot artifacts. SDK realization remains
 deferred; document checks do not establish runtime conformance or accepted
-evidence. See <doc:CompositionalTestContext> and
+evidence. Stable correlation edges connect evaluations to assertions, and a
+root pass alone cannot verify a declared target. Late attributed failures
+invalidate prior success by revision. The current `tests_verified` evaluator
+is unavailable, so the pilot is limited to producer-observation inspection.
+See <doc:CompositionalTestContext> and
 `docs/proposals/0224_compositional_test_context_and_evidence_binding.md`.
 
 ## Proposal Records
