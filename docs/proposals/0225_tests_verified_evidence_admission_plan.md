@@ -112,17 +112,26 @@ completeness.
 The evidence request binds the exact spec and passport bytes, target declaration,
 test profile/version, repository identity, source commit, test-plan/selection
 digest, runner identity/profile, invocation identity, execution attempt, and
-result artifact digest. When applicable to the chosen runner profile, pin the
-platform, device/runtime, toolchain and runner-image identity that can change
-the result. The assertion-to-obligation edges use stable 0224
-correlation identities and are included in the exported evidence closure.
+result artifact digest. It also binds the exact tested application/build and
+test bundle identities and digests, plus provenance tying those artifacts to
+the pinned source revision. A source commit alone does not identify what a
+cached or separately compiled runner actually executed; missing or mismatched
+build provenance leaves the claim unknown. When applicable to the chosen
+runner profile, pin the platform, device/runtime, toolchain and runner-image
+identity that can change the result. The assertion-to-obligation edges use
+stable 0224 correlation identities and are included in the exported evidence
+closure.
 
-An adapter must show that its result artifact belongs to the pinned run and
-source revision. A test symbol found in source is not proof that the test ran.
+An adapter must show that its result artifact belongs to the pinned run,
+source revision, tested build and test bundle. A test symbol found in source is
+not proof that the test ran.
 A green job with incomplete or opaque selection is not enough. Retries are
 separate attempts; a later successful attempt cannot erase a recorded earlier
 failure. An attributed late failure supersedes a prior success as specified by
-0224, and the evaluator consumes the latest attempt revision.
+0224. The evaluator must verify the latest attempt revision against an
+authoritative, live per-attempt head/finality or revocation contract; it cannot
+trust a caller-supplied closure as proof that no newer revision exists. A stale
+success without that authority-backed latest-revision proof remains unknown.
 
 The first runner/result format is an implementation decision after the producer
 contract is reviewed. Keep the SpecGraph claim model independent of XCTest,
@@ -130,10 +139,13 @@ Swift Testing, pytest, or any runner's private file format.
 
 ### 3. Trusted receipt and current decision
 
-An accepted result requires an authority-issued receipt/aggregate decision that
-binds the producer observation and its exact source, target, plan, result and
-policy digests. SpecGraph invokes a digest-pinned verifier against fresh
-snapshots of the claim request, source artifacts, decision, receipt pairs,
+An accepted result requires both authority-issued receipt pairs and a separate
+live aggregate decision with `trusted: true` and `decision: accepted`, verified
+using the configured decision trust store. The aggregate decision binds the
+producer observation and its exact source, target, plan, result and policy
+digests; receipt-pair acceptance alone is not a claim verdict. SpecGraph
+invokes a digest-pinned verifier against fresh snapshots of the claim request,
+source artifacts, decision, receipt pairs,
 policy, trust stores and verifier executable. Input mutation during evaluation
 fails closed; prior reports are not reused as current verdicts.
 
@@ -146,8 +158,11 @@ cannot install trust.
 
 ### 4. Derived outcomes and failure behavior
 
-Only a live, trusted, accepted decision with exact declaration coverage and all
-required assertions successful can produce a satisfied `tests_verified` claim.
+Only receipt pairs whose signatures and trust are accepted, together with a
+separately verified live aggregate decision (`trusted: true`,
+`decision: accepted`), exact declaration coverage and all required assertions
+successful, can produce a satisfied `tests_verified` claim. Receipt acceptance
+alone cannot produce the claim verdict.
 Missing, stale, unresolved, skipped, failed, ambiguous or incomplete inputs
 remain unknown and block aggregate admission. An accepted receipt for a
 non-passing test set cannot satisfy the claim. Invalid input or verifier
@@ -162,9 +177,10 @@ source pins, receipts, policy and trust.
 
 ### Phase 1 — Freeze the cross-repository contract
 
-Review assertion identity, target mapping, test selection completeness, run and
-source pins, late-event revisions, and the exact receipt statement with the
-owners of 0224, FeaturePassport and the pilot runner. Determine whether the
+Review assertion identity, target mapping, test selection completeness, run,
+source and tested-build pins, authority-backed latest-attempt proof, and the
+exact receipt statement with the owners of 0224, FeaturePassport and the pilot
+runner. Determine whether the
 existing provider-neutral receipt contract can carry the required statement.
 Keep `tests_verified` unavailable until this contract is accepted.
 
@@ -188,11 +204,12 @@ concurrent-input cases before enabling any canonical declaration.
 ### Phase 4 — Run one bounded pilot
 
 Use one synthetic fixture and one explicitly bound test assertion. Pin source,
-selection, result bytes, runner profile, receipt, policy, trust stores and
-verifier. Demonstrate both accepted and rejected/unknown results, including a
-missing binding and a stale revision. Keep product assets and secrets out of the
-fixture. Do not infer canonical adoption, full suite coverage, or production
-behavior from the pilot.
+tested build and test bundle with provenance, selection, result bytes, runner
+profile, receipt, policy, trust stores and verifier. Demonstrate accepted and
+rejected/unknown results, including a missing binding, a stale revision without
+authoritative latest-attempt proof, and a source/build mismatch. Keep product
+assets and secrets out of the fixture. Do not infer canonical adoption, full
+suite coverage, or production behavior from the pilot.
 
 ### Phase 5 — Review activation separately
 
@@ -219,6 +236,9 @@ These cases plan future verification; none has been executed by this proposal.
 | TV-10 | Given a previously successful report but changed current source, declaration, receipt, policy, trust store, or verifier, when evaluated, then the old report is not reused as current evidence. |
 | TV-11 | Given a valid accepted test receipt, when comparing claims, then `tests_verified` does not imply `runtime_verified`, effect, outcome, exhaustive testing, or production correctness. |
 | TV-12 | Given a review-pending source or unresolved target, when all test assertions passed, then aggregate admission remains blocked. |
+| TV-13 | Given a pinned source revision but a cached or separately built application/test bundle whose identity or provenance does not match it, when evaluated, then the claim remains unknown. |
+| TV-14 | Given a successful revision-N closure without authority-backed proof that N is the latest attempt revision, when a caller omits a later invalidation, then the stale success remains unknown. |
+| TV-15 | Given accepted receipt pairs but no separate live trusted `accepted` aggregate decision verified against the decision trust store, when evaluated, then the claim remains unknown. |
 
 ## Success Criteria and Limits
 
