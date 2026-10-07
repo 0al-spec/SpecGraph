@@ -77,9 +77,13 @@ receives SFTP credentials.
 
 The repository landing page is deployed by a separate workflow job from
 `landing/` into the same `SFTP_REMOTE_ROOT`. That job is also non-destructive and
-excludes local QA screenshots under `landing/check/`. Landing files are not part
-of `artifact_manifest.json`; the manifest describes only the SpecGraph artifact
-surface.
+excludes local QA screenshots under `landing/check/`. Landing files are not
+part of `artifact_manifest.json`; the manifest describes only the SpecGraph
+artifact surface.
+
+The `sites/7of10/` app site is uploaded by a separate workflow job to
+`/www/egormerkushev.ru/7of10/` using the same `FTP` Environment credentials.
+It does not enter the SpecGraph landing mirror or its artifact manifest.
 
 GitHub Pages is not the product landing surface. The repository Pages root is
 published from `docs/github-pages-root/` as a technical entrypoint with links to

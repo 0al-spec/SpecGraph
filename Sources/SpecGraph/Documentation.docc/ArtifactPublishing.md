@@ -20,6 +20,10 @@ The specgraph.tech static host owns product-facing landing content and generated
 public artifact bundles. Static-host uploads must remain non-destructive so
 separate jobs do not delete each other's files.
 
+The `sites/7of10/` app site is uploaded separately to
+`/www/egormerkushev.ru/7of10/` with the same `FTP` Environment credentials. It
+does not enter the SpecGraph root mirror or artifact manifest.
+
 Product workspace bundles name their canonical Decision source root explicitly
 with `--decision-specs-root`. The publisher scans only that selected directory
 inside `specs/`, so a Decision assigned to one workspace is not repeated in an
