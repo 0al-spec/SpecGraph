@@ -85,6 +85,15 @@ request, adapter binary, policy source, and raw adapter report by SHA-256.
 - `tests_verified`, `effect_committed`, and `outcome_completed` remain
   `unknown / evidence_evaluator_unavailable`. A source pass cannot promote them.
   Unsupported kinds are rejected at declaration validation.
+- Proposal `0225` prepares a bounded plan for a future `tests_verified_v1`
+  evaluator. It does not enable that claim or change this current behavior. The
+  plan requires explicit assertion-to-obligation bindings; source, tested-build,
+  test-bundle, run and result pins with provenance; an authority-backed proof of
+  the latest attempt revision; accepted receipt pairs; and a separate live,
+  trusted `accepted` aggregate decision verified against the decision trust
+  store. Receipt acceptance alone is not the claim verdict; a passing test root
+  alone cannot satisfy the claim. See
+  `docs/proposals/0225_tests_verified_evidence_admission_plan.md`.
 - Missing, duplicate, unresolved, stale, or mismatched evidence never passes.
   Claims may individually be satisfied while aggregate admission is denied.
 - All requested claims must pass. No parent/child graph propagation or transitive

@@ -49,6 +49,13 @@ denied/unknown, 1 invalid input/execution failure. The local gate never mutates
 canonical lifecycle status and adds no Feature Passport dependency on SpecGraph.
 See repository `docs/evidence_claim_admission.md` for the full contract.
 
+Proposal 0225 prepares a separate, read-only `tests_verified_v1` plan. It does
+not implement the evaluator or enable the claim. The planned contract requires
+source-to-build provenance, an authoritative latest-attempt proof, accepted
+receipt pairs, and a separate live trusted `accepted` aggregate decision. See
+<doc:TestsVerifiedEvidencePlan> and
+`docs/proposals/0225_tests_verified_evidence_admission_plan.md`.
+
 
 ## Cross-repository receipt issuance handoff
 

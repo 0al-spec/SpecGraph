@@ -1198,5 +1198,77 @@
     "resolved_commit": "813f78a36fcae46393c8ca3731c8c6769bd5c4c8",
     "recorded_at": "2026-10-05T18:43:00Z",
     "prevention_path": "CTX-10a and synchronized DocC state the unavailable boundary; manual contract review and proposal/DocC gates passed."
+  },
+  {
+    "feedback_id": "pr-771-registry-encoding-noise",
+    "source_pr": 771,
+    "source_thread_url": "https://github.com/0al-spec/SpecGraph/pull/771#discussion_r4187910035",
+    "reviewer": "chatgpt-codex-connector",
+    "review_comment_summary": "An unrelated proposal 0221 registry note was rewritten from JSON Unicode escapes to literal Cyrillic, creating audit noise and merge-conflict risk.",
+    "fix_summary": "Restored the existing escaped Unicode representation and retained only the new 0225 registry entry.",
+    "root_cause_class": "process_rule_gap",
+    "prevention_action": "documentation_rule_added",
+    "verification": [
+      "manual_contract_review",
+      "lint_or_format_check"
+    ],
+    "residual_risk": "Large append-only registries remain susceptible to broad serializer rewrites if future changes do not preserve existing byte-level formatting.",
+    "resolved_commit": "f0f1e9ee925d5f025181c40c1722325763027e4f",
+    "recorded_at": "2026-10-06T08:55:00Z",
+    "prevention_path": "Review correction restores the prior escaped encoding; future registry edits must preserve unrelated entries byte-for-byte and use targeted insertions."
+  },
+  {
+    "feedback_id": "pr-771-latest-attempt-authority",
+    "source_pr": 771,
+    "source_thread_url": "https://github.com/0al-spec/SpecGraph/pull/771#discussion_r4187910046",
+    "reviewer": "chatgpt-codex-connector",
+    "review_comment_summary": "Fresh snapshots of caller-supplied evidence cannot establish that no later attempt revision or late-failure invalidation was omitted.",
+    "fix_summary": "Made an authority-backed live per-attempt head/finality or revocation proof a hard prerequisite; caller-supplied closure alone cannot prove latest revision. Added TV-14.",
+    "root_cause_class": "artifact_contract_validation_gap",
+    "prevention_action": "documentation_rule_added",
+    "verification": [
+      "manual_contract_review",
+      "lint_or_format_check"
+    ],
+    "residual_risk": "The upstream authority contract is not implemented by this proposal; tests_verified remains unavailable until it supplies the required latest-revision proof.",
+    "resolved_commit": "f0f1e9ee925d5f025181c40c1722325763027e4f",
+    "recorded_at": "2026-10-06T08:55:00Z",
+    "prevention_path": "Proposal 0225 acceptance case TV-14 and synchronized DocC describe the authority-backed freshness prerequisite."
+  },
+  {
+    "feedback_id": "pr-771-aggregate-decision-stage",
+    "source_pr": 771,
+    "source_thread_url": "https://github.com/0al-spec/SpecGraph/pull/771#discussion_r4187910059",
+    "reviewer": "chatgpt-codex-connector",
+    "review_comment_summary": "The admission summary could imply that trusted receipt acceptance alone yields a claim verdict, omitting the separate trusted accepted aggregate decision.",
+    "fix_summary": "Updated the public admission summary and DocC to require accepted receipt pairs plus a separately verified live trusted accepted aggregate decision under the decision trust store. Added TV-15.",
+    "root_cause_class": "diagnostic_wording_gap",
+    "prevention_action": "documentation_rule_added",
+    "verification": [
+      "manual_contract_review",
+      "lint_or_format_check"
+    ],
+    "residual_risk": "No evaluator is implemented; this review correction clarifies the future contract without enabling admission.",
+    "resolved_commit": "f0f1e9ee925d5f025181c40c1722325763027e4f",
+    "recorded_at": "2026-10-06T08:55:00Z",
+    "prevention_path": "Synchronized admission summary, proposal and DocC explicitly separate receipt-pair validation from aggregate claim decision."
+  },
+  {
+    "feedback_id": "pr-771-tested-build-provenance",
+    "source_pr": 771,
+    "source_thread_url": "https://github.com/0al-spec/SpecGraph/pull/771#discussion_r4187910068",
+    "reviewer": "chatgpt-codex-connector",
+    "review_comment_summary": "A source commit pin alone could be paired with results from a cached or separately built older application/test bundle.",
+    "fix_summary": "Required exact tested application/build and test bundle identities, digests and source provenance; added fail-closed acceptance case TV-13.",
+    "root_cause_class": "artifact_contract_validation_gap",
+    "prevention_action": "documentation_rule_added",
+    "verification": [
+      "manual_contract_review",
+      "lint_or_format_check"
+    ],
+    "residual_risk": "No build-provenance adapter exists in this proposal; implementations must leave evidence unknown until they can establish the binding.",
+    "resolved_commit": "f0f1e9ee925d5f025181c40c1722325763027e4f",
+    "recorded_at": "2026-10-06T08:55:00Z",
+    "prevention_path": "Proposal 0225 acceptance case TV-13 requires tested-build provenance and rejects source/build mismatches."
   }
 ]
