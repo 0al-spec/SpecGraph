@@ -2,6 +2,24 @@
 
 SpecGraph treats proposal records and runtime evidence as connected surfaces.
 
+## Intent decision review
+
+`specgraph.intent-decision-review/v1` joins added, removed and modified Intent
+Atoms to source-bound dispositions. The blocking `python-quality` PR job invokes
+the gate through the existing quality entry point; `make intent-decision-review`
+provides an explicit local comparison. `Intent-Decision-Review:` selects a tracked
+record under `tools/intent_decision_reviews/`. Exact base, intent delta, changed
+source snapshot and PR-description digests prevent stale coverage.
+
+Prefer existing Specification reuse; new definitions, justified mechanics,
+contract-only work and retirement are explicit alternatives. Unresolved rows
+remain `needs_review`; missing or malformed inputs remain `invalid`. A net-zero
+atom count does not imply no changes. Missing specification roots are invalid,
+not zero. `covered` is structural trace coverage, not semantic approval or human
+attestation, and does not alter S/U or invoke a model. Code-only policies still
+require architectural review. See `docs/intent_decision_review.md` and its bounded
+PR773 / SG-SPEC-0071 regression.
+
 ## Compositional test bindings
 
 RFC 0224 prepares an execution-binding follow-up to RFC 0223. A proposed

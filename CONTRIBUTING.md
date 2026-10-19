@@ -30,6 +30,24 @@ stable policies in individual specification modules. Keep parsing, I/O and
 exception mechanics in adapters. Explain a deliberate non-extraction in the PR;
 raw S/U counts neither require converting every branch nor replace this review.
 
+## Intent-to-decision review
+
+Changed Intent Atoms require [source-bound decision coverage](docs/intent_decision_review.md)
+through `make intent-decision-review`, contract `specgraph.intent-decision-review/v1`.
+This is structural coverage, not semantic approval. The existing blocking `python-quality`
+PR job enforces records for added, removed and modified atoms, including net-zero
+count changes. Add `Intent-Decision-Review:` to the PR description, linking the
+tracked record under `tools/intent_decision_reviews/`. Bind the exact base, intent
+delta, source snapshot and PR description; re-review when those change.
+
+PR773 showed why independent informational counters are insufficient: three new
+SG-SPEC-0071 acceptance atoms accompanied procedural evidence decisions outside
+the publication classifier's bounded inventory. The prevention joins each atom
+to implementation/Specification references or an explicit mechanics rationale;
+unresolved rows stay `needs_review`. Missing tracked specification roots remain
+invalid, not zero. This does not impose a numeric S/U threshold or attest the
+truth of author-provided rationales. New code-only policies still need review.
+
 ## Code Methodology and Style
 
 SpecGraph tooling should evolve by preserving observable contracts while moving

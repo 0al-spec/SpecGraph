@@ -1,0 +1,16 @@
+{
+  "repository": "0al-spec/SpecGraph",
+  "pull_request": 773,
+  "revision": "94be344c061f214cca6db250d08e7d64658b0b09",
+  "source_path": "specs/nodes/SG-SPEC-0071.yaml",
+  "sha256": "b18fba8c0000fbbabda2a9a0aea64ce6559f1a52e70e377ae7ce6a1cdfeaafc0",
+  "scope": "Exact single-node fixture, not the full repository measurement.",
+  "implementation": {
+    "source_path": "tools/publication_delivery_evidence.py",
+    "symbol": "acceptance_signal",
+    "start_line": 161,
+    "end_line": 194,
+    "file_sha256": "a5a0e0e210d68e5c26d4fe45f3531961d1d16810108f0b5617f18b519c0c6e60",
+    "excerpt_sha256": "3fb65ba23204c98e547b54859fe0cc2774daf3a85cf52763e2a1a65e83ece286"
+  }
+}

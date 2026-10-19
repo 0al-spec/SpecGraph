@@ -1,6 +1,25 @@
 {
   "groups": [
     {
+      "id": "intent-decision-review",
+      "description": "Source-bound intent decision coverage remains separate from semantic approval.",
+      "docs": [
+        "docs/intent_decision_review.md",
+        "CONTRIBUTING.md",
+        "AGENTS.md"
+      ],
+      "docc": [
+        "Sources/SpecGraph/Documentation.docc/ProposalsAndRuntime.md"
+      ],
+      "required_terms": [
+        "specgraph.intent-decision-review/v1",
+        "make intent-decision-review",
+        "Intent-Decision-Review:",
+        "needs_review",
+        "structural"
+      ]
+    },
+    {
       "id": "product-spec-id-allocation",
       "description": "Product child allocation namespaces and migration history stay aligned across operator docs and DocC.",
       "docs": [
