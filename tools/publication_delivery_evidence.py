@@ -149,6 +149,15 @@ def stage(result: str, summary: str, evidence: list[dict[str, str]]) -> dict[str
     return {"result": result, "summary": summary, "evidence": evidence}
 
 
+def observation_context(
+    observer: dict[str, Any] | None, target_environment: str, target_uri: str
+) -> dict[str, Any]:
+    return {
+        "observer": observer,
+        "target": {"environment": target_environment, "uri": target_uri},
+    }
+
+
 def acceptance_signal(path: Path | None, source: dict[str, Any]) -> dict[str, Any]:
     missing = stage("missing", "Awaiting a merged PR for this revision.", [])
     if path is None or not path.is_file():
@@ -196,9 +205,14 @@ def delivery_report(
     bindings, passport = load_pilot(root)
     source = source_identity(root, bindings)
     run = provenance()
+    report_observer = {
+        **run,
+        "environment": "ci" if run["provider"] == "github_actions" else "local",
+    }
     metadata = passport["metadata"]
     tests = load_json(tests_path) if tests_path.is_file() else None
     test_result = "missing"
+    test_observer = None
     obligations = []
     if tests is not None:
         expected = [(item["criterion_id"], item["test"]) for item in bindings["obligations"]]
@@ -212,6 +226,7 @@ def delivery_report(
             and observed_source.get("files_sha256") == source["files_sha256"]
         )
         if same_source and actual == expected and same_run:
+            test_observer = report_observer
             obligations = tests["obligations"]
             outcomes = {item.get("result") for item in obligations}
             if tests.get("exit_code") != 0 or "observed_failure" in outcomes:
@@ -222,6 +237,7 @@ def delivery_report(
     runtime = load_json(runtime_path) if runtime_path and runtime_path.is_file() else None
     bundle_identity = None
     runtime_result = "missing"
+    runtime_observer = None
     if bundle is not None:
         bundle_identity = {
             "manifest_sha256": file_digest(bundle / "artifact_manifest.json"),
@@ -229,11 +245,14 @@ def delivery_report(
         }
     if runtime is not None and bundle_identity is not None:
         execution = runtime.get("execution_context", {})
-        same_run = not run["run_id"] or execution == {
-            "source_revision": source["revision"],
-            "run_id": run["run_id"],
-            "run_attempt": run["run_attempt"],
-        }
+        same_run = not run["run_id"] or all(
+            execution.get(key) == value
+            for key, value in {
+                "source_revision": source["revision"],
+                "run_id": run["run_id"],
+                "run_attempt": run["run_attempt"],
+            }.items()
+        )
         manifest = load_json(bundle / "artifact_manifest.json")
         summary = runtime.get("summary", {})
         if (
@@ -246,8 +265,13 @@ def delivery_report(
             and summary.get("verified_file_count") == len(manifest["files"])
             and summary.get("verified_metadata_file_count") == 2
             and summary.get("failure_count") == 0
+            and all(execution.get(key) for key in ("provider", "environment", "uri"))
         ):
             runtime_result = "observed_success"
+            runtime_observer = {
+                key: execution.get(key, "")
+                for key in ("provider", "environment", "uri", "run_id", "run_attempt")
+            }
     native_ref = (
         [{"uri": runtime_path.name, "sha256": file_digest(runtime_path)}]
         if runtime is not None and runtime_path
@@ -282,6 +306,22 @@ def delivery_report(
         },
         "acceptance": acceptance_signal(acceptance_path, source),
     }
+    repository_uri = f"https://github.com/{source['repository']}"
+    source_uri = f"{repository_uri}/tree/{source['revision']}"
+    contexts = {
+        "intent": observation_context(report_observer, "repository", source_uri),
+        "spec": observation_context(report_observer, "repository", source_uri),
+        "tests": observation_context(test_observer, report_observer["environment"], run["uri"]),
+        "deploy": observation_context(
+            runtime_observer, bindings["runtime_environment"], bindings["runtime_base_url"]
+        ),
+        "runtime": observation_context(
+            runtime_observer, bindings["runtime_environment"], bindings["runtime_base_url"]
+        ),
+        "acceptance": observation_context(report_observer, "github", repository_uri),
+    }
+    for name, context in contexts.items():
+        stages[name]["provenance"] = context
     return {
         "artifact_kind": "feature_delivery_signals",
         "schema_version": 1,
@@ -313,12 +353,19 @@ def markdown_report(report: dict[str, Any]) -> str:
         "",
         "Trust: `provider_reported`; admission: `not_evaluated`.",
         "",
-        "| Stage | Result | Evidence |",
-        "| --- | --- | --- |",
+        "| Stage | Result | Observer | Target | Evidence |",
+        "| --- | --- | --- | --- | --- |",
     ]
     for name, item in report["stages"].items():
         refs = ", ".join(f"[{ref['uri']}]({ref['uri']})" for ref in item["evidence"]) or "—"
-        lines.append(f"| {name} | {item['result']} | {refs} |")
+        context = item["provenance"]
+        observer = context["observer"]
+        observer_label = observer["environment"] if observer else "unknown"
+        target = context["target"]
+        lines.append(
+            f"| {name} | {item['result']} | {observer_label} | "
+            f"{target['environment']}: {target['uri']} | {refs} |"
+        )
     lines.extend(
         [
             "",

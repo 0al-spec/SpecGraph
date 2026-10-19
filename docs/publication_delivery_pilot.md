@@ -17,7 +17,7 @@ publication path. This pilot joins its existing signals.
   digests. These Python locators do not use the Swift source resolver.
 
 The external profile is FeaturePassport's
-[`linked_delivery_signals_v1`](https://github.com/0al-spec/FeaturePassport/blob/bc47d9cf5ca0f528a0df6766a12266d0191f5974/docs/contracts/linked-delivery-signals-v1.md).
+[`linked_delivery_signals_v1`](https://github.com/0al-spec/FeaturePassport/blob/832e922e80b2f6e48b06445b8ed44bc61e1b21bb/docs/contracts/linked-delivery-signals-v1.md).
 It is provider-reported, function-level evidence with `admission: not_evaluated`.
 The profile does not activate the separate `tests_verified_v1` plan in proposal
 `0225`, reinterpret signed receipts, or alter the existing claim gate.
@@ -62,6 +62,18 @@ HTTP verifier now records the checked manifest/checksum digests, observation tim
 and Actions source/run/attempt identity. A successful HTTP result joins only to
 the matching expected bundle and current run. It confirms published bytes; the
 Python observer executes in Actions, not on the static host.
+
+Every stage records separate `provenance.observer` and `provenance.target`
+objects. The observer identifies the actual CI/local process and its native
+run/attempt reference; the target identifies the environment and URI being
+observed. For deploy/runtime, the reviewed bindings explicitly pair
+`runtime_environment: production` with `https://specgraph.tech`. Test targets
+are the CI/local test execution; intent/spec targets are the source revision;
+acceptance targets GitHub repository metadata. The report's top-level
+`--environment` labels the projection context only and never overrides these
+stage environments. A locally projected native CI report retains its CI observer.
+Missing runtime observations have a null observer and the intended target;
+that target does not establish a successful deployment.
 
 The post-deploy table and raw reports are retained in
 `specgraph-publication-delivery-signals-deploy` for 30 days. JSON and Markdown

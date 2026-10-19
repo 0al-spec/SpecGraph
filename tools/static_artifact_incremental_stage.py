@@ -204,6 +204,9 @@ def verify_remote_bundle(
 
     with ThreadPoolExecutor(max_workers=workers) as pool:
         verified = list(pool.map(verify, local_files.items()))
+    run_id = os.environ.get("GITHUB_RUN_ID", "")
+    repository = os.environ.get("GITHUB_REPOSITORY", "0al-spec/SpecGraph")
+    server = os.environ.get("GITHUB_SERVER_URL", "https://github.com")
     return {
         "artifact_kind": "specgraph_static_artifact_remote_verification_report",
         "schema_version": 1,
@@ -215,8 +218,11 @@ def verify_remote_bundle(
             "checksums_sha256": metadata_digests["checksums.sha256"],
         },
         "execution_context": {
+            "provider": "github_actions" if run_id else "local",
+            "environment": "ci" if run_id else "local",
+            "uri": f"{server}/{repository}/actions/runs/{run_id}" if run_id else "local-run",
             "source_revision": os.environ.get("GITHUB_SHA", ""),
-            "run_id": os.environ.get("GITHUB_RUN_ID", ""),
+            "run_id": run_id,
             "run_attempt": os.environ.get("GITHUB_RUN_ATTEMPT", ""),
         },
         "summary": {

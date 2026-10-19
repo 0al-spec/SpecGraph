@@ -158,9 +158,9 @@ def evidence(tmp_path: Path, monkeypatch):
         workers=1,
     )
     runtime["execution_context"] = {
+        **pilot.provenance(),
+        "environment": "ci",
         "source_revision": "a" * 40,
-        "run_id": "12",
-        "run_attempt": "2",
     }
     runtime_path = tmp_path / "runtime.json"
     pilot.write_json(runtime_path, runtime)
@@ -177,6 +177,86 @@ def test_native_test_and_http_reports_form_linked_table(evidence) -> None:
     assert report["trust_model"] == "provider_reported"
     assert report["admission"] == "not_evaluated"
     assert "| acceptance | missing |" in pilot.markdown_report(report)
+
+
+def test_stage_provenance_separates_ci_execution_and_production_target(evidence) -> None:
+    tests, bundle, runtime = evidence
+    report = pilot.delivery_report(ROOT, tests, bundle, runtime, "production-http")
+    assert report["provenance"]["environment"] == "production-http"
+    for name, item in report["stages"].items():
+        context = item["provenance"]
+        assert context["observer"]["environment"] == "ci"
+        assert context["observer"]["uri"] == "run/12"
+        target = context["target"]
+        if name in {"deploy", "runtime"}:
+            assert target == {"environment": "production", "uri": "https://specgraph.tech"}
+        elif name == "tests":
+            assert target == {"environment": "ci", "uri": "run/12"}
+        elif name in {"intent", "spec"}:
+            assert target["environment"] == "repository"
+            assert target["uri"].endswith("/tree/" + "a" * 40)
+        else:
+            assert target == {
+                "environment": "github",
+                "uri": "https://github.com/0al-spec/SpecGraph",
+            }
+    markdown = pilot.markdown_report(report)
+    assert "| runtime | observed_success | ci | production: https://specgraph.tech |" in markdown
+
+
+def test_local_projection_preserves_native_ci_observer(evidence, monkeypatch) -> None:
+    tests, bundle, runtime = evidence
+    monkeypatch.setattr(
+        pilot,
+        "provenance",
+        lambda: {"provider": "local", "run_id": "", "run_attempt": "", "uri": "local-run"},
+    )
+    report = pilot.delivery_report(ROOT, tests, bundle, runtime, "local")
+    stage = report["stages"]["runtime"]
+    assert stage["result"] == "observed_success"
+    assert stage["provenance"]["observer"] == {
+        "provider": "github_actions",
+        "environment": "ci",
+        "uri": "run/12",
+        "run_id": "12",
+        "run_attempt": "2",
+    }
+    assert stage["provenance"]["target"]["environment"] == "production"
+
+
+def test_unknown_native_observer_cannot_claim_runtime_success(evidence) -> None:
+    tests, bundle, runtime = evidence
+    payload = pilot.load_json(runtime)
+    del payload["execution_context"]["environment"]
+    pilot.write_json(runtime, payload)
+    report = pilot.delivery_report(ROOT, tests, bundle, runtime, "ci")
+    assert report["stages"]["runtime"]["result"] == "missing"
+    assert report["stages"]["runtime"]["provenance"]["observer"] is None
+
+
+@pytest.mark.parametrize("in_ci", [True, False])
+def test_http_verifier_records_its_actual_execution_environment(
+    evidence, monkeypatch, in_ci
+) -> None:
+    _, bundle, _ = evidence
+    for key in ("GITHUB_RUN_ID", "GITHUB_RUN_ATTEMPT", "GITHUB_REPOSITORY", "GITHUB_SERVER_URL"):
+        monkeypatch.delenv(key, raising=False)
+    if in_ci:
+        monkeypatch.setenv("GITHUB_RUN_ID", "37")
+        monkeypatch.setenv("GITHUB_RUN_ATTEMPT", "3")
+        monkeypatch.setenv("GITHUB_REPOSITORY", "0al-spec/SpecGraph")
+    native = verify_remote_bundle(
+        bundle_dir=bundle,
+        remote_base_url="https://specgraph.tech",
+        fetcher=lambda url: (bundle / url.rsplit("/", 1)[1]).read_bytes(),
+        workers=1,
+    )
+    observer = native["execution_context"]
+    assert observer["environment"] == ("ci" if in_ci else "local")
+    assert observer["provider"] == ("github_actions" if in_ci else "local")
+    assert observer["uri"] == (
+        "https://github.com/0al-spec/SpecGraph/actions/runs/37" if in_ci else "local-run"
+    )
 
 
 @pytest.mark.parametrize("field", ["source", "attempt", "subset", "skip"])
@@ -219,6 +299,9 @@ def test_predeploy_report_keeps_absent_stages_missing(evidence) -> None:
     assert report["stages"]["tests"]["result"] == "observed_success"
     assert report["stages"]["deploy"]["result"] == "missing"
     assert report["stages"]["runtime"]["result"] == "missing"
+    context = report["stages"]["runtime"]["provenance"]
+    assert context["observer"] is None
+    assert context["target"] == {"environment": "production", "uri": "https://specgraph.tech"}
 
 
 @pytest.mark.parametrize(

@@ -261,6 +261,11 @@ Code review comments are process evidence. For each actionable review thread:
 
 Use [tools/review_feedback_policy.json](tools/review_feedback_policy.json) as the vocabulary source.
 
+When joining delivery evidence, keep each stage's observer execution environment
+separate from its target environment and URI. A CI check of production HTTP
+bytes does not establish production execution of the checking code. Preserve
+native observer identity when projecting retained reports elsewhere.
+
 ### Review Heuristics for Artifacts and Gates
 
 Apply these checks systematically when reviewing supervisor, proposal,

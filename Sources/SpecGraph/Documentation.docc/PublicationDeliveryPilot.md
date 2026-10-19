@@ -16,6 +16,13 @@ adds the table to the job summary. Runtime means matching HTTP-published bundle
 bytes observed by an Actions-side verifier. It does not mean that Python
 executes on the static host. Missing or skipped evidence never becomes success.
 
+Every stage separates `provenance.observer` (the actual CI/local execution) from
+`provenance.target` (environment and URI). Deploy/runtime target the explicitly
+bound production origin `https://specgraph.tech`; the report environment labels
+only the projection context. Retained CI reports keep their original observer
+when projected locally. Missing runtime evidence has a null observer and an
+intended target, which does not establish deployment success.
+
 This is `provider_reported` evidence with `admission: not_evaluated`.
 The profile does not activate `tests_verified_v1` or alter signed receipt and
 claim-admission contracts. The Python bindings do not use the Swift resolver.

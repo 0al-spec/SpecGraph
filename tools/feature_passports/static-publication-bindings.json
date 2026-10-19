@@ -5,6 +5,7 @@
   "implementation": "tools/static_artifact_incremental_stage.py",
   "symbol": "verify_remote_bundle",
   "runtime_base_url": "https://specgraph.tech",
+  "runtime_environment": "production",
   "obligations": [
     {"criterion_id": "PB-ALL", "test": "tests/test_static_artifact_incremental_stage.py::test_verify_remote_bundle_hashes_every_manifest_file"},
     {"criterion_id": "PB-PAYLOAD", "test": "tests/test_static_artifact_incremental_stage.py::test_verify_remote_bundle_fails_on_digest_drift"},
