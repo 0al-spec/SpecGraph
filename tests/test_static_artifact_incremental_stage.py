@@ -173,3 +173,37 @@ def test_verify_remote_bundle_fails_on_stale_published_manifest(tmp_path: Path) 
             fetcher=lambda _url: b"stale",
             workers=1,
         )
+
+
+def test_verify_remote_bundle_fails_on_stale_checksums(tmp_path: Path) -> None:
+    bundle = _bundle(tmp_path / "bundle", {"runs/a.json": b"expected"})
+
+    def fetch(url: str) -> bytes:
+        if url.endswith("artifact_manifest.json"):
+            return (bundle / "artifact_manifest.json").read_bytes()
+        return b"stale checksums"
+
+    with pytest.raises(IncrementalStageError, match="metadata digest mismatch: checksums"):
+        verify_remote_bundle(
+            bundle_dir=bundle,
+            remote_base_url="https://specgraph.tech",
+            fetcher=fetch,
+            workers=1,
+        )
+
+
+def test_verify_remote_bundle_fails_on_missing_remote_payload(tmp_path: Path) -> None:
+    bundle = _bundle(tmp_path / "bundle", {"runs/a.json": b"expected"})
+
+    def fetch(url: str) -> bytes:
+        if url.endswith(("artifact_manifest.json", "checksums.sha256")):
+            return (bundle / url.rsplit("/", 1)[1]).read_bytes()
+        raise FileNotFoundError("remote payload missing")
+
+    with pytest.raises(IncrementalStageError, match="remote artifact request failed"):
+        verify_remote_bundle(
+            bundle_dir=bundle,
+            remote_base_url="https://specgraph.tech",
+            fetcher=fetch,
+            workers=1,
+        )

@@ -6,6 +6,7 @@ from __future__ import annotations
 import argparse
 import hashlib
 import json
+import os
 import shutil
 import sys
 import time
@@ -172,8 +173,10 @@ def verify_remote_bundle(
     _, local_files = _load_local_manifest(bundle_dir)
     base_url = remote_base_url.rstrip("/")
 
+    metadata_digests = {}
     for metadata_name in ("artifact_manifest.json", "checksums.sha256"):
         local_metadata = (bundle_dir / metadata_name).read_bytes()
+        metadata_digests[metadata_name] = hashlib.sha256(local_metadata).hexdigest()
         try:
             remote_metadata = fetcher(f"{base_url}/{metadata_name}")
         except Exception as exc:
@@ -206,6 +209,16 @@ def verify_remote_bundle(
         "schema_version": 1,
         "status": "verified",
         "remote_base_url": base_url,
+        "observed_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
+        "bundle_identity": {
+            "manifest_sha256": metadata_digests["artifact_manifest.json"],
+            "checksums_sha256": metadata_digests["checksums.sha256"],
+        },
+        "execution_context": {
+            "source_revision": os.environ.get("GITHUB_SHA", ""),
+            "run_id": os.environ.get("GITHUB_RUN_ID", ""),
+            "run_attempt": os.environ.get("GITHUB_RUN_ATTEMPT", ""),
+        },
         "summary": {
             "verified_file_count": len(verified),
             "verified_metadata_file_count": 2,

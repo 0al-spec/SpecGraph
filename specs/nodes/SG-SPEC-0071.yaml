@@ -1,0 +1,81 @@
+id: SG-SPEC-0071
+title: SpecGraph - Public Bundle Delivery Evidence Pilot
+kind: spec
+created_at: '2026-10-19T13:56:00Z'
+updated_at: '2026-10-19T13:56:00Z'
+status: specified
+maturity: 0.35
+depends_on: []
+refines:
+- SG-SPEC-0063
+relates_to:
+- SG-SPEC-0020
+- SG-SPEC-0017
+inputs:
+- docs/proposals/0215_incremental_static_workspace_deployment.md
+- tools/static_artifact_incremental_stage.py
+- tests/test_static_artifact_incremental_stage.py
+outputs:
+- specs/nodes/SG-SPEC-0071.yaml
+- tools/feature_passports/static-publication.json
+- tools/feature_passports/static-publication-bindings.json
+- tools/publication_delivery_evidence.py
+allowed_paths:
+- specs/nodes/SG-SPEC-0071.yaml
+- tools/feature_passports/*
+- tools/publication_delivery_evidence.py
+- tests/test_publication_delivery_evidence.py
+acceptance:
+- Names public bundle verification criteria and their explicit pytest bindings.
+- Preserves source, passport, test-run and published bundle identities in a linked signal report.
+- Reports missing or failed stages explicitly and keeps observations separate from admission and acceptance.
+prompt: Maintain one lightweight bootstrap pilot joining existing intent, specification, tests and publication
+  signals.
+specification:
+  objective: Join existing publication evidence from intent to tests and runtime with explicit identities
+    and visible gaps.
+  intent:
+    id: SG-INTENT-PUBLICATION-TRACE
+    source: operator-request-2026-10-19
+    statement: Make confirmations easy to extract across intent, spec, tests and runtime using SpecGraph
+      itself.
+  feature_id: specgraph.publication.verify_bundle
+  requirement:
+    id: SG-REQ-PUBLICATION-VERIFIED
+    statement: Confirm public bundle publication only after HTTPS metadata and every manifest payload
+      match the expected bundle.
+    criteria:
+    - id: PB-ALL
+      statement: A matching manifest, checksums and every declared payload produce a successful verification.
+    - id: PB-PAYLOAD
+      statement: A payload digest mismatch prevents successful verification.
+    - id: PB-MANIFEST
+      statement: A stale published manifest prevents successful verification.
+    - id: PB-CHECKSUMS
+      statement: Stale published checksums prevent successful verification.
+    - id: PB-MISSING
+      statement: A missing remote payload prevents successful verification.
+  delivery_signals:
+    profile: linked_delivery_signals_v1
+    passport: tools/feature_passports/static-publication.json
+    bindings: tools/feature_passports/static-publication-bindings.json
+    scope: Root SpecGraph static bundle only.
+    acceptance: Merge of the pilot implementation PR, or explicit operator acceptance tied to its revision.
+    trust_model: provider_reported
+    admission: not_evaluated
+    ontology:
+      references:
+      - SG-SPEC-0020/specification/terminology/code_surface
+      - SG-SPEC-0020/specification/terminology/test
+      - SG-SPEC-0020/specification/terminology/release
+      - SG-SPEC-0020/specification/terminology/runtime_result
+      role: Supplies trace vocabulary and canonical-versus-derived boundaries; it does not issue execution
+        verdicts.
+    limits:
+    - Function-level pytest bindings describe reviewed scenarios, not assertion-level or exhaustive coverage.
+    - The verifier executes in CI; HTTPS observation concerns published bytes, not server-side Python
+      execution.
+    - Signals do not satisfy tests_verified_v1 or change canonical maturity or admission policy.
+    - Missing acceptance remains visible until a merge or explicit approval signal is supplied.
+gate_state: none
+required_human_action: '-'

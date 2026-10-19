@@ -1,0 +1,35 @@
+{
+  "artifact_kind": "feature_passport",
+  "schema_version": 1,
+  "metadata": {
+    "feature_id": "specgraph.publication.verify_bundle",
+    "passport_id": "fp.specgraph.publication.verify_bundle",
+    "version": "0.1.0",
+    "status": "draft",
+    "issuer": "specgraph.maintainers"
+  },
+  "spec": {
+    "intent": {
+      "summary": "Trace public bundle verification from its requirement through tests to the published HTTP result.",
+      "acceptance_criteria": [
+        {"id": "PB-ALL", "text": "Matching metadata and every manifest payload verify successfully."},
+        {"id": "PB-PAYLOAD", "text": "A payload digest mismatch prevents successful verification."},
+        {"id": "PB-MANIFEST", "text": "A stale published manifest prevents successful verification."},
+        {"id": "PB-CHECKSUMS", "text": "Stale published checksums prevent successful verification."},
+        {"id": "PB-MISSING", "text": "A missing remote payload prevents successful verification."}
+      ]
+    },
+    "contract_refs": [{
+      "id": "publication-requirement",
+      "relation": "originates_from",
+      "provider": "specgraph",
+      "locator": {
+        "spec_id": "SG-SPEC-0071",
+        "path": "specification/requirement",
+        "requirement_id": "SG-REQ-PUBLICATION-VERIFIED"
+      }
+    }],
+    "evidence": {"required_level": "L4", "probes": []},
+    "privacy": {"pii_allowed": false, "retention_days": 30, "raw_payload_storage": false}
+  }
+}

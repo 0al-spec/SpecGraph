@@ -1530,6 +1530,17 @@ test-supervisor:
 
 
 .PHONY: evidence-claim-gate test-evidence-claim-gate
+
+PUBLICATION_EVIDENCE_DIR ?= dist/publication-pilot
+PUBLICATION_EVIDENCE_ENVIRONMENT ?= local
+
+.PHONY: test-publication-delivery publication-delivery-report
+test-publication-delivery:
+	@$(PYTHON) tools/publication_delivery_evidence.py test --output-dir "$(PUBLICATION_EVIDENCE_DIR)"
+
+publication-delivery-report:
+	@$(PYTHON) tools/publication_delivery_evidence.py report --output-dir "$(PUBLICATION_EVIDENCE_DIR)" --environment "$(PUBLICATION_EVIDENCE_ENVIRONMENT)" $(if $(PUBLICATION_EVIDENCE_BUNDLE),--bundle-dir "$(PUBLICATION_EVIDENCE_BUNDLE)") $(if $(PUBLICATION_EVIDENCE_RUNTIME),--runtime-report "$(PUBLICATION_EVIDENCE_RUNTIME)")
+
 evidence-claim-gate:
 	@$(PYTHON) tools/evidence_claim_gate.py --request '$(CLAIM_REQUEST)' --passport '$(CLAIM_PASSPORT)' --spec '$(CLAIM_SPEC)' --feature-passport-cli '$(CLAIM_FP_CLI)' --feature-passport-cli-sha256 '$(CLAIM_FP_CLI_SHA256)' $(if $(CLAIM_REPOSITORY),--repository '$(CLAIM_REPOSITORY)') $(if $(CLAIM_POLICY),--claim-policy '$(CLAIM_POLICY)') $(if $(CLAIM_BUNDLE),--bundle '$(CLAIM_BUNDLE)') $(if $(CLAIM_DECISION),--decision '$(CLAIM_DECISION)') $(if $(CLAIM_RECEIPT_TRUST_STORE),--receipt-trust-store '$(CLAIM_RECEIPT_TRUST_STORE)') $(if $(CLAIM_DECISION_TRUST_STORE),--decision-trust-store '$(CLAIM_DECISION_TRUST_STORE)')
 
