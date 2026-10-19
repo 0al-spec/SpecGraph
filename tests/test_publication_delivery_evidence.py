@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 import shutil
 import subprocess
 import sys
@@ -218,6 +219,48 @@ def test_predeploy_report_keeps_absent_stages_missing(evidence) -> None:
     assert report["stages"]["tests"]["result"] == "observed_success"
     assert report["stages"]["deploy"]["result"] == "missing"
     assert report["stages"]["runtime"]["result"] == "missing"
+
+
+@pytest.mark.parametrize(
+    "change,expected",
+    [
+        ("none", "observed_success"),
+        ("closed_unmerged", "missing"),
+        ("revision", "missing"),
+        ("repository", "missing"),
+    ],
+)
+def test_acceptance_uses_native_merged_revision_metadata(tmp_path: Path, change, expected) -> None:
+    source = {"revision": "a" * 40, "repository": "0al-spec/SpecGraph"}
+    row = {
+        "number": 773,
+        "merged_at": "2026-10-19T14:00:00Z",
+        "merge_commit_sha": source["revision"],
+        "base": {"repo": {"full_name": source["repository"]}},
+    }
+    if change == "closed_unmerged":
+        row["merged_at"] = None
+        row["state"] = "closed"
+    elif change == "revision":
+        row["merge_commit_sha"] = "b" * 40
+    elif change == "repository":
+        row["base"]["repo"]["full_name"] = "foreign/repository"
+    path = tmp_path / "associated-pulls.json"
+    path.write_text(json.dumps([row]))
+    result = pilot.acceptance_signal(path, source)
+    assert result["result"] == expected
+    if expected == "observed_success":
+        assert result["evidence"][1]["uri"] == "https://github.com/0al-spec/SpecGraph/pull/773"
+
+
+def test_unavailable_acceptance_metadata_is_nonblocking(tmp_path: Path) -> None:
+    path = tmp_path / "associated-pulls.json"
+    source = {"revision": "a" * 40, "repository": "0al-spec/SpecGraph"}
+    assert pilot.acceptance_signal(path, source)["result"] == "missing"
+    path.write_text("API temporarily unavailable")
+    assert pilot.acceptance_signal(path, source)["result"] == "missing"
+    path.write_text('[null, {"base": null}]')
+    assert pilot.acceptance_signal(path, source)["result"] == "missing"
 
 
 def test_workflow_retains_same_run_test_inputs_and_postdeploy_report() -> None:

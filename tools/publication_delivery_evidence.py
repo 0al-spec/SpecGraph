@@ -149,12 +149,49 @@ def stage(result: str, summary: str, evidence: list[dict[str, str]]) -> dict[str
     return {"result": result, "summary": summary, "evidence": evidence}
 
 
+def acceptance_signal(path: Path | None, source: dict[str, Any]) -> dict[str, Any]:
+    missing = stage("missing", "Awaiting a merged PR for this revision.", [])
+    if path is None or not path.is_file():
+        return missing
+    try:
+        rows = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return missing
+    if not isinstance(rows, list):
+        return missing
+    for row in rows:
+        if not isinstance(row, dict):
+            continue
+        base = row.get("base")
+        repository = base.get("repo") if isinstance(base, dict) else None
+        if not isinstance(repository, dict):
+            continue
+        if (
+            row.get("merged_at")
+            and row.get("merge_commit_sha") == source["revision"]
+            and repository.get("full_name") == source["repository"]
+            and type(row.get("number")) is int
+            and row["number"] > 0
+        ):
+            uri = f"https://github.com/{source['repository']}/pull/{row['number']}"
+            return stage(
+                "observed_success",
+                "Recorded revision merged through a pull request.",
+                [
+                    {"uri": path.name, "sha256": file_digest(path)},
+                    {"uri": uri},
+                ],
+            )
+    return missing
+
+
 def delivery_report(
     root: Path,
     tests_path: Path,
     bundle: Path | None,
     runtime_path: Path | None,
     environment: str,
+    acceptance_path: Path | None = None,
 ) -> dict[str, Any]:
     bindings, passport = load_pilot(root)
     source = source_identity(root, bindings)
@@ -243,7 +280,7 @@ def delivery_report(
             **stage(runtime_result, "HTTP bytes checked by the CI/local verifier.", native_ref),
             "observation": runtime,
         },
-        "acceptance": stage("missing", "Awaiting merged PR or explicit operator acceptance.", []),
+        "acceptance": acceptance_signal(acceptance_path, source),
     }
     return {
         "artifact_kind": "feature_delivery_signals",
@@ -286,7 +323,7 @@ def markdown_report(report: dict[str, Any]) -> str:
         [
             "",
             "Tests are function-level observations. Runtime means HTTP publication",
-            "observed by a CI/local verifier. Acceptance remains explicit.",
+            "observed by a CI/local verifier. Acceptance uses an explicitly merged revision.",
             "",
         ]
     )
@@ -325,6 +362,7 @@ def main(argv: list[str] | None = None) -> int:
             args.bundle_dir,
             args.runtime_report,
             args.environment,
+            output / "associated-pulls.json",
         )
         write_json(output / "report.json", report)
         (output / "report.md").write_text(markdown_report(report), encoding="utf-8")

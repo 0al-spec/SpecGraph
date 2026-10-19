@@ -30,6 +30,7 @@ on:
 
 permissions:
   contents: read
+  pull-requests: read
 
 concurrency:
   group: specgraph-static-artifacts-${{ github.ref }}
@@ -65,6 +66,17 @@ jobs:
 
       - name: Observe bound publication tests
         run: make test-publication-delivery
+
+      - name: Observe merged revision acceptance
+        if: always() && github.event_name != 'pull_request'
+        continue-on-error: true
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          mkdir -p dist/publication-pilot
+          gh api "repos/$GITHUB_REPOSITORY/commits/$GITHUB_SHA/pulls" \
+            --jq '[.[] | {number, merged_at, merge_commit_sha, base: {repo: {full_name: .base.repo.full_name}}}]' \
+            > dist/publication-pilot/associated-pulls.json
 
       - name: Install Agent Passport CLI
         env:

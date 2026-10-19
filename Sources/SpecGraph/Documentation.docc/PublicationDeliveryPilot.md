@@ -21,6 +21,7 @@ The profile does not activate `tests_verified_v1` or alter signed receipt and
 claim-admission contracts. The Python bindings do not use the Swift resolver.
 Ontology supplies the existing `SG-SPEC-0020` trace vocabulary.
 
-Acceptance stays missing until a merged PR or explicit operator acceptance is
-linked. Operational evidence does not change canonical maturity.
+Acceptance uses retained GitHub PR metadata matching the exact merged revision
+and base repository. Missing metadata and closed-but-unmerged PRs do not count.
+Operational evidence does not change canonical maturity.
 See repository `docs/publication_delivery_pilot.md` for commands, scope and limits.

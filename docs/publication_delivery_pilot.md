@@ -85,14 +85,17 @@ the pilot does not publish them automatically to the public webroot.
 | tests | The required bound pytest functions passed for the recorded snapshot |
 | deploy | The expected root bundle was observed at the HTTP origin |
 | runtime | The HTTP verifier observed matching metadata and every payload |
-| acceptance | Remains missing until a merged PR or explicit operator acceptance is linked |
+| acceptance | A GitHub PR was merged into exactly the recorded revision and repository |
 
 Success is an observation under `provider_reported`, not a trusted admission
 decision or a statement that tests are exhaustive. Ontology participates through
 the existing `SG-SPEC-0020` vocabulary for code surfaces, tests, releases and
 runtime results. Its job is semantic linkage, not execution adjudication.
 
-For this engineering pilot, acceptance is a merged implementation PR or explicit
-operator acceptance of the linked revision. Closed-but-unmerged PRs do not count.
-A separate production benefit needs its own outcome criterion. The first adapter
-intentionally leaves acceptance missing; it never invents operator approval.
+For this engineering pilot, acceptance is a merged implementation PR. On push or
+manual dispatch, the workflow retains native GitHub associated-PR metadata in
+`associated-pulls.json`. The adapter matches `merged_at`, `merge_commit_sha` and
+the base repository. Closed-but-unmerged PRs and another revision do not count.
+Unavailable metadata remains missing without blocking delivery. Explicit customer
+acceptance can be added as a separate source later. A separate production benefit
+needs its own outcome criterion; merge metadata does not establish that benefit.
