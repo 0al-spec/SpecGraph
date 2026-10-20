@@ -28,6 +28,7 @@ from publication_evidence.context import (
     TestObservationContext,
     TestSuiteContext,
 )
+from publication_evidence.execution_context import PublicationExecutionContext
 from publication_evidence.http_observation_spec import HTTP_OBSERVATION_SPEC
 from publication_evidence.merged_revision_spec import MERGED_REVISION_SPEC
 from publication_evidence.snapshot_spec import SOURCE_SNAPSHOT_SPEC
@@ -94,15 +95,7 @@ def source_identity(root: Path, bindings: dict[str, Any]) -> dict[str, Any]:
 
 
 def provenance() -> dict[str, str]:
-    run_id = os.environ.get("GITHUB_RUN_ID", "")
-    repository = os.environ.get("GITHUB_REPOSITORY", "0al-spec/SpecGraph")
-    server = os.environ.get("GITHUB_SERVER_URL", "https://github.com")
-    return {
-        "provider": "github_actions" if run_id else "local",
-        "run_id": run_id,
-        "run_attempt": os.environ.get("GITHUB_RUN_ATTEMPT", ""),
-        "uri": f"{server}/{repository}/actions/runs/{run_id}" if run_id else "local-run",
-    }
+    return PublicationExecutionContext.from_environment(os.environ).provenance()
 
 
 def junit_obligations(

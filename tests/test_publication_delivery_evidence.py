@@ -5,6 +5,7 @@ import shutil
 import subprocess
 import sys
 import xml.etree.ElementTree as ET
+from dataclasses import FrozenInstanceError
 from pathlib import Path
 
 import pytest
@@ -13,6 +14,8 @@ import yaml
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "tools"))
 
 import publication_delivery_evidence as pilot
+from publication_delivery_evidence import provenance as native_provenance
+from publication_evidence.execution_context import PublicationExecutionContext
 from static_artifact_incremental_stage import verify_remote_bundle
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -331,6 +334,108 @@ def test_http_verifier_records_its_actual_execution_environment(
     assert observer["uri"] == (
         "https://github.com/0al-spec/SpecGraph/actions/runs/37" if in_ci else "local-run"
     )
+
+
+@pytest.mark.parametrize(
+    "values, expected",
+    [
+        (
+            {},
+            dict(
+                provider="local",
+                run_id="",
+                run_attempt="",
+                uri="local-run",
+                environment="local",
+                source_revision="",
+            ),
+        ),
+        (
+            {"GITHUB_RUN_ID": "37", "GITHUB_RUN_ATTEMPT": "3", "GITHUB_SHA": "a" * 40},
+            dict(
+                provider="github_actions",
+                run_id="37",
+                run_attempt="3",
+                uri="https://github.com/0al-spec/SpecGraph/actions/runs/37",
+                environment="ci",
+                source_revision="a" * 40,
+            ),
+        ),
+        (
+            {
+                "GITHUB_RUN_ID": "37",
+                "GITHUB_REPOSITORY": "team/project",
+                "GITHUB_SERVER_URL": "https://git.example",
+            },
+            dict(
+                provider="github_actions",
+                run_id="37",
+                run_attempt="",
+                uri="https://git.example/team/project/actions/runs/37",
+                environment="ci",
+                source_revision="",
+            ),
+        ),
+        (
+            {"GITHUB_RUN_ID": "", "GITHUB_RUN_ATTEMPT": "2", "GITHUB_SHA": "b" * 40},
+            dict(
+                provider="local",
+                run_id="",
+                run_attempt="2",
+                uri="local-run",
+                environment="local",
+                source_revision="b" * 40,
+            ),
+        ),
+    ],
+)
+def test_publication_producers_preserve_execution_contract(evidence, monkeypatch, values, expected):
+    _, bundle, _ = evidence
+    for name in (
+        "GITHUB_RUN_ID",
+        "GITHUB_RUN_ATTEMPT",
+        "GITHUB_REPOSITORY",
+        "GITHUB_SERVER_URL",
+        "GITHUB_SHA",
+    ):
+        monkeypatch.delenv(name, raising=False)
+    for name, value in values.items():
+        monkeypatch.setenv(name, value)
+    report = verify_remote_bundle(
+        bundle_dir=bundle,
+        remote_base_url="https://specgraph.tech",
+        fetcher=lambda url: (bundle / url.rsplit("/", 1)[1]).read_bytes(),
+        workers=1,
+    )
+    assert report["execution_context"] == expected
+    assert native_provenance() == {
+        key: expected[key] for key in ("provider", "run_id", "run_attempt", "uri")
+    }
+
+
+def test_execution_context_snapshots_explicit_environment_and_is_immutable():
+    values = {"GITHUB_RUN_ID": "37"}
+    context = PublicationExecutionContext.from_environment(values)
+    values["GITHUB_RUN_ID"] = "99"
+    assert context.identity.run_id == "37"
+    with pytest.raises(FrozenInstanceError):
+        context.source_revision = "foreign"
+    with pytest.raises(FrozenInstanceError):
+        context.identity.run_id = "foreign"
+    projection = context.provenance()
+    projection["run_id"] = "changed"
+    assert context.observation()["run_id"] == "37"
+
+
+def test_http_verifier_cli_stays_standard_library_only():
+    completed = subprocess.run(
+        [sys.executable, "-S", "-B", "tools/static_artifact_incremental_stage.py", "--help"],
+        cwd=ROOT,
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    assert completed.returncode == 0, completed.stderr
 
 
 @pytest.mark.parametrize("field", ["source", "repository", "attempt", "subset", "skip"])

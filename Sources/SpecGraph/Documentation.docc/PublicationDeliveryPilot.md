@@ -28,6 +28,12 @@ build-job installations are isolated. HTTP evidence joins only with a known,
 matching source revision. A local verifier without `GITHUB_SHA` verifies bytes
 without establishing that link, so its linked deploy/runtime stages stay missing.
 
+The delivery adapter and HTTP verifier share a frozen
+`PublicationExecutionContext` built from an explicitly supplied environment.
+It projects the existing report shapes without inferring revision identity or
+changing evidence policies. This shared adapter module remains standard-library
+only and participates in the publication source digest inventory.
+
 This is `provider_reported` evidence with `admission: not_evaluated`.
 The profile does not activate `tests_verified_v1` or alter signed receipt and
 claim-admission contracts. The Python bindings do not use the Swift resolver.
