@@ -272,6 +272,12 @@ Keep broad acceptance summaries as context. A successful test suite and a
 well-formed report do not replace that mapping or establish independent
 confirmation at every displayed pipeline stage.
 
+When a tool gains an import dependency, check bootstrap in every CI job that
+invokes it; installations in a preceding job are not shared. For jobs skipped
+on PRs, verify the import path in a clean runtime-only environment as well as
+checking the workflow's setup/install order. Unknown revision identity leaves
+an evidence link unconfirmed, including local observations.
+
 ### Review Heuristics for Artifacts and Gates
 
 Apply these checks systematically when reviewing supervisor, proposal,

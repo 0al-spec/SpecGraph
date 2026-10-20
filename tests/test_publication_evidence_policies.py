@@ -118,6 +118,17 @@ def test_test_observation_identity(difference) -> None:
         ({"observed_bundle": ("foreign", "checksum")}, False),
         ({"observed_origin": "https://staging.example"}, False),
         ({"observed_source_revision": "foreign"}, False),
+        ({"observed_source_revision": ""}, False),
+        ({"source_revision": "", "observed_source_revision": ""}, False),
+        (
+            {
+                "expected_execution": facts.ExecutionIdentity("local", "", "", "local-run"),
+                "observed_execution": facts.ExecutionIdentity("local", "", "", "local-run"),
+                "observer_environment": "local",
+                "observed_source_revision": "",
+            },
+            False,
+        ),
         ({"observed_execution": replace(EXECUTION, run_attempt="1")}, False),
         ({"verified_file_count": 0}, False),
         ({"verified_metadata_count": 1}, False),

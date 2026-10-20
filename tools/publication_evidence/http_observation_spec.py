@@ -17,10 +17,8 @@ HTTP_OBSERVATION_SPEC: PredicateSpec[HttpObservationContext] = PredicateSpec(
         and bool(
             c.observed_execution.provider and c.observer_environment and c.observed_execution.uri
         )
-        and (
-            c.observed_source_revision == c.source_revision
-            or (not c.observed_execution.run_id and not c.observed_source_revision)
-        )
+        and bool(c.source_revision)
+        and c.observed_source_revision == c.source_revision
         and (
             not c.expected_execution.run_id
             or (

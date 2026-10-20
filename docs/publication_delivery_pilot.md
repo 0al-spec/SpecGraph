@@ -110,11 +110,20 @@ It retains a pre-deploy report as the Actions artifact
 `specgraph-publication-delivery-signals-build`. Missing deployment, runtime and
 acceptance signals stay visible. This job runs on PRs without deploying them.
 
-The deploy job downloads that run's test signals and the bundle. The existing
+The deploy job sets up its own Python 3.10 environment and installs the project's
+runtime dependencies before invoking tools. Build-job package installations do
+not carry into the deploy job. The deploy job downloads that run's test signals
+and the bundle. The existing
 HTTP verifier now records the checked manifest/checksum digests, observation time
 and Actions source/run/attempt identity. A successful HTTP result joins only to
 the matching expected bundle and current run. It confirms published bytes; the
 Python observer executes in Actions, not on the static host.
+
+Joining an HTTP observation requires a known source revision equal to the
+report's revision, including local projections. A local verifier without
+`GITHUB_SHA` can verify HTTP bytes but does not supply that revision binding;
+its linked deploy/runtime stages remain `missing`. Empty expected and observed
+revisions cannot confirm the link either.
 
 Every stage records separate `provenance.observer` and `provenance.target`
 objects. The observer identifies the actual CI/local process and its native

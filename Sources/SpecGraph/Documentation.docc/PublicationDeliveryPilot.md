@@ -23,6 +23,11 @@ only the projection context. Retained CI reports keep their original observer
 when projected locally. Missing runtime evidence has a null observer and an
 intended target, which does not establish deployment success.
 
+The deploy job installs runtime dependencies in its own Python 3.10 environment;
+build-job installations are isolated. HTTP evidence joins only with a known,
+matching source revision. A local verifier without `GITHUB_SHA` verifies bytes
+without establishing that link, so its linked deploy/runtime stages stay missing.
+
 This is `provider_reported` evidence with `admission: not_evaluated`.
 The profile does not activate `tests_verified_v1` or alter signed receipt and
 claim-admission contracts. The Python bindings do not use the Swift resolver.

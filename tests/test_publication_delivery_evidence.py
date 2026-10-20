@@ -275,6 +275,29 @@ def test_local_projection_cannot_borrow_foreign_revision(evidence, monkeypatch) 
     assert report["stages"]["runtime"]["result"] == "missing"
 
 
+def test_local_http_report_without_revision_is_unconfirmed(evidence, monkeypatch) -> None:
+    tests, bundle, runtime = evidence
+    for key in ("GITHUB_SHA", "GITHUB_RUN_ID", "GITHUB_RUN_ATTEMPT"):
+        monkeypatch.delenv(key, raising=False)
+    monkeypatch.setattr(
+        pilot,
+        "provenance",
+        lambda: {"provider": "local", "run_id": "", "run_attempt": "", "uri": "local-run"},
+    )
+    native = verify_remote_bundle(
+        bundle_dir=bundle,
+        remote_base_url="https://specgraph.tech",
+        fetcher=lambda url: (bundle / url.rsplit("/", 1)[1]).read_bytes(),
+        workers=1,
+    )
+    assert native["status"] == "verified"
+    assert native["execution_context"]["source_revision"] == ""
+    pilot.write_json(runtime, native)
+    report = pilot.delivery_report(ROOT, tests, bundle, runtime, "local")
+    assert report["stages"]["runtime"]["result"] == "missing"
+    assert report["stages"]["deploy"]["result"] == "missing"
+
+
 def test_unknown_native_observer_cannot_claim_runtime_success(evidence) -> None:
     tests, bundle, runtime = evidence
     payload = pilot.load_json(runtime)
@@ -422,3 +445,19 @@ def test_workflow_retains_same_run_test_inputs_and_postdeploy_report() -> None:
     assert summary["if"] == "always()"
     assert "root-verification.json" in summary["run"]
     assert deploy["needs"] == "build"
+
+
+def test_deploy_job_installs_runtime_dependencies_before_python_tools() -> None:
+    workflow = yaml.safe_load((ROOT / ".github/workflows/publish-static-artifacts.yml").read_text())
+    steps = workflow["jobs"]["deploy"]["steps"]
+    setup = next(i for i, step in enumerate(steps) if step.get("name") == "Set up deploy Python")
+    install = next(
+        i for i, step in enumerate(steps) if step.get("name") == "Install deploy dependencies"
+    )
+    assert steps[setup]["uses"].startswith("actions/setup-python@")
+    assert steps[setup]["with"]["python-version"] == "3.10"
+    assert "if" not in steps[setup] and "if" not in steps[install]
+    assert steps[install]["run"] == "python -m pip install ."
+    assert setup < install
+    invocations = [i for i, step in enumerate(steps) if "python tools/" in step.get("run", "")]
+    assert invocations and install < min(invocations)
