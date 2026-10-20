@@ -18,7 +18,14 @@ from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path, PurePosixPath
 from typing import Any
 
-from publication_evidence.execution_context import PublicationExecutionContext
+# Preserve direct script execution and spec_from_file_location consumers without
+# requiring their process to put tools/ on sys.path. Restore the caller's path.
+_TOOLS_DIR = str(Path(__file__).resolve().parent)
+sys.path.insert(0, _TOOLS_DIR)
+try:
+    from publication_evidence.execution_context import PublicationExecutionContext
+finally:
+    sys.path.remove(_TOOLS_DIR)
 
 
 class IncrementalStageError(ValueError):

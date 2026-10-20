@@ -438,6 +438,35 @@ def test_http_verifier_cli_stays_standard_library_only():
     assert completed.returncode == 0, completed.stderr
 
 
+def test_http_verifier_file_import_isolated_from_test_collection(tmp_path):
+    script = """
+import importlib.util
+import sys
+before = list(sys.path)
+spec = importlib.util.spec_from_file_location("isolated_publication_verifier", sys.argv[1])
+module = importlib.util.module_from_spec(spec)
+spec.loader.exec_module(module)
+assert callable(module.verify_remote_bundle)
+assert sys.path == before, (before, sys.path)
+"""
+    completed = subprocess.run(
+        [
+            sys.executable,
+            "-I",
+            "-S",
+            "-B",
+            "-c",
+            script,
+            str(ROOT / "tools/static_artifact_incremental_stage.py"),
+        ],
+        cwd=tmp_path,
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    assert completed.returncode == 0, completed.stderr
+
+
 @pytest.mark.parametrize("field", ["source", "repository", "attempt", "subset", "skip"])
 def test_test_signal_cannot_borrow_another_source_attempt_or_subset(evidence, field) -> None:
     tests, bundle, runtime = evidence

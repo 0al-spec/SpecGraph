@@ -278,6 +278,11 @@ on PRs, verify the import path in a clean runtime-only environment as well as
 checking the workflow's setup/install order. Unknown revision identity leaves
 an evidence link unconfirmed, including local observations.
 
+After extracting a tool dependency, exercise both direct CLI and file-based
+imports in an isolated process and run the exact bounded producer target.
+Combined pytest collection can hide missing import paths through another test's
+global `sys.path` changes; it does not establish independent entry-point readiness.
+
 ### Review Heuristics for Artifacts and Gates
 
 Apply these checks systematically when reviewing supervisor, proposal,

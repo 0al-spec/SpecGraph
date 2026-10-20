@@ -34,6 +34,11 @@ It projects the existing report shapes without inferring revision identity or
 changing evidence policies. This shared adapter module remains standard-library
 only and participates in the publication source digest inventory.
 
+The verifier supports direct CLI and isolated file-based imports. A subprocess
+regression checks this without site-packages or inherited Python paths, and
+ensures bootstrap restores the caller's import path. Run the exact bounded
+producer separately; combined test collection can mask missing import paths.
+
 This is `provider_reported` evidence with `admission: not_evaluated`.
 The profile does not activate `tests_verified_v1` or alter signed receipt and
 claim-admission contracts. The Python bindings do not use the Swift resolver.
