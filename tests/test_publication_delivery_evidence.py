@@ -88,6 +88,43 @@ def test_failed_collection_discards_old_passing_xml(tmp_path: Path, monkeypatch)
     assert result["junit_sha256"] is None
 
 
+@pytest.fixture
+def completed_test_run(tmp_path: Path, monkeypatch):
+    bindings, _ = pilot.load_pilot(ROOT)
+    source = {
+        "repository": "0al-spec/SpecGraph",
+        "revision": "a" * 40,
+        "files_sha256": {"policy.py": "b" * 64},
+        "working_tree_clean": True,
+    }
+    current = {**source, "files_sha256": dict(source["files_sha256"])}
+    snapshots = iter((source, current))
+    monkeypatch.setattr(pilot, "source_identity", lambda *_: next(snapshots))
+
+    def complete(*_, **__):
+        write_junit(tmp_path / "tests.xml", bindings["obligations"])
+        return subprocess.CompletedProcess([], 0)
+
+    monkeypatch.setattr(pilot.subprocess, "run", complete)
+    return current
+
+
+def test_changed_source_during_tests_cannot_report_success(
+    completed_test_run, tmp_path: Path
+) -> None:
+    completed_test_run["files_sha256"]["policy.py"] = "c" * 64
+    assert pilot.run_tests(ROOT, tmp_path) == 1
+    assert pilot.load_json(tmp_path / "tests.json")["result"] == "missing"
+
+
+def test_unrelated_working_tree_change_preserves_source_evidence(
+    completed_test_run, tmp_path: Path
+) -> None:
+    completed_test_run["working_tree_clean"] = False
+    assert pilot.run_tests(ROOT, tmp_path) == 0
+    assert pilot.load_json(tmp_path / "tests.json")["result"] == "observed_success"
+
+
 def test_failed_report_parse_cannot_leave_an_old_success(tmp_path: Path) -> None:
     (tmp_path / "tests.json").write_text("broken JSON")
     (tmp_path / "report.json").write_text('{"stages": "old success"}')
@@ -224,6 +261,20 @@ def test_local_projection_preserves_native_ci_observer(evidence, monkeypatch) ->
     assert stage["provenance"]["target"]["environment"] == "production"
 
 
+def test_local_projection_cannot_borrow_foreign_revision(evidence, monkeypatch) -> None:
+    tests, bundle, runtime = evidence
+    monkeypatch.setattr(
+        pilot,
+        "provenance",
+        lambda: {"provider": "local", "run_id": "", "run_attempt": "", "uri": "local-run"},
+    )
+    payload = pilot.load_json(runtime)
+    payload["execution_context"]["source_revision"] = "f" * 40
+    pilot.write_json(runtime, payload)
+    report = pilot.delivery_report(ROOT, tests, bundle, runtime, "local")
+    assert report["stages"]["runtime"]["result"] == "missing"
+
+
 def test_unknown_native_observer_cannot_claim_runtime_success(evidence) -> None:
     tests, bundle, runtime = evidence
     payload = pilot.load_json(runtime)
@@ -259,12 +310,14 @@ def test_http_verifier_records_its_actual_execution_environment(
     )
 
 
-@pytest.mark.parametrize("field", ["source", "attempt", "subset", "skip"])
+@pytest.mark.parametrize("field", ["source", "repository", "attempt", "subset", "skip"])
 def test_test_signal_cannot_borrow_another_source_attempt_or_subset(evidence, field) -> None:
     tests, bundle, runtime = evidence
     payload = pilot.load_json(tests)
     if field == "source":
         payload["source"]["revision"] = "f" * 40
+    elif field == "repository":
+        payload["source"]["repository"] = "another/repo"
     elif field == "attempt":
         payload["provenance"]["run_attempt"] = "1"
     elif field == "subset":

@@ -14,6 +14,24 @@ import xml.etree.ElementTree as ET
 from pathlib import Path
 from typing import Any
 
+from publication_evidence.bindings_spec import BINDING_ERROR_SPEC
+from publication_evidence.bound_observation_spec import TEST_OBSERVATION_SPEC
+from publication_evidence.case_spec import TEST_CASE_SPEC
+from publication_evidence.context import (
+    BindingContext,
+    ExecutionIdentity,
+    HttpObservationContext,
+    MergedRevisionContext,
+    SnapshotContext,
+    SourceIdentity,
+    TestCaseContext,
+    TestObservationContext,
+    TestSuiteContext,
+)
+from publication_evidence.http_observation_spec import HTTP_OBSERVATION_SPEC
+from publication_evidence.merged_revision_spec import MERGED_REVISION_SPEC
+from publication_evidence.snapshot_spec import SOURCE_SNAPSHOT_SPEC
+from publication_evidence.suite_spec import TEST_SUITE_SPEC
 from spec_yaml import load_yaml_text
 
 DEFAULT_BINDINGS = "tools/feature_passports/static-publication-bindings.json"
@@ -36,15 +54,17 @@ def load_pilot(root: Path) -> tuple[dict[str, Any], dict[str, Any]]:
     criteria = {item["id"] for item in passport["spec"]["intent"]["acceptance_criteria"]}
     node = load_yaml_text((root / bindings["spec"]).read_text(encoding="utf-8"))
     graph_criteria = {item["id"] for item in node["specification"]["requirement"]["criteria"]}
-    if criteria != graph_criteria:
-        raise ValueError("passport criteria must match the canonical pilot requirement")
     obligations = bindings["obligations"]
-    bound = [item["criterion_id"] for item in obligations]
-    tests = [item["test"] for item in obligations]
-    if not bound or len(bound) != len(set(bound)) or set(bound) != criteria:
-        raise ValueError("bindings must cover every passport criterion exactly once")
-    if len(tests) != len(set(tests)) or any("::" not in item for item in tests):
-        raise ValueError("each binding must name a distinct explicit pytest function")
+    error = BINDING_ERROR_SPEC.decide(
+        BindingContext(
+            frozenset(criteria),
+            frozenset(graph_criteria),
+            tuple(item["criterion_id"] for item in obligations),
+            tuple(item["test"] for item in obligations),
+        )
+    ).value
+    if error:
+        raise ValueError(error)
     return bindings, passport
 
 
@@ -56,6 +76,10 @@ def source_identity(root: Path, bindings: dict[str, Any]) -> dict[str, Any]:
         bindings["spec"],
         bindings["implementation"],
         "tools/publication_delivery_evidence.py",
+        *(
+            path.relative_to(root).as_posix()
+            for path in (root / "tools/publication_evidence").glob("*.py")
+        ),
         *(item["test"].split("::", 1)[0] for item in bindings["obligations"]),
     }
     dirty = subprocess.check_output(
@@ -94,20 +118,26 @@ def junit_obligations(
             for case in cases
             if case.get("classname") == classname and case.get("name") == function
         ]
-        result = "missing"
-        if len(matches) == 1:
-            case = matches[0]
-            if case.find("failure") is not None or case.find("error") is not None:
-                result = "observed_failure"
-            elif case.find("skipped") is None:
-                result = "observed_success"
+        result = TEST_CASE_SPEC.decide(
+            TestCaseContext(
+                len(matches),
+                any(
+                    case.find("failure") is not None or case.find("error") is not None
+                    for case in matches
+                ),
+                any(case.find("skipped") is not None for case in matches),
+            )
+        ).value
         results.append({**item, "result": result})
-    outcomes = {item["result"] for item in results}
-    if exit_code != 0 or "observed_failure" in outcomes:
-        return "observed_failure", results
-    if outcomes == {"observed_success"} and len(cases) == len(obligations):
-        return "observed_success", results
-    return "missing", results
+    result = TEST_SUITE_SPEC.decide(
+        TestSuiteContext(
+            exit_code,
+            frozenset(item["result"] for item in results),
+            len(cases),
+            len(obligations),
+        )
+    ).value
+    return result, results
 
 
 def write_json(path: Path, payload: dict[str, Any]) -> None:
@@ -127,7 +157,9 @@ def run_tests(root: Path, output: Path) -> int:
     command.extend(item["test"] for item in bindings["obligations"])
     completed = subprocess.run(command, cwd=root, check=False)
     result, obligations = junit_obligations(junit, bindings["obligations"], completed.returncode)
-    if source_identity(root, bindings) != source:
+    if not SOURCE_SNAPSHOT_SPEC.is_satisfied_by(
+        SnapshotContext(source_facts(source), source_facts(source_identity(root, bindings)))
+    ):
         result = "missing"
     write_json(
         output / "tests.json",
@@ -145,8 +177,10 @@ def run_tests(root: Path, output: Path) -> int:
     return 0 if result == "observed_success" else 1
 
 
-def stage(result: str, summary: str, evidence: list[dict[str, str]]) -> dict[str, Any]:
-    return {"result": result, "summary": summary, "evidence": evidence}
+def stage(
+    result: str, summary: str, evidence: list[dict[str, str]], **details: Any
+) -> dict[str, Any]:
+    return {"result": result, "summary": summary, "evidence": evidence, **details}
 
 
 def observation_context(
@@ -156,6 +190,28 @@ def observation_context(
         "observer": observer,
         "target": {"environment": target_environment, "uri": target_uri},
     }
+
+
+def source_facts(source: dict[str, Any]) -> SourceIdentity:
+    return SourceIdentity(
+        source.get("repository", ""),
+        source.get("revision", ""),
+        tuple(sorted(source.get("files_sha256", {}).items())),
+    )
+
+
+def execution_facts(run: dict[str, Any]) -> ExecutionIdentity:
+    return ExecutionIdentity(
+        *(run.get(key, "") for key in ("provider", "run_id", "run_attempt", "uri"))
+    )
+
+
+def obligation_facts(items: list[dict[str, Any]]) -> tuple[tuple[str, str], ...]:
+    return tuple((item.get("criterion_id", ""), item.get("test", "")) for item in items)
+
+
+def integer(value: Any) -> int | None:
+    return value if type(value) is int else None
 
 
 def acceptance_signal(path: Path | None, source: dict[str, Any]) -> dict[str, Any]:
@@ -175,12 +231,15 @@ def acceptance_signal(path: Path | None, source: dict[str, Any]) -> dict[str, An
         repository = base.get("repo") if isinstance(base, dict) else None
         if not isinstance(repository, dict):
             continue
-        if (
-            row.get("merged_at")
-            and row.get("merge_commit_sha") == source["revision"]
-            and repository.get("full_name") == source["repository"]
-            and type(row.get("number")) is int
-            and row["number"] > 0
+        if MERGED_REVISION_SPEC.is_satisfied_by(
+            MergedRevisionContext(
+                row.get("merged_at", ""),
+                source["revision"],
+                row.get("merge_commit_sha", ""),
+                source["repository"],
+                repository.get("full_name", ""),
+                integer(row.get("number")) or 0,
+            )
         ):
             uri = f"https://github.com/{source['repository']}/pull/{row['number']}"
             return stage(
@@ -215,24 +274,27 @@ def delivery_report(
     test_observer = None
     obligations = []
     if tests is not None:
-        expected = [(item["criterion_id"], item["test"]) for item in bindings["obligations"]]
-        actual = [
-            (item.get("criterion_id"), item.get("test")) for item in tests.get("obligations", [])
-        ]
-        same_run = tests.get("provenance") == run
-        observed_source = tests.get("source", {})
-        same_source = (
-            observed_source.get("revision") == source["revision"]
-            and observed_source.get("files_sha256") == source["files_sha256"]
-        )
-        if same_source and actual == expected and same_run:
+        if TEST_OBSERVATION_SPEC.is_satisfied_by(
+            TestObservationContext(
+                source_facts(source),
+                source_facts(tests.get("source", {})),
+                execution_facts(run),
+                execution_facts(tests.get("provenance", {})),
+                obligation_facts(bindings["obligations"]),
+                obligation_facts(tests.get("obligations", [])),
+            )
+        ):
             test_observer = report_observer
             obligations = tests["obligations"]
-            outcomes = {item.get("result") for item in obligations}
-            if tests.get("exit_code") != 0 or "observed_failure" in outcomes:
-                test_result = "observed_failure"
-            elif tests.get("result") == "observed_success" and outcomes == {"observed_success"}:
-                test_result = "observed_success"
+            test_result = TEST_SUITE_SPEC.decide(
+                TestSuiteContext(
+                    integer(tests.get("exit_code")),
+                    frozenset(item.get("result") for item in obligations),
+                    len(obligations),
+                    len(bindings["obligations"]),
+                    tests.get("result", ""),
+                )
+            ).value
     test_refs = [{"uri": tests_path.name, "sha256": file_digest(tests_path)}] if tests else []
     runtime = load_json(runtime_path) if runtime_path and runtime_path.is_file() else None
     bundle_identity = None
@@ -245,27 +307,33 @@ def delivery_report(
         }
     if runtime is not None and bundle_identity is not None:
         execution = runtime.get("execution_context", {})
-        same_run = not run["run_id"] or all(
-            execution.get(key) == value
-            for key, value in {
-                "source_revision": source["revision"],
-                "run_id": run["run_id"],
-                "run_attempt": run["run_attempt"],
-            }.items()
-        )
         manifest = load_json(bundle / "artifact_manifest.json")
         summary = runtime.get("summary", {})
-        if (
-            same_run
-            and runtime.get("status") == "verified"
-            and runtime.get("artifact_kind")
-            == "specgraph_static_artifact_remote_verification_report"
-            and runtime.get("bundle_identity") == bundle_identity
-            and runtime.get("remote_base_url") == bindings["runtime_base_url"]
-            and summary.get("verified_file_count") == len(manifest["files"])
-            and summary.get("verified_metadata_file_count") == 2
-            and summary.get("failure_count") == 0
-            and all(execution.get(key) for key in ("provider", "environment", "uri"))
+        observed_bundle = runtime.get("bundle_identity", {})
+        if HTTP_OBSERVATION_SPEC.is_satisfied_by(
+            HttpObservationContext(
+                source_revision=source["revision"],
+                observed_source_revision=execution.get("source_revision", ""),
+                expected_execution=execution_facts(run),
+                observed_execution=execution_facts(execution),
+                observer_environment=execution.get("environment", ""),
+                expected_bundle=(
+                    bundle_identity["manifest_sha256"],
+                    bundle_identity["checksums_sha256"],
+                ),
+                observed_bundle=(
+                    observed_bundle.get("manifest_sha256", ""),
+                    observed_bundle.get("checksums_sha256", ""),
+                ),
+                expected_origin=bindings["runtime_base_url"],
+                observed_origin=runtime.get("remote_base_url", ""),
+                status=runtime.get("status", ""),
+                artifact_kind=runtime.get("artifact_kind", ""),
+                expected_file_count=len(manifest["files"]),
+                verified_file_count=integer(summary.get("verified_file_count")),
+                verified_metadata_count=integer(summary.get("verified_metadata_file_count")),
+                failure_count=integer(summary.get("failure_count")),
+            )
         ):
             runtime_result = "observed_success"
             runtime_observer = {
@@ -277,6 +345,15 @@ def delivery_report(
         if runtime is not None and runtime_path
         else []
     )
+    repository_uri = f"https://github.com/{source['repository']}"
+    source_scope = observation_context(
+        report_observer, "repository", f"{repository_uri}/tree/{source['revision']}"
+    )
+    publication_scope = observation_context(
+        runtime_observer, bindings["runtime_environment"], bindings["runtime_base_url"]
+    )
+    acceptance = acceptance_signal(acceptance_path, source)
+    acceptance["provenance"] = observation_context(report_observer, "github", repository_uri)
     stages = {
         "intent": stage(
             "observed_success",
@@ -284,6 +361,7 @@ def delivery_report(
             [
                 {"uri": "inputs/passport.json", "sha256": file_digest(root / bindings["passport"])},
             ],
+            provenance=source_scope,
         ),
         "spec": stage(
             "observed_success",
@@ -292,36 +370,32 @@ def delivery_report(
                 {"uri": "inputs/spec.yaml", "sha256": file_digest(root / bindings["spec"])},
                 {"uri": "inputs/bindings.json", "sha256": file_digest(root / DEFAULT_BINDINGS)},
             ],
+            provenance=source_scope,
         ),
-        "tests": {
-            **stage(test_result, "Required pytest function observations.", test_refs),
-            "obligations": obligations,
-        },
+        "tests": stage(
+            test_result,
+            "Required pytest function observations.",
+            test_refs,
+            obligations=obligations,
+            provenance=observation_context(
+                test_observer, report_observer["environment"], run["uri"]
+            ),
+        ),
         "deploy": stage(
-            runtime_result, "Expected root bundle observed at the HTTP origin.", native_ref
+            runtime_result,
+            "Expected root bundle observed at the HTTP origin.",
+            native_ref,
+            provenance=publication_scope,
         ),
-        "runtime": {
-            **stage(runtime_result, "HTTP bytes checked by the CI/local verifier.", native_ref),
-            "observation": runtime,
-        },
-        "acceptance": acceptance_signal(acceptance_path, source),
+        "runtime": stage(
+            runtime_result,
+            "HTTP bytes checked by the CI/local verifier.",
+            native_ref,
+            observation=runtime,
+            provenance=publication_scope,
+        ),
+        "acceptance": acceptance,
     }
-    repository_uri = f"https://github.com/{source['repository']}"
-    source_uri = f"{repository_uri}/tree/{source['revision']}"
-    contexts = {
-        "intent": observation_context(report_observer, "repository", source_uri),
-        "spec": observation_context(report_observer, "repository", source_uri),
-        "tests": observation_context(test_observer, report_observer["environment"], run["uri"]),
-        "deploy": observation_context(
-            runtime_observer, bindings["runtime_environment"], bindings["runtime_base_url"]
-        ),
-        "runtime": observation_context(
-            runtime_observer, bindings["runtime_environment"], bindings["runtime_base_url"]
-        ),
-        "acceptance": observation_context(report_observer, "github", repository_uri),
-    }
-    for name, context in contexts.items():
-        stages[name]["provenance"] = context
     return {
         "artifact_kind": "feature_delivery_signals",
         "schema_version": 1,

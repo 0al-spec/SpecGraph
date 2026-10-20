@@ -28,6 +28,25 @@ The profile does not activate `tests_verified_v1` or alter signed receipt and
 claim-admission contracts. The Python bindings do not use the Swift resolver.
 Ontology supplies the existing `SG-SPEC-0020` trace vocabulary.
 
+The rule inventory is `SG-SPEC-0071.atoms.intents[]`: 13 explicitly identified
+atoms with executable `verifiable_by` references. Seven SpecificationCore
+policies in `tools/publication_evidence/` receive immutable typed contexts.
+Binding errors, testcase and suite outcomes have explicit `FirstMatch` priority;
+fresh and retained tests reuse the suite policy. Source collection and retained
+test joins reuse the snapshot policy. Bindings name the policy symbols actually
+used by the adapter; the source identity pins the extracted modules too.
+
+The existing Intent Atoms v1 profile counts the explicit inventory and keeps
+the three broad acceptance entries as non-counted context. This representation
+change does not imply ten new behaviors. See the rule-to-implementation/test
+table in `docs/publication_delivery_pilot.md`.
+
+The report's test observations cover the five `PB-*` feature scenarios.
+The ordinary Python suite separately verifies the `PE-*` adapter policies.
+
+Intent/spec success describes declarations; deploy/runtime share one HTTP
+observation. These are linked observations with limited independence.
+
 Acceptance uses retained GitHub PR metadata matching the exact merged revision
 and base repository. Missing metadata and closed-but-unmerged PRs do not count.
 Operational evidence does not change canonical maturity.

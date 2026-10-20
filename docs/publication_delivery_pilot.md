@@ -22,6 +22,59 @@ It is provider-reported, function-level evidence with `admission: not_evaluated`
 The profile does not activate the separate `tests_verified_v1` plan in proposal
 `0225`, reinterpret signed receipts, or alter the existing claim gate.
 
+## Rule, intent atom, implementation and test
+
+The canonical rule inventory is `SG-SPEC-0071.atoms.intents[]`. Every atom has
+a stable local ID and executable `verifiable_by` selectors. The five publication
+criteria refer to those atoms by `intent_atom_id`; the bindings file names the
+actual SpecificationCore objects used by the adapter for evidence decisions.
+The table below abbreviates module paths under `tools/publication_evidence/`.
+
+| Intent atom | Rule / implementation | Executable check |
+| --- | --- | --- |
+| `PB-ALL` | Matching metadata and payloads; existing `verify_remote_bundle` | `test_verify_remote_bundle_hashes_every_manifest_file` |
+| `PB-PAYLOAD` | Payload digest mismatch; existing verifier | `test_verify_remote_bundle_fails_on_digest_drift` |
+| `PB-MANIFEST` | Stale manifest; existing verifier | `test_verify_remote_bundle_fails_on_stale_published_manifest` |
+| `PB-CHECKSUMS` | Stale checksums; existing verifier | `test_verify_remote_bundle_fails_on_stale_checksums` |
+| `PB-MISSING` | Missing remote payload; existing verifier | `test_verify_remote_bundle_fails_on_missing_remote_payload` |
+| `PE-BINDINGS` | Complete distinct bindings; `bindings_spec.BINDING_ERROR_SPEC` | `test_binding_contract` |
+| `PE-CASE` | One completed case, failure precedence; `case_spec.TEST_CASE_SPEC` | `test_test_case_decision` |
+| `PE-SUITE` | Full passing suite, runner failure precedence; `suite_spec.TEST_SUITE_SPEC` | `test_test_suite_decision` |
+| `PE-SNAPSHOT` | Relevant source bytes unchanged; `snapshot_spec.SOURCE_SNAPSHOT_SPEC` | `test_changed_source_during_tests_cannot_report_success` |
+| `PE-TEST-IDENTITY` | Same source, execution and obligations; `bound_observation_spec.TEST_OBSERVATION_SPEC` | `test_test_observation_identity` |
+| `PE-HTTP` | Matching origin, bundle, payload count and execution; `http_observation_spec.HTTP_OBSERVATION_SPEC` | `test_http_observation_identity` |
+| `PE-OBSERVER` | Known native observer, separate target scope; HTTP policy and stage projection | `test_stage_provenance_separates_ci_execution_and_production_target` |
+| `PE-ACCEPTANCE` | Merged PR for this revision; `merged_revision_spec.MERGED_REVISION_SPEC` | `test_merged_revision_acceptance` |
+
+`test_every_declared_atom_has_a_real_test_and_policy_binding` checks that the
+inventory has distinct IDs, real test functions and matching policy bindings
+whose symbols the production adapter actually uses. This checks trace structure;
+the listed behavioral tests check the decisions. No runtime coverage is inferred
+from the existence of a reference.
+
+The report's `tests` stage still covers the five bound `PB-*` feature scenarios.
+The `PE-*` tests verify the evidence adapter through the ordinary Python suite;
+their declaration does not add them to that five-scenario observation artifact.
+
+Policies receive frozen typed contexts and perform no I/O. `FirstMatch` gives
+binding errors, case outcomes and suite outcomes explicit precedence. The same
+suite policy evaluates fresh JUnit and retained JSON; the same snapshot policy
+is used during collection and when joining retained evidence. Parsing XML/JSON,
+reading files, invoking pytest and projecting report fields stay in the adapter.
+The source identity includes every extracted policy/context module.
+
+This refinement also closes two identity gaps: test reports must name the same
+repository, and a local projection cannot reuse an HTTP report for another
+recorded revision. A change only to the working-tree clean/dirty flag is
+diagnostic; changes to relevant source bytes invalidate test evidence.
+
+The v1 analyzer/profile is unchanged. It now counts the 13 explicit atoms and
+retains the three broad `acceptance[]` entries as non-counted context. This is a
+documented source-mode transition, not a claim that the behavior grew by ten
+new requirements. Five atoms describe the pre-existing verifier; eight describe
+the evidence adapter's obligations. Typed contexts and named rules add source
+code; assess the complete adapter plus policy family when comparing metrics.
+
 ## Run
 
 ```sh
@@ -98,6 +151,10 @@ the pilot does not publish them automatically to the public webroot.
 | deploy | The expected root bundle was observed at the HTTP origin |
 | runtime | The HTTP verifier observed matching metadata and every payload |
 | acceptance | A GitHub PR was merged into exactly the recorded revision and repository |
+
+Intent/spec success describes authored declarations. Deploy/runtime share one
+HTTP observation, rather than two independent confirmations. The report links
+these sources; it does not establish a full requirement-to-assertion runtime trace.
 
 Success is an observation under `provider_reported`, not a trusted admission
 decision or a statement that tests are exhaustive. Ontology participates through
