@@ -21,6 +21,14 @@ It does not discover every normative sentence, nested requirement or code-only
 policy change. Existing SpecificationCore review rules still apply when no atom
 changes. `not_required` means only that this trigger did not fire.
 
+Decision coverage uses `intent-decision-obligations-v1`: for stable explicit atom
+IDs it compares the full parsed obligation, including `declared_type`, `scope`,
+`premises` and `verifiable_by`, not just the statement. Source paths, field paths
+and list positions are provenance and do not alone modify an obligation. The
+historical counter and `intent_summary` retain their text-only modification
+semantics; `changes` and `changed_atoms` describe the richer decision-review
+delta, whose profile is included in its digest.
+
 ## Record and binding
 
 Add a single field to the PR description:
@@ -64,6 +72,15 @@ and directly imported `PredicateSpec` / `FirstMatch` factory declarations.
 Unknown wrappers, inherited aliases and other languages need a qualified future
 adapter; do not relabel them as mechanics to bypass the check. Boolean composition
 can cite its existing component definitions without creating a wrapper Spec.
+
+Reference arrays are limited to 16 entries each and 256 submitted entries across
+the record. Duplicate references within an array are invalid. All arrays are
+preflighted before Git/AST declaration work; exact revision/file/symbol lookups
+and revision/file ASTs are cached within a run. Production source detection is
+scoped to `tools/`, `src/` and `Sources/`: `.py`, `.rs`, `.swift`, `.sh`, `.bash`,
+`.zsh`, `.ksh`, `.csh`, `.tcsh`, `.fish`, `.dash`, plus tracked executable regular
+files beginning with a shebang. Both base and head are checked for executable
+scripts, including deletions and executable-bit removal.
 
 The gate validates source references and coverage, **not** whether the cited
 caller applies the rule correctly, whether a mechanics rationale is true, or

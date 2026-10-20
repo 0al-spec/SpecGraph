@@ -20,6 +20,13 @@ attestation, and does not alter S/U or invoke a model. Code-only policies still
 require architectural review. See `docs/intent_decision_review.md` and its bounded
 PR773 / SG-SPEC-0071 regression.
 
+Decision delta profile `intent-decision-obligations-v1` also observes parsed
+explicit intent attributes while preserving the historical text-only counter.
+Reference arrays are bounded before Git/AST work (16 per array, 256 total), with
+per-run source/declaration caches. Contract-only detection includes supported
+shell extensions and tracked executable shebang scripts on either revision,
+including deletions. The ordinary guide lists the exact paths and extensions.
+
 ## Compositional test bindings
 
 RFC 0224 prepares an execution-binding follow-up to RFC 0223. A proposed

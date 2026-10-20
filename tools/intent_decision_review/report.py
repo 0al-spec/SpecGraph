@@ -9,7 +9,7 @@ from intent_atoms import build_snapshot, diff_snapshots
 from . import CONTRACT, decide
 from .context import DecisionReviewFacts, RecordEvidenceFacts
 from .record_rules import inspect_evidence
-from .sources import GitSources, digest, normalized_path, revision, strict_json
+from .sources import GitSources, digest, encoded, normalized_path, revision, strict_json
 
 REVIEW_PREFIX = "tools/intent_decision_reviews/"
 DISPOSITIONS = {
@@ -22,11 +22,38 @@ DISPOSITIONS = {
 }
 
 
-def changes_from(diff: dict) -> list[dict]:
+MAX_REFS_PER_LIST = 16
+MAX_REFS_TOTAL = 256
+DECISION_DELTA_PROFILE = "intent-decision-obligations-v1"
+
+
+def changes_from(diff: dict, before: dict, after: dict) -> list[dict]:
+    # The historical counter compares explicit statements only. Decision coverage
+    # also observes declared attributes, without changing that published metric.
+    def explicit(snapshot):
+        return {
+            (atom["node_id"], atom["atom_id"]): atom
+            for atom in snapshot["atoms"]
+            if atom.get("origin") == "explicit_intent" and atom.get("atom_id")
+        }
+
+    def obligation(atom):
+        return {
+            k: v
+            for k, v in atom.items()
+            if k not in {"source_path", "source_field", "element_index"}
+        }
+
+    old, new = explicit(before), explicit(after)
+    modified = [
+        dict(node_id=key[0], atom_id=key[1], before=old[key], after=new[key])
+        for key in sorted(old.keys() & new.keys())
+        if obligation(old[key]) != obligation(new[key])
+    ]
     return [
         dict(kind=kind, change_sha256=digest(dict(kind=kind, atom=atom)), atom=atom)
         for kind, field in (("added", "added"), ("removed", "removed"), ("modified", "modified"))
-        for atom in diff[field]
+        for atom in (modified if kind == "modified" else diff[field])
     ]
 
 
@@ -50,10 +77,22 @@ def inspect_records(sources: GitSources, review: dict, changes: list[dict]) -> t
         raise ValueError("decisions must be a list")
     wanted = {c["change_sha256"]: c for c in changes}
     seen, inspected = set(), []
-    production_changed = any(
-        p.startswith(("tools/", "src/", "Sources/")) and p.endswith((".py", ".rs", ".swift", ".sh"))
-        for p in sources.changed_paths()
-    )
+    # Preflight every list before any Git/AST reference lookup, including when a
+    # late record is oversized. Bounds apply to submitted entries, not uniques.
+    total = 0
+    for record in records:
+        if not isinstance(record, dict):
+            raise ValueError("decision must be an object")
+        for name in ("implementation_refs", "specification_refs"):
+            refs = record.get(name)
+            if not isinstance(refs, list) or len(refs) > MAX_REFS_PER_LIST:
+                raise ValueError("reference list exceeds v1 bounds or is not a list")
+            total += len(refs)
+            if total > MAX_REFS_TOTAL:
+                raise ValueError("review exceeds total reference bound")
+            if len({encoded(ref) for ref in refs}) != len(refs):
+                raise ValueError("duplicate declaration reference")
+    production_changed = sources.production_changed()
     for record in records:
         if not isinstance(record, dict) or set(record) != {
             "change_sha256",
@@ -129,9 +168,14 @@ def collect(
     before = build_snapshot(repo=str(root), revision=base)
     after = build_snapshot(repo=str(root), revision=head)
     diff = diff_snapshots(before, after)
-    changes = changes_from(diff)
+    changes = changes_from(diff, before, after)
     delta_sha = digest(
-        dict(profile=diff["profile"], analyzer_sha256=diff["analyzer_sha256"], changes=changes)
+        dict(
+            profile=diff["profile"],
+            analyzer_sha256=diff["analyzer_sha256"],
+            decision_delta_profile=DECISION_DELTA_PROFILE,
+            changes=changes,
+        )
     )
     sources = GitSources(root, base, head)
     errors, inspected, missing = [], [], []
@@ -186,6 +230,7 @@ def collect(
         base_sha=base,
         head_sha=head,
         intent_delta_sha256=delta_sha,
+        decision_delta_profile=DECISION_DELTA_PROFILE,
         source_scope_sha256=digest(scope),
         source_scope=scope,
         review_path=path,

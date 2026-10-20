@@ -40,6 +40,13 @@ count changes. Add `Intent-Decision-Review:` to the PR description, linking the
 tracked record under `tools/intent_decision_reviews/`. Bind the exact base, intent
 delta, source snapshot and PR description; re-review when those change.
 
+Review of the decision gate exposed three reusable adapter lessons: compare the
+entire parsed obligation rather than reusing a text-only metric delta; bound all
+reference lists before expensive work and cache repeated reads; detect executable
+scripts on both sides of a diff, including deletion. Regression tests in
+`tests/test_intent_decision_review.py` prevent recurrence; the historical metrics
+retain their own published semantics.
+
 PR773 showed why independent informational counters are insufficient: three new
 SG-SPEC-0071 acceptance atoms accompanied procedural evidence decisions outside
 the publication classifier's bounded inventory. The prevention joins each atom

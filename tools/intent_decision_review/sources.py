@@ -64,6 +64,8 @@ def normalized_path(value: object) -> str:
 class GitSources:
     def __init__(self, root: Path, base: str, head: str):
         self.root, self.base, self.head = root, base, head
+        self._parsed = {}
+        self._declarations = {}
 
     def blob(self, ref: str, path: str) -> bytes:
         path = normalized_path(path)
@@ -81,6 +83,33 @@ class GitSources:
     def changed_paths(self) -> list[str]:
         raw = git(self.root, "diff", "--name-only", "--no-renames", "-z", self.base, self.head)
         return [v.decode() for v in raw.split(b"\0") if v]
+
+    def production_changed(self) -> bool:
+        extensions = {
+            ".py",
+            ".rs",
+            ".swift",
+            ".sh",
+            ".bash",
+            ".zsh",
+            ".ksh",
+            ".csh",
+            ".tcsh",
+            ".fish",
+            ".dash",
+        }
+        for path in self.changed_paths():
+            if not path.startswith(("tools/", "src/", "Sources/")):
+                continue
+            if PurePosixPath(path).suffix in extensions:
+                return True
+            # Observe both sides: deletions or lost executable bits still count.
+            for ref in (self.base, self.head):
+                entry = git(self.root, "ls-tree", "-z", ref, "--", path)
+                if entry and entry.startswith(b"100755 blob "):
+                    if self.blob(ref, path).startswith(b"#!"):
+                        return True
+        return False
 
     def scope(self, review_path: str) -> dict[str, object]:
         result = {}
@@ -105,8 +134,15 @@ class GitSources:
             or not re.fullmatch(r"[A-Za-z_]\w*(?:\.[A-Za-z_]\w*)*", symbol)
         ):
             raise ValueError("v1 references require Python declarations")
-        raw = self.blob(ref or self.head, path)
-        module = ast.parse(raw)
+        ref = ref or self.head
+        key = (ref, path, symbol)
+        if key in self._declarations:
+            return self._declarations[key]
+        source_key = (ref, path)
+        if source_key not in self._parsed:
+            raw = self.blob(ref, path)
+            self._parsed[source_key] = (raw, ast.parse(raw))
+        raw, module = self._parsed[source_key]
         core = {
             alias.asname or alias.name: alias.name
             for node in module.body
@@ -144,7 +180,7 @@ class GitSources:
                 is_spec = core.get(name) in {"PredicateSpec", "FirstMatch"}
         lines = raw.decode().splitlines(keepends=True)
         excerpt = "".join(lines[found.lineno - 1 : found.end_lineno])
-        return dict(
+        result = dict(
             path=path,
             symbol=symbol,
             start_line=found.lineno,
@@ -153,6 +189,8 @@ class GitSources:
             code=excerpt,
             recognized_specification=is_spec,
         )
+        self._declarations[key] = result
+        return result
 
 
 def declaration_name(node: ast.AST) -> str | None:

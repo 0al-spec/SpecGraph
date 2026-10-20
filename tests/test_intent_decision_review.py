@@ -11,8 +11,8 @@ import pytest
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "tools"))
 
-from intent_decision_review.report import collect, draft  # noqa: E402
-from intent_decision_review.sources import encoded  # noqa: E402
+from intent_decision_review.report import collect, draft, inspect_records  # noqa: E402
+from intent_decision_review.sources import GitSources, encoded  # noqa: E402
 from intent_decision_review_gate import main  # noqa: E402
 from test_intent_atoms import git, make_repo  # noqa: E402
 
@@ -186,6 +186,98 @@ def test_explicit_atom_modification_and_retirement_are_not_addition_counts(tmp_p
     assert measured(repo, head, publish(repo, review))["status"] == "covered"
 
 
+@pytest.mark.parametrize(
+    "attribute, value",
+    [
+        ("type", "policy"),
+        ("scope", "publication"),
+        ("premises", ["authenticated"]),
+        ("verifiable_by", ["test_rule"]),
+    ],
+)
+@pytest.mark.parametrize("remove", [False, True])
+def test_declared_attribute_edits_require_review_without_changing_counter(
+    tmp_path, attribute, value, remove
+):
+    from intent_atoms import build_snapshot, diff_snapshots
+
+    repo, _, _ = history(tmp_path)
+    atom = dict(id="rule", statement="Keep the same statement.")
+
+    def document(with_attribute):
+        item = dict(atom)
+        if with_attribute:
+            item[attribute] = value
+        return encoded(dict(id="SG-1", kind="spec", atoms=dict(intents=[item])))
+
+    write(repo, "specs/nodes/SG-1.yaml", document(remove))
+    base = commit(repo)
+    write(repo, "specs/nodes/SG-1.yaml", document(not remove))
+    head = commit(repo)
+    historical = diff_snapshots(
+        build_snapshot(repo=str(repo), revision=base), build_snapshot(repo=str(repo), revision=head)
+    )
+    assert historical["modified"] == []
+    result = collect(repo, base, head)
+    assert result["status"] == "needs_review"
+    assert result["changed_atoms"] == 1
+    assert result["changes"][0]["kind"] == "modified"
+    assert result["changes"][0]["atom"]["before"] != result["changes"][0]["atom"]["after"]
+    review = record(repo, base, head)
+    assert measured(repo, base, publish(repo, review))["status"] == "covered"
+
+
+def test_reordering_explicit_atoms_does_not_modify_obligations(tmp_path):
+    repo, _, _ = history(tmp_path)
+    atoms = [dict(id="a", statement="First"), dict(id="b", statement="Second")]
+    write(repo, "specs/nodes/SG-1.yaml", encoded(dict(id="SG-1", atoms=dict(intents=atoms))))
+    base = commit(repo)
+    write(repo, "specs/nodes/SG-1.yaml", encoded(dict(id="SG-1", atoms=dict(intents=atoms[::-1]))))
+    assert collect(repo, base, commit(repo))["status"] == "not_required"
+
+
+@pytest.mark.parametrize("failure", ["per_list", "total", "duplicate"])
+def test_all_reference_bounds_are_checked_before_git_or_ast_work(failure):
+    from unittest.mock import Mock
+
+    sources = Mock()
+    refs = [dict(path="tools/rule.py", symbol=f"rule{i}") for i in range(17)]
+    if failure == "per_list":
+        rows = [
+            dict(implementation_refs=[], specification_refs=[]),
+            dict(implementation_refs=refs, specification_refs=[]),
+        ]
+    elif failure == "total":
+        rows = [dict(implementation_refs=refs[:16], specification_refs=refs[:16])] * 9
+    else:
+        rows = [dict(implementation_refs=refs[:1] * 2, specification_refs=[])]
+    with pytest.raises(ValueError):
+        inspect_records(sources, dict(decisions=rows), [])
+    assert sources.mock_calls == []
+
+
+def test_declaration_and_module_caches_reuse_exact_revision_reads(tmp_path):
+    import intent_decision_review.sources as source_module
+
+    repo, base, head = history(tmp_path)
+    write(repo, "tools/decision.py", "def decide(x):\n    return x\ndef other():\n    return 1\n")
+    head = commit(repo)
+    sources = GitSources(repo, base, head)
+    reference = dict(path="tools/decision.py", symbol="decide")
+    with (
+        patch.object(source_module, "git", wraps=source_module.git) as git_calls,
+        patch.object(source_module.ast, "parse", wraps=source_module.ast.parse) as parse_calls,
+    ):
+        sources.declaration(reference)
+        sources.declaration(reference)
+        sources.declaration(dict(reference, symbol="other"))
+        assert git_calls.call_count == 2
+        assert parse_calls.call_count == 1
+        sources.declaration(reference, ref=base)
+        assert git_calls.call_count == 4
+        assert parse_calls.call_count == 2
+
+
 def test_false_specification_reference_and_wrong_disposition_are_rejected(tmp_path):
     repo, base, head = history(tmp_path)
     review = record(repo, base, head)
@@ -230,17 +322,38 @@ def test_duplicate_json_keys_and_symlink_review_records_are_rejected(tmp_path):
     assert measured(repo, base, commit(repo))["status"] == "invalid"
 
 
-def test_contract_only_cannot_bypass_changed_runtime_source(tmp_path):
+@pytest.mark.parametrize(
+    "path, content, executable",
+    [
+        ("tools/new_runtime.py", "def rule():\n    return True\n", False),
+        ("tools/policy.bash", "echo policy\n", False),
+        ("src/policy.zsh", "echo policy\n", False),
+        ("tools/policy", "#!/usr/bin/env bash\necho policy\n", True),
+    ],
+)
+def test_contract_only_cannot_bypass_changed_runtime_source(tmp_path, path, content, executable):
     repo, base, head = history(tmp_path)
     review = draft(repo, base, head, LEDGER, pr_context=dict(body=BODY))
     review["decisions"][0].update(disposition="contract_only", rationale="Future contract.")
     head = publish(repo, review)
     assert measured(repo, base, head)["status"] == "covered"
-    write(repo, "tools/new_runtime.py", "def rule():\n    return True\n")
+    write(repo, path, content)
+    if executable:
+        (repo / path).chmod(0o755)
     head = commit(repo)
     review = draft(repo, base, head, LEDGER, pr_context=dict(body=BODY))
     review["decisions"][0].update(disposition="contract_only", rationale="Future contract.")
     assert measured(repo, base, publish(repo, review))["status"] == "invalid"
+
+
+def test_deleted_extensionless_shell_source_is_still_a_production_change(tmp_path):
+    repo, _, _ = history(tmp_path)
+    write(repo, "tools/policy", "#!/bin/sh\necho policy\n")
+    (repo / "tools/policy").chmod(0o755)
+    base = commit(repo)
+    (repo / "tools/policy").unlink()
+    head = commit(repo)
+    assert GitSources(repo, base, head).production_changed()
 
 
 def test_cli_event_context_is_preserved_and_no_override_is_allowed(tmp_path, capsys):
