@@ -147,11 +147,27 @@ jobs:
         if: steps.snapshot.outputs.is_current == 'true'
         env:
           RUNNER_TEMP: ${{ runner.temp }}
-          WORKFLOW_RUN_ID: ${{ github.event.workflow_run.id }}
+          PR_NUMBER: ${{ matrix.pr_number }}
+          REPOSITORY: ${{ github.repository }}
+          COLLECTION_RUN_ID: ${{ github.run_id }}
+          COLLECTION_ATTEMPT: ${{ github.run_attempt }}
+          UPSTREAM_CI_RUN_ID: ${{ github.event.workflow_run.id }}
         run: |
           cli="${RUNNER_TEMP}/specificationmetrics/cli/bin/specification-metrics"
           before="${RUNNER_TEMP}/specificationmetrics/before"
           after="${RUNNER_TEMP}/specificationmetrics/after"
+          cp .specificationmetrics.toml "${RUNNER_TEMP}/specificationmetrics/collection-config.toml"
+          cp scopes/specificationmetrics.toml "${RUNNER_TEMP}/specificationmetrics/scope-manifest.toml"
+          jq -n --arg repository "$REPOSITORY" --arg pr "$PR_NUMBER" \
+            --arg base "$base_sha" --arg head "$head_sha" \
+            --arg run "$COLLECTION_RUN_ID" --arg attempt "$COLLECTION_ATTEMPT" \
+            --arg ci "$UPSTREAM_CI_RUN_ID" --arg workflow "$(git rev-parse HEAD)" \
+            '{schema_version: 1, repository: $repository, pr_number: ($pr | tonumber),
+              base_sha: $base, head_sha: $head, collection_run_id: $run,
+              collection_attempt: $attempt, upstream_ci_run_id: $ci,
+              trusted_workflow_sha: $workflow,
+              analyzer_sha: "c4d95427875d28870085c847852f7357859d164f"}' \
+            > "${RUNNER_TEMP}/specificationmetrics/provenance.json"
           "${cli}" collect --config "${before}/.specificationmetrics.toml" \
             --output "${RUNNER_TEMP}/specificationmetrics/before.json"
           "${cli}" collect --config "${after}/.specificationmetrics.toml" \
@@ -159,12 +175,38 @@ jobs:
           "${cli}" compare "${RUNNER_TEMP}/specificationmetrics/before.json" \
             "${RUNNER_TEMP}/specificationmetrics/after.json" \
             --output "${RUNNER_TEMP}/specificationmetrics/diff.json"
+
+      - name: Retain detailed metric evidence
+        id: evidence
+        if: always() && steps.snapshot.outputs.is_current == 'true'
+        uses: actions/upload-artifact@v4
+        with:
+          name: specificationmetrics-pr-${{ matrix.pr_number }}-${{ env.head_sha }}-${{ github.run_attempt }}
+          path: |
+            ${{ runner.temp }}/specificationmetrics/before.json
+            ${{ runner.temp }}/specificationmetrics/after.json
+            ${{ runner.temp }}/specificationmetrics/diff.json
+            ${{ runner.temp }}/specificationmetrics/provenance.json
+            ${{ runner.temp }}/specificationmetrics/collection-config.toml
+            ${{ runner.temp }}/specificationmetrics/scope-manifest.toml
+          if-no-files-found: warn
+          retention-days: 30
+
+      - name: Render the PR metrics comment
+        if: success() && steps.snapshot.outputs.is_current == 'true'
+        env:
+          RUNNER_TEMP: ${{ runner.temp }}
+          COLLECTION_RUN_ID: ${{ github.run_id }}
+          REPOSITORY: ${{ github.repository }}
+          ARTIFACT_URL: ${{ steps.evidence.outputs.artifact-url }}
+        run: |
           python tools/specificationmetrics_pr_comment.py \
             --before "${RUNNER_TEMP}/specificationmetrics/before.json" \
             --after "${RUNNER_TEMP}/specificationmetrics/after.json" \
             --diff "${RUNNER_TEMP}/specificationmetrics/diff.json" \
             --output "${RUNNER_TEMP}/specificationmetrics/comment.json" \
-            --run-url "https://github.com/${GITHUB_REPOSITORY}/actions/runs/${WORKFLOW_RUN_ID}"
+            --run-url "https://github.com/${REPOSITORY}/actions/runs/${COLLECTION_RUN_ID}" \
+            --artifact-url "$ARTIFACT_URL"
 
       - name: Update the single PR metrics comment
         if: steps.snapshot.outputs.is_current == 'true'

@@ -64,8 +64,46 @@ def _valid_digest(value: Any) -> bool:
     )
 
 
+def _primary_diagnostics(report: dict[str, Any]) -> str:
+    """Summarize typed diagnostic fields without publishing source-derived text."""
+    reasons = []
+    for field, label in (
+        ("parse_issues", "parse issues"),
+        ("marker_issues", "marker issues"),
+        ("scope_issues", "scope issues"),
+    ):
+        issues = report.get(field)
+        if not isinstance(issues, list):
+            reasons.append(f"{label}: unavailable")
+        elif issues:
+            reasons.append(f"{label}: {len(issues)}")
+    for field, label in (
+        ("scope_review_required", "scope review required"),
+        ("liveness_review_required", "liveness review required"),
+    ):
+        value = report.get(field)
+        if value is True:
+            reasons.append(label)
+        elif value is not False:
+            reasons.append(f"{label}: unavailable")
+    unknown = _count(report.get("unknown_specifications"))
+    if unknown is None:
+        reasons.append("unknown liveness: unavailable")
+    elif unknown:
+        reasons.append(f"unknown liveness: {unknown}")
+    if reasons:
+        return "; ".join(reasons)
+    return (
+        "provisional reason unavailable" if report.get("provisional") is True else "none reported"
+    )
+
+
 def render_comment(
-    before: dict[str, Any], after: dict[str, Any], diff: dict[str, Any], run_url: str
+    before: dict[str, Any],
+    after: dict[str, Any],
+    diff: dict[str, Any],
+    run_url: str,
+    artifact_url: str | None = None,
 ) -> str:
     """Only include validated aggregate data; never echo source text or file paths."""
     if any(
@@ -104,6 +142,13 @@ def render_comment(
         or not run_url[len(expected_url_prefix) :].isdigit()
     ):
         raise ValueError("workflow run URL is invalid")
+    if artifact_url is not None:
+        artifact_prefix = f"{run_url}/artifacts/"
+        if (
+            not artifact_url.startswith(artifact_prefix)
+            or not artifact_url[len(artifact_prefix) :].isdigit()
+        ):
+            raise ValueError("artifact URL does not belong to the collection run")
 
     lines = [
         COMMENT_MARKER,
@@ -132,6 +177,8 @@ def render_comment(
             f"**Revisions:** `{_source_revision(before)}` → `{_source_revision(after)}`; "
             f"contract `{after['contract_digest'][:12]}`."
         ),
+        f"**Base diagnostics:** {_primary_diagnostics(old)}.",
+        f"**Head diagnostics:** {_primary_diagnostics(new)}.",
         "",
     ]
     supplementary = diff.get("supplementary")
@@ -175,6 +222,15 @@ def render_comment(
             f"[Collection run]({run_url})",
         ]
     )
+    if artifact_url is not None:
+        lines.extend(
+            [
+                f"[Detailed JSON reports and counting contract]({artifact_url})",
+                "Artifact presence does not imply a complete measurement; inspect report statuses "
+                "and diagnostics. Downloads require GitHub access "
+                "and expire with artifact retention.",
+            ]
+        )
     return "\n".join(lines)
 
 
@@ -192,10 +248,11 @@ def main() -> int:
     parser.add_argument("--diff", required=True, type=Path)
     parser.add_argument("--output", required=True, type=Path)
     parser.add_argument("--run-url", required=True)
+    parser.add_argument("--artifact-url")
     args = parser.parse_args()
     payload = {
         "body": render_comment(
-            _read(args.before), _read(args.after), _read(args.diff), args.run_url
+            _read(args.before), _read(args.after), _read(args.diff), args.run_url, args.artifact_url
         )
     }
     args.output.parent.mkdir(parents=True, exist_ok=True)

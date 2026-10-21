@@ -308,6 +308,12 @@ imports in an isolated process and run the exact bounded producer target.
 Combined pytest collection can hide missing import paths through another test's
 global `sys.path` changes; it does not establish independent entry-point readiness.
 
+For diagnostic metric comments, retain the underlying collection snapshots,
+comparison, counting contract and run provenance. Aggregate deltas alone cannot
+explain uncertain liveness or incomplete collection. Preserve available evidence
+on collection failure and distinguish an uploaded artifact from a complete
+measurement; see [Intent Atom metrics](docs/intent_atoms.md).
+
 ### Review Heuristics for Artifacts and Gates
 
 Apply these checks systematically when reviewing supervisor, proposal,
