@@ -120,6 +120,27 @@ def test_changed_source_during_tests_cannot_report_success(
     assert pilot.load_json(tmp_path / "tests.json")["result"] == "missing"
 
 
+def test_shared_json_change_invalidates_publication_source_snapshot(tmp_path, monkeypatch):
+    bindings, _ = pilot.load_pilot(ROOT)
+    inventory = pilot.source_identity(ROOT, bindings)["files_sha256"]
+    for name in inventory:
+        target = tmp_path / name
+        target.parent.mkdir(parents=True, exist_ok=True)
+        shutil.copyfile(ROOT / name, target)
+    monkeypatch.setattr(
+        pilot.subprocess,
+        "check_output",
+        lambda command, **_: "a" * 40 if command[1] == "rev-parse" else "",
+    )
+    before = pilot.source_identity(tmp_path, bindings)
+    with (tmp_path / "tools/artifact_json.py").open("a", encoding="utf-8") as stream:
+        stream.write("\n# changed shared serialization\n")
+    after = pilot.source_identity(tmp_path, bindings)
+    assert not pilot.SOURCE_SNAPSHOT_SPEC.is_satisfied_by(
+        pilot.SnapshotContext(pilot.source_facts(before), pilot.source_facts(after))
+    )
+
+
 def test_unrelated_working_tree_change_preserves_source_evidence(
     completed_test_run, tmp_path: Path
 ) -> None:

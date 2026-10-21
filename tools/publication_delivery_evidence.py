@@ -14,6 +14,7 @@ import xml.etree.ElementTree as ET
 from pathlib import Path
 from typing import Any
 
+from artifact_json import read_json_object, write_json_object
 from publication_evidence.bindings_spec import BINDING_ERROR_SPEC
 from publication_evidence.bound_observation_spec import TEST_OBSERVATION_SPEC
 from publication_evidence.case_spec import TEST_CASE_SPEC
@@ -43,10 +44,7 @@ def file_digest(path: Path) -> str:
 
 
 def load_json(path: Path) -> dict[str, Any]:
-    payload = json.loads(path.read_text(encoding="utf-8"))
-    if not isinstance(payload, dict):
-        raise ValueError(f"expected JSON object: {path}")
-    return payload
+    return read_json_object(path, object_error=f"expected JSON object: {path}")
 
 
 def load_pilot(root: Path) -> tuple[dict[str, Any], dict[str, Any]]:
@@ -77,6 +75,7 @@ def source_identity(root: Path, bindings: dict[str, Any]) -> dict[str, Any]:
         bindings["spec"],
         bindings["implementation"],
         "tools/publication_delivery_evidence.py",
+        "tools/artifact_json.py",
         *(
             path.relative_to(root).as_posix()
             for path in (root / "tools/publication_evidence").glob("*.py")
@@ -134,8 +133,7 @@ def junit_obligations(
 
 
 def write_json(path: Path, payload: dict[str, Any]) -> None:
-    path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_text(json.dumps(payload, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+    write_json_object(path, payload)
 
 
 def run_tests(root: Path, output: Path) -> int:

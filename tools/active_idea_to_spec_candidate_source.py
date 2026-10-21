@@ -6,10 +6,19 @@ import argparse
 import hashlib
 import json
 import re
+import sys
 from datetime import datetime, timezone
 from pathlib import Path, PurePosixPath
 from typing import Any
 from urllib.parse import unquote
+
+# Keep file-based imports independent of the caller's Python path.
+_TOOLS_DIR = str(Path(__file__).resolve().parent)
+sys.path.insert(0, _TOOLS_DIR)
+try:
+    from artifact_json import read_json_object, write_json_object
+finally:
+    sys.path.remove(_TOOLS_DIR)
 
 ROOT = Path(__file__).resolve().parents[1]
 PROPOSAL_ID = "0155"
@@ -123,15 +132,11 @@ def _repo_path(value: object, *, field: str) -> Path:
 
 
 def load_json(path: Path) -> dict[str, Any]:
-    payload = json.loads(path.read_text(encoding="utf-8"))
-    if not isinstance(payload, dict):
-        raise ValueError(f"{path} must contain a JSON object")
-    return payload
+    return read_json_object(path)
 
 
 def write_json(payload: dict[str, Any], path: Path) -> None:
-    path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_text(json.dumps(payload, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+    write_json_object(path, payload)
 
 
 def _sha256(path: Path) -> str:
