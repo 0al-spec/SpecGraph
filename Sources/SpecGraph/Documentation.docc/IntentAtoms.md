@@ -58,7 +58,7 @@ liveness remains counted because `closed_world = false`.
 
 After successful `Python CI`, the PR workflow compares the current base and head
 Git trees using SpecificationMetrics pinned to commit
-`c4d95427875d28870085c847852f7357859d164f`. The trusted counter parses source
+`4650728d33d79e75e1eaa2470ec26ec9b0338e5a`. The trusted counter parses source
 data and does not execute PR-authored code. One informational comment reports
 S, U, S/U, dead and unknown Specifications, and supplementary Python SLOC,
 Cyclomatic Complexity (CC), Cognitive Complexity (Cog), and clone deltas.
@@ -85,3 +85,12 @@ presence does not imply completeness: inspect report statuses and diagnostics.
 A failed collection publishes no new success summary; check revision IDs in
 any existing comment. Historical raw reports cannot be recovered when the old
 workflow did not retain them.
+
+Counting rule v9 recognizes statically resolved module-level Python subclasses
+and class-base runtime uses. It recovers the native BDD family: on unchanged
+SpecGraph `b86895c9`, S changes 100 to 106, U changes 10,093 to 10,073, and unknown
+liveness changes 1 to 0. This is an analyzer correction, not a refactoring gain.
+Preserve prior artifacts and start a new contract baseline; normal comparison
+rejects different collection contracts. The upstream
+[inheritance audit](https://github.com/SoundBlaster/SpecificationMetrics/blob/4650728d33d79e75e1eaa2470ec26ec9b0338e5a/docs/python-inheritance-counting-audit.md)
+records the source snapshot, supported subset and regression coverage.
