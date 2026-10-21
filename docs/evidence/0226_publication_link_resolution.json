@@ -1,0 +1,95 @@
+{
+  "admission": "not_evaluated",
+  "analyzer": {
+    "files_sha256": {
+      "intent_decision_review/sources.py": "3deb12a8a9761cbd1baa342f748c28dedc9a3bc2aa3a7f7e98d8be763d7ead93",
+      "publication_evidence/bindings_spec.py": "ac51e677e49778c63ee7da8060a25ffaa35d9dcba52f90a4839f82f66d8b3226",
+      "publication_evidence/context.py": "ce17623df9d4d32dff098c87d8385822e719c60e9ab629aafa4c834c74591a8e",
+      "publication_trace_links.py": "eaa1bdba6021d0ffbd9eee2eb4fcb78a853988187ee3c82909d7469844261e67",
+      "spec_yaml.py": "cc1fbbb2a634ef7145101e5c92ce42ff5dbb9f1a885788d828c5e305b69f16a9",
+      "traceability/__init__.py": "32d5e0187562a9dcc4e1595a48d2bafe0dedf1b532917370a70cddfa8cf0ff39",
+      "traceability/context.py": "b44ccc9bc89c59f687d953234b79f570155806e0a25eb697fecbb200ae04c2e3",
+      "traceability/publication.py": "259e2e7bc59e810a928df6c0c50f1ccaf36ea97089805b4a0542b15100a1d0d6",
+      "traceability/reference_status_spec.py": "77303598e3a8c63baf97c72d1f23aceca466144dd9304b6641253b13b3150c64",
+      "traceability/references.py": "50ffff8343abcd7b53d6f81c673d84dd9bb2fdb09ec7409673e203b399b79414"
+    },
+    "version": "1.0.0"
+  },
+  "artifact_kind": "publication_trace_links_observation",
+  "atom_inventory": {
+    "complete": true,
+    "declared_count": 13,
+    "unique_count": 13
+  },
+  "canonical_mutations_allowed": false,
+  "execution": "not_collected",
+  "findings": [],
+  "interpretation": "Exact direct-declaration links at a pinned source revision; link occurrences are not distinct covered atoms. No measured code was imported or executed; no atom SVC or trusted admission is established.",
+  "production_metrics": false,
+  "profile": "specgraph.publication-exact-links/v1",
+  "readiness": "not_evaluated",
+  "report_content_sha256": "d810be19c325f3f39cc808af6f327b065a2a466ddca28e7a9068dbfdcfa6030e",
+  "resolution_counts": {
+    "resolved": 55
+  },
+  "source_revision": "7998ae0b01c08c2c9a17d17a6f71ef81bed0b919",
+  "sources": {
+    "specs/nodes/SG-SPEC-0071.yaml": {
+      "sha256": "9f4a8b8332138ef3b6d1d9cc873b2a40a1a4620f7fceb35db32d4d9e1d6521a9",
+      "status": "read"
+    },
+    "tests/test_publication_delivery_evidence.py": {
+      "sha256": "fd9eee1a2aca22b60d3918edd0eae93f91bfa7fc7a0a9c9354bb1923f01f6d5c",
+      "status": "read"
+    },
+    "tests/test_publication_evidence_policies.py": {
+      "sha256": "aa60f5f23027b4bc1e9dd97cacd1ecf2f7cfa36ea03d2893734fec4c683d5c9b",
+      "status": "read"
+    },
+    "tests/test_static_artifact_incremental_stage.py": {
+      "sha256": "6a64b627e0bbc61abeb32b788b6ccbe8485175fa19adc3e6be09b6b7fab5e971",
+      "status": "read"
+    },
+    "tools/feature_passports/static-publication-bindings.json": {
+      "sha256": "e5f744bf9bc08de548df14bb5438ccafaa460c3ab3a940a8f45a37d8c5c95031",
+      "status": "read"
+    },
+    "tools/feature_passports/static-publication.json": {
+      "sha256": "4d7e7fceae4e9a818f6bfc2992a93211c1e0fe4482e552a20a011b8e21dd8924",
+      "status": "read"
+    },
+    "tools/publication_evidence/bindings_spec.py": {
+      "sha256": "ac51e677e49778c63ee7da8060a25ffaa35d9dcba52f90a4839f82f66d8b3226",
+      "status": "read"
+    },
+    "tools/publication_evidence/bound_observation_spec.py": {
+      "sha256": "f3e296d7ef70e7e5d5cee30274ce2d9968f9565dca8e3ff1b3e23060f9c3feed",
+      "status": "read"
+    },
+    "tools/publication_evidence/case_spec.py": {
+      "sha256": "678cc38bc73e2e45e6dcc775af82ade8d886cc92484070f317665bd3dd89b13a",
+      "status": "read"
+    },
+    "tools/publication_evidence/http_observation_spec.py": {
+      "sha256": "16699c83064b9dc2b0b7e1bc00fd3489502655340fa667657d36cd9d44e10526",
+      "status": "read"
+    },
+    "tools/publication_evidence/merged_revision_spec.py": {
+      "sha256": "70b26ebbb2d2c816122cccded29547b5d73695a85735dee631dd6dd7b432b411",
+      "status": "read"
+    },
+    "tools/publication_evidence/snapshot_spec.py": {
+      "sha256": "c58b66852ce1e409e998dab7f9f33b088b4dcdbf39d073816e34b5c08ba1f421",
+      "status": "read"
+    },
+    "tools/publication_evidence/suite_spec.py": {
+      "sha256": "d5a056eaff0d26d1709bc92dbe4c5df096c3340de6d67276206e44e157d04793",
+      "status": "read"
+    },
+    "tools/static_artifact_incremental_stage.py": {
+      "sha256": "6b9bab723a1fb59625cea5f01d305c6041405a3e03008c47ca1c11deb39b21f1",
+      "status": "read"
+    }
+  },
+  "status": "resolved"
+}
