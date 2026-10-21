@@ -123,7 +123,7 @@ jobs:
         run: >
           cargo install --locked
           --git https://github.com/SoundBlaster/SpecificationMetrics.git
-          --rev 41be0ec41922ccc94a5c04a172313f81434f8485
+          --rev 4e23ec78d773bee356d3515ab5f258b07228d706
           --root "${RUNNER_TEMP}/specificationmetrics/cli"
           specification-metrics
 
@@ -166,7 +166,7 @@ jobs:
               base_sha: $base, head_sha: $head, collection_run_id: $run,
               collection_attempt: $attempt, upstream_ci_run_id: $ci,
               trusted_workflow_sha: $workflow,
-              analyzer_sha: "41be0ec41922ccc94a5c04a172313f81434f8485"}' \
+              analyzer_sha: "4e23ec78d773bee356d3515ab5f258b07228d706"}' \
             > "${RUNNER_TEMP}/specificationmetrics/provenance.json"
           "${cli}" collect --config "${before}/.specificationmetrics.toml" \
             --output "${RUNNER_TEMP}/specificationmetrics/before.json"

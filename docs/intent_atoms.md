@@ -122,7 +122,7 @@ manifest uses `closed_world = false`.
 After successful `Python CI`, the SpecificationMetrics PR workflow fetches the
 PR's current base and head as Git objects, overlays the same trusted counting
 contract onto both disposable source trees, and runs the CLI pinned to commit
-`41be0ec41922ccc94a5c04a172313f81434f8485`. It does not run PR-authored code.
+`4e23ec78d773bee356d3515ab5f258b07228d706`. It does not run PR-authored code.
 The comment updates one marker-owned PR comment with S, U, S/U, liveness counts,
 and supplementary Python SLOC, CC, Cog, and cross-language clone deltas from
 Radon 6.0.1, complexipy 8.0.1, and jscpd 5.0.11. The source cohort comes from
@@ -159,5 +159,5 @@ SpecGraph `b86895c9`, the correction changes S from 100 to 106, U from 10,093 to
 10,073, and unknown liveness from 1 to 0. These are analyzer corrections, not
 application refactoring gains. Preserve previous artifacts and start a new
 contract baseline; normal collection comparison rejects different contracts.
-See the [inheritance audit](https://github.com/SoundBlaster/SpecificationMetrics/blob/41be0ec41922ccc94a5c04a172313f81434f8485/docs/python-inheritance-counting-audit.md)
+See the [inheritance audit](https://github.com/SoundBlaster/SpecificationMetrics/blob/4e23ec78d773bee356d3515ab5f258b07228d706/docs/python-inheritance-counting-audit.md)
 for the exact snapshot, supported ancestry subset and regression coverage.
