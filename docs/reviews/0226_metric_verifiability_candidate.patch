@@ -9,7 +9,7 @@
 +    distinguish declared verification links, resolved source declarations, execution observations, and
 +    recorded results with subject, revision, provenance, and completeness. They retain passed versus
 +    failed execution, missing or stale input limitations, and revision-bound historical PR review limits.
- 
+
      '
  - criterion: Defines the canonical versus derived boundary for metric family definitions, computed values,
 @@ -278,6 +281,18 @@

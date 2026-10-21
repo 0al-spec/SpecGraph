@@ -37,7 +37,7 @@
   "raw_artifact_availability": "local_raw_run",
   "executor_response_sha256": "0b5cc2e2462494013a60780a2840a2b2e8d74ba8c41df840ece7171234569313",
   "candidate_patch": "docs/reviews/0226_metric_verifiability_candidate.patch",
-  "candidate_patch_sha256": "1d56bbdb7cd24b44cbff255d2a38e0503ee86d11de84b41fc193250054f56c2f",
+  "candidate_patch_sha256": "f99cb0d9fdac91b17d4d73af3444f0d9338ab5216cc7e8aab89eb90313aa80db",
   "candidate_curation": "Retain semantic content from the child file, restore baseline lifecycle/history metadata for the review-only patch; generated gate metadata is retained locally, not adopted.",
   "failed_cli_attempts": [
     {
