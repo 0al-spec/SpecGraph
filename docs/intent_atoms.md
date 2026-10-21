@@ -129,3 +129,25 @@ Radon 6.0.1, complexipy 8.0.1, and jscpd 5.0.11. The source cohort comes from
 the versioned manifest, so tests and the report renderer do not affect these
 measurements. Unknown liveness or failed supplements are labeled in the report;
 the comment is informational and does not gate merge readiness.
+
+The comment links to the actual collection run and its `specificationmetrics-pr-*`
+artifact, retained for 30 days. Download it from that run's **Artifacts** section
+(GitHub access is required). The artifact contains `before.json`, `after.json`,
+`diff.json`, `provenance.json`, `collection-config.toml`, and `scope-manifest.toml`.
+The provenance binds the PR base/head, collection run and attempt, upstream
+Python CI run, analyzer commit, and checked-out trusted tooling revision.
+Source snapshots, installed tools, and environment dumps are not uploaded.
+
+The complete collection JSON retains per-file/per-function complexity,
+clone locations, Specification liveness entries, and parse/marker/scope
+diagnostics. The comment reports diagnostic counts and review-required flags
+without echoing source-derived messages. `S` includes live plus unknown
+Specifications; unresolved liveness keeps the primary metric provisional.
+Missing diagnostic fields are shown as unavailable rather than clean.
+
+Evidence upload runs even after collection fails, preserving whichever named
+files exist. Artifact presence does not imply completeness: inspect the files,
+their collection and supplementary statuses, and diagnostic entries. A failed
+collection does not publish a new success summary; an existing PR comment can
+still describe an older revision, so compare its revision IDs. Raw reports from
+older runs cannot be recovered retrospectively if they were not retained.

@@ -24,6 +24,11 @@ def report(revision, status="complete", provisional=False):
             "dead_specifications": 0,
             "unknown_specifications": 0,
             "provisional": provisional,
+            "parse_issues": [],
+            "marker_issues": [],
+            "scope_issues": [],
+            "scope_review_required": False,
+            "liveness_review_required": False,
         },
     }
 
@@ -110,3 +115,88 @@ def test_untrusted_revision_is_redacted_instead_of_echoed():
     )
     assert "untrusted PR title and source text" not in rendered
     assert "`unavailable` → `bbbbbbbbbbbb`" in rendered
+
+
+def comparison():
+    return {
+        "contract_digest": "a" * 64,
+        "before_source_digest": "c" * 64,
+        "after_source_digest": "c" * 64,
+        "supplementary": {},
+    }
+
+
+def test_provisional_reasons_are_reported_without_source_derived_diagnostic_text():
+    base, head = report("a"), report("b", "provisional", True)
+    head["primary"].update(
+        parse_issues=[{"message": "untrusted source text"}],
+        marker_issues=[{"path": "untrusted path"}],
+        scope_issues=[{"message": "untrusted scope text"}],
+        scope_review_required=True,
+        liveness_review_required=True,
+        unknown_specifications=1,
+    )
+    rendered = COMMENT.render_comment(
+        base, head, comparison(), "https://github.com/0al-spec/SpecGraph/actions/runs/12345"
+    )
+    assert "**Base diagnostics:** none reported." in rendered
+    for reason in (
+        "parse issues: 1",
+        "marker issues: 1",
+        "scope issues: 1",
+        "scope review required",
+        "liveness review required",
+        "unknown liveness: 1",
+    ):
+        assert reason in rendered
+    assert "untrusted" not in rendered
+
+
+def test_missing_or_malformed_diagnostics_are_unavailable_not_clean():
+    base, head = report("a"), report("b", "provisional", True)
+    head["primary"].pop("parse_issues")
+    head["primary"].update(marker_issues="untrusted", scope_review_required="false")
+    rendered = COMMENT.render_comment(
+        base, head, comparison(), "https://github.com/0al-spec/SpecGraph/actions/runs/12345"
+    )
+    assert "parse issues: unavailable" in rendered
+    assert "marker issues: unavailable" in rendered
+    assert "scope review required: unavailable" in rendered
+    assert "untrusted" not in rendered
+
+
+def test_provisional_without_a_reported_reason_stays_explicit():
+    head = report("b", "provisional", True)
+    rendered = COMMENT.render_comment(
+        report("a"), head, comparison(), "https://github.com/0al-spec/SpecGraph/actions/runs/12345"
+    )
+    assert "**Head diagnostics:** provisional reason unavailable." in rendered
+
+
+def test_artifact_link_is_scoped_to_the_collection_run_and_has_retention_notice():
+    run = "https://github.com/0al-spec/SpecGraph/actions/runs/12345"
+    artifact = f"{run}/artifacts/67890"
+    rendered = COMMENT.render_comment(report("a"), report("b"), comparison(), run, artifact)
+    assert f"[Detailed JSON reports and counting contract]({artifact})" in rendered
+    assert "Artifact presence does not imply a complete measurement" in rendered
+    assert "expire with artifact retention" in rendered
+
+
+@pytest.mark.parametrize(
+    "artifact",
+    [
+        "https://attacker.invalid/artifacts/123",
+        "https://github.com/0al-spec/SpecGraph/actions/runs/999/artifacts/123",
+        "https://github.com/0al-spec/SpecGraph/actions/runs/12345/artifacts/123?redirect=1",
+        "",
+    ],
+)
+def test_artifact_links_cannot_escape_the_collection_run(artifact):
+    with pytest.raises(ValueError, match="artifact URL"):
+        COMMENT.render_comment(
+            report("a"),
+            report("b"),
+            comparison(),
+            "https://github.com/0al-spec/SpecGraph/actions/runs/12345",
+            artifact,
+        )

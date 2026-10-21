@@ -65,3 +65,23 @@ Cyclomatic Complexity (CC), Cognitive Complexity (Cog), and clone deltas.
 Supplementary tools are pinned to Radon 6.0.1, complexipy 8.0.1, and jscpd 5.0.11.
 Failed tools or unknown liveness remain explicit diagnostics; the
 comment does not gate merge readiness.
+
+The comment links to the actual collection run and its `specificationmetrics-pr-*`
+artifact, retained for 30 days and downloadable with GitHub access. It contains
+`before.json`, `after.json`, `diff.json`, `provenance.json`,
+`collection-config.toml`, and `scope-manifest.toml`. Provenance records PR
+base/head, collection run/attempt, upstream CI, analyzer commit, and checked-out
+trusted tooling revision. Source snapshots, tools, and environment dumps are
+excluded from upload.
+
+Full JSON retains per-file/per-function complexity, clone locations,
+Specification liveness entries, and parse/marker/scope diagnostics. The comment
+summarizes counts and review-required flags; unavailable diagnostics are not
+reported as clean. `S` includes live plus unknown Specifications, and unresolved
+liveness makes the primary metric provisional.
+
+Upload preserves available named files even if collection fails. Artifact
+presence does not imply completeness: inspect report statuses and diagnostics.
+A failed collection publishes no new success summary; check revision IDs in
+any existing comment. Historical raw reports cannot be recovered when the old
+workflow did not retain them.
