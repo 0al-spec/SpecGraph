@@ -2910,5 +2910,18 @@
     "required_provenance_links": [
       "source_draft_ref"
     ]
+  },
+  {
+    "proposal_id": "0226",
+    "source_artifact_class": "working_draft",
+    "source_refs": [
+      "docs/archive/proposal_sources/0226_traceability_evidence_providers_and_svc.md"
+    ],
+    "motivating_concern": "Existing SVC input is a legacy acceptance-status proxy while atom-level source and execution bindings remain separate; collection and metric computation are coupled in the Supervisor facade.",
+    "normalized_title": "Traceability Evidence Providers and SVC",
+    "bounded_scope": "Prepare replaceable evidence providers, an immutable revision-bound trace snapshot and pure metric adapters; run one bounded SG-SPEC-0021 Supervisor cycle and retain its evidence. Preserve existing metric values, thresholds, CLI and viewer contracts; provider implementation and profile activation remain reviewed follow-up slices.",
+    "required_provenance_links": [
+      "source_draft_ref"
+    ]
   }
 ]

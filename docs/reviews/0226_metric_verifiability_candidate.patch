@@ -1,0 +1,33 @@
+--- a/specs/nodes/SG-SPEC-0021.yaml
++++ b/specs/nodes/SG-SPEC-0021.yaml
+@@ -56,7 +56,10 @@
+     and allowed family use, and specification.relationship_policy requires each family to declare explicit
+     subject binding and one semantic family_role before derived computation. Those rules separate canonical
+     graph state, SG-SPEC-0017 runtime observability entities, and SG-SPEC-0003 graph-health diagnostics
+-    as admissible inputs without collapsing them into one layer.
++    as admissible inputs without collapsing them into one layer. Specification Verifiability boundary_notes
++    distinguish declared verification links, resolved source declarations, execution observations, and
++    recorded results with subject, revision, provenance, and completeness. They retain passed versus
++    failed execution, missing or stale input limitations, and revision-bound historical PR review limits.
+
+     '
+ - criterion: Defines the canonical versus derived boundary for metric family definitions, computed values,
+@@ -278,6 +281,18 @@
+       acceptance judgment.
+     - Missing evidence may influence a derived score, but that derived result does not itself reject a
+       node without existing governance policy.
++    - A declared verification link, a resolved source declaration, an execution observation, and its
++      recorded result are distinct facts within the existing admissible input classes. Each cited fact
++      retains its subject, revision, source provenance, and completeness; resolving a link establishes
++      traceability without establishing execution.
++    - Where acceptance_criteria_and_evidence cites execution, that claim requires an attributable run
++      and its recorded result. Passed and failed executions remain distinct from missing execution;
++      either observed result may establish verifiability within its recorded scope without establishing
++      semantic acceptance. An authored declaration alone cannot supply an execution result.
++    - Missing, stale, unknown, or incomplete inputs remain explicit limitations; they do not establish
++      a failed check or justify presenting the assessment as a complete zero.
++    - Historical PR review or acceptance records support only their recorded subject revision and scope;
++      they do not establish current execution or semantic acceptance of later revisions.
+   - family: Process Observability
+     family_role: process_visibility
+     role: Family for assessing how visible and attributable the refinement, execution, or proposal process

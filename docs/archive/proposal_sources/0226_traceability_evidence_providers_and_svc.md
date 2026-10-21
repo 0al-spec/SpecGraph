@@ -1,0 +1,85 @@
+# Source: Traceability Evidence Providers and SVC
+
+## Operator Intent
+
+The operator requested modularity and replaceable providers for the place where
+SpecGraph joins implementation/requirement traces to SIB measurements, then said:
+
+> Пиши proposal через супервизор и запускай цикл self-improvement самого SpecGraph
+
+This is authority to prepare the proposal and run a bounded improvement cycle.
+It is not a recorded approval of new metric thresholds or canonical semantics.
+
+## Source Inspection
+
+Inspected SpecGraph commit: `3ffde36401dca3fa7da05fff6ec16a78f9b204ed`.
+
+- `tools/supervisor.py::derive_acceptance_coverage`: legacy criteria/evidence and
+  linked test mentions produce coarse statuses.
+- `tools/supervisor.py::build_spec_trace_index`: collects trace and freshness.
+- `tools/supervisor.py::build_metric_signal_index`: gathers subsystems and
+  averages acceptance status scores for specification_verifiability.
+- `tools/supervisor.py::METRIC_PACK_ADAPTER_INPUT_CATALOG`: SVC input points at
+  that existing signal.
+- `tools/supervisor.py::build_metric_pack_runs`: copies available signals into
+  metric-pack runs and reports missing inputs.
+- `tools/metric_pack_registry.json`: package/input metadata.
+- `tools/metric_signal_policy.json`: existing scoring and threshold policy.
+- `tools/intent_decision_review/report.py` and `sources.py`: exact change and
+  declaration coverage; semantic_approval remains false.
+- `tools/feature_passports/static-publication-bindings.json` and
+  `specs/nodes/SG-SPEC-0071.yaml`: current bounded atom/policy/test inventory.
+- `docs/publication_delivery_pilot.md`: PB execution observations and PE tests
+  have different observation scopes.
+- `Metrics/SIB_FULL/sib_full_metrics.tex`: SVC counts verifiable Intent Atoms;
+  aggregate SIB observables do not reconstruct explicit trace links themselves.
+
+The proposed package architecture and SVC qualification profile are author
+curation of this evidence and operator intent. They are not attributed as an
+independent Supervisor verdict or as already implemented behavior.
+
+## Supervisor Cycle
+
+The first three standalone CLI attempts rejected model IDs before generation.
+They ended in protocol failure because no final response was produced. Their
+run IDs and raw digests are retained in the [cycle observation](../../reviews/0226_supervisor_cycle.json).
+The initial dry run also exposed a lexical child-request heuristic reacting to
+a negated instruction; the operator note was reworded without broadening authority.
+
+The standard Supervisor executor callback then ran the real Codex child agent.
+After the operator said "Нужно поднять до Sol 6.1 Medium", the previous child was
+interrupted and GPT-6.1-Sol / Medium inspected and completed its pending edits.
+The actual response passed the unchanged Supervisor protocol and diff validation.
+
+- Run: `20261021T193422Z-SG-SPEC-0021-6ca26a10`.
+- Completion: `ok`; outcome: `done`; gate: `review_pending`.
+- Validation errors: zero; accepted canonical diff: false; auto-approval disabled.
+- [Supervisor-generated curated packet](../../evidence/supervisor-runs/20261021T193422Z-SG-SPEC-0021-6ca26a10.json).
+- [Review-only semantic candidate](../../reviews/0226_metric_verifiability_candidate.patch).
+- [Transport, failure and candidate digest observation](../../reviews/0226_supervisor_cycle.json).
+
+The candidate distinguishes declared/resolved/executed verification facts,
+source/revision/provenance/completeness, failure versus unknown input, and the
+limited scope of historical review. Existing acceptance criteria, family roles,
+admissible input classes and topology are preserved. The patch is author curation
+of the real child output with baseline lifecycle metadata; it has not been applied
+to canonical SG-SPEC-0021 in this PR. Local generated pending-review state and raw
+runs remain available separately. The packet records a review boundary, not
+semantic acceptance or a successful standalone CLI deployment.
+
+The operator-request and captured user-intent nodes emitted by the Supervisor are
+retained in `intent_layer/nodes/`. They remain pre-canonical lineage.
+
+## Requested Executor Profile Correction
+
+The shared execution policy now requests `gpt-6.1-sol`; all named profiles retain
+`medium` reasoning. The existing isolated-home regression was updated. This is
+the operator's explicit configuration correction; it does not establish that the
+standalone CLI backend now accepts the requested model. The successful run used
+the injected executor transport described above.
+
+## Proposal Boundary
+
+Continue proposal 0043's existing metric-pack architecture. The draft is a
+SpecGraph-owned integration proposal. Runtime implementation and metric-profile
+activation remain follow-up slices requiring review.

@@ -1,0 +1,79 @@
+{
+  "artifact_kind": "rfc0226_supervisor_cycle_observation",
+  "schema_version": 1,
+  "source_commit": "3ffde36401dca3fa7da05fff6ec16a78f9b204ed",
+  "operator_authority": "proposal_preparation_and_bounded_cycle",
+  "supervisor_run_id": "20261021T193422Z-SG-SPEC-0021-6ca26a10",
+  "executor": {
+    "transport": "injected_executor_callback",
+    "agent_task": "supervisor_sol61_executor",
+    "model": "gpt-6.1-sol",
+    "reasoning_effort": "medium",
+    "provenance": "Explicit Codex agent spawn parameters and retained actual executor response; model identity is orchestration-reported, not independently attested."
+  },
+  "interrupted_predecessor": {
+    "agent_task": "supervisor_semantic_executor",
+    "reason": "Operator selected Sol 6.1 Medium; predecessor edits were inspected and completed by the selected executor."
+  },
+  "completion_status": "ok",
+  "outcome": "done",
+  "gate_state": "review_pending",
+  "validation_errors": [],
+  "validator_results": {
+    "outputs": true,
+    "allowed_paths": true,
+    "reconciliation": true,
+    "atomicity": true,
+    "transition": true,
+    "executor_environment": true,
+    "runtime_artifacts": true,
+    "refinement_acceptance": true
+  },
+  "accepted_canonical_diff": false,
+  "canonical_candidate_applied": false,
+  "human_approval_attested": false,
+  "packet_path": "docs/evidence/supervisor-runs/20261021T193422Z-SG-SPEC-0021-6ca26a10.json",
+  "raw_run_sha256": "b47bf4587b391e2eabbef6cb304a3d03544f79f61bb3b053b90f5f0f94d84236",
+  "raw_artifact_availability": "local_raw_run",
+  "executor_response_sha256": "0b5cc2e2462494013a60780a2840a2b2e8d74ba8c41df840ece7171234569313",
+  "candidate_patch": "docs/reviews/0226_metric_verifiability_candidate.patch",
+  "candidate_patch_sha256": "f99cb0d9fdac91b17d4d73af3444f0d9338ab5216cc7e8aab89eb90313aa80db",
+  "candidate_curation": "Retain semantic content from the child file, restore baseline lifecycle/history metadata for the review-only patch; generated gate metadata is retained locally, not adopted.",
+  "failed_cli_attempts": [
+    {
+      "run_id": "20261021T192834Z-SG-SPEC-0021-0cf661cf",
+      "raw_sha256": "f1f4e870fdf2cbf407feb9fbae7149a04ec8a083cb66d57caa23bd4a7b541f64",
+      "attempted_model": "gpt-5.5",
+      "outcome": "escalate",
+      "validation_errors": [
+        "Missing executor machine protocol marker RUN_OUTCOME",
+        "Missing executor machine protocol marker BLOCKER"
+      ],
+      "startup_observation": "Model rejected by standalone CLI backend before generation; no semantic refinement occurred."
+    },
+    {
+      "run_id": "20261021T193008Z-SG-SPEC-0021-57d4fc75",
+      "raw_sha256": "81880e2d2208c5a3fbe3465df57af99fd6d33d9a79e859ab8149b8180d86f181",
+      "attempted_model": "gpt-6.1-sol",
+      "outcome": "escalate",
+      "validation_errors": [
+        "Missing executor machine protocol marker RUN_OUTCOME",
+        "Missing executor machine protocol marker BLOCKER"
+      ],
+      "startup_observation": "Model rejected by standalone CLI backend before generation; no semantic refinement occurred."
+    },
+    {
+      "run_id": "20261021T193130Z-SG-SPEC-0021-3253df76",
+      "raw_sha256": "04f04af4ea9196b2c8497c9b46b7b36f29221703cdc1c940514bdb8b3737889e",
+      "attempted_model": "gpt-5.4",
+      "outcome": "escalate",
+      "validation_errors": [
+        "Missing executor machine protocol marker RUN_OUTCOME",
+        "Missing executor machine protocol marker BLOCKER"
+      ],
+      "startup_observation": "Model rejected by standalone CLI backend before generation; no semantic refinement occurred."
+    }
+  ],
+  "runtime_realization": "provider_and_SVC_profile_deferred",
+  "hosted_provider_apis_called": false
+}

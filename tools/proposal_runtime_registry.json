@@ -13145,5 +13145,33 @@
       }
     ],
     "notes": "Proposal-only delivery plan. tests_verified remains evidence_evaluator_unavailable. No runner, producer, issuer, evaluator, schema, canonical claim, admission path or lifecycle mutation is implemented."
+  },
+  {
+    "proposal_id": "0226",
+    "posture": "deferred_until_canonicalized",
+    "runtime_surfaces": [
+      "docs/proposals/0226_traceability_evidence_providers_and_svc.md",
+      "docs/archive/proposal_sources/0226_traceability_evidence_providers_and_svc.md",
+      "Sources/SpecGraph/Documentation.docc/TraceabilityEvidenceProviders.md"
+    ],
+    "runtime_markers": [
+      {
+        "path": "docs/proposals/0226_traceability_evidence_providers_and_svc.md",
+        "pattern": "Draft proposal; architecture and staged realization plan for review."
+      }
+    ],
+    "validation_markers": [
+      {
+        "path": "docs/proposals/0226_traceability_evidence_providers_and_svc.md",
+        "pattern": "These cases specify future verification; none is claimed as executed by this"
+      }
+    ],
+    "observation_markers": [
+      {
+        "path": "docs/proposals/0226_traceability_evidence_providers_and_svc.md",
+        "pattern": "evidence_admission_allowed: false"
+      }
+    ],
+    "notes": "Operator-authorized proposal preparation and one bounded Supervisor cycle. CLI startup failures and actual callback execution are retained separately. The architecture and candidate SVC qualification profile are author curation; no provider runtime, metric activation, threshold change or trusted evidence admission is implemented by this proposal."
   }
 ]
