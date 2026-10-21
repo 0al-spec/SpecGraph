@@ -1,0 +1,39 @@
+{
+  "artifact_kind": "specgraph.intent-decision-review/v1",
+  "base_sha": "1eb6493e143d04ab0027134029dd93f330a8452e",
+  "decisions": [
+    {
+      "change_sha256": "1322d9610624cc75f381a6d4a304c5c8e2eae2860e01a7c35ac2f772987ea2f6",
+      "disposition": "reuse_specification",
+      "implementation_refs": [
+        {
+          "path": "tools/publication_delivery_evidence.py",
+          "symbol": "delivery_report"
+        },
+        {
+          "path": "tools/static_artifact_incremental_stage.py",
+          "symbol": "verify_remote_bundle"
+        },
+        {
+          "path": "tools/publication_evidence/execution_context.py",
+          "symbol": "PublicationExecutionContext.from_environment"
+        },
+        {
+          "path": "tests/test_publication_delivery_evidence.py",
+          "symbol": "test_publication_producers_preserve_execution_contract"
+        }
+      ],
+      "rationale": "The extra verifiable_by selector records existing producer identity coverage. HTTP_OBSERVATION_SPEC already governs observer sufficiency and remains invoked by delivery_report; native execution identity is prepared mechanically by PublicationExecutionContext and the HTTP verifier. No statement, admissibility rule or implementation changed, so no new Specification wrapper is needed.",
+      "specification_refs": [
+        {
+          "path": "tools/publication_evidence/http_observation_spec.py",
+          "symbol": "HTTP_OBSERVATION_SPEC"
+        }
+      ]
+    }
+  ],
+  "intent_delta_sha256": "cf412a96d4f0cd7531233a72b7c44092bec0863c140a1e17ed6e795ab94cf5c8",
+  "pr_body_sha256": "b82544cfa2594c43ed39c4c7d32717184ce9bf81893f5e21385af8a1e071ae60",
+  "schema_version": 1,
+  "source_scope_sha256": "b06b7a69b64c36bece77534eaf5af39d895d8a1689ae2d7f2b316b38c6869b90"
+}
