@@ -1,0 +1,25 @@
+{
+  "schema_version": 1,
+  "passport": "tools/feature_passports/static-publication.json",
+  "spec": "specs/nodes/SG-SPEC-0071.yaml",
+  "implementation": "tools/static_artifact_incremental_stage.py",
+  "symbol": "verify_remote_bundle",
+  "runtime_base_url": "https://specgraph.tech",
+  "runtime_environment": "production",
+  "policies": [
+    {"atom_ids": ["PE-SNAPSHOT"], "specification": "publication_evidence.snapshot_spec.SOURCE_SNAPSHOT_SPEC"},
+    {"atom_ids": ["PE-BINDINGS"], "specification": "publication_evidence.bindings_spec.BINDING_ERROR_SPEC"},
+    {"atom_ids": ["PE-CASE"], "specification": "publication_evidence.case_spec.TEST_CASE_SPEC"},
+    {"atom_ids": ["PE-SUITE"], "specification": "publication_evidence.suite_spec.TEST_SUITE_SPEC"},
+    {"atom_ids": ["PE-TEST-IDENTITY"], "specification": "publication_evidence.bound_observation_spec.TEST_OBSERVATION_SPEC"},
+    {"atom_ids": ["PE-HTTP", "PE-OBSERVER"], "specification": "publication_evidence.http_observation_spec.HTTP_OBSERVATION_SPEC"},
+    {"atom_ids": ["PE-ACCEPTANCE"], "specification": "publication_evidence.merged_revision_spec.MERGED_REVISION_SPEC"}
+  ],
+  "obligations": [
+    {"criterion_id": "PB-ALL", "test": "tests/test_static_artifact_incremental_stage.py::test_verify_remote_bundle_hashes_every_manifest_file"},
+    {"criterion_id": "PB-PAYLOAD", "test": "tests/test_static_artifact_incremental_stage.py::test_verify_remote_bundle_fails_on_digest_drift"},
+    {"criterion_id": "PB-MANIFEST", "test": "tests/test_static_artifact_incremental_stage.py::test_verify_remote_bundle_fails_on_stale_published_manifest"},
+    {"criterion_id": "PB-CHECKSUMS", "test": "tests/test_static_artifact_incremental_stage.py::test_verify_remote_bundle_fails_on_stale_checksums"},
+    {"criterion_id": "PB-MISSING", "test": "tests/test_static_artifact_incremental_stage.py::test_verify_remote_bundle_fails_on_missing_remote_payload"}
+  ]
+}

@@ -1,0 +1,158 @@
+id: SG-SPEC-0071
+title: SpecGraph - Public Bundle Delivery Evidence Pilot
+kind: spec
+created_at: '2026-10-19T13:56:00Z'
+updated_at: '2026-10-20T09:32:00Z'
+status: specified
+maturity: 0.35
+depends_on: []
+refines:
+- SG-SPEC-0063
+relates_to:
+- SG-SPEC-0020
+- SG-SPEC-0017
+inputs:
+- docs/proposals/0215_incremental_static_workspace_deployment.md
+- tools/static_artifact_incremental_stage.py
+- tests/test_static_artifact_incremental_stage.py
+outputs:
+- specs/nodes/SG-SPEC-0071.yaml
+- tools/feature_passports/static-publication.json
+- tools/feature_passports/static-publication-bindings.json
+- tools/publication_delivery_evidence.py
+- tools/publication_evidence
+allowed_paths:
+- specs/nodes/SG-SPEC-0071.yaml
+- tools/feature_passports/*
+- tools/publication_delivery_evidence.py
+- tools/publication_evidence/*
+- tests/test_publication_delivery_evidence.py
+- tests/test_publication_evidence_policies.py
+acceptance:
+- Names public bundle verification criteria and their explicit pytest bindings.
+- Preserves source, passport, test-run and published bundle identities in a linked signal report.
+- Reports missing or failed stages explicitly and keeps observations separate from admission and acceptance.
+atoms:
+  intents:
+  - id: PB-ALL
+    statement: Matching HTTPS metadata and every manifest payload produce successful bundle verification.
+    verifiable_by:
+    - tests/test_static_artifact_incremental_stage.py::test_verify_remote_bundle_hashes_every_manifest_file
+  - id: PB-PAYLOAD
+    statement: A payload digest mismatch prevents successful bundle verification.
+    verifiable_by:
+    - tests/test_static_artifact_incremental_stage.py::test_verify_remote_bundle_fails_on_digest_drift
+  - id: PB-MANIFEST
+    statement: A stale published manifest prevents successful bundle verification.
+    verifiable_by:
+    - tests/test_static_artifact_incremental_stage.py::test_verify_remote_bundle_fails_on_stale_published_manifest
+  - id: PB-CHECKSUMS
+    statement: Stale published checksums prevent successful bundle verification.
+    verifiable_by:
+    - tests/test_static_artifact_incremental_stage.py::test_verify_remote_bundle_fails_on_stale_checksums
+  - id: PB-MISSING
+    statement: A missing remote payload prevents successful bundle verification.
+    verifiable_by:
+    - tests/test_static_artifact_incremental_stage.py::test_verify_remote_bundle_fails_on_missing_remote_payload
+  - id: PE-BINDINGS
+    statement: Every passport publication criterion must match the graph and have one distinct explicit
+      pytest binding.
+    verifiable_by:
+    - tests/test_publication_evidence_policies.py::test_binding_contract
+  - id: PE-CASE
+    statement: Only one completed non-skipped occurrence can confirm a bound test; an error or failure
+      takes precedence over completion.
+    verifiable_by:
+    - tests/test_publication_evidence_policies.py::test_test_case_decision
+  - id: PE-SUITE
+    statement: Test evidence succeeds only for a complete passing suite with zero runner exit code; runner
+      or test failure takes precedence.
+    verifiable_by:
+    - tests/test_publication_evidence_policies.py::test_test_suite_decision
+  - id: PE-TEST-IDENTITY
+    statement: Retained test evidence must match the repository, source snapshot, execution identity and
+      ordered criterion bindings.
+    verifiable_by:
+    - tests/test_publication_evidence_policies.py::test_test_observation_identity
+  - id: PE-SNAPSHOT
+    statement: A passing test run cannot confirm source files that changed during its execution; unrelated
+      working-tree state is diagnostic only.
+    verifiable_by:
+    - tests/test_publication_delivery_evidence.py::test_changed_source_during_tests_cannot_report_success
+    - tests/test_publication_delivery_evidence.py::test_unrelated_working_tree_change_preserves_source_evidence
+  - id: PE-HTTP
+    statement: Publication evidence must match the expected bundle, HTTPS origin, complete payload count,
+      source revision and CI run attempt.
+    verifiable_by:
+    - tests/test_publication_evidence_policies.py::test_http_observation_identity
+    - tests/test_publication_delivery_evidence.py::test_local_http_report_without_revision_is_unconfirmed
+  - id: PE-ACCEPTANCE
+    statement: Engineering acceptance requires a merged pull request for the recorded repository and exact
+      revision.
+    verifiable_by:
+    - tests/test_publication_evidence_policies.py::test_merged_revision_acceptance
+  - id: PE-OBSERVER
+    statement: Every stage separates observer and target environments; an absent or unknown observer cannot
+      confirm runtime observation.
+    verifiable_by:
+    - tests/test_publication_delivery_evidence.py::test_stage_provenance_separates_ci_execution_and_production_target
+    - tests/test_publication_delivery_evidence.py::test_unknown_native_observer_cannot_claim_runtime_success
+prompt: Maintain one lightweight bootstrap pilot joining existing intent, specification, tests and publication
+  signals.
+specification:
+  objective: Join existing publication evidence from intent to tests and runtime with explicit identities
+    and visible gaps.
+  intent:
+    id: SG-INTENT-PUBLICATION-TRACE
+    source: operator-request-2026-10-19
+    statement: Make confirmations easy to extract across intent, spec, tests and runtime using SpecGraph
+      itself.
+  feature_id: specgraph.publication.verify_bundle
+  requirement:
+    id: SG-REQ-PUBLICATION-VERIFIED
+    statement: Confirm public bundle publication only after HTTPS metadata and every manifest payload
+      match the expected bundle.
+    criteria:
+    - id: PB-ALL
+      intent_atom_id: PB-ALL
+    - id: PB-PAYLOAD
+      intent_atom_id: PB-PAYLOAD
+    - id: PB-MANIFEST
+      intent_atom_id: PB-MANIFEST
+    - id: PB-CHECKSUMS
+      intent_atom_id: PB-CHECKSUMS
+    - id: PB-MISSING
+      intent_atom_id: PB-MISSING
+  delivery_signals:
+    profile: linked_delivery_signals_v1
+    passport: tools/feature_passports/static-publication.json
+    bindings: tools/feature_passports/static-publication-bindings.json
+    policy_atom_ids:
+    - PE-BINDINGS
+    - PE-CASE
+    - PE-SUITE
+    - PE-TEST-IDENTITY
+    - PE-SNAPSHOT
+    - PE-HTTP
+    - PE-ACCEPTANCE
+    - PE-OBSERVER
+    scope: Root SpecGraph static bundle only.
+    acceptance: Merge of the pilot implementation PR, or explicit operator acceptance tied to its revision.
+    trust_model: provider_reported
+    admission: not_evaluated
+    ontology:
+      references:
+      - SG-SPEC-0020/specification/terminology/code_surface
+      - SG-SPEC-0020/specification/terminology/test
+      - SG-SPEC-0020/specification/terminology/release
+      - SG-SPEC-0020/specification/terminology/runtime_result
+      role: Supplies trace vocabulary and canonical-versus-derived boundaries; it does not issue execution
+        verdicts.
+    limits:
+    - Function-level pytest bindings describe reviewed scenarios, not assertion-level or exhaustive coverage.
+    - The verifier executes in CI; HTTPS observation concerns published bytes, not server-side Python
+      execution.
+    - Signals do not satisfy tests_verified_v1 or change canonical maturity or admission policy.
+    - Missing acceptance remains visible until a merge or explicit approval signal is supplied.
+gate_state: none
+required_human_action: '-'
