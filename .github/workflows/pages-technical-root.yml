@@ -27,7 +27,8 @@ permissions:
   contents: read
 
 concurrency:
-  group: github-pages
+  # Isolate PR validation; only publishing runs share the Pages group.
+  group: ${{ github.event_name == 'pull_request' && format('specgraph-docc-pr-{0}', github.event.pull_request.number) || 'github-pages' }}
   cancel-in-progress: true
 
 env:

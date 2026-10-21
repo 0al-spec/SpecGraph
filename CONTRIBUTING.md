@@ -421,6 +421,13 @@ This gate is intentionally anchor-based rather than byte-for-byte comparison:
 DocC pages can have different navigation and formatting, but they must preserve
 the same operational facts, paths, commands, and boundary terms.
 
+DocC validation runs use a concurrency group scoped to the PR number
+(`specgraph-docc-pr-<number>`). Different PRs must not cancel one another or a
+Pages publication; a newer run for the same PR may supersede its older run.
+Push and manual publishing runs retain the shared `github-pages` group and
+its existing cancellation behavior. When a DocC check is cancelled, inspect
+the event and concurrency group before interpreting it as validation evidence.
+
 ## Metrics
 
 Metrics should be treated as diagnostic plugins or metric packs, not as hard-coded truth. SpecGraph should preserve the distinction between:
