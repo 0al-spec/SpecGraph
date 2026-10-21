@@ -1150,3 +1150,11 @@ characterization, workspace-isolated overrides, immutable run snapshots,
 historical diagnostics and real CLI smoke are separate evidence observations.
 SpecificationCore classifies the configured threshold families and traces the
 named value predicates used for each accepted configuration.
+
+## Supervisor execution profile
+
+The shared Supervisor execution profile requests `gpt-6.1-sol` with `medium`
+reasoning. The `fast`, `standard` and `materialize` profiles retain their existing
+timeouts and isolation settings. Model/account availability is checked by the
+actual executor; configuration alone is not a successful execution observation.
+See `docs/supervisor_manual.md` for explicit per-run overrides and timeout controls.

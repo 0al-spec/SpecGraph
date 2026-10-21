@@ -951,6 +951,20 @@
         "tests_verified",
         "evidence_evaluator_unavailable"
       ]
+    },
+    {
+      "id": "supervisor-sol61-execution-profile",
+      "description": "The requested shared child model and reasoning stay aligned in operator documentation and DocC.",
+      "docs": [
+        "docs/supervisor_manual.md"
+      ],
+      "docc": [
+        "Sources/SpecGraph/Documentation.docc/ProductWorkspacePilots.md"
+      ],
+      "required_terms": [
+        "gpt-6.1-sol",
+        "medium"
+      ]
     }
   ]
 }

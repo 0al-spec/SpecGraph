@@ -145,7 +145,7 @@
     "auto_heuristic_profile": "fast",
     "auto_child_materialization_profile": "materialize",
     "shared": {
-      "model": "gpt-5.5",
+      "model": "gpt-6.1-sol",
       "approval_policy": "never",
       "sandbox": "workspace-write",
       "disabled_features": [

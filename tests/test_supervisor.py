@@ -763,7 +763,7 @@ def test_create_child_codex_home_writes_minimal_config_and_copies_auth(
     child_home = supervisor_module.create_child_codex_home(source_codex_home=source_home)
     try:
         config_text = (child_home / "config.toml").read_text(encoding="utf-8")
-        assert 'model = "gpt-5.5"' in config_text
+        assert 'model = "gpt-6.1-sol"' in config_text
         assert 'model_reasoning_effort = "medium"' in config_text
         assert 'approval_policy = "never"' in config_text
         assert 'sandbox_mode = "workspace-write"' in config_text
