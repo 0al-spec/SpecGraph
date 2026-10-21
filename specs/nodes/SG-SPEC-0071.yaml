@@ -2,7 +2,7 @@ id: SG-SPEC-0071
 title: SpecGraph - Public Bundle Delivery Evidence Pilot
 kind: spec
 created_at: '2026-10-19T13:56:00Z'
-updated_at: '2026-10-20T09:32:00Z'
+updated_at: '2026-10-21T12:28:00Z'
 status: specified
 maturity: 0.35
 depends_on: []
@@ -97,6 +97,7 @@ atoms:
     verifiable_by:
     - tests/test_publication_delivery_evidence.py::test_stage_provenance_separates_ci_execution_and_production_target
     - tests/test_publication_delivery_evidence.py::test_unknown_native_observer_cannot_claim_runtime_success
+    - tests/test_publication_delivery_evidence.py::test_publication_producers_preserve_execution_contract
 prompt: Maintain one lightweight bootstrap pilot joining existing intent, specification, tests and publication
   signals.
 specification:

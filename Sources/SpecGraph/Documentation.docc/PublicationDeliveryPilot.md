@@ -34,6 +34,12 @@ It projects the existing report shapes without inferring revision identity or
 changing evidence policies. This shared adapter module remains standard-library
 only and participates in the publication source digest inventory.
 
+The canonical `PE-OBSERVER` atom also binds the existing parameterized
+`test_publication_producers_preserve_execution_contract` regression for local,
+Actions, custom-server and partial-environment identity projections. Existing
+stage-separation and missing-observer checks remain; this binding adds no policy
+and does not expand the five-scenario publication execution report.
+
 JSON object I/O is shared through `tools/artifact_json.py` with the active-candidate
 and intake-clarification tools. Existing facades preserve argument order,
 non-object diagnostics and exception types. Reports retain UTF-8 encoding, ASCII

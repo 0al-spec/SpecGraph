@@ -72,6 +72,13 @@ infer a missing revision or change the policies above. The HTTP verifier retains
 its standard-library-only import path. The context module is included in the
 existing publication source digest inventory.
 
+`PE-OBSERVER.verifiable_by` also names
+`test_publication_producers_preserve_execution_contract`: its parameterized
+cases check the native identity projections for local execution, GitHub Actions,
+a custom GitHub server/repository and partial environment data. This complements
+the existing stage-separation and missing-observer checks; it does not add a
+policy or expand the five-scenario `PB-*` execution report.
+
 JSON object reading and report writing are shared through `tools/artifact_json.py`
 with the active-candidate and intake-clarification tools. The public facades keep
 their argument order, non-object diagnostics and exception types. Reports retain
