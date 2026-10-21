@@ -30,6 +30,7 @@ on:
 
 permissions:
   contents: read
+  pull-requests: read
 
 concurrency:
   group: specgraph-static-artifacts-${{ github.ref }}
@@ -62,6 +63,20 @@ jobs:
         run: |
           python -m pip install --upgrade pip
           python -m pip install -e .[dev]
+
+      - name: Observe bound publication tests
+        run: make test-publication-delivery
+
+      - name: Observe merged revision acceptance
+        if: always() && github.event_name != 'pull_request'
+        continue-on-error: true
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          mkdir -p dist/publication-pilot
+          gh api "repos/$GITHUB_REPOSITORY/commits/$GITHUB_SHA/pulls" \
+            --jq '[.[] | {number, merged_at, merge_commit_sha, base: {repo: {full_name: .base.repo.full_name}}}]' \
+            > dist/publication-pilot/associated-pulls.json
 
       - name: Install Agent Passport CLI
         env:
@@ -197,6 +212,27 @@ jobs:
           path: dist/specgraph-public
           if-no-files-found: error
 
+      - name: Summarize publication delivery signals before deploy
+        if: always()
+        run: |
+          bundle_args=()
+          if [ -f dist/specgraph-public/artifact_manifest.json ]; then
+            bundle_args=(--bundle-dir dist/specgraph-public)
+          fi
+          python tools/publication_delivery_evidence.py report \
+            --output-dir dist/publication-pilot --environment ci \
+            "${bundle_args[@]}"
+          cat dist/publication-pilot/report.md >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Retain publication test signals
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: specgraph-publication-delivery-signals-build
+          path: dist/publication-pilot
+          retention-days: 30
+          if-no-files-found: warn
+
   deploy:
     name: Deploy bundle to static host
     runs-on: ubuntu-latest
@@ -220,11 +256,25 @@ jobs:
       - name: Checkout deploy tooling
         uses: actions/checkout@v6
 
+      - name: Set up deploy Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: "3.10"
+
+      - name: Install deploy dependencies
+        run: python -m pip install .
+
       - name: Download bundle artifact
         uses: actions/download-artifact@v8
         with:
           name: specgraph-static-artifacts
           path: dist/specgraph-public
+
+      - name: Download bound publication test signals
+        uses: actions/download-artifact@v8
+        with:
+          name: specgraph-publication-delivery-signals-build
+          path: dist/publication-pilot
 
       - name: Validate deploy contract
         if: env.SFTP_HOST != ''
@@ -361,6 +411,29 @@ jobs:
         with:
           name: specgraph-incremental-deployment-reports
           path: ${{ runner.temp }}/specgraph-incremental-reports
+          if-no-files-found: warn
+
+      - name: Summarize publication delivery signals after deploy
+        if: always()
+        run: |
+          runtime_args=()
+          native_report="$RUNNER_TEMP/specgraph-incremental-reports/root-verification.json"
+          if [ -f "$native_report" ]; then
+            cp "$native_report" dist/publication-pilot/root-verification.json
+            runtime_args=(--runtime-report dist/publication-pilot/root-verification.json)
+          fi
+          python tools/publication_delivery_evidence.py report \
+            --output-dir dist/publication-pilot --environment production-http \
+            --bundle-dir dist/specgraph-public "${runtime_args[@]}"
+          cat dist/publication-pilot/report.md >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Retain publication delivery signals
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: specgraph-publication-delivery-signals-deploy
+          path: dist/publication-pilot
+          retention-days: 30
           if-no-files-found: warn
 
       - name: Report skipped SFTP upload

@@ -1,5 +1,10 @@
 # Static Artifact Publish
 
+The [publication delivery pilot](publication_delivery_pilot.md) links the root
+bundle's existing tests and post-deploy HTTP verification through a draft Feature
+Passport and `linked_delivery_signals_v1` report. Its provider-reported table is
+retained in Actions and does not change evidence admission or deploy authority.
+
 SpecGraph can publish a static, HTTP-readable artifact mirror for SpecSpace or
 other read-only consumers.
 

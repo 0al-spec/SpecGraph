@@ -6,6 +6,7 @@ from __future__ import annotations
 import argparse
 import hashlib
 import json
+import os
 import shutil
 import sys
 import time
@@ -16,6 +17,16 @@ from collections.abc import Callable
 from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path, PurePosixPath
 from typing import Any
+
+# Preserve direct script execution and spec_from_file_location consumers without
+# requiring their process to put tools/ on sys.path. Restore the caller's path.
+_TOOLS_DIR = str(Path(__file__).resolve().parent)
+sys.path.insert(0, _TOOLS_DIR)
+try:
+    from artifact_json import write_json_object
+    from publication_evidence.execution_context import PublicationExecutionContext
+finally:
+    sys.path.remove(_TOOLS_DIR)
 
 
 class IncrementalStageError(ValueError):
@@ -172,8 +183,10 @@ def verify_remote_bundle(
     _, local_files = _load_local_manifest(bundle_dir)
     base_url = remote_base_url.rstrip("/")
 
+    metadata_digests = {}
     for metadata_name in ("artifact_manifest.json", "checksums.sha256"):
         local_metadata = (bundle_dir / metadata_name).read_bytes()
+        metadata_digests[metadata_name] = hashlib.sha256(local_metadata).hexdigest()
         try:
             remote_metadata = fetcher(f"{base_url}/{metadata_name}")
         except Exception as exc:
@@ -201,11 +214,18 @@ def verify_remote_bundle(
 
     with ThreadPoolExecutor(max_workers=workers) as pool:
         verified = list(pool.map(verify, local_files.items()))
+    execution = PublicationExecutionContext.from_environment(os.environ)
     return {
         "artifact_kind": "specgraph_static_artifact_remote_verification_report",
         "schema_version": 1,
         "status": "verified",
         "remote_base_url": base_url,
+        "observed_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
+        "bundle_identity": {
+            "manifest_sha256": metadata_digests["artifact_manifest.json"],
+            "checksums_sha256": metadata_digests["checksums.sha256"],
+        },
+        "execution_context": execution.observation(),
         "summary": {
             "verified_file_count": len(verified),
             "verified_metadata_file_count": 2,
@@ -215,8 +235,7 @@ def verify_remote_bundle(
 
 
 def _write_report(report: dict[str, Any], output: Path) -> None:
-    output.parent.mkdir(parents=True, exist_ok=True)
-    output.write_text(json.dumps(report, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+    write_json_object(output, report)
     print(
         json.dumps(
             {

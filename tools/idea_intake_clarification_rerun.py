@@ -11,6 +11,7 @@ from typing import Any
 
 import idea_to_spec_clarification_answers as answer_validator
 import user_idea_intake_interview as interview_tool
+from artifact_json import read_json_object, write_json_object
 
 ROOT = Path(__file__).resolve().parents[1]
 PROPOSAL_ID = "0186"
@@ -68,15 +69,11 @@ def _digest(payload: dict[str, Any]) -> str:
 
 
 def load_json(path: Path) -> dict[str, Any]:
-    payload = json.loads(path.read_text(encoding="utf-8"))
-    if not isinstance(payload, dict):
-        raise ValueError(f"{path} must contain a JSON object")
-    return payload
+    return read_json_object(path)
 
 
 def write_json(payload: dict[str, Any], path: Path) -> None:
-    path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_text(json.dumps(payload, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+    write_json_object(path, payload)
 
 
 def _finding(

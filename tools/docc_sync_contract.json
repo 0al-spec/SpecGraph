@@ -20,6 +20,16 @@
       ]
     },
     {
+      "id": "publication-delivery-pilot",
+      "description": "Lightweight publication signal profile and operational limits.",
+      "docs": ["docs/publication_delivery_pilot.md"],
+      "docc": ["Sources/SpecGraph/Documentation.docc/PublicationDeliveryPilot.md"],
+      "required_terms": [
+        "linked_delivery_signals_v1", "SG-SPEC-0071", "provider_reported",
+        "not_evaluated", "tests_verified_v1", "30 days"
+      ]
+    },
+    {
       "id": "product-spec-id-allocation",
       "description": "Product child allocation namespaces and migration history stay aligned across operator docs and DocC.",
       "docs": [
