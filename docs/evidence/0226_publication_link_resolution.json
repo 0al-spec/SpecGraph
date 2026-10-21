@@ -8,8 +8,10 @@
       "publication_trace_links.py": "eaa1bdba6021d0ffbd9eee2eb4fcb78a853988187ee3c82909d7469844261e67",
       "spec_yaml.py": "cc1fbbb2a634ef7145101e5c92ce42ff5dbb9f1a885788d828c5e305b69f16a9",
       "traceability/__init__.py": "32d5e0187562a9dcc4e1595a48d2bafe0dedf1b532917370a70cddfa8cf0ff39",
-      "traceability/context.py": "b44ccc9bc89c59f687d953234b79f570155806e0a25eb697fecbb200ae04c2e3",
-      "traceability/publication.py": "259e2e7bc59e810a928df6c0c50f1ccaf36ea97089805b4a0542b15100a1d0d6",
+      "traceability/atom_roles_spec.py": "e8bcb51c5f828b71dae28f7d9e351e6e765c6e06b7d9f8d19fd3c4da19c0fb09",
+      "traceability/context.py": "2a27bb4f61dd747f1bbe78ce5f5cbac66387efd9f0681168a13f79a30b192d85",
+      "traceability/policy_atom_bindings_spec.py": "e12e2f7ff99df78c380f13194a73db33f0b8a8f8ba20c9c6831f595f3511c759",
+      "traceability/publication.py": "0eaf835a88c9ffa42a5920790cc4fd6e0358f04f34b3e148068cf094b161202d",
       "traceability/reference_status_spec.py": "77303598e3a8c63baf97c72d1f23aceca466144dd9304b6641253b13b3150c64",
       "traceability/references.py": "50ffff8343abcd7b53d6f81c673d84dd9bb2fdb09ec7409673e203b399b79414"
     },
@@ -22,13 +24,22 @@
     "unique_count": 13
   },
   "canonical_mutations_allowed": false,
+  "compatibility_check": {
+    "baseline_analyzer_commit": "ca9c0d95b0049ce9f034b3107836cd994702c8e6",
+    "baseline_report_content_sha256": "d810be19c325f3f39cc808af6f327b065a2a466ddca28e7a9068dbfdcfa6030e",
+    "business_fields_identical": true,
+    "excluded_report_fields": [
+      "analyzer",
+      "content_sha256"
+    ]
+  },
   "execution": "not_collected",
   "findings": [],
   "interpretation": "Exact direct-declaration links at a pinned source revision; link occurrences are not distinct covered atoms. No measured code was imported or executed; no atom SVC or trusted admission is established.",
   "production_metrics": false,
   "profile": "specgraph.publication-exact-links/v1",
   "readiness": "not_evaluated",
-  "report_content_sha256": "d810be19c325f3f39cc808af6f327b065a2a466ddca28e7a9068dbfdcfa6030e",
+  "report_content_sha256": "ea5785c4bb02f7302226addd0c394439a39e265634dd9c247c6bea24823e3907",
   "resolution_counts": {
     "resolved": 55
   },

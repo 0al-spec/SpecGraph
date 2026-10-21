@@ -1270,5 +1270,19 @@
     "resolved_commit": "f0f1e9ee925d5f025181c40c1722325763027e4f",
     "recorded_at": "2026-10-06T08:55:00Z",
     "prevention_path": "Proposal 0225 acceptance case TV-13 requires tested-build provenance and rejects source/build mismatches."
+  },
+  {
+    "feedback_id": "pr-785-mapping-completeness-policy-boundary",
+    "source_pr": 785,
+    "source_thread_url": "https://github.com/0al-spec/SpecGraph/pull/785#discussion_r4342543127",
+    "reviewer": "chatgpt-codex-connector",
+    "review_comment_summary": "Mapping completeness and atom-role coverage remained procedural domain predicates inside the Git adapter.",
+    "fix_summary": "Extracted POLICY_ATOM_BINDINGS_SPEC and ATOM_ROLES_SPEC into individual source modules with immutable typed facts; the adapter only prepares facts and serializes outcomes.",
+    "root_cause_class": "process_rule_gap",
+    "prevention_action": "regression_test_added",
+    "verification": ["targeted_test", "lint_or_format_check", "manual_contract_review"],
+    "residual_risk": "This is a structural resolution diagnostic; policy extraction does not establish execution, fulfillment or canonical readiness.",
+    "recorded_at": "2026-10-21T22:36:00Z",
+    "prevention_path": "tests/test_publication_trace_links.py::test_mapping_policies_drive_adapter_findings requires each named policy to drive adapter findings; focused policy tables and frozen-context tests preserve existing behavior."
   }
 ]

@@ -13156,6 +13156,8 @@
       "tools/publication_trace_links.py",
       "tools/traceability/publication.py",
       "tools/traceability/reference_status_spec.py",
+      "tools/traceability/policy_atom_bindings_spec.py",
+      "tools/traceability/atom_roles_spec.py",
       "tools/traceability/references.py",
       "tests/test_publication_trace_links.py",
       "docs/publication_trace_links.md",

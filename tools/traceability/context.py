@@ -38,6 +38,28 @@ class ReferenceFacts:
 
 
 @dataclass(frozen=True)
+class PolicyAtomBindingsFacts:
+    bound_atom_ids: tuple[str, ...]
+    declared_atom_ids: tuple[str, ...]
+
+    def __post_init__(self) -> None:
+        object.__setattr__(self, "bound_atom_ids", tuple(self.bound_atom_ids))
+        object.__setattr__(self, "declared_atom_ids", tuple(self.declared_atom_ids))
+
+
+@dataclass(frozen=True)
+class AtomRolesFacts:
+    inventory_atom_ids: frozenset[str]
+    criterion_atom_ids: frozenset[str]
+    policy_atom_ids: frozenset[str]
+
+    def __post_init__(self) -> None:
+        object.__setattr__(self, "inventory_atom_ids", frozenset(self.inventory_atom_ids))
+        object.__setattr__(self, "criterion_atom_ids", frozenset(self.criterion_atom_ids))
+        object.__setattr__(self, "policy_atom_ids", frozenset(self.policy_atom_ids))
+
+
+@dataclass(frozen=True)
 class ReferenceResolution:
     declared: DeclaredReference
     status: str

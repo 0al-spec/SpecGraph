@@ -8,7 +8,9 @@
       "required_terms": [
         "specgraph.publication-exact-links/v1", "publication_trace_links",
         "REFERENCE_STATUS_SPEC", "needs_review", "source_lifecycle",
-        "content_sha256", "not_evaluated", "wrong_kind"
+        "content_sha256", "not_evaluated", "wrong_kind",
+        "POLICY_ATOM_BINDINGS_SPEC", "ATOM_ROLES_SPEC",
+        "PolicyAtomBindingsFacts", "AtomRolesFacts"
       ]
     },
     {

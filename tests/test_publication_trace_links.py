@@ -12,11 +12,21 @@ from pathlib import Path
 
 import pytest
 import yaml
+from specification_core import PredicateSpec
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "tools"))
 
-from traceability.context import Declaration, DeclaredReference, ReferenceFacts
+from traceability import publication
+from traceability.atom_roles_spec import ATOM_ROLES_SPEC
+from traceability.context import (
+    AtomRolesFacts,
+    Declaration,
+    DeclaredReference,
+    PolicyAtomBindingsFacts,
+    ReferenceFacts,
+)
+from traceability.policy_atom_bindings_spec import POLICY_ATOM_BINDINGS_SPEC
 from traceability.publication import build_publication_links
 from traceability.reference_status_spec import REFERENCE_STATUS_SPEC
 from traceability.references import resolve_references
@@ -116,6 +126,84 @@ def edit_node(root, transform):
 )
 def test_reference_status_policy(facts, expected):
     assert REFERENCE_STATUS_SPEC.decide(facts).value == expected
+
+
+@pytest.mark.parametrize(
+    ("bound", "declared", "expected"),
+    [
+        ((), (), True),
+        (("A",), ("A",), True),
+        (("B", "A"), ("A", "B"), True),
+        (("A", "A"), ("A",), False),
+        (("A",), ("A", "A"), False),
+        (("A", "A"), ("A", "A"), False),
+        (("A",), ("A", "B"), False),
+        (("A", "B"), ("A",), False),
+        (("A",), ("B",), False),
+    ],
+)
+def test_policy_atom_bindings_spec(bound, declared, expected):
+    assert (
+        POLICY_ATOM_BINDINGS_SPEC.is_satisfied_by(PolicyAtomBindingsFacts(bound, declared))
+        is expected
+    )
+
+
+@pytest.mark.parametrize(
+    ("inventory", "criteria", "policies", "expected"),
+    [
+        (("A", "B"), ("A",), ("B",), True),
+        (("A",), ("A",), ("A",), True),  # Existing overlap semantics are preserved.
+        ((), (), (), True),
+        (("A", "B"), ("A",), (), False),
+        (("A",), ("A",), ("B",), False),
+        (("A",), ("B",), (), False),
+    ],
+)
+def test_atom_roles_spec(inventory, criteria, policies, expected):
+    context = AtomRolesFacts(frozenset(inventory), frozenset(criteria), frozenset(policies))
+    assert ATOM_ROLES_SPEC.is_satisfied_by(context) is expected
+
+
+def test_mapping_contexts_copy_mutable_inputs_and_remain_frozen():
+    bound, declared, inventory = ["A"], ["A"], {"A"}
+    bindings = PolicyAtomBindingsFacts(bound, declared)
+    roles = AtomRolesFacts(inventory, inventory, set())
+    bound.append("B")
+    declared.clear()
+    inventory.clear()
+    assert bindings.bound_atom_ids == bindings.declared_atom_ids == ("A",)
+    assert roles.inventory_atom_ids == roles.criterion_atom_ids == frozenset({"A"})
+    assert roles.policy_atom_ids == frozenset()
+    with pytest.raises(FrozenInstanceError):
+        roles.inventory_atom_ids = frozenset()
+
+
+@pytest.mark.parametrize(
+    ("name", "context_type", "finding"),
+    [
+        (
+            "POLICY_ATOM_BINDINGS_SPEC",
+            PolicyAtomBindingsFacts,
+            "policy_atom_bindings_incomplete_or_duplicate",
+        ),
+        ("ATOM_ROLES_SPEC", AtomRolesFacts, "atom_roles_incomplete"),
+    ],
+)
+def test_mapping_policies_drive_adapter_findings(
+    repository, monkeypatch, name, context_type, finding
+):
+    observed = []
+
+    def reject(context):
+        observed.append(context)
+        return False
+
+    monkeypatch.setattr(publication, name, PredicateSpec(reject, name="test.mapping_rejection"))
+    report = build_publication_links(repository, "HEAD")
+    assert len(observed) == 1 and isinstance(observed[0], context_type)
+    assert report["findings"] == [{"code": finding}]
+    assert report["status"] == "needs_review"
 
 
 def test_generic_exact_ids_and_zeusus_reported_failures():

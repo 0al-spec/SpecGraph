@@ -17,6 +17,12 @@ order. Report status is `needs_review` when a link or inventory/mapping check
 fails. Exit 0 means a diagnostic was computed, not readiness. Invalid required
 inputs exit 1 with no JSON report.
 
+Mapping completeness is owned by `POLICY_ATOM_BINDINGS_SPEC` and `ATOM_ROLES_SPEC`
+in separate modules, with immutable `PolicyAtomBindingsFacts` and `AtomRolesFacts`.
+The Git adapter prepares facts and serializes the returned outcomes. Focused
+policy tables and adapter-integration tests preserve the original findings,
+including duplicate, missing, extra, empty and overlapping-role cases.
+
 The inventory joins atom `verifiable_by`, criterion/atom links, passport and
 bound criteria, policy atom bindings and implementation declarations. Duplicate
 IDs remain visible; empty/repeated atom channels and mismatched bound tests are

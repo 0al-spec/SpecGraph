@@ -31,6 +31,10 @@ selected Git commit
 `tools/traceability/context.py` holds immutable facts and results.
 `references.py` resolves exact keys within one explicitly bounded node inventory.
 `reference_status_spec.py` owns the named resolution policy.
+`POLICY_ATOM_BINDINGS_SPEC` and `ATOM_ROLES_SPEC` own mapping completeness and
+inventory-role coverage in separate source modules, using immutable
+`PolicyAtomBindingsFacts` and `AtomRolesFacts`. The adapter collects their inputs
+and serializes findings; it does not recompute their predicates.
 `publication.py` adapts the existing pilot inputs and reads regular Git blobs
 through the shared `GitSources` boundary. The CLI composes these pieces.
 No measured Python module is imported or executed. Working-tree edits cannot
@@ -118,6 +122,9 @@ The [pinned observation](evidence/0226_publication_link_resolution.json) records
 the real pilot's inventory and resolution results. Tests cover absent and
 ambiguous targets, wrong declaration kinds, unsupported selectors, Git symlinks,
 malformed/missing inventories, old-revision isolation and independent CLI use.
+Mapping policy tables preserve duplicate, missing, extra, empty and overlapping
+role behavior; adapter-integration tests require the named policy outcomes to
+drive findings and report status.
 
 Zeusus intake on 2026-10-22 supplied negative-case requirements: a nonexistent
 obligation ID, scenario range strings and a missing planned target. Small

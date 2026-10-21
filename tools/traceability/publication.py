@@ -20,7 +20,9 @@ from publication_evidence.bindings_spec import BINDING_ERROR_SPEC
 from publication_evidence.context import BindingContext
 from spec_yaml import load_yaml_text
 
-from .context import Declaration, DeclaredReference
+from .atom_roles_spec import ATOM_ROLES_SPEC
+from .context import AtomRolesFacts, Declaration, DeclaredReference, PolicyAtomBindingsFacts
+from .policy_atom_bindings_spec import POLICY_ATOM_BINDINGS_SPEC
 from .references import PYTHON_KINDS, resolve_references, supported_reference
 
 PROFILE = "specgraph.publication-exact-links/v1"
@@ -36,6 +38,8 @@ def analyzer_identity() -> dict[str, object]:
         "traceability/reference_status_spec.py",
         "traceability/references.py",
         "traceability/publication.py",
+        "traceability/atom_roles_spec.py",
+        "traceability/policy_atom_bindings_spec.py",
         "intent_decision_review/sources.py",
         "spec_yaml.py",
         "publication_evidence/bindings_spec.py",
@@ -287,12 +291,15 @@ def build_publication_links(
         mapping(specification.get("delivery_signals"), "delivery_signals").get("policy_atom_ids"),
         "policy_atom_ids",
     )
-    if Counter(bound_policy_atoms) != Counter(policy_atoms) or len(policy_atoms) != len(
-        set(policy_atoms)
+    if not POLICY_ATOM_BINDINGS_SPEC.is_satisfied_by(
+        PolicyAtomBindingsFacts(tuple(bound_policy_atoms), tuple(policy_atoms))
     ):
         findings.append({"code": "policy_atom_bindings_incomplete_or_duplicate"})
-    expected_atoms = set(criterion_atoms.values()) | set(policy_atoms)
-    if set(atom_channels) != expected_atoms:
+    if not ATOM_ROLES_SPEC.is_satisfied_by(
+        AtomRolesFacts(
+            frozenset(atom_channels), frozenset(criterion_atoms.values()), frozenset(policy_atoms)
+        )
+    ):
         findings.append({"code": "atom_roles_incomplete"})
     implementation = text(bindings.get("implementation"), "implementation")
     symbol = text(bindings.get("symbol"), "symbol")
