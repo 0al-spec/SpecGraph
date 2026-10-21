@@ -6,10 +6,12 @@ Version: 0.1.0
 ## Status
 
 Draft proposal; architecture and staged realization plan for review.
-Runtime realization is `deferred_until_canonicalized`. The bounded Supervisor
-cycle and its evidence are recorded in the source draft. This document does not
-activate a metric profile, replace the existing proxy, or approve a canonical
-semantic change.
+Compatibility slice B now extracts the existing proxy behind immutable prepared
+inputs and a replaceable metric interface. Evidence providers, TraceSnapshot and
+the atom-level SVC profile remain `deferred_until_canonicalized`. The bounded
+Supervisor cycle and its evidence are recorded in the source draft. This work
+does not activate a metric profile, replace the existing proxy, or approve a
+canonical semantic change.
 
 ```yaml
 canonical_mutations_allowed: false
@@ -196,20 +198,57 @@ profiles cannot be presented as one comparable trend without qualification.
 5. **Observe again:** compare the legacy proxy and the new detailed result for
    SG-SPEC-0071 at one pinned revision; inspect disagreements and negative cases.
 
-This proposal completes preparation and launches the bounded Supervisor cycle.
-It does not claim that provider runtime or improved SVC computation exists yet.
+The original proposal completed preparation and launched the bounded Supervisor
+cycle. The operator subsequently requested implementation, authorizing the
+compatibility extraction in slice B. Provider runtime and atom-level SVC
+computation remain future slices; the SG-SPEC-0021 semantic patch is still a
+separate review candidate.
 
 ## Realization Slices
 
 | Slice | Deliverable | Verification |
 | --- | --- | --- |
 | A | Reviewed provider/snapshot/profile contracts and semantic input boundary | Source-grounded review and explicit compatibility decisions |
-| B | Extract existing verifiability computation with immutable prepared inputs | Same existing values, statuses and CLI artifacts on fixed fixtures |
+| B | Implemented: extract existing verifiability computation with immutable prepared inputs and the optional `verifiability_metric` hook | Pre-refactor JSON fixtures, shared-policy boundaries, injectable composition and isolated imports |
 | C | One publication-pilot provider plus atom-level SVC profile | Exact atom-to-check inventory and source-pinned fixture results |
 | D | Connect to existing metric-pack artifacts with explicit provenance | Consumer compatibility, profile-separated comparisons and one real pilot |
 
 Each slice has its own focused PR. Failure or incompleteness stays visible;
 activation does not follow automatically from merging the proposal.
+
+## Implemented Compatibility Boundary (Slice B)
+
+`tools/metric_packs/` now contains `VerifiabilityContext`, immutable observations
+and results, the `VerifiabilityMetric` protocol, and `LegacyVerifiabilityMetric`.
+The legacy JSON adapter prepares the input; the metric performs pure arithmetic
+and projection. `SCORE_STATUS_SPEC` names the existing three-way threshold
+policy and is also used through the existing Supervisor score-status facade.
+
+`build_metric_signal_index(specs, *, verifiability_metric=None)` selects the
+legacy implementation by default. Supplying another implementation of that
+protocol is an explicit composition hook; it receives the same prepared context.
+This specialized input is not the proposed general TraceSnapshot, and no dynamic
+plugin loading or new metric profile is enabled.
+
+The extraction preserves unknown-status counting, numeric coercion, empty-input
+behavior, rounding before threshold comparison, the complete serialized metric
+entry and existing threshold consumers. Eight golden projections were captured
+from the exact pre-refactor production block at commit
+`2e33ce2d51b01080f25e592c9232185e01004d34` before editing it. They are retained in
+`tests/fixtures/metric_packs/legacy_verifiability.json`; focused tests also check
+immutable inputs, trace branch skips, shared score policy, injected composition
+and isolated file imports.
+
+A live local trace snapshot of 71 spec entries also produced identical serialized
+entries before and after: the legacy proxy stayed at 0.993 (70 `covered`, one
+`evidence_linked_unmapped`). This is an acceptance-status proxy, not atom-level
+SVC or confirmation that 99.3% of requirements passed tests. The pinned
+[compatibility observation](../evidence/0226_legacy_verifiability_compatibility.json)
+records both results and source digests.
+
+TP-08 now has compatibility characterization. The provider/atom-level cases
+below remain planned. Measurement results and local observations are reported
+with the implementing PR; no complexity or S/U improvement is presumed.
 
 ## Acceptance Cases for Future Realization
 
@@ -226,9 +265,10 @@ activation does not follow automatically from merging the proposal.
 | TP-09 | Code changes while intent is unchanged | Current resolution/freshness reflects selected source; no reuse of stale confirmation |
 | TP-10 | Empty selected atom set | Explicit not_applicable result, no invented zero coverage |
 
-These cases specify future verification; none is claimed as executed by this
-proposal. Local documentation and existing regression checks are reported
-separately in the PR.
+TP-08 has executable compatibility characterization in slice B. The remaining
+cases specify future verification for providers and atom-level SVC; they are
+not claimed as executed by this extraction. Local checks and observations are
+reported separately in the implementing PR.
 
 ## Open Decisions for Review
 

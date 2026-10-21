@@ -1,0 +1,55 @@
+{
+  "artifact_kind": "rfc0226_legacy_verifiability_compatibility",
+  "baseline_commit": "2e33ce2d51b01080f25e592c9232185e01004d34",
+  "baseline_source_sha256": "1d7418b22d59e5b4fa2a788de15100e922285fcaf449594a15001869a9bdce95",
+  "trace_input": "same live local-worktree trace index supplied to pinned pre-refactor block and extracted interpretation",
+  "trace_entry_count": 71,
+  "before": {
+    "metric_id": "specification_verifiability",
+    "title": "Specification Verifiability",
+    "score": 0.993,
+    "minimum_score": 0.45,
+    "threshold_gap": -0.543,
+    "status": "healthy",
+    "trigger_signal": "low_specification_verifiability",
+    "signal_emitted": false,
+    "basis": "Derived from acceptance coverage in the trace plane. This remains a weak bootstrap measure until criterion-level evidence mapping exists.",
+    "input_summary": {
+      "relevant_spec_count": 71,
+      "acceptance_status_counts": {
+        "covered": 70,
+        "evidence_linked_unmapped": 1
+      }
+    }
+  },
+  "after": {
+    "metric_id": "specification_verifiability",
+    "title": "Specification Verifiability",
+    "score": 0.993,
+    "minimum_score": 0.45,
+    "threshold_gap": -0.543,
+    "status": "healthy",
+    "trigger_signal": "low_specification_verifiability",
+    "signal_emitted": false,
+    "basis": "Derived from acceptance coverage in the trace plane. This remains a weak bootstrap measure until criterion-level evidence mapping exists.",
+    "input_summary": {
+      "relevant_spec_count": 71,
+      "acceptance_status_counts": {
+        "covered": 70,
+        "evidence_linked_unmapped": 1
+      }
+    }
+  },
+  "serialized_payload_equal": true,
+  "policy_sha256": "7adf4fc1d0c1151e51cdad9266a6944d57069ce2b8d335f41fb0c7a547a3a906",
+  "canonical_mutations_allowed": false,
+  "measured_source_sha256": {
+    "tools/supervisor.py": "c625c165966403452e6960a4558dc7a6f52c4192950fcc6d36f44b7cfedb69c6",
+    "tools/metric_packs/__init__.py": "5845a2bccc0db27d4e42d22db48beeb8a366af2fbc2e5051498d8f77f977379f",
+    "tools/metric_packs/context.py": "fde0200797fc795d1909e60383b66a0d4139e8737c151529d49e92df9979e7db",
+    "tools/metric_packs/legacy_verifiability.py": "98405099bf58fdae8b6ffbc79f4d8e1b524fcc54db94151eede25f0b112c1cee",
+    "tools/metric_packs/score_status_spec.py": "6477e3bb4d216dbe7ef132b358b5b1220b5adf6594cd7edee2100e52dcd62618"
+  },
+  "scope": "One live local-worktree trace snapshot, 71 spec entries; this checks the legacy proxy projection, not atom-level SVC or semantic requirement verification.",
+  "schema_version": 1
+}

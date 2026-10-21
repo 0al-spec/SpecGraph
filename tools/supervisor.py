@@ -133,6 +133,7 @@ from typing import TYPE_CHECKING, Any
 
 if TYPE_CHECKING:
     from decision_nodes import DecisionIndex
+    from metric_packs.context import VerifiabilityMetric
 
 try:
     import yaml
@@ -4967,6 +4968,23 @@ def get_spec_yaml_module() -> ModuleType:
     spec = importlib.util.spec_from_file_location(module_name, module_path)
     if spec is None or spec.loader is None:
         raise RuntimeError(f"Failed to load canonical YAML helper from {module_path}")
+    module = importlib.util.module_from_spec(spec)
+    sys.modules[module_name] = module
+    spec.loader.exec_module(module)
+    return module
+
+
+def get_metric_packs_module() -> ModuleType:
+    module_name = "_specgraph_metric_packs"
+    existing = sys.modules.get(module_name)
+    if isinstance(existing, ModuleType):
+        return existing
+    path = TOOLS_DIR / "metric_packs" / "__init__.py"
+    spec = importlib.util.spec_from_file_location(
+        module_name, path, submodule_search_locations=[str(path.parent)]
+    )
+    if spec is None or spec.loader is None:
+        raise RuntimeError(f"Failed to load metric interpretations from {path}")
     module = importlib.util.module_from_spec(spec)
     sys.modules[module_name] = module
     spec.loader.exec_module(module)
@@ -40838,9 +40856,8 @@ def weighted_metric_average(
 
 
 def metric_status_from_score(score: float | None, threshold: float) -> str:
-    if score is None:
-        return "not_applicable"
-    return "healthy" if score >= threshold else "below_threshold"
+    metrics = get_metric_packs_module()
+    return metrics.SCORE_STATUS_SPEC.decide(metrics.ScoreThreshold(score, threshold)).value
 
 
 def metric_gap_from_threshold(score: float | None, threshold: float) -> float | None:
@@ -41126,7 +41143,9 @@ def build_sib_full_proxy_metric_signals(
     ]
 
 
-def build_metric_signal_index(specs: list[SpecNode]) -> dict[str, Any]:
+def build_metric_signal_index(
+    specs: list[SpecNode], *, verifiability_metric: VerifiabilityMetric | None = None
+) -> dict[str, Any]:
     trace_index = build_spec_trace_index(specs)
     trace_projection = build_spec_trace_projection(trace_index)
     evidence_index = build_evidence_plane_index(specs)
@@ -41152,58 +41171,21 @@ def build_metric_signal_index(specs: list[SpecNode]) -> dict[str, Any]:
 
     metrics_by_id: dict[str, dict[str, Any]] = {}
 
-    acceptance_status_counts: dict[str, int] = {}
-    acceptance_scores: list[float] = []
-    acceptance_relevant_count = 0
-    for entry in trace_index.get("entries", []):
-        if not isinstance(entry, dict):
-            continue
-        coverage = entry.get("acceptance_coverage", {})
-        if not isinstance(coverage, dict):
-            continue
-        status = str(coverage.get("status", "")).strip()
-        if not status or status == "not_defined":
-            continue
-        acceptance_relevant_count += 1
-        acceptance_status_counts[status] = acceptance_status_counts.get(status, 0) + 1
-        score = metric_status_score(acceptance_score_map, status)
-        if score is not None:
-            acceptance_scores.append(score)
-
-    spec_verifiability_threshold = float(
-        metric_threshold_definition("specification_verifiability")["minimum_score"]
+    metric_pack = get_metric_packs_module()
+    verifiability_context = metric_pack.prepare_verifiability_context(
+        trace_index.get("entries", []),
+        acceptance_score_map,
+        float(metric_threshold_definition("specification_verifiability")["minimum_score"]),
+        str(metric_threshold_definition("specification_verifiability")["trigger_signal"]),
     )
-    spec_verifiability_score = average_metric_scores(acceptance_scores)
-    spec_verifiability_status = metric_status_from_score(
-        spec_verifiability_score,
-        spec_verifiability_threshold,
+    verifiability_metric = (
+        verifiability_metric
+        if verifiability_metric is not None
+        else metric_pack.LegacyVerifiabilityMetric()
     )
-    spec_verifiability_signal = str(
-        metric_threshold_definition("specification_verifiability")["trigger_signal"]
-    )
-    metrics_by_id["specification_verifiability"] = {
-        "metric_id": "specification_verifiability",
-        "title": "Specification Verifiability",
-        "score": spec_verifiability_score,
-        "minimum_score": spec_verifiability_threshold,
-        "threshold_gap": metric_gap_from_threshold(
-            spec_verifiability_score,
-            spec_verifiability_threshold,
-        ),
-        "status": spec_verifiability_status,
-        "trigger_signal": spec_verifiability_signal,
-        "signal_emitted": spec_verifiability_status == "below_threshold",
-        "basis": (
-            "Derived from acceptance coverage in the trace plane. This remains a weak bootstrap "
-            "measure until criterion-level evidence mapping exists."
-        ),
-        "input_summary": {
-            "relevant_spec_count": acceptance_relevant_count,
-            "acceptance_status_counts": {
-                key: acceptance_status_counts[key] for key in sorted(acceptance_status_counts)
-            },
-        },
-    }
+    metrics_by_id["specification_verifiability"] = verifiability_metric.evaluate(
+        verifiability_context
+    ).to_payload()
 
     proposal_status_counts: dict[str, int] = {}
     proposal_scores: list[float] = []

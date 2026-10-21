@@ -1,0 +1,378 @@
+{
+  "source_commit": "2e33ce2d51b01080f25e592c9232185e01004d34",
+  "source_path": "tools/supervisor.py",
+  "source_sha256": "1d7418b22d59e5b4fa2a788de15100e922285fcaf449594a15001869a9bdce95",
+  "capture": "Exact pre-refactor production verifiability block and its existing score/status/gap helpers, executed on fixed JSON input cases.",
+  "cases": [
+    {
+      "name": "mixed",
+      "entries": [
+        {
+          "acceptance_coverage": {
+            "status": "covered"
+          }
+        },
+        {
+          "acceptance_coverage": {
+            "status": "partially_mapped"
+          }
+        },
+        {
+          "acceptance_coverage": {
+            "status": "evidence_linked_unmapped"
+          }
+        },
+        {
+          "acceptance_coverage": {
+            "status": "no_linked_evidence"
+          }
+        }
+      ],
+      "status_scores": {
+        "covered": 1.0,
+        "partially_mapped": 0.75,
+        "evidence_linked_unmapped": 0.5,
+        "no_linked_evidence": 0.0
+      },
+      "minimum_score": 0.45,
+      "trigger_signal": "low_specification_verifiability",
+      "expected": {
+        "metric_id": "specification_verifiability",
+        "title": "Specification Verifiability",
+        "score": 0.562,
+        "minimum_score": 0.45,
+        "threshold_gap": -0.112,
+        "status": "healthy",
+        "trigger_signal": "low_specification_verifiability",
+        "signal_emitted": false,
+        "basis": "Derived from acceptance coverage in the trace plane. This remains a weak bootstrap measure until criterion-level evidence mapping exists.",
+        "input_summary": {
+          "relevant_spec_count": 4,
+          "acceptance_status_counts": {
+            "covered": 1,
+            "evidence_linked_unmapped": 1,
+            "no_linked_evidence": 1,
+            "partially_mapped": 1
+          }
+        }
+      }
+    },
+    {
+      "name": "empty",
+      "entries": [],
+      "status_scores": {
+        "covered": 1.0,
+        "partially_mapped": 0.75,
+        "evidence_linked_unmapped": 0.5,
+        "no_linked_evidence": 0.0
+      },
+      "minimum_score": 0.45,
+      "trigger_signal": "low_specification_verifiability",
+      "expected": {
+        "metric_id": "specification_verifiability",
+        "title": "Specification Verifiability",
+        "score": null,
+        "minimum_score": 0.45,
+        "threshold_gap": null,
+        "status": "not_applicable",
+        "trigger_signal": "low_specification_verifiability",
+        "signal_emitted": false,
+        "basis": "Derived from acceptance coverage in the trace plane. This remains a weak bootstrap measure until criterion-level evidence mapping exists.",
+        "input_summary": {
+          "relevant_spec_count": 0,
+          "acceptance_status_counts": {}
+        }
+      }
+    },
+    {
+      "name": "malformed_and_undefined",
+      "entries": [
+        null,
+        [],
+        {},
+        {
+          "acceptance_coverage": null
+        },
+        {
+          "acceptance_coverage": []
+        },
+        {
+          "acceptance_coverage": {
+            "status": ""
+          }
+        },
+        {
+          "acceptance_coverage": {
+            "status": "  "
+          }
+        },
+        {
+          "acceptance_coverage": {
+            "status": "not_defined"
+          }
+        },
+        {
+          "acceptance_coverage": {
+            "status": " covered "
+          }
+        }
+      ],
+      "status_scores": {
+        "covered": 1.0,
+        "partially_mapped": 0.75,
+        "evidence_linked_unmapped": 0.5,
+        "no_linked_evidence": 0.0
+      },
+      "minimum_score": 0.45,
+      "trigger_signal": "low_specification_verifiability",
+      "expected": {
+        "metric_id": "specification_verifiability",
+        "title": "Specification Verifiability",
+        "score": 1.0,
+        "minimum_score": 0.45,
+        "threshold_gap": -0.55,
+        "status": "healthy",
+        "trigger_signal": "low_specification_verifiability",
+        "signal_emitted": false,
+        "basis": "Derived from acceptance coverage in the trace plane. This remains a weak bootstrap measure until criterion-level evidence mapping exists.",
+        "input_summary": {
+          "relevant_spec_count": 1,
+          "acceptance_status_counts": {
+            "covered": 1
+          }
+        }
+      }
+    },
+    {
+      "name": "unknown_only",
+      "entries": [
+        {
+          "acceptance_coverage": {
+            "status": "future"
+          }
+        },
+        {
+          "acceptance_coverage": {
+            "status": "future"
+          }
+        },
+        {
+          "acceptance_coverage": {
+            "status": null
+          }
+        }
+      ],
+      "status_scores": {
+        "covered": 1.0,
+        "partially_mapped": 0.75,
+        "evidence_linked_unmapped": 0.5,
+        "no_linked_evidence": 0.0
+      },
+      "minimum_score": 0.45,
+      "trigger_signal": "low_specification_verifiability",
+      "expected": {
+        "metric_id": "specification_verifiability",
+        "title": "Specification Verifiability",
+        "score": null,
+        "minimum_score": 0.45,
+        "threshold_gap": null,
+        "status": "not_applicable",
+        "trigger_signal": "low_specification_verifiability",
+        "signal_emitted": false,
+        "basis": "Derived from acceptance coverage in the trace plane. This remains a weak bootstrap measure until criterion-level evidence mapping exists.",
+        "input_summary": {
+          "relevant_spec_count": 3,
+          "acceptance_status_counts": {
+            "None": 1,
+            "future": 2
+          }
+        }
+      }
+    },
+    {
+      "name": "invalid_and_coerced_scores",
+      "entries": [
+        {
+          "acceptance_coverage": {
+            "status": "covered"
+          }
+        },
+        {
+          "acceptance_coverage": {
+            "status": "partially_mapped"
+          }
+        },
+        {
+          "acceptance_coverage": {
+            "status": "evidence_linked_unmapped"
+          }
+        },
+        {
+          "acceptance_coverage": {
+            "status": "no_linked_evidence"
+          }
+        },
+        {
+          "acceptance_coverage": {
+            "status": "future"
+          }
+        }
+      ],
+      "status_scores": {
+        "covered": "invalid",
+        "partially_mapped": "0.5",
+        "evidence_linked_unmapped": null,
+        "no_linked_evidence": [],
+        "future": true
+      },
+      "minimum_score": 0.8,
+      "trigger_signal": "configured_attention",
+      "expected": {
+        "metric_id": "specification_verifiability",
+        "title": "Specification Verifiability",
+        "score": 0.75,
+        "minimum_score": 0.8,
+        "threshold_gap": 0.05,
+        "status": "below_threshold",
+        "trigger_signal": "configured_attention",
+        "signal_emitted": true,
+        "basis": "Derived from acceptance coverage in the trace plane. This remains a weak bootstrap measure until criterion-level evidence mapping exists.",
+        "input_summary": {
+          "relevant_spec_count": 5,
+          "acceptance_status_counts": {
+            "covered": 1,
+            "evidence_linked_unmapped": 1,
+            "future": 1,
+            "no_linked_evidence": 1,
+            "partially_mapped": 1
+          }
+        }
+      }
+    },
+    {
+      "name": "rounded_threshold",
+      "entries": [
+        {
+          "acceptance_coverage": {
+            "status": "custom"
+          }
+        }
+      ],
+      "status_scores": {
+        "custom": 0.4496
+      },
+      "minimum_score": 0.45,
+      "trigger_signal": "rounded_attention",
+      "expected": {
+        "metric_id": "specification_verifiability",
+        "title": "Specification Verifiability",
+        "score": 0.45,
+        "minimum_score": 0.45,
+        "threshold_gap": 0.0,
+        "status": "healthy",
+        "trigger_signal": "rounded_attention",
+        "signal_emitted": false,
+        "basis": "Derived from acceptance coverage in the trace plane. This remains a weak bootstrap measure until criterion-level evidence mapping exists.",
+        "input_summary": {
+          "relevant_spec_count": 1,
+          "acceptance_status_counts": {
+            "custom": 1
+          }
+        }
+      }
+    },
+    {
+      "name": "below_threshold",
+      "entries": [
+        {
+          "acceptance_coverage": {
+            "status": "covered"
+          }
+        },
+        {
+          "acceptance_coverage": {
+            "status": "no_linked_evidence"
+          }
+        }
+      ],
+      "status_scores": {
+        "covered": 1.0,
+        "partially_mapped": 0.75,
+        "evidence_linked_unmapped": 0.5,
+        "no_linked_evidence": 0.0
+      },
+      "minimum_score": 0.75,
+      "trigger_signal": "changed_trigger",
+      "expected": {
+        "metric_id": "specification_verifiability",
+        "title": "Specification Verifiability",
+        "score": 0.5,
+        "minimum_score": 0.75,
+        "threshold_gap": 0.25,
+        "status": "below_threshold",
+        "trigger_signal": "changed_trigger",
+        "signal_emitted": true,
+        "basis": "Derived from acceptance coverage in the trace plane. This remains a weak bootstrap measure until criterion-level evidence mapping exists.",
+        "input_summary": {
+          "relevant_spec_count": 2,
+          "acceptance_status_counts": {
+            "covered": 1,
+            "no_linked_evidence": 1
+          }
+        }
+      }
+    },
+    {
+      "name": "sorted_counts",
+      "entries": [
+        {
+          "acceptance_coverage": {
+            "status": "partially_mapped"
+          }
+        },
+        {
+          "acceptance_coverage": {
+            "status": "covered"
+          }
+        },
+        {
+          "acceptance_coverage": {
+            "status": "partially_mapped"
+          }
+        },
+        {
+          "acceptance_coverage": {
+            "status": "future"
+          }
+        }
+      ],
+      "status_scores": {
+        "covered": 1.0,
+        "partially_mapped": 0.75,
+        "evidence_linked_unmapped": 0.5,
+        "no_linked_evidence": 0.0
+      },
+      "minimum_score": 0.45,
+      "trigger_signal": "low_specification_verifiability",
+      "expected": {
+        "metric_id": "specification_verifiability",
+        "title": "Specification Verifiability",
+        "score": 0.833,
+        "minimum_score": 0.45,
+        "threshold_gap": -0.383,
+        "status": "healthy",
+        "trigger_signal": "low_specification_verifiability",
+        "signal_emitted": false,
+        "basis": "Derived from acceptance coverage in the trace plane. This remains a weak bootstrap measure until criterion-level evidence mapping exists.",
+        "input_summary": {
+          "relevant_spec_count": 4,
+          "acceptance_status_counts": {
+            "covered": 1,
+            "future": 1,
+            "partially_mapped": 2
+          }
+        }
+      }
+    }
+  ]
+}

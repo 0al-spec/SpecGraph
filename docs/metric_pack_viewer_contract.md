@@ -794,3 +794,17 @@ Out of scope for the first viewer slice:
 - Editing `tools/metric_pack_registry.json`.
 - Promoting draft sources.
 - Turning missing inputs into canonical intents automatically.
+
+## Compatibility Interpretation Boundary (RFC 0226)
+
+The existing `specification_verifiability` signal is computed by the pure
+`LegacyVerifiabilityMetric` from immutable `VerifiabilityContext` inputs under
+`tools/metric_packs/`. The Supervisor retains collection and its CLI facade.
+`build_metric_signal_index` exposes an optional `verifiability_metric` hook for
+explicit composition; its default remains the legacy proxy. `SCORE_STATUS_SPEC`
+is the shared existing score/threshold status policy.
+
+This extraction preserves the metric JSON fields, scores, status counters,
+thresholds and pack/viewer projections. It does not activate atom-level SVC,
+create the general TraceSnapshot, or infer execution/admission from resolved
+links. See RFC 0226 and its slice B compatibility tests.
