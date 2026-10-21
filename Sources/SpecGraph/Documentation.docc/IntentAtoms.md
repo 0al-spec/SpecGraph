@@ -94,3 +94,24 @@ Preserve prior artifacts and start a new contract baseline; normal comparison
 rejects different collection contracts. The upstream
 [inheritance audit](https://github.com/SoundBlaster/SpecificationMetrics/blob/4650728d33d79e75e1eaa2470ec26ec9b0338e5a/docs/python-inheritance-counting-audit.md)
 records the source snapshot, supported subset and regression coverage.
+
+### Verify an analyzer rollout
+
+The report workflow checks out the trusted default branch. A PR that changes
+the analyzer pin can therefore still receive a report from the previous
+analyzer before that PR merges. The first hosted verification must use a later
+open PR after the new workflow has reached the default branch. Push-only CI and
+reruns for merged PRs do not produce a new PR measurement.
+
+For that verification, download the linked artifact and check all six named
+files above. Bind `provenance.json` to the repository, PR base/head, upstream CI
+run, collection run/attempt, trusted tooling revision and expected analyzer SHA.
+Check counting rule v9 in both collection reports, matching collection contracts,
+complete collection/supplementary statuses, and primary diagnostics. Verify that
+the comment describes the same revisions and values as those JSON reports.
+
+A documentation-only verification PR should leave application S, U and classic
+metrics unchanged between its base and head. That proves collection consistency,
+not business correctness. Compare v8 and v9 only as an explicit analyzer audit on
+the same source snapshot; preserve the old artifact and establish the v9 baseline
+without presenting its changed counts as a code-quality improvement.
