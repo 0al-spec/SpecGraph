@@ -1,0 +1,125 @@
+{
+  "artifact_kind": "intent_layer_node",
+  "schema_version": 1,
+  "title": "Operator request for SG-SPEC-0021",
+  "created_at": "2026-10-21T19:28:33.748040+00:00",
+  "updated_at": "2026-10-21T19:37:41.862851+00:00",
+  "policy_reference": {
+    "artifact_path": "tools/intent_layer_policy.json",
+    "artifact_sha256": "f9df44dafea0fb1bc0e33007e304b749810ddefb6eda1fe31429390312e30171",
+    "version": 1
+  },
+  "bridge_policy_reference": {
+    "artifact_path": "tools/operator_request_bridge_policy.json",
+    "artifact_sha256": "fc4955b8a8d57a6caaa4d9f862d2ed4a5891a12988484c85b703224688670a4f",
+    "version": 1
+  },
+  "vocabulary_reference": {
+    "artifact_path": "tools/specgraph_vocabulary.json",
+    "artifact_sha256": "68aa0c73461dbd4ec8db3c2af27eb7b51a601d86005fae54ab58206f5e5f9b9f",
+    "version": 1
+  },
+  "intent_repository_presence": {
+    "tracked_presence": "repository_tracked",
+    "path_class": "intent_layer_node_path",
+    "persistence_boundary": "pre_canonical_repository_separate_from_runtime",
+    "tracked_path": "intent_layer/nodes/traceability-provider-proposal-20261021--c4c54e38.json"
+  },
+  "intent_handle": {
+    "handle_value": "traceability-provider-proposal-20261021",
+    "handle_status": "active"
+  },
+  "intent_layer_kind": "operator_request",
+  "mediation_state": "canonical_candidate",
+  "pre_spec_semantics": {
+    "policy_reference": {
+      "artifact_path": "tools/pre_spec_semantics_policy.json",
+      "artifact_sha256": "6cd49d100c8eae2ac9ea8512c7b7cbad108823064070a5de03487c3941447cb1",
+      "version": 1
+    },
+    "phase": "pre_spec",
+    "semantic_artifact_class": "operator_request",
+    "status": "canonical_candidate",
+    "authority": "operator",
+    "required_axes": [
+      "phase",
+      "status",
+      "authority",
+      "confidence",
+      "provenance",
+      "context_tags",
+      "supersedes"
+    ],
+    "implemented_axes": {
+      "phase": "explicit",
+      "status": "mapped_from_mediation_state",
+      "authority": "explicit",
+      "confidence": "not_yet_materialized",
+      "provenance": "explicit",
+      "context_tags": "not_yet_materialized",
+      "supersedes": "not_yet_materialized"
+    },
+    "adjacent_primary_kinds": [
+      "proposal",
+      "spec_draft"
+    ],
+    "canonical_boundary": "proposal_lane_or_reviewed_supervisor_candidate_required"
+  },
+  "request_bridge": {
+    "target_spec_id": "SG-SPEC-0021",
+    "run_mode": "targeted_refine",
+    "operator_note": "Operator requested a proposal and one bounded self-improvement cycle for SpecGraph itself. Target only SG-SPEC-0021, Derived Metric Family Boundary. Inspect existing contract plus SG-SPEC-0071 atoms, docs/publication_delivery_pilot.md, docs/intent_decision_review.md, docs/proposals/0043_metric_pack_plugin_architecture.md, tools/metric_pack_registry.json and tools/metric_signal_policy.json. Observed gap: build_metric_signal_index still computes specification_verifiability by averaging legacy acceptance_coverage status scores; intent decision review and source-bound publication test/HTTP observations are separate. Proposed architecture is EvidenceProvider -> immutable revision-bound TraceSnapshot -> metric adapter, with trace checks and metric interpretation consuming the same facts independently. Please refine only the semantic input boundary if a small compatible clarification is warranted: declared verification link, resolved source declaration, execution observation and its result are distinct facts, each with subject/revision/provenance/completeness. Passing and failing tests can both establish verifiability; missing, stale or unknown input does not establish a negative result or a complete zero. A PR review record is historical change coverage, not perpetual evidence for later code. Preserve all existing family roles, allowed subject/input classes, governance thresholds, authority and formula exclusions. Do not define storage schemas, plugin loaders, formulas or implementation details in this semantic spec. Preserve the existing topology and all recorded review decisions. If the change exceeds this boundary, return escalate and explain what belongs in the proposal. Use policy_text mutation only, retain exact existing acceptance criteria and update matching acceptance_evidence only if necessary. Do not edit any other tracked file; do not execute tests or install/build dependencies inside the child. Use only the configured executor; additional provider APIs and publishing are outside scope. A reviewable proposal will be curated from this run after the supervisor validates it. Stop at the first structured outcome or review boundary.",
+    "mutation_budget": [
+      "policy_text"
+    ],
+    "run_authority": [],
+    "stop_conditions": [
+      "first_structured_outcome",
+      "review_boundary_reached"
+    ],
+    "execution_profile": "standard",
+    "execution_contract": {
+      "authority": {
+        "requested_run_authority": [],
+        "canonical_write_boundary": "forbidden",
+        "allowed_downstream_routes": [
+          "supervisor_refinement_candidate",
+          "proposal_lane_emission"
+        ]
+      },
+      "mutation_budget": [
+        "policy_text"
+      ],
+      "stop_conditions": [
+        "first_structured_outcome",
+        "review_boundary_reached"
+      ],
+      "execution_profile": "standard"
+    }
+  },
+  "intent_lineage_link": [
+    {
+      "lineage_role": "derived_from",
+      "source_kind": "intent_layer_node",
+      "source_reference": "user_intent::write-a-proposal-through-the-supervisor-and-star"
+    },
+    {
+      "lineage_role": "normalized_from",
+      "source_kind": "runtime_artifact",
+      "source_reference": "runs/traceability-provider-operator-request.json"
+    }
+  ],
+  "runtime_bridge": {
+    "latest_packet_reference": "runs/traceability-provider-operator-request.json",
+    "bridge_state": "canonical_candidate",
+    "last_executed_run_id": "20261021T193422Z-SG-SPEC-0021-6ca26a10",
+    "last_executed_at": "2026-10-21T19:37:41.862846+00:00",
+    "last_outcome": "done",
+    "last_gate_state": "review_pending",
+    "proposal_ids": [],
+    "canonical_spec_ids": [
+      "SG-SPEC-0021"
+    ],
+    "downstream_route": "supervisor_refinement_candidate"
+  }
+}
