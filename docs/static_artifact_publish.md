@@ -98,6 +98,13 @@ should use the lowercase DocC path emitted by the plugin. Do not deploy
 `landing/` to GitHub Pages root; doing so can create navigation loops where
 documentation links return to the marketing page.
 
+DocC PR validation uses `specgraph-docc-pr-<number>` as its concurrency group.
+Different PRs cannot cancel each other's validation or a Pages publication;
+newer runs for the same PR can supersede older ones. Push and manual publishing
+runs retain the shared `github-pages` group with `cancel-in-progress: true`.
+An unrelated PR must not cause a cancelled DocC check to stand in for a completed
+validation result.
+
 The source `runs/` directory remains local and unchanged. The publish bundle is
 a redacted mirror: local absolute paths such as `/Users/...` are replaced with
 `$LOCAL_PATH` in the copied files.

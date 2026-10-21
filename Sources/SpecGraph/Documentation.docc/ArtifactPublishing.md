@@ -14,6 +14,13 @@ GitHub Pages owns the technical surface:
 
 The root page is intentionally not the product landing page.
 
+DocC PR validation uses `specgraph-docc-pr-<number>` as its concurrency group.
+Different PRs cannot cancel each other's validation or a Pages publication;
+newer runs for the same PR can supersede older ones. Push and manual publishing
+runs retain the shared `github-pages` group with `cancel-in-progress: true`.
+An unrelated PR must not cause a cancelled DocC check to stand in for a completed
+validation result.
+
 ## Static Host
 
 The specgraph.tech static host owns product-facing landing content and generated
