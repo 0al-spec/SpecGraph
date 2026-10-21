@@ -58,7 +58,7 @@ liveness remains counted because `closed_world = false`.
 
 After successful `Python CI`, the PR workflow compares the current base and head
 Git trees using SpecificationMetrics pinned to commit
-`4e23ec78d773bee356d3515ab5f258b07228d706`. The trusted counter parses source
+`4650728d33d79e75e1eaa2470ec26ec9b0338e5a`. The trusted counter parses source
 data and does not execute PR-authored code. One informational comment reports
 S, U, S/U, dead and unknown Specifications, and supplementary Python SLOC,
 Cyclomatic Complexity (CC), Cognitive Complexity (Cog), and clone deltas.
@@ -92,5 +92,5 @@ SpecGraph `b86895c9`, S changes 100 to 106, U changes 10,093 to 10,073, and unkn
 liveness changes 1 to 0. This is an analyzer correction, not a refactoring gain.
 Preserve prior artifacts and start a new contract baseline; normal comparison
 rejects different collection contracts. The upstream
-[inheritance audit](https://github.com/SoundBlaster/SpecificationMetrics/blob/4e23ec78d773bee356d3515ab5f258b07228d706/docs/python-inheritance-counting-audit.md)
+[inheritance audit](https://github.com/SoundBlaster/SpecificationMetrics/blob/4650728d33d79e75e1eaa2470ec26ec9b0338e5a/docs/python-inheritance-counting-audit.md)
 records the source snapshot, supported subset and regression coverage.
