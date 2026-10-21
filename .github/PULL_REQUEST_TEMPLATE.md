@@ -25,6 +25,12 @@ Proposal-ID:
 Spec-Impact: behavior | schema | lifecycle | tooling | docs-only | no-impact
 Spec-Rationale:
 
+For added/removed/modified Intent Atoms, link the source-bound decision review
+record (see `docs/intent_decision_review.md`). This field is optional when no
+atoms change; unresolved interpretations must remain `needs_review`.
+
+Intent-Decision-Review:
+
 ## Validation
 - [ ] Tests added/updated for changed behavior
 - [ ] Local checks passed

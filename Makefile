@@ -618,6 +618,10 @@ SPEC_EVIDENCE_HEAD_REF ?= HEAD
 spec-evidence-gate:
 	@$(PYTHON) tools/spec_evidence_gate.py --base-ref "$(SPEC_EVIDENCE_BASE_REF)" --head-ref "$(SPEC_EVIDENCE_HEAD_REF)"
 
+.PHONY: intent-decision-review
+intent-decision-review:
+	@$(PYTHON) tools/intent_decision_review_gate.py --base-ref "$(SPEC_EVIDENCE_BASE_REF)" --head-ref "$(SPEC_EVIDENCE_HEAD_REF)" $(INTENT_DECISION_REVIEW_ARGS)
+
 .PHONY: architecture-style
 architecture-style:
 	@$(PYTHON) tools/validate_architecture_style.py

@@ -1,6 +1,25 @@
 {
   "groups": [
     {
+      "id": "intent-decision-review",
+      "description": "Source-bound intent decision coverage remains separate from semantic approval.",
+      "docs": [
+        "docs/intent_decision_review.md",
+        "CONTRIBUTING.md",
+        "AGENTS.md"
+      ],
+      "docc": [
+        "Sources/SpecGraph/Documentation.docc/ProposalsAndRuntime.md"
+      ],
+      "required_terms": [
+        "specgraph.intent-decision-review/v1",
+        "make intent-decision-review",
+        "Intent-Decision-Review:",
+        "needs_review",
+        "structural"
+      ]
+    },
+    {
       "id": "publication-delivery-pilot",
       "description": "Lightweight publication signal profile and operational limits.",
       "docs": ["docs/publication_delivery_pilot.md"],

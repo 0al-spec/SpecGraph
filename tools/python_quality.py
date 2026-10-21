@@ -1,3 +1,4 @@
+import os
 import subprocess
 import sys
 
@@ -23,6 +24,17 @@ def main() -> int:
         exit_code = run_step(step)
         if exit_code != 0:
             return exit_code
+    if os.environ.get("GITHUB_EVENT_NAME") == "pull_request":
+        # Existing blocking CI job installs project dependencies and fetches the
+        # full history. The event supplies exact revisions and the full PR body.
+        return run_step(
+            [
+                sys.executable,
+                "tools/intent_decision_review_gate.py",
+                "--event-path",
+                os.environ.get("GITHUB_EVENT_PATH", ""),
+            ]
+        )
     return 0
 
 
