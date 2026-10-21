@@ -63,6 +63,15 @@ is used during collection and when joining retained evidence. Parsing XML/JSON,
 reading files, invoking pytest and projecting report fields stay in the adapter.
 The source identity includes every extracted policy/context module.
 
+Both publication producers obtain their native execution identity through
+`publication_evidence.execution_context.PublicationExecutionContext`, a frozen
+snapshot of an explicitly supplied environment mapping. Its projections retain
+the existing four-field test provenance and six-field HTTP execution context.
+This is shared adapter mechanics; it does not determine evidence admissibility,
+infer a missing revision or change the policies above. The HTTP verifier retains
+its standard-library-only import path. The context module is included in the
+existing publication source digest inventory.
+
 This refinement also closes two identity gaps: test reports must name the same
 repository, and a local projection cannot reuse an HTTP report for another
 recorded revision. A change only to the working-tree clean/dirty flag is
