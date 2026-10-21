@@ -34,6 +34,14 @@ It projects the existing report shapes without inferring revision identity or
 changing evidence policies. This shared adapter module remains standard-library
 only and participates in the publication source digest inventory.
 
+JSON object I/O is shared through `tools/artifact_json.py` with the active-candidate
+and intake-clarification tools. Existing facades preserve argument order,
+non-object diagnostics and exception types. Reports retain UTF-8 encoding, ASCII
+escaping, sorted keys, two-space indentation and a trailing newline; the HTTP
+verifier retains its separate stdout summary. Publication source digests include
+the shared module. Artifact-specific validation stays in existing adapters and
+policies.
+
 The verifier supports direct CLI and isolated file-based imports. A subprocess
 regression checks this without site-packages or inherited Python paths, and
 ensures bootstrap restores the caller's import path. Run the exact bounded

@@ -23,6 +23,7 @@ from typing import Any
 _TOOLS_DIR = str(Path(__file__).resolve().parent)
 sys.path.insert(0, _TOOLS_DIR)
 try:
+    from artifact_json import write_json_object
     from publication_evidence.execution_context import PublicationExecutionContext
 finally:
     sys.path.remove(_TOOLS_DIR)
@@ -234,8 +235,7 @@ def verify_remote_bundle(
 
 
 def _write_report(report: dict[str, Any], output: Path) -> None:
-    output.parent.mkdir(parents=True, exist_ok=True)
-    output.write_text(json.dumps(report, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+    write_json_object(output, report)
     print(
         json.dumps(
             {

@@ -72,6 +72,14 @@ infer a missing revision or change the policies above. The HTTP verifier retains
 its standard-library-only import path. The context module is included in the
 existing publication source digest inventory.
 
+JSON object reading and report writing are shared through `tools/artifact_json.py`
+with the active-candidate and intake-clarification tools. The public facades keep
+their argument order, non-object diagnostics and exception types. Reports retain
+UTF-8 encoding, ASCII escaping, sorted keys, two-space indentation and a trailing
+newline; the HTTP verifier also retains its separate stdout summary. The shared
+module is included in publication source digests. Artifact-specific validation
+and evidence admissibility remain in their existing adapters and policies.
+
 This refinement also closes two identity gaps: test reports must name the same
 repository, and a local projection cannot reuse an HTTP report for another
 recorded revision. A change only to the working-tree clean/dirty flag is
