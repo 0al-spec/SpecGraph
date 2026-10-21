@@ -2,7 +2,7 @@ id: SG-SPEC-0071
 title: SpecGraph - Public Bundle Delivery Evidence Pilot
 kind: spec
 created_at: '2026-10-19T13:56:00Z'
-updated_at: '2026-10-21T12:28:00Z'
+updated_at: '2026-10-21T14:52:59Z'
 status: specified
 maturity: 0.35
 depends_on: []
@@ -75,11 +75,13 @@ atoms:
     verifiable_by:
     - tests/test_publication_evidence_policies.py::test_test_observation_identity
   - id: PE-SNAPSHOT
-    statement: A passing test run cannot confirm source files that changed during its execution; unrelated
-      working-tree state is diagnostic only.
+    statement: A passing test run cannot confirm source files that changed during its execution; the relevant
+      source snapshot includes shared JSON I/O used by publication producers. Unrelated working-tree state
+      is diagnostic only.
     verifiable_by:
     - tests/test_publication_delivery_evidence.py::test_changed_source_during_tests_cannot_report_success
     - tests/test_publication_delivery_evidence.py::test_unrelated_working_tree_change_preserves_source_evidence
+    - tests/test_publication_delivery_evidence.py::test_shared_json_change_invalidates_publication_source_snapshot
   - id: PE-HTTP
     statement: Publication evidence must match the expected bundle, HTTPS origin, complete payload count,
       source revision and CI run attempt.

@@ -1,0 +1,39 @@
+{
+  "artifact_kind": "specgraph.intent-decision-review/v1",
+  "base_sha": "d2918dc492243a80f5652cbbd2e2d832f89ade20",
+  "decisions": [
+    {
+      "change_sha256": "d904acfdfe4de4e5588e3baf25bdc70f18120b841bdc1a3841660a69593ff812",
+      "disposition": "reuse_specification",
+      "implementation_refs": [
+        {
+          "path": "tools/publication_delivery_evidence.py",
+          "symbol": "source_identity"
+        },
+        {
+          "path": "tools/publication_delivery_evidence.py",
+          "symbol": "run_tests"
+        },
+        {
+          "path": "tools/publication_delivery_evidence.py",
+          "symbol": "delivery_report"
+        },
+        {
+          "path": "tests/test_publication_delivery_evidence.py",
+          "symbol": "test_shared_json_change_invalidates_publication_source_snapshot"
+        }
+      ],
+      "rationale": "source_identity already includes tools/artifact_json.py in the relevant source inventory. run_tests applies the existing SOURCE_SNAPSHOT_SPEC; retained test joins reuse it through TEST_OBSERVATION_SPEC. The existing shared-JSON regression checks snapshot invalidation. This clarifies that source boundary and reuses the existing rule without changing admissibility.",
+      "specification_refs": [
+        {
+          "path": "tools/publication_evidence/snapshot_spec.py",
+          "symbol": "SOURCE_SNAPSHOT_SPEC"
+        }
+      ]
+    }
+  ],
+  "intent_delta_sha256": "048b46f8932dfa4ca046e602cbe6515a6f7c3905831cd0c403018e4ac846d14b",
+  "pr_body_sha256": "c4377e08e080c1670d5419d73c339efc3d777f5328b5758ccb0e601c4b4c4519",
+  "schema_version": 1,
+  "source_scope_sha256": "a46fbe3b2c4c79c0dead85e93658b95ade8372449e453404a123c7222070bf6d"
+}
