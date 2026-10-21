@@ -39,8 +39,9 @@ and intake-clarification tools. Existing facades preserve argument order,
 non-object diagnostics and exception types. Reports retain UTF-8 encoding, ASCII
 escaping, sorted keys, two-space indentation and a trailing newline; the HTTP
 verifier retains its separate stdout summary. Publication source digests include
-the shared module. Artifact-specific validation stays in existing adapters and
-policies.
+the shared module as explicitly required by `PE-SNAPSHOT`, whose `verifiable_by`
+bindings include `test_shared_json_change_invalidates_publication_source_snapshot`.
+Artifact-specific validation stays in existing adapters and policies.
 
 The verifier supports direct CLI and isolated file-based imports. A subprocess
 regression checks this without site-packages or inherited Python paths, and

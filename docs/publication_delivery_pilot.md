@@ -77,8 +77,10 @@ with the active-candidate and intake-clarification tools. The public facades kee
 their argument order, non-object diagnostics and exception types. Reports retain
 UTF-8 encoding, ASCII escaping, sorted keys, two-space indentation and a trailing
 newline; the HTTP verifier also retains its separate stdout summary. The shared
-module is included in publication source digests. Artifact-specific validation
-and evidence admissibility remain in their existing adapters and policies.
+module is explicitly included by `PE-SNAPSHOT`, with
+`test_shared_json_change_invalidates_publication_source_snapshot` as an additional
+`verifiable_by` regression binding. Artifact-specific validation and evidence
+admissibility remain in their existing adapters and policies.
 
 This refinement also closes two identity gaps: test reports must name the same
 repository, and a local projection cannot reuse an HTTP report for another
