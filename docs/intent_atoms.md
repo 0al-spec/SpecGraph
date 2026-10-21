@@ -122,7 +122,7 @@ manifest uses `closed_world = false`.
 After successful `Python CI`, the SpecificationMetrics PR workflow fetches the
 PR's current base and head as Git objects, overlays the same trusted counting
 contract onto both disposable source trees, and runs the CLI pinned to commit
-`c4d95427875d28870085c847852f7357859d164f`. It does not run PR-authored code.
+`4650728d33d79e75e1eaa2470ec26ec9b0338e5a`. It does not run PR-authored code.
 The comment updates one marker-owned PR comment with S, U, S/U, liveness counts,
 and supplementary Python SLOC, CC, Cog, and cross-language clone deltas from
 Radon 6.0.1, complexipy 8.0.1, and jscpd 5.0.11. The source cohort comes from
@@ -151,3 +151,13 @@ their collection and supplementary statuses, and diagnostic entries. A failed
 collection does not publish a new success summary; an existing PR comment can
 still describe an older revision, so compare its revision IDs. Raw reports from
 older runs cannot be recovered retrospectively if they were not retained.
+
+The pinned analyzer uses counting rule v9: it recognizes static module-level
+Python Specification subclasses transitively and treats resolved class bases
+as runtime uses. This corrects the native BDD family omitted by v8. On unchanged
+SpecGraph `b86895c9`, the correction changes S from 100 to 106, U from 10,093 to
+10,073, and unknown liveness from 1 to 0. These are analyzer corrections, not
+application refactoring gains. Preserve previous artifacts and start a new
+contract baseline; normal collection comparison rejects different contracts.
+See the [inheritance audit](https://github.com/SoundBlaster/SpecificationMetrics/blob/4650728d33d79e75e1eaa2470ec26ec9b0338e5a/docs/python-inheritance-counting-audit.md)
+for the exact snapshot, supported ancestry subset and regression coverage.
