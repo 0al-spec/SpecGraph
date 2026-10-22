@@ -77,3 +77,10 @@ It should not:
   tests;
 - confuse model API routing with worktree-mutating agent execution;
 - require SpecSpace to read raw executor logs.
+
+## Zeusus second-pass feedback intake (2026-10-22)
+
+Source-bound classification and proposed follow-ups are recorded in the
+[triage](../../reviews/zeusus_second_pass_feedback_triage_20261022.md).
+This is local feedback review and documentation only; no new supervisor run,
+canonical adoption, runtime validator or trusted evidence is claimed.

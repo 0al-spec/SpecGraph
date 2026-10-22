@@ -781,3 +781,23 @@ cannot serve as issuer; missing signer does not fabricate a receipt; unavailable
 publication preserves the last snapshot as historical; a new CLI/image pin
 requires a fresh bounded run; an unsigned or merely matched observation cannot
 be presented as admitted. This documentation slice has **no runtime realization**.
+
+## Zeusus second-pass authoring validation feedback (2026-10-22)
+
+The [source-bound triage](../reviews/zeusus_second_pass_feedback_triage_20261022.md)
+routes ZST-02 and ZST-04 to the explicit contract-pack follow-up. At tooling pin
+`c46d58ad`, a candidate with eight green general validators covered 10/15 local
+rules, and a later 15/15 mapping still omitted requested identity attributes.
+`explicit_node_observability_v1` checks local obligation/scenario references and
+attribute-list shape; it does not enforce custom mapping coverage or a common
+identity profile. This parser is unchanged since the previous `92ee71cf` pilot.
+
+Proposed order: prepare an explicitly selected identity profile checked per
+obligation, then declared full/partial rule scope plus exact mapping/coverage
+checks. Wire the chosen checks into authoring/review capture as well as contract
+projection before claiming prevention. Preserve legacy behavior without opt-in;
+conditional harness tags must not become fabricated runtime scenario IDs.
+
+This is documentation-only triage, not implementation, canonical contract
+adoption, accepted execution evidence or a change to admission. Product-side
+corrections and 0226's publication-only provider do not close these engine gaps.

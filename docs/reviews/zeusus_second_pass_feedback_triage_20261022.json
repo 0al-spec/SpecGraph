@@ -1,0 +1,603 @@
+{
+  "artifact_kind": "specgraph_external_feedback_triage",
+  "canonical_mutations_allowed": false,
+  "entries": [
+    {
+      "disposition": "protocol_enforcement_worked_format_friction_open",
+      "id": "ZST-01",
+      "intake_entry": "20261022T201806Z-review-note-second-pass-executor-wraps-required-protocol-markers-in-markdown.md",
+      "intake_sha256": "1afe91f5e440432afa07d4d08ad9a844711f0691c8bb558f829bd403ddd65676",
+      "owner": "specgraph",
+      "prevention_implementation": "not_implemented_in_this_change",
+      "primary_proposal_id": "0056",
+      "priority": "P3",
+      "proposal_link_kind": "proposed_followup",
+      "related_proposal_ids": [
+        "0048"
+      ],
+      "root_cause_class": "process_rule_gap",
+      "triage_status": "triaged"
+    },
+    {
+      "disposition": "engine_gap_open_product_workaround_corrected",
+      "id": "ZST-02",
+      "intake_entry": "20261022T202430Z-review-note-second-pass-durability-mapping-completeness-needs-explicit-audit.md",
+      "intake_sha256": "627fec636aa3fb071388c40bdea31eaf459b130fa82926100a84a985bd080675",
+      "owner": "specgraph",
+      "prevention_implementation": "not_implemented_in_this_change",
+      "primary_proposal_id": "0047",
+      "priority": "P2",
+      "proposal_link_kind": "proposed_followup",
+      "related_proposal_ids": [
+        "0226",
+        "0223"
+      ],
+      "root_cause_class": "artifact_contract_validation_gap",
+      "triage_status": "triaged"
+    },
+    {
+      "disposition": "operator_error_corrected_native_continuation_contract_missing",
+      "id": "ZST-03",
+      "intake_entry": "20261022T202455Z-review-note-authoring-seed-metadata-filtering-must-preserve-provenance.md",
+      "intake_sha256": "21da6b285dbab05688f8fe3d2b8f05894daae28c450d690ba9a9609f938bf170",
+      "owner": "specgraph",
+      "prevention_implementation": "not_implemented_in_this_change",
+      "primary_proposal_id": "0054",
+      "priority": "P3",
+      "proposal_link_kind": "related_scope_requires_contract",
+      "related_proposal_ids": [
+        "0193"
+      ],
+      "root_cause_class": "process_rule_gap",
+      "triage_status": "triaged"
+    },
+    {
+      "disposition": "engine_gap_open_product_workaround_corrected",
+      "id": "ZST-04",
+      "intake_entry": "20261022T202855Z-review-note-second-pass-still-needs-strict-identity-context-validation-per-obligation.md",
+      "intake_sha256": "ffc56a8fe1cfe33150086cdd7984f3f790d175acdfa00d94236751f55bb66835",
+      "owner": "specgraph",
+      "prevention_implementation": "not_implemented_in_this_change",
+      "primary_proposal_id": "0047",
+      "priority": "P2",
+      "proposal_link_kind": "proposed_followup",
+      "related_proposal_ids": [
+        "0224"
+      ],
+      "root_cause_class": "artifact_contract_validation_gap",
+      "triage_status": "triaged"
+    }
+  ],
+  "evidence_admission_allowed": false,
+  "final_packet_observations": [
+    {
+      "acceptance_evidence_bdd_rules_provenance_relations_equal_prior": true,
+      "all_obligations_have_required_names": true,
+      "coverage": {
+        "expected_rule_count": 0,
+        "mapped_rule_count": 0,
+        "mapping_location": "/specification/materialization/rule_to_obligation_mapping",
+        "missing_rules": [],
+        "unknown_rules": []
+      },
+      "obligation_count": 2,
+      "prior_snapshot_sha256": "0888edf709536c543454b5ace1a5ddfb0417f15dfac95067c2b6b37de95ee245",
+      "reported_effective_gate": "review_pending",
+      "scenario_count": 10,
+      "snapshot_sha256": "691055c708b9c599433fdb51aefe3eeab6d9e9d4c1157e004db4be15cbb87de8",
+      "source_gate_state": null,
+      "spec_id": "ZEU-SPEC-0018"
+    },
+    {
+      "acceptance_evidence_bdd_rules_provenance_relations_equal_prior": true,
+      "all_obligations_have_required_names": true,
+      "coverage": {
+        "expected_rule_count": 11,
+        "mapped_rule_count": 11,
+        "mapping_location": "/specification/materialization/rule_to_obligation_mapping",
+        "missing_rules": [],
+        "unknown_rules": []
+      },
+      "obligation_count": 11,
+      "prior_snapshot_sha256": "e9ea30b19e210a8d68a772db7fb9bc67b1a2bb0e5914d5ac2ebb8dac6cc0f962",
+      "reported_effective_gate": "review_pending",
+      "scenario_count": 26,
+      "snapshot_sha256": "2172890dad7ab604941b48d2648ac683d0a4f67a263aeff01936332bfedfcdc9",
+      "source_gate_state": null,
+      "spec_id": "ZEU-SPEC-0019"
+    },
+    {
+      "acceptance_evidence_bdd_rules_provenance_relations_equal_prior": true,
+      "all_obligations_have_required_names": true,
+      "coverage": {
+        "expected_rule_count": 8,
+        "mapped_rule_count": 8,
+        "mapping_location": "/specification/materialization/rule_to_obligation_mapping",
+        "missing_rules": [],
+        "unknown_rules": []
+      },
+      "obligation_count": 8,
+      "prior_snapshot_sha256": "c434b30ae66aef7053e562ca7d8cbe044bdead240bae6f0e4ff82ec14b5e843b",
+      "reported_effective_gate": "review_pending",
+      "scenario_count": 12,
+      "snapshot_sha256": "67de244abd0f8169e24b91a548d4e8f0204b154f217969d4e7779742f16d583f",
+      "source_gate_state": "review_pending",
+      "spec_id": "ZEU-SPEC-0020"
+    },
+    {
+      "acceptance_evidence_bdd_rules_provenance_relations_equal_prior": true,
+      "all_obligations_have_required_names": true,
+      "coverage": {
+        "expected_rule_count": 10,
+        "mapped_rule_count": 10,
+        "mapping_location": "/specification/composition/rule_to_obligation_mapping",
+        "missing_rules": [],
+        "unknown_rules": []
+      },
+      "obligation_count": 5,
+      "prior_snapshot_sha256": "53fcc036a875dc0e41962ff66a45fe44b9992db20c28d455d0c7fcf352e196ee",
+      "reported_effective_gate": "review_pending",
+      "scenario_count": 14,
+      "snapshot_sha256": "784d2eb157392bce1d23a4aaa2e6aec2cbe4f8f7776ed918cef0e759e57eace4",
+      "source_gate_state": null,
+      "spec_id": "ZEU-SPEC-0021"
+    },
+    {
+      "acceptance_evidence_bdd_rules_provenance_relations_equal_prior": true,
+      "all_obligations_have_required_names": true,
+      "coverage": {
+        "expected_rule_count": 5,
+        "mapped_rule_count": 5,
+        "mapping_location": "/specification/materialization/rule_to_obligation_mapping",
+        "missing_rules": [],
+        "unknown_rules": []
+      },
+      "obligation_count": 5,
+      "prior_snapshot_sha256": "c47e0ffa4ce4f0a968656c91d720c735cd25f71496b1722081171a6c2d238d18",
+      "reported_effective_gate": "review_pending",
+      "scenario_count": 14,
+      "snapshot_sha256": "a1088cf2623421ffd3354a95d1ca22fa5fae2b714dfbee182da2a9a7e68ea043",
+      "source_gate_state": null,
+      "spec_id": "ZEU-SPEC-0022"
+    },
+    {
+      "acceptance_evidence_bdd_rules_provenance_relations_equal_prior": true,
+      "all_obligations_have_required_names": true,
+      "coverage": {
+        "expected_rule_count": 15,
+        "mapped_rule_count": 15,
+        "mapping_location": "/specification/materialization/rule_to_obligation_mapping",
+        "missing_rules": [],
+        "unknown_rules": []
+      },
+      "obligation_count": 6,
+      "prior_snapshot_sha256": "4b77adf1d9354a7719aa7fcc7763bd1338867dd7c7e62ddfcf498c0e256e4af4",
+      "reported_effective_gate": "review_pending",
+      "scenario_count": 24,
+      "snapshot_sha256": "7be52ceab0b82053e9775e5b7fc14601faabb1d761af01a9304edeb9d9a50470",
+      "source_gate_state": "review_pending",
+      "spec_id": "ZEU-SPEC-0023"
+    }
+  ],
+  "observed_on": "2026-10-22",
+  "product_adopted": false,
+  "receipt_hashes_verified": 4,
+  "required_attribute_names": [
+    "specification_id",
+    "rule_id",
+    "component_id",
+    "implementation_id",
+    "scenario_id_if_tagged"
+  ],
+  "run_observations": [
+    {
+      "accepted_canonical_diff": false,
+      "child_exit_code": 0,
+      "completion_status": "failed",
+      "gate_state": "blocked",
+      "marker_lines": [
+        "**RUN_OUTCOME: done**",
+        "**BLOCKER: none**"
+      ],
+      "outcome": "blocked",
+      "run_id": "20261022T201612Z-ZEU-SPEC-0020-91f5daa9",
+      "spec_id": "ZEU-SPEC-0020",
+      "validation_errors": [
+        "Missing executor machine protocol marker RUN_OUTCOME",
+        "Missing executor machine protocol marker BLOCKER"
+      ],
+      "validator_results": {
+        "allowed_paths": true,
+        "atomicity": true,
+        "executor_environment": true,
+        "outputs": true,
+        "reconciliation": true,
+        "refinement_acceptance": true,
+        "runtime_artifacts": true,
+        "transition": true
+      }
+    },
+    {
+      "accepted_canonical_diff": false,
+      "child_exit_code": 0,
+      "completion_status": "ok",
+      "expected_rule_count": 15,
+      "gate_state": "review_pending",
+      "identity_gaps": [
+        {
+          "missing_attributes": [
+            "rule_id"
+          ],
+          "obligation_id": "history_composition_policy_observation"
+        },
+        {
+          "missing_attributes": [
+            "component_id",
+            "implementation_id",
+            "rule_id",
+            "scenario_id_if_tagged",
+            "specification_id"
+          ],
+          "obligation_id": "history_request_final_typed_result"
+        },
+        {
+          "missing_attributes": [
+            "component_id",
+            "implementation_id",
+            "rule_id",
+            "scenario_id_if_tagged",
+            "specification_id"
+          ],
+          "obligation_id": "history_save_validation_result"
+        },
+        {
+          "missing_attributes": [
+            "component_id",
+            "implementation_id",
+            "rule_id",
+            "scenario_id_if_tagged",
+            "specification_id"
+          ],
+          "obligation_id": "history_replay_boundary_verification"
+        },
+        {
+          "missing_attributes": [
+            "rule_id",
+            "scenario_id_if_tagged",
+            "specification_id"
+          ],
+          "obligation_id": "history_root_entry_eligibility"
+        },
+        {
+          "missing_attributes": [
+            "component_id",
+            "implementation_id",
+            "rule_id",
+            "scenario_id_if_tagged",
+            "specification_id"
+          ],
+          "obligation_id": "history_retention_disposal"
+        }
+      ],
+      "mapped_rule_count": 10,
+      "mapping_location": "/specification/materialization/rule_to_obligation_mapping",
+      "missing_rules": [
+        "DUR-BOUNDS",
+        "DUR-FORMAT",
+        "DUR-IDENTITY",
+        "DUR-MIGRATION",
+        "DUR-RESET"
+      ],
+      "outcome": "done",
+      "run_id": "20261022T202045Z-ZEU-SPEC-0023-3a0616f9",
+      "spec_id": "ZEU-SPEC-0023",
+      "unknown_rules": [],
+      "validation_errors": [],
+      "validator_results": {
+        "allowed_paths": true,
+        "atomicity": true,
+        "executor_environment": true,
+        "outputs": true,
+        "reconciliation": true,
+        "refinement_acceptance": true,
+        "runtime_artifacts": true,
+        "transition": true
+      }
+    },
+    {
+      "accepted_canonical_diff": false,
+      "child_exit_code": 0,
+      "completion_status": "ok",
+      "expected_rule_count": 8,
+      "gate_state": "review_pending",
+      "identity_gaps": [
+        {
+          "missing_attributes": [
+            "implementation_id"
+          ],
+          "obligation_id": "hap_typed_forward_plan"
+        },
+        {
+          "missing_attributes": [
+            "implementation_id"
+          ],
+          "obligation_id": "hap_reverse_leaf_inverse"
+        },
+        {
+          "missing_attributes": [
+            "implementation_id"
+          ],
+          "obligation_id": "hap_transaction_preflight_and_commit"
+        },
+        {
+          "missing_attributes": [
+            "implementation_id"
+          ],
+          "obligation_id": "hap_structural_identity"
+        },
+        {
+          "missing_attributes": [
+            "implementation_id"
+          ],
+          "obligation_id": "hap_complementary_requirements"
+        },
+        {
+          "missing_attributes": [
+            "implementation_id"
+          ],
+          "obligation_id": "hap_structural_conflicts"
+        },
+        {
+          "missing_attributes": [
+            "implementation_id"
+          ],
+          "obligation_id": "hap_monotonic_allocator"
+        },
+        {
+          "missing_attributes": [
+            "implementation_id"
+          ],
+          "obligation_id": "hap_successful_forward_inverse_generation"
+        }
+      ],
+      "mapped_rule_count": 8,
+      "mapping_location": "/specification/materialization/rule_to_obligation_mapping",
+      "missing_rules": [],
+      "outcome": "done",
+      "run_id": "20261022T201806Z-ZEU-SPEC-0020-b7f23348",
+      "spec_id": "ZEU-SPEC-0020",
+      "unknown_rules": [],
+      "validation_errors": [],
+      "validator_results": {
+        "allowed_paths": true,
+        "atomicity": true,
+        "executor_environment": true,
+        "outputs": true,
+        "reconciliation": true,
+        "refinement_acceptance": true,
+        "runtime_artifacts": true,
+        "transition": true
+      }
+    },
+    {
+      "accepted_canonical_diff": false,
+      "child_exit_code": 0,
+      "completion_status": "ok",
+      "expected_rule_count": 15,
+      "gate_state": "review_pending",
+      "identity_gaps": [
+        {
+          "missing_attributes": [
+            "rule_id"
+          ],
+          "obligation_id": "history_composition_policy_observation"
+        },
+        {
+          "missing_attributes": [
+            "component_id",
+            "implementation_id",
+            "rule_id",
+            "scenario_id_if_tagged",
+            "specification_id"
+          ],
+          "obligation_id": "history_request_final_typed_result"
+        },
+        {
+          "missing_attributes": [
+            "component_id",
+            "implementation_id",
+            "rule_id",
+            "scenario_id_if_tagged",
+            "specification_id"
+          ],
+          "obligation_id": "history_save_validation_result"
+        },
+        {
+          "missing_attributes": [
+            "component_id",
+            "implementation_id",
+            "rule_id",
+            "scenario_id_if_tagged",
+            "specification_id"
+          ],
+          "obligation_id": "history_replay_boundary_verification"
+        },
+        {
+          "missing_attributes": [
+            "rule_id",
+            "scenario_id_if_tagged",
+            "specification_id"
+          ],
+          "obligation_id": "history_root_entry_eligibility"
+        },
+        {
+          "missing_attributes": [
+            "component_id",
+            "implementation_id",
+            "rule_id",
+            "scenario_id_if_tagged",
+            "specification_id"
+          ],
+          "obligation_id": "history_retention_disposal"
+        }
+      ],
+      "mapped_rule_count": 15,
+      "mapping_location": "/specification/materialization/rule_to_obligation_mapping",
+      "missing_rules": [],
+      "outcome": "done",
+      "run_id": "20261022T202429Z-ZEU-SPEC-0023-f364250a",
+      "spec_id": "ZEU-SPEC-0023",
+      "unknown_rules": [],
+      "validation_errors": [],
+      "validator_results": {
+        "allowed_paths": true,
+        "atomicity": true,
+        "executor_environment": true,
+        "outputs": true,
+        "reconciliation": true,
+        "refinement_acceptance": true,
+        "runtime_artifacts": true,
+        "transition": true
+      }
+    }
+  ],
+  "runtime_fix_implemented": false,
+  "schema_version": 1,
+  "seed_correction": {
+    "attribution": "operator_reported_manual_filter_error_corrected_before_run",
+    "commit": "e20bdc0c00938536dd9e1f43251fd19d2530d48a",
+    "native_continuation_implemented": false
+  },
+  "source_inspection": {
+    "mapping_scope_checked_by_parser": false,
+    "parser_path": "tools/implementation_contract_pack.py",
+    "parser_sha256": "0e81f0c350b53f553e6c97b4cead4d6e710caee2c7efa04fb01cd5e320a5c19a",
+    "required_identity_set_checked_by_parser": false,
+    "same_bytes_at_prior_revision": "92ee71cf"
+  },
+  "source_manifest": [
+    {
+      "namespace": "0al",
+      "path": ".0al/inbox/zeusus/20261022T201806Z-review-note-second-pass-executor-wraps-required-protocol-markers-in-markdown.md",
+      "sha256": "1afe91f5e440432afa07d4d08ad9a844711f0691c8bb558f829bd403ddd65676"
+    },
+    {
+      "namespace": "0al",
+      "path": ".0al/inbox/zeusus/20261022T202430Z-review-note-second-pass-durability-mapping-completeness-needs-explicit-audit.md",
+      "sha256": "627fec636aa3fb071388c40bdea31eaf459b130fa82926100a84a985bd080675"
+    },
+    {
+      "namespace": "0al",
+      "path": ".0al/inbox/zeusus/20261022T202455Z-review-note-authoring-seed-metadata-filtering-must-preserve-provenance.md",
+      "sha256": "21da6b285dbab05688f8fe3d2b8f05894daae28c450d690ba9a9609f938bf170"
+    },
+    {
+      "namespace": "0al",
+      "path": ".0al/inbox/zeusus/20261022T202855Z-review-note-second-pass-still-needs-strict-identity-context-validation-per-obligation.md",
+      "sha256": "ffc56a8fe1cfe33150086cdd7984f3f790d175acdfa00d94236751f55bb66835"
+    },
+    {
+      "namespace": "zeusus",
+      "path": "docs/evidence/command-history-specgraph/second-pass-20261022/README.md",
+      "sha256": "f499ee088d6bfb9ecd887c2a90a2ba5ce1dadffce77de7baa4100289225f4e5e"
+    },
+    {
+      "namespace": "zeusus",
+      "path": "docs/evidence/command-history-specgraph/second-pass-20261022/feedback-receipts.json",
+      "sha256": "861f49b72878b56dc6f18e41b6187cc5319b448ccd3b50dd04c4dd3cbcdfc157"
+    },
+    {
+      "namespace": "zeusus",
+      "path": "docs/evidence/command-history-specgraph/second-pass-20261022/validation-report.json",
+      "sha256": "0ed6a6ef619b08ecf6ea1f41bae51ca22c658b2db2e0b26a462e8015dc2abdce"
+    },
+    {
+      "namespace": "zeusus",
+      "path": "docs/evidence/command-history-specgraph/second-pass-20261022/history-round2-lineage.json",
+      "sha256": "27ea45d25e6a8cc13d269fe70a497bcd1a17a66f11e82413dcdbac1abe2ecd3c"
+    },
+    {
+      "namespace": "0al",
+      "path": ".0al/inbox/zeusus/20261021T214838Z-review-note-history-mappings-need-resolved-reference-validation.md",
+      "sha256": "77ce50a09c4b82d8bcff310c5ae72858b57aceed815dfb083d1d0d4a9cad1e64"
+    },
+    {
+      "namespace": "0al",
+      "path": ".0al/inbox/zeusus/20261021T214838Z-review-note-history-authoring-omits-diagnostic-identity-context.md",
+      "sha256": "a6961a26dfde39b5b24efa215b498a44668e08ef523b79dbc14321ddea29edfc"
+    },
+    {
+      "namespace": "zeusus",
+      "path": ".specgraph-workspace/.worktrees/history-round2-20261022/runs/20261022T201612Z-ZEU-SPEC-0020-91f5daa9.json",
+      "sha256": "fe9feced6fb7892639ca8abf363f6ca5b0d274fd32c8a02579c7d941c2a0c10c"
+    },
+    {
+      "namespace": "zeusus",
+      "path": ".specgraph-workspace/.worktrees/history-round2-20261022/runs/20261022T202045Z-ZEU-SPEC-0023-3a0616f9.json",
+      "sha256": "8533e1d8aa54da59875b8c75043a157ae95cfb6b7da623110800b27e1f30a5a1"
+    },
+    {
+      "namespace": "zeusus",
+      "path": ".specgraph-workspace/.worktrees/history-round2-20261022/.worktrees/zeu-spec-0023-20261022T202045Z-e0e369a2/specs/nodes/ZEU-SPEC-0023.yaml",
+      "sha256": "0d1da61e12039bd60962c3dfcb04a6f855898fd4e56100118e88a7953040f027"
+    },
+    {
+      "namespace": "zeusus",
+      "path": ".specgraph-workspace/.worktrees/history-round2-20261022/runs/20261022T201806Z-ZEU-SPEC-0020-b7f23348.json",
+      "sha256": "5a5dcca43a7caa5b4929bd9a12b15e7028a565d85cba35f9f07f9ad1dafe128e"
+    },
+    {
+      "namespace": "zeusus",
+      "path": ".specgraph-workspace/.worktrees/history-round2-20261022/.worktrees/zeu-spec-0020-20261022T201806Z-d44b04c1/specs/nodes/ZEU-SPEC-0020.yaml",
+      "sha256": "2728fac517f1274f059cd4f2426e5d6853c942bc51d67600aa51a313aceb3674"
+    },
+    {
+      "namespace": "zeusus",
+      "path": ".specgraph-workspace/.worktrees/history-round2-20261022/runs/20261022T202429Z-ZEU-SPEC-0023-f364250a.json",
+      "sha256": "0231f4c6cdcfb581ca9a80178c224b99dbd56627ae64941d4566b7763564cdbd"
+    },
+    {
+      "namespace": "zeusus",
+      "path": ".specgraph-workspace/.worktrees/history-round2-20261022/.worktrees/zeu-spec-0023-20261022T202429Z-cb5b6438/specs/nodes/ZEU-SPEC-0023.yaml",
+      "sha256": "0a8d9b561c669e2d66a4ef688f8d7dde16485063656e8f3354920adf15c34a68"
+    },
+    {
+      "namespace": "zeusus",
+      "path": "docs/evidence/command-history-specgraph/second-pass-20261022/specs/ZEU-SPEC-0018.yaml",
+      "sha256": "691055c708b9c599433fdb51aefe3eeab6d9e9d4c1157e004db4be15cbb87de8"
+    },
+    {
+      "namespace": "zeusus",
+      "path": "docs/evidence/command-history-specgraph/second-pass-20261022/specs/ZEU-SPEC-0019.yaml",
+      "sha256": "2172890dad7ab604941b48d2648ac683d0a4f67a263aeff01936332bfedfcdc9"
+    },
+    {
+      "namespace": "zeusus",
+      "path": "docs/evidence/command-history-specgraph/second-pass-20261022/specs/ZEU-SPEC-0020.yaml",
+      "sha256": "67de244abd0f8169e24b91a548d4e8f0204b154f217969d4e7779742f16d583f"
+    },
+    {
+      "namespace": "zeusus",
+      "path": "docs/evidence/command-history-specgraph/second-pass-20261022/specs/ZEU-SPEC-0021.yaml",
+      "sha256": "784d2eb157392bce1d23a4aaa2e6aec2cbe4f8f7776ed918cef0e759e57eace4"
+    },
+    {
+      "namespace": "zeusus",
+      "path": "docs/evidence/command-history-specgraph/second-pass-20261022/specs/ZEU-SPEC-0022.yaml",
+      "sha256": "a1088cf2623421ffd3354a95d1ca22fa5fae2b714dfbee182da2a9a7e68ea043"
+    },
+    {
+      "namespace": "zeusus",
+      "path": "docs/evidence/command-history-specgraph/second-pass-20261022/specs/ZEU-SPEC-0023.yaml",
+      "sha256": "7be52ceab0b82053e9775e5b7fc14601faabb1d761af01a9304edeb9d9a50470"
+    }
+  ],
+  "tool_revision": "c46d58ad7918e992d77a854302338afc0aa72221",
+  "verification": {
+    "hosted_requests": 0,
+    "kind": "read_only_source_and_set_comparison",
+    "metric_values_modified": false,
+    "runtime_tests_executed": false,
+    "supervisor_runs_started": 0
+  }
+}

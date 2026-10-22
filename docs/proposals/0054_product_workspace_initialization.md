@@ -258,3 +258,17 @@ discover -> import preview -> handoff/proposal -> human approve -> materialize
 - SpecSpace and SpecPM responsibilities are named without implementing them.
 - Auto-import and hosted platform behavior are explicitly out of scope.
 - The proposal has a bounded source draft in `docs/archive/proposal_sources/`.
+
+## Candidate-continuation feedback boundary (2026-10-22)
+
+The [Zeusus second-pass triage](../reviews/zeusus_second_pass_feedback_triage_20261022.md)
+links ZST-03 here as a related follow-up, not an existing initialization feature.
+A manual authoring-seed whitelist briefly dropped provenance; the operator
+restored it before refinement. The incident is not an asserted SpecGraph data-loss bug.
+
+A native continuation path for an unadopted YAML candidate still needs a bounded
+contract: preserve source digests, provenance, semantic fields and the original
+pending candidate; distinguish a fresh authoring copy and list permitted
+operational resets. Existing workspace initialization and 0193 intake-session
+continuation do not implement that path. Clearing metadata grants no approval
+or overwrite authority. This documentation-only triage adds no seed transform.
