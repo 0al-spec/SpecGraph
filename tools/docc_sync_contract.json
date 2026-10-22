@@ -1,6 +1,18 @@
 {
   "groups": [
     {
+      "id": "evidence-provider-snapshot",
+      "description": "Explicit declaration providers retain immutable source-bound facts without execution or admission.",
+      "docs": ["docs/evidence_provider.md"],
+      "docc": ["Sources/SpecGraph/Documentation.docc/EvidenceProvider.md"],
+      "required_terms": [
+        "EvidenceProvider", "EvidenceRegistry", "TraceSnapshot", "EvidenceRequest",
+        "specgraph.trace-snapshot/declarations-v1", "publication.declarations",
+        "RESOLUTION_COMPLETENESS_SPEC", "FACT_AGREEMENT_SPEC",
+        "observed_subject_count", "content_sha256", "not_collected"
+      ]
+    },
+    {
       "id": "publication-exact-links",
       "description": "Pinned source resolution remains separate from execution and readiness.",
       "docs": ["docs/publication_trace_links.md"],

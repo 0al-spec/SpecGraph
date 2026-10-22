@@ -129,3 +129,18 @@ records 13 unique atoms and 55 resolved link occurrences at one Git revision.
 It establishes direct declaration resolution, not fulfilled intent, runtime
 confirmation or canonical approval. The SG-SPEC-0021 semantic candidate remains
 separate and unapplied.
+
+## Declaration provider authorized on 2026-10-22
+
+The operator requested green-check/review merges of PRs 784 and 785, followed
+by EvidenceProvider work. PR 785 merged as `58bbf297`; after preserving both
+realization notes, current CI and a successful replacement HyperReview, PR 784
+merged as `24004833`. The failed automatic gate was released by the review
+service after replacement completion, without a merge bypass.
+
+Slice C1 implements an explicit in-process provider Protocol/registry and a
+declaration-only immutable TraceSnapshot on that merged base. Publication source
+collection happens once. The existing diagnostic remains compatible; metric
+qualification, execution artifacts, viewer migration and the SG-SPEC-0021
+semantic candidate remain separate. See [EvidenceProvider](../../evidence_provider.md)
+and the [pinned observation](../../evidence/0226_publication_provider_snapshot.json).
