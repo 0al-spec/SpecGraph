@@ -2,6 +2,15 @@
 
 ## Proposed opt-in identity declarations
 
+The source/requirement review packet at
+`docs/reviews/0047_authored_traceability/README.md` retains addressability and
+delivery-chain intent separately from six proposed local requirements and seven
+engineering choices. It maps all sixteen acceptance cases and includes native
+pre-canonical intent captures. The attempted refinement failed before model
+execution; the corrected candidate is assistant-authored and review pending.
+Canonical Intent -> Requirement reachability remains unresolved; SG-SPEC-0020
+is boundary context, not the derivation of the exact profile vocabulary.
+
 Proposal `0047` now includes `observability_identity_declarations_v1`,
 **contract preparation only**, with runtime realization
 `deferred_until_canonicalized`. See repository

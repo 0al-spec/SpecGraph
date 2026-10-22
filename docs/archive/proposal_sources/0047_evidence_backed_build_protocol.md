@@ -1,5 +1,23 @@
 # Evidence-Backed Build Protocol Source Draft
 
+## Intent derivation follow-up — 2026-10-23
+
+After merging the profile preparation, the operator asked: "Из какого intent
+происходят эти контракты?" The author identified retained addressability and
+delivery-chain intent, but acknowledged that feedback/proposal links and the
+generic SG-SPEC-0020 citation did not establish a canonical requirement path.
+The operator agreed with preparing that derivation. This is consent to prepare
+review material, not a separate attestation of every proposed requirement or
+canonical adoption.
+
+`docs/reviews/0047_authored_traceability/intent.json` preserves exact conversation
+quotes separately from interpretations and pins retained product authoring
+inputs. The adjacent candidate, lineage and evidence record the native intent
+bridge attempt, its executor failure and the corrected manual review draft.
+The original seed's atomicity/evidence errors are author preparation errors,
+not product defects. No successful refinement, canonical closure or runtime
+activation is claimed by this source amendment.
+
 ## Identity profile preparation source — 2026-10-23
 
 After the source-bound second-pass triage, the operator accepted preparation of

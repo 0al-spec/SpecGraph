@@ -815,3 +815,21 @@ checks; current tooling does not enforce this profile. Runtime realization is
 `deferred_until_canonicalized`; mapping coverage remains a separate follow-up.
 This amendment is contract preparation only with no runtime realization,
 canonical adoption, SDK propagation or evidence admission.
+
+### Source intent and requirement preparation (2026-10-23)
+
+The [review packet](../reviews/0047_authored_traceability/README.md) captures
+the operator's addressability/delivery-chain intent and retained Zeusus authoring
+inputs. Native pre-canonical `user_intent`/`operator_request` records preserve
+mediation lineage. Six candidate-local requirements are grouped into four
+acceptance criteria, with seven proposed engineering choices kept separate and
+all sixteen identity-profile acceptance cases mapped to requirements.
+
+This is source-bound preparation, not a canonical Intent -> Requirement path.
+The isolated Supervisor attempt failed before refinement because the installed
+CLI rejected the configured model; the original invalid seed and failed run
+are retained by pins. The corrected pending candidate is assistant-authored,
+not a successful Supervisor output. Canonical root/subject allocation, exact
+derivation edges, adoption and runtime enforcement remain unresolved. A generic
+SG-SPEC-0020 citation cannot substitute for them. No runtime realization occurs
+in this amendment; the profile remains `deferred_until_canonicalized`.

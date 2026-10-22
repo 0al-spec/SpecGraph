@@ -1,7 +1,7 @@
 {
   "artifact_kind": "authored_traceability_intent_capture",
   "schema_version": 1,
-  "captured_at": "2026-10-22T22:04:00Z",
+  "captured_at": "2026-10-22T22:04:20Z",
   "source_revision": "989086c59edf656bccc9000e9f5717a2f86ba173",
   "capture_authority": "assistant_curated_from_user_conversation_and_retained_inputs",
   "canonical_intent_adopted": false,
@@ -24,7 +24,7 @@
       "id": "INTENT-0047-DERIVATION",
       "source_kind": "user_chat_quote",
       "text": "Из какого intent происходят эти контракты?",
-      "original_timestamp": "2026-10-22T21:53Z (turn observation, not message-server timestamp)",
+      "original_timestamp": "not_retained",
       "interpretation": "Explain and retain the source intent of each proposed contract; distinguish requirements from engineering choices."
     }
   ],
@@ -35,7 +35,8 @@
       "sha256": "b410d223cba48c6bd3f9b28ee803605ef0998d635deb7b95ec534ade0d9d7788",
       "public_summary": "Existing policy/BDD-linked observations; preserve gameplay; diagnostic non-interference; actual-harness-only scenario tags.",
       "content_publication": "summary_only",
-      "authority": "retained_operator_context_not_independently_attested"
+      "authority": "retained_operator_context_not_independently_attested",
+      "id": "ZEU-AUTHORING-0047-01"
     },
     {
       "source_kind": "retained_product_authoring_input",
@@ -43,7 +44,8 @@
       "sha256": "635bd4752ab315add60cbba5c0b964386672dadf12ab1c1672746bbff7c6b9f1",
       "public_summary": "Exact rule/obligation/proposed-target/scenario mappings; distinct specification/rule/component/implementation identity and conditional scenario tags.",
       "content_publication": "summary_only",
-      "authority": "retained_operator_context_not_independently_attested"
+      "authority": "retained_operator_context_not_independently_attested",
+      "id": "ZEU-AUTHORING-0047-02"
     }
   ],
   "feedback": [

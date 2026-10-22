@@ -1,0 +1,29 @@
+{
+  "artifact_kind": "operator_request_packet",
+  "schema_version": 1,
+  "user_intent": {
+    "intent_handle": "user_intent::authored-traceability-0047",
+    "source_kind": "mediated_artifact",
+    "source_summary": "Preserve source-bound human intent across authored identity and mapping declarations; prepare requirements separately from profile engineering choices. Exact quotes and retained input pins are in docs/reviews/0047_authored_traceability/intent.json.",
+    "selected_node_ref": "DRAFT-SPEC-0047-TRACEABILITY",
+    "unresolved_questions": [
+      "Canonical adoption, exact parent and final requirement identities remain subject to review."
+    ]
+  },
+  "operator_request": {
+    "request_handle": "operator_request::0047-authored-traceability-preparation",
+    "target_spec_id": "DRAFT-SPEC-0047-TRACEABILITY",
+    "run_mode": "targeted_refine",
+    "operator_note": "One bounded preparation pass only. Read the declared input files and refine only specs/nodes/DRAFT-SPEC-0047-TRACEABILITY.yaml. This draft exists only in an isolated preparation workspace. Preserve all six requirement IDs and source refs, the four acceptance statements and existing BDD IDs. Improve their semantic precision if useful; acceptance_evidence can name candidate sections but is structural authoring evidence only. Keep human intent, derived proposed requirements and engineering choices distinct. Proposed parent is SG-SPEC-0062; SG-SPEC-0017/0020/0061 remain existing boundary context and must not be changed. No child IDs, canonical adoption, policy activation, SDK work, code, installs, builds, tests, GitHub actions or publishing. All existing runtime consumers remain unchanged. Do not add global field spelling rules or additional approval gates. Do not treat declarations or a green validator as executed evidence. Final response must end with plain RUN_OUTCOME and BLOCKER protocol lines without Markdown decoration. Stop at the first structured outcome or review boundary.",
+    "mutation_budget": [
+      "policy_text",
+      "schema_required_addition"
+    ],
+    "run_authority": [],
+    "execution_profile": "standard",
+    "stop_conditions": [
+      "first_structured_outcome",
+      "review_boundary_reached"
+    ]
+  }
+}

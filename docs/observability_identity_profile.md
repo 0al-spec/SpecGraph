@@ -8,6 +8,14 @@ Proposal 0047 **contract preparation only**; runtime realization is
 [0224](proposals/0224_compositional_test_context_and_evidence_binding.md)
 remaining responsible for the proposed execution-context propagation seam.
 
+The [source-intent and requirement packet](reviews/0047_authored_traceability/README.md)
+now separates retained user intent, six proposed local requirements and seven
+engineering choices. It links all sixteen acceptance cases, but remains review
+preparation: neither the mediated intent capture nor the manual candidate is
+canonical adoption. The attempted Supervisor refinement failed before model
+execution; see the packet's actual run evidence. SG-SPEC-0020 is boundary context,
+not a canonical derivation of this profile's required fields.
+
 The portable [profile definition](contracts/observability_identity_profile_v1.json)
 is proposed data, not a loaded runtime policy or JSON Schema. Current
 `tools/implementation_contract_pack.py` preserves additional observability fields
