@@ -144,3 +144,14 @@ collection happens once. The existing diagnostic remains compatible; metric
 qualification, execution artifacts, viewer migration and the SG-SPEC-0021
 semantic candidate remain separate. See [EvidenceProvider](../../evidence_provider.md)
 and the [pinned observation](../../evidence/0226_publication_provider_snapshot.json).
+
+Slice C2a subsequently adds `PublicationExecutionEvidenceProvider` for explicitly
+selected retained tests/delivery reports and a complete selected GitHub Actions
+identity. Source manifests are checked against Git objects at the artifact's
+actual revision; nested observer/runtime bindings and original producer outcomes
+stay distinct. Real build artifacts from run 39757869156 attempt 1 retain five
+successful pytest obligations and missing deploy/runtime signals. They used PR
+merge-checkout SHA `5ccf69e8ad5da8a82b63c035090ebfbf5481c4f0`, not the branch head.
+No tests/network/inference are executed by this provider. SVC qualification,
+trusted admission, canonical semantic changes and viewer activation remain
+separate. See the [execution observation](../../evidence/0226_publication_execution_snapshot.json).

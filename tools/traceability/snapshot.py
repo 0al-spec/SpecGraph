@@ -9,6 +9,7 @@ from .evidence import AgreementFacts, EvidenceConflict, EvidenceScope, ProviderE
 from .fact_agreement_spec import FACT_AGREEMENT_SPEC
 
 SNAPSHOT_PROFILE = "specgraph.trace-snapshot/declarations-v1"
+EXECUTION_SNAPSHOT_PROFILE = "specgraph.trace-snapshot/execution-v1"
 
 
 @dataclass(frozen=True)
@@ -70,16 +71,17 @@ class TraceSnapshot:
         )
 
     def to_payload(self) -> dict[str, object]:
+        collected_execution = any(r.execution is not None for r in self.reports)
         payload = {
             "artifact_kind": "trace_snapshot",
             "schema_version": 1,
-            "profile": SNAPSHOT_PROFILE,
+            "profile": EXECUTION_SNAPSHOT_PROFILE if collected_execution else SNAPSHOT_PROFILE,
             "scope": self.scope.to_payload(),
             "reports": [r.to_payload() for r in self.reports],
             "observed_subjects": [dict(spec_id=s, atom_id=a) for s, a in self.observed_subjects],
             "observed_subject_count": len(self.observed_subjects),
             "conflicts": [c.to_payload() for c in self.conflicts],
-            "execution": "not_collected",
+            "execution": "retained_artifacts" if collected_execution else "not_collected",
             "fulfillment": "not_evaluated",
             "admission": "not_evaluated",
             "readiness": "not_evaluated",

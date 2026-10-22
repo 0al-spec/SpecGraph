@@ -1,0 +1,94 @@
+{
+  "admission": "not_evaluated",
+  "artifact_kind": "publication_execution_provider_observation",
+  "branch_head": "7bceda4bfc716a5ccd8c6e619a63717fd7647dd6",
+  "canonical_mutations_allowed": false,
+  "ci_run_attempt": "1",
+  "ci_run_uri": "https://github.com/0al-spec/SpecGraph/actions/runs/39757869156",
+  "conflict_count": 0,
+  "diagnostics": [],
+  "execution": [
+    {
+      "binding_status": "matched",
+      "role": "delivery",
+      "signals": [
+        {
+          "binding_status": "matched",
+          "evaluated_result": null,
+          "producer_result": "observed_success",
+          "stage": "tests"
+        },
+        {
+          "binding_status": "not_asserted",
+          "evaluated_result": null,
+          "producer_result": "missing",
+          "stage": "deploy"
+        },
+        {
+          "binding_status": "not_asserted",
+          "evaluated_result": null,
+          "producer_result": "missing",
+          "stage": "runtime"
+        }
+      ]
+    },
+    {
+      "binding_status": "matched",
+      "role": "tests",
+      "signals": [
+        {
+          "binding_status": "matched",
+          "evaluated_result": "observed_success",
+          "producer_result": "observed_success",
+          "stage": "tests"
+        }
+      ]
+    }
+  ],
+  "execution_provider": {
+    "files_sha256": {
+      "intent_decision_review/sources.py": "3deb12a8a9761cbd1baa342f748c28dedc9a3bc2aa3a7f7e98d8be763d7ead93",
+      "publication_evidence/bound_observation_spec.py": "f3e296d7ef70e7e5d5cee30274ce2d9968f9565dca8e3ff1b3e23060f9c3feed",
+      "publication_evidence/context.py": "ce17623df9d4d32dff098c87d8385822e719c60e9ab629aafa4c834c74591a8e",
+      "publication_evidence/snapshot_spec.py": "c58b66852ce1e409e998dab7f9f33b088b4dcdbf39d073816e34b5c08ba1f421",
+      "publication_evidence/suite_spec.py": "d5a056eaff0d26d1709bc92dbe4c5df096c3340de6d67276206e44e157d04793",
+      "publication_trace_snapshot.py": "f37b7b20e961f1df58db3c3a70157b00ff888317b3d40f110001598ebf036f0b",
+      "traceability/evidence.py": "3d76b5e1c0269ef20d3628f542dec4e389f7039f57b9698cd97bb3738a59de04",
+      "traceability/execution.py": "2c49da0829aaba1cb7faad4e9cd76de74724e9fa95e55b43a0c4ef810f80d2b5",
+      "traceability/execution_binding_spec.py": "8494459fcade134a94507f09a874035344bb3cf0a90844383ca5e139eb9956fa",
+      "traceability/providers.py": "3da504cd8a763a4a7d20ec3bb53eee238a60d244672afa7263ac077f93941042",
+      "traceability/publication.py": "c4884e043c9489b9ee46e4b9da92a8191c0da2f19354572cb632a1abf9ecdee7",
+      "traceability/publication_execution_provider.py": "b1a0c7769aed7c88c2c110cc32ca2fa717a5a5d363e0ccdcdf3defff5f11836a",
+      "traceability/retained_runtime_binding_spec.py": "da572625f2bd698665c01797f7a5c33534ff97a09a58967c5f1476236df9bac9",
+      "traceability/snapshot.py": "98bfe9ef62114c31e9867d00b92761db9737419a3b12eeb0e0d3aa3e7a40fda4"
+    },
+    "profile": "specgraph.publication-retained-execution/v1",
+    "provider_id": "publication.execution",
+    "version": "1.0.0"
+  },
+  "github_artifact": {
+    "id": 12416274118,
+    "name": "specgraph-publication-delivery-signals-build"
+  },
+  "interpretation": "Real retained CI build reports, not a new test run. All five pytest obligations report success. Deploy and runtime remain missing because the PR run skipped deployment. Synthetic offline fixtures cover successful native HTTP provenance; no live HTTP observation is claimed here. Scope binding is provider-reported, not authentication, canonical admission, fulfillment or SVC.",
+  "observed_subject_count": 13,
+  "observed_test_obligation_count": 5,
+  "production_metrics": false,
+  "readiness": "not_evaluated",
+  "schema_version": 1,
+  "selected_artifacts": [
+    {
+      "path": "docs/evidence/0226_publication_execution/tests.json",
+      "sha256": "40fbc6e198f8c0ded0e7355c1ff46d2a67a1dc35b52768a5023de63963478e98"
+    },
+    {
+      "path": "docs/evidence/0226_publication_execution/report.json",
+      "sha256": "69b40ad73c0a0819ba3dedb8993ee437538f69677f613182b1b61a4461f8d748"
+    }
+  ],
+  "snapshot_content_sha256": "05e2c262ee2b382e4c2e503a6915510e76812f3b3e7d53992399a7ce3098707f",
+  "snapshot_profile": "specgraph.trace-snapshot/execution-v1",
+  "source_retention": "GitHub PR merge-checkout commit is transient; unavailable Git objects must yield explicit source-unavailable evidence. Raw selected reports are retained unchanged in this repository.",
+  "source_revision": "5ccf69e8ad5da8a82b63c035090ebfbf5481c4f0",
+  "source_revision_kind": "github_pr_merge_checkout"
+}

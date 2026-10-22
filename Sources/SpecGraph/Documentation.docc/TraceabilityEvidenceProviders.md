@@ -8,7 +8,8 @@ EvidenceProvider -> immutable TraceSnapshot -> metric adapter
 ```
 
 Compatibility slice B and declaration-only EvidenceProvider/TraceSnapshot slice
-C1 are implemented. Execution collection and metric-profile activation remain
+C1 are implemented. C2a adds explicit retained publication execution reports.
+Atom SVC and metric-profile activation remain
 `deferred_until_canonicalized`. The proposal and bounded Supervisor cycle retain
 their separate semantic review boundary. See <doc:EvidenceProvider>.
 
@@ -78,5 +79,5 @@ The serialized metric entry, rounding, unknown-status counts, numeric coercion,
 empty-input behavior and existing thresholds remain unchanged. Eight pre-refactor
 JSON fixtures plus isolated-import, immutable-input, trace and composition tests
 characterize compatibility. TP-08 now has executable characterization.
-Execution-provider and atom-level SVC cases remain planned; C1 characterizes
+Retained execution-provider cases are implemented in C2a; atom-level SVC remains planned. C1 characterizes
 declaration-provider scope, completeness, ordering and conflict preservation.

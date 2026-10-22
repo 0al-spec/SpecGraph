@@ -1026,6 +1026,26 @@
         "SCORE_STATUS_SPEC",
         "verifiability_metric"
       ]
+    },
+    {
+      "id": "retained-publication-execution",
+      "description": "Explicit retained execution provenance remains distinct from success and admission.",
+      "docs": [
+        "docs/evidence_provider.md"
+      ],
+      "docc": [
+        "Sources/SpecGraph/Documentation.docc/EvidenceProvider.md"
+      ],
+      "required_terms": [
+        "PublicationExecutionEvidenceProvider",
+        "publication.execution",
+        "PublicationExecutionSelection",
+        "EXECUTION_BINDING_SPEC",
+        "RETAINED_RUNTIME_BINDING_SPEC",
+        "specgraph.trace-snapshot/execution-v1",
+        "provider_reported_not_attested",
+        "39757869156"
+      ]
     }
   ]
 }
