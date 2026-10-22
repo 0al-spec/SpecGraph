@@ -2,6 +2,17 @@
 
 SpecGraph treats proposal records and runtime evidence as connected surfaces.
 
+## Stacked PR comparison freshness
+
+After changing a PR base, verify `refs/pull/<PR>/merge`: `merge^1` must match
+the current base SHA and `merge^2` the current head SHA. GitHub can retain a
+stale snapshot in a base-edit event; rerunning that event keeps its pinned
+inputs. Refresh the task branch from `origin/main`, push a new head and verify
+the new comparison/checks. A normal merge preserves branch history. Keep the
+exact-parent guard in `tools/check_rule_reuse_merge.sh`; old successful checks
+do not establish readiness for a changed comparison. See repository
+`CONTRIBUTING.md`, Branches and PRs.
+
 ## Intent decision review
 
 `specgraph.intent-decision-review/v1` joins added, removed and modified Intent

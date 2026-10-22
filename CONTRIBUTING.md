@@ -156,6 +156,15 @@ running a broader validation command.
 - If GitHub branch rules reject force-push for a stacked branch, do not fight the rule. Retarget the PR to `main`, verify it is clean and checks are green, then merge.
 - PR descriptions should include motivation, goal, scope, validation commands, and risks.
 
+After retargeting a stacked PR, verify the actual `refs/pull/<PR>/merge` snapshot:
+`merge^1` must equal the current base SHA and `merge^2` the current PR-head SHA.
+A base-edit event can retain a stale merge snapshot from the previous base;
+rerunning that historical workflow does not replace its pinned event inputs.
+Refresh the task branch from current `origin/main` (a normal merge preserves
+history), push the new head, and verify the fresh snapshot and checks. Preserve
+the exact-parent guard in `tools/check_rule_reuse_merge.sh`; do not weaken it or
+report the retargeted PR as ready using checks from the old comparison.
+
 Useful skills and commands:
 
 - `$gh-create-pr` for creating or updating PRs.
