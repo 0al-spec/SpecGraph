@@ -1,5 +1,23 @@
 # Evidence-Backed Build Protocol Source Draft
 
+## Identity profile preparation source — 2026-10-23
+
+After the source-bound second-pass triage, the operator accepted preparation of
+the opt-in identity profile for proposal 0047, followed separately by mapping
+completeness. The concrete source is ZST-04 in
+`docs/reviews/zeusus_second_pass_feedback_triage_20261022.md`. Missing names and
+unreviewed alternative spellings survived green general validators; manually
+corrected product candidates are not engine prevention.
+
+The authored follow-up chooses exact per-obligation declaration checks, an empty
+alias map, request-retained selection, source/definition pins and separate
+runtime-binding semantics. See `docs/observability_identity_profile.md` and
+`docs/contracts/observability_identity_profile_v1.json`. These are proposed
+contract artifacts, not a loaded policy, canonical requirement or validator.
+No new supervisor run, product edit, SDK propagation or evidence admission is
+claimed. Runtime realization is deferred until canonicalized; the acceptance
+matrix is future implementation scope.
+
 ## Source Class
 
 Working draft.

@@ -1069,6 +1069,40 @@
         "scenario_id_if_tagged",
         "review_pending"
       ]
+    },
+    {
+      "id": "observability-identity-profile-preparation",
+      "description": "Proposed identity declarations and activation boundaries remain aligned.",
+      "docs": [
+        "docs/observability_identity_profile.md"
+      ],
+      "docc": [
+        "Sources/SpecGraph/Documentation.docc/ImplementationContractPack.md"
+      ],
+      "required_terms": [
+        "observability_identity_declarations_v1",
+        "contract preparation only",
+        "deferred_until_canonicalized",
+        "identity_profile",
+        "specification_id",
+        "rule_id",
+        "component_id",
+        "implementation_id",
+        "scenario_id_if_tagged",
+        "canonical_mutations_allowed: false",
+        "runtime_code_mutations_allowed: false",
+        "evidence_admission_allowed: false"
+      ]
+    },
+    {
+      "id": "stacked-pr-comparison-freshness",
+      "description": "Retargeted PR readiness requires a fresh exact base/head merge snapshot.",
+      "docs": ["CONTRIBUTING.md"],
+      "docc": ["Sources/SpecGraph/Documentation.docc/ProposalsAndRuntime.md"],
+      "required_terms": [
+        "refs/pull/<PR>/merge", "merge^1", "merge^2", "stale",
+        "tools/check_rule_reuse_merge.sh"
+      ]
     }
   ]
 }

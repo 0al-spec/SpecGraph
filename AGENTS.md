@@ -43,6 +43,7 @@ credentials, private keys, or machine-local tokens to `.0al`.
 
 ## Repository rules
 - Merge in main branch ONLY  via Pull (Merge) Request on GitHub
+- After retargeting a stacked PR, verify its merge snapshot parents against the current base/head and wait for checks using that comparison. Follow the stale-snapshot recovery in [CONTRIBUTING.md](CONTRIBUTING.md#branches-and-prs); preserve the exact-parent guard.
 - Deliver feature changes through a dedicated branch and Pull Request; do not land feature work directly on `main`.
 - Work on one spec node at a time.
 - Refine specifications, not runtime code.
