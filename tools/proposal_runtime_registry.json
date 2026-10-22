@@ -13153,6 +13153,12 @@
       "docs/proposals/0226_traceability_evidence_providers_and_svc.md",
       "docs/archive/proposal_sources/0226_traceability_evidence_providers_and_svc.md",
       "Sources/SpecGraph/Documentation.docc/TraceabilityEvidenceProviders.md",
+      "tools/metric_packs/context.py",
+      "tools/metric_packs/legacy_verifiability.py",
+      "tools/metric_packs/score_status_spec.py",
+      "tools/supervisor.py",
+      "tests/test_legacy_verifiability.py",
+      "tests/fixtures/metric_packs/legacy_verifiability.json",
       "tools/publication_trace_links.py",
       "tools/traceability/publication.py",
       "tools/traceability/reference_status_spec.py",
@@ -13165,22 +13171,34 @@
     ],
     "runtime_markers": [
       {
-        "path": "tools/traceability/publication.py",
-        "pattern": "def build_publication_links("
-      },
-      {
         "path": "docs/proposals/0226_traceability_evidence_providers_and_svc.md",
         "pattern": "Draft proposal; architecture and staged realization plan for review."
+      },
+      {
+        "path": "tools/metric_packs/legacy_verifiability.py",
+        "pattern": "class LegacyVerifiabilityMetric:"
+      },
+      {
+        "path": "tools/metric_packs/score_status_spec.py",
+        "pattern": "SCORE_STATUS_SPEC:"
+      },
+      {
+        "path": "tools/traceability/publication.py",
+        "pattern": "def build_publication_links("
       }
     ],
     "validation_markers": [
       {
-        "path": "tests/test_publication_trace_links.py",
-        "pattern": "def test_revision_pin_non_execution_and_lifecycle("
+        "path": "tests/test_legacy_verifiability.py",
+        "pattern": "def test_legacy_projection_matches_pre_refactor_snapshot("
       },
       {
-        "path": "docs/proposals/0226_traceability_evidence_providers_and_svc.md",
-        "pattern": "These cases specify future verification; none is claimed as executed by this"
+        "path": "tests/test_legacy_verifiability.py",
+        "pattern": "def test_metric_package_loads_in_isolation_without_writing_artifacts("
+      },
+      {
+        "path": "tests/test_publication_trace_links.py",
+        "pattern": "def test_revision_pin_non_execution_and_lifecycle("
       }
     ],
     "observation_markers": [
@@ -13189,6 +13207,6 @@
         "pattern": "evidence_admission_allowed: false"
       }
     ],
-    "notes": "Partial realization: operator-authorized exact-link resolution prerequisite for the publication pilot. Source-pinned declarations, named resolution status policy and synthetic Zeusus negative cases are implemented. The full EvidenceProvider/TraceSnapshot contract, atom SVC, profile activation, threshold migration and trusted admission remain deferred. The independent compatibility extraction and the SG-SPEC-0021 semantic candidate retain their separate review scopes."
+    "notes": "Partial realization: compatibility slice B extracts the unchanged legacy proxy through immutable facts and an injectable metric protocol, with a named score-status Specification and pre-refactor golden projections. The independent publication prerequisite resolves source-pinned exact links through named resolution and mapping policies, with synthetic Zeusus negative cases. EvidenceProvider, general TraceSnapshot, atom-level SVC, profile activation and the SG-SPEC-0021 semantic candidate remain deferred; neither slice changes trusted admission or thresholds."
   }
 ]

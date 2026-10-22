@@ -8,8 +8,8 @@ EvidenceProvider -> immutable TraceSnapshot -> metric adapter
 ```
 
 Status: `deferred_until_canonicalized`. The proposal and bounded Supervisor
-cycle prepare a reviewable contract; provider runtime and metric-profile
-activation remain future slices.
+cycle prepare a reviewable contract. Compatibility slice B now extracts the
+existing proxy; provider runtime and metric-profile activation remain future slices.
 
 ## Current boundary
 
@@ -62,3 +62,19 @@ evidence_admission_allowed: false
 This work does not activate `tests_verified_v1` or change trusted receipt admission.
 See `docs/proposals/0226_traceability_evidence_providers_and_svc.md`, its source
 draft and the retained Supervisor run evidence for actual outcomes.
+
+## Implemented compatibility slice B
+
+`tools/metric_packs/` provides immutable `VerifiabilityContext` inputs and results,
+the `VerifiabilityMetric` protocol and the pure `LegacyVerifiabilityMetric`.
+`build_metric_signal_index` accepts an optional `verifiability_metric` hook, with
+the existing proxy selected by default. This is a specialized compatibility
+context; the general TraceSnapshot and evidence-provider registry remain future
+work. `SCORE_STATUS_SPEC` is shared by the extracted metric and the existing
+Supervisor threshold-status facade.
+
+The serialized metric entry, rounding, unknown-status counts, numeric coercion,
+empty-input behavior and existing thresholds remain unchanged. Eight pre-refactor
+JSON fixtures plus isolated-import, immutable-input, trace and composition tests
+characterize compatibility. TP-08 now has executable characterization; the
+provider and atom-level SVC cases remain planned.

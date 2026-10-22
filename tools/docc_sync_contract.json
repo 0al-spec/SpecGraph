@@ -997,6 +997,23 @@
         "gpt-6.1-sol",
         "medium"
       ]
+    },
+    {
+      "id": "legacy-verifiability-extraction",
+      "description": "The implemented compatibility boundary and default behavior stay aligned.",
+      "docs": [
+        "docs/proposals/0226_traceability_evidence_providers_and_svc.md",
+        "docs/metric_pack_viewer_contract.md"
+      ],
+      "docc": [
+        "Sources/SpecGraph/Documentation.docc/TraceabilityEvidenceProviders.md"
+      ],
+      "required_terms": [
+        "LegacyVerifiabilityMetric",
+        "VerifiabilityContext",
+        "SCORE_STATUS_SPEC",
+        "verifiability_metric"
+      ]
     }
   ]
 }

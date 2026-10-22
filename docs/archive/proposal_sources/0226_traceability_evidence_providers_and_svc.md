@@ -84,6 +84,26 @@ Continue proposal 0043's existing metric-pack architecture. The draft is a
 SpecGraph-owned integration proposal. Runtime implementation and metric-profile
 activation remain follow-up slices requiring review.
 
+## Bounded Compatibility Extraction
+
+After merging PR 782, the operator asked to start implementation and noted that
+the metric tools were ready. The first slice extracts the current proxy under
+`tools/metric_packs/`, with immutable prepared facts and an explicit
+`verifiability_metric` composition hook. A named score-status Specification is
+reused through the existing Supervisor facade.
+
+Eight fixed-input JSON projections were captured from the exact production block
+at `2e33ce2d51b01080f25e592c9232185e01004d34` before editing it. They include
+unknown/malformed statuses, numeric coercion, empty input and threshold rounding.
+The fixture records the source digest; tests compare complete serialized entries.
+CLI/isolated import and injected-composition checks exercise the actual module
+boundary. The trusted PR metrics workflow supplies the separate code-shape and
+S/U measurements; compatibility tests do not establish metric improvement.
+
+This is implementation of the existing behavior, without applying the semantic
+candidate above or activating a new SVC qualification profile. Evidence providers,
+the general TraceSnapshot and metric-profile migration remain subsequent slices.
+
 ## Exact-link prerequisite authorized on 2026-10-22
 
 After the Zeusus observability feedback triage, the operator authorized an exact

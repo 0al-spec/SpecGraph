@@ -16374,6 +16374,27 @@ def test_build_metric_signal_index_reports_threshold_breaches(
     ]
     assert index["viewer_projection"]["named_filters"]["legacy_alias_metrics"] == ["sib_proxy"]
 
+    class RecordingVerifiabilityMetric:
+        def __init__(self) -> None:
+            self.contexts = []
+
+        def evaluate(self, context):
+            self.contexts.append(context)
+            return (
+                supervisor_module.get_metric_packs_module()
+                .LegacyVerifiabilityMetric()
+                .evaluate(context)
+            )
+
+    metric = RecordingVerifiabilityMetric()
+    custom = supervisor_module.build_metric_signal_index(
+        supervisor_module.load_specs(), verifiability_metric=metric
+    )
+    assert len(metric.contexts) == 1
+    assert len(metric.contexts[0].observations) == 3
+    assert custom["metrics"] == index["metrics"]
+    assert custom["active_signals"] == index["active_signals"]
+
 
 def test_economic_observability_metrics_keep_proxy_semantics_with_active_prices(
     supervisor_module: object,
