@@ -13148,19 +13148,36 @@
   },
   {
     "proposal_id": "0226",
-    "posture": "deferred_until_canonicalized",
+    "posture": "synchronous_runtime_slice",
     "runtime_surfaces": [
       "docs/proposals/0226_traceability_evidence_providers_and_svc.md",
       "docs/archive/proposal_sources/0226_traceability_evidence_providers_and_svc.md",
-      "Sources/SpecGraph/Documentation.docc/TraceabilityEvidenceProviders.md"
+      "Sources/SpecGraph/Documentation.docc/TraceabilityEvidenceProviders.md",
+      "tools/publication_trace_links.py",
+      "tools/traceability/publication.py",
+      "tools/traceability/reference_status_spec.py",
+      "tools/traceability/policy_atom_bindings_spec.py",
+      "tools/traceability/atom_roles_spec.py",
+      "tools/traceability/references.py",
+      "tests/test_publication_trace_links.py",
+      "docs/publication_trace_links.md",
+      "docs/evidence/0226_publication_link_resolution.json"
     ],
     "runtime_markers": [
+      {
+        "path": "tools/traceability/publication.py",
+        "pattern": "def build_publication_links("
+      },
       {
         "path": "docs/proposals/0226_traceability_evidence_providers_and_svc.md",
         "pattern": "Draft proposal; architecture and staged realization plan for review."
       }
     ],
     "validation_markers": [
+      {
+        "path": "tests/test_publication_trace_links.py",
+        "pattern": "def test_revision_pin_non_execution_and_lifecycle("
+      },
       {
         "path": "docs/proposals/0226_traceability_evidence_providers_and_svc.md",
         "pattern": "These cases specify future verification; none is claimed as executed by this"
@@ -13172,6 +13189,6 @@
         "pattern": "evidence_admission_allowed: false"
       }
     ],
-    "notes": "Operator-authorized proposal preparation and one bounded Supervisor cycle. CLI startup failures and actual callback execution are retained separately. The architecture and candidate SVC qualification profile are author curation; no provider runtime, metric activation, threshold change or trusted evidence admission is implemented by this proposal."
+    "notes": "Partial realization: operator-authorized exact-link resolution prerequisite for the publication pilot. Source-pinned declarations, named resolution status policy and synthetic Zeusus negative cases are implemented. The full EvidenceProvider/TraceSnapshot contract, atom SVC, profile activation, threshold migration and trusted admission remain deferred. The independent compatibility extraction and the SG-SPEC-0021 semantic candidate retain their separate review scopes."
   }
 ]

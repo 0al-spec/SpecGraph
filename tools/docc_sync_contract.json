@@ -1,6 +1,19 @@
 {
   "groups": [
     {
+      "id": "publication-exact-links",
+      "description": "Pinned source resolution remains separate from execution and readiness.",
+      "docs": ["docs/publication_trace_links.md"],
+      "docc": ["Sources/SpecGraph/Documentation.docc/PublicationTraceLinks.md"],
+      "required_terms": [
+        "specgraph.publication-exact-links/v1", "publication_trace_links",
+        "REFERENCE_STATUS_SPEC", "needs_review", "source_lifecycle",
+        "content_sha256", "not_evaluated", "wrong_kind",
+        "POLICY_ATOM_BINDINGS_SPEC", "ATOM_ROLES_SPEC",
+        "PolicyAtomBindingsFacts", "AtomRolesFacts"
+      ]
+    },
+    {
       "id": "intent-decision-review",
       "description": "Source-bound intent decision coverage remains separate from semantic approval.",
       "docs": [

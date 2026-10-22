@@ -8,6 +8,10 @@ publication path. This pilot joins its existing signals.
 
 ## Passport and bindings
 
+For source-bound declaration diagnostics without executing this pilot, use
+[Exact publication trace links](publication_trace_links.md). That report keeps
+declared and resolved links separate from test/runtime observations.
+
 - [Feature Passport](../tools/feature_passports/static-publication.json), draft
   `0.1.0`, local criteria `PB-ALL`, `PB-PAYLOAD`, `PB-MANIFEST`,
   `PB-CHECKSUMS`, `PB-MISSING`.
