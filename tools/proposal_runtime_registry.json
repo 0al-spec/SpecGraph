@@ -13177,7 +13177,15 @@
       "tools/traceability/resolution_completeness_spec.py",
       "tests/test_evidence_provider.py",
       "docs/evidence_provider.md",
-      "docs/evidence/0226_publication_provider_snapshot.json"
+      "docs/evidence/0226_publication_provider_snapshot.json",
+      "tools/traceability/execution.py",
+      "tools/traceability/execution_binding_spec.py",
+      "tools/traceability/retained_runtime_binding_spec.py",
+      "tools/traceability/publication_execution_provider.py",
+      "tests/test_publication_execution_provider.py",
+      "docs/evidence/0226_publication_execution_snapshot.json",
+      "docs/evidence/0226_publication_execution/tests.json",
+      "docs/evidence/0226_publication_execution/report.json"
     ],
     "runtime_markers": [
       {
@@ -13199,6 +13207,10 @@
       {
         "path": "tools/traceability/publication_provider.py",
         "pattern": "class PublicationEvidenceProvider:"
+      },
+      {
+        "path": "tools/traceability/publication_execution_provider.py",
+        "pattern": "class PublicationExecutionEvidenceProvider:"
       }
     ],
     "validation_markers": [
@@ -13217,6 +13229,10 @@
       {
         "path": "tests/test_evidence_provider.py",
         "pattern": "def test_provider_order_and_repeat_observations_do_not_multiply_subjects("
+      },
+      {
+        "path": "tests/test_publication_execution_provider.py",
+        "pattern": "def test_pinned_source_matches_real_producer_without_executing_source("
       }
     ],
     "observation_markers": [
@@ -13225,6 +13241,6 @@
         "pattern": "evidence_admission_allowed: false"
       }
     ],
-    "notes": "Partial realization: slice B preserves the legacy proxy behind immutable facts and an injectable metric protocol; the independent exact-link prerequisite names resolution and mapping policies. Slice C1 adds a declaration EvidenceProvider, explicit in-process registry and immutable source-bound TraceSnapshot with capability completeness and duplicate/conflicting observations. Execution-artifact collection, atom SVC, profile activation and the SG-SPEC-0021 semantic candidate remain deferred. No threshold or trusted admission change is implemented."
+    "notes": "Partial realization: slice B preserves the legacy proxy behind immutable facts and an injectable metric protocol; the independent exact-link prerequisite names resolution and mapping policies. Slice C1 adds a declaration EvidenceProvider, explicit in-process registry and immutable source-bound TraceSnapshot with capability completeness and duplicate/conflicting observations. Slice C2a adds explicit retained publication execution-artifact collection with source/run/attempt and nested signal binding; original producer outcomes stay separate from binding status. A pinned real CI build observation retains five successful pytest obligations and missing deploy/runtime. Atom SVC, profile activation and the SG-SPEC-0021 semantic candidate remain deferred. No threshold or trusted admission change is implemented."
   }
 ]

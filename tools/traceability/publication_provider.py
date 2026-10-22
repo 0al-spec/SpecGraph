@@ -28,6 +28,7 @@ class PublicationEvidenceProvider:
         hashes = dict(analyzer_identity()["files_sha256"])
         for path in (
             "traceability/evidence.py",
+            "traceability/execution.py",
             "traceability/publication_provider.py",
             "traceability/providers.py",
             "traceability/snapshot.py",

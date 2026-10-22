@@ -1,7 +1,7 @@
 # EvidenceProvider and declaration TraceSnapshot
 
-RFC 0226 slice C1 implements the first provider boundary. It collects publication
-atoms and static resolutions; execution evidence and atom SVC remain follow-ups.
+RFC 0226 slice C1 implements the declaration provider boundary. Slice C2a adds
+explicit retained publication execution artifacts. Atom SVC remains a follow-up.
 
 ## Run and composition
 
@@ -106,6 +106,82 @@ Synthetic multi-provider tests cover order independence, duplicate identity
 coalescing, explicit conflicts and stale scope; they do not claim real additional
 providers or executed product tests.
 
-Next: an explicitly selected publication execution-artifact provider retaining
-producer outcome, revision, run identity and freshness. Metric qualification and
-viewer integration remain separate reviewed changes.
+## Retained execution artifacts (C2a)
+
+`PublicationExecutionEvidenceProvider` (`publication.execution`) reads existing
+producer JSON, without running pytest, the HTTP verifier, source imports or
+inference. Add it explicitly alongside the declaration provider:
+
+```bash
+.venv/bin/python tools/publication_trace_snapshot.py \
+  --repository-root . --repository-id 0al-spec/SpecGraph \
+  --revision <artifact-source-commit> --spec-id SG-SPEC-0071 \
+  --provider publication.declarations --provider publication.execution \
+  --tests-report /absolute/selected/tests.json \
+  --delivery-report /absolute/selected/report.json \
+  --run-id <github-run-id> --run-attempt <attempt>
+```
+
+At least one report is required; paths and run selection never come from a
+latest directory or environment. CLI relative paths resolve against the caller's
+working directory. API callers provide absolute paths in immutable
+`PublicationExecutionSelection`, independently of the legacy `artifact_paths`
+field (which remains rejected). The default declaration-only CLI is unchanged.
+
+Supported producer contracts are `specgraph_publication_test_observation`,
+schema 1, and `feature_delivery_signals`, schema 1, profile
+`linked_delivery_signals_v1`. The adapter reads up to 2 MiB per selected file,
+rejects duplicate JSON keys/nonfinite values and preserves valid parsed producer
+reports without rewriting outcomes. Original byte hashes are recorded under
+stable `artifact:tests` / `artifact:delivery` source labels; moving identical
+selected files does not change snapshot identity. Unavailable/malformed inputs
+produce diagnostics and no invented success. Unknown profiles remain unavailable.
+
+The expected file inventory is reconstructed from Git objects at the requested
+SHA using the existing producer's inventory: bindings, passport, spec,
+implementation, test files, JSON I/O, producer and publication policy package.
+`SOURCE_SNAPSHOT_SPEC` compares repository, revision and the exact file hashes;
+the current working copy is not the reference. `EXECUTION_BINDING_SPEC` requires
+the selected complete GitHub Actions identity (provider, run, attempt and
+repository-specific run URI). Current local producers use ambiguous `local-run`
+with empty IDs, so they cannot provide this binding profile. Invalid selection
+is a CLI error; a stale/missing observation is an informational snapshot.
+
+For tests, `TEST_OBSERVATION_SPEC` checks the exact ordered criterion/test
+selectors; `TEST_SUITE_SPEC` interprets the retained case outcomes and exit code.
+The original `producer_result` remains separate from `evaluated_result`. A bound
+failed suite remains failed; mismatched inputs never receive an evaluated result.
+The delivery report retains its normalized tests/deploy/runtime outcomes. Its
+test selectors and observer identities are checked. For claimed deploy/runtime
+signals, `RETAINED_RUNTIME_BINDING_SPEC` checks the embedded HTTP observation's
+revision, full run identity, origin and bundle identity against the selected
+report and pinned origin. An externally bound report can still contain an
+internally mismatched signal; both statuses remain visible. A producer's missing
+signal with no observer is `not_asserted`.
+
+This adapter checks provenance binding, not authenticity or HTTP bytes. It does
+not rerun native verification, reread JUnit/XML or bundle payloads, establish
+wall-clock freshness, select the newest attempt or authenticate GitHub claims.
+Timestamps and all producer metadata stay inside retained reports. Freshness is
+explicitly limited to the caller-selected revision and run; digests do not turn
+`provider_reported_not_attested` data into trusted receipts. Contradictory retained
+outcomes stay separate by artifact/stage; C1 atom/link conflict rules do not pick
+an execution winner.
+
+Selecting this provider uses `specgraph.trace-snapshot/execution-v1` and
+`execution: retained_artifacts`, including explicit unavailable-artifact entries.
+This means collection was attempted, not that execution succeeded. Execution
+providers supply no atom inventory: their node completeness flags stay false.
+Composition preserves the declaration inventory and does not multiply subjects.
+The declaration-only profile and JSON shape remain intact. Fulfillment,
+readiness and admission remain `not_evaluated`; canonical mutations stay disabled.
+
+The [real CI observation](evidence/0226_publication_execution_snapshot.json) uses
+explicitly downloaded build reports from run `39757869156`, attempt 1, at its
+actual PR merge-checkout SHA. Five pytest obligations report success; deploy and
+runtime remain missing because this PR run skipped deployment. Synthetic offline
+fixtures cover successful HTTP observations and negative binding cases; they do
+not establish a live deployment.
+
+Next: qualify atom-to-check channels for a separately reviewed SVC profile and
+connect snapshot diagnostics to the existing viewer. Neither is activated here.

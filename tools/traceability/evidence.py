@@ -8,6 +8,7 @@ from pathlib import Path
 from intent_decision_review.sources import encoded
 
 from .context import Declaration, ReferenceResolution
+from .execution import ExecutionEvidence, PublicationExecutionSelection
 
 
 def ordered(values):
@@ -48,6 +49,7 @@ class EvidenceRequest:
     repository_root: Path
     scope: EvidenceScope
     artifact_paths: tuple[str, ...] = ()
+    execution_selection: PublicationExecutionSelection | None = None
 
     def __post_init__(self) -> None:
         object.__setattr__(self, "artifact_paths", tuple(self.artifact_paths))
@@ -149,6 +151,7 @@ class ProviderEvidence:
     nodes: tuple[NodeEvidence, ...]
     sources: tuple[SourceEvidence, ...]
     collection_digest: str | None = None
+    execution: ExecutionEvidence | None = None
 
     def __post_init__(self) -> None:
         object.__setattr__(self, "nodes", tuple(sorted(self.nodes, key=lambda n: n.spec_id)))
@@ -159,13 +162,16 @@ class ProviderEvidence:
             )
 
     def to_payload(self) -> dict[str, object]:
-        return dict(
+        payload = dict(
             identity=self.identity.to_payload(),
             scope=self.scope.to_payload(),
             nodes=[n.to_payload() for n in self.nodes],
             sources=[s.to_payload() for s in self.sources],
             collection_digest=self.collection_digest,
         )
+        if self.execution is not None:
+            payload["execution"] = self.execution.to_payload()
+        return payload
 
 
 @dataclass(frozen=True)

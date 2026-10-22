@@ -1,0 +1,64 @@
+{
+  "artifact_kind": "specgraph_publication_test_observation",
+  "exit_code": 0,
+  "junit_sha256": "1c12d6912600aa37e27d974c083b14979766325451bc99bee3b9331be2ea1135",
+  "obligations": [
+    {
+      "criterion_id": "PB-ALL",
+      "result": "observed_success",
+      "test": "tests/test_static_artifact_incremental_stage.py::test_verify_remote_bundle_hashes_every_manifest_file"
+    },
+    {
+      "criterion_id": "PB-PAYLOAD",
+      "result": "observed_success",
+      "test": "tests/test_static_artifact_incremental_stage.py::test_verify_remote_bundle_fails_on_digest_drift"
+    },
+    {
+      "criterion_id": "PB-MANIFEST",
+      "result": "observed_success",
+      "test": "tests/test_static_artifact_incremental_stage.py::test_verify_remote_bundle_fails_on_stale_published_manifest"
+    },
+    {
+      "criterion_id": "PB-CHECKSUMS",
+      "result": "observed_success",
+      "test": "tests/test_static_artifact_incremental_stage.py::test_verify_remote_bundle_fails_on_stale_checksums"
+    },
+    {
+      "criterion_id": "PB-MISSING",
+      "result": "observed_success",
+      "test": "tests/test_static_artifact_incremental_stage.py::test_verify_remote_bundle_fails_on_missing_remote_payload"
+    }
+  ],
+  "provenance": {
+    "provider": "github_actions",
+    "run_attempt": "1",
+    "run_id": "39757869156",
+    "uri": "https://github.com/0al-spec/SpecGraph/actions/runs/39757869156"
+  },
+  "result": "observed_success",
+  "schema_version": 1,
+  "source": {
+    "files_sha256": {
+      "specs/nodes/SG-SPEC-0071.yaml": "9f4a8b8332138ef3b6d1d9cc873b2a40a1a4620f7fceb35db32d4d9e1d6521a9",
+      "tests/test_static_artifact_incremental_stage.py": "6a64b627e0bbc61abeb32b788b6ccbe8485175fa19adc3e6be09b6b7fab5e971",
+      "tools/artifact_json.py": "42fcf5688847eadf4e395df0dde439014653297cbc59d163f7ade5bf51d12170",
+      "tools/feature_passports/static-publication-bindings.json": "e5f744bf9bc08de548df14bb5438ccafaa460c3ab3a940a8f45a37d8c5c95031",
+      "tools/feature_passports/static-publication.json": "4d7e7fceae4e9a818f6bfc2992a93211c1e0fe4482e552a20a011b8e21dd8924",
+      "tools/publication_delivery_evidence.py": "66a31b3150470aa4bcf4d0ad9c8c37131f8237b2ab04cddf9561758c3a2a8382",
+      "tools/publication_evidence/__init__.py": "329011afbd50064bdedc1f30bf2fe7c89aceeb9b12ce30f2852fbc46c90537a2",
+      "tools/publication_evidence/bindings_spec.py": "ac51e677e49778c63ee7da8060a25ffaa35d9dcba52f90a4839f82f66d8b3226",
+      "tools/publication_evidence/bound_observation_spec.py": "f3e296d7ef70e7e5d5cee30274ce2d9968f9565dca8e3ff1b3e23060f9c3feed",
+      "tools/publication_evidence/case_spec.py": "678cc38bc73e2e45e6dcc775af82ade8d886cc92484070f317665bd3dd89b13a",
+      "tools/publication_evidence/context.py": "ce17623df9d4d32dff098c87d8385822e719c60e9ab629aafa4c834c74591a8e",
+      "tools/publication_evidence/execution_context.py": "ea9033bfe11c44c6fec4846d71cfd4338069f6368df504b41c6fbb8176578b31",
+      "tools/publication_evidence/http_observation_spec.py": "16699c83064b9dc2b0b7e1bc00fd3489502655340fa667657d36cd9d44e10526",
+      "tools/publication_evidence/merged_revision_spec.py": "70b26ebbb2d2c816122cccded29547b5d73695a85735dee631dd6dd7b432b411",
+      "tools/publication_evidence/snapshot_spec.py": "c58b66852ce1e409e998dab7f9f33b088b4dcdbf39d073816e34b5c08ba1f421",
+      "tools/publication_evidence/suite_spec.py": "d5a056eaff0d26d1709bc92dbe4c5df096c3340de6d67276206e44e157d04793",
+      "tools/static_artifact_incremental_stage.py": "6b9bab723a1fb59625cea5f01d305c6041405a3e03008c47ca1c11deb39b21f1"
+    },
+    "repository": "0al-spec/SpecGraph",
+    "revision": "5ccf69e8ad5da8a82b63c035090ebfbf5481c4f0",
+    "working_tree_clean": false
+  }
+}
