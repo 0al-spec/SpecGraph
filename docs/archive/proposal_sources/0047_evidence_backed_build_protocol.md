@@ -76,3 +76,10 @@ publishes curated read models; SpecSpace presents them. Preserve the local pilot
 as distinct from hosted execution. CLI digests, image digests, signing authority
 and trust configuration are separate boundaries. No automatic key provisioning,
 managed execution enablement or production rollout is authorized by this proposal.
+
+## Zeusus second-pass feedback intake (2026-10-22)
+
+Source-bound classification and proposed follow-ups are recorded in the
+[triage](../../reviews/zeusus_second_pass_feedback_triage_20261022.md).
+This is local feedback review and documentation only; no new supervisor run,
+canonical adoption, runtime validator or trusted evidence is claimed.

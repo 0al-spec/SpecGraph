@@ -515,3 +515,13 @@ The mitigation is to keep the first runtime slice narrow: extract the current
 Codex path into a named adapter, keep enforcement in deterministic supervisor
 validation, then add experimental backends only through read-only smoke
 contracts.
+
+## Zeusus second-pass protocol feedback (2026-10-22)
+
+The [four-entry triage](../reviews/zeusus_second_pass_feedback_triage_20261022.md)
+routes ZST-01 here. A child emitted bold Markdown markers; the current plain-line
+final-response protocol correctly blocked the run. Clarifying unformatted final
+lines and characterizing protocol decoys is a proposed follow-up, not a parser
+relaxation. A typed backend envelope requires its own compatibility decision.
+The rejected candidate remains evidence; child exit 0 grants no approval. This
+documentation-only triage does not implement a transport or execute a new run.

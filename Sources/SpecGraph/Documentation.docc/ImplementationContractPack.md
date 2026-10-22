@@ -108,3 +108,38 @@ published results do not authorize current admission. Local, hosted and
 production evidence remain distinct. Implementation PRs, target-specific release,
 authority configuration and deployment approval are still subsequent work; this
 documentation amendment installs no executable and triggers no deployment.
+
+## Zeusus second-pass feedback triage
+
+The 2026-10-22 four-entry triage is documented in
+`docs/reviews/zeusus_second_pass_feedback_triage_20261022.md` and its hashed JSON
+evidence. All four collector SHA-256 receipts match. No raw product specs,
+transcripts or machine-local paths are published. This is triage only, not
+runtime prevention, canonical adoption or trusted execution evidence.
+
+- ZST-01 routes Markdown protocol-marker friction to proposal 0056. Existing
+  plain-line final-response rejection worked; child exit 0 is not approval.
+  Clarified output instructions and a separately reviewed typed transport are
+  follow-ups; diagnostic transcripts cannot supply missing final markers.
+- ZST-02 routes complete `rule_to_obligation_mapping` scope and exact references
+  to proposal 0047, with 0226 resolver concepts and 0223 scenario identity as
+  supporting work. A saved candidate mapped 10/15 rules despite eight true
+  supervisor validators. Those validators do not establish mapping completeness.
+- ZST-03 links the corrected operator seed-filter error to the related 0054
+  direction. Native unadopted-candidate continuation is not implemented by 0054
+  initialization or 0193 session continuation. Provenance and pending-candidate
+  history need a bounded continuation contract; resetting a gate is not approval.
+- ZST-04 routes per-obligation identity spelling/required fields to proposal 0047;
+  proposal 0224 concerns later context propagation. The explicit parser checks
+  an attributes list, not an identity profile. The pilot requests
+  `specification_id`, `rule_id`, `component_id`, `implementation_id` and
+  `scenario_id_if_tagged`; actual scenario values remain absent without a tagged
+  harness. These names are not imposed globally by this triage.
+
+`explicit_node_observability_v1` is unchanged between the old `92ee71cf` and
+`c46d58ad` pilots. The final product packet has 49/49 participant rules mapped,
+37 obligations with the requested names, and 100 preserved BDD scenarios.
+Those product-side fixes do not mean that SpecGraph gained new checks; no BDD
+or gameplay tests were executed by the triage. All candidates remain
+`review_pending`. First prepare an opt-in identity profile, then full/partial
+rule coverage, and wire the selected checks before review capture.

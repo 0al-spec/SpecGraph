@@ -42,3 +42,10 @@ This proposal is not a full platform installer. It does not implement hosted
 accounts, cloud provisioning, SpecSpace project switching, or SpecPM package
 materialization. It defines the SpecGraph-owned initialization boundary that
 those services can call or display.
+
+## Zeusus second-pass feedback intake (2026-10-22)
+
+Source-bound classification and proposed follow-ups are recorded in the
+[triage](../../reviews/zeusus_second_pass_feedback_triage_20261022.md).
+This is local feedback review and documentation only; no new supervisor run,
+canonical adoption, runtime validator or trusted evidence is claimed.

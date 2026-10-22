@@ -1046,6 +1046,29 @@
         "provider_reported_not_attested",
         "39757869156"
       ]
+    },
+    {
+      "id": "zeusus-second-pass-feedback-triage",
+      "description": "Source-bound external feedback routing and unimplemented follow-ups remain distinct from adoption.",
+      "docs": [
+        "docs/reviews/zeusus_second_pass_feedback_triage_20261022.md"
+      ],
+      "docc": [
+        "Sources/SpecGraph/Documentation.docc/ImplementationContractPack.md"
+      ],
+      "required_terms": [
+        "ZST-01",
+        "ZST-02",
+        "ZST-03",
+        "ZST-04",
+        "0047",
+        "0054",
+        "0056",
+        "explicit_node_observability_v1",
+        "rule_to_obligation_mapping",
+        "scenario_id_if_tagged",
+        "review_pending"
+      ]
     }
   ]
 }
