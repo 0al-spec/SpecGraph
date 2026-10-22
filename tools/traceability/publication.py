@@ -4,8 +4,10 @@ from __future__ import annotations
 
 import ast
 import hashlib
+import json
 import re
 from collections import Counter
+from dataclasses import dataclass
 from pathlib import Path
 
 from intent_decision_review.sources import (
@@ -21,7 +23,13 @@ from publication_evidence.context import BindingContext
 from spec_yaml import load_yaml_text
 
 from .atom_roles_spec import ATOM_ROLES_SPEC
-from .context import AtomRolesFacts, Declaration, DeclaredReference, PolicyAtomBindingsFacts
+from .context import (
+    AtomRolesFacts,
+    Declaration,
+    DeclaredReference,
+    PolicyAtomBindingsFacts,
+    ReferenceResolution,
+)
 from .policy_atom_bindings_spec import POLICY_ATOM_BINDINGS_SPEC
 from .references import PYTHON_KINDS, resolve_references, supported_reference
 
@@ -130,11 +138,28 @@ class PublicationSources:
         )
 
 
-def build_publication_links(
+@dataclass(frozen=True)
+class PublicationLinkCollection:
+    """One collection pass; immutable facts alongside the compatible JSON projection."""
+
+    atom_declarations: tuple[Declaration, ...]
+    resolutions: tuple[ReferenceResolution, ...]
+    report_json: bytes
+
+    def __post_init__(self) -> None:
+        object.__setattr__(self, "atom_declarations", tuple(self.atom_declarations))
+        object.__setattr__(self, "resolutions", tuple(self.resolutions))
+        object.__setattr__(self, "report_json", bytes(self.report_json))
+
+    def to_payload(self) -> dict[str, object]:
+        return json.loads(self.report_json)
+
+
+def collect_publication_links(
     repository_root: Path,
     source_ref: str,
     bindings_path: str = "tools/feature_passports/static-publication-bindings.json",
-) -> dict[str, object]:
+) -> PublicationLinkCollection:
     """Diagnostic only: inspect authored links, never run tests or grant readiness."""
     pin = revision(repository_root, source_ref)
     sources = PublicationSources(GitSources(repository_root, pin, pin), pin)
@@ -359,4 +384,17 @@ def build_publication_links(
         "readiness": "not_evaluated",
         "canonical_mutations_allowed": False,
     }
-    return {**report, "content_sha256": digest(report)}
+    return PublicationLinkCollection(
+        tuple(d for d in declarations if d.kind == "atom"),
+        resolutions,
+        json.dumps({**report, "content_sha256": digest(report)}, allow_nan=False).encode(),
+    )
+
+
+def build_publication_links(
+    repository_root: Path,
+    source_ref: str,
+    bindings_path: str = "tools/feature_passports/static-publication-bindings.json",
+) -> dict[str, object]:
+    """Preserve the diagnostic facade; provider callers reuse the collected facts."""
+    return collect_publication_links(repository_root, source_ref, bindings_path).to_payload()

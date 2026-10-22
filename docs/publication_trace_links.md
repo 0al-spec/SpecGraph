@@ -37,6 +37,9 @@ inventory-role coverage in separate source modules, using immutable
 and serializes findings; it does not recompute their predicates.
 `publication.py` adapts the existing pilot inputs and reads regular Git blobs
 through the shared `GitSources` boundary. The CLI composes these pieces.
+The additive [EvidenceProvider](evidence_provider.md) interface consumes the same
+single collection as immutable facts. This diagnostic remains separate from
+the new declaration-only TraceSnapshot.
 No measured Python module is imported or executed. Working-tree edits cannot
 replace a declaration in the selected revision. A symlink is not a regular
 source blob.

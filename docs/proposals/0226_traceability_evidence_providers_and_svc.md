@@ -7,8 +7,9 @@ Version: 0.1.0
 
 Draft proposal; architecture and staged realization plan for review.
 Compatibility slice B now extracts the existing proxy behind immutable prepared
-inputs and a replaceable metric interface. Evidence providers, TraceSnapshot and
-the atom-level SVC profile remain `deferred_until_canonicalized`. The bounded
+inputs and a replaceable metric interface. Slice C1 now exposes a declaration-only
+EvidenceProvider and immutable TraceSnapshot for the publication pilot. Execution
+evidence and atom-level SVC remain `deferred_until_canonicalized`. The bounded
 Supervisor cycle and its evidence are recorded in the source draft. This work
 does not activate a metric profile, replace the existing proxy, or approve a
 canonical semantic change.
@@ -200,8 +201,9 @@ profiles cannot be presented as one comparable trend without qualification.
 
 The original proposal completed preparation and launched the bounded Supervisor
 cycle. The operator subsequently requested implementation, authorizing the
-compatibility extraction in slice B. Provider runtime and atom-level SVC
-computation remain future slices; the SG-SPEC-0021 semantic patch is still a
+compatibility extraction in slice B. Declaration provider runtime is implemented
+in C1; execution-artifact inputs and atom-level SVC remain future work. The
+SG-SPEC-0021 semantic patch is still a
 separate review candidate.
 
 ## Realization Slices
@@ -210,7 +212,8 @@ separate review candidate.
 | --- | --- | --- |
 | A | Reviewed provider/snapshot/profile contracts and semantic input boundary | Source-grounded review and explicit compatibility decisions |
 | B | Implemented: extract existing verifiability computation with immutable prepared inputs and the optional `verifiability_metric` hook | Pre-refactor JSON fixtures, shared-policy boundaries, injectable composition and isolated imports |
-| C | One publication-pilot provider plus atom-level SVC profile | Exact atom-to-check inventory and source-pinned fixture results |
+| C1 | Implemented: publication declaration EvidenceProvider, explicit registry and immutable TraceSnapshot | Pinned inventories, partial/missing sources, duplicate/conflicting reports and independent CLI |
+| C2 | Execution-artifact inputs and atom-level SVC profile | Exact atom-to-check inventory, explicit producer observations and source-pinned results |
 | D | Connect to existing metric-pack artifacts with explicit provenance | Consumer compatibility, profile-separated comparisons and one real pilot |
 
 Each slice has its own focused PR. Failure or incompleteness stays visible;
@@ -246,11 +249,20 @@ SVC or confirmation that 99.3% of requirements passed tests. The pinned
 [compatibility observation](../evidence/0226_legacy_verifiability_compatibility.json)
 records both results and source digests.
 
-TP-08 now has compatibility characterization. The provider/atom-level cases
-below remain planned. Measurement results and local observations are reported
+TP-08 now has compatibility characterization. C1 adds declaration-provider
+characterization; execution and atom-level metric portions below remain planned.
+Measurement results and local observations are reported
 with the implementing PR; no complexity or S/U improvement is presumed.
 
 ## Acceptance Cases for Future Realization
+
+The [EvidenceProvider contract](../evidence_provider.md) describes implemented
+slice C1. It consumes one exact-link collection without changing the diagnostic
+facade. Typed scope checks, capability-specific completeness, immutable nested
+facts, deterministic identity, duplicate subject coalescing and explicit atom/link
+conflicts have focused tests. The [pinned snapshot observation](../evidence/0226_publication_provider_snapshot.json)
+records the actual declaration inventory. SVC qualification, execution-event
+collection and trusted admission remain future work in the cases below.
 
 | ID | Case | Expected result |
 | --- | --- | --- |
@@ -265,9 +277,10 @@ with the implementing PR; no complexity or S/U improvement is presumed.
 | TP-09 | Code changes while intent is unchanged | Current resolution/freshness reflects selected source; no reuse of stale confirmation |
 | TP-10 | Empty selected atom set | Explicit not_applicable result, no invented zero coverage |
 
-TP-08 has executable compatibility characterization in slice B. The remaining
-cases specify future verification for providers and atom-level SVC; they are
-not claimed as executed by this extraction. Local checks and observations are
+TP-08 has executable compatibility characterization in slice B. C1 tests the
+provider declaration/scope, missing-input, order and conflict boundaries; metric
+qualification and execution portions of these cases remain future work.
+Local checks and observations are
 reported separately in the implementing PR.
 
 ## Open Decisions for Review

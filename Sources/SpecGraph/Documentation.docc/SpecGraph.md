@@ -100,6 +100,7 @@ The canonical source files remain in the repository:
 - <doc:ArtifactPublishing>
 - <doc:PublicationDeliveryPilot>
 - <doc:PublicationTraceLinks>
+- <doc:EvidenceProvider>
 - <doc:ExecutorAdapterGateway>
 - <doc:OntologyCAdapterReport>
 - <doc:ProposalsAndRuntime>

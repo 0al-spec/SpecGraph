@@ -1,0 +1,139 @@
+{
+  "admission": "not_evaluated",
+  "artifact_kind": "publication_provider_snapshot_observation",
+  "canonical_mutations_allowed": false,
+  "collection_digest": "f904b7d13547f160f780a5dae9a10d8c42f905d2461dce7c86940a0946a26519",
+  "compatibility": {
+    "baseline_analyzer_commit": "2400483300f36942b1d3543fb3293c547f4f6bc7",
+    "baseline_report_content_sha256": "9e3850f8aa9a37594afa7680d6d03c89e09e34d0ec49d7e4e67735f992cd3f1b",
+    "business_fields_identical": true,
+    "excluded_fields": [
+      "analyzer",
+      "content_sha256"
+    ]
+  },
+  "conflict_count": 0,
+  "execution": "not_collected",
+  "interpretation": "Declaration-only collection at a pinned revision. Counts are not SVC, fulfillment or executed-test coverage. Source pointers/file hashes do not claim canonical Requirement revisions.",
+  "inventory_complete": true,
+  "link_occurrence_count": 55,
+  "observed_subject_count": 13,
+  "production_metrics": false,
+  "provider": {
+    "files_sha256": {
+      "intent_decision_review/sources.py": "3deb12a8a9761cbd1baa342f748c28dedc9a3bc2aa3a7f7e98d8be763d7ead93",
+      "publication_evidence/bindings_spec.py": "ac51e677e49778c63ee7da8060a25ffaa35d9dcba52f90a4839f82f66d8b3226",
+      "publication_evidence/context.py": "ce17623df9d4d32dff098c87d8385822e719c60e9ab629aafa4c834c74591a8e",
+      "publication_trace_links.py": "eaa1bdba6021d0ffbd9eee2eb4fcb78a853988187ee3c82909d7469844261e67",
+      "publication_trace_snapshot.py": "b07461afa4f463b389a1280cadd113257c8abc5945dcc0a10e28180dd9e43571",
+      "spec_yaml.py": "cc1fbbb2a634ef7145101e5c92ce42ff5dbb9f1a885788d828c5e305b69f16a9",
+      "traceability/__init__.py": "32d5e0187562a9dcc4e1595a48d2bafe0dedf1b532917370a70cddfa8cf0ff39",
+      "traceability/atom_roles_spec.py": "e8bcb51c5f828b71dae28f7d9e351e6e765c6e06b7d9f8d19fd3c4da19c0fb09",
+      "traceability/context.py": "2a27bb4f61dd747f1bbe78ce5f5cbac66387efd9f0681168a13f79a30b192d85",
+      "traceability/evidence.py": "040370dd1fbb10cc408fce467c2ceac1fd995d055284bd2d7ace75b64d02fd08",
+      "traceability/fact_agreement_spec.py": "8f7417ee1b0771f5908d6d96d180b4d786fab25f51f21f24b07129722e6741e6",
+      "traceability/policy_atom_bindings_spec.py": "e12e2f7ff99df78c380f13194a73db33f0b8a8f8ba20c9c6831f595f3511c759",
+      "traceability/providers.py": "3da504cd8a763a4a7d20ec3bb53eee238a60d244672afa7263ac077f93941042",
+      "traceability/publication.py": "c4884e043c9489b9ee46e4b9da92a8191c0da2f19354572cb632a1abf9ecdee7",
+      "traceability/publication_provider.py": "d3684e4bb51aa541bf8de6bc8e956ee5e591478ee0f005b6eccc55829efccee6",
+      "traceability/reference_status_spec.py": "77303598e3a8c63baf97c72d1f23aceca466144dd9304b6641253b13b3150c64",
+      "traceability/references.py": "50ffff8343abcd7b53d6f81c673d84dd9bb2fdb09ec7409673e203b399b79414",
+      "traceability/resolution_completeness_spec.py": "c65c1a0138859b36d550bc2ef205b3c01e661e25934a59fd64521d020c96234e",
+      "traceability/snapshot.py": "02bd0cc1216bdb1154c5c2dd5ddaad2e74f78a63cbf0b88c86a4b62510b9104b"
+    },
+    "profile": "specgraph.publication-exact-links/v1",
+    "provider_id": "publication.declarations",
+    "version": "1.0.0"
+  },
+  "readiness": "not_evaluated",
+  "resolution_complete": true,
+  "snapshot_content_sha256": "a1f489c1e811273ea249d10f000202f6b70a79b2e304ee9b247fcee67568dce5",
+  "snapshot_profile": "specgraph.trace-snapshot/declarations-v1",
+  "source_revision": "2400483300f36942b1d3543fb3293c547f4f6bc7",
+  "sources": [
+    {
+      "diagnostic": null,
+      "path": "specs/nodes/SG-SPEC-0071.yaml",
+      "sha256": "9f4a8b8332138ef3b6d1d9cc873b2a40a1a4620f7fceb35db32d4d9e1d6521a9",
+      "status": "read"
+    },
+    {
+      "diagnostic": null,
+      "path": "tests/test_publication_delivery_evidence.py",
+      "sha256": "fd9eee1a2aca22b60d3918edd0eae93f91bfa7fc7a0a9c9354bb1923f01f6d5c",
+      "status": "read"
+    },
+    {
+      "diagnostic": null,
+      "path": "tests/test_publication_evidence_policies.py",
+      "sha256": "aa60f5f23027b4bc1e9dd97cacd1ecf2f7cfa36ea03d2893734fec4c683d5c9b",
+      "status": "read"
+    },
+    {
+      "diagnostic": null,
+      "path": "tests/test_static_artifact_incremental_stage.py",
+      "sha256": "6a64b627e0bbc61abeb32b788b6ccbe8485175fa19adc3e6be09b6b7fab5e971",
+      "status": "read"
+    },
+    {
+      "diagnostic": null,
+      "path": "tools/feature_passports/static-publication-bindings.json",
+      "sha256": "e5f744bf9bc08de548df14bb5438ccafaa460c3ab3a940a8f45a37d8c5c95031",
+      "status": "read"
+    },
+    {
+      "diagnostic": null,
+      "path": "tools/feature_passports/static-publication.json",
+      "sha256": "4d7e7fceae4e9a818f6bfc2992a93211c1e0fe4482e552a20a011b8e21dd8924",
+      "status": "read"
+    },
+    {
+      "diagnostic": null,
+      "path": "tools/publication_evidence/bindings_spec.py",
+      "sha256": "ac51e677e49778c63ee7da8060a25ffaa35d9dcba52f90a4839f82f66d8b3226",
+      "status": "read"
+    },
+    {
+      "diagnostic": null,
+      "path": "tools/publication_evidence/bound_observation_spec.py",
+      "sha256": "f3e296d7ef70e7e5d5cee30274ce2d9968f9565dca8e3ff1b3e23060f9c3feed",
+      "status": "read"
+    },
+    {
+      "diagnostic": null,
+      "path": "tools/publication_evidence/case_spec.py",
+      "sha256": "678cc38bc73e2e45e6dcc775af82ade8d886cc92484070f317665bd3dd89b13a",
+      "status": "read"
+    },
+    {
+      "diagnostic": null,
+      "path": "tools/publication_evidence/http_observation_spec.py",
+      "sha256": "16699c83064b9dc2b0b7e1bc00fd3489502655340fa667657d36cd9d44e10526",
+      "status": "read"
+    },
+    {
+      "diagnostic": null,
+      "path": "tools/publication_evidence/merged_revision_spec.py",
+      "sha256": "70b26ebbb2d2c816122cccded29547b5d73695a85735dee631dd6dd7b432b411",
+      "status": "read"
+    },
+    {
+      "diagnostic": null,
+      "path": "tools/publication_evidence/snapshot_spec.py",
+      "sha256": "c58b66852ce1e409e998dab7f9f33b088b4dcdbf39d073816e34b5c08ba1f421",
+      "status": "read"
+    },
+    {
+      "diagnostic": null,
+      "path": "tools/publication_evidence/suite_spec.py",
+      "sha256": "d5a056eaff0d26d1709bc92dbe4c5df096c3340de6d67276206e44e157d04793",
+      "status": "read"
+    },
+    {
+      "diagnostic": null,
+      "path": "tools/static_artifact_incremental_stage.py",
+      "sha256": "6b9bab723a1fb59625cea5f01d305c6041405a3e03008c47ca1c11deb39b21f1",
+      "status": "read"
+    }
+  ]
+}

@@ -13167,7 +13167,17 @@
       "tools/traceability/references.py",
       "tests/test_publication_trace_links.py",
       "docs/publication_trace_links.md",
-      "docs/evidence/0226_publication_link_resolution.json"
+      "docs/evidence/0226_publication_link_resolution.json",
+      "tools/publication_trace_snapshot.py",
+      "tools/traceability/evidence.py",
+      "tools/traceability/providers.py",
+      "tools/traceability/snapshot.py",
+      "tools/traceability/publication_provider.py",
+      "tools/traceability/fact_agreement_spec.py",
+      "tools/traceability/resolution_completeness_spec.py",
+      "tests/test_evidence_provider.py",
+      "docs/evidence_provider.md",
+      "docs/evidence/0226_publication_provider_snapshot.json"
     ],
     "runtime_markers": [
       {
@@ -13185,6 +13195,10 @@
       {
         "path": "tools/traceability/publication.py",
         "pattern": "def build_publication_links("
+      },
+      {
+        "path": "tools/traceability/publication_provider.py",
+        "pattern": "class PublicationEvidenceProvider:"
       }
     ],
     "validation_markers": [
@@ -13199,6 +13213,10 @@
       {
         "path": "tests/test_publication_trace_links.py",
         "pattern": "def test_revision_pin_non_execution_and_lifecycle("
+      },
+      {
+        "path": "tests/test_evidence_provider.py",
+        "pattern": "def test_provider_order_and_repeat_observations_do_not_multiply_subjects("
       }
     ],
     "observation_markers": [
@@ -13207,6 +13225,6 @@
         "pattern": "evidence_admission_allowed: false"
       }
     ],
-    "notes": "Partial realization: compatibility slice B extracts the unchanged legacy proxy through immutable facts and an injectable metric protocol, with a named score-status Specification and pre-refactor golden projections. The independent publication prerequisite resolves source-pinned exact links through named resolution and mapping policies, with synthetic Zeusus negative cases. EvidenceProvider, general TraceSnapshot, atom-level SVC, profile activation and the SG-SPEC-0021 semantic candidate remain deferred; neither slice changes trusted admission or thresholds."
+    "notes": "Partial realization: slice B preserves the legacy proxy behind immutable facts and an injectable metric protocol; the independent exact-link prerequisite names resolution and mapping policies. Slice C1 adds a declaration EvidenceProvider, explicit in-process registry and immutable source-bound TraceSnapshot with capability completeness and duplicate/conflicting observations. Execution-artifact collection, atom SVC, profile activation and the SG-SPEC-0021 semantic candidate remain deferred. No threshold or trusted admission change is implemented."
   }
 ]
