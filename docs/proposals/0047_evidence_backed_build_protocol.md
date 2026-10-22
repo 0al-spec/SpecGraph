@@ -801,3 +801,17 @@ conditional harness tags must not become fabricated runtime scenario IDs.
 This is documentation-only triage, not implementation, canonical contract
 adoption, accepted execution evidence or a change to admission. Product-side
 corrections and 0226's publication-only provider do not close these engine gaps.
+
+### Opt-in identity profile preparation (2026-10-23)
+
+The [bounded identity contract](../observability_identity_profile.md) and
+[portable definition](../contracts/observability_identity_profile_v1.json)
+prepare `observability_identity_declarations_v1`: explicit selection retained in
+immutable authoring context, exact required names on each obligation, no accepted
+aliases, conditional harness binding without fabricated IDs, and attributed
+diagnostics shared by future authoring/projection adapters. Legacy behavior
+remains unchanged without opt-in. The sixteen acceptance cases describe future
+checks; current tooling does not enforce this profile. Runtime realization is
+`deferred_until_canonicalized`; mapping coverage remains a separate follow-up.
+This amendment is contract preparation only with no runtime realization,
+canonical adoption, SDK propagation or evidence admission.

@@ -1,5 +1,32 @@
 # Implementation Contract Pack
 
+## Proposed opt-in identity declarations
+
+Proposal `0047` now includes `observability_identity_declarations_v1`,
+**contract preparation only**, with runtime realization
+`deferred_until_canonicalized`. See repository
+`docs/observability_identity_profile.md` and portable definition
+`docs/contracts/observability_identity_profile_v1.json`.
+
+The proposed `identity_profile` selector is retained in immutable authoring
+context as well as the node. Both absent means legacy behavior; an unknown
+version, invalid selector or removal from an opted-in candidate cannot silently
+fall back. Every obligation must declare `specification_id`, `rule_id`,
+`component_id`, `implementation_id` and `scenario_id_if_tagged`. Extra attributes
+are preserved; the accepted alias map is empty. A union across obligations
+cannot cover missing names. Conditional harness binding requires no fabricated
+runtime scenario ID.
+
+Future attributed diagnostics pin source and definition bytes; one shared check
+must reach authoring review capture and explicit contract projection. These
+declarations do not prove actual identity resolution, runtime propagation,
+mapping completeness or verified execution. Current tooling **does not enforce
+`identity_profile`**; the sixteen acceptance cases are future checks. This
+preparation declares `canonical_mutations_allowed: false`,
+`runtime_code_mutations_allowed: false` and `evidence_admission_allowed: false`.
+
+## Implemented explicit-node projection
+
 Proposal `0047`, Slice 4 provides the `explicit_node_observability_v1` profile.
 Run `make implementation-contract-pack` with `CONTRACT_WORKSPACE_ROOT` and
 `CONTRACT_TARGET_SPEC` to project a structured `specification.observability`

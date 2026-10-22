@@ -1,5 +1,10 @@
 # Implementation Contract Pack preview
 
+For the proposed opt-in per-obligation identity declarations, see the
+[identity profile contract](observability_identity_profile.md). It is contract
+preparation only: the current tool does not enforce `identity_profile`, and
+the proposed `observability_identity_declarations_v1` is not activated here.
+
 Proposal `0047`, Slice 4 starts with the `explicit_node_observability_v1` profile.
 It produces an `implementation_contract_pack_preview` from one explicitly
 selected workspace node. It does not infer observation requirements from code.
