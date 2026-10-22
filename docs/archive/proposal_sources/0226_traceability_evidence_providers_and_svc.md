@@ -103,3 +103,29 @@ S/U measurements; compatibility tests do not establish metric improvement.
 This is implementation of the existing behavior, without applying the semantic
 candidate above or activating a new SVC qualification profile. Evidence providers,
 the general TraceSnapshot and metric-profile migration remain subsequent slices.
+
+## Exact-link prerequisite authorized on 2026-10-22
+
+After the Zeusus observability feedback triage, the operator authorized an exact
+reference resolver for the existing publication pilot. The bounded deliverable
+is a pinned source-declaration diagnostic, before EvidenceProvider/TraceSnapshot
+and atom SVC integration. It does not depend on the compatibility extraction PR.
+
+The six intake observations distinguish identity vocabulary omissions, missing
+mapping-reference validation, executor tool locations, a quoted-source transport
+false positive, retained candidate lifecycle drift and a correctly rejected
+operator target-count error. This slice addresses exact references and preserves
+source lifecycle explicitly. The other runtime/authoring seams remain separate.
+
+The implemented profile is `specgraph.publication-exact-links/v1`; its public
+contract is [Exact publication trace links](../../publication_trace_links.md).
+The common resolver has small synthetic regressions inspired by Zeusus's
+nonexistent obligation, scenario ranges and missing planned target. No Zeusus
+source is adopted, no whole-product adapter is claimed, and no gameplay test is
+executed by this work. Identity aliases remain product/profile-specific.
+
+The [pinned observation](../../evidence/0226_publication_link_resolution.json)
+records 13 unique atoms and 55 resolved link occurrences at one Git revision.
+It establishes direct declaration resolution, not fulfilled intent, runtime
+confirmation or canonical approval. The SG-SPEC-0021 semantic candidate remains
+separate and unapplied.

@@ -13158,7 +13158,16 @@
       "tools/metric_packs/score_status_spec.py",
       "tools/supervisor.py",
       "tests/test_legacy_verifiability.py",
-      "tests/fixtures/metric_packs/legacy_verifiability.json"
+      "tests/fixtures/metric_packs/legacy_verifiability.json",
+      "tools/publication_trace_links.py",
+      "tools/traceability/publication.py",
+      "tools/traceability/reference_status_spec.py",
+      "tools/traceability/policy_atom_bindings_spec.py",
+      "tools/traceability/atom_roles_spec.py",
+      "tools/traceability/references.py",
+      "tests/test_publication_trace_links.py",
+      "docs/publication_trace_links.md",
+      "docs/evidence/0226_publication_link_resolution.json"
     ],
     "runtime_markers": [
       {
@@ -13172,6 +13181,10 @@
       {
         "path": "tools/metric_packs/score_status_spec.py",
         "pattern": "SCORE_STATUS_SPEC:"
+      },
+      {
+        "path": "tools/traceability/publication.py",
+        "pattern": "def build_publication_links("
       }
     ],
     "validation_markers": [
@@ -13182,6 +13195,10 @@
       {
         "path": "tests/test_legacy_verifiability.py",
         "pattern": "def test_metric_package_loads_in_isolation_without_writing_artifacts("
+      },
+      {
+        "path": "tests/test_publication_trace_links.py",
+        "pattern": "def test_revision_pin_non_execution_and_lifecycle("
       }
     ],
     "observation_markers": [
@@ -13190,6 +13207,6 @@
         "pattern": "evidence_admission_allowed: false"
       }
     ],
-    "notes": "Operator-authorized proposal preparation and one bounded Supervisor cycle. CLI startup failures and actual callback execution are retained separately. The architecture and candidate SVC qualification profile are author curation; no provider runtime, metric activation, threshold change or trusted evidence admission is implemented by this proposal. The operator subsequently requested implementation. Compatibility slice B now extracts the unchanged legacy proxy through immutable prepared facts and an injectable metric protocol, and reuses a named score-status Specification through the existing Supervisor facade. Golden projections were captured before the refactor. This is partial realization; evidence providers, general TraceSnapshot, atom-level SVC, profile activation and semantic candidate adoption remain deferred."
+    "notes": "Partial realization: compatibility slice B extracts the unchanged legacy proxy through immutable facts and an injectable metric protocol, with a named score-status Specification and pre-refactor golden projections. The independent publication prerequisite resolves source-pinned exact links through named resolution and mapping policies, with synthetic Zeusus negative cases. EvidenceProvider, general TraceSnapshot, atom-level SVC, profile activation and the SG-SPEC-0021 semantic candidate remain deferred; neither slice changes trusted admission or thresholds."
   }
 ]
