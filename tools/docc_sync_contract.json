@@ -1105,6 +1105,22 @@
       ]
     },
     {
+      "id": "authored-traceability-intent-preparation",
+      "description": "Source derivation preparation remains distinct from successful refinement and canonical adoption.",
+      "docs": [
+        "docs/reviews/0047_authored_traceability/README.md"
+      ],
+      "docc": [
+        "Sources/SpecGraph/Documentation.docc/ImplementationContractPack.md"
+      ],
+      "required_terms": [
+        "engineering choices",
+        "assistant-authored",
+        "SG-SPEC-0020",
+        "Intent -> Requirement"
+      ]
+    },
+    {
       "id": "git-isolated-local-workspace",
       "description": "Minimal local workspace proposal and DocC preserve existing path behavior and observation limits.",
       "docs": [

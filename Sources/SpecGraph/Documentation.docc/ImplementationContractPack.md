@@ -2,6 +2,20 @@
 
 ## Proposed opt-in identity declarations
 
+The source/requirement review packet at
+`docs/reviews/0047_authored_traceability/README.md` retains addressability and
+delivery-chain intent separately from six proposed local requirements and seven
+engineering choices. It maps all sixteen acceptance cases and includes native
+pre-canonical intent captures. The initial failed attempt and assistant-authored
+candidate remain historical. The corrected retry with Codex CLI 0.163.0 / Sol 6.1
+Medium completed `ok / done / review_pending`, with eight validators passed and
+`accepted_canonical_diff: false`. Its raw child candidate and parent pending
+envelope are distinct; proposed mapping semantics distinguish reference validity
+from full/partial coverage. The 10-of-15 scenario is unexecuted, and diagnostic
+findings and CLI warnings remain retained. See the packet's `retry/evidence.json`.
+Canonical Intent -> Requirement reachability remains unresolved; SG-SPEC-0020
+is boundary context, not the derivation of the exact profile vocabulary.
+
 Proposal `0047` now includes `observability_identity_declarations_v1`,
 **contract preparation only**, with runtime realization
 `deferred_until_canonicalized`. See repository

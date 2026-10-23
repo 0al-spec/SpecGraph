@@ -1,5 +1,23 @@
 # Evidence-Backed Build Protocol Source Draft
 
+## Intent derivation follow-up — 2026-10-23
+
+After merging the profile preparation, the operator asked: "Из какого intent
+происходят эти контракты?" The author identified retained addressability and
+delivery-chain intent, but acknowledged that feedback/proposal links and the
+generic SG-SPEC-0020 citation did not establish a canonical requirement path.
+The operator agreed with preparing that derivation. This is consent to prepare
+review material, not a separate attestation of every proposed requirement or
+canonical adoption.
+
+`docs/reviews/0047_authored_traceability/intent.json` preserves exact conversation
+quotes separately from interpretations and pins retained product authoring
+inputs. The adjacent candidate, lineage and evidence record the native intent
+bridge attempt, its executor failure and the corrected manual review draft.
+The original seed's atomicity/evidence errors are author preparation errors,
+not product defects. No successful refinement, canonical closure or runtime
+activation is claimed by this source amendment.
+
 ## Identity profile preparation source — 2026-10-23
 
 After the source-bound second-pass triage, the operator accepted preparation of
@@ -101,3 +119,20 @@ Source-bound classification and proposed follow-ups are recorded in the
 [triage](../../reviews/zeusus_second_pass_feedback_triage_20261022.md).
 This is local feedback review and documentation only; no new supervisor run,
 canonical adoption, runtime validator or trusted evidence is claimed.
+
+## Source-intent preparation and corrected retry (2026-10-23)
+
+The operator asked which Intent produced the authored identity and mapping
+contracts. The [review packet](../../reviews/0047_authored_traceability/README.md)
+retains quoted intent, product-input pins and diagnostic feedback separately
+from six proposed requirements and concrete profile engineering choices.
+
+The initial failed Supervisor attempt and manual candidate remain historical.
+After the requested CLI update, one corrected bounded pass ran on Codex 0.163.0,
+Sol 6.1 Medium: `ok / done / review_pending`, eight validators passed,
+`accepted_canonical_diff: false`. The retained raw child candidate proposes
+explicit mapping scope, location and full/partial coverage semantics, including
+an unexecuted 10-of-15 scenario. Retry evidence preserves the parent pending
+envelope, native capture copies, quoted-document diagnostic match and real CLI
+warnings. These are preparation artifacts, not canonical adoption, runtime
+enforcement, executed BDD tests or admitted evidence.

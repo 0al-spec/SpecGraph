@@ -1,0 +1,199 @@
+{
+  "artifact_kind": "authored_traceability_preparation_lineage",
+  "schema_version": 1,
+  "proposal_id": "0047",
+  "state": "review_pending",
+  "source_intent": "intent.json",
+  "intent_handle": "user_intent::authored-traceability-0047",
+  "temporary_spec_id": "DRAFT-SPEC-0047-TRACEABILITY",
+  "requirement_identity_scope": "candidate_local_not_canonical_subject_identity",
+  "canonical_intent_path": "unresolved_until_explicit_adoption",
+  "canonical_adoption": false,
+  "runtime_enforcement": false,
+  "requirement_links": [
+    {
+      "requirement_id": "ATC-REQ-001",
+      "source_refs": [
+        "INTENT-0047-DERIVATION",
+        "INTENT-0047-ADDRESSABILITY"
+      ],
+      "artifacts": [
+        "intent.json",
+        "candidate.yaml"
+      ],
+      "contract_sections": [
+        "Status and source",
+        "Next bounded slices"
+      ],
+      "note": "Keep source claims distinct from canonical derivation; generic SG-SPEC-0020 citation cannot establish these requirements.",
+      "disposition": "proposed_requirement_interpretation"
+    },
+    {
+      "requirement_id": "ATC-REQ-002",
+      "source_refs": [
+        "INTENT-0047-ADDRESSABILITY",
+        "ZEU-AUTHORING-0047-01",
+        "ZEU-AUTHORING-0047-02",
+        "ZST-04"
+      ],
+      "artifacts": [
+        "candidate.yaml",
+        "../../observability_identity_profile.md"
+      ],
+      "contract_sections": [
+        "2. Per-obligation declaration rule"
+      ],
+      "identity_profile_acceptance_cases": [
+        "IDP-02",
+        "IDP-03",
+        "IDP-04",
+        "IDP-05",
+        "IDP-06",
+        "IDP-09",
+        "IDP-11",
+        "IDP-16"
+      ],
+      "disposition": "proposed_requirement_interpretation"
+    },
+    {
+      "requirement_id": "ATC-REQ-003",
+      "source_refs": [
+        "INTENT-0047-ADDRESSABILITY",
+        "INTENT-0047-DERIVATION",
+        "ZEU-AUTHORING-0047-02",
+        "ZST-04"
+      ],
+      "artifacts": [
+        "candidate.yaml",
+        "../../observability_identity_profile.md"
+      ],
+      "contract_sections": [
+        "1. Selection and compatibility",
+        "4. Diagnostics and enforcement seam"
+      ],
+      "identity_profile_acceptance_cases": [
+        "IDP-01",
+        "IDP-07",
+        "IDP-08",
+        "IDP-12",
+        "IDP-13",
+        "IDP-15"
+      ],
+      "disposition": "proposed_requirement_interpretation"
+    },
+    {
+      "requirement_id": "ATC-REQ-004",
+      "source_refs": [
+        "INTENT-0047-DELIVERY-CHAIN",
+        "ZEU-AUTHORING-0047-02",
+        "ZST-02"
+      ],
+      "artifacts": [
+        "candidate.yaml",
+        "../zeusus_second_pass_feedback_triage_20261022.md"
+      ],
+      "contract_sections": [
+        "ZST-02 — Mapping validity and coverage"
+      ],
+      "note": "Mapping contract preparation remains separate; no implemented coverage gate or complete mapping contract is claimed.",
+      "disposition": "proposed_requirement_interpretation"
+    },
+    {
+      "requirement_id": "ATC-REQ-005",
+      "source_refs": [
+        "INTENT-0047-DELIVERY-CHAIN",
+        "ZEU-AUTHORING-0047-01",
+        "ZEU-AUTHORING-0047-02"
+      ],
+      "artifacts": [
+        "candidate.yaml",
+        "../../observability_identity_profile.md"
+      ],
+      "contract_sections": [
+        "2. Per-obligation declaration rule"
+      ],
+      "identity_profile_acceptance_cases": [
+        "IDP-10"
+      ],
+      "disposition": "proposed_requirement_interpretation"
+    },
+    {
+      "requirement_id": "ATC-REQ-006",
+      "source_refs": [
+        "INTENT-0047-DELIVERY-CHAIN",
+        "ZEU-AUTHORING-0047-01"
+      ],
+      "artifacts": [
+        "candidate.yaml",
+        "../../observability_identity_profile.md"
+      ],
+      "contract_sections": [
+        "4. Diagnostics and enforcement seam"
+      ],
+      "identity_profile_acceptance_cases": [
+        "IDP-14"
+      ],
+      "disposition": "proposed_requirement_interpretation"
+    }
+  ],
+  "engineering_choices": [
+    {
+      "id": "ATC-DESIGN-001",
+      "choice": "Exact five attribute spellings",
+      "supports_requirement": "ATC-REQ-002",
+      "rationale": "Zeusus-compatible vocabulary; the underlying requirement is attributable identity, not these universal string names.",
+      "status": "proposed_design_not_human_quote"
+    },
+    {
+      "id": "ATC-DESIGN-002",
+      "choice": "Explicit profile opt-in and immutable selector",
+      "supports_requirement": "ATC-REQ-003",
+      "rationale": "Proposed way to keep requested requirements stable across candidate edits while preserving legacy inputs.",
+      "status": "proposed_design_not_human_quote"
+    },
+    {
+      "id": "ATC-DESIGN-003",
+      "choice": "Exact-byte SHA-256 source/profile pins",
+      "supports_requirement": "ATC-REQ-003",
+      "rationale": "Proposed stale-context detection mechanism; digest is revision provenance, not identity or approval.",
+      "status": "proposed_design_not_human_quote"
+    },
+    {
+      "id": "ATC-DESIGN-004",
+      "choice": "Empty alias map and no silent rewriting",
+      "supports_requirement": "ATC-REQ-002",
+      "rationale": "Proposed exact-name v1 behavior; product normalization instruction and a validating adapter have different roles.",
+      "status": "proposed_design_not_human_quote"
+    },
+    {
+      "id": "ATC-DESIGN-005",
+      "choice": "Diagnostic status/code and CLI exit mapping",
+      "supports_requirement": "ATC-REQ-003",
+      "rationale": "Proposed adapter/compatibility design rather than human product intent.",
+      "status": "proposed_design_not_human_quote"
+    },
+    {
+      "id": "ATC-DESIGN-006",
+      "choice": "One shared pure check at authoring and projection",
+      "supports_requirement": "ATC-REQ-003",
+      "rationale": "Proposed architectural realization to avoid divergent acceptance boundaries.",
+      "status": "proposed_design_not_human_quote"
+    },
+    {
+      "id": "ATC-DESIGN-007",
+      "choice": "Full/partial mapping mode and explicit mapping location",
+      "supports_requirement": "ATC-REQ-004",
+      "rationale": "Proposed realization; exact YAML container/field shape remains unprepared and unimplemented.",
+      "status": "proposed_design_not_human_quote"
+    }
+  ],
+  "coverage_claim": "All 16 proposed identity profile acceptance cases mapped to proposed requirements; no executed conformance or canonical reachability claim.",
+  "canonical_mutations_allowed": false,
+  "evidence_admission_allowed": false,
+  "refinement_status": "executor_unavailable_manual_candidate_preparation",
+  "acceptance_grouping": {
+    "criteria_count": 4,
+    "requirement_count": 6,
+    "reason": "Four acceptance surfaces group six local requirements within the existing maximum of five; no requirement is dropped."
+  }
+}

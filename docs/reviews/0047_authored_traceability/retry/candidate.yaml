@@ -1,0 +1,238 @@
+id: DRAFT-SPEC-0047-TRACEABILITY
+title: SpecGraph - Authored Traceability Obligation Completeness Preparation
+kind: spec
+created_at: '2026-10-22T22:04:00Z'
+updated_at: '2026-10-22T22:04:00Z'
+status: outlined
+maturity: 0.15
+depends_on: []
+refines:
+- SG-SPEC-0062
+inputs:
+- docs/reviews/0047_authored_traceability/intent.json
+- docs/observability_identity_profile.md
+- docs/contracts/observability_identity_profile_v1.json
+- docs/reviews/zeusus_second_pass_feedback_triage_20261022.md
+- docs/proposals/0047_evidence_backed_build_protocol.md
+- specs/nodes/SG-SPEC-0062.yaml
+- specs/nodes/SG-SPEC-0070.yaml
+- specs/nodes/SG-SPEC-0017.yaml
+- specs/nodes/SG-SPEC-0061.yaml
+outputs:
+- specs/nodes/DRAFT-SPEC-0047-TRACEABILITY.yaml
+allowed_paths:
+- specs/nodes/DRAFT-SPEC-0047-TRACEABILITY.yaml
+acceptance:
+- Retains explicit source intent for each proposed requirement and distinguishes requested observation
+  attribution from profile engineering choices.
+- Defines per-obligation preservation of requested identity and authoring context so sibling declarations
+  or candidate edits cannot silently satisfy omitted obligations.
+- Defines explicit rule mapping scope and distinguishes exact reference validity from full or partial
+  coverage without duplicating delegated rules.
+- Preserves harness-only scenario attribution, diagnostic non-interference and the distinction between
+  authored declarations and executed or admitted evidence.
+acceptance_evidence:
+- criterion: Retains explicit source intent for each proposed requirement and distinguishes requested
+    observation attribution from profile engineering choices.
+  evidence: 'Proposed structural coverage only: specification.source_intent_capture and requirements ATC-REQ-001/002
+    name source refs, while engineering_choice_boundary labels profile decisions. No executed conformance
+    is claimed.'
+- criterion: Defines per-obligation preservation of requested identity and authoring context so sibling
+    declarations or candidate edits cannot silently satisfy omitted obligations.
+  evidence: 'Proposed structural coverage only: requirements ATC-REQ-002/003 define independent obligation
+    attribution and preservation of requested authoring meaning. No engine enforcement is claimed.'
+- criterion: Defines explicit rule mapping scope and distinguishes exact reference validity from full
+    or partial coverage without duplicating delegated rules.
+  evidence: 'Proposed structural coverage only: ATC-REQ-004 and specification.proposed_mapping_contract
+    distinguish declared rule scope and mapping location, exact reference validity, full/partial coverage,
+    delegation and many-to-many mappings. ATC-SCENARIO-004 describes the resolvable-but-incomplete 10/15
+    case; it has not been executed. The full/partial vocabulary is a proposed engineering choice.'
+- criterion: Preserves harness-only scenario attribution, diagnostic non-interference and the distinction
+    between authored declarations and executed or admitted evidence.
+  evidence: 'Proposed structural coverage only: ATC-REQ-005/006 retain actual-harness-only tags, diagnostic
+    non-interference and declaration-versus-execution boundaries. No test or runtime evidence is admitted.'
+prompt: Prepare one review-only declaration contract grounded in the recorded human intent and retained
+  Zeusus authoring feedback. Preserve source requirements separately from engineering decisions; do not
+  adopt canonical policy. This corrected seed groups six proposed requirements into four acceptance criteria;
+  the original failed input and run remain retained.
+specification:
+  objective: Preserve the requested intent-to-rule-to-implementation/test/runtime attribution when authoring
+    and projecting observation declarations, with explicit mapping scope and honest evidence strength.
+  preparation_only: true
+  source_proposal: '0047'
+  proposed_canonical_parent: SG-SPEC-0062
+  source_intent_capture: docs/reviews/0047_authored_traceability/intent.json
+  scope:
+    in:
+    - Authored observation identity attribution requested by an explicit target
+    - Source-bound requirements distinct from proposed engineering choices
+    - Explicit rule mapping scope and declaration-level coverage
+    - Conditional harness attribution and non-interference
+    out:
+    - New canonical node or edge kinds
+    - Universal runtime event schema or mandatory product field spellings
+    - SDK propagation, instrumentation transport, storage or metrics
+    - Code/test/runtime conformance and evidence admission
+    - Canonical adoption or profile activation
+    - Rewriting frozen SG-SPEC-0017, SG-SPEC-0020 or parent specs
+  requirements:
+  - id: ATC-REQ-001
+    title: Source intent remains explicit
+    statement: A proposed authored traceability obligation identifies its retained source intent or authoring
+      request; inferred requirements and engineering choices are labeled separately, and an unresolved
+      source cannot be presented as a canonical derivation.
+    authority: proposed_requirement_not_canonical
+    source_refs:
+    - INTENT-0047-DERIVATION
+    - INTENT-0047-ADDRESSABILITY
+  - id: ATC-REQ-002
+    title: Each obligation retains requested identity
+    statement: Each authored observation obligation retains the specification, rule, component and implementation
+      attribution requested for that target, independently of sibling obligations. A complete sibling
+      or root summary cannot supply an omitted declaration.
+    authority: proposed_requirement_not_canonical
+    source_refs:
+    - INTENT-0047-ADDRESSABILITY
+    - ZEU-AUTHORING-0047-01
+    - ZEU-AUTHORING-0047-02
+    - ZST-04
+  - id: ATC-REQ-003
+    title: Authoring preserves requested meaning
+    statement: Refinement and projection preserve the selected authoring requirements and expose omission
+      or ambiguous renaming for review; executor edits do not silently remove a requested traceability
+      obligation. This does not mandate a global profile.
+    authority: proposed_requirement_not_canonical
+    source_refs:
+    - INTENT-0047-ADDRESSABILITY
+    - INTENT-0047-DERIVATION
+    - ZEU-AUTHORING-0047-02
+    - ZST-04
+  - id: ATC-REQ-004
+    title: Mapping scope and coverage are explicit
+    statement: An authored mapping identifies its intended rule scope, authoritative mapping location
+      and full or partial coverage claim. Exact reference validity is distinct from coverage; full coverage
+      requires every rule in the declared scope to have a resolved mapping, while partial coverage identifies
+      each uncovered rule by exact identity. Root delegation does not require copied participant rules;
+      many-to-many mappings remain possible.
+    authority: proposed_requirement_not_canonical
+    source_refs:
+    - INTENT-0047-DELIVERY-CHAIN
+    - ZEU-AUTHORING-0047-02
+    - ZST-02
+  - id: ATC-REQ-005
+    title: Scenario attribution requires a real harness
+    statement: A scenario attribution is conditional on an actual harness binding. Ordinary runtime observations
+      without a tagged harness do not receive fabricated scenario identities; declarations and test references
+      do not establish test execution.
+    authority: proposed_requirement_not_canonical
+    source_refs:
+    - INTENT-0047-DELIVERY-CHAIN
+    - ZEU-AUTHORING-0047-01
+    - ZEU-AUTHORING-0047-02
+  - id: ATC-REQ-006
+    title: Declaration checks retain evidence boundaries
+    statement: Successful authored-declaration checks establish only their declared structural scope.
+      They do not establish actual runtime propagation, implementation conformance, executed or passing
+      tests, evidence admission, or canonical approval. Diagnostic collection must not alter product behavior.
+    authority: proposed_requirement_not_canonical
+    source_refs:
+    - INTENT-0047-DELIVERY-CHAIN
+    - ZEU-AUTHORING-0047-01
+  engineering_choice_boundary:
+    profile: observability_identity_declarations_v1 is a proposed concrete realization, not the human
+      intent itself.
+    choices:
+    - Exact five field names are the selected Zeusus-compatible profile vocabulary, not universal ontology.
+    - Explicit opt-in, immutable selector, SHA-256 pins and diagnostic statuses are proposed implementation
+      choices.
+    - Empty alias map and CLI exit-code mapping are proposed compatibility choices.
+    - The full/partial coverage vocabulary and explicit mapping-location selection are proposed realizations
+      of ATC-REQ-004, not additional quoted human intent or an activated mapping schema.
+    alternatives_allowed: An alternative realization may satisfy the same reviewed requirements if it
+      preserves attributable meaning and makes omissions visible.
+    conditional_scenario: Required scenario_id_if_tagged declaration in the proposed profile does not
+      require an emitted runtime ID without a tagged harness.
+  proposed_mapping_contract:
+    authority: review_only_interpretation_of_ATC-REQ-004_not_canonical
+    source_basis: INTENT-0047-DELIVERY-CHAIN and retained authoring request ZEU-AUTHORING-0047-02 motivate
+      attributable mappings; ZST-02 supplies the observed distinction between reference validity and coverage.
+    scope_and_location: The declaration identifies the expected rule identities and owning specification
+      context independently of the mapping rows, and explicitly selects the authoritative mapping location.
+      The retained materialization and composition locations are examples, not universal field paths.
+      Omitted rows cannot silently narrow the declared scope or select another similarly named mapping.
+    reference_validity: Rule, obligation and scenario references resolve by exact identity in their declared
+      context. Declared implementation target strings remain authored references; their presence does
+      not establish source-code resolution or execution. Unknown or unresolved references and duplicate
+      mapping rows remain visible separately from uncovered rules.
+    coverage: Full coverage requires equality between the declared rule set and the distinct in-scope
+      rule identities with resolved mappings; row count alone cannot establish it. Partial coverage names
+      the covered subset and every uncovered rule. Missing scope or unresolved references cannot support
+      a full-coverage claim, and observed incompleteness does not silently change a full claim to partial.
+    composition: Several rules may share an obligation and one rule may map to several obligations; distinct
+      such associations are not duplicate rows. A root names delegated participant scope without copying
+      participant rules locally; delegation alone does not establish participant coverage.
+    evidence_limit: These are proposed declaration semantics only. Even full declared mapping coverage
+      establishes neither semantic sufficiency, implementation conformance, test execution, runtime propagation
+      nor evidence admission, and activates no consumer or approval gate.
+  bdd_scenarios:
+  - id: ATC-SCENARIO-001
+    scenario: Source intent remains explicit
+    steps:
+    - Given the source-bound authored traceability requirement ATC-REQ-001
+    - When its declaration is refined or projected
+    - Then A proposed authored traceability obligation identifies its retained source intent or authoring
+      request; inferred requirements and engineering choices are labeled separately, and an unresolved
+      source cannot be presented as a canonical derivation.
+  - id: ATC-SCENARIO-002
+    scenario: Each obligation retains requested identity
+    steps:
+    - Given the source-bound authored traceability requirement ATC-REQ-002
+    - When its declaration is refined or projected
+    - Then Each authored observation obligation retains the specification, rule, component and implementation
+      attribution requested for that target, independently of sibling obligations. A complete sibling
+      or root summary cannot supply an omitted declaration.
+  - id: ATC-SCENARIO-003
+    scenario: Authoring preserves requested meaning
+    steps:
+    - Given the source-bound authored traceability requirement ATC-REQ-003
+    - When its declaration is refined or projected
+    - Then Refinement and projection preserve the selected authoring requirements and expose omission
+      or ambiguous renaming for review; executor edits do not silently remove a requested traceability
+      obligation. This does not mandate a global profile.
+  - id: ATC-SCENARIO-004
+    scenario: Mapping scope and coverage are explicit
+    steps:
+    - Given ATC-REQ-004 and an explicitly located mapping claiming full coverage of 15 declared local
+      rules
+    - Given all mapping references resolve but only 10 distinct in-scope rule identities are mapped
+    - When the proposed declaration semantics are applied during refinement or projection
+    - Then reference validity remains distinct from coverage and the full-coverage claim is unsupported
+    - Then DUR-BOUNDS, DUR-FORMAT, DUR-IDENTITY, DUR-MIGRATION and DUR-RESET remain named as uncovered
+      rules
+    - Then repeated rows or additional obligations for the same 10 rules cannot supply the five omissions
+    - Then a partial-coverage declaration explicitly retains those omissions and the original declared
+      scope
+    - Then delegated participant rules need no local copies and delegation alone proves no participant
+      coverage
+    - Then this authored scenario and any successful declaration check establish no executed or admitted
+      evidence
+  - id: ATC-SCENARIO-005
+    scenario: Scenario attribution requires a real harness
+    steps:
+    - Given the source-bound authored traceability requirement ATC-REQ-005
+    - When its declaration is refined or projected
+    - Then A scenario attribution is conditional on an actual harness binding. Ordinary runtime observations
+      without a tagged harness do not receive fabricated scenario identities; declarations and test references
+      do not establish test execution.
+  - id: ATC-SCENARIO-006
+    scenario: Declaration checks retain evidence boundaries
+    steps:
+    - Given the source-bound authored traceability requirement ATC-REQ-006
+    - When its declaration is refined or projected
+    - Then Successful authored-declaration checks establish only their declared structural scope. They
+      do not establish actual runtime propagation, implementation conformance, executed or passing tests,
+      evidence admission, or canonical approval. Diagnostic collection must not alter product behavior.
+gate_state: none
+proposed_status: null
+proposed_maturity: null
+required_human_action: '-'

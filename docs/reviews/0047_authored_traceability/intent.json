@@ -1,0 +1,66 @@
+{
+  "artifact_kind": "authored_traceability_intent_capture",
+  "schema_version": 1,
+  "captured_at": "2026-10-22T22:04:20Z",
+  "source_revision": "989086c59edf656bccc9000e9f5717a2f86ba173",
+  "capture_authority": "assistant_curated_from_user_conversation_and_retained_inputs",
+  "canonical_intent_adopted": false,
+  "quotes": [
+    {
+      "id": "INTENT-0047-ADDRESSABILITY",
+      "source_kind": "user_chat_quote",
+      "text": "Поскольку правило обычно выражается просто и логично, то его надо уметь адресовать как в спеке так и в коде и трассировать в рантайм.",
+      "original_timestamp": "not_retained",
+      "interpretation": "Preserve addressable rule identity from specification to implementation and runtime."
+    },
+    {
+      "id": "INTENT-0047-DELIVERY-CHAIN",
+      "source_kind": "user_chat_quote",
+      "text": "Сигналы и подтверждения должны были достаточно легко извлекаемыми по всему пайплайну доставки продукта: intent → spec → tests → runtime.",
+      "original_timestamp": "not_retained",
+      "interpretation": "Make cross-stage evidence readily attributable while keeping the mechanism lightweight."
+    },
+    {
+      "id": "INTENT-0047-DERIVATION",
+      "source_kind": "user_chat_quote",
+      "text": "Из какого intent происходят эти контракты?",
+      "original_timestamp": "not_retained",
+      "interpretation": "Explain and retain the source intent of each proposed contract; distinguish requirements from engineering choices."
+    }
+  ],
+  "retained_inputs": [
+    {
+      "source_kind": "retained_product_authoring_input",
+      "locator": "Zeusus/docs/evidence/command-history-specgraph/observability-amendment/authoring-input.md",
+      "sha256": "b410d223cba48c6bd3f9b28ee803605ef0998d635deb7b95ec534ade0d9d7788",
+      "public_summary": "Existing policy/BDD-linked observations; preserve gameplay; diagnostic non-interference; actual-harness-only scenario tags.",
+      "content_publication": "summary_only",
+      "authority": "retained_operator_context_not_independently_attested",
+      "id": "ZEU-AUTHORING-0047-01"
+    },
+    {
+      "source_kind": "retained_product_authoring_input",
+      "locator": "Zeusus/docs/evidence/command-history-specgraph/second-pass-20261022/history-round2-intent.md",
+      "sha256": "635bd4752ab315add60cbba5c0b964386672dadf12ab1c1672746bbff7c6b9f1",
+      "public_summary": "Exact rule/obligation/proposed-target/scenario mappings; distinct specification/rule/component/implementation identity and conditional scenario tags.",
+      "content_publication": "summary_only",
+      "authority": "retained_operator_context_not_independently_attested",
+      "id": "ZEU-AUTHORING-0047-02"
+    }
+  ],
+  "feedback": [
+    {
+      "id": "ZST-04",
+      "path": "docs/reviews/zeusus_second_pass_feedback_triage_20261022.md",
+      "reason": "Requested identity declarations omitted or renamed despite green general checks."
+    },
+    {
+      "id": "ZST-02",
+      "path": "docs/reviews/zeusus_second_pass_feedback_triage_20261022.md",
+      "reason": "Resolved mappings cover 10 of 15 declared rules; validity differs from completeness."
+    }
+  ],
+  "interpretation_approval": "review_pending",
+  "canonical_mutations_allowed": false,
+  "evidence_admission_allowed": false
+}
