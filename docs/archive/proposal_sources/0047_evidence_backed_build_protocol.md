@@ -119,3 +119,20 @@ Source-bound classification and proposed follow-ups are recorded in the
 [triage](../../reviews/zeusus_second_pass_feedback_triage_20261022.md).
 This is local feedback review and documentation only; no new supervisor run,
 canonical adoption, runtime validator or trusted evidence is claimed.
+
+## Source-intent preparation and corrected retry (2026-10-23)
+
+The operator asked which Intent produced the authored identity and mapping
+contracts. The [review packet](../../reviews/0047_authored_traceability/README.md)
+retains quoted intent, product-input pins and diagnostic feedback separately
+from six proposed requirements and concrete profile engineering choices.
+
+The initial failed Supervisor attempt and manual candidate remain historical.
+After the requested CLI update, one corrected bounded pass ran on Codex 0.163.0,
+Sol 6.1 Medium: `ok / done / review_pending`, eight validators passed,
+`accepted_canonical_diff: false`. The retained raw child candidate proposes
+explicit mapping scope, location and full/partial coverage semantics, including
+an unexecuted 10-of-15 scenario. Retry evidence preserves the parent pending
+envelope, native capture copies, quoted-document diagnostic match and real CLI
+warnings. These are preparation artifacts, not canonical adoption, runtime
+enforcement, executed BDD tests or admitted evidence.

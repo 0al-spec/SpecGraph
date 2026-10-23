@@ -29,14 +29,17 @@ diagnostic feedback, not additional human product goals.
 | ATC-REQ-005 | Bind a scenario only when an actual tagged harness supplies it. |
 | ATC-REQ-006 | Preserve non-interference and the declaration-versus-execution/evidence boundary. |
 
-The [author-curated candidate](candidate.yaml) groups these six requirements
+The historical [author-curated candidate](candidate.yaml) groups these six requirements
 into **four acceptance criteria** and six **future** BDD scenarios. They are
 proposed semantic interpretations, not executed tests. Each requirement has
 explicit source references. Exact five spellings, opt-in selection, immutable
 request context, SHA-256 pins, alias behavior, diagnostic/CLI vocabulary and a
 shared checker are separately labeled design choices in [lineage](lineage.json).
 All 16 identity-profile acceptance cases have proposed requirement links.
-Mapping container/mode details remain a separate design follow-up.
+The latest [Supervisor candidate](retry/candidate.yaml) retains those identities
+and acceptance statements, and proposes explicit mapping scope, location and
+full/partial coverage semantics. Its declaration syntax and implementation remain
+separate design follow-ups.
 
 ## Existing SpecGraph workflow used
 
@@ -69,14 +72,48 @@ original input/request are preserved in PR ancestor `f52254d8`; the isolated
 seed revision is recorded as well. The [corrected input](input.yaml) has four
 aligned acceptance/evidence pairs. Its evidence prose describes candidate
 sections only, never actual runtime conformance. The [corrected request](corrected-operator-request.json)
-is prepared for a future attempt, not executed. The historical failed workspace
-and gate were not approved or reset; the pending candidate is a separate manual
-review artifact.
+was executed in the isolated retry described below. The historical failed
+workspace and gate were not approved or reset; the original pending candidate
+remains a separate manual review artifact.
 
 The native bridge labels its operator node `canonical_candidate` even for this
 failed attempt. That generator label is retained and does not override the run's
 failure or create canonical truth. Report the actual run fields rather than
 inferring success from that label or from the mere presence of a candidate file.
+
+### Repeat after CLI update
+
+Run `20261023T050721Z-DRAFT-SPEC-0047-TRACEABILITY-d98b7e69` used the corrected
+request and a fresh preparation worktree. Executor stderr identifies Codex
+`0.163.0`, `gpt-6.1-sol`, reasoning effort `medium`; the native record's
+`child_model` field is empty and is not repaired by this packet. The result was
+`ok / done / review_pending`, exit `0`, with all eight validator results true.
+`accepted_canonical_diff` remains **false**. The local refinement check's
+`decision: approve` is not a human adoption decision.
+
+The [retained raw child candidate](retry/candidate.yaml) changes only the proposed
+mapping contract: expected rule scope is independent of mapping rows, exact
+reference validity is distinct from coverage, and full coverage cannot be
+established by row counts. The unexecuted ATC-SCENARIO-004 now describes the
+observed 10-of-15 case and names the five uncovered rules. All six requirement
+IDs/source references, four acceptance statements and six future scenario IDs
+are preserved. No BDD or runtime test was executed.
+
+The raw child file retains `gate_state: none`; the **parent pending envelope**
+records `review_pending` and the candidate's sanitized sync digest. These are
+different lifecycle surfaces. The parent's root spec still contains the seed
+body, so it is not archived as the refinement output. [Retry evidence](retry/evidence.json)
+records both the raw-byte hash and the Supervisor's sanitized sync hash, along
+with the envelope, result, diagnostic finding and source pins. Retry native
+intent projections are archived under `retry/native_intent/`; the active
+first-attempt captures remain historical and unchanged. Original `evidence.json`
+artifact pins refer to revision `6b995ceb14b42024aeea6d68af1aef11e45ef862`.
+
+The run is not diagnostically clean. Its retained `state_runtime_failure` finding
+matches examples printed from `CONTRIBUTING.md`, not an observed initialization
+failure. Separately, the CLI emitted real PATH-alias and rollout-flush warnings.
+The executor still exited zero and supplied both protocol markers. No finding
+was erased, classifier patched or gate approved by this preparation.
 
 ## Remaining boundary and next step
 
@@ -85,7 +122,7 @@ The inspectable preparation chain is:
 ```text
 retained human intent + product authoring context
   -> native mediated intent / bounded operator request
-  -> proposed local requirements (manual review candidate)
+  -> proposed local requirements (Supervisor candidate pending review)
   -> requirement-to-contract and engineering-choice links
 ```
 
@@ -96,6 +133,6 @@ derivation edges must be resolved through the existing graph process before
 claiming that closure. Human review also decides whether the source interpretation
 and proposed parent are appropriate. No runtime checker/profile is activated.
 
-Next: review this requirement/source separation and restore the intended
-Supervisor executor route, then prepare the bounded canonical adoption. Do not
+Next: review the refined mapping semantics and requirement/source separation,
+then prepare the bounded canonical adoption. Do not
 use the generic SG-SPEC-0020 citation as a replacement for that work.

@@ -1,0 +1,127 @@
+{
+  "artifact_kind": "intent_layer_node",
+  "schema_version": 1,
+  "title": "Operator request for DRAFT-SPEC-0047-TRACEABILITY",
+  "created_at": "2026-10-22T22:05:13.464998+00:00",
+  "updated_at": "2026-10-23T05:09:06.395014+00:00",
+  "policy_reference": {
+    "artifact_path": "tools/intent_layer_policy.json",
+    "artifact_sha256": "f9df44dafea0fb1bc0e33007e304b749810ddefb6eda1fe31429390312e30171",
+    "version": 1
+  },
+  "bridge_policy_reference": {
+    "artifact_path": "tools/operator_request_bridge_policy.json",
+    "artifact_sha256": "fc4955b8a8d57a6caaa4d9f862d2ed4a5891a12988484c85b703224688670a4f",
+    "version": 1
+  },
+  "vocabulary_reference": {
+    "artifact_path": "tools/specgraph_vocabulary.json",
+    "artifact_sha256": "68aa0c73461dbd4ec8db3c2af27eb7b51a601d86005fae54ab58206f5e5f9b9f",
+    "version": 1
+  },
+  "intent_repository_presence": {
+    "tracked_presence": "repository_tracked",
+    "path_class": "intent_layer_node_path",
+    "persistence_boundary": "pre_canonical_repository_separate_from_runtime",
+    "tracked_path": "intent_layer/nodes/operator_request--0047-authored-traceability-preparation--e3c6901a.json"
+  },
+  "intent_handle": {
+    "handle_value": "operator_request::0047-authored-traceability-preparation",
+    "handle_status": "active"
+  },
+  "intent_layer_kind": "operator_request",
+  "mediation_state": "canonical_candidate",
+  "pre_spec_semantics": {
+    "policy_reference": {
+      "artifact_path": "tools/pre_spec_semantics_policy.json",
+      "artifact_sha256": "6cd49d100c8eae2ac9ea8512c7b7cbad108823064070a5de03487c3941447cb1",
+      "version": 1
+    },
+    "phase": "pre_spec",
+    "semantic_artifact_class": "operator_request",
+    "status": "canonical_candidate",
+    "authority": "operator",
+    "required_axes": [
+      "phase",
+      "status",
+      "authority",
+      "confidence",
+      "provenance",
+      "context_tags",
+      "supersedes"
+    ],
+    "implemented_axes": {
+      "phase": "explicit",
+      "status": "mapped_from_mediation_state",
+      "authority": "explicit",
+      "confidence": "not_yet_materialized",
+      "provenance": "explicit",
+      "context_tags": "not_yet_materialized",
+      "supersedes": "not_yet_materialized"
+    },
+    "adjacent_primary_kinds": [
+      "proposal",
+      "spec_draft"
+    ],
+    "canonical_boundary": "proposal_lane_or_reviewed_supervisor_candidate_required"
+  },
+  "request_bridge": {
+    "target_spec_id": "DRAFT-SPEC-0047-TRACEABILITY",
+    "run_mode": "targeted_refine",
+    "operator_note": "One bounded preparation pass only. Read the declared input files and refine only specs/nodes/DRAFT-SPEC-0047-TRACEABILITY.yaml. This draft exists only in an isolated preparation workspace. Preserve all six requirement IDs and source refs, the four acceptance statements and existing BDD IDs. Improve their semantic precision if useful; acceptance_evidence can name candidate sections but is structural authoring evidence only. Keep human intent, derived proposed requirements and engineering choices distinct. Proposed parent is SG-SPEC-0062; SG-SPEC-0017/0020/0061 remain existing boundary context and must not be changed. No child IDs, canonical adoption, policy activation, SDK work, code, installs, builds, tests, GitHub actions or publishing. All existing runtime consumers remain unchanged. Do not add global field spelling rules or additional approval gates. Do not treat declarations or a green validator as executed evidence. Final response must end with plain RUN_OUTCOME and BLOCKER protocol lines without Markdown decoration. Stop at the first structured outcome or review boundary.",
+    "mutation_budget": [
+      "policy_text",
+      "schema_required_addition"
+    ],
+    "run_authority": [],
+    "stop_conditions": [
+      "first_structured_outcome",
+      "review_boundary_reached"
+    ],
+    "execution_profile": "standard",
+    "execution_contract": {
+      "authority": {
+        "requested_run_authority": [],
+        "canonical_write_boundary": "forbidden",
+        "allowed_downstream_routes": [
+          "supervisor_refinement_candidate",
+          "proposal_lane_emission"
+        ]
+      },
+      "mutation_budget": [
+        "policy_text",
+        "schema_required_addition"
+      ],
+      "stop_conditions": [
+        "first_structured_outcome",
+        "review_boundary_reached"
+      ],
+      "execution_profile": "standard"
+    }
+  },
+  "intent_lineage_link": [
+    {
+      "lineage_role": "derived_from",
+      "source_kind": "intent_layer_node",
+      "source_reference": "user_intent::authored-traceability-0047"
+    },
+    {
+      "lineage_role": "normalized_from",
+      "source_kind": "runtime_artifact",
+      "source_reference": "docs/reviews/0047_authored_traceability/corrected-operator-request.json"
+    }
+  ],
+  "runtime_bridge": {
+    "latest_packet_reference": "docs/reviews/0047_authored_traceability/corrected-operator-request.json",
+    "bridge_state": "canonical_candidate",
+    "last_executed_run_id": "20261023T050721Z-DRAFT-SPEC-0047-TRACEABILITY-d98b7e69",
+    "last_executed_at": "2026-10-23T05:09:06.395009+00:00",
+    "last_outcome": "done",
+    "last_gate_state": "review_pending",
+    "proposal_ids": [],
+    "canonical_spec_ids": [
+      "DRAFT-SPEC-0047-TRACEABILITY"
+    ],
+    "downstream_route": "supervisor_refinement_candidate"
+  }
+}

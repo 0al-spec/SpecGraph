@@ -12,8 +12,10 @@ The [source-intent and requirement packet](reviews/0047_authored_traceability/RE
 now separates retained user intent, six proposed local requirements and seven
 engineering choices. It links all sixteen acceptance cases, but remains review
 preparation: neither the mediated intent capture nor the manual candidate is
-canonical adoption. The attempted Supervisor refinement failed before model
-execution; see the packet's actual run evidence. SG-SPEC-0020 is boundary context,
+canonical adoption. The initial Supervisor attempt failed before model execution;
+the corrected retry with CLI 0.163.0 / Sol 6.1 Medium completed and remains
+`review_pending`, with diagnostic findings retained. See the packet's separate
+historical and retry evidence. SG-SPEC-0020 is boundary context,
 not a canonical derivation of this profile's required fields.
 
 The portable [profile definition](contracts/observability_identity_profile_v1.json)
