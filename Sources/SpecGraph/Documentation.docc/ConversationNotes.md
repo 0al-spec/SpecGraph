@@ -52,6 +52,21 @@ Local sketches are Git-ignored; copy the directory before removing its checkout.
 Existing Markdown conversation-memory indexes do not yet ingest these sketches.
 The PoC adds no automatic agent orchestration, GUI, deletion or semantic merging.
 
+## From notes to a proposal
+
+The dogfooding amendment in proposal 0045 describes a manual handoff from
+selected, attributable notes to a bounded proposed change in the existing graph.
+SG-SPEC-0050 is the proposed canonical target; SG-SPEC-0051 supplies the later
+promotion, review and materialization boundaries. The amendment includes source
+excerpts, the selected sketch revision and note IDs, and the proposed canonical
+delta. It does not implement sketch export or apply that delta.
+
+An operator may approve an action such as preparing a proposal. Keep that
+quotation and its action scope in a note via `revise`; do not call the
+whole-sketch `approve` operation for it. Curate the needed excerpts into the
+proposal source archive so review does not depend on access to local ignored
+notes. Later canonical acceptance still concerns the specific reviewed change.
+
 ## Verification
 
 Run `tests/test_conversation_notes.py` for persistence, source retention,

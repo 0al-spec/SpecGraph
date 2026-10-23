@@ -435,6 +435,110 @@ The verification boundary is local CLI/API persistence and native Hypercode
 format compatibility. The PoC's useful next observation is whether a person can
 recognize their intent in the saved sketch and continue it in a later session.
 
+## Dogfooding: From Conversation Notes to a Proposed Graph Change
+
+### Problem and intended result
+
+The capture PoC now lets the operator discuss and rearrange a sketch. The next
+gap is the handoff from that sketch to a specific proposed change in SpecGraph's
+own specification graph. The motivating intent is to retain thoughts at
+conversation speed, refine them together, and carry their meaning and sources
+into a reviewable change to the system being designed.
+
+This amendment is the first manual dogfooding handoff. The
+[source excerpts](../archive/proposal_sources/0045_conversation_memory_exploration_vault.md#dogfooding-handoff-source-excerpts)
+preserve the operator's request, the assistant's proposed next action, and the
+operator's approval to prepare this amendment. Canonical YAML is unchanged;
+the proposed delta below is ready for discussion. Automatic sketch ingestion
+and proposal generation remain future runtime work.
+
+### One bounded path
+
+1. **Capture:** save a short note with its original quotation. A word is enough
+   to start; choosing a semantic kind does not block saving.
+2. **Refine:** discuss, rename and regroup notes while keeping their identities
+   and sources. Distinguish the operator's words from assistant interpretation.
+3. **Select a change:** identify the motivating intent, remaining questions and
+   the existing graph region. Propose a bounded update; justify a new child or
+   restructuring only when the existing node's scope cannot hold the concern.
+4. **Prepare the proposal:** preserve selected source excerpts, the sketch
+   revision and note IDs, target spec IDs, the proposed delta, and acceptance
+   examples. Reuse an existing proposal covering the same concern.
+5. **Review and apply:** use the existing pre-spec promotion and proposal-lane
+   process for the specific reviewed change. The conceptual sequence is
+   `raw_input -> IntentFragment -> IntentDraft -> Proposal -> SpecDraft -> canonical_artifact`.
+   Its transitions retain the records and reviews required by SG-SPEC-0051;
+   this explanatory sequence does not itself record those transitions.
+6. **Realize and observe:** implement the accepted bounded change, test it and
+   use the same conversational scenario again to discover the next gap.
+
+The agent performs the bookkeeping. The person can discuss the meaning and
+authorize a next action without approving each saved note. A note may also stay
+open or be set aside; reaching consensus does not require promoting every node.
+
+### Selected graph region and proposed delta
+
+The primary target is **SG-SPEC-0050**, the existing Pre-Spec Semantic Layer
+under SG-SPEC-0007. It already owns the observed-intent envelope and upstream
+promotion boundary. No new canonical node or semantic kind is proposed in this
+slice. Hypercode files, CLI commands and agent workflow stay in this proposal
+and its technical contract, outside the canonical node's storage-agnostic scope.
+
+Proposed additions to `specs/nodes/SG-SPEC-0050.yaml`, for subsequent review:
+
+- Under `specification.observation_model.retained_parent_role`, add:
+  "A conversational sketch may supply attributable raw input to the existing
+  observed-intent envelope. Capturing or rearranging its notes alone does not
+  assign IntentFragment, IntentDraft, Proposal, or canonical status."
+- Under `specification.examples`, add a conversation-refinement example:
+  a person and agent refine a short note; selected source material informs an
+  IntentDraft; a candidate change identifies an existing spec and explains the
+  proposed amendment; downstream promotion follows SG-SPEC-0051. Agreement to
+  prepare that amendment is recorded with that action's scope.
+- Add an acceptance criterion requiring this example to distinguish capture,
+  observed-intent interpretation and downstream promotion, while preserving
+  the existing delegated semantic and review boundaries.
+
+Related contracts are reused unchanged:
+
+| Contract | Role in this handoff |
+| --- | --- |
+| SG-SPEC-0053 | Meaning and separation of IntentFragment, IntentDraft and Proposal |
+| SG-SPEC-0052 | Provenance, review axes and traceability |
+| SG-SPEC-0051 | Promotion records, review and canonical materialization |
+| SG-SPEC-0006 | Repository-tracked proposal scope and application authority |
+
+### Approval scope observed in this conversation
+
+The operator approved **preparing an amendment to proposal 0045 with selected
+spec targets and proposed changes**. The live note records this quotation and
+scope. It does not use the PoC's whole-sketch `approve` operation: that operation
+means approval of one displayed sketch revision, which is a different subject.
+The proposed canonical delta above was prepared after the operator's statement
+and has not received canonical application approval.
+
+For the PoC, keeping the action and quotation in a note plus this source-backed
+amendment is sufficient. No new approval API, authority state or automatic
+promotion rule is introduced. Later formal transitions use SG-SPEC-0051's
+existing source/target references, outcome and review records.
+
+### Handoff evidence and next verification
+
+The local sketch `hypercode-conversation-poc` preserves
+`notes_to_specgraph_proposal` at revision `62ea6b7d435d4bfa9d69eb748dd3a10e`.
+Earlier nodes `conversation` and `system_design` retain their identities after
+regrouping. These local IDs are scoped to that sketch, not canonical spec IDs.
+The curated excerpts in the source archive let a reviewer inspect this handoff
+without access to the Git-ignored sketch. They do not publish its full history
+or independently authenticate the conversation.
+
+This preparation is complete when the source, motivating intent, target,
+proposed delta and authorization scope are readable together. The next review
+should assess fidelity to the operator's meaning and the placement in
+SG-SPEC-0050. A later accepted application should preserve traceability back
+through this proposal to the selected source material. Local persistence tests
+and a documentation PR do not establish that end-to-end application yet.
+
 ## Acceptance Criteria
 
 - SpecGraph has a proposal-level architecture for conversation-derived memory

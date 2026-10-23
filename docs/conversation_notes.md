@@ -131,6 +131,22 @@ Markdown memory indexes, canonical sources, and SpecSpace remain unchanged.
 There is no delete/merge operation, automatic semantic deduplication, model
 orchestration, GUI, or existing-memory-index integration in this slice.
 
+## From a sketch to a proposed graph change
+
+The [dogfooding amendment to proposal 0045](proposals/0045_conversation_memory_exploration_vault.md#dogfooding-from-conversation-notes-to-a-proposed-graph-change)
+describes the next manual handoff: select attributable notes, identify the
+existing graph region, prepare a bounded proposed delta and use the existing
+promotion process. Its primary target is SG-SPEC-0050; SG-SPEC-0051 governs the
+later review and materialization transitions. This is a prepared proposal,
+not an implemented exporter or completed canonical application.
+
+Distinguish approval of an action from approval of the displayed whole sketch.
+For example, "prepare the proposal" is recorded as a source quotation and a
+scoped note using `revise`; it must not be represented by `approve`, which
+records a whole-sketch review. The proposal can preserve the selected source
+excerpts for review without publishing the Git-ignored sketch. Semantic
+agreement, action authorization and canonical acceptance retain their subjects.
+
 ## Validation
 
 `tests/test_conversation_notes.py` exercises new-process recovery, rename/move
