@@ -815,3 +815,26 @@ checks; current tooling does not enforce this profile. Runtime realization is
 `deferred_until_canonicalized`; mapping coverage remains a separate follow-up.
 This amendment is contract preparation only with no runtime realization,
 canonical adoption, SDK propagation or evidence admission.
+
+### Source intent and requirement preparation (2026-10-23)
+
+The [review packet](../reviews/0047_authored_traceability/README.md) captures
+the operator's addressability/delivery-chain intent and retained Zeusus authoring
+inputs. Native pre-canonical `user_intent`/`operator_request` records preserve
+mediation lineage. Six candidate-local requirements are grouped into four
+acceptance criteria, with seven proposed engineering choices kept separate and
+all sixteen identity-profile acceptance cases mapped to requirements.
+
+This is source-bound preparation, not a canonical Intent -> Requirement path.
+The initial isolated Supervisor attempt failed before refinement because the
+installed CLI rejected the configured model; the original invalid seed and failed run
+are retained by pins, separately from the historical assistant-authored candidate.
+After the CLI update to 0.163.0, the corrected retry on Sol 6.1 Medium completed
+`ok / done / review_pending`: all eight validators passed, no canonical diff
+was accepted. The raw child candidate and parent pending envelope are retained
+separately; its proposed mapping semantics distinguish exact references from
+full/partial coverage, including the unexecuted 10-of-15 case. A quoted-document
+diagnostic match and real CLI warnings remain recorded. Canonical root/subject
+allocation, exact derivation edges, adoption and runtime enforcement remain unresolved. A generic
+SG-SPEC-0020 citation cannot substitute for them. No runtime realization occurs
+in this amendment; the profile remains `deferred_until_canonicalized`.

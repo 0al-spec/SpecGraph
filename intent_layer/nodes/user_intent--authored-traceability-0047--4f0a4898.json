@@ -1,0 +1,91 @@
+{
+  "artifact_kind": "intent_layer_node",
+  "schema_version": 1,
+  "title": "User intent: Preserve source-bound human intent across authored identity and mapping declarations; prepare requirements separately from profile engineering choices. Exact quotes and retained input pins are in docs/reviews/0047_authored_traceability/intent.json.",
+  "created_at": "2026-10-22T22:05:13.464164+00:00",
+  "updated_at": "2026-10-22T22:05:30.541723+00:00",
+  "policy_reference": {
+    "artifact_path": "tools/intent_layer_policy.json",
+    "artifact_sha256": "f9df44dafea0fb1bc0e33007e304b749810ddefb6eda1fe31429390312e30171",
+    "version": 1
+  },
+  "vocabulary_reference": {
+    "artifact_path": "tools/specgraph_vocabulary.json",
+    "artifact_sha256": "68aa0c73461dbd4ec8db3c2af27eb7b51a601d86005fae54ab58206f5e5f9b9f",
+    "version": 1
+  },
+  "intent_repository_presence": {
+    "tracked_presence": "repository_tracked",
+    "path_class": "intent_layer_node_path",
+    "persistence_boundary": "pre_canonical_repository_separate_from_runtime",
+    "tracked_path": "intent_layer/nodes/user_intent--authored-traceability-0047--4f0a4898.json"
+  },
+  "intent_handle": {
+    "handle_value": "user_intent::authored-traceability-0047",
+    "handle_status": "active"
+  },
+  "intent_layer_kind": "user_intent",
+  "mediation_state": "mediated",
+  "pre_spec_semantics": {
+    "policy_reference": {
+      "artifact_path": "tools/pre_spec_semantics_policy.json",
+      "artifact_sha256": "6cd49d100c8eae2ac9ea8512c7b7cbad108823064070a5de03487c3941447cb1",
+      "version": 1
+    },
+    "phase": "pre_spec",
+    "semantic_artifact_class": "user_intent",
+    "status": "mediated",
+    "authority": "mediator",
+    "required_axes": [
+      "phase",
+      "status",
+      "authority",
+      "confidence",
+      "provenance",
+      "context_tags",
+      "supersedes"
+    ],
+    "implemented_axes": {
+      "phase": "explicit",
+      "status": "mapped_from_mediation_state",
+      "authority": "explicit",
+      "confidence": "not_yet_materialized",
+      "provenance": "explicit",
+      "context_tags": "not_yet_materialized",
+      "supersedes": "not_yet_materialized"
+    },
+    "adjacent_primary_kinds": [
+      "intent_fragment",
+      "intent_draft",
+      "intent"
+    ],
+    "canonical_boundary": "proposal_lane_or_reviewed_supervisor_candidate_required"
+  },
+  "intent_capture": {
+    "source_kind": "mediated_artifact",
+    "source_summary": "Preserve source-bound human intent across authored identity and mapping declarations; prepare requirements separately from profile engineering choices. Exact quotes and retained input pins are in docs/reviews/0047_authored_traceability/intent.json.",
+    "selected_node_ref": "DRAFT-SPEC-0047-TRACEABILITY",
+    "unresolved_questions": [
+      "Canonical adoption, exact parent and final requirement identities remain subject to review."
+    ]
+  },
+  "intent_lineage_link": [
+    {
+      "lineage_role": "captured_from",
+      "source_kind": "runtime_artifact",
+      "source_reference": "docs/reviews/0047_authored_traceability/operator-request.json"
+    }
+  ],
+  "runtime_bridge": {
+    "latest_operator_request_handle": "operator_request::0047-authored-traceability-preparation",
+    "latest_packet_reference": "docs/reviews/0047_authored_traceability/operator-request.json",
+    "latest_run_id": "20261022T220513Z-DRAFT-SPEC-0047-TRACEABILITY-f7d8f0ac",
+    "latest_outcome": "escalate",
+    "latest_gate_state": "escalated",
+    "latest_proposal_ids": [],
+    "latest_canonical_spec_ids": [
+      "DRAFT-SPEC-0047-TRACEABILITY"
+    ],
+    "latest_downstream_route": "supervisor_refinement_candidate"
+  }
+}

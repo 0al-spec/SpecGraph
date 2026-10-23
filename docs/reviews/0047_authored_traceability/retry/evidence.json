@@ -1,0 +1,259 @@
+{
+  "artifact_kind": "authored_traceability_refinement_retry_evidence",
+  "schema_version": 1,
+  "source_revision": "6b995ceb14b42024aeea6d68af1aef11e45ef862",
+  "isolated_seed_revision": "bd9b144ced4d58e77eb3647bdc1d255fd59e6612",
+  "run_id": "20261023T050721Z-DRAFT-SPEC-0047-TRACEABILITY-d98b7e69",
+  "started_at_utc": "2026-10-23T05:07:21.601159+00:00",
+  "finished_at_utc": "2026-10-23T05:09:06.392209+00:00",
+  "temporary_target": "DRAFT-SPEC-0047-TRACEABILITY",
+  "configured_model": "gpt-6.1-sol",
+  "observed_cli_version": "0.163.0",
+  "observed_model": "gpt-6.1-sol",
+  "observed_reasoning_effort": "medium",
+  "native_run_child_model": "",
+  "model_observation_source": "Raw executor stderr lines 3, 6 and 10; native child_model remains empty.",
+  "execution_profile": "standard",
+  "completion_status": "ok",
+  "outcome": "done",
+  "exit_code": 0,
+  "gate_state": "review_pending",
+  "required_human_action": "approve or retry refinement",
+  "before_status": "outlined",
+  "proposed_status": "specified",
+  "final_status": "outlined",
+  "accepted_canonical_diff": false,
+  "changed_files": [
+    "specs/nodes/DRAFT-SPEC-0047-TRACEABILITY.yaml"
+  ],
+  "validator_results": {
+    "outputs": true,
+    "allowed_paths": true,
+    "reconciliation": true,
+    "atomicity": true,
+    "transition": true,
+    "executor_environment": true,
+    "runtime_artifacts": true,
+    "refinement_acceptance": true
+  },
+  "validation_errors": [
+    "Nested executor runtime state or migration setup failed. Evidence: `failed to open state db`, `failed to initialize state runtime`, or"
+  ],
+  "validation_findings": [
+    {
+      "code": "state_runtime_failure",
+      "family": "executor_environment",
+      "error_class": "runtime_failure",
+      "severity": "error",
+      "message": "Nested executor runtime state or migration setup failed. Evidence: `failed to open state db`, `failed to initialize state runtime`, or",
+      "details": {
+        "evidence": [
+          "`failed to open state db`, `failed to initialize state runtime`, or",
+          "`state db discrepancy`; keep ordinary migration plans and successful migration",
+          "`failed to open state db`, `failed to initialize state runtime`, or"
+        ]
+      }
+    }
+  ],
+  "validation_summary": {
+    "finding_count": 1,
+    "families": {
+      "executor_environment": 1
+    },
+    "error_classes": {
+      "runtime_failure": 1
+    },
+    "severity_counts": {
+      "error": 1
+    },
+    "codes": {
+      "state_runtime_failure": 1
+    }
+  },
+  "executor_environment": {
+    "issues": [
+      {
+        "kind": "state_runtime_failure",
+        "summary": "Nested executor runtime state or migration setup failed.",
+        "evidence": [
+          "`failed to open state db`, `failed to initialize state runtime`, or",
+          "`state db discrepancy`; keep ordinary migration plans and successful migration",
+          "`failed to open state db`, `failed to initialize state runtime`, or"
+        ]
+      }
+    ],
+    "issue_kinds": [
+      "state_runtime_failure"
+    ],
+    "primary_failure": false
+  },
+  "refinement_acceptance": {
+    "decision": "approve",
+    "change_class": "local_refinement",
+    "checks": {
+      "content_changed": true,
+      "hard_validation": true,
+      "single_spec_scope": true,
+      "constitutional_diff": false,
+      "graph_refactor_diff": false,
+      "atomicity_clear": true,
+      "within_mutation_budget": true
+    },
+    "diff_paths": [
+      "acceptance_evidence[2].evidence",
+      "specification.bdd_scenarios[3].steps[0]",
+      "specification.bdd_scenarios[3].steps[1]",
+      "specification.bdd_scenarios[3].steps[2]",
+      "specification.bdd_scenarios[3].steps[3]",
+      "specification.bdd_scenarios[3].steps[4]",
+      "specification.bdd_scenarios[3].steps[5]",
+      "specification.bdd_scenarios[3].steps[6]",
+      "specification.bdd_scenarios[3].steps[7]",
+      "specification.bdd_scenarios[3].steps[8]",
+      "specification.engineering_choice_boundary.choices[3]",
+      "specification.proposed_mapping_contract",
+      "specification.proposed_mapping_contract.authority",
+      "specification.proposed_mapping_contract.source_basis",
+      "specification.proposed_mapping_contract.scope_and_location",
+      "specification.proposed_mapping_contract.reference_validity",
+      "specification.proposed_mapping_contract.coverage",
+      "specification.proposed_mapping_contract.composition",
+      "specification.proposed_mapping_contract.evidence_limit",
+      "specification.requirements[3].statement"
+    ],
+    "mutation_classes": [
+      "policy_text"
+    ],
+    "mutation_budget": [
+      "policy_text",
+      "schema_required_addition"
+    ],
+    "budget_exceeded_classes": [],
+    "changed_spec_files": [
+      "specs/nodes/DRAFT-SPEC-0047-TRACEABILITY.yaml"
+    ],
+    "review_reasons": [],
+    "errors": [],
+    "warnings": []
+  },
+  "executor_final_message": "Refined only the draft node’s mapping scope and coverage semantics. Preserved all six requirement IDs and source refs, four acceptance statements, and existing BDD IDs.\n\nYAML lint and whitespace checks passed; these establish structural validity only. No tests ran or policy activated. Stopped at the review boundary.\n\nRUN_OUTCOME: done\nBLOCKER: none",
+  "candidate": {
+    "retained_copy": "docs/reviews/0047_authored_traceability/retry/candidate.yaml",
+    "source_path": "specs/nodes/DRAFT-SPEC-0047-TRACEABILITY.yaml",
+    "raw_sha256": "903d66719e5b7ab381cd8f494f878ef3baae2788d03c26b9f796296ff298690a",
+    "sanitized_sync_sha256": "1bd6f1dfe529955b5f7f14fd5991f16163911a20414ed1833554d77fd66b1ead",
+    "sync_digest_method": "tools/supervisor.py snapshot_sync_digests: SHA-256 of sanitize_spec_sync_text output; differs from raw-byte SHA-256.",
+    "authority": "raw_child_output_not_canonical",
+    "raw_child_gate_state": "none",
+    "note": "Raw child bytes retained unchanged. Review gate belongs to the parent pending envelope, whose root spec still contains the seed body; do not treat that seed as the refinement output."
+  },
+  "pending_envelope": {
+    "gate_state": "review_pending",
+    "proposed_status": "specified",
+    "proposed_maturity": 0.35,
+    "required_human_action": "approve or retry refinement",
+    "pending_sync_paths": [
+      "specs/nodes/DRAFT-SPEC-0047-TRACEABILITY.yaml"
+    ],
+    "pending_base_digests": {
+      "specs/nodes/DRAFT-SPEC-0047-TRACEABILITY.yaml": "31ee996ba4777f151b8bd11cd94ee4a72e58345cfc9138f39c6458a1a01823b3"
+    },
+    "pending_candidate_digests": {
+      "specs/nodes/DRAFT-SPEC-0047-TRACEABILITY.yaml": "1bd6f1dfe529955b5f7f14fd5991f16163911a20414ed1833554d77fd66b1ead"
+    },
+    "pending_run_id": "20261023T050721Z-DRAFT-SPEC-0047-TRACEABILITY-d98b7e69"
+  },
+  "diagnostic_interpretation": {
+    "classification": "quoted_documentation_matches_not_evidence_of_state_initialization_failure",
+    "source": "CONTRIBUTING.md section Executor transcript diagnostics, printed by child commands at stderr lines 108 and 6364",
+    "matched_stderr_lines": [
+      929,
+      930,
+      6570,
+      6571
+    ],
+    "source_excerpt": "Require explicit state failure diagnostics such as `failed to open state db`, `failed to initialize state runtime`, or `state db discrepancy`; keep ordinary migration plans and successful migration logs out of environment findings.",
+    "real_cli_warnings": [
+      {
+        "stderr_line": 1,
+        "kind": "path_alias_creation_refused_under_temporary_dir"
+      },
+      {
+        "stderr_line": 7419,
+        "kind": "rollout_flush_warning",
+        "message": "failed to flush rollout after emitting terminal turn event: thread not found"
+      }
+    ],
+    "disposition": "Retain original diagnostic finding and review_pending gate. Executor exit was zero; no classifier change or historical gate clearance is performed."
+  },
+  "pre_spec_provenance": {
+    "policy_reference": {
+      "artifact_path": "tools/pre_spec_semantics_policy.json",
+      "artifact_sha256": "6cd49d100c8eae2ac9ea8512c7b7cbad108823064070a5de03487c3941447cb1",
+      "version": 1
+    },
+    "vocabulary_reference": {
+      "artifact_path": "tools/specgraph_vocabulary.json",
+      "artifact_sha256": "68aa0c73461dbd4ec8db3c2af27eb7b51a601d86005fae54ab58206f5e5f9b9f",
+      "version": 1
+    },
+    "packet_reference": "docs/reviews/0047_authored_traceability/corrected-operator-request.json",
+    "user_intent_handle": "user_intent::authored-traceability-0047",
+    "operator_request_handle": "operator_request::0047-authored-traceability-preparation",
+    "proposal_ids": [],
+    "recorded_at": "2026-10-23T05:09:06.392244+00:00"
+  },
+  "operator_request_bridge": {
+    "policy_reference": {
+      "artifact_path": "tools/operator_request_bridge_policy.json",
+      "artifact_sha256": "fc4955b8a8d57a6caaa4d9f862d2ed4a5891a12988484c85b703224688670a4f",
+      "version": 1
+    },
+    "packet_reference": "docs/reviews/0047_authored_traceability/corrected-operator-request.json",
+    "user_intent_handle": "user_intent::authored-traceability-0047",
+    "operator_request_handle": "operator_request::0047-authored-traceability-preparation"
+  },
+  "native_intent_nodes": [
+    {
+      "source_path": "intent_layer/nodes/operator_request--0047-authored-traceability-preparation--e3c6901a.json",
+      "retained_copy": "docs/reviews/0047_authored_traceability/retry/native_intent/operator_request--0047-authored-traceability-preparation--e3c6901a.json",
+      "sha256": "a77f4126ebfd9b14ed6a01111f60fe0a59f62b92fe83051b29fef5b1e817351e"
+    },
+    {
+      "source_path": "intent_layer/nodes/user_intent--authored-traceability-0047--4f0a4898.json",
+      "retained_copy": "docs/reviews/0047_authored_traceability/retry/native_intent/user_intent--authored-traceability-0047--4f0a4898.json",
+      "sha256": "00d69542e14d437633b9334664281411d190dd42b86503aea59491e91f2645fe"
+    }
+  ],
+  "native_capture_scope": "Archived retry projections under docs only. Active first-attempt intent_layer captures and evidence.json remain unchanged; neither set establishes canonical adoption.",
+  "raw_run_record_sha256": "8f7d288e246d498cfecbca798a61e552334e3e24fe3a97f339bc32ff657c4cde",
+  "raw_run_retention": "Local isolated preparation-retry workspace runs/<run_id>.json; full executor transcript is not published.",
+  "historical_evidence": {
+    "path": "docs/reviews/0047_authored_traceability/evidence.json",
+    "git_revision": "6b995ceb14b42024aeea6d68af1aef11e45ef862",
+    "note": "First failed attempt and manual candidate are historical; its artifact pins resolve at this revision."
+  },
+  "artifact_pins": {
+    "docs/reviews/0047_authored_traceability/input.yaml": "e1b621d415b852c61c5e76443cd4ff61fe8fe89330b0697b2ddf04fd535a512d",
+    "docs/reviews/0047_authored_traceability/corrected-operator-request.json": "e17ea7fdaba8a099bbe5247fb440f266ae5701cbb03736b0b32e306f012850eb",
+    "docs/reviews/0047_authored_traceability/intent.json": "90544c29c76d00faa4edba35b28de4fa4b5bdf8dc0f79f15c8bc53d47cef036b",
+    "docs/reviews/0047_authored_traceability/lineage.json": "638b6cfeb4aeb7ee0f4db3a3d043476b67d563b80a7df2933c4d2495741220b6",
+    "docs/reviews/0047_authored_traceability/retry/candidate.yaml": "903d66719e5b7ab381cd8f494f878ef3baae2788d03c26b9f796296ff298690a",
+    "tools/supervisor_policy.json": "62d8e511bb7a06862a8d45d59b3dd46ca688f355fa3857cd0251d3d4de731e93"
+  },
+  "structural_validation": {
+    "requirements_retained": 6,
+    "acceptance_retained": 4,
+    "aligned_acceptance_evidence": 4,
+    "future_scenarios_retained": 6,
+    "source_refs_unchanged": true,
+    "sanitized_candidate_digest_matches_pending_envelope": true
+  },
+  "runtime_tests_executed": false,
+  "bdd_scenarios_executed": false,
+  "canonical_specs_changed": false,
+  "canonical_intent_adopted": false,
+  "canonical_subjects_allocated": false,
+  "runtime_enforcement": false,
+  "evidence_admission_allowed": false
+}

@@ -1,0 +1,114 @@
+{
+  "artifact_kind": "authored_traceability_preparation_evidence",
+  "schema_version": 1,
+  "source_revision": "989086c59edf656bccc9000e9f5717a2f86ba173",
+  "isolated_seed_revision": "f6d6dfd51257d719f71755156bd2ab03a4810dd8",
+  "run_id": "20261022T220513Z-DRAFT-SPEC-0047-TRACEABILITY-f7d8f0ac",
+  "temporary_target": "DRAFT-SPEC-0047-TRACEABILITY",
+  "attempted_model": "gpt-6.1-sol",
+  "attempted_reasoning_effort": "medium",
+  "execution_profile": "standard",
+  "executor_result": "unavailable_before_refinement",
+  "executor_error": "The 'gpt-6.1-sol' model is not supported when using Codex with a ChatGPT account.",
+  "native_run_child_model": "",
+  "completion_status": "failed",
+  "outcome": "escalate",
+  "gate_state": "escalated",
+  "accepted_canonical_diff": false,
+  "changed_files": [],
+  "validator_results": {
+    "outputs": true,
+    "allowed_paths": true,
+    "reconciliation": false,
+    "atomicity": false,
+    "transition": true,
+    "executor_environment": true,
+    "runtime_artifacts": true,
+    "refinement_acceptance": false
+  },
+  "validation_errors": [
+    "Missing executor machine protocol marker RUN_OUTCOME",
+    "Missing executor machine protocol marker BLOCKER",
+    "specs/nodes/DRAFT-SPEC-0047-TRACEABILITY.yaml: acceptance_evidence size must match acceptance size (0 != 6)",
+    "specs/nodes/DRAFT-SPEC-0047-TRACEABILITY.yaml: Atomicity gate exceeded: 6 acceptance criteria > 5. Split independent concerns into child specs."
+  ],
+  "raw_run_record_sha256": "ee6a7a7af73dae1a10086212b4fc71a8d3dbc0fccf5701f68db8e17fa7ad5599",
+  "raw_run_retention": "local isolated preparation workspace runs/<run_id>.json; raw executor transcript is not published",
+  "failed_seed_diagnosis": {
+    "acceptance_criteria": 6,
+    "maximum": 5,
+    "acceptance_evidence": 0,
+    "preparation_error_owner": "assistant",
+    "corrected_input_acceptance": 4,
+    "corrected_input_evidence": 4,
+    "requirements_retained": 6,
+    "future_scenarios_retained": 6
+  },
+  "native_intent_nodes": [
+    {
+      "path": "intent_layer/nodes/operator_request--0047-authored-traceability-preparation--e3c6901a.json",
+      "sha256": "9a0c9d61afc628d21eb6c56c2f0c4412d6229687ab3b20fb97d3c4d071696a1c",
+      "mediation_state": "canonical_candidate",
+      "authority": "operator"
+    },
+    {
+      "path": "intent_layer/nodes/user_intent--authored-traceability-0047--4f0a4898.json",
+      "sha256": "14df286708e2dcd5aa4276e3c0ea10a73ee620db252b9f988b99c4f5a99c60ed",
+      "mediation_state": "mediated",
+      "authority": "mediator"
+    }
+  ],
+  "candidate_author": "assistant",
+  "candidate_status": "review_pending",
+  "supervisor_refinement_succeeded": false,
+  "canonical_specs_changed": false,
+  "canonical_intent_adopted": false,
+  "canonical_subjects_allocated": false,
+  "runtime_enforcement": false,
+  "evidence_admission_allowed": false,
+  "artifact_pins": {
+    "docs/reviews/0047_authored_traceability/operator-request.json": "55067baae169067f8af8e928d5ca927e708d2f02d6a1c6ccaa08eac23a84802e",
+    "docs/reviews/0047_authored_traceability/intent.json": "90544c29c76d00faa4edba35b28de4fa4b5bdf8dc0f79f15c8bc53d47cef036b",
+    "docs/reviews/0047_authored_traceability/input.yaml": "e1b621d415b852c61c5e76443cd4ff61fe8fe89330b0697b2ddf04fd535a512d",
+    "docs/reviews/0047_authored_traceability/corrected-operator-request.json": "e17ea7fdaba8a099bbe5247fb440f266ae5701cbb03736b0b32e306f012850eb",
+    "docs/reviews/0047_authored_traceability/candidate.yaml": "f439277f318709249c93cea73ebe36e3ac9089c8a8d55ca0daf7cd2add2b2140",
+    "docs/reviews/0047_authored_traceability/lineage.json": "638b6cfeb4aeb7ee0f4db3a3d043476b67d563b80a7df2933c4d2495741220b6",
+    "docs/observability_identity_profile.md": "8becbbd35eba1eec827f20e10d9912ff82905f8f45d5684fe9277da623dfc39d",
+    "docs/contracts/observability_identity_profile_v1.json": "a82c1bcbcc2c01175162ee0823a0b8515dbdbfcee818db8ed95565146d2cd37f"
+  },
+  "failed_input_pins": [
+    {
+      "git_revision": "f6d6dfd51257d719f71755156bd2ab03a4810dd8",
+      "path": "docs/reviews/0047_authored_traceability/input.yaml",
+      "sha256": "91861c48868b80972b83557b64bad3fc76d389718d67ca8e6f2ca8371c87dcdc",
+      "availability": "isolated seed revision; matching original files also retained in PR ancestor f52254d8",
+      "public_source_revision": "f52254d82098678d135f860e3a76ddfd82b3ca52"
+    },
+    {
+      "git_revision": "f6d6dfd51257d719f71755156bd2ab03a4810dd8",
+      "path": "docs/reviews/0047_authored_traceability/intent.json",
+      "sha256": "6b28e455de5da20fb0e3c25fc04793b7868b68f0947002e3e328f87e37376b39",
+      "availability": "isolated seed revision; matching original files also retained in PR ancestor f52254d8",
+      "public_source_revision": "f52254d82098678d135f860e3a76ddfd82b3ca52"
+    },
+    {
+      "git_revision": "f6d6dfd51257d719f71755156bd2ab03a4810dd8",
+      "path": "docs/reviews/0047_authored_traceability/operator-request.json",
+      "sha256": "55067baae169067f8af8e928d5ca927e708d2f02d6a1c6ccaa08eac23a84802e",
+      "availability": "isolated seed revision; matching original files also retained in PR ancestor f52254d8",
+      "public_source_revision": "f52254d82098678d135f860e3a76ddfd82b3ca52"
+    }
+  ],
+  "native_projection_caveat": "Native operator mediation_state is canonical_candidate despite failed/escalated run. This is retained generator output, not canonical adoption or successful refinement; actual run fields remain authoritative.",
+  "preparation_validation": {
+    "yaml_lint": "passed_for_corrected_input_and_candidate",
+    "source_refs": "six_local_requirements_resolve_to_retained_capture",
+    "acceptance_alignment": "four_criteria_four_matching_evidence_entries",
+    "identity_case_links": "all_16_proposed_cases_linked",
+    "native_overlay": "built_four_entries_pre_canonical_only",
+    "docc_sync": "passed",
+    "proposal_tracking": "225_proposals_zero_blockers",
+    "runtime_tests_executed": false,
+    "bdd_scenarios_executed": false
+  }
+}
