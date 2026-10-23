@@ -1119,6 +1119,27 @@
         "SG-SPEC-0020",
         "Intent -> Requirement"
       ]
+    },
+    {
+      "id": "git-isolated-local-workspace",
+      "description": "Minimal local workspace proposal and DocC preserve existing path behavior and observation limits.",
+      "docs": [
+        "docs/proposals/0227_git_isolated_local_workspace.md"
+      ],
+      "docc": [
+        "Sources/SpecGraph/Documentation.docc/ProductWorkspacePilots.md"
+      ],
+      "required_terms": [
+        "0227",
+        "Path.cwd()",
+        "TOOLS_DIR",
+        "specs/nodes",
+        ".worktrees/",
+        "unclaimed",
+        "untracked",
+        "deferred_until_canonicalized",
+        "evidence_admission_allowed: false"
+      ]
     }
   ]
 }

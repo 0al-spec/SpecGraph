@@ -2923,5 +2923,18 @@
     "required_provenance_links": [
       "source_draft_ref"
     ]
+  },
+  {
+    "proposal_id": "0227",
+    "source_artifact_class": "working_draft",
+    "source_refs": [
+      "docs/archive/proposal_sources/0227_git_isolated_local_workspace.md"
+    ],
+    "motivating_concern": "Adopt an independent local SpecGraph knowledge Git inside existing code projects with minimal engine changes and no tracked implementation-file changes.",
+    "normalized_title": "Git-Isolated Local SpecGraph Workspace",
+    "bounded_scope": "Specify reuse of the existing Product Workspace layout through workspace cwd and a candidate skill; retain source-pinned local probes and a reproduced post-execution initializer conflict. Defer runtime implementation, cross-repository binding, SQL, hooks and synchronization.",
+    "required_provenance_links": [
+      "source_draft_ref"
+    ]
   }
 ]
