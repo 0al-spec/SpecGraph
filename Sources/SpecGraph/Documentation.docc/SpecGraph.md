@@ -107,6 +107,7 @@ The canonical source files remain in the repository:
 - <doc:TraceabilityEvidenceProviders>
 - <doc:ImplementationContractPack>
 - <doc:ProductWorkspacePilots>
+- <doc:ConversationNotes>
 
 ### Proposed composition comparison
 

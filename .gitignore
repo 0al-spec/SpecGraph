@@ -17,3 +17,6 @@ build/
 canonical_json/
 runs/*
 !runs/.gitkeep
+
+# Live conversational sketches are local unless explicitly curated for publication.
+conversation_memory/sketches/

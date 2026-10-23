@@ -412,6 +412,29 @@ This is still derived-only. It turns map-level candidates into a viewer-ready
 review queue, but it does not create proposal files, mutate canonical specs, or
 skip proposal-lane mediation.
 
+## Conversational Capture PoC (2026-10-23)
+
+The operator clarified that capturing a thought must happen during the
+conversation, before formalization: the person speaks and reviews while the
+agent keeps short notes. The [conversation notes contract](../conversation_notes.md)
+implements this bounded extension through `read_notes` and `update_notes`.
+
+The sketch stores `Note#id` hierarchy in `.hc`, exact-selector labels/details in
+`.hcs`, and quotations, named links and review observations in metadata. IDs
+survive rename/move. Atomic revision publication and revision comparison prevent
+partial snapshots and lost concurrent updates. Human approval is an attributed
+observation about one displayed revision, not canonical adoption.
+
+The existing Markdown-note index and its required note kinds remain unchanged.
+This capture format can retain a word before a semantic kind has been chosen;
+it is not silently converted into a typed memory note. The repo-local skill
+guides capture and optional, authorized subagent suggestions. There is no new
+Supervisor authority, ontology mutation, automatic delegation, MCP server or UI.
+
+The verification boundary is local CLI/API persistence and native Hypercode
+format compatibility. The PoC's useful next observation is whether a person can
+recognize their intent in the saved sketch and continue it in a later session.
+
 ## Acceptance Criteria
 
 - SpecGraph has a proposal-level architecture for conversation-derived memory

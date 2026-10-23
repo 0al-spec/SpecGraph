@@ -1,0 +1,4 @@
+interface:
+  display_name: "SpecGraph Conversation Notes"
+  short_description: "Capture and resume short Hypercode conversation notes"
+  default_prompt: "Use $specgraph-conversation-notes to keep a short, source-attributed sketch while we discuss this idea."

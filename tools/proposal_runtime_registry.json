@@ -2069,7 +2069,15 @@
       "tests/test_supervisor.py",
       "tools/conversation_memory_policy.json",
       "docs/conversation_memory_viewer_contract.md",
-      "docs/proposals/0045_conversation_memory_exploration_vault.md"
+      "docs/proposals/0045_conversation_memory_exploration_vault.md",
+      "tools/conversation_notes_cli.py",
+      "tools/conversation_notes/api.py",
+      "tools/conversation_notes/model.py",
+      "tools/conversation_notes/codec.py",
+      "tools/conversation_notes/store.py",
+      "tests/test_conversation_notes.py",
+      "docs/conversation_notes.md",
+      ".codex/skills/specgraph-conversation-notes/SKILL.md"
     ],
     "runtime_markers": [
       {
@@ -2087,6 +2095,14 @@
       {
         "path": "tools/supervisor.py",
         "pattern": "def build_conversation_memory_promotion_pressure("
+      },
+      {
+        "path": "tools/conversation_notes/api.py",
+        "pattern": "def read_notes("
+      },
+      {
+        "path": "tools/conversation_notes/api.py",
+        "pattern": "def update_notes("
       }
     ],
     "validation_markers": [
@@ -2101,6 +2117,14 @@
       {
         "path": "tests/test_supervisor.py",
         "pattern": "def test_build_conversation_memory_promotion_pressure_groups_candidates("
+      },
+      {
+        "path": "tests/test_conversation_notes.py",
+        "pattern": "def test_conversation_survives_new_process_and_preserves_source("
+      },
+      {
+        "path": "tests/test_conversation_notes.py",
+        "pattern": "def test_interrupted_publication_keeps_complete_previous_snapshot("
       }
     ],
     "observation_markers": [
