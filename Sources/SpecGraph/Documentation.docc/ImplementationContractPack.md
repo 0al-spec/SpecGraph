@@ -16,6 +16,16 @@ findings and CLI warnings remain retained. See the packet's `retry/evidence.json
 Canonical Intent -> Requirement reachability remains unresolved; SG-SPEC-0020
 is boundary context, not the derivation of the exact profile vocabulary.
 
+The subsequent adoption packet at
+`docs/reviews/0047_authored_traceability/adoption/README.md` prepares three Intent
+roots, six standalone Requirements, four shared criteria and eight directed
+`derived_from` edges. Exact source statements, shared membership and pending
+subject transitions are review-bound; source capture remains assistant-mediated.
+The SG-SPEC-0069 writer supports the Requirement/criterion records, not Intent
+roots or external relations. Their physical publication binding remains a
+separate implementation slice. Preparation, merge and successful structural
+checks establish no canonical reachability, origin, activation or runtime evidence.
+
 Proposal `0047` now includes `observability_identity_declarations_v1`,
 **contract preparation only**, with runtime realization
 `deferred_until_canonicalized`. See repository

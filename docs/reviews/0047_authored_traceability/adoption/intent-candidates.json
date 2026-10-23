@@ -1,0 +1,107 @@
+{
+  "schema_version": 1,
+  "artifact_kind": "authored_traceability_intent_candidates",
+  "gate_state": "review_pending",
+  "canonical_mutations_allowed": false,
+  "nodes": [
+    {
+      "source_quote_id": "INTENT-0047-ADDRESSABILITY",
+      "source_ref": "docs/reviews/0047_authored_traceability/intent.json#/quotes/0",
+      "intent_draft_ref": "docs/reviews/0047_authored_traceability/adoption/intent-lineage.json#/intent_drafts/0",
+      "gate_state": "review_pending",
+      "canonical_adoption": false,
+      "proposed_graph_identity": {
+        "workspace_identity": "workspace:a2800523-3588-4820-a47f-9fddc0fed3f5",
+        "kind": "intent",
+        "node_id": "intent.atc.addressability"
+      },
+      "proposed_record": {
+        "id": "intent.atc.addressability",
+        "kind": "intent",
+        "title": "Addressable rules across specification, code and runtime",
+        "status": "outlined",
+        "authority_class": "distilled",
+        "statement": "Preserve addressable rule identity from specification to implementation and runtime.",
+        "source_refs": [
+          "docs/reviews/0047_authored_traceability/intent.json#/quotes/0"
+        ],
+        "provenance": {
+          "actor_id": null,
+          "authority_class": "distilled",
+          "recorded_at": null,
+          "source_ref": "docs/reviews/0047_authored_traceability/intent.json#/quotes/0"
+        }
+      },
+      "interpretation_authority": "assistant_normalization_pending_human_semantic_review",
+      "canonical_storage_binding": null,
+      "writer_support": "not_supported_by_subject_source_write_v1",
+      "adoption_provenance": null
+    },
+    {
+      "source_quote_id": "INTENT-0047-DELIVERY-CHAIN",
+      "source_ref": "docs/reviews/0047_authored_traceability/intent.json#/quotes/1",
+      "intent_draft_ref": "docs/reviews/0047_authored_traceability/adoption/intent-lineage.json#/intent_drafts/1",
+      "gate_state": "review_pending",
+      "canonical_adoption": false,
+      "proposed_graph_identity": {
+        "workspace_identity": "workspace:a2800523-3588-4820-a47f-9fddc0fed3f5",
+        "kind": "intent",
+        "node_id": "intent.atc.delivery-chain"
+      },
+      "proposed_record": {
+        "id": "intent.atc.delivery-chain",
+        "kind": "intent",
+        "title": "Readily attributable delivery-chain signals",
+        "status": "outlined",
+        "authority_class": "distilled",
+        "statement": "Make cross-stage evidence readily attributable while keeping the mechanism lightweight.",
+        "source_refs": [
+          "docs/reviews/0047_authored_traceability/intent.json#/quotes/1"
+        ],
+        "provenance": {
+          "actor_id": null,
+          "authority_class": "distilled",
+          "recorded_at": null,
+          "source_ref": "docs/reviews/0047_authored_traceability/intent.json#/quotes/1"
+        }
+      },
+      "interpretation_authority": "assistant_normalization_pending_human_semantic_review",
+      "canonical_storage_binding": null,
+      "writer_support": "not_supported_by_subject_source_write_v1",
+      "adoption_provenance": null
+    },
+    {
+      "source_quote_id": "INTENT-0047-DERIVATION",
+      "source_ref": "docs/reviews/0047_authored_traceability/intent.json#/quotes/2",
+      "intent_draft_ref": "docs/reviews/0047_authored_traceability/adoption/intent-lineage.json#/intent_drafts/2",
+      "gate_state": "review_pending",
+      "canonical_adoption": false,
+      "proposed_graph_identity": {
+        "workspace_identity": "workspace:a2800523-3588-4820-a47f-9fddc0fed3f5",
+        "kind": "intent",
+        "node_id": "intent.atc.derivation"
+      },
+      "proposed_record": {
+        "id": "intent.atc.derivation",
+        "kind": "intent",
+        "title": "Explicit source Intent for authored contracts",
+        "status": "outlined",
+        "authority_class": "distilled",
+        "statement": "Explain and retain the source intent of each proposed contract; distinguish requirements from engineering choices.",
+        "source_refs": [
+          "docs/reviews/0047_authored_traceability/intent.json#/quotes/2"
+        ],
+        "provenance": {
+          "actor_id": null,
+          "authority_class": "distilled",
+          "recorded_at": null,
+          "source_ref": "docs/reviews/0047_authored_traceability/intent.json#/quotes/2"
+        }
+      },
+      "interpretation_authority": "assistant_normalization_pending_human_semantic_review",
+      "canonical_storage_binding": null,
+      "writer_support": "not_supported_by_subject_source_write_v1",
+      "adoption_provenance": null
+    }
+  ]
+}
