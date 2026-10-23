@@ -136,3 +136,19 @@ an unexecuted 10-of-15 scenario. Retry evidence preserves the parent pending
 envelope, native capture copies, quoted-document diagnostic match and real CLI
 warnings. These are preparation artifacts, not canonical adoption, runtime
 enforcement, executed BDD tests or admitted evidence.
+
+## Bounded canonical adoption preparation after PR #790
+
+After merging the source-intent packet, the operator requested preparation of
+canonical Intent -> Requirement adoption. That instruction authorizes the
+preparation, not the final origins or activation. The reviewed Supervisor draft
+is the source of six unchanged Requirement statements and four shared criteria.
+Three human source quotes remain distinct from normalized Intent interpretations
+and from the profile's engineering choices.
+
+The new review packet prepares standalone subject records, exact acceptance
+membership and eight Requirement-to-Intent `derived_from` edges. It reuses the
+existing workspace plan and decision boundary. Existing subject publication
+does not cover Intent roots or external relations; a persisted publication
+binding for that seam remains necessary. No gate is approved, original evidence
+rewritten, canonical subject published or runtime profile activated here.
