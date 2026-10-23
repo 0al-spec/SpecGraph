@@ -1,0 +1,436 @@
+{
+  "artifact_kind": "local_workspace_path_reuse_observation",
+  "schema_version": 1,
+  "observed_at": "2026-10-23",
+  "proposal_id": "0227",
+  "authority": "local engineering observation; not trusted evidence admission",
+  "engine_commit": "989086c59edf656bccc9000e9f5717a2f86ba173",
+  "source_sha256": {
+    "tools/supervisor.py": "c625c165966403452e6960a4558dc7a6f52c4192950fcc6d36f44b7cfedb69c6",
+    "tools/product_workspace_next_moves.py": "195b633afb56e88a9ddfc47e453853bdfb389e445738a3ef347d89391aacd991",
+    "tools/project_environment_policy.json": "b4fa0b7f4a2e79ee1b691d78d9ec826aebdc071aff5b3c151155c5445f852466"
+  },
+  "setup_boundary": "Nested Git initialization, exclude entry, fixture spec and knowledge commit were supplied manually by this probe; current initializer does not perform these steps.",
+  "fixture": {
+    "id": "PROBE-SPEC-0001",
+    "title": "Path-only workspace probe",
+    "kind": "spec",
+    "created_at": "2026-10-23T00:00:00Z",
+    "updated_at": "2026-10-23T00:00:00Z",
+    "status": "outlined",
+    "maturity": 0.4,
+    "gate_state": "none",
+    "depends_on": [],
+    "inputs": [],
+    "outputs": [
+      "specs/nodes/PROBE-SPEC-0001.yaml"
+    ],
+    "allowed_paths": [
+      "specs/nodes/PROBE-SPEC-0001.yaml"
+    ],
+    "acceptance": [
+      "Keep workspace state under its own root."
+    ],
+    "acceptance_evidence": [
+      {
+        "criterion": "Keep workspace state under its own root.",
+        "evidence": "Keep workspace state under its own root: runs/project_environment.json was written inside the selected workspace."
+      }
+    ],
+    "prompt": "Clarify this one bounded requirement without changing implementation code."
+  },
+  "initial_fixture_evidence": "A local path-routing probe checks output locations.",
+  "fixture_corrections": [
+    "JSON-shaped YAML fixture failed canonical formatting lint; existing formatter corrected it and lint was rerun.",
+    "Restored the original disposable fixture with acceptance evidence that repeats the criterion and names the observed workspace-local report; earlier failed/retried run logs were retained."
+  ],
+  "checks": [
+    {
+      "name": "initialize",
+      "cwd": "$ENGINE",
+      "exit_code": 0,
+      "command": [
+        "$PYTHON",
+        "$ENGINE/tools/supervisor.py",
+        "--init-product-workspace",
+        "--project-id",
+        "local-workspace-probe",
+        "--workspace-root",
+        "$WORKSPACE",
+        "--root-intent",
+        "Verify path-only local workspace reuse.",
+        "--output-mode",
+        "summary"
+      ],
+      "summary": {
+        "status": "initialized",
+        "project_id": "local-workspace-probe",
+        "governance_profile": "product_workspace",
+        "root_intent_status": "captured",
+        "created_path_count": 6,
+        "validation_finding_count": 0,
+        "next_gap": "review_before_first_spec_materialization",
+        "report_path": "runs/product_workspace_initialization.json"
+      }
+    },
+    {
+      "name": "initialize_again",
+      "cwd": "$ENGINE",
+      "exit_code": 0,
+      "command": [
+        "$PYTHON",
+        "$ENGINE/tools/supervisor.py",
+        "--init-product-workspace",
+        "--project-id",
+        "local-workspace-probe",
+        "--workspace-root",
+        "$WORKSPACE",
+        "--root-intent",
+        "Verify path-only local workspace reuse.",
+        "--output-mode",
+        "summary"
+      ],
+      "summary": {
+        "status": "ready",
+        "project_id": "local-workspace-probe",
+        "governance_profile": "product_workspace",
+        "root_intent_status": "captured",
+        "created_path_count": 0,
+        "validation_finding_count": 0,
+        "next_gap": "review_before_first_spec_materialization",
+        "report_path": "runs/product_workspace_initialization.json"
+      }
+    },
+    {
+      "name": "environment",
+      "cwd": "$WORKSPACE",
+      "exit_code": 0,
+      "command": [
+        "$PYTHON",
+        "$ENGINE/tools/supervisor.py",
+        "--build-project-environment",
+        "--output-mode",
+        "summary"
+      ],
+      "summary": {
+        "status": "valid",
+        "project_id": "local-workspace-probe",
+        "governance_profile": "product_workspace",
+        "requested_governance_profile": "product_workspace",
+        "core_locked": true,
+        "self_evolution_enabled": false,
+        "default_next_move_behavior": "filter_core_and_self_evolution",
+        "review_feedback_routing": "project_local_only",
+        "validation_finding_count": 0,
+        "next_gap": "none"
+      }
+    },
+    {
+      "name": "targeted_dry_run",
+      "cwd": "$WORKSPACE",
+      "exit_code": 0,
+      "command": [
+        "$PYTHON",
+        "$ENGINE/tools/supervisor.py",
+        "--target-spec",
+        "PROBE-SPEC-0001",
+        "--dry-run",
+        "--output-mode",
+        "summary"
+      ]
+    },
+    {
+      "name": "graph_health",
+      "cwd": "$WORKSPACE",
+      "exit_code": 0,
+      "command": [
+        "$PYTHON",
+        "$ENGINE/tools/supervisor.py",
+        "--target-spec",
+        "PROBE-SPEC-0001",
+        "--observe-graph-health",
+        "--output-mode",
+        "summary"
+      ]
+    },
+    {
+      "name": "spec_trace",
+      "cwd": "$WORKSPACE",
+      "exit_code": 0,
+      "command": [
+        "$PYTHON",
+        "$ENGINE/tools/supervisor.py",
+        "--build-spec-trace-index",
+        "--output-mode",
+        "summary"
+      ]
+    },
+    {
+      "name": "evidence_plane",
+      "cwd": "$WORKSPACE",
+      "exit_code": 0,
+      "command": [
+        "$PYTHON",
+        "$ENGINE/tools/supervisor.py",
+        "--build-evidence-plane-index",
+        "--output-mode",
+        "summary"
+      ]
+    },
+    {
+      "name": "advisor",
+      "cwd": "$PROJECT",
+      "exit_code": 0,
+      "command": [
+        "$PYTHON",
+        "$ENGINE/tools/product_workspace_next_moves.py",
+        "--workspace-root",
+        "$WORKSPACE",
+        "--target-spec",
+        "PROBE-SPEC-0001"
+      ]
+    },
+    {
+      "name": "yaml_lint",
+      "cwd": "$WORKSPACE",
+      "exit_code": 1,
+      "command": [
+        "$PYTHON",
+        "$ENGINE/tools/spec_yaml_lint.py",
+        "$WORKSPACE/specs/nodes/PROBE-SPEC-0001.yaml"
+      ],
+      "stderr": "$WORKSPACE/specs/nodes/PROBE-SPEC-0001.yaml: file is not canonically formatted; run `python tools/spec_yaml_format.py $WORKSPACE/specs/nodes/PROBE-SPEC-0001.yaml`\n"
+    },
+    {
+      "name": "fixture_format",
+      "cwd": "$WORKSPACE",
+      "exit_code": 0,
+      "command": [
+        "$PYTHON",
+        "$ENGINE/tools/spec_yaml_format.py",
+        "$WORKSPACE/specs/nodes/PROBE-SPEC-0001.yaml"
+      ]
+    },
+    {
+      "name": "yaml_lint_after_format",
+      "cwd": "$WORKSPACE",
+      "exit_code": 0,
+      "command": [
+        "$PYTHON",
+        "$ENGINE/tools/spec_yaml_lint.py",
+        "$WORKSPACE/specs/nodes/PROBE-SPEC-0001.yaml"
+      ]
+    },
+    {
+      "name": "deterministic_refinement",
+      "cwd": "$WORKSPACE",
+      "exit_code": 1,
+      "command": [
+        "local deterministic executor via supervisor.main(target_spec=PROBE-SPEC-0001, auto_approve=False)"
+      ],
+      "stderr": "\n=== validation errors ===\n- [relation/relation_failure/graph_reconciliation_error] specs/nodes/PROBE-SPEC-0001.yaml: acceptance_evidence[1] must semantically ground acceptance[1] using criterion terms, identifiers, or a concrete outcome\nAuto-retrying PROBE-SPEC-0001 after recoverable validation failure (1/1): specs/nodes/PROBE-SPEC-0001.yaml: acceptance_evidence[1] must semantically ground acceptance[1] using criterion terms, identifiers, or a concrete outcome\n\n=== validation errors ===\n- [relation/relation_failure/graph_reconciliation_error] specs/nodes/PROBE-SPEC-0001.yaml: acceptance_evidence[1] must semantically ground acceptance[1] using criterion terms, identifiers, or a concrete outcome\n"
+    },
+    {
+      "name": "corrected_fixture_lint",
+      "cwd": "$WORKSPACE",
+      "exit_code": 0,
+      "command": [
+        "$PYTHON",
+        "$ENGINE/tools/spec_yaml_lint.py",
+        "$WORKSPACE/specs/nodes/PROBE-SPEC-0001.yaml"
+      ]
+    },
+    {
+      "name": "deterministic_refinement_corrected",
+      "cwd": "$WORKSPACE",
+      "exit_code": 0,
+      "command": [
+        "local deterministic executor via supervisor.main(target_spec=PROBE-SPEC-0001, auto_approve=False)"
+      ]
+    },
+    {
+      "name": "parent_ignored",
+      "cwd": "$PROJECT",
+      "exit_code": 0,
+      "command": [
+        "git",
+        "check-ignore",
+        ".specgraph/specgraph.project.yaml"
+      ]
+    },
+    {
+      "name": "parent_status_final",
+      "cwd": "$PROBE/project",
+      "exit_code": 0,
+      "command": [
+        "git",
+        "status",
+        "--porcelain"
+      ]
+    },
+    {
+      "name": "parent_workspace_tracked",
+      "cwd": "$PROJECT",
+      "exit_code": 0,
+      "command": [
+        "git",
+        "ls-files",
+        "--",
+        ".specgraph"
+      ]
+    },
+    {
+      "name": "clone_knowledge_checkpoint",
+      "cwd": "$PROBE",
+      "exit_code": 0,
+      "command": [
+        "git",
+        "clone",
+        "--no-local",
+        "$WORKSPACE",
+        "$PROBE/relocated-project/.specgraph"
+      ],
+      "stderr": "Cloning into '$PROBE/relocated-project/.specgraph'...\n"
+    },
+    {
+      "name": "relocated_dry_run",
+      "cwd": "$PROBE/relocated-project/.specgraph",
+      "exit_code": 0,
+      "command": [
+        "$PYTHON",
+        "$ENGINE/tools/supervisor.py",
+        "--target-spec",
+        "PROBE-SPEC-0001",
+        "--dry-run",
+        "--output-mode",
+        "summary"
+      ]
+    },
+    {
+      "name": "relocated_advisor",
+      "cwd": "$PROBE",
+      "exit_code": 0,
+      "command": [
+        "$PYTHON",
+        "$ENGINE/tools/product_workspace_next_moves.py",
+        "--workspace-root",
+        "$PROBE/relocated-project/.specgraph",
+        "--target-spec",
+        "PROBE-SPEC-0001"
+      ]
+    }
+  ],
+  "deterministic_executor": {
+    "type": "injected local fixture; no LLM",
+    "behavior": "Read the selected spec in the native execution worktree, change only its prompt using existing write_spec_yaml, return RUN_OUTCOME: done and BLOCKER: none.",
+    "calls": 3,
+    "real_agent_calls": 0,
+    "hosted_provider_calls": 0
+  },
+  "refinement_attempts": [
+    {
+      "run_id": "20261023T132159Z-PROBE-SPEC-0001-707afae6",
+      "completion_status": "failed",
+      "outcome": "done",
+      "gate_state": "retry_pending",
+      "exit_code": 0,
+      "validation_errors": [
+        "specs/nodes/PROBE-SPEC-0001.yaml: acceptance_evidence[1] must semantically ground acceptance[1] using criterion terms, identifiers, or a concrete outcome"
+      ],
+      "required_human_action": "rerun supervisor"
+    },
+    {
+      "run_id": "20261023T132159Z-PROBE-SPEC-0001-a6b90b14",
+      "completion_status": "failed",
+      "outcome": "done",
+      "gate_state": "retry_pending",
+      "exit_code": 0,
+      "validation_errors": [
+        "specs/nodes/PROBE-SPEC-0001.yaml: acceptance_evidence[1] must semantically ground acceptance[1] using criterion terms, identifiers, or a concrete outcome"
+      ],
+      "required_human_action": "rerun supervisor"
+    },
+    {
+      "run_id": "20261023T132313Z-PROBE-SPEC-0001-d519898a",
+      "completion_status": "ok",
+      "outcome": "done",
+      "gate_state": "review_pending",
+      "exit_code": 0,
+      "validation_errors": [],
+      "required_human_action": "approve or retry refinement"
+    }
+  ],
+  "corrected_run": {
+    "run_id": "20261023T132313Z-PROBE-SPEC-0001-d519898a",
+    "completion_status": "ok",
+    "outcome": "done",
+    "gate_state": "review_pending",
+    "required_human_action": "approve or retry refinement",
+    "exit_code": 0,
+    "auto_approved": false,
+    "accepted_canonical_diff": false,
+    "changed_files": [
+      "specs/nodes/PROBE-SPEC-0001.yaml"
+    ],
+    "validation_errors": [],
+    "validator_results": {
+      "outputs": true,
+      "allowed_paths": true,
+      "reconciliation": true,
+      "atomicity": true,
+      "transition": true,
+      "executor_environment": true,
+      "runtime_artifacts": true,
+      "refinement_acceptance": true
+    },
+    "stdout": "RUN_OUTCOME: done\nBLOCKER: none\n",
+    "stderr": "",
+    "accepted_canonical_diff_semantics": "Run metadata acceptance is not human approval; gate_state=review_pending remains authoritative."
+  },
+  "post_execution_initializer": {
+    "command": "$PYTHON $ENGINE/tools/supervisor.py --init-product-workspace --project-id local-workspace-probe --workspace-root $WORKSPACE --root-intent \"Verify path-only local workspace reuse.\" --output-mode summary",
+    "exit_code": 1,
+    "status": "blocked",
+    "validation_findings": [
+      {
+        "finding_id": "unexpected_top_level_entries",
+        "severity": "error",
+        "path": ".",
+        "entries": [
+          ".worktrees"
+        ],
+        "message": "existing workspace contains entries outside the initializer layout",
+        "next_gap": "review_existing_workspace_before_initialization"
+      }
+    ]
+  },
+  "read_model_boundary": {
+    "spec_id": "PROBE-SPEC-0001",
+    "implementation_state": "unclaimed",
+    "freshness": "not_tracked",
+    "evidence_scope": "untracked",
+    "chain_status": "untracked",
+    "code_refs": [],
+    "test_refs": [],
+    "commit_refs": [],
+    "inference": "Exit 0 and artifact presence do not establish an outer-implementation binding or verified evidence."
+  },
+  "git_boundary": {
+    "parent_clean": true,
+    "parent_workspace_untracked": true,
+    "parent_commit_unchanged": true,
+    "knowledge_checkpoint_commit": "8f10160aff468f41b7fbfb551ef1c6d04a2d646e",
+    "restored_checkpoint_commit": "8f10160aff468f41b7fbfb551ef1c6d04a2d646e",
+    "checkpoint_identity_preserved": true,
+    "restoration_boundary": "Clone restores committed knowledge only; ignored runtime artifacts and an uncommitted pending-review state are not restored or claimed."
+  },
+  "limitations": [
+    "No real agent executor was launched; one deterministic local executor exercised the existing Supervisor refinement/review path.",
+    "No implementation-to-knowledge repository binding was implemented.",
+    "No automatic initializer Git integration was implemented.",
+    "Missing optional trace/evidence registry readiness must be inspected separately from command exit codes."
+  ],
+  "canonical_mutations_allowed": false,
+  "runtime_code_mutations_allowed": false,
+  "evidence_admission_allowed": false
+}
