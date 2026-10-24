@@ -542,12 +542,14 @@ and a documentation PR do not establish that end-to-end application yet.
 ## Declared Draft Obligations Counter
 
 The operator requested proposal obligations as a separate count after observing
-that canonical Intent Atoms remained unchanged during this PoC. A separate
-documentation-only change will declare the agent-authored draft
-obligations with stable IDs and individual intent-decision dispositions. These
-summarize the bounded capture/handoff behavior above and retain the source
-archive as context; declaring them does not grant new human approval or
-canonical adoption.
+that canonical Intent Atoms remained unchanged during this PoC. The
+[explicit declaration](0045_conversation_memory_exploration_vault.intent.yaml)
+records eight agent-authored draft obligations with stable IDs. They summarize
+the bounded capture/handoff behavior above and retain the source archive as
+context; declaring them does not grant new human approval or canonical adoption.
+Each addition has a source-bound `contract_only` disposition in
+`tools/intent_decision_reviews/0045-proposal-declaration.json`. This declaration
+changes no production code and does not attest implementation coverage.
 
 The existing Intent Atoms v1 analyzer reads declared YAML in the separate
 `docs/proposals` scope. The PR comment renders that count beside the existing

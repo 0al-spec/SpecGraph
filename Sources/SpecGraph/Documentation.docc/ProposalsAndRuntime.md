@@ -13,6 +13,12 @@ exact-parent guard in `tools/check_rule_reuse_merge.sh`; old successful checks
 do not establish readiness for a changed comparison. See repository
 `CONTRIBUTING.md`, Branches and PRs.
 
+Native GitHub stacks can use a virtual lower-PR merge snapshot as an upper
+PR's first merge parent. The current rule-reuse gate rejects this shape. Merge
+a ready bottom layer first, synchronize the remaining stack, refresh bound
+decision-review records for the new base, and verify fresh direct-base merge
+parents and CI. Keep the guard; rerunning the rejected event is insufficient.
+
 ## Intent decision review
 
 `specgraph.intent-decision-review/v1` joins added, removed and modified Intent

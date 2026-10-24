@@ -165,6 +165,13 @@ history), push the new head, and verify the fresh snapshot and checks. Preserve
 the exact-parent guard in `tools/check_rule_reuse_merge.sh`; do not weaken it or
 report the retargeted PR as ready using checks from the old comparison.
 
+Native GitHub stacks can give an upper PR a virtual lower-PR merge snapshot
+as its first merge parent instead of the declared base-branch head. The current
+rule-reuse gate rejects that shape. Merge a ready bottom layer first, synchronize
+the remaining stack, refresh any source-bound decision-review record for its
+new base, and verify fresh direct-base merge parents and CI before continuing.
+Do not bypass the guard or rerun an event pinned to the rejected snapshot.
+
 Useful skills and commands:
 
 - `$gh-create-pr` for creating or updating PRs.
