@@ -1,6 +1,23 @@
 {
   "groups": [
     {
+      "id": "conversation-notes",
+      "description": "Short attributed Hypercode notes captured by an agent during a conversation.",
+      "docs": [
+        "docs/conversation_notes.md",
+        "docs/proposals/0045_conversation_memory_exploration_vault.md"
+      ],
+      "docc": [
+        "Sources/SpecGraph/Documentation.docc/ConversationNotes.md"
+      ],
+      "required_terms": [
+        "read_notes",
+        "update_notes",
+        "Hypercode",
+        "revision"
+      ]
+    },
+    {
       "id": "evidence-provider-snapshot",
       "description": "Explicit declaration providers retain immutable source-bound facts without execution or admission.",
       "docs": ["docs/evidence_provider.md"],
