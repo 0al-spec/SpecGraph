@@ -25,6 +25,19 @@ DISPOSITIONS = {
 MAX_REFS_PER_LIST = 16
 MAX_REFS_TOTAL = 256
 DECISION_DELTA_PROFILE = "intent-decision-obligations-v1"
+PROPOSAL_ROOT = "docs/proposals"
+
+
+def proposal_snapshot(root: Path, revision: str) -> dict:
+    snapshot = build_snapshot(repo=str(root), revision=revision, spec_root=PROPOSAL_ROOT)
+    # Unlike the required canonical root, a proposal directory may not yet
+    # exist (or may have been removed). Only actual absence is an empty scope;
+    # malformed YAML, a blob or symlink at the root remain incomplete.
+    if [item["code"] for item in snapshot["diagnostics"]] == ["missing_spec_root"]:
+        snapshot["diagnostics"] = []
+        snapshot["completeness"] = "complete"
+        snapshot["summary"]["diagnostic_count"] = 0
+    return snapshot
 
 
 def changes_from(diff: dict, before: dict, after: dict) -> list[dict]:
@@ -169,6 +182,18 @@ def collect(
     after = build_snapshot(repo=str(root), revision=head)
     diff = diff_snapshots(before, after)
     changes = changes_from(diff, before, after)
+    proposal_before = proposal_snapshot(root, base)
+    proposal_after = proposal_snapshot(root, head)
+    proposal_diff = diff_snapshots(proposal_before, proposal_after)
+    for change in changes_from(proposal_diff, proposal_before, proposal_after):
+        # Preserve existing canonical keys; additional scopes cannot alias
+        # canonical node/atom IDs, including when they declare identical text.
+        change["spec_root"] = PROPOSAL_ROOT
+        change["change_sha256"] = digest(
+            dict(spec_root=PROPOSAL_ROOT, kind=change["kind"], atom=change["atom"])
+        )
+        changes.append(change)
+    complete = all(report["completeness"] == "complete" for report in (diff, proposal_diff))
     delta_sha = digest(
         dict(
             profile=diff["profile"],
@@ -180,7 +205,7 @@ def collect(
     sources = GitSources(root, base, head)
     errors, inspected, missing = [], [], []
     ledger_sha, scope, path = None, {}, None
-    if diff["completeness"] != "complete":
+    if not complete:
         errors.append("intent_delta_incomplete")
     elif changes:
         try:
@@ -241,9 +266,12 @@ def collect(
         missing_changes=missing,
         diagnostics=errors,
         trace=trace,
-        intent_completeness=diff["completeness"],
+        intent_completeness="complete" if complete else "incomplete",
         intent_diagnostics=diff["diagnostics"],
         intent_summary=diff["summary"],
+        proposal_intent_completeness=proposal_diff["completeness"],
+        proposal_intent_diagnostics=proposal_diff["diagnostics"],
+        proposal_intent_summary=proposal_diff["summary"],
         reviewer_context=dict(
             pull_request=context,
             description_authority="author_context_not_approval",

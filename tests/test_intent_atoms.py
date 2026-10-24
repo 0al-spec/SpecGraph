@@ -628,3 +628,44 @@ def test_diff_normalises_line_endings_before_matching_unkeyed_atoms(tmp_path: Pa
     assert diff["summary"]["removed_count"] == 0
     assert diff["summary"]["modified_count"] == 0
     assert diff["summary"]["unchanged_count"] == 1
+
+
+def test_proposal_declarations_use_separate_git_scope_and_stable_ids(tmp_path: Path) -> None:
+    module = load_module()
+    repo = make_repo(
+        tmp_path,
+        {
+            "specs/nodes/one.yaml": "id: SG-1\nacceptance: [Keep the original obligation.]\n",
+            "docs/proposals/0045_capture.md": "# Capture\n\nDraft discussion, not counted.\n",
+        },
+    )
+    before_sha = git(repo, "rev-parse", "HEAD")
+    declaration = {
+        "id": "SG-RFC-0045",
+        "kind": "proposal",
+        "status": "draft",
+        "atoms": {"intents": [{"id": "CAPTURE", "statement": "Save short notes."}]},
+    }
+    path = repo / "docs/proposals/0045_capture.intent.yaml"
+    path.write_text(json.dumps(declaration))
+    git(repo, "add", "docs/proposals")
+    git(repo, "commit", "-qm", "declare a draft obligation")
+    proposal_sha = git(repo, "rev-parse", "HEAD")
+    canonical_before = module.build_snapshot(repo=str(repo), revision=before_sha)
+    canonical_after = module.build_snapshot(repo=str(repo), revision=proposal_sha)
+    assert canonical_after["atoms"] == canonical_before["atoms"]
+    before = module.build_snapshot(repo=str(repo), revision=before_sha, spec_root="docs/proposals")
+    after = module.build_snapshot(repo=str(repo), revision=proposal_sha, spec_root="docs/proposals")
+    assert before["completeness"] == after["completeness"] == "complete"
+    assert before["summary"]["atom_count"] == 0
+    assert after["summary"]["atom_count"] == 1
+    assert after["nodes"][0]["status"] == "draft"
+    assert module.diff_snapshots(before, after)["summary"]["added_count"] == 1
+    declaration["atoms"]["intents"][0]["statement"] = "Save short notes with their source."
+    path.write_text(json.dumps(declaration))
+    git(repo, "add", "docs/proposals")
+    git(repo, "commit", "-qm", "refine the same obligation")
+    refined = module.build_snapshot(repo=str(repo), revision="HEAD", spec_root="docs/proposals")
+    diff = module.diff_snapshots(after, refined)
+    assert diff["summary"]["modified_count"] == 1
+    assert diff["summary"]["net_count_delta"] == 0

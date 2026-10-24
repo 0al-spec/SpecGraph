@@ -2077,7 +2077,11 @@
       "tools/conversation_notes/store.py",
       "tests/test_conversation_notes.py",
       "docs/conversation_notes.md",
-      ".codex/skills/specgraph-conversation-notes/SKILL.md"
+      ".codex/skills/specgraph-conversation-notes/SKILL.md",
+      "tools/intent_atoms_pr_comment.py",
+      "tests/test_intent_atoms.py",
+      "tests/test_intent_atoms_pr_comment.py",
+      ".github/workflows/intent-atoms-pr-comment.yml"
     ],
     "runtime_markers": [
       {
@@ -2103,6 +2107,10 @@
       {
         "path": "tools/conversation_notes/api.py",
         "pattern": "def update_notes("
+      },
+      {
+        "path": "tools/intent_atoms_pr_comment.py",
+        "pattern": "def proposal_lines("
       }
     ],
     "validation_markers": [
@@ -2125,6 +2133,14 @@
       {
         "path": "tests/test_conversation_notes.py",
         "pattern": "def test_interrupted_publication_keeps_complete_previous_snapshot("
+      },
+      {
+        "path": "tests/test_intent_atoms.py",
+        "pattern": "def test_proposal_declarations_use_separate_git_scope_and_stable_ids("
+      },
+      {
+        "path": "tests/test_intent_atoms_pr_comment.py",
+        "pattern": "def test_proposal_counts_stay_separate_and_do_not_echo_untrusted_text("
       }
     ],
     "observation_markers": [

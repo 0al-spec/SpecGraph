@@ -84,3 +84,21 @@ Only these curated excerpts and identifiers are published. The live sketch and
 its full revision history remain local. The proposed canonical change is an
 assistant-authored interpretation in proposal 0045, not text quoted from the
 operator and not an already applied graph mutation.
+
+## Operator clarification: separate proposal counts (2026-10-24)
+
+After inspecting `302 -> 302` for the capture PoC, the operator asked:
+
+> Давай чуть улучшим этот подсчет, да
+
+When asked whether the first improvement should include proposal obligations
+as a separate draft count or extract more fields from canonical YAML, the
+operator selected:
+
+> Обязательства в proposals отдельно (рекомендую)
+
+The assistant's bounded implementation uses explicit YAML declarations beside
+proposals and the existing versioned analyzer in a separate Git root. Statements
+in a subsequent 0045 declaration will be agent-authored summaries of this
+proposal; the excerpts above do not attest approval of those exact formulations.
+Counts remain separate from canonical specification atoms and do not grant authority.

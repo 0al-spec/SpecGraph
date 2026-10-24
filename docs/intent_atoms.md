@@ -103,6 +103,67 @@ permission to write comments. This also supports stacked PRs. An incomplete
 comparison reports diagnostics and withholds atom counts. The comment is review
 feedback, not a merge gate or the durable post-merge metric history.
 
+## Declared proposal obligations
+
+The same profile also counts a separate draft scope: tracked YAML declarations
+under `docs/proposals`. A declaration lives beside its proposal as
+`<proposal-name>.intent.yaml`, uses the proposal's stable ID, `kind: proposal`
+and a descriptive lifecycle status, and lists explicit `atoms.intents[]` with
+stable atom IDs and statements. For example:
+
+```yaml
+id: SG-RFC-0045
+kind: proposal
+status: draft
+proposal_ref: docs/proposals/0045_conversation_memory_exploration_vault.md
+atoms:
+  intents:
+  - id: CN-CAPTURE
+    statement: The agent can save a short note during a conversation.
+```
+
+This is an author-maintained declaration of obligations in the proposal, not
+an extraction from arbitrary Markdown. It does not classify the whole proposal
+or establish approval, implementation or canonical acceptance. Its original
+source material remains in the linked proposal/source archive. Declarations
+remain agent interpretations until reviewed; they are not new
+canonical Intent nodes. The first declaration is prepared in a separate
+documentation-only change with individual intent-decision dispositions.
+
+Use the existing analyzer with the separate Git root:
+
+```sh
+python3 tools/intent_atoms.py diff --repo . --spec-root docs/proposals \
+  --base <base-commit> --head <head-commit>
+```
+
+The PR report shows **specification atoms** and **proposal obligations** in
+separate sections; it never adds them together. Both use the same unchanged
+v1 counting rules. Stable proposal/atom ID pairs allow text refinements to
+appear as `modified`, even when the count stays the same. Proposals without
+YAML declarations remain outside this coverage. A zero draft count therefore
+means no countable declaration in this scope, not that the prose contains no
+intent. `complete` describes processing of declared fields only.
+
+This scope reads all tracked `.yaml`/`.yml` files under `docs/proposals` using
+the same v1 rules, including its acceptance fallback. Sidecar naming,
+`kind`, status and `proposal_ref` are authoring conventions rather than an
+authenticated link or a new schema validator. Use explicit IDs for stable text
+refinement; an omitted ID retains v1's text-based matching behavior.
+
+The optional `--proposal-report` input to `intent_atoms_pr_comment.py` must
+match the specification report's exact base/head revisions, profile digest,
+analyzer version and digest, and use root `docs/proposals`. A mismatch withholds
+that section's counts. An incomplete proposal snapshot likewise withholds
+draft counts while leaving the specification result visible. The SIB adapter
+continues to require `specs/nodes`; a proposal snapshot is not an accepted
+canonical `N_spec` source.
+
+The workflow uses trusted-default-branch tooling for both scopes. Before this
+workflow update lands on the default branch, reports on its own PR still use
+the earlier renderer. Verify the new hosted section on a later open PR after
+the workflow lands; local rendering can already exercise the exact Git roots.
+
 ## Specification adoption and classic-code PR report
 
 SpecificationMetrics provides a separate live source measure: **S** is the

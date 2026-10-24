@@ -1312,5 +1312,19 @@
     "residual_risk": "The source reference identifies the local review comment, not a GitHub review thread. Structural equality does not establish semantic approval.",
     "recorded_at": "2026-10-24T19:11:00Z",
     "prevention_path": "tests/test_conversation_notes.py::test_last_subtree_move_only_saves_new_attribution verifies root/nested no-op rejection without revision/history changes and preservation of new citations. Both no-op cases failed before the fix; all 34 conversation-notes tests passed after it."
+  },
+  {
+    "feedback_id": "pr-794-proposal-intent-decision-scope",
+    "source_pr": 794,
+    "source_thread_url": "https://github.com/0al-spec/SpecGraph/pull/794#discussion_r4368304004",
+    "reviewer": "chatgpt-codex-connector",
+    "review_comment_summary": "Eight declared proposal obligations bypassed intent-decision review because the gate scanned only canonical specification nodes.",
+    "fix_summary": "Scan declared proposal YAML automatically with scope-bound change digests and separate summaries. Introduce declarations in a documentation-only layer with individual contract_only dispositions; preserve the prohibition on using contract_only for production changes.",
+    "root_cause_class": "scope_isolation_gap",
+    "prevention_action": "regression_test_added",
+    "verification": ["targeted_test", "lint_or_format_check", "manual_contract_review"],
+    "residual_risk": "Coverage remains structural; unannotated Markdown and semantic correctness require review. Declarations do not attest approval or implementation.",
+    "recorded_at": "2026-10-24T20:56:00Z",
+    "prevention_path": "tests/test_intent_decision_review.py covers eight proposal dispositions, incomplete coverage, metadata changes, deletion, cross-scope identity, invalid inputs and rejection of contract_only with production changes."
   }
 ]
