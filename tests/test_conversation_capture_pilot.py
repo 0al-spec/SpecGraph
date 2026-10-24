@@ -45,10 +45,21 @@ def test_cn_capture_binding_retains_draft_subjects_and_exact_source():
         assert not candidate["canonical_adoption"] and not candidate["ready_for_materialization"]
         assert candidate["proposed_record"]["current_disposition"] is None
         assert candidate["proposed_record"]["revisions"][0]["provenance"] is None
+        statement = candidate["proposed_record"]["revisions"][0]["statement"]
+        assert (
+            candidate["source_mapping"]["source_statement_sha256"]
+            == hashlib.sha256(statement.encode()).hexdigest()
+        )
+        assert (
+            candidate["source_mapping"]["proposed_destination"]["subject"]
+            == candidate["proposed_record"]["subject"]
+        )
         parse_subject_ref(candidate["proposed_record"]["subject"])
     citation = excerpt["note"]["sources"][0]
     assert citation["speaker"] == "human"
-    assert citation["quote"] in (ROOT / excerpt["archive_path"]).read_text()
+    archived = f"- `{excerpt['archive_excerpt_id']}`: «{citation['quote']}»"
+    assert archived in (ROOT / excerpt["archive_path"]).read_text()
+    assert citation["ref"] == f"operator-excerpt:{excerpt['archive_excerpt_id']}"
     assert not excerpt["canonical"]
     commit = revision(ROOT, "HEAD")
     sources = GitSources(ROOT, commit, commit)
