@@ -539,6 +539,22 @@ SG-SPEC-0050. A later accepted application should preserve traceability back
 through this proposal to the selected source material. Local persistence tests
 and a documentation PR do not establish that end-to-end application yet.
 
+## Declared Draft Obligations Counter
+
+The operator requested proposal obligations as a separate count after observing
+that canonical Intent Atoms remained unchanged during this PoC. The
+[explicit declaration](0045_conversation_memory_exploration_vault.intent.yaml)
+records eight agent-authored draft obligations with stable IDs. They summarize
+the bounded capture/handoff behavior above and keep the source archive as
+their context; their presence is not a new human approval or canonical adoption.
+
+The existing Intent Atoms v1 analyzer reads this YAML in the separate
+`docs/proposals` scope. The PR comment renders that count beside the existing
+`specs/nodes` count with matching revision/analyzer provenance. Proposals
+without declarations remain unassessed. This runtime slice adds measurement
+visibility without automatically extracting prose, generating canonical nodes
+or changing promotion authority. See the [counting contract](../intent_atoms.md#declared-proposal-obligations).
+
 ## Acceptance Criteria
 
 - SpecGraph has a proposal-level architecture for conversation-derived memory

@@ -42,6 +42,32 @@ permission to write comments. This also supports stacked PRs. An incomplete
 comparison reports diagnostics and withholds atom counts. The comment is review
 feedback, not a merge gate or the durable post-merge metric history.
 
+## Declared Proposal Obligations
+
+The PR report also counts explicit YAML declarations under `docs/proposals`
+as a separate draft scope. A `<proposal-name>.intent.yaml` declaration carries
+the proposal ID, `kind: proposal`, a descriptive status, `proposal_ref`, and
+`atoms.intents[]` with stable IDs and statements. Proposal 0045 supplies the
+first example with eight agent-authored draft obligations.
+
+The unchanged v1 analyzer runs with `--spec-root docs/proposals`. Its result
+is displayed separately from specification atoms and is never added to them.
+Text changes with the same proposal/atom ID pair are reported as modifications.
+Unannotated Markdown remains unassessed; completeness describes the declared
+fields, not all intent present in the prose. The declarations do not establish
+review, approval, implementation or canonical promotion.
+
+The renderer's optional `--proposal-report` requires matching base/head
+revisions, profile digest, analyzer version/digest and the proposal root.
+Mismatched or incomplete proposal measurements withhold draft counts while
+the specification result remains visible. The SIB snapshot adapter continues
+to accept only `specs/nodes`, so draft counts cannot replace canonical N_spec.
+
+Both scopes use tooling from the trusted default branch. The new hosted
+section becomes available after the workflow lands there; verify it on a
+later open PR. The detailed declaration and reporting contract is in
+`docs/intent_atoms.md`.
+
 ## Specification Adoption and Code Metrics
 
 SpecificationMetrics reports **S** (live or unknown Specification definitions

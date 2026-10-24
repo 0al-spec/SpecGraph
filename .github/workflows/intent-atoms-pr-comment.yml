@@ -94,8 +94,15 @@ jobs:
             --base "${base_sha}" \
             --head "${head_sha}" \
             --output "${RUNNER_TEMP}/intent-atoms-diff.json"
+          python tools/intent_atoms.py diff \
+            --repo . \
+            --spec-root docs/proposals \
+            --base "${base_sha}" \
+            --head "${head_sha}" \
+            --output "${RUNNER_TEMP}/proposal-intent-atoms-diff.json"
           python tools/intent_atoms_pr_comment.py \
             --report "${RUNNER_TEMP}/intent-atoms-diff.json" \
+            --proposal-report "${RUNNER_TEMP}/proposal-intent-atoms-diff.json" \
             --payload "${RUNNER_TEMP}/intent-atoms-comment.json"
 
       - name: Update the PR report comment
