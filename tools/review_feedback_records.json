@@ -1298,5 +1298,19 @@
     "residual_risk": "The diff describes stored structural changes; it does not establish semantic agreement or canonical approval.",
     "recorded_at": "2026-10-24T07:54:00Z",
     "prevention_path": "tests/test_conversation_notes.py::test_sibling_reorder_diff_matches_persisted_order exercises CLI writes and fresh-process reads for root/nested moves with repeated/new citations. All four cases failed before the fix; all 30 conversation-notes tests passed after it. The JSON contract and DocC define sibling_index semantics."
+  },
+  {
+    "feedback_id": "pr-793-conversation-empty-revision",
+    "source_pr": 793,
+    "source_thread_url": "codex-local-review:pr-793/tools/conversation_notes/store.py:88-90",
+    "reviewer": "Codex local review, confirmed by operator",
+    "review_comment_summary": "A local diff comment identified that repeating an already-last subtree move with the same quotation published an empty revision; the operator agreed to fix it.",
+    "fix_summary": "Normalize edited nodes to stored preorder before comparing the notebook with the current snapshot. Reject unchanged edits before creating a revision while preserving new source quotations as real changes.",
+    "root_cause_class": "artifact_contract_validation_gap",
+    "prevention_action": "regression_test_added",
+    "verification": ["targeted_test", "lint_or_format_check"],
+    "residual_risk": "The source reference identifies the local review comment, not a GitHub review thread. Structural equality does not establish semantic approval.",
+    "recorded_at": "2026-10-24T19:11:00Z",
+    "prevention_path": "tests/test_conversation_notes.py::test_last_subtree_move_only_saves_new_attribution verifies root/nested no-op rejection without revision/history changes and preservation of new citations. Both no-op cases failed before the fix; all 34 conversation-notes tests passed after it."
   }
 ]

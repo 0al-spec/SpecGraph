@@ -7,7 +7,7 @@ import os
 import tempfile
 import uuid
 from contextlib import contextmanager
-from dataclasses import asdict
+from dataclasses import asdict, replace
 from datetime import datetime, timezone
 from pathlib import Path
 
@@ -86,6 +86,8 @@ class NotesStore:
                     "read_notes again"
                 )
             after = request.apply(before)
+            # Match the stored preorder before deciding whether a revision changed.
+            after = replace(after, nodes=after.branch())
             if after == before:
                 raise NotesError("No changes to save")
             new_revision = uuid.uuid4().hex

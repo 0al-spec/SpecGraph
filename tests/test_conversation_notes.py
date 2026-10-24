@@ -158,6 +158,51 @@ def test_sibling_reorder_diff_matches_persisted_order(tmp_path, parent_id, new_c
     }
 
 
+@pytest.mark.parametrize("nested", [False, True])
+@pytest.mark.parametrize("new_citation", [False, True])
+def test_last_subtree_move_only_saves_new_attribution(tmp_path, nested, new_citation):
+    changes = [{"op": "add", "id": "group", "label": "Group"}] if nested else []
+    parent_id = "group" if nested else None
+    changes.extend(
+        [
+            {"op": "add", "id": "earlier", "label": "Earlier", "parent_id": parent_id},
+            {"op": "add", "id": "last", "label": "Last", "parent_id": parent_id},
+            {"op": "add", "id": "child", "label": "Child", "parent_id": "last"},
+            {"op": "add", "id": "leaf", "label": "Leaf", "parent_id": "child"},
+        ]
+    )
+    first = apply(tmp_path, changes)
+    before = read_notes(tmp_path, history_limit=10)
+    revision_dirs = sorted(p.name for p in (tmp_path / "revisions").iterdir())
+    citation = source("Keep this subtree last.") if new_citation else source()
+    result = cli(
+        tmp_path,
+        "update_notes",
+        {
+            "expected_revision": first["revision"],
+            "source": citation,
+            "changes": [{"op": "move", "id": "last", "parent_id": parent_id}],
+        },
+    )
+    if new_citation:
+        assert result.returncode == 0, result.stderr
+        updated = json.loads(result.stdout)
+        assert updated["revision"] != first["revision"]
+        assert updated["diff"]["updated"] == [{"id": "last", "fields": {}, "sources_added": 1}]
+        restored = read_notes(tmp_path)
+        assert [n["id"] for n in restored["nodes"]] == [n["id"] for n in before["nodes"]]
+        assert next(n for n in restored["nodes"] if n["id"] == "last")["sources"] == [
+            source(),
+            citation,
+        ]
+    else:
+        assert result.returncode == 2
+        assert result.stdout == ""
+        assert json.loads(result.stderr) == {"error": "No changes to save"}
+        assert read_notes(tmp_path, history_limit=10) == before
+        assert sorted(p.name for p in (tmp_path / "revisions").iterdir()) == revision_dirs
+
+
 @pytest.mark.parametrize(
     "change",
     [

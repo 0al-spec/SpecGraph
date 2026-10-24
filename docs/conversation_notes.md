@@ -70,6 +70,10 @@ and details are single-line Unicode strings; labels must be nonempty. Original
 multiline text belongs in the quotation. Adding the same ID fails; repeating a
 link appends new attribution without duplicating the edge. A completely unchanged
 request returns `No changes to save` without advancing the revision.
+This comparison uses stored tree order: moving an already-last subtree to the
+same parent with its existing quotation creates no snapshot or history entry.
+A new quotation remains a real attribution change and is saved even when the
+visible tree stays the same.
 
 `approve` must be the only operation in its batch and requires a human quotation
 and an existing revision. It records the entire displayed revision; partial

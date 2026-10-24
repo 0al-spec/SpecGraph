@@ -32,6 +32,11 @@ Roots share the null parent. Descendants are compared within their own parent,
 so moving a subtree does not mark every descendant as reordered. The positions
 describe snapshot differences, not an imperative edit sequence.
 
+Moving an already-last subtree to its current parent with the same quotation
+returns `No changes to save`, preserving the revision and history. Comparison
+uses stored tree order. A new quotation is saved as an attribution change even
+when the visible tree stays the same.
+
 ## Stored sketch
 
 Each revision holds `notes.hc`, `notes.hcs` and `metadata.json`. Hypercode holds
