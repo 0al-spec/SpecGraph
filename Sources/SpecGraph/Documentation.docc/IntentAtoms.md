@@ -47,8 +47,9 @@ feedback, not a merge gate or the durable post-merge metric history.
 The PR report also counts explicit YAML declarations under `docs/proposals`
 as a separate draft scope. A `<proposal-name>.intent.yaml` declaration carries
 the proposal ID, `kind: proposal`, a descriptive status, `proposal_ref`, and
-`atoms.intents[]` with stable IDs and statements. Proposal 0045 supplies the
-first example with eight agent-authored draft obligations.
+`atoms.intents[]` with stable IDs and statements. Declarations are introduced
+in separate documentation-only changes with
+individual intent-decision dispositions.
 
 The unchanged v1 analyzer runs with `--spec-root docs/proposals`. Its result
 is displayed separately from specification atoms and is never added to them.

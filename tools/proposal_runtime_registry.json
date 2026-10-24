@@ -2081,7 +2081,6 @@
       "tools/intent_atoms_pr_comment.py",
       "tests/test_intent_atoms.py",
       "tests/test_intent_atoms_pr_comment.py",
-      "docs/proposals/0045_conversation_memory_exploration_vault.intent.yaml",
       ".github/workflows/intent-atoms-pr-comment.yml"
     ],
     "runtime_markers": [

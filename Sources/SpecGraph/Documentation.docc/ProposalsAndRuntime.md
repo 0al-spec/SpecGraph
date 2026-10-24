@@ -22,6 +22,14 @@ provides an explicit local comparison. `Intent-Decision-Review:` selects a track
 record under `tools/intent_decision_reviews/`. Exact base, intent delta, changed
 source snapshot and PR-description digests prevent stale coverage.
 
+Both `specs/nodes` and declared YAML under `docs/proposals` are scanned
+automatically, including CI event mode. Proposal changes carry scope-bound
+change digests and require individual dispositions. Canonical and proposal
+summaries remain separate; the gate's changed-obligation count is not a combined
+canonical Intent metric. An absent optional proposal directory is empty; a
+non-directory root or malformed declaration is invalid. Missing canonical roots
+remain invalid. Unannotated Markdown remains outside the trigger.
+
 Prefer existing Specification reuse; new definitions, justified mechanics,
 contract-only work and retirement are explicit alternatives. Unresolved rows
 remain `needs_review`; missing or malformed inputs remain `invalid`. A net-zero

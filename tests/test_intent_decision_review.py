@@ -77,6 +77,123 @@ def measured(repo, base, head, body=BODY):
     return collect(repo, base, head, pr_context=dict(number=12, title="Identity", body=body))
 
 
+def test_proposal_obligations_require_individual_dispositions_in_separate_scope(tmp_path, capsys):
+    repo = make_repo(tmp_path, {"specs/nodes/.keep": ""})
+    base = git(repo, "rev-parse", "HEAD")
+    write(
+        repo,
+        "docs/proposals/example.intent.yaml",
+        encoded(
+            dict(
+                id="RFC-1",
+                kind="proposal",
+                atoms=dict(
+                    intents=[
+                        dict(id=f"C-{index}", statement=f"Draft obligation {index}.")
+                        for index in range(8)
+                    ]
+                ),
+            )
+        ),
+    )
+    head = commit(repo)
+    pending = collect(repo, base, head)
+    assert pending["status"] == "needs_review"
+    assert pending["changed_atoms"] == len(pending["missing_changes"]) == 8
+    assert pending["intent_summary"]["after_atom_count"] == 0
+    assert pending["proposal_intent_summary"]["after_atom_count"] == 8
+    assert {c["spec_root"] for c in pending["changes"]} == {"docs/proposals"}
+    event = tmp_path / "event.json"
+    event.write_text(
+        encoded(dict(pull_request=dict(base=dict(sha=base), head=dict(sha=head), body="")))
+    )
+    assert main(["--repo-root", str(repo), "--event-path", str(event)]) == 1
+    assert json.loads(capsys.readouterr().out)["changed_atoms"] == 8
+    review = draft(repo, base, head, LEDGER, pr_context=dict(body=BODY))
+    for row in review["decisions"]:
+        row.update(
+            disposition="contract_only",
+            rationale="Declare a draft obligation; no implementation is changed.",
+        )
+    covered = measured(repo, base, publish(repo, review))
+    assert covered["status"] == "covered"
+    assert len(covered["decisions"]) == 8
+    assert not covered["semantic_approval"]
+    review["decisions"].pop()
+    partial = measured(repo, base, publish(repo, review))
+    assert partial["status"] == "needs_review"
+    assert len(partial["missing_changes"]) == 1
+    declaration = repo / "docs/proposals/example.intent.yaml"
+    declaration.write_text(
+        declaration.read_text().replace("Draft obligation 0.", "Changed obligation 0.")
+    )
+    stale = measured(repo, base, commit(repo))
+    assert stale["status"] == "invalid"
+    assert "stale or incompatible" in stale["diagnostics"][0]
+
+
+def test_proposal_scope_handles_metadata_and_deletion_without_changing_canonical_counts(tmp_path):
+    path = "docs/proposals/example.intent.yaml"
+    original = dict(
+        id="RFC-1", atoms=dict(intents=[dict(id="C-1", statement="Keep identity.", scope="local")])
+    )
+    repo = make_repo(tmp_path, {"specs/nodes/.keep": "", path: encoded(original)})
+    base = git(repo, "rev-parse", "HEAD")
+    original["atoms"]["intents"][0]["scope"] = "global"
+    write(repo, path, encoded(original))
+    updated = collect(repo, base, commit(repo))
+    assert updated["status"] == "needs_review"
+    assert [c["kind"] for c in updated["changes"]] == ["modified"]
+    assert updated["proposal_intent_summary"]["modified_count"] == 0
+    (repo / path).unlink()
+    deleted = collect(repo, base, commit(repo))
+    assert deleted["status"] == "needs_review"
+    assert [c["kind"] for c in deleted["changes"]] == ["removed"]
+    assert deleted["proposal_intent_summary"]["after_atom_count"] == 0
+
+
+def test_identical_ids_and_text_in_two_scopes_need_two_dispositions(tmp_path):
+    repo = make_repo(tmp_path, {"specs/nodes/.keep": ""})
+    base = git(repo, "rev-parse", "HEAD")
+    declaration = encoded(
+        dict(id="SHARED", atoms=dict(intents=[dict(id="C-1", statement="Same text.")]))
+    )
+    write(repo, "specs/nodes/shared.yaml", declaration)
+    write(repo, "docs/proposals/shared.intent.yaml", declaration)
+    result = collect(repo, base, commit(repo))
+    assert result["status"] == "needs_review"
+    assert result["changed_atoms"] == 2
+    assert len(set(result["missing_changes"])) == 2
+    assert result["intent_summary"]["after_atom_count"] == 1
+    assert result["proposal_intent_summary"]["after_atom_count"] == 1
+
+
+@pytest.mark.parametrize("value", ["broken: [", "not a directory"])
+def test_invalid_proposal_input_cannot_be_treated_as_absent(tmp_path, value):
+    repo = make_repo(tmp_path, {"specs/nodes/.keep": ""})
+    base = git(repo, "rev-parse", "HEAD")
+    path = "docs/proposals/example.intent.yaml" if value == "broken: [" else "docs/proposals"
+    write(repo, path, value)
+    result = measured(repo, base, commit(repo))
+    assert result["status"] == "invalid"
+    assert result["proposal_intent_completeness"] == "incomplete"
+    assert result["intent_completeness"] == "incomplete"
+    assert result["intent_summary"]["after_atom_count"] == 0
+
+
+def test_proposal_contract_only_cannot_cover_production_changes(tmp_path):
+    repo = make_repo(tmp_path, {"specs/nodes/.keep": ""})
+    base = git(repo, "rev-parse", "HEAD")
+    write(repo, "docs/proposals/example.intent.yaml", node())
+    write(repo, "tools/new.py", "def run():\n    return True\n")
+    head = commit(repo)
+    review = draft(repo, base, head, LEDGER, pr_context=dict(body=BODY))
+    review["decisions"][0].update(disposition="contract_only", rationale="Draft only.")
+    result = measured(repo, base, publish(repo, review))
+    assert result["status"] == "invalid"
+    assert "record evidence obligations failed" in result["diagnostics"][0]
+
+
 def test_pr773_exact_intent_fixture_requires_review_despite_zero_new_specs(tmp_path):
     fixture = ROOT / "tests/fixtures/intent_decision_review"
     raw = (fixture / "SG-SPEC-0071.yaml").read_bytes()

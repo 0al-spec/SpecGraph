@@ -16,6 +16,21 @@ exact Git base/head revisions. Added, removed and modified records all matter;
 a net-zero count can still require review. An incomplete snapshot is `invalid`,
 including a missing tracked specification root; it is never interpreted as zero.
 
+The gate always scans both `specs/nodes` and `docs/proposals`, including in CI
+event mode. Declared proposal obligations require the same individual
+dispositions; there is no opt-out scope flag. An absent proposal directory is
+an empty optional scope, allowing its first declaration and last removal.
+Malformed YAML or a non-directory proposal root is invalid. Canonical root
+absence remains invalid. Unannotated Markdown is still outside this trigger.
+
+`intent_summary` retains canonical counts; `proposal_intent_summary` and
+`proposal_intent_diagnostics` report the draft scope separately. `changed_atoms`
+counts obligations requiring dispositions across both scopes, not a combined
+canonical Intent metric. Proposal changes carry `spec_root: docs/proposals`
+and scope-bound change digests so equal IDs in two roots cannot share a
+disposition. Existing canonical change keys and v1 counting rules are preserved.
+Proposal changes enter the bound decision delta and invalidate stale records.
+
 The profile covers `acceptance[]`, `spec.acceptance[]` and explicit intent arrays.
 It does not discover every normative sentence, nested requirement or code-only
 policy change. Existing SpecificationCore review rules still apply when no atom
