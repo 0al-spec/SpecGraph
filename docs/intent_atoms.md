@@ -125,10 +125,11 @@ atoms:
 This is an author-maintained declaration of obligations in the proposal, not
 an extraction from arbitrary Markdown. It does not classify the whole proposal
 or establish approval, implementation or canonical acceptance. Its original
-source material remains in the linked proposal/source archive. Declarations
-remain agent interpretations until reviewed; they are not new
-canonical Intent nodes. The first declaration is prepared in a separate
-documentation-only change with individual intent-decision dispositions.
+source material remains in the linked proposal/source archive. Proposal 0045
+provides the first declaration with eight agent-authored draft obligations. Each
+addition has an individual `contract_only` disposition in the documentation-only
+declaration change; no new canonical Intent nodes or implementation claims are
+introduced.
 
 Use the existing analyzer with the separate Git root:
 
