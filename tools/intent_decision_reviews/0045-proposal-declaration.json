@@ -1,10 +1,10 @@
 {
   "artifact_kind": "specgraph.intent-decision-review/v1",
   "schema_version": 1,
-  "base_sha": "fc266988a71c13dfe31cdfd78c4d6e6824228ee1",
+  "base_sha": "d48511878a8e84253343500f6538ab16d2e1e423",
   "intent_delta_sha256": "066957c1fa1ce591587cad1296a4c30c4ebbea55693c1a005d76b953dd49fef9",
-  "source_scope_sha256": "f471d358cece499b756cebf37d50083507523147eb05bbed0e31ad0c9a1db9dd",
-  "pr_body_sha256": "5175ac686ee06966bb108ad2674e491f444a1decf55ce030e0c55ecc5721bf29",
+  "source_scope_sha256": "27b1ff65730f8f58b5bd1da888db7fbd0c485c9c9bfe7924fb976eec5271d5df",
+  "pr_body_sha256": "1bb01f18615b527c4df27fac656f5e773b9730f852214d4e00aa085406afe4d9",
   "decisions": [
     {
       "change_sha256": "71e5ea9083e153b4f2d80082859550d20e777d4cd82e8e38e77d7174863d6df8",
