@@ -80,6 +80,15 @@ notes. Later canonical acceptance still concerns the specific reviewed change.
 
 ## Verification
 
+The CN-CAPTURE pilot follows one curated note through proposal 0045, pending
+SG-SPEC-0069 Requirement/criterion candidates, existing code references and the
+real CLI. `tests/test_conversation_capture_pilot.py` verifies capture without
+semantic classification and exact recovery in a new process. The CI artifact
+`cn-capture-evidence` retains JUnit, inputs, raw outputs, source/run provenance and
+the HC/HCS snapshot. The full sketch stays local; adoption, fulfillment and
+evidence admission remain pending or not evaluated. Detailed links and limits:
+`docs/reviews/0045_cn_capture/README.md`.
+
 Run `tests/test_conversation_notes.py` for persistence, source retention,
 concurrency, failure recovery and review scope. Set `HYPERCODE_BIN` to include the
 optional native Hypercode compatibility check. The detailed JSON request and

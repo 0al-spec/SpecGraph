@@ -159,6 +159,20 @@ records a whole-sketch review. The proposal can preserve the selected source
 excerpts for review without publishing the Git-ignored sketch. Semantic
 agreement, action authorization and canonical acceptance retain their subjects.
 
+## CN-CAPTURE trace pilot
+
+The [bounded pilot](reviews/0045_cn_capture/README.md) follows one curated
+`notes` node from the local conversational sketch through proposal atom
+`CN-CAPTURE`, a pending Requirement/criterion candidate, existing Python
+declarations and an executable CLI test. The replay saves the note without
+choosing a semantic kind and reads it in a fresh process.
+
+CI retains `cn-capture-evidence`: JUnit, selected source inputs, raw CLI results,
+an observation with source/run identities and the HC/HCS snapshot. The original
+sketch remains local. The test observes capture behavior; Requirement adoption,
+fulfillment and evidence admission remain pending or not evaluated. Source-file
+hashes and run IDs retain provenance rather than authenticate it.
+
 ## Validation
 
 `tests/test_conversation_notes.py` exercises new-process recovery, rename/move

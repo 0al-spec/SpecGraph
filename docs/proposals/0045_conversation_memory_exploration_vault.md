@@ -558,6 +558,16 @@ without declarations remain unassessed. This runtime slice adds measurement
 visibility without automatically extracting prose, generating canonical nodes
 or changing promotion authority. See the [counting contract](../intent_atoms.md#declared-proposal-obligations).
 
+## CN-CAPTURE source-to-test pilot
+
+The [bounded review package](../reviews/0045_cn_capture/README.md) traces one
+existing conversational note through `CN-CAPTURE`, pending SG-SPEC-0069
+Requirement/criterion candidates, existing capture code and a real CLI test.
+CI retains the input, raw responses, HC/HCS snapshot, source/run identities and
+JUnit. This exercises the capture capability while leaving canonical subject
+adoption, fulfillment and evidence admission unasserted. The existing eight
+proposal obligations and canonical YAML remain unchanged.
+
 ## Acceptance Criteria
 
 - SpecGraph has a proposal-level architecture for conversation-derived memory

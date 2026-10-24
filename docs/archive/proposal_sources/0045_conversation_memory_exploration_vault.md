@@ -102,3 +102,14 @@ proposals and the existing versioned analyzer in a separate Git root. The eight
 statements in the 0045 declaration are agent-authored summaries of this proposal;
 the excerpts above do not attest approval of those exact formulations.
 Counts remain separate from canonical specification atoms and do not grant authority.
+
+## Operator clarification: CN-CAPTURE trace pilot (2026-10-24)
+
+Document-local excerpt labels, from the same development conversation:
+
+- `cn-capture-pilot/1`, agent: «Следующий шаг: проверить на одной такой заметке цепочку до требования, кода и теста.»
+- `cn-capture-pilot/2`, human: «Ок, приступай»
+
+The authorized action is the bounded source-to-test pilot. Its Requirement and
+criterion are agent-prepared candidates; this assent does not adopt their later
+formulations, allocate subjects or authorize a canonical writer operation.
