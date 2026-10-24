@@ -838,3 +838,20 @@ diagnostic match and real CLI warnings remain recorded. Canonical root/subject
 allocation, exact derivation edges, adoption and runtime enforcement remain unresolved. A generic
 SG-SPEC-0020 citation cannot substitute for them. No runtime realization occurs
 in this amendment; the profile remains `deferred_until_canonicalized`.
+
+### Canonical adoption packet after PR #790 (2026-10-23)
+
+The [adoption preparation](../reviews/0047_authored_traceability/adoption/README.md)
+turns the retained Supervisor candidate into six proposed standalone Requirement
+origins and four shared criterion origins. Three source-bound Intent roots and
+eight explicit `derived_from` edges are prepared separately from the existing
+SG-SPEC-0069 storage slice. Twenty pending SG-SPEC-0051 transition templates
+cover the ten supported subject records. Exact statements, criterion membership,
+source bytes and proposed topology are bound in the review packet.
+
+The subject writer currently publishes neither Intent roots nor external
+relations. This is an explicit remaining publication binding, not a reason to
+claim canonical reachability from only the supported subset. Human source
+interpretation, canonical origin decisions, allocation/topology, adoption
+provenance and exact publication authorization remain pending. This is
+preparation only; no canonical state or runtime realization is introduced.

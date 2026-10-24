@@ -1,0 +1,1025 @@
+{
+  "schema_version": 1,
+  "artifact_kind": "subject_publication_review_packet",
+  "prepared_at": "2026-10-23T16:20:31.789383+00:00",
+  "prepared_against_commit": "bc051b08c68dfe795d10fd9309e98867d3430911",
+  "authority": "agent_prepared_for_human_review",
+  "gate_state": "review_pending",
+  "canonical_adoption": false,
+  "canonical_mutations_allowed": false,
+  "canonical_readiness": "not_evaluated",
+  "ready_for_materialization": false,
+  "source_proposal": "docs/proposals/0047_evidence_backed_build_protocol.md",
+  "governing_contract": "SG-SPEC-0051",
+  "storage_contract": "SG-SPEC-0069",
+  "source_candidate": {
+    "path": "docs/reviews/0047_authored_traceability/retry/candidate.yaml",
+    "sha256": "903d66719e5b7ab381cd8f494f878ef3baae2788d03c26b9f796296ff298690a",
+    "merged_pr": 790,
+    "merge_commit": "bc051b08c68dfe795d10fd9309e98867d3430911",
+    "gate_approval_inferred_from_merge": false
+  },
+  "workspace": {
+    "workspace_identity": "workspace:a2800523-3588-4820-a47f-9fddc0fed3f5",
+    "proposed_declaration": "docs/reviews/0221_subject_storage/workspace_identity.yaml#/proposed_record",
+    "candidate_sha256": "d5a99ab533da5e3568601fb2d9c9934aeb3044dd5770c6bd442fd761a80b783b",
+    "allocation_state": "existing_approved_plan_unallocated_not_a_new_workspace",
+    "source_ref": "refs/specgraph/subject-storage/a2800523-3588-4820-a47f-9fddc0fed3f5",
+    "source_ref_initialization": {
+      "base_commit": null,
+      "decision_ref": null,
+      "state": "pending"
+    }
+  },
+  "subjects": [
+    {
+      "local_subject_id": "req.atc.source-intent",
+      "subject_class": "Requirement",
+      "title": "Source intent remains explicit",
+      "statement": "A proposed authored traceability obligation identifies its retained source intent or authoring request; inferred requirements and engineering choices are labeled separately, and an unresolved source cannot be presented as a canonical derivation.",
+      "candidate_file": "docs/reviews/0047_authored_traceability/adoption/subjects/req.atc.source-intent.yaml",
+      "candidate_sha256": "e6efc840047f5b0490d097e02c7372929f147b2ea617faffcf81aacbc670d132",
+      "source_draft_ref": "docs/reviews/0047_authored_traceability/adoption/subjects/req.atc.source-intent.yaml#/proposed_record",
+      "canonical_target_ref": "specs/requirements/req.atc.source-intent.yaml#/subject",
+      "canonical_revision_selection": {
+        "subject": {
+          "workspace_identity": "workspace:a2800523-3588-4820-a47f-9fddc0fed3f5",
+          "subject_class": "Requirement",
+          "local_subject_id": "req.atc.source-intent"
+        },
+        "mode": "exact",
+        "revision": 1
+      },
+      "source_proposal_ref": "docs/proposals/0047_evidence_backed_build_protocol.md",
+      "source_proposal_sha256": "56c9993b6d870e1a7a37e0753afee4e5beb539aebbe8f3c0c67badb697abbd02",
+      "source_occurrence": "docs/reviews/0047_authored_traceability/retry/candidate.yaml#/specification/requirements/0/statement",
+      "source_statement_sha256": "8d7ba9cd62ee7c2305674a6fb53ebcc4f98d4a2bb79421fd8b9587cc060048f8",
+      "requirement_membership": [
+        "ac.atc.source-attribution"
+      ],
+      "intent_lineage_ref": "docs/reviews/0047_authored_traceability/adoption/intent-lineage.json#/ingress_lineages/0",
+      "candidate_local_id": "ATC-REQ-001",
+      "bdd_scenario_id": "ATC-SCENARIO-001",
+      "identity_profile_acceptance_cases": []
+    },
+    {
+      "local_subject_id": "req.atc.obligation-identity",
+      "subject_class": "Requirement",
+      "title": "Each obligation retains requested identity",
+      "statement": "Each authored observation obligation retains the specification, rule, component and implementation attribution requested for that target, independently of sibling obligations. A complete sibling or root summary cannot supply an omitted declaration.",
+      "candidate_file": "docs/reviews/0047_authored_traceability/adoption/subjects/req.atc.obligation-identity.yaml",
+      "candidate_sha256": "387b5625f6ec61df41d39cf65d03be49f97efb416d87d95e2e581cc1307a213e",
+      "source_draft_ref": "docs/reviews/0047_authored_traceability/adoption/subjects/req.atc.obligation-identity.yaml#/proposed_record",
+      "canonical_target_ref": "specs/requirements/req.atc.obligation-identity.yaml#/subject",
+      "canonical_revision_selection": {
+        "subject": {
+          "workspace_identity": "workspace:a2800523-3588-4820-a47f-9fddc0fed3f5",
+          "subject_class": "Requirement",
+          "local_subject_id": "req.atc.obligation-identity"
+        },
+        "mode": "exact",
+        "revision": 1
+      },
+      "source_proposal_ref": "docs/proposals/0047_evidence_backed_build_protocol.md",
+      "source_proposal_sha256": "56c9993b6d870e1a7a37e0753afee4e5beb539aebbe8f3c0c67badb697abbd02",
+      "source_occurrence": "docs/reviews/0047_authored_traceability/retry/candidate.yaml#/specification/requirements/1/statement",
+      "source_statement_sha256": "62fc57a90ee3223447824fdc51b76fcddbe1590eb821db025c117ffff0567a8a",
+      "requirement_membership": [
+        "ac.atc.source-attribution",
+        "ac.atc.obligation-preservation"
+      ],
+      "intent_lineage_ref": "docs/reviews/0047_authored_traceability/adoption/intent-lineage.json#/ingress_lineages/1",
+      "candidate_local_id": "ATC-REQ-002",
+      "bdd_scenario_id": "ATC-SCENARIO-002",
+      "identity_profile_acceptance_cases": [
+        "IDP-02",
+        "IDP-03",
+        "IDP-04",
+        "IDP-05",
+        "IDP-06",
+        "IDP-09",
+        "IDP-11",
+        "IDP-16"
+      ]
+    },
+    {
+      "local_subject_id": "req.atc.authoring-preservation",
+      "subject_class": "Requirement",
+      "title": "Authoring preserves requested meaning",
+      "statement": "Refinement and projection preserve the selected authoring requirements and expose omission or ambiguous renaming for review; executor edits do not silently remove a requested traceability obligation. This does not mandate a global profile.",
+      "candidate_file": "docs/reviews/0047_authored_traceability/adoption/subjects/req.atc.authoring-preservation.yaml",
+      "candidate_sha256": "c13e3f069f603729dbe57f7330268a0dea8687bf0f42cb3bc9235fed16e31fe9",
+      "source_draft_ref": "docs/reviews/0047_authored_traceability/adoption/subjects/req.atc.authoring-preservation.yaml#/proposed_record",
+      "canonical_target_ref": "specs/requirements/req.atc.authoring-preservation.yaml#/subject",
+      "canonical_revision_selection": {
+        "subject": {
+          "workspace_identity": "workspace:a2800523-3588-4820-a47f-9fddc0fed3f5",
+          "subject_class": "Requirement",
+          "local_subject_id": "req.atc.authoring-preservation"
+        },
+        "mode": "exact",
+        "revision": 1
+      },
+      "source_proposal_ref": "docs/proposals/0047_evidence_backed_build_protocol.md",
+      "source_proposal_sha256": "56c9993b6d870e1a7a37e0753afee4e5beb539aebbe8f3c0c67badb697abbd02",
+      "source_occurrence": "docs/reviews/0047_authored_traceability/retry/candidate.yaml#/specification/requirements/2/statement",
+      "source_statement_sha256": "060616413218b4c2b37b4ab5b7a315f5cf7c975facce55aae01ad51f75353822",
+      "requirement_membership": [
+        "ac.atc.obligation-preservation"
+      ],
+      "intent_lineage_ref": "docs/reviews/0047_authored_traceability/adoption/intent-lineage.json#/ingress_lineages/2",
+      "candidate_local_id": "ATC-REQ-003",
+      "bdd_scenario_id": "ATC-SCENARIO-003",
+      "identity_profile_acceptance_cases": [
+        "IDP-01",
+        "IDP-07",
+        "IDP-08",
+        "IDP-12",
+        "IDP-13",
+        "IDP-15"
+      ]
+    },
+    {
+      "local_subject_id": "req.atc.mapping-coverage",
+      "subject_class": "Requirement",
+      "title": "Mapping scope and coverage are explicit",
+      "statement": "An authored mapping identifies its intended rule scope, authoritative mapping location and full or partial coverage claim. Exact reference validity is distinct from coverage; full coverage requires every rule in the declared scope to have a resolved mapping, while partial coverage identifies each uncovered rule by exact identity. Root delegation does not require copied participant rules; many-to-many mappings remain possible.",
+      "candidate_file": "docs/reviews/0047_authored_traceability/adoption/subjects/req.atc.mapping-coverage.yaml",
+      "candidate_sha256": "60c29442ebf58d5371219193e64f66c4757aec50deaddb63fad96ef5e99d9cc3",
+      "source_draft_ref": "docs/reviews/0047_authored_traceability/adoption/subjects/req.atc.mapping-coverage.yaml#/proposed_record",
+      "canonical_target_ref": "specs/requirements/req.atc.mapping-coverage.yaml#/subject",
+      "canonical_revision_selection": {
+        "subject": {
+          "workspace_identity": "workspace:a2800523-3588-4820-a47f-9fddc0fed3f5",
+          "subject_class": "Requirement",
+          "local_subject_id": "req.atc.mapping-coverage"
+        },
+        "mode": "exact",
+        "revision": 1
+      },
+      "source_proposal_ref": "docs/proposals/0047_evidence_backed_build_protocol.md",
+      "source_proposal_sha256": "56c9993b6d870e1a7a37e0753afee4e5beb539aebbe8f3c0c67badb697abbd02",
+      "source_occurrence": "docs/reviews/0047_authored_traceability/retry/candidate.yaml#/specification/requirements/3/statement",
+      "source_statement_sha256": "7d60454b65a4a63c9fe441c55b096e19b5996dd5895a6327864a6504891cb0ba",
+      "requirement_membership": [
+        "ac.atc.mapping-scope"
+      ],
+      "intent_lineage_ref": "docs/reviews/0047_authored_traceability/adoption/intent-lineage.json#/ingress_lineages/3",
+      "candidate_local_id": "ATC-REQ-004",
+      "bdd_scenario_id": "ATC-SCENARIO-004",
+      "identity_profile_acceptance_cases": []
+    },
+    {
+      "local_subject_id": "req.atc.harness-scenario",
+      "subject_class": "Requirement",
+      "title": "Scenario attribution requires a real harness",
+      "statement": "A scenario attribution is conditional on an actual harness binding. Ordinary runtime observations without a tagged harness do not receive fabricated scenario identities; declarations and test references do not establish test execution.",
+      "candidate_file": "docs/reviews/0047_authored_traceability/adoption/subjects/req.atc.harness-scenario.yaml",
+      "candidate_sha256": "504bd540967fd825a34186edaac76c00ec2fb35326f33ce27f7243fedcdd6eb3",
+      "source_draft_ref": "docs/reviews/0047_authored_traceability/adoption/subjects/req.atc.harness-scenario.yaml#/proposed_record",
+      "canonical_target_ref": "specs/requirements/req.atc.harness-scenario.yaml#/subject",
+      "canonical_revision_selection": {
+        "subject": {
+          "workspace_identity": "workspace:a2800523-3588-4820-a47f-9fddc0fed3f5",
+          "subject_class": "Requirement",
+          "local_subject_id": "req.atc.harness-scenario"
+        },
+        "mode": "exact",
+        "revision": 1
+      },
+      "source_proposal_ref": "docs/proposals/0047_evidence_backed_build_protocol.md",
+      "source_proposal_sha256": "56c9993b6d870e1a7a37e0753afee4e5beb539aebbe8f3c0c67badb697abbd02",
+      "source_occurrence": "docs/reviews/0047_authored_traceability/retry/candidate.yaml#/specification/requirements/4/statement",
+      "source_statement_sha256": "ed64a92fbd16206f3879f5234abc8b467c305a7a06537c4994cd066bc92c12c0",
+      "requirement_membership": [
+        "ac.atc.execution-boundary"
+      ],
+      "intent_lineage_ref": "docs/reviews/0047_authored_traceability/adoption/intent-lineage.json#/ingress_lineages/4",
+      "candidate_local_id": "ATC-REQ-005",
+      "bdd_scenario_id": "ATC-SCENARIO-005",
+      "identity_profile_acceptance_cases": [
+        "IDP-10"
+      ]
+    },
+    {
+      "local_subject_id": "req.atc.evidence-boundary",
+      "subject_class": "Requirement",
+      "title": "Declaration checks retain evidence boundaries",
+      "statement": "Successful authored-declaration checks establish only their declared structural scope. They do not establish actual runtime propagation, implementation conformance, executed or passing tests, evidence admission, or canonical approval. Diagnostic collection must not alter product behavior.",
+      "candidate_file": "docs/reviews/0047_authored_traceability/adoption/subjects/req.atc.evidence-boundary.yaml",
+      "candidate_sha256": "92eb06937df416940725e6d37cc96aa7f5fa4d633dcddc6fbfd65db0c52de7fb",
+      "source_draft_ref": "docs/reviews/0047_authored_traceability/adoption/subjects/req.atc.evidence-boundary.yaml#/proposed_record",
+      "canonical_target_ref": "specs/requirements/req.atc.evidence-boundary.yaml#/subject",
+      "canonical_revision_selection": {
+        "subject": {
+          "workspace_identity": "workspace:a2800523-3588-4820-a47f-9fddc0fed3f5",
+          "subject_class": "Requirement",
+          "local_subject_id": "req.atc.evidence-boundary"
+        },
+        "mode": "exact",
+        "revision": 1
+      },
+      "source_proposal_ref": "docs/proposals/0047_evidence_backed_build_protocol.md",
+      "source_proposal_sha256": "56c9993b6d870e1a7a37e0753afee4e5beb539aebbe8f3c0c67badb697abbd02",
+      "source_occurrence": "docs/reviews/0047_authored_traceability/retry/candidate.yaml#/specification/requirements/5/statement",
+      "source_statement_sha256": "fe870a965617fce3205bc407753e43302ad1a9b5c3a8bce3bd6bf00ad2502a1b",
+      "requirement_membership": [
+        "ac.atc.execution-boundary"
+      ],
+      "intent_lineage_ref": "docs/reviews/0047_authored_traceability/adoption/intent-lineage.json#/ingress_lineages/5",
+      "candidate_local_id": "ATC-REQ-006",
+      "bdd_scenario_id": "ATC-SCENARIO-006",
+      "identity_profile_acceptance_cases": [
+        "IDP-14"
+      ]
+    },
+    {
+      "local_subject_id": "ac.atc.source-attribution",
+      "subject_class": "criterion",
+      "title": "Source attribution and design separation",
+      "statement": "Retains explicit source intent for each proposed requirement and distinguishes requested observation attribution from profile engineering choices.",
+      "candidate_file": "docs/reviews/0047_authored_traceability/adoption/subjects/ac.atc.source-attribution.yaml",
+      "candidate_sha256": "4f278c444dbb809dcb6417e4b3b71efd285ca0894737eadf96ad290563c72a6c",
+      "source_draft_ref": "docs/reviews/0047_authored_traceability/adoption/subjects/ac.atc.source-attribution.yaml#/proposed_record",
+      "canonical_target_ref": "specs/criteria/ac.atc.source-attribution.yaml#/subject",
+      "canonical_revision_selection": {
+        "subject": {
+          "workspace_identity": "workspace:a2800523-3588-4820-a47f-9fddc0fed3f5",
+          "subject_class": "criterion",
+          "local_subject_id": "ac.atc.source-attribution"
+        },
+        "mode": "exact",
+        "revision": 1
+      },
+      "source_proposal_ref": "docs/proposals/0047_evidence_backed_build_protocol.md",
+      "source_proposal_sha256": "56c9993b6d870e1a7a37e0753afee4e5beb539aebbe8f3c0c67badb697abbd02",
+      "source_occurrence": "docs/reviews/0047_authored_traceability/retry/candidate.yaml#/acceptance/0",
+      "source_statement_sha256": "91e4255bffba6799d4c59fdfd4fec6f81832e9c58c2d7daf62768a6e757a7561",
+      "requirement_membership": [],
+      "intent_lineage_ref": "docs/reviews/0047_authored_traceability/adoption/intent-lineage.json#/ingress_lineages/6"
+    },
+    {
+      "local_subject_id": "ac.atc.obligation-preservation",
+      "subject_class": "criterion",
+      "title": "Independent obligation preservation",
+      "statement": "Defines per-obligation preservation of requested identity and authoring context so sibling declarations or candidate edits cannot silently satisfy omitted obligations.",
+      "candidate_file": "docs/reviews/0047_authored_traceability/adoption/subjects/ac.atc.obligation-preservation.yaml",
+      "candidate_sha256": "e8a20151e2bbf4f3745b4f727c415e6277ddcfc7ac82cda3fa5e3bbeabd8628d",
+      "source_draft_ref": "docs/reviews/0047_authored_traceability/adoption/subjects/ac.atc.obligation-preservation.yaml#/proposed_record",
+      "canonical_target_ref": "specs/criteria/ac.atc.obligation-preservation.yaml#/subject",
+      "canonical_revision_selection": {
+        "subject": {
+          "workspace_identity": "workspace:a2800523-3588-4820-a47f-9fddc0fed3f5",
+          "subject_class": "criterion",
+          "local_subject_id": "ac.atc.obligation-preservation"
+        },
+        "mode": "exact",
+        "revision": 1
+      },
+      "source_proposal_ref": "docs/proposals/0047_evidence_backed_build_protocol.md",
+      "source_proposal_sha256": "56c9993b6d870e1a7a37e0753afee4e5beb539aebbe8f3c0c67badb697abbd02",
+      "source_occurrence": "docs/reviews/0047_authored_traceability/retry/candidate.yaml#/acceptance/1",
+      "source_statement_sha256": "8d1610ca2644567c8c9d5f81cfdf57a3ca50ff2fa306ea4aa99f80974ddb3389",
+      "requirement_membership": [],
+      "intent_lineage_ref": "docs/reviews/0047_authored_traceability/adoption/intent-lineage.json#/ingress_lineages/7"
+    },
+    {
+      "local_subject_id": "ac.atc.mapping-scope",
+      "subject_class": "criterion",
+      "title": "Explicit mapping scope and coverage",
+      "statement": "Defines explicit rule mapping scope and distinguishes exact reference validity from full or partial coverage without duplicating delegated rules.",
+      "candidate_file": "docs/reviews/0047_authored_traceability/adoption/subjects/ac.atc.mapping-scope.yaml",
+      "candidate_sha256": "9b71f90b21c355c3a77520c75341e3144da4b8433324f7fe63c6d33236e14db5",
+      "source_draft_ref": "docs/reviews/0047_authored_traceability/adoption/subjects/ac.atc.mapping-scope.yaml#/proposed_record",
+      "canonical_target_ref": "specs/criteria/ac.atc.mapping-scope.yaml#/subject",
+      "canonical_revision_selection": {
+        "subject": {
+          "workspace_identity": "workspace:a2800523-3588-4820-a47f-9fddc0fed3f5",
+          "subject_class": "criterion",
+          "local_subject_id": "ac.atc.mapping-scope"
+        },
+        "mode": "exact",
+        "revision": 1
+      },
+      "source_proposal_ref": "docs/proposals/0047_evidence_backed_build_protocol.md",
+      "source_proposal_sha256": "56c9993b6d870e1a7a37e0753afee4e5beb539aebbe8f3c0c67badb697abbd02",
+      "source_occurrence": "docs/reviews/0047_authored_traceability/retry/candidate.yaml#/acceptance/2",
+      "source_statement_sha256": "3224d1b7f47276973aec0fe485651f0d9c130a81ae37b0abe00f0a6deb01e978",
+      "requirement_membership": [],
+      "intent_lineage_ref": "docs/reviews/0047_authored_traceability/adoption/intent-lineage.json#/ingress_lineages/8"
+    },
+    {
+      "local_subject_id": "ac.atc.execution-boundary",
+      "subject_class": "criterion",
+      "title": "Harness attribution and evidence limits",
+      "statement": "Preserves harness-only scenario attribution, diagnostic non-interference and the distinction between authored declarations and executed or admitted evidence.",
+      "candidate_file": "docs/reviews/0047_authored_traceability/adoption/subjects/ac.atc.execution-boundary.yaml",
+      "candidate_sha256": "d9e0b2f9aebdfe4d462caf4c247373e9566b0d595947185acf1d43ab545dc838",
+      "source_draft_ref": "docs/reviews/0047_authored_traceability/adoption/subjects/ac.atc.execution-boundary.yaml#/proposed_record",
+      "canonical_target_ref": "specs/criteria/ac.atc.execution-boundary.yaml#/subject",
+      "canonical_revision_selection": {
+        "subject": {
+          "workspace_identity": "workspace:a2800523-3588-4820-a47f-9fddc0fed3f5",
+          "subject_class": "criterion",
+          "local_subject_id": "ac.atc.execution-boundary"
+        },
+        "mode": "exact",
+        "revision": 1
+      },
+      "source_proposal_ref": "docs/proposals/0047_evidence_backed_build_protocol.md",
+      "source_proposal_sha256": "56c9993b6d870e1a7a37e0753afee4e5beb539aebbe8f3c0c67badb697abbd02",
+      "source_occurrence": "docs/reviews/0047_authored_traceability/retry/candidate.yaml#/acceptance/3",
+      "source_statement_sha256": "a93f844371191eb450580e83efed52dc4a7b508629cdc9e1ad8fb53c35626e69",
+      "requirement_membership": [],
+      "intent_lineage_ref": "docs/reviews/0047_authored_traceability/adoption/intent-lineage.json#/ingress_lineages/9"
+    }
+  ],
+  "intent_nodes_ref": "docs/reviews/0047_authored_traceability/adoption/intent-candidates.json#/nodes",
+  "proposed_canonical_edges": [
+    {
+      "edge_id": "edge.atc.001.001",
+      "kind": "derived_from",
+      "source": {
+        "workspace_identity": "workspace:a2800523-3588-4820-a47f-9fddc0fed3f5",
+        "kind": "requirement",
+        "node_id": "req.atc.source-intent"
+      },
+      "target": {
+        "workspace_identity": "workspace:a2800523-3588-4820-a47f-9fddc0fed3f5",
+        "kind": "intent",
+        "node_id": "intent.atc.addressability"
+      },
+      "source_basis_refs": [
+        "docs/reviews/0047_authored_traceability/retry/candidate.yaml#/specification/requirements/0/source_refs",
+        "docs/reviews/0047_authored_traceability/intent.json#/quotes/0"
+      ],
+      "authority_class": "inferred",
+      "state": "review_pending",
+      "canonical_adoption": false,
+      "adoption_provenance": null,
+      "canonical_storage_binding": null,
+      "writer_support": "external_relations_not_supported_by_subject_source_write_v1"
+    },
+    {
+      "edge_id": "edge.atc.001.003",
+      "kind": "derived_from",
+      "source": {
+        "workspace_identity": "workspace:a2800523-3588-4820-a47f-9fddc0fed3f5",
+        "kind": "requirement",
+        "node_id": "req.atc.source-intent"
+      },
+      "target": {
+        "workspace_identity": "workspace:a2800523-3588-4820-a47f-9fddc0fed3f5",
+        "kind": "intent",
+        "node_id": "intent.atc.derivation"
+      },
+      "source_basis_refs": [
+        "docs/reviews/0047_authored_traceability/retry/candidate.yaml#/specification/requirements/0/source_refs",
+        "docs/reviews/0047_authored_traceability/intent.json#/quotes/2"
+      ],
+      "authority_class": "inferred",
+      "state": "review_pending",
+      "canonical_adoption": false,
+      "adoption_provenance": null,
+      "canonical_storage_binding": null,
+      "writer_support": "external_relations_not_supported_by_subject_source_write_v1"
+    },
+    {
+      "edge_id": "edge.atc.002.001",
+      "kind": "derived_from",
+      "source": {
+        "workspace_identity": "workspace:a2800523-3588-4820-a47f-9fddc0fed3f5",
+        "kind": "requirement",
+        "node_id": "req.atc.obligation-identity"
+      },
+      "target": {
+        "workspace_identity": "workspace:a2800523-3588-4820-a47f-9fddc0fed3f5",
+        "kind": "intent",
+        "node_id": "intent.atc.addressability"
+      },
+      "source_basis_refs": [
+        "docs/reviews/0047_authored_traceability/retry/candidate.yaml#/specification/requirements/1/source_refs",
+        "docs/reviews/0047_authored_traceability/intent.json#/quotes/0"
+      ],
+      "authority_class": "inferred",
+      "state": "review_pending",
+      "canonical_adoption": false,
+      "adoption_provenance": null,
+      "canonical_storage_binding": null,
+      "writer_support": "external_relations_not_supported_by_subject_source_write_v1"
+    },
+    {
+      "edge_id": "edge.atc.003.001",
+      "kind": "derived_from",
+      "source": {
+        "workspace_identity": "workspace:a2800523-3588-4820-a47f-9fddc0fed3f5",
+        "kind": "requirement",
+        "node_id": "req.atc.authoring-preservation"
+      },
+      "target": {
+        "workspace_identity": "workspace:a2800523-3588-4820-a47f-9fddc0fed3f5",
+        "kind": "intent",
+        "node_id": "intent.atc.addressability"
+      },
+      "source_basis_refs": [
+        "docs/reviews/0047_authored_traceability/retry/candidate.yaml#/specification/requirements/2/source_refs",
+        "docs/reviews/0047_authored_traceability/intent.json#/quotes/0"
+      ],
+      "authority_class": "inferred",
+      "state": "review_pending",
+      "canonical_adoption": false,
+      "adoption_provenance": null,
+      "canonical_storage_binding": null,
+      "writer_support": "external_relations_not_supported_by_subject_source_write_v1"
+    },
+    {
+      "edge_id": "edge.atc.003.003",
+      "kind": "derived_from",
+      "source": {
+        "workspace_identity": "workspace:a2800523-3588-4820-a47f-9fddc0fed3f5",
+        "kind": "requirement",
+        "node_id": "req.atc.authoring-preservation"
+      },
+      "target": {
+        "workspace_identity": "workspace:a2800523-3588-4820-a47f-9fddc0fed3f5",
+        "kind": "intent",
+        "node_id": "intent.atc.derivation"
+      },
+      "source_basis_refs": [
+        "docs/reviews/0047_authored_traceability/retry/candidate.yaml#/specification/requirements/2/source_refs",
+        "docs/reviews/0047_authored_traceability/intent.json#/quotes/2"
+      ],
+      "authority_class": "inferred",
+      "state": "review_pending",
+      "canonical_adoption": false,
+      "adoption_provenance": null,
+      "canonical_storage_binding": null,
+      "writer_support": "external_relations_not_supported_by_subject_source_write_v1"
+    },
+    {
+      "edge_id": "edge.atc.004.002",
+      "kind": "derived_from",
+      "source": {
+        "workspace_identity": "workspace:a2800523-3588-4820-a47f-9fddc0fed3f5",
+        "kind": "requirement",
+        "node_id": "req.atc.mapping-coverage"
+      },
+      "target": {
+        "workspace_identity": "workspace:a2800523-3588-4820-a47f-9fddc0fed3f5",
+        "kind": "intent",
+        "node_id": "intent.atc.delivery-chain"
+      },
+      "source_basis_refs": [
+        "docs/reviews/0047_authored_traceability/retry/candidate.yaml#/specification/requirements/3/source_refs",
+        "docs/reviews/0047_authored_traceability/intent.json#/quotes/1"
+      ],
+      "authority_class": "inferred",
+      "state": "review_pending",
+      "canonical_adoption": false,
+      "adoption_provenance": null,
+      "canonical_storage_binding": null,
+      "writer_support": "external_relations_not_supported_by_subject_source_write_v1"
+    },
+    {
+      "edge_id": "edge.atc.005.002",
+      "kind": "derived_from",
+      "source": {
+        "workspace_identity": "workspace:a2800523-3588-4820-a47f-9fddc0fed3f5",
+        "kind": "requirement",
+        "node_id": "req.atc.harness-scenario"
+      },
+      "target": {
+        "workspace_identity": "workspace:a2800523-3588-4820-a47f-9fddc0fed3f5",
+        "kind": "intent",
+        "node_id": "intent.atc.delivery-chain"
+      },
+      "source_basis_refs": [
+        "docs/reviews/0047_authored_traceability/retry/candidate.yaml#/specification/requirements/4/source_refs",
+        "docs/reviews/0047_authored_traceability/intent.json#/quotes/1"
+      ],
+      "authority_class": "inferred",
+      "state": "review_pending",
+      "canonical_adoption": false,
+      "adoption_provenance": null,
+      "canonical_storage_binding": null,
+      "writer_support": "external_relations_not_supported_by_subject_source_write_v1"
+    },
+    {
+      "edge_id": "edge.atc.006.002",
+      "kind": "derived_from",
+      "source": {
+        "workspace_identity": "workspace:a2800523-3588-4820-a47f-9fddc0fed3f5",
+        "kind": "requirement",
+        "node_id": "req.atc.evidence-boundary"
+      },
+      "target": {
+        "workspace_identity": "workspace:a2800523-3588-4820-a47f-9fddc0fed3f5",
+        "kind": "intent",
+        "node_id": "intent.atc.delivery-chain"
+      },
+      "source_basis_refs": [
+        "docs/reviews/0047_authored_traceability/retry/candidate.yaml#/specification/requirements/5/source_refs",
+        "docs/reviews/0047_authored_traceability/intent.json#/quotes/1"
+      ],
+      "authority_class": "inferred",
+      "state": "review_pending",
+      "canonical_adoption": false,
+      "adoption_provenance": null,
+      "canonical_storage_binding": null,
+      "writer_support": "external_relations_not_supported_by_subject_source_write_v1"
+    }
+  ],
+  "transition_records": [
+    {
+      "transition_record_id": "0047-atc-ingress-req.atc.source-intent",
+      "transition_identifier": "0047:atc:proposal_ingress:req.atc.source-intent:v1",
+      "promotion_edge": "proposal -> spec_draft",
+      "gate_type": "review",
+      "state": "review_pending",
+      "reviewer_or_decider": null,
+      "decision_timestamp": null,
+      "outcome": null,
+      "rationale": null,
+      "source_ref": "docs/proposals/0047_evidence_backed_build_protocol.md",
+      "target_ref": "docs/reviews/0047_authored_traceability/adoption/subjects/req.atc.source-intent.yaml#/proposed_record",
+      "review": null,
+      "intent_lineage_ref": "docs/reviews/0047_authored_traceability/adoption/intent-lineage.json#/ingress_lineages/0"
+    },
+    {
+      "transition_record_id": "0047-atc-canonical-req.atc.source-intent",
+      "transition_identifier": "0047:atc:canonical_origin:req.atc.source-intent:v1",
+      "promotion_edge": "spec_draft -> canonical_artifact",
+      "gate_type": "review",
+      "state": "review_pending",
+      "reviewer_or_decider": null,
+      "decision_timestamp": null,
+      "outcome": null,
+      "rationale": null,
+      "source_ref": "docs/reviews/0047_authored_traceability/adoption/subjects/req.atc.source-intent.yaml#/proposed_record",
+      "target_ref": "specs/requirements/req.atc.source-intent.yaml#/subject",
+      "review": null,
+      "ingress_transition_id": "0047-atc-ingress-req.atc.source-intent",
+      "ingress_record_ref": "docs/reviews/0047_authored_traceability/adoption/packet.json#/transition_records/0",
+      "target_revision_selection": {
+        "subject": {
+          "workspace_identity": "workspace:a2800523-3588-4820-a47f-9fddc0fed3f5",
+          "subject_class": "Requirement",
+          "local_subject_id": "req.atc.source-intent"
+        },
+        "mode": "exact",
+        "revision": 1
+      }
+    },
+    {
+      "transition_record_id": "0047-atc-ingress-req.atc.obligation-identity",
+      "transition_identifier": "0047:atc:proposal_ingress:req.atc.obligation-identity:v1",
+      "promotion_edge": "proposal -> spec_draft",
+      "gate_type": "review",
+      "state": "review_pending",
+      "reviewer_or_decider": null,
+      "decision_timestamp": null,
+      "outcome": null,
+      "rationale": null,
+      "source_ref": "docs/proposals/0047_evidence_backed_build_protocol.md",
+      "target_ref": "docs/reviews/0047_authored_traceability/adoption/subjects/req.atc.obligation-identity.yaml#/proposed_record",
+      "review": null,
+      "intent_lineage_ref": "docs/reviews/0047_authored_traceability/adoption/intent-lineage.json#/ingress_lineages/1"
+    },
+    {
+      "transition_record_id": "0047-atc-canonical-req.atc.obligation-identity",
+      "transition_identifier": "0047:atc:canonical_origin:req.atc.obligation-identity:v1",
+      "promotion_edge": "spec_draft -> canonical_artifact",
+      "gate_type": "review",
+      "state": "review_pending",
+      "reviewer_or_decider": null,
+      "decision_timestamp": null,
+      "outcome": null,
+      "rationale": null,
+      "source_ref": "docs/reviews/0047_authored_traceability/adoption/subjects/req.atc.obligation-identity.yaml#/proposed_record",
+      "target_ref": "specs/requirements/req.atc.obligation-identity.yaml#/subject",
+      "review": null,
+      "ingress_transition_id": "0047-atc-ingress-req.atc.obligation-identity",
+      "ingress_record_ref": "docs/reviews/0047_authored_traceability/adoption/packet.json#/transition_records/2",
+      "target_revision_selection": {
+        "subject": {
+          "workspace_identity": "workspace:a2800523-3588-4820-a47f-9fddc0fed3f5",
+          "subject_class": "Requirement",
+          "local_subject_id": "req.atc.obligation-identity"
+        },
+        "mode": "exact",
+        "revision": 1
+      }
+    },
+    {
+      "transition_record_id": "0047-atc-ingress-req.atc.authoring-preservation",
+      "transition_identifier": "0047:atc:proposal_ingress:req.atc.authoring-preservation:v1",
+      "promotion_edge": "proposal -> spec_draft",
+      "gate_type": "review",
+      "state": "review_pending",
+      "reviewer_or_decider": null,
+      "decision_timestamp": null,
+      "outcome": null,
+      "rationale": null,
+      "source_ref": "docs/proposals/0047_evidence_backed_build_protocol.md",
+      "target_ref": "docs/reviews/0047_authored_traceability/adoption/subjects/req.atc.authoring-preservation.yaml#/proposed_record",
+      "review": null,
+      "intent_lineage_ref": "docs/reviews/0047_authored_traceability/adoption/intent-lineage.json#/ingress_lineages/2"
+    },
+    {
+      "transition_record_id": "0047-atc-canonical-req.atc.authoring-preservation",
+      "transition_identifier": "0047:atc:canonical_origin:req.atc.authoring-preservation:v1",
+      "promotion_edge": "spec_draft -> canonical_artifact",
+      "gate_type": "review",
+      "state": "review_pending",
+      "reviewer_or_decider": null,
+      "decision_timestamp": null,
+      "outcome": null,
+      "rationale": null,
+      "source_ref": "docs/reviews/0047_authored_traceability/adoption/subjects/req.atc.authoring-preservation.yaml#/proposed_record",
+      "target_ref": "specs/requirements/req.atc.authoring-preservation.yaml#/subject",
+      "review": null,
+      "ingress_transition_id": "0047-atc-ingress-req.atc.authoring-preservation",
+      "ingress_record_ref": "docs/reviews/0047_authored_traceability/adoption/packet.json#/transition_records/4",
+      "target_revision_selection": {
+        "subject": {
+          "workspace_identity": "workspace:a2800523-3588-4820-a47f-9fddc0fed3f5",
+          "subject_class": "Requirement",
+          "local_subject_id": "req.atc.authoring-preservation"
+        },
+        "mode": "exact",
+        "revision": 1
+      }
+    },
+    {
+      "transition_record_id": "0047-atc-ingress-req.atc.mapping-coverage",
+      "transition_identifier": "0047:atc:proposal_ingress:req.atc.mapping-coverage:v1",
+      "promotion_edge": "proposal -> spec_draft",
+      "gate_type": "review",
+      "state": "review_pending",
+      "reviewer_or_decider": null,
+      "decision_timestamp": null,
+      "outcome": null,
+      "rationale": null,
+      "source_ref": "docs/proposals/0047_evidence_backed_build_protocol.md",
+      "target_ref": "docs/reviews/0047_authored_traceability/adoption/subjects/req.atc.mapping-coverage.yaml#/proposed_record",
+      "review": null,
+      "intent_lineage_ref": "docs/reviews/0047_authored_traceability/adoption/intent-lineage.json#/ingress_lineages/3"
+    },
+    {
+      "transition_record_id": "0047-atc-canonical-req.atc.mapping-coverage",
+      "transition_identifier": "0047:atc:canonical_origin:req.atc.mapping-coverage:v1",
+      "promotion_edge": "spec_draft -> canonical_artifact",
+      "gate_type": "review",
+      "state": "review_pending",
+      "reviewer_or_decider": null,
+      "decision_timestamp": null,
+      "outcome": null,
+      "rationale": null,
+      "source_ref": "docs/reviews/0047_authored_traceability/adoption/subjects/req.atc.mapping-coverage.yaml#/proposed_record",
+      "target_ref": "specs/requirements/req.atc.mapping-coverage.yaml#/subject",
+      "review": null,
+      "ingress_transition_id": "0047-atc-ingress-req.atc.mapping-coverage",
+      "ingress_record_ref": "docs/reviews/0047_authored_traceability/adoption/packet.json#/transition_records/6",
+      "target_revision_selection": {
+        "subject": {
+          "workspace_identity": "workspace:a2800523-3588-4820-a47f-9fddc0fed3f5",
+          "subject_class": "Requirement",
+          "local_subject_id": "req.atc.mapping-coverage"
+        },
+        "mode": "exact",
+        "revision": 1
+      }
+    },
+    {
+      "transition_record_id": "0047-atc-ingress-req.atc.harness-scenario",
+      "transition_identifier": "0047:atc:proposal_ingress:req.atc.harness-scenario:v1",
+      "promotion_edge": "proposal -> spec_draft",
+      "gate_type": "review",
+      "state": "review_pending",
+      "reviewer_or_decider": null,
+      "decision_timestamp": null,
+      "outcome": null,
+      "rationale": null,
+      "source_ref": "docs/proposals/0047_evidence_backed_build_protocol.md",
+      "target_ref": "docs/reviews/0047_authored_traceability/adoption/subjects/req.atc.harness-scenario.yaml#/proposed_record",
+      "review": null,
+      "intent_lineage_ref": "docs/reviews/0047_authored_traceability/adoption/intent-lineage.json#/ingress_lineages/4"
+    },
+    {
+      "transition_record_id": "0047-atc-canonical-req.atc.harness-scenario",
+      "transition_identifier": "0047:atc:canonical_origin:req.atc.harness-scenario:v1",
+      "promotion_edge": "spec_draft -> canonical_artifact",
+      "gate_type": "review",
+      "state": "review_pending",
+      "reviewer_or_decider": null,
+      "decision_timestamp": null,
+      "outcome": null,
+      "rationale": null,
+      "source_ref": "docs/reviews/0047_authored_traceability/adoption/subjects/req.atc.harness-scenario.yaml#/proposed_record",
+      "target_ref": "specs/requirements/req.atc.harness-scenario.yaml#/subject",
+      "review": null,
+      "ingress_transition_id": "0047-atc-ingress-req.atc.harness-scenario",
+      "ingress_record_ref": "docs/reviews/0047_authored_traceability/adoption/packet.json#/transition_records/8",
+      "target_revision_selection": {
+        "subject": {
+          "workspace_identity": "workspace:a2800523-3588-4820-a47f-9fddc0fed3f5",
+          "subject_class": "Requirement",
+          "local_subject_id": "req.atc.harness-scenario"
+        },
+        "mode": "exact",
+        "revision": 1
+      }
+    },
+    {
+      "transition_record_id": "0047-atc-ingress-req.atc.evidence-boundary",
+      "transition_identifier": "0047:atc:proposal_ingress:req.atc.evidence-boundary:v1",
+      "promotion_edge": "proposal -> spec_draft",
+      "gate_type": "review",
+      "state": "review_pending",
+      "reviewer_or_decider": null,
+      "decision_timestamp": null,
+      "outcome": null,
+      "rationale": null,
+      "source_ref": "docs/proposals/0047_evidence_backed_build_protocol.md",
+      "target_ref": "docs/reviews/0047_authored_traceability/adoption/subjects/req.atc.evidence-boundary.yaml#/proposed_record",
+      "review": null,
+      "intent_lineage_ref": "docs/reviews/0047_authored_traceability/adoption/intent-lineage.json#/ingress_lineages/5"
+    },
+    {
+      "transition_record_id": "0047-atc-canonical-req.atc.evidence-boundary",
+      "transition_identifier": "0047:atc:canonical_origin:req.atc.evidence-boundary:v1",
+      "promotion_edge": "spec_draft -> canonical_artifact",
+      "gate_type": "review",
+      "state": "review_pending",
+      "reviewer_or_decider": null,
+      "decision_timestamp": null,
+      "outcome": null,
+      "rationale": null,
+      "source_ref": "docs/reviews/0047_authored_traceability/adoption/subjects/req.atc.evidence-boundary.yaml#/proposed_record",
+      "target_ref": "specs/requirements/req.atc.evidence-boundary.yaml#/subject",
+      "review": null,
+      "ingress_transition_id": "0047-atc-ingress-req.atc.evidence-boundary",
+      "ingress_record_ref": "docs/reviews/0047_authored_traceability/adoption/packet.json#/transition_records/10",
+      "target_revision_selection": {
+        "subject": {
+          "workspace_identity": "workspace:a2800523-3588-4820-a47f-9fddc0fed3f5",
+          "subject_class": "Requirement",
+          "local_subject_id": "req.atc.evidence-boundary"
+        },
+        "mode": "exact",
+        "revision": 1
+      }
+    },
+    {
+      "transition_record_id": "0047-atc-ingress-ac.atc.source-attribution",
+      "transition_identifier": "0047:atc:proposal_ingress:ac.atc.source-attribution:v1",
+      "promotion_edge": "proposal -> spec_draft",
+      "gate_type": "review",
+      "state": "review_pending",
+      "reviewer_or_decider": null,
+      "decision_timestamp": null,
+      "outcome": null,
+      "rationale": null,
+      "source_ref": "docs/proposals/0047_evidence_backed_build_protocol.md",
+      "target_ref": "docs/reviews/0047_authored_traceability/adoption/subjects/ac.atc.source-attribution.yaml#/proposed_record",
+      "review": null,
+      "intent_lineage_ref": "docs/reviews/0047_authored_traceability/adoption/intent-lineage.json#/ingress_lineages/6"
+    },
+    {
+      "transition_record_id": "0047-atc-canonical-ac.atc.source-attribution",
+      "transition_identifier": "0047:atc:canonical_origin:ac.atc.source-attribution:v1",
+      "promotion_edge": "spec_draft -> canonical_artifact",
+      "gate_type": "review",
+      "state": "review_pending",
+      "reviewer_or_decider": null,
+      "decision_timestamp": null,
+      "outcome": null,
+      "rationale": null,
+      "source_ref": "docs/reviews/0047_authored_traceability/adoption/subjects/ac.atc.source-attribution.yaml#/proposed_record",
+      "target_ref": "specs/criteria/ac.atc.source-attribution.yaml#/subject",
+      "review": null,
+      "ingress_transition_id": "0047-atc-ingress-ac.atc.source-attribution",
+      "ingress_record_ref": "docs/reviews/0047_authored_traceability/adoption/packet.json#/transition_records/12",
+      "target_revision_selection": {
+        "subject": {
+          "workspace_identity": "workspace:a2800523-3588-4820-a47f-9fddc0fed3f5",
+          "subject_class": "criterion",
+          "local_subject_id": "ac.atc.source-attribution"
+        },
+        "mode": "exact",
+        "revision": 1
+      }
+    },
+    {
+      "transition_record_id": "0047-atc-ingress-ac.atc.obligation-preservation",
+      "transition_identifier": "0047:atc:proposal_ingress:ac.atc.obligation-preservation:v1",
+      "promotion_edge": "proposal -> spec_draft",
+      "gate_type": "review",
+      "state": "review_pending",
+      "reviewer_or_decider": null,
+      "decision_timestamp": null,
+      "outcome": null,
+      "rationale": null,
+      "source_ref": "docs/proposals/0047_evidence_backed_build_protocol.md",
+      "target_ref": "docs/reviews/0047_authored_traceability/adoption/subjects/ac.atc.obligation-preservation.yaml#/proposed_record",
+      "review": null,
+      "intent_lineage_ref": "docs/reviews/0047_authored_traceability/adoption/intent-lineage.json#/ingress_lineages/7"
+    },
+    {
+      "transition_record_id": "0047-atc-canonical-ac.atc.obligation-preservation",
+      "transition_identifier": "0047:atc:canonical_origin:ac.atc.obligation-preservation:v1",
+      "promotion_edge": "spec_draft -> canonical_artifact",
+      "gate_type": "review",
+      "state": "review_pending",
+      "reviewer_or_decider": null,
+      "decision_timestamp": null,
+      "outcome": null,
+      "rationale": null,
+      "source_ref": "docs/reviews/0047_authored_traceability/adoption/subjects/ac.atc.obligation-preservation.yaml#/proposed_record",
+      "target_ref": "specs/criteria/ac.atc.obligation-preservation.yaml#/subject",
+      "review": null,
+      "ingress_transition_id": "0047-atc-ingress-ac.atc.obligation-preservation",
+      "ingress_record_ref": "docs/reviews/0047_authored_traceability/adoption/packet.json#/transition_records/14",
+      "target_revision_selection": {
+        "subject": {
+          "workspace_identity": "workspace:a2800523-3588-4820-a47f-9fddc0fed3f5",
+          "subject_class": "criterion",
+          "local_subject_id": "ac.atc.obligation-preservation"
+        },
+        "mode": "exact",
+        "revision": 1
+      }
+    },
+    {
+      "transition_record_id": "0047-atc-ingress-ac.atc.mapping-scope",
+      "transition_identifier": "0047:atc:proposal_ingress:ac.atc.mapping-scope:v1",
+      "promotion_edge": "proposal -> spec_draft",
+      "gate_type": "review",
+      "state": "review_pending",
+      "reviewer_or_decider": null,
+      "decision_timestamp": null,
+      "outcome": null,
+      "rationale": null,
+      "source_ref": "docs/proposals/0047_evidence_backed_build_protocol.md",
+      "target_ref": "docs/reviews/0047_authored_traceability/adoption/subjects/ac.atc.mapping-scope.yaml#/proposed_record",
+      "review": null,
+      "intent_lineage_ref": "docs/reviews/0047_authored_traceability/adoption/intent-lineage.json#/ingress_lineages/8"
+    },
+    {
+      "transition_record_id": "0047-atc-canonical-ac.atc.mapping-scope",
+      "transition_identifier": "0047:atc:canonical_origin:ac.atc.mapping-scope:v1",
+      "promotion_edge": "spec_draft -> canonical_artifact",
+      "gate_type": "review",
+      "state": "review_pending",
+      "reviewer_or_decider": null,
+      "decision_timestamp": null,
+      "outcome": null,
+      "rationale": null,
+      "source_ref": "docs/reviews/0047_authored_traceability/adoption/subjects/ac.atc.mapping-scope.yaml#/proposed_record",
+      "target_ref": "specs/criteria/ac.atc.mapping-scope.yaml#/subject",
+      "review": null,
+      "ingress_transition_id": "0047-atc-ingress-ac.atc.mapping-scope",
+      "ingress_record_ref": "docs/reviews/0047_authored_traceability/adoption/packet.json#/transition_records/16",
+      "target_revision_selection": {
+        "subject": {
+          "workspace_identity": "workspace:a2800523-3588-4820-a47f-9fddc0fed3f5",
+          "subject_class": "criterion",
+          "local_subject_id": "ac.atc.mapping-scope"
+        },
+        "mode": "exact",
+        "revision": 1
+      }
+    },
+    {
+      "transition_record_id": "0047-atc-ingress-ac.atc.execution-boundary",
+      "transition_identifier": "0047:atc:proposal_ingress:ac.atc.execution-boundary:v1",
+      "promotion_edge": "proposal -> spec_draft",
+      "gate_type": "review",
+      "state": "review_pending",
+      "reviewer_or_decider": null,
+      "decision_timestamp": null,
+      "outcome": null,
+      "rationale": null,
+      "source_ref": "docs/proposals/0047_evidence_backed_build_protocol.md",
+      "target_ref": "docs/reviews/0047_authored_traceability/adoption/subjects/ac.atc.execution-boundary.yaml#/proposed_record",
+      "review": null,
+      "intent_lineage_ref": "docs/reviews/0047_authored_traceability/adoption/intent-lineage.json#/ingress_lineages/9"
+    },
+    {
+      "transition_record_id": "0047-atc-canonical-ac.atc.execution-boundary",
+      "transition_identifier": "0047:atc:canonical_origin:ac.atc.execution-boundary:v1",
+      "promotion_edge": "spec_draft -> canonical_artifact",
+      "gate_type": "review",
+      "state": "review_pending",
+      "reviewer_or_decider": null,
+      "decision_timestamp": null,
+      "outcome": null,
+      "rationale": null,
+      "source_ref": "docs/reviews/0047_authored_traceability/adoption/subjects/ac.atc.execution-boundary.yaml#/proposed_record",
+      "target_ref": "specs/criteria/ac.atc.execution-boundary.yaml#/subject",
+      "review": null,
+      "ingress_transition_id": "0047-atc-ingress-ac.atc.execution-boundary",
+      "ingress_record_ref": "docs/reviews/0047_authored_traceability/adoption/packet.json#/transition_records/18",
+      "target_revision_selection": {
+        "subject": {
+          "workspace_identity": "workspace:a2800523-3588-4820-a47f-9fddc0fed3f5",
+          "subject_class": "criterion",
+          "local_subject_id": "ac.atc.execution-boundary"
+        },
+        "mode": "exact",
+        "revision": 1
+      }
+    }
+  ],
+  "writer_request": null,
+  "publication_authorization": null,
+  "topology_selection": null,
+  "canonical_traceability": {
+    "current_state": "unresolved",
+    "proposed_requirement_root_paths": "Explicit directed derived_from edges for six Requirements to three proposed Intent roots; only candidate topology is checked.",
+    "criterion_boundary": "Four criteria are acceptance revision targets, not new seed kinds. acceptance_criteria_refs does not itself establish an SG-SPEC-0061 canonical trace path; no criterion INV-002 closure is claimed.",
+    "logical_contracts": [
+      "SG-SPEC-0061",
+      "SG-SPEC-0023"
+    ],
+    "canonical_topology_published": false
+  },
+  "publication_support": {
+    "Requirement_and_criterion_storage": "Existing SG-SPEC-0069 reader/writer and mandatory recorded-decision gate; pending candidates are intentionally not writer input.",
+    "intent_roots": "Logical existing kind intent; physical binding and publication route remain unimplemented by this slice.",
+    "derived_from_edges": "Valid proposed requirement-to-intent endpoint kinds under SG-SPEC-0023; external relation storage/admission is not implemented by subject_source_write v1.",
+    "atomic_complete_chain_publication": "No existing writer publishes this whole chain. Do not publish only the supported subset and claim canonical Intent closure."
+  },
+  "decisions_requested": [
+    "Confirm each normalized Intent interpretation against the retained verbatim human quote, without upgrading assistant capture to attestation.",
+    "Review six unchanged Requirement statements, four exact criterion statements, new proposed origin identities and the explicit shared criterion membership.",
+    "Review eight proposed directed derived_from edges and their source bases; no generic relation or proposal citation substitutes for an edge.",
+    "Review the supported storage candidates separately from the missing Intent/edge publication binding; this packet alone does not authorize a writer request."
+  ],
+  "review_blockers": [
+    "source_interpretation_and_ingress_reviews_pending",
+    "canonical_origin_and_activation_decisions_pending",
+    "workspace_allocation_and_topology_selection_pending",
+    "adoption_provenance_pending",
+    "canonical_intent_and_edge_publication_binding_missing",
+    "exact_writer_request_and_publication_authorization_absent"
+  ],
+  "evidence_boundary": {
+    "future_bdd_scenarios": 6,
+    "executed_bdd_scenarios": 0,
+    "profile_cases_linked": 16,
+    "profile_enforced": false,
+    "engineering_choices_ref": "docs/reviews/0047_authored_traceability/lineage.json#/engineering_choices",
+    "historical_tests_or_runtime_evidence_transferred": false,
+    "receipt_or_approval_attestation": false
+  },
+  "inputs": {
+    "review_tree_file_sha256": {
+      "docs/archive/proposal_sources/0047_evidence_backed_build_protocol.md": "152d00ae8fbde9174f36734129de7c4cf037cecd7778bfad459004e45d7990a9",
+      "docs/contracts/observability_identity_profile_v1.json": "a82c1bcbcc2c01175162ee0823a0b8515dbdbfcee818db8ed95565146d2cd37f",
+      "docs/observability_identity_profile.md": "0bc76d26772aa0bf47143815d6715db9789265509d5084dbbc68bb057f85297b",
+      "docs/proposals/0047_evidence_backed_build_protocol.md": "56c9993b6d870e1a7a37e0753afee4e5beb539aebbe8f3c0c67badb697abbd02",
+      "docs/reviews/0047_authored_traceability/adoption/intent-candidates.json": "c8dcbc8d72b32bb507a5aa36a5b5b40c68de796d29931f680fb99e480bfdc8ab",
+      "docs/reviews/0047_authored_traceability/adoption/intent-lineage.json": "9a1aad49bf33ace24d294905d2dc3dec9b13d51ef569046fc4f7cd8b74224e6a",
+      "docs/reviews/0047_authored_traceability/adoption/subjects/ac.atc.execution-boundary.yaml": "d9e0b2f9aebdfe4d462caf4c247373e9566b0d595947185acf1d43ab545dc838",
+      "docs/reviews/0047_authored_traceability/adoption/subjects/ac.atc.mapping-scope.yaml": "9b71f90b21c355c3a77520c75341e3144da4b8433324f7fe63c6d33236e14db5",
+      "docs/reviews/0047_authored_traceability/adoption/subjects/ac.atc.obligation-preservation.yaml": "e8a20151e2bbf4f3745b4f727c415e6277ddcfc7ac82cda3fa5e3bbeabd8628d",
+      "docs/reviews/0047_authored_traceability/adoption/subjects/ac.atc.source-attribution.yaml": "4f278c444dbb809dcb6417e4b3b71efd285ca0894737eadf96ad290563c72a6c",
+      "docs/reviews/0047_authored_traceability/adoption/subjects/req.atc.authoring-preservation.yaml": "c13e3f069f603729dbe57f7330268a0dea8687bf0f42cb3bc9235fed16e31fe9",
+      "docs/reviews/0047_authored_traceability/adoption/subjects/req.atc.evidence-boundary.yaml": "92eb06937df416940725e6d37cc96aa7f5fa4d633dcddc6fbfd65db0c52de7fb",
+      "docs/reviews/0047_authored_traceability/adoption/subjects/req.atc.harness-scenario.yaml": "504bd540967fd825a34186edaac76c00ec2fb35326f33ce27f7243fedcdd6eb3",
+      "docs/reviews/0047_authored_traceability/adoption/subjects/req.atc.mapping-coverage.yaml": "60c29442ebf58d5371219193e64f66c4757aec50deaddb63fad96ef5e99d9cc3",
+      "docs/reviews/0047_authored_traceability/adoption/subjects/req.atc.obligation-identity.yaml": "387b5625f6ec61df41d39cf65d03be49f97efb416d87d95e2e581cc1307a213e",
+      "docs/reviews/0047_authored_traceability/adoption/subjects/req.atc.source-intent.yaml": "e6efc840047f5b0490d097e02c7372929f147b2ea617faffcf81aacbc670d132",
+      "docs/reviews/0047_authored_traceability/intent.json": "90544c29c76d00faa4edba35b28de4fa4b5bdf8dc0f79f15c8bc53d47cef036b",
+      "docs/reviews/0047_authored_traceability/lineage.json": "638b6cfeb4aeb7ee0f4db3a3d043476b67d563b80a7df2933c4d2495741220b6",
+      "docs/reviews/0047_authored_traceability/retry/candidate.yaml": "903d66719e5b7ab381cd8f494f878ef3baae2788d03c26b9f796296ff298690a",
+      "docs/reviews/0221_subject_storage/workspace_identity.yaml": "d5a99ab533da5e3568601fb2d9c9934aeb3044dd5770c6bd442fd761a80b783b",
+      "docs/reviews/0221_subject_storage_decision.json": "b334cb084e9f65edd8ba0934aa38cccce776166ed2e19b9c12c91e16dfa55760",
+      "docs/reviews/zeusus_second_pass_feedback_triage_20261022.md": "bbc7078b6070d908f5ded8a6619f9cb88f879300fcb8567caee375d2e6ff2788",
+      "docs/subject_publication.md": "cd91aafb90eeb939759268acb570b1ded349f3143973deb5ebcbec206ab2fc42"
+    },
+    "contract_snapshot": {
+      "commit": "bc051b08c68dfe795d10fd9309e98867d3430911",
+      "file_sha256": {
+        "specs/nodes/SG-SPEC-0001.yaml": "a4a084ef61caba1881355638f65076f098a859967de34bd41ebfe9245ac9829e",
+        "specs/nodes/SG-SPEC-0023.yaml": "605a520cef2e54961a48593427de9f1188898c4910c6c8c4895ef70af0b2bf30",
+        "specs/nodes/SG-SPEC-0024.yaml": "dddc2beaf839cbef47d5f9221bdd3992a5865b73b16de5b5277e8ab89b6a9889",
+        "specs/nodes/SG-SPEC-0051.yaml": "4869849286711830bba3bf19aa45526f96e535f4633949a0deb18ada071daceb",
+        "specs/nodes/SG-SPEC-0061.yaml": "cc0b058383ce70b25471cc3ae65f259eddd38145fb7197dcc62b9c0b83206608",
+        "specs/nodes/SG-SPEC-0068.yaml": "9b523386b9678acfcf8dfac3675ee700b107655896c0e6d8187f44561adbafd1",
+        "specs/nodes/SG-SPEC-0069.yaml": "49c8b337c3941110b5dbead247e9d7f64f5011ca573105af9ca1e345df4f487f"
+      }
+    },
+    "publication_implementation_snapshot": {
+      "commit": "bc051b08c68dfe795d10fd9309e98867d3430911",
+      "file_sha256": {
+        "tools/subject_canonical_source.py": "a1878c24dedcf2f5b15afbbcb4d59329f96ae33e5ac8b18d6550125cfc9a794b",
+        "tools/subject_source_write.py": "17f75f1dc11aac04e9b2e81c7e133ea8966f2289ecc95854d74a05522d8051e3",
+        "tools/subject_publication.py": "7ca4e85c9f015e9170eb5caca349d4acaea7518c14decb6c96b274b41be2f1e3"
+      }
+    }
+  },
+  "decision_lifecycle": "Keep reviewed packet and pending templates immutable after approval; record actual human decisions in a separate artifact bound to reviewed_head, packet raw SHA-256 and approval_scope_sha256. Any resolved adoption/provenance fields require a newly reviewed candidate/packet; do not fill them after approval.",
+  "approval_scope_sha256": "22f84fe2b0adb0379420ec3406c431254f28dc423663637437c1fb1269ced54d"
+}

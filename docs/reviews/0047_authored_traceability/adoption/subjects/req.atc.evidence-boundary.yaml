@@ -1,0 +1,94 @@
+schema_version: 1
+artifact_kind: subject_storage_candidate
+created_at: '2026-10-23T16:20:31.789383+00:00'
+updated_at: '2026-10-23T16:27:01.183659+00:00'
+source_lane: SpecDraft
+gate_state: review_pending
+canonical_adoption: false
+canonical_readiness: not_evaluated
+ready_for_materialization: false
+proposed_path: specs/requirements/req.atc.evidence-boundary.yaml
+storage_contract: SG-SPEC-0069
+preparation_provenance:
+  authority: agent_prepared_for_human_review
+  source_revision: bc051b08c68dfe795d10fd9309e98867d3430911
+  source_candidate: docs/reviews/0047_authored_traceability/retry/candidate.yaml
+  source_candidate_sha256: 903d66719e5b7ab381cd8f494f878ef3baae2788d03c26b9f796296ff298690a
+adoption_fields_pending:
+- proposed_record.revisions[0].provenance
+- proposed_record.current_disposition
+- proposed_record.retained_disposition_transitions.origin_activation
+- proposed_record.provenance.actor_id
+- proposed_record.provenance.recorded_at
+- proposed_record.provenance.source_confidence
+- proposed_record.revisions[0].node_fields.provenance.actor_id
+- proposed_record.revisions[0].node_fields.provenance.recorded_at
+- proposed_record.revisions[0].node_fields.provenance.source_confidence
+proposed_record:
+  schema_version: 1
+  artifact_kind: requirement_node
+  id: req.atc.evidence-boundary
+  title: Declaration checks retain evidence boundaries
+  kind: requirement
+  status: outlined
+  authority_class: inferred
+  source_ref: docs/reviews/0047_authored_traceability/retry/candidate.yaml#/specification/requirements/5/statement
+  subject:
+    workspace_identity: workspace:a2800523-3588-4820-a47f-9fddc0fed3f5
+    subject_class: Requirement
+    local_subject_id: req.atc.evidence-boundary
+  current_revision: 1
+  revisions:
+  - number: 1
+    predecessor: null
+    node_fields:
+      title: Declaration checks retain evidence boundaries
+      status: outlined
+      authority_class: inferred
+      source_ref: docs/reviews/0047_authored_traceability/retry/candidate.yaml#/specification/requirements/5/statement
+      provenance:
+        actor_id: null
+        authority_class: inferred
+        recorded_at: null
+        source_ref: docs/reviews/0047_authored_traceability/retry/candidate.yaml#/specification/requirements/5/statement
+        source_confidence: null
+    statement: Successful authored-declaration checks establish only their declared structural scope.
+      They do not establish actual runtime propagation, implementation conformance, executed or passing
+      tests, evidence admission, or canonical approval. Diagnostic collection must not alter product behavior.
+    containment: specs/requirements/req.atc.evidence-boundary.yaml
+    provenance: null
+    acceptance_criteria_refs:
+    - subject:
+        workspace_identity: workspace:a2800523-3588-4820-a47f-9fddc0fed3f5
+        subject_class: criterion
+        local_subject_id: ac.atc.execution-boundary
+      mode: exact
+      revision: 1
+    revision_scope: 'Proposed origin: req.atc.evidence-boundary retains the reviewed authored traceability
+      statement and explicit revision-1 acceptance membership; no historical execution or evidence applicability
+      is transferred.'
+  current_disposition: null
+  retained_disposition_transitions: []
+  provenance:
+    actor_id: null
+    authority_class: inferred
+    recorded_at: null
+    source_ref: docs/reviews/0047_authored_traceability/retry/candidate.yaml#/specification/requirements/5/statement
+    source_confidence: null
+source_mapping:
+  source_occurrence: docs/reviews/0047_authored_traceability/retry/candidate.yaml#/specification/requirements/5/statement
+  source_statement_sha256: fe870a965617fce3205bc407753e43302ad1a9b5c3a8bce3bd6bf00ad2502a1b
+  source_authority: reviewed_preparation_not_canonical_origin
+  proposed_destination:
+    subject:
+      workspace_identity: workspace:a2800523-3588-4820-a47f-9fddc0fed3f5
+      subject_class: Requirement
+      local_subject_id: req.atc.evidence-boundary
+    mode: exact
+    revision: 1
+  identity_effect: new_proposed_origin_not_rename_of_candidate_local_handle
+  evidence_transfer: not_performed
+  candidate_local_requirement_id: ATC-REQ-006
+  source_refs:
+  - INTENT-0047-DELIVERY-CHAIN
+  - ZEU-AUTHORING-0047-01
