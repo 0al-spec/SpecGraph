@@ -1,0 +1,66 @@
+{
+  "artifact_kind": "specgraph.intent-decision-review/v1",
+  "schema_version": 1,
+  "base_sha": "fc266988a71c13dfe31cdfd78c4d6e6824228ee1",
+  "intent_delta_sha256": "066957c1fa1ce591587cad1296a4c30c4ebbea55693c1a005d76b953dd49fef9",
+  "source_scope_sha256": "f471d358cece499b756cebf37d50083507523147eb05bbed0e31ad0c9a1db9dd",
+  "pr_body_sha256": "e9acb019408b747390466c1c6e07d0d706e9e9083123e67854465f3d99cad508",
+  "decisions": [
+    {
+      "change_sha256": "71e5ea9083e153b4f2d80082859550d20e777d4cd82e8e38e77d7174863d6df8",
+      "disposition": "contract_only",
+      "rationale": "Declare the proposal goal of recording a short note before semantic classification. This documentation-only addition does not change or attest the capture implementation.",
+      "implementation_refs": [],
+      "specification_refs": []
+    },
+    {
+      "change_sha256": "07e48387527d5e7d610558b4c35257116ad1431610ed72cba46133e4d2569f87",
+      "disposition": "contract_only",
+      "rationale": "Declare recovery of hierarchy, addresses and quotations as a proposal obligation. No session recovery code changes or implementation coverage are asserted in this PR.",
+      "implementation_refs": [],
+      "specification_refs": []
+    },
+    {
+      "change_sha256": "f60a8ae7b84f6c30821ace12f0cefbec2a9641ef36eb41dab982032c71418062",
+      "disposition": "contract_only",
+      "rationale": "Declare identity and quotation preservation during refinement. The statement records the draft contract; this PR neither changes refinement behavior nor supplies execution evidence.",
+      "implementation_refs": [],
+      "specification_refs": []
+    },
+    {
+      "change_sha256": "42edaf8a7f4fe8a6ca9a53c63c426852bc0ec17ff8bfd8fea0ba602fa3636c98",
+      "disposition": "contract_only",
+      "rationale": "Declare the distinction between human quotations and agent interpretations. This is draft attribution intent, without implementation or human-approval attestation.",
+      "implementation_refs": [],
+      "specification_refs": []
+    },
+    {
+      "change_sha256": "6a2dfed4db788ab6b0f85fb092fc876130a32be6f52c262148beaffdbda17a81",
+      "disposition": "contract_only",
+      "rationale": "Declare structural and attribution diff fidelity, including revision preservation on unchanged edits. This documentation-only declaration does not claim verification of that behavior.",
+      "implementation_refs": [],
+      "specification_refs": []
+    },
+    {
+      "change_sha256": "9909b30f6a62a17bfe896671c407627925f8fb81ac007db7fd10c73048a450d2",
+      "disposition": "contract_only",
+      "rationale": "Declare that sketch approval, proposal preparation authorization and canonical acceptance have distinct subjects. No authority decision or approval state changes in this PR.",
+      "implementation_refs": [],
+      "specification_refs": []
+    },
+    {
+      "change_sha256": "3b4018d4093e4ed34f9ca4415ea1928f46aa27b9a9ef33a414fc81192a3abae9",
+      "disposition": "contract_only",
+      "rationale": "Declare the proposed bounded handoff from selected notes to an identified specification region. The end-to-end handoff remains a proposal obligation; no writer or canonical mutation is enabled.",
+      "implementation_refs": [],
+      "specification_refs": []
+    },
+    {
+      "change_sha256": "1e2b759946df1869d8b6d032652974c70338b47454ba20a65372b6d46be3de42",
+      "disposition": "contract_only",
+      "rationale": "Declare use of the existing recorded promotion and review boundaries for a future graph change. This addition neither accepts the proposal nor publishes canonical records.",
+      "implementation_refs": [],
+      "specification_refs": []
+    }
+  ]
+}
