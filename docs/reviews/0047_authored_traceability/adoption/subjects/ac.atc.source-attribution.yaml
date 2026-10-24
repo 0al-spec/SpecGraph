@@ -1,0 +1,58 @@
+schema_version: 1
+artifact_kind: subject_storage_candidate
+created_at: '2026-10-23T16:20:31.789383+00:00'
+updated_at: '2026-10-23T16:27:01.183659+00:00'
+source_lane: SpecDraft
+gate_state: review_pending
+canonical_adoption: false
+canonical_readiness: not_evaluated
+ready_for_materialization: false
+proposed_path: specs/criteria/ac.atc.source-attribution.yaml
+storage_contract: SG-SPEC-0069
+preparation_provenance:
+  authority: agent_prepared_for_human_review
+  source_revision: bc051b08c68dfe795d10fd9309e98867d3430911
+  source_candidate: docs/reviews/0047_authored_traceability/retry/candidate.yaml
+  source_candidate_sha256: 903d66719e5b7ab381cd8f494f878ef3baae2788d03c26b9f796296ff298690a
+adoption_fields_pending:
+- proposed_record.revisions[0].provenance
+- proposed_record.current_disposition
+- proposed_record.retained_disposition_transitions.origin_activation
+proposed_record:
+  schema_version: 1
+  artifact_kind: acceptance_criterion_record
+  id: ac.atc.source-attribution
+  title: Source attribution and design separation
+  subject:
+    workspace_identity: workspace:a2800523-3588-4820-a47f-9fddc0fed3f5
+    subject_class: criterion
+    local_subject_id: ac.atc.source-attribution
+  current_revision: 1
+  revisions:
+  - number: 1
+    predecessor: null
+    node_fields:
+      title: Source attribution and design separation
+    statement: Retains explicit source intent for each proposed requirement and distinguishes requested
+      observation attribution from profile engineering choices.
+    containment: specs/criteria/ac.atc.source-attribution.yaml
+    provenance: null
+    acceptance_criteria_refs: []
+    revision_scope: 'Proposed origin: ac.atc.source-attribution retains the reviewed authored traceability
+      statement and explicit revision-1 acceptance membership; no historical execution or evidence applicability
+      is transferred.'
+  current_disposition: null
+  retained_disposition_transitions: []
+source_mapping:
+  source_occurrence: docs/reviews/0047_authored_traceability/retry/candidate.yaml#/acceptance/0
+  source_statement_sha256: 91e4255bffba6799d4c59fdfd4fec6f81832e9c58c2d7daf62768a6e757a7561
+  source_authority: reviewed_preparation_not_canonical_origin
+  proposed_destination:
+    subject:
+      workspace_identity: workspace:a2800523-3588-4820-a47f-9fddc0fed3f5
+      subject_class: criterion
+      local_subject_id: ac.atc.source-attribution
+    mode: exact
+    revision: 1
+  identity_effect: new_proposed_origin_not_rename_of_candidate_local_handle
+  evidence_transfer: not_performed

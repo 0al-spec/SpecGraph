@@ -136,3 +136,14 @@ and proposed parent are appropriate. No runtime checker/profile is activated.
 Next: review the refined mapping semantics and requirement/source separation,
 then prepare the bounded canonical adoption. Do not
 use the generic SG-SPEC-0020 citation as a replacement for that work.
+
+## Canonical adoption preparation after PR #790
+
+The next [adoption packet](adoption/README.md) now proposes three Intent roots,
+six standalone Requirements, four shared criteria and eight directed
+`derived_from` edges. It uses the retained Supervisor output, preserves the
+statements and separates source interpretation from engineering choices.
+The existing workspace plan and recorded-decision format are reused. Canonical
+Intent/edge publication is not supported by the current subject writer; this
+missing binding and every pending decision remain explicit. No historical gate,
+canonical root, subject origin or runtime profile is changed by preparation.

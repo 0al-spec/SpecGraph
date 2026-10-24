@@ -1,0 +1,222 @@
+{
+  "schema_version": 1,
+  "artifact_kind": "authored_traceability_source_lineage_preparation",
+  "human_intent_records": [
+    {
+      "schema_version": 1,
+      "artifact_kind": "human_intent_record",
+      "actor_id": "human:SoundBlaster",
+      "text": "Поскольку правило обычно выражается просто и логично, то его надо уметь адресовать как в спеке так и в коде и трассировать в рантайм.",
+      "original_timestamp": null,
+      "source_quote_id": "INTENT-0047-ADDRESSABILITY",
+      "source_ref": "docs/reviews/0047_authored_traceability/intent.json#/quotes/0",
+      "capture_authority": "assistant_transcription_of_retained_chat_quote_not_independent_attestation",
+      "recorded_at": "2026-10-23T16:20:31.789383+00:00",
+      "recorded_at_meaning": "packet preparation time, not original message time"
+    },
+    {
+      "schema_version": 1,
+      "artifact_kind": "human_intent_record",
+      "actor_id": "human:SoundBlaster",
+      "text": "Сигналы и подтверждения должны были достаточно легко извлекаемыми по всему пайплайну доставки продукта: intent → spec → tests → runtime.",
+      "original_timestamp": null,
+      "source_quote_id": "INTENT-0047-DELIVERY-CHAIN",
+      "source_ref": "docs/reviews/0047_authored_traceability/intent.json#/quotes/1",
+      "capture_authority": "assistant_transcription_of_retained_chat_quote_not_independent_attestation",
+      "recorded_at": "2026-10-23T16:20:31.789383+00:00",
+      "recorded_at_meaning": "packet preparation time, not original message time"
+    },
+    {
+      "schema_version": 1,
+      "artifact_kind": "human_intent_record",
+      "actor_id": "human:SoundBlaster",
+      "text": "Из какого intent происходят эти контракты?",
+      "original_timestamp": null,
+      "source_quote_id": "INTENT-0047-DERIVATION",
+      "source_ref": "docs/reviews/0047_authored_traceability/intent.json#/quotes/2",
+      "capture_authority": "assistant_transcription_of_retained_chat_quote_not_independent_attestation",
+      "recorded_at": "2026-10-23T16:20:31.789383+00:00",
+      "recorded_at_meaning": "packet preparation time, not original message time"
+    }
+  ],
+  "intent_drafts": [
+    {
+      "schema_version": 1,
+      "artifact_kind": "intent_draft",
+      "draft_id": "INTENT-0047-ADDRESSABILITY",
+      "statement": "Поскольку правило обычно выражается просто и логично, то его надо уметь адресовать как в спеке так и в коде и трассировать в рантайм.",
+      "provenance": {
+        "authority_class": "authored",
+        "actor_id": "human:SoundBlaster",
+        "source_ref": "docs/reviews/0047_authored_traceability/adoption/intent-lineage.json#/human_intent_records/0"
+      },
+      "provenance_scope": "Human authorship describes the retained verbatim quote only; this exchange was transcribed by the assistant and has no independent attestation.",
+      "canonical_adoption": false
+    },
+    {
+      "schema_version": 1,
+      "artifact_kind": "intent_draft",
+      "draft_id": "INTENT-0047-DELIVERY-CHAIN",
+      "statement": "Сигналы и подтверждения должны были достаточно легко извлекаемыми по всему пайплайну доставки продукта: intent → spec → tests → runtime.",
+      "provenance": {
+        "authority_class": "authored",
+        "actor_id": "human:SoundBlaster",
+        "source_ref": "docs/reviews/0047_authored_traceability/adoption/intent-lineage.json#/human_intent_records/1"
+      },
+      "provenance_scope": "Human authorship describes the retained verbatim quote only; this exchange was transcribed by the assistant and has no independent attestation.",
+      "canonical_adoption": false
+    },
+    {
+      "schema_version": 1,
+      "artifact_kind": "intent_draft",
+      "draft_id": "INTENT-0047-DERIVATION",
+      "statement": "Из какого intent происходят эти контракты?",
+      "provenance": {
+        "authority_class": "authored",
+        "actor_id": "human:SoundBlaster",
+        "source_ref": "docs/reviews/0047_authored_traceability/adoption/intent-lineage.json#/human_intent_records/2"
+      },
+      "provenance_scope": "Human authorship describes the retained verbatim quote only; this exchange was transcribed by the assistant and has no independent attestation.",
+      "canonical_adoption": false
+    }
+  ],
+  "ingress_lineages": [
+    {
+      "schema_version": 1,
+      "artifact_kind": "subject_intent_lineage",
+      "subject_local_id": "req.atc.source-intent",
+      "source_proposal_ref": "docs/proposals/0047_evidence_backed_build_protocol.md",
+      "source_proposal_sha256": "56c9993b6d870e1a7a37e0753afee4e5beb539aebbe8f3c0c67badb697abbd02",
+      "intent_ref": "docs/reviews/0047_authored_traceability/adoption/intent-lineage.json#/intent_drafts/2",
+      "additional_source_refs": [
+        "INTENT-0047-DERIVATION",
+        "INTENT-0047-ADDRESSABILITY"
+      ],
+      "review": null,
+      "lineage_state": "source_bound_pending_semantic_review"
+    },
+    {
+      "schema_version": 1,
+      "artifact_kind": "subject_intent_lineage",
+      "subject_local_id": "req.atc.obligation-identity",
+      "source_proposal_ref": "docs/proposals/0047_evidence_backed_build_protocol.md",
+      "source_proposal_sha256": "56c9993b6d870e1a7a37e0753afee4e5beb539aebbe8f3c0c67badb697abbd02",
+      "intent_ref": "docs/reviews/0047_authored_traceability/adoption/intent-lineage.json#/intent_drafts/0",
+      "additional_source_refs": [
+        "INTENT-0047-ADDRESSABILITY",
+        "ZEU-AUTHORING-0047-01",
+        "ZEU-AUTHORING-0047-02",
+        "ZST-04"
+      ],
+      "review": null,
+      "lineage_state": "source_bound_pending_semantic_review"
+    },
+    {
+      "schema_version": 1,
+      "artifact_kind": "subject_intent_lineage",
+      "subject_local_id": "req.atc.authoring-preservation",
+      "source_proposal_ref": "docs/proposals/0047_evidence_backed_build_protocol.md",
+      "source_proposal_sha256": "56c9993b6d870e1a7a37e0753afee4e5beb539aebbe8f3c0c67badb697abbd02",
+      "intent_ref": "docs/reviews/0047_authored_traceability/adoption/intent-lineage.json#/intent_drafts/0",
+      "additional_source_refs": [
+        "INTENT-0047-ADDRESSABILITY",
+        "INTENT-0047-DERIVATION",
+        "ZEU-AUTHORING-0047-02",
+        "ZST-04"
+      ],
+      "review": null,
+      "lineage_state": "source_bound_pending_semantic_review"
+    },
+    {
+      "schema_version": 1,
+      "artifact_kind": "subject_intent_lineage",
+      "subject_local_id": "req.atc.mapping-coverage",
+      "source_proposal_ref": "docs/proposals/0047_evidence_backed_build_protocol.md",
+      "source_proposal_sha256": "56c9993b6d870e1a7a37e0753afee4e5beb539aebbe8f3c0c67badb697abbd02",
+      "intent_ref": "docs/reviews/0047_authored_traceability/adoption/intent-lineage.json#/intent_drafts/1",
+      "additional_source_refs": [
+        "INTENT-0047-DELIVERY-CHAIN",
+        "ZEU-AUTHORING-0047-02",
+        "ZST-02"
+      ],
+      "review": null,
+      "lineage_state": "source_bound_pending_semantic_review"
+    },
+    {
+      "schema_version": 1,
+      "artifact_kind": "subject_intent_lineage",
+      "subject_local_id": "req.atc.harness-scenario",
+      "source_proposal_ref": "docs/proposals/0047_evidence_backed_build_protocol.md",
+      "source_proposal_sha256": "56c9993b6d870e1a7a37e0753afee4e5beb539aebbe8f3c0c67badb697abbd02",
+      "intent_ref": "docs/reviews/0047_authored_traceability/adoption/intent-lineage.json#/intent_drafts/1",
+      "additional_source_refs": [
+        "INTENT-0047-DELIVERY-CHAIN",
+        "ZEU-AUTHORING-0047-01",
+        "ZEU-AUTHORING-0047-02"
+      ],
+      "review": null,
+      "lineage_state": "source_bound_pending_semantic_review"
+    },
+    {
+      "schema_version": 1,
+      "artifact_kind": "subject_intent_lineage",
+      "subject_local_id": "req.atc.evidence-boundary",
+      "source_proposal_ref": "docs/proposals/0047_evidence_backed_build_protocol.md",
+      "source_proposal_sha256": "56c9993b6d870e1a7a37e0753afee4e5beb539aebbe8f3c0c67badb697abbd02",
+      "intent_ref": "docs/reviews/0047_authored_traceability/adoption/intent-lineage.json#/intent_drafts/1",
+      "additional_source_refs": [
+        "INTENT-0047-DELIVERY-CHAIN",
+        "ZEU-AUTHORING-0047-01"
+      ],
+      "review": null,
+      "lineage_state": "source_bound_pending_semantic_review"
+    },
+    {
+      "schema_version": 1,
+      "artifact_kind": "subject_intent_lineage",
+      "subject_local_id": "ac.atc.source-attribution",
+      "source_proposal_ref": "docs/proposals/0047_evidence_backed_build_protocol.md",
+      "source_proposal_sha256": "56c9993b6d870e1a7a37e0753afee4e5beb539aebbe8f3c0c67badb697abbd02",
+      "intent_ref": "docs/reviews/0047_authored_traceability/adoption/intent-lineage.json#/intent_drafts/0",
+      "additional_source_refs": [],
+      "review": null,
+      "lineage_state": "source_bound_pending_semantic_review"
+    },
+    {
+      "schema_version": 1,
+      "artifact_kind": "subject_intent_lineage",
+      "subject_local_id": "ac.atc.obligation-preservation",
+      "source_proposal_ref": "docs/proposals/0047_evidence_backed_build_protocol.md",
+      "source_proposal_sha256": "56c9993b6d870e1a7a37e0753afee4e5beb539aebbe8f3c0c67badb697abbd02",
+      "intent_ref": "docs/reviews/0047_authored_traceability/adoption/intent-lineage.json#/intent_drafts/0",
+      "additional_source_refs": [],
+      "review": null,
+      "lineage_state": "source_bound_pending_semantic_review"
+    },
+    {
+      "schema_version": 1,
+      "artifact_kind": "subject_intent_lineage",
+      "subject_local_id": "ac.atc.mapping-scope",
+      "source_proposal_ref": "docs/proposals/0047_evidence_backed_build_protocol.md",
+      "source_proposal_sha256": "56c9993b6d870e1a7a37e0753afee4e5beb539aebbe8f3c0c67badb697abbd02",
+      "intent_ref": "docs/reviews/0047_authored_traceability/adoption/intent-lineage.json#/intent_drafts/1",
+      "additional_source_refs": [],
+      "review": null,
+      "lineage_state": "source_bound_pending_semantic_review"
+    },
+    {
+      "schema_version": 1,
+      "artifact_kind": "subject_intent_lineage",
+      "subject_local_id": "ac.atc.execution-boundary",
+      "source_proposal_ref": "docs/proposals/0047_evidence_backed_build_protocol.md",
+      "source_proposal_sha256": "56c9993b6d870e1a7a37e0753afee4e5beb539aebbe8f3c0c67badb697abbd02",
+      "intent_ref": "docs/reviews/0047_authored_traceability/adoption/intent-lineage.json#/intent_drafts/1",
+      "additional_source_refs": [],
+      "review": null,
+      "lineage_state": "source_bound_pending_semantic_review"
+    }
+  ],
+  "interpretation_approval": null,
+  "capture_attested": false,
+  "canonical_adoption": false
+}

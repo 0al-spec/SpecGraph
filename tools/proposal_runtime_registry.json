@@ -2069,7 +2069,15 @@
       "tests/test_supervisor.py",
       "tools/conversation_memory_policy.json",
       "docs/conversation_memory_viewer_contract.md",
-      "docs/proposals/0045_conversation_memory_exploration_vault.md"
+      "docs/proposals/0045_conversation_memory_exploration_vault.md",
+      "tools/conversation_notes_cli.py",
+      "tools/conversation_notes/api.py",
+      "tools/conversation_notes/model.py",
+      "tools/conversation_notes/codec.py",
+      "tools/conversation_notes/store.py",
+      "tests/test_conversation_notes.py",
+      "docs/conversation_notes.md",
+      ".codex/skills/specgraph-conversation-notes/SKILL.md"
     ],
     "runtime_markers": [
       {
@@ -2087,6 +2095,14 @@
       {
         "path": "tools/supervisor.py",
         "pattern": "def build_conversation_memory_promotion_pressure("
+      },
+      {
+        "path": "tools/conversation_notes/api.py",
+        "pattern": "def read_notes("
+      },
+      {
+        "path": "tools/conversation_notes/api.py",
+        "pattern": "def update_notes("
       }
     ],
     "validation_markers": [
@@ -2101,6 +2117,14 @@
       {
         "path": "tests/test_supervisor.py",
         "pattern": "def test_build_conversation_memory_promotion_pressure_groups_candidates("
+      },
+      {
+        "path": "tests/test_conversation_notes.py",
+        "pattern": "def test_conversation_survives_new_process_and_preserves_source("
+      },
+      {
+        "path": "tests/test_conversation_notes.py",
+        "pattern": "def test_interrupted_publication_keeps_complete_previous_snapshot("
       }
     ],
     "observation_markers": [
@@ -2270,7 +2294,7 @@
         "pattern": "evidence-claim-gate:"
       }
     ],
-    "notes": "Existing observability projection and source/signed-decision admission are bounded runtime realizations. The 2026-09-30 cross-repository receipt issuance handoff is proposal_only: generic issuer work belongs to FeaturePassport, pilot wiring to Zeusus, trust configuration to explicit operators, and admission to SpecGraph. No issuer, key provisioning, trust adoption or lifecycle transition is implemented by this amendment. The CLI delivery amendment also remains proposal_only: FeaturePassport releases target-specific artifacts; Platform owns runner dependency/image delivery; SpecGraph owns curated read-model publication. No binary installation, release workflow or deployment is implemented by this documentation slice. The 2026-10-23 observability_identity_declarations_v1 follow-up is contract preparation only, deferred_until_canonicalized: docs/observability_identity_profile.md and docs/contracts/observability_identity_profile_v1.json prepare exact per-obligation declarations, immutable opt-in selection and future shared diagnostics. The definition is not loaded by runtime; sixteen acceptance cases are proposed, not executed conformance tests. No validator wiring, canonical adoption, SDK propagation, mapping completeness or evidence admission is implemented by this amendment. The source-intent follow-up in docs/reviews/0047_authored_traceability is review preparation only: native mediated intent captures, six proposed local requirements, four acceptance criteria and seven engineering choices. The initial failed attempt and assistant-authored candidate remain historical. After the CLI update to 0.163.0, the corrected Sol 6.1 Medium retry completed ok/done/review_pending with eight validators passed and accepted_canonical_diff false. Raw child candidate, parent pending envelope, native retry copies and diagnostic findings are retained separately under retry/; the 10-of-15 mapping scenario remains unexecuted. Canonical Intent/Requirement adoption and reachability remain unresolved; generic SG-SPEC-0020 evidence is not a substitute. No runtime realization or profile activation is introduced."
+    "notes": "Existing observability projection and source/signed-decision admission are bounded runtime realizations. The 2026-09-30 cross-repository receipt issuance handoff is proposal_only: generic issuer work belongs to FeaturePassport, pilot wiring to Zeusus, trust configuration to explicit operators, and admission to SpecGraph. No issuer, key provisioning, trust adoption or lifecycle transition is implemented by this amendment. The CLI delivery amendment also remains proposal_only: FeaturePassport releases target-specific artifacts; Platform owns runner dependency/image delivery; SpecGraph owns curated read-model publication. No binary installation, release workflow or deployment is implemented by this documentation slice. The 2026-10-23 observability_identity_declarations_v1 follow-up is contract preparation only, deferred_until_canonicalized: docs/observability_identity_profile.md and docs/contracts/observability_identity_profile_v1.json prepare exact per-obligation declarations, immutable opt-in selection and future shared diagnostics. The definition is not loaded by runtime; sixteen acceptance cases are proposed, not executed conformance tests. No validator wiring, canonical adoption, SDK propagation, mapping completeness or evidence admission is implemented by this amendment. The source-intent follow-up in docs/reviews/0047_authored_traceability is review preparation only: native mediated intent captures, six proposed local requirements, four acceptance criteria and seven engineering choices. The initial failed attempt and assistant-authored candidate remain historical. After the CLI update to 0.163.0, the corrected Sol 6.1 Medium retry completed ok/done/review_pending with eight validators passed and accepted_canonical_diff false. Raw child candidate, parent pending envelope, native retry copies and diagnostic findings are retained separately under retry/; the 10-of-15 mapping scenario remains unexecuted. Canonical Intent/Requirement adoption and reachability remain unresolved; generic SG-SPEC-0020 evidence is not a substitute. No runtime realization or profile activation is introduced. A subsequent review-only canonical adoption packet at docs/reviews/0047_authored_traceability/adoption/packet.json prepares six Requirement origins, four shared criterion origins, three logical Intent roots, eight proposed derived_from edges and twenty pending subject transitions. Existing SG-SPEC-0069 workspace planning and recorded-decision format are reused. Source interpretation and all adoption decisions remain pending. The current writer cannot publish Intent roots or external relations, so complete-chain publication and canonical reachability remain unresolved; supported-record publication alone cannot close that gap."
   },
   {
     "proposal_id": "0048",
