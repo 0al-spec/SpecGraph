@@ -13266,5 +13266,34 @@
       }
     ],
     "notes": "Partial realization: slice B preserves the legacy proxy behind immutable facts and an injectable metric protocol; the independent exact-link prerequisite names resolution and mapping policies. Slice C1 adds a declaration EvidenceProvider, explicit in-process registry and immutable source-bound TraceSnapshot with capability completeness and duplicate/conflicting observations. Slice C2a adds explicit retained publication execution-artifact collection with source/run/attempt and nested signal binding; original producer outcomes stay separate from binding status. A pinned real CI build observation retains five successful pytest obligations and missing deploy/runtime. Atom SVC, profile activation and the SG-SPEC-0021 semantic candidate remain deferred. No threshold or trusted admission change is implemented."
+  },
+  {
+    "proposal_id": "0227",
+    "posture": "deferred_until_canonicalized",
+    "runtime_surfaces": [
+      "docs/proposals/0227_git_isolated_local_workspace.md",
+      "docs/archive/proposal_sources/0227_git_isolated_local_workspace.md",
+      "Sources/SpecGraph/Documentation.docc/ProductWorkspacePilots.md",
+      "docs/evidence/0227_local_workspace_path_reuse.json"
+    ],
+    "runtime_markers": [
+      {
+        "path": "docs/proposals/0227_git_isolated_local_workspace.md",
+        "pattern": "Draft proposal; minimal workspace-location and candidate skill contract only."
+      }
+    ],
+    "validation_markers": [
+      {
+        "path": "docs/proposals/0227_git_isolated_local_workspace.md",
+        "pattern": "These are future acceptance cases; the"
+      }
+    ],
+    "observation_markers": [
+      {
+        "path": "docs/evidence/0227_local_workspace_path_reuse.json",
+        "pattern": "\"evidence_admission_allowed\": false"
+      }
+    ],
+    "notes": "Proposal-only location/skill plan. Existing engine reuse was observed with a deterministic local executor; no skill, Git setup command, root-rebinding API or initializer fix is implemented. Post-execution init blocks on generated .worktrees. Outer implementation trace/evidence binding and real-agent validation remain separate."
   }
 ]

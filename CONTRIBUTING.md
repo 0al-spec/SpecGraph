@@ -272,6 +272,15 @@ Useful patterns:
 
 ## Evidence and Backlog
 
+When investigating an external Product Workspace, distinguish the engine root
+from its data root. `ROOT = Path.cwd()` selects existing `specs/nodes`, runs and
+state; `TOOLS_DIR` selects installed core policies. Keep the standard layout
+before proposing new path settings. Probe both first initialization and an
+initializer rerun after execution: generated `.worktrees/` is currently rejected
+by the initializer (proposal `0227`). A successful trace/evidence command can
+still report `unclaimed`/`untracked`; it does not establish an outer-code binding.
+Keep deterministic-executor plumbing evidence separate from real agent behavior.
+
 Current backlog classes have specific meanings:
 
 - `add_verification_anchors`: the spec needs explicit tests, validators, or checks connected to its trace.

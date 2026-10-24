@@ -1,5 +1,37 @@
 # Product Workspace Pilots
 
+## Git-Isolated Local Workspace Candidate
+
+Proposal `0227` defines a minimal local placement and candidate
+`specgraph-workspace` skill. Reuse the existing Product Workspace initializer
+with `project/.specgraph` as its destination; run installed Supervisor commands
+there. `ROOT = Path.cwd()` selects the data root, while `TOOLS_DIR` supplies
+installed core policies. Keep `specs/nodes`, the existing YAML envelopes and the
+inner `.specgraph` state directory. Changing project-config path fields alone
+does not rebind the Supervisor's fixed relative data paths.
+
+The local probe exercised initialization, dry-run, product advice, graph health,
+and the refinement/review path with a deterministic executor. The parent Git
+remained clean; cloning a committed knowledge checkpoint to another path allowed
+dry-run and advice. No real agent/provider was called. The proposal ships no
+skill, setup command, runtime code change or trusted evidence admission.
+
+Post-execution initializer reruns currently reject the generated `.worktrees/`
+directory. A narrow allowlist/conflict-check regression fix remains future work.
+The skill must not delete execution state to hide this condition. Existing
+trace/evidence builders report `unclaimed` and `untracked` without contracts;
+location reuse does not automatically bind or scan the outer implementation Git.
+Ignored runs and uncommitted pending-review state are not restored by cloning a
+knowledge checkpoint. Configure the existing product spec-ID namespace before
+child allocation, and connect the skill through an explicit agent entrypoint.
+
+See `docs/proposals/0227_git_isolated_local_workspace.md` and
+`docs/evidence/0227_local_workspace_path_reuse.json` for the observed failures,
+corrections, source pins and future acceptance cases. Runtime realization stays
+`deferred_until_canonicalized`; `evidence_admission_allowed: false`.
+
+## Published Workspace Pilots
+
 Proposal `0215` publishes the root and tracked product workspace bundles through
 checksum-aware incremental staging. Payload files are transferred before
 checksums and manifests, and all manifest-authorized paths are verified over
