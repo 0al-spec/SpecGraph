@@ -26,6 +26,12 @@ directory, optionally selecting a branch with `--node-id` or history with
 `--history-limit`. Branch reads include `omitted_nodes`; incident links can
 reference nodes outside that branch. The update response contains a small diff.
 
+When sibling order changes, `diff.updated` includes `fields.sibling_index` with
+zero-based before/after positions, including neighbors shifted by the move.
+Roots share the null parent. Descendants are compared within their own parent,
+so moving a subtree does not mark every descendant as reordered. The positions
+describe snapshot differences, not an imperative edit sequence.
+
 ## Stored sketch
 
 Each revision holds `notes.hc`, `notes.hcs` and `metadata.json`. Hypercode holds

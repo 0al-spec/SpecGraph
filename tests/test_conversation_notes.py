@@ -116,6 +116,48 @@ def test_move_subtree_retains_descendant_identity_and_quotes(tmp_path):
     assert branch["omitted_nodes"] == 1
 
 
+@pytest.mark.parametrize("parent_id", [None, "group"])
+@pytest.mark.parametrize("new_citation", [False, True])
+def test_sibling_reorder_diff_matches_persisted_order(tmp_path, parent_id, new_citation):
+    changes = [{"op": "add", "id": "group", "label": "Group"}] if parent_id else []
+    changes.extend(
+        [
+            {"op": "add", "id": "a", "label": "A", "parent_id": parent_id},
+            {"op": "add", "id": "b", "label": "B", "parent_id": parent_id},
+            {"op": "add", "id": "child", "label": "Child", "parent_id": "a"},
+        ]
+    )
+    first = apply(tmp_path, changes)
+    citation = source("Move A after B.") if new_citation else source()
+    result = cli(
+        tmp_path,
+        "update_notes",
+        {
+            "expected_revision": first["revision"],
+            "source": citation,
+            "changes": [{"op": "move", "id": "a", "parent_id": parent_id}],
+        },
+    )
+    assert result.returncode == 0, result.stderr
+    updated = json.loads(result.stdout)
+    restored = json.loads(cli(tmp_path).stdout)
+    assert restored["revision"] == updated["revision"] != first["revision"]
+    assert [n["id"] for n in restored["nodes"] if n["parent_id"] == parent_id] == ["b", "a"]
+    assert next(n for n in restored["nodes"] if n["id"] == "child")["sources"] == [source()]
+    assert {n["id"]: n for n in updated["diff"]["updated"]} == {
+        "a": {
+            "id": "a",
+            "fields": {"sibling_index": {"before": 0, "after": 1}},
+            "sources_added": int(new_citation),
+        },
+        "b": {
+            "id": "b",
+            "fields": {"sibling_index": {"before": 1, "after": 0}},
+            "sources_added": 0,
+        },
+    }
+
+
 @pytest.mark.parametrize(
     "change",
     [

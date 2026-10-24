@@ -92,6 +92,14 @@ History follows published parent revisions (limit 0–100), not directory listin
 The update response is a small diff of added/revised notes, changed links and
 recorded reviews. Rename and move preserve IDs and existing quotations.
 
+For an existing note whose position among siblings changes, `diff.updated`
+includes `fields.sibling_index` with zero-based `before` and `after` indices.
+Roots are siblings under `parent_id: null`. The diff includes neighbors shifted
+by a move; descendants whose own sibling position is unchanged are not reported
+as reordered. A move within the same parent remains visible even when its
+source quotation is already attached. Indices describe the before/after
+snapshots, not a sequence of imperative edits.
+
 ## Hypercode and persistence
 
 ```text

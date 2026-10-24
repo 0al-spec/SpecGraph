@@ -85,8 +85,18 @@ def parse_update(payload: object) -> Update:
     return Update(revision, citation(data["source"]), tuple(parse_change(c) for c in changes))
 
 
+def sibling_positions(book: Notebook) -> dict[str, int]:
+    counts: dict[str | None, int] = {}
+    positions = {}
+    for node in book.nodes:
+        positions[node.id] = counts.get(node.parent_id, 0)
+        counts[node.parent_id] = positions[node.id] + 1
+    return positions
+
+
 def differences(before: Notebook, after: Notebook) -> dict:
     old = {n.id: n for n in before.nodes}
+    old_positions, new_positions = sibling_positions(before), sibling_positions(after)
     added, updated = [], []
     for node in after.branch():
         if node.id not in old:
@@ -105,6 +115,11 @@ def differences(before: Notebook, after: Notebook) -> dict:
             for key in ("label", "detail", "parent_id")
             if getattr(previous, key) != getattr(node, key)
         }
+        if old_positions[node.id] != new_positions[node.id]:
+            changed["sibling_index"] = {
+                "before": old_positions[node.id],
+                "after": new_positions[node.id],
+            }
         sources_added = len(node.sources) - len(previous.sources)
         if changed or sources_added:
             updated.append({"id": node.id, "fields": changed, "sources_added": sources_added})
