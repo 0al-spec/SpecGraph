@@ -1284,5 +1284,19 @@
     "residual_risk": "This is a structural resolution diagnostic; policy extraction does not establish execution, fulfillment or canonical readiness.",
     "recorded_at": "2026-10-21T22:36:00Z",
     "prevention_path": "tests/test_publication_trace_links.py::test_mapping_policies_drive_adapter_findings requires each named policy to drive adapter findings; focused policy tables and frozen-context tests preserve existing behavior."
+  },
+  {
+    "feedback_id": "pr-793-conversation-sibling-order-diff",
+    "source_pr": 793,
+    "source_thread_url": "https://github.com/0al-spec/SpecGraph/pull/793#discussion_r4363721533",
+    "reviewer": "chatgpt-codex-connector",
+    "review_comment_summary": "Moving a note within its existing parent changed persisted sibling order but omitted that change from the review diff.",
+    "fix_summary": "Compare zero-based sibling positions in both snapshots and report changed positions for the moved note and shifted neighbors; preserve source attribution and avoid descendant reorder noise.",
+    "root_cause_class": "artifact_contract_validation_gap",
+    "prevention_action": "regression_test_added",
+    "verification": ["targeted_test", "lint_or_format_check"],
+    "residual_risk": "The diff describes stored structural changes; it does not establish semantic agreement or canonical approval.",
+    "recorded_at": "2026-10-24T07:54:00Z",
+    "prevention_path": "tests/test_conversation_notes.py::test_sibling_reorder_diff_matches_persisted_order exercises CLI writes and fresh-process reads for root/nested moves with repeated/new citations. All four cases failed before the fix; all 30 conversation-notes tests passed after it. The JSON contract and DocC define sibling_index semantics."
   }
 ]
