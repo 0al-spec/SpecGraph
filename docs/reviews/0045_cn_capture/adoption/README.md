@@ -1,14 +1,35 @@
 # CN-CAPTURE: review preparation for canonical adoption
 
-**Goal:** agree what the existing capture behavior means before preparing its
-canonical records. This package is `review_pending`; merging it stores review
-material and does not publish or activate subjects.
+**Status:** semantic agreement recorded for the three formulations; canonical
+adoption remains pending. The original packet stays `review_pending` and immutable.
 
 The [trace pilot](../README.md) already links one conversational note, the
 existing `CN-CAPTURE` obligation, two candidates, working code and an executed
 CLI test. This package makes the meaning and adoption scope inspectable through
 the existing [publication process](../../../subject_publication.md). It adds no
 promotion gate.
+
+## Recorded semantic agreement
+
+[semantic-review.json](semantic-review.json) records the operator's agreement
+with the displayed Intent, Requirement and criterion meanings on 2026-10-25.
+It binds the merged preparation commit
+`c968135d8057ac83b639e7bba2fb3b7e5c539002`, packet bytes, packet scope and the
+three original statements. The English statements remain the bound source of
+the displayed Russian paraphrases; no separate verbatim English approval is claimed.
+
+[semantic-review-source.json](semantic-review-source.json) retains the preceding
+scope excerpts and exact response **«Хорошо, делай»**. This is contextual assent
+recorded by the agent. No additional human rationale was supplied; the recorded
+decision time is the first observation of the response, not its unknown original
+timestamp. Attribution is not identity attestation or a GitHub review.
+
+The record uses the existing scope-bound human review shape. It is a bounded
+semantic decision, not `subject_publication_decisions`. It does not authorize
+origin/activation effects, workspace allocation, source initialization, evidence
+transfer or a writer request. The four original transition templates and all
+candidate provenance fields remain unchanged. A successful reader check verifies
+recorded scope and attribution consistency, not independent proof of assent.
 
 ## The two proposed subjects
 
@@ -79,10 +100,11 @@ source ref is
 The packet proposes the preparation base as the initial source commit; allocation,
 initialization and topology selection remain pending. No source ref is initialized.
 
-The next semantic review concerns the normalized Intent, both statements, exact
-criterion membership, proposed new origins and subject-specific ingress. After
-those decisions, complete origin/activation provenance, workspace/topology and
-the exact writer request must be prepared for publication review.
+The recorded semantic agreement covers the normalized Intent and both statements.
+Complete origin/activation provenance, exact criterion membership, subject-specific
+ingress, workspace/topology and the exact writer request still need preparation
+and the existing publication review. The semantic decision is not silently reused
+as approval of those future records.
 
 The existing subject writer publishes Requirement/criterion records but does
 not publish Intent roots or external `derived_from` relations. Their canonical
@@ -133,6 +155,9 @@ Checkout revision and authored PR head remain distinct in the summary.
 
 Checks cover candidate/source identity, exact criterion membership, pending
 transitions and the existing packet reader against committed Git blobs. Changed
-input bytes and a changed scope are rejected. Successful reading establishes
-integrity, not publication readiness or semantic approval. Production capture
-code and counted Intent Atoms remain unchanged.
+input bytes and a changed scope are rejected. Semantic-decision checks also use
+the existing human-review reader: changed statements and changed attribution are
+rejected, and the publication gate refuses the semantic record as publication
+permission. Successful reading establishes recorded integrity; human assent is
+retained from the conversation, not inferred by a test. Production capture code
+and counted Intent Atoms remain unchanged.

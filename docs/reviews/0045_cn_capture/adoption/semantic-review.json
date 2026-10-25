@@ -1,0 +1,71 @@
+{
+  "schema_version": 1,
+  "artifact_kind": "conversation_capture_semantic_review",
+  "review_id": "0045-cn-capture-semantic-review-v1",
+  "packet_binding": {
+    "reviewed_head": "c968135d8057ac83b639e7bba2fb3b7e5c539002",
+    "packet_path": "docs/reviews/0045_cn_capture/adoption/packet.json",
+    "packet_sha256": "cbe1aeb7b19207803a302f6a1f394eb954295dbb2c021bc194228f39f62443f7",
+    "approval_scope_sha256": "9df09aa0388399ed38471043ec018ec6ff1565c1c98a994654c5cd815ade3d27"
+  },
+  "review_scope": "Semantic meaning of the three displayed formulations only.",
+  "claims": [
+    {
+      "id": "intent.cn.capture",
+      "kind": "intent",
+      "reviewed_ref": "docs/reviews/0045_cn_capture/adoption/intent-lineage.json#/canonical_intent_candidates/0",
+      "statement": "During a human-agent conversation, the agent preserves short notes while the person continues speaking and can later review them.",
+      "statement_sha256": "d962e2ec71323819ec69a825c96fdf00e43a488ecb9c973edd4b01a2567d36fc",
+      "displayed_meaning": "Агент сохраняет короткие заметки по ходу разговора, человек может позднее их просмотреть."
+    },
+    {
+      "id": "req.cn.capture",
+      "kind": "Requirement",
+      "reviewed_ref": "docs/reviews/0045_cn_capture/req.cn.capture.yaml#/proposed_record",
+      "revision": 1,
+      "statement": "The agent can save a short note during a conversation before choosing its semantic kind.",
+      "statement_sha256": "e1ef96ec99387fe9e9a8ef0c413aa7dc228ac7ed8cc86ea83df0fc2697f39e28",
+      "displayed_meaning": "Заметку можно сохранить до выбора её семантического типа."
+    },
+    {
+      "id": "ac.cn.capture-without-kind",
+      "kind": "criterion",
+      "reviewed_ref": "docs/reviews/0045_cn_capture/ac.cn.capture-without-kind.yaml#/proposed_record",
+      "revision": 1,
+      "statement": "Given an empty sketch, the CLI accepts one short note without a semantic kind, returns its stored revision and added-node diff, and a fresh process reads the same ID, label, detail and original human quotation with canonical false and no approval record.",
+      "statement_sha256": "8503361680c0e0add36bdfcc3182dfc30ed4fe7576f7a749d7dac24401afeb85",
+      "displayed_meaning": "CLI сохраняет заметку без kind, а новый процесс восстанавливает её идентификатор, текст и исходную цитату. Заметка остаётся черновой."
+    }
+  ],
+  "source_context_ref": "docs/reviews/0045_cn_capture/adoption/semantic-review-source.json#/context",
+  "source_context_sha256": "f4f1e0f12629c90c114d028c6445f08643bf14f52b9a61a4f3c24df81a68dd11",
+  "decision_interpretation": "Contextual assent to the displayed three-formulation review and authorization to record it. The English candidate statements are bound as their source; no separate verbatim English approval is claimed.",
+  "recorded_by": "agent:codex",
+  "recorded_at": "2026-10-25T13:29:18.315577+00:00",
+  "reviewer_identity_attested": false,
+  "publication_boundary": {
+    "canonical_adoption": false,
+    "publication_authorized": false,
+    "workspace_allocation_authorized": false,
+    "source_ref_initialization_authorized": false,
+    "origin_or_activation_decisions_recorded": false,
+    "evidence_transfer_authorized": false,
+    "tests_verified": "not_evaluated"
+  },
+  "remaining_work": [
+    "Bind canonical storage/publication for Intent and the derived_from relation.",
+    "Prepare complete subject records, workspace/topology selection and exact writer request.",
+    "Review the final complete publication scope under the existing contract."
+  ],
+  "review": {
+    "reviewer": "human:SoundBlaster",
+    "reviewer_authority": "human_project_author",
+    "decision_timestamp": "2026-10-25T13:25:31Z",
+    "decision_timestamp_basis": "First observation of this response in the current turn; original message timestamp is unavailable.",
+    "outcome": "approved",
+    "rationale": "Agreement recorded in conversation with the displayed bounded semantic scope; no additional human rationale was supplied.",
+    "source_quote": "Хорошо, делай",
+    "source_ref": "docs/reviews/0045_cn_capture/adoption/semantic-review-source.json",
+    "scope_sha256": "c5b584a314598cbf383cfb206f6c5ab9be18f04b41fa18b2576f5cb9c9beb69e"
+  }
+}

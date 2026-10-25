@@ -179,6 +179,11 @@ interpretation, four pending transition records and historical CI identity.
 Workspace allocation, final publication records and the Intent relation's
 canonical binding remain pending. Merging the preparation does not adopt subjects.
 
+The operator's agreement with the three displayed meanings is retained in a
+separate [semantic decision](reviews/0045_cn_capture/adoption/semantic-review.json)
+bound to the unchanged preparation. It preserves the response and its context;
+publication decisions remain pending.
+
 ## Validation
 
 `tests/test_conversation_notes.py` exercises new-process recovery, rename/move
