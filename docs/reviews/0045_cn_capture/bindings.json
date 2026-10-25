@@ -1,0 +1,32 @@
+{
+  "artifact_kind": "conversation_capture_pilot_bindings",
+  "schema_version": 1,
+  "canonical": false,
+  "proposal": {
+    "path": "docs/proposals/0045_conversation_memory_exploration_vault.intent.yaml",
+    "id": "SG-RFC-0045",
+    "atom_id": "CN-CAPTURE"
+  },
+  "source_note": "docs/reviews/0045_cn_capture/source-note.json",
+  "requirement_candidate": "docs/reviews/0045_cn_capture/req.cn.capture.yaml",
+  "criterion_candidate": "docs/reviews/0045_cn_capture/ac.cn.capture-without-kind.yaml",
+  "implementation_refs": [
+    {
+      "path": "tools/conversation_notes/api.py",
+      "symbol": "update_notes"
+    },
+    {
+      "path": "tools/conversation_notes/api.py",
+      "symbol": "read_notes"
+    },
+    {
+      "path": "tools/conversation_notes/store.py",
+      "symbol": "NotesStore.update"
+    }
+  ],
+  "test_selector": "tests/test_conversation_capture_pilot.py::test_cn_capture_saves_note_before_kind_selection",
+  "replay_scope": "One selected note is replayed as a root in a fresh isolated sketch; its historical parent and sketch revision are context, not reconstructed identity.",
+  "authority": "review_pending",
+  "fulfillment": "not_evaluated",
+  "admission": "not_evaluated"
+}

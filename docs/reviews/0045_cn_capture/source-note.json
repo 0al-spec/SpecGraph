@@ -1,0 +1,23 @@
+{
+  "artifact_kind": "conversation_note_excerpt",
+  "schema_version": 1,
+  "canonical": false,
+  "sketch_id": "hypercode-conversation-poc",
+  "sketch_revision": "62ea6b7d435d4bfa9d69eb748dd3a10e",
+  "note": {
+    "id": "notes",
+    "label": "Заметки",
+    "detail": "",
+    "parent_id": "agent",
+    "sources": [
+      {
+        "ref": "operator-excerpt:hypercode-notes/3",
+        "quote": "Думаю для него не надо усложнять, надо просто представить как во время беседы человека и агента последний делает как бы заметки, вызывая некие инструменты и сабагентов. А человек просто говорит и одобряет.",
+        "speaker": "human"
+      }
+    ]
+  },
+  "archive_path": "docs/archive/proposal_sources/0045_conversation_memory_exploration_vault.md",
+  "archive_excerpt_id": "hypercode-notes/3",
+  "authority": "agent_curated_excerpt_not_authenticated_transcript"
+}

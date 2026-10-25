@@ -199,4 +199,14 @@ jobs:
           if-no-files-found: warn
 
       - name: Run tests
-        run: pytest -q
+        env:
+          CN_CAPTURE_EVIDENCE_DIR: ${{ runner.temp }}/cn-capture-evidence
+        run: pytest -q --junitxml="${{ runner.temp }}/cn-capture-evidence/pytest-junit.xml"
+
+      - name: Retain CN-CAPTURE pilot observation and test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: cn-capture-evidence
+          path: ${{ runner.temp }}/cn-capture-evidence/
+          if-no-files-found: warn
