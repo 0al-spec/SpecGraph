@@ -173,6 +173,12 @@ sketch remains local. The test observes capture behavior; Requirement adoption,
 fulfillment and evidence admission remain pending or not evaluated. Source-file
 hashes and run IDs retain provenance rather than authenticate it.
 
+The [adoption review preparation](reviews/0045_cn_capture/adoption/README.md)
+collects both unchanged candidates, the human quotation and its proposed Intent
+interpretation, four pending transition records and historical CI identity.
+Workspace allocation, final publication records and the Intent relation's
+canonical binding remain pending. Merging the preparation does not adopt subjects.
+
 ## Validation
 
 `tests/test_conversation_notes.py` exercises new-process recovery, rename/move

@@ -1,0 +1,69 @@
+{
+  "schema_version": 1,
+  "artifact_kind": "conversation_capture_source_lineage_preparation",
+  "human_intent_records": [
+    {
+      "schema_version": 1,
+      "artifact_kind": "human_intent_record",
+      "actor_id": "human:SoundBlaster",
+      "text": "Думаю для него не надо усложнять, надо просто представить как во время беседы человека и агента последний делает как бы заметки, вызывая некие инструменты и сабагентов. А человек просто говорит и одобряет.",
+      "original_timestamp": null,
+      "source_ref": "docs/reviews/0045_cn_capture/source-note.json#/note/sources/0/quote",
+      "source_quote_id": "operator-excerpt:hypercode-notes/3",
+      "capture_authority": "agent_curated_existing_excerpt_not_independent_attestation",
+      "recorded_at": "2026-10-25T10:58:29.424286+00:00",
+      "recorded_at_meaning": "preparation time, not original message or approval time"
+    }
+  ],
+  "intent_drafts": [
+    {
+      "schema_version": 1,
+      "artifact_kind": "intent_draft",
+      "draft_id": "INTENT-0045-CAPTURE",
+      "statement": "Думаю для него не надо усложнять, надо просто представить как во время беседы человека и агента последний делает как бы заметки, вызывая некие инструменты и сабагентов. А человек просто говорит и одобряет.",
+      "provenance": {
+        "authority_class": "authored",
+        "actor_id": "human:SoundBlaster",
+        "source_ref": "docs/reviews/0045_cn_capture/adoption/intent-lineage.json#/human_intent_records/0"
+      },
+      "provenance_scope": "Human attribution applies to the retained verbatim quotation; the exchange was prepared by the agent.",
+      "canonical_adoption": false
+    }
+  ],
+  "canonical_intent_candidates": [
+    {
+      "id": "intent.cn.capture",
+      "kind": "intent",
+      "statement": "During a human-agent conversation, the agent preserves short notes while the person continues speaking and can later review them.",
+      "authority_class": "distilled",
+      "source_ref": "docs/reviews/0045_cn_capture/adoption/intent-lineage.json#/human_intent_records/0",
+      "state": "review_pending",
+      "canonical_adoption": false,
+      "adoption_provenance": null,
+      "canonical_storage_binding": null,
+      "interpretation": "Agent normalization for review. The more specific before-kind-selection requirement is the existing CN-CAPTURE proposal interpretation, not a verbatim claim from this human quote."
+    }
+  ],
+  "ingress_lineages": [
+    {
+      "schema_version": 1,
+      "artifact_kind": "subject_intent_lineage",
+      "subject_local_id": "req.cn.capture",
+      "source_proposal_ref": "docs/proposals/0045_conversation_memory_exploration_vault.intent.yaml",
+      "source_proposal_sha256": "2fca4e1736062bfe4b991d907c396a0acd56b00da5fe7a34cd58e3a4550a006e",
+      "intent_ref": "docs/reviews/0045_cn_capture/adoption/intent-lineage.json#/intent_drafts/0",
+      "review": null,
+      "lineage_state": "source_bound_pending_semantic_review"
+    },
+    {
+      "schema_version": 1,
+      "artifact_kind": "subject_intent_lineage",
+      "subject_local_id": "ac.cn.capture-without-kind",
+      "source_proposal_ref": "docs/proposals/0045_conversation_memory_exploration_vault.md",
+      "source_proposal_sha256": "9105e3f8afc9378fc0557a3a320bcb4664372dd1223506f48a8290c5762d0537",
+      "intent_ref": "docs/reviews/0045_cn_capture/adoption/intent-lineage.json#/intent_drafts/0",
+      "review": null,
+      "lineage_state": "source_bound_pending_semantic_review"
+    }
+  ]
+}

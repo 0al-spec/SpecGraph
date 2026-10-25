@@ -97,3 +97,8 @@ Canonical atoms remain unchanged. The draft proposal still has eight obligations
 this is a trace for its existing `CN-CAPTURE`, not a ninth atom. The next review
 concerns the candidate statement, criterion and placement before canonical
 adoption is considered through the existing process.
+
+The [adoption review preparation](adoption/README.md) now collects the unchanged
+candidates, human-source lineage, proposed Intent relation, pending transitions
+and historical CI identity. It exposes the remaining publication decisions;
+merging that preparation does not adopt the subjects.

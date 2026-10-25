@@ -1,0 +1,47 @@
+{
+  "schema_version": 1,
+  "artifact_kind": "conversation_capture_retained_execution_summary",
+  "source_run": {
+    "repository": "0al-spec/SpecGraph",
+    "run_id": "40137206124",
+    "run_attempt": 1,
+    "run_url": "https://github.com/0al-spec/SpecGraph/actions/runs/40137206124",
+    "authored_head": "6d934739c1d7e14a3fb2131c4855f85b64b10870",
+    "checkout_commit": "4e30d3603e5563d06da73be7ebeb465cb5bb24e4",
+    "artifact_id": 12577211630,
+    "artifact_name": "cn-capture-evidence",
+    "artifact_archive_digest": "sha256:0be339fd7afe734e059410045e1166c6111f856d456ab8eec723182183767ade"
+  },
+  "observation_sha256": "6454da32c7de9c6d373439933098378d3548ba50cd261b7a221492850a194f37",
+  "junit_sha256": "2c12f1a4612c67360f9031569a11dc873fae785b84d17e61cc78fcb3164b3ec0",
+  "test_cases": [
+    {
+      "classname": "tests.test_conversation_capture_pilot",
+      "name": "test_cn_capture_binding_retains_draft_subjects_and_exact_source",
+      "result": "passed"
+    },
+    {
+      "classname": "tests.test_conversation_capture_pilot",
+      "name": "test_cn_capture_saves_note_before_kind_selection",
+      "result": "passed"
+    }
+  ],
+  "command_exit_codes": [
+    0,
+    0,
+    0
+  ],
+  "source_files_verified_against_git": 16,
+  "input_candidate_sha256": {
+    "docs/reviews/0045_cn_capture/req.cn.capture.yaml": "7a4367dcdd5c4d063ba04a1fee280b64f82b1eaf8d4204dd0cc9996b1b626e84",
+    "docs/reviews/0045_cn_capture/ac.cn.capture-without-kind.yaml": "2f741cef1edf956ca218b29c1f923bb25f2f2df6c180b22722c236ef2fa70a4b"
+  },
+  "capture_revision": "09d2e0c4a40d40dcaad4cd438ae51674",
+  "retention_scope": "Historical draft-subject CI observation; source code and draft candidates are pinned to the original run, not reclassified as evidence for future canonical revisions.",
+  "evidence_transfer": "not_performed",
+  "admission": "not_evaluated",
+  "tests_verified": "not_evaluated",
+  "canonical_adoption": false,
+  "prepared_at": "2026-10-25T10:58:29.424286+00:00",
+  "source_availability": "Artifact available at preparation; GitHub retention is finite, so later use must recheck availability and byte digests."
+}
