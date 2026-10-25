@@ -2088,6 +2088,8 @@
       "docs/reviews/0045_cn_capture/adoption/packet.json",
       "docs/reviews/0045_cn_capture/adoption/intent-lineage.json",
       "docs/reviews/0045_cn_capture/adoption/execution-summary.json",
+      "docs/reviews/0045_cn_capture/adoption/semantic-review.json",
+      "docs/reviews/0045_cn_capture/adoption/semantic-review-source.json",
       "tests/test_cn_capture_adoption_packet.py",
       "docs/proposals/0045_conversation_memory_exploration_vault.intent.yaml",
       ".github/workflows/intent-atoms-pr-comment.yml"

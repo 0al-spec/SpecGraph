@@ -102,3 +102,7 @@ The [adoption review preparation](adoption/README.md) now collects the unchanged
 candidates, human-source lineage, proposed Intent relation, pending transitions
 and historical CI identity. It exposes the remaining publication decisions;
 merging that preparation does not adopt the subjects.
+
+The [separate semantic decision](adoption/semantic-review.json) records agreement
+with the three displayed formulations. Canonical publication decisions and
+Intent/relation storage bindings remain pending.

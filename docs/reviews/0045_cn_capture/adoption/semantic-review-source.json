@@ -1,0 +1,53 @@
+{
+  "schema_version": 1,
+  "artifact_kind": "subject_human_review_record",
+  "context": {
+    "source": "current_codex_conversation",
+    "capture_authority": "agent_curated_conversation_excerpts_not_independent_attestation",
+    "native_message_ids": null,
+    "original_message_timestamp": null,
+    "assistant_excerpts": [
+      {
+        "label": "review-goal",
+        "text": "**Цель следующей задачи — проверить, что формальные требования сохранили твой замысел.** У нас уже есть работающий код и тест. Теперь нужно согласовать, какое именно обещание продукта они реализуют."
+      },
+      {
+        "label": "displayed-scope",
+        "text": "| Уровень | Текущий смысл |\n|---|---|\n| Исходные слова | Агент делает заметки во время беседы, человек продолжает говорить и одобряет результат. |\n| Intent `intent.cn.capture` | Агент сохраняет короткие заметки по ходу разговора, человек может позднее их просмотреть. |\n| Requirement `req.cn.capture` | Заметку можно сохранить **до выбора её семантического типа**. |\n| Критерий `ac.cn.capture-without-kind` | CLI сохраняет заметку без `kind`, а новый процесс восстанавливает её идентификатор, текст и исходную цитату. Заметка остаётся черновой. |\n| Исполняемый тест | Выполняет этот сценарий через настоящий CLI и проверяет результат. |"
+      },
+      {
+        "label": "interpretation-disclosed",
+        "text": "Эти слова я вывел из нашего обсуждения. В исходной цитате их буквально нет. Логика такая: если перед сохранением приходится определять, является запись Intent, Requirement или чем-то ещё, это мешает быстрому конспектированию."
+      },
+      {
+        "label": "recording-step",
+        "text": "После согласования этих трёх формулировок я оформлю решение с привязкой к конкретной версии пакета. Технические записи переходов и хэши — моя работа; тебе нужно оценить смысл предлагаемого поведения."
+      },
+      {
+        "label": "bounded-next-step",
+        "text": "Ближайший шаг я предлагаю ограничить согласованием приведённых трёх формулировок. Это даст понятный смысловой ориентир для последующей публикации."
+      }
+    ],
+    "human_response": {
+      "speaker": "human",
+      "actor_id": "human:SoundBlaster",
+      "text": "Хорошо, делай"
+    },
+    "excerpt_label_meaning": "Labels identify excerpts in this document, not native conversation message IDs."
+  },
+  "review": {
+    "reviewer": "human:SoundBlaster",
+    "reviewer_authority": "human_project_author",
+    "decision_timestamp": "2026-10-25T13:25:31Z",
+    "decision_timestamp_basis": "First observation of this response in the current turn; original message timestamp is unavailable.",
+    "outcome": "approved",
+    "rationale": "Agreement recorded in conversation with the displayed bounded semantic scope; no additional human rationale was supplied.",
+    "source_quote": "Хорошо, делай",
+    "source_ref": "docs/reviews/0045_cn_capture/adoption/semantic-review-source.json",
+    "scope_sha256": "c5b584a314598cbf383cfb206f6c5ab9be18f04b41fa18b2576f5cb9c9beb69e"
+  },
+  "recorded_by": "agent:codex",
+  "recorded_at": "2026-10-25T13:29:18.315577+00:00",
+  "reviewer_identity_attested": false,
+  "github_review_submitted": false
+}

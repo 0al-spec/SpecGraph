@@ -98,6 +98,11 @@ the preparation does not adopt subjects. The focused
 `tests/test_cn_capture_adoption_packet.py` checks source/scope integrity through
 the existing publication packet reader; it does not certify readiness.
 
+The separate semantic decision at
+`docs/reviews/0045_cn_capture/adoption/semantic-review.json` records the operator's
+agreement with the three displayed meanings and retains its conversation context.
+It binds the unchanged preparation and does not grant publication permission.
+
 Run `tests/test_conversation_notes.py` for persistence, source retention,
 concurrency, failure recovery and review scope. Set `HYPERCODE_BIN` to include the
 optional native Hypercode compatibility check. The detailed JSON request and

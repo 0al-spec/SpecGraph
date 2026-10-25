@@ -1,4 +1,4 @@
-"""Integrity of one pending adoption scope, without synthetic human approvals."""
+"""Pending-packet integrity and one separately recorded semantic agreement."""
 
 import copy
 import hashlib
@@ -17,12 +17,16 @@ sys.path.insert(0, str(ROOT / "tools"))
 from subject_publication import (  # noqa: E402
     DecisionSnapshot,
     PublicationGovernanceError,
+    SubjectPublicationEvidence,
     _packet,
+    _review,
     scope_digest,
+    verify_publication,
 )
 from subject_read_model_io import parse_subject_ref  # noqa: E402
 
 PACKET = "docs/reviews/0045_cn_capture/adoption/packet.json"
+SEMANTIC_REVIEW = "docs/reviews/0045_cn_capture/adoption/semantic-review.json"
 
 
 def load_packet():
@@ -201,3 +205,76 @@ def test_existing_packet_reader_checks_capture_preparation_bytes(tmp_path, mutat
         accepted, _ = _packet(snapshot, binding)
         assert accepted["gate_state"] == "review_pending"
         assert accepted["canonical_mutations_allowed"] is False
+
+
+def test_recorded_semantic_agreement_binds_displayed_meanings_and_pending_packet():
+    record = json.loads((ROOT / SEMANTIC_REVIEW).read_text())
+    binding = record["packet_binding"]
+    reviewed = DecisionSnapshot(ROOT, binding["reviewed_head"])
+    packet, _ = _packet(reviewed, binding)
+    assert reviewed.read(PACKET) == (ROOT / PACKET).read_bytes()
+    assert packet["gate_state"] == "review_pending"
+    assert record["review_scope"] == "Semantic meaning of the three displayed formulations only."
+    assert [claim["id"] for claim in record["claims"]] == [
+        "intent.cn.capture",
+        "req.cn.capture",
+        "ac.cn.capture-without-kind",
+    ]
+    for claim in record["claims"]:
+        selected = reviewed.resolve(claim["reviewed_ref"])
+        if claim["kind"] == "intent":
+            assert claim["statement"] == selected["statement"]
+        else:
+            assert claim["id"] == selected["id"]
+            assert claim["revision"] == selected["revisions"][0]["number"] == 1
+            assert claim["statement"] == selected["revisions"][0]["statement"]
+        assert hashlib.sha256(claim["statement"].encode()).hexdigest() == claim["statement_sha256"]
+    source = json.loads((ROOT / record["review"]["source_ref"]).read_text())
+    context = source["context"]
+    assert record["source_context_ref"] == record["review"]["source_ref"] + "#/context"
+    assert scope_digest(context) == record["source_context_sha256"]
+    assert context["human_response"]["text"] == record["review"]["source_quote"] == "Хорошо, делай"
+    assert context["original_message_timestamp"] is None
+    assert context["native_message_ids"] is None
+    assert record["reviewer_identity_attested"] is source["reviewer_identity_attested"] is False
+    boundary = record["publication_boundary"]
+    assert boundary["tests_verified"] == "not_evaluated"
+    assert all(value is False for key, value in boundary.items() if key != "tests_verified")
+
+
+@pytest.mark.parametrize("mutation", [None, "statement", "source_quote"])
+def test_existing_review_reader_checks_recorded_semantic_scope(tmp_path, mutation):
+    record = json.loads((ROOT / SEMANTIC_REVIEW).read_text())
+    source_path = record["review"]["source_ref"]
+    if mutation == "statement":
+        record["claims"][1]["statement"] += " Changed after agreement."
+    if mutation == "source_quote":
+        record["review"]["source_quote"] = "Changed attribution."
+    repository = make_repo(
+        tmp_path,
+        {
+            SEMANTIC_REVIEW: json.dumps(record, ensure_ascii=False),
+            source_path: (ROOT / source_path).read_text(),
+        },
+    )
+    snapshot = DecisionSnapshot(repository, git(repository, "rev-parse", "HEAD"))
+    selected = snapshot.resolve(SEMANTIC_REVIEW)
+    if mutation:
+        match = "different scope" if mutation == "statement" else "attribution disagrees"
+        with pytest.raises(PublicationGovernanceError, match=match):
+            _review(selected, snapshot)
+    else:
+        review = _review(selected, snapshot)
+        assert review["outcome"] == "approved"
+        assert review["source_quote"] == "Хорошо, делай"
+
+
+def test_semantic_agreement_cannot_replace_publication_decisions(tmp_path):
+    repository = make_repo(tmp_path, {SEMANTIC_REVIEW: (ROOT / SEMANTIC_REVIEW).read_text()})
+    evidence = SubjectPublicationEvidence(
+        repository, git(repository, "rev-parse", "HEAD"), SEMANTIC_REVIEW
+    )
+    # The gate rejects the artifact kind before consulting any writer request.
+    with pytest.raises(PublicationGovernanceError, match="not subject-publication permission"):
+        verify_publication(evidence, None, None)
+    assert git(repository, "for-each-ref", "refs/specgraph/") == ""
