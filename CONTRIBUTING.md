@@ -115,7 +115,11 @@ Keep an approved review packet immutable. Store actual decisions separately,
 binding the packet path, raw-file hash, approval scope hash and reviewed head;
 scope changes require a new packet version and new approval. Validate every
 input, including bootstrap declarations and secondary sources, not just subject
-files. Pending decision fields, absent Intent lineage and missing topology
+files. Before amending a proposal, inspect existing packet input inventories.
+If its current bytes are bound by a historical packet, keep that proposal and
+source intact and place the bounded follow-up in separate documents; do not
+recompute the historical packet's digests to accommodate unrelated development.
+Pending decision fields, absent Intent lineage and missing topology
 decisions must remain explicit blockers. A consistency validator proves that a
 review snapshot agrees with its inputs; it does not authenticate approval or
 authorize a writer. The RFC 0221 prevention check is

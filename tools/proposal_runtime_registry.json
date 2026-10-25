@@ -12774,6 +12774,8 @@
       "tests/test_publication_policy_diagnostics.py",
       "docs/publication_policy_diagnostics.md",
       "docs/subject_intent_graph.md",
+      "docs/reviews/0221_intent_graph_source_extension.md",
+      "docs/archive/proposal_sources/0221_intent_graph_source_extension.md",
       "tools/subject_intent_graph.py",
       "tools/subject_intent_graph_context.py",
       "tools/subject_intent_graph_append_spec.py",

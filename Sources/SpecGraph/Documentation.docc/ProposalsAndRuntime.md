@@ -462,6 +462,9 @@ all effects. Preview and semantic agreement confer no publication authority.
 No production workspace is allocated; active reachability, criterion closure,
 Intent content revisions and evidence admission remain outside this slice.
 The complete contract is `docs/subject_intent_graph.md`.
+The original digest-bound proposal and source stay unchanged; the bounded
+follow-up lives separately. Check packet input inventories before amending a
+proposal, and preserve historical digests rather than refreshing them for new work.
 
 ## RFC 0221 canonical materialization review packet
 

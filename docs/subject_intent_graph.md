@@ -1,9 +1,14 @@
 # Intent roots and authored derivation in subject storage
 
-Proposal 0221 adds an opt-in physical extension for the existing `intent` and
+The [bounded proposal-0221 follow-up](reviews/0221_intent_graph_source_extension.md)
+adds an opt-in physical extension for the existing `intent` and
 `derived_from` kinds from SG-SPEC-0001/0023. It closes the writer seam identified
 by the CN-CAPTURE and authored-traceability pilots. Requirement/criterion records,
 their `SubjectClass` values and snapshot v1 stay unchanged.
+
+The original proposal/source files are retained byte-for-byte because the
+historical materialization packet binds them. This extension and its source
+request live separately; the packet's digest checks remain strict.
 
 ## Source format
 
