@@ -18,6 +18,16 @@
       ]
     },
     {
+      "id": "specdraft-layer",
+      "description": "Proposed authoring layer and existing promotion stage retain distinct meanings.",
+      "docs": ["docs/specdraft_layer.md"],
+      "docc": ["Sources/SpecGraph/Documentation.docc/SpecDraft.md"],
+      "required_terms": [
+        "SpecDraft layer", "SpecGraph", "Layer 0", "Hypercode",
+        "spec_draft", "source", "read_notes", "update_notes"
+      ]
+    },
+    {
       "id": "evidence-provider-snapshot",
       "description": "Explicit declaration providers retain immutable source-bound facts without execution or admission.",
       "docs": ["docs/evidence_provider.md"],
