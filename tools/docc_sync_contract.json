@@ -1157,6 +1157,24 @@
         "deferred_until_canonicalized",
         "evidence_admission_allowed: false"
       ]
+    },
+    {
+      "id": "subject-intent-graph-source",
+      "docs": [
+        "docs/subject_intent_graph.md"
+      ],
+      "docc": [
+        "Sources/SpecGraph/Documentation.docc/ProposalsAndRuntime.md"
+      ],
+      "required_terms": [
+        "specs/intent_graph.yaml",
+        "subject_intent_graph",
+        "derived_from",
+        "intent_graph_origin",
+        "subject_intent_graph.append_preserves_origins",
+        "subject_intent_graph.exact_requirement_to_intent",
+        "git_commit_compare_and_swap_v1"
+      ]
     }
   ]
 }

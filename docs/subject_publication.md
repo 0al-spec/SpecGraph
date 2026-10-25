@@ -127,6 +127,14 @@ a separately tested adapter implements them. No allocator, transition author,
 decision timestamp generator, evidence transfer or production materialization
 is added here.
 
+The opt-in [Intent graph extension](subject_intent_graph.md) uses this same gate
+for version-2 writer requests. Its reviewed candidate contains the complete
+`specs/intent_graph.yaml` record; new Intent and relation origins select separately
+reviewed `intent_graph_origin` effects binding workspace, ID, kind and complete
+record scope. Original human Intent sources are inventoried and resolved.
+Final publication permission covers those effects and the exact extended request.
+Requirement/criterion transitions retain their existing review contract.
+
 ## CLI and diagnostics
 
 ```bash

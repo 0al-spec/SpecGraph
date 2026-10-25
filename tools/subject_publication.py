@@ -19,6 +19,12 @@ from yaml import YAMLError
 from spec_yaml import load_yaml_text
 from subject_canonical_source import parse_topology_selection
 from subject_human_approval_spec import HUMAN_APPROVAL_SPEC
+from subject_intent_graph import (
+    INTENT_GRAPH_PATH,
+    CanonicalIntent,
+    CanonicalIntentGraph,
+    parse_intent_graph,
+)
 from subject_publication_context import (
     HumanApprovalContext,
     ReviewedRecordContext,
@@ -379,10 +385,78 @@ def _effect(
     return record
 
 
+def _intent_graph_effects(
+    packet: dict,
+    reviewed: DecisionSnapshot,
+    snapshot: DecisionSnapshot,
+    decisions: dict,
+    evidence: SubjectPublicationEvidence,
+    request,
+    previous: CanonicalIntentGraph | None,
+) -> set[str]:
+    """Resolve reviewed graph bytes and actual origin effects before candidate creation."""
+    entry = packet.get("intent_graph")
+    require(
+        (entry is None) == (request.intent_graph_yaml is None),
+        "unrequested or missing reviewed Intent graph",
+    )
+    if entry is None:
+        return set()
+    document = load_yaml_text(request.intent_graph_yaml)
+    require(
+        entry["target_path"] == INTENT_GRAPH_PATH
+        and entry["source_draft_ref"] == entry["candidate_file"] + "#/proposed_record"
+        and entry["candidate_sha256"]
+        == packet["inputs"]["review_tree_file_sha256"][entry["candidate_file"]],
+        "Intent graph candidate selection mismatch",
+    )
+    expected = _input(packet, reviewed, entry["source_draft_ref"])
+    require(
+        REVIEWED_RECORD_SPEC.is_satisfied_by(
+            ReviewedRecordContext(scope_digest(expected), scope_digest(document))
+        ),
+        "request complete Intent graph differs from reviewed candidate",
+    )
+    graph = parse_intent_graph(document)
+    require(
+        graph.workspace_identity == request.topology.workspace_identity,
+        "Intent graph workspace mismatch",
+    )
+    used = set()
+    for item in graph.additions(previous):
+        effect = _effect(
+            snapshot, decisions, evidence, item.adoption_provenance, "intent_graph_origin"
+        )
+        payload = item.payload()
+        require(
+            effect["workspace_identity"] == graph.workspace_identity
+            and effect["record_id"] == item.id
+            and effect["record_kind"] == payload["kind"]
+            and effect["record_sha256"] == scope_digest(payload),
+            "Intent graph origin covers a different record",
+        )
+        if isinstance(item, CanonicalIntent):
+            human = _input(packet, reviewed, item.source_ref)
+            require(
+                human["artifact_kind"] == "human_intent_record"
+                and type(human.get("schema_version")) is int
+                and human["schema_version"] == 1
+                and isinstance(human["actor_id"], str)
+                and human["actor_id"].startswith("human:")
+                and bool(human["actor_id"][6:].strip())
+                and isinstance(human["text"], str)
+                and bool(human["text"].strip()),
+                "Intent origin needs an inventoried original human source",
+            )
+        used.add(item.adoption_provenance)
+    return used
+
+
 def _verify_publication(
     evidence: SubjectPublicationEvidence | None,
     request: SubjectSourceWriteRequest,
     authorization: SubjectWriteAuthorization,
+    previous_intent_graph: CanonicalIntentGraph | None = None,
 ) -> dict:
     require(
         isinstance(evidence, SubjectPublicationEvidence), "resolved publication evidence required"
@@ -520,6 +594,11 @@ def _verify_publication(
             "request declaration differs from reviewed candidate",
         )
         used.add(declaration["provenance"])
+    used.update(
+        _intent_graph_effects(
+            packet, reviewed, snapshot, decisions, evidence, request, previous_intent_graph
+        )
+    )
     topology = _effect(
         snapshot, decisions, evidence, decisions["topology_decision_ref"], "topology"
     )
@@ -562,9 +641,10 @@ def verify_publication(
     evidence: SubjectPublicationEvidence | None,
     request: SubjectSourceWriteRequest,
     authorization: SubjectWriteAuthorization,
+    previous_intent_graph: CanonicalIntentGraph | None = None,
 ) -> dict:
     try:
-        return _verify_publication(evidence, request, authorization)
+        return _verify_publication(evidence, request, authorization, previous_intent_graph)
     except PublicationGovernanceError:
         raise
     except (OSError, ValueError, TypeError, KeyError, IndexError, AttributeError, YAMLError) as exc:

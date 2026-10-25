@@ -12,6 +12,7 @@ from pathlib import Path, PurePosixPath
 from tempfile import TemporaryDirectory
 
 from subject_canonical_source import DECLARATION
+from subject_intent_graph import INTENT_GRAPH_PATH
 from subject_read_model_io import SubjectDocumentError
 
 SOURCE_REF_PREFIX = "refs/specgraph/subject-storage/"
@@ -74,8 +75,17 @@ def selected_source_commit(repository: Path, source_ref: str) -> str:
 
 
 def _storage_entry(path: str) -> bool:
-    return path in {"specs", DECLARATION, "specs/requirements", "specs/criteria"} or any(
-        path.startswith(prefix) for prefix in ("specs/requirements/", "specs/criteria/")
+    if path.lower() == INTENT_GRAPH_PATH or path.lower().startswith(INTENT_GRAPH_PATH + "/"):
+        return True
+    return path in {
+        "specs",
+        DECLARATION,
+        INTENT_GRAPH_PATH,
+        "specs/requirements",
+        "specs/criteria",
+    } or any(
+        path.startswith(prefix)
+        for prefix in ("specs/requirements/", "specs/criteria/", INTENT_GRAPH_PATH + "/")
     )
 
 
@@ -108,6 +118,8 @@ class SubjectSourceCommit:
             path = encoded_path.decode("utf-8")
             if not _storage_entry(path):
                 continue
+            if path.lower() == INTENT_GRAPH_PATH and path != INTENT_GRAPH_PATH:
+                raise SubjectDocumentError("Intent graph filename must use canonical case")
             mode, kind, object_id = metadata.decode("ascii").split()
             if (
                 kind != "blob"
@@ -115,6 +127,7 @@ class SubjectSourceCommit:
                 or str(PurePosixPath(path)) != path
                 or ".." in PurePosixPath(path).parts
                 or path in {"specs", "specs/requirements", "specs/criteria"}
+                or path.startswith(INTENT_GRAPH_PATH + "/")
             ):
                 raise SubjectDocumentError("canonical storage must contain real files, no symlinks")
             content = git_command(self.repository, "cat-file", "blob", object_id).stdout
