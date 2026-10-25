@@ -184,6 +184,13 @@ separate [semantic decision](reviews/0045_cn_capture/adoption/semantic-review.js
 bound to the unchanged preparation. It preserves the response and its context;
 publication decisions remain pending.
 
+The [complete CN-CAPTURE materialization package](reviews/0045_cn_capture/materialization/README.md)
+contains full proposed records, one exact `derived_from` relation, workspace and
+topology selection, the version-2 writer request and pending decision templates.
+An isolated preview rehearses the four-file source without changing a production
+ref. Recording actual ingress reviews requires a new packet scope before final
+publication approval; historical CI evidence is not automatically admitted.
+
 ## Validation
 
 `tests/test_conversation_notes.py` exercises new-process recovery, rename/move

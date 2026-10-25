@@ -1,0 +1,24 @@
+{
+  "schema_version": 1,
+  "artifact_kind": "cn_capture_materialization_lineages",
+  "lineages": [
+    {
+      "schema_version": 1,
+      "artifact_kind": "subject_intent_lineage",
+      "subject_local_id": "req.cn.capture",
+      "source_proposal_ref": "docs/proposals/0045_conversation_memory_exploration_vault.intent.yaml",
+      "source_proposal_sha256": "2fca4e1736062bfe4b991d907c396a0acd56b00da5fe7a34cd58e3a4550a006e",
+      "intent_ref": "docs/reviews/0045_cn_capture/adoption/intent-lineage.json#/intent_drafts/0",
+      "review": null
+    },
+    {
+      "schema_version": 1,
+      "artifact_kind": "subject_intent_lineage",
+      "subject_local_id": "ac.cn.capture-without-kind",
+      "source_proposal_ref": "docs/proposals/0045_conversation_memory_exploration_vault.md",
+      "source_proposal_sha256": "9105e3f8afc9378fc0557a3a320bcb4664372dd1223506f48a8290c5762d0537",
+      "intent_ref": "docs/reviews/0045_cn_capture/adoption/intent-lineage.json#/intent_drafts/0",
+      "review": null
+    }
+  ]
+}

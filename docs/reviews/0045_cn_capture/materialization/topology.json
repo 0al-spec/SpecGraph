@@ -1,0 +1,18 @@
+{
+  "schema_version": 1,
+  "artifact_kind": "subject_canonical_topology_selection",
+  "workspace_identity": "workspace:a2800523-3588-4820-a47f-9fddc0fed3f5",
+  "dataset_identity": "dataset:specgraph-canonical-subjects-v1",
+  "topology_ref": "topology:cn-capture-origins-v1",
+  "governance_evidence_ref": "docs/reviews/0045_cn_capture/materialization/decisions.json#/effects/7",
+  "requirements": [
+    {
+      "subject": {
+        "workspace_identity": "workspace:a2800523-3588-4820-a47f-9fddc0fed3f5",
+        "subject_class": "Requirement",
+        "local_subject_id": "req.cn.capture"
+      },
+      "canonical_presence": "active"
+    }
+  ]
+}
