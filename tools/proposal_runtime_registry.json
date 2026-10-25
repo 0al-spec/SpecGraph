@@ -2084,6 +2084,11 @@
       "tests/test_conversation_capture_pilot.py",
       "docs/reviews/0045_cn_capture/README.md",
       "docs/reviews/0045_cn_capture/bindings.json",
+      "docs/reviews/0045_cn_capture/adoption/README.md",
+      "docs/reviews/0045_cn_capture/adoption/packet.json",
+      "docs/reviews/0045_cn_capture/adoption/intent-lineage.json",
+      "docs/reviews/0045_cn_capture/adoption/execution-summary.json",
+      "tests/test_cn_capture_adoption_packet.py",
       "docs/proposals/0045_conversation_memory_exploration_vault.intent.yaml",
       ".github/workflows/intent-atoms-pr-comment.yml"
     ],

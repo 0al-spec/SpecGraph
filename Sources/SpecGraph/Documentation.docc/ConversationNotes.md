@@ -89,6 +89,15 @@ the HC/HCS snapshot. The full sketch stays local; adoption, fulfillment and
 evidence admission remain pending or not evaluated. Detailed links and limits:
 `docs/reviews/0045_cn_capture/README.md`.
 
+The adoption review preparation in
+`docs/reviews/0045_cn_capture/adoption/README.md` collects the unchanged
+candidates, human quotation and proposed Intent interpretation, four pending
+transitions and historical CI identity. Workspace allocation, final publication
+records and canonical binding of the Intent relation remain pending. Merging
+the preparation does not adopt subjects. The focused
+`tests/test_cn_capture_adoption_packet.py` checks source/scope integrity through
+the existing publication packet reader; it does not certify readiness.
+
 Run `tests/test_conversation_notes.py` for persistence, source retention,
 concurrency, failure recovery and review scope. Set `HYPERCODE_BIN` to include the
 optional native Hypercode compatibility check. The detailed JSON request and

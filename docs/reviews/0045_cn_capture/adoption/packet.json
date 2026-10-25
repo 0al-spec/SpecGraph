@@ -1,0 +1,259 @@
+{
+  "schema_version": 1,
+  "artifact_kind": "subject_publication_review_packet",
+  "prepared_at": "2026-10-25T10:58:29.424286+00:00",
+  "prepared_against_commit": "1b2a6f22796769a3a5c1bcb5addc48a71ebe3f9b",
+  "authority": "agent_prepared_for_human_review",
+  "gate_state": "review_pending",
+  "canonical_adoption": false,
+  "canonical_mutations_allowed": false,
+  "canonical_readiness": "not_evaluated",
+  "ready_for_materialization": false,
+  "source_proposal": "docs/proposals/0045_conversation_memory_exploration_vault.md",
+  "governing_contract": "SG-SPEC-0051",
+  "storage_contract": "SG-SPEC-0069",
+  "workspace": {
+    "workspace_identity": "workspace:a2800523-3588-4820-a47f-9fddc0fed3f5",
+    "proposed_declaration": "docs/reviews/0221_subject_storage/workspace_identity.yaml#/proposed_record",
+    "candidate_sha256": "d5a99ab533da5e3568601fb2d9c9934aeb3044dd5770c6bd442fd761a80b783b",
+    "allocation_state": "existing_plan_unallocated",
+    "source_ref": "refs/specgraph/subject-storage/a2800523-3588-4820-a47f-9fddc0fed3f5",
+    "source_ref_initialization": {
+      "proposed_base_commit": "1b2a6f22796769a3a5c1bcb5addc48a71ebe3f9b",
+      "decision_ref": null,
+      "state": "pending"
+    }
+  },
+  "subjects": [
+    {
+      "local_subject_id": "req.cn.capture",
+      "subject_class": "Requirement",
+      "title": "Save a conversational note before choosing its semantic kind",
+      "statement": "The agent can save a short note during a conversation before choosing its semantic kind.",
+      "candidate_file": "docs/reviews/0045_cn_capture/req.cn.capture.yaml",
+      "candidate_sha256": "7a4367dcdd5c4d063ba04a1fee280b64f82b1eaf8d4204dd0cc9996b1b626e84",
+      "source_draft_ref": "docs/reviews/0045_cn_capture/req.cn.capture.yaml#/proposed_record",
+      "canonical_target_ref": "specs/requirements/req.cn.capture.yaml#/subject",
+      "canonical_revision_selection": {
+        "subject": {
+          "workspace_identity": "workspace:a2800523-3588-4820-a47f-9fddc0fed3f5",
+          "subject_class": "Requirement",
+          "local_subject_id": "req.cn.capture"
+        },
+        "mode": "exact",
+        "revision": 1
+      },
+      "source_proposal_ref": "docs/proposals/0045_conversation_memory_exploration_vault.intent.yaml",
+      "source_proposal_sha256": "2fca4e1736062bfe4b991d907c396a0acd56b00da5fe7a34cd58e3a4550a006e",
+      "source_occurrence": "docs/proposals/0045_conversation_memory_exploration_vault.intent.yaml#/atoms/intents/0/statement",
+      "requirement_membership": [
+        "ac.cn.capture-without-kind"
+      ],
+      "intent_lineage_ref": "docs/reviews/0045_cn_capture/adoption/intent-lineage.json#/ingress_lineages/0",
+      "candidate_statement_sha256": "e1ef96ec99387fe9e9a8ef0c413aa7dc228ac7ed8cc86ea83df0fc2697f39e28",
+      "statement_relation_to_source": "verbatim_existing_CN_CAPTURE_proposal_obligation"
+    },
+    {
+      "local_subject_id": "ac.cn.capture-without-kind",
+      "subject_class": "criterion",
+      "title": "Capture without semantic classification",
+      "statement": "Given an empty sketch, the CLI accepts one short note without a semantic kind, returns its stored revision and added-node diff, and a fresh process reads the same ID, label, detail and original human quotation with canonical false and no approval record.",
+      "candidate_file": "docs/reviews/0045_cn_capture/ac.cn.capture-without-kind.yaml",
+      "candidate_sha256": "2f741cef1edf956ca218b29c1f923bb25f2f2df6c180b22722c236ef2fa70a4b",
+      "source_draft_ref": "docs/reviews/0045_cn_capture/ac.cn.capture-without-kind.yaml#/proposed_record",
+      "canonical_target_ref": "specs/criteria/ac.cn.capture-without-kind.yaml#/subject",
+      "canonical_revision_selection": {
+        "subject": {
+          "workspace_identity": "workspace:a2800523-3588-4820-a47f-9fddc0fed3f5",
+          "subject_class": "criterion",
+          "local_subject_id": "ac.cn.capture-without-kind"
+        },
+        "mode": "exact",
+        "revision": 1
+      },
+      "source_proposal_ref": "docs/proposals/0045_conversation_memory_exploration_vault.md",
+      "source_proposal_sha256": "9105e3f8afc9378fc0557a3a320bcb4664372dd1223506f48a8290c5762d0537",
+      "source_occurrence": "docs/proposals/0045_conversation_memory_exploration_vault.md#one-bounded-path",
+      "requirement_membership": [],
+      "intent_lineage_ref": "docs/reviews/0045_cn_capture/adoption/intent-lineage.json#/ingress_lineages/1",
+      "candidate_statement_sha256": "8503361680c0e0add36bdfcc3182dfc30ed4fe7576f7a749d7dac24401afeb85",
+      "statement_relation_to_source": "agent_formalized_acceptance_scenario_from_proposal_context_not_verbatim"
+    }
+  ],
+  "intent_nodes_ref": "docs/reviews/0045_cn_capture/adoption/intent-lineage.json#/canonical_intent_candidates",
+  "proposed_canonical_edges": [
+    {
+      "edge_id": "edge.cn.capture.derived-from-intent",
+      "kind": "derived_from",
+      "source": {
+        "workspace_identity": "workspace:a2800523-3588-4820-a47f-9fddc0fed3f5",
+        "kind": "requirement",
+        "node_id": "req.cn.capture"
+      },
+      "target": {
+        "workspace_identity": "workspace:a2800523-3588-4820-a47f-9fddc0fed3f5",
+        "kind": "intent",
+        "node_id": "intent.cn.capture"
+      },
+      "source_basis_refs": [
+        "docs/reviews/0045_cn_capture/adoption/intent-lineage.json#/human_intent_records/0",
+        "docs/proposals/0045_conversation_memory_exploration_vault.intent.yaml#/atoms/intents/0"
+      ],
+      "authority_class": "inferred",
+      "state": "review_pending",
+      "canonical_adoption": false,
+      "adoption_provenance": null,
+      "canonical_storage_binding": null
+    }
+  ],
+  "transition_records": [
+    {
+      "gate_type": "review",
+      "state": "review_pending",
+      "reviewer_or_decider": null,
+      "decision_timestamp": null,
+      "outcome": null,
+      "rationale": null,
+      "review": null,
+      "transition_record_id": "0045-cn-capture-ingress-req.cn.capture",
+      "transition_identifier": "0045:cn-capture:proposal_ingress:req.cn.capture:v1",
+      "promotion_edge": "proposal -> spec_draft",
+      "source_ref": "docs/proposals/0045_conversation_memory_exploration_vault.intent.yaml",
+      "target_ref": "docs/reviews/0045_cn_capture/req.cn.capture.yaml#/proposed_record",
+      "intent_lineage_ref": "docs/reviews/0045_cn_capture/adoption/intent-lineage.json#/ingress_lineages/0"
+    },
+    {
+      "gate_type": "review",
+      "state": "review_pending",
+      "reviewer_or_decider": null,
+      "decision_timestamp": null,
+      "outcome": null,
+      "rationale": null,
+      "review": null,
+      "transition_record_id": "0045-cn-capture-canonical-req.cn.capture",
+      "transition_identifier": "0045:cn-capture:canonical_origin:req.cn.capture:v1",
+      "promotion_edge": "spec_draft -> canonical_artifact",
+      "source_ref": "docs/reviews/0045_cn_capture/req.cn.capture.yaml#/proposed_record",
+      "target_ref": "specs/requirements/req.cn.capture.yaml#/subject",
+      "ingress_transition_id": "0045-cn-capture-ingress-req.cn.capture",
+      "ingress_record_ref": "docs/reviews/0045_cn_capture/adoption/packet.json#/transition_records/0",
+      "target_revision_selection": {
+        "subject": {
+          "workspace_identity": "workspace:a2800523-3588-4820-a47f-9fddc0fed3f5",
+          "subject_class": "Requirement",
+          "local_subject_id": "req.cn.capture"
+        },
+        "mode": "exact",
+        "revision": 1
+      }
+    },
+    {
+      "gate_type": "review",
+      "state": "review_pending",
+      "reviewer_or_decider": null,
+      "decision_timestamp": null,
+      "outcome": null,
+      "rationale": null,
+      "review": null,
+      "transition_record_id": "0045-cn-capture-ingress-ac.cn.capture-without-kind",
+      "transition_identifier": "0045:cn-capture:proposal_ingress:ac.cn.capture-without-kind:v1",
+      "promotion_edge": "proposal -> spec_draft",
+      "source_ref": "docs/proposals/0045_conversation_memory_exploration_vault.md",
+      "target_ref": "docs/reviews/0045_cn_capture/ac.cn.capture-without-kind.yaml#/proposed_record",
+      "intent_lineage_ref": "docs/reviews/0045_cn_capture/adoption/intent-lineage.json#/ingress_lineages/1"
+    },
+    {
+      "gate_type": "review",
+      "state": "review_pending",
+      "reviewer_or_decider": null,
+      "decision_timestamp": null,
+      "outcome": null,
+      "rationale": null,
+      "review": null,
+      "transition_record_id": "0045-cn-capture-canonical-ac.cn.capture-without-kind",
+      "transition_identifier": "0045:cn-capture:canonical_origin:ac.cn.capture-without-kind:v1",
+      "promotion_edge": "spec_draft -> canonical_artifact",
+      "source_ref": "docs/reviews/0045_cn_capture/ac.cn.capture-without-kind.yaml#/proposed_record",
+      "target_ref": "specs/criteria/ac.cn.capture-without-kind.yaml#/subject",
+      "ingress_transition_id": "0045-cn-capture-ingress-ac.cn.capture-without-kind",
+      "ingress_record_ref": "docs/reviews/0045_cn_capture/adoption/packet.json#/transition_records/2",
+      "target_revision_selection": {
+        "subject": {
+          "workspace_identity": "workspace:a2800523-3588-4820-a47f-9fddc0fed3f5",
+          "subject_class": "criterion",
+          "local_subject_id": "ac.cn.capture-without-kind"
+        },
+        "mode": "exact",
+        "revision": 1
+      }
+    }
+  ],
+  "writer_request": null,
+  "publication_authorization": null,
+  "topology_selection": null,
+  "canonical_traceability": {
+    "state": "unresolved",
+    "canonical_topology_published": false,
+    "criterion_boundary": "Exact criterion membership does not itself establish an SG-SPEC-0061 path; no criterion root-path closure is claimed.",
+    "intent_and_relation_publication": "The existing subject writer supports Requirement/criterion records, not Intent roots or external derived_from relations."
+  },
+  "decisions_requested": [
+    "Review the normalized Intent against the original human quotation and the narrower before-kind-selection interpretation already expressed by CN-CAPTURE.",
+    "Review the two unchanged statements, proposed new origins and exact revision-1 criterion membership.",
+    "Review each subject-specific proposal ingress and canonical transition, with genuine source-bound human decisions.",
+    "Select workspace allocation, source initialization, topology and complete origin/activation provenance before preparing the final materialization candidates.",
+    "Review a newly bound packet if any full proposed record changes; then approve the exact writer request and publication scope."
+  ],
+  "review_blockers": [
+    "source_interpretation_and_ingress_reviews_pending",
+    "origin_activation_and_provenance_decisions_pending",
+    "workspace_allocation_and_topology_selection_pending",
+    "canonical_intent_and_edge_publication_binding_missing",
+    "final_complete_candidates_and_exact_writer_request_absent"
+  ],
+  "evidence_boundary": {
+    "retained_execution_ref": "docs/reviews/0045_cn_capture/adoption/execution-summary.json",
+    "case_count": 2,
+    "historical_evidence_transfer": false,
+    "admission": "not_evaluated",
+    "fulfillment": "not_evaluated"
+  },
+  "inputs": {
+    "review_tree_file_sha256": {
+      "docs/archive/proposal_sources/0045_conversation_memory_exploration_vault.md": "cfeb472f38e1437c88807b0e93cf6f79ddfcd4e3e3e52a197ef85a43c82aa0fe",
+      "docs/proposals/0045_conversation_memory_exploration_vault.intent.yaml": "2fca4e1736062bfe4b991d907c396a0acd56b00da5fe7a34cd58e3a4550a006e",
+      "docs/proposals/0045_conversation_memory_exploration_vault.md": "9105e3f8afc9378fc0557a3a320bcb4664372dd1223506f48a8290c5762d0537",
+      "docs/reviews/0045_cn_capture/ac.cn.capture-without-kind.yaml": "2f741cef1edf956ca218b29c1f923bb25f2f2df6c180b22722c236ef2fa70a4b",
+      "docs/reviews/0045_cn_capture/adoption/execution-summary.json": "ac615b04de9804e5292007513d2cf2dcd222c200aa9c93571e0c1548d8dd4701",
+      "docs/reviews/0045_cn_capture/adoption/intent-lineage.json": "de92da98858489784f2da4dd20aa07dce150209f75921d45e435b6f0595be1a4",
+      "docs/reviews/0045_cn_capture/bindings.json": "effa1d423548520c4ad6672fd03f4b8d10ba38e7a68032365a021e5ddceb561d",
+      "docs/reviews/0045_cn_capture/req.cn.capture.yaml": "7a4367dcdd5c4d063ba04a1fee280b64f82b1eaf8d4204dd0cc9996b1b626e84",
+      "docs/reviews/0045_cn_capture/source-note.json": "f7e77a1b7296ab5119931d4a3573771dee63ebc5d1f53fcfed7db06b3329d6ec",
+      "docs/reviews/0221_subject_storage/workspace_identity.yaml": "d5a99ab533da5e3568601fb2d9c9934aeb3044dd5770c6bd442fd761a80b783b",
+      "docs/subject_publication.md": "cd91aafb90eeb939759268acb570b1ded349f3143973deb5ebcbec206ab2fc42"
+    },
+    "contract_snapshot": {
+      "commit": "1b2a6f22796769a3a5c1bcb5addc48a71ebe3f9b",
+      "file_sha256": {
+        "specs/nodes/SG-SPEC-0001.yaml": "a4a084ef61caba1881355638f65076f098a859967de34bd41ebfe9245ac9829e",
+        "specs/nodes/SG-SPEC-0020.yaml": "e9f19d86fc5b4e2ff6ea4954f4a715a846bbf900416a64c36c9a24fd2ed4ce0a",
+        "specs/nodes/SG-SPEC-0023.yaml": "605a520cef2e54961a48593427de9f1188898c4910c6c8c4895ef70af0b2bf30",
+        "specs/nodes/SG-SPEC-0024.yaml": "dddc2beaf839cbef47d5f9221bdd3992a5865b73b16de5b5277e8ab89b6a9889",
+        "specs/nodes/SG-SPEC-0051.yaml": "4869849286711830bba3bf19aa45526f96e535f4633949a0deb18ada071daceb",
+        "specs/nodes/SG-SPEC-0061.yaml": "cc0b058383ce70b25471cc3ae65f259eddd38145fb7197dcc62b9c0b83206608",
+        "specs/nodes/SG-SPEC-0068.yaml": "9b523386b9678acfcf8dfac3675ee700b107655896c0e6d8187f44561adbafd1",
+        "specs/nodes/SG-SPEC-0069.yaml": "49c8b337c3941110b5dbead247e9d7f64f5011ca573105af9ca1e345df4f487f"
+      }
+    },
+    "publication_implementation_snapshot": {
+      "commit": "1b2a6f22796769a3a5c1bcb5addc48a71ebe3f9b",
+      "file_sha256": {
+        "tools/subject_publication.py": "7ca4e85c9f015e9170eb5caca349d4acaea7518c14decb6c96b274b41be2f1e3",
+        "tools/subject_source_write.py": "17f75f1dc11aac04e9b2e81c7e133ea8966f2289ecc95854d74a05522d8051e3",
+        "tools/subject_canonical_source.py": "a1878c24dedcf2f5b15afbbcb4d59329f96ae33e5ac8b18d6550125cfc9a794b"
+      }
+    }
+  },
+  "decision_lifecycle": "Keep this pending semantic/adoption preparation immutable when reviewed. Store actual human decisions separately with reviewed_head, packet raw SHA-256 and approval_scope_sha256. Filling pending adoption fields changes complete records and requires a newly reviewed packet before publication.",
+  "approval_scope_sha256": "9df09aa0388399ed38471043ec018ec6ff1565c1c98a994654c5cd815ade3d27"
+}
