@@ -2107,6 +2107,13 @@
       "docs/reviews/0045_cn_capture/source-review/review.json",
       "docs/reviews/0045_cn_capture/source-review/review-source.json",
       "docs/reviews/0045_cn_capture/source-review/decision-agenda.json",
+      "docs/reviews/0045_cn_capture/publication/README.md",
+      "docs/reviews/0045_cn_capture/publication/packet.json",
+      "docs/reviews/0045_cn_capture/publication/lineages.json",
+      "docs/reviews/0045_cn_capture/publication/specdraft-decisions.json",
+      "docs/reviews/0045_cn_capture/publication/confirmation-source.json",
+      "docs/reviews/0045_cn_capture/publication/decisions.template.json",
+      "docs/reviews/0045_cn_capture/publication/authorization.template.json",
       "tests/test_cn_capture_adoption_packet.py",
       "docs/proposals/0045_conversation_memory_exploration_vault.intent.yaml",
       ".github/workflows/intent-atoms-pr-comment.yml"

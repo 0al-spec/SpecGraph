@@ -197,6 +197,12 @@ and fresh-process recovery as disclosed agent interpretations. Its recorded
 agent decisions and task authorization are separate from human ingress review
 and publication permission; the original materialization inputs stay unchanged.
 
+The [confirmed CN-CAPTURE SpecDraft](reviews/0045_cn_capture/publication/README.md)
+retains actual human confirmation of both source lineages and the two
+`proposal -> spec_draft` transitions. A new final publication packet binds those
+reviews and the unchanged writer payload. Canonical transitions, effects and
+exact publication permission remain pending; accepted ingress is not re-reviewed.
+
 ## Validation
 
 `tests/test_conversation_notes.py` exercises new-process recovery, rename/move

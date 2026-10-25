@@ -1206,6 +1206,21 @@
         "ingress",
         "publication"
       ]
+    },
+    {
+      "id": "cn-capture-confirmed-specdraft",
+      "docs": [
+        "docs/reviews/0045_cn_capture/publication/README.md"
+      ],
+      "docc": [
+        "Sources/SpecGraph/Documentation.docc/ConversationNotes.md"
+      ],
+      "required_terms": [
+        "CN-CAPTURE",
+        "SpecDraft",
+        "publication",
+        "confirmation"
+      ]
     }
   ]
 }

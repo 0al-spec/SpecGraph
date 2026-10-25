@@ -1,0 +1,64 @@
+{
+  "schema_version": 1,
+  "artifact_kind": "conversation_capture_specdraft_decisions",
+  "recorded_by": "agent:codex",
+  "recorded_at": "2026-10-25T22:00:31.612781+00:00",
+  "source_review_ref": "docs/reviews/0045_cn_capture/source-review/review.json",
+  "confirmation_source_ref": "docs/reviews/0045_cn_capture/publication/confirmation-source.json",
+  "accepted_lane": "SpecDraft",
+  "transition_decisions": [
+    {
+      "gate_type": "review",
+      "state": "approved",
+      "reviewer_or_decider": "human:SoundBlaster",
+      "decision_timestamp": "2026-10-25T21:58:17Z",
+      "outcome": "approved",
+      "rationale": "Explicit confirmation of the two displayed source lineages for acceptance in SpecDraft; no additional human rationale was supplied.",
+      "review": {
+        "reviewer": "human:SoundBlaster",
+        "reviewer_authority": "human_project_author",
+        "decision_timestamp": "2026-10-25T21:58:17Z",
+        "decision_timestamp_basis": "First observation of this response in the current turn; original message timestamp is unavailable.",
+        "outcome": "approved",
+        "rationale": "Explicit confirmation of the two displayed source lineages for acceptance in SpecDraft; no additional human rationale was supplied.",
+        "source_quote": "Подтверждаю",
+        "source_ref": "docs/reviews/0045_cn_capture/publication/confirmation-source.json#/reviews/2",
+        "scope_sha256": "568251aa9cdf4bbe109777c98821ce66d79120233d6e8b46086e9bb3fd682ca6"
+      },
+      "transition_record_id": "cn-capture-ingress-req.cn.capture",
+      "transition_identifier": "cn-capture-ingress-req.cn.capture:v1",
+      "promotion_edge": "proposal -> spec_draft",
+      "source_ref": "docs/proposals/0045_conversation_memory_exploration_vault.intent.yaml",
+      "target_ref": "docs/reviews/0045_cn_capture/materialization/subjects/req.cn.capture.yaml#/proposed_record",
+      "intent_lineage_ref": "docs/reviews/0045_cn_capture/publication/lineages.json#/lineages/0"
+    },
+    {
+      "gate_type": "review",
+      "state": "approved",
+      "reviewer_or_decider": "human:SoundBlaster",
+      "decision_timestamp": "2026-10-25T21:58:17Z",
+      "outcome": "approved",
+      "rationale": "Explicit confirmation of the two displayed source lineages for acceptance in SpecDraft; no additional human rationale was supplied.",
+      "review": {
+        "reviewer": "human:SoundBlaster",
+        "reviewer_authority": "human_project_author",
+        "decision_timestamp": "2026-10-25T21:58:17Z",
+        "decision_timestamp_basis": "First observation of this response in the current turn; original message timestamp is unavailable.",
+        "outcome": "approved",
+        "rationale": "Explicit confirmation of the two displayed source lineages for acceptance in SpecDraft; no additional human rationale was supplied.",
+        "source_quote": "Подтверждаю",
+        "source_ref": "docs/reviews/0045_cn_capture/publication/confirmation-source.json#/reviews/3",
+        "scope_sha256": "c2e525498a75b66675378482f4c4485d8ba8e7dd97a6d72743078950ec602a76"
+      },
+      "transition_record_id": "cn-capture-ingress-ac.cn.capture-without-kind",
+      "transition_identifier": "cn-capture-ingress-ac.cn.capture-without-kind:v1",
+      "promotion_edge": "proposal -> spec_draft",
+      "source_ref": "docs/proposals/0045_conversation_memory_exploration_vault.md",
+      "target_ref": "docs/reviews/0045_cn_capture/materialization/subjects/ac.cn.capture-without-kind.yaml#/proposed_record",
+      "intent_lineage_ref": "docs/reviews/0045_cn_capture/publication/lineages.json#/lineages/1"
+    }
+  ],
+  "canonical_adoption": false,
+  "publication_authorized": false,
+  "reviewer_identity_attested": false
+}
