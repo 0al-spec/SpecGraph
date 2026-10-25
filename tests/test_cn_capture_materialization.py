@@ -22,6 +22,7 @@ from subject_publication import (
     SubjectPublicationEvidence,
     _packet,
     scope_digest,
+    verify_publication,
 )
 from subject_read_model import RevisionSelection, SubjectClass, SubjectRef
 from subject_read_model_io import SubjectDocumentError
@@ -300,3 +301,65 @@ def test_synthetic_decisions_publish_the_same_payload_with_a_new_review_scope(re
     )
     assert selected_source_commit(root, request.source_ref) == result["candidate_commit"]
     assert result["reviewer_identity_attested"] is False
+
+
+SOURCE_REVIEW = "docs/reviews/0045_cn_capture/source-review"
+
+
+def test_source_review_binds_unchanged_preparation_and_disclosed_interpretations():
+    review = document(SOURCE_REVIEW + "/review.json")
+    selection = review["reviewed_packet"]
+    snapshot = DecisionSnapshot(ROOT, selection["reviewed_head"])
+    packet, _ = _packet(snapshot, selection)
+    assert snapshot.read(PACKET) == (ROOT / PACKET).read_bytes()
+    for path, digest in review["source_file_sha256"].items():
+        assert hashlib.sha256((ROOT / path).read_bytes()).hexdigest() == digest, path
+    for path in packet["inputs"]["review_tree_file_sha256"]:
+        assert (ROOT / path).read_bytes() == snapshot.read(path), path
+    intent = document("docs/reviews/0045_cn_capture/adoption/intent-lineage.json")
+    assert review["findings"][0]["source_quote"] == intent["human_intent_records"][0]["text"]
+    proposal = document(packet["subjects"][0]["source_proposal_ref"])
+    assert packet["subjects"][0]["statement"] == proposal["atoms"]["intents"][0]["statement"]
+    assert [f["outcome"] for f in review["findings"][:3]] == [
+        "supported",
+        "supported_with_disclosed_inference",
+        "supported_with_disclosed_inference",
+    ]
+    for decision, lineage in zip(
+        review["recorded_decisions"], document(LINEAGES)["lineages"], strict=True
+    ):
+        assert decision["actor_id"] == "agent:codex"
+        assert decision["decision"] == "recommend_accept_proposed_ingress"
+        assert decision["lineage_scope_sha256"] == scope_digest(
+            {k: v for k, v in lineage.items() if k != "review"}
+        )
+        assert decision["human_ingress_approval"] == "pending"
+        assert lineage["review"] is None
+
+
+def test_source_review_retains_task_authorization_without_attributing_outcome_approval():
+    source = document(SOURCE_REVIEW + "/review-source.json")
+    agenda = document(SOURCE_REVIEW + "/decision-agenda.json")
+    assert source["context"]["human_response"] == {
+        "actor_id": "human:SoundBlaster",
+        "text": "Ок, делай",
+    }
+    assert source["context"]["native_message_ids"] is None
+    assert source["context"]["original_message_timestamp"] is None
+    assert source["human_publication_approval_recorded"] is False
+    assert not agenda["publication_authorized"] and not agenda["canonical_publication_included"]
+    assert len(agenda["subjects"]) == 2
+    assert all(item["actual_human_review"] is None for item in agenda["subjects"])
+
+
+@pytest.mark.parametrize("name", ["review.json", "review-source.json", "decision-agenda.json"])
+def test_source_review_artifacts_cannot_supply_writer_permission(rehearsal, name):
+    root, _, request, _ = rehearsal
+    path = SOURCE_REVIEW + "/" + name
+    save(root, path, document(path))
+    head = commit_paths(root, [path])
+    before = git_command(root, "count-objects", "-v").stdout
+    with pytest.raises(PublicationGovernanceError, match="not subject-publication permission"):
+        verify_publication(SubjectPublicationEvidence(root, head, path), None, None)
+    assert selected_source_commit(root, request.source_ref) == request.expected_commit
+    assert git_command(root, "count-objects", "-v").stdout == before

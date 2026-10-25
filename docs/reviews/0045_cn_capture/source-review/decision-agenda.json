@@ -1,0 +1,31 @@
+{
+  "schema_version": 1,
+  "artifact_kind": "conversation_capture_ingress_decision_agenda",
+  "prepared_by": "agent:codex",
+  "prepared_at": "2026-10-25T21:52:12.794310+00:00",
+  "basis_review_ref": "docs/reviews/0045_cn_capture/source-review/review.json",
+  "requested_decision": "Confirm the two source lineages for proposal-to-SpecDraft ingress only.",
+  "subjects": [
+    {
+      "subject_local_id": "req.cn.capture",
+      "lineage_ref": "docs/reviews/0045_cn_capture/materialization/lineages.json#/lineages/0",
+      "lineage_scope_sha256": "ef84d6cf9957286a00f0ea6e5ad6fb69848df0412e187238495d1bc9839a4f67",
+      "source_proposal_ref": "docs/proposals/0045_conversation_memory_exploration_vault.intent.yaml",
+      "intent_ref": "docs/reviews/0045_cn_capture/adoption/intent-lineage.json#/intent_drafts/0",
+      "proposed_outcome": "approved",
+      "actual_human_review": null
+    },
+    {
+      "subject_local_id": "ac.cn.capture-without-kind",
+      "lineage_ref": "docs/reviews/0045_cn_capture/materialization/lineages.json#/lineages/1",
+      "lineage_scope_sha256": "3453d7e7c46da59c6bf72cc744bacd5bf358aedf9a84c2c906e4e670a5565b2f",
+      "source_proposal_ref": "docs/proposals/0045_conversation_memory_exploration_vault.md",
+      "intent_ref": "docs/reviews/0045_cn_capture/adoption/intent-lineage.json#/intent_drafts/0",
+      "proposed_outcome": "approved",
+      "actual_human_review": null
+    }
+  ],
+  "canonical_publication_included": false,
+  "next_after_confirmation": "Record genuine lineage reviews in a new input version, bind a new packet scope, then review final canonical transitions, effects and exact publication permission.",
+  "publication_authorized": false
+}

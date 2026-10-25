@@ -2103,6 +2103,10 @@
       "docs/reviews/0045_cn_capture/materialization/decisions.template.json",
       "docs/reviews/0045_cn_capture/materialization/authorization.template.json",
       "tests/test_cn_capture_materialization.py",
+      "docs/reviews/0045_cn_capture/source-review/README.md",
+      "docs/reviews/0045_cn_capture/source-review/review.json",
+      "docs/reviews/0045_cn_capture/source-review/review-source.json",
+      "docs/reviews/0045_cn_capture/source-review/decision-agenda.json",
       "tests/test_cn_capture_adoption_packet.py",
       "docs/proposals/0045_conversation_memory_exploration_vault.intent.yaml",
       ".github/workflows/intent-atoms-pr-comment.yml"

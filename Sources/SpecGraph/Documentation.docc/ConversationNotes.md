@@ -111,6 +111,13 @@ creates no production ref or origins. Actual ingress reviews change input bytes
 and require a new packet scope before final publication approval. Historical CI
 evidence is not automatically admitted.
 
+The CN-CAPTURE source review at
+`docs/reviews/0045_cn_capture/source-review/README.md` records agent findings
+supporting the two ingress lineages. Disclosed interpretations, original source
+bindings and actual actor attribution are retained. Agent review and task
+authorization are separate from human ingress approval and publication permission;
+the materialization preparation stays unchanged.
+
 Run `tests/test_conversation_notes.py` for persistence, source retention,
 concurrency, failure recovery and review scope. Set `HYPERCODE_BIN` to include the
 optional native Hypercode compatibility check. The detailed JSON request and

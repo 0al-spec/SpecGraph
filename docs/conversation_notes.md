@@ -191,6 +191,12 @@ An isolated preview rehearses the four-file source without changing a production
 ref. Recording actual ingress reviews requires a new packet scope before final
 publication approval; historical CI evidence is not automatically admitted.
 
+The [CN-CAPTURE source review](reviews/0045_cn_capture/source-review/README.md)
+recommends accepting the two ingress lineages, retaining before-kind selection
+and fresh-process recovery as disclosed agent interpretations. Its recorded
+agent decisions and task authorization are separate from human ingress review
+and publication permission; the original materialization inputs stay unchanged.
+
 ## Validation
 
 `tests/test_conversation_notes.py` exercises new-process recovery, rename/move
