@@ -1,6 +1,24 @@
 {
   "groups": [
     {
+      "id": "pilot-followup-reentry",
+      "description": "Preserved pilot follow-ups return through existing supervisor surfaces without new debt metrics or publication authority.",
+      "docs": [
+        "docs/proposals/0229_pilot_followup_reentry.md"
+      ],
+      "docc": [
+        "Sources/SpecGraph/Documentation.docc/PilotFollowups.md"
+      ],
+      "required_terms": [
+        "0229",
+        "deferred_until_canonicalized",
+        "canonicalization",
+        "metric_signal_index",
+        "CN-PUBLISH",
+        "POC-LESSONS"
+      ]
+    },
+    {
       "id": "conversation-notes",
       "description": "Short attributed Hypercode notes captured by an agent during a conversation.",
       "docs": [
@@ -15,6 +33,16 @@
         "update_notes",
         "Hypercode",
         "revision"
+      ]
+    },
+    {
+      "id": "specdraft-layer",
+      "description": "Proposed authoring layer and existing promotion stage retain distinct meanings.",
+      "docs": ["docs/specdraft_layer.md"],
+      "docc": ["Sources/SpecGraph/Documentation.docc/SpecDraft.md"],
+      "required_terms": [
+        "SpecDraft layer", "SpecGraph", "Layer 0", "Hypercode",
+        "spec_draft", "source", "read_notes", "update_notes"
       ]
     },
     {
