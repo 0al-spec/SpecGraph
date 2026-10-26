@@ -59,3 +59,14 @@ to read the full overview.
 Review the [specification draft](specdraft.md) together with its prototype and
 bounded observations. The next technical slice is the 100-node profile and
 browser failure/recovery; acceptance/publication retain their stated scope.
+
+## Review correction: relation direction
+
+PR #804's inspector correction preserves the saved source, label and target
+when selecting either endpoint, including endpoints outside the selected branch
+and self-links. Run `node --test tests/specdraft_preview_inspector.cjs` (Node 24
+in CI). The test executes the shipped app and click handlers against a minimal
+DOM double; it does not establish browser layout or accessibility conformance.
+The original `verification.json` retains the original prototype observations
+and code hashes. The separate `review-fix-verification.json` binds this later
+correction and its focused checks; earlier browser samples are not re-attested.

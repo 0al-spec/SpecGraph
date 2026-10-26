@@ -59,10 +59,12 @@ function selectNode(id) {
   $("relations").replaceChildren();
   const related = data.links.filter(link => link.source_id === id || link.target_id === id);
   if (related.length) $("relations").append(element("h3", "", "Connections"));
+  const endpoint = nodeId => {
+    const node = data.nodes.find(item => item.id === nodeId);
+    return `${node?.label || nodeId}${node ? "" : " · outside this branch"}`;
+  };
   for (const link of related) {
-    const otherId = link.source_id === id ? link.target_id : link.source_id;
-    const other = data.nodes.find(node => node.id === otherId);
-    $("relations").append(element("p", "relation-row", `${link.label} → ${other?.label || otherId}${other ? "" : " · outside this branch"}`));
+    $("relations").append(element("p", "relation-row", `${endpoint(link.source_id)} — ${link.label} → ${endpoint(link.target_id)}`));
   }
 }
 function render(snapshot) {

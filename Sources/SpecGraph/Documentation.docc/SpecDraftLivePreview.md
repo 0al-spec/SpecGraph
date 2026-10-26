@@ -55,3 +55,10 @@ hostile-text browser execution remain unverified. Screenshots stay local.
 
 The next step is review of the contract/prototype, then bounded validation of
 remaining cases. See <doc:ConversationNotes> for the existing note tools.
+## Inspector relation fidelity
+
+Selecting either endpoint retains the saved relation as source — label → target.
+Endpoints outside the selected branch retain their IDs and an explicit outside
+marker. `node --test tests/specdraft_preview_inspector.cjs` executes the shipped
+app with a minimal DOM double; CI runs these four regressions on Node 24. These
+checks cover inspector text, not browser layout or accessibility conformance.

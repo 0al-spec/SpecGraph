@@ -60,8 +60,8 @@
     "docs/reviews/0228_specdraft_live_preview/source-notes.json": "a74dc35834ba684e8fe66c7b1975c367e1bb89afc3a62b3be12f7c347c77a85c",
     "docs/reviews/0228_specdraft_live_preview/handoff.json": "bc5ef533d07014438c1d23cf89daf154372adf55fc45cc20ce27b01f088ef40a",
     "docs/reviews/0228_specdraft_live_preview/specdraft.md": "4e65e21ef32a88f64af11f619f484406c3db8ddc29060591ae1b5ac91d076de4",
-    "docs/reviews/0228_specdraft_live_preview/README.md": "d6e39884bdf92df57ce9c457dbf28492eb8aa5d9768d40077600cbaaf1b7562e",
-    "Sources/SpecGraph/Documentation.docc/SpecDraftLivePreview.md": "00c53121c2ee60cf8ec6c383fe1ede79246bd02306c634ff10a230b9b388d186",
+    "docs/reviews/0228_specdraft_live_preview/README.md": "cbf7bad88acd7a0175c7a546b1aa704d1c1e6feb7d187ce4b9407ab60a69552e",
+    "Sources/SpecGraph/Documentation.docc/SpecDraftLivePreview.md": "eef03e78ac47c8721cb1cf8d04e3f10169391d840e48ab7089837262a7148526",
     "specs/nodes/SG-SPEC-0007.yaml": "ea58f937a5dc2f7e3fc4a0d60651dabb2b3a5a571bf1f03218eab497a0efe92c",
     "specs/nodes/SG-SPEC-0050.yaml": "5a56fc509889dd1721e6b26bae7c58529a342f933a54b2c108c3f0247af32257",
     "specs/nodes/SG-SPEC-0051.yaml": "4869849286711830bba3bf19aa45526f96e535f4633949a0deb18ada071daceb",
@@ -80,17 +80,29 @@
     "tools/specdraft_preview/snapshot_continuity_spec.py": "df3152c72ecbc879d4b0e45eca8920282262315b1f400d4ab87253270eb712fe",
     "tools/specdraft_preview/stale_snapshot_spec.py": "7841fe166485abb1a3f9e9e0802fa210f5f5a6aca9288b1d99e7bfc30604cbe4",
     "tools/specdraft_preview/unavailable_snapshot_spec.py": "2777c83477c7bbd238172f6b0583b58bd7bf95cff69a78e7e99caf72fe28d039",
-    "tools/specdraft_preview/static/app.js": "098e403c73cb67979e781cc35cc495772ff39ba8d4fc1076114513db71bf24f6",
+    "tools/specdraft_preview/static/app.js": "26e511c5feaa021fa735157832b09f111e2fc2d0e5f4c8775ae68c69ca2bf4bb",
     "tools/specdraft_preview/static/icon.svg": "5bc44e9dc3b44473e576ac35bbb0b84ac27ab339ae70bd91ce11f8a8c12ca0cb",
     "tools/specdraft_preview/static/index.html": "9222e78f058a6110e12649035f0d9cd073f9eb7680d7b4f9be47beea310fc8c9",
     "tools/specdraft_preview/static/style.css": "a0573a108440e8171719e1e752b689c476a9bfd303d3232043f7b58147d83404",
     "tests/test_specdraft_preview.py": "c7459ea23e04c576b247f57e039688403693fd55a25428abd06976fd26038b99",
-    "Makefile": "401be25aa94f4e2219c286a6cf7a1381743673839c0e42ed4e30b4a17c95f6f4"
+    "Makefile": "401be25aa94f4e2219c286a6cf7a1381743673839c0e42ed4e30b4a17c95f6f4",
+    "tests/specdraft_preview_inspector.cjs": "1a1c6e662c3ee93893a8c52d269c334ce138f3a1d155657dec46d973a3374301",
+    ".github/workflows/python-ci.yml": "1bf43925aee6c9254e4529a59141457bac0119781529bcc7064422c97af61b78",
+    "tools/review_feedback_records.json": "3d2518a91a2852f94ae406682c01fde7e928d80e5a05d732690ad308bd689bc5",
+    "docs/reviews/0228_specdraft_live_preview/review-fix-verification.json": "b1bd8abc1617913a15a903875522b97d5e62d6feaadd2cca401dfd8df9b35f54"
   },
   "runtime_observation": {
     "status": "bounded_local_sample",
     "reference": "docs/reviews/0228_specdraft_live_preview/verification.json",
     "acceptance_complete": false
   },
-  "review_scope_sha256": "b83656329fc2e6265e9c015c1abd1fd8b4829f0c794a3d7f0c3bb7ce1707b6ba"
+  "review_correction": {
+    "previous_pr_head": "2a9ac4ce09b357a3ff83e613f48a9005e7210939",
+    "previous_review_scope_sha256": "b83656329fc2e6265e9c015c1abd1fd8b4829f0c794a3d7f0c3bb7ce1707b6ba",
+    "source_thread_url": "https://github.com/0al-spec/SpecGraph/pull/804#discussion_r4375625114",
+    "verification": "docs/reviews/0228_specdraft_live_preview/review-fix-verification.json",
+    "historical_verification": "docs/reviews/0228_specdraft_live_preview/verification.json",
+    "human_review": null
+  },
+  "review_scope_sha256": "e0b251e29ad15a0c621711c2278d2a50dd2e16ea0b8932ffbaeb8b9a6b81dd60"
 }
