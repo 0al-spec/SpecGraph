@@ -99,12 +99,23 @@ capture on 26 October 2026, not an inferred date when a problem first appeared.
 
 - Source/target: [#803](https://github.com/0al-spec/SpecGraph/pull/803) and
   [#804](https://github.com/0al-spec/SpecGraph/pull/804), proposal 0228.
-- Observed gap: technical prototype observed on nine nodes, with a single 588 ms
-  save-to-render sample; the proposed 100-node profile and additional browser
-  recovery cases are not verified. Human SpecDraft acceptance remains pending.
+- Initial observation: the technical prototype was observed on nine nodes, with
+  a single 588 ms save-to-render sample. The retained original packet describes
+  that earlier source snapshot and is unchanged.
+- Follow-up on 26 October 2026: a separate [browser observation](../evidence/specdraft_preview_browser_20261026.json)
+  against merged revision `5b50da3f` exercised a synthetic notebook up to 100
+  nodes. Add, rename and reparent reached the DOM after 400, 440 and 16 ms,
+  retaining selection and identity. Selecting either endpoint preserved named
+  link direction. A controlled read failure kept the saved view and warning;
+  restoring the fixture returned to Live. These are single samples for ten
+  chains, not a distribution, arbitrary-topology guarantee or first-paint test.
+- Remaining gap: human SpecDraft acceptance, hostile-text browser behavior,
+  initial unavailable state and network/process recovery remain unverified.
+  At 31 percent overview zoom, detailed reading needs zoom or the inspector.
 - Return trigger: resume preview review or claim the proposed update target.
-- Next bounded step: read #804 review and its packet, then scope the remaining
-  UI observation. Keep the live ignored notebook intact across worktrees.
+- Next bounded step: use the original packet and this separate observation for
+  human review; select a remaining browser case only if needed for the chosen
+  MVP. Keep the live ignored notebook intact across worktrees.
 - Closure: resolve the bounded review/acceptance and record the chosen UI cases.
   Do not equate the nine-node sample with the full acceptance profile.
 
