@@ -13322,5 +13322,34 @@
       }
     ],
     "notes": "Proposal-only location/skill plan. Existing engine reuse was observed with a deterministic local executor; no skill, Git setup command, root-rebinding API or initializer fix is implemented. Post-execution init blocks on generated .worktrees. Outer implementation trace/evidence binding and real-agent validation remain separate."
+  },
+  {
+    "proposal_id": "0229",
+    "posture": "deferred_until_canonicalized",
+    "runtime_surfaces": [
+      "docs/proposals/0229_pilot_followup_reentry.md",
+      "docs/archive/proposal_sources/0229_pilot_followup_reentry.md",
+      "Sources/SpecGraph/Documentation.docc/PilotFollowups.md",
+      "docs/evidence/0229_pilot_followup_reentry.json"
+    ],
+    "runtime_markers": [
+      {
+        "path": "docs/proposals/0229_pilot_followup_reentry.md",
+        "pattern": "This is a backlog index only."
+      }
+    ],
+    "validation_markers": [
+      {
+        "path": "docs/proposals/0229_pilot_followup_reentry.md",
+        "pattern": "## Completion of this preservation slice"
+      }
+    ],
+    "observation_markers": [
+      {
+        "path": "docs/evidence/0229_pilot_followup_reentry.json",
+        "pattern": "\"supervisor_rediscovery\": true"
+      }
+    ],
+    "notes": "Preservation-only inventory with seven source-bound return handles. Existing proposal/backlog builders rediscover one deferred proposal; no per-handle metric, debt evaluator, new canonical kind, receipt issuer, publication approval, inference or threshold change. Generic canonicalization next_gap is a review/re-entry pointer, not writer permission. Existing metric output is a proxy and does not consume individual handles."
   }
 ]

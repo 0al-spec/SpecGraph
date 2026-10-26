@@ -1,0 +1,154 @@
+{
+  "artifact_kind": "pilot_followup_reentry_observation",
+  "schema_version": 1,
+  "observed_at": "2026-10-26T16:11:09.956296+00:00",
+  "base_revision": "ddf10b48fe8c0c288cf5597a04313185a4879e95",
+  "source_kind": "working_tree_snapshot",
+  "supervisor_rediscovery": true,
+  "proposal_id": "0229",
+  "inventory_handles": [
+    "CN-PUBLISH",
+    "TESTS-VERIFIED",
+    "DELIVERY-TRUST",
+    "ONTOLOGY-LINKS",
+    "CAPTURE-PROVENANCE",
+    "SPECDRAFT-PREVIEW",
+    "POC-LESSONS"
+  ],
+  "canonical_mutations_allowed": false,
+  "runtime_code_mutations_allowed": false,
+  "llm_calls": 0,
+  "per_handle_metrics_implemented": false,
+  "followups_closed": false,
+  "sources": [
+    {
+      "path": "docs/proposals/0229_pilot_followup_reentry.md",
+      "sha256": "6548c84d93a46838e473a88d92bc4ad71e106d143e873dea531c2bb86b50133d"
+    },
+    {
+      "path": "docs/archive/proposal_sources/0229_pilot_followup_reentry.md",
+      "sha256": "73d866624f79675cf3c33aa8f05fc9bf523655eb63cc8461d04af765113e7663"
+    },
+    {
+      "path": "Sources/SpecGraph/Documentation.docc/PilotFollowups.md",
+      "sha256": "51369c538f1635925126cb9fa5de58171b08055a644929d015a734751a684288"
+    },
+    {
+      "path": "Sources/SpecGraph/Documentation.docc/ProposalsAndRuntime.md",
+      "sha256": "2ee97f0f9b2aadfb15d16d20a0bbf6ecb6df31e5debf17c11f31d59f9b092d0e"
+    },
+    {
+      "path": "tools/docc_sync_contract.json",
+      "sha256": "9dfcacb90e018670c5d0b22650d917a57f4546a1babbfeb10d9e0e0fc92a5a45"
+    },
+    {
+      "path": "tools/proposal_runtime_registry.json",
+      "sha256": "5464c06103ed7e2f2f2cd952e2987d289166015d41e535fb7e94ea36d2edc5d0"
+    },
+    {
+      "path": "tools/proposal_promotion_registry.json",
+      "sha256": "33ff6ff714eec7c3758e153f6800bb58d1d2278cffce1eadd56adb786816329a"
+    }
+  ],
+  "commands_passed": [
+    "make proposal-runtime-index",
+    "make backlog",
+    "make next-move",
+    "make metric-signals",
+    "make docc-sync",
+    "make proposal-tracking-gate"
+  ],
+  "checked_local_link_count": 11,
+  "proposal_runtime": {
+    "entry_count": 227,
+    "posture": "deferred_until_canonicalized",
+    "next_gap": "canonicalization",
+    "runtime_realization_status": "deferred",
+    "observation_document_marker_satisfied": true
+  },
+  "backlog": {
+    "entry_count": 63,
+    "domain_counts": {
+      "evidence": 7,
+      "external_consumers": 2,
+      "implementation": 4,
+      "metrics": 6,
+      "process_feedback": 1,
+      "proposals": 43
+    },
+    "selected_rows": [
+      {
+        "backlog_id": "proposal_runtime_index::proposals::0229::canonicalization",
+        "domain": "proposals",
+        "source_artifact": "proposal_runtime_index",
+        "source_artifact_path": "runs/proposal_runtime_index.json",
+        "subject_kind": "proposal",
+        "subject_id": "0229",
+        "title": "Pilot Follow-up Inventory and Supervisor Re-entry",
+        "status": "deferred_until_canonicalized",
+        "review_state": "",
+        "next_gap": "canonicalization",
+        "priority": "low",
+        "details": {
+          "posture": "deferred_until_canonicalized",
+          "runtime_realization_status": "deferred",
+          "validation_closure_status": "deferred",
+          "observation_coverage_status": "deferred"
+        }
+      }
+    ]
+  },
+  "next_moves": {
+    "current_scene": "high_priority_backlog",
+    "recommended_subject": {
+      "backlog_id": "external_consumer_handoffs::external_consumers::metrics_sib::review_handoff_packet",
+      "domain": "external_consumers",
+      "source_artifact": "external_consumer_handoffs",
+      "source_artifact_path": "runs/external_consumer_handoff_packets.json",
+      "subject_kind": "consumer",
+      "subject_id": "metrics_sib",
+      "title": "",
+      "status": "ready_for_handoff",
+      "review_state": "ready_for_review",
+      "next_gap": "review_handoff_packet",
+      "priority": "high",
+      "details": {
+        "handoff_status": "ready_for_handoff"
+      }
+    },
+    "inventory_selected_as_top_move": false
+  },
+  "metrics": {
+    "entry_count": 9,
+    "scope": "existing proxy profile; no individual inventory-handle coverage"
+  },
+  "report_snapshots": [
+    {
+      "path": "runs/proposal_runtime_index.json",
+      "sha256": "40bc43f9ba4b937615510e6571be28f9b0e2519e60b885413f882f7f76dd6428",
+      "generated_at": "2026-10-26T16:11:12.217649+00:00"
+    },
+    {
+      "path": "runs/graph_backlog_projection.json",
+      "sha256": "090aef90bea5f5c5929aaca4d235a820d4410eeef14425a8c0dd853ba78def08",
+      "generated_at": "2026-10-26T16:09:17.892823+00:00"
+    },
+    {
+      "path": "runs/graph_next_moves.json",
+      "sha256": "4cb5fb9e26e24392004a20e5e1d05013465f4f91f034be986e228ca46205c6a8",
+      "generated_at": "2026-10-26T16:09:54.060238+00:00"
+    },
+    {
+      "path": "runs/metric_signal_index.json",
+      "sha256": "be8489ba57a5c3284105b791f7d7722e06f2c427df624007a3406665251d97cf",
+      "generated_at": "2026-10-26T16:10:06.042453+00:00"
+    }
+  ],
+  "limitations": [
+    "Document markers do not verify closure or trust.",
+    "Pending publication decisions and origins were not created.",
+    "The selected inventory is not individually consumed by metric_signal_index.",
+    "No behavioral test suite or browser audit was run for this documentation-only slice.",
+    "Generated reports are local historical observations and must be rebuilt in the selected checkout."
+  ]
+}

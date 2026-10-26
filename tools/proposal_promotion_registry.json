@@ -2936,5 +2936,18 @@
     "required_provenance_links": [
       "source_draft_ref"
     ]
+  },
+  {
+    "proposal_id": "0229",
+    "source_artifact_class": "working_draft",
+    "source_refs": [
+      "docs/archive/proposal_sources/0229_pilot_followup_reentry.md"
+    ],
+    "motivating_concern": "Preserve pilot gaps and future work so they can be resumed through the existing supervisor and observed metrics without reconstructing chat history.",
+    "normalized_title": "Pilot Follow-up Inventory and Supervisor Re-entry",
+    "bounded_scope": "Retain seven source-bound follow-up handles with revisit triggers and closure evidence, and observe discovery through existing proposal/backlog/metric builders; do not implement a debt engine, per-item metric, canonical mutation, new trust requirement or automatic scheduling.",
+    "required_provenance_links": [
+      "source_draft_ref"
+    ]
   }
 ]
