@@ -24873,7 +24873,7 @@ def test_main_builds_supervisor_stalled_run_salvage_as_recoverable_failure(
         build_supervisor_stalled_run_salvage_mode=True,
         target_spec="SG-SPEC-0001",
         supervisor_salvage_worktree_path=worktree.as_posix(),
-        supervisor_run_path="RUN-SALVAGE-1",
+        supervisor_run_path=" RUN-SALVAGE-1 ",
     )
 
     assert exit_code == 0
@@ -24916,6 +24916,113 @@ def test_main_builds_supervisor_stalled_run_salvage_as_recoverable_failure(
     assert "- required_human_action: review_salvaged_worktree_diff" in latest_summary
     assert "- salvage_artifact_path: runs/run-salvage-1-salvage.json" in latest_summary
     assert "- salvage_patch_artifact_path: runs/run-salvage-1-salvage.patch" in latest_summary
+
+
+@pytest.mark.parametrize("requested_run_id", [None, "", " \t "])
+def test_main_stalled_run_salvage_default_ids_preserve_independent_artifacts(
+    supervisor_module: object,
+    repo_fixture: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+    requested_run_id: str | None,
+) -> None:
+    worktree = make_fake_worktree(repo_fixture)
+    target = worktree / "specs" / "nodes" / "SG-SPEC-0001.yaml"
+    original = target.read_text(encoding="utf-8")
+    monkeypatch.setattr(supervisor_module, "utc_compact_timestamp", lambda: "20260101T000000Z")
+    nonces = iter(["00000001", "00000002"])
+    monkeypatch.setattr(supervisor_module, "runtime_nonce", lambda: next(nonces))
+    saved = []
+
+    for number in (1, 2):
+        target.write_text(original + f"\n# recovered edit {number}\n", encoding="utf-8")
+        exit_code = supervisor_module.main(
+            build_supervisor_stalled_run_salvage_mode=True,
+            target_spec="SG-SPEC-0001",
+            supervisor_salvage_worktree_path=worktree.as_posix(),
+            supervisor_run_path=requested_run_id,
+        )
+        captured = capsys.readouterr()
+        assert exit_code == 0, captured.err
+        summary = json.loads(captured.out)
+        artifacts = summary["written_artifacts"]
+        paths = {repo_fixture / value["artifact_path"] for value in artifacts.values()}
+        assert len(paths) == 3
+        snapshot = {path: path.read_bytes() for path in paths}
+        assert f"recovered edit {number}" in next(
+            data.decode() for path, data in snapshot.items() if path.suffix == ".patch"
+        )
+        assert summary["canonical_mutations_allowed"] is False
+        saved.append((artifacts["supervisor_run_log"]["run_id"], snapshot))
+
+    assert saved[0][0] != saved[1][0]
+    assert set(saved[0][1]).isdisjoint(saved[1][1])
+    for path, expected in saved[0][1].items():
+        assert path.read_bytes() == expected
+    assert (repo_fixture / "specs" / "nodes" / "SG-SPEC-0001.yaml").read_text(
+        encoding="utf-8"
+    ) == original
+    latest = (repo_fixture / "runs" / "latest-summary.md").read_text(encoding="utf-8")
+    assert f"- run_id: {saved[1][0]}" in latest
+
+
+@pytest.mark.parametrize("suffix", [".json", "-salvage.json", "-salvage.patch"])
+def test_main_stalled_run_salvage_default_id_skips_occupied_normalized_paths(
+    supervisor_module: object,
+    repo_fixture: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+    suffix: str,
+) -> None:
+    worktree = make_fake_worktree(repo_fixture)
+    target = worktree / "specs" / "nodes" / "SG-SPEC-0001.yaml"
+    target.write_text(target.read_text(encoding="utf-8") + "\n# recovered edit\n")
+    occupied_id = "20260101t000000z-sg-spec-0001-00000001"
+    occupied = repo_fixture / "runs" / f"{occupied_id}{suffix}"
+    occupied.write_bytes(b"existing recovery artifact")
+    monkeypatch.setattr(supervisor_module, "utc_compact_timestamp", lambda: "20260101T000000Z")
+    nonces = iter(["00000001", "00000002"])
+    monkeypatch.setattr(supervisor_module, "runtime_nonce", lambda: next(nonces))
+
+    exit_code = supervisor_module.main(
+        build_supervisor_stalled_run_salvage_mode=True,
+        target_spec="SG-SPEC-0001",
+        supervisor_salvage_worktree_path=worktree.as_posix(),
+    )
+
+    captured = capsys.readouterr()
+    assert exit_code == 0, captured.err
+    summary = json.loads(captured.out)
+    assert summary["written_artifacts"]["supervisor_run_log"]["run_id"] == (
+        "20260101t000000z-sg-spec-0001-00000002"
+    )
+    assert occupied.read_bytes() == b"existing recovery artifact"
+
+
+def test_main_stalled_run_salvage_default_id_exhaustion_preserves_artifacts(
+    supervisor_module: object,
+    repo_fixture: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    worktree = make_fake_worktree(repo_fixture)
+    target = worktree / "specs" / "nodes" / "SG-SPEC-0001.yaml"
+    target.write_text(target.read_text(encoding="utf-8") + "\n# recovered edit\n")
+    occupied = repo_fixture / "runs" / "20260101t000000z-sg-spec-0001-00000001-salvage.patch"
+    occupied.write_bytes(b"existing recovery artifact")
+    before = {path.name: path.read_bytes() for path in (repo_fixture / "runs").iterdir()}
+    monkeypatch.setattr(supervisor_module, "utc_compact_timestamp", lambda: "20260101T000000Z")
+    monkeypatch.setattr(supervisor_module, "runtime_nonce", lambda: "00000001")
+
+    exit_code = supervisor_module.main(
+        build_supervisor_stalled_run_salvage_mode=True,
+        target_spec="SG-SPEC-0001",
+        supervisor_salvage_worktree_path=worktree.as_posix(),
+    )
+
+    assert exit_code == 1
+    assert "failed to allocate unique salvage run_id" in capsys.readouterr().err
+    assert {path.name: path.read_bytes() for path in (repo_fixture / "runs").iterdir()} == before
 
 
 def test_main_builds_supervisor_stalled_run_salvage_handles_binary_file_without_crash(
@@ -24982,6 +25089,7 @@ def test_main_build_supervisor_stalled_run_salvage_rejects_existing_run_log(
 
     assert exit_code == 1
     assert "run log already exists for run_id: run-conflict-1" in (capsys.readouterr().err)
+    assert existing_log.read_text(encoding="utf-8") == "{}"
     assert not (repo_fixture / "runs" / "run-conflict-1-salvage.patch").exists()
     assert not (repo_fixture / "runs" / "run-conflict-1-salvage.json").exists()
 
