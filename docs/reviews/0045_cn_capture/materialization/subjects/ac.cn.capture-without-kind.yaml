@@ -1,0 +1,44 @@
+schema_version: 1
+artifact_kind: subject_storage_candidate
+created_at: '2026-10-25T21:08:02+00:00'
+source_lane: SpecDraft
+gate_state: review_pending
+canonical_adoption: false
+canonical_readiness: not_evaluated
+ready_for_materialization: false
+physical_fields_complete: true
+publication_decisions_recorded: false
+proposed_path: specs/criteria/ac.cn.capture-without-kind.yaml
+source_prototype: docs/reviews/0045_cn_capture/ac.cn.capture-without-kind.yaml
+prepared_by: agent:codex
+proposed_record:
+  schema_version: 1
+  artifact_kind: acceptance_criterion_record
+  id: ac.cn.capture-without-kind
+  title: Capture without semantic classification
+  subject:
+    workspace_identity: workspace:a2800523-3588-4820-a47f-9fddc0fed3f5
+    subject_class: criterion
+    local_subject_id: ac.cn.capture-without-kind
+  current_revision: 1
+  revisions:
+  - number: 1
+    predecessor: null
+    node_fields:
+      title: Capture without semantic classification
+    statement: Given an empty sketch, the CLI accepts one short note without a semantic kind, returns
+      its stored revision and added-node diff, and a fresh process reads the same ID, label, detail and
+      original human quotation with canonical false and no approval record.
+    containment: specs/criteria/ac.cn.capture-without-kind.yaml
+    provenance: docs/reviews/0045_cn_capture/materialization/decisions.json#/effects/3
+    acceptance_criteria_refs: []
+    revision_scope: CN-CAPTURE revision-1 origin and exact criterion membership; no historical evidence
+      transfer or tests_verified admission.
+  current_disposition:
+    state: active
+    basis_ref: origin:ac.cn.capture-without-kind:v1
+    observation_provenance: docs/reviews/0045_cn_capture/materialization/decisions.json#/effects/4
+  retained_disposition_transitions:
+  - event_ref: origin:ac.cn.capture-without-kind:v1
+    transition: activation
+    provenance: docs/reviews/0045_cn_capture/materialization/decisions.json#/effects/4

@@ -103,6 +103,14 @@ The separate semantic decision at
 agreement with the three displayed meanings and retains its conversation context.
 It binds the unchanged preparation and does not grant publication permission.
 
+The complete CN-CAPTURE materialization package at
+`docs/reviews/0045_cn_capture/materialization/README.md` contains full proposed
+Intent and subject records, an exact `derived_from` link, workspace/topology,
+the version-2 writer request and pending decision templates. Its isolated preview
+creates no production ref or origins. Actual ingress reviews change input bytes
+and require a new packet scope before final publication approval. Historical CI
+evidence is not automatically admitted.
+
 Run `tests/test_conversation_notes.py` for persistence, source retention,
 concurrency, failure recovery and review scope. Set `HYPERCODE_BIN` to include the
 optional native Hypercode compatibility check. The detailed JSON request and

@@ -106,3 +106,8 @@ merging that preparation does not adopt the subjects.
 The [separate semantic decision](adoption/semantic-review.json) records agreement
 with the three displayed formulations. Canonical publication decisions and
 Intent/relation storage bindings remain pending.
+
+The [materialization package](materialization/README.md) supplies the complete
+proposed Intent, two subjects, exact derivation, workspace/topology and writer
+request. Its isolated preview creates no production origin or ref; templates
+remain separate from actual publication decisions.

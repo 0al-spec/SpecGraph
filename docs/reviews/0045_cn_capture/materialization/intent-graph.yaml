@@ -1,0 +1,48 @@
+schema_version: 1
+artifact_kind: intent_graph_source_candidate
+created_at: '2026-10-25T21:08:02+00:00'
+source_lane: SpecDraft
+gate_state: review_pending
+canonical_adoption: false
+canonical_readiness: not_evaluated
+ready_for_materialization: false
+physical_fields_complete: true
+publication_decisions_recorded: false
+proposed_path: specs/intent_graph.yaml
+source_prototype: docs/reviews/0045_cn_capture/adoption/intent-lineage.json
+prepared_by: agent:codex
+proposed_record:
+  schema_version: 1
+  artifact_kind: subject_intent_graph
+  workspace_identity: workspace:a2800523-3588-4820-a47f-9fddc0fed3f5
+  intents:
+  - id: intent.cn.capture
+    kind: intent
+    revision: 1
+    title: Capture conversational notes during dialogue
+    status: outlined
+    authority_class: distilled
+    source_ref: docs/reviews/0045_cn_capture/adoption/intent-lineage.json#/human_intent_records/0
+    provenance:
+      actor_id: agent:codex
+      authority_class: distilled
+      recorded_at: '2026-10-25T21:08:02+00:00'
+      source_ref: docs/reviews/0045_cn_capture/adoption/intent-lineage.json#/human_intent_records/0
+      notes: Normalized meaning agreed in the separate semantic review; canonical origin permission is
+        pending.
+    statement: During a human-agent conversation, the agent preserves short notes while the person continues
+      speaking and can later review them.
+    adoption_provenance: docs/reviews/0045_cn_capture/materialization/decisions.json#/effects/5
+  derived_from:
+  - id: edge.cn.capture.derived-from-intent
+    kind: derived_from
+    source:
+      subject:
+        workspace_identity: workspace:a2800523-3588-4820-a47f-9fddc0fed3f5
+        subject_class: Requirement
+        local_subject_id: req.cn.capture
+      mode: exact
+      revision: 1
+    target_intent_id: intent.cn.capture
+    target_revision: 1
+    adoption_provenance: docs/reviews/0045_cn_capture/materialization/decisions.json#/effects/6

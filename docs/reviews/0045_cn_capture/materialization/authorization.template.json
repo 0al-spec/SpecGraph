@@ -1,0 +1,23 @@
+{
+  "schema_version": 1,
+  "artifact_kind": "subject_source_write_authorization_template",
+  "publication_authorized": false,
+  "proposed_authorization": {
+    "schema_version": 1,
+    "artifact_kind": "subject_source_write_authorization",
+    "request_sha256": "a6adba8da293a16b7255a953fc4caace468e81ad7fe1271dfdf8d57285732866",
+    "decision_ref": "docs/reviews/0045_cn_capture/materialization/decisions.json#/publication",
+    "reviewer": null,
+    "reviewer_authority": "human_project_author",
+    "recorded_at": null,
+    "transition_refs": [
+      "docs/reviews/0045_cn_capture/materialization/decisions.json#/effects/0",
+      "docs/reviews/0045_cn_capture/materialization/decisions.json#/effects/1",
+      "docs/reviews/0045_cn_capture/materialization/decisions.json#/effects/2",
+      "docs/reviews/0045_cn_capture/materialization/decisions.json#/effects/3",
+      "docs/reviews/0045_cn_capture/materialization/decisions.json#/effects/4",
+      "docs/reviews/0045_cn_capture/materialization/decisions.json#/effects/5",
+      "docs/reviews/0045_cn_capture/materialization/decisions.json#/effects/6"
+    ]
+  }
+}

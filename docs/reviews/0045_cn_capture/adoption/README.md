@@ -113,6 +113,11 @@ no complete physical graph candidate or approved origin effects. Prepare a new
 packet for the complete records; keep these reviewed preparation bytes unchanged.
 Criterion membership still supplies no implicit criterion-to-Intent path.
 
+The [complete physical publication preparation](../materialization/README.md)
+now provides full records, exact writer request, topology, pending decision
+templates and a reproducible isolated preview. It preserves this earlier packet
+and semantic decision; actual publication decisions remain pending.
+
 ## Binding and later publication
 
 The packet binds inputs by SHA-256 and historical contracts and writer code by
