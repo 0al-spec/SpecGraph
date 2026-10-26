@@ -1,0 +1,106 @@
+{
+  "schema_version": 1,
+  "artifact_kind": "specdraft_live_preview_technical_observation",
+  "recorded_by": "agent:codex",
+  "recorded_at": "2026-10-26T09:05:27.922248+00:00",
+  "scope": "Local reversible technical prototype; draft specification remains under review.",
+  "canonical_adoption": false,
+  "specdraft_accepted": false,
+  "evidence_admission_allowed": false,
+  "tests": {
+    "passed": 52,
+    "skipped": 1,
+    "skip_reason": "Optional reference Hypercode CLI compatibility check was not configured.",
+    "selectors": [
+      "tests/test_specdraft_preview.py",
+      "tests/test_conversation_notes.py"
+    ]
+  },
+  "browser": {
+    "driver": "configured Playwright browser",
+    "initial_nodes": 8,
+    "after_tool_update_nodes": 9,
+    "initial_revision": "b7244c6348c64bfb8ec08f3ba630d9d3",
+    "added_note_revision": "f6da76b8d66a44179a38bb8d1622b78d",
+    "measured_revision": "002d3ceea1cc439489546a7deb13afa5",
+    "manual_reload_for_update": false,
+    "source_inspector_selected_id": "specdraft_sidecar",
+    "original_quote_observed": true,
+    "latency_sample": {
+      "saved_at": "2026-10-26T08:55:55.034479+00:00",
+      "client_rendered_at_ms": 1793004955622,
+      "elapsed_ms": 588,
+      "node_count": 9,
+      "limit": "One local foreground wall-clock sample; not a distribution or the specified 100-node profile."
+    },
+    "desktop": {
+      "width": 1440,
+      "height": 960,
+      "horizontal_page_overflow": false
+    },
+    "narrow": {
+      "width": 420,
+      "height": 900,
+      "horizontal_page_overflow": false,
+      "fit_zoom_percent": 34,
+      "limitation": "Full-map overview needs zoom to read labels at this width."
+    },
+    "history_controls_present": false,
+    "codex_panel_open_request": "queued_not_render_verified",
+    "audit_limits": {
+      "browser_actions_used": 15,
+      "ceiling": 15,
+      "screenshots_inspected": 3,
+      "full_navigation_snapshots": 2
+    },
+    "console": "Initial favicon 404 observed; explicit local SVG favicon added. No JavaScript runtime error was observed.",
+    "screenshots": "Inspected locally; private image files are not included in this public packet."
+  },
+  "acceptance_coverage": [
+    {
+      "id": "SDPV-01",
+      "status": "observed_local_browser_and_unit_empty_case"
+    },
+    {
+      "id": "SDPV-02",
+      "status": "partial",
+      "remaining": "100-node browser profile is unverified."
+    },
+    {
+      "id": "SDPV-03",
+      "status": "partial",
+      "remaining": "Browser hostile-text execution and browser rename/reparent not exercised; literal payload/ID behavior covered in model tests."
+    },
+    {
+      "id": "SDPV-04",
+      "status": "focused_tests_passed",
+      "remaining": "No general security audit claim."
+    },
+    {
+      "id": "SDPV-05",
+      "status": "model_tests_passed_browser_unverified"
+    },
+    {
+      "id": "SDPV-06",
+      "status": "observed_current_only_ui_and_api_tests"
+    }
+  ],
+  "code_file_sha256": {
+    "tools/specdraft_preview_cli.py": "3660646fd9313390f969a57457ff083ab52139dbd9448cfc35eb7d1ac86a7a85",
+    "tools/specdraft_preview/__init__.py": "4c0202f97d74af5ea1de2bb2ebfecb4f9beec7c0853db93e9db6d1ceee2a3b29",
+    "tools/specdraft_preview/context.py": "7cf48d4807428548235ccb6d27137924a85f78ddbc2f1643ec6b6a727b0d313d",
+    "tools/specdraft_preview/display_state.py": "6debc9067653a775f81ce1043decbcca9fa8717d24ac4040446fe5d716cac891",
+    "tools/specdraft_preview/empty_snapshot_spec.py": "3b526c20faa52181769cdcd92480b7e56308acb24675362c8acbc5f84459a0c5",
+    "tools/specdraft_preview/server.py": "d3c98d0389e449c4cf2a7f00bdfca1b9929836da48cdf632f61bf7c22abc239a",
+    "tools/specdraft_preview/snapshot.py": "78195fa0fe7783c1e91aa774430d0187ab2be16e876f55bdb5c4a6c0f85ab159",
+    "tools/specdraft_preview/snapshot_continuity_spec.py": "df3152c72ecbc879d4b0e45eca8920282262315b1f400d4ab87253270eb712fe",
+    "tools/specdraft_preview/stale_snapshot_spec.py": "7841fe166485abb1a3f9e9e0802fa210f5f5a6aca9288b1d99e7bfc30604cbe4",
+    "tools/specdraft_preview/unavailable_snapshot_spec.py": "2777c83477c7bbd238172f6b0583b58bd7bf95cff69a78e7e99caf72fe28d039",
+    "tools/specdraft_preview/static/app.js": "098e403c73cb67979e781cc35cc495772ff39ba8d4fc1076114513db71bf24f6",
+    "tools/specdraft_preview/static/icon.svg": "5bc44e9dc3b44473e576ac35bbb0b84ac27ab339ae70bd91ce11f8a8c12ca0cb",
+    "tools/specdraft_preview/static/index.html": "9222e78f058a6110e12649035f0d9cd073f9eb7680d7b4f9be47beea310fc8c9",
+    "tools/specdraft_preview/static/style.css": "a0573a108440e8171719e1e752b689c476a9bfd303d3232043f7b58147d83404",
+    "tests/test_specdraft_preview.py": "c7459ea23e04c576b247f57e039688403693fd55a25428abd06976fd26038b99",
+    "Makefile": "401be25aa94f4e2219c286a6cf7a1381743673839c0e42ed4e30b4a17c95f6f4"
+  }
+}

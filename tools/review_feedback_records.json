@@ -1326,5 +1326,22 @@
     "residual_risk": "Coverage remains structural; unannotated Markdown and semantic correctness require review. Declarations do not attest approval or implementation.",
     "recorded_at": "2026-10-24T20:56:00Z",
     "prevention_path": "tests/test_intent_decision_review.py covers eight proposal dispositions, incomplete coverage, metadata changes, deletion, cross-scope identity, invalid inputs and rejection of contract_only with production changes."
+  },
+  {
+    "feedback_id": "pr-804-inspector-link-direction",
+    "source_pr": 804,
+    "source_thread_url": "https://github.com/0al-spec/SpecGraph/pull/804#discussion_r4375625114",
+    "reviewer": "chatgpt-codex-connector",
+    "review_comment_summary": "Selecting the target of a named relation reversed its saved meaning because every inspector row used an outgoing arrow to the other endpoint.",
+    "fix_summary": "Render the original source, label and target for every incident relation, retaining explicit outside-branch endpoint markers.",
+    "root_cause_class": "viewer_contract_gap",
+    "prevention_action": "regression_test_added",
+    "verification": [
+      "targeted_test",
+      "lint_or_format_check"
+    ],
+    "residual_risk": "The Node DOM-double regression checks shipped app text and click-handler behavior; it is not a real-browser layout or accessibility audit. Earlier browser observations remain historical.",
+    "recorded_at": "2026-10-26T16:59:24.779875+00:00",
+    "prevention_path": "tests/specdraft_preview_inspector.cjs exercises both selected endpoints, both outside-branch directions, a self-link and literal text. Four tests failed before and passed after; .github/workflows/python-ci.yml runs them under Node 24."
   }
 ]

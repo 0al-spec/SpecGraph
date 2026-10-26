@@ -1,0 +1,18 @@
+id: SG-RFC-0228
+kind: proposal
+status: draft
+proposal_ref: docs/proposals/0228_specdraft_live_preview.md
+provenance:
+  authored_by: agent
+  authority: proposal_draft
+  source_ref: docs/archive/proposal_sources/0228_specdraft_live_preview.md
+atoms:
+  intents:
+  - id: SD-LIVE-VIEW
+    statement: The person can view the selected saved SpecDraft sketch as a mind map in a local browser during the conversation.
+  - id: SD-LIVE-REFRESH
+    statement: Newly saved note revisions update the open mind map without a manual page reload.
+  - id: SD-LIVE-FIDELITY
+    statement: The view preserves the notes' identities, hierarchy, wording and source attribution while identifying them as draft material.
+  - id: SD-LIVE-SCOPE
+    statement: The first viewer slice only visualizes the current saved sketch, without editing, promotion, history selection or rollback.

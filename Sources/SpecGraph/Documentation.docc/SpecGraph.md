@@ -117,3 +117,7 @@ The canonical source files remain in the repository:
 ### Proposed scenario contract
 
 - <doc:BDDScenarioContract>
+
+### Proposed live authoring
+
+- <doc:SpecDraftLivePreview>

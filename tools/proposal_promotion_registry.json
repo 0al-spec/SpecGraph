@@ -2938,6 +2938,19 @@
     ]
   },
   {
+    "proposal_id": "0228",
+    "source_artifact_class": "working_draft",
+    "source_refs": [
+      "docs/archive/proposal_sources/0228_specdraft_live_preview.md"
+    ],
+    "motivating_concern": "The person should see saved conversational notes evolving as a browser mind map while the agent captures and refines the discussion.",
+    "normalized_title": "SpecDraft Live Preview",
+    "bounded_scope": "Source-attributed notes/proposal/specification draft plus a reversible local read-only live-view prototype and bounded technical observations. Keep specification acceptance, canonical publication, history controls and custom agent plugins separate; leave unverified profiles explicit.",
+    "required_provenance_links": [
+      "source_draft_ref"
+    ]
+  },
+  {
     "proposal_id": "0229",
     "source_artifact_class": "working_draft",
     "source_refs": [

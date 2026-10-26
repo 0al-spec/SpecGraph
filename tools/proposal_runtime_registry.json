@@ -13362,6 +13362,64 @@
     "notes": "Proposal-only location/skill plan. Existing engine reuse was observed with a deterministic local executor; no skill, Git setup command, root-rebinding API or initializer fix is implemented. Post-execution init blocks on generated .worktrees. Outer implementation trace/evidence binding and real-agent validation remain separate."
   },
   {
+    "proposal_id": "0228",
+    "posture": "synchronous_runtime_slice",
+    "runtime_surfaces": [
+      "docs/proposals/0228_specdraft_live_preview.md",
+      "docs/proposals/0228_specdraft_live_preview.intent.yaml",
+      "docs/archive/proposal_sources/0228_specdraft_live_preview.md",
+      "docs/reviews/0228_specdraft_live_preview/source-notes.json",
+      "docs/reviews/0228_specdraft_live_preview/specdraft.md",
+      "docs/reviews/0228_specdraft_live_preview/packet.json",
+      "docs/reviews/0228_specdraft_live_preview/handoff.json",
+      "Sources/SpecGraph/Documentation.docc/SpecDraftLivePreview.md",
+      "tools/specdraft_preview_cli.py",
+      "tools/specdraft_preview/__init__.py",
+      "tools/specdraft_preview/context.py",
+      "tools/specdraft_preview/display_state.py",
+      "tools/specdraft_preview/empty_snapshot_spec.py",
+      "tools/specdraft_preview/server.py",
+      "tools/specdraft_preview/snapshot.py",
+      "tools/specdraft_preview/snapshot_continuity_spec.py",
+      "tools/specdraft_preview/stale_snapshot_spec.py",
+      "tools/specdraft_preview/unavailable_snapshot_spec.py",
+      "tools/specdraft_preview/static/app.js",
+      "tools/specdraft_preview/static/icon.svg",
+      "tools/specdraft_preview/static/index.html",
+      "tools/specdraft_preview/static/style.css",
+      "tests/test_specdraft_preview.py",
+      "Makefile",
+      "docs/reviews/0228_specdraft_live_preview/verification.json"
+    ],
+    "runtime_markers": [
+      {
+        "path": "tools/specdraft_preview/server.py",
+        "pattern": "def create_server("
+      },
+      {
+        "path": "tools/specdraft_preview/snapshot.py",
+        "pattern": "class NotesPreview:"
+      }
+    ],
+    "validation_markers": [
+      {
+        "path": "tests/test_specdraft_preview.py",
+        "pattern": "def test_http_observes_live_store_without_mutation_or_history("
+      },
+      {
+        "path": "tests/test_specdraft_preview.py",
+        "pattern": "def test_missing_head_after_saved_revision_is_stale("
+      }
+    ],
+    "observation_markers": [
+      {
+        "path": "docs/reviews/0228_specdraft_live_preview/verification.json",
+        "pattern": "\"elapsed_ms\": 588"
+      }
+    ],
+    "notes": "Source-captured proposal and pending SpecDraft with bounded local prototype: read-only HTTP/SVG UI, named immutable display policies, 52 focused tests passed and one optional skip. Nine-node foreground refresh observed at 588 ms. Acceptance/canonical publication, 100-node browser profile, browser failure recovery and hostile-text browser execution remain unverified/pending."
+  },
+  {
     "proposal_id": "0229",
     "posture": "deferred_until_canonicalized",
     "runtime_surfaces": [

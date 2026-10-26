@@ -1,0 +1,40 @@
+{
+  "artifact_kind": "conversation_notes_update",
+  "schema_version": 1,
+  "canonical": false,
+  "revision": "b7244c6348c64bfb8ec08f3ba630d9d3",
+  "previous_revision": "e255d0f2dce94685a353da78669b0886",
+  "diff": {
+    "added": [
+      {
+        "id": "sidecar_proposal",
+        "label": "Proposal 0228",
+        "detail": "docs/proposals/0228_specdraft_live_preview.md; подготовлен для review.",
+        "parent_id": "sidecar_dogfooding"
+      },
+      {
+        "id": "sidecar_specdraft",
+        "label": "Черновик req.specdraft.live-preview",
+        "detail": "docs/reviews/0228_specdraft_live_preview/specdraft.md; шесть критериев, review_pending.",
+        "parent_id": "sidecar_dogfooding"
+      }
+    ],
+    "updated": [],
+    "links_changed": [
+      {
+        "source_id": "sidecar_specdraft",
+        "target_id": "sidecar_proposal",
+        "label": "подготовлен из",
+        "sources": [
+          {
+            "ref": "assistant-excerpt:specdraft-sidecar/proposal-prepared",
+            "quote": "Подготовлены proposal 0228 и SpecDraft с шестью проверяемыми сценариями: начальный вид, живое обновление, сохранение ID и цитат, read-only доступ, восстановление после ошибки и отложенная история.",
+            "speaker": "agent"
+          }
+        ]
+      }
+    ],
+    "reviews_added": []
+  },
+  "snapshot_path": "conversation_memory/sketches/hypercode-conversation-poc/revisions/b7244c6348c64bfb8ec08f3ba630d9d3"
+}

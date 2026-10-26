@@ -1,0 +1,44 @@
+{
+  "schema_version": 1,
+  "artifact_kind": "specdraft_preview_relation_review_correction",
+  "recorded_by": "agent:codex",
+  "recorded_at": "2026-10-26T16:59:24.779875+00:00",
+  "source_thread_url": "https://github.com/0al-spec/SpecGraph/pull/804#discussion_r4375625114",
+  "previous_pr_head": "2a9ac4ce09b357a3ff83e613f48a9005e7210939",
+  "acceptance_id": "SDPV-03",
+  "canonical_adoption": false,
+  "specdraft_accepted": false,
+  "browser_observation_repeated": false,
+  "historical_browser_observation": "verification.json",
+  "checks": {
+    "node_regression": {
+      "failed_before": 4,
+      "passed_after": 4,
+      "command": "node --test tests/specdraft_preview_inspector.cjs",
+      "local_node_version": "v26.5.0",
+      "ci_node_version": "24",
+      "harness": "Shipped app rendered and its actual click handlers invoked against a minimal DOM double."
+    },
+    "python_focused": {
+      "passed": 52,
+      "skipped": 1,
+      "skip_reason": "Optional reference Hypercode CLI compatibility check was not configured.",
+      "selectors": [
+        "tests/test_specdraft_preview.py",
+        "tests/test_conversation_notes.py"
+      ]
+    },
+    "python_quality": "passed",
+    "node_syntax": "passed"
+  },
+  "code_file_sha256": {
+    "tools/specdraft_preview/static/app.js": "26e511c5feaa021fa735157832b09f111e2fc2d0e5f4c8775ae68c69ca2bf4bb",
+    "tests/specdraft_preview_inspector.cjs": "1a1c6e662c3ee93893a8c52d269c334ce138f3a1d155657dec46d973a3374301",
+    ".github/workflows/python-ci.yml": "1bf43925aee6c9254e4529a59141457bac0119781529bcc7064422c97af61b78"
+  },
+  "limitations": [
+    "No new real-browser layout, accessibility or hostile-script audit.",
+    "The previous browser verification identifies the earlier code snapshot, not this correction.",
+    "CI has not yet run for this correction."
+  ]
+}

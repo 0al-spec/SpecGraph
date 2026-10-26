@@ -1,0 +1,79 @@
+{
+  "artifact_kind": "specgraph.intent-decision-review/v1",
+  "base_sha": "c4e98034fb01f055a42906ed525d589e68b43ac2",
+  "decisions": [
+    {
+      "change_sha256": "80047dbb5992363ab726f215b3d85379abb9e908d2ea6c7a5e676e7574b7699f",
+      "disposition": "mechanics",
+      "implementation_refs": [
+        {
+          "path": "tools/specdraft_preview/server.py",
+          "symbol": "create_server"
+        }
+      ],
+      "rationale": "SD-LIVE-VIEW / SDPV-01: fixed HTTP asset delivery and SVG hierarchy layout are rendering/I-O mechanics. create_server serves the local page and snapshot adapter; it does not infer meaning or choose eligibility. Browser observation verifies initial rendering. No Specification is added merely for layout.",
+      "specification_refs": []
+    },
+    {
+      "change_sha256": "e79658730ce11252b1c323fa69d279673d4befe6a332e68e6e6cdf034716e73f",
+      "disposition": "new_specification",
+      "implementation_refs": [
+        {
+          "path": "tools/specdraft_preview/snapshot.py",
+          "symbol": "NotesPreview"
+        },
+        {
+          "path": "tools/specdraft_preview/display_state.py",
+          "symbol": "display_state"
+        }
+      ],
+      "rationale": "SD-LIVE-REFRESH / SDPV-02,05: poll timing is browser mechanics; the stable current/empty/stale/unavailable distinction and refusal to reinterpret a lost saved head as a new empty sketch are named policies. NotesPreview prepares immutable facts and consumes these rules through display_state; focused tests cover their outcomes and recovery. The 100-node browser profile remains unverified.",
+      "specification_refs": [
+        {
+          "path": "tools/specdraft_preview/stale_snapshot_spec.py",
+          "symbol": "STALE_SNAPSHOT_SPEC"
+        },
+        {
+          "path": "tools/specdraft_preview/unavailable_snapshot_spec.py",
+          "symbol": "UNAVAILABLE_SNAPSHOT_SPEC"
+        },
+        {
+          "path": "tools/specdraft_preview/empty_snapshot_spec.py",
+          "symbol": "EMPTY_SNAPSHOT_SPEC"
+        },
+        {
+          "path": "tools/specdraft_preview/snapshot_continuity_spec.py",
+          "symbol": "SNAPSHOT_CONTINUITY_SPEC"
+        }
+      ]
+    },
+    {
+      "change_sha256": "5156a176264139f45783d73a8485000b512aa65993d13fdcbe39429553d7f281",
+      "disposition": "mechanics",
+      "implementation_refs": [
+        {
+          "path": "tools/specdraft_preview/snapshot.py",
+          "symbol": "NotesPreview"
+        }
+      ],
+      "rationale": "SD-LIVE-FIDELITY / SDPV-03: NotesPreview projects the existing read_notes revision, IDs, hierarchy, text, links and source attribution without semantic rewriting. Browser textContent/SVG text rendering preserves inert text. This is data projection/presentation, not a new authority decision; canonical false remains the existing note boundary. Original-source inspection was observed; hostile-text browser execution remains unverified. The PR804 correction presents every incident relation with its original source, label and target regardless of the selected endpoint. This is presentation mechanics; four Node DOM-double regressions exercise the shipped app and its click handlers, including incoming/outgoing external endpoints and self-links. These checks do not replace a browser audit.",
+      "specification_refs": []
+    },
+    {
+      "change_sha256": "727590ad4da33b7bfd44047917564c41d0d288c00bdfebdded86adb93cfff346",
+      "disposition": "mechanics",
+      "implementation_refs": [
+        {
+          "path": "tools/specdraft_preview/server.py",
+          "symbol": "create_server"
+        }
+      ],
+      "rationale": "SD-LIVE-SCOPE / SDPV-04,06: the fixed GET/HEAD asset and snapshot routes, loopback socket and rejected HTTP mutation/path requests are protocol and I/O boundary mechanics. No editing, approval, history-selection or canonical writer is invoked. Tests verify no note-file mutation and route rejection; UI observation shows current-only controls. New permission/semantic policy is deliberately not introduced.",
+      "specification_refs": []
+    }
+  ],
+  "intent_delta_sha256": "717cd5866a2cc5494c5a52a3677e6e7476741a089a97c1b6bdffa2fcc8a8b1b8",
+  "pr_body_sha256": "0eb5a34be875a8715ba04f3e5b7baebf558ca72a599b4148127fd6ffc79f4d46",
+  "schema_version": 1,
+  "source_scope_sha256": "b67577bee24130f28afc7066e4f10d32c49c2792e7afa3d1b2d673cb0c8459d1"
+}

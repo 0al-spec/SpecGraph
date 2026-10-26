@@ -152,6 +152,20 @@ jobs:
           --base-ref "${{ github.event.pull_request.base.sha }}"
           --head-ref "${{ github.event.pull_request.head.sha }}"
 
+  specdraft-preview-ui:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Set up Node for the dependency-free inspector regression
+        uses: actions/setup-node@v6
+        with:
+          node-version: "24"
+
+      - name: Verify saved relation direction in the shipped preview app
+        run: node --test tests/specdraft_preview_inspector.cjs
+
   test:
     runs-on: ubuntu-latest
     steps:

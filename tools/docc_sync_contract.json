@@ -1,6 +1,25 @@
 {
   "groups": [
     {
+      "id": "specdraft-live-preview",
+      "description": "Source-captured live notes visualization proposal and pending specification contract.",
+      "docs": [
+        "docs/proposals/0228_specdraft_live_preview.md"
+      ],
+      "docc": [
+        "Sources/SpecGraph/Documentation.docc/SpecDraftLivePreview.md"
+      ],
+      "required_terms": [
+        "SpecDraft",
+        "0228",
+        "read_notes",
+        "update_notes",
+        "SD-LIVE-VIEW",
+        "SDPV-01",
+        "synchronous_runtime_slice"
+      ]
+    },
+    {
       "id": "pilot-followup-reentry",
       "description": "Preserved pilot follow-ups return through existing supervisor surfaces without new debt metrics or publication authority.",
       "docs": [
