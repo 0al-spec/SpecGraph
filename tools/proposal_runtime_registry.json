@@ -2077,6 +2077,8 @@
       "tools/conversation_notes/store.py",
       "tests/test_conversation_notes.py",
       "docs/conversation_notes.md",
+      "docs/specdraft_layer.md",
+      "Sources/SpecGraph/Documentation.docc/SpecDraft.md",
       ".codex/skills/specgraph-conversation-notes/SKILL.md",
       "tools/intent_atoms_pr_comment.py",
       "tests/test_intent_atoms.py",

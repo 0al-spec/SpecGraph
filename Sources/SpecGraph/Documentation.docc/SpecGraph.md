@@ -108,6 +108,7 @@ The canonical source files remain in the repository:
 - <doc:ImplementationContractPack>
 - <doc:ProductWorkspacePilots>
 - <doc:ConversationNotes>
+- <doc:SpecDraft>
 
 ### Proposed composition comparison
 
