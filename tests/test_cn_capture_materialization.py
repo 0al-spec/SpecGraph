@@ -20,8 +20,11 @@ from subject_publication import (
     DecisionSnapshot,
     PublicationGovernanceError,
     SubjectPublicationEvidence,
+    _lineage,
     _packet,
+    _review,
     scope_digest,
+    verify_publication,
 )
 from subject_read_model import RevisionSelection, SubjectClass, SubjectRef
 from subject_read_model_io import SubjectDocumentError
@@ -58,11 +61,11 @@ def commit_paths(root, paths):
     return git_command(root, "rev-parse", "HEAD").stdout.decode().strip()
 
 
-def binding(root, packet, head):
+def binding(root, packet, head, path=PACKET):
     return {
         "reviewed_head": head,
-        "packet_path": PACKET,
-        "packet_sha256": hashlib.sha256((root / PACKET).read_bytes()).hexdigest(),
+        "packet_path": path,
+        "packet_sha256": hashlib.sha256((root / path).read_bytes()).hexdigest(),
         "approval_scope_sha256": packet["approval_scope_sha256"],
     }
 
@@ -300,3 +303,207 @@ def test_synthetic_decisions_publish_the_same_payload_with_a_new_review_scope(re
     )
     assert selected_source_commit(root, request.source_ref) == result["candidate_commit"]
     assert result["reviewer_identity_attested"] is False
+
+
+SOURCE_REVIEW = "docs/reviews/0045_cn_capture/source-review"
+
+
+def test_source_review_binds_unchanged_preparation_and_disclosed_interpretations():
+    review = document(SOURCE_REVIEW + "/review.json")
+    selection = review["reviewed_packet"]
+    snapshot = DecisionSnapshot(ROOT, selection["reviewed_head"])
+    packet, _ = _packet(snapshot, selection)
+    assert snapshot.read(PACKET) == (ROOT / PACKET).read_bytes()
+    for path, digest in review["source_file_sha256"].items():
+        assert hashlib.sha256((ROOT / path).read_bytes()).hexdigest() == digest, path
+    for path in packet["inputs"]["review_tree_file_sha256"]:
+        assert (ROOT / path).read_bytes() == snapshot.read(path), path
+    intent = document("docs/reviews/0045_cn_capture/adoption/intent-lineage.json")
+    assert review["findings"][0]["source_quote"] == intent["human_intent_records"][0]["text"]
+    proposal = document(packet["subjects"][0]["source_proposal_ref"])
+    assert packet["subjects"][0]["statement"] == proposal["atoms"]["intents"][0]["statement"]
+    assert [f["outcome"] for f in review["findings"][:3]] == [
+        "supported",
+        "supported_with_disclosed_inference",
+        "supported_with_disclosed_inference",
+    ]
+    for decision, lineage in zip(
+        review["recorded_decisions"], document(LINEAGES)["lineages"], strict=True
+    ):
+        assert decision["actor_id"] == "agent:codex"
+        assert decision["decision"] == "recommend_accept_proposed_ingress"
+        assert decision["lineage_scope_sha256"] == scope_digest(
+            {k: v for k, v in lineage.items() if k != "review"}
+        )
+        assert decision["human_ingress_approval"] == "pending"
+        assert lineage["review"] is None
+
+
+def test_source_review_retains_task_authorization_without_attributing_outcome_approval():
+    source = document(SOURCE_REVIEW + "/review-source.json")
+    agenda = document(SOURCE_REVIEW + "/decision-agenda.json")
+    assert source["context"]["human_response"] == {
+        "actor_id": "human:SoundBlaster",
+        "text": "Ок, делай",
+    }
+    assert source["context"]["native_message_ids"] is None
+    assert source["context"]["original_message_timestamp"] is None
+    assert source["human_publication_approval_recorded"] is False
+    assert not agenda["publication_authorized"] and not agenda["canonical_publication_included"]
+    assert len(agenda["subjects"]) == 2
+    assert all(item["actual_human_review"] is None for item in agenda["subjects"])
+
+
+@pytest.mark.parametrize("name", ["review.json", "review-source.json", "decision-agenda.json"])
+def test_source_review_artifacts_cannot_supply_writer_permission(rehearsal, name):
+    root, _, request, _ = rehearsal
+    path = SOURCE_REVIEW + "/" + name
+    save(root, path, document(path))
+    head = commit_paths(root, [path])
+    before = git_command(root, "count-objects", "-v").stdout
+    with pytest.raises(PublicationGovernanceError, match="not subject-publication permission"):
+        verify_publication(SubjectPublicationEvidence(root, head, path), None, None)
+    assert selected_source_commit(root, request.source_ref) == request.expected_commit
+    assert git_command(root, "count-objects", "-v").stdout == before
+
+
+PUBLICATION = "docs/reviews/0045_cn_capture/publication"
+FINAL_PACKET = PUBLICATION + "/packet.json"
+
+
+@pytest.fixture()
+def confirmed_specdraft(rehearsal):
+    root, _, request, _ = rehearsal
+    packet = document(FINAL_PACKET)
+    paths = [FINAL_PACKET, *packet["inputs"]["review_tree_file_sha256"]]
+    for path in paths:
+        target = root / path
+        target.parent.mkdir(parents=True, exist_ok=True)
+        target.write_bytes((ROOT / path).read_bytes())
+    head = commit_paths(root, paths)
+    return root, packet, request, head
+
+
+def test_confirmed_specdraft_binds_real_reviews_without_changing_physical_scope(
+    confirmed_specdraft,
+):
+    root, packet, request, head = confirmed_specdraft
+    snapshot = DecisionSnapshot(root, head)
+    checked, reviewed = _packet(snapshot, binding(root, packet, head, FINAL_PACKET))
+    original = document(PACKET)
+    assert checked["approval_scope_sha256"] != original["approval_scope_sha256"]
+    assert checked["writer_request"] == original["writer_request"]
+    assert checked["intent_graph"] == original["intent_graph"]
+    assert request.digest() == checked["writer_request"]["request_sha256"]
+    for subject, old_subject in zip(checked["subjects"], original["subjects"], strict=True):
+        assert {k: v for k, v in subject.items() if k != "intent_lineage_ref"} == {
+            k: v for k, v in old_subject.items() if k != "intent_lineage_ref"
+        }
+    decisions = document(PUBLICATION + "/specdraft-decisions.json")
+    agenda = document(SOURCE_REVIEW + "/decision-agenda.json")
+    for transition, item in zip(decisions["transition_decisions"], agenda["subjects"], strict=True):
+        assert transition["promotion_edge"] == "proposal -> spec_draft"
+        _lineage(checked, reviewed, transition, snapshot)
+        review = _review(transition, snapshot)
+        assert review["source_quote"] == "Подтверждаю"
+        assert review["reviewer"] == "human:SoundBlaster"
+        lineage = reviewed.resolve(transition["intent_lineage_ref"])
+        assert _review(lineage, snapshot)["scope_sha256"] == item["lineage_scope_sha256"]
+    assert decisions["accepted_lane"] == "SpecDraft"
+    assert not decisions["canonical_adoption"] and not decisions["publication_authorized"]
+    confirmation = document(PUBLICATION + "/confirmation-source.json")
+    assert confirmation["context"]["human_response"]["text"] == (
+        "SpecDraft - а мне нравится 👍 \n\nПодтверждаю"
+    )
+    assert confirmation["context"]["original_message_timestamp"] is None
+    assert confirmation["reviewer_identity_attested"] is False
+
+
+@pytest.mark.parametrize("mutation", ["subject", "quote"])
+def test_confirmed_specdraft_rejects_changed_scope_or_attribution(confirmed_specdraft, mutation):
+    root, _, _, head = confirmed_specdraft
+    lineage = copy.deepcopy(document(PUBLICATION + "/lineages.json")["lineages"][0])
+    if mutation == "subject":
+        lineage["subject_local_id"] = "unreviewed-subject"
+    else:
+        lineage["review"]["source_quote"] = "Approve canonical publication."
+    with pytest.raises(PublicationGovernanceError):
+        _review(lineage, DecisionSnapshot(root, head))
+
+
+def test_confirmed_ingress_does_not_grant_final_publication_permission(confirmed_specdraft):
+    root, packet, request, head = confirmed_specdraft
+    decisions = document(PUBLICATION + "/decisions.template.json")["proposed_decisions"]
+    decisions["packet_binding"] = binding(root, packet, head, FINAL_PACKET)
+    decisions["packet_approval"]["packet_binding"] = decisions["packet_binding"]
+    save(root, DECISIONS, decisions)
+    evidence_head = commit_paths(root, [DECISIONS])
+    proposed = document(PUBLICATION + "/authorization.template.json")["proposed_authorization"]
+    authorization = SubjectWriteAuthorization(
+        request.digest(),
+        proposed["decision_ref"],
+        "human:SoundBlaster",
+        "human_project_author",
+        request.recorded_at,
+        tuple(proposed["transition_refs"]),
+    )
+    before = git_command(root, "count-objects", "-v").stdout
+    with pytest.raises(PublicationGovernanceError, match="missing actual human review"):
+        write_subject_source(
+            root,
+            request,
+            authorization=authorization,
+            governance=SubjectPublicationEvidence(root, evidence_head, DECISIONS),
+        )
+    assert selected_source_commit(root, request.source_ref) == request.expected_commit
+    assert git_command(root, "count-objects", "-v").stdout == before
+
+
+def test_final_scope_needs_no_new_ingress_review_for_remaining_decisions(confirmed_specdraft):
+    root, packet, request, head = confirmed_specdraft
+    lineages = (root / PUBLICATION / "lineages.json").read_bytes()
+    packet_bytes = (root / FINAL_PACKET).read_bytes()
+    author = FixtureApprovals(root, request.recorded_at)
+    decisions = document(PUBLICATION + "/decisions.template.json")["proposed_decisions"]
+    decisions["packet_binding"] = binding(root, packet, head, FINAL_PACKET)
+    decisions["packet_approval"] = {"packet_binding": decisions["packet_binding"]}
+    author.approve(decisions["packet_approval"])
+    for transition in decisions["transition_decisions"]:
+        if transition["promotion_edge"] == "spec_draft -> canonical_artifact":
+            transition.update(
+                state="approved",
+                outcome="approved",
+                reviewer_or_decider="human:cn-capture-fixture",
+                decision_timestamp=request.recorded_at,
+                rationale="Synthetic temporary-repository approval only.",
+            )
+            author.approve(transition)
+        else:
+            assert transition["review"]["reviewer"] == "human:SoundBlaster"
+    for effect in decisions["effects"]:
+        author.approve(effect)
+    author.approve(decisions["publication"])
+    save(root, DECISIONS, decisions)
+    evidence_head = commit_paths(root, [DECISIONS, *author.paths])
+    proposed = document(PUBLICATION + "/authorization.template.json")["proposed_authorization"]
+    authorization = SubjectWriteAuthorization(
+        request.digest(),
+        proposed["decision_ref"],
+        "human:cn-capture-fixture",
+        "human_project_author",
+        request.recorded_at,
+        tuple(proposed["transition_refs"]),
+    )
+    result = write_subject_source(
+        root,
+        request,
+        authorization=authorization,
+        governance=SubjectPublicationEvidence(root, evidence_head, DECISIONS),
+    )
+    assert result["status"] == "published"
+    assert (
+        result["candidate_commit"]
+        == document(FOLDER + "/preview.json")["result"]["candidate_commit"]
+    )
+    assert (root / PUBLICATION / "lineages.json").read_bytes() == lineages
+    assert (root / FINAL_PACKET).read_bytes() == packet_bytes

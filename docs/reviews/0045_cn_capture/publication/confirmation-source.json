@@ -1,0 +1,89 @@
+{
+  "schema_version": 1,
+  "artifact_kind": "conversation_capture_specdraft_confirmation",
+  "recorded_by": "agent:codex",
+  "recorded_at": "2026-10-25T22:00:31.612781+00:00",
+  "reviewer_identity_attested": false,
+  "context": {
+    "source": "current_codex_conversation",
+    "capture_authority": "agent_curated_conversation_excerpt_not_independent_attestation",
+    "native_message_ids": null,
+    "original_message_timestamp": null,
+    "first_observed_at": "2026-10-25T21:58:17Z",
+    "assistant_question": "Следующий шаг: подтверждаешь эти две связи происхождения для принятия в SpecDraft?",
+    "displayed_meanings": [
+      "`req.cn.capture` повторяет CN-CAPTURE из proposal. Сохранение заметки до выбора типа — раскрытая и ранее согласованная интерпретация твоего intent.",
+      "`ac.cn.capture-without-kind` — согласованная детализация: сохранить заметку без типа и восстановить её новым процессом, сохранив цитату и черновой статус."
+    ],
+    "human_response": {
+      "actor_id": "human:SoundBlaster",
+      "text": "SpecDraft - а мне нравится 👍 \n\nПодтверждаю"
+    },
+    "selected_quote": "Подтверждаю",
+    "decision_agenda_ref": "docs/reviews/0045_cn_capture/source-review/decision-agenda.json",
+    "decision_agenda_sha256": "18adc0a3eed256a0c91d4c380910b56292364681d1dab1a8d8df2548e98e7213"
+  },
+  "interpretation": "Explicit confirmation of the two displayed source lineages for proposal-to-SpecDraft acceptance. No canonical origin, activation, workspace allocation, final packet approval or writer publication is authorized by this scoped confirmation.",
+  "reviews": [
+    {
+      "schema_version": 1,
+      "artifact_kind": "subject_human_review_record",
+      "review": {
+        "reviewer": "human:SoundBlaster",
+        "reviewer_authority": "human_project_author",
+        "decision_timestamp": "2026-10-25T21:58:17Z",
+        "decision_timestamp_basis": "First observation of this response in the current turn; original message timestamp is unavailable.",
+        "outcome": "approved",
+        "rationale": "Explicit confirmation of the two displayed source lineages for acceptance in SpecDraft; no additional human rationale was supplied.",
+        "source_quote": "Подтверждаю",
+        "source_ref": "docs/reviews/0045_cn_capture/publication/confirmation-source.json#/reviews/0",
+        "scope_sha256": "ef84d6cf9957286a00f0ea6e5ad6fb69848df0412e187238495d1bc9839a4f67"
+      }
+    },
+    {
+      "schema_version": 1,
+      "artifact_kind": "subject_human_review_record",
+      "review": {
+        "reviewer": "human:SoundBlaster",
+        "reviewer_authority": "human_project_author",
+        "decision_timestamp": "2026-10-25T21:58:17Z",
+        "decision_timestamp_basis": "First observation of this response in the current turn; original message timestamp is unavailable.",
+        "outcome": "approved",
+        "rationale": "Explicit confirmation of the two displayed source lineages for acceptance in SpecDraft; no additional human rationale was supplied.",
+        "source_quote": "Подтверждаю",
+        "source_ref": "docs/reviews/0045_cn_capture/publication/confirmation-source.json#/reviews/1",
+        "scope_sha256": "3453d7e7c46da59c6bf72cc744bacd5bf358aedf9a84c2c906e4e670a5565b2f"
+      }
+    },
+    {
+      "schema_version": 1,
+      "artifact_kind": "subject_human_review_record",
+      "review": {
+        "reviewer": "human:SoundBlaster",
+        "reviewer_authority": "human_project_author",
+        "decision_timestamp": "2026-10-25T21:58:17Z",
+        "decision_timestamp_basis": "First observation of this response in the current turn; original message timestamp is unavailable.",
+        "outcome": "approved",
+        "rationale": "Explicit confirmation of the two displayed source lineages for acceptance in SpecDraft; no additional human rationale was supplied.",
+        "source_quote": "Подтверждаю",
+        "source_ref": "docs/reviews/0045_cn_capture/publication/confirmation-source.json#/reviews/2",
+        "scope_sha256": "568251aa9cdf4bbe109777c98821ce66d79120233d6e8b46086e9bb3fd682ca6"
+      }
+    },
+    {
+      "schema_version": 1,
+      "artifact_kind": "subject_human_review_record",
+      "review": {
+        "reviewer": "human:SoundBlaster",
+        "reviewer_authority": "human_project_author",
+        "decision_timestamp": "2026-10-25T21:58:17Z",
+        "decision_timestamp_basis": "First observation of this response in the current turn; original message timestamp is unavailable.",
+        "outcome": "approved",
+        "rationale": "Explicit confirmation of the two displayed source lineages for acceptance in SpecDraft; no additional human rationale was supplied.",
+        "source_quote": "Подтверждаю",
+        "source_ref": "docs/reviews/0045_cn_capture/publication/confirmation-source.json#/reviews/3",
+        "scope_sha256": "c2e525498a75b66675378482f4c4485d8ba8e7dd97a6d72743078950ec602a76"
+      }
+    }
+  ]
+}

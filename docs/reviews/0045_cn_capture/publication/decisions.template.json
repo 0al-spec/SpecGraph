@@ -1,0 +1,243 @@
+{
+  "schema_version": 1,
+  "artifact_kind": "subject_publication_decisions_template",
+  "actual_decision_path": "docs/reviews/0045_cn_capture/materialization/decisions.json",
+  "publication_decisions_recorded": false,
+  "proposed_decisions": {
+    "schema_version": 1,
+    "artifact_kind": "subject_publication_decisions",
+    "packet_binding": {
+      "reviewed_head": null,
+      "packet_path": "docs/reviews/0045_cn_capture/materialization/packet.json",
+      "packet_sha256": null,
+      "approval_scope_sha256": null
+    },
+    "packet_approval": {
+      "packet_binding": {
+        "reviewed_head": null,
+        "packet_path": "docs/reviews/0045_cn_capture/materialization/packet.json",
+        "packet_sha256": null,
+        "approval_scope_sha256": null
+      },
+      "review": null
+    },
+    "transition_decisions": [
+      {
+        "gate_type": "review",
+        "state": "approved",
+        "reviewer_or_decider": "human:SoundBlaster",
+        "decision_timestamp": "2026-10-25T21:58:17Z",
+        "outcome": "approved",
+        "rationale": "Explicit confirmation of the two displayed source lineages for acceptance in SpecDraft; no additional human rationale was supplied.",
+        "review": {
+          "reviewer": "human:SoundBlaster",
+          "reviewer_authority": "human_project_author",
+          "decision_timestamp": "2026-10-25T21:58:17Z",
+          "decision_timestamp_basis": "First observation of this response in the current turn; original message timestamp is unavailable.",
+          "outcome": "approved",
+          "rationale": "Explicit confirmation of the two displayed source lineages for acceptance in SpecDraft; no additional human rationale was supplied.",
+          "source_quote": "Подтверждаю",
+          "source_ref": "docs/reviews/0045_cn_capture/publication/confirmation-source.json#/reviews/2",
+          "scope_sha256": "568251aa9cdf4bbe109777c98821ce66d79120233d6e8b46086e9bb3fd682ca6"
+        },
+        "transition_record_id": "cn-capture-ingress-req.cn.capture",
+        "transition_identifier": "cn-capture-ingress-req.cn.capture:v1",
+        "promotion_edge": "proposal -> spec_draft",
+        "source_ref": "docs/proposals/0045_conversation_memory_exploration_vault.intent.yaml",
+        "target_ref": "docs/reviews/0045_cn_capture/materialization/subjects/req.cn.capture.yaml#/proposed_record",
+        "intent_lineage_ref": "docs/reviews/0045_cn_capture/publication/lineages.json#/lineages/0"
+      },
+      {
+        "gate_type": "review",
+        "state": "review_pending",
+        "reviewer_or_decider": null,
+        "decision_timestamp": null,
+        "outcome": null,
+        "rationale": null,
+        "review": null,
+        "transition_record_id": "cn-capture-canonical-req.cn.capture",
+        "transition_identifier": "cn-capture-canonical-req.cn.capture:v1",
+        "promotion_edge": "spec_draft -> canonical_artifact",
+        "source_ref": "docs/reviews/0045_cn_capture/materialization/subjects/req.cn.capture.yaml#/proposed_record",
+        "target_ref": "specs/requirements/req.cn.capture.yaml#/subject",
+        "ingress_transition_id": "cn-capture-ingress-req.cn.capture",
+        "target_revision_selection": {
+          "subject": {
+            "workspace_identity": "workspace:a2800523-3588-4820-a47f-9fddc0fed3f5",
+            "subject_class": "Requirement",
+            "local_subject_id": "req.cn.capture"
+          },
+          "mode": "exact",
+          "revision": 1
+        }
+      },
+      {
+        "gate_type": "review",
+        "state": "approved",
+        "reviewer_or_decider": "human:SoundBlaster",
+        "decision_timestamp": "2026-10-25T21:58:17Z",
+        "outcome": "approved",
+        "rationale": "Explicit confirmation of the two displayed source lineages for acceptance in SpecDraft; no additional human rationale was supplied.",
+        "review": {
+          "reviewer": "human:SoundBlaster",
+          "reviewer_authority": "human_project_author",
+          "decision_timestamp": "2026-10-25T21:58:17Z",
+          "decision_timestamp_basis": "First observation of this response in the current turn; original message timestamp is unavailable.",
+          "outcome": "approved",
+          "rationale": "Explicit confirmation of the two displayed source lineages for acceptance in SpecDraft; no additional human rationale was supplied.",
+          "source_quote": "Подтверждаю",
+          "source_ref": "docs/reviews/0045_cn_capture/publication/confirmation-source.json#/reviews/3",
+          "scope_sha256": "c2e525498a75b66675378482f4c4485d8ba8e7dd97a6d72743078950ec602a76"
+        },
+        "transition_record_id": "cn-capture-ingress-ac.cn.capture-without-kind",
+        "transition_identifier": "cn-capture-ingress-ac.cn.capture-without-kind:v1",
+        "promotion_edge": "proposal -> spec_draft",
+        "source_ref": "docs/proposals/0045_conversation_memory_exploration_vault.md",
+        "target_ref": "docs/reviews/0045_cn_capture/materialization/subjects/ac.cn.capture-without-kind.yaml#/proposed_record",
+        "intent_lineage_ref": "docs/reviews/0045_cn_capture/publication/lineages.json#/lineages/1"
+      },
+      {
+        "gate_type": "review",
+        "state": "review_pending",
+        "reviewer_or_decider": null,
+        "decision_timestamp": null,
+        "outcome": null,
+        "rationale": null,
+        "review": null,
+        "transition_record_id": "cn-capture-canonical-ac.cn.capture-without-kind",
+        "transition_identifier": "cn-capture-canonical-ac.cn.capture-without-kind:v1",
+        "promotion_edge": "spec_draft -> canonical_artifact",
+        "source_ref": "docs/reviews/0045_cn_capture/materialization/subjects/ac.cn.capture-without-kind.yaml#/proposed_record",
+        "target_ref": "specs/criteria/ac.cn.capture-without-kind.yaml#/subject",
+        "ingress_transition_id": "cn-capture-ingress-ac.cn.capture-without-kind",
+        "target_revision_selection": {
+          "subject": {
+            "workspace_identity": "workspace:a2800523-3588-4820-a47f-9fddc0fed3f5",
+            "subject_class": "criterion",
+            "local_subject_id": "ac.cn.capture-without-kind"
+          },
+          "mode": "exact",
+          "revision": 1
+        }
+      }
+    ],
+    "effects": [
+      {
+        "effect": "workspace_allocation",
+        "workspace_identity": "workspace:a2800523-3588-4820-a47f-9fddc0fed3f5",
+        "source_ref": "refs/specgraph/subject-storage/a2800523-3588-4820-a47f-9fddc0fed3f5",
+        "expected_commit": "ddf10b48fe8c0c288cf5597a04313185a4879e95",
+        "identity_allocation_authorized": true,
+        "source_ref_initialization_authorized": true,
+        "declaration_sha256": "8f2d85a09374899198db0d3f615d179cb8eeb2dc96b3069946f5294349b10405",
+        "review": null
+      },
+      {
+        "effect": "origin",
+        "subject": {
+          "subject": {
+            "workspace_identity": "workspace:a2800523-3588-4820-a47f-9fddc0fed3f5",
+            "subject_class": "Requirement",
+            "local_subject_id": "req.cn.capture"
+          },
+          "mode": "exact",
+          "revision": 1
+        },
+        "canonical_transition_id": "cn-capture-canonical-req.cn.capture",
+        "review": null
+      },
+      {
+        "effect": "activation",
+        "subject": {
+          "subject": {
+            "workspace_identity": "workspace:a2800523-3588-4820-a47f-9fddc0fed3f5",
+            "subject_class": "Requirement",
+            "local_subject_id": "req.cn.capture"
+          },
+          "mode": "exact",
+          "revision": 1
+        },
+        "review": null
+      },
+      {
+        "effect": "origin",
+        "subject": {
+          "subject": {
+            "workspace_identity": "workspace:a2800523-3588-4820-a47f-9fddc0fed3f5",
+            "subject_class": "criterion",
+            "local_subject_id": "ac.cn.capture-without-kind"
+          },
+          "mode": "exact",
+          "revision": 1
+        },
+        "canonical_transition_id": "cn-capture-canonical-ac.cn.capture-without-kind",
+        "review": null
+      },
+      {
+        "effect": "activation",
+        "subject": {
+          "subject": {
+            "workspace_identity": "workspace:a2800523-3588-4820-a47f-9fddc0fed3f5",
+            "subject_class": "criterion",
+            "local_subject_id": "ac.cn.capture-without-kind"
+          },
+          "mode": "exact",
+          "revision": 1
+        },
+        "review": null
+      },
+      {
+        "effect": "intent_graph_origin",
+        "workspace_identity": "workspace:a2800523-3588-4820-a47f-9fddc0fed3f5",
+        "record_id": "intent.cn.capture",
+        "record_kind": "intent",
+        "record_sha256": "3b674a24e9b1761e1f3e2d16f5b44d7cbd07d5fe38ed62746e1f820677cd7ae4",
+        "review": null
+      },
+      {
+        "effect": "intent_graph_origin",
+        "workspace_identity": "workspace:a2800523-3588-4820-a47f-9fddc0fed3f5",
+        "record_id": "edge.cn.capture.derived-from-intent",
+        "record_kind": "derived_from",
+        "record_sha256": "ba3704caa4ca4b985b8b3b51ef2248d082e0251f7b6df146e78637b38b67801f",
+        "review": null
+      },
+      {
+        "effect": "topology",
+        "selection": {
+          "schema_version": 1,
+          "artifact_kind": "subject_canonical_topology_selection",
+          "workspace_identity": "workspace:a2800523-3588-4820-a47f-9fddc0fed3f5",
+          "dataset_identity": "dataset:specgraph-canonical-subjects-v1",
+          "topology_ref": "topology:cn-capture-origins-v1",
+          "governance_evidence_ref": "docs/reviews/0045_cn_capture/materialization/decisions.json#/effects/7",
+          "requirements": [
+            {
+              "subject": {
+                "workspace_identity": "workspace:a2800523-3588-4820-a47f-9fddc0fed3f5",
+                "subject_class": "Requirement",
+                "local_subject_id": "req.cn.capture"
+              },
+              "canonical_presence": "active"
+            }
+          ]
+        },
+        "review": null
+      }
+    ],
+    "topology_decision_ref": "docs/reviews/0045_cn_capture/materialization/decisions.json#/effects/7",
+    "publication": {
+      "request_sha256": "a6adba8da293a16b7255a953fc4caace468e81ad7fe1271dfdf8d57285732866",
+      "transition_refs": [
+        "docs/reviews/0045_cn_capture/materialization/decisions.json#/effects/0",
+        "docs/reviews/0045_cn_capture/materialization/decisions.json#/effects/1",
+        "docs/reviews/0045_cn_capture/materialization/decisions.json#/effects/2",
+        "docs/reviews/0045_cn_capture/materialization/decisions.json#/effects/3",
+        "docs/reviews/0045_cn_capture/materialization/decisions.json#/effects/4",
+        "docs/reviews/0045_cn_capture/materialization/decisions.json#/effects/5",
+        "docs/reviews/0045_cn_capture/materialization/decisions.json#/effects/6"
+      ],
+      "review": null
+    }
+  }
+}

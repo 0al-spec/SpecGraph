@@ -1,0 +1,27 @@
+{
+  "schema_version": 1,
+  "artifact_kind": "conversation_capture_review_task_source",
+  "recorded_by": "agent:codex",
+  "recorded_at": "2026-10-25T21:52:12.794310+00:00",
+  "context": {
+    "source": "current_codex_conversation",
+    "capture_authority": "agent_curated_conversation_excerpt_not_independent_attestation",
+    "native_message_ids": null,
+    "original_message_timestamp": null,
+    "first_observed_at": "2026-10-25T21:47:06Z",
+    "selected_assistant_text": "Следующая задача: проверить происхождение требований и состав пакета, затем записать реальные решения для публикации.",
+    "human_response": {
+      "actor_id": "human:SoundBlaster",
+      "text": "Ок, делай"
+    },
+    "prior_displayed_scope": {
+      "intent": "Агент сохраняет короткие заметки во время беседы.",
+      "requirement": "Сохранение заметки до выбора её смыслового типа.",
+      "criterion": "Сохранение без kind и восстановление новым процессом, с исходной цитатой и черновым статусом.",
+      "scope_class": "agent_summary_of_preceding_explanation_not_verbatim_excerpt"
+    }
+  },
+  "interpretation": "Authorization to check source fidelity and package composition and record the resulting review. The reply precedes this audit outcome; no approval of an unseen audit result or final publication snapshot is attributed to the human.",
+  "human_publication_approval_recorded": false,
+  "reviewer_identity_attested": false
+}

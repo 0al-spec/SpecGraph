@@ -1,0 +1,44 @@
+{
+  "schema_version": 1,
+  "artifact_kind": "cn_capture_materialization_lineages",
+  "lineages": [
+    {
+      "schema_version": 1,
+      "artifact_kind": "subject_intent_lineage",
+      "subject_local_id": "req.cn.capture",
+      "source_proposal_ref": "docs/proposals/0045_conversation_memory_exploration_vault.intent.yaml",
+      "source_proposal_sha256": "2fca4e1736062bfe4b991d907c396a0acd56b00da5fe7a34cd58e3a4550a006e",
+      "intent_ref": "docs/reviews/0045_cn_capture/adoption/intent-lineage.json#/intent_drafts/0",
+      "review": {
+        "reviewer": "human:SoundBlaster",
+        "reviewer_authority": "human_project_author",
+        "decision_timestamp": "2026-10-25T21:58:17Z",
+        "decision_timestamp_basis": "First observation of this response in the current turn; original message timestamp is unavailable.",
+        "outcome": "approved",
+        "rationale": "Explicit confirmation of the two displayed source lineages for acceptance in SpecDraft; no additional human rationale was supplied.",
+        "source_quote": "Подтверждаю",
+        "source_ref": "docs/reviews/0045_cn_capture/publication/confirmation-source.json#/reviews/0",
+        "scope_sha256": "ef84d6cf9957286a00f0ea6e5ad6fb69848df0412e187238495d1bc9839a4f67"
+      }
+    },
+    {
+      "schema_version": 1,
+      "artifact_kind": "subject_intent_lineage",
+      "subject_local_id": "ac.cn.capture-without-kind",
+      "source_proposal_ref": "docs/proposals/0045_conversation_memory_exploration_vault.md",
+      "source_proposal_sha256": "9105e3f8afc9378fc0557a3a320bcb4664372dd1223506f48a8290c5762d0537",
+      "intent_ref": "docs/reviews/0045_cn_capture/adoption/intent-lineage.json#/intent_drafts/0",
+      "review": {
+        "reviewer": "human:SoundBlaster",
+        "reviewer_authority": "human_project_author",
+        "decision_timestamp": "2026-10-25T21:58:17Z",
+        "decision_timestamp_basis": "First observation of this response in the current turn; original message timestamp is unavailable.",
+        "outcome": "approved",
+        "rationale": "Explicit confirmation of the two displayed source lineages for acceptance in SpecDraft; no additional human rationale was supplied.",
+        "source_quote": "Подтверждаю",
+        "source_ref": "docs/reviews/0045_cn_capture/publication/confirmation-source.json#/reviews/1",
+        "scope_sha256": "3453d7e7c46da59c6bf72cc744bacd5bf358aedf9a84c2c906e4e670a5565b2f"
+      }
+    }
+  ]
+}

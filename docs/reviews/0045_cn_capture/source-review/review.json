@@ -1,0 +1,140 @@
+{
+  "schema_version": 1,
+  "artifact_kind": "conversation_capture_source_review",
+  "reviewed_by": "agent:codex",
+  "reviewed_at": "2026-10-25T21:52:12.794310+00:00",
+  "reviewed_packet": {
+    "reviewed_head": "46e03ad3b522da4d9ff730e1bca3bece11312152",
+    "packet_path": "docs/reviews/0045_cn_capture/materialization/packet.json",
+    "packet_sha256": "03298e77732c546fa17e752347e7b3b8fa480e4e88cba4a1397162d6ba5504d4",
+    "approval_scope_sha256": "ef04e9dc665847e225b8add82777c9fea3e75f46c59a3a52541f2b9efc72ad24"
+  },
+  "task_authorization_ref": "docs/reviews/0045_cn_capture/source-review/review-source.json",
+  "source_file_sha256": {
+    "docs/archive/proposal_sources/0045_conversation_memory_exploration_vault.md": "cfeb472f38e1437c88807b0e93cf6f79ddfcd4e3e3e52a197ef85a43c82aa0fe",
+    "docs/proposals/0045_conversation_memory_exploration_vault.intent.yaml": "2fca4e1736062bfe4b991d907c396a0acd56b00da5fe7a34cd58e3a4550a006e",
+    "docs/proposals/0045_conversation_memory_exploration_vault.md": "9105e3f8afc9378fc0557a3a320bcb4664372dd1223506f48a8290c5762d0537",
+    "docs/reviews/0045_cn_capture/ac.cn.capture-without-kind.yaml": "2f741cef1edf956ca218b29c1f923bb25f2f2df6c180b22722c236ef2fa70a4b",
+    "docs/reviews/0045_cn_capture/adoption/execution-summary.json": "ac615b04de9804e5292007513d2cf2dcd222c200aa9c93571e0c1548d8dd4701",
+    "docs/reviews/0045_cn_capture/adoption/intent-lineage.json": "de92da98858489784f2da4dd20aa07dce150209f75921d45e435b6f0595be1a4",
+    "docs/reviews/0045_cn_capture/adoption/semantic-review-source.json": "448e8b5447032c4e3e56df708811f16b9a2d3dc553f7ca4a73c24bd360e64cff",
+    "docs/reviews/0045_cn_capture/adoption/semantic-review.json": "4e2d4e49be0bf3cd391e100e52c6bf41b0bcfb382dd9192572ba53b69a954e39",
+    "docs/reviews/0045_cn_capture/materialization/README.md": "f3ecef22bf5590d9c201550a9cbab14fab4ce018d711f040caf56a48716d1ffd",
+    "docs/reviews/0045_cn_capture/materialization/authorization.template.json": "c7b468113fabc1808d8412bfd941ffccb8d8e0e266b097a1f9c9bb85e0474257",
+    "docs/reviews/0045_cn_capture/materialization/decisions.template.json": "6aa394482e819090d4438fe72da23339c220230d1581955f3f30cf74a7ab1deb",
+    "docs/reviews/0045_cn_capture/materialization/intent-graph.yaml": "c080062123689227eb2312a95a6d5d949003b5b730f33dbd6d9c42cbdd793a12",
+    "docs/reviews/0045_cn_capture/materialization/lineages.json": "d4985f066db3d5ce02a31c5fcae454d29be771146a6c0cd14b6f8be4f5774bd6",
+    "docs/reviews/0045_cn_capture/materialization/packet.json": "03298e77732c546fa17e752347e7b3b8fa480e4e88cba4a1397162d6ba5504d4",
+    "docs/reviews/0045_cn_capture/materialization/preview.json": "2bd5a46c14ef77fc1e08ed68c9a60d7f23cc68a4f01dae4d7b943f7a2c408d91",
+    "docs/reviews/0045_cn_capture/materialization/subjects/ac.cn.capture-without-kind.yaml": "e5b18925e3de8268b40210f6da4fd2e1e68f99d441995eef0b74404b31a31fa9",
+    "docs/reviews/0045_cn_capture/materialization/subjects/req.cn.capture.yaml": "a43e0d5780185753ab81bbec0b7d40cf833aec2289186a77925b8ff622a37101",
+    "docs/reviews/0045_cn_capture/materialization/topology.json": "401eefcea7de9cc9cc198c0d88a332d30de901593b84dff624e4b21bed3c1c33",
+    "docs/reviews/0045_cn_capture/materialization/workspace-identity.yaml": "1f06e3672b189459ebf382b69517ce6fc5441fdaa836441cc7276d7b77fd2c54",
+    "docs/reviews/0045_cn_capture/materialization/writer-request.json": "f7ce862d60ee33bcd052fc3262e6860c9cb50dce2d23c4d385271f715f0064f0",
+    "docs/reviews/0045_cn_capture/req.cn.capture.yaml": "7a4367dcdd5c4d063ba04a1fee280b64f82b1eaf8d4204dd0cc9996b1b626e84",
+    "docs/reviews/0045_cn_capture/source-note.json": "f7e77a1b7296ab5119931d4a3573771dee63ebc5d1f53fcfed7db06b3329d6ec",
+    "docs/reviews/0045_cn_capture/source-review/review-source.json": "c12bd99c8fc67b95468afc17b5f31a8ef6c889da4a93bf20ee6658687d5c08a7",
+    "docs/reviews/0221_subject_storage/workspace_identity.yaml": "d5a99ab533da5e3568601fb2d9c9934aeb3044dd5770c6bd442fd761a80b783b",
+    "docs/subject_intent_graph.md": "364c6b3925cad3b48b3572fa4e24023e3b2520a6fd1becf72a6168d3f526c12d",
+    "docs/subject_publication.md": "80dd9da92e93472b2850641d069917ca30f392abbbac7bbce85827f919c0f0c2",
+    "pyproject.toml": "8ce4d752dca9661596034cc0001a8120635051fac4f56b7459df6a06c6c6fc09",
+    "tests/test_conversation_capture_pilot.py": "f727ce83463dbc55800f97331a19438085e2bfe7a46bca8735888568cc42a8e6",
+    "tools/subject_canonical_source.py": "a48e85bee0a8c2b225c5b36abf848d8489c59e76f4cb2f84cffaf0f98d9b650d",
+    "tools/subject_human_approval_spec.py": "2541161efb35f4f5e3b0ddf768dd7393e1b2fb8578ffa863e9ccdbbed1c356a3",
+    "tools/subject_intent_derivation_spec.py": "c192235adb830d63a1a7834a3bdb4b372455006fa883ec41b30b597d10504b09",
+    "tools/subject_intent_graph.py": "a8afda96840c61acdd7ec5d0d72e97580861b7435e462914eb2fd24903e7207d",
+    "tools/subject_intent_graph_append_spec.py": "d8d7c6a56a0adeb340989b218830bc3c58153fb07ebd457546514460340376b2",
+    "tools/subject_intent_graph_context.py": "3013ee4fa94114166b9f4ca0a9f2f18c0c2a3a815f38d6d3c5e35a8fff64202b",
+    "tools/subject_publication.py": "16d4d3c2f48025306792be798db1c7f645657e55578fac592fd2a2b11e354e81",
+    "tools/subject_publication_context.py": "7e1e07264e4b817f936e7e5dc32f25d1f4fdb7136564241c3ff3bf2af68db655",
+    "tools/subject_read_model.py": "600f46aeb3c6832b0165113e098e5750ab7f479cdc65dc32674c26d444763a6a",
+    "tools/subject_read_model_io.py": "7fb71e0f95f3b2106cb114cb575d99d8e83e5c5bf3579a6615c2fcc424d9b4e4",
+    "tools/subject_reviewed_record_spec.py": "965081ce7a6acc1a17f2eacdb6970d27863ec1a1112a6561a8a196c7991b2597",
+    "tools/subject_source_git.py": "285685843f1db2f60cec45cc10d481c9f264d0bdf5c8ef111465ae0f7eba78ff",
+    "tools/subject_source_write.py": "30c3cbe933cf7dfeebf52d1e864acf02fa2648bb98ab27fb4237d4f51b4f2c4e",
+    "tools/subject_transition_approval_spec.py": "034a78854a2da8d533b2fcca882751d5675793914392bc1bceefc32f97d46f1e",
+    "tools/subject_workspace_allocation_spec.py": "5cb2beadcd597881a53a5c2456ab4e829c628dfd471fd3ccb2ed4b2311e504d7"
+  },
+  "findings": [
+    {
+      "id": "intent-source",
+      "outcome": "supported",
+      "relation": "agent_distillation_of_retained_human_quote",
+      "source_ref": "docs/reviews/0045_cn_capture/adoption/intent-lineage.json#/human_intent_records/0",
+      "source_quote": "Думаю для него не надо усложнять, надо просто представить как во время беседы человека и агента последний делает как бы заметки, вызывая некие инструменты и сабагентов. А человек просто говорит и одобряет.",
+      "candidate_ref": "docs/reviews/0045_cn_capture/materialization/intent-graph.yaml#/proposed_record/intents/0",
+      "rationale": "The distilled formulation preserves conversational capture and later human review. Tool choice and optional subagents remain outside this bounded requirement."
+    },
+    {
+      "id": "requirement-source",
+      "outcome": "supported_with_disclosed_inference",
+      "relation": "verbatim_CN_CAPTURE_proposal_atom_and_human_agreed_interpretation",
+      "source_ref": "docs/proposals/0045_conversation_memory_exploration_vault.intent.yaml#/atoms/intents/0",
+      "candidate_ref": "docs/reviews/0045_cn_capture/materialization/subjects/req.cn.capture.yaml#/proposed_record",
+      "prior_meaning_review_ref": "docs/reviews/0045_cn_capture/adoption/semantic-review.json#/claims/1",
+      "rationale": "The Requirement repeats CN-CAPTURE exactly. Before-kind selection is an agent inference from low-friction capture, explicitly disclosed and included in the retained semantic agreement."
+    },
+    {
+      "id": "criterion-source",
+      "outcome": "supported_with_disclosed_inference",
+      "relation": "agent_formalized_bounded_acceptance_scenario_not_verbatim_human_quote",
+      "source_ref": "docs/proposals/0045_conversation_memory_exploration_vault.md",
+      "candidate_ref": "docs/reviews/0045_cn_capture/materialization/subjects/ac.cn.capture-without-kind.yaml#/proposed_record",
+      "prior_meaning_review_ref": "docs/reviews/0045_cn_capture/adoption/semantic-review.json#/claims/2",
+      "test_selector": "tests/test_conversation_capture_pilot.py::test_cn_capture_saves_note_before_kind_selection",
+      "rationale": "Fresh-process recovery operationalizes persistent capture; attribution and draft status preserve the proposal boundary. The scenario is an accepted interpretation, not words attributed verbatim to the human."
+    },
+    {
+      "id": "membership-and-derivation",
+      "outcome": "consistent",
+      "rationale": "Requirement revision 1 pins criterion revision 1 and derives from Intent revision 1. This establishes the proposed Requirement path; criterion membership alone supplies no criterion-to-Intent closure."
+    },
+    {
+      "id": "physical-package",
+      "outcome": "consistent_with_prepared_scope",
+      "rationale": "Exactly one Intent, one Requirement, one criterion and one derived_from relation; workspace/topology and writer payload agree. Preparation metadata remains distinct from pending publication decisions."
+    }
+  ],
+  "recorded_decisions": [
+    {
+      "actor_id": "agent:codex",
+      "subject": "req.cn.capture",
+      "decision": "recommend_accept_proposed_ingress",
+      "lineage_ref": "docs/reviews/0045_cn_capture/materialization/lineages.json#/lineages/0",
+      "lineage_scope_sha256": "ef84d6cf9957286a00f0ea6e5ad6fb69848df0412e187238495d1bc9839a4f67",
+      "basis": [
+        "intent-source",
+        "requirement-source"
+      ],
+      "human_ingress_approval": "pending"
+    },
+    {
+      "actor_id": "agent:codex",
+      "subject": "ac.cn.capture-without-kind",
+      "decision": "recommend_accept_proposed_ingress",
+      "lineage_ref": "docs/reviews/0045_cn_capture/materialization/lineages.json#/lineages/1",
+      "lineage_scope_sha256": "3453d7e7c46da59c6bf72cc744bacd5bf358aedf9a84c2c906e4e670a5565b2f",
+      "basis": [
+        "intent-source",
+        "criterion-source"
+      ],
+      "human_ingress_approval": "pending"
+    }
+  ],
+  "disposition": "source_review_complete_recommend_two_ingresses",
+  "canonical_effects": {
+    "workspace_allocated": false,
+    "source_ref_initialized": false,
+    "canonical_adoption": false,
+    "publication_authorized": false,
+    "evidence_admitted": false,
+    "tests_verified": "not_evaluated"
+  },
+  "limitations": [
+    "Human source excerpts are curated and not independently attested.",
+    "The original human quote does not literally specify kind omission or a CLI restart; these are disclosed agent interpretations with prior semantic agreement.",
+    "This audit is an agent decision; human review fields in the original lineages remain null.",
+    "The bounded criterion does not cover every aspect of the broader conversational intent.",
+    "Historical draft CI evidence is not admitted against a future canonical revision."
+  ]
+}
