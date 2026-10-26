@@ -81,3 +81,27 @@ JSON fixtures plus isolated-import, immutable-input, trace and composition tests
 characterize compatibility. TP-08 now has executable characterization.
 Retained execution-provider cases are implemented in C2a; atom-level SVC remains planned. C1 characterizes
 declaration-provider scope, completeness, ordering and conflict preservation.
+
+## Recovered semantic candidate
+
+The 27 October review of SG-SPEC-0021 is `review_only`, with
+`canonical_mutations_allowed: false`. The original candidate and archived raw
+salvage remain historical sources; the v2 patch contains only proposed semantic
+edits. Its preparation neither resolves an active gate nor adopts the proposal.
+
+Specification Verifiability currently permits canonical evidence records and
+trace links. Such records may cite derived observations without making those
+observations canonical or admitting a new metric input class. Direct derived
+execution inputs still require a reviewed input-boundary decision.
+
+The revised notes distinguish unknown required inputs from conclusive negative
+findings, preserve optional execution absence, and allow known zero results only
+where the selected metric profile defines them. C1/C2a already separate
+resolution, execution results and completeness. Their execution provenance is
+`provider_reported_not_attested`; revision/run binding alone does not prove
+wall-clock freshness, authenticity or semantic acceptance.
+
+See `docs/reviews/0226_metric_verifiability_recovery_review.md` and
+`docs/reviews/0226_metric_verifiability_candidate_v2.patch`. The next step is a
+semantic adoption decision for SG-SPEC-0021. RFC 0226 C2b qualification and any
+derived-input admission remain separate from this review.
