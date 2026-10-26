@@ -1,0 +1,181 @@
+{
+  "schema_version": 1,
+  "artifact_kind": "specdraft_preview_browser_followup",
+  "recorded_by": "agent:codex",
+  "observed_at": "2026-10-26T18:36:25Z",
+  "source_revision": "5b50da3ff7dcbc3030f2cd7f85c691a5b5db435b",
+  "proposal_id": "0228",
+  "followup_inventory": "0229",
+  "followup_handle": "SPECDRAFT-PREVIEW",
+  "scope": "Bounded local browser observation of the merged preview with an isolated synthetic saved notebook.",
+  "canonical_adoption": false,
+  "specdraft_accepted": false,
+  "evidence_admission_allowed": false,
+  "runtime_code_changed": false,
+  "prior_observations": [
+    "docs/reviews/0228_specdraft_live_preview/verification.json",
+    "docs/reviews/0228_specdraft_live_preview/review-fix-verification.json"
+  ],
+  "fixture": {
+    "source": "synthetic agent-authored notes; no human approval or product intent",
+    "initial_nodes": 99,
+    "final_nodes": 100,
+    "initial_revision": "a2116c8e1a2342fe9f11991aea272a55",
+    "topology": "n000 root; n001..n010 below root; remaining nodes below n(i-10), creating ten chains",
+    "named_link": {
+      "source_id": "n001",
+      "target_id": "n002",
+      "label": "depends on"
+    },
+    "writes": "conversation_notes.api.update_notes"
+  },
+  "browser": {
+    "driver": "configured Playwright browser",
+    "user_agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/154.0.0.0 Safari/537.36",
+    "viewport": {
+      "width": 1397,
+      "height": 806
+    },
+    "document_visibility_at_observation": "visible",
+    "page_navigations": 1,
+    "manual_reload": false,
+    "horizontal_page_overflow": false,
+    "final_zoom_percent": 31,
+    "final_revision": "86f017cd11ef483b97266236a01e76ab",
+    "final_node_count": 100,
+    "selected_id": "n002",
+    "final_status": "Live",
+    "warning_visible_after_recovery": false
+  },
+  "measurements": {
+    "clock": "Local wall-clock milliseconds: Python immediately after update_notes returns, then browser MutationObserver after synchronous DOM update completes. This does not measure first paint.",
+    "samples": [
+      {
+        "operation": "add",
+        "nodes_before": 99,
+        "nodes_after": 100,
+        "revision": "0579d3edc37b48529c9dbbaf10b74ed4",
+        "saved_at_ms": 1793039682309,
+        "dom_observed_at_ms": 1793039682709,
+        "elapsed_ms": 400
+      },
+      {
+        "operation": "rename",
+        "nodes_before": 100,
+        "nodes_after": 100,
+        "revision": "e34374368bfe4725ae1853c8e71d15de",
+        "saved_at_ms": 1793039705199,
+        "dom_observed_at_ms": 1793039705639,
+        "elapsed_ms": 440
+      },
+      {
+        "operation": "reparent",
+        "nodes_before": 100,
+        "nodes_after": 100,
+        "revision": "86f017cd11ef483b97266236a01e76ab",
+        "saved_at_ms": 1793039716754,
+        "dom_observed_at_ms": 1793039716770,
+        "elapsed_ms": 16
+      }
+    ],
+    "meaning": "One foreground sample per operation; all below the proposed two-second bound for this fixture. Not a latency distribution or a guarantee for arbitrary 100-node topology."
+  },
+  "checks": {
+    "relation_source_selection": {
+      "selected": "n001",
+      "observed": "Thought 001 — depends on → Thought 002"
+    },
+    "relation_target_selection": {
+      "selected": "n002",
+      "observed": "Thought 001 — depends on → Thought 002"
+    },
+    "rename": {
+      "selected_id_preserved": true,
+      "new_label": "Renamed target",
+      "relation": "Thought 001 — depends on → Renamed target"
+    },
+    "reparent": {
+      "id_preserved": true,
+      "selected_id_preserved": true,
+      "new_parent": "n003",
+      "selected_svg_position": "translate(540 208)",
+      "parent_svg_position": "translate(270 156)"
+    },
+    "recovery": {
+      "failure": "Only the synthetic notebook CURRENT was temporarily changed to invalid text.",
+      "stale_status": "Showing saved view",
+      "warning": "Saved notes are temporarily unavailable.",
+      "retained_nodes": 100,
+      "retained_revision": "86f017cd11ef483b97266236a01e76ab",
+      "retained_selected_id": "n002",
+      "restored_all_notebook_file_hashes": true,
+      "recovered_status": "Live",
+      "warning_cleared": true
+    },
+    "real_notebook": "Not modified; synthetic fixture served by a separate temporary loopback sidecar."
+  },
+  "acceptance_coverage": [
+    {
+      "id": "SDPV-02",
+      "status": "observed_for_bounded_fixture",
+      "cases": [
+        "add from 99 to 100 nodes",
+        "rename at 100 nodes",
+        "reparent at 100 nodes"
+      ],
+      "remaining": "No distribution, arbitrary topology, background-tab or first-paint guarantee."
+    },
+    {
+      "id": "SDPV-03",
+      "status": "partially_observed",
+      "cases": [
+        "source attribution",
+        "identity through rename and reparent",
+        "relation direction selecting either endpoint"
+      ],
+      "remaining": "Hostile markup execution, external endpoints, keyboard and accessibility behavior were not audited in this browser slice."
+    },
+    {
+      "id": "SDPV-05",
+      "status": "observed_after_prior_good_snapshot",
+      "cases": [
+        "retains last good snapshot and selection",
+        "visible stale warning",
+        "automatic return to Live"
+      ],
+      "remaining": "Initial unavailable state and network/process interruption were not exercised."
+    }
+  ],
+  "audit": {
+    "started_at": "2026-10-26T18:32:25Z",
+    "finished_at": "2026-10-26T18:36:25Z",
+    "browser_calls": 14,
+    "browser_call_ceiling": 15,
+    "screenshots_attempted": 2,
+    "screenshots_inspected": 1,
+    "full_snapshots_read": 0,
+    "artifact_export_failures": 2,
+    "artifact_export_note": "Browser tool rejected two explicit export paths outside its roots. Readback and screenshot then used supported default output; no browser reconfiguration.",
+    "agents": 0
+  },
+  "screenshot": {
+    "storage": "local only; not included in the public packet",
+    "sha256": "ccbf0223a572620b1ecebaf538b0f45bc142d42b2d2306211a0c5f7880ea0fc4",
+    "observation": "The full map fits at 31 percent. Labels are small; detailed reading requires zoom or the source inspector."
+  },
+  "source_file_sha256": {
+    "tools/specdraft_preview/static/app.js": "26e511c5feaa021fa735157832b09f111e2fc2d0e5f4c8775ae68c69ca2bf4bb",
+    "tools/specdraft_preview/static/index.html": "9222e78f058a6110e12649035f0d9cd073f9eb7680d7b4f9be47beea310fc8c9",
+    "tools/specdraft_preview/static/style.css": "a0573a108440e8171719e1e752b689c476a9bfd303d3232043f7b58147d83404",
+    "tools/specdraft_preview/server.py": "d3c98d0389e449c4cf2a7f00bdfca1b9929836da48cdf632f61bf7c22abc239a",
+    "tools/specdraft_preview/snapshot.py": "78195fa0fe7783c1e91aa774430d0187ab2be16e876f55bdb5c4a6c0f85ab159",
+    "tools/conversation_notes/api.py": "14b673e0a28dafde33473b395d4fd3a6cad28d72b1acc6aa05e7a1e51da270f0",
+    "tools/conversation_notes/store.py": "4ad3dca78e3802d93f608c04e671f2d867d270de8612b88d0ea697ce7388d1bd",
+    "tools/conversation_notes/model.py": "87bdffa1d15ccb667b047ab71774deac257e91c996a31d96cfb8931a17c25875"
+  },
+  "limitations": [
+    "Human review and SpecDraft acceptance remain pending.",
+    "No canonical publication, trusted evidence admission, new metric evaluator or supervisor LLM run occurred.",
+    "No product runtime or automated tests changed in this observation-only slice."
+  ]
+}

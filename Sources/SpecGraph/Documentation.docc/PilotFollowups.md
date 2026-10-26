@@ -30,3 +30,20 @@ Preserving a publication task does not approve its writer or materialize origins
 
 See `docs/proposals/0229_pilot_followup_reentry.md`, its archived source and
 `docs/evidence/0229_pilot_followup_reentry.json` for the bounded verification.
+
+## SpecDraft preview follow-up
+
+The separate `docs/evidence/specdraft_preview_browser_20261026.json` records a
+browser observation against merged revision `5b50da3f`. A synthetic notebook
+grew from 99 to 100 nodes; add, rename and reparent reached the DOM in 400, 440
+and 16 ms without reload, retaining selection and identity. Relation direction
+remained correct when selecting either endpoint. A temporary invalid notebook
+head preserved the saved view with a warning, and restoration returned to Live.
+
+These are one foreground sample per operation for ten chains, not a latency
+distribution, first-paint measurement or arbitrary-topology guarantee. The
+31 percent overview needs zoom or the inspector for detailed reading. Human
+review remains pending; hostile-text behavior, initial unavailable state and
+network/process recovery were not exercised. The earlier review packet and its
+observations remain historical snapshots; no approval or publication follows
+from this additional evidence.
