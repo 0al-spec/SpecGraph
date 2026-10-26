@@ -1,6 +1,16 @@
 {
   "groups": [
     {
+      "id": "specdraft-live-preview",
+      "description": "Source-captured live notes visualization proposal and pending specification contract.",
+      "docs": ["docs/proposals/0228_specdraft_live_preview.md"],
+      "docc": ["Sources/SpecGraph/Documentation.docc/SpecDraftLivePreview.md"],
+      "required_terms": [
+        "SpecDraft", "0228", "read_notes", "update_notes",
+        "SD-LIVE-VIEW", "SDPV-01", "synchronous_runtime_slice"
+      ]
+    },
+    {
       "id": "conversation-notes",
       "description": "Short attributed Hypercode notes captured by an agent during a conversation.",
       "docs": [

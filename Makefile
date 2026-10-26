@@ -1356,6 +1356,14 @@ metric-pricing:
 model-usage:
 	@$(PYTHON) $(SUPERVISOR) --build-model-usage-telemetry
 
+SPECDRAFT_PREVIEW_WORKSPACE ?= conversation_memory/sketches/hypercode-conversation-poc
+SPECDRAFT_PREVIEW_PORT ?= 0
+SPECDRAFT_PREVIEW_ARGS ?=
+
+.PHONY: specdraft-preview
+specdraft-preview:
+	@$(PYTHON) tools/specdraft_preview_cli.py --workspace "$(SPECDRAFT_PREVIEW_WORKSPACE)" --port "$(SPECDRAFT_PREVIEW_PORT)" $(SPECDRAFT_PREVIEW_ARGS)
+
 .PHONY: conversation-memory
 conversation-memory:
 	@$(PYTHON) $(SUPERVISOR) --build-conversation-memory-index

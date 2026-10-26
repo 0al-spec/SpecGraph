@@ -1,0 +1,34 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>SpecDraft · live notes</title>
+  <link rel="icon" href="/icon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="/style.css">
+  <script src="/app.js" defer></script>
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand"><span class="brand-mark" aria-hidden="true">✳</span><strong>SpecDraft</strong><span class="divider"></span><span>Thinking, in view.</span></div>
+    <div class="connection"><span id="status-dot" class="dot"></span><span id="status" role="status" aria-live="polite">Connecting</span><span class="draft-tag">DRAFT</span></div>
+  </header>
+  <main>
+    <section class="map-panel" aria-label="Live mind map">
+      <div class="map-heading"><div><p class="eyebrow">YOUR CONVERSATION, TAKING SHAPE</p><h1 id="sketch-title">A space for the next thought.</h1><p class="subtitle">Talk freely. Your agent keeps the sketch in sync.</p></div><span id="node-count" class="count">—</span></div>
+      <div id="notice" class="notice" role="status" hidden></div>
+      <div id="canvas" tabindex="0" aria-label="Pan and zoom the mind map">
+        <svg id="map" role="group" aria-label="Note hierarchy"><g id="scene"></g></svg>
+        <div id="empty" class="empty"><span class="empty-mark" aria-hidden="true">✳</span><h2>Your thoughts start here.</h2><p>Saved notes will appear as the conversation unfolds.</p></div>
+      </div>
+      <div class="map-footer"><span><span class="key-line"></span>Hierarchy <span class="key-line related"></span>Named links</span><div class="zoom-controls"><button id="zoom-out" aria-label="Zoom out">−</button><span id="zoom-value">100%</span><button id="zoom-in" aria-label="Zoom in">+</button><button id="fit">Fit view</button></div></div>
+    </section>
+    <aside class="inspector" aria-label="Selected note">
+      <p class="eyebrow">A CLOSER LOOK</p><div id="selection-empty"><h2>Follow a thought.</h2><p>Select a node to see its detail and the words it came from.</p><div class="inspector-illustration" aria-hidden="true"><i></i><i></i><i></i></div></div>
+      <div id="selection" hidden><span id="selected-id" class="note-id"></span><h2 id="selected-label"></h2><p id="selected-detail" class="detail"></p><h3>Source words</h3><div id="sources"></div><div id="relations"></div></div>
+      <div class="inspector-bottom"><span class="mini-mark" aria-hidden="true">✳</span><p>A sketch, still becoming.<br><span>Notes remain drafts until explicitly accepted.</span></p></div>
+    </aside>
+  </main>
+  <footer class="bottom-bar"><span id="sketch-name">Local notes</span><span id="revision">No saved revision</span><span>Read-only preview</span></footer>
+</body>
+</html>
