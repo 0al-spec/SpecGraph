@@ -7,6 +7,7 @@ import argparse
 import hashlib
 import json
 import re
+from collections.abc import Mapping
 from dataclasses import asdict, dataclass, replace
 from datetime import datetime
 from pathlib import Path
@@ -22,6 +23,7 @@ from subject_canonical_source import (
     parse_topology_selection,
     read_canonical_source,
 )
+from subject_intent_graph import INTENT_GRAPH_PATH, parse_intent_graph
 from subject_publication import (
     PublicationGovernanceError,
     SubjectPublicationEvidence,
@@ -80,6 +82,7 @@ class SubjectSourceWriteRequest:
     expected_source_file_sha256: tuple[tuple[str, str], ...]
     changes: tuple[SubjectSourceChange, ...]
     workspace_declaration_yaml: str | None = None
+    intent_graph_yaml: str | None = None
 
     def __post_init__(self) -> None:
         require_text(self.source_ref, "source_ref")
@@ -91,8 +94,12 @@ class SubjectSourceWriteRequest:
             raise SubjectDocumentError("write request requires a typed topology")
         require_tuple(self.changes, "changes")
         require_tuple(self.expected_source_file_sha256, "expected_source_file_sha256")
-        if not self.changes or any(not isinstance(c, SubjectSourceChange) for c in self.changes):
+        if (not self.changes and self.intent_graph_yaml is None) or any(
+            not isinstance(c, SubjectSourceChange) for c in self.changes
+        ):
             raise SubjectDocumentError("write request requires typed subject changes")
+        if self.intent_graph_yaml is not None:
+            require_text(self.intent_graph_yaml.rstrip("\n"), "proposed Intent graph")
         if len({c.subject for c in self.changes}) != len(self.changes) or len(
             {c.path for c in self.changes}
         ) != len(self.changes):
@@ -106,10 +113,14 @@ class SubjectSourceWriteRequest:
             raise SubjectDocumentError("duplicate expected source path")
 
     def digest(self) -> str:
-        """Version-1 digest: canonical JSON of the immutable parsed request."""
+        """Retain v1 digests exactly; v2 additionally binds the explicit graph."""
+        payload = asdict(self)
+        graph = payload.pop("intent_graph_yaml")
+        if graph is not None:
+            payload.update(schema_version=2, intent_graph_yaml=graph)
         return _sha256(
             json.dumps(
-                asdict(self),
+                payload,
                 ensure_ascii=False,
                 sort_keys=True,
                 separators=(",", ":"),
@@ -145,6 +156,9 @@ class SubjectWriteAuthorization:
 
 
 def parse_write_request(value: object) -> SubjectSourceWriteRequest:
+    version = value.get("schema_version") if isinstance(value, Mapping) else None
+    if type(version) is not int or version not in {1, 2}:
+        raise SubjectDocumentError("write request schema_version must be integer 1 or 2")
     data = _object(
         value,
         {
@@ -157,9 +171,12 @@ def parse_write_request(value: object) -> SubjectSourceWriteRequest:
             "expected_source_file_sha256",
             "changes",
         },
-        {"workspace_declaration"},
+        {"workspace_declaration"} | ({"intent_graph"} if version == 2 else set()),
     )
-    _version(data, "subject_source_write_request")
+    if data["artifact_kind"] != "subject_source_write_request":
+        raise SubjectDocumentError("artifact_kind must be subject_source_write_request")
+    if version == 2 and not isinstance(data.get("intent_graph"), dict):
+        raise SubjectDocumentError("version-2 request requires a complete intent_graph mapping")
     digests = data["expected_source_file_sha256"]
     if not isinstance(digests, dict):
         raise SubjectDocumentError("expected source digests must be a path/SHA256 mapping")
@@ -188,6 +205,7 @@ def parse_write_request(value: object) -> SubjectSourceWriteRequest:
         dump_canonical_yaml(data["workspace_declaration"])
         if "workspace_declaration" in data
         else None,
+        dump_canonical_yaml(data["intent_graph"]) if version == 2 else None,
     )
 
 
@@ -266,9 +284,25 @@ def write_subject_source(
     if authorization is not None and authorization.request_sha256 != request.digest():
         raise SubjectDocumentError("authorization does not bind this exact write request")
     # Resolve permission before candidate export, object creation or the final ref CAS.
-    governance_result = (
-        verify_publication(governance, request, authorization) if not preview else {}
-    )
+    governance_result = {}
+    if not preview:
+        if request.intent_graph_yaml is None:
+            governance_result = verify_publication(governance, request, authorization)
+        else:
+            previous = next(
+                (
+                    blob
+                    for blob in SubjectSourceCommit(repository, request.expected_commit).blobs()
+                    if blob.path == INTENT_GRAPH_PATH
+                ),
+                None,
+            )
+            previous_graph = (
+                parse_intent_graph(load_yaml_text(previous.content.decode())) if previous else None
+            )
+            governance_result = verify_publication(
+                governance, request, authorization, previous_graph
+            )
     commit_id = selected_source_commit(repository, request.source_ref)
     if commit_id != request.expected_commit:
         raise SubjectSourceConflict("expected source commit no longer matches the selected ref")
@@ -283,7 +317,7 @@ def write_subject_source(
     existing_subjects = {
         parse_subject_ref(load_yaml_text(blob.content.decode("utf-8"))["subject"])
         for blob in blobs
-        if blob.path != DECLARATION
+        if blob.path not in {DECLARATION, INTENT_GRAPH_PATH}
     }
     before_topology = replace(
         request.topology,
@@ -298,13 +332,16 @@ def write_subject_source(
         if declaration.exists():
             if request.workspace_declaration_yaml is not None:
                 raise SubjectDocumentError("workspace declaration is immutable after allocation")
-            before = _records(read_canonical_source(candidate_root, before_topology))
+            before_read = read_canonical_source(candidate_root, before_topology)
+            before = _records(before_read)
+            before_graph = before_read.intent_graph
         else:
             if blobs or request.workspace_declaration_yaml is None or before_topology.requirements:
                 raise SubjectDocumentError(
                     "bootstrap requires an absent source and explicit declaration"
                 )
             before = {}
+            before_graph = None
             declaration.write_text(request.workspace_declaration_yaml, encoding="utf-8")
         files = {}
         if request.workspace_declaration_yaml is not None:
@@ -326,6 +363,10 @@ def write_subject_source(
             content = change.document_yaml.encode("utf-8")
             target.write_bytes(content)
             files[change.path] = content
+        if request.intent_graph_yaml is not None:
+            graph_content = request.intent_graph_yaml.encode("utf-8")
+            (candidate_root / INTENT_GRAPH_PATH).write_bytes(graph_content)
+            files[INTENT_GRAPH_PATH] = graph_content
         candidate_read = read_canonical_source(candidate_root, request.topology)
         after = _records(candidate_read)
         if set(after) != set(before) | origins:
@@ -339,6 +380,9 @@ def write_subject_source(
             transitions.add(record.revisions[-1].provenance)
             if change.operation == "origin":
                 transitions.add(record.disposition_history[0].provenance)
+        if request.intent_graph_yaml is not None:
+            additions = candidate_read.intent_graph.additions(before_graph)
+            transitions.update(item.adoption_provenance for item in additions)
         if authorization is not None and transitions != set(authorization.transition_refs):
             raise SubjectDocumentError(
                 "authorization must cover exactly the authored transition references"

@@ -1,0 +1,44 @@
+{
+  "schema_version": 1,
+  "artifact_kind": "cn_capture_materialization_preflight",
+  "recorded_at": "2026-10-25T21:08:02+00:00",
+  "scope": "Physical request rehearsal in a disposable shared-object Git clone; no production allocation or publication.",
+  "isolation": "temporary_clone_only",
+  "source_ref_initialization": "temporary_clone_only",
+  "request_sha256": "a6adba8da293a16b7255a953fc4caace468e81ad7fe1271dfdf8d57285732866",
+  "result": {
+    "schema_version": 1,
+    "artifact_kind": "subject_source_write_result",
+    "status": "prepared",
+    "publication_backend": "git_commit_compare_and_swap_v1",
+    "source_ref": "refs/specgraph/subject-storage/a2800523-3588-4820-a47f-9fddc0fed3f5",
+    "prior_commit": "ddf10b48fe8c0c288cf5597a04313185a4879e95",
+    "candidate_commit": "0872c4d9a891890fa0710d18696dcbcb37763927",
+    "request_sha256": "a6adba8da293a16b7255a953fc4caace468e81ad7fe1271dfdf8d57285732866",
+    "source_file_sha256": {
+      "specs/criteria/ac.cn.capture-without-kind.yaml": "133f0cca6342cc53308b0dae6344fb8ee43450f5092b4baec225d10129550e96",
+      "specs/intent_graph.yaml": "0e2291d12fc0c594d8ee2ff71730b4634823335a9263f001137f776ffc37ef76",
+      "specs/requirements/req.cn.capture.yaml": "df386ccf70f5ff811b9cd4ac982c4ee252dfabfec787b49c9aa75d1321468e66",
+      "specs/workspace_identity.yaml": "8f2d85a09374899198db0d3f615d179cb8eeb2dc96b3069946f5294349b10405"
+    },
+    "workspace_identity": "workspace:a2800523-3588-4820-a47f-9fddc0fed3f5",
+    "dataset_identity": "dataset:specgraph-canonical-subjects-v1",
+    "candidate_validation": "passed",
+    "source_ref_updated": false,
+    "authorization_ref": null,
+    "authorization_verification": "not_supplied",
+    "canonical_readiness": "not_evaluated",
+    "ready_for_materialization": false,
+    "trusted_runtime_receipt": false
+  },
+  "exact_requirement_paths": [
+    [
+      "edge.cn.capture.derived-from-intent",
+      "intent.cn.capture"
+    ]
+  ],
+  "governance": "not_evaluated_by_preview",
+  "tests_verified": "not_evaluated",
+  "historical_evidence_transfer": false,
+  "original_repository_source_ref_updated": false
+}

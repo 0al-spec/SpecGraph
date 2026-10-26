@@ -3,11 +3,38 @@
     {
       "id": "specdraft-live-preview",
       "description": "Source-captured live notes visualization proposal and pending specification contract.",
-      "docs": ["docs/proposals/0228_specdraft_live_preview.md"],
-      "docc": ["Sources/SpecGraph/Documentation.docc/SpecDraftLivePreview.md"],
+      "docs": [
+        "docs/proposals/0228_specdraft_live_preview.md"
+      ],
+      "docc": [
+        "Sources/SpecGraph/Documentation.docc/SpecDraftLivePreview.md"
+      ],
       "required_terms": [
-        "SpecDraft", "0228", "read_notes", "update_notes",
-        "SD-LIVE-VIEW", "SDPV-01", "synchronous_runtime_slice"
+        "SpecDraft",
+        "0228",
+        "read_notes",
+        "update_notes",
+        "SD-LIVE-VIEW",
+        "SDPV-01",
+        "synchronous_runtime_slice"
+      ]
+    },
+    {
+      "id": "pilot-followup-reentry",
+      "description": "Preserved pilot follow-ups return through existing supervisor surfaces without new debt metrics or publication authority.",
+      "docs": [
+        "docs/proposals/0229_pilot_followup_reentry.md"
+      ],
+      "docc": [
+        "Sources/SpecGraph/Documentation.docc/PilotFollowups.md"
+      ],
+      "required_terms": [
+        "0229",
+        "deferred_until_canonicalized",
+        "canonicalization",
+        "metric_signal_index",
+        "CN-PUBLISH",
+        "POC-LESSONS"
       ]
     },
     {
@@ -25,6 +52,16 @@
         "update_notes",
         "Hypercode",
         "revision"
+      ]
+    },
+    {
+      "id": "specdraft-layer",
+      "description": "Proposed authoring layer and existing promotion stage retain distinct meanings.",
+      "docs": ["docs/specdraft_layer.md"],
+      "docc": ["Sources/SpecGraph/Documentation.docc/SpecDraft.md"],
+      "required_terms": [
+        "SpecDraft layer", "SpecGraph", "Layer 0", "Hypercode",
+        "spec_draft", "source", "read_notes", "update_notes"
       ]
     },
     {
@@ -1166,6 +1203,40 @@
         "untracked",
         "deferred_until_canonicalized",
         "evidence_admission_allowed: false"
+      ]
+    },
+    {
+      "id": "subject-intent-graph-source",
+      "docs": [
+        "docs/subject_intent_graph.md"
+      ],
+      "docc": [
+        "Sources/SpecGraph/Documentation.docc/ProposalsAndRuntime.md"
+      ],
+      "required_terms": [
+        "specs/intent_graph.yaml",
+        "subject_intent_graph",
+        "derived_from",
+        "intent_graph_origin",
+        "subject_intent_graph.append_preserves_origins",
+        "subject_intent_graph.exact_requirement_to_intent",
+        "git_commit_compare_and_swap_v1"
+      ]
+    },
+    {
+      "id": "cn-capture-materialization",
+      "docs": [
+        "docs/reviews/0045_cn_capture/materialization/README.md"
+      ],
+      "docc": [
+        "Sources/SpecGraph/Documentation.docc/ConversationNotes.md"
+      ],
+      "required_terms": [
+        "CN-CAPTURE",
+        "materialization",
+        "derived_from",
+        "preview",
+        "publication"
       ]
     }
   ]

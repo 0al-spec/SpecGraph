@@ -18,6 +18,7 @@ from uuid import UUID
 from yaml import YAMLError
 
 from spec_yaml import dump_canonical_yaml, load_yaml_text
+from subject_intent_graph import INTENT_GRAPH_PATH, CanonicalIntentGraph, parse_intent_graph
 from subject_read_model import (
     CriterionNodeFields,
     CurrentSubjectDisposition,
@@ -95,6 +96,7 @@ class CanonicalSourceRead:
     topology: CanonicalTopologySelection
     source_file_sha256: tuple[tuple[str, str], ...]
     source_root: Path
+    intent_graph: CanonicalIntentGraph | None = None
 
     def __post_init__(self) -> None:
         if not isinstance(self.index, SubjectIndex) or not isinstance(
@@ -114,7 +116,7 @@ class CanonicalSourceRead:
             raise ValueError("duplicate source digest path")
 
     def audit_payload(self) -> dict:
-        return {
+        payload = {
             "schema_version": 1,
             "artifact_kind": "subject_canonical_source_read",
             "validation_status": "passed",
@@ -134,6 +136,12 @@ class CanonicalSourceRead:
             "canonical_readiness": "not_evaluated",
             "ready_for_materialization": False,
         }
+        if self.intent_graph is not None:
+            payload["intent_graph"] = self.intent_graph.payload()
+            payload["relation_scope"] = (
+                "authored_exact_requirement_to_intent; no_implicit_membership_paths"
+            )
+        return payload
 
 
 def parse_topology_selection(value: object) -> CanonicalTopologySelection:
@@ -193,6 +201,14 @@ def _source_paths(root: Path) -> tuple[str, ...]:
     specs = root / "specs"
     if specs.is_symlink() or not specs.is_dir():
         raise SubjectDocumentError("specs must be a real directory in the selected root")
+    if any(
+        entry.name.lower() == "intent_graph.yaml" and entry.name != "intent_graph.yaml"
+        for entry in specs.iterdir()
+    ):
+        raise SubjectDocumentError("Intent graph filename must use canonical case")
+    graph_path = root / INTENT_GRAPH_PATH
+    if graph_path.exists() or graph_path.is_symlink():
+        paths.append(INTENT_GRAPH_PATH)
     for directory in DIRECTORIES.values():
         pending = [specs / directory]
         while pending:
@@ -362,7 +378,7 @@ def read_canonical_source(root: Path, topology: CanonicalTopologySelection) -> C
         records = tuple(
             _record(documents[path], path, workspace, presence)
             for path in paths
-            if path != DECLARATION
+            if path not in {DECLARATION, INTENT_GRAPH_PATH}
         )
         allocated = {}
         for record in records:
@@ -377,6 +393,13 @@ def read_canonical_source(root: Path, topology: CanonicalTopologySelection) -> C
                 "topology selection must cover exactly the stored Requirements"
             )
         index = SubjectIndex((WorkspaceSnapshot(workspace, topology.dataset_identity, records),))
+        graph = (
+            parse_intent_graph(documents[INTENT_GRAPH_PATH])
+            if INTENT_GRAPH_PATH in documents
+            else None
+        )
+        if graph is not None:
+            graph.validate_subjects(index)
         # Detect ordinary concurrent changes; this is not an atomic filesystem snapshot/receipt.
         if paths != _source_paths(root) or any(
             (root / path).is_symlink()
@@ -384,7 +407,9 @@ def read_canonical_source(root: Path, topology: CanonicalTopologySelection) -> C
             for path, digest in hashes
         ):
             raise SubjectDocumentError("source tree changed during read")
-        return CanonicalSourceRead(index, declaration["provenance"], topology, tuple(hashes), root)
+        return CanonicalSourceRead(
+            index, declaration["provenance"], topology, tuple(hashes), root, graph
+        )
     except (OSError, ValueError, TypeError, UnicodeError, YAMLError) as exc:
         raise SubjectDocumentError(str(exc)) from exc
 

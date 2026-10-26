@@ -4,6 +4,10 @@ The person speaks and reviews; the agent keeps short, persistent notes. This
 implements a bounded capture slice of [proposal 0045](proposals/0045_conversation_memory_exploration_vault.md).
 It saves a sketch before ontology linking, requirements or Supervisor execution.
 
+The [SpecDraft layer design note](specdraft_layer.md) places this capture PoC
+in a broader pre-canonical authoring space beneath SpecGraph. That layer name
+is distinct from the existing `SpecDraft` promotion stage.
+
 ## Agent entry point
 
 Use the repo-local [conversation notes skill](../.codex/skills/specgraph-conversation-notes/SKILL.md).
@@ -183,6 +187,13 @@ The operator's agreement with the three displayed meanings is retained in a
 separate [semantic decision](reviews/0045_cn_capture/adoption/semantic-review.json)
 bound to the unchanged preparation. It preserves the response and its context;
 publication decisions remain pending.
+
+The [complete CN-CAPTURE materialization package](reviews/0045_cn_capture/materialization/README.md)
+contains full proposed records, one exact `derived_from` relation, workspace and
+topology selection, the version-2 writer request and pending decision templates.
+An isolated preview rehearses the four-file source without changing a production
+ref. Recording actual ingress reviews requires a new packet scope before final
+publication approval; historical CI evidence is not automatically admitted.
 
 ## Validation
 

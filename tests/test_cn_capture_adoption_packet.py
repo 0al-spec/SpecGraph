@@ -33,6 +33,11 @@ def load_packet():
     return json.loads((ROOT / PACKET).read_text())
 
 
+def reviewed_inputs():
+    binding = json.loads((ROOT / SEMANTIC_REVIEW).read_text())["packet_binding"]
+    return DecisionSnapshot(ROOT, binding["reviewed_head"])
+
+
 def test_capture_adoption_scope_binds_two_unchanged_pending_candidates():
     packet = load_packet()
     scope = {key: value for key, value in packet.items() if key != "approval_scope_sha256"}
@@ -44,7 +49,7 @@ def test_capture_adoption_scope_binds_two_unchanged_pending_candidates():
     inputs = packet["inputs"]["review_tree_file_sha256"]
     assert PACKET not in inputs
     for path, expected in inputs.items():
-        assert hashlib.sha256((ROOT / path).read_bytes()).hexdigest() == expected, path
+        assert hashlib.sha256(reviewed_inputs().read(path)).hexdigest() == expected, path
     for label in ("contract_snapshot", "publication_implementation_snapshot"):
         snapshot = packet["inputs"][label]
         for path, expected in snapshot["file_sha256"].items():
@@ -167,7 +172,8 @@ def test_capture_adoption_transitions_and_intent_remain_preparation():
 def test_existing_packet_reader_checks_capture_preparation_bytes(tmp_path, mutation):
     packet = copy.deepcopy(load_packet())
     documents = {
-        path: (ROOT / path).read_text() for path in packet["inputs"]["review_tree_file_sha256"]
+        path: reviewed_inputs().read(path).decode()
+        for path in packet["inputs"]["review_tree_file_sha256"]
     }
     historical = packet["inputs"]["contract_snapshot"]
     for path in historical["file_sha256"]:
