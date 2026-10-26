@@ -4,6 +4,10 @@ The person speaks and reviews; the agent keeps short, persistent notes. This
 implements a bounded capture slice of [proposal 0045](proposals/0045_conversation_memory_exploration_vault.md).
 It saves a sketch before ontology linking, requirements or Supervisor execution.
 
+The [SpecDraft layer design note](specdraft_layer.md) places this capture PoC
+in a broader pre-canonical authoring space beneath SpecGraph. That layer name
+is distinct from the existing `SpecDraft` promotion stage.
+
 ## Agent entry point
 
 Use the repo-local [conversation notes skill](../.codex/skills/specgraph-conversation-notes/SKILL.md).

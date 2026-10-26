@@ -76,6 +76,10 @@ trusted accepted receipt, and does not implement or activate admission. See
 
 ## Proposal Records
 
+For retained pilot gaps and resumable work, see <doc:PilotFollowups>. Proposal
+0229 joins existing source records to supervisor return points while leaving
+the stronger runtime and metric contracts deferred.
+
 Proposal markdown under `docs/proposals/` describes bounded changes and their
 intended relationship to canonical specifications. Changes that affect proposal
 documents should include matching tracking material or an explicit
