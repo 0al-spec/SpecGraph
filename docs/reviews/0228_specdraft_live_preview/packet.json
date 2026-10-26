@@ -69,7 +69,7 @@
     "tools/conversation_notes/store.py": "4ad3dca78e3802d93f608c04e671f2d867d270de8612b88d0ea697ce7388d1bd",
     "tools/conversation_notes/model.py": "87bdffa1d15ccb667b047ab71774deac257e91c996a31d96cfb8931a17c25875",
     ".codex/skills/specgraph-conversation-notes/SKILL.md": "d1e4fa83cb726ed66825ee6e126c175efa20f587563aa952d93bffc17f3de0aa",
-    "docs/reviews/0228_specdraft_live_preview/verification.json": "e60c8c42670c21ba13bf1d5e5b754931ac22d7083580cf840e94f40e1aba8703",
+    "docs/reviews/0228_specdraft_live_preview/verification.json": "84c93831cc922c3150349d848b7ef263ad40582add2a117d6f8d4127f77c910a",
     "tools/specdraft_preview_cli.py": "3660646fd9313390f969a57457ff083ab52139dbd9448cfc35eb7d1ac86a7a85",
     "tools/specdraft_preview/__init__.py": "4c0202f97d74af5ea1de2bb2ebfecb4f9beec7c0853db93e9db6d1ceee2a3b29",
     "tools/specdraft_preview/context.py": "7cf48d4807428548235ccb6d27137924a85f78ddbc2f1643ec6b6a727b0d313d",
@@ -83,7 +83,7 @@
     "tools/specdraft_preview/static/app.js": "098e403c73cb67979e781cc35cc495772ff39ba8d4fc1076114513db71bf24f6",
     "tools/specdraft_preview/static/icon.svg": "5bc44e9dc3b44473e576ac35bbb0b84ac27ab339ae70bd91ce11f8a8c12ca0cb",
     "tools/specdraft_preview/static/index.html": "9222e78f058a6110e12649035f0d9cd073f9eb7680d7b4f9be47beea310fc8c9",
-    "tools/specdraft_preview/static/style.css": "45a2e4c6cefe02c9a5743637a99e254cf3a54d49eb05c47f041a47c8e46a83fc",
+    "tools/specdraft_preview/static/style.css": "a0573a108440e8171719e1e752b689c476a9bfd303d3232043f7b58147d83404",
     "tests/test_specdraft_preview.py": "c7459ea23e04c576b247f57e039688403693fd55a25428abd06976fd26038b99",
     "Makefile": "401be25aa94f4e2219c286a6cf7a1381743673839c0e42ed4e30b4a17c95f6f4"
   },
@@ -92,5 +92,5 @@
     "reference": "docs/reviews/0228_specdraft_live_preview/verification.json",
     "acceptance_complete": false
   },
-  "review_scope_sha256": "f04ca9e3ad425630afb68458dfa43caa316a4e928470c71f037b498645ba62b0"
+  "review_scope_sha256": "b83656329fc2e6265e9c015c1abd1fd8b4829f0c794a3d7f0c3bb7ce1707b6ba"
 }

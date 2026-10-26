@@ -99,7 +99,7 @@
     "tools/specdraft_preview/static/app.js": "098e403c73cb67979e781cc35cc495772ff39ba8d4fc1076114513db71bf24f6",
     "tools/specdraft_preview/static/icon.svg": "5bc44e9dc3b44473e576ac35bbb0b84ac27ab339ae70bd91ce11f8a8c12ca0cb",
     "tools/specdraft_preview/static/index.html": "9222e78f058a6110e12649035f0d9cd073f9eb7680d7b4f9be47beea310fc8c9",
-    "tools/specdraft_preview/static/style.css": "45a2e4c6cefe02c9a5743637a99e254cf3a54d49eb05c47f041a47c8e46a83fc",
+    "tools/specdraft_preview/static/style.css": "a0573a108440e8171719e1e752b689c476a9bfd303d3232043f7b58147d83404",
     "tests/test_specdraft_preview.py": "c7459ea23e04c576b247f57e039688403693fd55a25428abd06976fd26038b99",
     "Makefile": "401be25aa94f4e2219c286a6cf7a1381743673839c0e42ed4e30b4a17c95f6f4"
   }
