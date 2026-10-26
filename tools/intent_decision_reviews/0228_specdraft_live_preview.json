@@ -56,7 +56,7 @@
           "symbol": "NotesPreview"
         }
       ],
-      "rationale": "SD-LIVE-FIDELITY / SDPV-03: NotesPreview projects the existing read_notes revision, IDs, hierarchy, text, links and source attribution without semantic rewriting. Browser textContent/SVG text rendering preserves inert text. This is data projection/presentation, not a new authority decision; canonical false remains the existing note boundary. Original-source inspection was observed; hostile-text browser execution remains unverified.",
+      "rationale": "SD-LIVE-FIDELITY / SDPV-03: NotesPreview projects the existing read_notes revision, IDs, hierarchy, text, links and source attribution without semantic rewriting. Browser textContent/SVG text rendering preserves inert text. This is data projection/presentation, not a new authority decision; canonical false remains the existing note boundary. Original-source inspection was observed; hostile-text browser execution remains unverified. The PR804 correction presents every incident relation with its original source, label and target regardless of the selected endpoint. This is presentation mechanics; four Node DOM-double regressions exercise the shipped app and its click handlers, including incoming/outgoing external endpoints and self-links. These checks do not replace a browser audit.",
       "specification_refs": []
     },
     {
@@ -73,7 +73,7 @@
     }
   ],
   "intent_delta_sha256": "717cd5866a2cc5494c5a52a3677e6e7476741a089a97c1b6bdffa2fcc8a8b1b8",
-  "pr_body_sha256": "9f71cc256c7cd9482d676aba54bf82e8a99d12f0c6d9b48e61b3c9f6b469caef",
+  "pr_body_sha256": "0eb5a34be875a8715ba04f3e5b7baebf558ca72a599b4148127fd6ffc79f4d46",
   "schema_version": 1,
-  "source_scope_sha256": "fd24180a89ba0d6fbee6452c68e8877540c1c2b310718e5d082508a47496816a"
+  "source_scope_sha256": "f96f69a1a055f5ebe1fc572b848138b5eaf5069fafacb04575da28cd57ac5374"
 }
