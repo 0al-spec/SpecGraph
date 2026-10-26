@@ -12774,7 +12774,15 @@
       "tools/publication_policy_diagnostics.py",
       "tools/publication_policy_classification.json",
       "tests/test_publication_policy_diagnostics.py",
-      "docs/publication_policy_diagnostics.md"
+      "docs/publication_policy_diagnostics.md",
+      "docs/subject_intent_graph.md",
+      "docs/reviews/0221_intent_graph_source_extension.md",
+      "docs/archive/proposal_sources/0221_intent_graph_source_extension.md",
+      "tools/subject_intent_graph.py",
+      "tools/subject_intent_graph_context.py",
+      "tools/subject_intent_graph_append_spec.py",
+      "tools/subject_intent_derivation_spec.py",
+      "tests/test_subject_intent_graph.py"
     ],
     "runtime_markers": [
       {
@@ -12828,6 +12836,10 @@
       {
         "path": "tools/subject_source_write.py",
         "pattern": "def write_subject_source("
+      },
+      {
+        "path": "tools/subject_intent_graph.py",
+        "pattern": "class CanonicalIntentGraph:"
       }
     ],
     "validation_markers": [

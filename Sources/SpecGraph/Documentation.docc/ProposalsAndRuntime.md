@@ -443,6 +443,33 @@ exit 2) from deleted selected refs (`source_conflict`, exit 3), including deleti
 at the CAS boundary. PR #758 regression fixtures prevent both classification gaps;
 see the review prevention section in `docs/subject_source_write.md`.
 
+## Intent graph source extension
+
+Proposal 0221 adds optional `specs/intent_graph.yaml` with
+`artifact_kind: subject_intent_graph`: immutable revision-1 Intent origins and
+explicit `derived_from` edges pinned to exact Requirement revisions in the same
+workspace. `CanonicalSourceRead.intent_graph` exposes the graph separately from
+the unchanged Requirement/criterion snapshot. Its digest inventory and immutable
+Git export include the optional file; criterion membership supplies no path.
+
+`subject_source_write_request` version 2 requires a complete `intent_graph`
+mapping. Version 1 rejects that field and retains its legacy digest. The existing
+`git_commit_compare_and_swap_v1` backend can publish graph and subject records
+together. `subject_intent_graph.append_preserves_origins` forbids changing or
+deleting prior records; `subject_intent_graph.exact_requirement_to_intent`
+checks prepared endpoint facts. Parsing and Git effects remain adapters.
+
+The same governed publication gate compares the complete reviewed graph and
+requires original human source inputs plus scoped `intent_graph_origin` effects
+for every new node and edge. Final permission binds the extended request and
+all effects. Preview and semantic agreement confer no publication authority.
+No production workspace is allocated; active reachability, criterion closure,
+Intent content revisions and evidence admission remain outside this slice.
+The complete contract is `docs/subject_intent_graph.md`.
+The original digest-bound proposal and source stay unchanged; the bounded
+follow-up lives separately. Check packet input inventories before amending a
+proposal, and preserve historical digests rather than refreshing them for new work.
+
 ## RFC 0221 canonical materialization review packet
 
 `docs/reviews/0221_canonical_materialization_packet.json` is a digest-bound,

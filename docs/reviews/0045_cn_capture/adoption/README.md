@@ -106,10 +106,12 @@ ingress, workspace/topology and the exact writer request still need preparation
 and the existing publication review. The semantic decision is not silently reused
 as approval of those future records.
 
-The existing subject writer publishes Requirement/criterion records but does
-not publish Intent roots or external `derived_from` relations. Their canonical
-representation must be bound before claiming a complete Intent → Requirement →
-criterion path. This package records that implementation gap.
+The [Intent graph source extension](../../../subject_intent_graph.md) now provides
+a bounded publication path for Intent roots and exact Requirement-to-Intent
+`derived_from` relations. This historical packet predates that extension and has
+no complete physical graph candidate or approved origin effects. Prepare a new
+packet for the complete records; keep these reviewed preparation bytes unchanged.
+Criterion membership still supplies no implicit criterion-to-Intent path.
 
 ## Binding and later publication
 

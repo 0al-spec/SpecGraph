@@ -22,6 +22,8 @@ flowchart LR
 values without filesystem I/O. Missing declaration is invalid input; an empty
 declared workspace is allowed. Existing `specs/nodes` and `docs/reviews` are
 outside this source slice. Candidate envelopes never become canonical records.
+An optional `specs/intent_graph.yaml` adds the separately versioned Intent graph
+extension described below; the subject snapshot itself stays version 1.
 
 `CanonicalSourceRead` retains the normalized selected root, declaration
 provenance, workspace/dataset binding, topology/evidence references and SHA256
@@ -70,8 +72,10 @@ trusted authority receipt. Nonempty decision references establish structure;
 this slice does not attest whether those decisions are genuine. The audit labels
 `governance_evidence_verification: caller_selected_not_attested`. A future
 governed-topology producer supplies its authoritative selection and evidence.
-External subject relations are not loaded. Enumeration completeness remains
-bounded to the supplied storage slice.
+The optional [Intent graph extension](subject_intent_graph.md) additionally loads
+explicit same-workspace Requirement-revision-to-Intent derivations from
+`specs/intent_graph.yaml`. Other external relations remain outside this adapter.
+Enumeration completeness remains bounded to the supplied storage slice.
 
 ## CLI and exchange compatibility
 

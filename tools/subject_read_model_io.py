@@ -148,15 +148,21 @@ def revision_payload(revision: SubjectRevision) -> dict:
         result.pop("node_fields")
         result.pop("revision_scope")
     elif isinstance(revision.node_fields, RequirementNodeFields):
-        provenance = result["node_fields"]["provenance"]
-        trace = provenance.pop("trace_context_json")
-        supplied = provenance.pop("present_optional_fields") or ()
-        for key in list(provenance):
-            if provenance[key] is None and key not in supplied:
-                provenance.pop(key)
-        if trace is not None:
-            provenance["trace_context"] = json.loads(trace)
+        result["node_fields"]["provenance"] = provenance_payload(revision.node_fields.provenance)
     return result
+
+
+def provenance_payload(value: NodeProvenance) -> dict:
+    """Preserve the complete supplied provenance envelope for any node kind."""
+    provenance = asdict(value)
+    trace = provenance.pop("trace_context_json")
+    supplied = provenance.pop("present_optional_fields") or ()
+    for key in list(provenance):
+        if provenance[key] is None and key not in supplied:
+            provenance.pop(key)
+    if trace is not None:
+        provenance["trace_context"] = json.loads(trace)
+    return provenance
 
 
 def snapshot_payload(index: SubjectIndex) -> dict:

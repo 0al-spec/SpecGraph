@@ -57,10 +57,14 @@ publication independent of Git's storage configuration.
 The declaration is immutable after allocation. Exact acceptance references resolve
 in the complete candidate, so a new criterion and the Requirement revision pinning
 it publish together. Two Requirement membership revisions may be in the same batch.
-Frozen Requirement history cannot advance and status cannot regress. The first writer
+Frozen Requirement history cannot advance and status cannot regress. The version-1 writer
 rejects containment moves, disposition operations, replacements, relations, topology
 mutations and migrations. Caller-selected topology presence remains an independent
 read binding; it is not written into records or inferred from their existence.
+
+The opt-in [version-2 Intent graph extension](subject_intent_graph.md) adds
+immutable Intent origins and exact `derived_from` relations on the same source
+ref. It preserves the version-1 format/digest and all other operation exclusions.
 
 ## Request and authorization contracts
 
@@ -82,7 +86,8 @@ unresolved pins and invalid paths fail closed. Candidate envelopes and snapshot
 exchange documents are not accepted as physical records. Metadata and authored scope
 come from the supplied records; the writer does not invent human provenance.
 
-Version-1 `request_sha256` hashes UTF-8 canonical JSON of `asdict(parsed_request)`:
+Version-1 `request_sha256` hashes UTF-8 canonical JSON of the legacy parsed-request fields
+(the optional `intent_graph_yaml` extension is omitted when absent):
 sorted keys, `ensure_ascii=False`, separators `(',', ':')`, no NaN, no trailing newline.
 Parsing sorts the expected digest pairs and canonically serializes each proposed
 YAML record into immutable text. Change order is retained. The digest binds the ref,
