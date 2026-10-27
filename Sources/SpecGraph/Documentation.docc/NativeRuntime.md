@@ -24,7 +24,9 @@ selected, and an existing workspace or Git history is not overwritten by setup.
 
 Current supervisor refinement requires its configured Codex executor. ASP is
 future work, and the invoking agent is not automatically the child executor.
-The existing initializer's `specs/nodes` and `.worktrees` limitations persist.
+The initializer does not create `specs/nodes`. After Supervisor execution it
+accepts an existing `.worktrees` directory, preserving its contents, and rejects
+a file or symlink at that path.
 Unix platforms are the target; relocation, offline installation, Docker and a
 full cross-repository evidence binding are not claimed by this slice.
 

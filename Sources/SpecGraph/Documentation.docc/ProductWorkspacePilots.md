@@ -29,11 +29,12 @@ The local probe exercised initialization, dry-run, product advice, graph health,
 and the refinement/review path with a deterministic executor. The parent Git
 remained clean; cloning a committed knowledge checkpoint to another path allowed
 dry-run and advice. No real agent/provider was called. The proposal ships no
-skill, setup command, runtime code change or trusted evidence admission.
+skill, setup command or trusted evidence admission.
 
-Post-execution initializer reruns currently reject the generated `.worktrees/`
-directory. A narrow allowlist/conflict-check regression fix remains future work.
-The skill must not delete execution state to hide this condition. Existing
+The original probe observed post-execution reruns rejecting `.worktrees/`.
+The initializer now accepts an ordinary directory there without changing it,
+and blocks files and symlinks. The skill must not delete execution state.
+Existing
 trace/evidence builders report `unclaimed` and `untracked` without contracts;
 location reuse does not automatically bind or scan the outer implementation Git.
 Ignored runs and uncommitted pending-review state are not restored by cloning a

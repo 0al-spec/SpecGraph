@@ -194,6 +194,39 @@ raise SystemExit(supervisor.main(
     assert logs[0]["gate_state"] == "review_pending" and not logs[0]["validation_errors"]
     assert logs[0]["isolation_mode"] == "git_worktree"
     assert (project_a / "knowledge/specs/nodes/PROBE-SPEC-0001.yaml").read_bytes() == before_a
+    workspace = project_b / "knowledge"
+    # The shadowing fixture is unrelated to the initializer's allowed layout.
+    (workspace / "specgraph.py").unlink()
+    worktrees = workspace / ".worktrees"
+    assert worktrees.is_dir() and not worktrees.is_symlink()
+    before_worktrees = sorted(
+        path.relative_to(worktrees).as_posix() for path in worktrees.rglob("*")
+    )
+    before_config = (workspace / "specgraph.project.yaml").read_bytes()
+    before_intent = (workspace / ".specgraph/root_intent.md").read_bytes()
+    repeated = json.loads(
+        call(
+            [
+                str(launcher),
+                "--workspace",
+                str(workspace),
+                "init",
+                "--",
+                "--project-id",
+                "native-2",
+                "--output-mode",
+                "full",
+            ]
+        )
+    )
+    assert repeated["summary"]["status"] == "ready"
+    assert repeated["validation_findings"] == []
+    assert (
+        sorted(path.relative_to(worktrees).as_posix() for path in worktrees.rglob("*"))
+        == before_worktrees
+    )
+    assert (workspace / "specgraph.project.yaml").read_bytes() == before_config
+    assert (workspace / ".specgraph/root_intent.md").read_bytes() == before_intent
     report = {
         "artifact_kind": "native_runtime_observation",
         "schema_version": 1,
@@ -208,6 +241,7 @@ raise SystemExit(supervisor.main(
             "product_advisor",
             "targeted_supervisor_dry_run",
             "specdraft_read",
+            "repeat_init_after_git_worktree_refinement",
         ],
         "executor": "deterministic_fixture_not_a_real_agent",
         "refinement": {

@@ -47,13 +47,13 @@ automatic upgrades, broad integration bundle or Docker image is claimed.
 Focused tests verify conflict preservation, unsafe archive rejection, full SHA
 and incomplete installation rejection. A real isolated install and product
 workspace probe must bind to the installed commit and report exactly what ran.
-The existing initializer does not create `specs/nodes`, and after supervisor
-creates `.worktrees` a repeated initializer may report it as unexpected; these
-pre-existing limitations are not silently altered by this distribution slice.
+The initializer does not create `specs/nodes`. Its subsequent bounded correction
+allows an existing `.worktrees` directory while rejecting files and symlinks.
 Real provider calls, canonical publication, cross-repository code trace and
 hosted evidence admission are outside the technical smoke's claims.
 The actual repeat-init probe failed on `.worktrees` after the synthetic
-refinement, as expected from proposal 0227; this is an open usability defect.
+refinement, as recorded in proposal 0227; the subsequent correction is covered
+by a repeat-init regression in the installed-runtime smoke.
 
 ## Pipeline
 

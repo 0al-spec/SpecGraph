@@ -25648,6 +25648,59 @@ def test_initialize_product_workspace_is_idempotent(
     )
 
 
+def test_initialize_product_workspace_preserves_supervisor_worktrees(
+    supervisor_module: object, tmp_path: Path
+) -> None:
+    workspace = tmp_path / "Product"
+    kwargs = {"project_id": "product", "display_name": "Product", "workspace_root": workspace}
+    supervisor_module.initialize_product_workspace(**kwargs, root_intent="Build the product.")
+    existing = workspace / ".worktrees" / "review-pending" / "change.patch"
+    existing.parent.mkdir(parents=True)
+    existing.write_text("pending review\n", encoding="utf-8")
+
+    report = supervisor_module.initialize_product_workspace(**kwargs)
+
+    assert report["summary"]["status"] == "ready"
+    assert report["validation_findings"] == []
+    assert report["workspace"]["created_paths"] == []
+    assert existing.read_text(encoding="utf-8") == "pending review\n"
+    assert (workspace / ".specgraph/root_intent.md").read_text() == "Build the product.\n"
+
+
+@pytest.mark.parametrize("collision", ["file", "symlink", "dangling_symlink"])
+def test_initialize_product_workspace_rejects_invalid_worktrees_path(
+    supervisor_module: object, tmp_path: Path, collision: str
+) -> None:
+    workspace = tmp_path / "Product"
+    kwargs = {"project_id": "product", "display_name": "Product", "workspace_root": workspace}
+    supervisor_module.initialize_product_workspace(**kwargs)
+    path = workspace / ".worktrees"
+    target = tmp_path / "external"
+    if collision == "file":
+        path.write_text("keep", encoding="utf-8")
+    else:
+        if collision == "symlink":
+            target.mkdir()
+            (target / "keep").write_text("keep", encoding="utf-8")
+        path.symlink_to(target, target_is_directory=True)
+
+    report = supervisor_module.initialize_product_workspace(**kwargs)
+
+    assert report["summary"]["status"] == "blocked"
+    assert any(
+        finding["finding_id"] == "invalid_workspace_worktrees_directory"
+        for finding in report["validation_findings"]
+    )
+    if collision == "file":
+        assert path.read_text() == "keep"
+    else:
+        assert path.is_symlink()
+        if collision == "dangling_symlink":
+            assert not target.exists()
+        else:
+            assert (target / "keep").read_text() == "keep"
+
+
 def test_initialize_product_workspace_hashes_existing_root_intent(
     supervisor_module: object,
     tmp_path: Path,
