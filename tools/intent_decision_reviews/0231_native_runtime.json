@@ -65,7 +65,7 @@
     }
   ],
   "intent_delta_sha256": "0fa11a2d53468812916089645ed38be2ec5dd65382f55645ae24a99881081046",
-  "pr_body_sha256": "28bb5c95e384ac19e6ac05462e6337ad2e0ac3236294c8c8a46631f7fa40c500",
+  "pr_body_sha256": "9a127e2adc83429acc03b9b302d7db1132ba0e41668b35cf1507bc6b1dfd9abf",
   "schema_version": 1,
-  "source_scope_sha256": "0ce4e2c99fddca82dc84d55fafe6bf81b50d999dd5b1ab8a2620067ddbb5fafb"
+  "source_scope_sha256": "068c77b2c6b77fb8cde2a33447d9b1f345f8cd882ee90b3020fcf81f85298ac8"
 }
