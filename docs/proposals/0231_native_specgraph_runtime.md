@@ -58,6 +58,7 @@ refinement, as expected from proposal 0227; this is an open usability defect.
 Captured user intent → proposal lane → draft obligations → implementation →
 tests/observations. SG-SPEC-0007 constrains the attribution boundary; references
 are governance context, not a canonical Requirement binding. The named
-`RUNTIME_READY_SPEC` checks that a versioned installation receipt identifies a
-complete snapshot. CLI forwarding, archive copying and environment creation are
-I/O mechanics and do not expand supervisor authority.
+`RUNTIME_READY_SPEC` checks that a versioned receipt records a completed install
+and identifies a full source commit. It does not verify the current bytes of the
+installed tree. CLI forwarding, archive copying and environment creation are I/O
+mechanics and do not expand supervisor authority.
