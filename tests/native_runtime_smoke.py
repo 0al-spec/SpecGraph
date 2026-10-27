@@ -52,6 +52,11 @@ def main() -> None:
     receipt = json.loads(setup)
     assert receipt["source_commit"] == args.revision
     assert not (install / "source/.git").exists()
+    for name in ("tools/supervisor.py", "tools/native_runtime.py", "tools/supervisor_policy.json"):
+        original = subprocess.check_output(
+            ["git", "-C", str(args.repo), "show", f"{args.revision}:{name}"]
+        )
+        assert (install / "source" / name).read_bytes() == original
     launcher = install / "specgraph-runtime"
     fixture = json.loads(
         (install / "source/docs/evidence/0227_local_workspace_path_reuse.json").read_text()
