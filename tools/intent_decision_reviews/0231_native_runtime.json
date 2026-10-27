@@ -58,10 +58,6 @@
         {
           "path": "tools/native_runtime.py",
           "symbol": "run"
-        },
-        {
-          "path": "tools/supervisor.py",
-          "symbol": "main"
         }
       ],
       "rationale": "The launcher only forwards to the unchanged supervisor and executor boundary; it grants no additional authority and does not implement ASP. Existing supervisor governance still governs refinement; the deterministic fixture ended review_pending, without a real agent or canonical approval.",
