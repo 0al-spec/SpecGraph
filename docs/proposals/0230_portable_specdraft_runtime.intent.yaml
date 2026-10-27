@@ -1,0 +1,20 @@
+id: SG-RFC-0230
+kind: proposal
+status: draft
+proposal_ref: docs/proposals/0230_portable_specdraft_runtime.md
+provenance:
+  authored_by: agent
+  authority: proposal_draft
+  source_ref: docs/archive/proposal_sources/0230_portable_specdraft_runtime.md
+atoms:
+  intents:
+  - id: SD-DIST-CLI
+    statement: An isolated installation exposes versioned SpecDraft note and preview commands independently of the developer checkout.
+  - id: SD-DIST-RESOURCES
+    statement: The distribution contains the runtime modules and every preview resource needed to serve the selected consumer sketch.
+  - id: SD-DIST-DATA
+    statement: Consumer-owned notes retain revisions, IDs and source quotations across fresh installed CLI processes, with stale writes rejected unchanged.
+  - id: SD-DIST-SKILL
+    statement: The matching exported skill is self-contained, invokes installed commands and preserves differing existing destination content.
+  - id: SD-DIST-COMPAT
+    statement: Packaging preserves the source CLI and read-only loopback preview behavior without activating canonical publication or a full supervisor distribution.

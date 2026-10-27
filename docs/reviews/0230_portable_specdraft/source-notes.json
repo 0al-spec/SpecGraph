@@ -1,0 +1,37 @@
+{
+  "artifact_kind": "conversation_notes",
+  "schema_version": 1,
+  "revision": "2bf2408ebe0148f6a5c6a548f305e67a",
+  "canonical": false,
+  "nodes": [
+    {
+      "id": "specdraft_portable_runtime",
+      "label": "Устанавливаемый runtime",
+      "detail": "Python-пакет с CLI, ресурсами и согласованным skill; первый срез — заметки и preview. Реализацию провести через SpecGraph.",
+      "parent_id": "specdraft_layer",
+      "sources": [
+        {
+          "ref": "conversation:2026-10-27/specdraft-distribution-approval",
+          "quote": "Ok, давай сделаем это\n\nПропусти через пайплайн самого SpecGraph",
+          "speaker": "human"
+        }
+      ]
+    }
+  ],
+  "links": [],
+  "reviews": [],
+  "omitted_nodes": 30,
+  "history": [
+    {
+      "revision": "2bf2408ebe0148f6a5c6a548f305e67a",
+      "parent_revision": "3f99159e6c2a41e2aac65c756a7d25b2",
+      "captured_at": "2026-10-27T15:12:30.601083+00:00",
+      "source": {
+        "ref": "conversation:2026-10-27/specdraft-distribution-approval",
+        "quote": "Ok, давай сделаем это\n\nПропусти через пайплайн самого SpecGraph",
+        "speaker": "human"
+      }
+    }
+  ],
+  "snapshot_path": "conversation_memory/sketches/hypercode-conversation-poc/revisions/2bf2408ebe0148f6a5c6a548f305e67a"
+}

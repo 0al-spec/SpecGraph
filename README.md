@@ -14,6 +14,31 @@ It turns product intent into a structured, governed, and execution-ready graph t
 
 SpecGraph makes it possible to move from intent to implementation through specifications that remain understandable to humans, verifiable by machines, and traceable across the full software lifecycle.
 
+## Installed SpecDraft
+
+Proposal 0230 provides a separate Python runtime for notes and local preview.
+Install a reviewed release wheel into pipx; the candidate is not yet published
+on a package index:
+
+```sh
+pipx install /path/to/specgraph-0.2.0-py3-none-any.whl
+specgraph --version
+specgraph skill install --destination .codex/skills/specgraph-conversation-notes
+specgraph notes read_notes --workspace conversation_memory/sketches/session
+specgraph preview --workspace conversation_memory/sketches/session --port 0
+```
+
+The preview requires a workspace already created by `update_notes`. Runtime,
+bundled resources and skill are versioned together; project notes remain in
+the explicitly selected consumer workspace. Add private sketches to the consumer's
+`.gitignore` when appropriate. The installed runtime does not depend on a developer
+checkout and can remain fixed while SpecGraph is developed separately.
+
+This slice supports macOS/Linux with Python >=3.10; it does not package the full
+supervisor or provide native Windows support. See the
+[distribution contract](docs/proposals/0230_portable_specdraft_runtime.md) and
+[installed CLI/skill guide](src/specgraph/resources/skills/specgraph-conversation-notes/references/usage.md).
+
 ## Python Environment
 
 SpecGraph tooling requires Python 3.10 or newer. CI currently runs Python 3.10,

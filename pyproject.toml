@@ -4,8 +4,8 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "specgraph"
-version = "0.1.0"
-description = "Default Python project scaffold for SpecGraph"
+dynamic = ["version"]
+description = "SpecGraph tools: portable SpecDraft notes and local preview"
 readme = "README.md"
 requires-python = ">=3.10"
 authors = [{ name = "SpecGraph" }]
@@ -17,8 +17,26 @@ dependencies = [
 [project.optional-dependencies]
 dev = ["pytest==9.0.2", "ruff==0.15.9"]
 
-[tool.setuptools.packages.find]
-where = ["src"]
+[project.scripts]
+specgraph = "specgraph.cli:main"
+
+[tool.setuptools]
+packages = ["specgraph", "conversation_notes", "specdraft_preview"]
+py-modules = ["conversation_notes_cli", "specdraft_preview_cli"]
+
+[tool.setuptools.package-dir]
+"" = "tools"
+specgraph = "src/specgraph"
+
+[tool.setuptools.dynamic]
+version = {attr = "specgraph.__version__"}
+
+[tool.setuptools.package-data]
+specgraph = [
+    "resources/skills/specgraph-conversation-notes/SKILL.md",
+    "resources/skills/specgraph-conversation-notes/references/*.md",
+]
+specdraft_preview = ["static/*.html", "static/*.css", "static/*.js", "static/*.svg"]
 
 [tool.pytest.ini_options]
 pythonpath = ["src"]

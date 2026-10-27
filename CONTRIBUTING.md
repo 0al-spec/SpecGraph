@@ -4,6 +4,16 @@ SpecGraph is grown through small, reviewable graph changes. The project has accu
 
 Use [AGENTS.md](AGENTS.md) for executable agent rules. Use this file for the human-readable process, conventions, lessons learned, and durable project experience.
 
+## Distribution verification
+
+Distribution changes must exercise the built artifact, not just imports from
+the source checkout. For portable SpecDraft (proposal 0230), build a wheel through
+its source distribution, install it into a separate pipx environment, then run
+`tests/specdraft_distribution_smoke.py` from an external consumer workspace.
+Check module origins, packaged HTTP assets and the skill's local references.
+Source tests alone do not prove a wheel is complete. Keep consumer notebooks out
+of package data and preserve source CLI façades during package extraction.
+
 ## Core Loop
 
 1. Start from updated `main`.

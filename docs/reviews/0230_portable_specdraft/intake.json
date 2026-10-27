@@ -1,0 +1,18 @@
+{
+  "artifact_kind": "specdraft_distribution_intake",
+  "schema_version": 1,
+  "source": {
+    "ref": "conversation:2026-10-27/specdraft-distribution-approval",
+    "quote": "Ok, давай сделаем это\n\nПропусти через пайплайн самого SpecGraph",
+    "speaker": "human"
+  },
+  "approved_selection": {
+    "speaker": "agent",
+    "text": "Python-пакета с CLI, ресурсами и согласованным skill, устанавливаемого в отдельное окружение инструмента, например через pipx"
+  },
+  "notes_revision": "2bf2408ebe0148f6a5c6a548f305e67a",
+  "notes_node": "specdraft_portable_runtime",
+  "proposal_id": "0230",
+  "canonical": false,
+  "approval_scope": "prepare_and_implement_bounded_distribution_slice_not_canonical_adoption"
+}

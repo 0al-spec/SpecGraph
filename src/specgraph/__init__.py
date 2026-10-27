@@ -1,4 +1,6 @@
-"""SpecGraph Python package."""
+"""SpecGraph distribution; the first portable slice is SpecDraft."""
+
+__version__ = "0.2.0"
 
 
 def hello() -> str:

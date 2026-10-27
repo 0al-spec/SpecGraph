@@ -1,6 +1,6 @@
-"""Command-line entry point for the SpecGraph scaffold."""
+"""Run the same installed interface as the specgraph console script."""
 
-from . import hello
+from .cli import main
 
 if __name__ == "__main__":
-    print(hello())
+    raise SystemExit(main())
