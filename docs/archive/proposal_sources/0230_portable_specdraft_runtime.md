@@ -19,7 +19,9 @@ The existing `update_notes` API saved that attributed request under
 `specdraft_portable_runtime`, revision `2bf2408ebe0148f6a5c6a548f305e67a`.
 The supervisor's existing `sync_user_intent_node` intake helper generated the
 tracked `user_intent::specdraft-portable-runtime-20261027` node with state
-`captured`. This is a real intake operation, not a model refinement, canonical
+`captured`. Its proposal-lane synchronization helper then linked the captured
+handle to `proposal::0230`, `under_review`, with a draft target area rather than
+a canonical node mutation. This is a real intake operation, not a model refinement, canonical
 adoption or approval of the whole notebook. Source captures are retained in
 `docs/reviews/0230_portable_specdraft/`.
 

@@ -18,6 +18,8 @@ resources and coherent skill, and requested the SpecGraph pipeline itself.
 - [Intake](../reviews/0230_portable_specdraft/intake.json)
 - [Requirement draft and test bindings](../reviews/0230_portable_specdraft/specdraft.md)
 - [Declared proposal obligations](0230_portable_specdraft_runtime.intent.yaml)
+- [Installed artifact observation](../reviews/0230_portable_specdraft/verification.json)
+- [Pipeline lineage observation](../reviews/0230_portable_specdraft/pipeline.json)
 
 The source note is pre-canonical. SG-SPEC-0007 governs mediation provenance,
 SG-SPEC-0050/0051 govern pre-spec meanings and promotion. Frozen governance
@@ -77,6 +79,8 @@ trusted receipt admission or full supervisor portability.
 
 The existing notes API captured the operator quotation; the supervisor's intake
 helper recorded a `captured` user intent. Proposal, draft Requirement, code and
-tests keep that lineage explicit. No model refinement or frozen-spec mutation
+tests keep that lineage explicit. The existing proposal-lane synchronization
+helper created `proposal::0230` in `under_review`, linked to that captured intent;
+the pre-spec index reports it as a queryable downstream proposal. No model refinement or frozen-spec mutation
 is needed for this implementation-agnostic boundary. Running intake/index/gates
 is not reported as an executor/model run or canonical materialization.
