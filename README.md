@@ -14,6 +14,26 @@ It turns product intent into a structured, governed, and execution-ready graph t
 
 SpecGraph makes it possible to move from intent to implementation through specifications that remain understandable to humans, verifiable by machines, and traceable across the full software lifecycle.
 
+## Native SpecGraph runtime
+
+Proposal 0231 adds a separately installed snapshot of the full tracked SpecGraph
+source and a Python environment. It uses a full Git SHA and a new destination:
+
+```sh
+python3 tools/native_runtime.py install --source https://github.com/0al-spec/SpecGraph.git \
+  --revision <full-commit-sha> --destination <new-runtime-directory>
+<new-runtime-directory>/specgraph-runtime --workspace <project-workspace> \
+  init -- --project-id <project-id>
+<new-runtime-directory>/specgraph-runtime --workspace <project-workspace> \
+  supervisor -- --target-spec <spec-id> --dry-run
+```
+
+The selected revision must include the installer. Python 3.10+, Git and network
+access for Python dependencies are required. Existing project history, agent
+executor setup and workspace initialization are separate from installation.
+See [proposal 0231](docs/proposals/0231_native_specgraph_runtime.md) for
+supported operations and limitations.
+
 ## Installed SpecDraft
 
 Proposal 0230 provides a separate Python runtime for notes and local preview.

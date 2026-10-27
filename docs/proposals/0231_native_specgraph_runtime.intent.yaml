@@ -1,0 +1,18 @@
+id: SG-RFC-0231
+kind: proposal
+status: draft
+proposal_ref: docs/proposals/0231_native_specgraph_runtime.md
+provenance:
+  authored_by: agent
+  authority: proposal_draft
+  source_ref: docs/archive/proposal_sources/0231_native_specgraph_runtime.md
+atoms:
+  intents:
+  - id: SG-NATIVE-SNAPSHOT
+    statement: An installation retains a full tracked SpecGraph snapshot identified by the exact source commit without retaining its Git history.
+  - id: SG-NATIVE-ENVIRONMENT
+    statement: A separately created Python environment installs the snapshot dependencies and a launcher without overwriting an existing installation.
+  - id: SG-NATIVE-WORKSPACES
+    statement: One installed runtime runs existing product commands against explicitly selected independent workspace roots.
+  - id: SG-NATIVE-AUTHORITY
+    statement: The installed supervisor retains existing executor and review authority without pretending to implement ASP or canonical acceptance.

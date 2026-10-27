@@ -2975,5 +2975,18 @@
     "required_provenance_links": [
       "source_draft_ref"
     ]
+  },
+  {
+    "proposal_id": "0231",
+    "source_artifact_class": "working_draft",
+    "source_refs": [
+      "docs/archive/proposal_sources/0231_native_specgraph_runtime.md"
+    ],
+    "motivating_concern": "Use a stable complete SpecGraph snapshot for independent projects while the developer checkout changes.",
+    "normalized_title": "Native SpecGraph runtime",
+    "bounded_scope": "Native source-snapshot installer, isolated Python environment and existing product-workspace command forwarding with explicit provenance. ASP, Docker, full product evidence binding and canonical publication remain separate.",
+    "required_provenance_links": [
+      "source_draft_ref"
+    ]
   }
 ]

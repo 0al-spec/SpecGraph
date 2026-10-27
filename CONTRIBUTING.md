@@ -6,6 +6,12 @@ Use [AGENTS.md](AGENTS.md) for executable agent rules. Use this file for the hum
 
 ## Distribution verification
 
+Proposal 0231 installs a full pinned source snapshot alongside a separate Python
+environment. Exercise the installed launcher against distinct external workspace
+roots; source-only tests cannot prove policy resources or tool paths are usable.
+Record the selected commit and distinguish deterministic probes from real
+executor runs and canonical approval.
+
 Distribution changes must exercise the built artifact, not just imports from
 the source checkout. For portable SpecDraft (proposal 0230), build a wheel through
 its source distribution, install it into a separate pipx environment, then run

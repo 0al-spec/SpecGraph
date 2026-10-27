@@ -110,6 +110,7 @@ The canonical source files remain in the repository:
 - <doc:ConversationNotes>
 - <doc:SpecDraft>
 - <doc:SpecDraftDistribution>
+- <doc:NativeRuntime>
 
 ### Proposed composition comparison
 

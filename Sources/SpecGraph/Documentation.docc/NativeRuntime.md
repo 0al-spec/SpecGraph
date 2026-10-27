@@ -1,0 +1,27 @@
+# Native SpecGraph runtime
+
+Proposal 0231 describes a pinned source snapshot for an agent running SpecGraph
+from independent product workspaces. The installer ships tracked tools and
+policy resources without the engine Git history; it creates a separate Python
+environment and a launcher. Python 3.10+, Git and access to dependencies are
+prerequisites. The local source commit is recorded in `runtime.json`.
+
+`tools/native_runtime.py install` takes an explicit Git source, full revision
+and new destination. It never overwrites an existing destination. Failure leaves
+an incomplete installation without the `runtime.json` ready marker.
+
+The launcher accepts `--workspace` and `init`, `next-move`, `supervisor` or
+`draft`. `init` runs the existing initializer from the installed source root;
+other operations run in the selected product workspace. Project-owned Git,
+notes, specs and runs are not installed data. Each workspace must be explicitly
+selected, and an existing workspace or Git history is not overwritten by setup.
+
+Current supervisor refinement requires its configured Codex executor. ASP is
+future work, and the invoking agent is not automatically the child executor.
+The existing initializer's `specs/nodes` and `.worktrees` limitations persist.
+Unix platforms are the target; relocation, offline installation, Docker and a
+full cross-repository evidence binding are not claimed by this slice.
+
+Focused tests cover snapshot safety and installer refusal. An installed-runtime
+probe exercises a real snapshot and separate project roots; no canonical
+acceptance or live provider inference follows from that observation.

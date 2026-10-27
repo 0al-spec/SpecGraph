@@ -1,6 +1,23 @@
 {
   "groups": [
     {
+      "id": "native-specgraph-runtime",
+      "description": "Pinned engine snapshot and project-owned workspace runtime boundaries.",
+      "docs": [
+        "docs/proposals/0231_native_specgraph_runtime.md",
+        "README.md",
+        "CONTRIBUTING.md"
+      ],
+      "docc": [
+        "Sources/SpecGraph/Documentation.docc/NativeRuntime.md"
+      ],
+      "required_terms": [
+        "0231",
+        "SpecGraph",
+        "workspace"
+      ]
+    },
+    {
       "id": "specdraft-distribution",
       "description": "Independently installed SpecDraft preserves source fa\u00e7ades, consumer data and source-bound verification.",
       "docs": [

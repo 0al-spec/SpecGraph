@@ -1,0 +1,37 @@
+{
+  "artifact_kind": "conversation_notes",
+  "schema_version": 1,
+  "revision": "1b44588d2b6640de86bd56f219fd4735",
+  "canonical": false,
+  "nodes": [
+    {
+      "id": "specgraph_native_runtime",
+      "label": "Стабильный установленный SpecGraph",
+      "detail": "Снимок движка и отдельное Python-окружение; агент использует supervisor в workspace проекта. ASP — будущий executor.",
+      "parent_id": "specdraft_portable_runtime",
+      "sources": [
+        {
+          "ref": "conversation:2026-10-27/native-runtime-request",
+          "quote": "Для executor у меня есть ASP - agent surface protocol, но он ещё в разработке. Поэтому меня бы устроил такой вариант, где каким-то образом (скриптом?) создается копия стабильного SpecGraph со всеми инструмениами, разворачивается окружение Python/git/etc и далее агент-разработчик работает с супервизором и тп над конкретным проектом…",
+          "speaker": "human"
+        }
+      ]
+    }
+  ],
+  "links": [],
+  "reviews": [],
+  "omitted_nodes": 31,
+  "history": [
+    {
+      "revision": "1b44588d2b6640de86bd56f219fd4735",
+      "parent_revision": "2bf2408ebe0148f6a5c6a548f305e67a",
+      "captured_at": "2026-10-27T18:45:26.818269+00:00",
+      "source": {
+        "ref": "conversation:2026-10-27/native-runtime-request",
+        "quote": "Для executor у меня есть ASP - agent surface protocol, но он ещё в разработке. Поэтому меня бы устроил такой вариант, где каким-то образом (скриптом?) создается копия стабильного SpecGraph со всеми инструмениами, разворачивается окружение Python/git/etc и далее агент-разработчик работает с супервизором и тп над конкретным проектом…",
+        "speaker": "human"
+      }
+    }
+  ],
+  "snapshot_path": "conversation_memory/sketches/hypercode-conversation-poc/revisions/1b44588d2b6640de86bd56f219fd4735"
+}
