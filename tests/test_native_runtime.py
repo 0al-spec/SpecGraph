@@ -55,6 +55,21 @@ def test_non_full_sha_rejected_without_creating_destination(tmp_path):
     assert not target.exists()
 
 
+def test_local_git_sources_use_caller_root_and_remote_syntax_stays_unchanged(tmp_path):
+    assert runtime.resolve_git_source(".", tmp_path) == str(tmp_path.resolve())
+    assert runtime.resolve_git_source("../repository with spaces", tmp_path) == str(
+        (tmp_path / "../repository with spaces").resolve()
+    )
+    for source in (
+        "https://github.com/0al-spec/SpecGraph.git",
+        "ssh://git@example.com/repository",
+        "git@example.com:owner/repository.git",
+        "example.com:owner/repository.git",
+        "file:///tmp/source.git",
+    ):
+        assert runtime.resolve_git_source(source, tmp_path) == source
+
+
 def test_ready_spec_requires_a_complete_versioned_receipt():
     from native_runtime_context import RuntimeReadyFacts
     from native_runtime_ready_spec import RUNTIME_READY_SPEC

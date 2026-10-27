@@ -12,6 +12,9 @@ an incomplete installation without the `runtime.json` ready marker.
 To bootstrap without a developer checkout, download that script from the same
 trusted full commit on `raw.githubusercontent.com` before invoking it; the
 repository README gives the command. The chosen revision must contain the script.
+Local Git source paths are resolved against the caller's directory before Git
+enters its temporary repository; Git URL and SSH remote syntax stays unchanged.
+The installed-runtime smoke uses a relative source to preserve this behavior.
 
 The launcher accepts `--workspace` and `init`, `next-move`, `supervisor` or
 `draft`. `init` runs the existing initializer from the installed source root;

@@ -42,12 +42,13 @@ def main() -> None:
             str(args.repo / "tools/native_runtime.py"),
             "install",
             "--source",
-            str(args.repo),
+            ".",
             "--revision",
             args.revision,
             "--destination",
             str(install),
-        ]
+        ],
+        cwd=args.repo,
     )
     receipt = json.loads(setup)
     assert receipt["source_commit"] == args.revision

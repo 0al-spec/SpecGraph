@@ -11,6 +11,9 @@ environment. Exercise the installed launcher against distinct external workspace
 roots; source-only tests cannot prove policy resources or tool paths are usable.
 Record the selected commit and distinguish deterministic probes from real
 executor runs and canonical approval.
+Resolve user-supplied local Git sources against the caller's directory before
+changing the Git subprocess directory. Exercise a relative source in the actual
+installation smoke, and preserve Git URL and SSH remote syntax.
 
 Distribution changes must exercise the built artifact, not just imports from
 the source checkout. For portable SpecDraft (proposal 0230), build a wheel through

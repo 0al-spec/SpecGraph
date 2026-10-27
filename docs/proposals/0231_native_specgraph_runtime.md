@@ -23,6 +23,8 @@ never adds projects or their data to the installed runtime. Python >=3.10, Git,
 network access to dependencies and Unix venv layout are prerequisites.
 The bootstrap script can be downloaded from the same chosen Git commit; the
 consumer does not need an existing developer checkout.
+Relative Git source paths are resolved from the caller's directory before
+entering the temporary Git repository; URL and SSH remote forms are preserved.
 
 The installed `specgraph-runtime --workspace <workspace> init -- --project-id <id>`
 invokes the existing product initializer from the installed engine root.

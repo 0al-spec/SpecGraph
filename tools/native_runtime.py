@@ -16,6 +16,16 @@ import tempfile
 from pathlib import Path, PurePosixPath
 
 COMMIT = re.compile(r"^[0-9a-f]{40}$")
+REMOTE_SOURCE = re.compile(r"^(?:[A-Za-z][A-Za-z0-9+.-]*://|[^/]+:)")
+
+
+def resolve_git_source(source: str, caller_root: Path) -> str:
+    """Resolve local paths before Git changes cwd, preserving remote syntax."""
+    if not source:
+        raise ValueError("Git source must not be empty")
+    if REMOTE_SOURCE.match(source):
+        return source
+    return str((caller_root / Path(source).expanduser()).resolve())
 
 
 def execute(arguments: list[str], *, cwd: Path | None = None) -> None:
@@ -40,6 +50,7 @@ def install(source: str, revision: str, destination: Path) -> dict[str, str]:
         raise ValueError("Revision must be a full lowercase Git commit SHA")
     if shutil.which("git") is None:
         raise ValueError("Git is required for installation")
+    source = resolve_git_source(source, Path.cwd())
     target = destination.expanduser().absolute()
     if target.is_symlink() or target.exists():
         raise ValueError("Installation destination already exists")
