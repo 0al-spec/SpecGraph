@@ -15,10 +15,12 @@ Source tests alone do not prove a wheel is complete. Keep consumer notebooks out
 of package data and preserve `read_notes` / `update_notes` source CLI façades
 during package extraction.
 
-Preserve bytes of historical review-bound inputs during distribution work.
-The existing repository conversation-notes skill is bound into CN-CAPTURE
-review packets; portable instructions therefore ship as separate package
-resources rather than replacing that historical file or rewriting its receipts.
+Rehearse historical review packets from their pinned Git snapshot, not today's
+working-tree copies of review-bound runtime/build inputs. CN-CAPTURE binds its
+original `pyproject.toml`; that historical evidence must remain intact while
+packaging evolves. Keep rejection tests for changes inside the selected review
+snapshot. Do not rewrite old approval hashes merely to make current-source tests
+pass. The source-checkout skill remains separate from installed instructions.
 
 ## Core Loop
 

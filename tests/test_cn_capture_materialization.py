@@ -42,6 +42,13 @@ REQUEST = FOLDER + "/writer-request.json"
 LINEAGES = FOLDER + "/lineages.json"
 DECISIONS_TEMPLATE = FOLDER + "/decisions.template.json"
 DECISIONS = FOLDER + "/decisions.json"
+# Historical packets bind their original runtime/build inputs. Rehearsing them
+# must not freeze pyproject.toml (or runtime sources) in today's working tree.
+REHEARSAL_SOURCE_REVISION = "a837ec632397310450b96ce21c7f4faf03b8233b"
+
+
+def rehearsal_input(path):
+    return DecisionSnapshot(ROOT, REHEARSAL_SOURCE_REVISION).read(path)
 
 
 def document(path, root=ROOT):
@@ -86,12 +93,12 @@ def rehearsal(tmp_path):
         ("core.hooksPath", "/dev/null"),
     ):
         git_command(root, "config", key, value)
-    git_command(root, "read-tree", "HEAD")
+    git_command(root, "read-tree", REHEARSAL_SOURCE_REVISION)
     packet = document(PACKET)
     for path in [PACKET, *packet["inputs"]["review_tree_file_sha256"]]:
         target = root / path
         target.parent.mkdir(parents=True, exist_ok=True)
-        target.write_bytes((ROOT / path).read_bytes())
+        target.write_bytes(rehearsal_input(path))
     head = commit_paths(root, [PACKET, *packet["inputs"]["review_tree_file_sha256"]])
     request = parse_write_request(document(REQUEST, root))
     git_command(root, "update-ref", request.source_ref, request.expected_commit)
@@ -106,7 +113,7 @@ def test_complete_preparation_retains_meaning_exact_request_and_pending_decision
         == packet["approval_scope_sha256"]
     )
     for path, digest in packet["inputs"]["review_tree_file_sha256"].items():
-        assert hashlib.sha256((ROOT / path).read_bytes()).hexdigest() == digest, path
+        assert hashlib.sha256(rehearsal_input(path)).hexdigest() == digest, path
     assert request.digest() == packet["writer_request"]["request_sha256"]
     assert request.expected_source_file_sha256 == ()
     assert {change.subject.local_subject_id for change in request.changes} == {
@@ -161,6 +168,22 @@ def test_packet_reader_uses_committed_inputs_and_rejects_a_changed_request(
         checked, _ = _packet(snapshot, selection)
         assert checked["gate_state"] == "review_pending"
         assert checked["canonical_mutations_allowed"] is False
+
+
+def test_rehearsal_retains_build_inputs_and_rejects_changes_in_selected_review(rehearsal):
+    root, packet, _, head = rehearsal
+    snapshot = DecisionSnapshot(root, head)
+    original = rehearsal_input("pyproject.toml")
+    assert snapshot.read("pyproject.toml") == original
+    assert (
+        hashlib.sha256(original).hexdigest()
+        == packet["inputs"]["review_tree_file_sha256"]["pyproject.toml"]
+    )
+    _packet(snapshot, binding(root, packet, head))
+    (root / "pyproject.toml").write_bytes(original + b"\n# changed build input\n")
+    changed_head = commit_paths(root, ["pyproject.toml"])
+    with pytest.raises(PublicationGovernanceError, match="review input changed: pyproject.toml"):
+        _packet(DecisionSnapshot(root, changed_head), binding(root, packet, changed_head))
 
 
 def test_isolated_preview_reproduces_physical_commit_and_keeps_ref_index_head(rehearsal):
@@ -315,9 +338,9 @@ def test_source_review_binds_unchanged_preparation_and_disclosed_interpretations
     packet, _ = _packet(snapshot, selection)
     assert snapshot.read(PACKET) == (ROOT / PACKET).read_bytes()
     for path, digest in review["source_file_sha256"].items():
-        assert hashlib.sha256((ROOT / path).read_bytes()).hexdigest() == digest, path
+        assert hashlib.sha256(rehearsal_input(path)).hexdigest() == digest, path
     for path in packet["inputs"]["review_tree_file_sha256"]:
-        assert (ROOT / path).read_bytes() == snapshot.read(path), path
+        assert rehearsal_input(path) == snapshot.read(path), path
     intent = document("docs/reviews/0045_cn_capture/adoption/intent-lineage.json")
     assert review["findings"][0]["source_quote"] == intent["human_intent_records"][0]["text"]
     proposal = document(packet["subjects"][0]["source_proposal_ref"])
@@ -379,7 +402,7 @@ def confirmed_specdraft(rehearsal):
     for path in paths:
         target = root / path
         target.parent.mkdir(parents=True, exist_ok=True)
-        target.write_bytes((ROOT / path).read_bytes())
+        target.write_bytes(rehearsal_input(path))
     head = commit_paths(root, paths)
     return root, packet, request, head
 

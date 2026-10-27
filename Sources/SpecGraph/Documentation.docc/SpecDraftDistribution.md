@@ -47,9 +47,11 @@ HTTP mutation refusal and local skill references. CI covers Python 3.10/3.14.
 HTTP observation does not prove browser rendering, canonical acceptance or
 trusted evidence admission.
 
-The repository conversation-notes skill remains unchanged because historical
-CN-CAPTURE review packets bind its bytes. The portable version ships separately
-as package resources; packaging does not rewrite prior reviews or their digests.
+Historical CN-CAPTURE review packets bind the original `pyproject.toml` and
+runtime sources. Their test rehearsal reads a pinned Git snapshot rather than
+today's build metadata, while changes within the selected review snapshot still
+fail. Packaging does not rewrite prior reviews or their digests. The repository
+skill remains a source-checkout guide; portable instructions ship separately.
 
 The five draft obligations are SD-DIST-CLI, SD-DIST-RESOURCES, SD-DIST-DATA,
 SD-DIST-SKILL and SD-DIST-COMPAT. Source capture and supervisor intake preserve
