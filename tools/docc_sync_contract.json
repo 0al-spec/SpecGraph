@@ -1068,6 +1068,23 @@
       ]
     },
     {
+      "id": "recovered-metric-verifiability-candidate",
+      "description": "The recovered semantic candidate remains review-only with explicit input and trust boundaries.",
+      "docs": [
+        "docs/reviews/0226_metric_verifiability_recovery_review.md"
+      ],
+      "docc": [
+        "Sources/SpecGraph/Documentation.docc/TraceabilityEvidenceProviders.md"
+      ],
+      "required_terms": [
+        "SG-SPEC-0021",
+        "review_only",
+        "canonical_mutations_allowed: false",
+        "provider_reported_not_attested",
+        "0226_metric_verifiability_candidate_v2.patch"
+      ]
+    },
+    {
       "id": "supervisor-sol61-execution-profile",
       "description": "The requested shared child model and reasoning stay aligned in operator documentation and DocC.",
       "docs": [
