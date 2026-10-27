@@ -1,0 +1,33 @@
+{
+  "artifact_kind": "native_runtime_observation",
+  "canonical_publication": "not_evaluated",
+  "checks": [
+    "exact_snapshot_without_git",
+    "isolated_venv",
+    "path_with_spaces",
+    "init",
+    "product_advisor",
+    "targeted_supervisor_dry_run",
+    "specdraft_read"
+  ],
+  "executor": "deterministic_fixture_not_a_real_agent",
+  "installer_sha256": "3024b78faab17f4b920e02b1a3dff30961fae9ab4d48139b3f381aa6bd6aa8c0",
+  "python_version": "3.12.11",
+  "refinement": {
+    "gate_state": "review_pending",
+    "isolation_mode": "git_worktree",
+    "outcome": "done"
+  },
+  "review_thread": "https://github.com/0al-spec/SpecGraph/pull/813#discussion_r4393159271",
+  "schema_version": 1,
+  "source_argument": ".",
+  "source_commit": "df773af49d92121b9261dd5369fe0868086e5569",
+  "source_files_sha256": {
+    "tests/native_runtime_smoke.py": "744eff5a57fabeafc7f4926d0a5c7791a73d9a42d8dccab5ef984c982fba1bb3",
+    "tests/test_native_runtime.py": "1e76f5f3dfd5ae94df860ee873c8a0063fd5a201121cd9956e38d3c2a7cc7596",
+    "tools/native_runtime.py": "3024b78faab17f4b920e02b1a3dff30961fae9ab4d48139b3f381aa6bd6aa8c0"
+  },
+  "source_resolution": "relative to the caller checkout before temporary git -C",
+  "status": "passed",
+  "synthetic_workspaces": 2
+}

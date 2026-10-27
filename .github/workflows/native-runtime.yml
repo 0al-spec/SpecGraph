@@ -1,0 +1,40 @@
+name: Native SpecGraph runtime
+
+on:
+  pull_request:
+  push:
+    branches: [main, master]
+
+permissions:
+  contents: read
+
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
+jobs:
+  native-install:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: ["3.10", "3.14"]
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-python@v6
+        with:
+          python-version: ${{ matrix.python-version }}
+      - name: Install test prerequisites
+        run: python -m pip install -e '.[dev]'
+      - name: Verify installed runtime in separate workspaces
+        run: >-
+          python tests/native_runtime_smoke.py
+          --repo "$GITHUB_WORKSPACE"
+          --revision "$GITHUB_SHA"
+          --root "$RUNNER_TEMP/native-runtime-smoke"
+          --output "$RUNNER_TEMP/native-runtime-observation.json"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: native-runtime-observation-${{ matrix.python-version }}
+          path: ${{ runner.temp }}/native-runtime-observation.json

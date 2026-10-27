@@ -1,0 +1,62 @@
+{
+  "artifact_kind": "native_runtime_observation",
+  "canonical_publication": "not_evaluated",
+  "checks": [
+    "exact_snapshot_without_git",
+    "isolated_venv",
+    "path_with_spaces",
+    "init",
+    "product_advisor",
+    "targeted_supervisor_dry_run",
+    "specdraft_read"
+  ],
+  "executor": "deterministic_fixture_not_a_real_agent",
+  "installer_sha256": "d7a220b7e0ddbd419e1b3e114adacd539675aa4292c897453ca8b02bea2e0536",
+  "platform": "macOS; synthetic external workspaces",
+  "python_version": "3.12.11",
+  "refinement": {
+    "gate_state": "review_pending",
+    "isolation_mode": "git_worktree",
+    "outcome": "done"
+  },
+  "repeat_init_after_refinement": [
+    {
+      "entries": [
+        ".worktrees"
+      ],
+      "finding_id": "unexpected_top_level_entries",
+      "source_commit": "b4e5cb9ff0c0aa6138c03a9c9edcfd809d6c5f63",
+      "status": "blocked"
+    },
+    {
+      "entries": [
+        ".worktrees",
+        "specgraph.py"
+      ],
+      "finding_id": "unexpected_top_level_entries",
+      "note": "The second extra entry is the deliberate import-shadowing fixture.",
+      "source_commit": "654e1522acfcecd977165a56ca0fd2670b76f0b9",
+      "status": "blocked"
+    },
+    {
+      "entries": [
+        ".worktrees",
+        "specgraph.py"
+      ],
+      "finding_id": "unexpected_top_level_entries",
+      "note": "specgraph.py is a deliberate import-shadowing fixture.",
+      "source_commit": "ffcdcd9eb3a8465692e19aa4d9a12e7f322bc0bd",
+      "status": "blocked"
+    }
+  ],
+  "schema_version": 1,
+  "source_commit": "ffcdcd9eb3a8465692e19aa4d9a12e7f322bc0bd",
+  "source_files_sha256": {
+    "tests/native_runtime_smoke.py": "d46037759f115809c6a807d223d1bf327ed2efd9b3143ae0a84363e68e438bec",
+    "tools/native_runtime.py": "d7a220b7e0ddbd419e1b3e114adacd539675aa4292c897453ca8b02bea2e0536",
+    "tools/native_runtime_context.py": "24eb0410940f29694cadb23602dc5659500cd345595d2b9a10534d312dcf9f5c",
+    "tools/native_runtime_ready_spec.py": "30d343160f4b62b60d71765a58e86e824e51ae851ac482f5504640fae259225b"
+  },
+  "status": "passed",
+  "synthetic_workspaces": 2
+}

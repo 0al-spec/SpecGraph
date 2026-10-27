@@ -13500,5 +13500,51 @@
       }
     ],
     "notes": "Bounded portable notes/preview distribution with matched resources and skill; see source-bound installed verification. Full supervisor, Docker, native Windows, browser rendering and canonical adoption remain outside this slice."
+  },
+  {
+    "proposal_id": "0231",
+    "posture": "synchronous_runtime_slice",
+    "runtime_surfaces": [
+      "docs/proposals/0231_native_specgraph_runtime.md",
+      "docs/proposals/0231_native_specgraph_runtime.intent.yaml",
+      "docs/archive/proposal_sources/0231_native_specgraph_runtime.md",
+      "docs/reviews/0231_native_runtime/intake.json",
+      "docs/reviews/0231_native_runtime/source-notes.json",
+      "docs/reviews/0231_native_runtime/specdraft.md",
+      "docs/reviews/0231_native_runtime/verification.json",
+      "tools/native_runtime.py",
+      "tools/native_runtime_context.py",
+      "tools/native_runtime_ready_spec.py",
+      "tests/test_native_runtime.py",
+      "tests/native_runtime_smoke.py",
+      "Sources/SpecGraph/Documentation.docc/NativeRuntime.md"
+    ],
+    "runtime_markers": [
+      {
+        "path": "tools/native_runtime.py",
+        "pattern": "def install("
+      },
+      {
+        "path": "tools/native_runtime.py",
+        "pattern": "def run("
+      }
+    ],
+    "validation_markers": [
+      {
+        "path": "tests/test_native_runtime.py",
+        "pattern": "def test_archive_rejects_traversal_before_extracting("
+      },
+      {
+        "path": "tests/native_runtime_smoke.py",
+        "pattern": "def main("
+      }
+    ],
+    "observation_markers": [
+      {
+        "path": "docs/reviews/0231_native_runtime/verification.json",
+        "pattern": "\"artifact_kind\": \"native_runtime_observation\""
+      }
+    ],
+    "notes": "Pinned native engine snapshot and explicit product workspace launcher; local observations and unresolved executor/authority boundaries remain explicit."
   }
 ]

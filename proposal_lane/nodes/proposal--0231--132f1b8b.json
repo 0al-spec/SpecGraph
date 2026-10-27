@@ -1,0 +1,70 @@
+{
+  "artifact_kind": "proposal_lane_node",
+  "schema_version": 1,
+  "title": "Implementation Handoff Proposal for unscoped target (native_specgraph_runtime)",
+  "created_at": "2026-10-27T18:47:54.980080+00:00",
+  "updated_at": "2026-10-27T18:47:54.980087+00:00",
+  "policy_reference": {
+    "artifact_path": "tools/proposal_lane_policy.json",
+    "artifact_sha256": "cf16a8601fee008b754a9852160bb249386fc6182e9500fad95e72adc585eabc",
+    "version": 1
+  },
+  "proposal_repository_presence": {
+    "tracked_presence": "repository_tracked",
+    "path_class": "proposal_node_path",
+    "persistence_boundary": "review_visible_repository_separate_from_runtime",
+    "tracked_path": "proposal_lane/nodes/proposal--0231--132f1b8b.json"
+  },
+  "proposal_handle": {
+    "handle_value": "proposal::0231",
+    "handle_status": "active"
+  },
+  "proposal_authority_state": "under_review",
+  "proposal_target_region": {
+    "target_kind": "draft_target_area",
+    "target_reference": "proposal::0231",
+    "change_scope": "native_specgraph_runtime"
+  },
+  "proposal_lineage_link": [
+    {
+      "lineage_role": "derived_from",
+      "source_kind": "runtime_artifact",
+      "source_reference": "docs/proposals/0231_native_specgraph_runtime.md"
+    },
+    {
+      "lineage_role": "motivated_by",
+      "source_kind": "intent_layer_node",
+      "source_reference": "user_intent::specgraph-native-runtime-20261027"
+    }
+  ],
+  "proposal_artifact_link": [
+    {
+      "artifact_role": "supporting_runtime_artifact",
+      "reference_kind": "runtime_artifact",
+      "reference_value": "docs/proposals/0231_native_specgraph_runtime.md"
+    }
+  ],
+  "proposal_payload": {
+    "proposal_type": "implementation_handoff_proposal",
+    "trigger": "captured_user_intent",
+    "recommended_action": "review_installed_runtime_evidence",
+    "signal": "native_specgraph_runtime",
+    "source_work_item_type": "user_intent",
+    "execution_policy": "emit_proposal",
+    "transition_profile": "",
+    "packet_type": "",
+    "target_artifact_class": "reviewable_proposal",
+    "user_intent_handle": "user_intent::specgraph-native-runtime-20261027",
+    "operator_request_handle": ""
+  },
+  "runtime_bridge": {
+    "proposal_queue_status": "review_pending",
+    "supporting_run_ids": [],
+    "occurrence_count": null,
+    "threshold": null,
+    "proposal_artifact_path": "docs/proposals/0231_native_specgraph_runtime.md",
+    "applied_run_id": "",
+    "applied_at": "",
+    "operator_request_handle": ""
+  }
+}

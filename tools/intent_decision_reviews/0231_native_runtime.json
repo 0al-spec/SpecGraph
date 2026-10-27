@@ -1,0 +1,71 @@
+{
+  "artifact_kind": "specgraph.intent-decision-review/v1",
+  "base_sha": "26886fc22bf04d115429836dfce13f1e7efbfb29",
+  "decisions": [
+    {
+      "change_sha256": "473942eb2712e5d7db9f220c469cd7abf3f8640f8a610937900e3afc2f7894d0",
+      "disposition": "mechanics",
+      "implementation_refs": [
+        {
+          "path": "tools/native_runtime.py",
+          "symbol": "install"
+        },
+        {
+          "path": "tools/native_runtime.py",
+          "symbol": "extract_snapshot"
+        }
+      ],
+      "rationale": "The fetched full commit is compared to the request; Git archive and validated extraction copy tracked files. This is source and filesystem I/O, not a domain policy or canonical authority decision.",
+      "specification_refs": []
+    },
+    {
+      "change_sha256": "c48fd8ccf26583fd3c8e3463224a10e94f1c34d0636b22bf708a9c691f5dfc2e",
+      "disposition": "new_specification",
+      "implementation_refs": [
+        {
+          "path": "tools/native_runtime.py",
+          "symbol": "install"
+        },
+        {
+          "path": "tools/native_runtime.py",
+          "symbol": "run"
+        }
+      ],
+      "rationale": "Environment creation and exclusive destination creation are I/O mechanics; the named receipt readiness Specification checks artifact kind, completed status, schema and source commit before any installed run. It does not claim tree integrity.",
+      "specification_refs": [
+        {
+          "path": "tools/native_runtime_ready_spec.py",
+          "symbol": "RUNTIME_READY_SPEC"
+        }
+      ]
+    },
+    {
+      "change_sha256": "08264b00af227e76f323fa34ac86cb4d28e1783dd66b3e8bae35df1b687d6dfe",
+      "disposition": "mechanics",
+      "implementation_refs": [
+        {
+          "path": "tools/native_runtime.py",
+          "symbol": "run"
+        }
+      ],
+      "rationale": "The explicit workspace selects the current directory or existing workspace-root parameter for each existing CLI. This adapter routing does not infer business semantics; two independent synthetic workspaces and their Git repositories were exercised.",
+      "specification_refs": []
+    },
+    {
+      "change_sha256": "3ff0f66fab63b0c90c94ce1cb5f7ce96e6d574a5036d22754c266d448596913c",
+      "disposition": "mechanics",
+      "implementation_refs": [
+        {
+          "path": "tools/native_runtime.py",
+          "symbol": "run"
+        }
+      ],
+      "rationale": "The launcher only forwards to the unchanged supervisor and executor boundary; it grants no additional authority and does not implement ASP. Existing supervisor governance still governs refinement; the deterministic fixture ended review_pending, without a real agent or canonical approval.",
+      "specification_refs": []
+    }
+  ],
+  "intent_delta_sha256": "0fa11a2d53468812916089645ed38be2ec5dd65382f55645ae24a99881081046",
+  "pr_body_sha256": "9a127e2adc83429acc03b9b302d7db1132ba0e41668b35cf1507bc6b1dfd9abf",
+  "schema_version": 1,
+  "source_scope_sha256": "068c77b2c6b77fb8cde2a33447d9b1f345f8cd882ee90b3020fcf81f85298ac8"
+}

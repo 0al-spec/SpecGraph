@@ -1,0 +1,9 @@
+{
+  "artifact_kind": "native_runtime_intake",
+  "schema_version": 1,
+  "source_notes_revision": "1b44588d2b6640de86bd56f219fd4735",
+  "source_node": "specgraph_native_runtime",
+  "source_notes_ref": "docs/reviews/0231_native_runtime/source-notes.json",
+  "user_instruction": "Да, начинай по канону правок",
+  "canonical": false
+}

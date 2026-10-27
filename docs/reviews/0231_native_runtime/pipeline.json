@@ -1,0 +1,12 @@
+{
+  "artifact_kind": "native_runtime_pipeline_observation",
+  "canonical_publication": "not_performed",
+  "canonical_requirement_binding": "not_created",
+  "intent_handle": "user_intent::specgraph-native-runtime-20261027",
+  "intent_status": "captured",
+  "model_execution": "not_performed",
+  "proposal_handle": "proposal::0231",
+  "proposal_status": "under_review",
+  "schema_version": 1,
+  "source_notes_revision": "1b44588d2b6640de86bd56f219fd4735"
+}
