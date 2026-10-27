@@ -1343,5 +1343,22 @@
     "residual_risk": "The Node DOM-double regression checks shipped app text and click-handler behavior; it is not a real-browser layout or accessibility audit. Earlier browser observations remain historical.",
     "recorded_at": "2026-10-26T16:59:24.779875+00:00",
     "prevention_path": "tests/specdraft_preview_inspector.cjs exercises both selected endpoints, both outside-branch directions, a self-link and literal text. Four tests failed before and passed after; .github/workflows/python-ci.yml runs them under Node 24."
+  },
+  {
+    "feedback_id": "pr-813-relative-git-source",
+    "source_pr": 813,
+    "source_thread_url": "https://github.com/0al-spec/SpecGraph/pull/813#discussion_r4393159271",
+    "reviewer": "chatgpt-codex-connector",
+    "review_comment_summary": "Relative --source was resolved inside the temporary bare Git repository, causing fetch to fail.",
+    "fix_summary": "Resolve local sources against the caller directory before changing Git cwd; preserve URL and scp-style remotes.",
+    "root_cause_class": "test_coverage_gap",
+    "prevention_action": "regression_test_added",
+    "verification": [
+      "targeted_test",
+      "lint_or_format_check"
+    ],
+    "residual_risk": "Remote URL and scp forms are checked as preserved arguments; this review smoke uses an actual local repository rather than a live remote.",
+    "recorded_at": "2026-10-27T19:59:39.779207+00:00",
+    "prevention_path": "tests/test_native_runtime.py checks relative paths and remote forms; tests/native_runtime_smoke.py installs using --source . from the caller checkout and exercises two workspaces."
   }
 ]
