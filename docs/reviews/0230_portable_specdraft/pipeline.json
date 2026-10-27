@@ -1,0 +1,78 @@
+{
+  "artifact_kind": "specdraft_distribution_pipeline_observation",
+  "canonical_links": [
+    {
+      "authority": "textual_reference",
+      "next_gap": "attach_promotion_trace",
+      "proposal_id": "0230",
+      "proposal_path": "docs/proposals/0230_portable_specdraft_runtime.md",
+      "relation_kind": "mentions",
+      "source_refs": [
+        "docs/proposals/0230_portable_specdraft_runtime.md"
+      ],
+      "spec_id": "SG-SPEC-0007",
+      "trace_status": "inferred"
+    },
+    {
+      "authority": "textual_reference",
+      "next_gap": "attach_promotion_trace",
+      "proposal_id": "0230",
+      "proposal_path": "docs/proposals/0230_portable_specdraft_runtime.md",
+      "relation_kind": "mentions",
+      "source_refs": [
+        "docs/proposals/0230_portable_specdraft_runtime.md"
+      ],
+      "spec_id": "SG-SPEC-0050",
+      "trace_status": "inferred"
+    }
+  ],
+  "canonical_publication": "not_performed",
+  "draft_criteria": [
+    "SD-DIST-CLI",
+    "SD-DIST-RESOURCES",
+    "SD-DIST-DATA",
+    "SD-DIST-SKILL",
+    "SD-DIST-COMPAT"
+  ],
+  "intent_entry": {
+    "authority": "external_actor",
+    "downstream_canonical_spec_ids": [],
+    "downstream_proposal_ids": [
+      "proposal::0230"
+    ],
+    "intent_handle": "user_intent::specdraft-portable-runtime-20261027",
+    "mediation_state": "captured",
+    "phase": "pre_spec",
+    "query_contract": {
+      "findings": [],
+      "status": "queryable"
+    },
+    "required_axes": [
+      "phase",
+      "status",
+      "authority",
+      "confidence",
+      "provenance",
+      "context_tags",
+      "supersedes"
+    ],
+    "semantic_artifact_class": "user_intent",
+    "status": "captured",
+    "title": "User intent: Installable SpecDraft Python runtime, CLI, resources and coherent skill independent of the developer checkout.",
+    "tracked_path": "intent_layer/nodes/user_intent--specdraft-portable-runtime-20261027--8fcd7bf7.json"
+  },
+  "model_execution": "not_requested_or_performed",
+  "proposal_promotion_status": "bounded",
+  "schema_version": 1,
+  "source_files_sha256": {
+    "docs/reviews/0230_portable_specdraft/intake.json": "9bf7ca86ca470494b5ae66e99b5acb9cadc9b4a5e3c30d13664463bf0df0bed7",
+    "docs/reviews/0230_portable_specdraft/source-notes.json": "dba8c5f044582f9af8e22d5f896fc2059d975c9c815060aca06c7ffd68908e4b",
+    "proposal_lane/nodes/proposal--0230--99c9a2d0.json": "2c3d53f98dae574368609a917eff8274c309f84f835b6edaf09179090bd36f7e"
+  },
+  "source_notes_revision": "2bf2408ebe0148f6a5c6a548f305e67a",
+  "unresolved_boundary": {
+    "canonical_target": "not_allocated_or_approved",
+    "lane_target_trace": "missing_trace_for_draft_target_area",
+    "meaning": "Proposal lineage is queryable; canonical Requirement binding/adoption is not asserted."
+  }
+}

@@ -1,0 +1,35 @@
+{
+  "admission": "not_evaluated",
+  "artifact_kind": "specdraft_distribution_smoke",
+  "browser_rendering": "not_observed",
+  "build_route": "setuptools sdist -> wheel; pipx 1.8.0 isolated install; installed CLI outside checkout",
+  "build_source_revision": "df21c438b89df66e5bda22a0db48f8090ac342a3",
+  "canonical_acceptance": "not_evaluated",
+  "checks": {
+    "fresh_process_recovery": "passed",
+    "installed_cli": "passed",
+    "packaged_http_assets": "passed",
+    "preview_observes_update": "passed",
+    "preview_rejects_mutation": "passed",
+    "self_contained_skill": "passed",
+    "stale_revision_preserves_data": "passed"
+  },
+  "dependency_commit": "6113d773e78cb94c4eb0ce31e8439877fef45494",
+  "module_origins_outside_developer_checkout": {
+    "conversation_notes.api": true,
+    "specdraft_preview.server": true,
+    "specgraph.cli": true
+  },
+  "python_version": "3.12.11",
+  "runtime_version": "0.2.0",
+  "schema_version": 1,
+  "source_evidence": {
+    "pyproject.toml": "6c0477f3fe5df32fc56e30d89f66e1b8768789e56e088e154090ba4fe0be836f",
+    "src/specgraph/cli.py": "264cf258152f7655e0ece0cd58a3ac86f375b59d2d11304f39c6cdc6c3f7f740",
+    "src/specgraph/distribution.py": "d70a8e3cddf5e99e6f07ad97dd01047a89fff91a84226643c12df90116d56d09",
+    "tests/specdraft_distribution_smoke.py": "fa0510f1f77283b307d16013ef4c321455f59c80226bda2154637c239933b080"
+  },
+  "status": "passed",
+  "synthetic_workspace": true,
+  "wheel_sha256": "36e6dc99be33eef4fb3bb85cec99f9e92890aa3f29fa6118f5e4310133cff134"
+}

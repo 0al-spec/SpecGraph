@@ -13451,5 +13451,54 @@
       }
     ],
     "notes": "Preservation-only inventory with seven source-bound return handles. Existing proposal/backlog builders rediscover one deferred proposal; no per-handle metric, debt evaluator, new canonical kind, receipt issuer, publication approval, inference or threshold change. Generic canonicalization next_gap is a review/re-entry pointer, not writer permission. Existing metric output is a proxy and does not consume individual handles."
+  },
+  {
+    "proposal_id": "0230",
+    "posture": "synchronous_runtime_slice",
+    "runtime_surfaces": [
+      "docs/proposals/0230_portable_specdraft_runtime.md",
+      "docs/proposals/0230_portable_specdraft_runtime.intent.yaml",
+      "docs/archive/proposal_sources/0230_portable_specdraft_runtime.md",
+      "docs/reviews/0230_portable_specdraft/source-notes.json",
+      "docs/reviews/0230_portable_specdraft/intake.json",
+      "docs/reviews/0230_portable_specdraft/specdraft.md",
+      "docs/reviews/0230_portable_specdraft/verification.json",
+      "pyproject.toml",
+      "src/specgraph/cli.py",
+      "src/specgraph/distribution.py",
+      "src/specgraph/resources/skills/specgraph-conversation-notes/SKILL.md",
+      "src/specgraph/resources/skills/specgraph-conversation-notes/references/usage.md",
+      "tests/test_specdraft_distribution.py",
+      "tests/specdraft_distribution_smoke.py",
+      ".github/workflows/specdraft-distribution.yml",
+      "Sources/SpecGraph/Documentation.docc/SpecDraftDistribution.md"
+    ],
+    "runtime_markers": [
+      {
+        "path": "src/specgraph/cli.py",
+        "pattern": "def main("
+      },
+      {
+        "path": "src/specgraph/distribution.py",
+        "pattern": "def install_skill("
+      }
+    ],
+    "validation_markers": [
+      {
+        "path": "tests/test_specdraft_distribution.py",
+        "pattern": "def test_skill_conflict_preserves_existing_content("
+      },
+      {
+        "path": "tests/specdraft_distribution_smoke.py",
+        "pattern": "def observe("
+      }
+    ],
+    "observation_markers": [
+      {
+        "path": "docs/reviews/0230_portable_specdraft/verification.json",
+        "pattern": "\"artifact_kind\": \"specdraft_distribution_smoke\""
+      }
+    ],
+    "notes": "Bounded portable notes/preview distribution with matched resources and skill; see source-bound installed verification. Full supervisor, Docker, native Windows, browser rendering and canonical adoption remain outside this slice."
   }
 ]

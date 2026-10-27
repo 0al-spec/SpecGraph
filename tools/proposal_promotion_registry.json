@@ -2962,5 +2962,18 @@
     "required_provenance_links": [
       "source_draft_ref"
     ]
+  },
+  {
+    "proposal_id": "0230",
+    "source_artifact_class": "working_draft",
+    "source_refs": [
+      "docs/archive/proposal_sources/0230_portable_specdraft_runtime.md"
+    ],
+    "motivating_concern": "Use a stable installed SpecDraft in consumer projects while the developer checkout changes independently.",
+    "normalized_title": "Portable SpecDraft runtime",
+    "bounded_scope": "Source-captured intent and proposal draft plus independently installable Python notes/preview CLI, bundled resources and matching self-contained skill. Preserve existing source fa\u00e7ades and consumer data. No full supervisor distribution or canonical adoption.",
+    "required_provenance_links": [
+      "source_draft_ref"
+    ]
   }
 ]

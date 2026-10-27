@@ -1,6 +1,27 @@
 {
   "groups": [
     {
+      "id": "specdraft-distribution",
+      "description": "Independently installed SpecDraft preserves source fa\u00e7ades, consumer data and source-bound verification.",
+      "docs": [
+        "docs/proposals/0230_portable_specdraft_runtime.md",
+        "README.md",
+        "CONTRIBUTING.md"
+      ],
+      "docc": [
+        "Sources/SpecGraph/Documentation.docc/SpecDraftDistribution.md"
+      ],
+      "required_terms": [
+        "0230",
+        "SpecDraft",
+        "pipx",
+        "read_notes",
+        "update_notes",
+        "skill",
+        "wheel"
+      ]
+    },
+    {
       "id": "worktree-lifecycle",
       "description": "Worktree closeout preserves local work and explicit recovery without canonical adoption.",
       "docs": ["docs/worktree_lifecycle.md", "CONTRIBUTING.md", "AGENTS.md", ".codex/skills/worktree-lifecycle/SKILL.md"],

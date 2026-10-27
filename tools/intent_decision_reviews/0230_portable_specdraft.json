@@ -1,0 +1,115 @@
+{
+  "artifact_kind": "specgraph.intent-decision-review/v1",
+  "base_sha": "a837ec632397310450b96ce21c7f4faf03b8233b",
+  "decisions": [
+    {
+      "change_sha256": "ec07bd1cf86589f9c468a92bfccef8024ac142ada03e49e92a54e0ce7926c4ea",
+      "disposition": "mechanics",
+      "implementation_refs": [
+        {
+          "path": "src/specgraph/cli.py",
+          "symbol": "main"
+        }
+      ],
+      "rationale": "SD-DIST-CLI: The installed main facade only parses/forwards argv to the unchanged notes/preview adapters and reports the distribution version. Command dispatch and entry-point installation are protocol mechanics, not domain eligibility or authority decisions.",
+      "specification_refs": []
+    },
+    {
+      "change_sha256": "08473e40813f20bf9c39a8aee8199e9dbb90f4eca87e9ca81b3d3cef0c5c2be9",
+      "disposition": "mechanics",
+      "implementation_refs": [
+        {
+          "path": "src/specgraph/distribution.py",
+          "symbol": "skill_contents"
+        },
+        {
+          "path": "src/specgraph/cli.py",
+          "symbol": "main"
+        },
+        {
+          "path": "tools/specdraft_preview/server.py",
+          "symbol": "create_server"
+        }
+      ],
+      "rationale": "SD-DIST-RESOURCES: Explicit setuptools mappings include the existing runtime modules and fixed HTTP assets; skill_contents reads version-matched package resources. This is artifact assembly/resource I-O, not a new decision policy. Installed smoke checks all four served assets against wheel bytes and imports outside the developer checkout.",
+      "specification_refs": []
+    },
+    {
+      "change_sha256": "632858999140df191a04471a71f5e8a34ba5a9bec2dcd7291f1b18c663f8a47e",
+      "disposition": "mechanics",
+      "implementation_refs": [
+        {
+          "path": "src/specgraph/cli.py",
+          "symbol": "main"
+        },
+        {
+          "path": "tools/conversation_notes/store.py",
+          "symbol": "NotesStore"
+        },
+        {
+          "path": "tools/conversation_notes/api.py",
+          "symbol": "update_notes"
+        }
+      ],
+      "rationale": "SD-DIST-DATA: The installed adapter delegates to the unchanged NotesStore/API. Consumer workspace selection, immutable file snapshots, exact-byte quotations and revision compare-and-swap are preserved persistence mechanics; packaging does not invent a parallel lifecycle policy. Fresh installed processes and a rejected stale write exercise those existing boundaries.",
+      "specification_refs": []
+    },
+    {
+      "change_sha256": "842e4fd0d058a2e1fcf6bf1e835919db82ddea53cc45c6c4fcf34f2de9f83977",
+      "disposition": "mechanics",
+      "implementation_refs": [
+        {
+          "path": "src/specgraph/distribution.py",
+          "symbol": "install_skill"
+        },
+        {
+          "path": "src/specgraph/distribution.py",
+          "symbol": "skill_contents"
+        }
+      ],
+      "rationale": "SD-DIST-SKILL: install_skill exports a fixed resource set only to an explicit destination. Matching-byte idempotence, exclusive creation and refusal to overwrite differing files are filesystem conflict handling, not semantic authorization. Separate portable resources preserve the historical review-bound repository skill; no global agent configuration is changed.",
+      "specification_refs": []
+    },
+    {
+      "change_sha256": "1447784ab9c475fde41e9807036d5e3179b8d98c20970d312fcd439d59f43b60",
+      "disposition": "reuse_specification",
+      "implementation_refs": [
+        {
+          "path": "src/specgraph/cli.py",
+          "symbol": "main"
+        },
+        {
+          "path": "tools/specdraft_preview/snapshot.py",
+          "symbol": "NotesPreview"
+        },
+        {
+          "path": "tools/specdraft_preview/display_state.py",
+          "symbol": "display_state"
+        }
+      ],
+      "rationale": "SD-DIST-COMPAT: The installed preview facade calls the same create_server/NotesPreview/display_state path, reusing the existing stale/unavailable/empty snapshot and continuity Specifications. Loopback sockets, fixed read-only routes and absence of a canonical writer are preserved adapter boundaries, not new publication authority. Source tests and installed HTTP probes cover the unchanged behavior; a complete supervisor is deliberately not packaged.",
+      "specification_refs": [
+        {
+          "path": "tools/specdraft_preview/stale_snapshot_spec.py",
+          "symbol": "STALE_SNAPSHOT_SPEC"
+        },
+        {
+          "path": "tools/specdraft_preview/unavailable_snapshot_spec.py",
+          "symbol": "UNAVAILABLE_SNAPSHOT_SPEC"
+        },
+        {
+          "path": "tools/specdraft_preview/empty_snapshot_spec.py",
+          "symbol": "EMPTY_SNAPSHOT_SPEC"
+        },
+        {
+          "path": "tools/specdraft_preview/snapshot_continuity_spec.py",
+          "symbol": "SNAPSHOT_CONTINUITY_SPEC"
+        }
+      ]
+    }
+  ],
+  "intent_delta_sha256": "488d814839d61a9c8152a47c23476317e65e0ddc6ceedb1710d0d88731fcdf0e",
+  "pr_body_sha256": "331d04f8993bd3653ae8700c39e3d52c0ae9c8bb9acf5053113b83776af819e1",
+  "schema_version": 1,
+  "source_scope_sha256": "983630fc4cfeff2647fd67317ba7d5421745c92fb1c004bd34a7b88d92232330"
+}

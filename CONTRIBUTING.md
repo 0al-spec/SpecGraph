@@ -4,6 +4,29 @@ SpecGraph is grown through small, reviewable graph changes. The project has accu
 
 Use [AGENTS.md](AGENTS.md) for executable agent rules. Use this file for the human-readable process, conventions, lessons learned, and durable project experience.
 
+## Distribution verification
+
+Distribution changes must exercise the built artifact, not just imports from
+the source checkout. For portable SpecDraft (proposal 0230), build a wheel through
+its source distribution, install it into a separate pipx environment, then run
+`tests/specdraft_distribution_smoke.py` from an external consumer workspace.
+Check module origins, packaged HTTP assets and the skill's local references.
+Source tests alone do not prove a wheel is complete. Keep consumer notebooks out
+of package data and preserve `read_notes` / `update_notes` source CLI façades
+during package extraction.
+
+Rehearse historical review packets from their pinned Git snapshot, not today's
+working-tree copies of review-bound runtime/build inputs. CN-CAPTURE binds its
+original `pyproject.toml`; that historical evidence must remain intact while
+packaging evolves. Keep rejection tests for changes inside the selected review
+snapshot. Do not rewrite old approval hashes merely to make current-source tests
+pass. The source-checkout skill remains separate from installed instructions.
+
+Validate new workflow expression contexts before relying on hosted checks.
+`runner.temp` is available in step `env`, not job `env`; an invalid job-level
+reference can prevent every job from being created. Use actionlint for static
+workflow validation and verify that the expected jobs actually started.
+
 ## Core Loop
 
 1. Start from updated `main`.
