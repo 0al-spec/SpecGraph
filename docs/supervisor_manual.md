@@ -1862,6 +1862,15 @@ Expected recovery fields:
 The patch may be adopted only after human review and normal validation. Raw
 `.worktrees/` contents remain local runtime state and must not be committed.
 
+An omitted or whitespace-only salvage run ID generates a distinct timestamp,
+spec and nonce identifier. Automatic allocation checks the normalized log,
+salvage JSON and patch paths, retrying occupied names within the existing retry
+limit. Separate invocations retain their own artifacts; `latest-summary.md`
+continues to select the latest run. An explicitly supplied ID keeps its existing
+normalization, and an existing run log still rejects reuse without changing
+the saved recovery. This is artifact allocation, not a new executor run or
+canonical approval.
+
 ## 7. How To Read Outcomes
 
 The supervisor writes authoritative run data to:

@@ -1,5 +1,20 @@
 # Product Workspace Pilots
 
+## Stalled-run salvage identifiers
+
+The proposal 0048 recovery path allocates a timestamp, spec and nonce run ID
+when no ID, an empty string or whitespace is supplied. Check absence before
+sanitization: a fallback slug is not a unique run identity. Default allocation
+checks the actual normalized log, salvage JSON and patch paths and retries
+occupied names within the existing bound. This preserves partially saved
+artifacts as well as independent calls in the same clock tick.
+
+Explicit IDs retain their normalization and existing-log rejection. The shared
+`latest-summary.md` remains a latest-run pointer; earlier run artifacts remain
+available separately. Recovery still requires review before canonical adoption
+and does not launch an executor. See the salvage section of
+`docs/supervisor_manual.md` and the identifier lesson in `CONTRIBUTING.md`.
+
 ## Git-Isolated Local Workspace Candidate
 
 Proposal `0227` defines a minimal local placement and candidate

@@ -10311,7 +10311,21 @@ def build_supervisor_stalled_run_salvage(
     if not worktree_path.exists() or not worktree_path.is_dir():
         raise RuntimeError(f"salvage worktree path does not exist: {worktree_path.as_posix()}")
 
-    selected_run_id = sanitize_for_git(str(run_id or "").strip()) or make_run_id(normalized_spec_id)
+    requested_run_id = str(run_id or "").strip()
+    if requested_run_id:
+        selected_run_id = sanitize_for_git(requested_run_id)
+    else:
+        for _attempt in range(RUNTIME_ID_COLLISION_RETRY_LIMIT):
+            selected_run_id = sanitize_for_git(make_run_id(normalized_spec_id))
+            artifact_paths = (
+                supervisor_stalled_run_salvage_log_path(selected_run_id),
+                supervisor_stalled_run_salvage_artifact_path(selected_run_id),
+                supervisor_stalled_run_salvage_patch_path(selected_run_id),
+            )
+            if not any(path.exists() for path in artifact_paths):
+                break
+        else:
+            raise RuntimeError(f"failed to allocate unique salvage run_id for {normalized_spec_id}")
     allowed_paths = [f"specs/nodes/{normalized_spec_id}.yaml"]
     changed_files = git_status_changed_files(worktree_path)
     if not changed_files:

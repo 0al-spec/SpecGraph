@@ -129,6 +129,15 @@ evidence selection; preview does not grant permission. Record actual human
 decisions and their original sources, never synthetic fixture approvals in a
 production workspace. Successful scope verification does not attest identity.
 
+### Recovery artifact identifiers
+
+For optional runtime artifact IDs, distinguish an absent input before applying
+a sanitizer that supplies its own fallback slug. Allocate default IDs against
+the actual normalized artifact paths, including partially saved artifacts;
+keep explicit-ID duplicate protection. The stalled-run salvage regressions in
+`tests/test_supervisor.py` exercise independent calls in the same clock tick,
+occupied log/JSON/patch names and bounded allocation failure.
+
 ## Local Python Environment
 
 SpecGraph tooling requires Python 3.10 or newer. GitHub Actions installs Python
