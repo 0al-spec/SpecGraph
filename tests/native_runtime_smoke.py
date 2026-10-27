@@ -174,7 +174,11 @@ raise SystemExit(supervisor.main(
     logs = []
     for path in (project_b / "knowledge/runs").glob("*.json"):
         value = json.loads(path.read_text())
-        if value.get("spec_id") == "PROBE-SPEC-0001" and "completion_status" in value:
+        if (
+            isinstance(value, dict)
+            and value.get("spec_id") == "PROBE-SPEC-0001"
+            and "completion_status" in value
+        ):
             logs.append(value)
     assert len(logs) == 1
     assert logs[0]["completion_status"] == "ok" and logs[0]["outcome"] == "done"
