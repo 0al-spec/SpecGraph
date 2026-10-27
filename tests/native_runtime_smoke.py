@@ -148,6 +148,39 @@ def main() -> None:
     assert (project_a / "knowledge/specgraph.project.yaml").read_text() != (
         project_b / "knowledge/specgraph.project.yaml"
     ).read_text()
+    # Exercise the installed supervisor's real Git worktree/review path with a
+    # deterministic executor. No agent, model or hosted inference is invoked.
+    code = """
+import subprocess, sys
+from pathlib import Path
+sys.path.insert(0, str(Path(sys.argv[1]) / "tools"))
+import supervisor
+import yaml
+def executor(node, worktree):
+    path = worktree / "specs/nodes" / (node.id + ".yaml")
+    value = yaml.safe_load(path.read_text())
+    value["prompt"] += " Keep this bounded to the selected project."
+    supervisor.write_spec_yaml(path, value)
+    return subprocess.CompletedProcess(["fixture"], 0, "RUN_OUTCOME: done\\nBLOCKER: none\\n", "")
+raise SystemExit(supervisor.main(
+    target_spec="PROBE-SPEC-0001", executor=executor, auto_approve=False, output_mode="summary"
+))
+"""
+    before_a = (project_a / "knowledge/specs/nodes/PROBE-SPEC-0001.yaml").read_bytes()
+    call(
+        [str(install / "venv/bin/python"), "-c", code, str(install / "source")],
+        cwd=project_b / "knowledge",
+    )
+    logs = []
+    for path in (project_b / "knowledge/runs").glob("*.json"):
+        value = json.loads(path.read_text())
+        if value.get("spec_id") == "PROBE-SPEC-0001" and "completion_status" in value:
+            logs.append(value)
+    assert len(logs) == 1
+    assert logs[0]["completion_status"] == "ok" and logs[0]["outcome"] == "done"
+    assert logs[0]["gate_state"] == "review_pending" and not logs[0]["validation_errors"]
+    assert logs[0]["isolation_mode"] == "git_worktree"
+    assert (project_a / "knowledge/specs/nodes/PROBE-SPEC-0001.yaml").read_bytes() == before_a
     report = {
         "artifact_kind": "native_runtime_observation",
         "schema_version": 1,
@@ -163,7 +196,12 @@ def main() -> None:
             "targeted_supervisor_dry_run",
             "specdraft_read",
         ],
-        "executor": "not_exercised",
+        "executor": "deterministic_fixture_not_a_real_agent",
+        "refinement": {
+            "outcome": "done",
+            "gate_state": "review_pending",
+            "isolation_mode": "git_worktree",
+        },
         "canonical_publication": "not_evaluated",
         "installer_sha256": hashlib.sha256(
             (install / "source/tools/native_runtime.py").read_bytes()
