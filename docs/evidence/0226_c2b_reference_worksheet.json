@@ -1,0 +1,707 @@
+{
+  "admission": "not_evaluated",
+  "artifact_kind": "qualification_profile_reference_worksheet",
+  "atoms": [
+    {
+      "atom_id": "PB-ALL",
+      "author_expected_state": "qualified",
+      "channels": [
+        {
+          "author_expected_state": "qualified",
+          "declared": {
+            "owner": "PB-ALL",
+            "relation": "verifiable_by",
+            "source_location": "/atoms/intents/0/verifiable_by/0",
+            "source_path": "specs/nodes/SG-SPEC-0071.yaml",
+            "target": "tests/test_static_artifact_incremental_stage.py::test_verify_remote_bundle_hashes_every_manifest_file",
+            "target_kind": "pytest_function"
+          },
+          "resolution_status": "resolved",
+          "resolved_declaration": {
+            "kind": "pytest_function",
+            "reference": "tests/test_static_artifact_incremental_stage.py::test_verify_remote_bundle_hashes_every_manifest_file",
+            "source_location": "lines:124-145",
+            "source_path": "tests/test_static_artifact_incremental_stage.py",
+            "source_sha256": "6a64b627e0bbc61abeb32b788b6ccbe8485175fa19adc3e6be09b6b7fab5e971",
+            "syntax_kind": "FunctionDef"
+          }
+        }
+      ],
+      "declaration": {
+        "kind": "atom",
+        "reference": "PB-ALL",
+        "source_location": "/atoms/intents/0",
+        "source_path": "specs/nodes/SG-SPEC-0071.yaml",
+        "source_sha256": "9f4a8b8332138ef3b6d1d9cc873b2a40a1a4620f7fceb35db32d4d9e1d6521a9",
+        "syntax_kind": "authored_id"
+      },
+      "spec_id": "SG-SPEC-0071"
+    },
+    {
+      "atom_id": "PB-CHECKSUMS",
+      "author_expected_state": "qualified",
+      "channels": [
+        {
+          "author_expected_state": "qualified",
+          "declared": {
+            "owner": "PB-CHECKSUMS",
+            "relation": "verifiable_by",
+            "source_location": "/atoms/intents/3/verifiable_by/0",
+            "source_path": "specs/nodes/SG-SPEC-0071.yaml",
+            "target": "tests/test_static_artifact_incremental_stage.py::test_verify_remote_bundle_fails_on_stale_checksums",
+            "target_kind": "pytest_function"
+          },
+          "resolution_status": "resolved",
+          "resolved_declaration": {
+            "kind": "pytest_function",
+            "reference": "tests/test_static_artifact_incremental_stage.py::test_verify_remote_bundle_fails_on_stale_checksums",
+            "source_location": "lines:178-192",
+            "source_path": "tests/test_static_artifact_incremental_stage.py",
+            "source_sha256": "6a64b627e0bbc61abeb32b788b6ccbe8485175fa19adc3e6be09b6b7fab5e971",
+            "syntax_kind": "FunctionDef"
+          }
+        }
+      ],
+      "declaration": {
+        "kind": "atom",
+        "reference": "PB-CHECKSUMS",
+        "source_location": "/atoms/intents/3",
+        "source_path": "specs/nodes/SG-SPEC-0071.yaml",
+        "source_sha256": "9f4a8b8332138ef3b6d1d9cc873b2a40a1a4620f7fceb35db32d4d9e1d6521a9",
+        "syntax_kind": "authored_id"
+      },
+      "spec_id": "SG-SPEC-0071"
+    },
+    {
+      "atom_id": "PB-MANIFEST",
+      "author_expected_state": "qualified",
+      "channels": [
+        {
+          "author_expected_state": "qualified",
+          "declared": {
+            "owner": "PB-MANIFEST",
+            "relation": "verifiable_by",
+            "source_location": "/atoms/intents/2/verifiable_by/0",
+            "source_path": "specs/nodes/SG-SPEC-0071.yaml",
+            "target": "tests/test_static_artifact_incremental_stage.py::test_verify_remote_bundle_fails_on_stale_published_manifest",
+            "target_kind": "pytest_function"
+          },
+          "resolution_status": "resolved",
+          "resolved_declaration": {
+            "kind": "pytest_function",
+            "reference": "tests/test_static_artifact_incremental_stage.py::test_verify_remote_bundle_fails_on_stale_published_manifest",
+            "source_location": "lines:166-175",
+            "source_path": "tests/test_static_artifact_incremental_stage.py",
+            "source_sha256": "6a64b627e0bbc61abeb32b788b6ccbe8485175fa19adc3e6be09b6b7fab5e971",
+            "syntax_kind": "FunctionDef"
+          }
+        }
+      ],
+      "declaration": {
+        "kind": "atom",
+        "reference": "PB-MANIFEST",
+        "source_location": "/atoms/intents/2",
+        "source_path": "specs/nodes/SG-SPEC-0071.yaml",
+        "source_sha256": "9f4a8b8332138ef3b6d1d9cc873b2a40a1a4620f7fceb35db32d4d9e1d6521a9",
+        "syntax_kind": "authored_id"
+      },
+      "spec_id": "SG-SPEC-0071"
+    },
+    {
+      "atom_id": "PB-MISSING",
+      "author_expected_state": "qualified",
+      "channels": [
+        {
+          "author_expected_state": "qualified",
+          "declared": {
+            "owner": "PB-MISSING",
+            "relation": "verifiable_by",
+            "source_location": "/atoms/intents/4/verifiable_by/0",
+            "source_path": "specs/nodes/SG-SPEC-0071.yaml",
+            "target": "tests/test_static_artifact_incremental_stage.py::test_verify_remote_bundle_fails_on_missing_remote_payload",
+            "target_kind": "pytest_function"
+          },
+          "resolution_status": "resolved",
+          "resolved_declaration": {
+            "kind": "pytest_function",
+            "reference": "tests/test_static_artifact_incremental_stage.py::test_verify_remote_bundle_fails_on_missing_remote_payload",
+            "source_location": "lines:195-209",
+            "source_path": "tests/test_static_artifact_incremental_stage.py",
+            "source_sha256": "6a64b627e0bbc61abeb32b788b6ccbe8485175fa19adc3e6be09b6b7fab5e971",
+            "syntax_kind": "FunctionDef"
+          }
+        }
+      ],
+      "declaration": {
+        "kind": "atom",
+        "reference": "PB-MISSING",
+        "source_location": "/atoms/intents/4",
+        "source_path": "specs/nodes/SG-SPEC-0071.yaml",
+        "source_sha256": "9f4a8b8332138ef3b6d1d9cc873b2a40a1a4620f7fceb35db32d4d9e1d6521a9",
+        "syntax_kind": "authored_id"
+      },
+      "spec_id": "SG-SPEC-0071"
+    },
+    {
+      "atom_id": "PB-PAYLOAD",
+      "author_expected_state": "qualified",
+      "channels": [
+        {
+          "author_expected_state": "qualified",
+          "declared": {
+            "owner": "PB-PAYLOAD",
+            "relation": "verifiable_by",
+            "source_location": "/atoms/intents/1/verifiable_by/0",
+            "source_path": "specs/nodes/SG-SPEC-0071.yaml",
+            "target": "tests/test_static_artifact_incremental_stage.py::test_verify_remote_bundle_fails_on_digest_drift",
+            "target_kind": "pytest_function"
+          },
+          "resolution_status": "resolved",
+          "resolved_declaration": {
+            "kind": "pytest_function",
+            "reference": "tests/test_static_artifact_incremental_stage.py::test_verify_remote_bundle_fails_on_digest_drift",
+            "source_location": "lines:148-163",
+            "source_path": "tests/test_static_artifact_incremental_stage.py",
+            "source_sha256": "6a64b627e0bbc61abeb32b788b6ccbe8485175fa19adc3e6be09b6b7fab5e971",
+            "syntax_kind": "FunctionDef"
+          }
+        }
+      ],
+      "declaration": {
+        "kind": "atom",
+        "reference": "PB-PAYLOAD",
+        "source_location": "/atoms/intents/1",
+        "source_path": "specs/nodes/SG-SPEC-0071.yaml",
+        "source_sha256": "9f4a8b8332138ef3b6d1d9cc873b2a40a1a4620f7fceb35db32d4d9e1d6521a9",
+        "syntax_kind": "authored_id"
+      },
+      "spec_id": "SG-SPEC-0071"
+    },
+    {
+      "atom_id": "PE-ACCEPTANCE",
+      "author_expected_state": "qualified",
+      "channels": [
+        {
+          "author_expected_state": "qualified",
+          "declared": {
+            "owner": "PE-ACCEPTANCE",
+            "relation": "verifiable_by",
+            "source_location": "/atoms/intents/11/verifiable_by/0",
+            "source_path": "specs/nodes/SG-SPEC-0071.yaml",
+            "target": "tests/test_publication_evidence_policies.py::test_merged_revision_acceptance",
+            "target_kind": "pytest_function"
+          },
+          "resolution_status": "resolved",
+          "resolved_declaration": {
+            "kind": "pytest_function",
+            "reference": "tests/test_publication_evidence_policies.py::test_merged_revision_acceptance",
+            "source_location": "lines:173-182",
+            "source_path": "tests/test_publication_evidence_policies.py",
+            "source_sha256": "aa60f5f23027b4bc1e9dd97cacd1ecf2f7cfa36ea03d2893734fec4c683d5c9b",
+            "syntax_kind": "FunctionDef"
+          }
+        }
+      ],
+      "declaration": {
+        "kind": "atom",
+        "reference": "PE-ACCEPTANCE",
+        "source_location": "/atoms/intents/11",
+        "source_path": "specs/nodes/SG-SPEC-0071.yaml",
+        "source_sha256": "9f4a8b8332138ef3b6d1d9cc873b2a40a1a4620f7fceb35db32d4d9e1d6521a9",
+        "syntax_kind": "authored_id"
+      },
+      "spec_id": "SG-SPEC-0071"
+    },
+    {
+      "atom_id": "PE-BINDINGS",
+      "author_expected_state": "qualified",
+      "channels": [
+        {
+          "author_expected_state": "qualified",
+          "declared": {
+            "owner": "PE-BINDINGS",
+            "relation": "verifiable_by",
+            "source_location": "/atoms/intents/5/verifiable_by/0",
+            "source_path": "specs/nodes/SG-SPEC-0071.yaml",
+            "target": "tests/test_publication_evidence_policies.py::test_binding_contract",
+            "target_kind": "pytest_function"
+          },
+          "resolution_status": "resolved",
+          "resolved_declaration": {
+            "kind": "pytest_function",
+            "reference": "tests/test_publication_evidence_policies.py::test_binding_contract",
+            "source_location": "lines:40-48",
+            "source_path": "tests/test_publication_evidence_policies.py",
+            "source_sha256": "aa60f5f23027b4bc1e9dd97cacd1ecf2f7cfa36ea03d2893734fec4c683d5c9b",
+            "syntax_kind": "FunctionDef"
+          }
+        }
+      ],
+      "declaration": {
+        "kind": "atom",
+        "reference": "PE-BINDINGS",
+        "source_location": "/atoms/intents/5",
+        "source_path": "specs/nodes/SG-SPEC-0071.yaml",
+        "source_sha256": "9f4a8b8332138ef3b6d1d9cc873b2a40a1a4620f7fceb35db32d4d9e1d6521a9",
+        "syntax_kind": "authored_id"
+      },
+      "spec_id": "SG-SPEC-0071"
+    },
+    {
+      "atom_id": "PE-CASE",
+      "author_expected_state": "qualified",
+      "channels": [
+        {
+          "author_expected_state": "qualified",
+          "declared": {
+            "owner": "PE-CASE",
+            "relation": "verifiable_by",
+            "source_location": "/atoms/intents/6/verifiable_by/0",
+            "source_path": "specs/nodes/SG-SPEC-0071.yaml",
+            "target": "tests/test_publication_evidence_policies.py::test_test_case_decision",
+            "target_kind": "pytest_function"
+          },
+          "resolution_status": "resolved",
+          "resolved_declaration": {
+            "kind": "pytest_function",
+            "reference": "tests/test_publication_evidence_policies.py::test_test_case_decision",
+            "source_location": "lines:61-62",
+            "source_path": "tests/test_publication_evidence_policies.py",
+            "source_sha256": "aa60f5f23027b4bc1e9dd97cacd1ecf2f7cfa36ea03d2893734fec4c683d5c9b",
+            "syntax_kind": "FunctionDef"
+          }
+        }
+      ],
+      "declaration": {
+        "kind": "atom",
+        "reference": "PE-CASE",
+        "source_location": "/atoms/intents/6",
+        "source_path": "specs/nodes/SG-SPEC-0071.yaml",
+        "source_sha256": "9f4a8b8332138ef3b6d1d9cc873b2a40a1a4620f7fceb35db32d4d9e1d6521a9",
+        "syntax_kind": "authored_id"
+      },
+      "spec_id": "SG-SPEC-0071"
+    },
+    {
+      "atom_id": "PE-HTTP",
+      "author_expected_state": "qualified",
+      "channels": [
+        {
+          "author_expected_state": "qualified",
+          "declared": {
+            "owner": "PE-HTTP",
+            "relation": "verifiable_by",
+            "source_location": "/atoms/intents/10/verifiable_by/1",
+            "source_path": "specs/nodes/SG-SPEC-0071.yaml",
+            "target": "tests/test_publication_delivery_evidence.py::test_local_http_report_without_revision_is_unconfirmed",
+            "target_kind": "pytest_function"
+          },
+          "resolution_status": "resolved",
+          "resolved_declaration": {
+            "kind": "pytest_function",
+            "reference": "tests/test_publication_delivery_evidence.py::test_local_http_report_without_revision_is_unconfirmed",
+            "source_location": "lines:302-322",
+            "source_path": "tests/test_publication_delivery_evidence.py",
+            "source_sha256": "fd9eee1a2aca22b60d3918edd0eae93f91bfa7fc7a0a9c9354bb1923f01f6d5c",
+            "syntax_kind": "FunctionDef"
+          }
+        },
+        {
+          "author_expected_state": "qualified",
+          "declared": {
+            "owner": "PE-HTTP",
+            "relation": "verifiable_by",
+            "source_location": "/atoms/intents/10/verifiable_by/0",
+            "source_path": "specs/nodes/SG-SPEC-0071.yaml",
+            "target": "tests/test_publication_evidence_policies.py::test_http_observation_identity",
+            "target_kind": "pytest_function"
+          },
+          "resolution_status": "resolved",
+          "resolved_declaration": {
+            "kind": "pytest_function",
+            "reference": "tests/test_publication_evidence_policies.py::test_http_observation_identity",
+            "source_location": "lines:142-160",
+            "source_path": "tests/test_publication_evidence_policies.py",
+            "source_sha256": "aa60f5f23027b4bc1e9dd97cacd1ecf2f7cfa36ea03d2893734fec4c683d5c9b",
+            "syntax_kind": "FunctionDef"
+          }
+        }
+      ],
+      "declaration": {
+        "kind": "atom",
+        "reference": "PE-HTTP",
+        "source_location": "/atoms/intents/10",
+        "source_path": "specs/nodes/SG-SPEC-0071.yaml",
+        "source_sha256": "9f4a8b8332138ef3b6d1d9cc873b2a40a1a4620f7fceb35db32d4d9e1d6521a9",
+        "syntax_kind": "authored_id"
+      },
+      "spec_id": "SG-SPEC-0071"
+    },
+    {
+      "atom_id": "PE-OBSERVER",
+      "author_expected_state": "qualified",
+      "channels": [
+        {
+          "author_expected_state": "qualified",
+          "declared": {
+            "owner": "PE-OBSERVER",
+            "relation": "verifiable_by",
+            "source_location": "/atoms/intents/12/verifiable_by/2",
+            "source_path": "specs/nodes/SG-SPEC-0071.yaml",
+            "target": "tests/test_publication_delivery_evidence.py::test_publication_producers_preserve_execution_contract",
+            "target_kind": "pytest_function"
+          },
+          "resolution_status": "resolved",
+          "resolved_declaration": {
+            "kind": "pytest_function",
+            "reference": "tests/test_publication_delivery_evidence.py::test_publication_producers_preserve_execution_contract",
+            "source_location": "lines:413-434",
+            "source_path": "tests/test_publication_delivery_evidence.py",
+            "source_sha256": "fd9eee1a2aca22b60d3918edd0eae93f91bfa7fc7a0a9c9354bb1923f01f6d5c",
+            "syntax_kind": "FunctionDef"
+          }
+        },
+        {
+          "author_expected_state": "qualified",
+          "declared": {
+            "owner": "PE-OBSERVER",
+            "relation": "verifiable_by",
+            "source_location": "/atoms/intents/12/verifiable_by/0",
+            "source_path": "specs/nodes/SG-SPEC-0071.yaml",
+            "target": "tests/test_publication_delivery_evidence.py::test_stage_provenance_separates_ci_execution_and_production_target",
+            "target_kind": "pytest_function"
+          },
+          "resolution_status": "resolved",
+          "resolved_declaration": {
+            "kind": "pytest_function",
+            "reference": "tests/test_publication_delivery_evidence.py::test_stage_provenance_separates_ci_execution_and_production_target",
+            "source_location": "lines:243-265",
+            "source_path": "tests/test_publication_delivery_evidence.py",
+            "source_sha256": "fd9eee1a2aca22b60d3918edd0eae93f91bfa7fc7a0a9c9354bb1923f01f6d5c",
+            "syntax_kind": "FunctionDef"
+          }
+        },
+        {
+          "author_expected_state": "qualified",
+          "declared": {
+            "owner": "PE-OBSERVER",
+            "relation": "verifiable_by",
+            "source_location": "/atoms/intents/12/verifiable_by/1",
+            "source_path": "specs/nodes/SG-SPEC-0071.yaml",
+            "target": "tests/test_publication_delivery_evidence.py::test_unknown_native_observer_cannot_claim_runtime_success",
+            "target_kind": "pytest_function"
+          },
+          "resolution_status": "resolved",
+          "resolved_declaration": {
+            "kind": "pytest_function",
+            "reference": "tests/test_publication_delivery_evidence.py::test_unknown_native_observer_cannot_claim_runtime_success",
+            "source_location": "lines:325-332",
+            "source_path": "tests/test_publication_delivery_evidence.py",
+            "source_sha256": "fd9eee1a2aca22b60d3918edd0eae93f91bfa7fc7a0a9c9354bb1923f01f6d5c",
+            "syntax_kind": "FunctionDef"
+          }
+        }
+      ],
+      "declaration": {
+        "kind": "atom",
+        "reference": "PE-OBSERVER",
+        "source_location": "/atoms/intents/12",
+        "source_path": "specs/nodes/SG-SPEC-0071.yaml",
+        "source_sha256": "9f4a8b8332138ef3b6d1d9cc873b2a40a1a4620f7fceb35db32d4d9e1d6521a9",
+        "syntax_kind": "authored_id"
+      },
+      "spec_id": "SG-SPEC-0071"
+    },
+    {
+      "atom_id": "PE-SNAPSHOT",
+      "author_expected_state": "qualified",
+      "channels": [
+        {
+          "author_expected_state": "qualified",
+          "declared": {
+            "owner": "PE-SNAPSHOT",
+            "relation": "verifiable_by",
+            "source_location": "/atoms/intents/9/verifiable_by/0",
+            "source_path": "specs/nodes/SG-SPEC-0071.yaml",
+            "target": "tests/test_publication_delivery_evidence.py::test_changed_source_during_tests_cannot_report_success",
+            "target_kind": "pytest_function"
+          },
+          "resolution_status": "resolved",
+          "resolved_declaration": {
+            "kind": "pytest_function",
+            "reference": "tests/test_publication_delivery_evidence.py::test_changed_source_during_tests_cannot_report_success",
+            "source_location": "lines:115-120",
+            "source_path": "tests/test_publication_delivery_evidence.py",
+            "source_sha256": "fd9eee1a2aca22b60d3918edd0eae93f91bfa7fc7a0a9c9354bb1923f01f6d5c",
+            "syntax_kind": "FunctionDef"
+          }
+        },
+        {
+          "author_expected_state": "qualified",
+          "declared": {
+            "owner": "PE-SNAPSHOT",
+            "relation": "verifiable_by",
+            "source_location": "/atoms/intents/9/verifiable_by/2",
+            "source_path": "specs/nodes/SG-SPEC-0071.yaml",
+            "target": "tests/test_publication_delivery_evidence.py::test_shared_json_change_invalidates_publication_source_snapshot",
+            "target_kind": "pytest_function"
+          },
+          "resolution_status": "resolved",
+          "resolved_declaration": {
+            "kind": "pytest_function",
+            "reference": "tests/test_publication_delivery_evidence.py::test_shared_json_change_invalidates_publication_source_snapshot",
+            "source_location": "lines:123-141",
+            "source_path": "tests/test_publication_delivery_evidence.py",
+            "source_sha256": "fd9eee1a2aca22b60d3918edd0eae93f91bfa7fc7a0a9c9354bb1923f01f6d5c",
+            "syntax_kind": "FunctionDef"
+          }
+        },
+        {
+          "author_expected_state": "qualified",
+          "declared": {
+            "owner": "PE-SNAPSHOT",
+            "relation": "verifiable_by",
+            "source_location": "/atoms/intents/9/verifiable_by/1",
+            "source_path": "specs/nodes/SG-SPEC-0071.yaml",
+            "target": "tests/test_publication_delivery_evidence.py::test_unrelated_working_tree_change_preserves_source_evidence",
+            "target_kind": "pytest_function"
+          },
+          "resolution_status": "resolved",
+          "resolved_declaration": {
+            "kind": "pytest_function",
+            "reference": "tests/test_publication_delivery_evidence.py::test_unrelated_working_tree_change_preserves_source_evidence",
+            "source_location": "lines:144-149",
+            "source_path": "tests/test_publication_delivery_evidence.py",
+            "source_sha256": "fd9eee1a2aca22b60d3918edd0eae93f91bfa7fc7a0a9c9354bb1923f01f6d5c",
+            "syntax_kind": "FunctionDef"
+          }
+        }
+      ],
+      "declaration": {
+        "kind": "atom",
+        "reference": "PE-SNAPSHOT",
+        "source_location": "/atoms/intents/9",
+        "source_path": "specs/nodes/SG-SPEC-0071.yaml",
+        "source_sha256": "9f4a8b8332138ef3b6d1d9cc873b2a40a1a4620f7fceb35db32d4d9e1d6521a9",
+        "syntax_kind": "authored_id"
+      },
+      "spec_id": "SG-SPEC-0071"
+    },
+    {
+      "atom_id": "PE-SUITE",
+      "author_expected_state": "qualified",
+      "channels": [
+        {
+          "author_expected_state": "qualified",
+          "declared": {
+            "owner": "PE-SUITE",
+            "relation": "verifiable_by",
+            "source_location": "/atoms/intents/7/verifiable_by/0",
+            "source_path": "specs/nodes/SG-SPEC-0071.yaml",
+            "target": "tests/test_publication_evidence_policies.py::test_test_suite_decision",
+            "target_kind": "pytest_function"
+          },
+          "resolution_status": "resolved",
+          "resolved_declaration": {
+            "kind": "pytest_function",
+            "reference": "tests/test_publication_evidence_policies.py::test_test_suite_decision",
+            "source_location": "lines:77-79",
+            "source_path": "tests/test_publication_evidence_policies.py",
+            "source_sha256": "aa60f5f23027b4bc1e9dd97cacd1ecf2f7cfa36ea03d2893734fec4c683d5c9b",
+            "syntax_kind": "FunctionDef"
+          }
+        }
+      ],
+      "declaration": {
+        "kind": "atom",
+        "reference": "PE-SUITE",
+        "source_location": "/atoms/intents/7",
+        "source_path": "specs/nodes/SG-SPEC-0071.yaml",
+        "source_sha256": "9f4a8b8332138ef3b6d1d9cc873b2a40a1a4620f7fceb35db32d4d9e1d6521a9",
+        "syntax_kind": "authored_id"
+      },
+      "spec_id": "SG-SPEC-0071"
+    },
+    {
+      "atom_id": "PE-TEST-IDENTITY",
+      "author_expected_state": "qualified",
+      "channels": [
+        {
+          "author_expected_state": "qualified",
+          "declared": {
+            "owner": "PE-TEST-IDENTITY",
+            "relation": "verifiable_by",
+            "source_location": "/atoms/intents/8/verifiable_by/0",
+            "source_path": "specs/nodes/SG-SPEC-0071.yaml",
+            "target": "tests/test_publication_evidence_policies.py::test_test_observation_identity",
+            "target_kind": "pytest_function"
+          },
+          "resolution_status": "resolved",
+          "resolved_declaration": {
+            "kind": "pytest_function",
+            "reference": "tests/test_publication_evidence_policies.py::test_test_observation_identity",
+            "source_location": "lines:94-110",
+            "source_path": "tests/test_publication_evidence_policies.py",
+            "source_sha256": "aa60f5f23027b4bc1e9dd97cacd1ecf2f7cfa36ea03d2893734fec4c683d5c9b",
+            "syntax_kind": "FunctionDef"
+          }
+        }
+      ],
+      "declaration": {
+        "kind": "atom",
+        "reference": "PE-TEST-IDENTITY",
+        "source_location": "/atoms/intents/8",
+        "source_path": "specs/nodes/SG-SPEC-0071.yaml",
+        "source_sha256": "9f4a8b8332138ef3b6d1d9cc873b2a40a1a4620f7fceb35db32d4d9e1d6521a9",
+        "syntax_kind": "authored_id"
+      },
+      "spec_id": "SG-SPEC-0071"
+    }
+  ],
+  "author_expected_result": {
+    "denominator": 13,
+    "numerator": 13,
+    "qualified_atom_count": 13,
+    "status": "computed",
+    "unknown_atom_count": 0,
+    "unqualified_atom_count": 0,
+    "value": 1.0
+  },
+  "candidate_profile": "specgraph.pytest-channel-qualification/v1",
+  "canonical_mutations_allowed": false,
+  "classification_kind": "author_review_reference_not_runtime_metric",
+  "declaration_provider": {
+    "files_sha256": {
+      "intent_decision_review/sources.py": "3deb12a8a9761cbd1baa342f748c28dedc9a3bc2aa3a7f7e98d8be763d7ead93",
+      "publication_evidence/bindings_spec.py": "ac51e677e49778c63ee7da8060a25ffaa35d9dcba52f90a4839f82f66d8b3226",
+      "publication_evidence/context.py": "ce17623df9d4d32dff098c87d8385822e719c60e9ab629aafa4c834c74591a8e",
+      "publication_trace_links.py": "eaa1bdba6021d0ffbd9eee2eb4fcb78a853988187ee3c82909d7469844261e67",
+      "publication_trace_snapshot.py": "f37b7b20e961f1df58db3c3a70157b00ff888317b3d40f110001598ebf036f0b",
+      "spec_yaml.py": "cc1fbbb2a634ef7145101e5c92ce42ff5dbb9f1a885788d828c5e305b69f16a9",
+      "traceability/__init__.py": "32d5e0187562a9dcc4e1595a48d2bafe0dedf1b532917370a70cddfa8cf0ff39",
+      "traceability/atom_roles_spec.py": "e8bcb51c5f828b71dae28f7d9e351e6e765c6e06b7d9f8d19fd3c4da19c0fb09",
+      "traceability/context.py": "2a27bb4f61dd747f1bbe78ce5f5cbac66387efd9f0681168a13f79a30b192d85",
+      "traceability/evidence.py": "3d76b5e1c0269ef20d3628f542dec4e389f7039f57b9698cd97bb3738a59de04",
+      "traceability/execution.py": "2c49da0829aaba1cb7faad4e9cd76de74724e9fa95e55b43a0c4ef810f80d2b5",
+      "traceability/fact_agreement_spec.py": "8f7417ee1b0771f5908d6d96d180b4d786fab25f51f21f24b07129722e6741e6",
+      "traceability/policy_atom_bindings_spec.py": "e12e2f7ff99df78c380f13194a73db33f0b8a8f8ba20c9c6831f595f3511c759",
+      "traceability/providers.py": "3da504cd8a763a4a7d20ec3bb53eee238a60d244672afa7263ac077f93941042",
+      "traceability/publication.py": "c4884e043c9489b9ee46e4b9da92a8191c0da2f19354572cb632a1abf9ecdee7",
+      "traceability/publication_provider.py": "65899f2e5316abb95c7e6a4bce31dd281c115abce6ee96cc0c1fa254f1299cfc",
+      "traceability/reference_status_spec.py": "77303598e3a8c63baf97c72d1f23aceca466144dd9304b6641253b13b3150c64",
+      "traceability/references.py": "50ffff8343abcd7b53d6f81c673d84dd9bb2fdb09ec7409673e203b399b79414",
+      "traceability/resolution_completeness_spec.py": "c65c1a0138859b36d550bc2ef205b3c01e661e25934a59fd64521d020c96234e",
+      "traceability/snapshot.py": "98bfe9ef62114c31e9867d00b92761db9737419a3b12eeb0e0d3aa3e7a40fda4"
+    },
+    "profile": "specgraph.publication-exact-links/v1",
+    "provider_id": "publication.declarations",
+    "version": "1.0.0"
+  },
+  "declared_test_link_count": 18,
+  "execution": "not_collected",
+  "execution_used_for_qualification": false,
+  "fulfillment": "not_evaluated",
+  "input_snapshot_file_sha256": "ac5f871e5047699d3cd3072cdb70ceecbf97c1e269e31a62bca25c0422875016",
+  "input_snapshot_sha256": "62321b66af9e03d2c0719e1b5bb3649a9f4794c307ccb1f6747bc4857defe080",
+  "inventory_complete": true,
+  "profile_status": "proposed_contract",
+  "readiness": "not_evaluated",
+  "resolved_test_link_count": 18,
+  "runtime_evaluator_implemented": false,
+  "schema_version": 1,
+  "semantic_sufficiency": "not_evaluated",
+  "source_manifest": [
+    {
+      "diagnostic": null,
+      "path": "specs/nodes/SG-SPEC-0071.yaml",
+      "sha256": "9f4a8b8332138ef3b6d1d9cc873b2a40a1a4620f7fceb35db32d4d9e1d6521a9",
+      "status": "read"
+    },
+    {
+      "diagnostic": null,
+      "path": "tests/test_publication_delivery_evidence.py",
+      "sha256": "fd9eee1a2aca22b60d3918edd0eae93f91bfa7fc7a0a9c9354bb1923f01f6d5c",
+      "status": "read"
+    },
+    {
+      "diagnostic": null,
+      "path": "tests/test_publication_evidence_policies.py",
+      "sha256": "aa60f5f23027b4bc1e9dd97cacd1ecf2f7cfa36ea03d2893734fec4c683d5c9b",
+      "status": "read"
+    },
+    {
+      "diagnostic": null,
+      "path": "tests/test_static_artifact_incremental_stage.py",
+      "sha256": "6a64b627e0bbc61abeb32b788b6ccbe8485175fa19adc3e6be09b6b7fab5e971",
+      "status": "read"
+    },
+    {
+      "diagnostic": null,
+      "path": "tools/feature_passports/static-publication-bindings.json",
+      "sha256": "e5f744bf9bc08de548df14bb5438ccafaa460c3ab3a940a8f45a37d8c5c95031",
+      "status": "read"
+    },
+    {
+      "diagnostic": null,
+      "path": "tools/feature_passports/static-publication.json",
+      "sha256": "4d7e7fceae4e9a818f6bfc2992a93211c1e0fe4482e552a20a011b8e21dd8924",
+      "status": "read"
+    },
+    {
+      "diagnostic": null,
+      "path": "tools/publication_evidence/bindings_spec.py",
+      "sha256": "ac51e677e49778c63ee7da8060a25ffaa35d9dcba52f90a4839f82f66d8b3226",
+      "status": "read"
+    },
+    {
+      "diagnostic": null,
+      "path": "tools/publication_evidence/bound_observation_spec.py",
+      "sha256": "f3e296d7ef70e7e5d5cee30274ce2d9968f9565dca8e3ff1b3e23060f9c3feed",
+      "status": "read"
+    },
+    {
+      "diagnostic": null,
+      "path": "tools/publication_evidence/case_spec.py",
+      "sha256": "678cc38bc73e2e45e6dcc775af82ade8d886cc92484070f317665bd3dd89b13a",
+      "status": "read"
+    },
+    {
+      "diagnostic": null,
+      "path": "tools/publication_evidence/http_observation_spec.py",
+      "sha256": "16699c83064b9dc2b0b7e1bc00fd3489502655340fa667657d36cd9d44e10526",
+      "status": "read"
+    },
+    {
+      "diagnostic": null,
+      "path": "tools/publication_evidence/merged_revision_spec.py",
+      "sha256": "70b26ebbb2d2c816122cccded29547b5d73695a85735dee631dd6dd7b432b411",
+      "status": "read"
+    },
+    {
+      "diagnostic": null,
+      "path": "tools/publication_evidence/snapshot_spec.py",
+      "sha256": "c58b66852ce1e409e998dab7f9f33b088b4dcdbf39d073816e34b5c08ba1f421",
+      "status": "read"
+    },
+    {
+      "diagnostic": null,
+      "path": "tools/publication_evidence/suite_spec.py",
+      "sha256": "d5a056eaff0d26d1709bc92dbe4c5df096c3340de6d67276206e44e157d04793",
+      "status": "read"
+    },
+    {
+      "diagnostic": null,
+      "path": "tools/static_artifact_incremental_stage.py",
+      "sha256": "6b9bab723a1fb59625cea5f01d305c6041405a3e03008c47ca1c11deb39b21f1",
+      "status": "read"
+    }
+  ],
+  "source_scope": {
+    "repository_id": "0al-spec/SpecGraph",
+    "resolver_profile": "specgraph.publication-exact-links/v1",
+    "source_revision": "b4d0f25ec8856c7cd3e8af886506f837253ccdbd",
+    "spec_ids": [
+      "SG-SPEC-0071"
+    ]
+  }
+}

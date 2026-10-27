@@ -1,0 +1,52 @@
+{
+  "artifact_kind": "specgraph.intent-decision-review/v1",
+  "base_sha": "b4d0f25ec8856c7cd3e8af886506f837253ccdbd",
+  "decisions": [
+    {
+      "change_sha256": "ba3612d544560059082aeed708f2867e10ad939a6fe0e8020c555abcc8e36ce9",
+      "disposition": "contract_only",
+      "implementation_refs": [],
+      "rationale": "C2B-PIN: the Selected input and identity section defines future explicit repository/revision/provider/source binding. The pinned worksheet witnesses existing C1 collection only. No production source or qualifier implementation changes; this obligation is a proposed contract for the next slice, not a claim of source authenticity.",
+      "specification_refs": []
+    },
+    {
+      "change_sha256": "f9c487dc6e9cd53c82ecb9557bc54181d3ca32831d15244473363f1d3fb1bd64",
+      "disposition": "contract_only",
+      "implementation_refs": [],
+      "rationale": "C2B-CHANNEL: the Channel decision table defines qualified/unqualified/unknown and bounds static pytest selectors to exact direct function declarations. C1 resolver facts inform the design; no new production caller applies this classification yet. Contract-only scope preserves the distinction between a proposed eligibility rule and an implemented Specification.",
+      "specification_refs": []
+    },
+    {
+      "change_sha256": "ac7484df60fe3707afd79673bb5d55949303a5caaaf118bb65f0c13e684794c5",
+      "disposition": "contract_only",
+      "implementation_refs": [],
+      "rationale": "C2B-ATOM: the Atom decision section orders uncontested good, unknown and conclusive-negative alternatives and specifies counting once. The 16 acceptance examples propose future regression cases. No runtime aggregation or decision table is introduced in this PR.",
+      "specification_refs": []
+    },
+    {
+      "change_sha256": "dbd643441016100a10fec305d6fe07f5777496a09c8e7cb15ce43250e46ac33c",
+      "disposition": "contract_only",
+      "implementation_refs": [],
+      "rationale": "C2B-COMPUTE: the Exact result table specifies complete zero, empty and incomplete states plus nullable exact values. The 13/13 worksheet is explicitly author-expected reference data, not a runtime SVC evaluator or migration of legacy scoring. Production source and activation remain unchanged.",
+      "specification_refs": []
+    },
+    {
+      "change_sha256": "3919f4e88ac5fdc2fbeb3772a2675f9c45cc69533191356353265c398e86bdd2",
+      "disposition": "contract_only",
+      "implementation_refs": [],
+      "rationale": "C2B-CONFLICT: the repeated-observation section specifies source membership agreement, provenance-preserving coalescing and unknown conflicts. Existing C1 facts are inspected but no production conflict consumer changes. The new semantics remain a reviewable profile contract requiring future implementation tests.",
+      "specification_refs": []
+    },
+    {
+      "change_sha256": "2e3b4047ea12bb8c605cf60eef7000ab102c3df3c12f32c52713e05e416b30e6",
+      "disposition": "contract_only",
+      "implementation_refs": [],
+      "rationale": "C2B-SEPARATION: the Execution and revision section prohibits transferring PB results to unobserved PE channels or treating resolution as tests_verified, fulfillment or admission. Proposal/DocC/tracking identify the evaluator as not implemented and retain disabled activation. No execution-report evaluator, metric registry default, viewer or CI behavior changes.",
+      "specification_refs": []
+    }
+  ],
+  "intent_delta_sha256": "d3bfc836bdc7950b721591ab34c8019f2922d09d5e3077d49921b559db40e6e2",
+  "pr_body_sha256": "627a338bc035dc686368a84cf3edb62878e6d9cd94f558070860570fa559070b",
+  "schema_version": 1,
+  "source_scope_sha256": "1cb55f6334bb31b336cd173fa4a8c22e0cf1148bb1f2a393fc88767540983225"
+}

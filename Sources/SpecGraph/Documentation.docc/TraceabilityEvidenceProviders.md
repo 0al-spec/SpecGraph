@@ -39,7 +39,8 @@ without multiplying the count of one atom.
 SVC measures the fraction of the complete selected atom inventory with a qualified
 verification channel under a versioned profile. The proposed first profile
 requires valid resolved bindings. A failing executed check can establish
-verifiability while reporting failed fulfillment separately. Missing optional
+structural verifiability while retaining its test failure separately;
+fulfillment remains not evaluated. Missing optional
 execution does not erase resolution; incomplete required inventory prevents an
 exact ratio. Empty selection is explicitly not applicable in this proposed
 profile. This qualification rule still requires review.
@@ -103,13 +104,35 @@ wall-clock freshness, authenticity or semantic acceptance.
 
 See `docs/reviews/0226_metric_verifiability_recovery_review.md` and
 `docs/reviews/0226_metric_verifiability_candidate_v2.patch`. The recovered v2
-delta is now prepared in a focused canonical-spec PR for human review, updating
+delta merged through PR #810 at `b4d0f25e`, updating
 SG-SPEC-0021's boundary notes and acceptance-evidence explanation. Its
 modification timestamp is refreshed; acceptance criteria, input classes,
 family roles, invariant IDs and lifecycle remain unchanged.
 
-Preparing the PR does not attest final semantic approval. The current Intent
-Atom profile does not count `boundary_notes`, so the five clarifications do not
+That bounded refinement does not activate the metric profile. The current
+Intent Atom profile does not count `boundary_notes`, so the five clarifications do not
 add counted atoms. RFC 0226 C2b qualification and any direct derived-input
 admission remain separate decisions; formulas, thresholds and runtime behavior
 are unchanged.
+
+## Proposed C2b channel qualification
+
+`specgraph.pytest-channel-qualification/v1` is a `proposed_contract` with
+`qualification_basis: source_resolution_only`. Its runtime evaluator is not
+implemented. See `docs/pytest_channel_qualification_profile.md` and the six
+declared draft obligations under proposal 0226.
+
+Channels and atoms have three states: `qualified`, `unqualified`, `unknown`.
+One uncontested good channel qualifies an atom once. Otherwise unknown channels
+prevent a negative conclusion. Complete zero, complete empty selection and
+incomplete inputs remain distinct; unknown atom states prevent an exact fraction.
+Provider conflicts retain their witnesses rather than selecting a winner.
+
+The C1 reference at `b4d0f25e` observed 13 atoms and 18 resolved test links.
+`docs/evidence/0226_c2b_reference_worksheet.json` records the author-expected
+13/13 structural result; it is not a production metric or a passing-test count.
+Static resolution proves neither pytest collection nor semantic sufficiency.
+C2a's five PB scenarios cannot supply execution outcomes for unobserved PE tests.
+Execution, fulfillment and admission remain separate; defaults and gates stay
+unchanged. The next implementation slice is a pure typed qualifier and an opt-in
+diagnostic entry point, followed by its negative/conflict acceptance cases.

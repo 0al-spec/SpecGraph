@@ -1068,6 +1068,25 @@
       ]
     },
     {
+      "id": "pytest-channel-qualification-contract",
+      "description": "The C2b candidate profile and its source-only reference remain distinct from an implemented metric.",
+      "docs": [
+        "docs/pytest_channel_qualification_profile.md"
+      ],
+      "docc": [
+        "Sources/SpecGraph/Documentation.docc/TraceabilityEvidenceProviders.md"
+      ],
+      "required_terms": [
+        "specgraph.pytest-channel-qualification/v1",
+        "proposed_contract",
+        "qualification_basis: source_resolution_only",
+        "qualified",
+        "unqualified",
+        "unknown",
+        "0226_c2b_reference_worksheet.json"
+      ]
+    },
+    {
       "id": "recovered-metric-verifiability-candidate",
       "description": "The recovered semantic candidate remains review-only with explicit input and trust boundaries.",
       "docs": [

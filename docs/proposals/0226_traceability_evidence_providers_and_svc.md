@@ -15,12 +15,17 @@ Supervisor cycle and its evidence are recorded in the source draft. This work
 does not activate a metric profile, replace the existing proxy, or approve a
 canonical semantic change.
 
-The recovered SG-SPEC-0021 boundary clarification is now prepared in a focused
-canonical-spec PR for human review, using the v2 candidate retained by PR #809.
-Its proposed notes preserve the existing input classes and distinguish cited
-observations, completeness, negative results and historical scope. Preparing
-that PR is not final semantic approval; atom-SVC qualification and direct
+The recovered SG-SPEC-0021 boundary clarification merged through PR #810 as
+`b4d0f25e`, using the v2 candidate retained by PR #809. Its notes preserve the
+existing input classes and distinguish cited observations, completeness,
+negative results and historical scope. Atom-SVC qualification and direct
 derived-input admission remain separate decisions.
+
+C2b now has a [candidate qualification contract](../pytest_channel_qualification_profile.md),
+six explicit [draft obligations](0226_traceability_evidence_providers_and_svc.intent.yaml)
+and a [pinned reference worksheet](../evidence/0226_c2b_reference_worksheet.json).
+This defines the proposed rules; a runtime qualifier is not implemented or
+activated by this contract-only slice.
 
 ```yaml
 canonical_mutations_allowed: false
@@ -156,8 +161,9 @@ For the first candidate SVC profile:
 - The numerator counts each atom at most once when at least one operational
   verification channel has a valid, resolved binding under the profile.
 - For Python bindings, merely providing a nonempty string does not qualify.
-- A completed failing check can establish verifiability while reporting failed
-  fulfillment. SVC must not silently become the pass rate.
+- A completed failing check can establish structural verifiability; retain its
+  test failure separately. This profile does not evaluate fulfillment. SVC must
+  not silently become the pass rate.
 - Missing or stale execution remains visible independently of a structurally
   valid verification channel.
 - Empty subject selection yields `not_applicable` with no ratio in this profile;
@@ -168,6 +174,14 @@ The qualification rule is a proposal for review; it is not activated here and
 does not establish that a test is semantically sufficient. Distinct declaration,
 resolution and execution counts accompany the ratio. `tests_verified_v1`, trusted
 receipt admission, runtime verification and product outcome remain separate.
+
+The C2b profile makes channel and atom qualification three-valued: `qualified`,
+`unqualified` and `unknown`. An uncontested good alternative is sufficient;
+otherwise unknown alternatives prevent a negative conclusion. An exact fraction
+requires a complete selected atom inventory and no unknown atom qualifications.
+The profile resolves links statically and does not prove pytest collection or
+execution. Its six draft obligations cover pins, channel/atom decisions,
+computability, conflict handling and separation from execution/admission.
 
 Stable eligibility and interpretation policies should use named SpecificationCore
 specifications with immutable contexts, each in its own module. Parsing, Git and
@@ -211,8 +225,8 @@ The original proposal completed preparation and launched the bounded Supervisor
 cycle. The operator subsequently requested implementation, authorizing the
 compatibility extraction in slice B. Declaration provider runtime is implemented
 in C1; C2a adds retained execution-artifact inputs. Atom-level SVC remains future
-work. The recovered v2 semantic patch is prepared as a bounded refinement of
-SG-SPEC-0021 for human review. The [recovery review](../reviews/0226_metric_verifiability_recovery_review.md)
+work. The recovered v2 semantic patch merged as a bounded refinement of
+SG-SPEC-0021 through PR #810. The [recovery review](../reviews/0226_metric_verifiability_recovery_review.md)
 and [v2 patch](../reviews/0226_metric_verifiability_candidate_v2.patch) retain
 their original scope and provenance; no historical run gate is replayed.
 
@@ -224,7 +238,7 @@ their original scope and provenance; no historical run gate is replayed.
 | B | Implemented: extract existing verifiability computation with immutable prepared inputs and the optional `verifiability_metric` hook | Pre-refactor JSON fixtures, shared-policy boundaries, injectable composition and isolated imports |
 | C1 | Implemented: publication declaration EvidenceProvider, explicit registry and immutable TraceSnapshot | Pinned inventories, partial/missing sources, duplicate/conflicting reports and independent CLI |
 | C2a | Implemented: explicit retained publication tests/delivery artifacts and run binding | Existing producer contracts, exact Git file inventory/run/attempt, negative nested provenance cases and a real CI artifact |
-| C2b | Atom-level SVC profile | Exact atom-to-check inventory, explicit producer observations and source-pinned results |
+| C2b | Proposed structural test-channel qualification contract; runtime qualifier pending | Decision tables, 16 proposed acceptance cases and a pinned 13-atom / 18-link reference worksheet; execution remains separate |
 | D | Connect to existing metric-pack artifacts with explicit provenance | Consumer compatibility, profile-separated comparisons and one real pilot |
 
 Each slice has its own focused PR. Failure or incompleteness stays visible;
@@ -280,7 +294,7 @@ remain future work in the cases below.
 | ID | Case | Expected result |
 | --- | --- | --- |
 | TP-01 | Atom names a nonexistent test | Declared link retained, resolution fails, atom excluded from qualified numerator |
-| TP-02 | Bound test completes with failure | Verifiability retained; failed fulfillment reported separately |
+| TP-02 | Bound test completes with failure | Structural qualification retained; observed test failure stays separate from fulfillment evaluation |
 | TP-03 | Optional execution report absent | Resolution-based SVC remains computable; execution observation missing |
 | TP-04 | Required inventory incomplete or stale | Exact ratio unavailable; diagnostics and partial facts retained |
 | TP-05 | Historical review cites an earlier implementation | Historical pins retained; current resolution required; no approval inference |
@@ -299,8 +313,9 @@ reported separately in the implementing PR.
 
 ## Open Decisions for Review
 
-- Approve the first resolved-channel qualification profile and its empty-set
-  convention, including how non-Python confirmation channels participate later.
+- Review `specgraph.pytest-channel-qualification/v1`, including three-valued
+  qualification and empty/incomplete conventions, before runtime implementation
+  and any later non-Python extension or default metric activation.
 - Select the minimal existing artifact inventory consumed by the first provider.
 - Decide the additive result field/schema version for existing viewers in slice D.
 - Review any Supervisor semantic candidate independently of this tooling design.
