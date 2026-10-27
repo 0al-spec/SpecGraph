@@ -81,6 +81,8 @@ def main() -> None:
         nodes = workspace / "specs/nodes"
         nodes.mkdir(parents=True)
         (nodes / f"{fixture['id']}.yaml").write_text(yaml.safe_dump(fixture, sort_keys=False))
+        # A project-local module must not shadow the installed SpecDraft package.
+        (workspace / "specgraph.py").write_text("raise RuntimeError('unexpected project import')\n")
         call(["git", "init", "--quiet", str(workspace)])
         call(
             [
@@ -91,6 +93,7 @@ def main() -> None:
                 "specgraph.project.yaml",
                 "specs",
                 ".specgraph/root_intent.md",
+                "specgraph.py",
             ]
         )
         call(

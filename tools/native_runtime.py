@@ -19,7 +19,11 @@ COMMIT = re.compile(r"^[0-9a-f]{40}$")
 
 
 def execute(arguments: list[str], *, cwd: Path | None = None) -> None:
-    subprocess.run(arguments, cwd=cwd, stdout=sys.stderr, check=True)
+    environment = os.environ.copy()
+    environment.pop("PYTHONPATH", None)
+    environment.pop("PYTHONHOME", None)
+    environment["PYTHONDONTWRITEBYTECODE"] = "1"
+    subprocess.run(arguments, cwd=cwd, env=environment, stdout=sys.stderr, check=True)
 
 
 def extract_snapshot(archive: Path, destination: Path) -> None:
@@ -85,7 +89,8 @@ def install(source: str, revision: str, destination: Path) -> dict[str, str]:
         "status": "installed",
         "source_commit": selected,
         "python_version": subprocess.check_output(
-            [str(python), "-c", "import platform; print(platform.python_version())"], text=True
+            [str(python), "-I", "-c", "import platform; print(platform.python_version())"],
+            text=True,
         ).strip(),
     }
     (target / "runtime.json").write_text(json.dumps(receipt, indent=2) + "\n")
@@ -128,7 +133,7 @@ def run(installation: Path, workspace: Path, operation: str, arguments: list[str
         command = [str(python), str(source / "tools" / "supervisor.py"), *arguments]
         cwd = project
     else:
-        command = [str(python), "-m", "specgraph", *arguments]
+        command = [str(python), "-I", "-m", "specgraph", *arguments]
         cwd = project
     if operation != "init" and not project.is_dir():
         raise ValueError("Workspace must be an existing directory")

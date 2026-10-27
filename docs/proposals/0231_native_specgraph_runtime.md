@@ -4,6 +4,9 @@
 
 Synchronous runtime slice for review. The [source](../archive/proposal_sources/0231_native_specgraph_runtime.md), [attributed note](../reviews/0231_native_runtime/source-notes.json), [intake](../reviews/0231_native_runtime/intake.json) and [draft obligations](0231_native_specgraph_runtime.intent.yaml) precede canonical acceptance.
 
+See the [installed-runtime observation](../reviews/0231_native_runtime/verification.json)
+and [pipeline observation](../reviews/0231_native_runtime/pipeline.json).
+
 An agent needs a stable installed snapshot while the SpecGraph developer
 checkout evolves independently. The existing Product Workspace model remains
 the project boundary; source snapshots and Python environments are versioned
@@ -18,6 +21,8 @@ installs dependencies, and produces a launcher and a completed receipt. It fails
 if the destination exists, preserves incomplete installations on error, and
 never adds projects or their data to the installed runtime. Python >=3.10, Git,
 network access to dependencies and Unix venv layout are prerequisites.
+The bootstrap script can be downloaded from the same chosen Git commit; the
+consumer does not need an existing developer checkout.
 
 The installed `specgraph-runtime --workspace <workspace> init -- --project-id <id>`
 invokes the existing product initializer from the installed engine root.
@@ -45,6 +50,8 @@ creates `.worktrees` a repeated initializer may report it as unexpected; these
 pre-existing limitations are not silently altered by this distribution slice.
 Real provider calls, canonical publication, cross-repository code trace and
 hosted evidence admission are outside the technical smoke's claims.
+The actual repeat-init probe failed on `.worktrees` after the synthetic
+refinement, as expected from proposal 0227; this is an open usability defect.
 
 ## Pipeline
 

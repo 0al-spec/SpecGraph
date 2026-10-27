@@ -20,8 +20,13 @@ Proposal 0231 adds a separately installed snapshot of the full tracked SpecGraph
 source and a Python environment. It uses a full Git SHA and a new destination:
 
 ```sh
-python3 tools/native_runtime.py install --source https://github.com/0al-spec/SpecGraph.git \
-  --revision <full-commit-sha> --destination <new-runtime-directory>
+# Select a trusted full commit SHA that includes tools/native_runtime.py.
+REVISION=<full-commit-sha>
+curl -fsSL "https://raw.githubusercontent.com/0al-spec/SpecGraph/$REVISION/tools/native_runtime.py" \
+  -o /tmp/specgraph-native-install.py
+python3 /tmp/specgraph-native-install.py install \
+  --source https://github.com/0al-spec/SpecGraph.git \
+  --revision "$REVISION" --destination <new-runtime-directory>
 <new-runtime-directory>/specgraph-runtime --workspace <project-workspace> \
   init -- --project-id <project-id>
 <new-runtime-directory>/specgraph-runtime --workspace <project-workspace> \
