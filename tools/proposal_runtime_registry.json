@@ -13363,7 +13363,7 @@
         "pattern": "\"evidence_admission_allowed\": false"
       }
     ],
-    "notes": "Proposal-only location/skill plan. Existing engine reuse was observed with a deterministic local executor; no skill, Git setup command, root-rebinding API or initializer fix is implemented. Post-execution init blocks on generated .worktrees. Outer implementation trace/evidence binding and real-agent validation remain separate."
+    "notes": "Location/skill plan with a bounded initializer correction: post-execution init preserves an ordinary .worktrees directory and rejects files and symlinks. No skill, Git setup command or root-rebinding API is implemented. Outer implementation trace/evidence binding and real-agent validation remain separate."
   },
   {
     "proposal_id": "0228",

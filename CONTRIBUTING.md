@@ -337,8 +337,9 @@ When investigating an external Product Workspace, distinguish the engine root
 from its data root. `ROOT = Path.cwd()` selects existing `specs/nodes`, runs and
 state; `TOOLS_DIR` selects installed core policies. Keep the standard layout
 before proposing new path settings. Probe both first initialization and an
-initializer rerun after execution: generated `.worktrees/` is currently rejected
-by the initializer (proposal `0227`). A successful trace/evidence command can
+initializer rerun after execution: the initializer accepts an existing ordinary
+`.worktrees/` directory, preserving its contents, but rejects a file or symlink
+at that path (proposal `0227`). A successful trace/evidence command can
 still report `unclaimed`/`untracked`; it does not establish an outer-code binding.
 Keep deterministic-executor plumbing evidence separate from real agent behavior.
 

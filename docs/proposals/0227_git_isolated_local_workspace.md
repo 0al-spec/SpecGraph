@@ -127,11 +127,11 @@ the generated `.worktrees/` directory remains under the selected knowledge root.
 The initializer's `PRODUCT_WORKSPACE_ALLOWED_TOP_LEVEL_ENTRIES` omits that entry,
 so a later rerun reports `unexpected_top_level_entries` and blocks.
 
-A future bounded fix should recognize the Supervisor-owned directory while
-preserving conflict/symlink checks and refusal of unrelated directories. Add a
-focused regression for init -> execution-created layout -> init. Until that fix
-is accepted, the skill must not claim initializer idempotence after execution or
-delete `.worktrees/` as a workaround. No such runtime fix is included here.
+The bounded initializer correction accepts an existing ordinary `.worktrees/`
+directory without changing its contents, and blocks a file or symlink at that
+path. Unrelated entries remain subject to the existing conflict checks. A
+regression covers init -> execution-created layout -> init. This does not
+implement the candidate skill or setup helper.
 
 ## Observation and evidence limits
 
@@ -173,7 +173,7 @@ not provide it. Git ignore also provides no access-control boundary.
 
 1. Review this bounded location/skill contract and the observed initializer gap.
 2. In a separate realization PR, add the candidate skill and, if needed, a thin
-   setup helper. Apply only the reproduced initializer correction with its test.
+   setup helper. The reproduced initializer correction is implemented separately.
 3. Run one real product pilot, preserving initial parent status and commits,
    knowledge history, exact gate state, tool version and portability evidence.
 

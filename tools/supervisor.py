@@ -11231,6 +11231,7 @@ PRODUCT_WORKSPACE_ALLOWED_TOP_LEVEL_ENTRIES = {
     "docs",
     "runs",
     ".specgraph",
+    ".worktrees",
     ".git",
     ".gitignore",
     ".env.example",
@@ -11409,6 +11410,18 @@ def product_workspace_conflict_findings(
                 "entries": unexpected_top_level,
                 "message": "existing workspace contains entries outside the initializer layout",
                 "next_gap": "review_existing_workspace_before_initialization",
+            }
+        )
+
+    worktrees_path = workspace_root / ".worktrees"
+    if worktrees_path.is_symlink() or (worktrees_path.exists() and not worktrees_path.is_dir()):
+        findings.append(
+            {
+                "finding_id": "invalid_workspace_worktrees_directory",
+                "severity": "error",
+                "path": ".worktrees/",
+                "message": "workspace worktrees path must be a directory, not a file or symlink",
+                "next_gap": "repair_existing_workspace_before_initialization",
             }
         )
 
