@@ -13274,7 +13274,8 @@
       "tests/test_publication_execution_provider.py",
       "docs/evidence/0226_publication_execution_snapshot.json",
       "docs/evidence/0226_publication_execution/tests.json",
-      "docs/evidence/0226_publication_execution/report.json"
+      "docs/evidence/0226_publication_execution/report.json",
+      "specs/nodes/SG-SPEC-0021.yaml"
     ],
     "runtime_markers": [
       {
@@ -13330,7 +13331,7 @@
         "pattern": "evidence_admission_allowed: false"
       }
     ],
-    "notes": "Partial realization: slice B preserves the legacy proxy behind immutable facts and an injectable metric protocol; the independent exact-link prerequisite names resolution and mapping policies. Slice C1 adds a declaration EvidenceProvider, explicit in-process registry and immutable source-bound TraceSnapshot with capability completeness and duplicate/conflicting observations. Slice C2a adds explicit retained publication execution-artifact collection with source/run/attempt and nested signal binding; original producer outcomes stay separate from binding status. A pinned real CI build observation retains five successful pytest obligations and missing deploy/runtime. Atom SVC, profile activation and the SG-SPEC-0021 semantic candidate remain deferred. No threshold or trusted admission change is implemented."
+    "notes": "Partial realization: slice B preserves the legacy proxy behind immutable facts and an injectable metric protocol; the independent exact-link prerequisite names resolution and mapping policies. Slice C1 adds a declaration EvidenceProvider, explicit in-process registry and immutable source-bound TraceSnapshot with capability completeness and duplicate/conflicting observations. Slice C2a adds explicit retained publication execution-artifact collection with source/run/attempt and nested signal binding; original producer outcomes stay separate from binding status. A pinned real CI build observation retains five successful pytest obligations and missing deploy/runtime. The recovered SG-SPEC-0021 v2 boundary clarification is prepared in a focused canonical-spec PR for human review; the five notes and acceptance-evidence explanation preserve existing input classes and lifecycle. Atom SVC qualification, direct derived-input admission and profile activation remain deferred. No threshold or trusted admission change is implemented."
   },
   {
     "proposal_id": "0227",

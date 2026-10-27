@@ -15,6 +15,13 @@ Supervisor cycle and its evidence are recorded in the source draft. This work
 does not activate a metric profile, replace the existing proxy, or approve a
 canonical semantic change.
 
+The recovered SG-SPEC-0021 boundary clarification is now prepared in a focused
+canonical-spec PR for human review, using the v2 candidate retained by PR #809.
+Its proposed notes preserve the existing input classes and distinguish cited
+observations, completeness, negative results and historical scope. Preparing
+that PR is not final semantic approval; atom-SVC qualification and direct
+derived-input admission remain separate decisions.
+
 ```yaml
 canonical_mutations_allowed: false
 runtime_profile_activation_allowed: false
@@ -203,9 +210,11 @@ profiles cannot be presented as one comparable trend without qualification.
 The original proposal completed preparation and launched the bounded Supervisor
 cycle. The operator subsequently requested implementation, authorizing the
 compatibility extraction in slice B. Declaration provider runtime is implemented
-in C1; C2a adds retained execution-artifact inputs. Atom-level SVC remains future work. The
-SG-SPEC-0021 semantic patch is still a
-separate review candidate.
+in C1; C2a adds retained execution-artifact inputs. Atom-level SVC remains future
+work. The recovered v2 semantic patch is prepared as a bounded refinement of
+SG-SPEC-0021 for human review. The [recovery review](../reviews/0226_metric_verifiability_recovery_review.md)
+and [v2 patch](../reviews/0226_metric_verifiability_candidate_v2.patch) retain
+their original scope and provenance; no historical run gate is replayed.
 
 ## Realization Slices
 
