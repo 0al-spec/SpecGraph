@@ -178,3 +178,28 @@ delta. No new metric profile, direct derived-input admission, threshold, writer
 permission or trusted-evidence claim is introduced. The current Intent Atom
 profile does not count `boundary_notes`; an unchanged count does not mean that
 these five semantic clarifications are absent.
+
+## C2b qualification profile requested on 2026-10-27
+
+After independent Astra Medium review and the operator's “Проверяй и вливай”,
+PR #810 merged as `b4d0f25ec8856c7cd3e8af886506f837253ccdbd`. The proposed next
+task was to define when an atom-to-test link counts as a verification channel
+under C2b. The operator replied “Ок, действуй”. This authorizes the bounded
+profile-definition task; it does not select a default metric or admit a new
+derived input class.
+
+The [candidate profile](../../pytest_channel_qualification_profile.md) proposes
+source-bound three-valued channel/atom decisions, exact-result completeness,
+provider conflict behavior and explicit execution limits. Six draft obligations
+are declared alongside this proposal. They are author-proposed refinements of
+the requested concern, not verbatim human requirements or canonical atoms.
+
+The existing C1 CLI was run locally at the exact merged source revision, without
+executing tests or importing inspected source. It observed 13 atoms and 18
+explicit `verifiable_by` links, all statically resolved. The
+[reference worksheet](../../evidence/0226_c2b_reference_worksheet.json) retains
+the exact scope, snapshot/provider digests, source manifest and all atom/channel
+witnesses. Relevant Git blobs were independently reread to verify their hashes.
+Its author-expected 13/13 result applies the proposed structural interpretation;
+no production C2b evaluator, runtime metric, test execution or semantic acceptance
+is claimed. The existing C2a five-scenario report was not joined to these 13 atoms.

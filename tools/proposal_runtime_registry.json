@@ -13275,7 +13275,10 @@
       "docs/evidence/0226_publication_execution_snapshot.json",
       "docs/evidence/0226_publication_execution/tests.json",
       "docs/evidence/0226_publication_execution/report.json",
-      "specs/nodes/SG-SPEC-0021.yaml"
+      "specs/nodes/SG-SPEC-0021.yaml",
+      "docs/pytest_channel_qualification_profile.md",
+      "docs/proposals/0226_traceability_evidence_providers_and_svc.intent.yaml",
+      "docs/evidence/0226_c2b_reference_worksheet.json"
     ],
     "runtime_markers": [
       {
@@ -13331,7 +13334,7 @@
         "pattern": "evidence_admission_allowed: false"
       }
     ],
-    "notes": "Partial realization: slice B preserves the legacy proxy behind immutable facts and an injectable metric protocol; the independent exact-link prerequisite names resolution and mapping policies. Slice C1 adds a declaration EvidenceProvider, explicit in-process registry and immutable source-bound TraceSnapshot with capability completeness and duplicate/conflicting observations. Slice C2a adds explicit retained publication execution-artifact collection with source/run/attempt and nested signal binding; original producer outcomes stay separate from binding status. A pinned real CI build observation retains five successful pytest obligations and missing deploy/runtime. The recovered SG-SPEC-0021 v2 boundary clarification is prepared in a focused canonical-spec PR for human review; the five notes and acceptance-evidence explanation preserve existing input classes and lifecycle. Atom SVC qualification, direct derived-input admission and profile activation remain deferred. No threshold or trusted admission change is implemented."
+    "notes": "Partial realization: slice B preserves the legacy proxy behind immutable facts and an injectable metric protocol; the independent exact-link prerequisite names resolution and mapping policies. Slice C1 adds a declaration EvidenceProvider, explicit in-process registry and immutable source-bound TraceSnapshot with capability completeness and duplicate/conflicting observations. Slice C2a adds explicit retained publication execution-artifact collection with source/run/attempt and nested signal binding; original producer outcomes stay separate from binding status. A pinned real CI build observation retains five successful pytest obligations and missing deploy/runtime. The recovered SG-SPEC-0021 v2 boundary clarification merged through PR #810 at b4d0f25e; the five notes and acceptance-evidence explanation preserve existing input classes and lifecycle. Atom SVC qualification, direct derived-input admission and profile activation remain deferred. No threshold or trusted admission change is implemented. C2b now has a proposed three-valued structural pytest-channel qualification contract, six explicit draft obligations and a pinned author-reference worksheet for 13 atoms and 18 resolved test links at b4d0f25e. This is contract-only preparation: the C2b runtime evaluator is not implemented, reference expectations are not production SVC or passing-test counts, and activation/defaults/direct-derived-input admission remain deferred."
   },
   {
     "proposal_id": "0227",

@@ -1,0 +1,22 @@
+id: SG-RFC-0226
+kind: proposal
+status: draft
+proposal_ref: docs/proposals/0226_traceability_evidence_providers_and_svc.md
+provenance:
+  authored_by: agent
+  authority: proposal_draft
+  source_ref: docs/archive/proposal_sources/0226_traceability_evidence_providers_and_svc.md
+atoms:
+  intents:
+  - id: C2B-PIN
+    statement: Qualification uses an explicit repository, source revision, atom inventory and selected declaration providers with source and analyzer provenance.
+  - id: C2B-CHANNEL
+    statement: Only an explicit supported uniquely resolved atom-to-test declaration qualifies structurally; conclusive bad bindings and unknown evidence remain distinct.
+  - id: C2B-ATOM
+    statement: An atom qualifies once through any uncontested good channel, otherwise remains unknown if an alternative is unknown, and is unqualified only after conclusive enumeration.
+  - id: C2B-COMPUTE
+    statement: An exact fraction requires a complete nonempty atom inventory and no unknown atom qualifications; complete zero, empty selection and incomplete data have distinct results.
+  - id: C2B-CONFLICT
+    statement: Repeated agreeing observations retain provenance without multiplying atoms, while conflicting identity, binding or inventory facts remain unresolved and order independent.
+  - id: C2B-SEPARATION
+    statement: Test execution, results, semantic sufficiency, fulfillment and admission remain separate from structural channel qualification and do not activate legacy metric, viewer or CI behavior.
