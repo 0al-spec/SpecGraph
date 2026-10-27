@@ -155,3 +155,26 @@ merge-checkout SHA `5ccf69e8ad5da8a82b63c035090ebfbf5481c4f0`, not the branch he
 No tests/network/inference are executed by this provider. SVC qualification,
 trusted admission, canonical semantic changes and viewer activation remain
 separate. See the [execution observation](../../evidence/0226_publication_execution_snapshot.json).
+
+## Recovered boundary clarification prepared on 2026-10-27
+
+PR #809 retained the source-grounded recovery review and v2 semantic candidate;
+it merged as `8945b021c49fbc08f50da8b93db9ba53d530e4d8`. After the operator
+requested merging PRs #807–809, the next proposed task was to prepare a focused
+PR applying that candidate to SG-SPEC-0021. The operator replied “Подготовь”.
+This authorizes preparation of the canonical-spec PR, not a claim of final
+semantic approval or profile activation.
+
+The prepared change applies the v2 semantic delta to the current node and
+updates its modification timestamp. Existing acceptance criteria, family roles,
+subject/input classes, invariant IDs and lifecycle fields are preserved. The
+[recovery review](../../reviews/0226_metric_verifiability_recovery_review.md)
+and [v2 patch](../../reviews/0226_metric_verifiability_candidate_v2.patch)
+remain historical review artifacts. The patch SHA-256 is
+`df8f1bc4037a698ddf4fb57630b5b2ee6bbf4409a768577ba1797fde34c37728`.
+
+No Supervisor executor or old gate resolution is needed to reapply that bounded
+delta. No new metric profile, direct derived-input admission, threshold, writer
+permission or trusted-evidence claim is introduced. The current Intent Atom
+profile does not count `boundary_notes`; an unchanged count does not mean that
+these five semantic clarifications are absent.

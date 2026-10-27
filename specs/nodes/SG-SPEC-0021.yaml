@@ -2,7 +2,7 @@ id: SG-SPEC-0021
 title: SpecGraph - Derived Metric Family Boundary
 kind: spec
 created_at: '2026-04-12T07:36:12Z'
-updated_at: '2026-05-14T22:33:00Z'
+updated_at: '2026-10-27T10:28:00Z'
 status: linked
 maturity: 1.0
 depends_on:
@@ -56,7 +56,10 @@ acceptance_evidence:
     and allowed family use, and specification.relationship_policy requires each family to declare explicit
     subject binding and one semantic family_role before derived computation. Those rules separate canonical
     graph state, SG-SPEC-0017 runtime observability entities, and SG-SPEC-0003 graph-health diagnostics
-    as admissible inputs without collapsing them into one layer.
+    as admissible inputs without collapsing them into one layer. Specification Verifiability boundary_notes
+    distinguish authored links and cited resolution, execution, and result facts without admitting additional
+    input classes. They preserve explicit subject, revision, provenance, and completeness limits, optional
+    execution absence, conclusive negative findings, and historical review scope.
 
     '
 - criterion: Defines the canonical versus derived boundary for metric family definitions, computed values,
@@ -278,6 +281,24 @@ specification:
       acceptance judgment.
     - Missing evidence may influence a derived score, but that derived result does not itself reject a
       node without existing governance policy.
+    - Within acceptance_criteria_and_evidence and trace_dependency_links, declared verification links
+      and cited resolution, execution observation, and result facts have distinct meanings. Canonical
+      evidence records may cite derived observations without making those observations canonical or admitting
+      an additional metric_input_class.
+    - Interpret cited facts within their explicit subject, source revision, provenance, and completeness
+      scope under the selected evidence profile. Absent or unknown bindings remain limitations; resolving
+      a source link alone does not establish execution, authenticity, semantic sufficiency, or acceptance.
+    - A claim that execution occurred requires an attributable run and recorded result under the selected
+      profile. Passed, failed, skipped, and unavailable outcomes remain distinct. A bound completed failure
+      may contribute evidence of verifiability within its recorded scope without establishing successful
+      fulfillment; optional execution absence does not invalidate conclusive declaration resolution.
+    - Missing, stale, unknown, or incomplete required inputs remain explicit limitations; they must not
+      become observed failures or a complete zero. Conclusive negative findings from complete required
+      inputs remain valid, including zero where the selected metric profile defines it.
+    - Historical review and acceptance records establish only their recorded subject revision and scope.
+      Reusing their links for another revision requires resolution at that revision under the selected
+      profile; link reuse alone establishes neither fresh execution nor acceptance. Revision/run binding
+      does not by itself establish wall-clock freshness or independent source authenticity.
   - family: Process Observability
     family_role: process_visibility
     role: Family for assessing how visible and attributable the refinement, execution, or proposal process

@@ -102,6 +102,14 @@ resolution, execution results and completeness. Their execution provenance is
 wall-clock freshness, authenticity or semantic acceptance.
 
 See `docs/reviews/0226_metric_verifiability_recovery_review.md` and
-`docs/reviews/0226_metric_verifiability_candidate_v2.patch`. The next step is a
-semantic adoption decision for SG-SPEC-0021. RFC 0226 C2b qualification and any
-derived-input admission remain separate from this review.
+`docs/reviews/0226_metric_verifiability_candidate_v2.patch`. The recovered v2
+delta is now prepared in a focused canonical-spec PR for human review, updating
+SG-SPEC-0021's boundary notes and acceptance-evidence explanation. Its
+modification timestamp is refreshed; acceptance criteria, input classes,
+family roles, invariant IDs and lifecycle remain unchanged.
+
+Preparing the PR does not attest final semantic approval. The current Intent
+Atom profile does not count `boundary_notes`, so the five clarifications do not
+add counted atoms. RFC 0226 C2b qualification and any direct derived-input
+admission remain separate decisions; formulas, thresholds and runtime behavior
+are unchanged.
