@@ -15,6 +15,11 @@ Source tests alone do not prove a wheel is complete. Keep consumer notebooks out
 of package data and preserve `read_notes` / `update_notes` source CLI façades
 during package extraction.
 
+Preserve bytes of historical review-bound inputs during distribution work.
+The existing repository conversation-notes skill is bound into CN-CAPTURE
+review packets; portable instructions therefore ship as separate package
+resources rather than replacing that historical file or rewriting its receipts.
+
 ## Core Loop
 
 1. Start from updated `main`.

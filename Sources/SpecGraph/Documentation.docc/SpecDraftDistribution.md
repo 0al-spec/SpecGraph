@@ -47,6 +47,10 @@ HTTP mutation refusal and local skill references. CI covers Python 3.10/3.14.
 HTTP observation does not prove browser rendering, canonical acceptance or
 trusted evidence admission.
 
+The repository conversation-notes skill remains unchanged because historical
+CN-CAPTURE review packets bind its bytes. The portable version ships separately
+as package resources; packaging does not rewrite prior reviews or their digests.
+
 The five draft obligations are SD-DIST-CLI, SD-DIST-RESOURCES, SD-DIST-DATA,
 SD-DIST-SKILL and SD-DIST-COMPAT. Source capture and supervisor intake preserve
 their origin. No model refinement or canonical publication is claimed.
