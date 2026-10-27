@@ -184,6 +184,15 @@ Useful skills and commands:
 
 ## Supervisor Runs
 
+Before creating a worktree and when closing its task, use the
+[worktree-lifecycle skill](.codex/skills/worktree-lifecycle/SKILL.md).
+Reuse suitable task environments, keep persistent notebooks outside temporary
+worktrees, and account for staged, unstaged, untracked and ignored data before
+retirement. A merged PR does not account for later local changes; a dirty tree
+needs a disposition rather than indefinite retention. Preserve unaccepted
+supervisor candidates through the existing salvage/review path. Archive closure
+does not approve canonical changes. See [the recovery walkthrough](docs/worktree_lifecycle.md).
+
 Prefer the repository Makefile targets over direct verbose supervisor commands:
 
 ```bash

@@ -1,6 +1,13 @@
 {
   "groups": [
     {
+      "id": "worktree-lifecycle",
+      "description": "Worktree closeout preserves local work and explicit recovery without canonical adoption.",
+      "docs": ["docs/worktree_lifecycle.md", "CONTRIBUTING.md", "AGENTS.md", ".codex/skills/worktree-lifecycle/SKILL.md"],
+      "docc": ["Sources/SpecGraph/Documentation.docc/WorktreeLifecycle.md"],
+      "required_terms": ["worktree-lifecycle", "ignored", "salvage", "canonical"]
+    },
+    {
       "id": "specdraft-live-preview",
       "description": "Source-captured live notes visualization proposal and pending specification contract.",
       "docs": [

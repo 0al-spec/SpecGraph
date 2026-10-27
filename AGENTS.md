@@ -44,6 +44,7 @@ credentials, private keys, or machine-local tokens to `.0al`.
 ## Repository rules
 - Merge in main branch ONLY  via Pull (Merge) Request on GitHub
 - After retargeting a stacked PR, verify its merge snapshot parents against the current base/head and wait for checks using that comparison. Follow the stale-snapshot recovery in [CONTRIBUTING.md](CONTRIBUTING.md#branches-and-prs); preserve the exact-parent guard.
+- When creating, handing off or retiring worktrees, follow the [worktree-lifecycle skill](.codex/skills/worktree-lifecycle/SKILL.md). Account for ignored data and live consumers; finish with an explicit published, handed-off or archived disposition. Preserve unresolved candidates through existing salvage/review records rather than keeping unlabelled directories indefinitely. This is engineering closeout, not canonical approval or a new CI gate.
 - Deliver feature changes through a dedicated branch and Pull Request; do not land feature work directly on `main`.
 - Work on one spec node at a time.
 - Refine specifications, not runtime code.
