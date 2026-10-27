@@ -21,6 +21,7 @@ dev = ["pytest==9.0.2", "ruff==0.15.9"]
 specgraph = "specgraph.cli:main"
 
 [tool.setuptools]
+include-package-data = false
 packages = ["specgraph", "conversation_notes", "specdraft_preview"]
 py-modules = ["conversation_notes_cli", "specdraft_preview_cli"]
 

@@ -12,7 +12,8 @@ its source distribution, install it into a separate pipx environment, then run
 `tests/specdraft_distribution_smoke.py` from an external consumer workspace.
 Check module origins, packaged HTTP assets and the skill's local references.
 Source tests alone do not prove a wheel is complete. Keep consumer notebooks out
-of package data and preserve source CLI façades during package extraction.
+of package data and preserve `read_notes` / `update_notes` source CLI façades
+during package extraction.
 
 ## Core Loop
 
