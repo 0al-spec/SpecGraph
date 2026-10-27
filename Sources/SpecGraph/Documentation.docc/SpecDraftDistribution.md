@@ -53,6 +53,10 @@ today's build metadata, while changes within the selected review snapshot still
 fail. Packaging does not rewrite prior reviews or their digests. The repository
 skill remains a source-checkout guide; portable instructions ship separately.
 
+Validate workflow contexts with actionlint: `runner.temp` belongs in step `env`,
+not job `env`. Confirm that hosted jobs were actually created; a workflow file
+present in the PR is not evidence of an executed installation check.
+
 The five draft obligations are SD-DIST-CLI, SD-DIST-RESOURCES, SD-DIST-DATA,
 SD-DIST-SKILL and SD-DIST-COMPAT. Source capture and supervisor intake preserve
 their origin. No model refinement or canonical publication is claimed.

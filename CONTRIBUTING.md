@@ -22,6 +22,11 @@ packaging evolves. Keep rejection tests for changes inside the selected review
 snapshot. Do not rewrite old approval hashes merely to make current-source tests
 pass. The source-checkout skill remains separate from installed instructions.
 
+Validate new workflow expression contexts before relying on hosted checks.
+`runner.temp` is available in step `env`, not job `env`; an invalid job-level
+reference can prevent every job from being created. Use actionlint for static
+workflow validation and verify that the expected jobs actually started.
+
 ## Core Loop
 
 1. Start from updated `main`.

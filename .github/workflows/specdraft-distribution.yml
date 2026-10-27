@@ -18,9 +18,6 @@ jobs:
       matrix:
         python-version: ["3.10", "3.14"]
     env:
-      PIPX_HOME: ${{ runner.temp }}/specgraph-pipx
-      PIPX_BIN_DIR: ${{ runner.temp }}/specgraph-bin
-      PIPX_MAN_DIR: ${{ runner.temp }}/specgraph-man
       PIP_DISABLE_PIP_VERSION_CHECK: "1"
     steps:
       - uses: actions/checkout@v6
@@ -34,8 +31,16 @@ jobs:
           python -m pip install build==1.3.0 pipx==1.8.0
           python -m build --outdir "$RUNNER_TEMP/specgraph-dist"
       - name: Install into an isolated tool environment
+        env:
+          PIPX_HOME: ${{ runner.temp }}/specgraph-pipx
+          PIPX_BIN_DIR: ${{ runner.temp }}/specgraph-bin
+          PIPX_MAN_DIR: ${{ runner.temp }}/specgraph-man
         run: pipx install "$RUNNER_TEMP"/specgraph-dist/*.whl --python "$(command -v python)"
       - name: Exercise installed commands in a consumer workspace
+        env:
+          PIPX_HOME: ${{ runner.temp }}/specgraph-pipx
+          PIPX_BIN_DIR: ${{ runner.temp }}/specgraph-bin
+          PIPX_MAN_DIR: ${{ runner.temp }}/specgraph-man
         run: >-
           python tests/specdraft_distribution_smoke.py
           --command "$PIPX_BIN_DIR/specgraph"
