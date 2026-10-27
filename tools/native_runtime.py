@@ -98,12 +98,22 @@ def install(source: str, revision: str, destination: Path) -> dict[str, str]:
 
 
 def run(installation: Path, workspace: Path, operation: str, arguments: list[str]) -> int:
+    # Imported only after installation: the standalone bootstrap has no
+    # SpecificationCore dependency until it has created its own environment.
+    from native_runtime_context import RuntimeReadyFacts
+    from native_runtime_ready_spec import RUNTIME_READY_SPEC
+
     root = installation.expanduser().resolve(strict=True)
     receipt = json.loads((root / "runtime.json").read_text())
-    if (
-        receipt.get("artifact_kind") != "specgraph_native_runtime"
-        or receipt.get("status") != "installed"
-    ):
+    if not isinstance(receipt, dict):
+        raise ValueError("Installation receipt must be an object")
+    facts = RuntimeReadyFacts(
+        artifact_kind=str(receipt.get("artifact_kind", "")),
+        status=str(receipt.get("status", "")),
+        schema_version=receipt.get("schema_version"),
+        source_commit=str(receipt.get("source_commit", "")),
+    )
+    if not RUNTIME_READY_SPEC.is_satisfied_by(facts):
         raise ValueError("Installation is not ready")
     project = workspace.expanduser().resolve()
     if project == root or root in project.parents:

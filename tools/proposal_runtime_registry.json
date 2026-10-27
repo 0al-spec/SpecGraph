@@ -13513,6 +13513,8 @@
       "docs/reviews/0231_native_runtime/specdraft.md",
       "docs/reviews/0231_native_runtime/verification.json",
       "tools/native_runtime.py",
+      "tools/native_runtime_context.py",
+      "tools/native_runtime_ready_spec.py",
       "tests/test_native_runtime.py",
       "tests/native_runtime_smoke.py",
       "Sources/SpecGraph/Documentation.docc/NativeRuntime.md"

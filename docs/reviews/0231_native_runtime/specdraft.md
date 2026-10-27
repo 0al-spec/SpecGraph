@@ -9,3 +9,5 @@ The four draft obligations map to `tools/native_runtime.py::install`,
 destructive/error boundaries. The installed-runtime smoke must additionally
 exercise two independent workspaces, existing supervisor behavior and receipt
 provenance. This draft is not a canonical Requirement or an admission decision.
+`RUNTIME_READY_SPEC` in `tools/native_runtime_ready_spec.py` expresses the
+versioned installation readiness decision using `RuntimeReadyFacts`.

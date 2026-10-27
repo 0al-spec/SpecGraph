@@ -3,11 +3,13 @@
 import importlib.util
 import io
 import json
+import sys
 import tarfile
 from pathlib import Path
 
 import pytest
 
+sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "tools"))
 SPEC = importlib.util.spec_from_file_location(
     "native_runtime", Path(__file__).resolve().parents[1] / "tools" / "native_runtime.py"
 )
@@ -51,3 +53,17 @@ def test_non_full_sha_rejected_without_creating_destination(tmp_path):
     with pytest.raises(ValueError, match="full lowercase"):
         runtime.install("unused", "deadbeef", target)
     assert not target.exists()
+
+
+def test_ready_spec_requires_a_complete_versioned_receipt():
+    from native_runtime_context import RuntimeReadyFacts
+    from native_runtime_ready_spec import RUNTIME_READY_SPEC
+
+    ready = RuntimeReadyFacts("specgraph_native_runtime", "installed", 1, "a" * 40)
+    assert RUNTIME_READY_SPEC.is_satisfied_by(ready)
+    assert not RUNTIME_READY_SPEC.is_satisfied_by(
+        RuntimeReadyFacts(ready.artifact_kind, ready.status, True, ready.source_commit)
+    )
+    assert not RUNTIME_READY_SPEC.is_satisfied_by(
+        RuntimeReadyFacts(ready.artifact_kind, ready.status, 1, "incomplete")
+    )
