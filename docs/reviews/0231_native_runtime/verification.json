@@ -11,28 +11,39 @@
     "specdraft_read"
   ],
   "executor": "deterministic_fixture_not_a_real_agent",
-  "installer_sha256": "4da7b216760d2fc54c6f2f95ea75707c873e1c02e735ff3734077fadef3e5185",
-  "platform": "macOS local; external TB5 synthetic workspaces",
+  "installer_sha256": "463b7bcb270d94e87fb487bc0c2eecf4df4090ea63d9d4860aa1bf1118cef449",
+  "platform": "macOS; synthetic external workspaces",
   "python_version": "3.12.11",
   "refinement": {
     "gate_state": "review_pending",
     "isolation_mode": "git_worktree",
     "outcome": "done"
   },
-  "repeat_init_after_refinement": {
-    "classification": "existing_initializer_limitation",
-    "entries": [
-      ".worktrees"
-    ],
-    "exit_code": 1,
-    "finding_id": "unexpected_top_level_entries",
-    "status": "blocked"
-  },
+  "repeat_init_after_refinement": [
+    {
+      "entries": [
+        ".worktrees"
+      ],
+      "finding_id": "unexpected_top_level_entries",
+      "source_commit": "b4e5cb9ff0c0aa6138c03a9c9edcfd809d6c5f63",
+      "status": "blocked"
+    },
+    {
+      "entries": [
+        ".worktrees",
+        "specgraph.py"
+      ],
+      "finding_id": "unexpected_top_level_entries",
+      "note": "The second extra entry is the deliberate import-shadowing fixture.",
+      "source_commit": "654e1522acfcecd977165a56ca0fd2670b76f0b9",
+      "status": "blocked"
+    }
+  ],
   "schema_version": 1,
-  "source_commit": "b4e5cb9ff0c0aa6138c03a9c9edcfd809d6c5f63",
+  "source_commit": "654e1522acfcecd977165a56ca0fd2670b76f0b9",
   "source_files_sha256": {
-    "tests/native_runtime_smoke.py": "51ae2c81215aa43e998aab7101ec4e02eda082473f61ef2fb5be479735196428",
-    "tools/native_runtime.py": "4da7b216760d2fc54c6f2f95ea75707c873e1c02e735ff3734077fadef3e5185"
+    "tests/native_runtime_smoke.py": "d46037759f115809c6a807d223d1bf327ed2efd9b3143ae0a84363e68e438bec",
+    "tools/native_runtime.py": "463b7bcb270d94e87fb487bc0c2eecf4df4090ea63d9d4860aa1bf1118cef449"
   },
   "status": "passed",
   "synthetic_workspaces": 2
