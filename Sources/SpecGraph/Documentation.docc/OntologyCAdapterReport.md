@@ -60,6 +60,9 @@ produced output is checked by the SpecGraph adapter validator. On the initial
 fixture it resolves seven refs and retains one `sgcore:ClaimCalibration` gap;
 a passed report does not close that gap.
 
+The release integration is currently exercised on macOS; Linux support is a
+separate follow-up and is not established by this smoke.
+
 For local reproduction on macOS with the Swift toolchain, build `ontologyc`
 from the pinned checkout and select its binary and checkout explicitly:
 
@@ -72,6 +75,26 @@ The SpecGraph native runtime does not install `ontologyc`. Local callers must
 ensure the binary was built from the checked source: checking the source HEAD
 alone does not establish binary provenance. The integration leaves canonical
 permissions, ontology package status, and publication unchanged.
+
+### Captured ontology snapshot
+
+`tools/ontology_snapshot.py` exposes `capture_ontology_snapshot`, which captures
+immutable source and normalized IR bytes using an explicitly selected
+`ontologyc`. It runs `check` and `compile`, verifies the IR `sourceDigest`
+against the captured source, and can require a saved IR to match byte for byte.
+The recorded source, IR and compiler SHA-256 values identify bytes; they do not
+authenticate the executable or establish release provenance. The caller must
+trust the compiler and its environment; this is not a sandbox.
+
+The raw source hash covers exact file bytes. The compiler digest follows Ontology
+0.1.0's UTF-8 text decoding, including removal of a leading BOM, and is recorded
+separately.
+
+Only the release smoke currently uses this helper. Other ontology consumers and
+the supervisor have not been migrated, and previously derived artifacts are not
+validated by it. Conversation capture remains independent of ontology checking.
+The smoke preserves ontology gaps for review rather than blocking merely because
+the fixture contains one.
 
 ## Semantic Review Surfaces
 
