@@ -61,6 +61,7 @@ def observe(command: Path, python: Path, wheel: Path, project: Path, forbidden: 
         }
         for name in ("SKILL.md", "references/usage.md"):
             assert archive.read(f"specgraph/resources/skills/specgraph-conversation-notes/{name}")
+        assert archive.read("specgraph/resources/skills/specgraph-project-ontology/SKILL.md")
 
     probe = subprocess.check_output(
         [
@@ -127,6 +128,24 @@ def observe(command: Path, python: Path, wheel: Path, project: Path, forbidden: 
         for reference in re.findall(r"\]\(([^)]+)\)", path.read_text()):
             target = (path.parent / reference).resolve()
             assert target.is_relative_to(destination.resolve()) and target.is_file()
+
+    ontology_name = "specgraph-project-ontology"
+    ontology = json.loads(
+        run("skill", "install", "--name", ontology_name, "--project", project).stdout
+    )
+    ontology_path = project / ".codex" / "skills" / ontology_name
+    assert ontology["status"] == "installed" and ontology["skill"] == ontology_name
+    assert ontology["destination"] == str(ontology_path)
+    assert (
+        hashlib.sha256((ontology_path / "SKILL.md").read_bytes()).hexdigest()
+        == (ontology["files_sha256"]["SKILL.md"])
+    )
+    assert (
+        json.loads(run("skill", "install", "--name", ontology_name, "--project", project).stdout)[
+            "status"
+        ]
+        == "already_installed"
+    )
 
     server = subprocess.Popen(
         [str(command), "preview", "--workspace", str(workspace), "--port", "0"],
@@ -199,6 +218,7 @@ def observe(command: Path, python: Path, wheel: Path, project: Path, forbidden: 
                 "fresh_process_recovery",
                 "stale_revision_preserves_data",
                 "self_contained_skill",
+                "named_ontology_skill",
                 "packaged_http_assets",
                 "preview_observes_update",
                 "preview_rejects_mutation",

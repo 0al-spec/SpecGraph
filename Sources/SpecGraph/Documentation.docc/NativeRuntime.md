@@ -25,6 +25,22 @@ other operations run in the selected product workspace. Project-owned Git,
 notes, specs and runs are not installed data. Each workspace must be explicitly
 selected, and an existing workspace or Git history is not overwritten by setup.
 
+Install the version-matched ontology skill into the product project explicitly:
+
+```sh
+<new-runtime-directory>/specgraph-runtime --workspace /absolute/knowledge/workspace \
+  draft -- skill install --name specgraph-project-ontology \
+  --project /absolute/product/project
+```
+
+The outer workspace selects the knowledge workspace used by the launcher;
+`--project` selects the product project where the skill is installed under
+`.codex/skills/`. They may be different directories. The skill can guide
+terminology work even when the workspace has no ontology package or `ontologyc`.
+Installing it does not accept ontology terms, publish changes, or change agent
+settings. Existing differing skill content is not overwritten. The original
+conversation-notes installation with `--destination` remains available.
+
 Current supervisor refinement requires its configured Codex executor. ASP is
 future work, and the invoking agent is not automatically the child executor.
 The initializer does not create `specs/nodes`. After Supervisor execution it

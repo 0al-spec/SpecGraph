@@ -14,6 +14,7 @@ On macOS/Linux with Python >=3.10, install the reviewed wheel into pipx:
 pipx install /path/to/specgraph-0.2.0-py3-none-any.whl
 specgraph --version
 specgraph skill install --destination .codex/skills/specgraph-conversation-notes
+specgraph skill install --name specgraph-project-ontology --project /absolute/product/project
 specgraph notes read_notes --workspace conversation_memory/sketches/session
 specgraph notes update_notes --workspace conversation_memory/sketches/session --input request.json
 specgraph preview --workspace conversation_memory/sketches/session --port 0
@@ -24,6 +25,12 @@ the existing `expected_revision`, exact source quotation and changes array.
 The bundled skill contains a self-contained `references/usage.md` with a
 complete JSON example. Existing differing skill files are refused, matching
 files are idempotent; agent settings are not edited automatically.
+
+The optional ontology skill is installed into the specified product project's
+`.codex/skills/` directory. Its project can differ from the SpecGraph knowledge
+workspace. It guides terminology work even when no ontology package or
+`ontologyc` is available; installation and validation do not accept terms or
+publish ontology changes.
 
 The same skill also documents the native `specgraph-runtime --workspace ...
 draft -- ...` route, including version, notes, preview and skill installation.

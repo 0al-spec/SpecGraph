@@ -129,6 +129,92 @@ def test_cli_reports_skill_errors_as_json(tmp_path, capsys):
     assert destination.read_text() == "preserve me"
 
 
+def test_cli_installs_named_skill_to_existing_project(tmp_path, capsys):
+    project = tmp_path / "consumer project"
+    project.mkdir()
+    name = "specgraph-project-ontology"
+    destination = project / ".codex" / "skills" / name
+    args = ["skill", "install", "--name", name, "--project", str(project)]
+    assert main(args) == 0
+    installed = json.loads(capsys.readouterr().out)
+    assert installed["status"] == "installed"
+    assert installed["skill"] == name
+    assert installed["destination"] == str(destination)
+    assert (destination / "SKILL.md").read_bytes() == skill_contents(name)["SKILL.md"]
+    assert main(args) == 0
+    assert json.loads(capsys.readouterr().out)["status"] == "already_installed"
+    (destination / "SKILL.md").write_text("user-maintained instructions")
+    assert main(args) == 2
+    assert "not overwritten" in json.loads(capsys.readouterr().err)["error"]
+    assert (destination / "SKILL.md").read_text() == "user-maintained instructions"
+
+
+def test_ontology_skill_matches_repository_workflow():
+    root = Path(__file__).resolve().parents[1]
+    repository_skill = root / ".codex/skills/specgraph-project-ontology/SKILL.md"
+    assert skill_contents("specgraph-project-ontology")["SKILL.md"] == repository_skill.read_bytes()
+
+
+def test_cli_project_destination_defaults_to_conversation_skill(tmp_path, capsys):
+    assert main(["skill", "install", "--project", str(tmp_path)]) == 0
+    installed = json.loads(capsys.readouterr().out)
+    assert installed["skill"] == "specgraph-conversation-notes"
+    assert Path(installed["destination"]) == (
+        tmp_path / ".codex" / "skills" / "specgraph-conversation-notes"
+    )
+
+
+def test_cli_rejects_nonexistent_project_and_symlinked_skill_directory(tmp_path, capsys):
+    missing = tmp_path / "missing"
+    assert main(["skill", "install", "--project", str(missing)]) == 2
+    assert "existing directory" in json.loads(capsys.readouterr().err)["error"]
+    assert not missing.exists()
+    project = tmp_path / "project"
+    project.mkdir()
+    outside = tmp_path / "outside"
+    outside.mkdir()
+    (project / ".codex").symlink_to(outside, target_is_directory=True)
+    assert main(["skill", "install", "--project", str(project)]) == 2
+    assert "symlinks" in json.loads(capsys.readouterr().err)["error"]
+    assert list(outside.iterdir()) == []
+
+
+def test_cli_rejects_symlinked_project_skills_and_destination(tmp_path, capsys):
+    project = tmp_path / "project"
+    (project / ".codex").mkdir(parents=True)
+    outside = tmp_path / "outside"
+    outside.mkdir()
+    skills = project / ".codex" / "skills"
+    skills.symlink_to(outside, target_is_directory=True)
+    args = ["skill", "install", "--name", "specgraph-project-ontology", "--project", str(project)]
+    assert main(args) == 2
+    assert "symlinks" in json.loads(capsys.readouterr().err)["error"]
+    assert list(outside.iterdir()) == []
+    skills.unlink()
+    skills.mkdir()
+    (skills / "specgraph-project-ontology").symlink_to(outside, target_is_directory=True)
+    assert main(args) == 2
+    assert "symlink" in json.loads(capsys.readouterr().err)["error"]
+    assert list(outside.iterdir()) == []
+
+
+def test_cli_rejects_unknown_skill_without_creating_destination(tmp_path, capsys):
+    destination = tmp_path / "target"
+    with pytest.raises(SystemExit) as stopped:
+        main(["skill", "install", "--name", "../unknown", "--destination", str(destination)])
+    assert stopped.value.code == 2
+    assert "invalid choice" in capsys.readouterr().err
+    assert not destination.exists()
+
+
+def test_cli_rejects_multiple_skill_destinations(tmp_path, capsys):
+    with pytest.raises(SystemExit) as stopped:
+        main(["skill", "install", "--project", str(tmp_path), "--destination", str(tmp_path / "x")])
+    assert stopped.value.code == 2
+    assert "not allowed" in capsys.readouterr().err
+    assert not (tmp_path / "x").exists()
+
+
 def test_cli_version(capsys):
     with pytest.raises(SystemExit) as stopped:
         main(["--version"])

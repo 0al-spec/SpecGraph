@@ -6,7 +6,7 @@ import sys
 from pathlib import Path
 
 from . import __version__
-from .distribution import install_skill
+from .distribution import DEFAULT_SKILL, SKILL_FILES, install_skill, project_skill_destination
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -17,7 +17,10 @@ def main(argv: list[str] | None = None) -> int:
     commands.add_parser("preview", add_help=False, help="Serve a read-only loopback preview")
     skill = commands.add_parser("skill", help="Install the version-matched, self-contained skill")
     skill.add_argument("operation", choices=("install",))
-    skill.add_argument("--destination", required=True, type=Path)
+    skill.add_argument("--name", choices=tuple(SKILL_FILES), default=DEFAULT_SKILL)
+    target = skill.add_mutually_exclusive_group(required=True)
+    target.add_argument("--destination", type=Path)
+    target.add_argument("--project", type=Path, help="Existing project root for .codex/skills")
     args, remaining = parser.parse_known_args(argv)
     if args.command == "notes":
         from conversation_notes_cli import main as notes_main
@@ -30,7 +33,12 @@ def main(argv: list[str] | None = None) -> int:
     if remaining:
         parser.error(f"unrecognized arguments: {' '.join(remaining)}")
     try:
-        result = install_skill(args.destination)
+        destination = (
+            args.destination
+            if args.destination is not None
+            else project_skill_destination(args.project, args.name)
+        )
+        result = install_skill(destination, args.name)
     except (OSError, ValueError) as error:
         print(json.dumps({"error": str(error)}, ensure_ascii=False), file=sys.stderr)
         return 2
