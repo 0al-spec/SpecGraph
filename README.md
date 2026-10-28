@@ -34,7 +34,9 @@ python3 /tmp/specgraph-native-install.py install \
 ```
 
 The selected revision must include the installer. Python 3.10+, Git and network
-access for Python dependencies are required. Existing project history, agent
+access for Python dependencies are required. The installer reports its Python
+executable and version and rejects older interpreters before creating the
+destination. Existing project history, agent
 executor setup and workspace initialization are separate from installation.
 See [proposal 0231](docs/proposals/0231_native_specgraph_runtime.md) for
 supported operations and limitations.

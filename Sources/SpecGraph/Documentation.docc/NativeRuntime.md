@@ -9,6 +9,9 @@ prerequisites. The local source commit is recorded in `runtime.json`.
 `tools/native_runtime.py install` takes an explicit Git source, full revision
 and new destination. It never overwrites an existing destination. Failure leaves
 an incomplete installation without the `runtime.json` ready marker.
+Before creating the destination it checks the interpreter version and reports
+the selected executable and version; Python older than 3.10 is rejected without
+creating the installation directory.
 To bootstrap without a developer checkout, download that script from the same
 trusted full commit on `raw.githubusercontent.com` before invoking it; the
 repository README gives the command. The chosen revision must contain the script.

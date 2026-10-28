@@ -46,6 +46,13 @@ def extract_snapshot(archive: Path, destination: Path) -> None:
 
 
 def install(source: str, revision: str, destination: Path) -> dict[str, str]:
+    version = ".".join(map(str, sys.version_info[:3]))
+    interpreter = sys.executable or "<unknown executable>"
+    if sys.version_info < (3, 10):  # noqa: UP036 -- standalone bootstrap can run on older Python
+        raise ValueError(
+            f"Python 3.10 or newer is required; found Python {version} at {interpreter}"
+        )
+    print(f"Using Python {version} at {interpreter}", file=sys.stderr)
     if not COMMIT.fullmatch(revision):
         raise ValueError("Revision must be a full lowercase Git commit SHA")
     if shutil.which("git") is None:
