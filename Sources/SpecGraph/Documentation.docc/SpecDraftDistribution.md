@@ -27,8 +27,12 @@ files are idempotent; agent settings are not edited automatically.
 
 The installed runtime, static resources and exported skill come from one version.
 Consumer notebooks and their revision history live in the explicitly chosen
-project workspace; exclude private sketches in that project's `.gitignore`.
-They are not installed data and do not follow the SpecGraph developer checkout.
+project workspace. The bundled skill describes which files preserve a sketch's
+published history in Git and which files are local runtime state. A draft can be
+tracked without becoming canonical. Respect existing privacy and storage choices
+and inspect all historical source quotations before sharing a sketch. Ignored
+data needs an independent backup. Consumer notebooks are not installed data and
+do not follow the SpecGraph developer checkout.
 Notes remain pre-canonical and the preview remains read-only on loopback.
 
 The 0.2.0 candidate is not published on PyPI. Installation resolves Python
