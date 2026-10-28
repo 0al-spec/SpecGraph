@@ -118,10 +118,10 @@ The smoke passes only when:
 - the authority boundary forbids report authority, automatic import-lock
   updates, and automatic canonical node updates.
 
-### Ontology 0.1.0 release integration
+### Ontology 0.1.1 release integration
 
-The release integration smoke uses the Ontology tooling release `0.1.0`, Git
-commit `d07cf5a8cd829b78027dda6d414ab89f4cb4f4e0`. This is the version of the
+The release integration smoke uses the Ontology tooling release `0.1.1`, Git
+commit `21e4cb32ed042e629e72b708b8b086fb32d4cebc`. This is the version of the
 compiler source, separate from the `0.1.0` version of SpecGraph's own
 `org.0al.specgraph.core` ontology package. The project-local package remains a
 draft; a compiler release does not accept its terms.
@@ -134,10 +134,10 @@ is seven resolved refs and one `sgcore:ClaimCalibration` gap; a passed report
 does not close that gap. This complements the checked-in fixture smoke above,
 which does not invoke or identify a particular compiler.
 
-The release integration is currently exercised on macOS; Linux support is a
-separate follow-up and is not established by this smoke.
+CI runs the release integration smoke on macOS and Linux; results are reported
+independently for each platform.
 
-For a local reproduction on macOS with the Swift toolchain, build `ontologyc`
+For a local reproduction with a supported Swift toolchain, build `ontologyc`
 from the pinned checkout and pass its binary and checkout explicitly:
 
 ```sh
@@ -163,7 +163,7 @@ authenticate the compiler or prove it came from the release. The executable and
 its environment must be trusted by the caller; this is not a sandbox.
 
 The raw source digest and compiler `sourceDigest` describe different inputs:
-the former hashes the exact file bytes, while the latter follows Ontology 0.1.0's
+the former hashes the exact file bytes, while the latter follows Ontology 0.1.1's
 UTF-8 text decoding, including removal of a leading BOM. Both are recorded so a
 valid BOM-bearing file is not mistaken for a mismatch.
 
