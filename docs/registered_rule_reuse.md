@@ -49,9 +49,14 @@ presence alone does not establish readiness.
 ## Merge snapshot selection
 
 CI checks out `${{ github.sha }}`, the GitHub PR merge commit, and passes it
-through `tools/check_rule_reuse_merge.sh`. Its first parent must equal the event
-base SHA and its second parent must equal the event PR head SHA. Mismatches fail
-before analysis. The analyzer compares base to this **merge result**; it does not
+through `tools/check_rule_reuse_merge.sh`. It requires exactly two parents and
+the event PR head as second parent. The first parent must be the event base, or
+a two-parent virtual snapshot whose second parent is the event base, whose tree
+equals the base tree, and whose PR head descends from that base. Other shapes
+fail before analysis. The job checks the live GitHub PR base, head and merge SHA
+against the event both before and after analysis; failure or unavailability fails
+the job. This is a point-in-time check, not a lock against later PR changes.
+The analyzer compares base to this **merge result**; it does not
 interpret changes already made on the base as deletions by an older PR branch.
 A genuine catalog deletion in the merge result still fails.
 
@@ -84,6 +89,7 @@ adapter does not prove runtime identity or resolve module aliases/re-exports.
 
 The run-local `registered-rule-reuse` artifact contains `report.json`, selected
 catalog, head catalog, `head-catalog-validation.json`, `comparison.json` in CI,
+`freshness-before.json`, `freshness-after.json` when both live checks succeed,
 `mode.txt`, `summary.md` when successful and
 `history.sqlite`. The SQLite `rule_reuse_snapshots` table is separate from S/U
 history; each snapshot records revisions, catalog digest and analyzer version.

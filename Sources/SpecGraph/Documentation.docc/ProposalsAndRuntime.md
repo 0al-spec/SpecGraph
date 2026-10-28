@@ -4,20 +4,23 @@ SpecGraph treats proposal records and runtime evidence as connected surfaces.
 
 ## Stacked PR comparison freshness
 
-After changing a PR base, verify `refs/pull/<PR>/merge`: `merge^1` must match
-the current base SHA and `merge^2` the current head SHA. GitHub can retain a
+After changing a PR base, verify `refs/pull/<PR>/merge`: `merge^2` must match
+the current head SHA; `merge^1` must be the current base or a verified
+base-equivalent virtual merge as described below. GitHub can retain a
 stale snapshot in a base-edit event; rerunning that event keeps its pinned
 inputs. Refresh the task branch from `origin/main`, push a new head and verify
 the new comparison/checks. A normal merge preserves branch history. Keep the
-exact-parent guard in `tools/check_rule_reuse_merge.sh`; old successful checks
+snapshot guard in `tools/check_rule_reuse_merge.sh`; old successful checks
 do not establish readiness for a changed comparison. See repository
 `CONTRIBUTING.md`, Branches and PRs.
 
 Native GitHub stacks can use a virtual lower-PR merge snapshot as an upper
-PR's first merge parent. The current rule-reuse gate rejects this shape. Merge
-a ready bottom layer first, synchronize the remaining stack, refresh bound
-decision-review records for the new base, and verify fresh direct-base merge
-parents and CI. Keep the guard; rerunning the rejected event is insufficient.
+PR's first merge parent. The rule-reuse gate requires that virtual merge to have
+exactly two parents, the declared base as second parent, and a tree identical to
+the base. The PR head must descend from the base. Live GitHub base, head and
+merge identities must match the event before and after analysis. Rerunning a
+stale event cannot refresh its pinned identities. Refresh bound decision-review
+records and check CI after the stack's base changes.
 
 ## Intent decision review
 
@@ -611,8 +614,10 @@ match. Branch-protection requirements are separate GitHub settings. See
 
 
 The reuse job analyzes the GitHub **merge result**, not the raw PR head, after
-`tools/check_rule_reuse_merge.sh` verifies its two parents against the event base
-and PR head. `comparison.json` retains all three identities; the report head is
+`tools/check_rule_reuse_merge.sh` verifies its parents against the event base
+and PR head, accepting only the checked virtual-base shape described above.
+Freshness is also checked against live PR identities. `comparison.json` retains
+all three identities; the report head is
 the merge revision. Independently validating the future head catalog with a
 head-to-head comparison prevents malformed catalogs from poisoning subsequent
 PRs. This validation retains `head-catalog-validation.json` and does not weaken
