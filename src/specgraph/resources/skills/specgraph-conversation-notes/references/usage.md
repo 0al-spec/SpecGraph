@@ -1,12 +1,14 @@
 # Installed SpecDraft CLI
 
 Supported hosts for this slice: macOS and Linux, Python 3.10 or newer. Native
-Windows support is not claimed: NotesStore uses Unix file locks. Docker and
-full supervisor distribution are later slices.
+Windows support is not claimed: NotesStore uses Unix file locks. Docker is a
+separate future distribution.
 
 Run the tool from the consumer project. Its code, static preview assets and
 this skill come from the installed runtime; its data comes from the explicitly
 selected workspace.
+
+For the standalone SpecDraft installation:
 
 ```sh
 specgraph --version
@@ -15,6 +17,26 @@ specgraph notes update_notes --workspace conversation_memory/sketches/design --i
 specgraph notes read_notes --workspace conversation_memory/sketches/design --history-limit 10
 specgraph preview --workspace conversation_memory/sketches/design --port 0
 ```
+
+For an installed native SpecGraph runtime, use its launcher and select an
+existing product workspace separately from the sketch directory. The launcher
+may be addressed by its absolute path; it need not be on `PATH`:
+
+```sh
+SPECGRAPH_RUNTIME=/absolute/path/to/specgraph-runtime
+PRODUCT_WORKSPACE=/absolute/path/to/product-workspace
+SKETCH="$PRODUCT_WORKSPACE/conversation_memory/sketches/design"
+"$SPECGRAPH_RUNTIME" --workspace "$PRODUCT_WORKSPACE" draft -- --version
+"$SPECGRAPH_RUNTIME" --workspace "$PRODUCT_WORKSPACE" draft -- notes read_notes --workspace "$SKETCH"
+"$SPECGRAPH_RUNTIME" --workspace "$PRODUCT_WORKSPACE" draft -- notes update_notes --workspace "$SKETCH" --input request.json
+"$SPECGRAPH_RUNTIME" --workspace "$PRODUCT_WORKSPACE" draft -- notes read_notes --workspace "$SKETCH" --history-limit 10
+"$SPECGRAPH_RUNTIME" --workspace "$PRODUCT_WORKSPACE" draft -- preview --workspace "$SKETCH" --port 0
+```
+
+The product workspace must already exist. `--workspace` before `draft` selects
+the launcher working root; the `notes` or `preview` option selects the notebook.
+The two can be different paths. Both routes use the same notes protocol; the
+launcher does not register tools or install an agent skill automatically.
 
 `update_notes` also accepts the request as JSON on stdin. Read/update return
 JSON on stdout; invalid input or stale revision returns exit code 2 and an
@@ -105,6 +127,13 @@ histories and resolve explicitly; Git text merge is not a SpecDraft merge.
 
 ```sh
 specgraph skill install --destination .codex/skills/specgraph-conversation-notes
+```
+
+Alternatively, with the native launcher and `PRODUCT_WORKSPACE` set as above:
+
+```sh
+"$SPECGRAPH_RUNTIME" --workspace "$PRODUCT_WORKSPACE" draft -- skill install \
+  --destination "$PRODUCT_WORKSPACE/.codex/skills/specgraph-conversation-notes"
 ```
 
 The destination contains `SKILL.md` plus this local reference, with no links to

@@ -25,6 +25,11 @@ The bundled skill contains a self-contained `references/usage.md` with a
 complete JSON example. Existing differing skill files are refused, matching
 files are idempotent; agent settings are not edited automatically.
 
+The same skill also documents the native `specgraph-runtime --workspace ...
+draft -- ...` route, including version, notes, preview and skill installation.
+The outer workspace selects the launcher working root; notes and preview receive
+the sketch path separately. The installed launcher need not be on `PATH`.
+
 The installed runtime, static resources and exported skill come from one version.
 Consumer notebooks and their revision history live in the explicitly chosen
 project workspace. The bundled skill describes which files preserve a sketch's
