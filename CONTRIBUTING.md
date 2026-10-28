@@ -338,6 +338,14 @@ Useful patterns:
 
 ## Evidence and Backlog
 
+For consumer SpecDraft notebooks, use the bundled skill's Git storage contract:
+preserve `CURRENT` and every published ancestor snapshot as a unit when tracking
+the sketch. Draft status alone is not a reason to ignore it. Inspect historical
+quotations and the intended destination before sharing; respect existing local
+storage choices. Locks, incomplete writes and orphan revisions are not part of
+the published chain. The SpecGraph checkout's own existing local sketch remains
+ignored unless deliberately curated.
+
 When investigating an external Product Workspace, distinguish the engine root
 from its data root. `ROOT = Path.cwd()` selects existing `specs/nodes`, runs and
 state; `TOOLS_DIR` selects installed core policies. Keep the standard layout

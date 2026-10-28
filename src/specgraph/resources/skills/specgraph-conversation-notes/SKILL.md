@@ -10,9 +10,10 @@ selected runtime. Do not locate or depend on a SpecGraph developer checkout.
 Read the self-contained [CLI and JSON contract](references/usage.md).
 
 Choose one persistent sketch directory inside the consumer project, for example
-`conversation_memory/sketches/design`. Keep that path across sessions and add
-the sketch directory to the project's Git ignore rules before storing private
-conversation material. All commands require the workspace explicitly.
+`conversation_memory/sketches/design`. Keep that path across sessions. All
+commands require the workspace explicitly. Follow the Git storage contract in
+[the usage reference](references/usage.md); do not invent
+blanket exclusions or treat draft status as a reason to exclude a sketch.
 
 Capture the person's exact source wording separately from your short label and
 interpretation. Reuse existing IDs when a topic recurs. The person speaks and

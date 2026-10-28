@@ -1280,7 +1280,11 @@
     "fix_summary": "Extracted POLICY_ATOM_BINDINGS_SPEC and ATOM_ROLES_SPEC into individual source modules with immutable typed facts; the adapter only prepares facts and serializes outcomes.",
     "root_cause_class": "process_rule_gap",
     "prevention_action": "regression_test_added",
-    "verification": ["targeted_test", "lint_or_format_check", "manual_contract_review"],
+    "verification": [
+      "targeted_test",
+      "lint_or_format_check",
+      "manual_contract_review"
+    ],
     "residual_risk": "This is a structural resolution diagnostic; policy extraction does not establish execution, fulfillment or canonical readiness.",
     "recorded_at": "2026-10-21T22:36:00Z",
     "prevention_path": "tests/test_publication_trace_links.py::test_mapping_policies_drive_adapter_findings requires each named policy to drive adapter findings; focused policy tables and frozen-context tests preserve existing behavior."
@@ -1294,7 +1298,10 @@
     "fix_summary": "Compare zero-based sibling positions in both snapshots and report changed positions for the moved note and shifted neighbors; preserve source attribution and avoid descendant reorder noise.",
     "root_cause_class": "artifact_contract_validation_gap",
     "prevention_action": "regression_test_added",
-    "verification": ["targeted_test", "lint_or_format_check"],
+    "verification": [
+      "targeted_test",
+      "lint_or_format_check"
+    ],
     "residual_risk": "The diff describes stored structural changes; it does not establish semantic agreement or canonical approval.",
     "recorded_at": "2026-10-24T07:54:00Z",
     "prevention_path": "tests/test_conversation_notes.py::test_sibling_reorder_diff_matches_persisted_order exercises CLI writes and fresh-process reads for root/nested moves with repeated/new citations. All four cases failed before the fix; all 30 conversation-notes tests passed after it. The JSON contract and DocC define sibling_index semantics."
@@ -1308,7 +1315,10 @@
     "fix_summary": "Normalize edited nodes to stored preorder before comparing the notebook with the current snapshot. Reject unchanged edits before creating a revision while preserving new source quotations as real changes.",
     "root_cause_class": "artifact_contract_validation_gap",
     "prevention_action": "regression_test_added",
-    "verification": ["targeted_test", "lint_or_format_check"],
+    "verification": [
+      "targeted_test",
+      "lint_or_format_check"
+    ],
     "residual_risk": "The source reference identifies the local review comment, not a GitHub review thread. Structural equality does not establish semantic approval.",
     "recorded_at": "2026-10-24T19:11:00Z",
     "prevention_path": "tests/test_conversation_notes.py::test_last_subtree_move_only_saves_new_attribution verifies root/nested no-op rejection without revision/history changes and preservation of new citations. Both no-op cases failed before the fix; all 34 conversation-notes tests passed after it."
@@ -1322,7 +1332,11 @@
     "fix_summary": "Scan declared proposal YAML automatically with scope-bound change digests and separate summaries. Introduce declarations in a documentation-only layer with individual contract_only dispositions; preserve the prohibition on using contract_only for production changes.",
     "root_cause_class": "scope_isolation_gap",
     "prevention_action": "regression_test_added",
-    "verification": ["targeted_test", "lint_or_format_check", "manual_contract_review"],
+    "verification": [
+      "targeted_test",
+      "lint_or_format_check",
+      "manual_contract_review"
+    ],
     "residual_risk": "Coverage remains structural; unannotated Markdown and semantic correctness require review. Declarations do not attest approval or implementation.",
     "recorded_at": "2026-10-24T20:56:00Z",
     "prevention_path": "tests/test_intent_decision_review.py covers eight proposal dispositions, incomplete coverage, metadata changes, deletion, cross-scope identity, invalid inputs and rejection of contract_only with production changes."
@@ -1360,5 +1374,22 @@
     "residual_risk": "Remote URL and scp forms are checked as preserved arguments; this review smoke uses an actual local repository rather than a live remote.",
     "recorded_at": "2026-10-27T19:59:39.779207+00:00",
     "prevention_path": "tests/test_native_runtime.py checks relative paths and remote forms; tests/native_runtime_smoke.py installs using --source . from the caller checkout and exercises two workspaces."
+  },
+  {
+    "feedback_id": "pr-815-history-completeness",
+    "source_pr": 815,
+    "source_thread_url": "https://github.com/0al-spec/SpecGraph/pull/815#discussion_r4397480844",
+    "reviewer": "SoundBlaster",
+    "review_comment_summary": "A bounded 100-entry read can succeed when older history is missing.",
+    "fix_summary": "Provide verify_history to validate every published snapshot and its parent chain through the root, and clarify that bounded reads do not prove completeness.",
+    "root_cause_class": "test_coverage_gap",
+    "prevention_action": "regression_test_added",
+    "verification": [
+      "targeted_test",
+      "lint_or_format_check"
+    ],
+    "residual_risk": "Structural verification does not authenticate source quotations or approve publication.",
+    "recorded_at": "2026-10-28T06:28:10.800128+00:00",
+    "prevention_path": "tests/test_specdraft_distribution.py verifies 102 snapshots and detects an absent ancestor beyond the 100-entry display limit."
   }
 ]

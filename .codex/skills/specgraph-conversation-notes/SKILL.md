@@ -14,9 +14,13 @@ save a note.
 Locate the SpecGraph checkout containing `tools/conversation_notes_cli.py` and
 use its Python environment. Select one persistent sketch directory and retain
 its path across turns. Default inside that checkout:
-`conversation_memory/sketches/<conversation-name>/`. These local drafts are
-Git-ignored; tell the user where they are stored. For the JSON request contract,
-read [Conversation Notes](../../../docs/conversation_notes.md).
+`conversation_memory/sketches/<conversation-name>/`. This checkout explicitly
+ignores that path; tell the user it is not backed up in Git. For consumer
+projects, follow the Git storage contract in the packaged
+[usage reference](../../../src/specgraph/resources/skills/specgraph-conversation-notes/references/usage.md):
+keep the current pointer and complete ancestor snapshots together; do not infer
+an ignore rule from draft status. Respect existing storage choices. For the JSON
+request contract, read [Conversation Notes](../../../docs/conversation_notes.md).
 
 The two tools are CLI commands returning JSON:
 

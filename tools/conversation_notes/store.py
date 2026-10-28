@@ -140,3 +140,31 @@ class NotesStore:
             )
             revision = metadata["parent_revision"]
         return entries
+
+    def verify_history(self) -> dict:
+        """Validate every published snapshot through the root, without a display limit."""
+        current = self.current_revision()
+        if current is None:
+            raise NotesError("No published sketch revision to verify")
+        revision = current
+        seen = set()
+        while revision is not None:
+            if not isinstance(revision, str) or not REVISION.fullmatch(revision):
+                raise NotesError("Invalid parent revision")
+            if revision in seen:
+                raise NotesError("Snapshot history cycle")
+            seen.add(revision)
+            _, metadata = self.snapshot(revision)
+            if "parent_revision" not in metadata:
+                raise NotesError(f"Missing parent_revision in snapshot {revision}")
+            revision = metadata["parent_revision"]
+        if self.current_revision() != current:
+            raise NotesError("Current revision changed during history verification; retry")
+        return {
+            "artifact_kind": "conversation_notes_history_verification",
+            "schema_version": 1,
+            "revision": current,
+            "revision_count": len(seen),
+            "status": "complete",
+            "canonical": False,
+        }
