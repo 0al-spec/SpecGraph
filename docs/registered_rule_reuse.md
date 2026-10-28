@@ -93,6 +93,9 @@ catalog, head catalog, `head-catalog-validation.json`, `comparison.json` in CI,
 `mode.txt`, `summary.md` when successful and
 `history.sqlite`. The SQLite `rule_reuse_snapshots` table is separate from S/U
 history; each snapshot records revisions, catalog digest and analyzer version.
+If the post-analysis freshness check fails, earlier analysis files can still be
+uploaded: they are not successful evidence for the current PR comparison. Use
+the job outcome and both freshness receipts, not report presence alone.
 Artifacts are retained per Actions retention, not a permanent cross-run database.
 Download retained SQLite files for local history; long-term retention is a
 separate operational choice.

@@ -621,7 +621,9 @@ all three identities; the report head is
 the merge revision. Independently validating the future head catalog with a
 head-to-head comparison prevents malformed catalogs from poisoning subsequent
 PRs. This validation retains `head-catalog-validation.json` and does not weaken
-the authoritative base-catalog comparison. See `docs/registered_rule_reuse.md`.
+the authoritative base-catalog comparison. If the post-analysis freshness check
+fails, earlier artifacts may still be uploaded; their presence is not successful
+evidence for the current comparison. See `docs/registered_rule_reuse.md`.
 
 
 The pinned analyzer also runs `tools/rule_reuse_ci_smoke.py` with seven isolated
