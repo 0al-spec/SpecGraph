@@ -118,6 +118,36 @@ The smoke passes only when:
 - the authority boundary forbids report authority, automatic import-lock
   updates, and automatic canonical node updates.
 
+### Ontology 0.1.0 release integration
+
+The release integration smoke uses the Ontology tooling release `0.1.0`, Git
+commit `d07cf5a8cd829b78027dda6d414ab89f4cb4f4e0`. This is the version of the
+compiler source, separate from the `0.1.0` version of SpecGraph's own
+`org.0al.specgraph.core` ontology package. The project-local package remains a
+draft; a compiler release does not accept its terms.
+
+CI builds `ontologyc` from the pinned source before running the integration
+smoke. The smoke invokes the supplied binary, checks the source checkout's Git
+HEAD against that commit, and runs the existing SpecGraph adapter validator on
+freshly produced output. On the checked-in initial fixture the expected result
+is seven resolved refs and one `sgcore:ClaimCalibration` gap; a passed report
+does not close that gap. This complements the checked-in fixture smoke above,
+which does not invoke or identify a particular compiler.
+
+For a local reproduction on macOS with the Swift toolchain, build `ontologyc`
+from the pinned checkout and pass its binary and checkout explicitly:
+
+```sh
+python tools/ontology_release_smoke.py --ontologyc /absolute/path/to/ontologyc \
+  --ontology-source /absolute/path/to/Ontology --work-dir /absolute/path/to/output
+```
+
+The native SpecGraph runtime does not install `ontologyc`; callers supply the
+compiler separately. Local callers are responsible for using a binary built from
+the checked source: checking the checkout HEAD alone cannot prove the binary's
+provenance. Generated reports are review evidence only, with no change to
+permissions, canonical package state, or publication.
+
 ## Failure Modes
 
 The policy names these report-level failure modes:

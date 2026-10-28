@@ -49,6 +49,30 @@ ref, and digest. The digest must match the normalized IR `sourceDigest`.
 The smoke also verifies that output refs resolve under the fixture directory and
 that report counts match the resolved concept refs and ontology gaps.
 
+### Ontology 0.1.0 release integration
+
+CI builds `ontologyc` from Ontology tooling release `0.1.0`, commit
+`d07cf5a8cd829b78027dda6d414ab89f4cb4f4e0`, before invoking the release
+integration smoke. The smoke invokes the supplied binary and checks the source
+checkout HEAD. This compiler release is distinct from SpecGraph's project-local
+`org.0al.specgraph.core@0.1.0` package, which remains a draft. The freshly
+produced output is checked by the SpecGraph adapter validator. On the initial
+fixture it resolves seven refs and retains one `sgcore:ClaimCalibration` gap;
+a passed report does not close that gap.
+
+For local reproduction on macOS with the Swift toolchain, build `ontologyc`
+from the pinned checkout and select its binary and checkout explicitly:
+
+```sh
+python tools/ontology_release_smoke.py --ontologyc /absolute/path/to/ontologyc \
+  --ontology-source /absolute/path/to/Ontology --work-dir /absolute/path/to/output
+```
+
+The SpecGraph native runtime does not install `ontologyc`. Local callers must
+ensure the binary was built from the checked source: checking the source HEAD
+alone does not establish binary provenance. The integration leaves canonical
+permissions, ontology package status, and publication unchanged.
+
 ## Semantic Review Surfaces
 
 The same ontology import command consumes:

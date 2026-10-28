@@ -1,0 +1,70 @@
+name: Ontology release compatibility
+
+on:
+  workflow_dispatch:
+  pull_request:
+  push:
+    branches: [main, master]
+
+permissions:
+  contents: read
+
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+  ONTOLOGY_REVISION: d07cf5a8cd829b78027dda6d414ab89f4cb4f4e0
+
+jobs:
+  compiler-compatibility:
+    runs-on: macos-15
+    steps:
+      - name: Checkout SpecGraph
+        uses: actions/checkout@v6
+        with:
+          persist-credentials: false
+
+      - name: Checkout pinned Ontology release source
+        uses: actions/checkout@v6
+        with:
+          repository: 0al-spec/Ontology
+          ref: d07cf5a8cd829b78027dda6d414ab89f4cb4f4e0
+          path: .ontology-release-source
+          persist-credentials: false
+
+      - name: Verify source and Swift toolchain
+        run: |
+          set -euo pipefail
+          test "$(git -C .ontology-release-source rev-parse HEAD)" = "$ONTOLOGY_REVISION"
+          swift --version
+
+      - name: Set up Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: "3.10"
+
+      - name: Install SpecGraph dependencies
+        run: python -m pip install -e .
+
+      - name: Build ontologyc from pinned source
+        run: |
+          set -euo pipefail
+          swift build --package-path "$GITHUB_WORKSPACE/.ontology-release-source" \
+            --scratch-path "$RUNNER_TEMP/ontology-build" --force-resolved-versions \
+            --configuration release --product ontologyc
+
+      - name: Verify release compiler against the project-local fixture
+        run: |
+          set -euo pipefail
+          compiler_dir="$(swift build --package-path "$GITHUB_WORKSPACE/.ontology-release-source" \
+            --scratch-path "$RUNNER_TEMP/ontology-build" --force-resolved-versions \
+            --configuration release --show-bin-path)"
+          python tools/ontology_release_smoke.py \
+            --ontologyc "$compiler_dir/ontologyc" \
+            --ontology-source "$GITHUB_WORKSPACE/.ontology-release-source" \
+            --work-dir "$RUNNER_TEMP/ontology-release-smoke"
+
+      - name: Retain compatibility receipt
+        uses: actions/upload-artifact@v4
+        with:
+          name: ontology-release-compatibility
+          path: ${{ runner.temp }}/ontology-release-smoke/receipt.json
+          if-no-files-found: error
