@@ -1391,5 +1391,22 @@
     "residual_risk": "Structural verification does not authenticate source quotations or approve publication.",
     "recorded_at": "2026-10-28T06:28:10.800128+00:00",
     "prevention_path": "tests/test_specdraft_distribution.py verifies 102 snapshots and detects an absent ancestor beyond the 100-entry display limit."
+  },
+  {
+    "feedback_id": "pr-817-native-request-path",
+    "source_pr": 817,
+    "source_thread_url": "https://github.com/0al-spec/SpecGraph/pull/817#discussion_r4397481014",
+    "reviewer": "SoundBlaster",
+    "review_comment_summary": "Relative request.json resolves in the launcher workspace rather than the caller directory.",
+    "fix_summary": "Use an absolute request path and document the launcher working directory; exercise the example with a request outside the workspace.",
+    "root_cause_class": "test_coverage_gap",
+    "prevention_action": "regression_test_added",
+    "verification": [
+      "targeted_test",
+      "lint_or_format_check"
+    ],
+    "residual_risk": "The smoke uses synthetic request data and does not cover every possible user path or real agent behavior.",
+    "recorded_at": "2026-10-28T06:28:54.818624+00:00",
+    "prevention_path": "tests/native_runtime_smoke.py runs notes update through the installed launcher with an absolute request in the product directory outside the selected workspace."
   }
 ]

@@ -5,12 +5,15 @@ description: Keep short, source-attributed SpecDraft notes during a human-agent 
 
 # Conversational notes
 
-Use the installed `specgraph` command. Run `specgraph --version` to identify the
-selected runtime. Do not locate or depend on a SpecGraph developer checkout.
-Read the self-contained [CLI and JSON contract](references/usage.md).
+Use the installed `specgraph` command, or the native runtime's `draft` route
+when using `specgraph-runtime`. Both routes and version checks are shown in the
+self-contained [CLI and JSON contract](references/usage.md). Do not locate or
+depend on a SpecGraph developer checkout.
 
-Choose one persistent sketch directory inside the consumer project, for example
-`conversation_memory/sketches/design`. Keep that path across sessions. All
+Choose one persistent sketch directory and keep its path across sessions. The
+consumer project may use `conversation_memory/sketches/design`; if its root is
+also a product workspace that needs repeated initialization, choose a directory
+outside that workspace, as explained in the reference. All
 commands require the workspace explicitly. Follow the Git storage contract in
 [the usage reference](references/usage.md); do not invent
 blanket exclusions or treat draft status as a reason to exclude a sketch.
@@ -20,7 +23,8 @@ interpretation. Reuse existing IDs when a topic recurs. The person speaks and
 reviews; the agent calls the tools. Saving a note requires no ontology lookup,
 requirement fields or model run.
 
-- Start or resume with `specgraph notes read_notes --workspace <sketch>`.
+- Start or resume with `notes read_notes --workspace <sketch>` through the
+  selected installed command route.
 - Use the returned revision as `expected_revision` in `update_notes`.
 - Save small batches after meaningful statements; name a real message reference
   when available, otherwise identify the excerpt locally without inventing a
@@ -34,7 +38,7 @@ requirement fields or model run.
 - Read a bounded branch with `--node-id`; `omitted_nodes` describes exclusion
   and links may point outside the selected branch.
 
-Use `specgraph preview --workspace <sketch>` for the current saved mind map.
+Use `preview --workspace <sketch>` through that route for the saved mind map.
 The server is read-only, loopback-only and prints its actual URL. It does not
 edit notes, select history, approve requirements or publish canonical records.
 
