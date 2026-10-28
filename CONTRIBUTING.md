@@ -202,7 +202,12 @@ running a broader validation command.
 - PR descriptions should include motivation, goal, scope, validation commands, and risks.
 
 After retargeting a stacked PR, verify the actual `refs/pull/<PR>/merge` snapshot:
-`merge^1` must equal the current base SHA and `merge^2` the current PR-head SHA.
+the merge must have exactly two parents and `merge^2` must equal the current
+PR-head SHA. A direct `merge^1` must equal the current base SHA. A virtual first
+parent is accepted only if it has exactly two parents, its second parent is the
+base SHA, its tree equals the base tree, and the base is an ancestor of the PR
+head. The job also compares the live GitHub base, head and merge identities with
+the event before and after analysis; unavailable or mismatched identities fail.
 A base-edit event can retain a stale merge snapshot from the previous base;
 rerunning that historical workflow does not replace its pinned event inputs.
 Refresh the task branch from current `origin/main` (a normal merge preserves
@@ -210,12 +215,12 @@ history), push the new head, and verify the fresh snapshot and checks. Preserve
 the exact-parent guard in `tools/check_rule_reuse_merge.sh`; do not weaken it or
 report the retargeted PR as ready using checks from the old comparison.
 
-Native GitHub stacks can give an upper PR a virtual lower-PR merge snapshot
-as its first merge parent instead of the declared base-branch head. The current
-rule-reuse gate rejects that shape. Merge a ready bottom layer first, synchronize
-the remaining stack, refresh any source-bound decision-review record for its
-new base, and verify fresh direct-base merge parents and CI before continuing.
-Do not bypass the guard or rerun an event pinned to the rejected snapshot.
+Native GitHub stacks can give an upper PR a virtual lower-PR merge snapshot as
+its first merge parent. The gate accepts the verified base-equivalent shape
+above, not arbitrary virtual merges. Rerunning an event pinned to a rejected
+snapshot cannot refresh its identities. After merging a lower layer, synchronize
+the remaining stack and refresh any source-bound decision-review record for its
+new base; verify fresh snapshots and CI before continuing.
 
 Useful skills and commands:
 

@@ -1241,7 +1241,7 @@
     },
     {
       "id": "stacked-pr-comparison-freshness",
-      "description": "Retargeted PR readiness requires a fresh exact base/head merge snapshot.",
+      "description": "PR readiness requires fresh base/head identities and an exact or verified virtual-base merge snapshot.",
       "docs": ["CONTRIBUTING.md"],
       "docc": ["Sources/SpecGraph/Documentation.docc/ProposalsAndRuntime.md"],
       "required_terms": [

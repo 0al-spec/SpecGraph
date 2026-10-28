@@ -252,6 +252,129 @@ def test_merge_from_other_pr_is_rejected_before_analysis(adapter):
     assert not (output / "arguments.txt").exists()
 
 
+def synthetic_merge(root, tree, *parents):
+    args = [
+        "-c",
+        "user.name=Fixture",
+        "-c",
+        "user.email=fixture@example.invalid",
+        "commit-tree",
+        tree,
+    ]
+    for parent in parents:
+        args.extend(("-p", parent))
+    return git(root, *args, "-m", "synthetic merge")
+
+
+@pytest.mark.parametrize(
+    "case", ["valid", "wrong_base_parent", "changed_base_tree", "third_parent", "unrelated_head"]
+)
+def test_virtual_base_requires_exact_provenance_and_tree(adapter, case):
+    root, catalog, output, run = adapter
+    initial = commit(root)
+    catalog.write_text("reviewed catalog\n")
+    base = commit(root)
+    (root / "tools/change.py").write_text("value = 1\n")
+    head = commit(root)
+    base_tree = git(root, "rev-parse", f"{base}^{{tree}}")
+    head_tree = git(root, "rev-parse", f"{head}^{{tree}}")
+    if case == "unrelated_head":
+        head = initial
+    virtual = synthetic_merge(
+        root,
+        head_tree if case == "changed_base_tree" else base_tree,
+        initial,
+        initial if case == "wrong_base_parent" else base,
+        *([head] if case == "third_parent" else []),
+    )
+    merged = synthetic_merge(root, head_tree, virtual, head)
+    result = run(base, merged, pr_head=head)
+    if case == "valid":
+        assert result.returncode == 0, result.stderr
+        assert (output / "catalog.toml").read_text() == "reviewed catalog\n"
+        assert (output / "calls.txt").read_text().splitlines()[-1].endswith(f"{base} {merged}")
+    else:
+        assert result.returncode != 0
+        assert not (output / "arguments.txt").exists()
+
+
+def test_virtual_base_rejects_stale_event_and_wrong_pr_head(adapter):
+    root, catalog, output, run = adapter
+    initial = commit(root)
+    catalog.write_text("base\n")
+    base = commit(root)
+    (root / "tools/change.py").write_text("pass\n")
+    head = commit(root)
+    virtual = synthetic_merge(root, git(root, "rev-parse", f"{base}^{{tree}}"), initial, base)
+    merged = synthetic_merge(root, git(root, "rev-parse", f"{head}^{{tree}}"), virtual, head)
+    assert run(initial, merged, pr_head=head).returncode != 0
+    assert run(base, merged, pr_head=initial).returncode != 0
+    assert not (output / "arguments.txt").exists()
+
+
+def test_freshness_requires_live_open_pr_with_exact_base_head_and_merge():
+    import sys
+
+    sys.path.insert(0, str(ROOT / "tools"))
+    from rule_reuse_pr_freshness import verify_pull_request
+
+    payload = {
+        "state": "open",
+        "base": {"sha": "base"},
+        "head": {"sha": "head"},
+        "merge_commit_sha": "merge",
+    }
+    verify_pull_request(payload, "base", "head", "merge")
+    for modified in (
+        {**payload, "state": "closed"},
+        {**payload, "base": {"sha": "stale"}},
+        {**payload, "head": {"sha": "stale"}},
+        {**payload, "merge_commit_sha": "stale"},
+        {**payload, "merge_commit_sha": None},
+        {**payload, "base": None},
+    ):
+        with pytest.raises(ValueError):
+            verify_pull_request(modified, "base", "head", "merge")
+
+
+def test_freshness_cli_fails_closed_when_github_is_unavailable(tmp_path, monkeypatch, capsys):
+    import sys
+    from urllib.error import URLError
+
+    sys.path.insert(0, str(ROOT / "tools"))
+    import rule_reuse_pr_freshness as freshness
+
+    monkeypatch.setenv("GITHUB_REPOSITORY", "owner/repository")
+    monkeypatch.setenv("RULE_PR_NUMBER", "123")
+    monkeypatch.setenv("GH_TOKEN", "fixture-token")
+    monkeypatch.setenv("GITHUB_API_URL", "https://api.example.invalid")
+    receipt = tmp_path / "freshness.json"
+    monkeypatch.setattr(
+        sys,
+        "argv",
+        [
+            "freshness",
+            "--base",
+            "base",
+            "--head",
+            "head",
+            "--merge",
+            "merge",
+            "--output",
+            str(receipt),
+        ],
+    )
+
+    def unavailable(request, timeout):
+        assert request.full_url == "https://api.example.invalid/repos/owner/repository/pulls/123"
+        raise URLError("unavailable")
+
+    monkeypatch.setattr(freshness, "urlopen", unavailable)
+    assert freshness.main() == 1
+    assert "unavailable" in capsys.readouterr().err
+    assert not receipt.exists()
+
+
 def test_workflow_selects_merge_sha_and_preserves_pr_head_provenance():
     import yaml
 
@@ -261,4 +384,12 @@ def test_workflow_selects_merge_sha_and_preserves_pr_head_provenance():
     assert job["steps"][0]["with"]["ref"] == "${{ github.sha }}"
     assert job["env"]["RULE_MERGE"] == "${{ github.sha }}"
     assert job["env"]["RULE_PR_HEAD"] == "${{ github.event.pull_request.head.sha }}"
+    assert job["permissions"]["pull-requests"] == "read"
+    steps = job["steps"]
+    gate = next(
+        i for i, step in enumerate(steps) if "check_rule_reuse_merge.sh" in step.get("run", "")
+    )
+    assert "rule_reuse_pr_freshness.py" in steps[gate - 1]["run"]
+    assert "rule_reuse_pr_freshness.py" in steps[gate + 1]["run"]
+    assert "GH_TOKEN" not in steps[gate].get("env", {})
     assert any("check_rule_reuse_merge.sh" in step.get("run", "") for step in job["steps"])
