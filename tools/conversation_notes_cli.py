@@ -12,7 +12,7 @@ from conversation_notes.model import NotesError
 
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("tool", choices=("read_notes", "update_notes"))
+    parser.add_argument("tool", choices=("read_notes", "update_notes", "verify_history"))
     parser.add_argument("--workspace", type=Path, required=True, help="Dedicated sketch directory")
     parser.add_argument("--input", type=Path, help="JSON request; update_notes defaults to stdin")
     parser.add_argument("--node-id", help="Read only this node and its descendants")
@@ -25,6 +25,12 @@ def main(argv: list[str] | None = None) -> int:
             result = read_notes(
                 args.workspace, node_id=args.node_id, history_limit=args.history_limit
             )
+        elif args.tool == "verify_history":
+            if args.input or args.node_id or args.history_limit:
+                raise NotesError("verify_history accepts only --workspace")
+            from conversation_notes.store import NotesStore
+
+            result = NotesStore(args.workspace).verify_history()
         else:
             if args.node_id or args.history_limit:
                 raise NotesError("--node-id and --history-limit are only used by read_notes")

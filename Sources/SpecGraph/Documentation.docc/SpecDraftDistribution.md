@@ -34,6 +34,10 @@ and inspect all historical source quotations before sharing a sketch. Ignored
 data needs an independent backup. Consumer notebooks are not installed data and
 do not follow the SpecGraph developer checkout.
 Notes remain pre-canonical and the preview remains read-only on loopback.
+`specgraph notes verify_history --workspace <sketch>` validates every snapshot
+in the published parent chain through the root. The bounded `read_notes`
+history display is limited to 100 and does not prove the complete chain. This
+checks snapshot structure and integrity, not quotation authenticity or approval.
 
 The 0.2.0 candidate is not published on PyPI. Installation resolves Python
 dependencies and the pinned SpycificationCore Git commit; this is not a fully

@@ -94,7 +94,10 @@ that destination. A correction adds a revision and does not erase earlier
 quotations. Never edit immutable snapshots to sanitize history; choose a safe
 destination or a separately reviewed export. Keep `CURRENT` and its complete
 ancestor chain together in the same commit and verify recovery in a fresh
-checkout with `read_notes --history-limit`. Avoid staging while a writer is
+checkout with `specgraph notes verify_history --workspace <sketch>`. This walks
+and checks every snapshot through `parent_revision: null`; failure returns a
+nonzero exit. `read_notes --history-limit` accepts at most 100 and is only a
+bounded display, not proof of complete history. Avoid staging while a writer is
 active. If concurrent Git branches advance `CURRENT` differently, preserve both
 histories and resolve explicitly; Git text merge is not a SpecDraft merge.
 

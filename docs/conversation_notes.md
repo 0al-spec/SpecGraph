@@ -140,6 +140,12 @@ pointer publication leaves the previous revision usable; orphan snapshots are
 excluded from history. A storage failure after publication may have committed
 the new revision: reread before retrying. No automatic cleanup deletes history.
 
+`specgraph notes verify_history --workspace <sketch>` validates every published
+snapshot and follows parent revisions to the root. It rejects missing, malformed
+or changed snapshots and cycles. `read_notes --history-limit` is limited to 100
+entries and does not prove completeness beyond the displayed history. This
+structural check does not authenticate quotations or approve their publication.
+
 Local sketches under `conversation_memory/sketches/` are Git-ignored and survive
 process/session restart; copying the directory preserves their history. They
 are not a backup and must be copied before removing the checkout. Existing

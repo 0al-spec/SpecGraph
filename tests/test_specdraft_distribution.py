@@ -53,6 +53,40 @@ def test_cli_rejects_stale_revision(tmp_path, monkeypatch, capsys):
     assert "Revision conflict" in json.loads(output.err)["error"]
 
 
+def test_verify_history_walks_past_display_limit_and_detects_missing_ancestor(
+    tmp_path, monkeypatch, capsys
+):
+    root = tmp_path / "sketch"
+    monkeypatch.setattr(sys, "stdin", io.StringIO(json.dumps(request())))
+    assert main(["notes", "update_notes", "--workspace", str(root)]) == 0
+    first = json.loads(capsys.readouterr().out)["revision"]
+    first_dir = root / "revisions" / first
+    hc = (first_dir / "notes.hc").read_bytes()
+    hcs = (first_dir / "notes.hcs").read_bytes()
+    metadata = json.loads((first_dir / "metadata.json").read_text())
+    parent = first
+    for index in range(1, 102):
+        revision = f"{index:032x}"
+        directory = root / "revisions" / revision
+        directory.mkdir()
+        (directory / "notes.hc").write_bytes(hc)
+        (directory / "notes.hcs").write_bytes(hcs)
+        (directory / "metadata.json").write_text(
+            json.dumps({**metadata, "revision": revision, "parent_revision": parent})
+        )
+        parent = revision
+    (root / "CURRENT").write_text(parent + "\n")
+    args = ["notes", "verify_history", "--workspace", str(root)]
+    assert main(args) == 0
+    result = json.loads(capsys.readouterr().out)
+    assert result["revision_count"] == 102 and result["status"] == "complete"
+    (first_dir / "notes.hc").unlink()
+    assert main(["notes", "read_notes", "--workspace", str(root), "--history-limit", "100"]) == 0
+    capsys.readouterr()
+    assert main(args) == 2
+    assert "Cannot read snapshot" in json.loads(capsys.readouterr().err)["error"]
+
+
 def test_skill_is_self_contained_and_idempotent(tmp_path):
     destination = tmp_path / "consumer" / ".codex" / "skills" / "specgraph-conversation-notes"
     installed = install_skill(destination)
