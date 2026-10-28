@@ -25,7 +25,7 @@ may be addressed by its absolute path; it need not be on `PATH`:
 ```sh
 SPECGRAPH_RUNTIME=/absolute/path/to/specgraph-runtime
 PRODUCT_WORKSPACE=/absolute/path/to/product-workspace
-SKETCH="$PRODUCT_WORKSPACE/conversation_memory/sketches/design"
+SKETCH=/absolute/path/to/sketch
 REQUEST_JSON=/absolute/path/to/request.json
 "$SPECGRAPH_RUNTIME" --workspace "$PRODUCT_WORKSPACE" draft -- --version
 "$SPECGRAPH_RUNTIME" --workspace "$PRODUCT_WORKSPACE" draft -- notes read_notes --workspace "$SKETCH"
@@ -36,8 +36,11 @@ REQUEST_JSON=/absolute/path/to/request.json
 
 The product workspace must already exist. `--workspace` before `draft` selects
 the launcher working root; the `notes` or `preview` option selects the notebook.
-The launcher resolves a relative `--input` against the product workspace, not
-the invoking shell's directory; use an absolute request path as shown. The two
+The initializer currently rejects unknown top-level entries such as a sketch
+directory inside its workspace. Choose the sketch path outside that root when
+the workspace needs repeat initialization. The launcher resolves a relative
+`--input` against the product workspace, not the invoking shell's directory;
+use an absolute request path as shown. The two
 workspaces can be different paths. Both routes use the same notes protocol; the
 launcher does not register tools or install an agent skill automatically.
 

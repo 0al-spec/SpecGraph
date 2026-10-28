@@ -10,8 +10,10 @@ when using `specgraph-runtime`. Both routes and version checks are shown in the
 self-contained [CLI and JSON contract](references/usage.md). Do not locate or
 depend on a SpecGraph developer checkout.
 
-Choose one persistent sketch directory inside the consumer project, for example
-`conversation_memory/sketches/design`. Keep that path across sessions. All
+Choose one persistent sketch directory and keep its path across sessions. The
+consumer project may use `conversation_memory/sketches/design`; if its root is
+also a product workspace that needs repeated initialization, choose a directory
+outside that workspace, as explained in the reference. All
 commands require the workspace explicitly. Follow the Git storage contract in
 [the usage reference](references/usage.md); do not invent
 blanket exclusions or treat draft status as a reason to exclude a sketch.

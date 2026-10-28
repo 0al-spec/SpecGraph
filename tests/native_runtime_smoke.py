@@ -149,7 +149,7 @@ def main() -> None:
                     "notes",
                     "read_notes",
                     "--workspace",
-                    str(workspace / "sketch"),
+                    str(project / "sketch"),
                 ]
             )
         )
@@ -179,7 +179,7 @@ def main() -> None:
                     "notes",
                     "update_notes",
                     "--workspace",
-                    str(workspace / "sketch"),
+                    str(project / "sketch"),
                     "--input",
                     str(request),
                 ],
@@ -198,7 +198,7 @@ def main() -> None:
                     "notes",
                     "verify_history",
                     "--workspace",
-                    str(workspace / "sketch"),
+                    str(project / "sketch"),
                 ],
                 cwd=project,
             )
