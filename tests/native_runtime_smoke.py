@@ -154,6 +154,56 @@ def main() -> None:
             )
         )
         assert notes["canonical"] is False and notes["revision"] is None
+        request = project / "request.json"
+        request.write_text(
+            json.dumps(
+                {
+                    "expected_revision": None,
+                    "source": {
+                        "ref": "synthetic:pilot",
+                        "quote": "Fixture note",
+                        "speaker": "human",
+                    },
+                    "changes": [{"op": "add", "id": "goal", "label": "Goal", "parent_id": None}],
+                }
+            )
+        )
+        saved = json.loads(
+            call(
+                [
+                    str(launcher),
+                    "--workspace",
+                    str(workspace),
+                    "draft",
+                    "--",
+                    "notes",
+                    "update_notes",
+                    "--workspace",
+                    str(workspace / "sketch"),
+                    "--input",
+                    str(request),
+                ],
+                cwd=project,
+            )
+        )
+        assert saved["revision"] and saved["canonical"] is False
+        history = json.loads(
+            call(
+                [
+                    str(launcher),
+                    "--workspace",
+                    str(workspace),
+                    "draft",
+                    "--",
+                    "notes",
+                    "verify_history",
+                    "--workspace",
+                    str(workspace / "sketch"),
+                ],
+                cwd=project,
+            )
+        )
+        assert history["revision"] == saved["revision"] and history["revision_count"] == 1
     assert (project_a / "knowledge/specgraph.project.yaml").read_text() != (
         project_b / "knowledge/specgraph.project.yaml"
     ).read_text()
@@ -241,6 +291,8 @@ raise SystemExit(supervisor.main(
             "product_advisor",
             "targeted_supervisor_dry_run",
             "specdraft_read",
+            "specdraft_absolute_request_outside_workspace",
+            "specdraft_full_history_verification",
             "repeat_init_after_git_worktree_refinement",
         ],
         "executor": "deterministic_fixture_not_a_real_agent",

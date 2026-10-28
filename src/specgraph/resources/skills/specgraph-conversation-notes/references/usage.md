@@ -26,16 +26,19 @@ may be addressed by its absolute path; it need not be on `PATH`:
 SPECGRAPH_RUNTIME=/absolute/path/to/specgraph-runtime
 PRODUCT_WORKSPACE=/absolute/path/to/product-workspace
 SKETCH="$PRODUCT_WORKSPACE/conversation_memory/sketches/design"
+REQUEST_JSON=/absolute/path/to/request.json
 "$SPECGRAPH_RUNTIME" --workspace "$PRODUCT_WORKSPACE" draft -- --version
 "$SPECGRAPH_RUNTIME" --workspace "$PRODUCT_WORKSPACE" draft -- notes read_notes --workspace "$SKETCH"
-"$SPECGRAPH_RUNTIME" --workspace "$PRODUCT_WORKSPACE" draft -- notes update_notes --workspace "$SKETCH" --input request.json
+"$SPECGRAPH_RUNTIME" --workspace "$PRODUCT_WORKSPACE" draft -- notes update_notes --workspace "$SKETCH" --input "$REQUEST_JSON"
 "$SPECGRAPH_RUNTIME" --workspace "$PRODUCT_WORKSPACE" draft -- notes read_notes --workspace "$SKETCH" --history-limit 10
 "$SPECGRAPH_RUNTIME" --workspace "$PRODUCT_WORKSPACE" draft -- preview --workspace "$SKETCH" --port 0
 ```
 
 The product workspace must already exist. `--workspace` before `draft` selects
 the launcher working root; the `notes` or `preview` option selects the notebook.
-The two can be different paths. Both routes use the same notes protocol; the
+The launcher resolves a relative `--input` against the product workspace, not
+the invoking shell's directory; use an absolute request path as shown. The two
+workspaces can be different paths. Both routes use the same notes protocol; the
 launcher does not register tools or install an agent skill automatically.
 
 `update_notes` also accepts the request as JSON on stdin. Read/update return
@@ -116,7 +119,8 @@ that destination. A correction adds a revision and does not erase earlier
 quotations. Never edit immutable snapshots to sanitize history; choose a safe
 destination or a separately reviewed export. Keep `CURRENT` and its complete
 ancestor chain together in the same commit and verify recovery in a fresh
-checkout with `specgraph notes verify_history --workspace <sketch>`. This walks
+checkout with `specgraph notes verify_history --workspace <sketch>` or, through
+the native launcher, `"$SPECGRAPH_RUNTIME" --workspace "$PRODUCT_WORKSPACE" draft -- notes verify_history --workspace "$SKETCH"`. This walks
 and checks every snapshot through `parent_revision: null`; failure returns a
 nonzero exit. `read_notes --history-limit` accepts at most 100 and is only a
 bounded display, not proof of complete history. Avoid staging while a writer is
