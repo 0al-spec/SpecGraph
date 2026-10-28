@@ -27,6 +27,21 @@ def test_existing_installation_is_not_overwritten(tmp_path):
     assert marker.read_text() == "keep"
 
 
+def test_unsupported_python_fails_before_destination_creation(tmp_path, monkeypatch, capsys):
+    monkeypatch.setattr(runtime.sys, "version_info", (3, 9, 6))
+    target = tmp_path / "runtime"
+    assert (
+        runtime.main(
+            ["install", "--source", ".", "--revision", "a" * 40, "--destination", str(target)]
+        )
+        == 2
+    )
+    error = json.loads(capsys.readouterr().err)["error"]
+    assert "Python 3.10 or newer" in error
+    assert "3.9.6" in error and runtime.sys.executable in error
+    assert not target.exists()
+
+
 def test_archive_rejects_traversal_before_extracting(tmp_path):
     archive = tmp_path / "bad.tar"
     with tarfile.open(archive, "w") as bundle:
