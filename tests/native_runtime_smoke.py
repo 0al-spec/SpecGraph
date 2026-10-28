@@ -21,8 +21,8 @@ def main() -> None:
     root = args.root.resolve()
     root.mkdir(parents=True, exist_ok=True)
     install = root / "runtime with spaces"
-    project_a = root / "project-a"
-    project_b = root / "project-b"
+    project_a = root / "project a"
+    project_b = root / "project b"
     for project in (project_a, project_b):
         project.mkdir()
     environment = os.environ.copy()
@@ -63,7 +63,7 @@ def main() -> None:
         (install / "source/docs/evidence/0227_local_workspace_path_reuse.json").read_text()
     )["fixture"]
     for index, project in enumerate((project_a, project_b), 1):
-        workspace = project / "knowledge"
+        workspace = project / "knowledge workspace"
         call(
             [
                 str(launcher),
@@ -154,6 +154,31 @@ def main() -> None:
             )
         )
         assert notes["canonical"] is False and notes["revision"] is None
+        skill_name = "specgraph-project-ontology"
+        installed_skill = json.loads(
+            call(
+                [
+                    str(launcher),
+                    "--workspace",
+                    str(workspace),
+                    "draft",
+                    "--",
+                    "skill",
+                    "install",
+                    "--name",
+                    skill_name,
+                    "--project",
+                    str(project),
+                ]
+            )
+        )
+        skill_path = project / ".codex" / "skills" / skill_name / "SKILL.md"
+        assert installed_skill["status"] == "installed" and installed_skill["skill"] == skill_name
+        assert (
+            hashlib.sha256(skill_path.read_bytes()).hexdigest()
+            == (installed_skill["files_sha256"]["SKILL.md"])
+        )
+        assert not (workspace / ".codex" / "skills" / skill_name).exists()
         request = project / "request.json"
         request.write_text(
             json.dumps(
@@ -204,8 +229,8 @@ def main() -> None:
             )
         )
         assert history["revision"] == saved["revision"] and history["revision_count"] == 1
-    assert (project_a / "knowledge/specgraph.project.yaml").read_text() != (
-        project_b / "knowledge/specgraph.project.yaml"
+    assert (project_a / "knowledge workspace/specgraph.project.yaml").read_text() != (
+        project_b / "knowledge workspace/specgraph.project.yaml"
     ).read_text()
     # Exercise the installed supervisor's real Git worktree/review path with a
     # deterministic executor. No agent, model or hosted inference is invoked.
@@ -225,13 +250,13 @@ raise SystemExit(supervisor.main(
     target_spec="PROBE-SPEC-0001", executor=executor, auto_approve=False, output_mode="summary"
 ))
 """
-    before_a = (project_a / "knowledge/specs/nodes/PROBE-SPEC-0001.yaml").read_bytes()
+    before_a = (project_a / "knowledge workspace/specs/nodes/PROBE-SPEC-0001.yaml").read_bytes()
     call(
         [str(install / "venv/bin/python"), "-c", code, str(install / "source")],
-        cwd=project_b / "knowledge",
+        cwd=project_b / "knowledge workspace",
     )
     logs = []
-    for path in (project_b / "knowledge/runs").glob("*.json"):
+    for path in (project_b / "knowledge workspace/runs").glob("*.json"):
         value = json.loads(path.read_text())
         if (
             isinstance(value, dict)
@@ -243,8 +268,10 @@ raise SystemExit(supervisor.main(
     assert logs[0]["completion_status"] == "ok" and logs[0]["outcome"] == "done"
     assert logs[0]["gate_state"] == "review_pending" and not logs[0]["validation_errors"]
     assert logs[0]["isolation_mode"] == "git_worktree"
-    assert (project_a / "knowledge/specs/nodes/PROBE-SPEC-0001.yaml").read_bytes() == before_a
-    workspace = project_b / "knowledge"
+    assert (
+        project_a / "knowledge workspace/specs/nodes/PROBE-SPEC-0001.yaml"
+    ).read_bytes() == before_a
+    workspace = project_b / "knowledge workspace"
     # The shadowing fixture is unrelated to the initializer's allowed layout.
     (workspace / "specgraph.py").unlink()
     worktrees = workspace / ".worktrees"
@@ -291,6 +318,7 @@ raise SystemExit(supervisor.main(
             "product_advisor",
             "targeted_supervisor_dry_run",
             "specdraft_read",
+            "named_skill_install_in_project_outside_workspace",
             "specdraft_absolute_request_outside_workspace",
             "specdraft_full_history_verification",
             "repeat_init_after_git_worktree_refinement",

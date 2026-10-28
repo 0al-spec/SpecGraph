@@ -41,6 +41,20 @@ executor setup and workspace initialization are separate from installation.
 See [proposal 0231](docs/proposals/0231_native_specgraph_runtime.md) for
 supported operations and limitations.
 
+Install the ontology skill into the project where the agent works. The product
+project and its SpecGraph knowledge workspace may be different directories:
+
+```sh
+<new-runtime-directory>/specgraph-runtime --workspace /absolute/knowledge/workspace \
+  draft -- skill install --name specgraph-project-ontology \
+  --project /absolute/product/project
+```
+
+This installs `.codex/skills/specgraph-project-ontology` in the selected product
+project. The skill guides terminology discovery even when the workspace has no
+ontology package or `ontologyc`; it does not accept terms or publish changes.
+The launcher does not automatically install the skill or change agent settings.
+
 ## Installed SpecDraft
 
 Proposal 0230 provides a separate Python runtime for notes and local preview.
@@ -51,6 +65,7 @@ on a package index:
 pipx install /path/to/specgraph-0.2.0-py3-none-any.whl
 specgraph --version
 specgraph skill install --destination .codex/skills/specgraph-conversation-notes
+specgraph skill install --name specgraph-project-ontology --project /absolute/product/project
 specgraph notes read_notes --workspace conversation_memory/sketches/session
 specgraph preview --workspace conversation_memory/sketches/session --port 0
 ```

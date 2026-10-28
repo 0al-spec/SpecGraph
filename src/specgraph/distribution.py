@@ -6,15 +6,21 @@ from pathlib import Path
 
 from . import __version__
 
-SKILL_FILES = ("SKILL.md", "references/usage.md")
+DEFAULT_SKILL = "specgraph-conversation-notes"
+SKILL_FILES = {
+    DEFAULT_SKILL: ("SKILL.md", "references/usage.md"),
+    "specgraph-project-ontology": ("SKILL.md",),
+}
 
 
-def skill_contents() -> dict[str, bytes]:
+def skill_contents(skill_name: str = DEFAULT_SKILL) -> dict[str, bytes]:
+    if skill_name not in SKILL_FILES:
+        raise ValueError(f"Unknown skill: {skill_name}")
     root = files("specgraph")
-    for part in ("resources", "skills", "specgraph-conversation-notes"):
+    for part in ("resources", "skills", skill_name):
         root = root.joinpath(part)
     contents = {}
-    for name in SKILL_FILES:
+    for name in SKILL_FILES[skill_name]:
         resource = root
         for part in name.split("/"):
             resource = resource.joinpath(part)
@@ -22,9 +28,22 @@ def skill_contents() -> dict[str, bytes]:
     return contents
 
 
-def install_skill(destination: Path) -> dict[str, object]:
+def project_skill_destination(project: Path, skill_name: str = DEFAULT_SKILL) -> Path:
+    if skill_name not in SKILL_FILES:
+        raise ValueError(f"Unknown skill: {skill_name}")
+    project = project.expanduser().absolute()
+    if not project.is_dir():
+        raise ValueError("Project must be an existing directory")
+    codex = project / ".codex"
+    skills = codex / "skills"
+    if codex.is_symlink() or skills.is_symlink():
+        raise ValueError("Project skill directories must not be symlinks")
+    return skills / skill_name
+
+
+def install_skill(destination: Path, skill_name: str = DEFAULT_SKILL) -> dict[str, object]:
     destination = destination.expanduser().absolute()
-    contents = skill_contents()
+    contents = skill_contents(skill_name)
     if destination.is_symlink():
         raise ValueError("Skill destination must not be a symlink")
     if destination.exists():
@@ -48,7 +67,7 @@ def install_skill(destination: Path) -> dict[str, object]:
         status = "installed"
     return {
         "status": status,
-        "skill": "specgraph-conversation-notes",
+        "skill": skill_name,
         "runtime_version": __version__,
         "destination": str(destination),
         "files_sha256": {name: hashlib.sha256(data).hexdigest() for name, data in contents.items()},

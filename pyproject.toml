@@ -36,6 +36,7 @@ version = {attr = "specgraph.__version__"}
 specgraph = [
     "resources/skills/specgraph-conversation-notes/SKILL.md",
     "resources/skills/specgraph-conversation-notes/references/*.md",
+    "resources/skills/specgraph-project-ontology/SKILL.md",
 ]
 specdraft_preview = ["static/*.html", "static/*.css", "static/*.js", "static/*.svg"]
 
