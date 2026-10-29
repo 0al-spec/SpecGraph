@@ -66,6 +66,19 @@ captured context identity. Qualified matches are structural candidates;
 unknown/ambiguous terms remain review gaps. Prose is unassessed and an empty
 inventory does not mean grounded. No package or term acceptance is created.
 
+Supervisor's opt-in `--build-project-ontology-context-check` takes an explicit
+target, project ID, selection and operator-provided compiler. One captured target
+byte set supplies advisory reports, inventory and optional previous-report
+freshness; the separate derived artifact is written atomically under workspace
+`runs/project_ontology_context/`. It does not invoke refinement, alter approval
+gates or pick an arbitrary latest report. `checked` describes only the declared
+structural advisory scope. Legacy modes and draft capture remain available.
+
+The marathon's source-bound hardening observations and repairs remain linked
+through existing intent/operator-request/proposal lanes. They distinguish local
+review, hosted CI and prepared-versus-merged fixes; registration is not a new
+model execution or canonical acceptance event.
+
 A context can select one ontology or a composed package set. Selection records
 exact package/source identities, dependencies, compiler and check profile.
 Version conflicts, unavailable dependency checks and ambiguous terms stay

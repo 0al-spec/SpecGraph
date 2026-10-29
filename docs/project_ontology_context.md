@@ -168,3 +168,35 @@ does not certify a specification. Multi-member resolution is unsupported in this
 profile. A single captured member may supply local advisory candidates while
 overall dependency closure remains unavailable. Foreign workspace, malformed
 input and duplicate identities remain explicit failures.
+
+## Target-scoped Supervisor operation
+
+The optional operation inspects one existing specification and saves a separate
+derived report. It does not refine the target or modify approval gates:
+
+```sh
+python tools/supervisor.py --build-project-ontology-context-check \
+  --target-spec SG-SPEC-0072 --ontology-context-project-id specgraph \
+  --ontology-context-selection runs/ontology-context-pilot/selection.yaml \
+  --ontologyc /path/to/ontologyc --ontologyc-sha256 <executable-sha256>
+```
+
+The command shares one captured context and target byte sequence across reports,
+inventory and explicit comparison. It saves
+`runs/project_ontology_context/SG-SPEC-0072.json` inside the selected workspace,
+with atomic replacement restricted to the same report/target/project kind.
+Compact JSON goes to stdout; `--output-mode full` prints the full report.
+The same command can be forwarded through native runtime `supervisor -- ...`.
+
+Pass `--ontology-context-previous-report <workspace-relative-path>` to assess
+an explicitly chosen previous target report. There is no automatic latest-report
+selection. Previous freshness is a separate observation; the current report is
+recomputed from current captured inputs. Producer source digests are attributed
+input identity, not execution attestation.
+
+Exit status is 0 for `checked`, 1 for `unavailable`, and 2 for invalid/input
+errors. `checked` is only this structural advisory operation; prose stays
+unassessed and semantic approval remains absent. Imported closure can leave the
+context unavailable even when local advisory reports exist. Missing selection
+does not invoke refinement or prevent draft capture. Combining this mode with
+refinement, loop or approval options is rejected; legacy modes remain unchanged.
