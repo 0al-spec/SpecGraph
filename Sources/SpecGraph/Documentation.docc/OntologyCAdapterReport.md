@@ -49,10 +49,10 @@ ref, and digest. The digest must match the normalized IR `sourceDigest`.
 The smoke also verifies that output refs resolve under the fixture directory and
 that report counts match the resolved concept refs and ontology gaps.
 
-### Ontology 0.1.0 release integration
+### Ontology 0.2.0 release integration
 
-CI builds `ontologyc` from Ontology tooling release `0.1.0`, commit
-`d07cf5a8cd829b78027dda6d414ab89f4cb4f4e0`, before invoking the release
+CI builds `ontologyc` from Ontology tooling release `0.2.0`, commit
+`1a47f7058228efb412cbdeaabbaf27bca25e9846`, before invoking the release
 integration smoke. The smoke invokes the supplied binary and checks the source
 checkout HEAD. This compiler release is distinct from SpecGraph's project-local
 `org.0al.specgraph.core@0.1.0` package, which remains a draft. The freshly
@@ -60,10 +60,10 @@ produced output is checked by the SpecGraph adapter validator. On the initial
 fixture it resolves seven refs and retains one `sgcore:ClaimCalibration` gap;
 a passed report does not close that gap.
 
-The release integration is currently exercised on macOS; Linux support is a
-separate follow-up and is not established by this smoke.
+CI runs the release integration smoke on macOS and Linux; results are reported
+independently for each platform.
 
-For local reproduction on macOS with the Swift toolchain, build `ontologyc`
+For local reproduction with a supported Swift toolchain, build `ontologyc`
 from the pinned checkout and select its binary and checkout explicitly:
 
 ```sh
@@ -87,7 +87,7 @@ authenticate the executable or establish release provenance. The caller must
 trust the compiler and its environment; this is not a sandbox.
 
 The raw source hash covers exact file bytes. The compiler digest follows Ontology
-0.1.0's UTF-8 text decoding, including removal of a leading BOM, and is recorded
+0.2.0's UTF-8 text decoding, including removal of a leading BOM, and is recorded
 separately.
 
 Only the release smoke currently uses this helper. Other ontology consumers and
