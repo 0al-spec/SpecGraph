@@ -1,0 +1,149 @@
+{
+  "run_id": "20261029T183152Z-SG-SPEC-0064-356a72ac",
+  "spec_id": "SG-SPEC-0064",
+  "execution_profile": "materialize",
+  "completion_status": "ok",
+  "outcome": "done",
+  "gate_state": "review_pending",
+  "required_human_action": "resolve_blocking_ontology_semantic_findings",
+  "changed_files": [
+    "specs/nodes/SG-SPEC-0064.yaml",
+    "specs/nodes/SG-SPEC-0072.yaml"
+  ],
+  "materialized_child_paths": [
+    "specs/nodes/SG-SPEC-0072.yaml"
+  ],
+  "new_child_materialized_count": 1,
+  "accepted_canonical_diff": false,
+  "validation_errors": [],
+  "validator_results": {
+    "outputs": true,
+    "allowed_paths": true,
+    "reconciliation": true,
+    "atomicity": true,
+    "transition": true,
+    "executor_environment": true,
+    "runtime_artifacts": true,
+    "refinement_acceptance": true
+  },
+  "refinement_acceptance": {
+    "decision": "review_required",
+    "change_class": "graph_refactor",
+    "checks": {
+      "content_changed": true,
+      "hard_validation": true,
+      "single_spec_scope": false,
+      "constitutional_diff": false,
+      "graph_refactor_diff": true,
+      "atomicity_clear": true,
+      "within_mutation_budget": true
+    },
+    "diff_paths": [
+      "acceptance[1]",
+      "acceptance_evidence[1].criterion",
+      "acceptance_evidence[1].evidence",
+      "depends_on[3]",
+      "inputs[5]",
+      "specification.member_contracts[3]",
+      "specification.member_contracts[3].spec_id",
+      "specification.member_contracts[3].member_role",
+      "specification.member_contracts[3].ownership_boundary"
+    ],
+    "mutation_classes": [
+      "policy_text"
+    ],
+    "mutation_budget": [],
+    "budget_exceeded_classes": [],
+    "changed_spec_files": [
+      "specs/nodes/SG-SPEC-0064.yaml",
+      "specs/nodes/SG-SPEC-0072.yaml"
+    ],
+    "review_reasons": [
+      "run changed additional spec files beyond the selected source node",
+      "run changed graph structure or spec contract paths"
+    ],
+    "errors": [],
+    "warnings": []
+  },
+  "reconciliation": {
+    "worktree_spec_count": 72,
+    "changed_spec_ids": [
+      "SG-SPEC-0064",
+      "SG-SPEC-0072"
+    ],
+    "semantic_dependencies_resolved": true,
+    "work_dependencies_ready": false,
+    "cycles": []
+  },
+  "executor_environment": {
+    "issues": [],
+    "issue_kinds": [],
+    "primary_failure": false
+  },
+  "stdout": "RUN_OUTCOME: done\nBLOCKER: none",
+  "artifact_kind": "ontology_context_supervisor_child_candidate",
+  "schema_version": 1,
+  "original_run_path": "runs/20261029T183152Z-SG-SPEC-0064-356a72ac.json",
+  "original_run_sha256": "affce379199528cee3913c1185e3755bb407cf29656f110e847491a0ebeae570",
+  "worktree_branch": "codex/sg-spec-0064/20261029T183152Z-c756ac29",
+  "candidate_inventory": [
+    {
+      "proposed_path": "specs/nodes/SG-SPEC-0064.yaml",
+      "candidate_path": "docs/reviews/0232_project_ontology_context/supervisor/candidates/SG-SPEC-0064.yaml",
+      "sha256": "fac197551ab035727bd27f444692bcb1adcde4278c3a27f458261a21d91add1f"
+    },
+    {
+      "proposed_path": "specs/nodes/SG-SPEC-0072.yaml",
+      "candidate_path": "docs/reviews/0232_project_ontology_context/supervisor/candidates/SG-SPEC-0072.yaml",
+      "sha256": "7637f19c34619eedf97fad8ef589d5e9dd8f74d32ba2b12e58b4bf4423df94aa"
+    }
+  ],
+  "authority_boundary": {
+    "canonical_acceptance": false,
+    "runtime_enforcement": false,
+    "current_gate_evidence": "Existing soft ontology gate refers to example findings; scope/freshness for this project has not been established. It was not cleared or bypassed."
+  },
+  "retention": "Exact source candidates retained for review; main spec bytes restored. Do not run approval against a restored parent and assume these candidates were applied.",
+  "retained_git_commit": "8b481ac08ac47523140f101f8b253ca23a803ab5",
+  "worktree_disposition": "Candidate commit remains reachable on the recorded local branch; exact candidate copies are retained in this review packet. Temporary worktree retired after byte verification; no pending policy was approved.",
+  "ontology_gate_observation": {
+    "source_artifact": "runs/ontology_supervisor_semantic_gate.json",
+    "source_artifact_status": "available",
+    "gate_state": "blocked",
+    "source_gate": {
+      "gate_state": "blocked",
+      "outcome": "semantic_gate_blocked",
+      "required_human_action": "resolve_blocking_ontology_semantic_findings",
+      "blocking_item_ids": [
+        "semantic-finding-exampolicy",
+        "semantic-finding-allows-policy"
+      ],
+      "review_required_item_ids": [
+        "semantic-finding-exam",
+        "semantic-finding-requires-policy",
+        "semantic-finding-casfunction"
+      ],
+      "candidate_item_ids": []
+    },
+    "source_summary": {
+      "blocking_count": 2,
+      "candidate_count": 0,
+      "next_gap": "wire_supervisor_semantic_gate_into_targeted_runs",
+      "review_item_count": 5,
+      "review_required_count": 3,
+      "source_status": "blocked_relation_conflict",
+      "status": "blocked"
+    },
+    "run_decision": {
+      "run_action": "require_review_before_approval",
+      "blocks_executor_invocation": false,
+      "suppresses_auto_approve": true,
+      "required_human_action": "resolve_blocking_ontology_semantic_findings",
+      "auto_approve_requires_gate_state": "clear",
+      "preserved_blocking_item_ids": [
+        "semantic-finding-exampolicy",
+        "semantic-finding-allows-policy"
+      ]
+    }
+  }
+}

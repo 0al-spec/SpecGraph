@@ -2993,7 +2993,8 @@
     "proposal_id": "0232",
     "source_artifact_class": "working_draft",
     "source_refs": [
-      "docs/archive/proposal_sources/0232_verified_project_ontology_context.md"
+      "docs/archive/proposal_sources/0232_verified_project_ontology_context.md",
+      "docs/archive/proposal_sources/0232_supervisor_context_contract.md"
     ],
     "motivating_concern": "All project specifications should ground terminology in verified project-selected ontologies while drafts remain easy to capture and gaps remain explicit review work.",
     "normalized_title": "Verified Project Ontology Context",

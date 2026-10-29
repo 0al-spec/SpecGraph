@@ -199,6 +199,24 @@ assessed context and coverage, unresolved cases are explicit, and the declared
 ontology-dependent actions actually enforce the policy. A report count, this
 proposal, the optional #825 mode or a rendered graph cannot satisfy that alone.
 
+## Supervisor contract preparation
+
+A [Supervisor review packet](../reviews/0232_project_ontology_context/supervisor/README.md)
+now retains two real targeted runs. The first returned `split_required`; the
+second created exactly one candidate SG-SPEC-0072 beneath SG-SPEC-0064 and
+returned `done / review_pending` with zero validation errors and
+`accepted_canonical_diff: false`. The candidate's four acceptance entries define
+selection, identity, verification outcomes and their authority boundary. The
+parent candidate only reconciles membership/dependency routing.
+
+Candidate files and their exact hashes are retained under `docs/reviews/`, not
+installed in the canonical graph. The first run's diagnostic false positive and
+the second run's unrelated/unestablished soft-gate evidence remain visible.
+Reviewing or merging the preparation packet does not approve the candidate,
+resolve that gate, reserve the proposed ID or implement project selection.
+The next step is scoped contract review and supported Supervisor adoption;
+configuration and runtime work follow that boundary.
+
 ## Separate follow-ups
 
 Intent preservation across ontology, specification, Hypercode, implementation,
