@@ -157,6 +157,19 @@ def run(installation: Path, workspace: Path, operation: str, arguments: list[str
             *arguments,
         ]
         cwd = project
+    elif operation == "ontology-context":
+        if any(
+            arg == "--workspace-root" or arg.startswith("--workspace-root=") for arg in arguments
+        ):
+            raise ValueError("ontology-context workspace is selected by --workspace")
+        command = [
+            str(python),
+            str(source / "tools" / "project_ontology_context_cli.py"),
+            "--workspace-root",
+            str(project),
+            *arguments,
+        ]
+        cwd = project
     elif operation == "supervisor":
         command = [str(python), str(source / "tools" / "supervisor.py"), *arguments]
         cwd = project
@@ -182,7 +195,9 @@ def main(argv: list[str] | None = None) -> int:
     launch = commands.add_parser("run")
     launch.add_argument("--installation", required=True, type=Path)
     launch.add_argument("--workspace", required=True, type=Path)
-    launch.add_argument("operation", choices=("init", "next-move", "supervisor", "draft"))
+    launch.add_argument(
+        "operation", choices=("init", "next-move", "supervisor", "draft", "ontology-context")
+    )
     args, extra = parser.parse_known_args(argv)
     if extra and extra[0] == "--":
         extra.pop(0)

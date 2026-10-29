@@ -66,3 +66,37 @@ does not prevent conversation capture or draft authoring.
 
 Each domain outcome policy lives in its own Specification module with immutable
 facts. Parsing, paths, subprocess adaptation and serialization remain at the edge.
+
+## Workspace CLI and native runtime
+
+From the source checkout, inspect help with
+`python tools/project_ontology_context_cli.py --help`. A capture command selects
+an existing workspace and caller-provided executable:
+
+```sh
+python tools/project_ontology_context_cli.py \
+  --workspace-root /path/to/project --project-id example \
+  --selection ontology/context.yaml --ontologyc /path/to/ontologyc \
+  --compiler-sha256 <executable-sha256> --output runs/ontology-context.json
+```
+
+An installed native source runtime exposes the same operation:
+
+```sh
+specgraph-runtime --workspace /path/to/project ontology-context -- \
+  --project-id example --selection ontology/context.yaml \
+  --ontologyc /path/to/ontologyc --output runs/ontology-context.json
+```
+
+The CLI may read `project_id` and an optional `ontology_context.selection` pointer
+from `specgraph.project.yaml`; explicit arguments take precedence. It does not
+rewrite configuration or run init. JSON stays on stdout; exit codes are 0 for
+verified, 1 for unavailable, and 2 for invalid/input errors. Optional output is
+atomically replaced only inside the selected workspace, without overwriting
+project configuration, ontology inputs or unrelated existing files.
+
+Native routing preserves the wrapper-selected workspace and rejects forwarded
+workspace overrides. Argument abbreviation is disabled, including forms such as
+`--workspace-r`. Existing init, next-move, supervisor and draft routes remain.
+This is a native source-runtime route, not a new command in the standalone
+SpecDraft wheel CLI.

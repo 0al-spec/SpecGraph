@@ -39,6 +39,13 @@ independently detected identity, pin and source/IR mismatches remain invalid.
 Imported/composed closure remains unavailable. See
 `docs/project_ontology_context.md` for the actual API and manifest shape.
 
+The source CLI `project_ontology_context_cli.py` and native runtime
+`ontology-context` route operate on an explicit external workspace. Optional
+project configuration supplies defaults without initialization or mutation.
+Exit outcomes remain verified/unavailable/invalid; native routing rejects
+workspace overrides and abbreviated arguments. Optional report writes are
+workspace-contained and atomic. No compiler is installed or discovered implicitly.
+
 A context can select one ontology or a composed package set. Selection records
 exact package/source identities, dependencies, compiler and check profile.
 Version conflicts, unavailable dependency checks and ambiguous terms stay

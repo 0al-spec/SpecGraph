@@ -97,3 +97,108 @@ def test_ready_spec_requires_a_complete_versioned_receipt():
     assert not RUNTIME_READY_SPEC.is_satisfied_by(
         RuntimeReadyFacts(ready.artifact_kind, ready.status, 1, "incomplete")
     )
+
+
+def test_ontology_context_route_uses_selected_workspace(tmp_path, monkeypatch):
+    root = tmp_path / "runtime"
+    root.mkdir()
+    (root / "runtime.json").write_text(
+        json.dumps(
+            {
+                "artifact_kind": "specgraph_native_runtime",
+                "status": "installed",
+                "schema_version": 1,
+                "source_commit": "a" * 40,
+            }
+        )
+    )
+    workspace = tmp_path / "product"
+    workspace.mkdir()
+    calls = []
+    monkeypatch.setattr(
+        runtime.subprocess,
+        "run",
+        lambda command, **kwargs: (
+            calls.append((command, kwargs)) or type("Result", (), {"returncode": 1})()
+        ),
+    )
+    monkeypatch.setenv("PYTHONPATH", "untrusted")
+    assert runtime.run(root, workspace, "ontology-context", ["--project-id", "demo"]) == 1
+    command, options = calls[-1]
+    assert command[1].endswith("tools/project_ontology_context_cli.py")
+    assert command[2:4] == ["--workspace-root", str(workspace)]
+    assert options["cwd"] == workspace and "PYTHONPATH" not in options["env"]
+    for supplied in (["--workspace-root", "/elsewhere"], ["--workspace-root=/elsewhere"]):
+        with pytest.raises(ValueError, match="selected by --workspace"):
+            runtime.run(root, workspace, "ontology-context", supplied)
+    assert runtime.run(root, workspace, "init", ["--project-id", "demo"]) == 1
+    assert calls[-1][0][1].endswith("tools/supervisor.py")
+
+
+def test_ontology_context_launcher_runs_in_external_workspace(tmp_path):
+    import subprocess
+
+    root = tmp_path / "runtime"
+    root.mkdir()
+    (root / "runtime.json").write_text(
+        json.dumps(
+            {
+                "artifact_kind": "specgraph_native_runtime",
+                "status": "installed",
+                "schema_version": 1,
+                "source_commit": "a" * 40,
+            }
+        )
+    )
+    source = Path(__file__).resolve().parents[1]
+    (root / "source").symlink_to(source, target_is_directory=True)
+    (root / "venv").symlink_to(source / ".venv", target_is_directory=True)
+    workspace = tmp_path / "product"
+    workspace.mkdir()
+    process = subprocess.run(
+        [
+            sys.executable,
+            str(source / "tools" / "native_runtime.py"),
+            "run",
+            "--installation",
+            str(root),
+            "--workspace",
+            str(workspace),
+            "ontology-context",
+            "--project-id",
+            "demo",
+        ],
+        capture_output=True,
+        text=True,
+    )
+    assert process.returncode == 1, process.stderr
+    assert json.loads(process.stdout)["outcome"] == "unavailable"
+    foreign = tmp_path / "foreign"
+    foreign.mkdir()
+    for target in (foreign, root):
+        (target / "specgraph.project.yaml").write_text(
+            "artifact_kind: specgraph_project_config\nproject_id: foreign\n"
+        )
+        for option in ("--workspace-r", f"--workspace-r={target}"):
+            forwarded = [option, str(target)] if option == "--workspace-r" else [option]
+            attack = subprocess.run(
+                [
+                    sys.executable,
+                    str(source / "tools" / "native_runtime.py"),
+                    "run",
+                    "--installation",
+                    str(root),
+                    "--workspace",
+                    str(workspace),
+                    "ontology-context",
+                    *forwarded,
+                    "--output",
+                    "report.json",
+                ],
+                capture_output=True,
+                text=True,
+            )
+            assert attack.returncode == 2
+            assert not attack.stdout and "unrecognized arguments" in attack.stderr
+            assert not (target / "report.json").exists()
+            assert not (workspace / "report.json").exists()
