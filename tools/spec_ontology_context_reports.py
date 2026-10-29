@@ -100,11 +100,9 @@ def build_context_reports(
                     "document must have a normalized workspace-relative path and bytes"
                 )
             resolved = (root / path).resolve()
-            if (
-                not resolved.is_relative_to(selected_root)
-                or not resolved.is_file()
-                or path.name != resolved.name
-            ):
+            if not resolved.is_relative_to(selected_root):
+                raise ValueError(f"spec path escapes selected root: {name}")
+            if documents is None and (not resolved.is_file() or path.name != resolved.name):
                 raise ValueError(f"spec path is not a regular file inside selected root: {name}")
             if name in seen_paths:
                 raise ValueError(f"duplicate document path: {name}")

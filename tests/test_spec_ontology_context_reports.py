@@ -150,3 +150,29 @@ def test_duplicate_spec_id_is_invalid(captured):
     assert result["outcome"] == "invalid"
     assert "duplicate spec identity" in result["diagnostics"][0]
     assert result["binding_index"] is None
+
+
+def test_explicit_captured_document_survives_source_removal(captured):
+    root, specs, path, context = captured
+    raw = path.read_bytes()
+    name = path.relative_to(root).as_posix()
+    path.unlink()
+    result = reports.build_context_reports(
+        context, workspace_root=root, specs_root=specs, documents=((name, raw),)
+    )
+    assert result["outcome"] == "analyzed"
+    assert result["inputs"]["specs"] == [{"path": name, "sha256": sha(raw)}]
+    assert result["binding_index"]["entries"][0]["spec_id"] == "SG-SPEC-0001"
+    assert result["validation_report"]["entries"][0]["spec_id"] == "SG-SPEC-0001"
+
+
+def test_explicit_document_still_rejects_symlink_escape(captured, tmp_path):
+    root, specs, path, context = captured
+    raw = path.read_bytes()
+    name = path.relative_to(root).as_posix()
+    path.unlink()
+    path.symlink_to(tmp_path.parent / "outside.yaml")
+    result = reports.build_context_reports(
+        context, workspace_root=root, specs_root=specs, documents=((name, raw),)
+    )
+    assert result["outcome"] == "invalid" and "escapes" in result["diagnostics"][0]
