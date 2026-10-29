@@ -13,10 +13,12 @@ from typing import Any
 import yaml
 
 from ontology_imports import ROOT, load_json, relative_path, write_json
+from ontology_snapshot import OntologySnapshot, capture_ontology_snapshot
 
 PROPOSAL_ID = "0134"
 SCHEMA_VERSION = 1
 DEFAULT_IR_PATH = ROOT / "ontology/packages/specgraph-core/generated/ontology.normalized.json"
+DEFAULT_ONTOLOGY_SOURCE = ROOT / "ontology/packages/specgraph-core/domain-ontology-package.yaml"
 DEFAULT_OUTPUT_PATH = ROOT / "runs/spec_ontology_binding_index.json"
 SPEC_ROOT = ROOT / "specs/nodes"
 TOKEN_RE = re.compile(r"[^a-z0-9]+")
@@ -275,12 +277,29 @@ def spec_entry(path: Path, ir_symbols: dict[str, dict[str, str]]) -> dict[str, A
     }
 
 
+def snapshot_evidence(snapshot: OntologySnapshot | None) -> dict[str, str]:
+    if snapshot is None:
+        return {"status": "not_verified"}
+    return {
+        "status": "compiler_checked",
+        "source_sha256": snapshot.source_sha256,
+        "ir_sha256": snapshot.ir_sha256,
+        "compiler_sha256": snapshot.compiler_sha256,
+        "compiler_provenance": snapshot.compiler_provenance,
+    }
+
+
 def build_binding_index(
     *,
     specs_root: Path = SPEC_ROOT,
     ir_path: Path = DEFAULT_IR_PATH,
+    snapshot: OntologySnapshot | None = None,
+    ir: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
-    ir = load_json(ir_path)
+    if snapshot is not None and ir is not None:
+        raise ValueError("provide snapshot or IR, not both")
+    if ir is None:
+        ir = json.loads(snapshot.ir_bytes) if snapshot is not None else load_json(ir_path)
     ir_symbols = ontology_symbols(ir)
     entries = [spec_entry(path, ir_symbols) for path in sorted(specs_root.glob("SG-SPEC-*.yaml"))]
     accepted_binding_count = sum(len(entry["accepted_bindings"]) for entry in entries)
@@ -296,6 +315,7 @@ def build_binding_index(
         "tracked_artifacts_written": False,
         "legacy_corpus": True,
         "ontology_ir_ref": relative_path(ir_path),
+        "ontology_verification": snapshot_evidence(snapshot),
         "summary": {
             "spec_count": len(entries),
             "accepted_binding_count": accepted_binding_count,
@@ -310,6 +330,8 @@ def build_binding_index(
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--ontology-ir", default=str(DEFAULT_IR_PATH))
+    parser.add_argument("--ontologyc", help="compiler executable; enables checked ontology mode")
+    parser.add_argument("--ontology-source", default=str(DEFAULT_ONTOLOGY_SOURCE))
     parser.add_argument("--specs-root", default=str(SPEC_ROOT))
     parser.add_argument("--output", default=str(DEFAULT_OUTPUT_PATH))
     parser.add_argument("--write", action="store_true")
@@ -342,7 +364,18 @@ def main() -> int:
     except ValueError as exc:
         print(str(exc), file=sys.stderr)
         return 2
-    index = build_binding_index(specs_root=specs_root, ir_path=ir_path)
+    try:
+        snapshot = (
+            capture_ontology_snapshot(
+                Path(args.ontology_source), Path(args.ontologyc), expected_ir_path=ir_path
+            )
+            if args.ontologyc
+            else None
+        )
+        index = build_binding_index(specs_root=specs_root, ir_path=ir_path, snapshot=snapshot)
+    except (OSError, ValueError) as exc:
+        print(str(exc), file=sys.stderr)
+        return 2
     if args.write:
         path = write_json(output_path, index)
         print(relative_path(path))

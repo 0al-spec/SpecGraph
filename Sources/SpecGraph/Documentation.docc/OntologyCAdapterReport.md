@@ -90,9 +90,12 @@ The raw source hash covers exact file bytes. The compiler digest follows Ontolog
 0.2.0's UTF-8 text decoding, including removal of a leading BOM, and is recorded
 separately.
 
-Only the release smoke currently uses this helper. Other ontology consumers and
-the supervisor have not been migrated, and previously derived artifacts are not
-validated by it. Conversation capture remains independent of ontology checking.
+The legacy binding index and validation report can use `--ontologyc` and
+`--ontology-source` to validate the captured source and saved IR. Their
+`ontology_verification` field distinguishes compiler-checked data from the
+legacy unverified mode. Both outputs remain review-only; a compiler hash does
+not authenticate the executable. Other ontology consumers and the supervisor
+have not been migrated, and previously derived artifacts are not validated. Conversation capture remains independent of ontology checking.
 The smoke preserves ontology gaps for review rather than blocking merely because
 the fixture contains one.
 

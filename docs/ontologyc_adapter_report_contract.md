@@ -167,8 +167,15 @@ the former hashes the exact file bytes, while the latter follows Ontology 0.2.0'
 UTF-8 text decoding, including removal of a leading BOM. Both are recorded so a
 valid BOM-bearing file is not mistaken for a mismatch.
 
-At present only the release smoke uses this snapshot helper. Other ontology
-consumers and the supervisor are not yet migrated: the helper does not validate
+The legacy binding index and validation report accept an optional `--ontologyc`
+executable and `--ontology-source`; this compiles the captured source and requires
+the saved IR to match. Their `ontology_verification` reports `compiler_checked`
+with source, IR, and compiler hashes, or `not_verified` without the compiler.
+The report passes one captured IR to the index and relation checks. A missing or
+failing requested compiler fails the command. The compiler must be trusted; its
+hash does not authenticate it. Both outputs remain review-only.
+
+Other ontology consumers and the supervisor are not yet migrated: the helper does not validate
 their existing or stale derived artifacts, and it does not make ontology
 checking mandatory for conversation capture. Unknown terms and ontology gaps
 remain reviewable; the smoke does not block merely because the fixture has a
