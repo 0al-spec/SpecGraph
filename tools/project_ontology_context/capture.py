@@ -157,11 +157,7 @@ def capture_project_context(
         not isinstance(compiler_sha256, str) or not _DIGEST.fullmatch(compiler_sha256)
     ):
         add("compiler", "invalid", "compiler_sha256 must be lowercase SHA-256 hex")
-    if (
-        ontologyc is None
-        or not Path(ontologyc).is_file()
-        or not os.access(ontologyc, __import__("os").X_OK)
-    ):
+    if ontologyc is None or not Path(ontologyc).is_file() or not os.access(ontologyc, os.X_OK):
         add("compiler", "unavailable", "operator-provided executable is unavailable")
     else:
         add(
@@ -182,8 +178,18 @@ def capture_project_context(
             if (
                 ontologyc is None
                 or not Path(ontologyc).is_file()
-                or not os.access(ontologyc, __import__("os").X_OK)
+                or not os.access(ontologyc, os.X_OK)
             ):
+                add(
+                    "compiler", "unavailable", "compiler unavailable during member capture", package
+                )
+                add(
+                    "member_capture",
+                    "unavailable",
+                    "compiler unavailable during member capture",
+                    package,
+                )
+                add("dependency_closure", "unavailable", "member inputs not checked", package)
                 continue
             snapshot = capture_ontology_snapshot(
                 source,
@@ -240,6 +246,8 @@ def capture_project_context(
         and len({s.compiler_sha256 for s in snapshots}) != 1
     ):
         add("compiler", "invalid", "compiler changed between member captures")
+    if not members or len(snapshots) != len(members):
+        add("context_capture", "unavailable", "selected context capture is incomplete")
     facts = ContextFacts(tuple(checks))
     outcome = (
         "invalid"
@@ -272,6 +280,9 @@ def capture_project_context(
                 json.dumps(identity, sort_keys=True, separators=(",", ":")).encode()
             ).hexdigest()
         )
+    if outcome == "verified" and revision is None:
+        add("context_revision", "unavailable", "context revision could not be constructed")
+        outcome = "unavailable"
     return ContextResult(
         project_id,
         str(root),

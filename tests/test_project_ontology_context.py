@@ -216,3 +216,33 @@ def test_context_pin_prevents_compiler_execution(workspace):
     result = capture(compiler_sha256="0" * 64)
     assert result.outcome == "invalid"
     assert not marker.exists()
+
+
+def test_compiler_availability_lost_before_capture_is_unavailable(workspace, monkeypatch):
+    from project_ontology_context import capture as module
+
+    _, compiler, package, selection, capture = workspace
+    selection([package()])
+    original = module.os.access
+    checks = 0
+
+    def access(path, mode):
+        nonlocal checks
+        if Path(path) == compiler and mode == module.os.X_OK:
+            checks += 1
+            return checks == 1
+        return original(path, mode)
+
+    monkeypatch.setattr(module.os, "access", access)
+    monkeypatch.setattr(
+        module, "capture_ontology_snapshot", lambda *a, **k: pytest.fail("must not run")
+    )
+    result = capture()
+    assert checks == 2 and result.outcome == "unavailable"
+    assert result.revision is None and not result.snapshots
+    assert any(c.check == "member_capture" and c.outcome == "unavailable" for c in result.checks)
+
+    checks = 0
+    invalid = capture(compiler_sha256="invalid-pin")
+    assert invalid.outcome == "invalid" and invalid.revision is None
+    assert any(c.outcome == "unavailable" for c in invalid.checks)
