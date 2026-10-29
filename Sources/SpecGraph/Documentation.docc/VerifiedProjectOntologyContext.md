@@ -1,5 +1,21 @@
 # Verified Project Ontology Context
 
+## Reviewed selection contract and implementation track
+
+The 0232 selection contract is prepared as SG-SPEC-0072 with parent
+SG-SPEC-0064 reconciliation through a fresh Terra 6.1 High Supervisor run and
+independent review. `docs/reviews/0232_project_ontology_context/adoption/`
+retains its source, byte inventory, normalized sync digests and gate resolution.
+Preparation on a PR branch is not a human signature, semantic approval or
+production activation. The global legacy smoke findings were preserved.
+
+The seven-layer track in
+`docs/reviews/0232_project_ontology_context/marathon.md` proceeds through captured
+context, CLI/native routing, advisory reports, explicit freshness assessment,
+scoped terminology inventory and a target-specific Supervisor check. It does
+not activate a global gate or claim complete prose coverage. Unsupported
+dependency closure remains unavailable; draft capture remains available.
+
 Proposal `SG-RFC-0232` is a planning contract for grounding every project
 specification in an explicitly selected ontology context. Runtime realization
 is `deferred_until_canonicalized`; this proposal activates no new policy.
