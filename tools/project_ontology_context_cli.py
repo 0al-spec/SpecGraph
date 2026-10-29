@@ -49,6 +49,8 @@ def main(argv: list[str] | None = None) -> int:
             if (
                 not isinstance(config, dict)
                 or config.get("artifact_kind") != "specgraph_project_config"
+                or type(config.get("schema_version")) is not int
+                or config["schema_version"] != 1
             ):
                 raise ValueError("invalid specgraph.project.yaml")
         project_id = args.project_id if args.project_id is not None else config.get("project_id")

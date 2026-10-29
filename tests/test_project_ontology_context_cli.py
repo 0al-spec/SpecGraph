@@ -88,6 +88,7 @@ def test_external_workspace_config_default_and_atomic_report(context):
         yaml.safe_dump(
             {
                 "artifact_kind": "specgraph_project_config",
+                "schema_version": 1,
                 "project_id": "demo",
                 "ontology_context": {"selection": "selection.yaml"},
             }
@@ -106,6 +107,26 @@ def test_external_workspace_config_default_and_atomic_report(context):
     assert json.loads(result.stdout)["outcome"] == "verified"
     assert json.loads((workspace / "report.json").read_text()) == json.loads(result.stdout)
     assert result.stderr == ""
+
+
+@pytest.mark.parametrize("version", [None, 99, True])
+def test_unknown_project_config_schema_does_not_supply_defaults(context, version):
+    workspace, _ = context
+    (workspace / "specgraph.project.yaml").write_text(
+        yaml.safe_dump(
+            {
+                "artifact_kind": "specgraph_project_config",
+                "schema_version": version,
+                "project_id": "demo",
+                "ontology_context": {"selection": "selection.yaml"},
+            }
+        )
+    )
+    result = call(workspace, "--output", "report.json")
+    assert result.returncode == 2
+    assert result.stdout == ""
+    assert "invalid specgraph.project.yaml" in result.stderr
+    assert not (workspace / "report.json").exists()
 
 
 def test_missing_selection_or_compiler_and_wrong_pin(context):
