@@ -122,3 +122,26 @@ closure. Invalid context, foreign workspace, mismatched capture, duplicate spec
 IDs or unsupported joint multi-member analysis return diagnostics without
 falling back to mutable saved IR. Ordinary no-context report APIs remain
 backward-compatible. These profiles do not assess all natural-language prose.
+
+## Explicit report freshness assessment
+
+At creation, `bind_report_bundle(bundle, producer_identity=...)` produces an
+immutable `ReportInputBinding`. Save its `report()` alongside that exact advisory
+bundle. `assess_report_freshness(saved_bundle, input_binding=..., context=...,
+workspace_root=..., specs_root=..., producer_identity=..., documents=None)`
+compares it with explicitly supplied current inputs and a rebuilt advisory view.
+No directory is searched for a latest result, and no cache is selected implicitly.
+
+The binding records canonical-JSON bundle/binding digests and caller-supplied
+producer identity. It is integrity/attribution data, not a signature, trusted
+producer attestation, FeaturePassport receipt or evidence admission. Creating
+a binding later cannot establish who produced historical data.
+
+`fresh` means compatible declared advisory inputs: project/workspace, context,
+captured member/source/IR/compiler, exact specification paths/hashes, binding and
+validation payloads, analysis profile and producer identity. Changed known inputs
+are stale, inconsistent saved content is invalid, and missing/partial identity
+or original binding remains unavailable. Missing data cannot become fresh by
+reconstructing a historical binding during assessment. A named Specification
+evaluates immutable comparison facts; it does not approve meanings or activate
+a new Supervisor/merge gate.

@@ -53,6 +53,13 @@ views to one captured context and specification byte set. Its
 does not fall back to saved IR. Local analysis does not verify imported closure
 or semantically accept the legacy `accepted_bindings` field.
 
+Explicit report assessment uses `ReportInputBinding` recorded at creation and
+compares declared current inputs through `REPORT_INPUTS_COMPATIBLE_SPEC`.
+Freshness is advisory input compatibility, not trusted provenance. Missing
+original binding remains unavailable; known changes are stale and inconsistent
+saved content invalid. It does not search for a latest artifact or activate a
+cache, global gate or semantic acceptance policy.
+
 A context can select one ontology or a composed package set. Selection records
 exact package/source identities, dependencies, compiler and check profile.
 Version conflicts, unavailable dependency checks and ambiguous terms stay
