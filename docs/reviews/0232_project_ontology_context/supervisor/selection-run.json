@@ -1,0 +1,109 @@
+{
+  "run_id": "20261029T182812Z-SG-SPEC-0064-40f74cb3",
+  "spec_id": "SG-SPEC-0064",
+  "execution_profile": "standard",
+  "completion_status": "progressed",
+  "outcome": "split_required",
+  "gate_state": "split_required",
+  "required_human_action": "split spec scope before rerun",
+  "changed_files": [
+    "specs/nodes/SG-SPEC-0064.yaml"
+  ],
+  "productive_split_required": true,
+  "validation_errors": [
+    "Nested executor runtime state or migration setup failed. Evidence: `failed to open state db`, `failed to initialize state runtime`, or"
+  ],
+  "validation_summary": {
+    "finding_count": 1,
+    "families": {
+      "executor_environment": 1
+    },
+    "error_classes": {
+      "runtime_failure": 1
+    },
+    "severity_counts": {
+      "error": 1
+    },
+    "codes": {
+      "state_runtime_failure": 1
+    }
+  },
+  "executor_environment": {
+    "issues": [
+      {
+        "kind": "state_runtime_failure",
+        "summary": "Nested executor runtime state or migration setup failed.",
+        "evidence": [
+          "`failed to open state db`, `failed to initialize state runtime`, or",
+          "`state db discrepancy`; keep ordinary migration plans and successful migration"
+        ]
+      }
+    ],
+    "issue_kinds": [
+      "state_runtime_failure"
+    ],
+    "primary_failure": false
+  },
+  "refinement_acceptance": {
+    "decision": "review_required",
+    "change_class": "graph_refactor",
+    "checks": {
+      "content_changed": true,
+      "hard_validation": true,
+      "single_spec_scope": true,
+      "constitutional_diff": false,
+      "graph_refactor_diff": true,
+      "atomicity_clear": true,
+      "within_mutation_budget": true
+    },
+    "diff_paths": [
+      "acceptance[4]",
+      "acceptance_evidence[4]",
+      "acceptance_evidence[4].criterion",
+      "acceptance_evidence[4].evidence",
+      "inputs[5]",
+      "inputs[6]",
+      "inputs[7]",
+      "specification.project_ontology_context_refinement",
+      "specification.project_ontology_context_refinement.proposal_ref",
+      "specification.project_ontology_context_refinement.source_ref",
+      "specification.project_ontology_context_refinement.source_boundary",
+      "specification.project_ontology_context_refinement.bounded_concern",
+      "specification.project_ontology_context_refinement.proposed_selection",
+      "specification.project_ontology_context_refinement.proposed_identity",
+      "specification.project_ontology_context_refinement.proposed_verification_distinctions",
+      "specification.project_ontology_context_refinement.proposed_verification_distinctions.verified",
+      "specification.project_ontology_context_refinement.proposed_verification_distinctions.unavailable",
+      "specification.project_ontology_context_refinement.proposed_verification_distinctions.invalid",
+      "specification.project_ontology_context_refinement.authority_boundary",
+      "specification.project_ontology_context_refinement.next_bounded_step"
+    ],
+    "mutation_classes": [
+      "policy_text"
+    ],
+    "mutation_budget": [],
+    "budget_exceeded_classes": [],
+    "changed_spec_files": [
+      "specs/nodes/SG-SPEC-0064.yaml"
+    ],
+    "review_reasons": [
+      "run changed graph structure or spec contract paths"
+    ],
+    "errors": [],
+    "warnings": []
+  },
+  "stdout": "RUN_OUTCOME: split_required\nBLOCKER: SG-SPEC-0064 now records the source-grounded proposed selection, identity, and verification distinctions; YAML lint and acceptance/evidence alignment passed. Next authorize a dedicated child under SG-RFC-0232 and parent dependency reconciliation beyond this single-file pass. No policy activation or runtime implementation.",
+  "artifact_kind": "ontology_context_supervisor_observation",
+  "schema_version": 1,
+  "original_run_path": "runs/20261029T182812Z-SG-SPEC-0064-40f74cb3.json",
+  "original_run_sha256": "65e7cd6db290a060cc24ec21dc204c425a0318738a270a0f7cae3b246b0c5813",
+  "base_sha": "1c586346751cb1fd6fb065f6902ef691d37c76e0",
+  "candidate_sha256": "26d30c790e5c9c5ab2b7f0c82614f45662b2812299c038744f56504b69c967bc",
+  "interpretation": {
+    "environment_diagnostic": "quoted_documentation_false_positive",
+    "evidence_source": "CONTRIBUTING.md#Executor transcript diagnostics",
+    "primary_runtime_failure": false,
+    "canonical_acceptance": false,
+    "next_step": "one bounded child candidate for project ontology context selection"
+  }
+}

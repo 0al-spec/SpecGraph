@@ -1,0 +1,163 @@
+diff --git a/specs/nodes/SG-SPEC-0064.yaml b/specs/nodes/SG-SPEC-0064.yaml
+index ad53a7f3..4cf07bc1 100644
+--- a/specs/nodes/SG-SPEC-0064.yaml
++++ b/specs/nodes/SG-SPEC-0064.yaml
+@@ -18,6 +18,9 @@ inputs:
+ - specs/nodes/SG-SPEC-0003.yaml
+ - specs/nodes/SG-SPEC-0010.yaml
+ - docs/proposals/0022_refinement_fan_out_pressure.md
++- docs/proposals/0232_verified_project_ontology_context.md
++- docs/archive/proposal_sources/0232_verified_project_ontology_context.md
++- docs/reviews/0232_project_ontology_context/source-notes.json
+ outputs:
+ - specs/nodes/SG-SPEC-0064.yaml
+ allowed_paths:
+@@ -31,6 +34,9 @@ acceptance:
+   while concrete child specs keep their existing semantic ownership and dependencies.
+ - Keeps validator implementation, supervisor workflow, queue control, runtime execution, and vocabulary
+   compiler behavior out of scope for this cluster.
++- Identifies the proposed project ontology context selection boundary from SG-RFC-0232, including stable
++  context identity and verified, unavailable, and invalid distinctions, for a dedicated child without
++  changing shared vocabulary primitives or activating policy.
+ acceptance_evidence:
+ - criterion: Defines SG-SPEC-0064 as the intermediate semantic cluster parent under SG-SPEC-0001 for governance,
+     refinement policy, graph-health governance, and vocabulary semantics.
+@@ -52,6 +58,13 @@ acceptance_evidence:
+   evidence: specification.scope.out excludes validator implementation, supervisor workflow, queue control,
+     runtime execution, and vocabulary compiler behavior; specification.non_goal_policy forbids runtime
+     realization claims and wrapper-only clustering.
++- criterion: Identifies the proposed project ontology context selection boundary from SG-RFC-0232, including
++    stable context identity and verified, unavailable, and invalid distinctions, for a dedicated child
++    without changing shared vocabulary primitives or activating policy.
++  evidence: specification.project_ontology_context_refinement cites SG-RFC-0232 and its attributed source,
++    records proposed explicit selection and stable context identity, distinguishes verified, unavailable,
++    and invalid results, and names the next dedicated child concern. Its authority_boundary preserves
++    SG-SPEC-0010 primitives and leaves policy activation and topology approval outside this pass.
+ prompt: Introduce the governance and vocabulary semantics cluster beneath SG-SPEC-0001 so root fan-out
+   pressure can be reduced through a meaningful intermediate parent for refinement policy, graph-health
+   governance, and vocabulary semantics.
+@@ -109,6 +122,40 @@ specification:
+     member_role: Ubiquitous vocabulary meta-ontology primitives.
+     ownership_boundary: Defines vocabulary primitive semantics for executable domain vocabularies without
+       prescribing compiler or runtime behavior.
++  project_ontology_context_refinement:
++    proposal_ref: docs/proposals/0232_verified_project_ontology_context.md
++    source_ref: docs/archive/proposal_sources/0232_verified_project_ontology_context.md
++    source_boundary: The attributed operator direction requests verified ontology grounding; the selection,
++      identity, and verification distinctions below continue the proposal's agent interpretation for review,
++      not an approved package meaning or an active project-wide gate.
++    bounded_concern: Explicit project ontology context selection with inspectable identity and verification
++      outcomes, distinct from the shared vocabulary primitive definitions.
++    proposed_selection: The project explicitly selects one versioned ontology package or a set with explicit
++      compatible dependency and name-resolution rules. A compiler release alone does not select vocabulary;
++      silent latest-version selection and last-package-wins resolution do not establish a verified context.
++    proposed_identity: A stable context revision identifies the selected package set and dependency closure,
++      each member's package identity, namespace, exact version, source and content hashes, captured source
++      and IR identities, and selected compiler and checking profiles. A verification result records the
++      resolved selection so a different input set cannot silently retain the same checked identity.
++    proposed_verification_distinctions:
++      verified: The declared structural checks succeeded for the selected context and identified inputs,
++        including required dependency and name-resolution checks. This does not establish semantic approval
++        or complete terminology coverage for a specification.
++      unavailable: The context is unselected or a required compiler or dependency check is missing or
++        unsupported. Separate successful package checks cannot establish unsupported closure verification;
++        draft capture remains available without a verified-context claim.
++      invalid: Checks find an invalid package, source/IR mismatch, duplicate identity, missing import,
++        incompatible requirement, or ambiguous unqualified name in the selected context. Report the failure
++        without substituting old IR as the current verified context.
++    authority_boundary: SG-SPEC-0010 retains Concept, RelationType, StateFamily, Alias, and Invariant;
++      SG-SPEC-0064 retains cluster ownership. This records a proposed refinement boundary only and neither
++      selects or changes an ontology package nor approves meanings, topology, policy activation, or rollout
++      completion. Existing member contracts and dependencies remain intact.
++    next_bounded_step: Review and authorize one dedicated child beneath SG-SPEC-0064 for project ontology
++      context selection, stable identity, and scoped verified/unavailable/invalid outcomes under SG-RFC-0232.
++      Materialize it only in a pass allowed to create the child and reconcile the parent dependency; do
++      not assign a child ID or add that dependency in this single-file pass. Leave terminology coverage,
++      freshness enforcement, migration, compiler implementation, storage, and UI to later bounded work.
+   non_goal_policy:
+   - SG-SPEC-0064 must not redefine member procedures, graph-health formulas, vocabulary adapter behavior,
+     or viewer affordances.
+@@ -116,5 +163,82 @@ specification:
+     semantics.
+   - SG-SPEC-0064 must not hide unresolved member gaps; backlog and evidence projections should continue
+     to point to the concrete member when the gap is member-specific.
+-gate_state: none
++gate_state: split_required
+ proposed_status: null
++proposed_maturity: null
++required_human_action: split spec scope before rerun
++last_outcome: split_required
++last_blocker: SG-SPEC-0064 now records the source-grounded proposed selection, identity, and verification
++  distinctions; YAML lint and acceptance/evidence alignment passed. Next authorize a dedicated child under
++  SG-RFC-0232 and parent dependency reconciliation beyond this single-file pass. No policy activation
++  or runtime implementation.
++last_run_id: 20261029T182812Z-SG-SPEC-0064-40f74cb3
++last_exit_code: 0
++last_changed_files:
++- specs/nodes/SG-SPEC-0064.yaml
++last_run_at: '2026-10-29T18:29:38.865512+00:00'
++last_worktree_path: ''
++last_branch: ''
++last_validator_results:
++  outputs: true
++  allowed_paths: true
++  reconciliation: true
++  atomicity: true
++  transition: true
++  executor_environment: true
++  runtime_artifacts: true
++  refinement_acceptance: true
++last_refinement_acceptance:
++  decision: review_required
++  change_class: graph_refactor
++  checks:
++    content_changed: true
++    hard_validation: true
++    single_spec_scope: true
++    constitutional_diff: false
++    graph_refactor_diff: true
++    atomicity_clear: true
++    within_mutation_budget: true
++  diff_paths:
++  - acceptance[4]
++  - acceptance_evidence[4]
++  - acceptance_evidence[4].criterion
++  - acceptance_evidence[4].evidence
++  - inputs[5]
++  - inputs[6]
++  - inputs[7]
++  - specification.project_ontology_context_refinement
++  - specification.project_ontology_context_refinement.proposal_ref
++  - specification.project_ontology_context_refinement.source_ref
++  - specification.project_ontology_context_refinement.source_boundary
++  - specification.project_ontology_context_refinement.bounded_concern
++  - specification.project_ontology_context_refinement.proposed_selection
++  - specification.project_ontology_context_refinement.proposed_identity
++  - specification.project_ontology_context_refinement.proposed_verification_distinctions
++  - specification.project_ontology_context_refinement.proposed_verification_distinctions.verified
++  - specification.project_ontology_context_refinement.proposed_verification_distinctions.unavailable
++  - specification.project_ontology_context_refinement.proposed_verification_distinctions.invalid
++  - specification.project_ontology_context_refinement.authority_boundary
++  - specification.project_ontology_context_refinement.next_bounded_step
++  mutation_classes:
++  - policy_text
++  mutation_budget: []
++  budget_exceeded_classes: []
++  changed_spec_files:
++  - specs/nodes/SG-SPEC-0064.yaml
++  review_reasons:
++  - run changed graph structure or spec contract paths
++  errors: []
++  warnings: []
++last_reconciliation:
++  worktree_spec_count: 71
++  changed_spec_ids:
++  - SG-SPEC-0064
++  semantic_dependencies_resolved: true
++  work_dependencies_ready: false
++  cycles: []
++last_requested_child_materialization: false
++last_materialized_child_paths: []
++last_errors:
++- 'Nested executor runtime state or migration setup failed. Evidence: `failed to open state db`, `failed
++  to initialize state runtime`, or'
