@@ -178,3 +178,46 @@ def test_invalid_json_values_and_duplicate_keys_fail_closed(tmp_path, output, me
     compiler.chmod(0o700)
     with pytest.raises(OntologySnapshotError, match=message):
         capture_ontology_snapshot(source, compiler)
+
+
+def test_compiler_pin_is_checked_before_execution(tmp_path):
+    source = tmp_path / "source.yaml"
+    source.write_text("original")
+    marker = tmp_path / "executed"
+    compiler = compiler_fixture(
+        tmp_path / "ontologyc", during_check=f"pathlib.Path({str(marker)!r}).touch()"
+    )
+    with pytest.raises(OntologySnapshotError, match="compiler hash") as error:
+        capture_ontology_snapshot(source, compiler, expected_compiler_sha256="0" * 64)
+    assert error.value.outcome == "invalid"
+    assert not marker.exists()
+
+
+def test_snapshot_error_classifies_io_timeout_and_malformed_ir(tmp_path, monkeypatch):
+    import subprocess
+
+    compiler = compiler_fixture(tmp_path / "ontologyc")
+    source = tmp_path / "source.yaml"
+    with pytest.raises(OntologySnapshotError) as unavailable:
+        capture_ontology_snapshot(source, compiler)
+    assert unavailable.value.outcome == "unavailable"
+    source.write_text("original")
+
+    def timeout(*args, **kwargs):
+        raise subprocess.TimeoutExpired(args[0], 60)
+
+    monkeypatch.setattr(subprocess, "run", timeout)
+    with pytest.raises(OntologySnapshotError) as unavailable:
+        capture_ontology_snapshot(source, compiler)
+    assert unavailable.value.outcome == "unavailable"
+    monkeypatch.undo()
+    compiler.write_text(
+        "#!/usr/bin/env python3\n"
+        "import pathlib,sys\n"
+        "if sys.argv[1] == 'compile':\n"
+        " out=pathlib.Path(sys.argv[sys.argv.index('--out')+1]); out.mkdir()\n"
+        " (out/'ontology.normalized.json').write_text('{invalid')\n"
+    )
+    with pytest.raises(OntologySnapshotError) as invalid:
+        capture_ontology_snapshot(source, compiler)
+    assert invalid.value.outcome == "invalid"

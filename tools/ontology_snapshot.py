@@ -19,6 +19,12 @@ from pathlib import Path
 class OntologySnapshotError(ValueError):
     """An ontology snapshot could not be verified for use."""
 
+    def __init__(self, message: str, *, outcome: str = "invalid") -> None:
+        super().__init__(message)
+        if outcome not in {"invalid", "unavailable"}:
+            raise ValueError("invalid snapshot error outcome")
+        self.outcome = outcome
+
 
 @dataclass(frozen=True, slots=True)
 class OntologySnapshot:
@@ -62,6 +68,7 @@ def capture_ontology_snapshot(
     ontologyc: Path,
     *,
     expected_ir_path: Path | None = None,
+    expected_compiler_sha256: str | None = None,
 ) -> OntologySnapshot:
     """Compile captured source; optionally require an exact saved-IR match.
 
@@ -75,14 +82,29 @@ def capture_ontology_snapshot(
         compiler_source = source_bytes.decode("utf-8-sig").encode("utf-8")
         expected_ir = expected_ir_path.read_bytes() if expected_ir_path is not None else None
         if not ontologyc.is_file() or not os.access(ontologyc, os.X_OK):
-            raise OntologySnapshotError("ontologyc must be an executable file")
+            raise OntologySnapshotError(
+                "ontologyc must be an executable file", outcome="unavailable"
+            )
         compiler_bytes = ontologyc.read_bytes()
-    except (OSError, UnicodeError) as error:
+    except OSError as error:
+        raise OntologySnapshotError(
+            f"cannot capture ontology inputs: {error}", outcome="unavailable"
+        ) from error
+    except UnicodeError as error:
         raise OntologySnapshotError(f"cannot capture ontology inputs: {error}") from error
 
     source_sha256 = _sha256(source_bytes)
     compiler_source_digest = f"sha256:{_sha256(compiler_source)}"
     compiler_sha256 = _sha256(compiler_bytes)
+    if expected_compiler_sha256 is not None:
+        if (
+            not isinstance(expected_compiler_sha256, str)
+            or len(expected_compiler_sha256) != 64
+            or any(c not in "0123456789abcdef" for c in expected_compiler_sha256)
+        ):
+            raise OntologySnapshotError("expected compiler SHA-256 must be lowercase hex")
+        if compiler_sha256 != expected_compiler_sha256:
+            raise OntologySnapshotError("compiler hash does not match operator pin")
     try:
         with tempfile.TemporaryDirectory(prefix="specgraph-ontology-") as temporary:
             work = Path(temporary)
@@ -127,7 +149,11 @@ def capture_ontology_snapshot(
     except subprocess.CalledProcessError as error:
         detail = error.stderr.strip() if isinstance(error.stderr, str) else ""
         raise OntologySnapshotError(f"ontology compiler failed: {detail or error}") from error
-    except (OSError, UnicodeError, json.JSONDecodeError, subprocess.TimeoutExpired) as error:
+    except (OSError, subprocess.TimeoutExpired) as error:
+        raise OntologySnapshotError(
+            f"cannot verify ontology snapshot: {error}", outcome="unavailable"
+        ) from error
+    except (UnicodeError, json.JSONDecodeError) as error:
         raise OntologySnapshotError(f"cannot verify ontology snapshot: {error}") from error
 
     return OntologySnapshot(
