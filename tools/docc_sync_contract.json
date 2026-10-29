@@ -1349,6 +1349,26 @@
         "publication",
         "confirmation"
       ]
+    },
+    {
+      "id": "verified-project-ontology-context",
+      "description": "Project-wide verified ontology context and staged migration are proposed, not active policy.",
+      "docs": [
+        "docs/proposals/0232_verified_project_ontology_context.md"
+      ],
+      "docc": [
+        "Sources/SpecGraph/Documentation.docc/VerifiedProjectOntologyContext.md"
+      ],
+      "required_terms": [
+        "SG-RFC-0232",
+        "deferred_until_canonicalized",
+        "OntologySnapshot",
+        "TraceSnapshot",
+        "/api/v1/practical-ontology",
+        "/api/v1/ontology-workbench",
+        "/ontology",
+        "runtime_profile_activation_allowed: false"
+      ]
     }
   ]
 }

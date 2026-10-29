@@ -1,0 +1,21 @@
+{
+  "artifact_kind": "conversation_notes_update",
+  "schema_version": 1,
+  "canonical": false,
+  "revision": "0cc00274018944f8949c9e18aae60bde",
+  "previous_revision": null,
+  "diff": {
+    "added": [
+      {
+        "id": "project_ontology_context",
+        "label": "Проверенная онтология для всех спецификаций",
+        "detail": "Проект выбирает одну онтологию или набор; терминология спецификаций опирается на проверенное содержимое.",
+        "parent_id": null
+      }
+    ],
+    "updated": [],
+    "links_changed": [],
+    "reviews_added": []
+  },
+  "snapshot_path": "conversation_memory/sketches/project-ontology-context/revisions/0cc00274018944f8949c9e18aae60bde"
+}

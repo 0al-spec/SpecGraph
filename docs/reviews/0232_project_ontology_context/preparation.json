@@ -1,0 +1,27 @@
+{
+  "artifact_kind": "project_ontology_context_proposal_preparation",
+  "schema_version": 1,
+  "base_sha": "a8d316bec2f8ac0ce3ea926f6f8675966f5ebad8",
+  "proposal_id": "0232",
+  "supervisor": {
+    "target": "SG-SPEC-0010",
+    "mode": "dry_run",
+    "selection_observed": true,
+    "executor_invoked": false,
+    "canonical_graph_changed": false,
+    "dry_run_stdout_sha256": "db2d353fa63c2d8efc501bc1a6ff673a51f6d7fe968ff5efa7785a2f285a8225"
+  },
+  "source_note": {
+    "path": "docs/reviews/0232_project_ontology_context/source-notes.json",
+    "sha256": "63d3af83f5139dac2ef68619710af3ddc5d6e30edde305f6a6cf45232f084f55",
+    "canonical": false
+  },
+  "checks": {
+    "proposal_tracking_gate": "passed",
+    "docc_sync": "passed"
+  },
+  "runtime_enforcement_implemented": false,
+  "human_approval_attested": false,
+  "evidence_admission_allowed": false,
+  "hosted_requests": 0
+}

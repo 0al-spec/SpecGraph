@@ -1,0 +1,28 @@
+id: SG-RFC-0232
+kind: proposal
+status: draft
+proposal_ref: docs/proposals/0232_verified_project_ontology_context.md
+provenance:
+  authored_by: agent
+  authority: proposal_draft
+  source_ref: docs/archive/proposal_sources/0232_verified_project_ontology_context.md
+atoms:
+  intents:
+  - id: ONT-CONTEXT
+    statement: Every project specification shall ground its domain terminology in an explicitly selected versioned context containing one verified ontology or a compatible set of verified ontologies.
+  - id: ONT-INPUTS
+    statement: Verification shall bind the selected package closure, captured source and IR bytes, compiler and checking profiles, and consumers shall use the same immutable context inputs within an operation.
+  - id: ONT-COVERAGE
+    statement: Terminology assessment shall retain qualified definitions and source locations in a scoped inventory, expose unassessed prose and ambiguity, and withhold whole-specification conformance for incomplete coverage.
+  - id: ONT-GAPS
+    statement: A valid ontology with gaps shall remain usable for resolved vocabulary while required unresolved terminology stays attributed review work and prevents the affected specification from being declared fully grounded.
+  - id: ONT-DRAFT
+    statement: Conversation capture and draft development shall remain available when ontology checks are unavailable, while ontology-dependent actions shall require the declared checks and term coverage.
+  - id: ONT-FRESHNESS
+    statement: Reuse of verification shall require matching project context, specification, binding and policy inputs, and Supervisor shall not treat missing, stale or partial evidence as current verified success.
+  - id: ONT-MIGRATION
+    statement: Existing specifications shall migrate through an explicit assessed inventory that preserves stable IDs and historical revisions, with unassessed scope and approved exceptions visible rather than silently marked conforming.
+  - id: ONT-VIEW
+    statement: SpecSpace workspace panels shall display selected context, verification, freshness, coverage and gaps, while local ontology graph imports shall not select or approve the project context.
+  - id: ONT-TRUST
+    statement: Structural verification, terminology review, human acceptance and implementation intent preservation shall remain distinct, and a compiler hash or model suggestion shall not establish semantic approval.
