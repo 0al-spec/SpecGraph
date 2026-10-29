@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+import unicodedata
 from collections import defaultdict
 from pathlib import Path
 from typing import Any
@@ -21,6 +22,21 @@ from project_ontology_context import ContextResult
 from spec_ontology_binding_index import slug, symbol_keys
 
 PROFILE = "specgraph-explicit-terms-v1"
+
+
+def _spelling_keys(value: str) -> set[str]:
+    """Keep Unicode terms distinct while retaining existing ASCII spelling rules."""
+    normalized = unicodedata.normalize("NFKC", value).casefold()
+    if not any(char.isalnum() for char in normalized):
+        return set()
+    if value.isascii():
+        return symbol_keys(value)
+    keys = set()
+    for part in (normalized, normalized.rsplit(":", 1)[-1]):
+        key = "-".join("".join(char if char.isalnum() else " " for char in part).split())
+        if key:
+            keys.update((key, key.replace("-", "")))
+    return keys
 
 
 def _sha(data: bytes) -> str:
@@ -159,7 +175,7 @@ def build_term_inventory(
                     [v for v in aliases if isinstance(v, str)] if isinstance(aliases, list) else []
                 )
                 for name in spellings:
-                    for key in symbol_keys(name):
+                    for key in _spelling_keys(name):
                         names[key].add(ref)
         selected_root = (root / specs_root).resolve()
         if not selected_root.is_relative_to(root) or not selected_root.is_dir():
@@ -194,7 +210,8 @@ def build_term_inventory(
             resolved = (root / path).resolve()
             if (
                 not resolved.is_relative_to(selected_root)
-                or not resolved.is_file()
+                or (documents is None and not resolved.is_file())
+                or (resolved.exists() and not resolved.is_file())
                 or path.name != resolved.name
             ):
                 raise ValueError(f"spec path is not a regular file inside selected root: {name}")
@@ -217,7 +234,7 @@ def build_term_inventory(
             for field, term_node in terms:
                 term = term_node.value
                 candidates = sorted(
-                    set().union(*(names.get(key, set()) for key in symbol_keys(term)))
+                    set().union(*(names.get(key, set()) for key in _spelling_keys(term)))
                 )
                 if ":" in term:
                     exact_count = refs.get(term, 0)

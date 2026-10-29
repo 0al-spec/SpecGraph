@@ -170,3 +170,40 @@ def test_field_path_identifies_terminology_key(sample):
     entry = next(e for e in result["entries"] if e["term"] == "Known term")
     assert entry["field_path"] == 'specification.terminology["Known term"]'
     assert entry["source"] == "specification.terminology"
+
+
+def test_unicode_alias_is_distinct_from_unrelated_term_and_casefolded(sample):
+    _, _, spec, context = sample
+    spec.write_text(
+        "id: SG-SPEC-0001\nspecification:\n  terminology:\n"
+        "    Требование: {}\n    ТРЕБОВАНИЕ: {}\n    Призрак: {}\n"
+    )
+    snapshot = context.snapshots[0]
+    ir = json.loads(snapshot.ir_bytes)
+    ir["classes"][0]["aliases"].append("Требование")
+    raw = json.dumps(ir, ensure_ascii=False).encode()
+    context = replace(context, snapshots=(replace(snapshot, ir_bytes=raw, ir_sha256=sha(raw)),))
+    result = inventory(sample, context=context)
+    assert result["outcome"] == "analyzed"
+    entries = {entry["term"]: entry for entry in result["entries"]}
+    for term in ("Требование", "ТРЕБОВАНИЕ"):
+        assert entries[term]["resolution"] == "spelling_candidate"
+        assert entries[term]["candidates"] == ["demo:Spec"]
+        assert entries[term]["authority"] == "structural_advisory_only"
+    assert entries["Призрак"]["resolution"] == "unknown"
+    assert entries["Призрак"]["classification"] == "legacy_unknown_term"
+    assert entries["Призрак"]["candidates"] == []
+    assert result["project_context"]["semantic_approval"] == "not_established"
+
+
+def test_captured_documents_survive_deleted_source(sample):
+    _, _, spec, _ = sample
+    original = spec.read_bytes()
+    expected = inventory(sample)
+    spec.unlink()
+    result = inventory(sample, documents=(("specs/nodes/SG-SPEC-0001.yaml", original),))
+    assert result["outcome"] == "analyzed"
+    assert result["entries"] == expected["entries"]
+    assert result["inputs"]["specs"][0]["sha256"] == sha(original)
+    entry = next(item for item in result["entries"] if item["term"] == "demo:Spec")
+    assert entry["location"]["start"] == {"line": 3, "column": 5, "offset": 36}
