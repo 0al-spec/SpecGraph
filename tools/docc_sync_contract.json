@@ -1371,6 +1371,24 @@
       ]
     },
     {
+      "id": "specificationmetrics-review-response",
+      "description": "Metric reports receive a revision-bound design response without introducing a numerical gate.",
+      "docs": [
+        "AGENTS.md",
+        "CONTRIBUTING.md"
+      ],
+      "docc": [
+        "Sources/SpecGraph/Documentation.docc/IntentAtoms.md"
+      ],
+      "required_terms": [
+        "SpecificationMetrics",
+        "base/head",
+        "trade-offs",
+        "unmeasured",
+        "numerical merge gate"
+      ]
+    },
+    {
       "id": "tooling-defect-registration",
       "description": "Confirmed false warnings have a graph return path and source-bound prevention evidence.",
       "docs": [

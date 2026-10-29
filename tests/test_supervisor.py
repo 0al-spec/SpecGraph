@@ -1018,6 +1018,10 @@ def test_codex_json_error_diagnostics_ignores_native_error_decoys_in_items(
         "invalid JSON\n",
         '"failed to open state db"\n',
         '[{"type":"error","message":"failed to open state db"}]\n',
+        '{"type":null,"message":"failed to open state db"}\n',
+        '{"type":["error"],"message":"failed to open state db"}\n',
+        '{"type":{},"message":"failed to open state db"}\n',
+        '{"message":"failed to open state db"}\n',
         '{"type":"error","message":{"message":"failed to open state db"}}\n',
         '{"type":"turn.failed","error":"failed to open state db"}\n',
     ],
@@ -1027,6 +1031,22 @@ def test_codex_json_error_diagnostics_ignores_unsupported_shapes(
     stdout: str,
 ) -> None:
     assert supervisor_module.codex_json_error_diagnostics(stdout) == ""
+
+
+def test_codex_json_error_diagnostics_consults_admission_policy(
+    supervisor_module: object, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    from specification_core import PredicateSpec
+
+    policy = supervisor_module.get_executor_diagnostic_evidence_module()
+    monkeypatch.setattr(
+        policy,
+        "EXECUTOR_DIAGNOSTIC_EVIDENCE_SPEC",
+        PredicateSpec(lambda context: False, name="test.reject_native_diagnostic"),
+    )
+    event = {"type": "error", "message": "failed to open state db"}
+
+    assert supervisor_module.codex_json_error_diagnostics(json.dumps(event) + "\n") == ""
 
 
 def test_run_codex_missing_final_message_does_not_accept_transcript(

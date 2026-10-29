@@ -35,3 +35,18 @@ declaration, not a claim that a nested spec-refinement executor ran for this
 bug fix. The delegated agent handled source diagnosis and code/tests; the main
 agent owns defect registration, integration and publication. No canonical spec
 was rewritten to justify an existing parser-contract repair.
+
+## Metric-review correction
+
+The first metric report exposed a policy boundary that the initial fix left
+inside the parser. The [metric response](metrics-review.md) binds that finding
+to the measured revisions and records the follow-up. The adapter now supplies
+immutable origin/event facts to `EXECUTOR_DIAGNOSTIC_EVIDENCE_SPEC` in its own
+source module. JSON shape validation and field mapping stay in the adapter;
+native `error`/`turn.failed` admission is the named policy. Its trace name is
+`executor.diagnostic_evidence_admitted`.
+
+AGENTS.md, CONTRIBUTING.md and DocC require substantive responses to metric
+reports: explain and defend the design, or repair an identified defect and
+verify it. This does not introduce a numerical merge gate. No lower CC/U or
+changed S is claimed before the follow-up collection completes.

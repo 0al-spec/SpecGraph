@@ -61,3 +61,17 @@ The defect observation links reproduction, expected behavior, implementation and
 regression evidence. A prepared fix remains review-pending until merged and
 does not approve ontology candidates from the original runs. Historical raw
 artifacts are retained, and replay under new code is labeled as a replay.
+
+## Metric-review follow-up
+
+The operator requested an assessment of the
+[SpecificationMetrics report on PR #828](https://github.com/0al-spec/SpecGraph/pull/828#issuecomment-6506530681),
+then authorized the correction and a reusable review rule:
+
+> ОК, давай сделаем и заведем правило содержательно отвечать на комментарий с этими SpecificationMetrics: либо отстаивать свою позицию, либо находить в решении реальный изъян и исправляться.
+
+This is another locally attributed excerpt from the same conversation. The
+follow-up separates native diagnostic-evidence admission from parsing and
+records the metric interpretation in [metrics-review.md](metrics-review.md).
+It remains within the existing defect/proposal route. The main agent owns this
+follow-up; the original delegated agent supplied its read-only assessment.

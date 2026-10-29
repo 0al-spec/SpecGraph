@@ -4975,6 +4975,22 @@ def get_spec_yaml_module() -> ModuleType:
     return module
 
 
+def get_executor_diagnostic_evidence_module() -> ModuleType:
+    """Load the sibling policy for both direct CLI and file-based imports."""
+    module_name = "_specgraph_executor_diagnostic_evidence"
+    existing = sys.modules.get(module_name)
+    if isinstance(existing, ModuleType):
+        return existing
+    path = TOOLS_DIR / "executor_diagnostic_evidence_spec.py"
+    spec = importlib.util.spec_from_file_location(module_name, path)
+    if spec is None or spec.loader is None:
+        raise RuntimeError(f"Failed to load executor diagnostic evidence policy from {path}")
+    module = importlib.util.module_from_spec(spec)
+    sys.modules[module_name] = module
+    spec.loader.exec_module(module)
+    return module
+
+
 def get_metric_packs_module() -> ModuleType:
     module_name = "_specgraph_metric_packs"
     existing = sys.modules.get(module_name)
@@ -52795,22 +52811,24 @@ def create_child_codex_home(
 
 def codex_json_error_diagnostics(stdout: str) -> str:
     """Project native JSONL error events without interpreting agent or tool items."""
+    policy = get_executor_diagnostic_evidence_module()
     diagnostics: list[str] = []
     for line in stdout.splitlines():
         try:
             event = json.loads(line)
         except (ValueError, TypeError):
             continue
-        if not isinstance(event, dict):
+        if not isinstance(event, dict) or not isinstance(event.get("type"), str):
             continue
         event_type = event.get("type")
+        context = policy.ExecutorDiagnosticEvidenceContext("codex_native_event", event_type)
+        if not policy.EXECUTOR_DIAGNOSTIC_EVIDENCE_SPEC.is_satisfied_by(context):
+            continue
         if event_type == "error":
             message = event.get("message")
-        elif event_type == "turn.failed":
+        else:
             error = event.get("error")
             message = error.get("message") if isinstance(error, dict) else None
-        else:
-            continue
         if isinstance(message, str) and message.strip():
             # Keep projection boundaries intact; the original JSONL remains in the transcript.
             diagnostic = " ".join(message.splitlines())

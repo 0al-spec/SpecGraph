@@ -47,7 +47,8 @@
   "impact_scope": "False validation findings and misleading diagnostic summary. The observed issue was not the primary runtime failure and does not explain Supervisor split-required exit semantics.",
   "subagent_scope": "Read-only reproduction followed by disjoint code/test implementation; main owns graph registration and publication.",
   "implementation_refs": [
-    "tools/supervisor.py"
+    "tools/supervisor.py",
+    "tools/executor_diagnostic_evidence_spec.py"
   ],
   "verification": {
     "status": "passed_local_checks",
@@ -57,7 +58,9 @@
       "tests/test_supervisor.py::test_codex_json_error_diagnostics_preserves_native_failures",
       "tests/test_supervisor.py::test_codex_json_error_diagnostics_ignores_native_error_decoys_in_items",
       "tests/test_supervisor.py::test_main_records_native_stdout_error_events_without_item_decoy_findings",
-      "tests/test_supervisor.py::test_classify_executor_environment_ignores_appended_stdout_transcript"
+      "tests/test_supervisor.py::test_classify_executor_environment_ignores_appended_stdout_transcript",
+      "tests/test_executor_diagnostic_evidence_spec.py",
+      "tests/test_supervisor.py::test_codex_json_error_diagnostics_consults_admission_policy"
     ]
   },
   "closure": {
@@ -75,5 +78,6 @@
     "proposal_node_path": "proposal_lane/nodes/proposal--executor-diagnostic-defect-20261029--b58ca528.json"
   },
   "repair_boundary": "The unmarked historical fragment is a baseline reproduction only. The repair separates native diagnostics from tool/agent content at new execution capture; it does not infer provenance for arbitrary old human transcripts.",
-  "prevention_action": "regression_test_added"
+  "prevention_action": "regression_test_added",
+  "metric_review_ref": "docs/reviews/executor_diagnostic_defect_20261029/metrics-review.md"
 }

@@ -14,6 +14,10 @@ introduce a canonical Defect kind. See the bounded observation under
 events while protocol markers come from the final-message file. Only native
 `error` and `turn.failed` messages are projected as diagnostics; retained
 agent/tool transcript items are excluded from environment classification.
+`EXECUTOR_DIAGNOSTIC_EVIDENCE_SPEC` owns this admission policy in a separate
+module with immutable origin/event facts. JSON decoding and field projection
+remain adapter mechanics; the stable policy trace is
+`executor.diagnostic_evidence_admitted`.
 
 ## Stacked PR comparison freshness
 
