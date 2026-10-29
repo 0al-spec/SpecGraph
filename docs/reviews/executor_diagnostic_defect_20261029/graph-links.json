@@ -1,0 +1,8 @@
+{
+  "user_intent_path": "intent_layer/nodes/user_intent--executor-diagnostic-defect-20261029--77486105.json",
+  "user_intent_handle": "user_intent::executor-diagnostic-defect-20261029",
+  "operator_request_path": "intent_layer/nodes/operator_request--executor-diagnostic-defect-20261029--7c2c620c.json",
+  "operator_request_handle": "operator_request::executor-diagnostic-defect-20261029",
+  "proposal_node_path": "proposal_lane/nodes/proposal--executor-diagnostic-defect-20261029--b58ca528.json",
+  "proposal_handle": "proposal::executor-diagnostic-defect-20261029"
+}

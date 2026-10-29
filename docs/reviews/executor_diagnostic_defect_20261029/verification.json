@@ -1,0 +1,81 @@
+{
+  "artifact_kind": "executor_diagnostic_defect_verification",
+  "schema_version": 1,
+  "defect_id": "EXECUTOR-DIAGNOSTIC-20261029",
+  "status": "passed_local_checks_review_pending",
+  "selected_graph_entries": [
+    {
+      "surface": "intent_layer_overlay",
+      "tracked_path": "intent_layer/nodes/operator_request--executor-diagnostic-defect-20261029--7c2c620c.json",
+      "handle": "operator_request::executor-diagnostic-defect-20261029",
+      "state": "proposal_linked",
+      "query_contract": {
+        "status": "ok",
+        "findings": []
+      }
+    },
+    {
+      "surface": "intent_layer_overlay",
+      "tracked_path": "intent_layer/nodes/user_intent--executor-diagnostic-defect-20261029--77486105.json",
+      "handle": "user_intent::executor-diagnostic-defect-20261029",
+      "state": "captured",
+      "query_contract": {
+        "status": "ok",
+        "findings": []
+      }
+    },
+    {
+      "surface": "proposal_lane_overlay",
+      "tracked_path": "proposal_lane/nodes/proposal--executor-diagnostic-defect-20261029--b58ca528.json",
+      "handle": "proposal::executor-diagnostic-defect-20261029",
+      "state": "under_review",
+      "query_contract": {
+        "required_fields": [
+          "proposal_repository_presence",
+          "proposal_handle",
+          "proposal_authority_state",
+          "proposal_target_region",
+          "proposal_lineage_link"
+        ],
+        "status": "queryable",
+        "findings": []
+      }
+    }
+  ],
+  "checks": {
+    "integration_tests": {
+      "command": ".venv/bin/python -m pytest -q tests/test_supervisor.py -k 'classify_executor_environment or codex_json_error_diagnostics or run_codex or build_codex_exec_command or main_records_native_stdout_error_events or executor_environment'",
+      "result": "55 passed, 1041 deselected",
+      "output_sha256": "a09d7d957b9cff377bc57d9d962f84890fbaa4efbcfe023d1631b5b71df06338"
+    },
+    "subagent_report": {
+      "final_targeted_tests": "64 passed, 1032 deselected",
+      "full_supervisor_tests_before_native_error_projection": "1079 passed",
+      "final_full_suite_repeated": false
+    },
+    "python_quality": "passed",
+    "docc_sync": "passed",
+    "historical_run_bytes_unchanged": true,
+    "graph_scope": "only the three selected defect-route nodes; no claim that all repository graph entries were reassessed"
+  },
+  "implementation_inventory": [
+    {
+      "path": "tools/supervisor.py",
+      "sha256": "9834cb8d0794a8ade1adb58d344cffc31cb7e9f81129cfcadb92e1c173c79ca5"
+    },
+    {
+      "path": "tests/test_supervisor.py",
+      "sha256": "55349bb296d7861dee9ce72d11398f729bc140e9e159eb88a30725793fdc46f3"
+    }
+  ],
+  "native_event_shape_reference": "https://github.com/openai/codex/blob/rust-v0.163.0/sdk/typescript/src/events.ts",
+  "scope_limits": [
+    "No hosted model run performed for this repair.",
+    "Stored tests use controlled executor event/process fixtures.",
+    "Historical unmarked human transcripts cannot be retroactively assigned reliable stream provenance.",
+    "Prepared fix and graph visibility do not constitute merged closure or approval of prior candidates."
+  ],
+  "hosted_requests": 0,
+  "canonical_mutations_allowed": false,
+  "defect_closed": false
+}

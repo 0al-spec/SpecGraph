@@ -1,0 +1,79 @@
+{
+  "artifact_kind": "executor_diagnostic_defect_observation",
+  "schema_version": 1,
+  "defect_id": "EXECUTOR-DIAGNOSTIC-20261029",
+  "status": "fix_prepared_review_pending",
+  "source_ref": "docs/reviews/executor_diagnostic_defect_20261029/source.md",
+  "source_quote": "Ложные предупреждения нужно проводить как дефекты тоже через граф со всеми вытекающими процедурами",
+  "affected_contract_refs": [
+    "specs/nodes/SG-SPEC-0003.yaml",
+    "CONTRIBUTING.md#executor-transcript-diagnostics",
+    "docs/proposals/0039_review_feedback_learning_loop.md",
+    "docs/proposals/0048_supervisor_stalled_run_salvage_protocol.md",
+    "docs/proposals/0056_supervisor_executor_adapter_gateway.md"
+  ],
+  "observed_run": {
+    "run_id": "20261029T182812Z-SG-SPEC-0064-40f74cb3",
+    "artifact_sha256": "65e7cd6db290a060cc24ec21dc204c425a0318738a270a0f7cae3b246b0c5813",
+    "child_exit_code": 0,
+    "outcome": "split_required",
+    "gate_state": "split_required",
+    "environment": {
+      "issues": [
+        {
+          "kind": "state_runtime_failure",
+          "summary": "Nested executor runtime state or migration setup failed.",
+          "evidence": [
+            "`failed to open state db`, `failed to initialize state runtime`, or",
+            "`state db discrepancy`; keep ordinary migration plans and successful migration"
+          ]
+        }
+      ],
+      "issue_kinds": [
+        "state_runtime_failure"
+      ],
+      "primary_failure": false
+    },
+    "validation_errors": [
+      "Nested executor runtime state or migration setup failed. Evidence: `failed to open state db`, `failed to initialize state runtime`, or"
+    ],
+    "stdout": "RUN_OUTCOME: split_required\nBLOCKER: SG-SPEC-0064 now records the source-grounded proposed selection, identity, and verification distinctions; YAML lint and acceptance/evidence alignment passed. Next authorize a dedicated child under SG-RFC-0232 and parent dependency reconciliation beyond this single-file pass. No policy activation or runtime implementation."
+  },
+  "minimal_input": "`failed to open state db`",
+  "baseline_issue_kind": "state_runtime_failure",
+  "expected": "Quoted documentation, agent replies and tool output are not runtime diagnostic events; actual native errors remain detectable.",
+  "root_cause_class": "artifact_contract_validation_gap",
+  "root_cause": "Human-readable executor transcript and diagnostic stream were combined, then all lines were substring-matched without provenance.",
+  "impact_scope": "False validation findings and misleading diagnostic summary. The observed issue was not the primary runtime failure and does not explain Supervisor split-required exit semantics.",
+  "subagent_scope": "Read-only reproduction followed by disjoint code/test implementation; main owns graph registration and publication.",
+  "implementation_refs": [
+    "tools/supervisor.py"
+  ],
+  "verification": {
+    "status": "passed_local_checks",
+    "artifact_ref": "docs/reviews/executor_diagnostic_defect_20261029/verification.json",
+    "test_refs": [
+      "tests/test_supervisor.py::test_run_codex_separates_stdout_events_from_environment_diagnostics",
+      "tests/test_supervisor.py::test_codex_json_error_diagnostics_preserves_native_failures",
+      "tests/test_supervisor.py::test_codex_json_error_diagnostics_ignores_native_error_decoys_in_items",
+      "tests/test_supervisor.py::test_main_records_native_stdout_error_events_without_item_decoy_findings",
+      "tests/test_supervisor.py::test_classify_executor_environment_ignores_appended_stdout_transcript"
+    ]
+  },
+  "closure": {
+    "status": "review_pending",
+    "merged_fix": false,
+    "canonical_candidate_approved": false,
+    "historical_run_rewritten": false
+  },
+  "graph": {
+    "user_intent_handle": "user_intent::executor-diagnostic-defect-20261029",
+    "operator_request_handle": "operator_request::executor-diagnostic-defect-20261029",
+    "proposal_handle": "proposal::executor-diagnostic-defect-20261029",
+    "user_intent_path": "intent_layer/nodes/user_intent--executor-diagnostic-defect-20261029--77486105.json",
+    "operator_request_path": "intent_layer/nodes/operator_request--executor-diagnostic-defect-20261029--7c2c620c.json",
+    "proposal_node_path": "proposal_lane/nodes/proposal--executor-diagnostic-defect-20261029--b58ca528.json"
+  },
+  "repair_boundary": "The unmarked historical fragment is a baseline reproduction only. The repair separates native diagnostics from tool/agent content at new execution capture; it does not infer provenance for arbitrary old human transcripts.",
+  "prevention_action": "regression_test_added"
+}

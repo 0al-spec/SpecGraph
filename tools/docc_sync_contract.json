@@ -1369,6 +1369,26 @@
         "/ontology",
         "runtime_profile_activation_allowed: false"
       ]
+    },
+    {
+      "id": "tooling-defect-registration",
+      "description": "Confirmed false warnings have a graph return path and source-bound prevention evidence.",
+      "docs": [
+        "AGENTS.md",
+        "CONTRIBUTING.md"
+      ],
+      "docc": [
+        "Sources/SpecGraph/Documentation.docc/ProposalsAndRuntime.md"
+      ],
+      "required_terms": [
+        ".0al",
+        "regression"
+      ],
+      "docc_required_terms": [
+        "Confirmed false warnings",
+        "intent/proposal",
+        "review-pending"
+      ]
     }
   ]
 }

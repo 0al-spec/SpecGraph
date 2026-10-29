@@ -1,0 +1,82 @@
+{
+  "artifact_kind": "proposal_lane_node",
+  "schema_version": 1,
+  "title": "Implementation Handoff Proposal for SG-SPEC-0003 (executor_diagnostic_false_positive)",
+  "created_at": "2026-10-29T19:22:31.821964+00:00",
+  "updated_at": "2026-10-29T19:22:31.821974+00:00",
+  "policy_reference": {
+    "artifact_path": "tools/proposal_lane_policy.json",
+    "artifact_sha256": "cf16a8601fee008b754a9852160bb249386fc6182e9500fad95e72adc585eabc",
+    "version": 1
+  },
+  "proposal_repository_presence": {
+    "tracked_presence": "repository_tracked",
+    "path_class": "proposal_node_path",
+    "persistence_boundary": "review_visible_repository_separate_from_runtime",
+    "tracked_path": "proposal_lane/nodes/proposal--executor-diagnostic-defect-20261029--b58ca528.json"
+  },
+  "proposal_handle": {
+    "handle_value": "proposal::executor-diagnostic-defect-20261029",
+    "handle_status": "active"
+  },
+  "proposal_authority_state": "under_review",
+  "proposal_target_region": {
+    "target_kind": "canonical_node",
+    "target_reference": "SG-SPEC-0003",
+    "change_scope": "executor_diagnostic_false_positive"
+  },
+  "proposal_lineage_link": [
+    {
+      "lineage_role": "motivated_by",
+      "source_kind": "canonical_node",
+      "source_reference": "SG-SPEC-0003"
+    },
+    {
+      "lineage_role": "derived_from",
+      "source_kind": "runtime_artifact",
+      "source_reference": "docs/reviews/executor_diagnostic_defect_20261029/defect.json"
+    },
+    {
+      "lineage_role": "motivated_by",
+      "source_kind": "intent_layer_node",
+      "source_reference": "user_intent::executor-diagnostic-defect-20261029"
+    },
+    {
+      "lineage_role": "derived_from",
+      "source_kind": "intent_layer_node",
+      "source_reference": "operator_request::executor-diagnostic-defect-20261029"
+    }
+  ],
+  "proposal_artifact_link": [
+    {
+      "artifact_role": "supporting_runtime_artifact",
+      "reference_kind": "runtime_artifact",
+      "reference_value": "docs/reviews/executor_diagnostic_defect_20261029/defect.json"
+    }
+  ],
+  "proposal_payload": {
+    "proposal_type": "implementation_handoff_proposal",
+    "trigger": "confirmed_runtime_observation",
+    "recommended_action": "review_prepared_diagnostic_fix_and_regressions",
+    "signal": "executor_diagnostic_false_positive",
+    "source_work_item_type": "implementation_work",
+    "execution_policy": "emit_proposal",
+    "transition_profile": "",
+    "packet_type": "",
+    "target_artifact_class": "",
+    "user_intent_handle": "user_intent::executor-diagnostic-defect-20261029",
+    "operator_request_handle": "operator_request::executor-diagnostic-defect-20261029"
+  },
+  "runtime_bridge": {
+    "proposal_queue_status": "review_pending",
+    "supporting_run_ids": [
+      "20261029T182812Z-SG-SPEC-0064-40f74cb3"
+    ],
+    "occurrence_count": null,
+    "threshold": null,
+    "proposal_artifact_path": "docs/reviews/executor_diagnostic_defect_20261029/defect.json",
+    "applied_run_id": "",
+    "applied_at": "",
+    "operator_request_handle": "operator_request::executor-diagnostic-defect-20261029"
+  }
+}

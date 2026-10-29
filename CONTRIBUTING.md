@@ -633,8 +633,19 @@ complexity measurements when evaluating refactoring pilots.
 
 ## Executor transcript diagnostics
 
-Nested executor stderr can include operator notes, specification text, and
-diffs alongside runtime logs. Migration vocabulary alone is not evidence of a
+Confirmed false warnings are defects. Register the source-bound observation
+through the existing intent/proposal graph lanes with an affected contract,
+reproduction, proposed fix and regression evidence. `.0al` remains a coordination
+receipt; the graph record supplies the return path. Keep a prepared fix
+review-pending until merged, and preserve the original run's meaning. The
+[2026-10-29 diagnostic defect](docs/reviews/executor_diagnostic_defect_20261029/source.md)
+is the first explicit application of this rule.
+
+Historical human-readable executor stderr can include operator notes,
+specification text and diffs alongside runtime logs. New Codex runs use JSONL
+stdout events and an independent final-message file. Only native top-level
+`error` and `turn.failed` messages are projected into diagnostics; the retained
+stdout transcript is excluded from classification. Migration vocabulary alone is not evidence of a
 runtime failure. Require explicit state failure diagnostics such as
 `failed to open state db`, `failed to initialize state runtime`, or
 `state db discrepancy`; keep ordinary migration plans and successful migration

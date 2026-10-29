@@ -1,0 +1,24 @@
+{
+  "artifact_kind": "operator_request_packet",
+  "schema_version": 1,
+  "user_intent": {
+    "intent_handle": "user_intent::executor-diagnostic-defect-20261029",
+    "source_kind": "chat_instruction",
+    "source_summary": "Register confirmed false warnings as graph-tracked defects and repair executor diagnostic transcript contamination. Exact source excerpts and bounded observation are retained in docs/reviews/executor_diagnostic_defect_20261029/source.md.",
+    "selected_node_ref": "SG-SPEC-0003",
+    "unresolved_questions": []
+  },
+  "operator_request": {
+    "request_handle": "operator_request::executor-diagnostic-defect-20261029",
+    "target_spec_id": "SG-SPEC-0003",
+    "run_mode": "targeted_refine",
+    "operator_note": "Treat the observed warning as a tooling defect under existing observation/evidence and executor-adapter contracts. Register the observation and scoped repair proposal; preserve actual runtime error detection, final-message authority and historical run results. Canonical spec refinement is not a prerequisite for repairing this existing parser contract, and no automatic canonical writes or candidate approvals are requested.",
+    "mutation_budget": [],
+    "run_authority": [],
+    "execution_profile": "standard",
+    "stop_conditions": [
+      "first_structured_outcome",
+      "review_boundary_reached"
+    ]
+  }
+}
