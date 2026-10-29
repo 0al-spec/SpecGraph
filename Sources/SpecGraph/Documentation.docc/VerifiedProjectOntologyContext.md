@@ -61,3 +61,18 @@ The proposal's acceptance matrix describes future tests, not completed runs.
 Intent preservation across specification, code and observation is a separate
 bounded follow-up using Ontology examples and 0226 facts. An agent skill can
 guide that review without substituting for evidence or human acceptance.
+
+## Supervisor contract candidate
+
+The review packet at
+`docs/reviews/0232_project_ontology_context/supervisor/README.md` preserves a
+targeted `split_required` result and a subsequent one-child materialization.
+The latter produced the proposed SG-SPEC-0072 selection contract and SG-SPEC-0064
+parent reconciliation, with zero validation errors and `review_pending`.
+`accepted_canonical_diff: false` remains the recorded result. Exact candidate
+files are retained under `docs/reviews/`; they are not canonical graph updates.
+
+The first run's quoted-documentation environment finding and the existing soft
+ontology gate's unestablished applicability remain in the observations. No gate
+is cleared by this packet. Contract review and supported Supervisor adoption
+precede the minimal configuration/runtime implementation.
