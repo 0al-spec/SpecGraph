@@ -5,11 +5,18 @@ from __future__ import annotations
 
 import argparse
 import json
+import sys
 from pathlib import Path
 from typing import Any
 
 from ontology_imports import ROOT, load_json, relative_path, write_json
-from spec_ontology_binding_index import DEFAULT_IR_PATH, build_binding_index
+from ontology_snapshot import OntologySnapshot, capture_ontology_snapshot
+from spec_ontology_binding_index import (
+    DEFAULT_IR_PATH,
+    DEFAULT_ONTOLOGY_SOURCE,
+    build_binding_index,
+    snapshot_evidence,
+)
 
 PROPOSAL_ID = "0135"
 SCHEMA_VERSION = 1
@@ -133,9 +140,16 @@ def validate_entry(
     }
 
 
-def build_validation_report(*, ir_path: Path = DEFAULT_IR_PATH) -> dict[str, Any]:
-    binding_index = build_binding_index(ir_path=ir_path)
-    ir = load_json(ir_path)
+def build_validation_report(
+    *, ir_path: Path = DEFAULT_IR_PATH, snapshot: OntologySnapshot | None = None
+) -> dict[str, Any]:
+    ir = json.loads(snapshot.ir_bytes) if snapshot is not None else load_json(ir_path)
+    # Even legacy, unverified reports use a single in-memory read.
+    binding_index = (
+        build_binding_index(ir_path=ir_path, snapshot=snapshot)
+        if snapshot is not None
+        else build_binding_index(ir_path=ir_path, ir=ir)
+    )
     relations = relation_contracts(ir)
     entries = [
         validate_entry(entry, relations=relations)
@@ -159,6 +173,7 @@ def build_validation_report(*, ir_path: Path = DEFAULT_IR_PATH) -> dict[str, Any
         "canonical_mutations_allowed": False,
         "tracked_artifacts_written": False,
         "ontology_ir_ref": relative_path(ir_path),
+        "ontology_verification": snapshot_evidence(snapshot),
         "source_binding_index_kind": binding_index["artifact_kind"],
         "validation_modes": {
             "legacy_specs": "report_only",
@@ -179,6 +194,8 @@ def build_validation_report(*, ir_path: Path = DEFAULT_IR_PATH) -> dict[str, Any
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--ontology-ir", default=str(DEFAULT_IR_PATH))
+    parser.add_argument("--ontologyc", help="compiler executable; enables checked ontology mode")
+    parser.add_argument("--ontology-source", default=str(DEFAULT_ONTOLOGY_SOURCE))
     parser.add_argument("--output", default=str(DEFAULT_OUTPUT_PATH))
     parser.add_argument("--write", action="store_true")
     return parser.parse_args()
@@ -192,7 +209,18 @@ def main() -> int:
     output_path = Path(args.output)
     if not output_path.is_absolute():
         output_path = ROOT / output_path
-    report = build_validation_report(ir_path=ir_path)
+    try:
+        snapshot = (
+            capture_ontology_snapshot(
+                Path(args.ontology_source), Path(args.ontologyc), expected_ir_path=ir_path
+            )
+            if args.ontologyc
+            else None
+        )
+        report = build_validation_report(ir_path=ir_path, snapshot=snapshot)
+    except (OSError, ValueError) as exc:
+        print(str(exc), file=sys.stderr)
+        return 2
     if args.write:
         path = write_json(output_path, report)
         print(relative_path(path))

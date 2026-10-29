@@ -68,3 +68,57 @@ def test_spec_ontology_validation_report_write_target_is_runs_only() -> None:
     assert module.relative_path(module.DEFAULT_OUTPUT_PATH) == (
         "runs/spec_ontology_validation_report.json"
     )
+
+
+def test_report_uses_one_ir_read_and_marks_unverified(monkeypatch) -> None:
+    module = load_validation_module()
+    calls = []
+    original = module.load_json
+
+    def read_once(path):
+        calls.append(path)
+        return original(path)
+
+    monkeypatch.setattr(module, "load_json", read_once)
+    report = module.build_validation_report()
+    assert len(calls) == 1
+    assert report["ontology_verification"] == {"status": "not_verified"}
+
+
+def test_checked_snapshot_is_consumed_without_reopening_ir(monkeypatch) -> None:
+    module = load_validation_module()
+    from ontology_snapshot import OntologySnapshot
+
+    raw = module.DEFAULT_IR_PATH.read_bytes()
+    snapshot = OntologySnapshot(
+        b"source", raw, "sourcehash", "sha256:source", "irhash", "compilerhash"
+    )
+
+    def fail_read(_path):
+        raise AssertionError("consumer reopened the IR")
+
+    monkeypatch.setattr(module, "load_json", fail_read)
+    report = module.build_validation_report(snapshot=snapshot)
+    assert report["ontology_verification"] == {
+        "status": "compiler_checked",
+        "source_sha256": "sourcehash",
+        "ir_sha256": "irhash",
+        "compiler_sha256": "compilerhash",
+        "compiler_provenance": "not_verified",
+    }
+    assert report["summary"]["spec_count"] > 0
+
+
+def test_checked_cli_fails_if_compiler_missing(tmp_path) -> None:
+    import subprocess
+
+    for tool in ("spec_ontology_binding_index.py", "spec_ontology_validation_report.py"):
+        result = subprocess.run(
+            [sys.executable, str(ROOT / "tools" / tool), "--ontologyc", str(tmp_path / "missing")],
+            text=True,
+            capture_output=True,
+            check=False,
+        )
+        assert result.returncode == 2
+        assert "ontologyc" in result.stderr
+        assert not result.stdout
