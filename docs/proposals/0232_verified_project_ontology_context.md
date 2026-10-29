@@ -64,7 +64,7 @@ Related proposals: [0132](0132_project_local_ontology_package_boundary.md),
 [0135](0135_spec_ontology_validation_report.md),
 [0138](0138_ontology_gap_review_workflow.md),
 [0140](0140_legacy_spec_ontology_backfill_plan.md),
-[0144](0144_ontology_applicability_import.md), and
+[0144](0144_ontology_model_applicability_import.md), and
 [0231](0231_native_specgraph_runtime.md).
 These retain their original implemented/report-only scopes.
 

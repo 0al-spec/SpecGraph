@@ -1,0 +1,73 @@
+{
+  "artifact_kind": "specgraph.intent-decision-review/v1",
+  "schema_version": 1,
+  "base_sha": "a8d316bec2f8ac0ce3ea926f6f8675966f5ebad8",
+  "intent_delta_sha256": "1eaf82306b56d123f3a1ad3c583f4d5844c666e3d73bb83341bc0ef2e84f9f5e",
+  "source_scope_sha256": "8807f7549511cfdd2f0cd8ed0de7eba1bebec2674ef8a80570f64acfe3d778b3",
+  "pr_body_sha256": "a0dbab0cf896d9cf25c71be53c886af6153abc85d23ae9f7d904b2df14960ac6",
+  "decisions": [
+    {
+      "change_sha256": "71aeffde686236ea0fe53f333403a0c42531303d3de942441fa4ff2e31cf3461",
+      "disposition": "contract_only",
+      "rationale": "ONT-CONTEXT: The operator explicitly requires all project specifications to use verified ontology vocabulary. The Project selection and Terminology coverage sections propose the context model; no selector, canonical schema or enforcement is implemented.",
+      "implementation_refs": [],
+      "specification_refs": []
+    },
+    {
+      "change_sha256": "20c1f385a4eae5110f430ef6010ad150d5314be50244f3cee3c04312ca1808cd",
+      "disposition": "contract_only",
+      "rationale": "ONT-INPUTS: The Project selection and immutable inputs section extends the existing single-package snapshot concept to a proposed checked context and dependency closure. Existing snapshot code is only inspected context; no runtime consumer or dependency resolver changes in this PR.",
+      "implementation_refs": [],
+      "specification_refs": []
+    },
+    {
+      "change_sha256": "01db0a277aa6310d8a5dc54cc708a0933a6cf35f8c07ab5ba257a4e39adf986d",
+      "disposition": "contract_only",
+      "rationale": "ONT-COVERAGE: The Terminology coverage section requires scoped source-located assessment and keeps unassessed prose explicit. The full coverage profile and semantic reviewer are future work; this text is not a successful assessment of the current corpus.",
+      "implementation_refs": [],
+      "specification_refs": []
+    },
+    {
+      "change_sha256": "ac7fa347bdcd38b1b9744e6678f90f293b83fdc473e5bc9dc7813cedb07e113d",
+      "disposition": "contract_only",
+      "rationale": "ONT-GAPS: The operator permits structurally valid ontologies with gaps. The action-specific table retains usable resolved vocabulary while withholding full grounding for required unresolved terms; no new gate or term acceptance is activated.",
+      "implementation_refs": [],
+      "specification_refs": []
+    },
+    {
+      "change_sha256": "d0491f03ac9eedbdcb607890d8a4159c52b759fed270eb9530175e967600df50",
+      "disposition": "contract_only",
+      "rationale": "ONT-DRAFT: The operator endorsed preserving conversational capture before terminology resolution. The readiness table proposes the boundary between drafts and dependent actions; current capture code and canonical permissions are unchanged.",
+      "implementation_refs": [],
+      "specification_refs": []
+    },
+    {
+      "change_sha256": "395a39f049c4b949d78c1e38fad10652a81329cc48626e9aa402ccf6410d67d5",
+      "disposition": "contract_only",
+      "rationale": "ONT-FRESHNESS: The Freshness, reuse and Supervisor section proposes binding all influencing context/spec/binding/policy inputs rather than trusting artifact presence. No cache admission, freshness implementation or Supervisor decision code is introduced.",
+      "implementation_refs": [],
+      "specification_refs": []
+    },
+    {
+      "change_sha256": "ccb3b10f100366736b38fb7241c5ce7e143f4402558a47011713e5197ae7d965",
+      "disposition": "contract_only",
+      "rationale": "ONT-MIGRATION: The migration rows and delivery sequence propose preserving IDs/history and making unassessed legacy scope and exceptions visible. No canonical vocabulary assignment, historical revision rewrite or approved exception is produced.",
+      "implementation_refs": [],
+      "specification_refs": []
+    },
+    {
+      "change_sha256": "0f550994c350d900581112c03b233ae00f5e11ceabf607887b9906a0aa9dc4da",
+      "disposition": "contract_only",
+      "rationale": "ONT-VIEW: The SpecSpace section reuses inspected workspace endpoints and preserves browser-local /ontology exploration. No SpecSpace endpoint, UI parser, trust badge or project-selection behavior changes here.",
+      "implementation_refs": [],
+      "specification_refs": []
+    },
+    {
+      "change_sha256": "e8af53c258475c6b1d2fd929bb694464030918e317a1ba6a4694988e9b6152d9",
+      "disposition": "contract_only",
+      "rationale": "ONT-TRUST: The responsibility table and scoped review rules distinguish formal checking, terminology review, human acceptance and future intent preservation. This contract-only design grants no model/compiler approval authority and introduces no production decision.",
+      "implementation_refs": [],
+      "specification_refs": []
+    }
+  ]
+}
