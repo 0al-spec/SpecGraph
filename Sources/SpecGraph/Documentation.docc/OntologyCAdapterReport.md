@@ -49,10 +49,10 @@ ref, and digest. The digest must match the normalized IR `sourceDigest`.
 The smoke also verifies that output refs resolve under the fixture directory and
 that report counts match the resolved concept refs and ontology gaps.
 
-### Ontology 0.1.1 release integration
+### Ontology 0.2.0 release integration
 
-CI builds `ontologyc` from Ontology tooling release `0.1.1`, commit
-`21e4cb32ed042e629e72b708b8b086fb32d4cebc`, before invoking the release
+CI builds `ontologyc` from Ontology tooling release `0.2.0`, commit
+`1a47f7058228efb412cbdeaabbaf27bca25e9846`, before invoking the release
 integration smoke. The smoke invokes the supplied binary and checks the source
 checkout HEAD. This compiler release is distinct from SpecGraph's project-local
 `org.0al.specgraph.core@0.1.0` package, which remains a draft. The freshly
@@ -87,7 +87,7 @@ authenticate the executable or establish release provenance. The caller must
 trust the compiler and its environment; this is not a sandbox.
 
 The raw source hash covers exact file bytes. The compiler digest follows Ontology
-0.1.1's UTF-8 text decoding, including removal of a leading BOM, and is recorded
+0.2.0's UTF-8 text decoding, including removal of a leading BOM, and is recorded
 separately.
 
 Only the release smoke currently uses this helper. Other ontology consumers and

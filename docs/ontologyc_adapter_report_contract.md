@@ -118,10 +118,10 @@ The smoke passes only when:
 - the authority boundary forbids report authority, automatic import-lock
   updates, and automatic canonical node updates.
 
-### Ontology 0.1.1 release integration
+### Ontology 0.2.0 release integration
 
-The release integration smoke uses the Ontology tooling release `0.1.1`, Git
-commit `21e4cb32ed042e629e72b708b8b086fb32d4cebc`. This is the version of the
+The release integration smoke uses the Ontology tooling release `0.2.0`, Git
+commit `1a47f7058228efb412cbdeaabbaf27bca25e9846`. This is the version of the
 compiler source, separate from the `0.1.0` version of SpecGraph's own
 `org.0al.specgraph.core` ontology package. The project-local package remains a
 draft; a compiler release does not accept its terms.
@@ -163,7 +163,7 @@ authenticate the compiler or prove it came from the release. The executable and
 its environment must be trusted by the caller; this is not a sandbox.
 
 The raw source digest and compiler `sourceDigest` describe different inputs:
-the former hashes the exact file bytes, while the latter follows Ontology 0.1.1's
+the former hashes the exact file bytes, while the latter follows Ontology 0.2.0's
 UTF-8 text decoding, including removal of a leading BOM. Both are recorded so a
 valid BOM-bearing file is not mistaken for a mismatch.
 
