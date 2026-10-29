@@ -10,6 +10,7 @@ import sys
 from pathlib import Path
 
 import pytest
+import yaml
 
 SUPERVISOR = Path(__file__).resolve().parents[1] / "tools" / "supervisor.py"
 
@@ -205,10 +206,14 @@ def test_checked_then_changed_target_reports_previous_stale(tmp_path):
 
 
 def test_legacy_abbreviation_remains_enabled_without_context_mode(workspace):
-    result = call(workspace, "--output-m", "summary", "--ontology-context-project-id", "demo")
-    assert result.returncode == 2
-    assert "ontology context options require" in result.stderr
-    assert "unrecognized arguments" not in result.stderr
+    result = call(workspace, "--build-project", "--output-m", "summary")
+    assert result.returncode in {0, 1}, result.stderr
+    assert "ambiguous option" not in result.stderr
+    report = json.loads(result.stdout)
+    assert report["artifact_kind"] == "project_environment"
+    assert not (workspace / "runs/project_ontology_context").exists()
+    help_result = call(workspace, "--help")
+    assert "--build-project-ontology-context-check --help" in " ".join(help_result.stdout.split())
 
 
 @pytest.mark.parametrize(
@@ -236,3 +241,81 @@ def test_context_mode_rejects_abbreviations(workspace, args):
     result = call(workspace, *args)
     assert result.returncode == 2 and not result.stdout
     assert not (workspace / "runs").exists()
+
+
+@pytest.mark.parametrize("selected_input", ["selection", "source", "ir", "compiler"])
+def test_output_does_not_replace_selected_inputs(workspace, selected_input):
+    directory = workspace / "runs/project_ontology_context"
+    directory.mkdir(parents=True)
+    output = directory / "SG-SPEC-0001.json"
+    original = json.dumps(
+        {
+            "artifact_kind": "project_ontology_target_check",
+            "schema_version": 1,
+            "target_spec_id": "SG-SPEC-0001",
+            "project_id": "demo",
+        }
+    ).encode()
+    output.write_bytes(original)
+    relative = output.relative_to(workspace).as_posix()
+    member = {
+        "id": "demo",
+        "namespace": "ex",
+        "version": "1.0.0",
+        "source": "source.yaml",
+        "ir": "ir.json",
+        "source_sha256": "a" * 64,
+        "ir_sha256": "b" * 64,
+    }
+    if selected_input in {"source", "ir"}:
+        member[selected_input] = relative
+    selection = {
+        "artifact_kind": "specgraph_project_ontology_selection",
+        "schema_version": 1,
+        "packages": [member],
+        "profiles": ["ontologyc-structural-v1"],
+        "composition": {"dependency_rule": "explicit", "name_resolution_rule": "qualified"},
+    }
+    (workspace / "selection.yaml").write_text(yaml.safe_dump(selection))
+    args = [
+        "--build-project-ontology-context-check",
+        "--target-spec",
+        "SG-SPEC-0001",
+        "--ontology-context-project-id",
+        "demo",
+        "--ontology-context-selection",
+        relative if selected_input == "selection" else "selection.yaml",
+    ]
+    if selected_input == "compiler":
+        args += ["--ontologyc", str(output)]
+    result = call(workspace, *args)
+    assert result.returncode == 2 and not result.stdout
+    assert "collides" in result.stderr and output.read_bytes() == original
+
+
+def test_malformed_selection_does_not_replace_existing_report(workspace):
+    directory = workspace / "runs/project_ontology_context"
+    directory.mkdir(parents=True)
+    output = directory / "SG-SPEC-0001.json"
+    original = json.dumps(
+        {
+            "artifact_kind": "project_ontology_target_check",
+            "schema_version": 1,
+            "target_spec_id": "SG-SPEC-0001",
+            "project_id": "demo",
+        }
+    ).encode()
+    output.write_bytes(original)
+    (workspace / "selection.yaml").write_text("packages: [unterminated")
+    result = call(
+        workspace,
+        "--build-project-ontology-context-check",
+        "--target-spec",
+        "SG-SPEC-0001",
+        "--ontology-context-project-id",
+        "demo",
+        "--ontology-context-selection",
+        "selection.yaml",
+    )
+    assert result.returncode == 2 and not result.stdout
+    assert output.read_bytes() == original

@@ -43,7 +43,8 @@ hosted CI and visual/runtime product evidence are reported separately.
 The implementation source and hardening return path is registered through native
 intent/operator-request/proposal lanes; concrete paths are in
 `marathon/graph-links.json`. `marathon/defects.json` records the compiler-pin,
-abbreviated-workspace and hosted-test-environment defects with repair/test refs.
+abbreviated-workspace, hosted-test-environment, legacy CLI abbreviation and
+output/input collision defects with repair/test refs.
 These are prepared fixes under review, not merged closure. The registration-only
 packet does not claim another model run or signed human approval. No new
 canonical Defect kind or new gate is introduced.

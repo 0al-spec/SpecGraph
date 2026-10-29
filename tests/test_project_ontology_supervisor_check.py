@@ -210,3 +210,34 @@ def test_previous_source_changed_foreign_and_malformed(workspace):
         run(previous_report_path=Path("previous.json"))["previous_freshness"]["outcome"]
         == "invalid"
     )
+
+
+def test_invalid_component_precedes_unavailable_and_unknown_is_unavailable(workspace, monkeypatch):
+    _, _, _, _, run = workspace
+    monkeypatch.setattr(
+        check,
+        "build_context_reports",
+        lambda *a, **k: {"outcome": "invalid", "diagnostics": ["bad bundle"]},
+    )
+    monkeypatch.setattr(
+        check,
+        "build_term_inventory",
+        lambda *a, **k: {"outcome": "unavailable", "diagnostics": ["missing inventory"]},
+    )
+    assert run()["outcome"] == "invalid"
+    monkeypatch.setattr(
+        check, "build_context_reports", lambda *a, **k: {"outcome": "unexpected", "diagnostics": []}
+    )
+    assert run()["outcome"] == "unavailable"
+
+
+def test_previous_bundle_freshness_never_certifies_inventory(workspace):
+    root, _, _, _, run = workspace
+    old = run()
+    old["inventory"]["entries"] = [{"invented": "tampered"}]
+    (root / "previous.json").write_text(json.dumps(old))
+    current = run(previous_report_path=Path("previous.json"))
+    assert current["previous_freshness"]["outcome"] == "fresh"
+    assert current["previous_freshness"]["scope"] == "binding_validation_bundle"
+    assert current["previous_freshness"]["inventory_freshness"] == "not_assessed"
+    assert current["inventory_freshness"] == "not_assessed"

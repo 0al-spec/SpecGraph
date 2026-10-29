@@ -59870,20 +59870,25 @@ def main(
 
 
 if __name__ == "__main__":
+    ontology_mode = "--build-project-ontology-context-check" in sys.argv[1:]
     parser = argparse.ArgumentParser(
         description="SpecGraph supervisor",
-        allow_abbrev="--build-project-ontology-context-check" not in sys.argv[1:],
+        allow_abbrev=not ontology_mode,
+        epilog=(
+            "For ontology context check options, use --build-project-ontology-context-check --help."
+        ),
     )
-    parser.add_argument(
-        "--build-project-ontology-context-check",
-        action="store_true",
-        help="Build a read-only ontology advisory check for one explicitly selected spec",
-    )
-    parser.add_argument("--ontology-context-project-id")
-    parser.add_argument("--ontology-context-selection")
-    parser.add_argument("--ontologyc")
-    parser.add_argument("--ontologyc-sha256")
-    parser.add_argument("--ontology-context-previous-report")
+    if ontology_mode:
+        parser.add_argument(
+            "--build-project-ontology-context-check",
+            action="store_true",
+            help="Build a read-only ontology advisory check for one explicitly selected spec",
+        )
+        parser.add_argument("--ontology-context-project-id")
+        parser.add_argument("--ontology-context-selection")
+        parser.add_argument("--ontologyc")
+        parser.add_argument("--ontologyc-sha256")
+        parser.add_argument("--ontology-context-previous-report")
     parser.add_argument("--dry-run", action="store_true", help="Show selection and prompt only")
     parser.add_argument(
         "--verbose",
@@ -60762,18 +60767,7 @@ if __name__ == "__main__":
         help="Apply an approved split_oversized_spec proposal for --target-spec",
     )
     args = parser.parse_args()
-    ontology_options = (
-        args.ontology_context_project_id,
-        args.ontology_context_selection,
-        args.ontologyc,
-        args.ontologyc_sha256,
-        args.ontology_context_previous_report,
-    )
-    if not args.build_project_ontology_context_check and any(
-        v is not None for v in ontology_options
-    ):
-        parser.error("ontology context options require --build-project-ontology-context-check")
-    if args.build_project_ontology_context_check:
+    if ontology_mode:
         allowed = {
             "--build-project-ontology-context-check",
             "--target-spec",
@@ -60821,7 +60815,7 @@ if __name__ == "__main__":
                     "compiler_sha256": args.ontologyc_sha256,
                     "previous_report": args.ontology_context_previous_report,
                 }
-                if args.build_project_ontology_context_check
+                if ontology_mode
                 else None
             ),
             split_proposal=args.split_proposal,

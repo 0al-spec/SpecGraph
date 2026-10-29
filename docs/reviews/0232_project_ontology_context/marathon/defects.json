@@ -50,6 +50,35 @@
         "tests/test_native_runtime.py"
       ],
       "production_installer_changed": false
+    },
+    {
+      "id": "ONT-MARATHON-04",
+      "problem": "Registering the new Supervisor option made legacy --build-project ambiguous.",
+      "observation_source": "independent Terra High review of c9e257df",
+      "observed_head": "c9e257df",
+      "repair": "Register ontology options only for the exact explicit mode; preserve the legacy parser option set and default help discoverability.",
+      "implementation_refs": [
+        "tools/supervisor.py::__main__"
+      ],
+      "prevention": "Subprocess regression executes the existing project_environment route through --build-project and rejects abbreviated new options.",
+      "test_refs": [
+        "tests/test_project_ontology_supervisor_cli.py::test_legacy_abbreviation_remains_enabled_without_context_mode"
+      ]
+    },
+    {
+      "id": "ONT-MARATHON-05",
+      "problem": "The fixed report path could overwrite a selected input when it was already shaped like a target report.",
+      "observation_source": "independent Terra High review of c9e257df",
+      "observed_head": "c9e257df",
+      "repair": "Reject resolved output collisions with selection, declared source/IR and compiler before execution or writing; retain explicit previous-report=output comparison.",
+      "implementation_refs": [
+        "tools/project_ontology_supervisor_cli.py::run_request"
+      ],
+      "prevention": "Four selected-input collision regressions preserve original bytes; malformed YAML also preserves existing output.",
+      "test_refs": [
+        "tests/test_project_ontology_supervisor_cli.py::test_output_does_not_replace_selected_inputs",
+        "tests/test_project_ontology_supervisor_cli.py::test_malformed_selection_does_not_replace_existing_report"
+      ]
     }
   ],
   "closure": {

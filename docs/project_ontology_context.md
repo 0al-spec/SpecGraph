@@ -190,8 +190,10 @@ The same command can be forwarded through native runtime `supervisor -- ...`.
 
 Pass `--ontology-context-previous-report <workspace-relative-path>` to assess
 an explicitly chosen previous target report. There is no automatic latest-report
-selection. Previous freshness is a separate observation; the current report is
-recomputed from current captured inputs. Producer source digests are attributed
+selection. `previous_freshness_scope` is `binding_validation_bundle`: only the
+binding/validation bundle is compared, while `inventory_freshness` stays
+`not_assessed`. A fresh bundle never certifies a previous inventory. The current
+report is recomputed from current captured inputs. Producer source digests are attributed
 input identity, not execution attestation.
 
 Exit status is 0 for `checked`, 1 for `unavailable`, and 2 for invalid/input

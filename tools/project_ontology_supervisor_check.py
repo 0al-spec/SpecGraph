@@ -10,7 +10,10 @@ from typing import Any
 
 import yaml
 
-from project_ontology_context import capture_project_context
+from project_ontology_context import CheckResult, capture_project_context
+from project_ontology_context.invalid_spec import INVALID_SPEC
+from project_ontology_context.model import ContextFacts
+from project_ontology_context.unavailable_spec import UNAVAILABLE_SPEC
 from project_ontology_report_freshness import (
     FreshnessResult,
     assess_report_freshness,
@@ -62,6 +65,21 @@ def _previous(path: Path | None, root: Path) -> tuple[dict[str, Any] | None, dic
         return None, FreshnessResult("invalid", (f"cannot read previous report: {error}",)).report()
 
 
+def _outcome(facts: ContextFacts) -> str:
+    if INVALID_SPEC.is_satisfied_by(facts):
+        return "invalid"
+    if UNAVAILABLE_SPEC.is_satisfied_by(facts):
+        return "unavailable"
+    return "checked"
+
+
+def _component_check(name: str, outcome: object, *, complete: str) -> CheckResult:
+    normalized = (
+        "verified" if outcome == complete else "invalid" if outcome == "invalid" else "unavailable"
+    )
+    return CheckResult(name, normalized, f"{name} outcome: {outcome}")
+
+
 def build_target_context_check(
     workspace_root: Path,
     *,
@@ -89,6 +107,8 @@ def build_target_context_check(
         "input_binding": None,
         "producer": None,
         "previous_freshness": None,
+        "previous_freshness_scope": "binding_validation_bundle",
+        "inventory_freshness": "not_assessed",
         "scope": "explicit_target_advisory_check",
         "semantic_approval": "not_established",
         "full_spec_conformance": "not_assessed",
@@ -139,15 +159,12 @@ def build_target_context_check(
     )
     output["bundle"] = bundle
     output["inventory"] = inventory
-    output["outcome"] = (
-        "invalid"
-        if "invalid" in {context.outcome, bundle["outcome"], inventory["outcome"]}
-        else "unavailable"
-        if context.outcome != "verified"
-        or bundle["outcome"] != "analyzed"
-        or inventory["outcome"] != "analyzed"
-        else "checked"
+    component_checks = (
+        _component_check("context", context.outcome, complete="verified"),
+        _component_check("binding_validation_bundle", bundle.get("outcome"), complete="analyzed"),
+        _component_check("term_inventory", inventory.get("outcome"), complete="analyzed"),
     )
+    output["outcome"] = _outcome(ContextFacts(component_checks))
     output["diagnostics"] = (
         [c.detail for c in context.checks if c.outcome != "verified"]
         + bundle["diagnostics"]
@@ -166,7 +183,11 @@ def build_target_context_check(
                 bundle, producer_identity=producer_identity
             ).report()
         except (OSError, ValueError, TypeError) as error:
-            output["outcome"] = "unavailable" if output["outcome"] != "invalid" else "invalid"
+            output["outcome"] = _outcome(
+                ContextFacts(
+                    component_checks + (CheckResult("input_binding", "unavailable", str(error)),)
+                )
+            )
             output["diagnostics"].append(f"cannot bind advisory producer inputs: {error}")
     previous, previous_failure = _previous(previous_report_path, root)
     if previous_failure is not None:
@@ -186,4 +207,7 @@ def build_target_context_check(
                 producer_identity=producer_identity,
                 documents=documents,
             ).report()
+    if output["previous_freshness"] is not None:
+        output["previous_freshness"]["scope"] = "binding_validation_bundle"
+        output["previous_freshness"]["inventory_freshness"] = "not_assessed"
     return output

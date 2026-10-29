@@ -10,6 +10,9 @@ import tempfile
 from pathlib import Path
 from typing import Any
 
+import yaml
+
+from project_ontology_context.capture import _load_yaml, _parse
 from project_ontology_supervisor_check import build_target_context_check
 
 _TARGET = re.compile(r"SG-SPEC-[0-9]{4}\Z")
@@ -41,6 +44,31 @@ def run_request(
         output = root / "runs" / "project_ontology_context" / f"{target_spec}.json"
         if output.is_symlink() or not output.resolve().is_relative_to(root):
             raise ValueError("report output path must stay inside workspace and not be a symlink")
+        output_path = output.resolve()
+        protected = []
+        if request.get("ontologyc") is not None:
+            protected.append((Path(request["ontologyc"]).resolve(), "compiler"))
+        if selection is not None:
+            selection_file = (root / Path(selection)).resolve()
+            protected.append((selection_file, "selection"))
+            if selection_file == output_path:
+                raise ValueError("report output collides with selected selection input")
+            try:
+                payload = _load_yaml(selection_file.read_bytes())
+            except FileNotFoundError:
+                pass  # The context check reports an unavailable selection.
+            else:
+                members, _, _ = _parse(payload)
+                for member in members:
+                    for field in ("source", "ir"):
+                        path = Path(member[field])
+                        resolved = (root / path).resolve()
+                        if path.is_absolute() or not resolved.is_relative_to(root):
+                            raise ValueError(f"selection {field} path must stay under workspace")
+                        protected.append((resolved, field))
+        for path, label in protected:
+            if path == output_path:
+                raise ValueError(f"report output collides with selected {label} input")
         if output.exists():
             try:
                 existing = json.loads(output.read_text())
@@ -97,6 +125,6 @@ def run_request(
         )
         print(json.dumps(result, ensure_ascii=False, indent=2))
         return {"checked": 0, "unavailable": 1, "invalid": 2}[report["outcome"]]
-    except (OSError, ValueError, TypeError) as error:
+    except (OSError, ValueError, TypeError, yaml.YAMLError) as error:
         print(json.dumps({"error": str(error)}), file=sys.stderr)
         return 2
