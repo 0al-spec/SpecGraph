@@ -152,7 +152,9 @@ def test_ontology_context_launcher_runs_in_external_workspace(tmp_path):
     )
     source = Path(__file__).resolve().parents[1]
     (root / "source").symlink_to(source, target_is_directory=True)
-    (root / "venv").symlink_to(source / ".venv", target_is_directory=True)
+    interpreter_root = Path(sys.prefix)
+    assert (interpreter_root / "bin" / "python").is_file()
+    (root / "venv").symlink_to(interpreter_root, target_is_directory=True)
     workspace = tmp_path / "product"
     workspace.mkdir()
     process = subprocess.run(
