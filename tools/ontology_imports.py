@@ -8,6 +8,7 @@ import copy
 import hashlib
 import json
 import re
+from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
@@ -75,6 +76,22 @@ LAYER_REVIEW_CHANGE_TYPES = (
     "changed_fields",
     "breaking_changes",
 )
+
+
+@dataclass(frozen=True, slots=True)
+class CapturedOntologyInputs:
+    """Exact fixture and IR bytes selected by a caller before adapter evaluation.
+
+    Paths still identify report references; they do not supply these contents.
+    Caller owns capture and any integrity checks performed before construction.
+    """
+
+    fixture_bytes: bytes
+    ir_bytes: bytes
+
+    def __post_init__(self) -> None:
+        if type(self.fixture_bytes) is not bytes or type(self.ir_bytes) is not bytes:
+            raise TypeError("captured ontology inputs must be immutable bytes")
 
 
 def load_json(path: Path) -> dict[str, Any]:
@@ -7040,9 +7057,15 @@ def build_ontology_import_surfaces(
     adapter_report_path: Path | None = None,
     compatibility_report_path: Path | None = None,
     semantic_policy_path: Path | None | object = DEFAULT_SEMANTIC_POLICY,
+    captured_inputs: CapturedOntologyInputs | None = None,
 ) -> dict[str, dict[str, Any]]:
     policy = load_json(policy_path)
-    fixture = load_yaml(fixture_path)
+    if captured_inputs is None:
+        fixture = load_yaml(fixture_path)
+    else:
+        fixture = yaml.safe_load(captured_inputs.fixture_bytes.decode("utf-8"))
+        if not isinstance(fixture, dict):
+            raise ValueError(f"{fixture_path} must contain a YAML mapping")
     validate_fixture(policy, fixture)
     import_layout = require_object(policy, "repository_layout", "ontology_import_policy")
     default_fixture_path = require_layout_path(import_layout, "default_fixture")
@@ -7061,7 +7084,12 @@ def build_ontology_import_surfaces(
         package["materialized_ir"],
         "fixture.package.materialized_ir",
     )
-    ir = load_json(ir_path)
+    if captured_inputs is None:
+        ir = load_json(ir_path)
+    else:
+        ir = json.loads(captured_inputs.ir_bytes.decode("utf-8"))
+        if not isinstance(ir, dict):
+            raise ValueError(f"{ir_path} must contain a JSON object")
     validate_ir_metadata(ir, package)
     refs = ontology_ref_map(ir)
     layer_summary = ontology_layer_summary(ir)

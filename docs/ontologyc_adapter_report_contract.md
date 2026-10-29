@@ -134,6 +134,9 @@ is seven resolved refs and one `sgcore:ClaimCalibration` gap; a passed report
 does not close that gap. This complements the checked-in fixture smoke above,
 which does not invoke or identify a particular compiler.
 
+The release integration is currently exercised on macOS; Linux support is a
+separate follow-up and is not established by this smoke.
+
 For a local reproduction on macOS with the Swift toolchain, build `ontologyc`
 from the pinned checkout and pass its binary and checkout explicitly:
 
@@ -147,6 +150,29 @@ compiler separately. Local callers are responsible for using a binary built from
 the checked source: checking the checkout HEAD alone cannot prove the binary's
 provenance. Generated reports are review evidence only, with no change to
 permissions, canonical package state, or publication.
+
+### Captured ontology snapshot
+
+`tools/ontology_snapshot.py` provides `capture_ontology_snapshot` to capture
+immutable source and normalized IR bytes for a consumer. It runs `check` and
+`compile` using an explicitly selected `ontologyc`, verifies that the IR's
+`sourceDigest` corresponds to the captured source, and can require byte-for-byte
+equality with a saved IR. It records SHA-256 values for the captured source, IR
+and actual executable bytes. A binary digest identifies bytes; it does not
+authenticate the compiler or prove it came from the release. The executable and
+its environment must be trusted by the caller; this is not a sandbox.
+
+The raw source digest and compiler `sourceDigest` describe different inputs:
+the former hashes the exact file bytes, while the latter follows Ontology 0.1.0's
+UTF-8 text decoding, including removal of a leading BOM. Both are recorded so a
+valid BOM-bearing file is not mistaken for a mismatch.
+
+At present only the release smoke uses this snapshot helper. Other ontology
+consumers and the supervisor are not yet migrated: the helper does not validate
+their existing or stale derived artifacts, and it does not make ontology
+checking mandatory for conversation capture. Unknown terms and ontology gaps
+remain reviewable; the smoke does not block merely because the fixture has a
+gap.
 
 ## Failure Modes
 
