@@ -46,6 +46,13 @@ Exit outcomes remain verified/unavailable/invalid; native routing rejects
 workspace overrides and abbreviated arguments. Optional report writes are
 workspace-contained and atomic. No compiler is installed or discovered implicitly.
 
+`build_context_reports` connects the existing advisory binding and validation
+views to one captured context and specification byte set. Its
+`specgraph-local-symbol-advisory-v1` profile records exact input hashes and the
+`single_member_local_symbols` scope. Invalid/foreign or unsupported joint input
+does not fall back to saved IR. Local analysis does not verify imported closure
+or semantically accept the legacy `accepted_bindings` field.
+
 A context can select one ontology or a composed package set. Selection records
 exact package/source identities, dependencies, compiler and check profile.
 Version conflicts, unavailable dependency checks and ambiguous terms stay

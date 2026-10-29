@@ -141,14 +141,21 @@ def validate_entry(
 
 
 def build_validation_report(
-    *, ir_path: Path = DEFAULT_IR_PATH, snapshot: OntologySnapshot | None = None
+    *,
+    ir_path: Path = DEFAULT_IR_PATH,
+    snapshot: OntologySnapshot | None = None,
+    binding_index: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
     ir = json.loads(snapshot.ir_bytes) if snapshot is not None else load_json(ir_path)
     # Even legacy, unverified reports use a single in-memory read.
     binding_index = (
-        build_binding_index(ir_path=ir_path, snapshot=snapshot)
-        if snapshot is not None
-        else build_binding_index(ir_path=ir_path, ir=ir)
+        binding_index
+        if binding_index is not None
+        else (
+            build_binding_index(ir_path=ir_path, snapshot=snapshot)
+            if snapshot is not None
+            else build_binding_index(ir_path=ir_path, ir=ir)
+        )
     )
     relations = relation_contracts(ir)
     entries = [

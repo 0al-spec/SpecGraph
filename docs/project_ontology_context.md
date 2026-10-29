@@ -100,3 +100,25 @@ workspace overrides. Argument abbreviation is disabled, including forms such as
 `--workspace-r`. Existing init, next-move, supervisor and draft routes remain.
 This is a native source-runtime route, not a new command in the standalone
 SpecDraft wheel CLI.
+
+## Context-bound advisory reports
+
+`spec_ontology_context_reports.build_context_reports(context,
+workspace_root=..., specs_root=..., documents=None)` connects the existing
+binding index and validation report to the captured context. It reads the
+selected `SG-SPEC-*.yaml` corpus once, or accepts explicit workspace-relative
+captured `(path, bytes)` documents. Both views consume the same snapshot and
+parsed specifications; validation consumes the same built binding index.
+
+Inputs retain each specification path/hash and the profile
+`specgraph-local-symbol-advisory-v1`. Report metadata records project/workspace,
+context revision/outcome, member/source/IR/compiler identities and the
+`single_member_local_symbols` scope. The legacy field name `accepted_bindings`
+still describes structural extraction, not accepted meaning.
+
+One successfully captured member may supply advisory local-symbol analysis
+while imported closure is unavailable. This does not claim verified context
+closure. Invalid context, foreign workspace, mismatched capture, duplicate spec
+IDs or unsupported joint multi-member analysis return diagnostics without
+falling back to mutable saved IR. Ordinary no-context report APIs remain
+backward-compatible. These profiles do not assess all natural-language prose.
