@@ -60,6 +60,12 @@ original binding remains unavailable; known changes are stale and inconsistent
 saved content invalid. It does not search for a latest artifact or activate a
 cache, global gate or semantic acceptance policy.
 
+The `specgraph-explicit-terms-v1` inventory records explicit terminology keys
+and ontology_refs with source hashes, exact YAML field/line/column spans and
+captured context identity. Qualified matches are structural candidates;
+unknown/ambiguous terms remain review gaps. Prose is unassessed and an empty
+inventory does not mean grounded. No package or term acceptance is created.
+
 A context can select one ontology or a composed package set. Selection records
 exact package/source identities, dependencies, compiler and check profile.
 Version conflicts, unavailable dependency checks and ambiguous terms stay

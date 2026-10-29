@@ -145,3 +145,26 @@ or original binding remains unavailable. Missing data cannot become fresh by
 reconstructing a historical binding during assessment. A named Specification
 evaluates immutable comparison facts; it does not approve meanings or activate
 a new Supervisor/merge gate.
+
+## Explicit term inventory
+
+`build_term_inventory(context, workspace_root=..., specs_root=...,
+documents=None)` assesses the `specgraph-explicit-terms-v1` profile:
+`specification.terminology` mapping keys and string references in root or
+`specification.ontology_refs`. It records spec/path, exact field path, source
+hash, YAML line/column and character span, and captured context identity.
+Source marks are one-based line/column with exclusive end; byte and Unicode
+character offsets are not interchangeable. YAML aliases are rejected rather
+than presenting an anchor's location as an occurrence location.
+
+Qualified matches are structural candidates; spelling/alias matches remain
+candidates and unknown/ambiguous terms become attributable gaps. No match is a
+human review or meaning approval. Gap records retain existing report vocabulary
+where applicable. Captured documents may be shared with the advisory reports;
+the inventory never reopens saved ontology IR or changes source specifications.
+
+Free prose remains `unassessed`, `grounded` remains false, and an empty inventory
+does not certify a specification. Multi-member resolution is unsupported in this
+profile. A single captured member may supply local advisory candidates while
+overall dependency closure remains unavailable. Foreign workspace, malformed
+input and duplicate identities remain explicit failures.
