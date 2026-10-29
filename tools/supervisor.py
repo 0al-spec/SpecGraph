@@ -4371,6 +4371,7 @@ ROOT_REFACTOR_TIMEOUT_SECONDS = int(
     policy_lookup("execution_profiles.special_timeouts.root_refactor_timeout_seconds")
 )
 EXECUTOR_PROGRESS_POLL_SECONDS = 30
+EXECUTOR_STDOUT_TRANSCRIPT_MARKER = "\n[executor stdout transcript]\n"
 XHIGH_QUIET_PROGRESS_WINDOWS = 3
 QUIET_PROGRESS_REASONING_EFFORTS = {"medium", "xhigh"}
 LINKED_CONTINUATION_MATURITY_THRESHOLD = float(
@@ -4968,6 +4969,22 @@ def get_spec_yaml_module() -> ModuleType:
     spec = importlib.util.spec_from_file_location(module_name, module_path)
     if spec is None or spec.loader is None:
         raise RuntimeError(f"Failed to load canonical YAML helper from {module_path}")
+    module = importlib.util.module_from_spec(spec)
+    sys.modules[module_name] = module
+    spec.loader.exec_module(module)
+    return module
+
+
+def get_executor_diagnostic_evidence_module() -> ModuleType:
+    """Load the sibling policy for both direct CLI and file-based imports."""
+    module_name = "_specgraph_executor_diagnostic_evidence"
+    existing = sys.modules.get(module_name)
+    if isinstance(existing, ModuleType):
+        return existing
+    path = TOOLS_DIR / "executor_diagnostic_evidence_spec.py"
+    spec = importlib.util.spec_from_file_location(module_name, path)
+    if spec is None or spec.loader is None:
+        raise RuntimeError(f"Failed to load executor diagnostic evidence policy from {path}")
     module = importlib.util.module_from_spec(spec)
     sys.modules[module_name] = module
     spec.loader.exec_module(module)
@@ -9772,11 +9789,14 @@ def classify_executor_environment(stderr: str) -> dict[str, Any]:
     """Classify runtime/environment issues from nested executor stderr.
 
     These signals are operational diagnostics about the child executor runtime,
-    not graph-health findings about the current spec. The transcript can also
-    contain operator notes, spec prose, and diffs: migration vocabulary alone
-    is not evidence of a state runtime failure.
+    not graph-health findings about the current spec. The JSON event transcript
+    retained after the stdout marker contains model and tool content, so it is
+    excluded; the producer projects only native error events before that marker.
+    Unmarked input is treated as stderr;
+    arbitrary historical human transcripts do not carry authenticated provenance.
     """
-    lines = [line.strip() for line in stderr.splitlines() if line.strip()]
+    diagnostic_stderr = stderr.partition(EXECUTOR_STDOUT_TRANSCRIPT_MARKER)[0]
+    lines = [line.strip() for line in diagnostic_stderr.splitlines() if line.strip()]
     lowered = [line.lower() for line in lines]
     issues: list[dict[str, Any]] = []
 
@@ -52723,6 +52743,7 @@ def build_codex_exec_command(
     cmd = [
         resolve_codex_executable(),
         "exec",
+        "--json",
         "--ignore-user-config",
         "--model",
         profile.model,
@@ -52786,6 +52807,33 @@ def create_child_codex_home(
         shutil.copy2(auth_path, child_home / "auth.json")
 
     return child_home
+
+
+def codex_json_error_diagnostics(stdout: str) -> str:
+    """Project native JSONL error events without interpreting agent or tool items."""
+    policy = get_executor_diagnostic_evidence_module()
+    diagnostics: list[str] = []
+    for line in stdout.splitlines():
+        try:
+            event = json.loads(line)
+        except (ValueError, TypeError):
+            continue
+        if not isinstance(event, dict) or not isinstance(event.get("type"), str):
+            continue
+        event_type = event.get("type")
+        context = policy.ExecutorDiagnosticEvidenceContext("codex_native_event", event_type)
+        if not policy.EXECUTOR_DIAGNOSTIC_EVIDENCE_SPEC.is_satisfied_by(context):
+            continue
+        if event_type == "error":
+            message = event.get("message")
+        else:
+            error = event.get("error")
+            message = error.get("message") if isinstance(error, dict) else None
+        if isinstance(message, str) and message.strip():
+            # Keep projection boundaries intact; the original JSONL remains in the transcript.
+            diagnostic = " ".join(message.splitlines())
+            diagnostics.append(f"codex {event_type}: {diagnostic}\n")
+    return "".join(diagnostics)
 
 
 def run_codex(
@@ -52997,7 +53045,9 @@ def run_codex(
             except (OSError, UnicodeError) as error:
                 stderr_chunks.append(f"supervisor final-message read error: {error}\n")
         if stdout_chunks:
-            stderr_chunks.append("\n[executor stdout transcript]\n" + "".join(stdout_chunks))
+            stdout_transcript = "".join(stdout_chunks)
+            stderr_chunks.append(codex_json_error_diagnostics(stdout_transcript))
+            stderr_chunks.append(EXECUTOR_STDOUT_TRANSCRIPT_MARKER + stdout_transcript)
         shutil.rmtree(child_codex_home, ignore_errors=True)
 
     return subprocess.CompletedProcess(

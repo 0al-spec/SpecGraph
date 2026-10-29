@@ -407,6 +407,33 @@ explain uncertain liveness or incomplete collection. Preserve available evidence
 on collection failure and distinguish an uploaded artifact from a complete
 measurement; see [Intent Atom metrics](docs/intent_atoms.md).
 
+### Responding to SpecificationMetrics
+
+Each SpecificationMetrics PR report needs a substantive author response in the
+PR conversation, linked to that report. It informs design review even though
+the numbers do not decide merge readiness.
+
+1. Identify the reported base/head, collection status and counting contract.
+   Explain missing or provisional evidence before interpreting deltas. Retain
+   the linked reports when needed; never treat absent data as zero complexity.
+2. Connect material changes in S/U, complexity and duplication to the actual
+   functions and policies. Separate parsing/I/O mechanics from domain decisions,
+   and consider the whole changed decision family, including extracted modules.
+   Do not invent per-candidate locations from aggregate counts.
+3. Make and explain a decision: defend the design with code evidence and explicit
+   trade-offs, or identify a real defect, repair it and cite the commit and
+   behavioral verification. If evidence is insufficient, say what is unknown
+   and name the next check. A bare acknowledgement or "informational only"
+   does not answer the report.
+4. After a changed-head report arrives, update the response or post a linked
+   follow-up for those revisions. A fix may precede its new measurement; label
+   the old numbers as historical and do not claim an unmeasured improvement.
+
+This is a review practice, not an automatic numerical merge gate. Do not create
+Specifications to increase S, move code outside measurement scope, or split
+files solely to lower a local number. A justified increase is acceptable; a
+misplaced policy deserves correction even if extraction does not lower CC/U.
+
 ### Review Heuristics for Artifacts and Gates
 
 Apply these checks systematically when reviewing supervisor, proposal,
@@ -633,8 +660,19 @@ complexity measurements when evaluating refactoring pilots.
 
 ## Executor transcript diagnostics
 
-Nested executor stderr can include operator notes, specification text, and
-diffs alongside runtime logs. Migration vocabulary alone is not evidence of a
+Confirmed false warnings are defects. Register the source-bound observation
+through the existing intent/proposal graph lanes with an affected contract,
+reproduction, proposed fix and regression evidence. `.0al` remains a coordination
+receipt; the graph record supplies the return path. Keep a prepared fix
+review-pending until merged, and preserve the original run's meaning. The
+[2026-10-29 diagnostic defect](docs/reviews/executor_diagnostic_defect_20261029/source.md)
+is the first explicit application of this rule.
+
+Historical human-readable executor stderr can include operator notes,
+specification text and diffs alongside runtime logs. New Codex runs use JSONL
+stdout events and an independent final-message file. Only native top-level
+`error` and `turn.failed` messages are projected into diagnostics; the retained
+stdout transcript is excluded from classification. Migration vocabulary alone is not evidence of a
 runtime failure. Require explicit state failure diagnostics such as
 `failed to open state db`, `failed to initialize state runtime`, or
 `state db discrepancy`; keep ordinary migration plans and successful migration

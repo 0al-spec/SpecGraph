@@ -1,0 +1,110 @@
+{
+  "artifact_kind": "executor_diagnostic_defect_verification",
+  "schema_version": 1,
+  "defect_id": "EXECUTOR-DIAGNOSTIC-20261029",
+  "status": "passed_local_checks_review_pending",
+  "selected_graph_entries": [
+    {
+      "surface": "intent_layer_overlay",
+      "tracked_path": "intent_layer/nodes/operator_request--executor-diagnostic-defect-20261029--7c2c620c.json",
+      "handle": "operator_request::executor-diagnostic-defect-20261029",
+      "state": "proposal_linked",
+      "query_contract": {
+        "status": "ok",
+        "findings": []
+      }
+    },
+    {
+      "surface": "intent_layer_overlay",
+      "tracked_path": "intent_layer/nodes/user_intent--executor-diagnostic-defect-20261029--77486105.json",
+      "handle": "user_intent::executor-diagnostic-defect-20261029",
+      "state": "captured",
+      "query_contract": {
+        "status": "ok",
+        "findings": []
+      }
+    },
+    {
+      "surface": "proposal_lane_overlay",
+      "tracked_path": "proposal_lane/nodes/proposal--executor-diagnostic-defect-20261029--b58ca528.json",
+      "handle": "proposal::executor-diagnostic-defect-20261029",
+      "state": "under_review",
+      "query_contract": {
+        "required_fields": [
+          "proposal_repository_presence",
+          "proposal_handle",
+          "proposal_authority_state",
+          "proposal_target_region",
+          "proposal_lineage_link"
+        ],
+        "status": "queryable",
+        "findings": []
+      }
+    }
+  ],
+  "checks": {
+    "integration_tests": {
+      "command": ".venv/bin/python -m pytest -q tests/test_supervisor.py tests/test_executor_diagnostic_evidence_spec.py",
+      "result": "1116 passed",
+      "junit_sha256": "4258fdfb7ebad2403ec68c8300da3bbc4a433bb6c12eca597ffef07ae673b5f1",
+      "scope": "complete supervisor module plus diagnostic evidence policy tests after extraction"
+    },
+    "subagent_report": {
+      "final_targeted_tests": "64 passed, 1032 deselected",
+      "full_supervisor_tests_before_native_error_projection": "1079 passed",
+      "final_full_suite_repeated": false
+    },
+    "python_quality": "passed",
+    "docc_sync": "passed",
+    "historical_run_bytes_unchanged": true,
+    "graph_scope": "only the three selected defect-route nodes; no claim that all repository graph entries were reassessed",
+    "initial_integration_tests": {
+      "command": ".venv/bin/python -m pytest -q tests/test_supervisor.py -k 'classify_executor_environment or codex_json_error_diagnostics or run_codex or build_codex_exec_command or main_records_native_stdout_error_events or executor_environment'",
+      "result": "55 passed, 1041 deselected",
+      "output_sha256": "a09d7d957b9cff377bc57d9d962f84890fbaa4efbcfe023d1631b5b71df06338"
+    },
+    "isolated_file_import": "passed in the full test set; isolated interpreter, external cwd, no PYTHONPATH dependency",
+    "intent_decision_review": "not_required; no canonical or declared proposal atoms changed"
+  },
+  "implementation_inventory": [
+    {
+      "path": "tools/supervisor.py",
+      "sha256": "c81818ab0930ff2837649600474eb0a5e5069c58812ad8753c508235e494b24d"
+    },
+    {
+      "path": "tools/executor_diagnostic_evidence_spec.py",
+      "sha256": "033955092c037b882641cd9cdf26acab4b292f2aa03b7b09e721e63065a2f000"
+    },
+    {
+      "path": "tests/test_supervisor.py",
+      "sha256": "4bcf1a7554f413d197b5359877e45b34314ba028c67ef008605b282314a89c2b"
+    },
+    {
+      "path": "tests/test_executor_diagnostic_evidence_spec.py",
+      "sha256": "6d60271470870a3617fa777aee27598fa46e557c0719ea4ad144c0dfe5eb4737"
+    }
+  ],
+  "native_event_shape_reference": "https://github.com/openai/codex/blob/rust-v0.163.0/sdk/typescript/src/events.ts",
+  "scope_limits": [
+    "No hosted model run performed for this repair.",
+    "Stored tests use controlled executor event/process fixtures.",
+    "Historical unmarked human transcripts cannot be retroactively assigned reliable stream provenance.",
+    "Prepared fix and graph visibility do not constitute merged closure or approval of prior candidates."
+  ],
+  "hosted_requests": 0,
+  "canonical_mutations_allowed": false,
+  "defect_closed": false,
+  "metric_review": {
+    "response_ref": "docs/reviews/executor_diagnostic_defect_20261029/metrics-review.md",
+    "initial_report_url": "https://github.com/0al-spec/SpecGraph/pull/828#issuecomment-6506530681",
+    "artifact_id": 12927616309,
+    "archive_sha256": "1c3a34c6e188d9a2b27fa1b7fcbaf0f331ddb13b7e3296a5d0f410a86385897a",
+    "base_sha": "1c586346751cb1fd6fb065f6902ef691d37c76e0",
+    "measured_head_sha": "7cff1a2310486d62e17243ec25fa23be905074fe",
+    "collection_contract": "943b09cbbe201297fd4dd2818bb574be357e277e62f4532a0fc23ec7a7e11d74",
+    "both_collections_complete": true,
+    "provenance_checked": true,
+    "follow_up_measurement": "pending",
+    "claimed_numerical_improvement": false
+  }
+}

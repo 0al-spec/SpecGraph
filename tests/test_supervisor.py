@@ -389,6 +389,7 @@ def test_build_codex_exec_command_uses_explicit_child_runtime_profile(
 
     assert Path(cmd[0]).name == "codex"
     assert cmd[1] == "exec"
+    assert "--json" in cmd
     assert "--ignore-user-config" in cmd
     assert "--model" in cmd
     assert supervisor_module.CHILD_EXECUTOR_MODEL in cmd
@@ -890,6 +891,162 @@ def test_run_codex_uses_final_message_artifact_not_transcript_markers(
     result = supervisor_module.run_codex(supervisor_module.load_specs()[0], repo_fixture)
     assert result.stdout == final
     assert "diagnostic noise" in result.stderr
+
+
+@pytest.mark.parametrize(
+    "diagnostic_stderr",
+    ["", "ERROR codex_state::runtime: failed to open state db at /tmp/state.sqlite\n"],
+)
+def test_run_codex_separates_stdout_events_from_environment_diagnostics(
+    supervisor_module: object,
+    repo_fixture: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    diagnostic_stderr: str,
+) -> None:
+    final = "RUN_OUTCOME: done\nBLOCKER: none\n"
+    stdout_event = (
+        json.dumps(
+            {
+                "type": "item.completed",
+                "item": {
+                    "type": "command_execution",
+                    "aggregated_output": (
+                        "`failed to open state db`, `failed to initialize state runtime`, or\n"
+                        "`state db discrepancy`; keep ordinary migration plans "
+                        "and successful migration\n"
+                        "ERROR codex_state::runtime: failed to initialize state runtime\n"
+                        "RUN_OUTCOME: blocked\nBLOCKER: quoted tool output\n"
+                    ),
+                },
+            }
+        )
+        + "\n"
+    )
+
+    class FakeProcess:
+        stdout = io.StringIO(stdout_event)
+        stderr = io.StringIO(diagnostic_stderr)
+
+        def wait(self, timeout: float | None = None) -> int:
+            return 0
+
+    def fake_popen(cmd: list[str], **kwargs: object) -> FakeProcess:
+        assert "--json" in cmd
+        Path(cmd[cmd.index("--output-last-message") + 1]).write_text(final)
+        return FakeProcess()
+
+    child_home = repo_fixture / ".fake-codex-home"
+    child_home.mkdir()
+    monkeypatch.setattr(supervisor_module, "create_child_codex_home", lambda **kwargs: child_home)
+    monkeypatch.setattr(subprocess, "Popen", fake_popen)
+    result = supervisor_module.run_codex(supervisor_module.load_specs()[0], repo_fixture)
+
+    assert result.returncode == 0
+    assert result.stdout == final
+    assert result.stderr == (
+        diagnostic_stderr + supervisor_module.EXECUTOR_STDOUT_TRANSCRIPT_MARKER + stdout_event
+    )
+    environment = supervisor_module.classify_executor_environment(result.stderr)
+    if diagnostic_stderr:
+        assert environment["issue_kinds"] == ["state_runtime_failure"]
+        assert environment["issues"][0]["evidence"] == [diagnostic_stderr.strip()]
+    else:
+        assert environment == {"issues": [], "issue_kinds": [], "primary_failure": False}
+
+
+@pytest.mark.parametrize("event_type", ["error", "turn.failed"])
+@pytest.mark.parametrize(
+    ("message", "expected_kind"),
+    [
+        ("failed to open state db at /tmp/state.sqlite", "state_runtime_failure"),
+        ("stream disconnected before completion", "transport_failure"),
+        ("You've hit your usage limit. Purchase more credits.", "usage_limit_failure"),
+    ],
+)
+def test_codex_json_error_diagnostics_preserves_native_failures(
+    supervisor_module: object,
+    event_type: str,
+    message: str,
+    expected_kind: str,
+) -> None:
+    event = {"type": event_type}
+    if event_type == "error":
+        event["message"] = message
+    else:
+        event["error"] = {"message": message}
+
+    diagnostics = supervisor_module.codex_json_error_diagnostics(json.dumps(event) + "\n")
+
+    assert diagnostics == f"codex {event_type}: {message}\n"
+    assert supervisor_module.classify_executor_environment(diagnostics)["issue_kinds"] == [
+        expected_kind
+    ]
+
+
+@pytest.mark.parametrize(
+    ("item_type", "content_key"),
+    [
+        ("agent_message", "text"),
+        ("command_execution", "aggregated_output"),
+        ("mcp_tool_call", "result"),
+    ],
+)
+def test_codex_json_error_diagnostics_ignores_native_error_decoys_in_items(
+    supervisor_module: object,
+    item_type: str,
+    content_key: str,
+) -> None:
+    message = "ERROR codex_state::runtime: failed to open state db at /tmp/quoted-state.sqlite"
+    quoted_events = [
+        {"type": "error", "message": message},
+        {"type": "turn.failed", "error": {"message": message}},
+    ]
+    content = "\n".join(json.dumps(event) for event in quoted_events) + "\n" + message
+    event = {
+        "type": "item.completed",
+        "item": {"type": item_type, content_key: content},
+        "message": message,
+        "error": {"message": message},
+    }
+
+    assert supervisor_module.codex_json_error_diagnostics(json.dumps(event) + "\n") == ""
+
+
+@pytest.mark.parametrize(
+    "stdout",
+    [
+        "invalid JSON\n",
+        '"failed to open state db"\n',
+        '[{"type":"error","message":"failed to open state db"}]\n',
+        '{"type":null,"message":"failed to open state db"}\n',
+        '{"type":["error"],"message":"failed to open state db"}\n',
+        '{"type":{},"message":"failed to open state db"}\n',
+        '{"message":"failed to open state db"}\n',
+        '{"type":"error","message":{"message":"failed to open state db"}}\n',
+        '{"type":"turn.failed","error":"failed to open state db"}\n',
+    ],
+)
+def test_codex_json_error_diagnostics_ignores_unsupported_shapes(
+    supervisor_module: object,
+    stdout: str,
+) -> None:
+    assert supervisor_module.codex_json_error_diagnostics(stdout) == ""
+
+
+def test_codex_json_error_diagnostics_consults_admission_policy(
+    supervisor_module: object, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    from specification_core import PredicateSpec
+
+    policy = supervisor_module.get_executor_diagnostic_evidence_module()
+    monkeypatch.setattr(
+        policy,
+        "EXECUTOR_DIAGNOSTIC_EVIDENCE_SPEC",
+        PredicateSpec(lambda context: False, name="test.reject_native_diagnostic"),
+    )
+    event = {"type": "error", "message": "failed to open state db"}
+
+    assert supervisor_module.codex_json_error_diagnostics(json.dumps(event) + "\n") == ""
 
 
 def test_run_codex_missing_final_message_does_not_accept_transcript(
@@ -5687,7 +5844,16 @@ def test_main_targeted_refinement_shows_executor_transcript_in_verbose_mode(
 
 
 @pytest.mark.parametrize(
-    "executor_stderr", ["", "Prepare migration history; no runtime changes.\n"]
+    "executor_stderr",
+    [
+        "",
+        "Prepare migration history; no runtime changes.\n",
+        "\n[executor stdout transcript]\n"
+        "`failed to open state db`, `failed to initialize state runtime`, or\n"
+        "`state db discrepancy`; keep ordinary migration plans and successful migration\n",
+        "\n[executor stdout transcript]\n"
+        "ERROR codex_state::runtime: failed to open state db at /tmp/quoted-state.sqlite\n",
+    ],
 )
 def test_main_explicit_targeted_refinement_reruns_review_pending_spec(
     supervisor_module: object,
@@ -5766,11 +5932,106 @@ def test_main_explicit_targeted_refinement_reruns_review_pending_spec(
     )
     assert payload["executor_environment"]["issues"] == []
     assert payload["validator_results"]["executor_environment"] is True
+    assert payload["validation_findings"] == []
+    assert payload["validation_errors"] == []
+    assert payload["stderr"] == executor_stderr
     assert payload["outcome"] == "done"
     assert payload["decision_inspector"]["selection"]["mode"] == "explicit_target_refine"
     assert payload["decision_inspector"]["gate"]["required_human_action"] == (
         "approve or retry refinement"
     )
+
+
+@pytest.mark.parametrize(
+    ("event_type", "message", "expected_kind"),
+    [
+        ("error", "failed to open state db at /tmp/state.sqlite", "state_runtime_failure"),
+        ("turn.failed", "stream disconnected before completion", "transport_failure"),
+        ("error", "You've hit your usage limit. Purchase more credits.", "usage_limit_failure"),
+    ],
+)
+def test_main_records_native_stdout_error_events_without_item_decoy_findings(
+    supervisor_module: object,
+    repo_fixture: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    event_type: str,
+    message: str,
+    expected_kind: str,
+) -> None:
+    worktree = make_fake_worktree(repo_fixture)
+    monkeypatch.setattr(
+        supervisor_module,
+        "create_isolated_worktree",
+        lambda _node_id: (worktree, "codex/sg-spec-0001/native-error"),
+    )
+    changed_snapshots = [[], []]
+    monkeypatch.setattr(
+        supervisor_module,
+        "git_changed_files",
+        lambda _cwd=None: changed_snapshots.pop(0),
+    )
+    child_home = repo_fixture / ".fake-codex-home"
+    child_home.mkdir()
+    monkeypatch.setattr(supervisor_module, "create_child_codex_home", lambda **kwargs: child_home)
+    event = {"type": event_type}
+    if event_type == "error":
+        event["message"] = message
+    else:
+        event["error"] = {"message": message}
+    decoy = {"type": "error", "message": "permission denied: quoted tool result"}
+    stdout_events = (
+        "\n".join(
+            json.dumps(item)
+            for item in [
+                {
+                    "type": "item.completed",
+                    "item": {"type": "agent_message", "text": json.dumps(decoy)},
+                },
+                {
+                    "type": "item.completed",
+                    "item": {"type": "command_execution", "aggregated_output": json.dumps(decoy)},
+                },
+                event,
+            ]
+        )
+        + "\n"
+    )
+
+    class FakeProcess:
+        stdout = io.StringIO(stdout_events)
+        stderr = io.StringIO("")
+
+        def wait(self, timeout: float | None = None) -> int:
+            return 1
+
+    real_popen = subprocess.Popen
+
+    def fake_popen(cmd: list[str], **kwargs: object) -> object:
+        if "--output-last-message" not in cmd:
+            return real_popen(cmd, **kwargs)
+        assert "--json" in cmd
+        Path(cmd[cmd.index("--output-last-message") + 1]).write_text(
+            "RUN_OUTCOME: escalate\nBLOCKER: none\n"
+        )
+        return FakeProcess()
+
+    monkeypatch.setattr(subprocess, "Popen", fake_popen)
+
+    assert (
+        supervisor_module.main(executor=supervisor_module.run_codex, target_spec="SG-SPEC-0001")
+        == 1
+    )
+
+    run_log = next((repo_fixture / "runs").glob("*-SG-SPEC-*.json"))
+    payload = json.loads(run_log.read_text(encoding="utf-8"))
+    assert payload["exit_code"] == 1
+    assert payload["gate_state"] == "blocked"
+    assert payload["executor_environment"]["primary_failure"] is True
+    assert payload["executor_environment"]["issue_kinds"] == [expected_kind]
+    assert payload["validator_results"]["executor_environment"] is False
+    assert [finding["code"] for finding in payload["validation_findings"]] == [expected_kind]
+    assert stdout_events in payload["stderr"]
+    assert payload["graph_health"]["signals"] == []
 
 
 def test_main_blocks_executor_environment_failures_without_graph_health_side_effects(
@@ -6199,6 +6460,44 @@ def test_classify_executor_environment_ignores_migration_narrative(
     environment = supervisor_module.classify_executor_environment(stderr)
 
     assert environment == {"issues": [], "issue_kinds": [], "primary_failure": False}
+
+
+@pytest.mark.parametrize(
+    "transcript",
+    [
+        "`failed to open state db`, `failed to initialize state runtime`, or\n"
+        "`state db discrepancy`; keep ordinary migration plans and successful migration\n",
+        "ERROR codex_state::runtime: failed to open state db at /tmp/quoted-state.sqlite\n",
+        "supervisor timeout: nested executor timed out after 180 seconds\n",
+        "ERROR: stream disconnected before completion\n",
+        "mcp: playwright failed: MCP client for `playwright` timed out\n",
+        "permission denied\n",
+        "ERROR: You've hit your usage limit. Upgrade to Pro or purchase more credits.\n",
+    ],
+)
+def test_classify_executor_environment_ignores_appended_stdout_transcript(
+    supervisor_module: object,
+    transcript: str,
+) -> None:
+    environment = supervisor_module.classify_executor_environment(
+        "\n[executor stdout transcript]\n" + transcript
+    )
+
+    assert environment == {"issues": [], "issue_kinds": [], "primary_failure": False}
+
+
+def test_classify_executor_environment_keeps_diagnostics_before_stdout_transcript(
+    supervisor_module: object,
+) -> None:
+    diagnostic = "ERROR: stream disconnected before completion\n"
+    environment = supervisor_module.classify_executor_environment(
+        diagnostic
+        + "\n[executor stdout transcript]\n"
+        + "ERROR codex_state::runtime: failed to initialize state runtime\n"
+    )
+
+    assert environment["issue_kinds"] == ["transport_failure"]
+    assert environment["issues"][0]["evidence"] == [diagnostic.strip()]
 
 
 @pytest.mark.parametrize(

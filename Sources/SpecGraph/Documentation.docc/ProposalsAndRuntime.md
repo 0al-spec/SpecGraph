@@ -2,6 +2,23 @@
 
 SpecGraph treats proposal records and runtime evidence as connected surfaces.
 
+## Tooling defects and false warnings
+
+Confirmed false warnings are source-bound defect observations, with graph links
+through existing intent/proposal lanes to the affected contract, reproduction,
+fix and regression evidence. A `.0al` note is coordination rather than defect
+closure. Prepared fixes stay review-pending until merged; original run results
+and later replays remain distinct. This uses existing graph kinds and does not
+introduce a canonical Defect kind. See the bounded observation under
+`docs/reviews/executor_diagnostic_defect_20261029/`. Codex runs use JSONL stdout
+events while protocol markers come from the final-message file. Only native
+`error` and `turn.failed` messages are projected as diagnostics; retained
+agent/tool transcript items are excluded from environment classification.
+`EXECUTOR_DIAGNOSTIC_EVIDENCE_SPEC` owns this admission policy in a separate
+module with immutable origin/event facts. JSON decoding and field projection
+remain adapter mechanics; the stable policy trace is
+`executor.diagnostic_evidence_admitted`.
+
 ## Stacked PR comparison freshness
 
 After changing a PR base, verify `refs/pull/<PR>/merge`: `merge^2` must match

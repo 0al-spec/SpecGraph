@@ -143,3 +143,24 @@ metrics unchanged between its base and head. That proves collection consistency,
 not business correctness. Compare v8 and v9 only as an explicit analyzer audit on
 the same source snapshot; preserve the old artifact and establish the v9 baseline
 without presenting its changed counts as a code-quality improvement.
+
+### Respond to the metric report
+
+Each SpecificationMetrics report needs a substantive author response linked in
+the PR conversation. Identify the reported base/head, counting contract and
+collection status. Connect material deltas to the changed functions and the
+whole decision family, separating parsing mechanics from domain policies.
+Aggregate candidate counts do not establish individual candidate locations.
+
+Either defend the design with code evidence and explicit trade-offs, or identify
+a real defect, repair it and cite the commit and behavioral verification. When
+evidence is incomplete, state the gap and next check. A bare acknowledgement or
+"informational only" does not answer the report. After a changed-head report,
+update the response for those revisions; do not claim an unmeasured improvement
+using an earlier report.
+
+This is review practice, not a numerical merge gate. Do not create Specifications
+to increase S, change source roles to hide complexity, or split files only to
+reduce a local metric. A justified increase is acceptable; extracting a misplaced
+policy can be useful without reducing total CC/U. See CONTRIBUTING.md,
+"Responding to SpecificationMetrics", for the review steps.
