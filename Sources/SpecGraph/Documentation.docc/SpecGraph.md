@@ -123,3 +123,7 @@ The canonical source files remain in the repository:
 ### Proposed live authoring
 
 - <doc:SpecDraftLivePreview>
+
+### Proposed Project Ontology Context
+
+- <doc:VerifiedProjectOntologyContext>

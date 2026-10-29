@@ -2971,7 +2971,7 @@
     ],
     "motivating_concern": "Use a stable installed SpecDraft in consumer projects while the developer checkout changes independently.",
     "normalized_title": "Portable SpecDraft runtime",
-    "bounded_scope": "Source-captured intent and proposal draft plus independently installable Python notes/preview CLI, bundled resources and matching self-contained skill. Preserve existing source fa\u00e7ades and consumer data. No full supervisor distribution or canonical adoption.",
+    "bounded_scope": "Source-captured intent and proposal draft plus independently installable Python notes/preview CLI, bundled resources and matching self-contained skill. Preserve existing source façades and consumer data. No full supervisor distribution or canonical adoption.",
     "required_provenance_links": [
       "source_draft_ref"
     ]
@@ -2985,6 +2985,19 @@
     "motivating_concern": "Use a stable complete SpecGraph snapshot for independent projects while the developer checkout changes.",
     "normalized_title": "Native SpecGraph runtime",
     "bounded_scope": "Native source-snapshot installer, isolated Python environment and existing product-workspace command forwarding with explicit provenance. ASP, Docker, full product evidence binding and canonical publication remain separate.",
+    "required_provenance_links": [
+      "source_draft_ref"
+    ]
+  },
+  {
+    "proposal_id": "0232",
+    "source_artifact_class": "working_draft",
+    "source_refs": [
+      "docs/archive/proposal_sources/0232_verified_project_ontology_context.md"
+    ],
+    "motivating_concern": "All project specifications should ground terminology in verified project-selected ontologies while drafts remain easy to capture and gaps remain explicit review work.",
+    "normalized_title": "Verified Project Ontology Context",
+    "bounded_scope": "Prepare source-attributed context, verification, terminology coverage, migration and SpecSpace observation contract; no canonical writes or new runtime enforcement. Intent preservation is a separate linked follow-up.",
     "required_provenance_links": [
       "source_draft_ref"
     ]

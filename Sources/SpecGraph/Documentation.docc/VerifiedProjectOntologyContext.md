@@ -1,0 +1,63 @@
+# Verified Project Ontology Context
+
+Proposal `SG-RFC-0232` is a planning contract for grounding every project
+specification in an explicitly selected ontology context. Runtime realization
+is `deferred_until_canonicalized`; this proposal activates no new policy.
+
+The review sources are:
+
+- `docs/proposals/0232_verified_project_ontology_context.md`
+- `docs/proposals/0232_verified_project_ontology_context.intent.yaml`
+- `docs/archive/proposal_sources/0232_verified_project_ontology_context.md`
+- `docs/reviews/0232_project_ontology_context/source-notes.json`
+
+## Selected context and scope
+
+A context can select one ontology or a composed package set. Selection records
+exact package/source identities, dependencies, compiler and check profile.
+Version conflicts, unavailable dependency checks and ambiguous terms stay
+visible. Compiler release versions do not change package approval status.
+
+One immutable `OntologySnapshot`, or a composed context of such snapshots,
+supplies captured source and IR to an operation. Provenance binds all relevant
+inputs. Compiler hashes identify bytes without authenticating the compiler.
+`TraceSnapshot` from proposal 0226 remains the separate trace-fact model.
+
+Terminology coverage uses a scoped inventory of definitions, qualified
+bindings and source locations. Unassessed prose stays unassessed. Compilation
+and spelling matches cannot establish full semantic coverage or acceptance.
+
+## Drafts, gaps and readiness
+
+Valid packages with gaps remain usable for resolved vocabulary. Required gaps
+need review before the affected specification can be called fully grounded.
+Draft capture stays available when a compiler or ontology is missing.
+Ontology-dependent actions require the checks and vocabulary they declare.
+
+Reports bind the selected context, project, specification, binding and policy
+inputs. Missing, stale or partial evidence cannot become current success.
+An old context remains historical evidence; it cannot silently replace changed
+current inputs. Existing specifications migrate through an explicit inventory
+that preserves IDs and history while exposing unassessed scope and exceptions.
+
+## SpecSpace surfaces
+
+Reuse `/api/v1/practical-ontology` and `/api/v1/ontology-workbench` for workspace
+observation of the selected context, verification, freshness, coverage and gaps.
+Graph rendering and artifact presence do not establish approved terminology.
+The `/ontology` route remains independent browser-local artifact inspection;
+dropping a ZIP does not select or approve the active project context.
+
+## Delivery and evidence boundaries
+
+PR #825 proposes optional checked inputs in two report consumers; it is not the
+project-wide guarantee. Subsequent slices define minimal context selection,
+migrate candidate graph and Supervisor, assess the legacy corpus, provide a
+compiler in the native distribution and update SpecSpace display contracts.
+The proposal's acceptance matrix describes future tests, not completed runs.
+
+`canonical_mutations_allowed: false` and
+`runtime_profile_activation_allowed: false` describe this preparation slice.
+Intent preservation across specification, code and observation is a separate
+bounded follow-up using Ontology examples and 0226 facts. An agent skill can
+guide that review without substituting for evidence or human acceptance.
