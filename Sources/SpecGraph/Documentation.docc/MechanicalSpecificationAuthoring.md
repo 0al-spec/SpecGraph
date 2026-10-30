@@ -45,6 +45,22 @@ Registration does not execute an agent or approve canonical publication:
 
 ## Source documents
 
+The local scenario pilot follows the operator's lightweight authoring direction: a
+SG72-MIXED model beside the spec, using a real ontologyc-generated TypeScript
+SDK and explicit checks of one scenario. Its source map keeps one acceptance
+criterion partially modelled and three unmodelled. Generated artifacts are
+scratch outputs, and the local draft is not a new global ontology selection.
+See `specs/models/SG-SPEC-0072/README.md` for the on-demand command and
+`docs/reviews/0233_mechanical_specification_authoring/local-model-pilot/README.md`
+for the experiment. Compilation, bounded execution and source completeness
+remain separate observations; no new readiness or merge gate is activated.
+The real local run passed SDK generation, TypeScript compilation, instance checks
+and one production execution retaining both diagnostics. Its 43 focused tests
+include 13 real-tool integrations and negative construction/linkage/source
+probes. This is local evidence; the integration cases explicitly skip in Python
+CI without configured ontologyc and TypeScript paths. The curated observation
+records tested hashes and the compiler's unverified source provenance.
+
 The first executed baseline selects merged revision `a980ba6f` and confirms
 the historical pilot spec bytes are unchanged. Existing acceptance-shape checks
 detect evidence-only deletion but miss paired criterion/evidence deletion;

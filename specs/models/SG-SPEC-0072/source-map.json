@@ -1,0 +1,68 @@
+{
+  "schema_version": 1,
+  "spec_id": "SG-SPEC-0072",
+  "source_sha256": "46a6be05a4a0c4c5de7cfe29a8b44d5bd25fab09404f20fb2f2646a433fc196e",
+  "scenario_id": "SG72-MIXED",
+  "source_fragments": [
+    {
+      "pointer": "/specification/verification_contract/invalid",
+      "quote": "duplicate identity"
+    },
+    {
+      "pointer": "/specification/verification_contract/unavailable",
+      "quote": "a required compiler, input or dependency check is missing or unsupported"
+    },
+    {
+      "pointer": "/specification/verification_contract/outcome_precedence",
+      "quote": "A detected invalidity makes the overall outcome invalid even if another required check is unavailable."
+    },
+    {
+      "pointer": "/specification/verification_contract/outcome_precedence",
+      "quote": "retain per-check diagnostics in every case."
+    },
+    {
+      "pointer": "/specification/verification_contract/result_contract",
+      "quote": "per-check results, one overall outcome, and concrete diagnostics."
+    },
+    {
+      "pointer": "/specification/acceptance_cases/4/expected",
+      "quote": "a detected context conflict plus another unavailable required check remains invalid with both diagnostics retained."
+    }
+  ],
+  "acceptance": [
+    {
+      "pointer": "/acceptance/0",
+      "status": "unmodelled",
+      "reason": "Package selection, exact pins, dependency closure and name resolution are not modelled by this example. Duplicate identity is a supplied invalidity condition."
+    },
+    {
+      "pointer": "/acceptance/1",
+      "status": "unmodelled",
+      "reason": "Context revision identity, captured bytes, source and IR hashes, compiler identity and profile identity are not modelled."
+    },
+    {
+      "pointer": "/acceptance/2",
+      "status": "partial",
+      "reason": "This illustrative synthetic declaration models only mixed invalid and unavailable check outcomes and retention of both diagnostics. It does not cover the other outcome branches, complete check scope, source/IR fallback behavior or execution of the checks. Source fragments select clauses, not whole scalar obligations."
+    },
+    {
+      "pointer": "/acceptance/3",
+      "status": "unmodelled",
+      "reason": "Semantic approval, complete terminology coverage and runtime enforcement are not established by this bounded model. Its source links do not discharge the full provenance and authority criterion."
+    }
+  ],
+  "expected": {
+    "outcome": "invalid",
+    "checks": [
+      {
+        "check": "selection",
+        "outcome": "invalid"
+      },
+      {
+        "check": "compiler",
+        "outcome": "unavailable"
+      }
+    ],
+    "diagnostics_required": true
+  }
+}

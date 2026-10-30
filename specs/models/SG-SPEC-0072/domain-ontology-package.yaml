@@ -1,0 +1,50 @@
+apiVersion: ontology.specgraph.io/v1alpha1
+kind: DomainOntologyPackage
+metadata:
+  id: org.0al.specgraph.local.contextcase
+  namespace: contextcase
+  version: 0.1.0
+  publisher: SpecGraph
+  source: specs/models/SG-SPEC-0072/domain-ontology-package.yaml
+  approvalStatus: draft
+spec:
+  imports:
+    - {id: specgraph.foundation, namespace: sg, version: 0.1.0}
+    - {id: org.0al.specgraph.core, namespace: sgcore, version: 0.1.0}
+  classes:
+    CheckResult:
+      extends: sg:ValueObject
+      description: A declared check result in this hypothetical test case, not a recorded event or evidence of execution.
+      fields:
+        check: {type: string, required: true}
+        outcome: {type: string, required: true}
+        detail: {type: string, required: true}
+    ContextVerificationCase:
+      extends: sgcore:Test
+      description: One local test declaration with an expected overall context outcome; it neither executes nor approves verification.
+      fields:
+        expectedOutcome: {type: string, required: true}
+  protocols: {}
+  relations:
+    caseIncludesCheck:
+      domain: ContextVerificationCase
+      range: CheckResult
+      cardinality: {min: 2, max: 2}
+      description: This bounded mixed-outcome case declares its two required check diagnostics.
+    caseValidatesRequirement:
+      domain: ContextVerificationCase
+      range: sgcore:Requirement
+      cardinality: {min: 1, max: 1}
+      description: The local case targets the outcome-precedence requirement.
+  policies:
+    LocalDraftBoundary:
+      extends: sg:Policy
+      enforceability: manual
+      appliesTo: [ContextVerificationCase]
+      text: A local declaration only; generated shapes do not prove behavioral correctness, semantic approval or canonical readiness.
+  # Package-format friction: the compiler requires a nonempty state machine.
+  # This unbound declaration-only vocabulary asserts no actual lifecycle/history.
+  stateMachines:
+    DeclarationOnly:
+      states: [draft]
+      transitions: [{from: draft, to: draft}]
