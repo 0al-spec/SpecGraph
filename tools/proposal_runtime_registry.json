@@ -13591,5 +13591,40 @@
       }
     ],
     "notes": "The original planning and two-run review packet remain historical. A fresh Terra 6.1 High Supervisor materialization and independent review now prepare the bounded SG-SPEC-0072 selection contract and SG-SPEC-0064 reconciliation through supported gate resolution on a PR branch. Final PR acceptance is separate; no package meaning, complete term coverage, cross-operation cache admission or global runtime policy is approved. The seven-layer implementation track is in the linked marathon document. Overall 0232 posture remains deferred_until_canonicalized for its broader proposed governance/migration scope."
+  },
+  {
+    "proposal_id": "0233",
+    "posture": "deferred_until_canonicalized",
+    "runtime_surfaces": [
+      "docs/proposals/0233_mechanical_specification_authoring.md",
+      "docs/archive/proposal_sources/0233_mechanical_specification_authoring.md",
+      "docs/proposals/0233_mechanical_specification_authoring.intent.yaml",
+      "Sources/SpecGraph/Documentation.docc/MechanicalSpecificationAuthoring.md",
+      "docs/reviews/0233_mechanical_specification_authoring/README.md",
+      "docs/reviews/0233_mechanical_specification_authoring/operator-request.json",
+      "docs/reviews/0233_mechanical_specification_authoring/graph-links.json",
+      "intent_layer/nodes/user_intent--0233-mechanical-specification-authoring--f1341ca0.json",
+      "intent_layer/nodes/operator_request--0233-mechanical-specification-authoring--cafda04f.json",
+      "proposal_lane/nodes/proposal--0233-mechanical-specification-authoring--cf422918.json"
+    ],
+    "runtime_markers": [
+      {
+        "path": "docs/proposals/0233_mechanical_specification_authoring.md",
+        "pattern": "Draft proposal; planning contract only."
+      }
+    ],
+    "validation_markers": [
+      {
+        "path": "docs/proposals/0233_mechanical_specification_authoring.md",
+        "pattern": "These cases plan future verification; none has been executed by this proposal."
+      }
+    ],
+    "observation_markers": [
+      {
+        "path": "docs/reviews/0233_mechanical_specification_authoring/graph-links.json",
+        "pattern": "\"executor_invoked\": false"
+      }
+    ],
+    "notes": "Source-attributed authoring direction and existing intent/proposal registration only. Pilot, new checker adapters, canonical refinement, threshold changes and runtime profile activation remain pending. Resume through proposal::0233-mechanical-specification-authoring."
   }
 ]

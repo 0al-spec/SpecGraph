@@ -104,6 +104,7 @@ The canonical source files remain in the repository:
 - <doc:ExecutorAdapterGateway>
 - <doc:OntologyCAdapterReport>
 - <doc:ProposalsAndRuntime>
+- <doc:MechanicalSpecificationAuthoring>
 - <doc:TraceabilityEvidenceProviders>
 - <doc:ImplementationContractPack>
 - <doc:ProductWorkspacePilots>

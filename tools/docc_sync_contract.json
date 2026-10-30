@@ -1,6 +1,28 @@
 {
   "groups": [
     {
+      "id": "mechanical-specification-authoring",
+      "description": "Source-bound authoring proposal and graph return path remain separate from pilot execution and policy activation.",
+      "docs": [
+        "docs/proposals/0233_mechanical_specification_authoring.md",
+        "docs/reviews/0233_mechanical_specification_authoring/README.md"
+      ],
+      "docc": [
+        "Sources/SpecGraph/Documentation.docc/MechanicalSpecificationAuthoring.md"
+      ],
+      "required_terms": [
+        "SG-RFC-0233",
+        "SG-SPEC-0015",
+        "SG-SPEC-0072",
+        "deferred_until_canonicalized",
+        "proposal::0233-mechanical-specification-authoring"
+      ],
+      "docc_required_terms": [
+        "runtime_profile_activation_allowed: false",
+        "SVC"
+      ]
+    },
+    {
       "id": "native-specgraph-runtime",
       "description": "Pinned engine snapshot and project-owned workspace runtime boundaries.",
       "docs": [

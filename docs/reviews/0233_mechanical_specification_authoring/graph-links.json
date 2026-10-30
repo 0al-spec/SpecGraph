@@ -1,0 +1,81 @@
+{
+  "artifact_kind": "proposal_registration_observation",
+  "schema_version": 1,
+  "recorded_at": "2026-10-30T11:27:11.646309+00:00",
+  "source_base_revision": "ee8cb62f5acca18e884dcc19cf306ca6708ab7c5",
+  "proposal_id": "0233",
+  "source_ref": "docs/archive/proposal_sources/0233_mechanical_specification_authoring.md",
+  "source_sha256": "f9b6ff30e3030f622d6df18668fec8cfb803bd8b7b1fbd18c34f811306e265f3",
+  "proposal_ref": "docs/proposals/0233_mechanical_specification_authoring.md",
+  "proposal_sha256": "113b7fc30906f0693c14b3685b6678b45684f251e772e083052d7369de5f18ed",
+  "handles": {
+    "user_intent": "user_intent::0233-mechanical-specification-authoring",
+    "operator_request": "operator_request::0233-mechanical-specification-authoring",
+    "proposal": "proposal::0233-mechanical-specification-authoring"
+  },
+  "paths": {
+    "user_intent": "intent_layer/nodes/user_intent--0233-mechanical-specification-authoring--f1341ca0.json",
+    "operator_request": "intent_layer/nodes/operator_request--0233-mechanical-specification-authoring--cafda04f.json",
+    "proposal": "proposal_lane/nodes/proposal--0233-mechanical-specification-authoring--cf422918.json"
+  },
+  "target_spec_id": "SG-SPEC-0015",
+  "pilot": {
+    "spec_id": "SG-SPEC-0072",
+    "revision": "c31b1a332ed1df2fba7d10ad0a215f230d61b97e",
+    "status": "unmerged_reference_at_preparation"
+  },
+  "queries": {
+    "operator_request::0233-mechanical-specification-authoring": {
+      "status": "ok",
+      "findings": []
+    },
+    "user_intent::0233-mechanical-specification-authoring": {
+      "status": "ok",
+      "findings": []
+    },
+    "proposal::0233-mechanical-specification-authoring": {
+      "required_fields": [
+        "proposal_repository_presence",
+        "proposal_handle",
+        "proposal_authority_state",
+        "proposal_target_region",
+        "proposal_lineage_link"
+      ],
+      "status": "queryable",
+      "findings": []
+    }
+  },
+  "registration_method": [
+    "normalize_operator_request_packet",
+    "sync_user_intent_node",
+    "sync_operator_request_node",
+    "sync_tracked_proposal_lane_node"
+  ],
+  "review_correction": "The authored proposal's queue status was cleared after review: it is not a derived queue item. Its under_review authority and source lineage remain independent of queue refresh.",
+  "executor_invoked": false,
+  "pilot_executed": false,
+  "canonical_mutations_allowed": false,
+  "runtime_profile_activation_allowed": false,
+  "evidence_admission_allowed": false,
+  "next_action": "Review pilot obligation inventory/profile, then prepare a derived report and sensitivity probes in a separate bounded change.",
+  "pre_spec_queries": {
+    "operator_request::0233-mechanical-specification-authoring": {
+      "status": "queryable",
+      "findings": []
+    },
+    "user_intent::0233-mechanical-specification-authoring": {
+      "status": "queryable",
+      "findings": []
+    }
+  },
+  "validation": {
+    "proposal_tracking_gate": {
+      "status": "passed",
+      "proposal_count": 232,
+      "blocking_count": 0
+    },
+    "docc_sync": "passed",
+    "independent_read_only_review": "no_actionable_findings",
+    "scope": "Registration, source and document contracts only; no behavioral pilot executed."
+  }
+}
