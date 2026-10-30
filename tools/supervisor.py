@@ -51001,6 +51001,24 @@ def emit_supervisor_json(payload: dict[str, Any], *, output_mode: str) -> None:
     print(json.dumps(output, ensure_ascii=False, indent=2))
 
 
+def run_project_ontology_context_request(
+    request: dict[str, Any], *, target_spec: str | None, output_mode: str
+) -> int:
+    """Load the optional CLI adapter from this supervisor's source directory."""
+    module_path = TOOLS_DIR / "project_ontology_supervisor_cli.py"
+    spec = importlib.util.spec_from_file_location("project_ontology_supervisor_cli", module_path)
+    if spec is None or spec.loader is None:
+        print("cannot load project ontology CLI adapter", file=sys.stderr)
+        return 2
+    module = importlib.util.module_from_spec(spec)
+    sys.path.insert(0, str(TOOLS_DIR))
+    try:
+        spec.loader.exec_module(module)
+        return module.run_request(ROOT, request, target_spec=target_spec, output_mode=output_mode)
+    finally:
+        sys.path.pop(0)
+
+
 def build_ontology_supervisor_semantic_gate_report() -> dict[str, Any]:
     module_path = TOOLS_DIR / "ontology_imports.py"
     spec = importlib.util.spec_from_file_location(
@@ -55287,6 +55305,7 @@ def main(
     supervisor_prompt_profile: str | None = None,
     supervisor_prompt_extension_file: str | None = None,
     output_mode: str = "summary",
+    ontology_context_request: dict[str, Any] | None = None,
 ) -> int:
     """Entry point for CLI and tests.
 
@@ -55324,6 +55343,7 @@ def main(
         return 1
 
     standalone_modes = {
+        "--build-project-ontology-context-check": ontology_context_request is not None,
         "--validate-transition-packet": bool(validate_transition_packet_path),
         "--build-intent-layer-overlay": build_intent_layer_overlay_mode,
         "--build-exploration-preview": build_exploration_preview_mode,
@@ -55445,7 +55465,48 @@ def main(
             "standalone commands cannot be combined: " + ", ".join(enabled_standalone_modes),
             file=sys.stderr,
         )
-        return 1
+        return 2 if ontology_context_request is not None else 1
+
+    if ontology_context_request is not None:
+        if (
+            any(
+                (
+                    dry_run,
+                    auto_approve,
+                    loop,
+                    resolve_gate,
+                    decision,
+                    note,
+                    split_proposal,
+                    apply_split_proposal,
+                    operator_note,
+                    mutation_budget,
+                    run_authority,
+                    execution_profile,
+                    child_model,
+                    child_timeout_seconds,
+                    list_stale_runtime,
+                    clean_stale_runtime,
+                    observe_graph_health_mode,
+                    operator_request_packet_path,
+                    supervisor_prompt_profile,
+                    supervisor_prompt_extension_file,
+                    product_workspace_project_id,
+                    product_workspace_display_name,
+                    product_workspace_root,
+                    product_workspace_root_intent,
+                )
+            )
+            or max_iterations != 50
+        ):
+            print(
+                "ontology context check cannot be combined with refinement or authority options",
+                file=sys.stderr,
+            )
+            return 2
+        return run_project_ontology_context_request(
+            ontology_context_request, target_spec=target_spec, output_mode=normalized_output_mode
+        )
 
     supervisor_prompt_overlay_requested = bool(
         str(supervisor_prompt_profile or "").strip()
@@ -59809,7 +59870,25 @@ def main(
 
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description="SpecGraph supervisor")
+    ontology_mode = "--build-project-ontology-context-check" in sys.argv[1:]
+    parser = argparse.ArgumentParser(
+        description="SpecGraph supervisor",
+        allow_abbrev=not ontology_mode,
+        epilog=(
+            "For ontology context check options, use --build-project-ontology-context-check --help."
+        ),
+    )
+    if ontology_mode:
+        parser.add_argument(
+            "--build-project-ontology-context-check",
+            action="store_true",
+            help="Build a read-only ontology advisory check for one explicitly selected spec",
+        )
+        parser.add_argument("--ontology-context-project-id")
+        parser.add_argument("--ontology-context-selection")
+        parser.add_argument("--ontologyc")
+        parser.add_argument("--ontologyc-sha256")
+        parser.add_argument("--ontology-context-previous-report")
     parser.add_argument("--dry-run", action="store_true", help="Show selection and prompt only")
     parser.add_argument(
         "--verbose",
@@ -60688,6 +60767,19 @@ if __name__ == "__main__":
         help="Apply an approved split_oversized_spec proposal for --target-spec",
     )
     args = parser.parse_args()
+    if ontology_mode:
+        allowed = {
+            "--build-project-ontology-context-check",
+            "--target-spec",
+            "--ontology-context-project-id",
+            "--ontology-context-selection",
+            "--ontologyc",
+            "--ontologyc-sha256",
+            "--ontology-context-previous-report",
+            "--output-mode",
+        }
+        if any(arg.split("=", 1)[0] not in allowed for arg in sys.argv[1:] if arg.startswith("--")):
+            parser.error("ontology context check cannot be combined with other supervisor options")
     try:
         mutation_budget = parse_mutation_budget(args.mutation_budget or "")
     except ValueError as exc:
@@ -60715,6 +60807,17 @@ if __name__ == "__main__":
             decision=args.decision,
             note=args.note,
             target_spec=args.target_spec,
+            ontology_context_request=(
+                {
+                    "project_id": args.ontology_context_project_id,
+                    "selection": args.ontology_context_selection,
+                    "ontologyc": args.ontologyc,
+                    "compiler_sha256": args.ontologyc_sha256,
+                    "previous_report": args.ontology_context_previous_report,
+                }
+                if ontology_mode
+                else None
+            ),
             split_proposal=args.split_proposal,
             apply_split_proposal=args.apply_split_proposal,
             operator_note=args.operator_note or "",

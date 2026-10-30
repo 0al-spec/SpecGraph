@@ -1,0 +1,8 @@
+{
+  "user_intent_path": "intent_layer/nodes/user_intent--ontology-context-marathon-20261030--b5a77b97.json",
+  "user_intent_handle": "user_intent::ontology-context-marathon-20261030",
+  "operator_request_path": "intent_layer/nodes/operator_request--ontology-context-marathon-20261030--a7687d82.json",
+  "operator_request_handle": "operator_request::ontology-context-marathon-20261030",
+  "proposal_path": "proposal_lane/nodes/proposal--ontology-context-marathon-20261030--5114252d.json",
+  "proposal_handle": "proposal::ontology-context-marathon-20261030"
+}

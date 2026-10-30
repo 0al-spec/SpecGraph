@@ -1,0 +1,39 @@
+{
+  "artifact_kind": "compiler_outcome_defect_verification",
+  "schema_version": 1,
+  "defect_id": "ONTOLOGY-COMPILER-OUTCOME-20261030",
+  "status": "passed_local_checks_review_pending",
+  "test_refs": [
+    "tests/test_ontology_snapshot.py",
+    "tests/test_project_ontology_context.py"
+  ],
+  "checks": {
+    "focused_tests": {
+      "command": ".venv/bin/python -m pytest -q -o cache_dir=<TB5 pytest cache> --basetemp=<TB5 temp> tests/test_ontology_snapshot.py tests/test_project_ontology_context.py",
+      "result": "41 passed",
+      "scope": "controlled local compiler fixtures, including nonzero check and compile, signal, undecodable output, captured hash mismatch, missing-input precedence, identity mismatch, immutable capture reuse and nonregular input rejection"
+    },
+    "python_quality": "passed: .venv/bin/python tools/python_quality.py",
+    "docc_sync": "passed: make docc-sync"
+  },
+  "limitations": [
+    "No real ontologyc invocation or hosted run was performed for these regressions.",
+    "The prepared repair is not a merged fix or semantic approval."
+  ],
+  "merged_fix": false,
+  "canonical_mutations_allowed": false,
+  "source_files_sha256": {
+    "tools/ontology_snapshot.py": "050c7d3567fc04af951d455e4fe201b11314a620278358ce666cbab020dac66c",
+    "tools/project_ontology_context/capture.py": "6ae694a8fce6847e42070ba519be674d0f8a57737ce952f008e198db9fa32fb7",
+    "tests/test_ontology_snapshot.py": "25a7bf989da0bf14a41cee643ca3ffd626b7abaf11cf8638c4d3ddedfbf95738",
+    "tests/test_project_ontology_context.py": "2d80c7a7d1daad55dcd0e9e1dcde1027d7c8c34d9e07a3416c52641110744fd6"
+  },
+  "graph_query_validation": {
+    "user_intent": "ok",
+    "operator_request": "ok",
+    "proposal": "queryable",
+    "authority": "under_review",
+    "derived_queue_owned": false,
+    "executor_invoked": false
+  }
+}

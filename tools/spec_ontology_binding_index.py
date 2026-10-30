@@ -161,8 +161,14 @@ def add_binding(
         bindings.append(candidate)
 
 
-def spec_entry(path: Path, ir_symbols: dict[str, dict[str, str]]) -> dict[str, Any]:
-    spec = load_yaml(path)
+def spec_entry(
+    path: Path,
+    ir_symbols: dict[str, dict[str, str]],
+    *,
+    document: dict[str, Any] | None = None,
+    path_label: str | None = None,
+) -> dict[str, Any]:
+    spec = load_yaml(path) if document is None else document
     spec_id = str(spec.get("id", path.stem))
     bindings: list[dict[str, str]] = []
     relation_candidates: list[dict[str, Any]] = []
@@ -269,7 +275,7 @@ def spec_entry(path: Path, ir_symbols: dict[str, dict[str, str]]) -> dict[str, A
 
     return {
         "spec_id": spec_id,
-        "path": relative_path(path),
+        "path": relative_path(path) if path_label is None else path_label,
         "status": "legacy_report_only",
         "accepted_bindings": sorted(bindings, key=lambda item: (item["source"], item["term"])),
         "relation_candidates": relation_candidates,
@@ -295,13 +301,21 @@ def build_binding_index(
     ir_path: Path = DEFAULT_IR_PATH,
     snapshot: OntologySnapshot | None = None,
     ir: dict[str, Any] | None = None,
+    documents: tuple[tuple[str, dict[str, Any]], ...] | None = None,
 ) -> dict[str, Any]:
     if snapshot is not None and ir is not None:
         raise ValueError("provide snapshot or IR, not both")
     if ir is None:
         ir = json.loads(snapshot.ir_bytes) if snapshot is not None else load_json(ir_path)
     ir_symbols = ontology_symbols(ir)
-    entries = [spec_entry(path, ir_symbols) for path in sorted(specs_root.glob("SG-SPEC-*.yaml"))]
+    entries = (
+        [
+            spec_entry(Path(path), ir_symbols, document=document, path_label=path)
+            for path, document in documents
+        ]
+        if documents is not None
+        else [spec_entry(path, ir_symbols) for path in sorted(specs_root.glob("SG-SPEC-*.yaml"))]
+    )
     accepted_binding_count = sum(len(entry["accepted_bindings"]) for entry in entries)
     relation_candidate_count = sum(len(entry["relation_candidates"]) for entry in entries)
     gap_count = sum(len(entry["gaps"]) for entry in entries)

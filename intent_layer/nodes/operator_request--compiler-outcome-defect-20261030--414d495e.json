@@ -1,0 +1,117 @@
+{
+  "artifact_kind": "intent_layer_node",
+  "schema_version": 1,
+  "title": "Operator request for SG-SPEC-0072",
+  "created_at": "2026-10-30T12:28:31.498195+00:00",
+  "updated_at": "2026-10-30T12:28:31.498198+00:00",
+  "policy_reference": {
+    "artifact_path": "tools/intent_layer_policy.json",
+    "artifact_sha256": "f9df44dafea0fb1bc0e33007e304b749810ddefb6eda1fe31429390312e30171",
+    "version": 1
+  },
+  "bridge_policy_reference": {
+    "artifact_path": "tools/operator_request_bridge_policy.json",
+    "artifact_sha256": "fc4955b8a8d57a6caaa4d9f862d2ed4a5891a12988484c85b703224688670a4f",
+    "version": 1
+  },
+  "vocabulary_reference": {
+    "artifact_path": "tools/specgraph_vocabulary.json",
+    "artifact_sha256": "68aa0c73461dbd4ec8db3c2af27eb7b51a601d86005fae54ab58206f5e5f9b9f",
+    "version": 1
+  },
+  "intent_repository_presence": {
+    "tracked_presence": "repository_tracked",
+    "path_class": "intent_layer_node_path",
+    "persistence_boundary": "pre_canonical_repository_separate_from_runtime",
+    "tracked_path": "intent_layer/nodes/operator_request--compiler-outcome-defect-20261030--414d495e.json"
+  },
+  "intent_handle": {
+    "handle_value": "operator_request::compiler-outcome-defect-20261030",
+    "handle_status": "active"
+  },
+  "intent_layer_kind": "operator_request",
+  "mediation_state": "proposal_linked",
+  "pre_spec_semantics": {
+    "policy_reference": {
+      "artifact_path": "tools/pre_spec_semantics_policy.json",
+      "artifact_sha256": "6cd49d100c8eae2ac9ea8512c7b7cbad108823064070a5de03487c3941447cb1",
+      "version": 1
+    },
+    "phase": "pre_spec",
+    "semantic_artifact_class": "operator_request",
+    "status": "ready_for_execution",
+    "authority": "operator",
+    "required_axes": [
+      "phase",
+      "status",
+      "authority",
+      "confidence",
+      "provenance",
+      "context_tags",
+      "supersedes"
+    ],
+    "implemented_axes": {
+      "phase": "explicit",
+      "status": "mapped_from_mediation_state",
+      "authority": "explicit",
+      "confidence": "not_yet_materialized",
+      "provenance": "explicit",
+      "context_tags": "not_yet_materialized",
+      "supersedes": "not_yet_materialized"
+    },
+    "adjacent_primary_kinds": [
+      "proposal",
+      "spec_draft"
+    ],
+    "canonical_boundary": "proposal_lane_or_reviewed_supervisor_candidate_required"
+  },
+  "request_bridge": {
+    "target_spec_id": "SG-SPEC-0072",
+    "run_mode": "targeted_refine",
+    "operator_note": "Register the confirmed compiler-outcome observation and prepared fix for review under the existing 0232 contract. No executor, canonical mutation, semantic acceptance, gate activation, or claim of merged fix.",
+    "mutation_budget": [],
+    "run_authority": [],
+    "stop_conditions": [
+      "first_structured_outcome",
+      "review_boundary_reached"
+    ],
+    "execution_profile": "standard",
+    "execution_contract": {
+      "authority": {
+        "requested_run_authority": [],
+        "canonical_write_boundary": "forbidden",
+        "allowed_downstream_routes": [
+          "supervisor_refinement_candidate",
+          "proposal_lane_emission"
+        ]
+      },
+      "mutation_budget": [],
+      "stop_conditions": [
+        "first_structured_outcome",
+        "review_boundary_reached"
+      ],
+      "execution_profile": "standard"
+    }
+  },
+  "intent_lineage_link": [
+    {
+      "lineage_role": "derived_from",
+      "source_kind": "intent_layer_node",
+      "source_reference": "user_intent::compiler-outcome-defect-20261030"
+    },
+    {
+      "lineage_role": "normalized_from",
+      "source_kind": "runtime_artifact",
+      "source_reference": "docs/reviews/0232_project_ontology_context/compiler-outcome-defect/operator-request.json"
+    }
+  ],
+  "runtime_bridge": {
+    "latest_packet_reference": "docs/reviews/0232_project_ontology_context/compiler-outcome-defect/operator-request.json",
+    "bridge_state": "proposal_linked",
+    "downstream_route": "proposal_lane_emission",
+    "proposal_ids": [
+      "proposal::compiler-outcome-defect-20261030"
+    ],
+    "registration_note": "Graph registration only; no supervisor execution or run is asserted."
+  }
+}

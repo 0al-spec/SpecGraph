@@ -1373,6 +1373,13 @@
       ]
     },
     {
+      "id": "project-ontology-context-runtime",
+      "description": "The implemented bounded context capture scope stays aligned with DocC.",
+      "docs": ["docs/project_ontology_context.md"],
+      "docc": ["Sources/SpecGraph/Documentation.docc/VerifiedProjectOntologyContext.md"],
+      "required_terms": ["capture_project_context", "SG-SPEC-0072", "ontologyc-structural-v1", "unavailable"]
+    },
+    {
       "id": "verified-project-ontology-context",
       "description": "Project-wide verified ontology context and staged migration are proposed, not active policy.",
       "docs": [

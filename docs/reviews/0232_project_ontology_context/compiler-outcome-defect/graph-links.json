@@ -1,0 +1,8 @@
+{
+  "user_intent_path": "intent_layer/nodes/user_intent--compiler-outcome-defect-20261030--cc75a920.json",
+  "user_intent_handle": "user_intent::compiler-outcome-defect-20261030",
+  "operator_request_path": "intent_layer/nodes/operator_request--compiler-outcome-defect-20261030--414d495e.json",
+  "operator_request_handle": "operator_request::compiler-outcome-defect-20261030",
+  "proposal_node_path": "proposal_lane/nodes/proposal--compiler-outcome-defect-20261030--a91d06f4.json",
+  "proposal_handle": "proposal::compiler-outcome-defect-20261030"
+}

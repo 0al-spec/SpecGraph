@@ -1,0 +1,302 @@
+{
+  "artifact_kind": "ontology_marathon_local_verification",
+  "schema_version": 1,
+  "execution_source_revision": "d3d75ac17f8af300845badffd87e2b9f9d571bd6",
+  "stack": [
+    {
+      "layer": 1,
+      "pr": 829,
+      "branch": "codex/ontology-context-contract",
+      "head": "52460a2db2a567c9304a36ad357fbe986e2474d0"
+    },
+    {
+      "layer": 2,
+      "pr": 830,
+      "branch": "codex/ontology-context-core",
+      "head": "86c8ead0a6484ab394b58bdc4da607c90dea421e"
+    },
+    {
+      "layer": 3,
+      "pr": 831,
+      "branch": "codex/ontology-context-cli",
+      "head": "7f96c03c5c504cb27a24d3d70363f944a4b467f6"
+    },
+    {
+      "layer": 4,
+      "pr": 832,
+      "branch": "codex/ontology-context-reports",
+      "head": "508bdcd5a1d1edf5184cec5cdd8db07cde08e57c"
+    },
+    {
+      "layer": 5,
+      "pr": 833,
+      "branch": "codex/ontology-report-freshness",
+      "head": "3efc3424a9dc7ceb5aec922cadc3c9dd9307be02"
+    },
+    {
+      "layer": 6,
+      "pr": 834,
+      "branch": "codex/ontology-term-inventory",
+      "head": "17136a880e739b960326c1ac248d60aed9edf5e1"
+    },
+    {
+      "layer": 7,
+      "pr": 835,
+      "branch": "codex/ontology-supervisor-context",
+      "head": "d3d75ac17f8af300845badffd87e2b9f9d571bd6"
+    }
+  ],
+  "evidence_level": "attributed_local_execution_not_attestation",
+  "compiler": {
+    "sha256": "1b1c478a7ee5cac4d2444a34d1729d4ea56560983057c0136d610cc51f89a0ad",
+    "release_origin": "not_verified",
+    "check": "passed",
+    "compile_typescript": "passed"
+  },
+  "supervisor_smoke": {
+    "artifact_kind": "project_ontology_target_check",
+    "project_id": "specgraph",
+    "target_spec_id": "SG-SPEC-0072",
+    "outcome": "unavailable",
+    "target": {
+      "id": "SG-SPEC-0072",
+      "path": "specs/nodes/SG-SPEC-0072.yaml",
+      "sha256": "46a6be05a4a0c4c5de7cfe29a8b44d5bd25fab09404f20fb2f2646a433fc196e"
+    },
+    "context": {
+      "artifact_kind": "project_ontology_context_report",
+      "schema_version": 1,
+      "project_id": "specgraph",
+      "selection_path": "runs/ontology-context-pilot/selection.yaml",
+      "outcome": "unavailable",
+      "context_revision": "sha256:8565d64625d34b7b65394f2d3d90a64430deb46078cbec7437a6c1323337ae3d",
+      "members": [
+        {
+          "id": "org.0al.specgraph.core",
+          "namespace": "sgcore",
+          "version": "0.1.0"
+        }
+      ],
+      "profiles": [
+        "ontologyc-structural-v1"
+      ],
+      "composition": {
+        "dependency_rule": "explicit",
+        "name_resolution_rule": "qualified"
+      },
+      "snapshots": [
+        {
+          "id": "org.0al.specgraph.core",
+          "namespace": "sgcore",
+          "version": "0.1.0",
+          "source_sha256": "5bfa2ff40b6174def589546ab2fea2501e1f256c4f1446f36c45c7f3fffcd929",
+          "ir_sha256": "7a9d1cb640f154c32a2a15a4ec8868349bee04be30a0b5da886422c0d3eb638f",
+          "compiler_sha256": "1b1c478a7ee5cac4d2444a34d1729d4ea56560983057c0136d610cc51f89a0ad",
+          "compiler_provenance": "not_verified"
+        }
+      ],
+      "checks": [
+        {
+          "check": "profile",
+          "outcome": "verified",
+          "detail": "supported structural checking profile",
+          "package": null
+        },
+        {
+          "check": "selection",
+          "outcome": "verified",
+          "detail": "explicit package selection parsed",
+          "package": null
+        },
+        {
+          "check": "compiler",
+          "outcome": "verified",
+          "detail": "operator-provided executable available; provenance not verified",
+          "package": null
+        },
+        {
+          "check": "member_capture",
+          "outcome": "verified",
+          "detail": "source, IR and package identity checked",
+          "package": "org.0al.specgraph.core"
+        },
+        {
+          "check": "dependency_closure",
+          "outcome": "unavailable",
+          "detail": "dependency closure and composition checks are unsupported",
+          "package": "org.0al.specgraph.core"
+        }
+      ],
+      "semantic_approval": "not_established",
+      "canonical_mutations_allowed": false
+    },
+    "producer": {
+      "identity": "specgraph-local-symbol-advisory-v1:sha256:918696534ed9264fedd3d98b5ff1c0e6d4a7e5115c88aa8130e8b36e84e52848",
+      "source_sha256": {
+        "spec_ontology_context_reports.py": "7aa3335099777a094ff32a532c9ec9ec48bbec4db82a6ddfa5ff1775e0895967",
+        "spec_ontology_binding_index.py": "e2de342bca49dbdc60b7e2f57e1093624b713f83cff9be9402b654d59daace0a",
+        "spec_ontology_validation_report.py": "251d944ad25a95daa280e11aad71e1d13ad2b4a04a5e6aa9e732a0c3ab358ffb",
+        "ontology_imports.py": "878fd62376ef6003b74f756758cbd0984d789ad03f86108e5d7a0375669f9983",
+        "ontology_snapshot.py": "14707adbadc97272a14773b05a5e7b67319b7f5e1ea0bfe2fcb78e89a9b66267"
+      },
+      "provenance": "caller_attributed_not_attested"
+    },
+    "previous_freshness": {
+      "artifact_kind": "project_ontology_report_freshness",
+      "schema_version": 1,
+      "outcome": "fresh",
+      "diagnostics": [
+        "explicit advisory inputs match"
+      ],
+      "comparisons": [
+        {
+          "input": "producer_identity",
+          "matches": true
+        },
+        {
+          "input": "project_id",
+          "matches": true
+        },
+        {
+          "input": "workspace",
+          "matches": true
+        },
+        {
+          "input": "context_revision",
+          "matches": true
+        },
+        {
+          "input": "analysis_profile",
+          "matches": true
+        },
+        {
+          "input": "selected_member",
+          "matches": true
+        },
+        {
+          "input": "source_sha256",
+          "matches": true
+        },
+        {
+          "input": "ir_sha256",
+          "matches": true
+        },
+        {
+          "input": "compiler_sha256",
+          "matches": true
+        },
+        {
+          "input": "context_outcome",
+          "matches": true
+        },
+        {
+          "input": "scope",
+          "matches": true
+        },
+        {
+          "input": "spec_inputs",
+          "matches": true
+        },
+        {
+          "input": "binding_payload",
+          "matches": true
+        },
+        {
+          "input": "validation_payload",
+          "matches": true
+        }
+      ],
+      "scope": "binding_validation_bundle",
+      "semantic_approval": "not_established",
+      "tests_verified": false,
+      "producer_provenance": "caller_attributed",
+      "inventory_freshness": "not_assessed"
+    },
+    "previous_freshness_scope": "binding_validation_bundle",
+    "inventory_freshness": "not_assessed",
+    "semantic_approval": "not_established",
+    "full_spec_conformance": "not_assessed",
+    "bundle_outcome": "analyzed",
+    "inventory_outcome": "analyzed"
+  },
+  "previous_producer_change": {
+    "outcome": "stale",
+    "diagnostic": "producer_identity changed",
+    "source": "explicit earlier api-first report selected by operator; no latest lookup"
+  },
+  "gates": {
+    "spec_evidence": "passed",
+    "intent_decision_review": {
+      "gate_passed": true,
+      "changed_atoms": 0,
+      "base_sha": "17136a880e739b960326c1ac248d60aed9edf5e1"
+    },
+    "proposal_tracking": {
+      "status": "passed",
+      "tracked": 231,
+      "blocking": 0
+    },
+    "native_intent_query_contracts": "ok",
+    "native_proposal_query_contract": "queryable",
+    "all_stack_intent_reviews": {
+      "passed": 7,
+      "changed_atoms_by_pr": {
+        "829": 6,
+        "830": 0,
+        "831": 0,
+        "832": 0,
+        "833": 0,
+        "834": 0,
+        "835": 0
+      },
+      "net_new_canonical_atoms": 4,
+      "semantic_approval": false
+    }
+  },
+  "tests": {
+    "full_suite_before_test_clock_fix": {
+      "source_revision": "d3d75ac17f8af300845badffd87e2b9f9d571bd6",
+      "passed": 3382,
+      "failed": 2,
+      "skipped": 4,
+      "seconds": 439.67,
+      "junit_sha256": "03ac8322f372fde90b8da601357a0ccfa0c9399accb514dc9ff9d6bae9023b25",
+      "failures": [
+        "test_live_sg_spec_0019_evidence_contract_is_chain_complete",
+        "test_live_sg_spec_0049_trace_contract_is_verified"
+      ]
+    },
+    "test_clock_fix_regressions": {
+      "passed": 4,
+      "seconds": 14.49,
+      "execution": "Terra 6.1 High worker; same checkout and TB5 environment",
+      "test_source_sha256": "3164a4b81fe39331ec49f30bbbcfbc9e40bc810688ca1fc3e99bddf17b1e0b74",
+      "full_local_rerun": "not_performed_after_test_only_fix"
+    },
+    "other_targeted_runs": {
+      "core_and_snapshot": 25,
+      "target_and_supervisor_cli": 29,
+      "context_reports": 7,
+      "term_inventory": 8
+    },
+    "counting_note": "Runs overlap; do not sum counts into a synthetic full-suite pass."
+  },
+  "limits": [
+    "Local compiler bytes identified without release attestation",
+    "Dependency/composition closure unsupported; current specgraph-core context remains unavailable",
+    "Freshness covers binding_validation_bundle only; inventory not_assessed",
+    "Semantic approval and full-prose conformance not established",
+    "New stack not merged; hosted checks and automated review reported separately",
+    "Production trace freshness currently uses weak Git test-file commit-time anchors; controlled test clocks do not establish execution evidence."
+  ],
+  "followups": [
+    {
+      "target": "SG-SPEC-0072 / proposal0232",
+      "action": "Implement and test explicit dependency/composition closure before current specgraph-core can receive verified context."
+    },
+    {
+      "target": "existing EvidenceProvider and trace freshness surfaces",
+      "action": "Replace weak whole-file test-commit chronology with revision-bound execution evidence in a separately reviewed slice; no new admission gate in this stack."
+    }
+  ]
+}

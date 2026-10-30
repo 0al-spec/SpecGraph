@@ -13562,7 +13562,11 @@
       "docs/reviews/0232_project_ontology_context/supervisor/selection-run.json",
       "docs/reviews/0232_project_ontology_context/supervisor/child-run.json",
       "docs/reviews/0232_project_ontology_context/supervisor/candidates/SG-SPEC-0064.yaml",
-      "docs/reviews/0232_project_ontology_context/supervisor/candidates/SG-SPEC-0072.yaml"
+      "docs/reviews/0232_project_ontology_context/supervisor/candidates/SG-SPEC-0072.yaml",
+      "specs/nodes/SG-SPEC-0072.yaml",
+      "docs/reviews/0232_project_ontology_context/adoption/README.md",
+      "docs/reviews/0232_project_ontology_context/adoption/review.json",
+      "docs/reviews/0232_project_ontology_context/marathon.md"
     ],
     "runtime_markers": [
       {
@@ -13586,7 +13590,7 @@
         "pattern": "\"accepted_canonical_diff\": false"
       }
     ],
-    "notes": "Planning-only project ontology context and staged legacy migration. SpecGraph selection/checking, SpecSpace display, dependency closure, complete term coverage, Supervisor freshness, compiler distribution and canonical enforcement remain unimplemented. Related PR #825 is optional report-only groundwork, not global conformance. Two real targeted Supervisor runs now retain a split-required selection and a validated one-child candidate. SG-SPEC-0072 and parent reconciliation remain under docs/reviews with review_pending and accepted_canonical_diff=false; no canonical adoption or configuration/runtime implementation is claimed."
+    "notes": "The original planning and two-run review packet remain historical. A fresh Terra 6.1 High Supervisor materialization and independent review now prepare the bounded SG-SPEC-0072 selection contract and SG-SPEC-0064 reconciliation through supported gate resolution on a PR branch. Final PR acceptance is separate; no package meaning, complete term coverage, cross-operation cache admission or global runtime policy is approved. The seven-layer implementation track is in the linked marathon document. Overall 0232 posture remains deferred_until_canonicalized for its broader proposed governance/migration scope."
   },
   {
     "proposal_id": "0233",

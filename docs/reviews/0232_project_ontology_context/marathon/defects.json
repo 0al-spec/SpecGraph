@@ -1,0 +1,161 @@
+{
+  "artifact_kind": "ontology_track_defect_observations",
+  "schema_version": 1,
+  "status": "fixes_prepared_review_pending",
+  "affected_spec": "SG-SPEC-0072",
+  "proposal_ref": "docs/proposals/0232_verified_project_ontology_context.md",
+  "source_boundary": "Locally attributed integration review plus the linked hosted CI log; local pre-fix observations are not a retained complete Git snapshot.",
+  "observations": [
+    {
+      "id": "ONT-MARATHON-01",
+      "problem": "Expected compiler pin was checked after executing the captured compiler.",
+      "observation_source": "local integration review of the initial layer2 implementation",
+      "repair": "Validate the same captured executable bytes against expected_compiler_sha256 before any subprocess invocation.",
+      "implementation_refs": [
+        "tools/ontology_snapshot.py::capture_ontology_snapshot",
+        "tools/project_ontology_context/capture.py::capture_project_context"
+      ],
+      "prevention": "Wrong-pin marker regressions assert the selected compiler never executes; snapshot error outcomes are typed, not inferred from message substrings.",
+      "test_refs": [
+        "tests/test_ontology_snapshot.py",
+        "tests/test_project_ontology_context.py"
+      ]
+    },
+    {
+      "id": "ONT-MARATHON-02",
+      "problem": "argparse abbreviation allowed --workspace-r to override native wrapper workspace selection.",
+      "observation_source": "independent Terra High review before layer3 publication",
+      "repair": "Disable abbreviation in ontology-context CLI; keep wrapper workspace override checks.",
+      "implementation_refs": [
+        "tools/project_ontology_context_cli.py::main",
+        "tools/native_runtime.py::run"
+      ],
+      "prevention": "Subprocess regressions reject abbreviated overrides toward a foreign workspace and installed runtime.",
+      "test_refs": [
+        "tests/test_project_ontology_context_cli.py",
+        "tests/test_native_runtime.py"
+      ]
+    },
+    {
+      "id": "ONT-MARATHON-03",
+      "problem": "Native launcher test fixture assumed source/.venv exists on hosted CI.",
+      "observation_source": "https://github.com/0al-spec/SpecGraph/actions/runs/40972146292/job/123791231200",
+      "observed_head": "046e1314e38445a37ec2e2e00e9561e3c52ee5d7",
+      "repair": "Use the active Python environment via sys.prefix rather than a repository-local virtualenv.",
+      "implementation_refs": [
+        "tests/test_native_runtime.py::test_ontology_context_launcher_runs_in_external_workspace"
+      ],
+      "prevention": "Fixture verifies the selected environment contains bin/python; targeted suite re-run locally and hosted rerun pending after source-layer backport.",
+      "test_refs": [
+        "tests/test_native_runtime.py"
+      ],
+      "production_installer_changed": false
+    },
+    {
+      "id": "ONT-MARATHON-04",
+      "problem": "Registering the new Supervisor option made legacy --build-project ambiguous.",
+      "observation_source": "independent Terra High review of c9e257df",
+      "observed_head": "c9e257df",
+      "repair": "Register ontology options only for the exact explicit mode; preserve the legacy parser option set and default help discoverability.",
+      "implementation_refs": [
+        "tools/supervisor.py::__main__"
+      ],
+      "prevention": "Subprocess regression executes the existing project_environment route through --build-project and rejects abbreviated new options.",
+      "test_refs": [
+        "tests/test_project_ontology_supervisor_cli.py::test_legacy_abbreviation_remains_enabled_without_context_mode"
+      ]
+    },
+    {
+      "id": "ONT-MARATHON-05",
+      "problem": "The fixed report path could overwrite a selected input when it was already shaped like a target report.",
+      "observation_source": "independent Terra High review of c9e257df",
+      "observed_head": "c9e257df",
+      "repair": "Reject resolved output collisions with selection, declared source/IR and compiler before execution or writing; retain explicit previous-report=output comparison.",
+      "implementation_refs": [
+        "tools/project_ontology_supervisor_cli.py::run_request"
+      ],
+      "prevention": "Four selected-input collision regressions preserve original bytes; malformed YAML also preserves existing output.",
+      "test_refs": [
+        "tests/test_project_ontology_supervisor_cli.py::test_output_does_not_replace_selected_inputs",
+        "tests/test_project_ontology_supervisor_cli.py::test_malformed_selection_does_not_replace_existing_report"
+      ]
+    },
+    {
+      "id": "ONT-MARATHON-06",
+      "problem": "Explicit captured report documents still required a live source file.",
+      "observation_source": "https://github.com/0al-spec/SpecGraph/pull/832#discussion_r4418917247",
+      "observed_head": "83a94786135805c16745748385b506bc7ba075d7",
+      "repair": "Analyze supplied bytes after source removal; retain path containment and disk-capture file checks.",
+      "implementation_refs": [
+        "tools/spec_ontology_context_reports.py::build_context_reports"
+      ],
+      "test_refs": [
+        "tests/test_spec_ontology_context_reports.py"
+      ],
+      "fix_commit": "0658273203f2b74ce983f5646e595718e7bb3f42"
+    },
+    {
+      "id": "ONT-MARATHON-07",
+      "problem": "ASCII fallback spelling keys made unrelated Cyrillic terms match and suppressed a real review gap.",
+      "observation_source": "https://github.com/0al-spec/SpecGraph/pull/834#discussion_r4418955195",
+      "observed_head": "ad4a16b75bd4ace6fb2a9bee0d53705248902358",
+      "repair": "Preserve Unicode spelling distinctions using normalization/casefold and exclude empty fallback matches; keep semantic approval absent.",
+      "implementation_refs": [
+        "tools/project_ontology_term_inventory.py"
+      ],
+      "test_refs": [
+        "tests/test_project_ontology_term_inventory.py"
+      ],
+      "fix_commit": "bf35dbef78516c7e3ad14bc84baefc531231170a"
+    },
+    {
+      "id": "ONT-MARATHON-08",
+      "problem": "Explicit captured term-inventory documents also required a live source file.",
+      "observation_source": "Terra High sibling-boundary audit following ONT-MARATHON-06",
+      "repair": "Use captured bytes after deletion with the same source hash and YAML span; keep containment and disk-capture checks.",
+      "implementation_refs": [
+        "tools/project_ontology_term_inventory.py::build_term_inventory"
+      ],
+      "test_refs": [
+        "tests/test_project_ontology_term_inventory.py"
+      ],
+      "fix_commit": "bf35dbef78516c7e3ad14bc84baefc531231170a"
+    },
+    {
+      "id": "ONT-MARATHON-09",
+      "problem": "Compiler availability loss between two checks could produce verified with no snapshots or context revision.",
+      "observation_source": "Clone-pair inspection from https://github.com/0al-spec/SpecGraph/pull/830#issuecomment-6510854122; artifact12939894876",
+      "observed_head": "5f05ceed702620b5d4555f2ec1f1fe1a5798b0a3",
+      "repair": "Record unavailable compiler/member/closure results when availability changes, require complete captures and a revision for verified, preserve invalid precedence.",
+      "implementation_refs": [
+        "tools/project_ontology_context/capture.py::capture_project_context"
+      ],
+      "test_refs": [
+        "tests/test_project_ontology_context.py::test_compiler_availability_lost_before_capture_is_unavailable"
+      ],
+      "fix_commit": "86c8ead0a6484ab394b58bdc4da607c90dea421e",
+      "verification": "25 core/snapshot tests passed locally; full-suite and hosted results recorded separately"
+    },
+    {
+      "id": "ONT-MARATHON-10",
+      "problem": "Two live registry-contract tests assumed verified independently of whole-file Git timestamp ordering.",
+      "observation_source": "Full local pytest on d3d75ac17f8af300845badffd87e2b9f9d571bd6; 3382 passed, 2 failed, 4 skipped.",
+      "repair": "Control only temporal Git inputs for the two live contract tests; preserve registry/anchor lookup and real freshness derivation. Do not change production freshness or manufacture a verification anchor.",
+      "implementation_refs": [
+        "tests/test_supervisor.py::equal_live_trace_surface_clocks"
+      ],
+      "test_refs": [
+        "tests/test_supervisor.py::test_live_sg_spec_0019_evidence_contract_is_chain_complete",
+        "tests/test_supervisor.py::test_live_sg_spec_0049_trace_contract_is_verified",
+        "tests/test_supervisor.py::test_build_spec_trace_index_derives_stale_and_drifted_verified_states",
+        "tests/test_supervisor.py::test_build_spec_trace_index_detects_drift_on_unmentioned_declared_surface"
+      ],
+      "verification": "All four targeted tests passed after the fixture repair; the full local suite has not been repeated after this test-only fix."
+    }
+  ],
+  "closure": {
+    "merged": false,
+    "canonical_approval": false,
+    "hosted_rerun_pending": true
+  }
+}

@@ -1,0 +1,162 @@
+id: SG-SPEC-0072
+title: SpecGraph - Project Ontology Context Selection
+kind: spec
+created_at: '2026-10-29T18:33:46Z'
+updated_at: '2026-10-29T18:33:46Z'
+status: specified
+maturity: 0.35
+depends_on: []
+relates_to:
+- SG-SPEC-0010
+refines:
+- SG-SPEC-0064
+inputs:
+- specs/nodes/SG-SPEC-0064.yaml
+- specs/nodes/SG-SPEC-0010.yaml
+- docs/proposals/0232_verified_project_ontology_context.md
+- docs/archive/proposal_sources/0232_verified_project_ontology_context.md
+- docs/reviews/0232_project_ontology_context/source-notes.json
+outputs:
+- specs/nodes/SG-SPEC-0072.yaml
+allowed_paths:
+- specs/nodes/SG-SPEC-0072.yaml
+acceptance:
+- Defines explicit project ontology context selection for one package or a composed set with exact pins
+  and explicit dependency and name-resolution rules.
+- Binds a stable immutable context revision to the resolved package set, dependency closure, source and
+  IR hashes, compiler identity, and checking profiles for one operation.
+- Distinguishes verified, unavailable, and invalid outcomes with declared check scope, concrete diagnostics,
+  and no substitution of old IR as current verified context.
+- Keeps SG-RFC-0232 selection semantics source-attributed and separate from semantic approval,
+  complete terminology coverage, and runtime enforcement.
+acceptance_evidence:
+- criterion: Defines explicit project ontology context selection for one package or a composed set with
+    exact pins and explicit dependency and name-resolution rules.
+  evidence: specification.selection_contract requires package identity, namespace, exact version, source
+    and content hashes for one package or a composed set. specification.acceptance_cases includes a single
+    package, a compatible composed set, and invalid duplicate identities, incompatible pins, missing imports,
+    and ambiguous unqualified names; compiler-only, silent latest-version, and last-package-wins selection
+    do not establish selection.
+- criterion: Binds a stable immutable context revision to the resolved package set, dependency closure,
+    source and IR hashes, compiler identity, and checking profiles for one operation.
+  evidence: specification.identity_contract binds a stable immutable context revision to the resolved
+    package set and dependency closure, captured source and IR hashes, compiler executable identity and
+    checking profiles. specification.acceptance_cases distinguishes identical resolved inputs from changed
+    pins, source, IR, compiler or profiles and requires all consumers in one operation to share captured
+    bytes without reopening mutable IR paths.
+- criterion: Distinguishes verified, unavailable, and invalid outcomes with declared check scope, concrete
+    diagnostics, and no substitution of old IR as current verified context.
+  evidence: specification.verification_contract defines verified for successful required scoped checks,
+    unavailable for unselected context or missing or unsupported required checks, and invalid for detected
+    package, source/IR or context conflicts. specification.acceptance_cases covers missing compiler, unsupported
+    closure, mixed failure and unavailable checks, and source/IR mismatch without old IR substitution.
+    These are proposed review cases, not executed runtime evidence.
+- criterion: Keeps SG-RFC-0232 selection semantics source-attributed and separate from
+    semantic approval, complete terminology coverage, and runtime enforcement.
+  evidence: specification.provenance cites SG-RFC-0232, its attributed source draft and noncanonical captured
+    note. specification.authority_boundary separates structural verification from semantic approval and
+    complete terminology coverage; specification.scope.out excludes compiler, storage, UI, enforcement
+    and migration implementation. These source-attributed semantics neither approve vocabulary
+    nor activates runtime policy.
+prompt: Define the SG-RFC-0232 semantics for explicit project ontology context selection,
+  stable immutable identity, and verified/unavailable/invalid outcomes. Keep selection rules here, preserve
+  shared primitives, and require review before policy activation. Do not implement compiler, storage or
+  UI, or claim complete natural-language coverage.
+specification:
+  objective: Define the inspectable project-selected ontology context and its scoped verification result
+    so consumers can identify exactly which captured vocabulary inputs were checked.
+  provenance:
+    proposal: docs/proposals/0232_verified_project_ontology_context.md
+    attributed_source: docs/archive/proposal_sources/0232_verified_project_ontology_context.md
+    captured_note: docs/reviews/0232_project_ontology_context/source-notes.json
+    interpretation_boundary: The attributed operator direction requests verified ontology grounding for
+      project specifications. Selection, identity and outcome rules continue the proposal interpretation
+      for review; the source endorsement does not approve this contract or activate a global gate.
+  scope:
+    in:
+    - Explicit project selection of one versioned ontology package or a composed package set
+    - Immutable context identity and captured inputs shared within one operation
+    - Scoped structural verification outcomes and diagnostics for the selected context
+    out:
+    - Changes to Concept, RelationType, StateFamily, Alias, Invariant or shared Ontology contracts
+    - Compiler implementation, dependency solver, physical manifest schema, storage backend or UI
+    - Specification terminology inventory, semantic binding review, complete natural-language coverage
+      or migration rollout
+    - Report cache admission, cross-operation freshness enforcement or Supervisor action-readiness policy
+  selection_contract:
+    project_selection: A project explicitly selects a versioned context. One package is valid; a composed
+      set requires explicit compatible dependency and name-resolution rules. Each member records package
+      identity, namespace, exact version, source and content hashes.
+    pin_boundary: A compiler release pin is distinct from a package pin and cannot select vocabulary.
+      Do not silently choose latest versions or resolve conflicts by last-package-wins.
+    composition_diagnostics: Duplicate identities, incompatible requirements, missing imports and ambiguous
+      unqualified names are context diagnostics. Separate successful member compilations cannot establish
+      unsupported dependency closure checks.
+    resolved_selection: Record project/workspace identity and the resolved context revision in each verification
+      result, including when a project default supplied the selection. Keep historical revisions inspectable;
+      a selection change does not rewrite specification words, bindings or history.
+  identity_contract:
+    identity_inputs:
+    - Resolved package set with each package identity, namespace, exact version, source and content hashes
+    - Dependency closure and explicit composition/name-resolution rules
+    - Captured source and IR identities and content hashes for every selected member
+    - Selected compiler identity including executable content hash and checking profile identities
+    stability: The same resolved identity inputs retain the same context identity. Changing any identity
+      input requires a distinct immutable revision; no existing revision may be rebound to different bytes.
+      The physical encoding and digest algorithm remain undecided.
+    operation_snapshot: Capture one immutable context snapshot per operation and pass captured data to
+      every consumer. A composed context may hold multiple OntologySnapshot values. Consumers do not reopen
+      mutable IR paths or mix revisions.
+    origin_boundary: Compiler hashes identify executable bytes; compiler trust and package semantic approval
+      require separately recorded origins. A context identity alone does not prove successful verification.
+  verification_contract:
+    result_contract: Record the resolved selection, context revision when available, captured input identities,
+      declared required checks and profiles, per-check results, one overall outcome, and concrete diagnostics.
+      If selection or capture is unavailable, record that absence explicitly rather than inventing an
+      identity.
+    verified: All required structural checks for the selected context and captured inputs succeeded, including
+      required dependency closure and name resolution. Verification applies only to the declared scope;
+      partial member checks cannot be presented as verified context closure.
+    unavailable: No context is selected, or a required compiler, input or dependency check is missing
+      or unsupported, with no detected invalidity. Name the unavailable guarantee and missing prerequisite;
+      separate successful package checks cannot fill it.
+    invalid: A performed check detects an invalid package, source/IR mismatch, duplicate identity, missing
+      import, incompatible requirement or ambiguous unqualified name. Report the failing input and check;
+      do not substitute old IR as current checked context.
+    outcome_precedence: A detected invalidity makes the overall outcome invalid even if another required
+      check is unavailable. Otherwise any missing or unsupported required check makes it unavailable.
+      Only all required checks succeeding permits verified; retain per-check diagnostics in every case.
+    limits: These outcomes concern scoped context verification only. They do not establish semantic approval,
+      terminology coverage, current specification conformance, implementation correctness or authority
+      for canonical promotion. Draft capture remains available when verification is unavailable or invalid.
+  acceptance_cases:
+  - case: Single pinned package
+    expected: An explicitly selected single package with captured source/IR and all required checks passing
+      is verified for the declared scope; selecting only a compiler is unavailable project selection.
+  - case: Composed context
+    expected: Exact compatible package pins, explicit dependency/name-resolution rules and successful
+      required closure checks permit verified. Duplicate identities, incompatible pins, missing imports
+      or ambiguous unqualified names produce invalid with the specific diagnostic.
+  - case: Stable identity and operation capture
+    expected: Identical resolved identity inputs retain the revision. Changing package pins, source, IR,
+      compiler or checking profiles requires a different revision. A mutable IR path changing after capture
+      cannot change the bytes passed to another consumer in the same operation.
+  - case: Missing or unsupported checks
+    expected: An unselected context, missing required compiler or unsupported required closure check produces
+      unavailable and names the prerequisite. Successful independent package checks cannot upgrade unsupported
+      closure to verified.
+  - case: Detected mismatch and mixed results
+    expected: Source/IR mismatch produces invalid without fallback to old IR; a detected context conflict
+      plus another unavailable required check remains invalid with both diagnostics retained.
+  - case: Verification authority
+    expected: A verified structural result may coexist with unresolved term gaps and absent semantic approval.
+      Drafts remain capturable; these semantics and their cases cannot certify complete natural-language
+      coverage or activate policy.
+  authority_boundary: These semantics continue SG-RFC-0232 without automatic semantic approval or runtime
+    realization. SG-SPEC-0010 retains shared vocabulary primitive ownership. Context verification neither
+    accepts meanings nor admits evidence. Detailed terminology grounding, migration exceptions and operation-specific
+    enforcement require separate bounded review; no new proposal or active gate is created here.
+gate_state: review_pending
+proposed_status: null
+required_human_action: Review the SG-RFC-0232 project ontology context selection candidate and parent
+  dependency reconciliation; no automatic canonical approval or policy activation.
