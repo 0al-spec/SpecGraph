@@ -19,6 +19,9 @@ The route is UserIntent -> OperatorRequest -> Proposal -> SG-SPEC-0015.
 The proposal remains `under_review`; the request is `proposal_linked`.
 These records use existing graph kinds and query contracts. They are not
 canonical Requirement/Intent publication and do not add a canonical spec node.
+The authored proposal has an empty `proposal_queue_status`: it is not owned by
+the derived Supervisor queue, so a queue refresh cannot retire it. Its review
+state is recorded independently in `proposal_authority_state`.
 
 The helpers listed in graph-links.json registered the authored packet without
 calling an executor. Existing lineage vocabulary calls some authored-file links

@@ -51,6 +51,7 @@
     "sync_operator_request_node",
     "sync_tracked_proposal_lane_node"
   ],
+  "review_correction": "The authored proposal's queue status was cleared after review: it is not a derived queue item. Its under_review authority and source lineage remain independent of queue refresh.",
   "executor_invoked": false,
   "pilot_executed": false,
   "canonical_mutations_allowed": false,

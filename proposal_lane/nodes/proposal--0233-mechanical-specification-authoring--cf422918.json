@@ -68,7 +68,7 @@
     "operator_request_handle": "operator_request::0233-mechanical-specification-authoring"
   },
   "runtime_bridge": {
-    "proposal_queue_status": "review_pending",
+    "proposal_queue_status": "",
     "supporting_run_ids": [],
     "occurrence_count": null,
     "threshold": null,

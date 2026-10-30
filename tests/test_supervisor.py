@@ -4443,6 +4443,42 @@ def test_sync_tracked_proposal_lane_node_treats_null_optional_timestamp_as_absen
     assert supervisor_module.proposal_lane_timestamp_findings(node) == []
 
 
+def test_queue_refresh_preserves_authored_0233_proposal(
+    supervisor_module: object,
+    repo_fixture: Path,
+) -> None:
+    relative = Path(
+        "proposal_lane/nodes/proposal--0233-mechanical-specification-authoring--cf422918.json"
+    )
+    node_path = repo_fixture / relative
+    node_path.parent.mkdir(parents=True, exist_ok=True)
+    shutil.copyfile(LIVE_REPO_ROOT / relative, node_path)
+    original = json.loads(node_path.read_text(encoding="utf-8"))
+    handle = original["proposal_handle"]["handle_value"]
+    assert original["proposal_authority_state"] == "under_review"
+    assert not original["runtime_bridge"]["proposal_queue_status"]
+
+    supervisor_module.update_proposal_queue(
+        graph_health={
+            "source_spec_id": "SG-SPEC-0015",
+            "observations": [{"kind": "repeated_split_required_candidate", "details": "unrelated"}],
+            "signals": ["repeated_split_required_candidate"],
+            "recommended_actions": ["review_decomposition_policy"],
+        },
+        run_id="RUN-UNRELATED",
+    )
+
+    assert json.loads(node_path.read_text(encoding="utf-8")) == original
+    overlay = json.loads(
+        (repo_fixture / "runs" / "proposal_lane_overlay.json").read_text(encoding="utf-8")
+    )
+    assert handle in overlay["named_filters"]["under_review"]
+    assert handle not in overlay["named_filters"]["rejected_or_superseded"]
+    entry = next(item for item in overlay["entries"] if item["proposal_handle"] == handle)
+    assert entry["query_contract"]["status"] == "queryable"
+    assert entry["lineage_links"] == original["proposal_lineage_link"]
+
+
 def test_update_proposal_queue_retires_stale_tracked_nodes_for_same_spec(
     supervisor_module: object,
     repo_fixture: Path,

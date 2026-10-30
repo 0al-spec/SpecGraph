@@ -35,6 +35,8 @@ retain the conversation as shared project memory. The return handle is
 `proposal::0233-mechanical-specification-authoring`; its existing canonical
 target is SG-SPEC-0015. Review the pilot inventory/profile, then prepare one
 derived report and negative sensitivity probes. Those probes have not run.
+The authored proposal's empty `proposal_queue_status` keeps it outside derived
+queue retirement; `proposal_authority_state` records its independent review state.
 
 Registration does not execute an agent or approve canonical publication:
 `runtime_profile_activation_allowed: false` and
