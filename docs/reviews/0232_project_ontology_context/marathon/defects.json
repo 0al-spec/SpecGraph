@@ -79,6 +79,78 @@
         "tests/test_project_ontology_supervisor_cli.py::test_output_does_not_replace_selected_inputs",
         "tests/test_project_ontology_supervisor_cli.py::test_malformed_selection_does_not_replace_existing_report"
       ]
+    },
+    {
+      "id": "ONT-MARATHON-06",
+      "problem": "Explicit captured report documents still required a live source file.",
+      "observation_source": "https://github.com/0al-spec/SpecGraph/pull/832#discussion_r4418917247",
+      "observed_head": "83a94786135805c16745748385b506bc7ba075d7",
+      "repair": "Analyze supplied bytes after source removal; retain path containment and disk-capture file checks.",
+      "implementation_refs": [
+        "tools/spec_ontology_context_reports.py::build_context_reports"
+      ],
+      "test_refs": [
+        "tests/test_spec_ontology_context_reports.py"
+      ],
+      "fix_commit": "0658273203f2b74ce983f5646e595718e7bb3f42"
+    },
+    {
+      "id": "ONT-MARATHON-07",
+      "problem": "ASCII fallback spelling keys made unrelated Cyrillic terms match and suppressed a real review gap.",
+      "observation_source": "https://github.com/0al-spec/SpecGraph/pull/834#discussion_r4418955195",
+      "observed_head": "ad4a16b75bd4ace6fb2a9bee0d53705248902358",
+      "repair": "Preserve Unicode spelling distinctions using normalization/casefold and exclude empty fallback matches; keep semantic approval absent.",
+      "implementation_refs": [
+        "tools/project_ontology_term_inventory.py"
+      ],
+      "test_refs": [
+        "tests/test_project_ontology_term_inventory.py"
+      ],
+      "fix_commit": "bf35dbef78516c7e3ad14bc84baefc531231170a"
+    },
+    {
+      "id": "ONT-MARATHON-08",
+      "problem": "Explicit captured term-inventory documents also required a live source file.",
+      "observation_source": "Terra High sibling-boundary audit following ONT-MARATHON-06",
+      "repair": "Use captured bytes after deletion with the same source hash and YAML span; keep containment and disk-capture checks.",
+      "implementation_refs": [
+        "tools/project_ontology_term_inventory.py::build_term_inventory"
+      ],
+      "test_refs": [
+        "tests/test_project_ontology_term_inventory.py"
+      ],
+      "fix_commit": "bf35dbef78516c7e3ad14bc84baefc531231170a"
+    },
+    {
+      "id": "ONT-MARATHON-09",
+      "problem": "Compiler availability loss between two checks could produce verified with no snapshots or context revision.",
+      "observation_source": "Clone-pair inspection from https://github.com/0al-spec/SpecGraph/pull/830#issuecomment-6510854122; artifact12939894876",
+      "observed_head": "5f05ceed702620b5d4555f2ec1f1fe1a5798b0a3",
+      "repair": "Record unavailable compiler/member/closure results when availability changes, require complete captures and a revision for verified, preserve invalid precedence.",
+      "implementation_refs": [
+        "tools/project_ontology_context/capture.py::capture_project_context"
+      ],
+      "test_refs": [
+        "tests/test_project_ontology_context.py::test_compiler_availability_lost_before_capture_is_unavailable"
+      ],
+      "fix_commit": "86c8ead0a6484ab394b58bdc4da607c90dea421e",
+      "verification": "25 core/snapshot tests passed locally; full-suite and hosted results recorded separately"
+    },
+    {
+      "id": "ONT-MARATHON-10",
+      "problem": "Two live registry-contract tests assumed verified independently of whole-file Git timestamp ordering.",
+      "observation_source": "Full local pytest on d3d75ac17f8af300845badffd87e2b9f9d571bd6; 3382 passed, 2 failed, 4 skipped.",
+      "repair": "Control only temporal Git inputs for the two live contract tests; preserve registry/anchor lookup and real freshness derivation. Do not change production freshness or manufacture a verification anchor.",
+      "implementation_refs": [
+        "tests/test_supervisor.py::equal_live_trace_surface_clocks"
+      ],
+      "test_refs": [
+        "tests/test_supervisor.py::test_live_sg_spec_0019_evidence_contract_is_chain_complete",
+        "tests/test_supervisor.py::test_live_sg_spec_0049_trace_contract_is_verified",
+        "tests/test_supervisor.py::test_build_spec_trace_index_derives_stale_and_drifted_verified_states",
+        "tests/test_supervisor.py::test_build_spec_trace_index_detects_drift_on_unmentioned_declared_surface"
+      ],
+      "verification": "All four targeted tests passed after the fixture repair; the full local suite has not been repeated after this test-only fix."
     }
   ],
   "closure": {

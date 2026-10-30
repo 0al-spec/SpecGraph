@@ -48,3 +48,31 @@ output/input collision defects with repair/test refs.
 These are prepared fixes under review, not merged closure. The registration-only
 packet does not claim another model run or signed human approval. No new
 canonical Defect kind or new gate is introduced.
+
+## Prepared stack and verification
+
+| PR | Slice |
+| --- | --- |
+| [829](https://github.com/0al-spec/SpecGraph/pull/829) | Supervisor-reviewed selection contract |
+| [830](https://github.com/0al-spec/SpecGraph/pull/830) | Captured context and scoped outcome policies |
+| [831](https://github.com/0al-spec/SpecGraph/pull/831) | External-workspace CLI and native route |
+| [832](https://github.com/0al-spec/SpecGraph/pull/832) | Captured binding/validation bundle |
+| [833](https://github.com/0al-spec/SpecGraph/pull/833) | Explicit saved-bundle freshness |
+| [834](https://github.com/0al-spec/SpecGraph/pull/834) | Explicit-term inventory and attributable gaps |
+| [835](https://github.com/0al-spec/SpecGraph/pull/835) | Target-scoped Supervisor operation and graph return path |
+
+`marathon/verification.json` records the exact tested revision, attributed local
+compiler bytes, actual Supervisor smoke, gates and test boundaries. The full
+local run passed 3382 tests and failed two history-dependent live assertions;
+those tests now use a controlled commit clock, and all four targeted live/drift
+regressions passed. This does not claim a repeated green full local suite or
+hosted CI. Production freshness is unchanged. Counts from overlapping focused
+runs must not be added together.
+
+Ten concrete hardening observations have repair/test references in the linked
+native proposal return path. Source-level and hosted reviews remain separate
+from final merge, semantic acceptance and production policy activation. The
+next ontology slice is explicit imported dependency closure for specgraph-core;
+current local advisory reports cannot prove it. Revision-bound execution evidence
+for legacy trace freshness is also retained as a follow-up, not silently solved
+by the test fixture.
