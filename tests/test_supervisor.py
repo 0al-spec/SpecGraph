@@ -10269,9 +10269,27 @@ def test_live_sg_spec_0018_evidence_contract_is_chain_complete(
     }
 
 
+@pytest.fixture
+def equal_live_trace_surface_clocks(supervisor_module: object, monkeypatch: pytest.MonkeyPatch):
+    """Keep live anchors while testing independently of whole-file commit ordering."""
+    collect = supervisor_module.collect_trace_commit_refs
+    test_refs = collect(["tests/test_supervisor.py"], limit=1)
+    assert test_refs
+    clock = test_refs[0]["committed_at"]
+
+    def collect_with_equal_clocks(ref_paths, *, repo_root=None, limit=5):
+        refs = collect(ref_paths, repo_root=repo_root, limit=limit)
+        if set(ref_paths) in ({"tools/supervisor.py"}, {"tests/test_supervisor.py"}):
+            return [{**ref, "committed_at": clock} for ref in refs]
+        return refs
+
+    monkeypatch.setattr(supervisor_module, "collect_trace_commit_refs", collect_with_equal_clocks)
+
+
 def test_live_sg_spec_0019_evidence_contract_is_chain_complete(
     supervisor_module: object,
     monkeypatch: pytest.MonkeyPatch,
+    equal_live_trace_surface_clocks: None,
 ) -> None:
     monkeypatch.setattr(supervisor_module, "git_status_changed_files", lambda cwd: [])
 
@@ -10309,6 +10327,7 @@ def test_live_sg_spec_0019_evidence_contract_is_chain_complete(
 def test_live_sg_spec_0049_trace_contract_is_verified(
     supervisor_module: object,
     monkeypatch: pytest.MonkeyPatch,
+    equal_live_trace_surface_clocks: None,
 ) -> None:
     monkeypatch.setattr(supervisor_module, "git_status_changed_files", lambda cwd: [])
 

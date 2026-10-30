@@ -39,6 +39,46 @@ independently detected identity, pin and source/IR mismatches remain invalid.
 Imported/composed closure remains unavailable. See
 `docs/project_ontology_context.md` for the actual API and manifest shape.
 
+The source CLI `project_ontology_context_cli.py` and native runtime
+`ontology-context` route operate on an explicit external workspace. Optional
+project configuration supplies defaults without initialization or mutation.
+Exit outcomes remain verified/unavailable/invalid; native routing rejects
+workspace overrides and abbreviated arguments. Optional report writes are
+workspace-contained and atomic. No compiler is installed or discovered implicitly.
+
+`build_context_reports` connects the existing advisory binding and validation
+views to one captured context and specification byte set. Its
+`specgraph-local-symbol-advisory-v1` profile records exact input hashes and the
+`single_member_local_symbols` scope. Invalid/foreign or unsupported joint input
+does not fall back to saved IR. Local analysis does not verify imported closure
+or semantically accept the legacy `accepted_bindings` field.
+
+Explicit report assessment uses `ReportInputBinding` recorded at creation and
+compares declared current inputs through `REPORT_INPUTS_COMPATIBLE_SPEC`.
+Freshness is advisory input compatibility, not trusted provenance. Missing
+original binding remains unavailable; known changes are stale and inconsistent
+saved content invalid. It does not search for a latest artifact or activate a
+cache, global gate or semantic acceptance policy.
+
+The `specgraph-explicit-terms-v1` inventory records explicit terminology keys
+and ontology_refs with source hashes, exact YAML field/line/column spans and
+captured context identity. Qualified matches are structural candidates;
+unknown/ambiguous terms remain review gaps. Prose is unassessed and an empty
+inventory does not mean grounded. No package or term acceptance is created.
+
+Supervisor's opt-in `--build-project-ontology-context-check` takes an explicit
+target, project ID, selection and operator-provided compiler. One captured target
+byte set supplies advisory reports, inventory and optional previous-report
+freshness; the separate derived artifact is written atomically under workspace
+`runs/project_ontology_context/`. It does not invoke refinement, alter approval
+gates or pick an arbitrary latest report. `checked` describes only the declared
+structural advisory scope. Legacy modes and draft capture remain available.
+
+The marathon's source-bound hardening observations and repairs remain linked
+through existing intent/operator-request/proposal lanes. They distinguish local
+review, hosted CI and prepared-versus-merged fixes; registration is not a new
+model execution or canonical acceptance event.
+
 A context can select one ontology or a composed package set. Selection records
 exact package/source identities, dependencies, compiler and check profile.
 Version conflicts, unavailable dependency checks and ambiguous terms stay

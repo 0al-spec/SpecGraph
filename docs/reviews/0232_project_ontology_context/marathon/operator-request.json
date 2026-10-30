@@ -1,0 +1,24 @@
+{
+  "artifact_kind": "operator_request_packet",
+  "schema_version": 1,
+  "user_intent": {
+    "intent_handle": "user_intent::ontology-context-marathon-20261030",
+    "source_kind": "chat_instruction",
+    "source_summary": "Operator requested review of SG-SPEC-0072 followed by a 5–7 PR ontology-track marathon using Terra 6.1 High. Source direction is retained in adoption/review.json and marathon.md; confirmed integration defects and repairs are retained in marathon/defects.json.",
+    "selected_node_ref": "SG-SPEC-0072",
+    "unresolved_questions": []
+  },
+  "operator_request": {
+    "request_handle": "operator_request::ontology-context-marathon-20261030",
+    "target_spec_id": "SG-SPEC-0072",
+    "run_mode": "targeted_refine",
+    "operator_note": "Registration-only return path for the prepared ontology implementation stack and its source-bound hardening observations; this packet does not claim a nested refinement executor ran. Actual execution/review used the explicitly requested Terra High override recorded in adoption/review.json. Keep final merge, semantic acceptance and global policy activation separate.",
+    "mutation_budget": [],
+    "run_authority": [],
+    "execution_profile": "standard",
+    "stop_conditions": [
+      "first_structured_outcome",
+      "review_boundary_reached"
+    ]
+  }
+}

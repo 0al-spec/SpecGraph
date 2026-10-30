@@ -1,0 +1,277 @@
+"""Explicitly compare an advisory bundle against current captured inputs.
+
+The input_binding is caller-attributed, not an authenticated producer attestation.
+No report is selected, cached, or activated by this module.
+"""
+
+from __future__ import annotations
+
+import hashlib
+import json
+import re
+from dataclasses import dataclass
+from pathlib import Path
+from typing import Any
+
+from project_ontology_context import ContextResult
+from project_ontology_report_freshness_spec import REPORT_INPUTS_COMPATIBLE_SPEC, FreshnessFacts
+from spec_ontology_context_reports import build_context_reports
+
+_HEX = re.compile(r"[0-9a-f]{64}\Z")
+
+
+def _digest(value: object) -> str:
+    return hashlib.sha256(
+        json.dumps(value, sort_keys=True, separators=(",", ":"), allow_nan=False).encode("utf-8")
+    ).hexdigest()
+
+
+@dataclass(frozen=True, slots=True)
+class ReportInputBinding:
+    bundle_sha256: str
+    binding_sha256: str
+    producer_identity: str
+
+    def report(self) -> dict[str, object]:
+        return {
+            "artifact_kind": "project_ontology_report_binding",
+            "schema_version": 1,
+            "bundle_sha256": self.bundle_sha256,
+            "binding_sha256": self.binding_sha256,
+            "producer_identity": self.producer_identity,
+            "producer_provenance": "caller_attributed",
+        }
+
+
+@dataclass(frozen=True, slots=True)
+class FreshnessResult:
+    outcome: str
+    diagnostics: tuple[str, ...]
+    comparisons: tuple[tuple[str, bool], ...] = ()
+
+    def report(self) -> dict[str, object]:
+        return {
+            "artifact_kind": "project_ontology_report_freshness",
+            "schema_version": 1,
+            "outcome": self.outcome,
+            "diagnostics": list(self.diagnostics),
+            "comparisons": [
+                {"input": name, "matches": matched} for name, matched in self.comparisons
+            ],
+            "scope": "advisory_report_input_compatibility",
+            "semantic_approval": "not_established",
+            "tests_verified": False,
+            "producer_provenance": "caller_attributed",
+        }
+
+
+def _input_binding(value: ReportInputBinding | dict[str, Any]) -> ReportInputBinding:
+    if isinstance(value, ReportInputBinding):
+        return value
+    if (
+        not isinstance(value, dict)
+        or value.get("artifact_kind") != "project_ontology_report_binding"
+        or value.get("schema_version") != 1
+    ):
+        raise ValueError("unsupported input_binding")
+    return ReportInputBinding(
+        value.get("bundle_sha256"), value.get("binding_sha256"), value.get("producer_identity")
+    )
+
+
+def _identity_valid(value: object) -> bool:
+    return isinstance(value, str) and bool(value.strip()) and value == value.strip()
+
+
+def _shape(bundle: object) -> tuple[str, str] | None:
+    if not isinstance(bundle, dict) or bundle.get("outcome") != "analyzed":
+        return "unavailable", "analyzed bundle unavailable"
+    inputs = bundle.get("inputs")
+    binding = bundle.get("binding_index")
+    validation = bundle.get("validation_report")
+    if (
+        not isinstance(inputs, dict)
+        or not isinstance(binding, dict)
+        or not isinstance(validation, dict)
+    ):
+        return "unavailable", "bundle input or report missing"
+    if not _identity_valid(inputs.get("specs_root")) or not isinstance(inputs.get("specs"), list):
+        return "unavailable", "spec input inventory missing"
+    if any(
+        not isinstance(row, dict)
+        or not _identity_valid(row.get("path"))
+        or not isinstance(row.get("sha256"), str)
+        or not _HEX.fullmatch(row["sha256"])
+        for row in inputs["specs"]
+    ):
+        return "unavailable", "spec input identity missing"
+    metadata = binding.get("project_context")
+    if not isinstance(metadata, dict) or any(
+        not _identity_valid(metadata.get(k))
+        for k in (
+            "project_id",
+            "workspace",
+            "context_revision",
+            "analysis_profile",
+            "context_outcome",
+            "scope",
+            "source_sha256",
+            "ir_sha256",
+            "compiler_sha256",
+        )
+    ):
+        return "unavailable", "project context identity missing"
+    if not metadata["context_revision"].startswith("sha256:") or not _HEX.fullmatch(
+        metadata["context_revision"][7:]
+    ):
+        return "unavailable", "context revision missing or malformed"
+    if any(
+        not _HEX.fullmatch(metadata[key])
+        for key in ("source_sha256", "ir_sha256", "compiler_sha256")
+    ):
+        return "unavailable", "snapshot hash identity missing or malformed"
+    if not isinstance(metadata.get("selected_member"), dict) or any(
+        not _identity_valid(metadata["selected_member"].get(k))
+        for k in ("id", "namespace", "version")
+    ):
+        return "unavailable", "selected member identity missing"
+    if any(
+        k not in binding or k not in validation
+        for k in (
+            "artifact_kind",
+            "schema_version",
+            "entries",
+            "summary",
+            "inputs",
+            "project_context",
+        )
+    ):
+        return "unavailable", "report payload incomplete"
+    if (
+        binding["inputs"] != inputs
+        or validation["inputs"] != inputs
+        or validation["project_context"] != metadata
+    ):
+        return "invalid", "report input metadata is inconsistent"
+    if (
+        binding["artifact_kind"] != "spec_ontology_binding_index"
+        or validation["artifact_kind"] != "spec_ontology_validation_report"
+    ):
+        return "invalid", "report kind is inconsistent"
+    return None
+
+
+def bind_report_bundle(bundle: dict[str, Any], *, producer_identity: str) -> ReportInputBinding:
+    """Bind a complete bundle at capture time; this does not attest its origin."""
+    issue = _shape(bundle)
+    if issue or not _identity_valid(producer_identity):
+        raise ValueError(issue[1] if issue else "producer identity missing")
+    return ReportInputBinding(_digest(bundle), _digest(bundle["binding_index"]), producer_identity)
+
+
+def assess_report_freshness(
+    saved_bundle: dict[str, Any] | None,
+    *,
+    input_binding: ReportInputBinding | dict[str, Any] | None,
+    context: ContextResult,
+    workspace_root: Path,
+    specs_root: Path,
+    producer_identity: str | None,
+    documents: tuple[tuple[str, bytes], ...] | None = None,
+) -> FreshnessResult:
+    """Compare saved data and input_binding with newly captured explicit current inputs."""
+    if input_binding is None or saved_bundle is None or not _identity_valid(producer_identity):
+        return FreshnessResult(
+            "unavailable", ("saved bundle, capture input_binding or producer identity missing",)
+        )
+    try:
+        saved_input_binding = _input_binding(input_binding)
+        if not _identity_valid(saved_input_binding.producer_identity) or not all(
+            isinstance(digest, str) and _HEX.fullmatch(digest)
+            for digest in (saved_input_binding.bundle_sha256, saved_input_binding.binding_sha256)
+        ):
+            return FreshnessResult("unavailable", ("input_binding identities missing",))
+        issue = _shape(saved_bundle)
+        if issue:
+            return FreshnessResult(issue[0], (issue[1],))
+        if (
+            _digest(saved_bundle) != saved_input_binding.bundle_sha256
+            or _digest(saved_bundle["binding_index"]) != saved_input_binding.binding_sha256
+        ):
+            return FreshnessResult(
+                "invalid",
+                ("saved bundle or binding payload differs from its capture input_binding",),
+            )
+        if (
+            not _identity_valid(context.revision)
+            or not context.revision.startswith("sha256:")
+            or not _HEX.fullmatch(context.revision[7:])
+        ):
+            return FreshnessResult(
+                "unavailable", ("current context revision missing or malformed",)
+            )
+        saved_meta = saved_bundle["binding_index"]["project_context"]
+        root = str(Path(workspace_root).resolve())
+        direct = (
+            ("producer_identity", saved_input_binding.producer_identity == producer_identity),
+            ("project_id", saved_meta["project_id"] == context.project_id),
+            ("workspace", saved_meta["workspace"] == root and context.workspace == root),
+            ("context_revision", saved_meta["context_revision"] == context.revision),
+        )
+        if not all(result for _, result in direct):
+            return FreshnessResult(
+                "stale", tuple(f"{name} changed" for name, ok in direct if not ok), direct
+            )
+        current = build_context_reports(
+            context, workspace_root=workspace_root, specs_root=specs_root, documents=documents
+        )
+        if current.get("outcome") != "analyzed":
+            return FreshnessResult(
+                "invalid" if current.get("outcome") == "invalid" else "unavailable",
+                (
+                    "current advisory inputs unavailable: "
+                    + "; ".join(current.get("diagnostics", [])),
+                ),
+                direct,
+            )
+        issue = _shape(current)
+        if issue:
+            return FreshnessResult(
+                "unavailable", ("current bundle incomplete: " + issue[1],), direct
+            )
+        current_meta = current["binding_index"]["project_context"]
+        keys = (
+            "analysis_profile",
+            "selected_member",
+            "source_sha256",
+            "ir_sha256",
+            "compiler_sha256",
+            "context_outcome",
+            "scope",
+        )
+        comparisons = (
+            direct
+            + tuple((key, saved_meta.get(key) == current_meta.get(key)) for key in keys)
+            + (
+                ("spec_inputs", saved_bundle["inputs"] == current["inputs"]),
+                (
+                    "binding_payload",
+                    _digest(saved_bundle["binding_index"]) == _digest(current["binding_index"]),
+                ),
+                (
+                    "validation_payload",
+                    _digest(saved_bundle["validation_report"])
+                    == _digest(current["validation_report"]),
+                ),
+            )
+        )
+        facts = FreshnessFacts(tuple(match for _, match in comparisons))
+        if REPORT_INPUTS_COMPATIBLE_SPEC.is_satisfied_by(facts):
+            return FreshnessResult("fresh", ("explicit advisory inputs match",), comparisons)
+        return FreshnessResult(
+            "stale",
+            tuple(f"{name} changed" for name, match in comparisons if not match),
+            comparisons,
+        )
+    except (TypeError, ValueError, OSError) as error:
+        return FreshnessResult("invalid", (f"invalid report or input_binding: {error}",))
