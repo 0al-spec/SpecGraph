@@ -1,0 +1,80 @@
+{
+  "artifact_kind": "proposal_lane_node",
+  "schema_version": 1,
+  "title": "Governance Proposal for SG-SPEC-0015 (mechanical_specification_authoring)",
+  "created_at": "2026-10-30T11:27:11.640703+00:00",
+  "updated_at": "2026-10-30T11:27:11.640710+00:00",
+  "policy_reference": {
+    "artifact_path": "tools/proposal_lane_policy.json",
+    "artifact_sha256": "cf16a8601fee008b754a9852160bb249386fc6182e9500fad95e72adc585eabc",
+    "version": 1
+  },
+  "proposal_repository_presence": {
+    "tracked_presence": "repository_tracked",
+    "path_class": "proposal_node_path",
+    "persistence_boundary": "review_visible_repository_separate_from_runtime",
+    "tracked_path": "proposal_lane/nodes/proposal--0233-mechanical-specification-authoring--cf422918.json"
+  },
+  "proposal_handle": {
+    "handle_value": "proposal::0233-mechanical-specification-authoring",
+    "handle_status": "active"
+  },
+  "proposal_authority_state": "under_review",
+  "proposal_target_region": {
+    "target_kind": "canonical_node",
+    "target_reference": "SG-SPEC-0015",
+    "change_scope": "mechanical_specification_authoring"
+  },
+  "proposal_lineage_link": [
+    {
+      "lineage_role": "motivated_by",
+      "source_kind": "canonical_node",
+      "source_reference": "SG-SPEC-0015"
+    },
+    {
+      "lineage_role": "derived_from",
+      "source_kind": "runtime_artifact",
+      "source_reference": "docs/proposals/0233_mechanical_specification_authoring.md"
+    },
+    {
+      "lineage_role": "motivated_by",
+      "source_kind": "intent_layer_node",
+      "source_reference": "user_intent::0233-mechanical-specification-authoring"
+    },
+    {
+      "lineage_role": "derived_from",
+      "source_kind": "intent_layer_node",
+      "source_reference": "operator_request::0233-mechanical-specification-authoring"
+    }
+  ],
+  "proposal_artifact_link": [
+    {
+      "artifact_role": "supporting_runtime_artifact",
+      "reference_kind": "runtime_artifact",
+      "reference_value": "docs/proposals/0233_mechanical_specification_authoring.md"
+    }
+  ],
+  "proposal_payload": {
+    "proposal_type": "governance_proposal",
+    "trigger": "captured_user_intent",
+    "recommended_action": "review_authoring_pilot_inventory_and_check_bindings",
+    "signal": "mechanical_specification_authoring",
+    "source_work_item_type": "",
+    "execution_policy": "",
+    "transition_profile": "",
+    "packet_type": "",
+    "target_artifact_class": "",
+    "user_intent_handle": "user_intent::0233-mechanical-specification-authoring",
+    "operator_request_handle": "operator_request::0233-mechanical-specification-authoring"
+  },
+  "runtime_bridge": {
+    "proposal_queue_status": "review_pending",
+    "supporting_run_ids": [],
+    "occurrence_count": null,
+    "threshold": null,
+    "proposal_artifact_path": "docs/proposals/0233_mechanical_specification_authoring.md",
+    "applied_run_id": "",
+    "applied_at": "",
+    "operator_request_handle": "operator_request::0233-mechanical-specification-authoring"
+  }
+}

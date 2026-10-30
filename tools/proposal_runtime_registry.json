@@ -13587,5 +13587,40 @@
       }
     ],
     "notes": "Planning-only project ontology context and staged legacy migration. SpecGraph selection/checking, SpecSpace display, dependency closure, complete term coverage, Supervisor freshness, compiler distribution and canonical enforcement remain unimplemented. Related PR #825 is optional report-only groundwork, not global conformance. Two real targeted Supervisor runs now retain a split-required selection and a validated one-child candidate. SG-SPEC-0072 and parent reconciliation remain under docs/reviews with review_pending and accepted_canonical_diff=false; no canonical adoption or configuration/runtime implementation is claimed."
+  },
+  {
+    "proposal_id": "0233",
+    "posture": "deferred_until_canonicalized",
+    "runtime_surfaces": [
+      "docs/proposals/0233_mechanical_specification_authoring.md",
+      "docs/archive/proposal_sources/0233_mechanical_specification_authoring.md",
+      "docs/proposals/0233_mechanical_specification_authoring.intent.yaml",
+      "Sources/SpecGraph/Documentation.docc/MechanicalSpecificationAuthoring.md",
+      "docs/reviews/0233_mechanical_specification_authoring/README.md",
+      "docs/reviews/0233_mechanical_specification_authoring/operator-request.json",
+      "docs/reviews/0233_mechanical_specification_authoring/graph-links.json",
+      "intent_layer/nodes/user_intent--0233-mechanical-specification-authoring--f1341ca0.json",
+      "intent_layer/nodes/operator_request--0233-mechanical-specification-authoring--cafda04f.json",
+      "proposal_lane/nodes/proposal--0233-mechanical-specification-authoring--cf422918.json"
+    ],
+    "runtime_markers": [
+      {
+        "path": "docs/proposals/0233_mechanical_specification_authoring.md",
+        "pattern": "Draft proposal; planning contract only."
+      }
+    ],
+    "validation_markers": [
+      {
+        "path": "docs/proposals/0233_mechanical_specification_authoring.md",
+        "pattern": "These cases plan future verification; none has been executed by this proposal."
+      }
+    ],
+    "observation_markers": [
+      {
+        "path": "docs/reviews/0233_mechanical_specification_authoring/graph-links.json",
+        "pattern": "\"executor_invoked\": false"
+      }
+    ],
+    "notes": "Source-attributed authoring direction and existing intent/proposal registration only. Pilot, new checker adapters, canonical refinement, threshold changes and runtime profile activation remain pending. Resume through proposal::0233-mechanical-specification-authoring."
   }
 ]

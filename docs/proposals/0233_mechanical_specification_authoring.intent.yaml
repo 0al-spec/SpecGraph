@@ -1,0 +1,24 @@
+id: SG-RFC-0233
+kind: proposal
+status: draft
+proposal_ref: docs/proposals/0233_mechanical_specification_authoring.md
+provenance:
+  authored_by: agent
+  authority: proposal_draft
+  source_ref: docs/archive/proposal_sources/0233_mechanical_specification_authoring.md
+atoms:
+  intents:
+  - id: AUTHOR-MEMORY
+    statement: Authoring decisions and their attributed conversational sources shall remain reachable through existing intent and proposal graph lanes with an explicit pending return task.
+  - id: AUTHOR-INVENTORY
+    statement: A specification authoring assessment shall preserve the complete declared in-scope obligation inventory and explicit partial, delegated, deferred or unresolved mappings across revisions.
+  - id: AUTHOR-ONTOLOGY
+    statement: The selected authoring profile shall validate applicable required ontology bindings while distinguishing missing definitions, missing usages, incomplete requirements and unsupported tooling without blocking draft capture.
+  - id: AUTHOR-VERIFICATION
+    statement: Acceptance authoring shall link obligations to verification declarations and distinguish valid declarations, available checking methods and actual execution results.
+  - id: AUTHOR-METRICS
+    statement: Authoring diagnostics shall retain exact input scope, unknowns and metric provenance, count all declared obligations in coverage denominators and keep structural complexity separate from contract violations.
+  - id: AUTHOR-REFINEMENT
+    statement: Refinement shall follow concrete gaps and existing bounded-concern contracts, allowing large complete leaves without automatic splitting by size or aggregate score.
+  - id: AUTHOR-PILOT
+    statement: The first SG-SPEC-0072 authoring pilot shall demonstrate sensitivity to missing bindings, missing cases, contradictory outcomes and stale inputs before any readiness policy is activated.

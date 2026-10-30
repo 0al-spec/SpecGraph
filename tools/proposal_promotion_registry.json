@@ -3002,5 +3002,18 @@
     "required_provenance_links": [
       "source_draft_ref"
     ]
+  },
+  {
+    "proposal_id": "0233",
+    "source_artifact_class": "working_draft",
+    "source_refs": [
+      "docs/archive/proposal_sources/0233_mechanical_specification_authoring.md"
+    ],
+    "motivating_concern": "Preserve mechanically checked specification authoring as shared graph memory using existing Ontology, SIB and Supervisor contracts, including large finished leaves.",
+    "normalized_title": "Mechanically checked specification authoring",
+    "bounded_scope": "Prepare the authoring cycle and one frozen SG-SPEC-0072 outcome-precedence pilot, register its source/return path, and retain explicit deferred realization. No canonical mutations or runtime readiness activation.",
+    "required_provenance_links": [
+      "source_draft_ref"
+    ]
   }
 ]
