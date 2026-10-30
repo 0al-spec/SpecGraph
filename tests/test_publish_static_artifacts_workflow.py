@@ -237,7 +237,7 @@ def test_pages_technical_root_builds_docc_surface() -> None:
 
     assert "name: Deploy DocC Technical Surface" in workflow
     assert "pull_request:" in workflow
-    assert "runs-on: macos-14" in workflow
+    assert "runs-on: macos-15" in workflow
     assert "generate-documentation" in workflow
     assert "--target SpecGraph" in workflow
     assert "--hosting-base-path SpecGraph" in workflow
