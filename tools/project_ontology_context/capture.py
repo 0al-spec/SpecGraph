@@ -10,7 +10,13 @@ from pathlib import Path
 
 import yaml
 
-from ontology_snapshot import OntologySnapshot, OntologySnapshotError, capture_ontology_snapshot
+from ontology_snapshot import (
+    OntologySnapshot,
+    OntologySnapshotError,
+    capture_ontology_inputs,
+    capture_ontology_snapshot,
+    parse_ontology_ir,
+)
 
 from .invalid_spec import INVALID_SPEC
 from .model import CheckResult, ContextFacts, ContextResult
@@ -171,45 +177,61 @@ def capture_project_context(
         try:
             source = _path(root, member["source"])
             ir = _path(root, member["ir"])
-            if not source.is_file() or not ir.is_file():
-                add("member_capture", "unavailable", "source or saved IR unavailable", package)
-                add("dependency_closure", "unavailable", "member inputs unavailable", package)
-                continue
-            if (
-                ontologyc is None
-                or not Path(ontologyc).is_file()
-                or not os.access(ontologyc, os.X_OK)
+            inputs = capture_ontology_inputs(source, ir)
+            expected = (member["id"], member["namespace"], member["version"])
+            source_data = None
+            ir_data = None
+            input_failed = False
+            for name, data, error, digest in (
+                ("source", inputs.source, inputs.source_error, member["source_sha256"]),
+                ("IR", inputs.ir, inputs.ir_error, member["ir_sha256"]),
             ):
-                add(
-                    "compiler", "unavailable", "compiler unavailable during member capture", package
-                )
-                add(
-                    "member_capture",
-                    "unavailable",
-                    "compiler unavailable during member capture",
-                    package,
-                )
+                if data is None:
+                    add("member_capture", "unavailable", f"{name} unavailable: {error}", package)
+                    input_failed = True
+                    continue
+                if hashlib.sha256(data).hexdigest() != digest:
+                    add(
+                        "member_capture",
+                        "invalid",
+                        f"captured {name} hash does not match selection",
+                        package,
+                    )
+                    input_failed = True
+                try:
+                    parsed = _load_yaml(data) if name == "source" else parse_ontology_ir(data)
+                    metadata = (
+                        parsed.get("metadata")
+                        if name == "source" and isinstance(parsed, dict)
+                        else parsed
+                    )
+                    if (
+                        not isinstance(metadata, dict)
+                        or tuple(metadata.get(k) for k in ("id", "namespace", "version"))
+                        != expected
+                    ):
+                        raise ValueError(f"{name} package identity does not match selection")
+                    if name == "source":
+                        source_data = parsed
+                    else:
+                        ir_data = parsed
+                except (ValueError, yaml.YAMLError, UnicodeError) as error:
+                    add("member_capture", "invalid", str(error), package)
+                    input_failed = True
+            if input_failed:
                 add("dependency_closure", "unavailable", "member inputs not checked", package)
                 continue
             snapshot = capture_ontology_snapshot(
                 source,
-                Path(ontologyc),
+                Path(ontologyc) if ontologyc is not None else None,
                 expected_ir_path=ir,
                 expected_compiler_sha256=compiler_sha256,
+                expected_source_sha256=member["source_sha256"],
+                expected_ir_sha256=member["ir_sha256"],
+                captured_inputs=inputs,
             )
             snapshots.append(snapshot)
             captured_members.append((member["id"], member["namespace"], member["version"]))
-            source_data = _load_yaml(snapshot.source_bytes)
-            ir_data = json.loads(snapshot.ir_bytes)
-            metadata = source_data.get("metadata") if isinstance(source_data, dict) else None
-            if not isinstance(metadata, dict):
-                raise ValueError("source metadata is missing")
-            expected = (member["id"], member["namespace"], member["version"])
-            if (
-                tuple(metadata.get(k) for k in ("id", "namespace", "version")) != expected
-                or tuple(ir_data.get(k) for k in ("id", "namespace", "version")) != expected
-            ):
-                raise ValueError("source or IR package identity does not match selection")
             if (
                 snapshot.source_sha256 != member["source_sha256"]
                 or snapshot.ir_sha256 != member["ir_sha256"]

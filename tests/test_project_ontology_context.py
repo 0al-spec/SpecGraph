@@ -2,6 +2,8 @@
 
 import hashlib
 import json
+import os
+import subprocess
 import sys
 from dataclasses import FrozenInstanceError
 from pathlib import Path
@@ -125,6 +127,81 @@ def test_duplicate_invalid_takes_precedence_over_missing_compiler(workspace):
     assert {c.outcome for c in result.checks} >= {"invalid", "unavailable"}
 
 
+def test_captured_hash_mismatch_is_invalid_when_compiler_missing(workspace):
+    root, _, package, selection, _ = workspace
+    member = package()
+    selection([{**member, "source_sha256": "0" * 64}])
+    result = capture_project_context(
+        root, project_id="p", selection_path=Path("selection.yaml"), ontologyc=None
+    )
+    assert result.outcome == "invalid" and result.revision is None
+    assert {c.outcome for c in result.checks} >= {"invalid", "unavailable"}
+    assert any("source hash" in c.detail for c in result.checks)
+
+
+@pytest.mark.parametrize("missing", ["source", "ir"])
+def test_available_wrong_hash_takes_precedence_over_other_missing_input(workspace, missing):
+    root, _, package, selection, capture = workspace
+    member = package()
+    other = "ir" if missing == "source" else "source"
+    member[f"{other}_sha256"] = "0" * 64
+    (root / member[missing]).unlink()
+    selection([member])
+    result = capture()
+    assert result.outcome == "invalid" and result.revision is None
+    assert {c.outcome for c in result.checks} >= {"invalid", "unavailable"}
+    assert any("hash does not match" in c.detail for c in result.checks)
+
+
+@pytest.mark.parametrize("input_name", ["source", "ir"])
+def test_nonregular_input_is_unavailable_without_reading_fifo(workspace, input_name, monkeypatch):
+    root, _, package, selection, capture = workspace
+    member = package()
+    fifo = root / member[input_name]
+    fifo.unlink()
+    os.mkfifo(fifo)
+    selection([member])
+    read_bytes = Path.read_bytes
+
+    def guarded_read(path):
+        if path == fifo:
+            pytest.fail("must not read FIFO")
+        return read_bytes(path)
+
+    monkeypatch.setattr(Path, "read_bytes", guarded_read)
+    result = capture()
+    assert result.outcome == "unavailable" and result.revision is None
+    assert any("regular file" in c.detail for c in result.checks)
+
+
+@pytest.mark.parametrize("input_name", ["source", "ir"])
+@pytest.mark.parametrize("compiler_missing", [True, False])
+def test_identity_mismatch_precedes_unavailable_or_failing_compiler(
+    workspace, input_name, compiler_missing
+):
+    root, compiler, package, selection, _ = workspace
+    member = package()
+    path = root / member[input_name]
+    data = json.loads(path.read_bytes())
+    (data["metadata"] if input_name == "source" else data)["id"] = "wrong"
+    captured = json.dumps(data, sort_keys=True).encode()
+    path.write_bytes(captured)
+    member[f"{input_name}_sha256"] = sha(captured)
+    selection([member])
+    marker = root / "executed"
+    compiler.write_text(f"#!/bin/sh\ntouch {str(marker)!r}\nexit 1\n")
+    compiler.chmod(0o700)
+    result = capture_project_context(
+        root,
+        project_id="p",
+        selection_path=Path("selection.yaml"),
+        ontologyc=None if compiler_missing else compiler,
+    )
+    assert result.outcome == "invalid" and result.revision is None
+    assert any("identity does not match" in c.detail for c in result.checks)
+    assert not marker.exists()
+
+
 def test_selection_identity_pin_and_compiler_pin_mismatches(workspace):
     _, compiler, package, selection, capture = workspace
     member = package()
@@ -202,6 +279,28 @@ def test_snapshot_failure_classification_is_independent_of_message(workspace, mo
     assert capture().outcome == "invalid"
 
 
+def test_ambiguous_compiler_failure_and_detected_mismatch_keep_precedence(workspace, monkeypatch):
+    from ontology_snapshot import OntologySnapshotError
+    from project_ontology_context import capture as module
+
+    _, _, package, selection, capture = workspace
+    first = package()
+    second = package("other", "other")
+    selection([first, {**second, "id": "wrong"}])
+    original = module.capture_ontology_snapshot
+
+    def capture_with_failure(source, *args, **kwargs):
+        if source.name == "example.yaml":
+            raise OntologySnapshotError("compiler failed", outcome="unavailable")
+        return original(source, *args, **kwargs)
+
+    monkeypatch.setattr(module, "capture_ontology_snapshot", capture_with_failure)
+    result = capture()
+    assert result.outcome == "invalid" and result.revision is None
+    assert any(c.check == "member_capture" and c.outcome == "unavailable" for c in result.checks)
+    assert any(c.check == "member_capture" and c.outcome == "invalid" for c in result.checks)
+
+
 def test_context_pin_prevents_compiler_execution(workspace):
     root, compiler, package, selection, capture = workspace
     selection([package()])
@@ -234,9 +333,7 @@ def test_compiler_availability_lost_before_capture_is_unavailable(workspace, mon
         return original(path, mode)
 
     monkeypatch.setattr(module.os, "access", access)
-    monkeypatch.setattr(
-        module, "capture_ontology_snapshot", lambda *a, **k: pytest.fail("must not run")
-    )
+    monkeypatch.setattr(subprocess, "run", lambda *a, **k: pytest.fail("must not run"))
     result = capture()
     assert checks == 2 and result.outcome == "unavailable"
     assert result.revision is None and not result.snapshots

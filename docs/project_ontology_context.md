@@ -38,7 +38,9 @@ context revision and compiler byte identity. The optional compiler pin is
 checked against the same captured executable bytes **before execution**.
 Compiler provenance remains `not_verified`; a byte hash is not origin attestation.
 
-The identity binds canonical package order, workspace-relative selected sources,
+Selected source and saved IR hashes are checked against their captured bytes
+before compiler execution, including when the compiler is unavailable. The
+identity binds canonical package order, workspace-relative selected sources,
 captured source/IR hashes, compiler hash, checking profiles and composition rules.
 Changing an identity input changes the revision. Consumers receive captured bytes
 and do not reopen saved IR. Partial results retain explicit capture diagnostics.
@@ -49,6 +51,11 @@ and do not reopen saved IR. Partial results retain explicit capture diagnostics.
 `verified`. Missing selection, executable or unsupported checks remain unavailable.
 Identity/hash mismatch and detected invalidity remain invalid. Snapshot failures
 have typed outcomes; consumers do not classify them by matching error messages.
+An ambiguous nonzero compiler exit, signal termination or undecodable compiler
+output leaves the check unavailable: the process outcome alone does not establish
+invalid input. Independently detected identity, pin and source/IR mismatches
+remain invalid. See the [compiler outcome defect record](reviews/0232_project_ontology_context/compiler-outcome-defect/source.md)
+for the repair and its evidence.
 
 The initial structural profile can verify a single package with no imports.
 Imported/composed dependency closure is not implemented. In particular, the

@@ -1,0 +1,24 @@
+{
+  "artifact_kind": "operator_request_packet",
+  "schema_version": 1,
+  "user_intent": {
+    "intent_handle": "user_intent::compiler-outcome-defect-20261030",
+    "source_kind": "chat_instruction",
+    "source_summary": "Agent-recorded follow-up to the user request to address PR review: confirmed compiler-outcome defect; the source-bound observation is in docs/reviews/0232_project_ontology_context/compiler-outcome-defect/source.md",
+    "selected_node_ref": "SG-SPEC-0072",
+    "unresolved_questions": []
+  },
+  "operator_request": {
+    "request_handle": "operator_request::compiler-outcome-defect-20261030",
+    "target_spec_id": "SG-SPEC-0072",
+    "run_mode": "targeted_refine",
+    "operator_note": "Register the confirmed compiler-outcome observation and prepared fix for review under the existing 0232 contract. No executor, canonical mutation, semantic acceptance, gate activation, or claim of merged fix.",
+    "mutation_budget": [],
+    "run_authority": [],
+    "execution_profile": "standard",
+    "stop_conditions": [
+      "first_structured_outcome",
+      "review_boundary_reached"
+    ]
+  }
+}

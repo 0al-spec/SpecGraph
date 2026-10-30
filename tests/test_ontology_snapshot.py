@@ -9,7 +9,11 @@ from pathlib import Path
 import pytest
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "tools"))
-from ontology_snapshot import OntologySnapshotError, capture_ontology_snapshot  # noqa: E402
+from ontology_snapshot import (  # noqa: E402
+    OntologySnapshotError,
+    capture_ontology_inputs,
+    capture_ontology_snapshot,
+)
 
 
 def compiler_fixture(path: Path, *, during_check: str = "") -> Path:
@@ -70,6 +74,19 @@ def test_snapshot_uses_captured_source_and_saved_ir_when_paths_change(tmp_path):
         snapshot.ir_bytes = b"changed"
 
 
+def test_pre_captured_inputs_are_reused_and_bound_to_paths(tmp_path):
+    source = tmp_path / "source.yaml"
+    source.write_text("original")
+    compiler = compiler_fixture(tmp_path / "ontologyc")
+    inputs = capture_ontology_inputs(source, None)
+    source.write_text("changed")
+    snapshot = capture_ontology_snapshot(source, compiler, captured_inputs=inputs)
+    assert snapshot.source_bytes == b"original"
+    with pytest.raises(OntologySnapshotError, match="paths do not match") as error:
+        capture_ontology_snapshot(tmp_path / "other.yaml", compiler, captured_inputs=inputs)
+    assert error.value.outcome == "invalid"
+
+
 def test_rejects_tampered_ir_even_when_source_digest_matches(tmp_path):
     source = tmp_path / "source.yaml"
     source.write_text("original")
@@ -78,8 +95,9 @@ def test_rejects_tampered_ir_even_when_source_digest_matches(tmp_path):
     saved.write_text(json.dumps({"sourceDigest": f"sha256:{digest}", "classes": []}))
     compiler = compiler_fixture(tmp_path / "ontologyc")
 
-    with pytest.raises(OntologySnapshotError, match="saved ontology IR differs"):
+    with pytest.raises(OntologySnapshotError, match="saved ontology IR differs") as error:
         capture_ontology_snapshot(source, compiler, expected_ir_path=saved)
+    assert error.value.outcome == "invalid"
     assert source.read_text() == "original"
     assert json.loads(saved.read_text())["classes"] == []
 
@@ -88,8 +106,10 @@ def test_invalid_source_fails_closed_without_changing_inputs(tmp_path):
     source = tmp_path / "source.yaml"
     source.write_text("invalid")
     compiler = compiler_fixture(tmp_path / "ontologyc")
-    with pytest.raises(OntologySnapshotError, match="invalid ontology"):
+    with pytest.raises(OntologySnapshotError, match="invalid ontology") as error:
         capture_ontology_snapshot(source, compiler)
+    # The diagnostic text and nonzero exit do not prove why the compiler failed.
+    assert error.value.outcome == "unavailable"
     assert source.read_text() == "invalid"
 
 
@@ -105,9 +125,32 @@ def test_compile_failure_after_successful_check_fails_closed(tmp_path):
         "    raise SystemExit(1)\n"
     )
     compiler.chmod(0o700)
-    with pytest.raises(OntologySnapshotError, match="compile failed"):
+    with pytest.raises(OntologySnapshotError, match="compile failed") as error:
         capture_ontology_snapshot(source, compiler)
+    assert error.value.outcome == "unavailable"
     assert source.read_text() == "original"
+
+
+@pytest.mark.parametrize("failure", ["check", "signal", "undecodable"])
+def test_ambiguous_compiler_failures_are_unavailable(tmp_path, failure):
+    source = tmp_path / "source.yaml"
+    source.write_text("original")
+    compiler = tmp_path / "ontologyc"
+    action = {
+        "check": "raise SystemExit(1)",
+        "signal": "os.kill(os.getpid(), signal.SIGTERM)",
+        "undecodable": "os.write(2, bytes([255])); raise SystemExit(1)",
+    }[failure]
+    compiler.write_text(
+        "#!/usr/bin/env python3\n"
+        "import os, signal, sys\n"
+        "if sys.argv[1] == 'check':\n"
+        f"    {action}\n"
+    )
+    compiler.chmod(0o700)
+    with pytest.raises(OntologySnapshotError) as error:
+        capture_ontology_snapshot(source, compiler)
+    assert error.value.outcome == "unavailable"
 
 
 def test_missing_compiler_and_source_fail_closed(tmp_path):
@@ -189,6 +232,28 @@ def test_compiler_pin_is_checked_before_execution(tmp_path):
     )
     with pytest.raises(OntologySnapshotError, match="compiler hash") as error:
         capture_ontology_snapshot(source, compiler, expected_compiler_sha256="0" * 64)
+    assert error.value.outcome == "invalid"
+    assert not marker.exists()
+
+
+@pytest.mark.parametrize("mismatch", ["source", "ir"])
+def test_input_hash_mismatch_is_invalid_before_compiler_execution(tmp_path, mismatch):
+    source = tmp_path / "source.yaml"
+    source.write_text("original")
+    saved_ir = tmp_path / "saved.json"
+    saved_ir.write_text("saved")
+    marker = tmp_path / "executed"
+    compiler = compiler_fixture(
+        tmp_path / "ontologyc", during_check=f"pathlib.Path({str(marker)!r}).touch()"
+    )
+    with pytest.raises(OntologySnapshotError, match="hash does not match") as error:
+        capture_ontology_snapshot(
+            source,
+            compiler,
+            expected_ir_path=saved_ir,
+            expected_source_sha256="0" * 64 if mismatch == "source" else None,
+            expected_ir_sha256="0" * 64 if mismatch == "ir" else None,
+        )
     assert error.value.outcome == "invalid"
     assert not marker.exists()
 
