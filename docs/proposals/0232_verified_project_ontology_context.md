@@ -13,8 +13,11 @@ the schema, migration and enforcement design below remain proposed.
 [captured note](../reviews/0232_project_ontology_context/source-notes.json) and
 [draft obligations](0232_verified_project_ontology_context.intent.yaml) preserve
 the origin and scope. The [preparation observation](../reviews/0232_project_ontology_context/preparation.json)
-records the bounded Supervisor dry-run and document checks. This package adds no runtime enforcement, accepted ontology
-terms, canonical specification changes or SpecSpace UI changes.
+records the initial bounded Supervisor dry-run and document checks. The later
+[adoption review](../reviews/0232_project_ontology_context/adoption/README.md)
+prepares a selection contract and parent reconciliation on a PR branch; merge
+into the canonical graph remains a separate decision. Neither preparation adds
+runtime enforcement, accepts ontology terms or changes the SpecSpace UI.
 
 ```yaml
 canonical_mutations_allowed: false
@@ -201,21 +204,25 @@ proposal, the optional #825 mode or a rendered graph cannot satisfy that alone.
 
 ## Supervisor contract preparation
 
-A [Supervisor review packet](../reviews/0232_project_ontology_context/supervisor/README.md)
-now retains two real targeted runs. The first returned `split_required`; the
+The initial [Supervisor review packet](../reviews/0232_project_ontology_context/supervisor/README.md)
+retains two real targeted runs. The first returned `split_required`; the
 second created exactly one candidate SG-SPEC-0072 beneath SG-SPEC-0064 and
 returned `done / review_pending` with zero validation errors and
 `accepted_canonical_diff: false`. The candidate's four acceptance entries define
 selection, identity, verification outcomes and their authority boundary. The
 parent candidate only reconciles membership/dependency routing.
 
-Candidate files and their exact hashes are retained under `docs/reviews/`, not
-installed in the canonical graph. The first run's diagnostic false positive and
-the second run's unrelated/unestablished soft-gate evidence remain visible.
+At that packet's preparation stage, candidate files and their exact hashes were
+retained under `docs/reviews/`, without canonical graph updates. The first run's
+diagnostic false positive and the second run's unrelated/unestablished soft-gate
+evidence remain visible.
 Reviewing or merging the preparation packet does not approve the candidate,
 resolve that gate, reserve the proposed ID or implement project selection.
-The next step is scoped contract review and supported Supervisor adoption;
-configuration and runtime work follow that boundary.
+The subsequent [adoption review](../reviews/0232_project_ontology_context/adoption/README.md)
+records scoped contract review and supported Supervisor preparation of
+SG-SPEC-0072 and its parent on a PR branch. PR review and merge remain separate;
+configuration and runtime work follow that boundary. Preparation does not
+approve ontology meanings or activate a global policy.
 
 ## Separate follow-ups
 
