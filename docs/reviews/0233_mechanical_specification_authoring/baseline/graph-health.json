@@ -1,0 +1,22 @@
+{
+  "output_mode": "summary",
+  "artifact_kind": "graph_health_observation",
+  "source_spec_id": "SG-SPEC-0072",
+  "source_title": "SpecGraph - Project Ontology Context Selection",
+  "diagnostic_outcome": "done",
+  "subtree_spec_ids": [
+    "SG-SPEC-0072"
+  ],
+  "subtree_spec_count": 1,
+  "historical_descendant_ids": [],
+  "historical_descendant_count": 0,
+  "graph_health": {
+    "source_spec_id": "SG-SPEC-0072",
+    "observations": [],
+    "signals": [],
+    "recommended_actions": []
+  },
+  "observation_count": 0,
+  "signals": [],
+  "recommended_actions": []
+}
