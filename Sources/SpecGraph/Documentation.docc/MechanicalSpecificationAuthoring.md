@@ -34,7 +34,8 @@ Source excerpts, draft obligations and an existing intent/proposal registration
 retain the conversation as shared project memory. The return handle is
 `proposal::0233-mechanical-specification-authoring`; its existing canonical
 target is SG-SPEC-0015. Review the pilot inventory/profile, then prepare one
-derived report and negative sensitivity probes. Those probes have not run.
+derived report and negative sensitivity probes. At preparation those probes had
+not run. The first post-merge baseline is now recorded separately below.
 The authored proposal's empty `proposal_queue_status` keeps it outside derived
 queue retirement; `proposal_authority_state` records its independent review state.
 
@@ -44,6 +45,17 @@ Registration does not execute an agent or approve canonical publication:
 
 ## Source documents
 
+The first executed baseline selects merged revision `a980ba6f` and confirms
+the historical pilot spec bytes are unchanged. Existing acceptance-shape checks
+detect evidence-only deletion but miss paired criterion/evidence deletion;
+native BDD detects a dangling scenario reference. Textual outcome contradictions
+remain outside those declaration checks. Supervisor reports no graph-health
+signals for the leaf; this does not establish authoring completeness. Twenty
+existing context tests passed with fixture compiler inputs. Required ontology
+bindings, stale authoring evidence and a frozen outcome inventory remain the
+next profile work. No readiness gate or canonical status changed.
+
+- `docs/reviews/0233_mechanical_specification_authoring/baseline/README.md`
 - `docs/proposals/0233_mechanical_specification_authoring.md`
 - `docs/proposals/0233_mechanical_specification_authoring.intent.yaml`
 - `docs/archive/proposal_sources/0233_mechanical_specification_authoring.md`

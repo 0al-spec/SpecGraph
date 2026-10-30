@@ -1,0 +1,18 @@
+{
+  "selected_revision": "a980ba6f3c76153e7990f6fdad6cfd2536a3f1f0",
+  "historical_pilot_revision": "c31b1a332ed1df2fba7d10ad0a215f230d61b97e",
+  "selection_reason": "Explicitly reselect merged main for the authorized pilot; historical spec bytes equal current bytes.",
+  "source_hashes": {
+    "specs/nodes/SG-SPEC-0072.yaml": "46a6be05a4a0c4c5de7cfe29a8b44d5bd25fab09404f20fb2f2646a433fc196e",
+    "tools/authoring_pilot_baseline.py": "60263511c973ed5d1d8782d86ab2595ddbf97fc96a8ca5ce7220e4ea9a84d0b5",
+    "tools/supervisor.py": "5935328d9888f9eec982a89ce1b40fbe315577880007794fb83a06c994791f46",
+    "tools/native_bdd/boundary.py": "b9b6a82d55b8288e54248e2742540619a246e3466493aedd0a8389a1abc60ae8",
+    "tests/test_project_ontology_context.py": "2d80c7a7d1daad55dcd0e9e1dcde1027d7c8c34d9e07a3416c52641110744fd6"
+  },
+  "context_tests": {
+    "command": ".venv/bin/python -m pytest -q tests/test_project_ontology_context.py",
+    "result": "20 passed",
+    "boundary": "Fixture compiler and mocked failures; no real ontologyc run."
+  },
+  "canonical_mutations_allowed": false
+}

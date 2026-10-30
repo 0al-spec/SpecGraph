@@ -1,0 +1,152 @@
+{
+  "artifact_kind": "authoring_pilot_baseline",
+  "schema_version": 1,
+  "proposal_id": "0233",
+  "spec_id": "SG-SPEC-0072",
+  "source_sha256": "46a6be05a4a0c4c5de7cfe29a8b44d5bd25fab09404f20fb2f2646a433fc196e",
+  "expected_acceptance_inventory": [
+    {
+      "source_pointer": "/acceptance/0",
+      "text": "Defines explicit project ontology context selection for one package or a composed set with exact pins and explicit dependency and name-resolution rules."
+    },
+    {
+      "source_pointer": "/acceptance/1",
+      "text": "Binds a stable immutable context revision to the resolved package set, dependency closure, source and IR hashes, compiler identity, and checking profiles for one operation."
+    },
+    {
+      "source_pointer": "/acceptance/2",
+      "text": "Distinguishes verified, unavailable, and invalid outcomes with declared check scope, concrete diagnostics, and no substitution of old IR as current verified context."
+    },
+    {
+      "source_pointer": "/acceptance/3",
+      "text": "Keeps SG-RFC-0232 selection semantics source-attributed and separate from semantic approval, complete terminology coverage, and runtime enforcement."
+    }
+  ],
+  "inventory_identity": "source_sha256 plus source_pointer; snapshot-local, not durable atom IDs",
+  "experiments": [
+    {
+      "experiment": "unchanged_source",
+      "changed_paths": [],
+      "remaining_acceptance_count": 4,
+      "remaining_prose_case_count": 6,
+      "observations": {
+        "acceptance_shape_errors": [],
+        "bdd_presence": "absent",
+        "bdd_findings": [],
+        "bdd_scenario_count": 0,
+        "execution_evidence": "not_evaluated"
+      }
+    },
+    {
+      "experiment": "remove_evidence_only",
+      "changed_paths": [
+        "/acceptance_evidence/2"
+      ],
+      "remaining_acceptance_count": 4,
+      "remaining_prose_case_count": 6,
+      "observations": {
+        "acceptance_shape_errors": [
+          "acceptance_evidence size must match acceptance size (3 != 4)"
+        ],
+        "bdd_presence": "absent",
+        "bdd_findings": [],
+        "bdd_scenario_count": 0,
+        "execution_evidence": "not_evaluated"
+      }
+    },
+    {
+      "experiment": "remove_criterion_and_matching_evidence",
+      "changed_paths": [
+        "/acceptance/2",
+        "/acceptance_evidence/2"
+      ],
+      "remaining_acceptance_count": 3,
+      "remaining_prose_case_count": 6,
+      "observations": {
+        "acceptance_shape_errors": [],
+        "bdd_presence": "absent",
+        "bdd_findings": [],
+        "bdd_scenario_count": 0,
+        "execution_evidence": "not_evaluated"
+      }
+    },
+    {
+      "experiment": "remove_mixed_outcome_prose_case",
+      "changed_paths": [
+        "/specification/acceptance_cases/4"
+      ],
+      "remaining_acceptance_count": 4,
+      "remaining_prose_case_count": 5,
+      "observations": {
+        "acceptance_shape_errors": [],
+        "bdd_presence": "absent",
+        "bdd_findings": [],
+        "bdd_scenario_count": 0,
+        "execution_evidence": "not_evaluated"
+      }
+    },
+    {
+      "experiment": "contradict_outcome_precedence_prose",
+      "changed_paths": [
+        "/specification/verification_contract/outcome_precedence"
+      ],
+      "remaining_acceptance_count": 4,
+      "remaining_prose_case_count": 6,
+      "observations": {
+        "acceptance_shape_errors": [],
+        "bdd_presence": "absent",
+        "bdd_findings": [],
+        "bdd_scenario_count": 0,
+        "execution_evidence": "not_evaluated"
+      }
+    },
+    {
+      "experiment": "synthetic_linked_declaration",
+      "changed_paths": [
+        "/specification/bdd_scenarios",
+        "/specification/observability"
+      ],
+      "remaining_acceptance_count": 4,
+      "remaining_prose_case_count": 6,
+      "observations": {
+        "acceptance_shape_errors": [],
+        "bdd_presence": "present",
+        "bdd_findings": [],
+        "bdd_scenario_count": 1,
+        "execution_evidence": "not_evaluated"
+      }
+    },
+    {
+      "experiment": "remove_referenced_synthetic_scenario",
+      "changed_paths": [
+        "/specification/bdd_scenarios"
+      ],
+      "remaining_acceptance_count": 4,
+      "remaining_prose_case_count": 6,
+      "observations": {
+        "acceptance_shape_errors": [],
+        "bdd_presence": "invalid",
+        "bdd_findings": [
+          {
+            "code": "unresolved_node_local_reference",
+            "path": "specification.observability.obligations[0].scenario_ids[0]",
+            "message": "unresolved node local reference",
+            "severity": "error"
+          }
+        ],
+        "bdd_scenario_count": null,
+        "execution_evidence": "not_evaluated"
+      }
+    }
+  ],
+  "unsupported_by_this_baseline": [
+    "Required ontology usage bindings: no authoring profile selected",
+    "Stale authoring evidence admission: no authoring report contract yet",
+    "Semantic contradiction detection in prose",
+    "Formal source-obligation discharge and atom-level SVC",
+    "Large-leaf completeness and optional ontology relation applicability"
+  ],
+  "canonical_mutations_allowed": false,
+  "runtime_profile_activation_allowed": false,
+  "authoring_readiness": "not_evaluated"
+}

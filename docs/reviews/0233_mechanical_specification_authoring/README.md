@@ -30,6 +30,11 @@ supporting run ID, execution timestamp or canonical application event.
 
 ## Resume
 
+The [first executed baseline](baseline/README.md) records the post-merge pilot
+selection, copy-only sensitivity probes, existing context tests and a targeted
+Supervisor graph-health observation. It is reachable through this existing
+proposal return path; historical registration evidence below remains unchanged.
+
 Find `proposal::0233-mechanical-specification-authoring` in the existing proposal
 lane overlay and follow its source/intent links. Start with review of the scoped
 SG-SPEC-0072 outcome-precedence inventory and authoring profile. Its selected
