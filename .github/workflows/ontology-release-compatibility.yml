@@ -11,7 +11,7 @@ permissions:
 
 env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
-  ONTOLOGY_REVISION: 1a47f7058228efb412cbdeaabbaf27bca25e9846
+  ONTOLOGY_REVISION: d831e25b46095dfea5e17befbc88c5fdcd03e031
 
 jobs:
   compiler-compatibility:
@@ -26,7 +26,7 @@ jobs:
         uses: actions/checkout@v6
         with:
           repository: 0al-spec/Ontology
-          ref: 1a47f7058228efb412cbdeaabbaf27bca25e9846
+          ref: d831e25b46095dfea5e17befbc88c5fdcd03e031
           path: .ontology-release-source
           persist-credentials: false
 
@@ -61,6 +61,7 @@ jobs:
             --ontologyc "$compiler_dir/ontologyc" \
             --ontology-source "$GITHUB_WORKSPACE/.ontology-release-source" \
             --work-dir "$RUNNER_TEMP/ontology-release-smoke"
+          "$compiler_dir/ontologyc" check specs/models/SG-SPEC-0072/domain-ontology-package.yaml
 
       - name: Retain compatibility receipt
         uses: actions/upload-artifact@v4
@@ -86,7 +87,7 @@ jobs:
         uses: actions/checkout@v6
         with:
           repository: 0al-spec/Ontology
-          ref: 1a47f7058228efb412cbdeaabbaf27bca25e9846
+          ref: d831e25b46095dfea5e17befbc88c5fdcd03e031
           path: .ontology-release-source
           persist-credentials: false
 
@@ -121,6 +122,7 @@ jobs:
             --ontologyc "$compiler_dir/ontologyc" \
             --ontology-source "$GITHUB_WORKSPACE/.ontology-release-source" \
             --work-dir "$RUNNER_TEMP/ontology-release-smoke"
+          "$compiler_dir/ontologyc" check specs/models/SG-SPEC-0072/domain-ontology-package.yaml
 
       - name: Retain compatibility receipt
         uses: actions/upload-artifact@v4

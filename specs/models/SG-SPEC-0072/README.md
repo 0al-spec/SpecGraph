@@ -22,13 +22,19 @@ compiler; generated SDK/JavaScript and the report go to a new scratch directory:
   --work-dir /absolute/path/to/new-run
 ```
 
-The reference toolchain is SpecGraph's pinned Ontology 0.2.0 source revision
-`1a47f7058228efb412cbdeaabbaf27bca25e9846`, TypeScript `6.0.3`, and Node.js.
+The reference toolchain is SpecGraph's pinned Ontology 0.3.0 source revision
+`d831e25b46095dfea5e17befbc88c5fdcd03e031`, TypeScript `6.0.3`, and Node.js.
 The existing Ontology compatibility workflow documents building ontologyc from
 that revision. TypeScript can be installed in a separate tool directory with
 `npm install --prefix /path/to/toolchain --no-audit --no-fund typescript@6.0.3`.
 Use the configured external build/cache locations for local work. The pilot
 does not install dependencies or change the project's selected ontology.
+
+This local vocabulary declares no policy or lifecycle, so `policies` and
+`stateMachines` are omitted. Ontology 0.3.0 supports this minimal form; the
+previous 0.2.0 compiler required artificial declarations. The release
+compatibility jobs check this package on macOS and Linux. The historical
+observation retains the original input hashes and is not evidence for this edit.
 
 Exit codes are `0` for this case satisfied, `1` for a model or behavior mismatch,
 and `2` for a tool/environment failure. `report.json` retains per-layer results,

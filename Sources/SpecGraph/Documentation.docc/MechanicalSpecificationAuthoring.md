@@ -61,6 +61,15 @@ probes. This is local evidence; the integration cases explicitly skip in Python
 CI without configured ontologyc and TypeScript paths. The curated observation
 records tested hashes and the compiler's unverified source provenance.
 
+The Ontology 0.3.0 follow-up removes the local package's unused policy and state
+machine declarations. A separate observation records 54 passing focused tests
+without skips, including the real-tool negative cases, and unchanged core IR.
+The old compiler rejects the minimal package; the new compiler runs the same
+scenario successfully. Both compatibility CI jobs check the minimal package's
+structure. They do not execute the full scenario. Original 0.2.0 evidence remains
+historical; adapter complexity and partial acceptance coverage remain open.
+See `docs/reviews/0233_mechanical_specification_authoring/local-model-pilot/ontology-030-observation.json`.
+
 The first executed baseline selects merged revision `a980ba6f` and confirms
 the historical pilot spec bytes are unchanged. Existing acceptance-shape checks
 detect evidence-only deletion but miss paired criterion/evidence deletion;

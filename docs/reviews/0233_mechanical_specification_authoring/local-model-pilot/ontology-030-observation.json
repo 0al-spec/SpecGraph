@@ -1,0 +1,176 @@
+{
+  "artifact_kind": "ontology_release_adoption_observation",
+  "schema_version": 1,
+  "observation_date_utc": "2026-10-30",
+  "proposal_id": "0233",
+  "spec_id": "SG-SPEC-0072",
+  "source_base_revision": "dfc056d421c0afb234e834287f57b0ec1253c1ac",
+  "source_binding": "The base revision predates this edit; inputs_sha256 binds the actual tested working-tree sources.",
+  "ontology_release": {
+    "tag": "0.3.0",
+    "source_revision": "d831e25b46095dfea5e17befbc88c5fdcd03e031",
+    "binary_sha256": "1d0128d27f33f04b46c3969e41a04f3ac365afbb748d4c1f7f45645c09839923",
+    "binary_source_provenance": "not_verified"
+  },
+  "old_compiler_control": {
+    "release": "0.2.0",
+    "binary_sha256": "b382e2a75f7f102658244fdec227b6fabf4bc0778db78e2493503bb4cabe346d",
+    "returncode": 1,
+    "diagnostic": "error policies.empty spec.policies: spec.policies must contain at least one policy\nerror spec.required spec.policies: spec.policies is required\nerror spec.required spec.stateMachines: spec.stateMachines is required\nerror stateMachines.empty spec.stateMachines: spec.stateMachines must contain at least one state machine"
+  },
+  "release_compatibility": {
+    "status": "passed",
+    "normalized_ir_matches_project_file": true,
+    "normalized_ir_sha256": "7a9d1cb640f154c32a2a15a4ec8868349bee04be30a0b5da886422c0d3eb638f",
+    "resolved_ref_count": 7,
+    "gap_refs": [
+      "sgcore:ClaimCalibration"
+    ],
+    "package_approval_status": "draft",
+    "canonical_mutations_allowed": false,
+    "semantic_acceptance": "not_evaluated"
+  },
+  "local_model": {
+    "outcome": "satisfied",
+    "layers": {
+      "compiler": {
+        "status": "passed"
+      },
+      "typecheck": {
+        "status": "passed"
+      },
+      "model": {
+        "status": "passed"
+      },
+      "behavior": {
+        "status": "passed"
+      }
+    },
+    "findings": [],
+    "coverage": {
+      "acceptance": [
+        {
+          "pointer": "/acceptance/0",
+          "status": "unmodelled",
+          "reason": "Package selection, exact pins, dependency closure and name resolution are not modelled by this example. Duplicate identity is a supplied invalidity condition."
+        },
+        {
+          "pointer": "/acceptance/1",
+          "status": "unmodelled",
+          "reason": "Context revision identity, captured bytes, source and IR hashes, compiler identity and profile identity are not modelled."
+        },
+        {
+          "pointer": "/acceptance/2",
+          "status": "partial",
+          "reason": "This illustrative synthetic declaration models only mixed invalid and unavailable check outcomes and retention of both diagnostics. It does not cover the other outcome branches, complete check scope, source/IR fallback behavior or execution of the checks. Source fragments select clauses, not whole scalar obligations."
+        },
+        {
+          "pointer": "/acceptance/3",
+          "status": "unmodelled",
+          "reason": "Semantic approval, complete terminology coverage and runtime enforcement are not established by this bounded model. Its source links do not discharge the full provenance and authority criterion."
+        }
+      ],
+      "complete": false
+    },
+    "observed": {
+      "artifact_kind": "project_ontology_context_report",
+      "schema_version": 1,
+      "project_id": "local-SG72-MIXED",
+      "selection_path": "selection.yaml",
+      "outcome": "invalid",
+      "context_revision": null,
+      "members": [
+        {
+          "id": "org.0al.specgraph.core",
+          "namespace": "sgcore",
+          "version": "0.1.0"
+        },
+        {
+          "id": "org.0al.specgraph.core",
+          "namespace": "sgcore",
+          "version": "0.1.0"
+        }
+      ],
+      "profiles": [
+        "ontologyc-structural-v1"
+      ],
+      "composition": {
+        "dependency_rule": "explicit",
+        "name_resolution_rule": "qualified"
+      },
+      "snapshots": [],
+      "checks": [
+        {
+          "check": "profile",
+          "outcome": "verified",
+          "detail": "supported structural checking profile",
+          "package": null
+        },
+        {
+          "check": "selection",
+          "outcome": "invalid",
+          "detail": "duplicate package identity or namespace",
+          "package": null
+        },
+        {
+          "check": "compiler",
+          "outcome": "unavailable",
+          "detail": "operator-provided executable is unavailable",
+          "package": null
+        },
+        {
+          "check": "member_capture",
+          "outcome": "unavailable",
+          "detail": "ontologyc must be an executable file",
+          "package": "org.0al.specgraph.core"
+        },
+        {
+          "check": "member_capture",
+          "outcome": "unavailable",
+          "detail": "ontologyc must be an executable file",
+          "package": "org.0al.specgraph.core"
+        },
+        {
+          "check": "context_capture",
+          "outcome": "unavailable",
+          "detail": "selected context capture is incomplete",
+          "package": null
+        }
+      ],
+      "semantic_approval": "not_established",
+      "canonical_mutations_allowed": false
+    }
+  },
+  "inputs_sha256": {
+    "model/domain-ontology-package.yaml": "0f7d7229c2f9972b3b0a94f252fbf115ebb77841c40bb3b0304641d119aade04",
+    "model/model.ts": "ddbe073602340317ecbf0a568d2b0fb4ac8aa96bdf88bd45e48f2ff847d4f91d",
+    "model/tsconfig.json": "98454ddc1895c84e012284e3252b7fa9aff93fa072d1d50bbd5b0ef44b7b88f5",
+    "model/source-map.json": "776320afaee710ce5cd1e48cf401b90cb6a6ebef65c8d4e68196340b3d2659eb",
+    "model/mixed-outcome.feature": "1459210eba539941c08e61c275a1859ca76cb167d5a1ef8f7ab5bbcb3b8679ef",
+    "consumer.ts": "67cf993733a8cf8ae55533c4e3665502ee1e8c9453a707c03c1a2968a8f9adfa",
+    "runner.py": "f17d535cd3149c135f16f9aa963df8ad0e1ea2ee716f11c6b889bbf9b4cd04d3",
+    "specs/nodes/SG-SPEC-0072.yaml": "46a6be05a4a0c4c5de7cfe29a8b44d5bd25fab09404f20fb2f2646a433fc196e",
+    "sgcore.yaml": "5bfa2ff40b6174def589546ab2fea2501e1f256c4f1446f36c45c7f3fffcd929",
+    "tools/ontology_snapshot.py": "050c7d3567fc04af951d455e4fe201b11314a620278358ce666cbab020dac66c",
+    "tools/project_ontology_context/__init__.py": "c0fa153f5ee08c7ab1a17e8000a24b552fc511afa5b3619057efa82b55ed8ddf",
+    "tools/project_ontology_context/capture.py": "6ae694a8fce6847e42070ba519be674d0f8a57737ce952f008e198db9fa32fb7",
+    "tools/project_ontology_context/model.py": "25bc2294c524110fa767ab00d3f3b3e08daff0950a13bfe01a9ad7690182a0e5",
+    "tools/project_ontology_context/invalid_spec.py": "9271711b71a9a0a7199e13d024be892dc2a2442dd79c64edd5aa3ec87ec84a0b",
+    "tools/project_ontology_context/unavailable_spec.py": "275db3a133ded6e807d5a4a037aacc1601c36bc2e9d2699594fb107442668260"
+  },
+  "validation": {
+    "focused_tests": 54,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "junit_sha256": "14a2978691a55e8c7f50881428f51823361f80b7274f75974eae18ad0dfd414f",
+    "pilot_report_sha256": "17173962ab41a9243528e7869930328b50973d72533aa54713024de625df1109",
+    "release_smoke_sha256": "ab1bfd0c9eabe257ccb62314fde117db4c1db78526ffd933a6e50aa827431400"
+  },
+  "limits": [
+    "One mixed-outcome scenario; acceptance coverage remains partial.",
+    "No generic instance validation or readiness gate.",
+    "No authenticated binary-to-source attestation."
+  ],
+  "curation": "Machine-local output paths are omitted. Raw report hashes identify the separately retained local artifacts; original 0.2.0 observations remain unchanged."
+}
