@@ -29,6 +29,16 @@ The review sources are:
 
 ## Selected context and scope
 
+The bounded source API `capture_project_context` implements explicit selection
+and immutable capture under SG-SPEC-0072. Selection v1 declares pinned members,
+`ontologyc-structural-v1` and explicit qualified composition rules. The optional
+compiler pin is checked before execution. Named outcome policies preserve
+invalid-before-unavailable precedence; errors have typed outcomes.
+An ambiguous compiler process failure or undecodable process output is unavailable;
+independently detected identity, pin and source/IR mismatches remain invalid.
+Imported/composed closure remains unavailable. See
+`docs/project_ontology_context.md` for the actual API and manifest shape.
+
 A context can select one ontology or a composed package set. Selection records
 exact package/source identities, dependencies, compiler and check profile.
 Version conflicts, unavailable dependency checks and ambiguous terms stay
