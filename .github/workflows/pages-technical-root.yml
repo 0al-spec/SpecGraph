@@ -37,7 +37,7 @@ env:
 jobs:
   build:
     name: Build DocC technical surface
-    runs-on: macos-14
+    runs-on: macos-15
 
     steps:
       - name: Checkout
