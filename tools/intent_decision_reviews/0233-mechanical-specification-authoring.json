@@ -1,6 +1,6 @@
 {
   "artifact_kind": "specgraph.intent-decision-review/v1",
-  "base_sha": "ee8cb62f5acca18e884dcc19cf306ca6708ab7c5",
+  "base_sha": "701921a408af2247fb09fd0ccb2670c042e41e35",
   "decisions": [
     {
       "change_sha256": "cbbd2bb49cc41c373f2d6be31f2f136d4d80881925da91fc127376ff6db84fed",
@@ -55,5 +55,5 @@
   "intent_delta_sha256": "f9f57547d0d581f984fcc7786f80bfa18b6e89757ee03fcbf9ee568715f55002",
   "pr_body_sha256": "068ecd100d1d157048a6cbe5115665917ff406b1747c1eda13e42a79ee6bbe7a",
   "schema_version": 1,
-  "source_scope_sha256": "bfd77cbf4288d81e84c224b9b74c78f120787d08f6f84f3ca92aa82ee0c25b0d"
+  "source_scope_sha256": "8914c71b86f57c30aded3cf904acc76d849809c27ffd88f926017af8b1851bd3"
 }
