@@ -1,0 +1,59 @@
+{
+  "artifact_kind": "specgraph.intent-decision-review/v1",
+  "base_sha": "ee8cb62f5acca18e884dcc19cf306ca6708ab7c5",
+  "decisions": [
+    {
+      "change_sha256": "cbbd2bb49cc41c373f2d6be31f2f136d4d80881925da91fc127376ff6db84fed",
+      "disposition": "contract_only",
+      "implementation_refs": [],
+      "rationale": "Draft contract for durable source and existing graph return paths. This PR records the planning request through existing helpers and retained data; no production source change or new publication authority.",
+      "specification_refs": []
+    },
+    {
+      "change_sha256": "35b401f950ac915803661f3ade252182657762b11eb1b60c3a91f673d4647746",
+      "disposition": "contract_only",
+      "implementation_refs": [],
+      "rationale": "Proposed inventory and partial-coverage contract only. Runtime denominator and mapping enforcement are deferred; the seven draft obligations do not claim new canonical behavior.",
+      "specification_refs": []
+    },
+    {
+      "change_sha256": "5a4c525c507bfea5b49af005072581582a6543973c95eb2123b82cbc0d574f46",
+      "disposition": "contract_only",
+      "implementation_refs": [],
+      "rationale": "Proposed scoped authoring-profile obligation only. Current compiler capabilities and optional relations are documented; no new checker, ontology schema or runtime profile is activated.",
+      "specification_refs": []
+    },
+    {
+      "change_sha256": "86d7c4c96fe86eef35899885c3a4439265ac11a38af796bc7edfe1f026ef7a7d",
+      "disposition": "contract_only",
+      "implementation_refs": [],
+      "rationale": "Proposed distinction between declarations, checking methods and execution. Existing native BDD boundaries are reused in the design; scenario execution adapters are not implemented here.",
+      "specification_refs": []
+    },
+    {
+      "change_sha256": "e89737cfd3092bd777df25ffdcc0f9a309d661a064abca02ac4c9e1c58a7e63e",
+      "disposition": "contract_only",
+      "implementation_refs": [],
+      "rationale": "Proposed provenance, denominator and complexity interpretation contract. SIB proxies, scoring code and thresholds are unchanged; incomplete inputs remain a documented future concern.",
+      "specification_refs": []
+    },
+    {
+      "change_sha256": "f4672a45c6423a556f83d43b7acdc65dd0391cf42332553f90c6d3bd5952f828",
+      "disposition": "contract_only",
+      "implementation_refs": [],
+      "rationale": "Proposed use of existing SG-SPEC-0015 and SG-SPEC-0049 for large leaves and bounded refinement. Numeric atomicity gates and canonical specs are not changed in this PR.",
+      "specification_refs": []
+    },
+    {
+      "change_sha256": "2484bf9796a76f05945033ff3d41a7cc876baf8bcaa5c15e4f402e71c6eefbd0",
+      "disposition": "contract_only",
+      "implementation_refs": [],
+      "rationale": "Planned SG-SPEC-0072 sensitivity experiment only. A frozen unmerged source revision and pending next action are recorded; no behavioral pilot or readiness activation is claimed.",
+      "specification_refs": []
+    }
+  ],
+  "intent_delta_sha256": "f9f57547d0d581f984fcc7786f80bfa18b6e89757ee03fcbf9ee568715f55002",
+  "pr_body_sha256": "6481cd123bfa1efe20fe3d5fdc7c324e6bc65fc5fd67b779655fed1a336f0005",
+  "schema_version": 1,
+  "source_scope_sha256": "d56a1b492fcaa42478898d847d661975292c96941824871320a388a180cd1d52"
+}
