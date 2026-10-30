@@ -53,7 +53,7 @@
     }
   ],
   "intent_delta_sha256": "f9f57547d0d581f984fcc7786f80bfa18b6e89757ee03fcbf9ee568715f55002",
-  "pr_body_sha256": "6481cd123bfa1efe20fe3d5fdc7c324e6bc65fc5fd67b779655fed1a336f0005",
+  "pr_body_sha256": "068ecd100d1d157048a6cbe5115665917ff406b1747c1eda13e42a79ee6bbe7a",
   "schema_version": 1,
-  "source_scope_sha256": "d56a1b492fcaa42478898d847d661975292c96941824871320a388a180cd1d52"
+  "source_scope_sha256": "bfd77cbf4288d81e84c224b9b74c78f120787d08f6f84f3ca92aa82ee0c25b0d"
 }
