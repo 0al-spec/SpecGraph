@@ -169,6 +169,9 @@ def test_real_sdk_and_behavior_preserve_partial_coverage(real_tools, copied_mode
     for generated in ("src/generated/pilot/types.ts", "src/generated/sgcore/types.ts"):
         assert generated in report["generated"]
         assert (work / generated).is_file()
+    local_ir = json.loads((work / "src/generated/pilot/ontology.normalized.json").read_bytes())
+    assert local_ir["policies"] == []
+    assert local_ir["stateMachines"] == []
     assert report["coverage"]["complete"] is False
     assert [(row["pointer"], row["status"]) for row in report["coverage"]["acceptance"]] == [
         ("/acceptance/0", "unmodelled"),

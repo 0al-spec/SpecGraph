@@ -90,3 +90,26 @@ bounded case with different relations before generalizing this consumer; measure
 how much authoring and adapter code it reuses. Preserve the compiler's mandatory
 policy/state-machine boilerplate and missing generic instance checks as concrete
 Ontology ergonomics feedback. Global enforcement remains outside this pilot.
+
+## Ontology 0.3.0 follow-up
+
+The observations above describe the original 0.2.0 experiment; its receipt and
+hashes remain unchanged. [Ontology 0.3.0](https://github.com/0al-spec/Ontology/releases/tag/0.3.0),
+commit `d831e25b46095dfea5e17befbc88c5fdcd03e031`, addresses the package-format
+friction through Ontology PR #78. The current local package omits both unused
+sections instead of declaring a manual policy and an unbound state machine.
+Its classes, relations, model and selected source obligations are unchanged.
+
+The [new observation](ontology-030-observation.json) records a separate run:
+the old compiler rejects this minimal source; the new compiler passes SDK
+generation, TypeScript, instance checks and the same production behavior probe.
+All 54 focused tests passed without skips, including the real-tool negative
+cases and release-smoke boundary tests. The existing specgraph-core IR remains
+byte-identical, with seven resolved refs and the same ClaimCalibration gap.
+The compiler hash identifies the tested binary without authenticating its source.
+
+CI checks the minimal package on macOS and Linux in addition to the existing
+release compatibility smoke. This is a package check, not hosted execution of
+the full scenario. The Python/TypeScript runner's complexity and the missing
+generic instance checks remain follow-ups under proposal 0233; this release
+update does not establish inexpensive reuse or complete acceptance coverage.

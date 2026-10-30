@@ -49,10 +49,10 @@ ref, and digest. The digest must match the normalized IR `sourceDigest`.
 The smoke also verifies that output refs resolve under the fixture directory and
 that report counts match the resolved concept refs and ontology gaps.
 
-### Ontology 0.2.0 release integration
+### Ontology 0.3.0 release integration
 
-CI builds `ontologyc` from Ontology tooling release `0.2.0`, commit
-`1a47f7058228efb412cbdeaabbaf27bca25e9846`, before invoking the release
+CI builds `ontologyc` from Ontology tooling release `0.3.0`, commit
+`d831e25b46095dfea5e17befbc88c5fdcd03e031`, before invoking the release
 integration smoke. The smoke invokes the supplied binary and checks the source
 checkout HEAD. This compiler release is distinct from SpecGraph's project-local
 `org.0al.specgraph.core@0.1.0` package, which remains a draft. The freshly
@@ -61,7 +61,9 @@ fixture it resolves seven refs and retains one `sgcore:ClaimCalibration` gap;
 a passed report does not close that gap.
 
 CI runs the release integration smoke on macOS and Linux; results are reported
-independently for each platform.
+independently for each platform. Both jobs also check the local SG72-MIXED
+package without unused `policies` and `stateMachines` sections. This establishes
+structural compatibility; it does not execute the scenario.
 
 For local reproduction with a supported Swift toolchain, build `ontologyc`
 from the pinned checkout and select its binary and checkout explicitly:
@@ -87,7 +89,7 @@ authenticate the executable or establish release provenance. The caller must
 trust the compiler and its environment; this is not a sandbox.
 
 The raw source hash covers exact file bytes. The compiler digest follows Ontology
-0.2.0's UTF-8 text decoding, including removal of a leading BOM, and is recorded
+0.3.0's UTF-8 text decoding, including removal of a leading BOM, and is recorded
 separately.
 
 The legacy binding index and validation report can use `--ontologyc` and
