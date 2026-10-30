@@ -70,7 +70,8 @@ jobs:
           if-no-files-found: error
 
   compiler-compatibility-linux:
-    runs-on: ubuntu-24.04
+    # Keep the host Python tool cache compatible with the jammy container's glibc.
+    runs-on: ubuntu-22.04
     container: swift:6.0.3-jammy
     defaults:
       run:

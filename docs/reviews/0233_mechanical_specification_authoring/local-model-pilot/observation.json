@@ -1,0 +1,257 @@
+{
+  "artifact_kind": "local_ontology_pilot_curated_observation",
+  "schema_version": 1,
+  "observation_date": "2026-10-30",
+  "source_base_revision": "07982b776db6e44121d864fc6595d91a839311f5",
+  "scope": "One SG72-MIXED synthetic case and selected clauses of acceptance row 2; not full specification coverage.",
+  "raw_report_sha256": "569a7816d6c93275f3793ac7b31a009a0c851059dc4d551afd58a63767a289fa",
+  "curation": "Machine-local paths, command argv and log bodies omitted. Raw run is local; all source inputs remain in this repository. Compiler source provenance is not attested.",
+  "outcome": "satisfied",
+  "layers": {
+    "compiler": {
+      "status": "passed"
+    },
+    "typecheck": {
+      "status": "passed"
+    },
+    "model": {
+      "status": "passed"
+    },
+    "behavior": {
+      "status": "passed"
+    }
+  },
+  "findings": [],
+  "inputs_sha256": {
+    "model/domain-ontology-package.yaml": "78150a3111f11b9a2ce8dcdf4e6dd51d2564a3af4a0c566bd7b2f713c5096a86",
+    "model/model.ts": "ddbe073602340317ecbf0a568d2b0fb4ac8aa96bdf88bd45e48f2ff847d4f91d",
+    "model/tsconfig.json": "98454ddc1895c84e012284e3252b7fa9aff93fa072d1d50bbd5b0ef44b7b88f5",
+    "model/source-map.json": "776320afaee710ce5cd1e48cf401b90cb6a6ebef65c8d4e68196340b3d2659eb",
+    "model/mixed-outcome.feature": "1459210eba539941c08e61c275a1859ca76cb167d5a1ef8f7ab5bbcb3b8679ef",
+    "consumer.ts": "67cf993733a8cf8ae55533c4e3665502ee1e8c9453a707c03c1a2968a8f9adfa",
+    "runner.py": "f17d535cd3149c135f16f9aa963df8ad0e1ea2ee716f11c6b889bbf9b4cd04d3",
+    "specs/nodes/SG-SPEC-0072.yaml": "46a6be05a4a0c4c5de7cfe29a8b44d5bd25fab09404f20fb2f2646a433fc196e",
+    "sgcore.yaml": "5bfa2ff40b6174def589546ab2fea2501e1f256c4f1446f36c45c7f3fffcd929",
+    "tools/ontology_snapshot.py": "050c7d3567fc04af951d455e4fe201b11314a620278358ce666cbab020dac66c",
+    "tools/project_ontology_context/__init__.py": "c0fa153f5ee08c7ab1a17e8000a24b552fc511afa5b3619057efa82b55ed8ddf",
+    "tools/project_ontology_context/capture.py": "6ae694a8fce6847e42070ba519be674d0f8a57737ce952f008e198db9fa32fb7",
+    "tools/project_ontology_context/model.py": "25bc2294c524110fa767ab00d3f3b3e08daff0950a13bfe01a9ad7690182a0e5",
+    "tools/project_ontology_context/invalid_spec.py": "9271711b71a9a0a7199e13d024be892dc2a2442dd79c64edd5aa3ec87ec84a0b",
+    "tools/project_ontology_context/unavailable_spec.py": "275db3a133ded6e807d5a4a037aacc1601c36bc2e9d2699594fb107442668260"
+  },
+  "tools": {
+    "ontologyc": {
+      "sha256": "b382e2a75f7f102658244fdec227b6fabf4bc0778db78e2493503bb4cabe346d",
+      "version": "not_exposed_by_cli",
+      "provenance": "not_verified"
+    },
+    "typescript": {
+      "entrypoint_sha256": "8d5fa5bd883fec0979fc2004f1fe1d99aef40570155d550eadc0b03b55513bf0",
+      "implementation_sha256": {
+        "package.json": "9332e97c30d3e53ed54910b89207ed657fb444066484df6e5b6965bf130865e9",
+        "tsc.js": "2cffde0b8c6760dfb0b5b0382bbb7e00ba6a8b2d981b9205b256a700a481d983",
+        "_tsc.js": "1c59e77a54b186ec43fa7f3e0d3c4bb15ca5eb5ba43e96b1d3a267139eddd3e3"
+      },
+      "version": "Version 6.0.3"
+    },
+    "node": {
+      "sha256": "19fa44ac565968cd4dbf38277854c829e441598f0872223881002efb471b40e9",
+      "version": "v26.5.0"
+    },
+    "python": {
+      "version": "3.12.11 (main, Aug 18 2025, 19:02:39) [Clang 20.1.4 ]",
+      "sha256": "1699bf8aa705a8bb71613bef5cdd7d7c8c9d9a188a841f41679aa9b5830b8f60"
+    }
+  },
+  "generated_sha256": {
+    "src/generated/pilot/ontology.normalized.json": "c54f16effdb09ff13532a7abc126a112795bb5e33b990fde9dfb04bbce5f22b2",
+    "src/generated/pilot/policies.ts": "f2098be3e99accb173f4cc994dcc2b4aa07e40f1a5b95cb301996700647b8c23",
+    "src/generated/pilot/protocols.ts": "c4697e6b4087559079d834476a766e589307d1cf0422037bfb5042d714d4ecbc",
+    "src/generated/pilot/refs.ts": "a2ab81a8c2dfc64b767ddae648cd62cf50ea50fef6c88f2e13d257b5d85f78e3",
+    "src/generated/pilot/registry.ts": "3272b2089ab2c58eb3a96cb5dd09c8e8c519ad985a4e19c4272aaf4b80ac0b76",
+    "src/generated/pilot/relations.ts": "1b9c68057d976d0a41f0304c20bd899eee175bab7e8ed9c665514c9fa2f392b0",
+    "src/generated/pilot/schemas.ts": "8f287c02b641b7163942ea17706f760664a51fb1da156dc0351fc5085dbaea59",
+    "src/generated/pilot/state-machines.ts": "ce43db9c6add8b56ec1e3285e6b79fd3f4d3928d4899182d244d5cdbcdf3204e",
+    "src/generated/pilot/types.ts": "24f73481a78703037ae6adcc08e705473deea74f607145c3539d788c13044aaa",
+    "src/generated/pilot/validators.ts": "7e48cee3e66304282f99cf282ec646e23e25346ab8f383d01eaf355540a353f4",
+    "src/generated/sgcore/ontology.normalized.json": "7a9d1cb640f154c32a2a15a4ec8868349bee04be30a0b5da886422c0d3eb638f",
+    "src/generated/sgcore/policies.ts": "5b7cd0c89e8a437488e4f360e8ba5cc1a2509e032fce80e8a20e88284d5a31ef",
+    "src/generated/sgcore/protocols.ts": "c4697e6b4087559079d834476a766e589307d1cf0422037bfb5042d714d4ecbc",
+    "src/generated/sgcore/refs.ts": "9ad758604877dc25148567cf50d69b83dfe311d564f7e502bacf6e16c48d9eaf",
+    "src/generated/sgcore/registry.ts": "bf04812a3b62bd3e3f6f69c3124b29efe55350aad9e0138262820ac0801ce1f0",
+    "src/generated/sgcore/relations.ts": "441f885c9066f44268da5ec58d3240b4636a2b686093adc39069c5fd3607effe",
+    "src/generated/sgcore/schemas.ts": "95dc43c8ab9602a0027ed4d3ac97d7ee2a728c0cf26588915eb7c2c8a9dcd56a",
+    "src/generated/sgcore/state-machines.ts": "0478b5cd2d06d4669f3d6629a1e0408d757f585c51ad6987a5ab15537d13ee50",
+    "src/generated/sgcore/types.ts": "1573d3d91c05bcb76ae2ca75f2ce804c9a4c8739b9c6b8f5db9dc96df181321a",
+    "src/generated/sgcore/validators.ts": "7e48cee3e66304282f99cf282ec646e23e25346ab8f383d01eaf355540a353f4"
+  },
+  "commands": [
+    {
+      "name": "typescript-version",
+      "returncode": 0
+    },
+    {
+      "name": "node-version",
+      "returncode": 0
+    },
+    {
+      "name": "sgcore-check",
+      "returncode": 0
+    },
+    {
+      "name": "sgcore-compile",
+      "returncode": 0
+    },
+    {
+      "name": "pilot-check",
+      "returncode": 0
+    },
+    {
+      "name": "pilot-compile",
+      "returncode": 0
+    },
+    {
+      "name": "typescript-model",
+      "returncode": 0
+    },
+    {
+      "name": "model-consumer",
+      "returncode": 0
+    }
+  ],
+  "observed": {
+    "artifact_kind": "project_ontology_context_report",
+    "schema_version": 1,
+    "project_id": "local-SG72-MIXED",
+    "selection_path": "selection.yaml",
+    "outcome": "invalid",
+    "context_revision": null,
+    "members": [
+      {
+        "id": "org.0al.specgraph.core",
+        "namespace": "sgcore",
+        "version": "0.1.0"
+      },
+      {
+        "id": "org.0al.specgraph.core",
+        "namespace": "sgcore",
+        "version": "0.1.0"
+      }
+    ],
+    "profiles": [
+      "ontologyc-structural-v1"
+    ],
+    "composition": {
+      "dependency_rule": "explicit",
+      "name_resolution_rule": "qualified"
+    },
+    "snapshots": [],
+    "checks": [
+      {
+        "check": "profile",
+        "outcome": "verified",
+        "detail": "supported structural checking profile",
+        "package": null
+      },
+      {
+        "check": "selection",
+        "outcome": "invalid",
+        "detail": "duplicate package identity or namespace",
+        "package": null
+      },
+      {
+        "check": "compiler",
+        "outcome": "unavailable",
+        "detail": "operator-provided executable is unavailable",
+        "package": null
+      },
+      {
+        "check": "member_capture",
+        "outcome": "unavailable",
+        "detail": "ontologyc must be an executable file",
+        "package": "org.0al.specgraph.core"
+      },
+      {
+        "check": "member_capture",
+        "outcome": "unavailable",
+        "detail": "ontologyc must be an executable file",
+        "package": "org.0al.specgraph.core"
+      },
+      {
+        "check": "context_capture",
+        "outcome": "unavailable",
+        "detail": "selected context capture is incomplete",
+        "package": null
+      }
+    ],
+    "semantic_approval": "not_established",
+    "canonical_mutations_allowed": false
+  },
+  "coverage": {
+    "acceptance": [
+      {
+        "pointer": "/acceptance/0",
+        "status": "unmodelled",
+        "reason": "Package selection, exact pins, dependency closure and name resolution are not modelled by this example. Duplicate identity is a supplied invalidity condition."
+      },
+      {
+        "pointer": "/acceptance/1",
+        "status": "unmodelled",
+        "reason": "Context revision identity, captured bytes, source and IR hashes, compiler identity and profile identity are not modelled."
+      },
+      {
+        "pointer": "/acceptance/2",
+        "status": "partial",
+        "reason": "This illustrative synthetic declaration models only mixed invalid and unavailable check outcomes and retention of both diagnostics. It does not cover the other outcome branches, complete check scope, source/IR fallback behavior or execution of the checks. Source fragments select clauses, not whole scalar obligations."
+      },
+      {
+        "pointer": "/acceptance/3",
+        "status": "unmodelled",
+        "reason": "Semantic approval, complete terminology coverage and runtime enforcement are not established by this bounded model. Its source links do not discharge the full provenance and authority criterion."
+      }
+    ],
+    "complete": false
+  },
+  "tests": {
+    "source_sha256": "cad9e63d8c59c3fa0354d0ac799ca96c60d4580dd144635d775d9c87a2fe2d84",
+    "junit_sha256": "a320c614b79feaca0b8cb943324523700ae5e35a8333d7033b96420319572876",
+    "total": 43,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "pilot_cases": [
+      "test_source_mapping_accepts_the_partial_authored_inventory_without_mutation",
+      "test_source_mapping_cannot_shrink_or_relabel_the_claim[missing_acceptance_row-source-map.json/acceptance]",
+      "test_source_mapping_cannot_shrink_or_relabel_the_claim[erase_partial_status-source-map.json/acceptance]",
+      "test_source_mapping_cannot_shrink_or_relabel_the_claim[missing_source_clause-source-map.json/source_fragments]",
+      "test_source_mapping_cannot_shrink_or_relabel_the_claim[unrelated_existing_pointer-source-map.json/source_fragments]",
+      "test_source_mapping_cannot_shrink_or_relabel_the_claim[stale_source_hash-source-map.json/source_sha256]",
+      "test_source_mapping_cannot_shrink_or_relabel_the_claim[missing_required_check-source-map.json/expected]",
+      "test_source_mapping_cannot_shrink_or_relabel_the_claim[wrong_expected_outcome-source-map.json/expected]",
+      "test_a_new_hash_cannot_relabel_a_different_source_specification",
+      "test_real_sdk_and_behavior_preserve_partial_coverage",
+      "test_real_typescript_rejects_sdk_contract_violations[required_field]",
+      "test_real_typescript_rejects_sdk_contract_violations[unknown_type]",
+      "test_real_typescript_rejects_sdk_contract_violations[unknown_relation]",
+      "test_type_correct_models_cannot_omit_required_meaning[wrong_endpoint]",
+      "test_type_correct_models_cannot_omit_required_meaning[wrong_outcome]",
+      "test_type_correct_models_cannot_omit_required_meaning[empty_diagnostic]",
+      "test_type_correct_models_cannot_omit_required_meaning[removed_check]",
+      "test_type_correct_models_cannot_omit_required_meaning[wrong_spec_id]",
+      "test_type_correct_models_cannot_omit_required_meaning[missing_spec_link]",
+      "test_well_formed_model_still_has_to_match_observed_behavior",
+      "test_cli_rejects_a_stale_source_map_before_compilation",
+      "test_cli_preserves_preexisting_work_directory"
+    ],
+    "existing_context_and_baseline_cases": 21,
+    "real_tool_integration_cases": 13
+  },
+  "unsupported": [
+    "Natural-language completeness and contradiction detection",
+    "Generic ontology instance validation",
+    "Gherkin step execution",
+    "Semantic approval, readiness and universal correctness"
+  ],
+  "canonical_mutations_allowed": false,
+  "runtime_gate_activation_allowed": false
+}

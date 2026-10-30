@@ -30,6 +30,11 @@ supporting run ID, execution timestamp or canonical application event.
 
 ## Resume
 
+The operator subsequently selected an optional local formal-model experiment.
+Follow the [local scenario pilot](local-model-pilot/README.md) and its attributed
+direction for the current bounded task. It keeps the original registration,
+proposal scope and baseline evidence intact; it does not activate a global gate.
+
 The [first executed baseline](baseline/README.md) records the post-merge pilot
 selection, copy-only sensitivity probes, existing context tests and a targeted
 Supervisor graph-health observation. It is reachable through this existing
