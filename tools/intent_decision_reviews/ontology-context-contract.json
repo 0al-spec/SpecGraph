@@ -1,0 +1,52 @@
+{
+  "artifact_kind": "specgraph.intent-decision-review/v1",
+  "base_sha": "ee8cb62f5acca18e884dcc19cf306ca6708ab7c5",
+  "decisions": [
+    {
+      "change_sha256": "578f690b4b933bcd87ea6d53fa8d9a5ed1372585f48150425d8948802ec2fd62",
+      "disposition": "contract_only",
+      "implementation_refs": [],
+      "rationale": "Contract-only SG-SPEC-0064 obligation: Groups spec refinement/linkage policy, reflective governance and graph-health signals, ubiquitous vocabulary primitives, and project ontology context selection without redefining the bounded contracts owned by those children. The reviewed Supervisor candidate prepares this specification; this PR changes no production Python/Rust/Swift/shell code and claims no implementation or semantic approval.",
+      "specification_refs": []
+    },
+    {
+      "change_sha256": "089677f1b78dc7b54f1eaf21031511ca78431b1271da6c54fe91d4658d042176",
+      "disposition": "contract_only",
+      "implementation_refs": [],
+      "rationale": "Contract-only SG-SPEC-0072 obligation: Defines explicit project ontology context selection for one package or a composed set with exact pins and explicit dependency and name-resolution rules. The reviewed Supervisor candidate prepares this specification; this PR changes no production Python/Rust/Swift/shell code and claims no implementation or semantic approval.",
+      "specification_refs": []
+    },
+    {
+      "change_sha256": "cec3cdfd83b6f84eda637b3c0ce288e5c5f1ce72825a4ee03c14f42c6b2fc51b",
+      "disposition": "contract_only",
+      "implementation_refs": [],
+      "rationale": "Contract-only SG-SPEC-0072 obligation: Binds a stable immutable context revision to the resolved package set, dependency closure, source and IR hashes, compiler identity, and checking profiles for one operation. The reviewed Supervisor candidate prepares this specification; this PR changes no production Python/Rust/Swift/shell code and claims no implementation or semantic approval.",
+      "specification_refs": []
+    },
+    {
+      "change_sha256": "6ec0c57e7cc310f99f747292b9f510855014293c408dcb9f6e7996b52de48b8d",
+      "disposition": "contract_only",
+      "implementation_refs": [],
+      "rationale": "Contract-only SG-SPEC-0072 obligation: Distinguishes verified, unavailable, and invalid outcomes with declared check scope, concrete diagnostics, and no substitution of old IR as current verified context. The reviewed Supervisor candidate prepares this specification; this PR changes no production Python/Rust/Swift/shell code and claims no implementation or semantic approval.",
+      "specification_refs": []
+    },
+    {
+      "change_sha256": "23c56f68e6179cddee95d4f0892a3889454349ad7be5d216f9d000a176a2bd35",
+      "disposition": "contract_only",
+      "implementation_refs": [],
+      "rationale": "Contract-only SG-SPEC-0072 obligation: Keeps SG-RFC-0232 selection semantics source-attributed and separate from semantic approval, complete terminology coverage, and runtime enforcement. The reviewed Supervisor candidate prepares this specification; this PR changes no production Python/Rust/Swift/shell code and claims no implementation or semantic approval.",
+      "specification_refs": []
+    },
+    {
+      "change_sha256": "dcfa15608d69fab30756f02cd9c5feb609fc7af259168dff91b725a6859e5453",
+      "disposition": "retired",
+      "implementation_refs": [],
+      "rationale": "Supersede the old SG-SPEC-0064 aggregate criterion with the source-bound project-context extension; preserve existing child ownership, not retire its product behavior.",
+      "specification_refs": []
+    }
+  ],
+  "intent_delta_sha256": "21d3b02c9b1524b639aecb770480567827bdd98ba464e63400c9fd0f6203ea18",
+  "pr_body_sha256": "80b37599df1bd9dfc9d6fb2779bc7b958aa4c60c8a501fec7051c9e691cd1245",
+  "schema_version": 1,
+  "source_scope_sha256": "4feb71b3ccacfae9d52f180e5ca1c95fe6d5a6b3a9272199b00c4b54643c6dfd"
+}

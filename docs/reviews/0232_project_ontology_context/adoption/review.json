@@ -1,0 +1,157 @@
+{
+  "artifact_kind": "project_ontology_context_contract_review",
+  "schema_version": 1,
+  "base_commit": "ee8cb62f5acca18e884dcc19cf306ca6708ab7c5",
+  "run_id": "20261029T225047Z-SG-SPEC-0064-4730ba80",
+  "run_sha256": "4b4a06af05c2ef170d102e2ece8f01f2ff1b45038e0641835391c1e956c431a2",
+  "operator_direction": "Ок, делай, потом сделай марафон по треку онтологий в виде стопки 5-7 PRs",
+  "operator_direction_boundary": "Locally attributed conversation direction; not an authenticated signature or final PR merge approval.",
+  "execution": {
+    "model": "gpt-6.1-terra",
+    "reasoning_effort": "high",
+    "profile": "materialize",
+    "scope": "one child and parent reconciliation",
+    "profile_override_origin": "explicit operator request; per-run in-memory dataclass replacement; tracked policy unchanged"
+  },
+  "outcome": "done",
+  "completion_status": "ok",
+  "gate_state_before_review": "review_pending",
+  "validation_errors": [],
+  "validator_results": {
+    "outputs": true,
+    "allowed_paths": true,
+    "reconciliation": true,
+    "atomicity": true,
+    "transition": true,
+    "executor_environment": true,
+    "runtime_artifacts": true,
+    "refinement_acceptance": true
+  },
+  "change_class": "constitutional_change",
+  "review": {
+    "reviewer_kind": "independent_agent",
+    "model": "gpt-6.1-terra",
+    "reasoning_effort": "high",
+    "decision": "allow_preparation_on_pr_branch",
+    "findings": [
+      "Permanent contract no longer describes itself as an eternal review candidate.",
+      "Parent aggregate explicitly includes project context while retaining child and shared primitive ownership."
+    ],
+    "limits": [
+      "No semantic approval of ontology terms.",
+      "No runtime enforcement activated.",
+      "Work dependencies not ready.",
+      "Global legacy smoke evidence was not cleared or treated as a target-specific check."
+    ]
+  },
+  "candidate_inventory": [
+    {
+      "canonical_path": "specs/nodes/SG-SPEC-0064.yaml",
+      "reviewed_copy": "docs/reviews/0232_project_ontology_context/adoption/candidates/SG-SPEC-0064.yaml",
+      "raw_sha256": "cb1d39b20b96b93523d99b07138b92f453c0cbfc04c949775e89e4bfbfb7ce2b",
+      "pending_sync_digest": "eda6a3231d92cb21636418039089f9ac2d1052134f894493ed23acf9ada27584"
+    },
+    {
+      "canonical_path": "specs/nodes/SG-SPEC-0072.yaml",
+      "reviewed_copy": "docs/reviews/0232_project_ontology_context/adoption/candidates/SG-SPEC-0072.yaml",
+      "raw_sha256": "c4f857291d432e1910b5f1bd30fb8e088354bdb51342dcfd1d7ce11d6391863d",
+      "pending_sync_digest": "46a6be05a4a0c4c5de7cfe29a8b44d5bd25fab09404f20fb2f2646a433fc196e"
+    }
+  ],
+  "graph": {
+    "worktree_spec_count": 72,
+    "changed_spec_ids": [
+      "SG-SPEC-0064",
+      "SG-SPEC-0072"
+    ],
+    "semantic_dependencies_resolved": true,
+    "work_dependencies_ready": false,
+    "cycles": []
+  },
+  "legacy_soft_gate": {
+    "artifact_kind": "ontology_supervisor_semantic_gate_run_evidence",
+    "schema_version": 1,
+    "proposal_id": "0117",
+    "run_id": "20261029T225047Z-SG-SPEC-0064-4730ba80",
+    "spec_id": "SG-SPEC-0064",
+    "source_artifact": "runs/ontology_supervisor_semantic_gate.json",
+    "source_artifact_status": "available",
+    "load_error": "",
+    "integration_mode": "soft_review_evidence",
+    "canonical_mutations_allowed": false,
+    "tracked_artifacts_written": false,
+    "prompt_agent_executed": false,
+    "prompt_agent_execution_allowed": false,
+    "gate_state": "blocked",
+    "source_gate": {
+      "gate_state": "blocked",
+      "outcome": "semantic_gate_blocked",
+      "required_human_action": "resolve_blocking_ontology_semantic_findings",
+      "blocking_item_ids": [
+        "semantic-finding-exampolicy",
+        "semantic-finding-allows-policy"
+      ],
+      "review_required_item_ids": [
+        "semantic-finding-exam",
+        "semantic-finding-requires-policy",
+        "semantic-finding-casfunction"
+      ],
+      "candidate_item_ids": []
+    },
+    "source_artifacts": {
+      "ontology_delta_candidate_review_packet": "runs/ontology_delta_candidate_review_packet.json",
+      "semantic_context_pack": "runs/ontology_semantic_context_pack.json",
+      "semantic_lint_report": "runs/ontology_semantic_lint_report.json",
+      "semantic_review_surface": "runs/ontology_semantic_review_surface.json"
+    },
+    "source_summary": {
+      "blocking_count": 2,
+      "candidate_count": 0,
+      "next_gap": "wire_supervisor_semantic_gate_into_targeted_runs",
+      "review_item_count": 5,
+      "review_required_count": 3,
+      "source_status": "blocked_relation_conflict",
+      "status": "blocked"
+    },
+    "run_decision": {
+      "run_action": "require_review_before_approval",
+      "blocks_executor_invocation": false,
+      "suppresses_auto_approve": true,
+      "required_human_action": "resolve_blocking_ontology_semantic_findings",
+      "auto_approve_requires_gate_state": "clear",
+      "preserved_blocking_item_ids": [
+        "semantic-finding-exampolicy",
+        "semantic-finding-allows-policy"
+      ]
+    },
+    "consumer_boundary": {
+      "for_supervisor_run_evidence": true,
+      "may_execute_prompt_agent": false,
+      "may_write_ontology_package": false,
+      "may_update_ontology_lockfile": false,
+      "may_mutate_canonical_specs": false,
+      "may_mark_candidate_accepted": false,
+      "may_close_semantic_gate": false
+    },
+    "next_gap": "build_prompt_agent_ontology_context_artifact"
+  },
+  "main_canonical_publication": false,
+  "global_policy_activation": false,
+  "approval_note": "Supported gate resolution prepares reviewed files on task branch only; final acceptance remains the PR review/merge decision.",
+  "gate_resolution": {
+    "command": "tools/supervisor.py --resolve-gate SG-SPEC-0064 --decision approve",
+    "result": "Resolved gate for SG-SPEC-0064: approve",
+    "scope": "reviewed contract prepared on PR branch, not merged main"
+  },
+  "prepared_canonical_inventory": [
+    {
+      "path": "specs/nodes/SG-SPEC-0064.yaml",
+      "sha256": "27386b3d59e1fb4223174124040d9a1e3726ab683c372bf1c2f7cf0a3a1e94db"
+    },
+    {
+      "path": "specs/nodes/SG-SPEC-0072.yaml",
+      "sha256": "46a6be05a4a0c4c5de7cfe29a8b44d5bd25fab09404f20fb2f2646a433fc196e"
+    }
+  ],
+  "worktree_disposition": "Native run worktree retired by supported gate resolution after byte inventory preservation; primary checkout is the integration branch."
+}

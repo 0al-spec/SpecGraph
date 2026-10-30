@@ -2,13 +2,14 @@ id: SG-SPEC-0064
 title: SpecGraph - Governance and Vocabulary Semantics Cluster
 kind: spec
 created_at: '2026-05-14T22:40:00Z'
-updated_at: '2026-05-14T22:40:00Z'
+updated_at: '2026-10-29T22:56:32Z'
 status: linked
-maturity: 0.66
+maturity: 0.86
 depends_on:
 - SG-SPEC-0002
 - SG-SPEC-0003
 - SG-SPEC-0010
+- SG-SPEC-0072
 relates_to: []
 refines:
 - SG-SPEC-0001
@@ -18,6 +19,7 @@ inputs:
 - specs/nodes/SG-SPEC-0003.yaml
 - specs/nodes/SG-SPEC-0010.yaml
 - docs/proposals/0022_refinement_fan_out_pressure.md
+- specs/nodes/SG-SPEC-0072.yaml
 outputs:
 - specs/nodes/SG-SPEC-0064.yaml
 allowed_paths:
@@ -25,8 +27,9 @@ allowed_paths:
 acceptance:
 - Defines SG-SPEC-0064 as the intermediate semantic cluster parent under SG-SPEC-0001 for governance,
   refinement policy, graph-health governance, and vocabulary semantics.
-- Groups spec refinement/linkage policy, reflective governance and graph-health signals, and ubiquitous
-  vocabulary primitives without redefining the bounded contracts owned by those children.
+- Groups spec refinement/linkage policy, reflective governance and graph-health signals, ubiquitous vocabulary
+  primitives, and project ontology context selection without redefining the bounded contracts owned by
+  those children.
 - Defines root dependency routing so SG-SPEC-0001 can depend on one governance-and-vocabulary aggregate
   while concrete child specs keep their existing semantic ownership and dependencies.
 - Keeps validator implementation, supervisor workflow, queue control, runtime execution, and vocabulary
@@ -37,11 +40,13 @@ acceptance_evidence:
   evidence: specification.objective, specification.scope.in, and specification.cluster_contract.parent_boundary
     define SG-SPEC-0064 as the delegated governance-and-vocabulary cluster beneath SG-SPEC-0001, while
     inputs include the fan-out pressure proposal that motivates intermediate clustering.
-- criterion: Groups spec refinement/linkage policy, reflective governance and graph-health signals, and
-    ubiquitous vocabulary primitives without redefining the bounded contracts owned by those children.
-  evidence: specification.member_contracts enumerates SG-SPEC-0002, SG-SPEC-0003, and SG-SPEC-0010 with
-    explicit member roles for spec refinement/linkage policy, reflective governance and graph-health signals,
-    and ubiquitous vocabulary primitives while preserving each bounded contract.
+- criterion: Groups spec refinement/linkage policy, reflective governance and graph-health signals, ubiquitous
+    vocabulary primitives, and project ontology context selection without redefining the bounded contracts
+    owned by those children.
+  evidence: specification.member_contracts enumerates SG-SPEC-0002, SG-SPEC-0003, SG-SPEC-0010, and SG-SPEC-0072
+    for spec refinement/linkage policy, reflective governance and graph-health signals, ubiquitous vocabulary
+    primitives, and project ontology context selection. SG-SPEC-0072 owns the detailed selection contract;
+    depends_on includes that child and its refines edge targets SG-SPEC-0064.
 - criterion: Defines root dependency routing so SG-SPEC-0001 can depend on one governance-and-vocabulary
     aggregate while concrete child specs keep their existing semantic ownership and dependencies.
   evidence: specification.cluster_contract.dependency_policy and specification.cluster_contract.refinement_routing_policy
@@ -57,13 +62,14 @@ prompt: Introduce the governance and vocabulary semantics cluster beneath SG-SPE
   governance, and vocabulary semantics.
 specification:
   objective: Define the intermediate semantic cluster for governance and vocabulary semantics so SG-SPEC-0001
-    can delegate refinement policy, reflective graph-health governance, and ubiquitous vocabulary concerns
-    through one legible aggregate boundary while each concrete child keeps its stable bounded contract.
+    can delegate refinement policy, reflective graph-health governance, ubiquitous vocabulary primitives,
+    and project ontology context selection through one legible aggregate boundary while each concrete
+    child keeps its stable bounded contract.
   scope:
     in:
     - Intermediate cluster role for governance and vocabulary semantics beneath SG-SPEC-0001
     - Grouping boundary for refinement/linkage policy, reflective governance, graph-health signals, and
-      vocabulary primitives
+      vocabulary primitives and project ontology context selection
     - Dependency routing from SG-SPEC-0001 through the cluster to concrete semantic children
     - Reparenting boundary for reducing root refinement fan-out without changing stable child IDs
     out:
@@ -76,8 +82,8 @@ specification:
       and vocabulary semantics without becoming runtime policy execution.
     governance_boundary: The semantic region that defines how specs refine, link, expose health signals,
       and stay readable as governed graph artifacts.
-    vocabulary_boundary: The semantic region that defines shared executable vocabulary primitives without
-      prescribing compiler or runtime behavior.
+    vocabulary_boundary: The semantic region that defines shared vocabulary primitives and project ontology
+      context selection without prescribing compiler or runtime behavior.
   cluster_contract:
     parent_boundary:
     - SG-SPEC-0001 remains the seed ontology and owns root layer, node kind, edge kind, lifecycle, and
@@ -109,6 +115,11 @@ specification:
     member_role: Ubiquitous vocabulary meta-ontology primitives.
     ownership_boundary: Defines vocabulary primitive semantics for executable domain vocabularies without
       prescribing compiler or runtime behavior.
+  - spec_id: SG-SPEC-0072
+    member_role: Project ontology context selection.
+    ownership_boundary: Defines explicit project ontology context selection, immutable context identity,
+      and scoped verification outcomes sourced from SG-RFC-0232; preserves shared vocabulary primitives
+      and does not activate project-wide policy.
   non_goal_policy:
   - SG-SPEC-0064 must not redefine member procedures, graph-health formulas, vocabulary adapter behavior,
     or viewer affordances.
@@ -118,3 +129,13 @@ specification:
     to point to the concrete member when the gap is member-specific.
 gate_state: none
 proposed_status: null
+proposed_maturity: null
+required_human_action: '-'
+last_gate_run_id: 20261029T225047Z-SG-SPEC-0064-4730ba80
+last_worktree_path: ''
+last_branch: ''
+last_gate_decision: approve
+last_gate_note: Independent Terra High review permits preparation under explicit operator ontology-marathon
+  direction; exact candidate sync digests checked. Final PR merge remains separate; no semantic approval
+  or global policy activation; legacy smoke findings are preserved, not treated as target verification.
+last_gate_at: '2026-10-29T22:56:32.797511+00:00'
