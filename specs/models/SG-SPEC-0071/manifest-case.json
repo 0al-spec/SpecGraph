@@ -1,0 +1,31 @@
+{
+  "source": {
+    "spec": "SG-SPEC-0071",
+    "sha256": "9f4a8b8332138ef3b6d1d9cc873b2a40a1a4620f7fceb35db32d4d9e1d6521a9",
+    "requirement": "SG-REQ-PUBLICATION-VERIFIED",
+    "criterion": "PB-MANIFEST",
+    "criterionPointer": "/specification/requirement/criteria/2",
+    "atomPointer": "/atoms/intents/2",
+    "statement": "A stale published manifest prevents successful bundle verification.",
+    "test": "tests/test_static_artifact_incremental_stage.py::test_verify_remote_bundle_fails_on_stale_published_manifest"
+  },
+  "localMetadataFile": {
+    "path": "artifact_manifest.json",
+    "expectedSHA256": "65a7f698b7580815d6a7380f339c76e3e68aec401c365e9555055ef6b3691bf6"
+  },
+  "localBody": "{\"files\": [{\"path\": \"payload.txt\", \"sha256\": \"ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad\", \"size_bytes\": 3}]}",
+  "observations": {
+    "matching": {
+      "body": "{\"files\": [{\"path\": \"payload.txt\", \"sha256\": \"ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad\", \"size_bytes\": 3}]}",
+      "observedSHA256": "65a7f698b7580815d6a7380f339c76e3e68aec401c365e9555055ef6b3691bf6"
+    },
+    "stale": {
+      "body": "{\"files\": [{\"path\": \"payload.txt\", \"sha256\": \"a52d159f262b2c6ddb724a61840befc36eb30c88877a4030b65cbe86298449c9\", \"size_bytes\": 3}]}",
+      "observedSHA256": "6cd2acdfc96c44b65f70ba338b4d0a36236ee8069c08a5aea21eae08b1b6861c"
+    },
+    "reformatted": {
+      "body": "{\"files\": [{\"path\": \"payload.txt\", \"sha256\": \"ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad\", \"size_bytes\": 3}]} ",
+      "observedSHA256": "54847068c7e32f62e487a0eb00264186c23873163eeb4869f798f11e3ff0d00b"
+    }
+  }
+}

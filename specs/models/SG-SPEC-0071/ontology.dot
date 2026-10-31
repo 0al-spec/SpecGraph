@@ -1,14 +1,20 @@
 digraph ontology {
   graph [rankdir=LR, bgcolor="#ffffff", pad=0.35, nodesep=0.35, ranksep=0.7,
-    fontname="Helvetica", fontsize=18, labelloc=t, label="org.0al.specgraph.local.payloadcheck@0.1.0"];
+    fontname="Helvetica", fontsize=18, labelloc=t, label="org.0al.specgraph.local.payloadcheck@0.4.0"];
   node [shape=box, style="rounded,filled", fontname="Helvetica", fontsize=11,
     color="#94a3b8", fontcolor="#0f172a", fillcolor="#eff6ff", margin="0.16,0.1"];
   edge [fontname="Helvetica", fontsize=9, color="#64748b", fontcolor="#334155", arrowsize=0.7];
+  "classes/payload:FetchedFileObservation" [label="«class»\npayload:FetchedFileObservation\nobservedSHA256: string", fillcolor="#dbeafe"];
+  "classes/payload:LocalMetadataFile" [label="«class»\npayload:LocalMetadataFile\nexpectedSHA256: string\npath: string", fillcolor="#dbeafe"];
   "classes/payload:ManifestEntry" [label="«class»\npayload:ManifestEntry\nexpectedSHA256: string\npath: string", fillcolor="#dbeafe"];
-  "classes/payload:PayloadObservation" [label="«class»\npayload:PayloadObservation\nobservedSHA256: string", fillcolor="#dbeafe"];
+  "classes/payload:PayloadNotFoundObservation" [label="«class»\npayload:PayloadNotFoundObservation\nhttpStatus: integer", fillcolor="#dbeafe"];
+  "classes/payload:FetchedFileObservation" -> "classes/payload:LocalMetadataFile" [label="comparedAgainst [1..1] · oneOf", style=solid, arrowhead=normal];
+  "classes/payload:FetchedFileObservation" -> "classes/payload:ManifestEntry" [label="comparedAgainst [1..1] · oneOf", style=solid, arrowhead=normal];
+  "classes/payload:FetchedFileObservation" -> "external/classes/sgcore:Evidence" [label="extends", style=solid, arrowhead=empty];
+  "classes/payload:LocalMetadataFile" -> "external/classes/sg:ValueObject" [label="extends", style=solid, arrowhead=empty];
   "classes/payload:ManifestEntry" -> "external/classes/sg:ValueObject" [label="extends", style=solid, arrowhead=empty];
-  "classes/payload:PayloadObservation" -> "classes/payload:ManifestEntry" [label="comparedAgainst [1..1]", style=solid, arrowhead=normal];
-  "classes/payload:PayloadObservation" -> "external/classes/sgcore:Evidence" [label="extends", style=solid, arrowhead=empty];
+  "classes/payload:PayloadNotFoundObservation" -> "classes/payload:ManifestEntry" [label="requestedEntry [1..1]", style=solid, arrowhead=normal];
+  "classes/payload:PayloadNotFoundObservation" -> "external/classes/sgcore:Evidence" [label="extends", style=solid, arrowhead=empty];
   subgraph cluster_external {
     label="External references (declarations not loaded)";
     fontsize=11; color="#cbd5e1"; style=dashed;

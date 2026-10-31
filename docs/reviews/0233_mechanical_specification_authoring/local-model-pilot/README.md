@@ -254,7 +254,7 @@ and reported `sgcore:ClaimCalibration` for review.
 
 ## A criterion from a second specification
 
-The [PB-PAYLOAD experiment](../../../../specs/models/SG-SPEC-0071/README.md)
+The [first PB-PAYLOAD experiment](https://github.com/0al-spec/SpecGraph/tree/045b43f662c8cb28a5507361be38b89a61128229/specs/models/SG-SPEC-0071)
 uses one criterion from SG-SPEC-0071. Existing core relations trace its
 requirement, test and evidence. A local extension represents the expected
 manifest digest and the digest of fetched bytes. The two instances have the
@@ -266,3 +266,74 @@ The authored input is 29 lines of package YAML, 30 of typed declarations and
 27 of fixture JSON. Most of the extra code is test scaffolding to bind the
 criterion, compile SDKs and check edge endpoints. This pilot establishes
 expressibility and exposes its cost for one criterion.
+
+## Reuse on PB-MANIFEST
+
+The [paired pilot](https://github.com/0al-spec/SpecGraph/tree/dd83ff72b1d949c959db1adfbb9cefbfa8ea3be7/specs/models/SG-SPEC-0071) keeps the
+same expected/observed comparison and three core trace relations. The new
+criterion needs one additional source type because its expected digest comes
+from the retained manifest file itself. The package generalizes the observation
+and the existing comparison relation. Both cases share the SDK compilation,
+graph builder, source-binding checks and verifier replay.
+
+Relative to the first pilot, package YAML grew from 29 to 36 lines and typed
+declarations from 30 to 42 (+19 combined). The second input adds 31 lines
+of JSON. The two pytest files grew by 66 lines net, including the new
+byte-level controls and checks of the selected origin. These counts exclude
+workflow, documentation and generated diagrams. A valid stale manifest
+and a whitespace-only variant both failed, while the
+unchanged manifest verified. The production verifier was exercised unchanged.
+
+## Reuse on PB-CHECKSUMS
+
+The [third case](../../../../specs/models/SG-SPEC-0071/checksums-case.json)
+uses the same retained-file comparison as PB-MANIFEST. The local vocabulary
+renames `LocalManifest` to `LocalMetadataFile` in version 0.3.0.
+It still has three classes and one relation. The path binding distinguishes
+the two metadata criteria even when both proposed references have the same type.
+
+| Structural measure | Two criteria (#846) | Three criteria |
+| --- | ---: | ---: |
+| Local ontology classes / relations | 3 / 1 | 3 / 1 |
+| Shared package YAML lines | 36 | 36 |
+| Typed model lines | 42 | 56 |
+| Case fixture lines (all cases) | 58 | 89 |
+| Hosted pilot checks | 10 | 17 |
+
+The two pytest files grew by 72 lines net for the source and SDK checks, path
+mutations and producer-to-verifier replay. Both path substitutions failed.
+The current checksum list verified; a stale remote digest and a CRLF-only edit
+both failed specifically for `checksums.sha256`. A separate probe with the
+same stale list locally and remotely verified, recording the dependency on the
+retained reference. See the [cases, diagram and replay](../../../../specs/models/SG-SPEC-0071/README.md).
+
+## Missing payload and empty bytes
+
+[PB-MISSING](../../../../specs/models/SG-SPEC-0071/missing-case.json) exercises
+a different outcome for the same payload path. The verifier accepted the
+expected empty file, rejected returned bytes `abc` with a digest mismatch and
+rejected HTTP 404 before comparing a digest. A timeout produced a request
+failure with its original cause and left the file's existence unknown.
+
+The model reuses the manifest entry, fetched-observation type and core trace
+relations. The fourth criterion adds one evidence type and one local relation,
+bringing the package from three classes and one relation to four and two.
+`requestedEntry` ties a 404 to its expected file. The expected SHA-256 stays
+on the manifest entry. The generated SDK and the model's JSON controls check
+the distinction between missing data and the digest of a real empty file.
+The decision to treat HTTP 404 as not-found evidence is local to this example.
+
+## Coverage of every expected file
+
+[PB-ALL](../../../../specs/models/SG-SPEC-0071/README.md#coverage-of-a-whole-bundle)
+exercises the fifth publication criterion. The four local classes, two relations
+and package version 0.4.0 suffice. The additional rule is executable: it reads
+the expected paths independently of the observed requests, requires both metadata
+digests and checks each path for matching evidence.
+
+With the first file correct, corruption and HTTP 404 on the second file both
+failed verification. In the injected scheduling fault the first file was
+visited twice. The verifier reported the same success counts as the intact run,
+but the model identified the second path as unchecked. This result depends on
+retaining observations by request path. The existing receipt alone cannot
+reconstruct that evidence.

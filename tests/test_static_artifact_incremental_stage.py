@@ -4,6 +4,7 @@ import hashlib
 import importlib.util
 import json
 from pathlib import Path
+from urllib.error import HTTPError
 
 import pytest
 
@@ -163,38 +164,126 @@ def test_verify_remote_bundle_fails_on_digest_drift(tmp_path: Path) -> None:
         )
 
 
+PUBLICATION_MODELS = TOOL_PATH.parents[1] / "specs/models/SG-SPEC-0071"
+
+
+def _replay_digest_observation(bundle, reference, observation):
+    path = reference["path"]
+    retained_bytes = (bundle / path).read_bytes()
+    observed_bytes = observation["body"].encode()
+    assert hashlib.sha256(retained_bytes).hexdigest() == reference["expectedSHA256"]
+    assert hashlib.sha256(observed_bytes).hexdigest() == observation["observedSHA256"]
+    return _verify_with_response(bundle, path, observed_bytes)
+
+
+def _verify_with_response(bundle: Path, path: str, response: bytes | Exception):
+    # Substitute only the selected response. All other paths serve their local bytes.
+    origin = "https://publication.example/"
+
+    def fetch(url):
+        assert url.startswith(origin)
+        relative = url.removeprefix(origin)
+        if relative != path:
+            return (bundle / relative).read_bytes()
+        if isinstance(response, Exception):
+            raise response
+        return response
+
+    return verify_remote_bundle(bundle_dir=bundle, remote_base_url=origin, fetcher=fetch)
+
+
 @pytest.mark.parametrize("control", ["matching", "changed"])
 def test_pb_payload_model_against_bundle_verifier(tmp_path: Path, control: str) -> None:
-    model = Path(__file__).resolve().parents[1] / "specs/models/SG-SPEC-0071/case.json"
-    case = json.loads(model.read_bytes())
+    case = json.loads((PUBLICATION_MODELS / "case.json").read_bytes())
     entry = case["manifestEntry"]
     local = case["localBody"].encode()
     observation = case["observations"][control]
     remote = observation["body"].encode()
     assert sum(a != b for a, b in zip(local, remote, strict=True)) == int(control == "changed")
-    assert hashlib.sha256(local).hexdigest() == entry["expectedSHA256"]
-    assert hashlib.sha256(remote).hexdigest() == observation["observedSHA256"]
-
-    path = entry["path"]
-    bundle = _bundle(tmp_path / "bundle", {path: local})
-    origin = "https://publication.example/"
-    responses = {
-        origin + name: (bundle / name).read_bytes()
-        for name in ("artifact_manifest.json", "checksums.sha256")
-    }
-    responses[origin + path] = remote
-
-    def verify():
-        return verify_remote_bundle(
-            bundle_dir=bundle, remote_base_url=origin, fetcher=responses.__getitem__
-        )
-
+    bundle = _bundle(tmp_path / "bundle", {entry["path"]: local})
+    manifest = json.loads((bundle / "artifact_manifest.json").read_bytes())
+    assert manifest["files"][0]["sha256"] == entry["expectedSHA256"]
     if control == "matching":
-        assert verify()["status"] == "verified"
+        assert _replay_digest_observation(bundle, entry, observation)["status"] == "verified"
     else:
         with pytest.raises(IncrementalStageError) as failure:
-            verify()
-        assert str(failure.value) == f"remote artifact digest mismatch: {path}"
+            _replay_digest_observation(bundle, entry, observation)
+        assert str(failure.value) == f"remote artifact digest mismatch: {entry['path']}"
+
+
+@pytest.mark.parametrize("control", ["matching", "stale", "reformatted"])
+def test_pb_manifest_model_against_bundle_verifier(tmp_path: Path, control: str) -> None:
+    case = json.loads((PUBLICATION_MODELS / "manifest-case.json").read_bytes())
+    payload = json.loads((PUBLICATION_MODELS / "case.json").read_bytes())
+    bundle = _bundle(
+        tmp_path / "bundle", {payload["manifestEntry"]["path"]: payload["localBody"].encode()}
+    )
+    reference = case["localMetadataFile"]
+    assert reference["path"] == "artifact_manifest.json"
+    manifest = bundle / reference["path"]
+    expected = json.loads(case["localBody"])
+    assert expected == json.loads(manifest.read_bytes())
+    manifest.write_bytes(case["localBody"].encode())
+
+    observation = case["observations"][control]
+    body = observation["body"]
+    if control == "matching":
+        assert body == case["localBody"]
+        report = _replay_digest_observation(bundle, reference, observation)
+        assert report["status"] == "verified"
+        assert report["bundle_identity"]["manifest_sha256"] == reference["expectedSHA256"]
+        return
+
+    if control == "reformatted":
+        assert json.loads(body) == expected and body != case["localBody"]
+    else:
+        old_entry = dict(
+            expected["files"][0], sha256=payload["observations"]["changed"]["observedSHA256"]
+        )
+        assert json.loads(body) == {"files": [old_entry]}
+        assert len(body.encode()) == len(case["localBody"].encode())
+    with pytest.raises(IncrementalStageError) as failure:
+        _replay_digest_observation(bundle, reference, observation)
+    assert str(failure.value) == "remote metadata digest mismatch: artifact_manifest.json"
+
+
+@pytest.mark.parametrize("control", ["matching", "stale", "crlf"])
+def test_pb_checksums_model_against_bundle_verifier(
+    tmp_path: Path, monkeypatch, control: str
+) -> None:
+    monkeypatch.syspath_prepend(str(TOOL_PATH.parent))
+    from build_static_artifact_bundle import PublishFile, write_checksums
+
+    case = json.loads((PUBLICATION_MODELS / "checksums-case.json").read_bytes())
+    payload = json.loads((PUBLICATION_MODELS / "case.json").read_bytes())
+    path = payload["manifestEntry"]["path"]
+    body = payload["localBody"].encode()
+    bundle = _bundle(tmp_path / "bundle", {path: body})
+    published_file = PublishFile(
+        path=path, root=".", size_bytes=len(body), sha256=hashlib.sha256(body).hexdigest()
+    )
+    retained = write_checksums(bundle, [published_file])
+    reference = case["localMetadataFile"]
+    assert retained.name == reference["path"] == "checksums.sha256"
+    assert retained.read_bytes() == case["localBody"].encode()
+
+    observation = case["observations"][control]
+    if control == "matching":
+        assert observation["body"] == case["localBody"]
+        report = _replay_digest_observation(bundle, reference, observation)
+        assert report["status"] == "verified"
+        assert report["bundle_identity"]["checksums_sha256"] == reference["expectedSHA256"]
+        assert report["summary"]["verified_file_count"] == 1
+        return
+
+    if control == "crlf":
+        assert observation["body"] == case["localBody"].replace("\n", "\r\n")
+    else:
+        old_digest = payload["observations"]["changed"]["observedSHA256"]
+        assert observation["body"] == f"{old_digest}  {path}\n"
+    with pytest.raises(IncrementalStageError) as failure:
+        _replay_digest_observation(bundle, reference, observation)
+    assert str(failure.value) == "remote metadata digest mismatch: checksums.sha256"
 
 
 def test_verify_remote_bundle_fails_on_stale_published_manifest(tmp_path: Path) -> None:
@@ -241,3 +330,39 @@ def test_verify_remote_bundle_fails_on_missing_remote_payload(tmp_path: Path) ->
             fetcher=fetch,
             workers=1,
         )
+
+
+@pytest.mark.parametrize("control", ["matching", "changed", "notFound", "timeout"])
+def test_pb_missing_model_against_bundle_verifier(tmp_path: Path, control: str) -> None:
+    case = json.loads((PUBLICATION_MODELS / "missing-case.json").read_bytes())
+    entry = case["manifestEntry"]
+    path = entry["path"]
+    assert case["localBody"] == ""
+    bundle = _bundle(tmp_path / "bundle", {path: b""})
+    manifest = json.loads((bundle / "artifact_manifest.json").read_bytes())
+    assert manifest["files"] == [{"path": path, "size_bytes": 0, "sha256": entry["expectedSHA256"]}]
+    if control == "matching":
+        report = _replay_digest_observation(bundle, entry, case["observations"][control])
+        assert report["status"] == "verified"
+        assert report["summary"]["verified_file_count"] == 1
+    elif control == "changed":
+        with pytest.raises(IncrementalStageError) as failure:
+            _replay_digest_observation(bundle, entry, case["observations"][control])
+        assert str(failure.value) == f"remote artifact digest mismatch: {path}"
+    else:
+        assert case["notFound"] == {"httpStatus": 404}
+        cause = (
+            HTTPError(
+                f"https://publication.example/{path}",
+                case["notFound"]["httpStatus"],
+                "Not Found",
+                None,
+                None,
+            )
+            if control == "notFound"
+            else TimeoutError("request timed out")
+        )
+        with pytest.raises(IncrementalStageError) as failure:
+            _verify_with_response(bundle, path, cause)
+        assert str(failure.value) == f"remote artifact request failed for {path}: {cause}"
+        assert failure.value.__cause__ is cause

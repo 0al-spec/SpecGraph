@@ -1,66 +1,149 @@
-# One publication criterion — PB-PAYLOAD
+# Publication file verification criteria
 
-If a fetched file has a different SHA-256 from its entry in the bundle manifest,
-bundle verification must fail. This pilot covers **one of the five** criteria of
-`SG-REQ-PUBLICATION-VERIFIED`. The [source node](../../nodes/SG-SPEC-0071.yaml)
-identifies the criterion at `/specification/requirement/criteria/1`.
-Its obligation and existing pytest binding are at `/atoms/intents/1`.
-[case.json](case.json) pins the node's bytes, IDs, pointers and statement.
+This pilot exercises all five criteria of `SG-REQ-PUBLICATION-VERIFIED`.
+Four examples describe an individual file. PB-ALL asks whether the evidence
+from one verification attempt covers the entire retained manifest and both metadata files.
 
-## What the vocabulary expresses
-
-| Part of the criterion | Expression | How it was checked |
+| Criterion | Address in [SG-SPEC-0071](../../nodes/SG-SPEC-0071.yaml) | Source of the expected digest |
 | --- | --- | --- |
-| Which requirement, criterion and test are involved | Existing `sgcore:Requirement`, `AcceptanceCriterion`, `Test`, `requirementValidatedByCriterion` and `testValidatesRequirement`. A local observation specializes `sgcore:Evidence` and can use `evidenceSupportsCriterion`. | Resolve the criterion and its test against the source and passport bindings. Type-check [model.ts](model.ts) against the generated SDKs and check the instance edges against their compiled endpoints. |
-| Which values to compare | Two draft local classes, `ManifestEntry(path, expectedSHA256)` and `PayloadObservation(observedSHA256)`. Each observation has exactly one `comparedAgainst` entry. | Compile the [local package](domain-ontology-package.yaml) with Ontology 0.5.0. Both matching and mismatching digests fit the same field types and relation. |
-| What a mismatch does | The product computes SHA-256 over the fetched bytes and rejects a mismatch for that path. | Run the production [bundle verifier](../../../tools/static_artifact_incremental_stage.py) against the two inputs below. |
+| [PB-ALL](all-case.json) | `/specification/requirement/criteria/0`, `/atoms/intents/0` | Both retained metadata files and every path and SHA-256 declared by the retained manifest. |
+| [PB-PAYLOAD](case.json) | `/specification/requirement/criteria/1`, `/atoms/intents/1` | The selected payload's entry in the local manifest. |
+| [PB-MANIFEST](manifest-case.json) | `/specification/requirement/criteria/2`, `/atoms/intents/2` | SHA-256 computed from the exact bytes of the retained local `artifact_manifest.json`. Its entries describe payloads; none serves as the expected digest of the manifest itself. |
+| [PB-CHECKSUMS](checksums-case.json) | `/specification/requirement/criteria/3`, `/atoms/intents/3` | SHA-256 of the entire retained local `checksums.sha256` file, including its line ending. |
+| [PB-MISSING](missing-case.json) | `/specification/requirement/criteria/4`, `/atoms/intents/4` | The manifest identifies the expected payload. HTTP 404 supplies no observed payload digest to compare. |
 
-The project-local `specgraph-core@0.1.0` has no manifest-entry type or relation
-for this comparison. As a control, we constructed an object with
-`$type: "sgcore:Evidence"` and `observedSHA256` against the unextended generated
-SDK. TypeScript 6.0.3 rejected the property (`TS2353`). The released event vocabulary does include an
-[`artifactDigest` on a direct observation origin](https://github.com/0al-spec/Ontology/blob/0fcc94469d971aaf39fcc182bc5c6b8acff37fd2/SPECS/ontology/packages/events-core/versions/0.2.0/domain-ontology-package.yaml).
-That identifies an observation's source artifact. It supplies neither the digest
-expected by a publication manifest nor the rule that rejects a mismatch.
-The two additions are scoped to this example. SHA-256 fields in the generated
-SDK are strings. The production verifier supplies the hash algorithm and comparison.
+Each fixture pins the source spec's bytes, criterion ID, statement and existing
+pytest binding. The tests also check the binding in the publication passport.
 
-![Local types and the observation-to-entry relation](ontology.svg)
+## Shared model
 
-The [DOT](ontology.dot) and SVG show the package's type declarations.
-[model.ts](model.ts) links the synthetic observations to the actual criterion.
+All cases use the same three core relations to link the requirement, criterion,
+test and evidence. A single [typed graph builder](publication-graph.ts) uses the SDKs generated
+from the project core and the [local package](domain-ontology-package.yaml).
+Each successful fetch produces a `FetchedFileObservation`. Its `comparedAgainst`
+relation selects exactly one expected digest source.
 
-## Controls and replay
+The first pilot used `ManifestEntry` and `PayloadObservation`. The second adds
+one source type, `LocalManifest`. Both source types have a path and an expected
+digest. Draft package version 0.2.0 names their shared observation
+`FetchedFileObservation` and widens the range of the existing relation to
+`oneOf(ManifestEntry, LocalManifest)`.
 
-Both runs use the same local file `payload.txt`, manifest and checksums.
-The test substitutes an in-memory HTTPS response for the network fetch. All
-other verification logic runs through `verify_remote_bundle`.
+For the third criterion, draft 0.3.0 generalizes `LocalManifest` to
+`LocalMetadataFile`. This keeps three classes and one local relation. The two
+metadata cases share the same fields, generated SDK and relation target. The
+executable model binds each criterion to its required relative path. Swapping
+only the path in either fixture, while preserving the type, body and digest,
+causes model construction to fail before the HTTP replay.
 
-| Served bytes | Observed result |
-| --- | --- |
-| `abc` (matches the local bytes) | `verified` for the one-file fixture |
-| `abd` (one changed byte, same length) | `IncrementalStageError: remote artifact digest mismatch: payload.txt` |
+The fourth criterion introduces `PayloadNotFoundObservation` in draft 0.4.0.
+Its `requestedEntry` relation identifies the manifest entry the server was
+asked to serve. The entry retains its expected digest. The 404 observation
+contains only its identity and HTTP status. The generated SDK keeps
+`observedSHA256` required on a fetched observation and leaves it out of the
+missing type. The executable model rejects a body, a digest or a status other
+than 404 on the not-found record.
 
-A separate structural control changed only the local relation range from
-`ManifestEntry` to `ManifestEntyr`. The released compiler exited 1 with
-`relation.range.unresolved` at `spec.relations.comparedAgainst.range`.
-The digest mismatch itself is a valid observation in the ontology; the error in
-the second row comes from exercising the product. These runs use synthetic
-payloads and establish no deployment or evidence admission.
+![Fetched bytes have a digest comparison; a not-found observation identifies the requested manifest entry](ontology.svg)
 
-From the SpecGraph root, select the extracted 0.5.0 compiler and TypeScript
-6.0.3 (Node on PATH) to include the generated SDK check:
+The compiled SDK and [type diagram](ontology.dot) allow both targets. The
+criterion-specific endpoint check supplies the narrower rule. In a disposable
+copy of the second pilot, assigning the `ManifestEntry` type to PB-MANIFEST's
+reference still type-checked, but its endpoint test expected `LocalManifest` and failed.
+The compiler itself rejects an unknown type in the relation's range. The
+earlier [core-only experiment](https://github.com/0al-spec/SpecGraph/tree/045b43f662c8cb28a5507361be38b89a61128229/specs/models/SG-SPEC-0071)
+also showed that the generated core `Evidence` type lacks `observedSHA256`
+(TypeScript `TS2353`).
+
+## Behavior observed
+
+The tests call the production [bundle verifier](../../../tools/static_artifact_incremental_stage.py)
+with an in-memory HTTPS fetcher. The fixture replaces only the selected remote
+response. All manifest runs retain the same local manifest, payload `abc` and
+checksums. The stale manifest is valid JSON of the same length and contains the
+digest of the earlier payload `abd`.
+
+For PB-CHECKSUMS the bundle writer produces the baseline list from the current
+payload. The remote manifest and payload match the local files in all three
+checksum-list controls.
+
+| Criterion | Remote response | Production result |
+| --- | --- | --- |
+| PB-PAYLOAD | `abc` | `verified` |
+| PB-PAYLOAD | `abd` | `remote artifact digest mismatch: payload.txt` |
+| PB-MANIFEST | Exact local manifest bytes | `verified`; the report identifies the local manifest digest |
+| PB-MANIFEST | Stale manifest | `remote metadata digest mismatch: artifact_manifest.json` |
+| PB-MANIFEST | Current manifest followed by one ASCII space | Same metadata mismatch, even though the parsed JSON is equal |
+| PB-CHECKSUMS | Exact list emitted by `write_checksums` | `verified`; the receipt contains the SHA-256 of the list itself |
+| PB-CHECKSUMS | Same path, checksum for the earlier payload `abd` | `remote metadata digest mismatch: checksums.sha256` |
+| PB-CHECKSUMS | Correct digest and path, CRLF in place of LF | Same checksum-list mismatch |
+| PB-MISSING | Empty payload as declared in the manifest | `verified`, one file verified |
+| PB-MISSING | Three bytes (`abc`) at the same path | `remote artifact digest mismatch: payload.txt` |
+| PB-MISSING | HTTP 404 for the same path | Request failed for `payload.txt`, with the original HTTP error as its cause |
+| PB-MISSING | Fetch timeout at the same path | Request failed with the timeout as its cause. The remote file's existence is unknown. |
+
+The empty-file control matters because zero bytes have a valid SHA-256. Using
+that digest as a stand-in for a missing response would make the absent file
+match this particular manifest. Only the 404 control produces not-found
+evidence in the pilot. The timeout is a verifier control. The verifier raises
+on both request failures before it can return a successful verification report.
+
+The whitespace and line-ending cases characterize byte-level comparison.
+In a separate local probe we kept the current payload and manifest but put the
+same obsolete checksum list on both sides. The verifier returned `verified`
+for one payload and two metadata files. It checks that the remote list matches
+the retained list and that payloads match the manifest. List contents depend
+on the local producer. This probe records the current trust boundary. The
+inputs in this pilot are synthetic.
+
+## Coverage of a whole bundle
+
+The [PB-ALL model](bundle-model.ts) takes the two retained UTF-8 metadata
+files and a transcript of fetch results for one HTTPS origin and attempt.
+It hashes both metadata files and reads the expected payload paths from the
+same manifest bytes. Each observation links to the file actually requested.
+A digest mismatch or observed payload 404 gives `failed`. With no observed
+failure, an expected file without a request gives `incomplete` and the model
+lists the unchecked paths. Only complete, matching evidence gives `verified`.
+These verdicts belong to the pilot. The current production receipt records
+counts and metadata digests; the tests collect the per-request evidence during execution.
+
+Both test payloads contain `abc` so the digest alone cannot identify which
+path the verifier fetched. The [replay](../../../tests/test_publication_bundle_ontology_model.py)
+uses the same retained bundle for these controls.
+
+| Second payload | Production verifier | Model |
+| --- | --- | --- |
+| Returns the expected bytes | `verified`, 2 payloads | `verified` |
+| Returns altered bytes | Digest mismatch for `second.txt` | `failed`, `second.txt` |
+| Returns HTTP 404 | Request failed for `second.txt` | `failed`, `second.txt` |
+| Skipped by the test scheduler | `verified`, 1 payload | `incomplete`, `second.txt` unchecked |
+| Skipped while the scheduler checks the first twice | `verified`, 2 payloads | `incomplete`, `second.txt` unchecked |
+
+The last two rows deliberately substitute a faulty scheduler. The normal
+verifier visits both payloads. Corrupting either remote metadata file also fails.
+Removing the second entry from the retained manifest and its observation still
+leaves a mismatch against the digest of the manifest actually served.
+
+## Replay
+
+Use the extracted Ontology 0.5.0 tools, TypeScript 6.0.3 and Node 22 or later on PATH.
+From the repository root:
 
 ```sh
 ONTOLOGYC_BINARY_PATH=/absolute/path/to/ontologyc \
 TYPESCRIPT_TSC_PATH=/absolute/path/to/typescript/bin/tsc \
-  .venv/bin/python -m pytest -q tests/test_pb_payload_ontology_model.py \
-  tests/test_static_artifact_incremental_stage.py -k pb_payload
+  .venv/bin/python -m pytest -v tests/test_publication_digest_ontology_model.py \
+  tests/test_publication_bundle_ontology_model.py \
+  tests/test_static_artifact_incremental_stage.py::test_pb_payload_model_against_bundle_verifier \
+  tests/test_static_artifact_incremental_stage.py::test_pb_manifest_model_against_bundle_verifier \
+  tests/test_static_artifact_incremental_stage.py::test_pb_checksums_model_against_bundle_verifier \
+  tests/test_static_artifact_incremental_stage.py::test_pb_missing_model_against_bundle_verifier
 
 /absolute/path/to/ontologyviz specs/models/SG-SPEC-0071/domain-ontology-package.yaml \
   --format svg --out /path/to/diagram
 ```
 
-The macOS Ontology compatibility job runs the source, SDK and behavior controls
-and compares the rendered DOT. Ordinary Python runs can exercise the source
-binding and both payloads without installing either external tool.
+The macOS compatibility job generates the core and local SDKs, checks all five criteria and
+compares the released visualizer's DOT to the checked-in diagram. Source
+bindings and byte-level behavior tests also run with Python alone.

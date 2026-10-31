@@ -90,6 +90,25 @@ evidence and test relations. Two local types describe a manifest entry and a
 payload observation. Matching and mismatching digests both type-check; the
 production bundle verifier rejects the changed response bytes. The source map,
 diagram and replay commands are in `specs/models/SG-SPEC-0071/README.md`.
+The paired `PB-MANIFEST` example shares the comparison relation, trace builder
+and verifier replay. Its expected digest comes from the retained local manifest
+file. The test distinguishes this origin from a payload entry and exercises
+exact, stale and whitespace-only versions of the remote manifest.
+The third case, `PB-CHECKSUMS`, uses the same retained metadata file type and
+comparison relation. The criterion selects `checksums.sha256`; `PB-MANIFEST`
+selects `artifact_manifest.json`. The pilot exercises path substitutions in
+both directions and checks the production verifier against the bytes emitted by
+the bundle writer, a stale remote list and a line-ending change.
+The fourth case, `PB-MISSING`, requests one expected empty payload. Returned
+empty bytes verify, different bytes fail the digest comparison, and HTTP 404
+fails the request. The model links the 404 to the requested manifest entry
+without an observed digest. A timeout also prevents verification and leaves
+the existence of the remote file unknown.
+The fifth case, `PB-ALL`, checks both metadata files and every payload path
+declared in the same retained manifest. It reuses the four local types and two
+relations. In a test that made the verifier fetch one file twice and skip the
+other, the success receipt still counted two payloads. The model identified
+the uncovered path from the observations recorded during that run.
 
 The first executed baseline selects merged revision `a980ba6f` and confirms
 the historical pilot spec bytes are unchanged. Existing acceptance-shape checks

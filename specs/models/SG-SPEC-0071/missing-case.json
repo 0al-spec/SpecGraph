@@ -1,0 +1,28 @@
+{
+  "source": {
+    "spec": "SG-SPEC-0071",
+    "sha256": "9f4a8b8332138ef3b6d1d9cc873b2a40a1a4620f7fceb35db32d4d9e1d6521a9",
+    "requirement": "SG-REQ-PUBLICATION-VERIFIED",
+    "criterion": "PB-MISSING",
+    "criterionPointer": "/specification/requirement/criteria/4",
+    "atomPointer": "/atoms/intents/4",
+    "statement": "A missing remote payload prevents successful bundle verification.",
+    "test": "tests/test_static_artifact_incremental_stage.py::test_verify_remote_bundle_fails_on_missing_remote_payload"
+  },
+  "manifestEntry": {
+    "path": "payload.txt",
+    "expectedSHA256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  "localBody": "",
+  "observations": {
+    "matching": {
+      "body": "",
+      "observedSHA256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "changed": {
+      "body": "abc",
+      "observedSHA256": "ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad"
+    }
+  },
+  "notFound": { "httpStatus": 404 }
+}
