@@ -19,7 +19,8 @@ from local_ontology_pilot import pointer  # noqa: E402
 
 CASES = {
     "PB-PAYLOAD": ("case.json", "manifestEntry", "payload:ManifestEntry"),
-    "PB-MANIFEST": ("manifest-case.json", "localManifest", "payload:LocalManifest"),
+    "PB-MANIFEST": ("manifest-case.json", "localMetadataFile", "payload:LocalMetadataFile"),
+    "PB-CHECKSUMS": ("checksums-case.json", "localMetadataFile", "payload:LocalMetadataFile"),
 }
 
 
@@ -61,21 +62,21 @@ def compiler():
 
 def test_compiler_rejects_an_unknown_comparison_target(compiler, tmp_path):
     model = yaml.safe_load((MODEL / "domain-ontology-package.yaml").read_bytes())
-    model["spec"]["relations"]["comparedAgainst"]["range"]["oneOf"][1] = "LocalManifestTypo"
+    model["spec"]["relations"]["comparedAgainst"]["range"]["oneOf"][1] = "LocalMetadataFileTypo"
     broken = tmp_path / "broken.yaml"
     broken.write_text(yaml.safe_dump(model), encoding="utf-8")
     check = subprocess.run([compiler, "check", broken, "--format", "json"], capture_output=True)
     assert check.returncode == 1
     assert any(
         d["code"] == "relation.range.unresolved"
-        and "LocalManifestTypo" in d["message"]
+        and "LocalMetadataFileTypo" in d["message"]
         and d["path"].startswith("spec.relations.comparedAgainst.range")
         for d in json.loads(check.stdout)
     )
 
 
 @pytest.fixture(scope="module")
-def compiled_models(compiler, tmp_path_factory):
+def compiled_workspace(compiler, tmp_path_factory):
     tmp_path = tmp_path_factory.mktemp("publication-sdk")
     tsc = os.environ.get("TYPESCRIPT_TSC_PATH")
     if not tsc:
@@ -112,6 +113,12 @@ def compiled_models(compiler, tmp_path_factory):
         cwd=tmp_path,
         check=True,
     )
+    return tmp_path
+
+
+@pytest.fixture(scope="module")
+def compiled_models(compiled_workspace):
+    tmp_path = compiled_workspace
     graphs = json.loads(
         subprocess.check_output(
             ["node", "-p", 'JSON.stringify(require("./js/model.js").models)'], cwd=tmp_path
@@ -155,7 +162,10 @@ def test_compiled_model_and_endpoints(compiled_models, criterion_id):
     # Compiling an imported namespace alone does not establish its symbol membership.
     comparison = relations["payload:comparedAgainst"]
     assert comparison["cardinality"] == {"min": 1, "max": 1}
-    assert set(comparison["range"]["oneOf"]) == {"payload:ManifestEntry", "payload:LocalManifest"}
+    assert set(comparison["range"]["oneOf"]) == {
+        "payload:ManifestEntry",
+        "payload:LocalMetadataFile",
+    }
     for rel, first, last in edges:
         for node, slot in ((first, "domain"), (last, "range")):
             actual = nodes[node]["$type"]
@@ -163,3 +173,26 @@ def test_compiled_model_and_endpoints(compiled_models, criterion_id):
             choices = accepted["oneOf"] if isinstance(accepted, dict) else [accepted]
             assert all(choice in classes for choice in choices)
             assert actual in choices or classes[actual]["extends"] in choices
+
+
+@pytest.mark.parametrize(
+    ("criterion", "required_path", "swapped_path"),
+    [
+        ("PB-CHECKSUMS", "checksums.sha256", "artifact_manifest.json"),
+        ("PB-MANIFEST", "artifact_manifest.json", "checksums.sha256"),
+    ],
+)
+def test_metadata_model_rejects_swapped_path(
+    compiled_workspace, tmp_path, criterion, required_path, swapped_path
+):
+    # Exercise the emitted model with one path changed. Keep the type and digest intact.
+    js = tmp_path / "js"
+    shutil.copytree(compiled_workspace / "js", js)
+    fixture = js / CASES[criterion][0]
+    case = json.loads(fixture.read_bytes())
+    assert case["localMetadataFile"]["path"] == required_path
+    case["localMetadataFile"]["path"] = swapped_path
+    fixture.write_text(json.dumps(case), encoding="utf-8")
+    run = subprocess.run(["node", js / "model.js"], capture_output=True, text=True)
+    assert run.returncode != 0
+    assert f"{criterion} expects {required_path}, got {swapped_path}" in run.stderr
