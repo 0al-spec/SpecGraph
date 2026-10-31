@@ -104,6 +104,11 @@ empty bytes verify, different bytes fail the digest comparison, and HTTP 404
 fails the request. The model links the 404 to the requested manifest entry
 without an observed digest. A timeout also prevents verification and leaves
 the existence of the remote file unknown.
+The fifth case, `PB-ALL`, checks both metadata files and every payload path
+declared in the same retained manifest. It reuses the four local types and two
+relations. In a test that made the verifier fetch one file twice and skip the
+other, the success receipt still counted two payloads. The model identified
+the uncovered path from the observations recorded during that run.
 
 The first executed baseline selects merged revision `a980ba6f` and confirms
 the historical pilot spec bytes are unchanged. Existing acceptance-shape checks

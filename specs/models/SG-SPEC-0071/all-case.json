@@ -1,0 +1,14 @@
+{
+  "source": {
+    "spec": "SG-SPEC-0071",
+    "sha256": "9f4a8b8332138ef3b6d1d9cc873b2a40a1a4620f7fceb35db32d4d9e1d6521a9",
+    "requirement": "SG-REQ-PUBLICATION-VERIFIED",
+    "criterion": "PB-ALL",
+    "criterionPointer": "/specification/requirement/criteria/0",
+    "atomPointer": "/atoms/intents/0",
+    "statement": "Matching HTTPS metadata and every manifest payload produce successful bundle verification.",
+    "test": "tests/test_static_artifact_incremental_stage.py::test_verify_remote_bundle_hashes_every_manifest_file"
+  },
+  "remoteBaseURL": "https://publication.example/bundle",
+  "payloads": {"first.txt": "abc", "second.txt": "abc"}
+}
