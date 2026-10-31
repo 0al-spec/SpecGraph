@@ -86,7 +86,7 @@ liveness remains counted because `closed_world = false`.
 
 After successful `Python CI`, the PR workflow compares the current base and head
 Git trees using SpecificationMetrics pinned to commit
-`332348dc86ebd9cfc9d1db15c37afbae9c2546d0`. The trusted counter parses source
+`cd2bc093fec82983ec370536fa9f1d6014ab86e2`. The trusted counter parses source
 data and does not execute PR-authored code. One informational comment reports
 S, U, S/U, dead and unknown Specifications, and supplementary Python SLOC,
 Cyclomatic Complexity (CC), Cognitive Complexity (Cog), and clone deltas.
@@ -99,7 +99,9 @@ to the PR head and removed locations to the base, with one-based line and UTF-8
 byte column. A commit link requires matching Git blob bytes. Repeated identical
 conditions with a change in multiplicity appear as an ambiguous group. The
 comment shows up to 20 locations within a 12 KB row budget. The full
-`opportunity_changes` object is in `diff.json`.
+`opportunity_changes` object is in `diff.json`. The summary labels the ambiguous
+groups' contribution separately and shows the total calculation, for example
+`Total ΔU: 23 − 2 + (+0) = +21.`, using all locations before display truncation.
 
 The comment links to the actual collection run and its `specificationmetrics-pr-*`
 artifact, retained for 30 days and downloadable with GitHub access. It contains

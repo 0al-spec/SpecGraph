@@ -137,7 +137,11 @@ def test_comment_combines_summary_with_pinned_cli_locations(tmp_path, render_fai
     cli = evidence / "cli/bin/specification-metrics"
     cli.parent.mkdir(parents=True)
     snippet = (
-        "### Remaining opportunities (U) · 4 → 5 (+1)\n\n- Added [site](https://example.invalid/)\n"
+        "### Remaining opportunities (U) · 4 → 5 (+1)\n\n"
+        "Location comparison **complete**. Added 1, removed 0, ambiguous groups 0 "
+        "(contribution to ΔU: +0).\n"
+        "Total ΔU: 1 − 0 + (+0) = +1.\n\n"
+        "- Added [site](https://example.invalid/)\n"
     )
     cli.write_text(
         f"#!{sys.executable}\n"
