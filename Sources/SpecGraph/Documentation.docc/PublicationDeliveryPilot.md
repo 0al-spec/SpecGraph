@@ -82,3 +82,10 @@ Acceptance uses retained GitHub PR metadata matching the exact merged revision
 and base repository. Missing metadata and closed-but-unmerged PRs do not count.
 Operational evidence does not change canonical maturity.
 See repository `docs/publication_delivery_pilot.md` for commands, scope and limits.
+
+For one manual publication run, `capture_root_paths` enables per-path evidence
+from the successful root HTTPS check. The incremental deployment artifact
+retains the observed SHA-256 list alongside its receipt. After CI finishes,
+`tools/publication_path_coverage.py` compares it with the metadata retained by
+the build and names any missing or unexpected path. The ordinary publication
+workflow leaves capture off by default.
