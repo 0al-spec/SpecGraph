@@ -3,7 +3,7 @@ kind: DomainOntologyPackage
 metadata:
   id: org.0al.specgraph.local.payloadcheck
   namespace: payload
-  version: 0.3.0
+  version: 0.4.0
   approvalStatus: draft
 spec:
   imports:
@@ -27,6 +27,11 @@ spec:
       description: The SHA-256 of bytes returned for the selected file.
       fields:
         observedSHA256: {type: string, required: true}
+    PayloadNotFoundObservation:
+      extends: sgcore:Evidence
+      description: The server reported that the requested manifest payload was not found.
+      fields:
+        httpStatus: {type: integer, required: true}
   relations:
     comparedAgainst:
       domain: FetchedFileObservation
@@ -34,3 +39,8 @@ spec:
         oneOf: [ManifestEntry, LocalMetadataFile]
       cardinality: {min: 1, max: 1}
       description: Identifies the source of the expected digest for this observation.
+    requestedEntry:
+      domain: PayloadNotFoundObservation
+      range: ManifestEntry
+      cardinality: {min: 1, max: 1}
+      description: Identifies the expected payload whose request returned HTTP 404.
