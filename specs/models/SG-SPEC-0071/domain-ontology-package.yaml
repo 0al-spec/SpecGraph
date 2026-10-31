@@ -3,7 +3,7 @@ kind: DomainOntologyPackage
 metadata:
   id: org.0al.specgraph.local.payloadcheck
   namespace: payload
-  version: 0.1.0
+  version: 0.2.0
   approvalStatus: draft
 spec:
   imports:
@@ -16,14 +16,21 @@ spec:
       fields:
         path: {type: string, required: true}
         expectedSHA256: {type: string, required: true}
-    PayloadObservation:
+    LocalManifest:
+      extends: sg:ValueObject
+      description: The exact local manifest file whose bytes supply the expected SHA-256.
+      fields:
+        path: {type: string, required: true}
+        expectedSHA256: {type: string, required: true}
+    FetchedFileObservation:
       extends: sgcore:Evidence
-      description: The SHA-256 of the bytes fetched for a manifest entry.
+      description: The SHA-256 of bytes returned for the selected file.
       fields:
         observedSHA256: {type: string, required: true}
   relations:
     comparedAgainst:
-      domain: PayloadObservation
-      range: ManifestEntry
+      domain: FetchedFileObservation
+      range:
+        oneOf: [ManifestEntry, LocalManifest]
       cardinality: {min: 1, max: 1}
-      description: Identifies the expected entry for this observation.
+      description: Identifies the source of the expected digest for this observation.
