@@ -163,6 +163,40 @@ def test_verify_remote_bundle_fails_on_digest_drift(tmp_path: Path) -> None:
         )
 
 
+@pytest.mark.parametrize("control", ["matching", "changed"])
+def test_pb_payload_model_against_bundle_verifier(tmp_path: Path, control: str) -> None:
+    model = Path(__file__).resolve().parents[1] / "specs/models/SG-SPEC-0071/case.json"
+    case = json.loads(model.read_bytes())
+    entry = case["manifestEntry"]
+    local = case["localBody"].encode()
+    observation = case["observations"][control]
+    remote = observation["body"].encode()
+    assert sum(a != b for a, b in zip(local, remote, strict=True)) == int(control == "changed")
+    assert hashlib.sha256(local).hexdigest() == entry["expectedSHA256"]
+    assert hashlib.sha256(remote).hexdigest() == observation["observedSHA256"]
+
+    path = entry["path"]
+    bundle = _bundle(tmp_path / "bundle", {path: local})
+    origin = "https://publication.example/"
+    responses = {
+        origin + name: (bundle / name).read_bytes()
+        for name in ("artifact_manifest.json", "checksums.sha256")
+    }
+    responses[origin + path] = remote
+
+    def verify():
+        return verify_remote_bundle(
+            bundle_dir=bundle, remote_base_url=origin, fetcher=responses.__getitem__
+        )
+
+    if control == "matching":
+        assert verify()["status"] == "verified"
+    else:
+        with pytest.raises(IncrementalStageError) as failure:
+            verify()
+        assert str(failure.value) == f"remote artifact digest mismatch: {path}"
+
+
 def test_verify_remote_bundle_fails_on_stale_published_manifest(tmp_path: Path) -> None:
     bundle = _bundle(tmp_path / "bundle", {"runs/a.json": b"expected"})
 

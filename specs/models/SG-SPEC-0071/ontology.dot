@@ -1,0 +1,18 @@
+digraph ontology {
+  graph [rankdir=LR, bgcolor="#ffffff", pad=0.35, nodesep=0.35, ranksep=0.7,
+    fontname="Helvetica", fontsize=18, labelloc=t, label="org.0al.specgraph.local.payloadcheck@0.1.0"];
+  node [shape=box, style="rounded,filled", fontname="Helvetica", fontsize=11,
+    color="#94a3b8", fontcolor="#0f172a", fillcolor="#eff6ff", margin="0.16,0.1"];
+  edge [fontname="Helvetica", fontsize=9, color="#64748b", fontcolor="#334155", arrowsize=0.7];
+  "classes/payload:ManifestEntry" [label="«class»\npayload:ManifestEntry\nexpectedSHA256: string\npath: string", fillcolor="#dbeafe"];
+  "classes/payload:PayloadObservation" [label="«class»\npayload:PayloadObservation\nobservedSHA256: string", fillcolor="#dbeafe"];
+  "classes/payload:ManifestEntry" -> "external/classes/sg:ValueObject" [label="extends", style=solid, arrowhead=empty];
+  "classes/payload:PayloadObservation" -> "classes/payload:ManifestEntry" [label="comparedAgainst [1..1]", style=solid, arrowhead=normal];
+  "classes/payload:PayloadObservation" -> "external/classes/sgcore:Evidence" [label="extends", style=solid, arrowhead=empty];
+  subgraph cluster_external {
+    label="External references (declarations not loaded)";
+    fontsize=11; color="#cbd5e1"; style=dashed;
+  "external/classes/sg:ValueObject" [label="«external reference»\nsg:ValueObject\nspecgraph.foundation@0.1.0", fillcolor="#f1f5f9", style="rounded,dashed,filled"];
+  "external/classes/sgcore:Evidence" [label="«external reference»\nsgcore:Evidence\norg.0al.specgraph.core@0.1.0", fillcolor="#f1f5f9", style="rounded,dashed,filled"];
+  }
+}
