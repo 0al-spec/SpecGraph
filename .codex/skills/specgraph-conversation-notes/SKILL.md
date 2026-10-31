@@ -43,6 +43,8 @@ The two tools are CLI commands returning JSON:
   sketch, record an `approve` operation against that exact revision, separately
   from edits. Partial or ambiguous assent stays a source quotation until its
   scope is clear. This records a conversation observation, not canonical adoption.
+- When a reply agrees with or refuses an earlier proposal, follow the
+  [contextual agreement or refusal rule](../../../src/specgraph/resources/skills/specgraph-conversation-notes/SKILL.md#contextual-agreement-or-refusal).
 - Read the relevant branch with `--node-id` for bounded context. `omitted_nodes`
   reports excluded nodes; links may point outside the selected branch.
 
