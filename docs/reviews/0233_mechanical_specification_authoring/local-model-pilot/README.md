@@ -269,7 +269,7 @@ expressibility and exposes its cost for one criterion.
 
 ## Reuse on PB-MANIFEST
 
-The [paired pilot](../../../../specs/models/SG-SPEC-0071/README.md) keeps the
+The [paired pilot](https://github.com/0al-spec/SpecGraph/tree/dd83ff72b1d949c959db1adfbb9cefbfa8ea3be7/specs/models/SG-SPEC-0071) keeps the
 same expected/observed comparison and three core trace relations. The new
 criterion needs one additional source type because its expected digest comes
 from the retained manifest file itself. The package generalizes the observation
@@ -280,7 +280,29 @@ Relative to the first pilot, package YAML grew from 29 to 36 lines and typed
 declarations from 30 to 42 (+19 combined). The second input adds 31 lines
 of JSON. The two pytest files grew by 66 lines net, including the new
 byte-level controls and checks of the selected origin. These counts exclude
-workflow, documentation and generated diagrams. They show concrete reuse;
-they do not measure authoring time. A
-valid stale manifest and a whitespace-only variant both failed, while the
+workflow, documentation and generated diagrams. A valid stale manifest
+and a whitespace-only variant both failed, while the
 unchanged manifest verified. The production verifier was exercised unchanged.
+
+## Reuse on PB-CHECKSUMS
+
+The [third case](../../../../specs/models/SG-SPEC-0071/checksums-case.json)
+uses the same retained-file comparison as PB-MANIFEST. The local vocabulary
+renames `LocalManifest` to `LocalMetadataFile` in version 0.3.0.
+It still has three classes and one relation. The path binding distinguishes
+the two metadata criteria even when both proposed references have the same type.
+
+| Structural measure | Two criteria (#846) | Three criteria |
+| --- | ---: | ---: |
+| Local ontology classes / relations | 3 / 1 | 3 / 1 |
+| Shared package YAML lines | 36 | 36 |
+| Typed model lines | 42 | 56 |
+| Case fixture lines (all cases) | 58 | 89 |
+| Hosted pilot checks | 10 | 17 |
+
+The two pytest files grew by 72 lines net for the source and SDK checks, path
+mutations and producer-to-verifier replay. Both path substitutions failed.
+The current checksum list verified; a stale remote digest and a CRLF-only edit
+both failed specifically for `checksums.sha256`. A separate probe with the
+same stale list locally and remotely verified, recording the dependency on the
+retained reference. See the [cases, diagram and replay](../../../../specs/models/SG-SPEC-0071/README.md).

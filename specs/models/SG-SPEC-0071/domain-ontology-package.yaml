@@ -3,7 +3,7 @@ kind: DomainOntologyPackage
 metadata:
   id: org.0al.specgraph.local.payloadcheck
   namespace: payload
-  version: 0.2.0
+  version: 0.3.0
   approvalStatus: draft
 spec:
   imports:
@@ -16,9 +16,9 @@ spec:
       fields:
         path: {type: string, required: true}
         expectedSHA256: {type: string, required: true}
-    LocalManifest:
+    LocalMetadataFile:
       extends: sg:ValueObject
-      description: The exact local manifest file whose bytes supply the expected SHA-256.
+      description: A retained bundle metadata file whose exact bytes supply the expected SHA-256.
       fields:
         path: {type: string, required: true}
         expectedSHA256: {type: string, required: true}
@@ -31,6 +31,6 @@ spec:
     comparedAgainst:
       domain: FetchedFileObservation
       range:
-        oneOf: [ManifestEntry, LocalManifest]
+        oneOf: [ManifestEntry, LocalMetadataFile]
       cardinality: {min: 1, max: 1}
       description: Identifies the source of the expected digest for this observation.

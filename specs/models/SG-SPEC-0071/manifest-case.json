@@ -9,7 +9,7 @@
     "statement": "A stale published manifest prevents successful bundle verification.",
     "test": "tests/test_static_artifact_incremental_stage.py::test_verify_remote_bundle_fails_on_stale_published_manifest"
   },
-  "localManifest": {
+  "localMetadataFile": {
     "path": "artifact_manifest.json",
     "expectedSHA256": "65a7f698b7580815d6a7380f339c76e3e68aec401c365e9555055ef6b3691bf6"
   },

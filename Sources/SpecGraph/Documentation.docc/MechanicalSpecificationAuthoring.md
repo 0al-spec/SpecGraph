@@ -94,6 +94,11 @@ The paired `PB-MANIFEST` example shares the comparison relation, trace builder
 and verifier replay. Its expected digest comes from the retained local manifest
 file. The test distinguishes this origin from a payload entry and exercises
 exact, stale and whitespace-only versions of the remote manifest.
+The third case, `PB-CHECKSUMS`, uses the same retained metadata file type and
+comparison relation. The criterion selects `checksums.sha256`; `PB-MANIFEST`
+selects `artifact_manifest.json`. The pilot exercises path substitutions in
+both directions and checks the production verifier against the bytes emitted by
+the bundle writer, a stale remote list and a line-ending change.
 
 The first executed baseline selects merged revision `a980ba6f` and confirms
 the historical pilot spec bytes are unchanged. Existing acceptance-shape checks
