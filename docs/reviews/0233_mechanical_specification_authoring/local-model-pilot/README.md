@@ -322,3 +322,18 @@ bringing the package from three classes and one relation to four and two.
 on the manifest entry. The generated SDK and the model's JSON controls check
 the distinction between missing data and the digest of a real empty file.
 The decision to treat HTTP 404 as not-found evidence is local to this example.
+
+## Coverage of every expected file
+
+[PB-ALL](../../../../specs/models/SG-SPEC-0071/README.md#coverage-of-a-whole-bundle)
+exercises the fifth publication criterion. The four local classes, two relations
+and package version 0.4.0 suffice. The additional rule is executable: it reads
+the expected paths independently of the observed requests, requires both metadata
+digests and checks each path for matching evidence.
+
+With the first file correct, corruption and HTTP 404 on the second file both
+failed verification. In the injected scheduling fault the first file was
+visited twice. The verifier reported the same success counts as the intact run,
+but the model identified the second path as unchecked. This result depends on
+retaining observations by request path. The existing receipt alone cannot
+reconstruct that evidence.

@@ -1,11 +1,12 @@
 # Publication file verification criteria
 
-This pilot exercises four of the five criteria of `SG-REQ-PUBLICATION-VERIFIED`.
-The first three compare returned bytes to a reference digest. The fourth asks
-what the verifier can observe when the server reports a missing payload.
+This pilot exercises all five criteria of `SG-REQ-PUBLICATION-VERIFIED`.
+Four examples describe an individual file. PB-ALL asks whether the evidence
+from one verification attempt covers the entire retained manifest and both metadata files.
 
 | Criterion | Address in [SG-SPEC-0071](../../nodes/SG-SPEC-0071.yaml) | Source of the expected digest |
 | --- | --- | --- |
+| [PB-ALL](all-case.json) | `/specification/requirement/criteria/0`, `/atoms/intents/0` | Both retained metadata files and every path and SHA-256 declared by the retained manifest. |
 | [PB-PAYLOAD](case.json) | `/specification/requirement/criteria/1`, `/atoms/intents/1` | The selected payload's entry in the local manifest. |
 | [PB-MANIFEST](manifest-case.json) | `/specification/requirement/criteria/2`, `/atoms/intents/2` | SHA-256 computed from the exact bytes of the retained local `artifact_manifest.json`. Its entries describe payloads; none serves as the expected digest of the manifest itself. |
 | [PB-CHECKSUMS](checksums-case.json) | `/specification/requirement/criteria/3`, `/atoms/intents/3` | SHA-256 of the entire retained local `checksums.sha256` file, including its line ending. |
@@ -17,7 +18,7 @@ pytest binding. The tests also check the binding in the publication passport.
 ## Shared model
 
 All cases use the same three core relations to link the requirement, criterion,
-test and evidence. A single [typed graph builder](model.ts) uses the SDKs generated
+test and evidence. A single [typed graph builder](publication-graph.ts) uses the SDKs generated
 from the project core and the [local package](domain-ontology-package.yaml).
 Each successful fetch produces a `FetchedFileObservation`. Its `comparedAgainst`
 relation selects exactly one expected digest source.
@@ -95,15 +96,45 @@ the retained list and that payloads match the manifest. List contents depend
 on the local producer. This probe records the current trust boundary. The
 inputs in this pilot are synthetic.
 
+## Coverage of a whole bundle
+
+The [PB-ALL model](bundle-model.ts) takes the two retained UTF-8 metadata
+files and a transcript of fetch results for one HTTPS origin and attempt.
+It hashes both metadata files and reads the expected payload paths from the
+same manifest bytes. Each observation links to the file actually requested.
+A digest mismatch or observed payload 404 gives `failed`. With no observed
+failure, an expected file without a request gives `incomplete` and the model
+lists the unchecked paths. Only complete, matching evidence gives `verified`.
+These verdicts belong to the pilot. The current production receipt records
+counts and metadata digests; the tests collect the per-request evidence during execution.
+
+Both test payloads contain `abc` so the digest alone cannot identify which
+path the verifier fetched. The [replay](../../../tests/test_publication_bundle_ontology_model.py)
+uses the same retained bundle for these controls.
+
+| Second payload | Production verifier | Model |
+| --- | --- | --- |
+| Returns the expected bytes | `verified`, 2 payloads | `verified` |
+| Returns altered bytes | Digest mismatch for `second.txt` | `failed`, `second.txt` |
+| Returns HTTP 404 | Request failed for `second.txt` | `failed`, `second.txt` |
+| Skipped by the test scheduler | `verified`, 1 payload | `incomplete`, `second.txt` unchecked |
+| Skipped while the scheduler checks the first twice | `verified`, 2 payloads | `incomplete`, `second.txt` unchecked |
+
+The last two rows deliberately substitute a faulty scheduler. The normal
+verifier visits both payloads. Corrupting either remote metadata file also fails.
+Removing the second entry from the retained manifest and its observation still
+leaves a mismatch against the digest of the manifest actually served.
+
 ## Replay
 
-Use the extracted Ontology 0.5.0 tools, TypeScript 6.0.3 and Node on PATH.
+Use the extracted Ontology 0.5.0 tools, TypeScript 6.0.3 and Node 22 or later on PATH.
 From the repository root:
 
 ```sh
 ONTOLOGYC_BINARY_PATH=/absolute/path/to/ontologyc \
 TYPESCRIPT_TSC_PATH=/absolute/path/to/typescript/bin/tsc \
   .venv/bin/python -m pytest -v tests/test_publication_digest_ontology_model.py \
+  tests/test_publication_bundle_ontology_model.py \
   tests/test_static_artifact_incremental_stage.py::test_pb_payload_model_against_bundle_verifier \
   tests/test_static_artifact_incremental_stage.py::test_pb_manifest_model_against_bundle_verifier \
   tests/test_static_artifact_incremental_stage.py::test_pb_checksums_model_against_bundle_verifier \
@@ -113,6 +144,6 @@ TYPESCRIPT_TSC_PATH=/absolute/path/to/typescript/bin/tsc \
   --format svg --out /path/to/diagram
 ```
 
-The macOS compatibility job generates both SDKs once, checks all four cases and
+The macOS compatibility job generates the core and local SDKs, checks all five criteria and
 compares the released visualizer's DOT to the checked-in diagram. Source
 bindings and byte-level behavior tests also run with Python alone.

@@ -25,9 +25,14 @@ CASES = {
 }
 
 
-@pytest.mark.parametrize("criterion_id", CASES)
+SOURCE_CASES = {criterion: value[0] for criterion, value in CASES.items()} | {
+    "PB-ALL": "all-case.json",
+}
+
+
+@pytest.mark.parametrize("criterion_id", SOURCE_CASES)
 def test_binding_identifies_the_canonical_criterion_and_test(criterion_id):
-    filename, _, _ = CASES[criterion_id]
+    filename = SOURCE_CASES[criterion_id]
     source = json.loads((MODEL / filename).read_bytes())["source"]
     raw = (ROOT / "specs/nodes/SG-SPEC-0071.yaml").read_bytes()
     spec = yaml.safe_load(raw)
@@ -95,7 +100,7 @@ def compiled_workspace(compiler, tmp_path_factory):
             ],
             check=True,
         )
-    for name in ("model.ts", *(filename for filename, _, _ in CASES.values())):
+    for name in ("model.ts", "publication-graph.ts", "bundle-model.ts", *SOURCE_CASES.values()):
         shutil.copyfile(MODEL / name, tmp_path / name)
     subprocess.run(
         [
