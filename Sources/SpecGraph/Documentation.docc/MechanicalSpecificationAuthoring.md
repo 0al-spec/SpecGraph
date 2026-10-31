@@ -70,6 +70,14 @@ structure. They do not execute the full scenario. Original 0.2.0 evidence remain
 historical; adapter complexity and partial acceptance coverage remain open.
 See `docs/reviews/0233_mechanical_specification_authoring/local-model-pilot/ontology-030-observation.json`.
 
+A second example, `SG72-UNSUPPORTED-CLOSURE`, uses the same runner, SDK and
+instance consumer. Production capture verifies the selected package's source
+and IR. Its required dependency closure check reports `unavailable`, so the
+context also reports `unavailable`. The local draft adds one relation from
+that closure check to the member check for the same package. Both examples
+exercise part of acceptance criterion 2 (zero-based). The source maps retain
+all four criteria and their coverage status.
+
 The first executed baseline selects merged revision `a980ba6f` and confirms
 the historical pilot spec bytes are unchanged. Existing acceptance-shape checks
 detect evidence-only deletion but miss paired criterion/evidence deletion;

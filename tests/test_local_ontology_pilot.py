@@ -110,7 +110,7 @@ def copied_model(tmp_path):
     return Path(shutil.copytree(AUTHORED_MODEL, tmp_path / "authored-model"))
 
 
-def run_cli(real_tools, model_dir, work_dir):
+def run_cli(real_tools, model_dir, work_dir, *extra):
     compiler, tsc = real_tools
     completed = subprocess.run(
         [
@@ -125,6 +125,7 @@ def run_cli(real_tools, model_dir, work_dir):
             str(model_dir),
             "--work-dir",
             str(work_dir),
+            *extra,
         ],
         cwd=ROOT,
         env={**os.environ, "PYTHONDONTWRITEBYTECODE": "1"},
@@ -142,8 +143,8 @@ def read_report(completed, work):
     return json.loads(report_path.read_bytes())
 
 
-def replace_once(model_dir, old, new):
-    path = model_dir / "model.ts"
+def replace_once(model_dir, old, new, *, filename="model.ts"):
+    path = model_dir / filename
     source = path.read_text()
     assert source.count(old) == 1, f"Authored model anchor must be unambiguous: {old!r}"
     path.write_text(source.replace(old, new, 1))
@@ -238,7 +239,7 @@ def test_type_correct_models_cannot_omit_required_meaning(
         replace_once(
             copied_model,
             'relations.caseIncludesCheck.alias, from: scenario.id, to: "duplicate-selection"',
-            "relations.caseIncludesCheck.alias, from: scenario.id, to: requirement.id",
+            'relations.caseIncludesCheck.alias, from: scenario.id, to: "SG72-OUTCOME-PRECEDENCE"',
         )
     elif mutation == "wrong_outcome":
         replace_once(
@@ -263,13 +264,16 @@ def test_type_correct_models_cannot_omit_required_meaning(
             "",
         )
     elif mutation == "wrong_spec_id":
-        replace_once(copied_model, 'id: "SG-SPEC-0072"', 'id: "SG-SPEC-9999"')
+        replace_once(
+            copied_model, 'id: "SG-SPEC-0072"', 'id: "SG-SPEC-9999"', filename="case-model.ts"
+        )
     else:
         replace_once(
             copied_model,
             "  { relation: coreRelations.definesRequirement.alias, "
             "from: specification.id, to: requirement.id },\n",
             "",
+            filename="case-model.ts",
         )
     work = tmp_path / "model-rejection"
     completed = run_cli(real_tools, copied_model, work)
@@ -322,3 +326,88 @@ def test_cli_preserves_preexisting_work_directory(real_tools, copied_model, tmp_
     assert "new or empty" in completed.stderr
     assert receipt.read_bytes() == original
     assert list(work.iterdir()) == [receipt]
+
+
+def test_closure_map_cannot_borrow_mixed_case_obligations():
+    scenario = pilot.CASES["SG72-UNSUPPORTED-CLOSURE"]
+    mixed, document, source = source_inputs()
+    mapping = json.loads((AUTHORED_MODEL / scenario.mapping).read_bytes())
+    pilot.source_mapping(mapping, document, source, scenario)
+    for field in ("source_fragments", "expected", "scenario_id"):
+        with pytest.raises(pilot.PilotFailure):
+            pilot.source_mapping({**mapping, field: mixed[field]}, document, source, scenario)
+
+
+def test_verified_member_with_unsupported_closure(real_tools, copied_model, tmp_path):
+    work = tmp_path / "closure"
+    scenario = "SG72-UNSUPPORTED-CLOSURE"
+    completed = run_cli(real_tools, copied_model, work, "--scenario", scenario)
+    report = read_report(completed, work)
+    assert completed.returncode == 0, report
+    assert report["scenario_id"] == scenario
+    assert report["outcome"] == "satisfied"
+    assert all(layer["status"] == "passed" for layer in report["layers"].values())
+    assert report["coverage"]["complete"] is False
+    observed = report["observed"]
+    assert observed["outcome"] == "unavailable"
+    [snapshot] = observed["snapshots"]
+    assert snapshot["compiler_sha256"] == report["tools"]["ontologyc"]["sha256"]
+    assert {
+        (check["check"], check["outcome"])
+        for check in observed["checks"]
+        if check["package"] == snapshot["id"]
+    } >= {("member_capture", "verified"), ("dependency_closure", "unavailable")}
+
+
+def test_type_correct_reversed_closure_link_is_rejected(real_tools, copied_model, tmp_path):
+    replace_once(
+        copied_model,
+        'from: "unsupported-closure", to: "captured-member"',
+        'from: "captured-member", to: "unsupported-closure"',
+        filename="unsupported-closure.ts",
+    )
+    work = tmp_path / "reversed"
+    completed = run_cli(real_tools, copied_model, work, "--scenario", "SG72-UNSUPPORTED-CLOSURE")
+    report = read_report(completed, work)
+    assert report["layers"]["typecheck"]["status"] == "passed"
+    assert_layer_failure(completed, report, "model")
+    assert report["findings"][0]["path"] == "model.ts/relations"
+    assert report["layers"]["behavior"]["status"] == "not_run"
+
+
+def test_closure_diagnostic_from_another_member_cannot_satisfy_the_scenario():
+    scenario = pilot.CASES["SG72-UNSUPPORTED-CLOSURE"]
+    declared = {role: {"id": role[0], "detail": role[0]} for role in scenario.roles}
+    checks = [
+        {"check": name, "outcome": status, "detail": name, "package": package}
+        for (name, status), package in zip(scenario.roles, ("pkg-a", "pkg-b"), strict=True)
+    ]
+    with pytest.raises(pilot.PilotFailure) as caught:
+        pilot.verify_behavior(
+            {"outcome": "unavailable", "checks": checks}, scenario, declared, {"id": "pkg-a"}, "sha"
+        )
+    assert caught.value.layer == "behavior"
+    assert caught.value.path == "model.ts/checks/dependency_closure"
+
+
+def test_verified_member_diagnostic_requires_its_pinned_snapshot():
+    scenario = pilot.CASES["SG72-UNSUPPORTED-CLOSURE"]
+    member = {
+        "id": "core",
+        "namespace": "sgcore",
+        "version": "0.1.0",
+        "source_sha256": "1" * 64,
+        "ir_sha256": "2" * 64,
+    }
+    declared = {role: {"id": role[0], "detail": role[0]} for role in scenario.roles}
+    observed = {
+        "outcome": "unavailable",
+        "snapshots": [{**member, "compiler_sha256": "3" * 64}],
+        "checks": [
+            {"check": name, "outcome": status, "detail": name, "package": "core"}
+            for name, status in scenario.roles
+        ],
+    }
+    with pytest.raises(pilot.PilotFailure) as caught:
+        pilot.verify_behavior(observed, scenario, declared, member, "4" * 64)
+    assert caught.value.path == "observed/snapshots"
