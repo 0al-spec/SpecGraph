@@ -411,3 +411,17 @@ def test_verified_member_diagnostic_requires_its_pinned_snapshot():
     with pytest.raises(pilot.PilotFailure) as caught:
         pilot.verify_behavior(observed, scenario, declared, member, "4" * 64)
     assert caught.value.path == "observed/snapshots"
+
+
+def test_verified_foundation_model_runs_through_all_four_layers(real_tools, copied_model, tmp_path):
+    work = tmp_path / "pinned"
+    result = run_cli(real_tools, copied_model, work, "--scenario", "SG72-PINNED-FOUNDATION")
+    report = read_report(result, work)
+    assert result.returncode == 0, report["findings"]
+    assert report["scenario_id"] == "SG72-PINNED-FOUNDATION"
+    assert all(layer["status"] == "passed" for layer in report["layers"].values())
+    assert report["observed"]["outcome"] == "verified"
+    assert [
+        row["pointer"] for row in report["coverage"]["acceptance"] if row["status"] == "partial"
+    ] == ["/acceptance/0", "/acceptance/2"]
+    assert report["coverage"]["complete"] is False

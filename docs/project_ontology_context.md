@@ -57,16 +57,36 @@ invalid input. Independently detected identity, pin and source/IR mismatches
 remain invalid. See the [compiler outcome defect record](reviews/0232_project_ontology_context/compiler-outcome-defect/source.md)
 for the repair and its evidence.
 
-The structural profile marks closure verified only for one package with zero
-imports. Ontology 0.3.0 requires at least one import in every domain package,
-so its compiler and this profile cannot currently produce a verified project
-context together. The positive unit case uses a fixture compiler. The
-[release compatibility observation](reviews/0233_mechanical_specification_authoring/local-model-pilot/README.md#single-package-verified-probe-31-october-2026)
-records both the rejected package and a successful package compilation. In particular, the
-current specgraph-core source imports specgraph.foundation, so compiling its
-root alone leaves the required closure guarantee unavailable. Capturing those
-bytes does not approve the package or ground all specifications. Missing context
-does not prevent conversation capture or draft authoring.
+With `profiles: [ontologyc-structural-v1]`, imported packages have unavailable
+closure. Ontology 0.3.0 requires at least one import. The [earlier compatibility
+probe](reviews/0233_mechanical_specification_authoring/local-model-pilot/README.md#single-package-verified-probe-31-october-2026)
+records this combination.
+
+### One pinned foundation import
+
+Set `profiles: [ontologyc-foundation-v1]` in the existing selection file.
+Select one package whose only import is
+`{id: specgraph.foundation, namespace: sg, version: 0.1.0}`.
+Run the workspace CLI shown below with the same source, IR and compiler pins.
+
+This offline profile maps that import to the terminal vocabulary in the
+Foundation Kinds and Protocols tables of the
+[Ontology 0.3.0 glossary](https://github.com/0al-spec/Ontology/blob/d831e25b46095dfea5e17befbc88c5fdcd03e031/SPECS/ontology/glossary.md).
+The [release authoring guide](https://github.com/0al-spec/Ontology/blob/d831e25b46095dfea5e17befbc88c5fdcd03e031/SPECS/ontology/authoring-guide.md)
+declares the import version and namespace. SpecGraph ships a copy of the
+release glossary, checks its SHA-256 on capture and reads the symbols from those
+bytes. The resolver checks class bases, implemented protocols, relation endpoints
+(including `range.oneOf`), policy bases and policy targets. The compiler checks
+local references. Descriptions and examples are free text.
+
+For `Entry.extends: sg:ValueObject`, the report includes the declaration's
+JSON pointer and `ontology://specgraph.foundation/0.1.0/classes/ValueObject`.
+For `sg:Typo` at that site it records `invalid` with the pointer and name.
+The `resolved_imports` entry identifies the content actually consulted and
+participates in the context revision. An unavailable glossary or an unsupported
+import set produces `unavailable`; a glossary digest mismatch produces `invalid`.
+Verification covers structural name resolution in this profile. Package approval
+and prose coverage retain their separate review processes.
 
 Each domain outcome policy lives in its own Specification module with immutable
 facts. Parsing, paths, subprocess adaptation and serialization remain at the edge.

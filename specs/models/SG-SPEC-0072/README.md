@@ -1,14 +1,15 @@
 # Local formal scenarios for SG-SPEC-0072
 
-Both examples exercise the production rule for combining ontology checks.
+The three examples exercise the production rule for combining ontology checks.
 
 | CLI scenario | Selected inputs | Expected context outcome |
 | --- | --- | --- |
 | `SG72-MIXED` (default) | Duplicate package selection and missing compiler | `invalid` with both diagnostics |
 | `SG72-UNSUPPORTED-CLOSURE` | A pinned package with an import, verified source and IR, and an unsupported closure check | `unavailable` with both check results attributed to the same member |
+| `SG72-PINNED-FOUNDATION` | One pinned member extends `sg:ValueObject` with the foundation profile | `verified` with the resolved symbol and glossary digest |
 
 Each example has a readable `.feature`, a source map with exact clauses and four
-acceptance rows, and a typed declaration (`model.ts` or `unsupported-closure.ts`).
+acceptance rows, and a typed declaration (`model.ts`, `unsupported-closure.ts` or `pinned-foundation.ts`).
 They share `case-model.ts`, the draft vocabulary in `domain-ontology-package.yaml`
 and the SDK generated from that vocabulary and `specgraph-core`.
 
@@ -18,13 +19,15 @@ compiler; generated SDK/JavaScript and the report go to a new scratch directory:
 
 ```sh
 .venv/bin/python tools/local_ontology_pilot.py \
-  --scenario SG72-UNSUPPORTED-CLOSURE \
+  --scenario SG72-PINNED-FOUNDATION \
   --ontologyc /absolute/path/to/ontologyc \
   --tsc /absolute/path/to/typescript/bin/tsc \
   --work-dir /absolute/path/to/new-run
 ```
 
-Use another empty work directory and select `SG72-MIXED` to compare both reports.
+Use a separate empty directory for each run. The foundation case compiles
+`foundation-member.yaml` and passes its exact source and generated IR pins
+into production capture. Its source map marks acceptance rows 0 and 2 partial.
 
 The reference toolchain is SpecGraph's pinned Ontology 0.3.0 source revision
 `d831e25b46095dfea5e17befbc88c5fdcd03e031`, TypeScript `6.0.3`, and Node.js.

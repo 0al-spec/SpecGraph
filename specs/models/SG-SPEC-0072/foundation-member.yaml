@@ -1,0 +1,10 @@
+apiVersion: ontology.specgraph.io/v1alpha1
+kind: DomainOntologyPackage
+metadata: {id: test.sg72-member, namespace: sample, version: 0.1.0, approvalStatus: draft}
+spec:
+  imports:
+    - {id: specgraph.foundation, namespace: sg, version: 0.1.0}
+  classes:
+    Entry: {extends: "sg:ValueObject", description: A value in the local test package.}
+  relations:
+    follows: {domain: Entry, range: Entry, cardinality: {min: 0, max: 1}}

@@ -17,6 +17,10 @@ class Scenario:
     member_count: int
     supply_compiler: bool
     closure_link: tuple[Role, Role] | None = None
+    profile: str = "ontologyc-structural-v1"
+    member_source: str | None = None
+    partial_rows: tuple[int, ...] = (2,)
+    reference: tuple[str, str, str] | None = None
 
 
 CONTRACT = "/specification/verification_contract/"
@@ -80,4 +84,33 @@ UNSUPPORTED_CLOSURE = Scenario(
     supply_compiler=True,
     closure_link=(CLOSURE, MEMBER),
 )
-CASES = {case.id: case for case in (MIXED, UNSUPPORTED_CLOSURE)}
+FOUNDATION = ("dependency_closure", "verified")
+VERIFIED = Scenario(
+    id="SG72-PINNED-FOUNDATION",
+    model="pinned-foundation.ts",
+    mapping="pinned-foundation.source-map.json",
+    feature="pinned-foundation.feature",
+    outcome="verified",
+    roles=(MEMBER, FOUNDATION),
+    clauses=(
+        (CONTRACT + "verified", "including required dependency closure and name resolution."),
+        (CONTRACT + "outcome_precedence", "Only all required checks succeeding permits verified"),
+        (
+            "/specification/acceptance_cases/0/expected",
+            "An explicitly selected single package with captured source/IR "
+            "and all required checks passing is verified for the declared scope",
+        ),
+    ),
+    member_count=1,
+    supply_compiler=True,
+    closure_link=(FOUNDATION, MEMBER),
+    profile="ontologyc-foundation-v1",
+    member_source="foundation-member.yaml",
+    partial_rows=(0, 2),
+    reference=(
+        "/spec/classes/Entry/extends",
+        "sg:ValueObject",
+        "ontology://specgraph.foundation/0.1.0/classes/ValueObject",
+    ),
+)
+CASES = {case.id: case for case in (MIXED, UNSUPPORTED_CLOSURE, VERIFIED)}

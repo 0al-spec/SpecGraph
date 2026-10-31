@@ -78,6 +78,12 @@ that closure check to the member check for the same package. Both examples
 exercise part of acceptance criterion 2 (zero-based). The source maps retain
 all four criteria and their coverage status.
 
+The third example, `SG72-PINNED-FOUNDATION`, supplies the single-import foundation
+profile to production capture. A typed model checks the verified member and
+closure, and the report identifies the `sg:ValueObject` declaration in the
+pinned upstream vocabulary. A paired CLI regression recompiles the member
+with `sg:Typo` and checks for an invalid result at the same source pointer.
+
 The first executed baseline selects merged revision `a980ba6f` and confirms
 the historical pilot spec bytes are unchanged. Existing acceptance-shape checks
 detect evidence-only deletion but miss paired criterion/evidence deletion;

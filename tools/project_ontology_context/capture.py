@@ -6,6 +6,7 @@ import hashlib
 import json
 import os
 import re
+from dataclasses import asdict
 from pathlib import Path
 
 import yaml
@@ -18,6 +19,7 @@ from ontology_snapshot import (
     parse_ontology_ir,
 )
 
+from . import foundation
 from .invalid_spec import INVALID_SPEC
 from .model import CheckResult, ContextFacts, ContextResult
 from .unavailable_spec import UNAVAILABLE_SPEC
@@ -126,6 +128,7 @@ def capture_project_context(
     profiles: tuple[str, ...] = ()
     rules: tuple[tuple[str, str], ...] = ()
     members: list[dict[str, str]] = []
+    resolved_imports = ()
     revision = None
     selection_ref = str(selection_path) if selection_path is not None else None
 
@@ -144,7 +147,7 @@ def capture_project_context(
             payload = _load_yaml(selection.read_bytes())
             members, profiles, rules = _parse(payload)
             identities = tuple((m["id"], m["namespace"], m["version"]) for m in members)
-            if profiles == ("ontologyc-structural-v1",):
+            if profiles in (("ontologyc-structural-v1",), (foundation.PROFILE,)):
                 add("profile", "verified", "supported structural checking profile")
             else:
                 add("profile", "unavailable", "required checking profile missing or unsupported")
@@ -244,7 +247,12 @@ def capture_project_context(
             imports = source_spec.get("imports", [])
             if not isinstance(imports, list) or ir_data.get("imports", []) != imports:
                 raise ValueError("source and IR imports differ or are malformed")
-            if imports or len(members) > 1:
+            if profiles == (foundation.PROFILE,):
+                closure_checks, resolved_imports = foundation.check_import(
+                    source_spec, member, len(members)
+                )
+                checks.extend(closure_checks)
+            elif imports or len(members) > 1:
                 add(
                     "dependency_closure",
                     "unavailable",
@@ -278,7 +286,12 @@ def capture_project_context(
         if UNAVAILABLE_SPEC.is_satisfied_by(facts)
         else "verified"
     )
-    if members and len(snapshots) == len(members) and outcome != "invalid":
+    if (
+        members
+        and len(snapshots) == len(members)
+        and outcome != "invalid"
+        and (profiles != (foundation.PROFILE,) or resolved_imports)
+    ):
         identity = {
             "members": [
                 {
@@ -296,6 +309,8 @@ def capture_project_context(
             "profiles": profiles,
             "composition": dict(rules),
         }
+        if resolved_imports:
+            identity["resolved_imports"] = [asdict(item) for item in resolved_imports]
         revision = (
             "sha256:"
             + hashlib.sha256(
@@ -317,4 +332,5 @@ def capture_project_context(
         identities,
         profiles,
         rules,
+        resolved_imports,
     )

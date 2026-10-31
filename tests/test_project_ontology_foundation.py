@@ -1,0 +1,164 @@
+"""Foundation closure controls with the normal public context CLI."""
+
+from __future__ import annotations
+
+import hashlib
+import json
+import os
+import subprocess
+import sys
+from pathlib import Path
+
+import pytest
+import yaml
+
+ROOT = Path(__file__).resolve().parents[1]
+MEMBER = ROOT / "specs/models/SG-SPEC-0072/foundation-member.yaml"
+CORE = ROOT / "ontology/packages/specgraph-core/domain-ontology-package.yaml"
+sys.path.insert(0, str(ROOT / "tools"))
+from project_ontology_context import foundation  # noqa: E402
+
+
+def sha(data):
+    return hashlib.sha256(data).hexdigest()
+
+
+@pytest.fixture
+def compiler():
+    if not (binary := os.environ.get("ONTOLOGYC_BINARY_PATH")):
+        pytest.skip("set ONTOLOGYC_BINARY_PATH to exercise the real package compiler")
+    return Path(binary).resolve(strict=True)
+
+
+def capture(work, compiler, source):
+    work.mkdir()
+    package = work / "member.yaml"
+    package.write_bytes(source)
+    subprocess.run(
+        [compiler, "compile", package, "--target", "typescript", "--out", work / "ir"],
+        check=True,
+        capture_output=True,
+        timeout=60,
+    )
+    ir = work / "ir/ontology.normalized.json"
+    meta = yaml.safe_load(source)["metadata"]
+    selection = {
+        "artifact_kind": "specgraph_project_ontology_selection",
+        "schema_version": 1,
+        "packages": [
+            {
+                **{k: meta[k] for k in ("id", "version", "namespace")},
+                "source": "member.yaml",
+                "source_sha256": sha(source),
+                "ir": "ir/ontology.normalized.json",
+                "ir_sha256": sha(ir.read_bytes()),
+            }
+        ],
+        "profiles": [foundation.PROFILE],
+        "composition": {"dependency_rule": "explicit", "name_resolution_rule": "qualified"},
+    }
+    (work / "selection.yaml").write_text(yaml.safe_dump(selection))
+    proc = subprocess.run(
+        [
+            sys.executable,
+            "-B",
+            ROOT / "tools/project_ontology_context_cli.py",
+            "--workspace-root",
+            work,
+            "--project-id",
+            "foundation-probe",
+            "--selection",
+            "selection.yaml",
+            "--ontologyc",
+            compiler,
+            "--compiler-sha256",
+            sha(compiler.read_bytes()),
+            "--output",
+            "report.json",
+        ],
+        capture_output=True,
+        text=True,
+        timeout=180,
+    )
+    report = json.loads(proc.stdout)
+    assert json.loads((work / "report.json").read_bytes()) == report
+    return proc.returncode, report
+
+
+def test_same_pinned_foundation_resolves_valueobject_and_rejects_typo(compiler, tmp_path):
+    source = MEMBER.read_bytes()
+    good_code, good = capture(tmp_path / "valid", compiler, source)
+    bad_code, bad = capture(
+        tmp_path / "typo", compiler, source.replace(b"sg:ValueObject", b"sg:Typo")
+    )
+    assert (good_code, good["outcome"]) == (0, "verified")
+    assert (bad_code, bad["outcome"]) == (2, "invalid")
+    assert good["context_revision"] and bad["context_revision"] is None
+    assert good["resolved_imports"] == bad["resolved_imports"]
+    assert good["resolved_imports"][0]["source_sha256"] == sha(foundation.GLOSSARY.read_bytes())
+    assert good["snapshots"][0]["source_sha256"] != bad["snapshots"][0]["source_sha256"]
+    for report in (good, bad):
+        assert any(
+            c["check"] == "member_capture" and c["outcome"] == "verified" for c in report["checks"]
+        )
+    for report, name, uri in (
+        (good, "sg:ValueObject", "ontology://specgraph.foundation/0.1.0/classes/ValueObject"),
+        (bad, "sg:Typo", None),
+    ):
+        [resolution] = [c for c in report["checks"] if c["check"] == "name_resolution"]
+        assert resolution["outcome"] == report["outcome"]
+        assert resolution["reference"] == {
+            "pointer": "/spec/classes/Entry/extends",
+            "name": name,
+            "uri": uri,
+        }
+
+
+def test_real_project_core_resolves_its_foundation_import(compiler, tmp_path):
+    code, report = capture(tmp_path / "core", compiler, CORE.read_bytes())
+    assert (code, report["outcome"]) == (0, "verified"), report["checks"]
+    assert any("sg:Policy ->" in c["detail"] for c in report["checks"])
+
+
+def member_spec():
+    doc = yaml.safe_load(MEMBER.read_bytes())
+    return doc["spec"], doc["metadata"]
+
+
+def test_resolution_checks_structural_slots_and_their_roles():
+    spec, member = member_spec()
+    entry = spec["classes"]["Entry"]
+    entry.update(description="Unrelated prose can mention sg:Typo", implements=["sg:Auditable"])
+    spec["relations"]["follows"]["range"] = {"oneOf": ["Entry", "sg:Typo"]}
+    spec["policies"] = {"Review": {"extends": "sg:Approvable", "appliesTo": ["sg:Typo"]}}
+    checks, _ = foundation.check_import(spec, member, 1)
+    assert [
+        c.detail.split(": ")[0]
+        for c in checks
+        if c.check == "name_resolution" and c.outcome == "invalid"
+    ] == [
+        "/spec/relations/follows/range/oneOf/1",
+        "/spec/policies/Review/extends",
+        "/spec/policies/Review/appliesTo/0",
+    ]
+    assert any("protocols/Auditable" in c.detail for c in checks)
+    assert checks[-1].outcome == "invalid"
+
+
+def test_catalog_cannot_be_replaced_by_a_project_dictionary(monkeypatch, tmp_path):
+    spec, member = member_spec()
+    replacement = tmp_path / "glossary.txt"
+    monkeypatch.setattr(foundation, "GLOSSARY", replacement)
+    checks, imports = foundation.check_import(spec, member, 1)
+    assert checks[-1].outcome == "unavailable" and not imports
+    replacement.write_text("sg:Typo is valid")
+    checks, imports = foundation.check_import(spec, member, 1)
+    assert checks[-1].outcome == "invalid" and not imports
+
+
+@pytest.mark.parametrize(("count", "version"), [(2, "0.1.0"), (1, "0.2.0")])
+def test_unsupported_import_sets_stay_unavailable(count, version):
+    spec, member = member_spec()
+    spec["imports"][0]["version"] = version
+    checks, imports = foundation.check_import(spec, member, count)
+    assert checks[-1].outcome == "unavailable" and not imports
