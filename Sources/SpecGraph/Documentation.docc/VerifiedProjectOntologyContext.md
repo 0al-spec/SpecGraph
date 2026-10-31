@@ -36,7 +36,11 @@ compiler pin is checked before execution. Named outcome policies preserve
 invalid-before-unavailable precedence; errors have typed outcomes.
 An ambiguous compiler process failure or undecodable process output is unavailable;
 independently detected identity, pin and source/IR mismatches remain invalid.
-Imported/composed closure remains unavailable. See
+With Ontology 0.3.0 every compilable domain package declares an import.
+The current profile verifies closure only for a single package without imports.
+A member can therefore verify while the overall project context remains unavailable.
+The bounded probe is recorded in
+`docs/reviews/0233_mechanical_specification_authoring/local-model-pilot/verified-single-probe.json`. See
 `docs/project_ontology_context.md` for the actual API and manifest shape.
 
 The source CLI `project_ontology_context_cli.py` and native runtime

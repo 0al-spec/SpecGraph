@@ -1,0 +1,147 @@
+{
+  "observation": "SG72-VERIFIED-SINGLE feasibility probe",
+  "observed_date_utc": "2026-10-31",
+  "specgraph_revision": "a42077cf4ddd8c84e96fc684e0505533dcf906b4",
+  "spec_id": "SG-SPEC-0072",
+  "source_pointer": "/specification/acceptance_cases/0/expected",
+  "intent_refs": [
+    "SG-RFC-0232/ONT-CONTEXT",
+    "SG-RFC-0232/ONT-INPUTS"
+  ],
+  "proposal_handle": "proposal::0233-mechanical-specification-authoring",
+  "status": "verified_case_blocked_at_package_compilation",
+  "ontology_release": "0.3.0",
+  "ontology_source_revision": "d831e25b46095dfea5e17befbc88c5fdcd03e031",
+  "ontologyc_sha256": "1d0128d27f33f04b46c3969e41a04f3ac365afbb748d4c1f7f45645c09839923",
+  "compiler_provenance": "not_verified",
+  "upstream_fixture": "SPECS/ontology/fixtures/valid/local-model-omitted-sections.yaml",
+  "fixture_yaml_serializer": "PyYAML 6.0.3, safe_dump(sort_keys=False)",
+  "compiler_observations": [
+    {
+      "case": "with-import",
+      "source_sha256": "8f13d7e8f4656e7a7bda82c25fb92343de5224029731261ddb403b32fd8536c6",
+      "normalized_ir_emitted": true,
+      "check": {
+        "exit": 0,
+        "error_codes": []
+      },
+      "compile": {
+        "exit": 0,
+        "error_codes": []
+      }
+    },
+    {
+      "case": "empty-imports",
+      "source_sha256": "98d377f9a58b58d44e816457b526803e8447fb8caf72d1b7106bf01b4e5c9cec",
+      "normalized_ir_emitted": false,
+      "check": {
+        "exit": 1,
+        "error_codes": [
+          "class.extends.unresolved",
+          "imports.empty"
+        ]
+      },
+      "compile": {
+        "exit": 1,
+        "error_codes": [
+          "class.extends.unresolved",
+          "imports.empty"
+        ]
+      }
+    },
+    {
+      "case": "omitted-imports",
+      "source_sha256": "989a17aa918c10d0e199ce934da967e699fa86f981cc58ccb8f141a3e5525968",
+      "normalized_ir_emitted": false,
+      "check": {
+        "exit": 1,
+        "error_codes": [
+          "class.extends.unresolved",
+          "imports.empty",
+          "spec.required"
+        ]
+      },
+      "compile": {
+        "exit": 1,
+        "error_codes": [
+          "class.extends.unresolved",
+          "imports.empty",
+          "spec.required"
+        ]
+      }
+    }
+  ],
+  "with_import_control": {
+    "selection": {
+      "artifact_kind": "specgraph_project_ontology_selection",
+      "composition": {
+        "dependency_rule": "explicit",
+        "name_resolution_rule": "qualified"
+      },
+      "packages": [
+        {
+          "id": "test.local-model",
+          "ir": "ir/ontology.normalized.json",
+          "ir_sha256": "82207e5bb855d5ec67be171cde7457dea950581d8d6bf4c05a1d05206f0aa63b",
+          "namespace": "localmodel",
+          "source": "member.yaml",
+          "source_sha256": "8f13d7e8f4656e7a7bda82c25fb92343de5224029731261ddb403b32fd8536c6",
+          "version": "0.1.0"
+        }
+      ],
+      "profiles": [
+        "ontologyc-structural-v1"
+      ],
+      "schema_version": 1
+    },
+    "cli_exit": 1,
+    "context_outcome": "unavailable",
+    "checks": [
+      {
+        "check": "profile",
+        "detail": "supported structural checking profile",
+        "outcome": "verified",
+        "package": null
+      },
+      {
+        "check": "selection",
+        "detail": "explicit package selection parsed",
+        "outcome": "verified",
+        "package": null
+      },
+      {
+        "check": "compiler",
+        "detail": "operator-provided executable available; provenance not verified",
+        "outcome": "verified",
+        "package": null
+      },
+      {
+        "check": "member_capture",
+        "detail": "source, IR and package identity checked",
+        "outcome": "verified",
+        "package": "test.local-model"
+      },
+      {
+        "check": "dependency_closure",
+        "detail": "dependency closure and composition checks are unsupported",
+        "outcome": "unavailable",
+        "package": "test.local-model"
+      }
+    ],
+    "snapshot": {
+      "compiler_provenance": "not_verified",
+      "compiler_sha256": "1d0128d27f33f04b46c3969e41a04f3ac365afbb748d4c1f7f45645c09839923",
+      "id": "test.local-model",
+      "ir_sha256": "82207e5bb855d5ec67be171cde7457dea950581d8d6bf4c05a1d05206f0aa63b",
+      "namespace": "localmodel",
+      "source_sha256": "8f13d7e8f4656e7a7bda82c25fb92343de5224029731261ddb403b32fd8536c6",
+      "version": "0.1.0"
+    }
+  },
+  "no_import_context_execution": "not_run_missing_compiler_ir",
+  "fixture_compiler_controls": {
+    "suite": "tests/test_project_ontology_context.py",
+    "passed": 20,
+    "positive_case": "test_snapshot_identity_and_mutable_files"
+  }
+}

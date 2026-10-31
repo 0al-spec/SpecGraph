@@ -143,3 +143,67 @@ and one vocabulary relation. Supporting both cost a net 127 Python lines
 across the runner and its reviewed case definitions relative to `bcee7569`.
 Each map still marks one of four acceptance criteria partial. A third case
 could exercise `verified` and measure how much more adapter work it requires.
+
+## Single-package verified probe, 31 October 2026
+
+SG-SPEC-0072 acceptance case 0 requires successful structural checks for a
+pinned package. The proposed third example needed a package with zero imports
+because the current capture can verify closure only under that condition.
+The pinned compiler rejects this prerequisite. The executable pilot still has
+two cases. This experiment changed zero lines of runner code, and the cost of
+adding a working third case remains unmeasured.
+
+| Imports in the selected package | ontologyc check / compile | Production context CLI |
+| --- | --- | --- |
+| Empty list | Both exit 1 with `imports.empty`. No IR emitted. | No compiled IR to select |
+| Omitted field | Both exit 1 with `spec.required` and `imports.empty`. No IR emitted. | No compiled IR to select |
+| One pinned foundation import | Both exit 0. Compilation emits IR. | Exit 1, member verified, closure unavailable, context unavailable |
+
+Removing the import from this fixture also leaves its two `sg:ValueObject` base
+references unresolved. Independently of those references, the release schema
+sets `minItems: 1` and the compiler unconditionally checks for an empty list.
+Every compilable package in this format therefore takes the unsupported-import
+branch of the current production capture. The 20 passing context tests include
+a positive control using their own compiler fixture. See the
+[observations, selected hashes and source revision](verified-single-probe.json),
+[release schema](https://github.com/0al-spec/Ontology/blob/d831e25b46095dfea5e17befbc88c5fdcd03e031/SPECS/ontology/domain-ontology-package.schema.yaml),
+[compiler validation](https://github.com/0al-spec/Ontology/blob/d831e25b46095dfea5e17befbc88c5fdcd03e031/Sources/OntologyCompiler/PackageValidation.swift#L22-L34)
+and [context capture](https://github.com/0al-spec/SpecGraph/blob/a42077cf4ddd8c84e96fc684e0505533dcf906b4/tools/project_ontology_context/capture.py).
+
+To replay from the SpecGraph checkout, set `work` to a fresh scratch directory,
+`ONTOLOGY_CHECKOUT` to an Ontology checkout containing the release and
+`ONTOLOGYC` to the built release binary. The receipt contains the exact
+selection used for the successful package compilation.
+
+```sh
+git -C "$ONTOLOGY_CHECKOUT" show d831e25b46095dfea5e17befbc88c5fdcd03e031:SPECS/ontology/fixtures/valid/local-model-omitted-sections.yaml > "$work/upstream.yaml"
+.venv/bin/python - "$work" <<'PYTHON'
+import json, sys, yaml
+from pathlib import Path
+work = Path(sys.argv[1])
+receipt = Path("docs/reviews/0233_mechanical_specification_authoring/local-model-pilot/verified-single-probe.json")
+for variant in ("with-import", "empty-imports", "omitted-imports"):
+    case = work / variant
+    case.mkdir()
+    data = yaml.safe_load((work / "upstream.yaml").read_bytes())
+    if variant == "empty-imports":
+        data["spec"]["imports"] = []
+    elif variant == "omitted-imports":
+        del data["spec"]["imports"]
+    (case / "member.yaml").write_text(yaml.safe_dump(data, sort_keys=False))
+selection = json.loads(receipt.read_bytes())["with_import_control"]["selection"]
+(work / "with-import/selection.yaml").write_text(yaml.safe_dump(selection))
+PYTHON
+for case in with-import empty-imports omitted-imports; do
+  "$ONTOLOGYC" check "$work/$case/member.yaml" || printf 'check exit %s\n' "$?"
+  "$ONTOLOGYC" compile "$work/$case/member.yaml" --target typescript --out "$work/$case/ir" || printf 'compile exit %s\n' "$?"
+done
+.venv/bin/python tools/project_ontology_context_cli.py --workspace-root "$work/with-import" \
+  --project-id sg72-verified-probe --selection selection.yaml --ontologyc "$ONTOLOGYC" \
+  --compiler-sha256 1d0128d27f33f04b46c3969e41a04f3ac365afbb748d4c1f7f45645c09839923
+```
+
+The compiler pin in the replay command identifies the observed binary. For a
+different build, pin the digest of the executable being tested and record it
+with the result. Return through proposal 0233 after SpecGraph can resolve a
+pinned import, or after a released package format supports standalone packages.
