@@ -3,6 +3,11 @@ name: Publish Static Artifacts
 on:
   workflow_dispatch:
     inputs:
+      capture_root_paths:
+        description: "Retain the root verifier's per-path HTTPS digests for this deployment"
+        required: false
+        type: boolean
+        default: false
       hosted_managed_publication_packet_b64:
         description: "Bounded public-safe hosted-operation publication packet"
         required: false
@@ -391,10 +396,17 @@ jobs:
 
       - name: Verify published artifact digests
         if: env.SFTP_HOST != ''
+        env:
+          CAPTURE_ROOT_PATHS: ${{ github.event_name == 'workflow_dispatch' && inputs.capture_root_paths }}
         run: |
+          root_args=()
+          if [ "$CAPTURE_ROOT_PATHS" = "true" ]; then
+            root_args=(--observations-output "$RUNNER_TEMP/specgraph-incremental-reports/root-path-observations.json")
+          fi
           python tools/static_artifact_incremental_stage.py verify \
             --bundle-dir dist/specgraph-public \
             --remote-base-url "$STATIC_ARTIFACT_PUBLIC_BASE_URL" \
+            "${root_args[@]}" \
             --output "$RUNNER_TEMP/specgraph-incremental-reports/root-verification.json"
           python tools/static_artifact_incremental_stage.py verify \
             --bundle-dir dist/specgraph-public/workspaces/team-decision-log \

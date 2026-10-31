@@ -180,6 +180,36 @@ continues independently. No keys, signer service or new telemetry backend are
 needed for this provider-reported profile. Raw artifacts remain in Actions;
 the pilot does not publish them automatically to the public webroot.
 
+## Offline PB-ALL check for one deployment
+
+Enable `capture_root_paths` in a manual **Publish Static Artifacts** run to
+sample the root bundle. This runs the normal deployment. During its successful
+HTTPS verification attempt the verifier records each fetched path and the
+SHA-256 of the bytes it received, including the two metadata files. The root
+receipt binds the exact bytes of `root-path-observations.json` by SHA-256.
+Failed attempts contribute no rows to the successful attempt. The option
+defaults to off and applies only to the root.
+
+After the run completes, download the build and deploy artifacts from the
+same run and use the offline reader from that revision. Use a fresh directory.
+
+```bash
+gh run download "$RUN_ID" -R 0al-spec/SpecGraph -n specgraph-static-artifacts -D evidence/bundle
+gh run download "$RUN_ID" -R 0al-spec/SpecGraph -n specgraph-incremental-deployment-reports -D evidence/deploy
+python3 tools/publication_path_coverage.py \
+  --run-id "$RUN_ID" \
+  --bundle-dir evidence/bundle \
+  --receipt evidence/deploy/root-verification.json \
+  --observations evidence/deploy/root-path-observations.json
+```
+
+The reader needs only the root `artifact_manifest.json` and `checksums.sha256`
+from the build. It compares the expected and observed path/digest pairs
+including repetitions, checks the receipt binding, origin and attempt, and
+prints missing or unexpected paths. Exit 0 means complete matching evidence,
+1 means a comparison failed, and 2 means the inputs could not be read as that
+contract. This is a retrospective check of one provider-reported observation.
+
 ## Interpretation
 
 | Stage | Meaning of success |
