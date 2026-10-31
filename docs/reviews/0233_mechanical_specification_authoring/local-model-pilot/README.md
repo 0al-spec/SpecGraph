@@ -254,7 +254,7 @@ and reported `sgcore:ClaimCalibration` for review.
 
 ## A criterion from a second specification
 
-The [PB-PAYLOAD experiment](../../../../specs/models/SG-SPEC-0071/README.md)
+The [first PB-PAYLOAD experiment](https://github.com/0al-spec/SpecGraph/tree/045b43f662c8cb28a5507361be38b89a61128229/specs/models/SG-SPEC-0071)
 uses one criterion from SG-SPEC-0071. Existing core relations trace its
 requirement, test and evidence. A local extension represents the expected
 manifest digest and the digest of fetched bytes. The two instances have the
@@ -266,3 +266,21 @@ The authored input is 29 lines of package YAML, 30 of typed declarations and
 27 of fixture JSON. Most of the extra code is test scaffolding to bind the
 criterion, compile SDKs and check edge endpoints. This pilot establishes
 expressibility and exposes its cost for one criterion.
+
+## Reuse on PB-MANIFEST
+
+The [paired pilot](../../../../specs/models/SG-SPEC-0071/README.md) keeps the
+same expected/observed comparison and three core trace relations. The new
+criterion needs one additional source type because its expected digest comes
+from the retained manifest file itself. The package generalizes the observation
+and the existing comparison relation. Both cases share the SDK compilation,
+graph builder, source-binding checks and verifier replay.
+
+Relative to the first pilot, package YAML grew from 29 to 36 lines and typed
+declarations from 30 to 42 (+19 combined). The second input adds 31 lines
+of JSON. The two pytest files grew by 66 lines net, including the new
+byte-level controls and checks of the selected origin. These counts exclude
+workflow, documentation and generated diagrams. They show concrete reuse;
+they do not measure authoring time. A
+valid stale manifest and a whitespace-only variant both failed, while the
+unchanged manifest verified. The production verifier was exercised unchanged.

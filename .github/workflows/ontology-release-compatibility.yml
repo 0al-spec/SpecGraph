@@ -87,7 +87,7 @@ jobs:
           done
           echo "compiler=$work/$bundle/ontologyc" >> "$GITHUB_OUTPUT"
 
-      - name: Check the PB-PAYLOAD model with its generated SDK and production verifier
+      - name: Check PB-PAYLOAD and PB-MANIFEST with their shared SDK and production verifier
         env:
           ONTOLOGYC_BINARY_PATH: ${{ steps.model_tools.outputs.compiler }}
         run: |
@@ -95,8 +95,9 @@ jobs:
           toolchain=$(mktemp -d "$RUNNER_TEMP/payload-ts.XXXXXXXX")
           npm install --prefix "$toolchain" --no-audit --no-fund --ignore-scripts typescript@6.0.3
           TYPESCRIPT_TSC_PATH="$toolchain/node_modules/typescript/bin/tsc" \
-            python -m pytest -v tests/test_pb_payload_ontology_model.py \
-              tests/test_static_artifact_incremental_stage.py -k pb_payload
+            python -m pytest -v tests/test_publication_digest_ontology_model.py \
+              tests/test_static_artifact_incremental_stage.py::test_pb_payload_model_against_bundle_verifier \
+              tests/test_static_artifact_incremental_stage.py::test_pb_manifest_model_against_bundle_verifier
 
       - name: Retain compatibility receipt
         uses: actions/upload-artifact@v4

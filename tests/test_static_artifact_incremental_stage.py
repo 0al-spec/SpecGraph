@@ -163,38 +163,80 @@ def test_verify_remote_bundle_fails_on_digest_drift(tmp_path: Path) -> None:
         )
 
 
+PUBLICATION_MODELS = TOOL_PATH.parents[1] / "specs/models/SG-SPEC-0071"
+
+
+def _replay_digest_observation(bundle, reference, observation):
+    path = reference["path"]
+    retained_bytes = (bundle / path).read_bytes()
+    observed_bytes = observation["body"].encode()
+    assert hashlib.sha256(retained_bytes).hexdigest() == reference["expectedSHA256"]
+    assert hashlib.sha256(observed_bytes).hexdigest() == observation["observedSHA256"]
+
+    # Substitute only the selected response. All other paths serve their local bytes.
+    origin = "https://publication.example/"
+
+    def fetch(url):
+        assert url.startswith(origin)
+        relative = url.removeprefix(origin)
+        return observed_bytes if relative == path else (bundle / relative).read_bytes()
+
+    return verify_remote_bundle(bundle_dir=bundle, remote_base_url=origin, fetcher=fetch)
+
+
 @pytest.mark.parametrize("control", ["matching", "changed"])
 def test_pb_payload_model_against_bundle_verifier(tmp_path: Path, control: str) -> None:
-    model = Path(__file__).resolve().parents[1] / "specs/models/SG-SPEC-0071/case.json"
-    case = json.loads(model.read_bytes())
+    case = json.loads((PUBLICATION_MODELS / "case.json").read_bytes())
     entry = case["manifestEntry"]
     local = case["localBody"].encode()
     observation = case["observations"][control]
     remote = observation["body"].encode()
     assert sum(a != b for a, b in zip(local, remote, strict=True)) == int(control == "changed")
-    assert hashlib.sha256(local).hexdigest() == entry["expectedSHA256"]
-    assert hashlib.sha256(remote).hexdigest() == observation["observedSHA256"]
-
-    path = entry["path"]
-    bundle = _bundle(tmp_path / "bundle", {path: local})
-    origin = "https://publication.example/"
-    responses = {
-        origin + name: (bundle / name).read_bytes()
-        for name in ("artifact_manifest.json", "checksums.sha256")
-    }
-    responses[origin + path] = remote
-
-    def verify():
-        return verify_remote_bundle(
-            bundle_dir=bundle, remote_base_url=origin, fetcher=responses.__getitem__
-        )
-
+    bundle = _bundle(tmp_path / "bundle", {entry["path"]: local})
+    manifest = json.loads((bundle / "artifact_manifest.json").read_bytes())
+    assert manifest["files"][0]["sha256"] == entry["expectedSHA256"]
     if control == "matching":
-        assert verify()["status"] == "verified"
+        assert _replay_digest_observation(bundle, entry, observation)["status"] == "verified"
     else:
         with pytest.raises(IncrementalStageError) as failure:
-            verify()
-        assert str(failure.value) == f"remote artifact digest mismatch: {path}"
+            _replay_digest_observation(bundle, entry, observation)
+        assert str(failure.value) == f"remote artifact digest mismatch: {entry['path']}"
+
+
+@pytest.mark.parametrize("control", ["matching", "stale", "reformatted"])
+def test_pb_manifest_model_against_bundle_verifier(tmp_path: Path, control: str) -> None:
+    case = json.loads((PUBLICATION_MODELS / "manifest-case.json").read_bytes())
+    payload = json.loads((PUBLICATION_MODELS / "case.json").read_bytes())
+    bundle = _bundle(
+        tmp_path / "bundle", {payload["manifestEntry"]["path"]: payload["localBody"].encode()}
+    )
+    reference = case["localManifest"]
+    assert reference["path"] == "artifact_manifest.json"
+    manifest = bundle / reference["path"]
+    expected = json.loads(case["localBody"])
+    assert expected == json.loads(manifest.read_bytes())
+    manifest.write_bytes(case["localBody"].encode())
+
+    observation = case["observations"][control]
+    body = observation["body"]
+    if control == "matching":
+        assert body == case["localBody"]
+        report = _replay_digest_observation(bundle, reference, observation)
+        assert report["status"] == "verified"
+        assert report["bundle_identity"]["manifest_sha256"] == reference["expectedSHA256"]
+        return
+
+    if control == "reformatted":
+        assert json.loads(body) == expected and body != case["localBody"]
+    else:
+        old_entry = dict(
+            expected["files"][0], sha256=payload["observations"]["changed"]["observedSHA256"]
+        )
+        assert json.loads(body) == {"files": [old_entry]}
+        assert len(body.encode()) == len(case["localBody"].encode())
+    with pytest.raises(IncrementalStageError) as failure:
+        _replay_digest_observation(bundle, reference, observation)
+    assert str(failure.value) == "remote metadata digest mismatch: artifact_manifest.json"
 
 
 def test_verify_remote_bundle_fails_on_stale_published_manifest(tmp_path: Path) -> None:
