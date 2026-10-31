@@ -209,8 +209,28 @@ def test_compiler_sites_are_bound_to_captured_values():
         (failure[0], "spec.classes.Entry.description", "wrong field"),
     )
     spec["classes"]["Entry"]["description"] = "sg:Typo"
-    [check] = foundation.rejected_references(
+    [check] = foundation.failed_capture_checks(
         {"spec": spec}, member, 1, OntologySourceRejection(diagnostics, "a" * 64, "b" * 64)
     )
     assert check.reference.pointer == "/spec/relations/follows/range/oneOf/1"
     assert check.reference.name == "sg:Typo" and check.compiler_diagnostic.code == failure[0]
+
+
+@pytest.mark.parametrize(
+    ("old", "new"),
+    [(b"namespace: sample", b"namespace: sg"), (b"test.sg72-member", b"specgraph.foundation")],
+)
+def test_shadowed_identity_is_invalid_even_without_ir(compiler, tmp_path, old, new):
+    source = MEMBER.read_bytes()
+    capture(tmp_path / "accepted", compiler, source)
+    prior = (tmp_path / "accepted/ir/ontology.normalized.json").read_bytes()
+    code, report = capture(
+        tmp_path / "shadowed", compiler, source.replace(old, new), prior_ir=prior
+    )
+    assert (code, report["outcome"], report["context_revision"]) == (2, "invalid", None)
+    assert any(
+        c["check"] == "dependency_closure"
+        and c["outcome"] == "invalid"
+        and "shadows" in c["detail"]
+        for c in report["checks"]
+    )

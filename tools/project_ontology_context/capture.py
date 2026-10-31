@@ -14,7 +14,6 @@ import yaml
 from ontology_snapshot import (
     OntologySnapshot,
     OntologySnapshotError,
-    OntologySourceRejection,
     capture_ontology_inputs,
     capture_ontology_snapshot,
     parse_ontology_ir,
@@ -267,9 +266,9 @@ def capture_project_context(
                 add("dependency_closure", "verified", "single package declares no imports", package)
         except OntologySnapshotError as error:
             add("member_capture", error.outcome, str(error), package)
-            if source_data is not None and isinstance(error, OntologySourceRejection):
+            if foundation_selected and source_data is not None:
                 checks.extend(
-                    foundation.rejected_references(source_data, member, len(members), error)
+                    foundation.failed_capture_checks(source_data, member, len(members), error)
                 )
         except FileNotFoundError:
             add("member_capture", "unavailable", "source or saved IR unavailable", package)

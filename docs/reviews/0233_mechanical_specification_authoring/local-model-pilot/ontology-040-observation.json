@@ -53,6 +53,13 @@
     "project_core": {
       "outcome": "verified",
       "verified_reference_sites": 15
+    },
+    "shadowed_namespace_without_ir": {
+      "outcome": "invalid",
+      "cli_exit": 2,
+      "check": "dependency_closure",
+      "detail": "Selected member shadows the foundation identity or namespace",
+      "context_revision": null
     }
   },
   "release_smoke": {

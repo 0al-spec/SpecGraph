@@ -8,7 +8,7 @@ import re
 from collections.abc import Iterator
 from pathlib import Path
 
-from ontology_snapshot import OntologySourceRejection
+from ontology_snapshot import OntologySnapshotError, OntologySourceRejection
 
 from .invalid_spec import INVALID_SPEC
 from .model import CheckResult, CompilerDiagnostic, ContextFacts, ReferenceSite, ResolvedImport
@@ -52,17 +52,18 @@ def _external(ref: str, package_namespace: str) -> bool:
     return bool(separator) and namespace != package_namespace
 
 
-def rejected_references(
-    source: dict, member: dict, member_count: int, rejection: OntologySourceRejection
+def failed_capture_checks(
+    source: dict, member: dict, member_count: int, rejection: OntologySnapshotError
 ) -> Iterator[CheckResult]:
     """Bind compiler reference errors to existing fields in the same captured source."""
     spec = source.get("spec")
-    if (
-        not isinstance(spec, dict)
-        or not _supported_import(spec, member_count)
-        or member["id"] == PIN.id
-        or member["namespace"] == PIN.namespace
-    ):
+    if not isinstance(spec, dict):
+        return
+    issue = _scope_issue(spec, member, member_count)
+    if issue is not None:
+        yield issue
+        return
+    if not isinstance(rejection, OntologySourceRejection):
         return
     symbol = r"[A-Za-z][A-Za-z0-9_]*"
     sites = {
@@ -104,10 +105,25 @@ def rejected_references(
                 )
 
 
-def _supported_import(spec: dict, member_count: int) -> bool:
-    return member_count == 1 and spec.get("imports") == [
+def _scope_issue(spec: dict, member: dict, member_count: int) -> CheckResult | None:
+    package = member["id"]
+    if member_count != 1 or spec.get("imports") != [
         {"id": PIN.id, "namespace": PIN.namespace, "version": PIN.version}
-    ]
+    ]:
+        return CheckResult(
+            "dependency_closure",
+            "unavailable",
+            "Profile requires one member importing specgraph.foundation@0.1.0 as sg",
+            package,
+        )
+    if package == PIN.id or member["namespace"] == PIN.namespace:
+        return CheckResult(
+            "dependency_closure",
+            "invalid",
+            "Selected member shadows the foundation identity or namespace",
+            package,
+        )
+    return None
 
 
 def _resolve(
@@ -141,17 +157,9 @@ def check_import(
     def closure(outcome: str, detail: str) -> CheckResult:
         return CheckResult("dependency_closure", outcome, detail, package)
 
-    if not _supported_import(spec, member_count):
-        return [
-            closure(
-                "unavailable",
-                "Profile requires one member importing specgraph.foundation@0.1.0 as sg",
-            )
-        ], ()
-    if package == PIN.id or member["namespace"] == PIN.namespace:
-        return [
-            closure("invalid", "Selected member shadows the foundation identity or namespace")
-        ], ()
+    issue = _scope_issue(spec, member, member_count)
+    if issue is not None:
+        return [issue], ()
     try:
         data = EXPORTS.read_bytes()
     except OSError as error:
