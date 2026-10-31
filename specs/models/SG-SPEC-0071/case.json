@@ -1,0 +1,27 @@
+{
+  "source": {
+    "spec": "SG-SPEC-0071",
+    "sha256": "9f4a8b8332138ef3b6d1d9cc873b2a40a1a4620f7fceb35db32d4d9e1d6521a9",
+    "requirement": "SG-REQ-PUBLICATION-VERIFIED",
+    "criterion": "PB-PAYLOAD",
+    "criterionPointer": "/specification/requirement/criteria/1",
+    "atomPointer": "/atoms/intents/1",
+    "statement": "A payload digest mismatch prevents successful bundle verification.",
+    "test": "tests/test_static_artifact_incremental_stage.py::test_verify_remote_bundle_fails_on_digest_drift"
+  },
+  "manifestEntry": {
+    "path": "payload.txt",
+    "expectedSHA256": "ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad"
+  },
+  "localBody": "abc",
+  "observations": {
+    "matching": {
+      "body": "abc",
+      "observedSHA256": "ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad"
+    },
+    "changed": {
+      "body": "abd",
+      "observedSHA256": "a52d159f262b2c6ddb724a61840befc36eb30c88877a4030b65cbe86298449c9"
+    }
+  }
+}
