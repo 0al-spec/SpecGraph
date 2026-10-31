@@ -13,6 +13,25 @@ acceptance rows, and a typed declaration (`model.ts`, `unsupported-closure.ts` o
 They share `case-model.ts`, the draft vocabulary in `domain-ontology-package.yaml`
 and the SDK generated from that vocabulary and `specgraph-core`.
 
+![SG-SPEC-0072 local model. Each context verification case includes two check results and targets one requirement.](ontology.svg)
+
+The diagram shows the two local classes and their declared relations. Dashed
+boxes identify types referenced from the foundation and SpecGraph core imports.
+The two required check results are instances of the same `CheckResult` class.
+
+To reproduce the [DOT source](ontology.dot) and SVG, extract the archive for your
+platform from [Ontology 0.5.0](https://github.com/0al-spec/Ontology/releases/tag/0.5.0),
+install Graphviz for SVG output and run this command from the SpecGraph root:
+
+```sh
+/path/to/ontologyviz specs/models/SG-SPEC-0072/domain-ontology-package.yaml \
+  --format svg --out /path/to/diagram
+```
+
+The checked-in SVG was rendered with Graphviz 16.1.0. The macOS compatibility
+job verifies the released archive's SHA-256, then compares the generated DOT
+with the checked-in DOT. Layout can vary with the Graphviz version and fonts.
+
 Edit these source files, then run the pilot from repository root using Python
 from the repository environment. Supply an existing ontologyc and TypeScript
 compiler; generated SDK/JavaScript and the report go to a new scratch directory:
@@ -29,8 +48,8 @@ Use a separate empty directory for each run. The foundation case compiles
 `foundation-member.yaml` and passes its exact source and generated IR pins
 into production capture. Its source map marks acceptance rows 0 and 2 partial.
 
-The reference toolchain is SpecGraph's pinned Ontology 0.4.0 source revision
-`46a4af4ab9608a8e1fd46bf3d650cd3fc8727a73`, TypeScript `6.0.3`, and Node.js.
+The reference toolchain is SpecGraph's pinned Ontology 0.5.0 source revision
+`0fcc94469d971aaf39fcc182bc5c6b8acff37fd2`, TypeScript `6.0.3`, and Node.js.
 The existing Ontology compatibility workflow documents building ontologyc from
 that revision. TypeScript can be installed in a separate tool directory with
 `npm install --prefix /path/to/toolchain --no-audit --no-fund typescript@6.0.3`.

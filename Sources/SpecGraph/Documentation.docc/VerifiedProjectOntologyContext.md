@@ -36,7 +36,7 @@ compiler pin is checked before execution. Named outcome policies preserve
 invalid-before-unavailable precedence; errors have typed outcomes.
 An ambiguous compiler process failure or undecodable process output is unavailable;
 independently detected identity, pin and source/IR mismatches remain invalid.
-With Ontology 0.4.0 every compilable domain package declares an import.
+With Ontology 0.5.0 every compilable domain package declares an import.
 The original `ontologyc-structural-v1` profile verifies closure only for a single package without imports.
 A member can therefore verify while the overall project context remains unavailable.
 The bounded probe is recorded in
@@ -45,7 +45,7 @@ The bounded probe is recorded in
 
 The opt-in `ontologyc-foundation-v1` profile resolves one member's single
 `specgraph.foundation@0.1.0` import in namespace `sg`. It verifies the local
-copy of the 0.4.0 compiler export catalog by SHA-256 and binds its identity to the context
+copy of the 0.5.0 compiler export catalog by SHA-256 and binds its identity to the context
 revision. Qualified references in declaration slots carry the source pointer,
 name and resolved URI. A structured compiler rejection at a captured reference field yields `invalid` even when no IR was produced. Other import sets
 remain unavailable for this profile. See `docs/project_ontology_context.md`

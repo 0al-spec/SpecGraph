@@ -18,7 +18,7 @@ PIN = ResolvedImport(
     id="specgraph.foundation",
     namespace="sg",
     version="0.1.0",
-    source_uri="https://github.com/0al-spec/Ontology/blob/46a4af4ab9608a8e1fd46bf3d650cd3fc8727a73/SPECS/ontology/foundation/0.1.0/exports.json",
+    source_uri="https://github.com/0al-spec/Ontology/blob/0fcc94469d971aaf39fcc182bc5c6b8acff37fd2/SPECS/ontology/foundation/0.1.0/exports.json",
     source_sha256="ef07cf4e8dd4cdc8c8dd583971fc3cabfe82e4b00fb0e680b6d1db48cfe262ad",
 )
 EXPORTS = Path(__file__).parent / "pinned_foundation/exports.json"
