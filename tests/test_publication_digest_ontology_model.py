@@ -58,7 +58,7 @@ def test_binding_identifies_the_canonical_criterion_and_test(criterion_id):
     ]
 
 
-@pytest.fixture(scope="session")
+@pytest.fixture(scope="module")
 def compiler():
     path = os.environ.get("ONTOLOGYC_BINARY_PATH")
     if not path:
@@ -81,7 +81,7 @@ def test_compiler_rejects_an_unknown_comparison_target(compiler, tmp_path):
     )
 
 
-@pytest.fixture(scope="session")
+@pytest.fixture(scope="module")
 def compiled_workspace(compiler, tmp_path_factory):
     tmp_path = tmp_path_factory.mktemp("publication-sdk")
     tsc = os.environ.get("TYPESCRIPT_TSC_PATH")

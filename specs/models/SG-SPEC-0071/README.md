@@ -144,6 +144,6 @@ TYPESCRIPT_TSC_PATH=/absolute/path/to/typescript/bin/tsc \
   --format svg --out /path/to/diagram
 ```
 
-The macOS compatibility job generates both SDKs once, checks all five criteria and
+The macOS compatibility job generates the core and local SDKs, checks all five criteria and
 compares the released visualizer's DOT to the checked-in diagram. Source
 bindings and byte-level behavior tests also run with Python alone.
