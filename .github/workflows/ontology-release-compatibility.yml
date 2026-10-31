@@ -67,21 +67,36 @@ jobs:
           cmp "$RUNNER_TEMP/foundation-exports.json" tools/project_ontology_context/pinned_foundation/exports.json
           ONTOLOGYC_BINARY_PATH="$compiler_dir/ontologyc" python -m pytest -q tests/test_project_ontology_foundation.py
 
-      - name: Reproduce the SG-SPEC-0072 diagram with the released visualizer
+      - name: Reproduce the local model diagrams with the released visualizer
+        id: model_tools
         env:
           ARCHIVE_SHA256: 83d99b865b0979450a47998438eb1ff07229f2142e0658d8acd24765b69a2079
         run: |
           set -euo pipefail
-          work=$(mktemp -d "$RUNNER_TEMP/sg72-diagram.XXXXXXXX")
+          work=$(mktemp -d "$RUNNER_TEMP/ontology-models.XXXXXXXX")
           bundle="ontologyc-$ONTOLOGY_RELEASE-macos-arm64"
           curl --fail --location --silent --show-error --retry 3 \
             "https://github.com/0al-spec/Ontology/releases/download/$ONTOLOGY_RELEASE/$bundle.tar.gz" \
             --output "$work/archive.tar.gz"
           (cd "$work" && printf '%s  archive.tar.gz\n' "$ARCHIVE_SHA256" | shasum -a 256 -c -)
-          tar -xzf "$work/archive.tar.gz" -C "$work" "$bundle/ontologyviz"
-          model=specs/models/SG-SPEC-0072
-          "$work/$bundle/ontologyviz" "$model/domain-ontology-package.yaml" --format dot --out "$work/render"
-          cmp "$work/render/ontology.dot" "$model/ontology.dot"
+          tar -xzf "$work/archive.tar.gz" -C "$work" "$bundle/ontologyviz" "$bundle/ontologyc"
+          for id in SG-SPEC-0072 SG-SPEC-0071; do
+            model="specs/models/$id"
+            "$work/$bundle/ontologyviz" "$model/domain-ontology-package.yaml" --format dot --out "$work/$id"
+            cmp "$work/$id/ontology.dot" "$model/ontology.dot"
+          done
+          echo "compiler=$work/$bundle/ontologyc" >> "$GITHUB_OUTPUT"
+
+      - name: Check the PB-PAYLOAD model with its generated SDK and production verifier
+        env:
+          ONTOLOGYC_BINARY_PATH: ${{ steps.model_tools.outputs.compiler }}
+        run: |
+          set -euo pipefail
+          toolchain=$(mktemp -d "$RUNNER_TEMP/payload-ts.XXXXXXXX")
+          npm install --prefix "$toolchain" --no-audit --no-fund --ignore-scripts typescript@6.0.3
+          TYPESCRIPT_TSC_PATH="$toolchain/node_modules/typescript/bin/tsc" \
+            python -m pytest -v tests/test_pb_payload_ontology_model.py \
+              tests/test_static_artifact_incremental_stage.py -k pb_payload
 
       - name: Retain compatibility receipt
         uses: actions/upload-artifact@v4

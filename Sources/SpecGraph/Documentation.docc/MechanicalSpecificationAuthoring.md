@@ -84,6 +84,13 @@ closure, and the report identifies the `sg:ValueObject` declaration in the
 pinned upstream vocabulary. A paired CLI regression recompiles the member
 with `sg:Typo` and checks for an invalid result at the same source pointer.
 
+A pilot in a different spec, `SG-SPEC-0071`, binds the `PB-PAYLOAD` criterion
+to its existing test. The core ontology supplies the requirement, criterion,
+evidence and test relations. Two local types describe a manifest entry and a
+payload observation. Matching and mismatching digests both type-check; the
+production bundle verifier rejects the changed response bytes. The source map,
+diagram and replay commands are in `specs/models/SG-SPEC-0071/README.md`.
+
 The first executed baseline selects merged revision `a980ba6f` and confirms
 the historical pilot spec bytes are unchanged. Existing acceptance-shape checks
 detect evidence-only deletion but miss paired criterion/evidence deletion;

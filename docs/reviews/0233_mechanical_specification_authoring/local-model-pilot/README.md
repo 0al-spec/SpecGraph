@@ -251,3 +251,18 @@ links the deterministic DOT and gives the rendering command.
 The compiler from the same archive reproduced the committed foundation exports
 and the project-local normalized IR. The adapter resolved seven references
 and reported `sgcore:ClaimCalibration` for review.
+
+## A criterion from a second specification
+
+The [PB-PAYLOAD experiment](../../../../specs/models/SG-SPEC-0071/README.md)
+uses one criterion from SG-SPEC-0071. Existing core relations trace its
+requirement, test and evidence. A local extension represents the expected
+manifest digest and the digest of fetched bytes. The two instances have the
+same ontology shape; changing one byte changes the production verifier's
+outcome. The pilot reuses the released compiler, generated SDKs and the existing
+verifier through pytest. It adds no production runner or global ontology term.
+
+The authored input is 29 lines of package YAML, 30 of typed declarations and
+27 of fixture JSON. Most of the extra code is test scaffolding to bind the
+criterion, compile SDKs and check edge endpoints. This pilot establishes
+expressibility and exposes its cost for one criterion.
