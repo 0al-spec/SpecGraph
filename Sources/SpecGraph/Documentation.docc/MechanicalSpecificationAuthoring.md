@@ -99,6 +99,11 @@ comparison relation. The criterion selects `checksums.sha256`; `PB-MANIFEST`
 selects `artifact_manifest.json`. The pilot exercises path substitutions in
 both directions and checks the production verifier against the bytes emitted by
 the bundle writer, a stale remote list and a line-ending change.
+The fourth case, `PB-MISSING`, requests one expected empty payload. Returned
+empty bytes verify, different bytes fail the digest comparison, and HTTP 404
+fails the request. The model links the 404 to the requested manifest entry
+without an observed digest. A timeout also prevents verification and leaves
+the existence of the remote file unknown.
 
 The first executed baseline selects merged revision `a980ba6f` and confirms
 the historical pilot spec bytes are unchanged. Existing acceptance-shape checks

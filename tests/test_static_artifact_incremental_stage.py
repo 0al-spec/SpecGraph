@@ -4,6 +4,7 @@ import hashlib
 import importlib.util
 import json
 from pathlib import Path
+from urllib.error import HTTPError
 
 import pytest
 
@@ -172,14 +173,21 @@ def _replay_digest_observation(bundle, reference, observation):
     observed_bytes = observation["body"].encode()
     assert hashlib.sha256(retained_bytes).hexdigest() == reference["expectedSHA256"]
     assert hashlib.sha256(observed_bytes).hexdigest() == observation["observedSHA256"]
+    return _verify_with_response(bundle, path, observed_bytes)
 
+
+def _verify_with_response(bundle: Path, path: str, response: bytes | Exception):
     # Substitute only the selected response. All other paths serve their local bytes.
     origin = "https://publication.example/"
 
     def fetch(url):
         assert url.startswith(origin)
         relative = url.removeprefix(origin)
-        return observed_bytes if relative == path else (bundle / relative).read_bytes()
+        if relative != path:
+            return (bundle / relative).read_bytes()
+        if isinstance(response, Exception):
+            raise response
+        return response
 
     return verify_remote_bundle(bundle_dir=bundle, remote_base_url=origin, fetcher=fetch)
 
@@ -322,3 +330,39 @@ def test_verify_remote_bundle_fails_on_missing_remote_payload(tmp_path: Path) ->
             fetcher=fetch,
             workers=1,
         )
+
+
+@pytest.mark.parametrize("control", ["matching", "changed", "notFound", "timeout"])
+def test_pb_missing_model_against_bundle_verifier(tmp_path: Path, control: str) -> None:
+    case = json.loads((PUBLICATION_MODELS / "missing-case.json").read_bytes())
+    entry = case["manifestEntry"]
+    path = entry["path"]
+    assert case["localBody"] == ""
+    bundle = _bundle(tmp_path / "bundle", {path: b""})
+    manifest = json.loads((bundle / "artifact_manifest.json").read_bytes())
+    assert manifest["files"] == [{"path": path, "size_bytes": 0, "sha256": entry["expectedSHA256"]}]
+    if control == "matching":
+        report = _replay_digest_observation(bundle, entry, case["observations"][control])
+        assert report["status"] == "verified"
+        assert report["summary"]["verified_file_count"] == 1
+    elif control == "changed":
+        with pytest.raises(IncrementalStageError) as failure:
+            _replay_digest_observation(bundle, entry, case["observations"][control])
+        assert str(failure.value) == f"remote artifact digest mismatch: {path}"
+    else:
+        assert case["notFound"] == {"httpStatus": 404}
+        cause = (
+            HTTPError(
+                f"https://publication.example/{path}",
+                case["notFound"]["httpStatus"],
+                "Not Found",
+                None,
+                None,
+            )
+            if control == "notFound"
+            else TimeoutError("request timed out")
+        )
+        with pytest.raises(IncrementalStageError) as failure:
+            _verify_with_response(bundle, path, cause)
+        assert str(failure.value) == f"remote artifact request failed for {path}: {cause}"
+        assert failure.value.__cause__ is cause
