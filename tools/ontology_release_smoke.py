@@ -15,7 +15,7 @@ from ontology_imports import CapturedOntologyInputs, build_ontology_import_surfa
 from ontology_snapshot import capture_ontology_snapshot
 
 ROOT = Path(__file__).resolve().parents[1]
-ONTOLOGY_REVISION = "d831e25b46095dfea5e17befbc88c5fdcd03e031"
+ONTOLOGY_REVISION = "46a4af4ab9608a8e1fd46bf3d650cd3fc8727a73"
 PACKAGE_ROOT = ROOT / "ontology/packages/specgraph-core"
 
 

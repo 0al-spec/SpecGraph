@@ -26,6 +26,21 @@ class OntologySnapshotError(ValueError):
         self.outcome = outcome
 
 
+class OntologySourceRejection(OntologySnapshotError):
+    """A coherent compiler rejection of the captured source, without a verified IR."""
+
+    def __init__(
+        self,
+        diagnostics: tuple[tuple[str, str, str], ...],
+        source_sha256: str,
+        compiler_sha256: str,
+    ):
+        super().__init__("ontology compiler rejected the selected source", outcome="unavailable")
+        self.diagnostics = diagnostics
+        self.source_sha256 = source_sha256
+        self.compiler_sha256 = compiler_sha256
+
+
 @dataclass(frozen=True, slots=True)
 class OntologySnapshot:
     """Immutable source and IR bytes captured in the same compiler invocation."""
@@ -98,6 +113,34 @@ def parse_ontology_ir(data: bytes) -> object:
     )
 
 
+def _check_response(
+    result: subprocess.CompletedProcess[str], source_sha256: str, compiler_sha256: str
+) -> None:
+    """Accept only the pinned CLI's structured success or rejection contract."""
+    if result.returncode not in (0, 1):
+        result.check_returncode()
+    try:
+        rows = parse_ontology_ir(result.stdout.encode())
+        if not isinstance(rows, list) or any(
+            not isinstance(row, dict)
+            or row.get("severity") not in ("error", "warning")
+            or not all(isinstance(row.get(k), str) and row[k] for k in ("code", "path", "message"))
+            for row in rows
+        ):
+            raise ValueError("invalid diagnostic array")
+        errors = tuple(
+            (r["code"], r["path"], r["message"]) for r in rows if r["severity"] == "error"
+        )
+        if bool(errors) != (result.returncode == 1):
+            raise ValueError("exit status and diagnostics disagree")
+    except (ValueError, UnicodeError) as error:
+        raise OntologySnapshotError(
+            "ontology compiler returned unusable check diagnostics", outcome="unavailable"
+        ) from error
+    if errors:
+        raise OntologySourceRejection(errors, source_sha256, compiler_sha256)
+
+
 def capture_ontology_snapshot(
     source_path: Path,
     ontologyc: Path | None,
@@ -107,6 +150,7 @@ def capture_ontology_snapshot(
     expected_source_sha256: str | None = None,
     expected_ir_sha256: str | None = None,
     captured_inputs: CapturedOntologyInputs | None = None,
+    structured_check: bool = False,
 ) -> OntologySnapshot:
     """Compile captured source; optionally require an exact saved-IR match.
 
@@ -132,12 +176,8 @@ def capture_ontology_snapshot(
         and (_sha256(expected_ir) != expected_ir_sha256)
     ):
         raise OntologySnapshotError("captured IR hash does not match selection")
-    if (
-        source_bytes is None
-        or inputs.source_error
-        or inputs.ir_error
-        or (expected_ir_path is not None and expected_ir is None)
-    ):
+    missing_ir = inputs.ir_error or (expected_ir_path is not None and expected_ir is None)
+    if source_bytes is None or inputs.source_error or (missing_ir and not structured_check):
         detail = inputs.source_error or inputs.ir_error or "missing input"
         raise OntologySnapshotError(
             f"cannot capture ontology inputs: {detail}", outcome="unavailable"
@@ -180,15 +220,18 @@ def capture_ontology_snapshot(
             executable.chmod(0o500)
             output = work / "generated"
 
+            check_args = ("check", str(staged_source))
+            if structured_check:
+                check_args += ("--format", "json")
             for arguments in (
-                ("check", str(staged_source)),
+                check_args,
                 ("compile", str(staged_source), "--target", "typescript", "--out", str(output)),
             ):
                 try:
-                    subprocess.run(
+                    result = subprocess.run(
                         [str(executable), *arguments],
                         cwd=work,
-                        check=True,
+                        check=False,
                         capture_output=True,
                         text=True,
                         timeout=60,
@@ -200,8 +243,17 @@ def capture_ontology_snapshot(
                 if executable.read_bytes() != compiler_bytes:
                     raise OntologySnapshotError("compiler changed captured executable")
 
-            if staged_source.read_bytes() != source_bytes:
-                raise OntologySnapshotError("compiler changed captured ontology source")
+                if staged_source.read_bytes() != source_bytes:
+                    raise OntologySnapshotError("compiler changed captured ontology source")
+                if structured_check and arguments[0] == "check":
+                    _check_response(result, source_sha256, compiler_sha256)
+                    if missing_ir:
+                        raise OntologySnapshotError(
+                            f"cannot capture ontology inputs: {inputs.ir_error or 'missing IR'}",
+                            outcome="unavailable",
+                        )
+                result.check_returncode()
+
             ir_bytes = (output / "ontology.normalized.json").read_bytes()
             ir = parse_ontology_ir(ir_bytes)
             if not isinstance(ir, dict) or ir.get("sourceDigest") != compiler_source_digest:

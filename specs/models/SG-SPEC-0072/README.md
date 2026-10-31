@@ -6,7 +6,7 @@ The three examples exercise the production rule for combining ontology checks.
 | --- | --- | --- |
 | `SG72-MIXED` (default) | Duplicate package selection and missing compiler | `invalid` with both diagnostics |
 | `SG72-UNSUPPORTED-CLOSURE` | A pinned package with an import, verified source and IR, and an unsupported closure check | `unavailable` with both check results attributed to the same member |
-| `SG72-PINNED-FOUNDATION` | One pinned member extends `sg:ValueObject` with the foundation profile | `verified` with the resolved symbol and glossary digest |
+| `SG72-PINNED-FOUNDATION` | One pinned member extends `sg:ValueObject` with the foundation profile | `verified` with the resolved symbol and compiler export catalog digest |
 
 Each example has a readable `.feature`, a source map with exact clauses and four
 acceptance rows, and a typed declaration (`model.ts`, `unsupported-closure.ts` or `pinned-foundation.ts`).
@@ -29,8 +29,8 @@ Use a separate empty directory for each run. The foundation case compiles
 `foundation-member.yaml` and passes its exact source and generated IR pins
 into production capture. Its source map marks acceptance rows 0 and 2 partial.
 
-The reference toolchain is SpecGraph's pinned Ontology 0.3.0 source revision
-`d831e25b46095dfea5e17befbc88c5fdcd03e031`, TypeScript `6.0.3`, and Node.js.
+The reference toolchain is SpecGraph's pinned Ontology 0.4.0 source revision
+`46a4af4ab9608a8e1fd46bf3d650cd3fc8727a73`, TypeScript `6.0.3`, and Node.js.
 The existing Ontology compatibility workflow documents building ontologyc from
 that revision. TypeScript can be installed in a separate tool directory with
 `npm install --prefix /path/to/toolchain --no-audit --no-fund typescript@6.0.3`.

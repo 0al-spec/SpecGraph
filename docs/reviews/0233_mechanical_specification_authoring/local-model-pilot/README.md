@@ -231,3 +231,9 @@ To replay both CLI controls and the production package, set `ONTOLOGYC_BINARY_PA
 and run `python -m pytest -q tests/test_project_ontology_foundation.py` in the
 repository environment. For the four-layer run use the
 [model instructions](../../../../specs/models/SG-SPEC-0072/README.md).
+
+## Released compiler control — Ontology 0.4.0
+
+The [0.4.0 release](https://github.com/0al-spec/Ontology/releases/tag/0.4.0) changes the point at which SG72-PINNED-FOUNDATION detects a misspelled base. The compiler rejects the source before generating an IR. SpecGraph records the native diagnostic code, the checked source and compiler digests, and the field as a JSON pointer. The earlier 0.3.0 observation above retains the behavior of that release.
+
+The [release-binary observation](ontology-040-observation.json) pairs the actual SG-SPEC-0072 package with a one-literal edit. It also checks the same rejection with a previously valid IR on disk, a valid source without IR, and the project-local core package. The adapter still reports the existing ClaimCalibration gap.

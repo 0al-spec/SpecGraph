@@ -1,29 +1,27 @@
-"""Resolve one explicitly pinned foundation import against the release's glossary."""
+"""Resolve one explicitly pinned foundation import against the compiler's versioned exports."""
 
 from __future__ import annotations
 
 import hashlib
+import json
 import re
 from collections.abc import Iterator
 from pathlib import Path
 
+from ontology_snapshot import OntologySourceRejection
+
 from .invalid_spec import INVALID_SPEC
-from .model import CheckResult, ContextFacts, ReferenceSite, ResolvedImport
+from .model import CheckResult, CompilerDiagnostic, ContextFacts, ReferenceSite, ResolvedImport
 
 PROFILE = "ontologyc-foundation-v1"
 PIN = ResolvedImport(
     id="specgraph.foundation",
     namespace="sg",
     version="0.1.0",
-    source_uri="https://github.com/0al-spec/Ontology/blob/d831e25b46095dfea5e17befbc88c5fdcd03e031/SPECS/ontology/glossary.md",
-    source_sha256="0f0d543da04e8250be4711e7785cb7318ae0e43c594c2f1cc4970c63207e1910",
+    source_uri="https://github.com/0al-spec/Ontology/blob/46a4af4ab9608a8e1fd46bf3d650cd3fc8727a73/SPECS/ontology/foundation/0.1.0/exports.json",
+    source_sha256="ef07cf4e8dd4cdc8c8dd583971fc3cabfe82e4b00fb0e680b6d1db48cfe262ad",
 )
-GLOSSARY = Path(__file__).parent / "pinned_foundation/glossary.txt"
-
-
-def _terms(text: str, section: str) -> set[str]:
-    table = text.split(f"## {section}\n", 1)[1].split("\n## ", 1)[0].split("|---|---|", 1)[1]
-    return set(re.findall(r"^\| ([A-Z][a-zA-Z0-9_]*) \|", table, re.MULTILINE))
+EXPORTS = Path(__file__).parent / "pinned_foundation/exports.json"
 
 
 def _reference_sites(spec: dict) -> Iterator[tuple[str, str, str]]:
@@ -52,6 +50,64 @@ def _reference_sites(spec: dict) -> Iterator[tuple[str, str, str]]:
 def _external(ref: str, package_namespace: str) -> bool:
     namespace, separator, _ = ref.partition(":")
     return bool(separator) and namespace != package_namespace
+
+
+def rejected_references(
+    source: dict, member: dict, member_count: int, rejection: OntologySourceRejection
+) -> Iterator[CheckResult]:
+    """Bind compiler reference errors to existing fields in the same captured source."""
+    spec = source.get("spec")
+    if (
+        not isinstance(spec, dict)
+        or not _supported_import(spec, member_count)
+        or member["id"] == PIN.id
+        or member["namespace"] == PIN.namespace
+    ):
+        return
+    symbol = r"[A-Za-z][A-Za-z0-9_]*"
+    sites = {
+        "class.extends.unresolved": rf"classes\.{symbol}\.extends",
+        "protocol.unresolved": rf"classes\.{symbol}\.implements\[[0-9]+\]",
+        "relation.domain.unresolved": rf"relations\.{symbol}\.domain",
+        "relation.range.unresolved": rf"relations\.{symbol}\.range(?:\.oneOf\[[0-9]+\])?",
+        "policy.extends.unresolved": rf"policies\.{symbol}\.extends",
+        "policy.appliesTo.unresolved": rf"policies\.{symbol}\.appliesTo\[[0-9]+\]",
+    }
+    for code, field, message in rejection.diagnostics:
+        if code not in sites or not re.fullmatch(r"spec\." + sites[code], field):
+            continue
+        parts = re.findall(r"[A-Za-z][A-Za-z0-9_]*|[0-9]+", field)
+        value = source
+        for key in parts:
+            if isinstance(value, dict):
+                value = value.get(key)
+            elif (
+                isinstance(value, list)
+                and key.isdigit()
+                and len(key) <= len(str(len(value)))
+                and int(key) < len(value)
+            ):
+                value = value[int(key)]
+            else:
+                break
+        else:
+            if isinstance(value, str) and value.startswith(PIN.namespace + ":"):
+                yield CheckResult(
+                    "name_resolution",
+                    "invalid",
+                    message,
+                    member["id"],
+                    ReferenceSite("/" + "/".join(parts), value),
+                    compiler_diagnostic=CompilerDiagnostic(
+                        code, rejection.source_sha256, rejection.compiler_sha256
+                    ),
+                )
+
+
+def _supported_import(spec: dict, member_count: int) -> bool:
+    return member_count == 1 and spec.get("imports") == [
+        {"id": PIN.id, "namespace": PIN.namespace, "version": PIN.version}
+    ]
 
 
 def _resolve(
@@ -85,9 +141,7 @@ def check_import(
     def closure(outcome: str, detail: str) -> CheckResult:
         return CheckResult("dependency_closure", outcome, detail, package)
 
-    if member_count != 1 or spec.get("imports") != [
-        {"id": PIN.id, "namespace": PIN.namespace, "version": PIN.version}
-    ]:
+    if not _supported_import(spec, member_count):
         return [
             closure(
                 "unavailable",
@@ -99,18 +153,17 @@ def check_import(
             closure("invalid", "Selected member shadows the foundation identity or namespace")
         ], ()
     try:
-        data = GLOSSARY.read_bytes()
+        data = EXPORTS.read_bytes()
     except OSError as error:
         return [closure("unavailable", f"Pinned foundation vocabulary unavailable: {error}")], ()
     if hashlib.sha256(data).hexdigest() != PIN.source_sha256:
-        return [closure("invalid", "Foundation glossary SHA-256 differs from the release pin")], ()
+        return [closure("invalid", "Foundation exports SHA-256 differs from the release pin")], ()
 
-    text = data.decode("utf-8")
-    kinds = _terms(text, "Foundation Kinds")
+    catalog = json.loads(data)
     vocab = {
-        "classes": kinds,
-        "protocols": _terms(text, "Protocols"),
-        "policy_base": kinds & {"Policy"},
+        "classes": set(catalog["classes"]),
+        "protocols": set(catalog["protocols"]),
+        "policy_base": set(catalog["policyBases"]),
     }
     try:
         checks = [

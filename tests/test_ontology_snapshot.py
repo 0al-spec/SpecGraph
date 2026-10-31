@@ -11,6 +11,7 @@ import pytest
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "tools"))
 from ontology_snapshot import (  # noqa: E402
     OntologySnapshotError,
+    OntologySourceRejection,
     capture_ontology_inputs,
     capture_ontology_snapshot,
 )
@@ -286,3 +287,26 @@ def test_snapshot_error_classifies_io_timeout_and_malformed_ir(tmp_path, monkeyp
     with pytest.raises(OntologySnapshotError) as invalid:
         capture_ontology_snapshot(source, compiler)
     assert invalid.value.outcome == "invalid"
+
+
+@pytest.mark.parametrize(
+    ("status", "payload"),
+    [
+        (1, "not JSON"),
+        (1, "[]"),
+        (0, '[{"severity":"error","code":"ref","path":"a","message":"bad"}]'),
+        (1, '[{"severity":"error","code":"ref"}]'),
+        (2, "[]"),
+    ],
+)
+def test_incoherent_structured_check_cannot_invalidate_a_reference(tmp_path, status, payload):
+    source = tmp_path / "package.yaml"
+    source.write_text("source")
+    compiler = compiler_fixture(
+        tmp_path / "ontologyc", during_check=f"print({payload!r}); sys.exit({status})"
+    )
+    with pytest.raises(OntologySnapshotError) as caught:
+        capture_ontology_snapshot(source, compiler, structured_check=True)
+    assert caught.value.outcome == "unavailable" and not isinstance(
+        caught.value, OntologySourceRejection
+    )

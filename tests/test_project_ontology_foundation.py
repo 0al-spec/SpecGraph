@@ -16,6 +16,7 @@ ROOT = Path(__file__).resolve().parents[1]
 MEMBER = ROOT / "specs/models/SG-SPEC-0072/foundation-member.yaml"
 CORE = ROOT / "ontology/packages/specgraph-core/domain-ontology-package.yaml"
 sys.path.insert(0, str(ROOT / "tools"))
+from ontology_snapshot import OntologySourceRejection  # noqa: E402
 from project_ontology_context import foundation  # noqa: E402
 
 
@@ -30,17 +31,27 @@ def compiler():
     return Path(binary).resolve(strict=True)
 
 
-def capture(work, compiler, source):
+def capture(work, compiler, source, *, prior_ir=None, keep_prior=False):
     work.mkdir()
     package = work / "member.yaml"
     package.write_bytes(source)
-    subprocess.run(
-        [compiler, "compile", package, "--target", "typescript", "--out", work / "ir"],
-        check=True,
-        capture_output=True,
-        timeout=60,
-    )
     ir = work / "ir/ontology.normalized.json"
+    if prior_ir is None:
+        subprocess.run(
+            [compiler, "compile", package, "--target", "typescript", "--out", ir.parent],
+            check=True,
+            capture_output=True,
+            timeout=60,
+        )
+        ir_hash = sha(ir.read_bytes())
+    else:
+        # Keep the last real IR pin from the selection; a rejected edit produces no new IR.
+        ir_hash = sha(prior_ir)
+        if keep_prior:
+            ir.parent.mkdir()
+            ir.write_bytes(prior_ir)
+        else:
+            assert not ir.exists()
     meta = yaml.safe_load(source)["metadata"]
     selection = {
         "artifact_kind": "specgraph_project_ontology_selection",
@@ -51,7 +62,7 @@ def capture(work, compiler, source):
                 "source": "member.yaml",
                 "source_sha256": sha(source),
                 "ir": "ir/ontology.normalized.json",
-                "ir_sha256": sha(ir.read_bytes()),
+                "ir_sha256": ir_hash,
             }
         ],
         "profiles": [foundation.PROFILE],
@@ -85,22 +96,37 @@ def capture(work, compiler, source):
     return proc.returncode, report
 
 
-def test_same_pinned_foundation_resolves_valueobject_and_rejects_typo(compiler, tmp_path):
+@pytest.mark.parametrize("keep_prior", [False, True], ids=["no-ir", "stale-ir"])
+def test_same_pinned_foundation_resolves_valueobject_and_rejects_typo(
+    compiler, tmp_path, keep_prior
+):
     source = MEMBER.read_bytes()
     good_code, good = capture(tmp_path / "valid", compiler, source)
     bad_code, bad = capture(
-        tmp_path / "typo", compiler, source.replace(b"sg:ValueObject", b"sg:Typo")
+        tmp_path / "typo",
+        compiler,
+        source.replace(b"sg:ValueObject", b"sg:Typo"),
+        prior_ir=(tmp_path / "valid/ir/ontology.normalized.json").read_bytes(),
+        keep_prior=keep_prior,
     )
     assert (good_code, good["outcome"]) == (0, "verified")
     assert (bad_code, bad["outcome"]) == (2, "invalid")
     assert good["context_revision"] and bad["context_revision"] is None
-    assert good["resolved_imports"] == bad["resolved_imports"]
-    assert good["resolved_imports"][0]["source_sha256"] == sha(foundation.GLOSSARY.read_bytes())
-    assert good["snapshots"][0]["source_sha256"] != bad["snapshots"][0]["source_sha256"]
-    for report in (good, bad):
-        assert any(
-            c["check"] == "member_capture" and c["outcome"] == "verified" for c in report["checks"]
-        )
+    assert good["resolved_imports"][0]["source_sha256"] == sha(foundation.EXPORTS.read_bytes())
+    assert good["snapshots"] and not bad["snapshots"] and not bad.get("resolved_imports")
+    assert (tmp_path / "typo/ir/ontology.normalized.json").exists() is keep_prior
+    assert any(
+        c["check"] == "member_capture" and c["outcome"] == "verified" for c in good["checks"]
+    )
+    assert not any(
+        c["check"] == "member_capture" and c["outcome"] == "verified" for c in bad["checks"]
+    )
+    [error] = [c for c in bad["checks"] if c.get("compiler_diagnostic")]
+    assert error["compiler_diagnostic"] == {
+        "code": "class.extends.unresolved",
+        "source_sha256": sha(source.replace(b"sg:ValueObject", b"sg:Typo")),
+        "compiler_sha256": sha(compiler.read_bytes()),
+    }
     for report, name, uri in (
         (good, "sg:ValueObject", "ontology://specgraph.foundation/0.1.0/classes/ValueObject"),
         (bad, "sg:Typo", None),
@@ -147,8 +173,8 @@ def test_resolution_checks_structural_slots_and_their_roles():
 
 def test_catalog_cannot_be_replaced_by_a_project_dictionary(monkeypatch, tmp_path):
     spec, member = member_spec()
-    replacement = tmp_path / "glossary.txt"
-    monkeypatch.setattr(foundation, "GLOSSARY", replacement)
+    replacement = tmp_path / "exports.json"
+    monkeypatch.setattr(foundation, "EXPORTS", replacement)
     checks, imports = foundation.check_import(spec, member, 1)
     assert checks[-1].outcome == "unavailable" and not imports
     replacement.write_text("sg:Typo is valid")
@@ -162,3 +188,29 @@ def test_unsupported_import_sets_stay_unavailable(count, version):
     spec["imports"][0]["version"] = version
     checks, imports = foundation.check_import(spec, member, count)
     assert checks[-1].outcome == "unavailable" and not imports
+
+
+def test_clean_source_without_saved_ir_remains_unavailable(compiler, tmp_path):
+    source = MEMBER.read_bytes()
+    capture(tmp_path / "good", compiler, source)
+    prior = (tmp_path / "good/ir/ontology.normalized.json").read_bytes()
+    code, report = capture(tmp_path / "missing", compiler, source, prior_ir=prior)
+    assert code != 0 and report["outcome"] == "unavailable"
+    assert report["context_revision"] is None and not report["snapshots"]
+
+
+def test_compiler_sites_are_bound_to_captured_values():
+    spec, member = member_spec()
+    spec["relations"]["follows"]["range"] = {"oneOf": ["Entry", "sg:Typo"]}
+    failure = ("relation.range.unresolved", "spec.relations.follows.range.oneOf[1]", "reason")
+    diagnostics = (
+        failure,
+        (failure[0], "spec.relations.follows.range.oneOf[9]", "reason"),
+        (failure[0], "spec.classes.Entry.description", "wrong field"),
+    )
+    spec["classes"]["Entry"]["description"] = "sg:Typo"
+    [check] = foundation.rejected_references(
+        {"spec": spec}, member, 1, OntologySourceRejection(diagnostics, "a" * 64, "b" * 64)
+    )
+    assert check.reference.pointer == "/spec/relations/follows/range/oneOf/1"
+    assert check.reference.name == "sg:Typo" and check.compiler_diagnostic.code == failure[0]

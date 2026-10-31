@@ -58,7 +58,7 @@ remain invalid. See the [compiler outcome defect record](reviews/0232_project_on
 for the repair and its evidence.
 
 With `profiles: [ontologyc-structural-v1]`, imported packages have unavailable
-closure. Ontology 0.3.0 requires at least one import. The [earlier compatibility
+closure. Ontology 0.4.0 requires at least one import. The [earlier compatibility
 probe](reviews/0233_mechanical_specification_authoring/local-model-pilot/README.md#single-package-verified-probe-31-october-2026)
 records this combination.
 
@@ -69,22 +69,16 @@ Select one package whose only import is
 `{id: specgraph.foundation, namespace: sg, version: 0.1.0}`.
 Run the workspace CLI shown below with the same source, IR and compiler pins.
 
-This offline profile maps that import to the terminal vocabulary in the
-Foundation Kinds and Protocols tables of the
-[Ontology 0.3.0 glossary](https://github.com/0al-spec/Ontology/blob/d831e25b46095dfea5e17befbc88c5fdcd03e031/SPECS/ontology/glossary.md).
-The [release authoring guide](https://github.com/0al-spec/Ontology/blob/d831e25b46095dfea5e17befbc88c5fdcd03e031/SPECS/ontology/authoring-guide.md)
-declares the import version and namespace. SpecGraph ships a copy of the
-release glossary, checks its SHA-256 on capture and reads the symbols from those
-bytes. The resolver checks class bases, implemented protocols, relation endpoints
-(including `range.oneOf`), policy bases and policy targets. The compiler checks
-local references. Descriptions and examples are free text.
+The profile pins the [foundation export catalog from Ontology 0.4.0](https://github.com/0al-spec/Ontology/blob/46a4af4ab9608a8e1fd46bf3d650cd3fc8727a73/SPECS/ontology/foundation/0.1.0/exports.json). Release compatibility CI compares the vendored bytes with `ontologyc export-foundation` on both platforms. The profile checks the SHA-256 of those bytes before linking verified references to their URIs.
+
+SpecGraph runs `ontologyc check --format json` on private copies of the selected compiler and the pinned source. A compiler rejection can identify an invalid foundation reference before there is any generated IR. The report binds the compiler's code and field to the value at that location in the captured source. A valid source with missing IR remains unavailable. A process failure or an unreadable diagnostic response is also unavailable.
 
 For `Entry.extends: sg:ValueObject`, the report includes the declaration's
 JSON pointer and `ontology://specgraph.foundation/0.1.0/classes/ValueObject`.
-For `sg:Typo` at that site it records `invalid` with the pointer and name.
+For `sg:Typo` at that site the outcome is `invalid`. The reference includes the pointer and the source value. The `compiler_diagnostic` records `class.extends.unresolved` and the SHA-256 of the checked source and executable. A rejected package has no verified snapshot or context revision.
 The `resolved_imports` entry identifies the content actually consulted and
-participates in the context revision. An unavailable glossary or an unsupported
-import set produces `unavailable`; a glossary digest mismatch produces `invalid`.
+participates in the context revision. An unavailable catalog or an unsupported
+import set produces `unavailable`; a catalog digest mismatch produces `invalid`.
 Verification covers structural name resolution in this profile. Package approval
 and prose coverage retain their separate review processes.
 

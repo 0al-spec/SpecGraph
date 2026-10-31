@@ -402,7 +402,7 @@ def run(args: argparse.Namespace, root: Path) -> tuple[dict, int]:
         ]
         producer_paths.append("tools/project_ontology_context/foundation.py")
         if scenario.member_source:
-            producer_paths.append("tools/project_ontology_context/pinned_foundation/glossary.txt")
+            producer_paths.append("tools/project_ontology_context/pinned_foundation/exports.json")
         for path in producer_paths:
             capture(root / path, path, work / "producer-source" / path)
         from project_ontology_context import capture_project_context

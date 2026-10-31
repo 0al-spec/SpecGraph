@@ -11,7 +11,7 @@ permissions:
 
 env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
-  ONTOLOGY_REVISION: d831e25b46095dfea5e17befbc88c5fdcd03e031
+  ONTOLOGY_REVISION: 46a4af4ab9608a8e1fd46bf3d650cd3fc8727a73
 
 jobs:
   compiler-compatibility:
@@ -26,7 +26,7 @@ jobs:
         uses: actions/checkout@v6
         with:
           repository: 0al-spec/Ontology
-          ref: d831e25b46095dfea5e17befbc88c5fdcd03e031
+          ref: 46a4af4ab9608a8e1fd46bf3d650cd3fc8727a73
           path: .ontology-release-source
           persist-credentials: false
 
@@ -62,7 +62,8 @@ jobs:
             --ontology-source "$GITHUB_WORKSPACE/.ontology-release-source" \
             --work-dir "$RUNNER_TEMP/ontology-release-smoke"
           "$compiler_dir/ontologyc" check specs/models/SG-SPEC-0072/domain-ontology-package.yaml
-          cmp .ontology-release-source/SPECS/ontology/glossary.md tools/project_ontology_context/pinned_foundation/glossary.txt
+          "$compiler_dir/ontologyc" export-foundation > "$RUNNER_TEMP/foundation-exports.json"
+          cmp "$RUNNER_TEMP/foundation-exports.json" tools/project_ontology_context/pinned_foundation/exports.json
           ONTOLOGYC_BINARY_PATH="$compiler_dir/ontologyc" python -m pytest -q tests/test_project_ontology_foundation.py
 
       - name: Retain compatibility receipt
@@ -89,7 +90,7 @@ jobs:
         uses: actions/checkout@v6
         with:
           repository: 0al-spec/Ontology
-          ref: d831e25b46095dfea5e17befbc88c5fdcd03e031
+          ref: 46a4af4ab9608a8e1fd46bf3d650cd3fc8727a73
           path: .ontology-release-source
           persist-credentials: false
 
@@ -125,7 +126,8 @@ jobs:
             --ontology-source "$GITHUB_WORKSPACE/.ontology-release-source" \
             --work-dir "$RUNNER_TEMP/ontology-release-smoke"
           "$compiler_dir/ontologyc" check specs/models/SG-SPEC-0072/domain-ontology-package.yaml
-          cmp .ontology-release-source/SPECS/ontology/glossary.md tools/project_ontology_context/pinned_foundation/glossary.txt
+          "$compiler_dir/ontologyc" export-foundation > "$RUNNER_TEMP/foundation-exports.json"
+          cmp "$RUNNER_TEMP/foundation-exports.json" tools/project_ontology_context/pinned_foundation/exports.json
           ONTOLOGYC_BINARY_PATH="$compiler_dir/ontologyc" python -m pytest -q tests/test_project_ontology_foundation.py
 
       - name: Retain compatibility receipt

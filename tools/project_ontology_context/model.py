@@ -15,12 +15,20 @@ class ReferenceSite:
 
 
 @dataclass(frozen=True, slots=True)
+class CompilerDiagnostic:
+    code: str
+    source_sha256: str
+    compiler_sha256: str
+
+
+@dataclass(frozen=True, slots=True)
 class CheckResult:
     check: str
     outcome: str
     detail: str
     package: str | None = None
     reference: ReferenceSite | None = None
+    compiler_diagnostic: CompilerDiagnostic | None = None
 
     def report(self) -> dict[str, object]:
         return {
@@ -28,6 +36,11 @@ class CheckResult:
             "outcome": self.outcome,
             "detail": self.detail,
             "package": self.package,
+            **(
+                {"compiler_diagnostic": asdict(self.compiler_diagnostic)}
+                if self.compiler_diagnostic
+                else {}
+            ),
             **({"reference": asdict(self.reference)} if self.reference is not None else {}),
         }
 

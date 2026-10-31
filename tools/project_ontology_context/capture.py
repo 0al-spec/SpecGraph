@@ -14,6 +14,7 @@ import yaml
 from ontology_snapshot import (
     OntologySnapshot,
     OntologySnapshotError,
+    OntologySourceRejection,
     capture_ontology_inputs,
     capture_ontology_snapshot,
     parse_ontology_ir,
@@ -175,14 +176,15 @@ def capture_project_context(
             "operator-provided executable available; provenance not verified",
         )
 
+    foundation_selected = profiles == (foundation.PROFILE,)
     for member in members:
         package = member["id"]
+        source_data = None
         try:
             source = _path(root, member["source"])
             ir = _path(root, member["ir"])
             inputs = capture_ontology_inputs(source, ir)
             expected = (member["id"], member["namespace"], member["version"])
-            source_data = None
             ir_data = None
             input_failed = False
             for name, data, error, digest in (
@@ -191,7 +193,8 @@ def capture_project_context(
             ):
                 if data is None:
                     add("member_capture", "unavailable", f"{name} unavailable: {error}", package)
-                    input_failed = True
+                    if not (name == "IR" and foundation_selected):
+                        input_failed = True
                     continue
                 if hashlib.sha256(data).hexdigest() != digest:
                     add(
@@ -232,6 +235,7 @@ def capture_project_context(
                 expected_source_sha256=member["source_sha256"],
                 expected_ir_sha256=member["ir_sha256"],
                 captured_inputs=inputs,
+                structured_check=foundation_selected,
             )
             snapshots.append(snapshot)
             captured_members.append((member["id"], member["namespace"], member["version"]))
@@ -263,6 +267,10 @@ def capture_project_context(
                 add("dependency_closure", "verified", "single package declares no imports", package)
         except OntologySnapshotError as error:
             add("member_capture", error.outcome, str(error), package)
+            if source_data is not None and isinstance(error, OntologySourceRejection):
+                checks.extend(
+                    foundation.rejected_references(source_data, member, len(members), error)
+                )
         except FileNotFoundError:
             add("member_capture", "unavailable", "source or saved IR unavailable", package)
         except (ValueError, yaml.YAMLError, UnicodeError) as error:
