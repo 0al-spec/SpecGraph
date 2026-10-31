@@ -1,0 +1,86 @@
+{
+  "observation": "Pinned foundation import in SG-SPEC-0072",
+  "source_revision": "9742896843cde253483c23b6e25a6721c0512c76",
+  "spec_id": "SG-SPEC-0072",
+  "spec_pointer": "/specification/acceptance_cases/0",
+  "proposal_ref": "0233",
+  "ontology_release": "0.3.0",
+  "compiler_binary_sha256": "1d0128d27f33f04b46c3969e41a04f3ac365afbb748d4c1f7f45645c09839923",
+  "compiler_provenance": "not_verified",
+  "profile": "ontologyc-foundation-v1",
+  "resolved_imports": [
+    {
+      "id": "specgraph.foundation",
+      "namespace": "sg",
+      "source_sha256": "0f0d543da04e8250be4711e7785cb7318ae0e43c594c2f1cc4970c63207e1910",
+      "source_uri": "https://github.com/0al-spec/Ontology/blob/d831e25b46095dfea5e17befbc88c5fdcd03e031/SPECS/ontology/glossary.md",
+      "version": "0.1.0"
+    }
+  ],
+  "local_context_cli": {
+    "valid": {
+      "exit_asserted_by_test": 0,
+      "context_outcome": "verified",
+      "report_sha256": "cac70525b14bb82ac3086b9eeaea261c35038bd770e23f0be3b3eaa768355d0a",
+      "context_revision": "sha256:65480e6ec17b252adb4d1d7e7491a575e25885cfc62de62141031a853c54b416",
+      "source_sha256": "f5e69998c4d98319822c0937c5a04a00f4e7aa1d52e32891b48daab3418c76c0",
+      "ir_sha256": "388c039c3acfb328e9c068323f7388c8eebde2ae0cdc018d5eee0a6329e0742d",
+      "reference_count": 1,
+      "site": {
+        "name": "sg:ValueObject",
+        "pointer": "/spec/classes/Entry/extends",
+        "uri": "ontology://specgraph.foundation/0.1.0/classes/ValueObject"
+      }
+    },
+    "typo": {
+      "exit_asserted_by_test": 2,
+      "context_outcome": "invalid",
+      "report_sha256": "3ec47a1ee4dd06b8c44ae7a6190202e5c4a92ed2540b657cad81c969b6978063",
+      "context_revision": null,
+      "source_sha256": "88a0220f512fb4a9546cd6945916a2207fafea0d69edc1e808bd791e47d94f3a",
+      "ir_sha256": "6d775a18a0121890538f2cf7c38bae5b33c0a47dc714e996eb5d1d6120f12cda",
+      "reference_count": 1,
+      "site": {
+        "name": "sg:Typo",
+        "pointer": "/spec/classes/Entry/extends",
+        "uri": null
+      }
+    },
+    "core": {
+      "exit_asserted_by_test": 0,
+      "context_outcome": "verified",
+      "report_sha256": "de2e55b2c1c31369cd614635cb022c8fac7fede6966db74491a4cd6d576157f6",
+      "context_revision": "sha256:eb2bd0a77f5c55bddc3c5595c8580d936894d44099e346301e8d693ecd07ac34",
+      "source_sha256": "5bfa2ff40b6174def589546ab2fea2501e1f256c4f1446f36c45c7f3fffcd929",
+      "ir_sha256": "7a9d1cb640f154c32a2a15a4ec8868349bee04be30a0b5da886422c0d3eb638f",
+      "reference_count": 15,
+      "resolved_names": [
+        "sg:Command",
+        "sg:DomainEntity",
+        "sg:Policy"
+      ]
+    }
+  },
+  "local_model_pilot": {
+    "SG72-MIXED": {
+      "outcome": "satisfied",
+      "context_outcome": "invalid",
+      "report_sha256": "a55cc13bab5747f3f0b757854e7dec992e826df7754334101da02af2cf1b5989"
+    },
+    "SG72-PINNED-FOUNDATION": {
+      "outcome": "satisfied",
+      "context_outcome": "verified",
+      "report_sha256": "d6eb3d71c936ffa2b9e049bcdc5f794e5723d40a253d3bae5e74d06d2afb22e9"
+    },
+    "SG72-UNSUPPORTED-CLOSURE": {
+      "outcome": "satisfied",
+      "context_outcome": "unavailable",
+      "report_sha256": "75797a2c6409358c3768d9eec397ea319f020ba6a1c08e4baaf241760be71147"
+    }
+  },
+  "focused_tests": {
+    "passed": 116,
+    "skipped": 0,
+    "junit_sha256": "1a6e4a653183b164d61872d274672254c217c2bfa41d2f468ebfcf10d398f150"
+  }
+}

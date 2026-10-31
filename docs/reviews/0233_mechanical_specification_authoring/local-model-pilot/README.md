@@ -207,3 +207,27 @@ The compiler pin in the replay command identifies the observed binary. For a
 different build, pin the digest of the executable being tested and record it
 with the result. Return through proposal 0233 after SpecGraph can resolve a
 pinned import, or after a released package format supports standalone packages.
+
+## One pinned foundation import
+
+The next pilot selected `ontologyc-foundation-v1` and compiled two versions
+of the same ten-line member. Each version had a fresh source pin and IR pin.
+The public context CLI verified `sg:ValueObject` and rejected `sg:Typo` as
+invalid at `/spec/classes/Entry/extends`. Both reports identify the same
+foundation glossary digest. Project-local `specgraph-core` also verified.
+The [observation](pinned-foundation-observation.json) records the source revision,
+binary and input hashes, pointer, result and report digests. The preceding
+single-package observation used the original structural profile.
+
+All three typed scenarios passed the SDK, typecheck, instance and production
+layers. The original profiles still exercise invalid and unavailable. The
+third model adds 27 lines of TypeScript and reuses the same consumer. Relative
+to `0cedfcbf` the runner grew by 34 physical Python lines, case definitions
+by 33, and the production resolver, capture and result types by 171 combined.
+This experiment includes implementing a new product capability. Those counts
+do not isolate the cost of declaring a case for an already supported import.
+
+To replay both CLI controls and the production package, set `ONTOLOGYC_BINARY_PATH`
+and run `python -m pytest -q tests/test_project_ontology_foundation.py` in the
+repository environment. For the four-layer run use the
+[model instructions](../../../../specs/models/SG-SPEC-0072/README.md).
