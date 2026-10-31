@@ -21,6 +21,7 @@ CASES = {
     "PB-PAYLOAD": ("case.json", "manifestEntry", "payload:ManifestEntry"),
     "PB-MANIFEST": ("manifest-case.json", "localMetadataFile", "payload:LocalMetadataFile"),
     "PB-CHECKSUMS": ("checksums-case.json", "localMetadataFile", "payload:LocalMetadataFile"),
+    "PB-MISSING": ("missing-case.json", "manifestEntry", "payload:ManifestEntry"),
 }
 
 
@@ -157,6 +158,16 @@ def test_compiled_model_and_endpoints(compiled_models, criterion_id):
         assert nodes[key]["observedSHA256"] == observation["observedSHA256"]
         expected.add(("payload:comparedAgainst", key, entry))
         expected.add(("sgcore:evidenceSupportsCriterion", key, source["criterion"]))
+    if criterion_id == "PB-MISSING":
+        assert nodes["notFound"] == {
+            "$type": "payload:PayloadNotFoundObservation",
+            "id": "notFound",
+            "httpStatus": case["notFound"]["httpStatus"],
+        }
+        assert nodes["notFound"]["httpStatus"] == 404
+        expected.add(("payload:requestedEntry", "notFound", entry))
+        expected.add(("sgcore:evidenceSupportsCriterion", "notFound", source["criterion"]))
+        assert relations["payload:requestedEntry"]["cardinality"] == {"min": 1, "max": 1}
     assert edges == expected and len(graph["edges"]) == len(edges)
 
     # Compiling an imported namespace alone does not establish its symbol membership.
@@ -175,6 +186,13 @@ def test_compiled_model_and_endpoints(compiled_models, criterion_id):
             assert actual in choices or classes[actual]["extends"] in choices
 
 
+def _run_modified_fixture(compiled_workspace, tmp_path, criterion, case):
+    js = tmp_path / "js"
+    shutil.copytree(compiled_workspace / "js", js)
+    (js / CASES[criterion][0]).write_text(json.dumps(case), encoding="utf-8")
+    return subprocess.run(["node", js / "model.js"], capture_output=True, text=True)
+
+
 @pytest.mark.parametrize(
     ("criterion", "required_path", "swapped_path"),
     [
@@ -186,13 +204,44 @@ def test_metadata_model_rejects_swapped_path(
     compiled_workspace, tmp_path, criterion, required_path, swapped_path
 ):
     # Exercise the emitted model with one path changed. Keep the type and digest intact.
-    js = tmp_path / "js"
-    shutil.copytree(compiled_workspace / "js", js)
-    fixture = js / CASES[criterion][0]
-    case = json.loads(fixture.read_bytes())
+    case = json.loads((MODEL / CASES[criterion][0]).read_bytes())
     assert case["localMetadataFile"]["path"] == required_path
     case["localMetadataFile"]["path"] = swapped_path
-    fixture.write_text(json.dumps(case), encoding="utf-8")
-    run = subprocess.run(["node", js / "model.js"], capture_output=True, text=True)
+    run = _run_modified_fixture(compiled_workspace, tmp_path, criterion, case)
     assert run.returncode != 0
     assert f"{criterion} expects {required_path}, got {swapped_path}" in run.stderr
+
+
+@pytest.mark.parametrize(
+    "extra",
+    [{"observedSHA256": hashlib.sha256(b"").hexdigest()}, {"body": ""}, {"httpStatus": 503}],
+    ids=["invented-empty-digest", "invented-empty-body", "service-unavailable"],
+)
+def test_missing_model_rejects_false_not_found_evidence(compiled_workspace, tmp_path, extra):
+    case = json.loads((MODEL / "missing-case.json").read_bytes())
+    case["notFound"].update(extra)
+    run = _run_modified_fixture(compiled_workspace, tmp_path, "PB-MISSING", case)
+    assert run.returncode != 0
+    assert "PB-MISSING expects HTTP 404 without payload bytes or an observed digest" in run.stderr
+
+
+def test_generated_sdk_separates_missing_and_fetched_digests(compiled_workspace, tmp_path):
+    shutil.copyfile(compiled_workspace / "generated/payload/types.ts", tmp_path / "types.ts")
+    (tmp_path / "controls.ts").write_text(
+        """\
+import type { PayloadNotFoundObservation, FetchedFileObservation } from "./types";
+const absent = { $type: "payload:PayloadNotFoundObservation", httpStatus: 404 } as const;
+const valid: PayloadNotFoundObservation = absent;
+const emptyDigest = "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855";
+// @ts-expect-error A missing response has no observed digest.
+const fabricated: PayloadNotFoundObservation = { ...absent, observedSHA256: emptyDigest };
+// @ts-expect-error Returned bytes require an observed digest.
+const incomplete: FetchedFileObservation = { $type: "payload:FetchedFileObservation" };
+""",
+        encoding="utf-8",
+    )
+    subprocess.run(
+        ["node", os.environ["TYPESCRIPT_TSC_PATH"], "--strict", "--noEmit", "controls.ts"],
+        cwd=tmp_path,
+        check=True,
+    )

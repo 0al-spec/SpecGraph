@@ -306,3 +306,19 @@ The current checksum list verified; a stale remote digest and a CRLF-only edit
 both failed specifically for `checksums.sha256`. A separate probe with the
 same stale list locally and remotely verified, recording the dependency on the
 retained reference. See the [cases, diagram and replay](../../../../specs/models/SG-SPEC-0071/README.md).
+
+## Missing payload and empty bytes
+
+[PB-MISSING](../../../../specs/models/SG-SPEC-0071/missing-case.json) exercises
+a different outcome for the same payload path. The verifier accepted the
+expected empty file, rejected returned bytes `abc` with a digest mismatch and
+rejected HTTP 404 before comparing a digest. A timeout produced a request
+failure with its original cause and left the file's existence unknown.
+
+The model reuses the manifest entry, fetched-observation type and core trace
+relations. The fourth criterion adds one evidence type and one local relation,
+bringing the package from three classes and one relation to four and two.
+`requestedEntry` ties a 404 to its expected file. The expected SHA-256 stays
+on the manifest entry. The generated SDK and the model's JSON controls check
+the distinction between missing data and the digest of a real empty file.
+The decision to treat HTTP 404 as not-found evidence is local to this example.
