@@ -90,6 +90,10 @@ evidence and test relations. Two local types describe a manifest entry and a
 payload observation. Matching and mismatching digests both type-check; the
 production bundle verifier rejects the changed response bytes. The source map,
 diagram and replay commands are in `specs/models/SG-SPEC-0071/README.md`.
+The paired `PB-MANIFEST` example shares the comparison relation, trace builder
+and verifier replay. Its expected digest comes from the retained local manifest
+file. The test distinguishes this origin from a payload entry and exercises
+exact, stale and whitespace-only versions of the remote manifest.
 
 The first executed baseline selects merged revision `a980ba6f` and confirms
 the historical pilot spec bytes are unchanged. Existing acceptance-shape checks
