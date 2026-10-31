@@ -57,8 +57,12 @@ invalid input. Independently detected identity, pin and source/IR mismatches
 remain invalid. See the [compiler outcome defect record](reviews/0232_project_ontology_context/compiler-outcome-defect/source.md)
 for the repair and its evidence.
 
-The initial structural profile can verify a single package with no imports.
-Imported/composed dependency closure is not implemented. In particular, the
+The structural profile marks closure verified only for one package with zero
+imports. Ontology 0.3.0 requires at least one import in every domain package,
+so its compiler and this profile cannot currently produce a verified project
+context together. The positive unit case uses a fixture compiler. The
+[release compatibility observation](reviews/0233_mechanical_specification_authoring/local-model-pilot/README.md#single-package-verified-probe-31-october-2026)
+records both the rejected package and a successful package compilation. In particular, the
 current specgraph-core source imports specgraph.foundation, so compiling its
 root alone leaves the required closure guarantee unavailable. Capturing those
 bytes does not approve the package or ground all specifications. Missing context
