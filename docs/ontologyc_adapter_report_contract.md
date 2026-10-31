@@ -118,10 +118,10 @@ The smoke passes only when:
 - the authority boundary forbids report authority, automatic import-lock
   updates, and automatic canonical node updates.
 
-### Ontology 0.4.0 release integration
+### Ontology 0.5.0 release integration
 
-The release integration smoke uses the Ontology tooling release `0.4.0`, Git
-commit `46a4af4ab9608a8e1fd46bf3d650cd3fc8727a73`. This is the version of the
+The release integration smoke uses the Ontology tooling release `0.5.0`, Git
+commit `0fcc94469d971aaf39fcc182bc5c6b8acff37fd2`. This is the version of the
 compiler source, separate from the `0.1.0` version of SpecGraph's own
 `org.0al.specgraph.core` ontology package. The project-local package remains a
 draft; a compiler release does not accept its terms.
@@ -138,6 +138,10 @@ CI runs the release integration smoke on macOS and Linux; results are reported
 independently for each platform. Both jobs also check the local SG72-MIXED
 package, which now omits unused `policies` and `stateMachines` sections.
 That package check establishes structural compatibility, not scenario execution.
+
+For the [SG-SPEC-0072 diagram](../specs/models/SG-SPEC-0072/README.md), the
+macOS job also downloads the published 0.5.0 archive, checks its pinned SHA-256
+and uses the extracted `ontologyviz` to reproduce the checked-in DOT.
 
 For a local reproduction with a supported Swift toolchain, build `ontologyc`
 from the pinned checkout and pass its binary and checkout explicitly:
@@ -165,7 +169,7 @@ authenticate the compiler or prove it came from the release. The executable and
 its environment must be trusted by the caller; this is not a sandbox.
 
 The raw source digest and compiler `sourceDigest` describe different inputs:
-the former hashes the exact file bytes, while the latter follows Ontology 0.4.0's
+the former hashes the exact file bytes, while the latter follows Ontology 0.5.0's
 UTF-8 text decoding, including removal of a leading BOM. Both are recorded so a
 valid BOM-bearing file is not mistaken for a mismatch.
 

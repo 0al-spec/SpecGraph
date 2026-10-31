@@ -58,7 +58,7 @@ remain invalid. See the [compiler outcome defect record](reviews/0232_project_on
 for the repair and its evidence.
 
 With `profiles: [ontologyc-structural-v1]`, imported packages have unavailable
-closure. Ontology 0.4.0 requires at least one import. The [earlier compatibility
+closure. Ontology 0.5.0 requires at least one import. The [earlier compatibility
 probe](reviews/0233_mechanical_specification_authoring/local-model-pilot/README.md#single-package-verified-probe-31-october-2026)
 records this combination.
 
@@ -69,7 +69,7 @@ Select one package whose only import is
 `{id: specgraph.foundation, namespace: sg, version: 0.1.0}`.
 Run the workspace CLI shown below with the same source, IR and compiler pins.
 
-The profile pins the [foundation export catalog from Ontology 0.4.0](https://github.com/0al-spec/Ontology/blob/46a4af4ab9608a8e1fd46bf3d650cd3fc8727a73/SPECS/ontology/foundation/0.1.0/exports.json). Release compatibility CI compares the vendored bytes with `ontologyc export-foundation` on both platforms. The profile checks the SHA-256 of those bytes before linking verified references to their URIs.
+The profile pins the [foundation export catalog from Ontology 0.5.0](https://github.com/0al-spec/Ontology/blob/0fcc94469d971aaf39fcc182bc5c6b8acff37fd2/SPECS/ontology/foundation/0.1.0/exports.json). Release compatibility CI compares the vendored bytes with `ontologyc export-foundation` on both platforms. The profile checks the SHA-256 of those bytes before linking verified references to their URIs.
 
 SpecGraph runs `ontologyc check --format json` on private copies of the selected compiler and the pinned source. A compiler rejection can identify an invalid foundation reference before there is any generated IR. The report binds the compiler's code and field to the value at that location in the captured source. A valid source with missing IR remains unavailable. A process failure or an unreadable diagnostic response is also unavailable.
 

@@ -49,10 +49,10 @@ ref, and digest. The digest must match the normalized IR `sourceDigest`.
 The smoke also verifies that output refs resolve under the fixture directory and
 that report counts match the resolved concept refs and ontology gaps.
 
-### Ontology 0.4.0 release integration
+### Ontology 0.5.0 release integration
 
-CI builds `ontologyc` from Ontology tooling release `0.4.0`, commit
-`46a4af4ab9608a8e1fd46bf3d650cd3fc8727a73`, before invoking the release
+CI builds `ontologyc` from Ontology tooling release `0.5.0`, commit
+`0fcc94469d971aaf39fcc182bc5c6b8acff37fd2`, before invoking the release
 integration smoke. The smoke invokes the supplied binary and checks the source
 checkout HEAD. This compiler release is distinct from SpecGraph's project-local
 `org.0al.specgraph.core@0.1.0` package, which remains a draft. The freshly
@@ -64,6 +64,10 @@ CI runs the release integration smoke on macOS and Linux; results are reported
 independently for each platform. Both jobs also check the local SG72-MIXED
 package without unused `policies` and `stateMachines` sections. This establishes
 structural compatibility; it does not execute the scenario.
+
+The macOS job also checks the SHA-256 of the published 0.5.0 archive and
+reproduces the SG-SPEC-0072 model's DOT with the extracted `ontologyviz`.
+The SVG preview and rendering command are in `specs/models/SG-SPEC-0072/README.md`.
 
 For local reproduction with a supported Swift toolchain, build `ontologyc`
 from the pinned checkout and select its binary and checkout explicitly:
@@ -89,7 +93,7 @@ authenticate the executable or establish release provenance. The caller must
 trust the compiler and its environment; this is not a sandbox.
 
 The raw source hash covers exact file bytes. The compiler digest follows Ontology
-0.4.0's UTF-8 text decoding, including removal of a leading BOM, and is recorded
+0.5.0's UTF-8 text decoding, including removal of a leading BOM, and is recorded
 separately.
 
 The legacy binding index and validation report can use `--ontologyc` and

@@ -11,7 +11,8 @@ permissions:
 
 env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
-  ONTOLOGY_REVISION: 46a4af4ab9608a8e1fd46bf3d650cd3fc8727a73
+  ONTOLOGY_RELEASE: 0.5.0
+  ONTOLOGY_REVISION: 0fcc94469d971aaf39fcc182bc5c6b8acff37fd2
 
 jobs:
   compiler-compatibility:
@@ -26,7 +27,7 @@ jobs:
         uses: actions/checkout@v6
         with:
           repository: 0al-spec/Ontology
-          ref: 46a4af4ab9608a8e1fd46bf3d650cd3fc8727a73
+          ref: ${{ env.ONTOLOGY_REVISION }}
           path: .ontology-release-source
           persist-credentials: false
 
@@ -66,6 +67,22 @@ jobs:
           cmp "$RUNNER_TEMP/foundation-exports.json" tools/project_ontology_context/pinned_foundation/exports.json
           ONTOLOGYC_BINARY_PATH="$compiler_dir/ontologyc" python -m pytest -q tests/test_project_ontology_foundation.py
 
+      - name: Reproduce the SG-SPEC-0072 diagram with the released visualizer
+        env:
+          ARCHIVE_SHA256: 83d99b865b0979450a47998438eb1ff07229f2142e0658d8acd24765b69a2079
+        run: |
+          set -euo pipefail
+          work=$(mktemp -d "$RUNNER_TEMP/sg72-diagram.XXXXXXXX")
+          bundle="ontologyc-$ONTOLOGY_RELEASE-macos-arm64"
+          curl --fail --location --silent --show-error --retry 3 \
+            "https://github.com/0al-spec/Ontology/releases/download/$ONTOLOGY_RELEASE/$bundle.tar.gz" \
+            --output "$work/archive.tar.gz"
+          (cd "$work" && printf '%s  archive.tar.gz\n' "$ARCHIVE_SHA256" | shasum -a 256 -c -)
+          tar -xzf "$work/archive.tar.gz" -C "$work" "$bundle/ontologyviz"
+          model=specs/models/SG-SPEC-0072
+          "$work/$bundle/ontologyviz" "$model/domain-ontology-package.yaml" --format dot --out "$work/render"
+          cmp "$work/render/ontology.dot" "$model/ontology.dot"
+
       - name: Retain compatibility receipt
         uses: actions/upload-artifact@v4
         with:
@@ -90,7 +107,7 @@ jobs:
         uses: actions/checkout@v6
         with:
           repository: 0al-spec/Ontology
-          ref: 46a4af4ab9608a8e1fd46bf3d650cd3fc8727a73
+          ref: ${{ env.ONTOLOGY_REVISION }}
           path: .ontology-release-source
           persist-credentials: false
 

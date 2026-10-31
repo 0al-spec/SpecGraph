@@ -239,3 +239,15 @@ The [0.4.0 release](https://github.com/0al-spec/Ontology/releases/tag/0.4.0) cha
 The [release-binary observation](ontology-040-observation.json) pairs the actual SG-SPEC-0072 package with a one-literal edit. It also checks the same rejection with a previously valid IR on disk, a valid source without IR, and the project-local core package. The adapter still reports the existing ClaimCalibration gap.
 
 A follow-up control at SpecGraph `f20f48fd` initially reported `unavailable` when the member claimed namespace `sg` and no IR existed. The pinned source already established the namespace conflict. The same scope check now runs on failed captures; the recorded control reports `dependency_closure: invalid` without a snapshot.
+
+## Local model rendered with Ontology 0.5.0
+
+The [SG-SPEC-0072 diagram](../../../../specs/models/SG-SPEC-0072/ontology.svg)
+was generated with the macOS arm64 `ontologyviz` from release `0.5.0` at
+`0fcc94469d971aaf39fcc182bc5c6b8acff37fd2`. It contains two local classes,
+three external type references and five edges. The [model guide](../../../../specs/models/SG-SPEC-0072/README.md)
+links the deterministic DOT and gives the rendering command.
+
+The compiler from the same archive reproduced the committed foundation exports
+and the project-local normalized IR. The adapter resolved seven references
+and reported `sgcore:ClaimCalibration` for review.
