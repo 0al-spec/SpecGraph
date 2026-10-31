@@ -419,7 +419,9 @@ the numbers do not decide merge readiness.
 2. Connect material changes in S/U, complexity and duplication to the actual
    functions and policies. Separate parsing/I/O mechanics from domain decisions,
    and consider the whole changed decision family, including extracted modules.
-   Do not invent per-candidate locations from aggregate counts.
+   Use the U location section and the full diff artifact to inspect changed sites.
+   When repeated conditions form an ambiguous group, cite its net change and
+   inspect both revisions before attributing it to a particular occurrence.
 3. Make and explain a decision: defend the design with code evidence and explicit
    trade-offs, or identify a real defect, repair it and cite the commit and
    behavioral verification. If evidence is insufficient, say what is unknown

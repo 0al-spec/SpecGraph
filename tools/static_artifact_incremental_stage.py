@@ -176,6 +176,7 @@ def verify_remote_bundle(
     remote_base_url: str,
     fetcher: Fetcher = _fetch,
     workers: int = 12,
+    observed_paths: list[dict[str, str]] | None = None,
 ) -> dict[str, Any]:
     parsed = urllib.parse.urlparse(remote_base_url)
     if parsed.scheme != "https" or not parsed.netloc:
@@ -186,20 +187,18 @@ def verify_remote_bundle(
     metadata_digests = {}
     for metadata_name in ("artifact_manifest.json", "checksums.sha256"):
         local_metadata = (bundle_dir / metadata_name).read_bytes()
-        metadata_digests[metadata_name] = hashlib.sha256(local_metadata).hexdigest()
         try:
             remote_metadata = fetcher(f"{base_url}/{metadata_name}")
         except Exception as exc:
             raise IncrementalStageError(
                 f"remote metadata request failed for {metadata_name}: {exc}"
             ) from exc
-        if (
-            hashlib.sha256(remote_metadata).hexdigest()
-            != hashlib.sha256(local_metadata).hexdigest()
-        ):
+        actual = hashlib.sha256(remote_metadata).hexdigest()
+        if actual != hashlib.sha256(local_metadata).hexdigest():
             raise IncrementalStageError(f"remote metadata digest mismatch: {metadata_name}")
+        metadata_digests[metadata_name] = actual
 
-    def verify(item: tuple[str, dict[str, Any]]) -> str:
+    def verify(item: tuple[str, dict[str, Any]]) -> tuple[str, str]:
         path, row = item
         try:
             body = fetcher(f"{base_url}/{path}")
@@ -210,10 +209,15 @@ def verify_remote_bundle(
         actual = hashlib.sha256(body).hexdigest()
         if actual != row["sha256"]:
             raise IncrementalStageError(f"remote artifact digest mismatch: {path}")
-        return path
+        return path, actual
 
     with ThreadPoolExecutor(max_workers=workers) as pool:
         verified = list(pool.map(verify, local_files.items()))
+    if observed_paths is not None:
+        observed_paths.extend(
+            {"path": path, "sha256": digest}
+            for path, digest in sorted([*metadata_digests.items(), *verified])
+        )
     execution = PublicationExecutionContext.from_environment(os.environ)
     return {
         "artifact_kind": "specgraph_static_artifact_remote_verification_report",
@@ -234,8 +238,8 @@ def verify_remote_bundle(
     }
 
 
-def _write_report(report: dict[str, Any], output: Path) -> None:
-    write_json_object(output, report)
+def _write_report(report: dict[str, Any], output: Path, *, exclusive: bool = False) -> None:
+    write_json_object(output, report, exclusive=exclusive)
     print(
         json.dumps(
             {
@@ -263,6 +267,11 @@ def build_parser() -> argparse.ArgumentParser:
     verify.add_argument("--attempts", type=int, default=3)
     verify.add_argument("--retry-delay-seconds", type=float, default=5.0)
     verify.add_argument("--output", type=Path, required=True)
+    verify.add_argument(
+        "--observations-output",
+        type=Path,
+        help="Retain successful HTTPS path and digest observations alongside a fresh receipt",
+    )
     return parser
 
 
@@ -279,12 +288,21 @@ def main(argv: list[str] | None = None) -> int:
         else:
             if args.attempts < 1:
                 raise IncrementalStageError("verification attempts must be positive")
+            if args.observations_output is not None:
+                if args.output.resolve() == args.observations_output.resolve():
+                    raise IncrementalStageError("receipt and observations need distinct paths")
+                if args.output.exists() or args.observations_output.exists():
+                    raise IncrementalStageError(
+                        "capture requires fresh receipt and observations paths"
+                    )
             last_error: IncrementalStageError | None = None
             for attempt in range(1, args.attempts + 1):
+                observations = [] if args.observations_output is not None else None
                 try:
                     report = verify_remote_bundle(
                         bundle_dir=args.bundle_dir.resolve(),
                         remote_base_url=args.remote_base_url,
+                        observed_paths=observations,
                     )
                     report["attempt"] = attempt
                     break
@@ -294,8 +312,28 @@ def main(argv: list[str] | None = None) -> int:
                         time.sleep(args.retry_delay_seconds)
             else:
                 raise last_error or IncrementalStageError("remote verification failed")
-        _write_report(report, args.output.resolve())
-    except IncrementalStageError as exc:
+            if observations is not None:
+                write_json_object(
+                    args.observations_output,
+                    {
+                        "artifact_kind": "specgraph_publication_path_observations",
+                        "schema_version": 1,
+                        "execution_context": report["execution_context"],
+                        "remote_base_url": report["remote_base_url"],
+                        "attempt": report["attempt"],
+                        "observations": observations,
+                    },
+                    exclusive=True,
+                )
+                report["path_observations_sha256"] = hashlib.sha256(
+                    args.observations_output.read_bytes()
+                ).hexdigest()
+        _write_report(
+            report,
+            args.output.resolve(),
+            exclusive=args.command == "verify" and args.observations_output is not None,
+        )
+    except (IncrementalStageError, FileExistsError) as exc:
         print(f"incremental static artifact error: {exc}", file=sys.stderr)
         return 2
     return 0

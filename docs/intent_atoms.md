@@ -184,13 +184,20 @@ manifest uses `closed_world = false`.
 After successful `Python CI`, the SpecificationMetrics PR workflow fetches the
 PR's current base and head as Git objects, overlays the same trusted counting
 contract onto both disposable source trees, and runs the CLI pinned to commit
-`4650728d33d79e75e1eaa2470ec26ec9b0338e5a`. It does not run PR-authored code.
+`332348dc86ebd9cfc9d1db15c37afbae9c2546d0`. It does not run PR-authored code.
 The comment updates one marker-owned PR comment with S, U, S/U, liveness counts,
 and supplementary Python SLOC, CC, Cog, and cross-language clone deltas from
 Radon 6.0.1, complexipy 8.0.1, and jscpd 5.0.11. The source cohort comes from
 the versioned manifest, so tests and the report renderer do not affect these
 measurements. Unknown liveness or failed supplements are labeled in the report;
 the comment is informational and does not gate merge readiness.
+
+The pinned CLI also renders a section for changes in U. Added locations link
+to the PR head and removed locations to the base, with one-based line and UTF-8
+byte column. A commit link requires matching Git blob bytes. Repeated identical
+conditions with a change in multiplicity appear as an ambiguous group. The
+comment shows up to 20 locations within a 12 KB row budget. The full
+`opportunity_changes` object is in `diff.json`.
 
 The comment links to the actual collection run and its `specificationmetrics-pr-*`
 artifact, retained for 30 days. Download it from that run's **Artifacts** section
@@ -214,15 +221,19 @@ collection does not publish a new success summary; an existing PR comment can
 still describe an older revision, so compare its revision IDs. Raw reports from
 older runs cannot be recovered retrospectively if they were not retained.
 
-The pinned analyzer uses counting rule v9: it recognizes static module-level
-Python Specification subclasses transitively and treats resolved class bases
-as runtime uses. This corrects the native BDD family omitted by v8. On unchanged
+Counting rule v9 added transitive discovery of module-level Python Specification
+subclasses and recognition of resolved class bases as runtime uses. This corrects the native BDD family omitted by v8. On unchanged
 SpecGraph `b86895c9`, the correction changes S from 100 to 106, U from 10,093 to
 10,073, and unknown liveness from 1 to 0. These are analyzer corrections, not
 application refactoring gains. Preserve previous artifacts and start a new
 contract baseline; normal collection comparison rejects different contracts.
 See the [inheritance audit](https://github.com/SoundBlaster/SpecificationMetrics/blob/4650728d33d79e75e1eaa2470ec26ec9b0338e5a/docs/python-inheritance-counting-audit.md)
 for the exact snapshot, supported ancestry subset and regression coverage.
+
+Counting rule v10 adds resolved Python `PredicateSpec[T]` factories. On the
+same SpecGraph revision `4add3afe`, this analyzer change raises S from 127 to
+130 with U at 10,676 under both rules. Collect both sides with the pinned v10
+analyzer for each new PR comparison.
 
 ### Verify an analyzer rollout
 
@@ -235,12 +246,11 @@ reruns for merged PRs do not produce a new PR measurement.
 For that verification, download the linked artifact and check all six named
 files above. Bind `provenance.json` to the repository, PR base/head, upstream CI
 run, collection run/attempt, trusted tooling revision and expected analyzer SHA.
-Check counting rule v9 in both collection reports, matching collection contracts,
+Check counting rule v10 in both collection reports, matching collection contracts,
 complete collection/supplementary statuses, and primary diagnostics. Verify that
 the comment describes the same revisions and values as those JSON reports.
 
 A documentation-only verification PR should leave application S, U and classic
 metrics unchanged between its base and head. That proves collection consistency,
-not business correctness. Compare v8 and v9 only as an explicit analyzer audit on
-the same source snapshot; preserve the old artifact and establish the v9 baseline
-without presenting its changed counts as a code-quality improvement.
+not business correctness. Compare counting-rule versions separately on the same snapshot and retain
+the historical reports.

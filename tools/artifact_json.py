@@ -16,6 +16,8 @@ def read_json_object(path: Path, *, object_error: str | None = None) -> dict[str
     return payload
 
 
-def write_json_object(path: Path, payload: dict[str, Any]) -> None:
+def write_json_object(path: Path, payload: dict[str, Any], *, exclusive: bool = False) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_text(json.dumps(payload, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+    text = json.dumps(payload, indent=2, sort_keys=True) + "\n"
+    with path.open("x" if exclusive else "w", encoding="utf-8") as stream:
+        stream.write(text)
