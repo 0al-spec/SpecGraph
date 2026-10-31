@@ -35,6 +35,10 @@ requirement fields or model run.
 - At a natural pause, explain the small diff. Do not ask for approval of every
   write. Record `approve` only for an explicit approval of the displayed whole
   sketch at that exact revision; partial assent remains a source quotation.
+- When agreement or refusal depends on an earlier proposal, quote both the
+  proposal and the reply, attribute each to its speaker, and link the reply
+  to the proposal it addresses. Keep qualifiers such as “conceptually” or
+  “for now” in the quoted reply.
 - Read a bounded branch with `--node-id`; `omitted_nodes` describes exclusion
   and links may point outside the selected branch.
 
