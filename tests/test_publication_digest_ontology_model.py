@@ -25,9 +25,14 @@ CASES = {
 }
 
 
-@pytest.mark.parametrize("criterion_id", CASES)
+SOURCE_CASES = {criterion: value[0] for criterion, value in CASES.items()} | {
+    "PB-ALL": "all-case.json",
+}
+
+
+@pytest.mark.parametrize("criterion_id", SOURCE_CASES)
 def test_binding_identifies_the_canonical_criterion_and_test(criterion_id):
-    filename, _, _ = CASES[criterion_id]
+    filename = SOURCE_CASES[criterion_id]
     source = json.loads((MODEL / filename).read_bytes())["source"]
     raw = (ROOT / "specs/nodes/SG-SPEC-0071.yaml").read_bytes()
     spec = yaml.safe_load(raw)
@@ -53,7 +58,7 @@ def test_binding_identifies_the_canonical_criterion_and_test(criterion_id):
     ]
 
 
-@pytest.fixture(scope="module")
+@pytest.fixture(scope="session")
 def compiler():
     path = os.environ.get("ONTOLOGYC_BINARY_PATH")
     if not path:
@@ -76,7 +81,7 @@ def test_compiler_rejects_an_unknown_comparison_target(compiler, tmp_path):
     )
 
 
-@pytest.fixture(scope="module")
+@pytest.fixture(scope="session")
 def compiled_workspace(compiler, tmp_path_factory):
     tmp_path = tmp_path_factory.mktemp("publication-sdk")
     tsc = os.environ.get("TYPESCRIPT_TSC_PATH")
@@ -95,7 +100,7 @@ def compiled_workspace(compiler, tmp_path_factory):
             ],
             check=True,
         )
-    for name in ("model.ts", *(filename for filename, _, _ in CASES.values())):
+    for name in ("model.ts", "publication-graph.ts", "bundle-model.ts", *SOURCE_CASES.values()):
         shutil.copyfile(MODEL / name, tmp_path / name)
     subprocess.run(
         [
