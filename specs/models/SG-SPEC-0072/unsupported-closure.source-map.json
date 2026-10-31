@@ -1,0 +1,64 @@
+{
+  "schema_version": 1,
+  "spec_id": "SG-SPEC-0072",
+  "source_sha256": "46a6be05a4a0c4c5de7cfe29a8b44d5bd25fab09404f20fb2f2646a433fc196e",
+  "scenario_id": "SG72-UNSUPPORTED-CLOSURE",
+  "source_fragments": [
+    {
+      "pointer": "/specification/verification_contract/unavailable",
+      "quote": "a required compiler, input or dependency check is missing or unsupported"
+    },
+    {
+      "pointer": "/specification/verification_contract/outcome_precedence",
+      "quote": "Otherwise any missing or unsupported required check makes it unavailable."
+    },
+    {
+      "pointer": "/specification/verification_contract/outcome_precedence",
+      "quote": "retain per-check diagnostics in every case."
+    },
+    {
+      "pointer": "/specification/verification_contract/result_contract",
+      "quote": "per-check results, one overall outcome, and concrete diagnostics."
+    },
+    {
+      "pointer": "/specification/acceptance_cases/3/expected",
+      "quote": "Successful independent package checks cannot upgrade unsupported closure to verified."
+    }
+  ],
+  "acceptance": [
+    {
+      "pointer": "/acceptance/0",
+      "status": "unmodelled",
+      "reason": "A pinned imported package supplies the fixture. The model does not verify general package selection or name resolution."
+    },
+    {
+      "pointer": "/acceptance/1",
+      "status": "unmodelled",
+      "reason": "Context revision identity, captured bytes, source and IR hashes, compiler identity and profile identity are not modelled."
+    },
+    {
+      "pointer": "/acceptance/2",
+      "status": "partial",
+      "reason": "Models one verified member check and unsupported closure for the same member. Other outcomes and fallback behavior remain outside this scenario."
+    },
+    {
+      "pointer": "/acceptance/3",
+      "status": "unmodelled",
+      "reason": "Semantic approval, complete terminology coverage and runtime enforcement are not established by this bounded model. Its source links do not discharge the full provenance and authority criterion."
+    }
+  ],
+  "expected": {
+    "outcome": "unavailable",
+    "checks": [
+      {
+        "check": "member_capture",
+        "outcome": "verified"
+      },
+      {
+        "check": "dependency_closure",
+        "outcome": "unavailable"
+      }
+    ],
+    "diagnostics_required": true
+  }
+}

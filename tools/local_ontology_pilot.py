@@ -12,6 +12,8 @@ from pathlib import Path
 
 import yaml
 
+from local_ontology_cases import CASES, MIXED, Scenario
+
 
 class PilotFailure(Exception):
     def __init__(self, layer: str, path: str, message: str, code: int = 1):
@@ -30,33 +32,12 @@ def pointer(document: object, path: str) -> object:
     return document
 
 
-def source_mapping(expected: dict, document: dict, spec_bytes: bytes) -> None:
-    """The six source clauses and four coverage rows of this one reviewed example."""
-    base = "/specification/verification_contract/"
-    anchors = {
-        (base + "invalid", "duplicate identity"),
-        (
-            base + "unavailable",
-            "a required compiler, input or dependency check is missing or unsupported",
-        ),
-        (
-            base + "outcome_precedence",
-            "A detected invalidity makes the overall outcome invalid "
-            "even if another required check is unavailable.",
-        ),
-        (base + "outcome_precedence", "retain per-check diagnostics in every case."),
-        (
-            base + "result_contract",
-            "per-check results, one overall outcome, and concrete diagnostics.",
-        ),
-        (
-            "/specification/acceptance_cases/4/expected",
-            "a detected context conflict plus another unavailable required check remains invalid "
-            "with both diagnostics retained.",
-        ),
-    }
+def source_mapping(
+    expected: dict, document: dict, spec_bytes: bytes, scenario: Scenario = MIXED
+) -> None:
+    """Bind the selected example to its independently reviewed clauses and roles."""
     actual = [(item["pointer"], item["quote"]) for item in expected["source_fragments"]]
-    if set(actual) != anchors or len(actual) != len(anchors):
+    if set(actual) != set(scenario.clauses) or len(actual) != len(scenario.clauses):
         raise PilotFailure(
             "model", "source-map.json/source_fragments", "Required source-clause inventory changed"
         )
@@ -84,23 +65,108 @@ def source_mapping(expected: dict, document: dict, spec_bytes: bytes) -> None:
             "Keep exactly four acceptance rows; only row 2 is partially modelled",
         )
     wanted = expected["expected"]
-    required = [("selection", "invalid"), ("compiler", "unavailable")]
     if (
         expected["schema_version"] != 1
         or expected["spec_id"] != "SG-SPEC-0072"
-        or expected["scenario_id"] != "SG72-MIXED"
-        or wanted["outcome"] != "invalid"
+        or expected["scenario_id"] != scenario.id
+        or wanted["outcome"] != scenario.outcome
         or wanted["diagnostics_required"] is not True
-        or [(c["check"], c["outcome"]) for c in wanted["checks"]] != required
+        or tuple((c["check"], c["outcome"]) for c in wanted["checks"]) != scenario.roles
     ):
         raise PilotFailure(
             "model",
             "source-map.json/expected",
-            "This fixed pilot requires invalid, both named diagnostics and SG72-MIXED",
+            f"Expected the reviewed outcome and check roles for {scenario.id}",
         )
 
 
+def verify_declaration(declaration: dict, expected: dict, scenario: Scenario) -> dict:
+    wanted = expected["expected"]
+    if declaration["specification"]["id"] != expected["spec_id"]:
+        raise PilotFailure(
+            "model",
+            "model.ts/specification/id",
+            "Model refers to a different source specification",
+        )
+    if (
+        declaration["scenario"]["id"] != expected["scenario_id"]
+        or declaration["scenario"]["expectedOutcome"] != wanted["outcome"]
+    ):
+        raise PilotFailure(
+            "model",
+            "model.ts/scenario",
+            "Declared case/outcome differs from the independent source map",
+        )
+    if declaration["requirement"]["id"] != "SG72-OUTCOME-PRECEDENCE":
+        raise PilotFailure(
+            "model", "model.ts/requirement/id", "Model targets a different requirement"
+        )
+    declared = {(check["check"], check["outcome"]): check for check in declaration["checks"]}
+    required = {(check["check"], check["outcome"]) for check in wanted["checks"]}
+    if set(declared) != required or len(declaration["checks"]) != len(required):
+        raise PilotFailure(
+            "model",
+            "model.ts/checks",
+            "Declared checks differ from the independent required diagnostic roles",
+        )
+    links = [
+        (edge["from"], edge["to"])
+        for edge in declaration["relations"]
+        if edge["relation"] == "contextcase:closureUsesMemberCheck"
+    ]
+    wanted_links = []
+    if scenario.closure_link:
+        closure, member = scenario.closure_link
+        wanted_links.append((declared[closure]["id"], declared[member]["id"]))
+    if links != wanted_links:
+        raise PilotFailure(
+            "model", "model.ts/relations", "Closure must reference its selected member check"
+        )
+    return declared
+
+
+def verify_behavior(
+    observed: dict, scenario: Scenario, declared: dict, member: dict, compiler_hash: str
+) -> None:
+    if observed["outcome"] != scenario.outcome:
+        raise PilotFailure(
+            "behavior",
+            "observed/outcome",
+            "Production capture disagrees with the source-map expectation",
+        )
+    checks = observed["checks"]
+    if scenario.outcome == "unavailable" and any(item["outcome"] == "invalid" for item in checks):
+        raise PilotFailure(
+            "behavior", "observed/checks", "Unavailable requires no detected invalidity"
+        )
+    diagnostics = {
+        (item["check"], item["outcome"], item["detail"], item["package"]) for item in checks
+    }
+    package = member["id"] if scenario.closure_link else None
+    for role, check in declared.items():
+        if (*role, check["detail"], package) not in diagnostics:
+            raise PilotFailure(
+                "behavior",
+                f"model.ts/checks/{check['id']}",
+                "Required diagnostic differs in check, outcome, detail or package",
+            )
+
+    if scenario.closure_link:
+        expected = {
+            k: member[k] for k in ("id", "namespace", "version", "source_sha256", "ir_sha256")
+        }
+        expected["compiler_sha256"] = compiler_hash
+        snapshots = observed.get("snapshots", [])
+        if len(snapshots) != 1 or any(
+            snapshots[0].get(field) != value for field, value in expected.items()
+        ):
+            raise PilotFailure(
+                "behavior", "observed/snapshots", "Verified member lacks its pinned snapshot"
+            )
+
+
 def run(args: argparse.Namespace, root: Path) -> tuple[dict, int]:
+    scenario = CASES[getattr(args, "scenario", MIXED.id)]
     work = args.work_dir.resolve()
     if work.exists() and (not work.is_dir() or any(work.iterdir())):
         raise ValueError("--work-dir must be new or empty; existing output is never overwritten")
@@ -112,7 +178,7 @@ def run(args: argparse.Namespace, root: Path) -> tuple[dict, int]:
         "artifact_kind": "local_ontology_scenario_pilot",
         "schema_version": 1,
         "spec_id": "SG-SPEC-0072",
-        "scenario_id": "SG72-MIXED",
+        "scenario_id": scenario.id,
         "outcome": "tool_failure",
         "layers": {
             name: {"status": "not_run"} for name in ("compiler", "typecheck", "model", "behavior")
@@ -175,14 +241,18 @@ def run(args: argparse.Namespace, root: Path) -> tuple[dict, int]:
     code, layer = 2, "compiler"
     try:
         model_dir = (args.model_dir or root / "specs/models/SG-SPEC-0072").resolve()
-        for name in (
-            "domain-ontology-package.yaml",
-            "model.ts",
-            "tsconfig.json",
-            "source-map.json",
-            "mixed-outcome.feature",
-        ):
+        for name in ("domain-ontology-package.yaml", "tsconfig.json", scenario.feature):
             capture(model_dir / name, f"model/{name}", source / name)
+        # Older, self-contained mixed models have no shared declaration module.
+        if (model_dir / "case-model.ts").is_file():
+            capture(model_dir / "case-model.ts", "model/case-model.ts", source / "case-model.ts")
+        for name, staged in ((scenario.model, "model.ts"), (scenario.mapping, "source-map.json")):
+            capture(model_dir / name, f"model/{name}", source / staged)
+        capture(
+            root / "tools/local_ontology_cases.py",
+            "local_ontology_cases.py",
+            work / "local_ontology_cases.py",
+        )
         capture(
             root / "tools/local_ontology_pilot/consumer.ts", "consumer.ts", source / "consumer.ts"
         )
@@ -201,17 +271,19 @@ def run(args: argparse.Namespace, root: Path) -> tuple[dict, int]:
         try:
             expected = json.loads((source / "source-map.json").read_bytes())
             document = yaml.safe_load(spec_bytes)
-            source_mapping(expected, document, spec_bytes)
-            feature = (source / "mixed-outcome.feature").read_text().splitlines()
+            source_mapping(expected, document, spec_bytes, scenario)
+            feature = (source / scenario.feature).read_text().splitlines()
             tags = [
                 token for line in feature if line.strip().startswith("@") for token in line.split()
             ]
             scenarios = [line for line in feature if line.strip().startswith("Scenario:")]
-            if tags.count("@SG72-MIXED") != 1 or len(scenarios) != 1:
+            if [tag for tag in tags if tag.startswith("@SG72-")] != [f"@{scenario.id}"] or len(
+                scenarios
+            ) != 1:
                 raise PilotFailure(
                     "model",
-                    "mixed-outcome.feature",
-                    "Expected one @SG72-MIXED tag and one Scenario",
+                    scenario.feature,
+                    f"Expected one @{scenario.id} tag and one Scenario",
                 )
         except (ValueError, TypeError, KeyError, IndexError, yaml.YAMLError) as error:
             raise PilotFailure(
@@ -293,33 +365,9 @@ def run(args: argparse.Namespace, root: Path) -> tuple[dict, int]:
             raise PilotFailure(layer, first["path"], first["message"])
         declaration = consumer["model"]
         report["model"] = declaration
-        wanted = expected["expected"]
-        if declaration["specification"]["id"] != expected["spec_id"]:
-            raise PilotFailure(
-                layer,
-                "model.ts/specification/id",
-                "Model refers to a different source specification",
-            )
-        if (
-            declaration["scenario"]["id"] != expected["scenario_id"]
-            or declaration["scenario"]["expectedOutcome"] != wanted["outcome"]
-        ):
-            raise PilotFailure(
-                layer,
-                "model.ts/scenario",
-                "Declared case/outcome differs from the independent source map",
-            )
-        declared = {(check["check"], check["outcome"]): check for check in declaration["checks"]}
-        required = {(check["check"], check["outcome"]) for check in wanted["checks"]}
-        if set(declared) != required or len(declaration["checks"]) != len(required):
-            raise PilotFailure(
-                layer,
-                "model.ts/checks",
-                "Declared checks differ from the independent required diagnostic roles",
-            )
+        declared = verify_declaration(declaration, expected, scenario)
         report["layers"][layer]["status"] = "passed"
         layer = "behavior"
-        # SDK compilation above is real. This production scenario deliberately has no compiler.
         producer_paths = ["tools/ontology_snapshot.py"] + [
             f"tools/project_ontology_context/{name}.py"
             for name in ("__init__", "capture", "model", "invalid_spec", "unavailable_spec")
@@ -346,34 +394,24 @@ def run(args: argparse.Namespace, root: Path) -> tuple[dict, int]:
         selection = {
             "artifact_kind": "specgraph_project_ontology_selection",
             "schema_version": 1,
-            "packages": [member, member],
+            "packages": [member] * scenario.member_count,
             "profiles": ["ontologyc-structural-v1"],
             "composition": {"dependency_rule": "explicit", "name_resolution_rule": "qualified"},
         }
         (runtime / "selection.yaml").write_text(yaml.safe_dump(selection))
         observed = capture_project_context(
             runtime,
-            project_id="local-SG72-MIXED",
+            project_id=f"local-{scenario.id}",
             selection_path=Path("selection.yaml"),
-            ontologyc=None,
+            ontologyc=compiler if scenario.supply_compiler else None,
+            compiler_sha256=report["tools"]["ontologyc"]["sha256"]
+            if scenario.supply_compiler
+            else None,
         ).report()
         report["observed"] = observed
-        if observed["outcome"] != wanted["outcome"]:
-            raise PilotFailure(
-                layer,
-                "observed/outcome",
-                "Production capture disagrees with the source-map expectation",
-            )
-        for key, check in declared.items():
-            if not any(
-                (item["check"], item["outcome"]) == key and item["detail"] == check["detail"]
-                for item in observed["checks"]
-            ):
-                raise PilotFailure(
-                    layer,
-                    f"model.ts/checks/{check['id']}",
-                    "Required diagnostic is missing or associated with a different check/outcome",
-                )
+        verify_behavior(
+            observed, scenario, declared, member, report["tools"]["ontologyc"]["sha256"]
+        )
         report["layers"][layer]["status"] = "passed"
         for path, original in captured.items():
             if digest(path.read_bytes()) != original:
@@ -404,6 +442,12 @@ def main() -> int:
     parser.add_argument("--tsc", required=True, type=Path)
     parser.add_argument("--work-dir", required=True, type=Path)
     parser.add_argument("--model-dir", type=Path)
+    parser.add_argument(
+        "--scenario",
+        choices=CASES,
+        default=MIXED.id,
+        help="Select one SG-SPEC-0072 example (default: %(default)s)",
+    )
     args = parser.parse_args()
     sys.dont_write_bytecode = True
     try:

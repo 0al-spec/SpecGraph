@@ -3,7 +3,7 @@ kind: DomainOntologyPackage
 metadata:
   id: org.0al.specgraph.local.contextcase
   namespace: contextcase
-  version: 0.1.0
+  version: 0.2.0
   publisher: SpecGraph
   source: specs/models/SG-SPEC-0072/domain-ontology-package.yaml
   approvalStatus: draft
@@ -30,9 +30,14 @@ spec:
       domain: ContextVerificationCase
       range: CheckResult
       cardinality: {min: 2, max: 2}
-      description: This bounded mixed-outcome case declares its two required check diagnostics.
+      description: The scenario declares the two check results selected for comparison.
     caseValidatesRequirement:
       domain: ContextVerificationCase
       range: sgcore:Requirement
       cardinality: {min: 1, max: 1}
       description: The local case targets the outcome-precedence requirement.
+    closureUsesMemberCheck:
+      domain: CheckResult
+      range: CheckResult
+      cardinality: {min: 0, max: 1}
+      description: The required dependency closure check refers to the structural check for the same selected member.
