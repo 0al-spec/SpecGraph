@@ -210,7 +210,7 @@ def test_pb_manifest_model_against_bundle_verifier(tmp_path: Path, control: str)
     bundle = _bundle(
         tmp_path / "bundle", {payload["manifestEntry"]["path"]: payload["localBody"].encode()}
     )
-    reference = case["localManifest"]
+    reference = case["localMetadataFile"]
     assert reference["path"] == "artifact_manifest.json"
     manifest = bundle / reference["path"]
     expected = json.loads(case["localBody"])
@@ -237,6 +237,45 @@ def test_pb_manifest_model_against_bundle_verifier(tmp_path: Path, control: str)
     with pytest.raises(IncrementalStageError) as failure:
         _replay_digest_observation(bundle, reference, observation)
     assert str(failure.value) == "remote metadata digest mismatch: artifact_manifest.json"
+
+
+@pytest.mark.parametrize("control", ["matching", "stale", "crlf"])
+def test_pb_checksums_model_against_bundle_verifier(
+    tmp_path: Path, monkeypatch, control: str
+) -> None:
+    monkeypatch.syspath_prepend(str(TOOL_PATH.parent))
+    from build_static_artifact_bundle import PublishFile, write_checksums
+
+    case = json.loads((PUBLICATION_MODELS / "checksums-case.json").read_bytes())
+    payload = json.loads((PUBLICATION_MODELS / "case.json").read_bytes())
+    path = payload["manifestEntry"]["path"]
+    body = payload["localBody"].encode()
+    bundle = _bundle(tmp_path / "bundle", {path: body})
+    published_file = PublishFile(
+        path=path, root=".", size_bytes=len(body), sha256=hashlib.sha256(body).hexdigest()
+    )
+    retained = write_checksums(bundle, [published_file])
+    reference = case["localMetadataFile"]
+    assert retained.name == reference["path"] == "checksums.sha256"
+    assert retained.read_bytes() == case["localBody"].encode()
+
+    observation = case["observations"][control]
+    if control == "matching":
+        assert observation["body"] == case["localBody"]
+        report = _replay_digest_observation(bundle, reference, observation)
+        assert report["status"] == "verified"
+        assert report["bundle_identity"]["checksums_sha256"] == reference["expectedSHA256"]
+        assert report["summary"]["verified_file_count"] == 1
+        return
+
+    if control == "crlf":
+        assert observation["body"] == case["localBody"].replace("\n", "\r\n")
+    else:
+        old_digest = payload["observations"]["changed"]["observedSHA256"]
+        assert observation["body"] == f"{old_digest}  {path}\n"
+    with pytest.raises(IncrementalStageError) as failure:
+        _replay_digest_observation(bundle, reference, observation)
+    assert str(failure.value) == "remote metadata digest mismatch: checksums.sha256"
 
 
 def test_verify_remote_bundle_fails_on_stale_published_manifest(tmp_path: Path) -> None:
