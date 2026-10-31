@@ -123,7 +123,7 @@ jobs:
         run: >
           cargo install --locked
           --git https://github.com/SoundBlaster/SpecificationMetrics.git
-          --rev 4650728d33d79e75e1eaa2470ec26ec9b0338e5a
+          --rev 332348dc86ebd9cfc9d1db15c37afbae9c2546d0
           --root "${RUNNER_TEMP}/specificationmetrics/cli"
           specification-metrics
 
@@ -166,11 +166,11 @@ jobs:
               base_sha: $base, head_sha: $head, collection_run_id: $run,
               collection_attempt: $attempt, upstream_ci_run_id: $ci,
               trusted_workflow_sha: $workflow,
-              analyzer_sha: "4650728d33d79e75e1eaa2470ec26ec9b0338e5a"}' \
+              analyzer_sha: "332348dc86ebd9cfc9d1db15c37afbae9c2546d0"}' \
             > "${RUNNER_TEMP}/specificationmetrics/provenance.json"
-          "${cli}" collect --config "${before}/.specificationmetrics.toml" \
+          "${cli}" collect --candidate-locations --config "${before}/.specificationmetrics.toml" \
             --output "${RUNNER_TEMP}/specificationmetrics/before.json"
-          "${cli}" collect --config "${after}/.specificationmetrics.toml" \
+          "${cli}" collect --candidate-locations --config "${after}/.specificationmetrics.toml" \
             --output "${RUNNER_TEMP}/specificationmetrics/after.json"
           "${cli}" compare "${RUNNER_TEMP}/specificationmetrics/before.json" \
             "${RUNNER_TEMP}/specificationmetrics/after.json" \
@@ -200,13 +200,19 @@ jobs:
           REPOSITORY: ${{ github.repository }}
           ARTIFACT_URL: ${{ steps.evidence.outputs.artifact-url }}
         run: |
+          report_dir="${RUNNER_TEMP}/specificationmetrics"
+          "${report_dir}/cli/bin/specification-metrics" compare \
+            "${report_dir}/before.json" "${report_dir}/after.json" \
+            --github-markdown "$REPOSITORY" --output "${report_dir}/locations.md"
           python tools/specificationmetrics_pr_comment.py \
             --before "${RUNNER_TEMP}/specificationmetrics/before.json" \
             --after "${RUNNER_TEMP}/specificationmetrics/after.json" \
             --diff "${RUNNER_TEMP}/specificationmetrics/diff.json" \
-            --output "${RUNNER_TEMP}/specificationmetrics/comment.json" \
+            --output "${report_dir}/summary.json" \
             --run-url "https://github.com/${REPOSITORY}/actions/runs/${COLLECTION_RUN_ID}" \
             --artifact-url "$ARTIFACT_URL"
+          jq --rawfile locations "${report_dir}/locations.md" \
+            '.body += ("\n\n" + $locations)' "${report_dir}/summary.json" > "${report_dir}/comment.json"
 
       - name: Update the single PR metrics comment
         if: steps.snapshot.outputs.is_current == 'true'
