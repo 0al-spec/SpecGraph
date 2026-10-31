@@ -2,9 +2,23 @@
 
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import asdict, dataclass
 
 from ontology_snapshot import OntologySnapshot
+
+
+@dataclass(frozen=True, slots=True)
+class ReferenceSite:
+    pointer: str
+    name: str
+    uri: str | None = None
+
+
+@dataclass(frozen=True, slots=True)
+class CompilerDiagnostic:
+    code: str
+    source_sha256: str
+    compiler_sha256: str
 
 
 @dataclass(frozen=True, slots=True)
@@ -13,6 +27,8 @@ class CheckResult:
     outcome: str
     detail: str
     package: str | None = None
+    reference: ReferenceSite | None = None
+    compiler_diagnostic: CompilerDiagnostic | None = None
 
     def report(self) -> dict[str, object]:
         return {
@@ -20,12 +36,27 @@ class CheckResult:
             "outcome": self.outcome,
             "detail": self.detail,
             "package": self.package,
+            **(
+                {"compiler_diagnostic": asdict(self.compiler_diagnostic)}
+                if self.compiler_diagnostic
+                else {}
+            ),
+            **({"reference": asdict(self.reference)} if self.reference is not None else {}),
         }
 
 
 @dataclass(frozen=True, slots=True)
 class ContextFacts:
     checks: tuple[CheckResult, ...]
+
+
+@dataclass(frozen=True, slots=True)
+class ResolvedImport:
+    id: str
+    namespace: str
+    version: str
+    source_uri: str
+    source_sha256: str
 
 
 @dataclass(frozen=True, slots=True)
@@ -41,6 +72,7 @@ class ContextResult:
     members: tuple[tuple[str, str, str], ...]
     profiles: tuple[str, ...]
     rules: tuple[tuple[str, str], ...]
+    resolved_imports: tuple[ResolvedImport, ...] = ()
 
     def report(self) -> dict[str, object]:
         return {
@@ -53,6 +85,11 @@ class ContextResult:
             "context_revision": self.revision,
             "members": [{"id": x[0], "namespace": x[1], "version": x[2]} for x in self.members],
             "profiles": list(self.profiles),
+            **(
+                {"resolved_imports": [asdict(item) for item in self.resolved_imports]}
+                if self.resolved_imports
+                else {}
+            ),
             "composition": dict(self.rules),
             "snapshots": [
                 {

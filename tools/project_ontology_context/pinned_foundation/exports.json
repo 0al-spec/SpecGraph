@@ -1,0 +1,30 @@
+{
+  "classes" : [
+    "Actor",
+    "Capability",
+    "Command",
+    "DomainEntity",
+    "Event",
+    "Invariant",
+    "Policy",
+    "StateMachine",
+    "SystemActor",
+    "ValueObject"
+  ],
+  "id" : "specgraph.foundation",
+  "namespace" : "sg",
+  "policyBases" : [
+    "Policy"
+  ],
+  "protocols" : [
+    "Approvable",
+    "Auditable",
+    "DeviceBound",
+    "RestrictableCapability",
+    "Signable",
+    "TimeBound",
+    "Versioned"
+  ],
+  "schemaVersion" : 1,
+  "version" : "0.1.0"
+}

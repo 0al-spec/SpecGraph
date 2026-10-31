@@ -1,0 +1,74 @@
+{
+  "spec_id": "SG-SPEC-0072",
+  "spec_sha256": "46a6be05a4a0c4c5de7cfe29a8b44d5bd25fab09404f20fb2f2646a433fc196e",
+  "spec_pointer": "/specification/acceptance_cases/0",
+  "proposal_ref": "0233",
+  "ontology_release": "0.4.0",
+  "ontology_commit": "46a4af4ab9608a8e1fd46bf3d650cd3fc8727a73",
+  "platform": "macos-arm64",
+  "archive_sha256": "befa7433b3210003c2f38c6c9110a217b48991dd75dd60125bde152ee86466c3",
+  "ontologyc_sha256": "c943f484cccfc5fbd3a24d078dce624e3bb3bc6ab4a33160fdd29fbcb2b84c75",
+  "catalog_sha256": "ef07cf4e8dd4cdc8c8dd583971fc3cabfe82e4b00fb0e680b6d1db48cfe262ad",
+  "profile": "ontologyc-foundation-v1",
+  "controls": {
+    "valid": {
+      "input": "sg:ValueObject",
+      "outcome": "verified",
+      "cli_exit": 0,
+      "reference": {
+        "name": "sg:ValueObject",
+        "pointer": "/spec/classes/Entry/extends",
+        "uri": "ontology://specgraph.foundation/0.1.0/classes/ValueObject"
+      },
+      "context_revision": "sha256:bfee7556aea0d09db2d6a08e7f05fd3a0af7e6e2da1a61a326b655b841829750"
+    },
+    "typo_without_ir": {
+      "input": "sg:Typo",
+      "outcome": "invalid",
+      "cli_exit": 2,
+      "reference": {
+        "name": "sg:Typo",
+        "pointer": "/spec/classes/Entry/extends",
+        "uri": null
+      },
+      "compiler_diagnostic": {
+        "code": "class.extends.unresolved",
+        "compiler_sha256": "c943f484cccfc5fbd3a24d078dce624e3bb3bc6ab4a33160fdd29fbcb2b84c75",
+        "source_sha256": "88a0220f512fb4a9546cd6945916a2207fafea0d69edc1e808bd791e47d94f3a"
+      },
+      "verified_snapshots": 0,
+      "context_revision": null
+    },
+    "typo_with_last_good_ir": {
+      "outcome": "invalid",
+      "cli_exit": 2,
+      "verified_snapshots": 0,
+      "context_revision": null
+    },
+    "valid_without_ir": {
+      "outcome": "unavailable",
+      "cli_exit": 1,
+      "context_revision": null
+    },
+    "project_core": {
+      "outcome": "verified",
+      "verified_reference_sites": 15
+    },
+    "shadowed_namespace_without_ir": {
+      "outcome": "invalid",
+      "cli_exit": 2,
+      "check": "dependency_closure",
+      "detail": "Selected member shadows the foundation identity or namespace",
+      "context_revision": null
+    }
+  },
+  "release_smoke": {
+    "resolved_ref_count": 7,
+    "gap_refs": [
+      "sgcore:ClaimCalibration"
+    ],
+    "normalized_ir_matches_project_file": true,
+    "canonical_mutations_allowed": false,
+    "semantic_acceptance": "not_evaluated"
+  }
+}

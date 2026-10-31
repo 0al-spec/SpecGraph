@@ -56,13 +56,17 @@ def source_mapping(
             raise PilotFailure("model", path, "Source fragment differs from its pinned quote")
     rows = [(item["pointer"], item["status"]) for item in expected["acceptance"]]
     if (
-        rows != [(f"/acceptance/{i}", "partial" if i == 2 else "unmodelled") for i in range(4)]
+        rows
+        != [
+            (f"/acceptance/{i}", "partial" if i in scenario.partial_rows else "unmodelled")
+            for i in range(4)
+        ]
         or len(document["acceptance"]) != 4
     ):
         raise PilotFailure(
             "model",
             "source-map.json/acceptance",
-            "Keep exactly four acceptance rows; only row 2 is partially modelled",
+            "Keep the four acceptance rows and their reviewed scenario-specific coverage",
         )
     wanted = expected["expected"]
     if (
@@ -135,6 +139,23 @@ def verify_behavior(
             "Production capture disagrees with the source-map expectation",
         )
     checks = observed["checks"]
+    if scenario.reference and (
+        not observed.get("context_revision")
+        or not observed.get("resolved_imports")
+        or not any(
+            item["check"] == "name_resolution"
+            and item["package"] == member["id"]
+            and item.get("reference")
+            == dict(zip(("pointer", "name", "uri"), scenario.reference, strict=True))
+            for item in checks
+        )
+        or any(item["outcome"] != "verified" for item in checks)
+    ):
+        raise PilotFailure(
+            "behavior",
+            "observed/checks",
+            "Expected a verified revision and the resolved ValueObject import",
+        )
     if scenario.outcome == "unavailable" and any(item["outcome"] == "invalid" for item in checks):
         raise PilotFailure(
             "behavior", "observed/checks", "Unavailable requires no detected invalidity"
@@ -325,10 +346,17 @@ def run(args: argparse.Namespace, root: Path) -> tuple[dict, int]:
             report["tools"][tool]["version"] = (
                 command(f"{tool}-version", argv, "typecheck").stdout.decode().strip()
             )
-        for name, package in (
-            ("sgcore", sgcore),
-            ("pilot", source / "domain-ontology-package.yaml"),
-        ):
+        packages = {"sgcore": sgcore, "pilot": source / "domain-ontology-package.yaml"}
+        selected = "sgcore"
+        if scenario.member_source:
+            selected = "member"
+            packages[selected] = source / scenario.member_source
+            capture(
+                model_dir / scenario.member_source,
+                f"model/{scenario.member_source}",
+                packages[selected],
+            )
+        for name, package in packages.items():
             command(f"{name}-check", [str(compiler), "check", str(package)], "compiler")
             command(
                 f"{name}-compile",
@@ -372,6 +400,9 @@ def run(args: argparse.Namespace, root: Path) -> tuple[dict, int]:
             f"tools/project_ontology_context/{name}.py"
             for name in ("__init__", "capture", "model", "invalid_spec", "unavailable_spec")
         ]
+        producer_paths.append("tools/project_ontology_context/foundation.py")
+        if scenario.member_source:
+            producer_paths.append("tools/project_ontology_context/pinned_foundation/exports.json")
         for path in producer_paths:
             capture(root / path, path, work / "producer-source" / path)
         from project_ontology_context import capture_project_context
@@ -379,11 +410,14 @@ def run(args: argparse.Namespace, root: Path) -> tuple[dict, int]:
         runtime = work / "workspace"
         runtime.mkdir()
         for name, data in (
-            ("package.yaml", sgcore.read_bytes()),
-            ("ontology.json", (source / "generated/sgcore/ontology.normalized.json").read_bytes()),
+            ("package.yaml", packages[selected].read_bytes()),
+            (
+                "ontology.json",
+                (source / "generated" / selected / "ontology.normalized.json").read_bytes(),
+            ),
         ):
             (runtime / name).write_bytes(data)
-        metadata = yaml.safe_load(sgcore.read_bytes())["metadata"]
+        metadata = yaml.safe_load(packages[selected].read_bytes())["metadata"]
         member = {key: metadata[key] for key in ("id", "namespace", "version")}
         member.update(
             source="package.yaml",
@@ -395,7 +429,7 @@ def run(args: argparse.Namespace, root: Path) -> tuple[dict, int]:
             "artifact_kind": "specgraph_project_ontology_selection",
             "schema_version": 1,
             "packages": [member] * scenario.member_count,
-            "profiles": ["ontologyc-structural-v1"],
+            "profiles": [scenario.profile],
             "composition": {"dependency_rule": "explicit", "name_resolution_rule": "qualified"},
         }
         (runtime / "selection.yaml").write_text(yaml.safe_dump(selection))

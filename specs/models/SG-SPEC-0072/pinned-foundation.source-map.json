@@ -1,0 +1,56 @@
+{
+  "schema_version": 1,
+  "spec_id": "SG-SPEC-0072",
+  "source_sha256": "46a6be05a4a0c4c5de7cfe29a8b44d5bd25fab09404f20fb2f2646a433fc196e",
+  "scenario_id": "SG72-PINNED-FOUNDATION",
+  "source_fragments": [
+    {
+      "pointer": "/specification/verification_contract/verified",
+      "quote": "including required dependency closure and name resolution."
+    },
+    {
+      "pointer": "/specification/verification_contract/outcome_precedence",
+      "quote": "Only all required checks succeeding permits verified"
+    },
+    {
+      "pointer": "/specification/acceptance_cases/0/expected",
+      "quote": "An explicitly selected single package with captured source/IR and all required checks passing is verified for the declared scope"
+    }
+  ],
+  "acceptance": [
+    {
+      "pointer": "/acceptance/0",
+      "status": "partial",
+      "reason": "Checks one pinned member and one qualified foundation import. General selection and multi-package composition remain outside this example."
+    },
+    {
+      "pointer": "/acceptance/1",
+      "status": "unmodelled",
+      "reason": "Context revision identity, captured bytes, source and IR hashes, compiler identity and profile identity are not modelled."
+    },
+    {
+      "pointer": "/acceptance/2",
+      "status": "partial",
+      "reason": "Covers the verified branch for one pinned foundation import, qualified reference resolution and its member snapshot."
+    },
+    {
+      "pointer": "/acceptance/3",
+      "status": "unmodelled",
+      "reason": "Semantic approval, complete terminology coverage and runtime enforcement are not established by this bounded model. Its source links do not discharge the full provenance and authority criterion."
+    }
+  ],
+  "expected": {
+    "outcome": "verified",
+    "checks": [
+      {
+        "check": "member_capture",
+        "outcome": "verified"
+      },
+      {
+        "check": "dependency_closure",
+        "outcome": "verified"
+      }
+    ],
+    "diagnostics_required": true
+  }
+}
