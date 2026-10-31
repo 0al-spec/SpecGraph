@@ -113,3 +113,33 @@ release compatibility smoke. This is a package check, not hosted execution of
 the full scenario. The Python/TypeScript runner's complexity and the missing
 generic instance checks remain follow-ups under proposal 0233; this release
 update does not establish inexpensive reuse or complete acceptance coverage.
+
+## Second scenario, 31 October 2026
+
+At revision `76f2dbd2c30c95b696d7b2f95b91aa630e4cc16f` the same CLI
+ran both cases with Ontology 0.3.0 and TypeScript 6.0.3. Each passed SDK
+generation, type checking, instance validation and the production behavior probe.
+
+| Scenario | Observed production checks | Overall context | Local report SHA-256 |
+| --- | --- | --- | --- |
+| `SG72-MIXED` | Duplicate selection invalid, required compiler unavailable | `invalid` | `02e0e11e99a26ce734038d0dd78413184169f8788040540aeb631cef84c02df7` |
+| `SG72-UNSUPPORTED-CLOSURE` | Member verified, dependency closure unavailable for that member | `unavailable` | `b4cdb91c587964e7ba46636538c186885fea4b48d1b85d00ef8abaa497273ed3` |
+
+The second case executed the compiler in the production capture. Its snapshot
+matched the selected source, IR, package identity and compiler digest. The
+observed compiler SHA-256 was `1d0128d27f33f04b46c3969e41a04f3ac365afbb748d4c1f7f45645c09839923`.
+Each report above includes local run paths, so its digest identifies that run.
+A repeat run can compare outcomes, checks, inputs and tool hashes.
+
+The focused suite passed 59 tests with both tool paths configured. Controls
+rejected a reversed, type-correct check relation, a diagnostic for another
+package and a snapshot from a different compiler. The original self-contained
+model from `bcee7569` also passed via the default CLI in a fresh directory.
+
+The 55-line instance consumer serves both cases unchanged. They share a typed
+case constructor, the package compiler steps and production capture. The
+second case added 27 lines of TypeScript, 9 of Gherkin, a 64-line source map
+and one vocabulary relation. Supporting both cost a net 127 Python lines
+across the runner and its reviewed case definitions relative to `bcee7569`.
+Each map still marks one of four acceptance criteria partial. A third case
+could exercise `verified` and measure how much more adapter work it requires.
