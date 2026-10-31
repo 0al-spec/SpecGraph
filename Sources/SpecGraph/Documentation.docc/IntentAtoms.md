@@ -86,13 +86,20 @@ liveness remains counted because `closed_world = false`.
 
 After successful `Python CI`, the PR workflow compares the current base and head
 Git trees using SpecificationMetrics pinned to commit
-`4650728d33d79e75e1eaa2470ec26ec9b0338e5a`. The trusted counter parses source
+`332348dc86ebd9cfc9d1db15c37afbae9c2546d0`. The trusted counter parses source
 data and does not execute PR-authored code. One informational comment reports
 S, U, S/U, dead and unknown Specifications, and supplementary Python SLOC,
 Cyclomatic Complexity (CC), Cognitive Complexity (Cog), and clone deltas.
 Supplementary tools are pinned to Radon 6.0.1, complexipy 8.0.1, and jscpd 5.0.11.
 Failed tools or unknown liveness remain explicit diagnostics; the
 comment does not gate merge readiness.
+
+The pinned CLI also renders a section for changes in U. Added locations link
+to the PR head and removed locations to the base, with one-based line and UTF-8
+byte column. A commit link requires matching Git blob bytes. Repeated identical
+conditions with a change in multiplicity appear as an ambiguous group. The
+comment shows up to 20 locations within a 12 KB row budget. The full
+`opportunity_changes` object is in `diff.json`.
 
 The comment links to the actual collection run and its `specificationmetrics-pr-*`
 artifact, retained for 30 days and downloadable with GitHub access. It contains
@@ -123,6 +130,11 @@ rejects different collection contracts. The upstream
 [inheritance audit](https://github.com/SoundBlaster/SpecificationMetrics/blob/4650728d33d79e75e1eaa2470ec26ec9b0338e5a/docs/python-inheritance-counting-audit.md)
 records the source snapshot, supported subset and regression coverage.
 
+Counting rule v10 adds resolved Python `PredicateSpec[T]` factories. On the
+same SpecGraph revision `4add3afe`, this analyzer change raises S from 127 to
+130 with U at 10,676 under both rules. Collect both sides with the pinned v10
+analyzer for each new PR comparison.
+
 ### Verify an analyzer rollout
 
 The report workflow checks out the trusted default branch. A PR that changes
@@ -134,15 +146,14 @@ reruns for merged PRs do not produce a new PR measurement.
 For that verification, download the linked artifact and check all six named
 files above. Bind `provenance.json` to the repository, PR base/head, upstream CI
 run, collection run/attempt, trusted tooling revision and expected analyzer SHA.
-Check counting rule v9 in both collection reports, matching collection contracts,
+Check counting rule v10 in both collection reports, matching collection contracts,
 complete collection/supplementary statuses, and primary diagnostics. Verify that
 the comment describes the same revisions and values as those JSON reports.
 
 A documentation-only verification PR should leave application S, U and classic
 metrics unchanged between its base and head. That proves collection consistency,
-not business correctness. Compare v8 and v9 only as an explicit analyzer audit on
-the same source snapshot; preserve the old artifact and establish the v9 baseline
-without presenting its changed counts as a code-quality improvement.
+not business correctness. Compare counting-rule versions separately on the same snapshot and retain
+the historical reports.
 
 ### Respond to the metric report
 
@@ -150,7 +161,9 @@ Each SpecificationMetrics report needs a substantive author response linked in
 the PR conversation. Identify the reported base/head, counting contract and
 collection status. Connect material deltas to the changed functions and the
 whole decision family, separating parsing mechanics from domain policies.
-Aggregate candidate counts do not establish individual candidate locations.
+Use the location section and full diff artifact for changed sites. For an
+ambiguous group, cite its net change and inspect both revisions before
+attributing the change to an occurrence.
 
 Either defend the design with code evidence and explicit trade-offs, or identify
 a real defect, repair it and cite the commit and behavioral verification. When

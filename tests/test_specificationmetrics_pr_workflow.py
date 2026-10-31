@@ -85,6 +85,7 @@ def test_collection_preserves_provenance_and_available_reports_on_failure(tmp_pa
     cli.write_text(
         f"#!{sys.executable}\n"
         "import json, pathlib, sys\n"
+        "if sys.argv[1] == 'collect': assert '--candidate-locations' in sys.argv\n"
         "output = pathlib.Path(sys.argv[sys.argv.index('--output') + 1])\n"
         f"if {fail_head!r} and output.name == 'after.json': sys.exit(23)\n"
         "output.write_text(json.dumps({'status': 'provisional'}))\n"
@@ -126,3 +127,72 @@ def test_collection_preserves_provenance_and_available_reports_on_failure(tmp_pa
         ("scope-manifest.toml", "scopes/specificationmetrics.toml"),
     ):
         assert (evidence / saved).read_bytes() == (ROOT / original).read_bytes()
+
+
+@pytest.mark.parametrize("render_fails", [False, True])
+def test_comment_combines_summary_with_pinned_cli_locations(tmp_path, render_fails):
+    if shutil.which("jq") is None:
+        pytest.skip("workflow shell needs jq")
+    evidence = tmp_path / "specificationmetrics"
+    cli = evidence / "cli/bin/specification-metrics"
+    cli.parent.mkdir(parents=True)
+    snippet = (
+        "### Remaining opportunities (U) · 4 → 5 (+1)\n\n- Added [site](https://example.invalid/)\n"
+    )
+    cli.write_text(
+        f"#!{sys.executable}\n"
+        "import pathlib, sys\n"
+        f"root = pathlib.Path({str(evidence)!r})\n"
+        "assert sys.argv[1:] == ['compare', str(root/'before.json'), str(root/'after.json'), "
+        "'--github-markdown', '0al-spec/SpecGraph', '--output', str(root/'locations.md')]\n"
+        f"if {render_fails!r}: sys.exit(23)\n"
+        f"(root/'locations.md').write_text({snippet!r})\n"
+    )
+    cli.chmod(0o755)
+    primary = {
+        "source_digest": "a" * 64,
+        "specification_definitions": 1,
+        "remaining_opportunities": 4,
+    }
+    snapshot = {
+        "schema_version": 1,
+        "project": "0al-spec/SpecGraph",
+        "status": "complete",
+        "contract_digest": "b" * 64,
+        "primary": primary,
+    }
+    for name, count in (("before", 4), ("after", 5)):
+        primary["remaining_opportunities"] = count
+        (evidence / f"{name}.json").write_text(json.dumps(snapshot))
+    (evidence / "diff.json").write_text(
+        json.dumps(
+            {
+                "before_source_digest": "a" * 64,
+                "after_source_digest": "a" * 64,
+                "contract_digest": "b" * 64,
+            }
+        )
+    )
+    step = next(s for s in report_steps() if s["name"] == "Render the PR metrics comment")
+    result = subprocess.run(
+        ["bash", "--noprofile", "--norc", "-eo", "pipefail", "-c", step["run"]],
+        cwd=ROOT,
+        env={
+            **os.environ,
+            "RUNNER_TEMP": str(tmp_path),
+            "COLLECTION_RUN_ID": "123",
+            "REPOSITORY": "0al-spec/SpecGraph",
+            "ARTIFACT_URL": "https://github.com/0al-spec/SpecGraph/actions/runs/123/artifacts/456",
+        },
+        capture_output=True,
+        text=True,
+    )
+    assert result.returncode == (23 if render_fails else 0), result.stderr
+    output = evidence / "comment.json"
+    if render_fails:
+        assert not output.exists()
+    else:
+        body = json.loads(output.read_text())["body"]
+        assert body.count("<!-- specificationmetrics-pr-report-v1 -->") == 1
+        assert "| Remaining opportunities (U) | 4 | 5 (+1) |" in body
+        assert body.endswith("\n\n" + snippet)
