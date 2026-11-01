@@ -1,0 +1,150 @@
+apiVersion: ontology.specgraph.io/v1alpha1
+kind: DomainOntologyPackage
+metadata:
+  id: org.0al.motivation.core
+  namespace: motivcore
+  version: 0.1.0
+  publisher: OntologyService
+  source: SPECS/ontology/packages/motivation-core/authoring/intent.md
+  approvalStatus: draft
+spec:
+  imports:
+    - id: specgraph.foundation
+      namespace: sg
+      version: 0.1.0
+    - id: org.0al.events.core
+      namespace: eventcore
+      version: 0.2.0
+  classes:
+    Motive:
+      extends: sg:DomainEntity
+      layer: mechanics
+      central: true
+      description: A prompting reason that may move any Entity actor toward action or omission; consciousness, deliberation and intention are not required. Content is separate from its scoped attribution.
+      fields:
+        motiveKey: {type: string, required: true}
+        description: {type: string, required: true}
+        label: {type: string, required: false}
+    MotivationHypothesis:
+      extends: sg:DomainEntity
+      lifecycle: MotivationReview
+      description: Proposed attribution of one motive to the actor's action or omission in one existing interpretation or source-only interpretation candidate. It may retain an unresolved actor; review does not establish motivation or physical causation.
+      fields:
+        hypothesisKey: {type: string, required: true}
+        contributionKind: {type: string, required: true}
+    OperatorMotivationSupport:
+      extends: sg:DomainEntity
+      description: Explicit uncited support supplied by a named operator Entity; authorship and rationale do not become a source citation or proof of motive.
+      fields:
+        supportKey: {type: string, required: true}
+        rationale: {type: string, required: true}
+    ReviewMotivation:
+      extends: sg:Command
+      description: Record review of the attribution proposal without confirming its truth, performing an action or promoting source-only physical observations.
+    RejectMotivation:
+      extends: sg:Command
+      description: Reject the attribution proposal while retaining its sources and support; rejection does not prove absence of the motive.
+  protocols: {}
+  relations:
+    hypothesisMotive:
+      domain: MotivationHypothesis
+      range: Motive
+      cardinality: {min: 1, max: 1}
+      description: A hypothesis attributes exactly one prompting-reason content; multiple hypotheses may explain the same contribution without being mutually exclusive.
+    hypothesisView:
+      domain: MotivationHypothesis
+      range:
+        oneOf: [eventcore:Interpretation, eventcore:InterpretationCandidate]
+      cardinality: {min: 1, max: 1}
+      description: The sole scope anchor. Episode, action/event identity and known observations derive through this view, not duplicate actor/event fields.
+    hypothesisActorRole:
+      domain: MotivationHypothesis
+      range: eventcore:RoleBinding
+      cardinality: {min: 0, max: 1}
+      description: If resolved, hypothesisActorRole must be the target of interpretationBindsRole or candidateBindsRole from the selected hypothesisView and have roleName actor; derive Entity through roleBoundEntity. Other views may reference the same role. Absence preserves an unknown actor.
+    hypothesisPromptingEntity:
+      domain: MotivationHypothesis
+      range: eventcore:Entity
+      cardinality: {min: 0, max: "*"}
+      description: Optional contextual entity involved in the prompting reason, such as an instruction sender or external influence. This is distinct from the motivated actor and establishes no causal force or mental state.
+    hypothesisPromptingFact:
+      domain: MotivationHypothesis
+      range: eventcore:Fact
+      cardinality: {min: 0, max: "*"}
+      description: Optional contextual proposition/polarity support about the prompting circumstances; a declared Fact is not a complete physical StateSnapshot.
+    hypothesisPromptingView:
+      domain: MotivationHypothesis
+      range:
+        oneOf: [eventcore:Interpretation, eventcore:InterpretationCandidate]
+      cardinality: {min: 0, max: "*"}
+      description: Optional interpretation of a reported prompting occurrence. Temporal/cross-episode alignment needs separate review; this link is not an automatically verified CausalHypothesis.
+    hypothesisPositiveSupport:
+      domain: MotivationHypothesis
+      range:
+        oneOf: [eventcore:SourceAssertion, OperatorMotivationSupport]
+      cardinality: {min: 0, max: "*"}
+      description: Support for this specific actor/view/motive attribution. Quotes and their speakers remain source-scoped; relevance and meaning are not inferred by generated object schemas.
+    hypothesisNegativeSupport:
+      domain: MotivationHypothesis
+      range:
+        oneOf: [eventcore:SourceAssertion, OperatorMotivationSupport]
+      cardinality: {min: 0, max: "*"}
+      description: Explicit opposition to this specific attribution. It coexists with positive support; missing evidence and rejected workflow status do not create negative support.
+    operatorSupportAuthor:
+      domain: OperatorMotivationSupport
+      range: eventcore:Entity
+      cardinality: {min: 1, max: 1}
+      description: Declared support author, independently of the hypothesis actor or quoted speaker; no human-only identity or authentication is inferred.
+  policies:
+    ActorScopedMotivation:
+      extends: sg:Policy
+      enforceability: manual
+      appliesTo: [Motive, MotivationHypothesis]
+      text: A Motive is a broad prompting reason applicable to any Entity actor, including communities, AI, machines and natural phenomena; intention and consciousness are optional interpretations, never admission requirements. A hypothesis has one view. A selected actor RoleBinding must be reached by interpretationBindsRole or candidateBindsRole from that selected hypothesisView and named actor; exclusive ownership is not required. Actor Entity and episode derive from existing links. An unresolved actor remains unresolved, and evidence or motives are never transferred to another participant or episode by label similarity.
+    IndependentMotivationSupport:
+      extends: sg:Policy
+      enforceability: manual
+      appliesTo: [MotivationHypothesis]
+      text: Positive and negative declared support are independent collections. When both collections are empty the attribution is unknown or unsupported; positive only means supported, negative only means opposed, and both means contested. These are support-presence descriptions, not factual truth. Competing positive motives may coexist. Missing hypotheses do not imply that no motive exists; removing support does not invent its opposite. Do not store a duplicate truth-state field.
+    SourceAndOperatorMotivation:
+      extends: sg:Policy
+      enforceability: manual
+      appliesTo: [MotivationHypothesis, OperatorMotivationSupport]
+      text: Preserve exact source/revision/digest/quote/speaker identity. A speaker reporting a reason need not be the actor, and I in a letter is not automatically the narrator. Cited and uncited operator support remain distinct; relevance, authenticity and inferred psychological or physical meaning require explicit separate review. An unsupported model proposal may remain proposed without fabricating operator authorship or citations.
+    SeparateContributionAndConsequence:
+      extends: sg:Policy
+      enforceability: manual
+      appliesTo: [Motive, MotivationHypothesis]
+      text: contributionKind is action or omission by explicit interpretation. A motive does not prove performance, an omission's duty/deadline/capability/exception grounds, deliberation, intention, fault, responsibility or sanction. The selected view's record-owned optional exact Delta describes own change only; an empty local difference does not assert absence of downstream consequences. Hypothesized downstream consequences follow an explicit CausalHypothesis whose hypothesisCauseView is exactly the selected hypothesisView, then hypothesisEffectView and its own RecordedEvent and optional exact Delta. Preserve hypothesis identity and workflow state without promoting causal attribution to fact or merging Deltas. For the pilot use a separate omission record plus CausalHypothesis to the effect record; an owner reading of the movement record is a different motive scope. An InterpretationCandidate may remain source-only without states, record or Delta. Unknown changes are not an empty diff; a desired outcome is not an actual consequence, and this draft adds no goal class or outcome inference.
+    PromptingReasonBoundary:
+      extends: sg:Policy
+      enforceability: manual
+      appliesTo: [MotivationHypothesis]
+      text: Prompting Entity/Fact/view anchors are optional contextual declarations, not proof that they motivated the actor. A prompting occurrence cannot be its own target recorded event. A claimed ordered causal chain needs explicit scope alignment, valid comparable clocks and cause start no later than contribution start; unknown temporal data remains unresolved. Motive attribution and event-to-event CausalHypothesis are distinct interpretations, neither automatically establishes the other or changes supplied states.
+    ReviewIsNotMotiveTruth:
+      extends: sg:Policy
+      enforceability: manual
+      appliesTo: [MotivationHypothesis]
+      text: MotivationReview records proposal workflow only. Reviewed does not establish the motive, make a cited assertion true or authorize physical enrichment; rejected does not erase sources or produce negative support. Existing eventcore-v1 and eventcore-provenance-v1 profiles do not admit motivcore nodes or relations. A future consumer needs an explicitly reviewed contract before claiming these policies are enforced at runtime.
+  stateMachines:
+    MotivationReview:
+      states: [proposed, reviewed, rejected]
+      transitions:
+        - {from: proposed, to: reviewed, command: ReviewMotivation}
+        - {from: proposed, to: rejected, command: RejectMotivation}
+  modelApplicability:
+    appliesTo:
+      domains: [general_event_modeling]
+      contexts: [draft_vocabulary_review, actor_scoped_explanation, source_only_candidates]
+    excludes:
+      contexts: [automatic_motive_truth, automatic_liability_assignment, implicit_instance_profile_extension]
+    assumptions:
+      - id: broad_actor
+        text: Any Entity may occupy an actor role. A prompting reason does not require intention, consciousness or human identity.
+      - id: explicit_consumer_boundary
+        text: Package/object-shape validation does not enforce selected-view role edges, causal traversal, cross-node scope, contribution enums, temporal coherence or semantic relevance. Manual policies remain declarations.
+      - id: consequence_availability
+        text: Own changes derive from the selected recorded event states; hypothesized downstream effects retain an explicit causal link and the separate effect record Delta. Empty own change does not mean no downstream effects. Narrative motives and partial observations never supply missing physical snapshots.
+    invalidationTriggers:
+      - id: consumer_contract_changed
+        text: Re-review this vocabulary and its dependency pin before adopting an executable motivation consumer profile.

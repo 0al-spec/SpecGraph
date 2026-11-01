@@ -157,3 +157,14 @@ is cleared by this packet. The later adoption review prepares the contract and
 parent reconciliation on a PR branch, with PR review and merge still separate.
 This preparation does not approve ontology meanings or activate global policy;
 configuration/runtime implementation follows the contract review boundary.
+
+## Selected motivation composition
+
+The opt-in profile `ontologyc-motivation-composition-v1` checks one project package,
+`org.0al.motivation.core@0.1.0` and `org.0al.events.core@0.2.0`, using the existing
+pinned foundation catalog. Every selected source/IR has an explicit hash.
+Exact imports and structural references resolve with source pointers and
+qualified concept URIs. Missing dependencies, incompatible pins and unknown
+names are invalid; absent source/IR/compiler is unavailable. Selection order
+does not affect the context revision. This does not establish semantic
+approval or multi-member specification term inventory, which remains unsupported.

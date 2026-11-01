@@ -1,0 +1,102 @@
+{
+  "artifact_kind": "motivation_composition_local_observation",
+  "schema_version": 1,
+  "spec_id": "SG-SPEC-0072",
+  "proposal_id": "0232",
+  "outcome": "verified",
+  "context_revision": "sha256:75dbb84bda925e1389d91a1df6045fc7aff6fa8b710565c96e9f4aaeae241b61",
+  "profiles": [
+    "ontologyc-motivation-composition-v1"
+  ],
+  "members": [
+    {
+      "id": "app.composition.pilot",
+      "namespace": "pilot",
+      "version": "0.1.0"
+    },
+    {
+      "id": "org.0al.events.core",
+      "namespace": "eventcore",
+      "version": "0.2.0"
+    },
+    {
+      "id": "org.0al.motivation.core",
+      "namespace": "motivcore",
+      "version": "0.1.0"
+    }
+  ],
+  "resolved_imports": [
+    {
+      "id": "specgraph.foundation",
+      "namespace": "sg",
+      "version": "0.1.0",
+      "source_uri": "https://github.com/0al-spec/Ontology/blob/0fcc94469d971aaf39fcc182bc5c6b8acff37fd2/SPECS/ontology/foundation/0.1.0/exports.json",
+      "source_sha256": "ef07cf4e8dd4cdc8c8dd583971fc3cabfe82e4b00fb0e680b6d1db48cfe262ad"
+    },
+    {
+      "id": "org.0al.events.core",
+      "namespace": "eventcore",
+      "version": "0.2.0",
+      "source_uri": "events-core.yaml",
+      "source_sha256": "92a3245fc9acd15748fd1fa3cfb8e4fdc8fda429a5fd6cffd7a97bc13f2f359e"
+    },
+    {
+      "id": "org.0al.motivation.core",
+      "namespace": "motivcore",
+      "version": "0.1.0",
+      "source_uri": "motivation-core.yaml",
+      "source_sha256": "3061eca33ddc2296c2c292695d98daf6697e92fb582da544bc1d5107721ae955"
+    }
+  ],
+  "snapshots": [
+    {
+      "id": "app.composition.pilot",
+      "namespace": "pilot",
+      "version": "0.1.0",
+      "source_sha256": "21ae0cfce65fea69c91a2ca0ed6299596ef707004c1e619e672833619ce69f1b",
+      "ir_sha256": "d91cd30752dc4fba736e4dcfe2656b9c4902c86c9a94e02c462eee587c694e72",
+      "compiler_sha256": "dcdc37216246f9acebca7387e14b61300d9dec4367f7c1630445b97280c80168",
+      "compiler_provenance": "not_verified"
+    },
+    {
+      "id": "org.0al.events.core",
+      "namespace": "eventcore",
+      "version": "0.2.0",
+      "source_sha256": "92a3245fc9acd15748fd1fa3cfb8e4fdc8fda429a5fd6cffd7a97bc13f2f359e",
+      "ir_sha256": "e6c932ad8c492d168b63dbe112335c270d88ff758e016f3502031aefe9dea916",
+      "compiler_sha256": "dcdc37216246f9acebca7387e14b61300d9dec4367f7c1630445b97280c80168",
+      "compiler_provenance": "not_verified"
+    },
+    {
+      "id": "org.0al.motivation.core",
+      "namespace": "motivcore",
+      "version": "0.1.0",
+      "source_sha256": "3061eca33ddc2296c2c292695d98daf6697e92fb582da544bc1d5107721ae955",
+      "ir_sha256": "25da040f4bd0b014014b1ed996250cd4c17a64503355f6f558917bec9ddd1fe9",
+      "compiler_sha256": "dcdc37216246f9acebca7387e14b61300d9dec4367f7c1630445b97280c80168",
+      "compiler_provenance": "not_verified"
+    }
+  ],
+  "reference_count": 158,
+  "motive_reference": [
+    {
+      "check": "name_resolution",
+      "outcome": "verified",
+      "detail": "/spec/relations/hasMotive/range: motivcore:Motive -> ontology://org.0al.motivation.core/0.1.0/classes/Motive",
+      "package": "app.composition.pilot",
+      "reference": {
+        "pointer": "/spec/relations/hasMotive/range",
+        "name": "motivcore:Motive",
+        "uri": "ontology://org.0al.motivation.core/0.1.0/classes/Motive"
+      }
+    }
+  ],
+  "checker_sources": {
+    "tools/project_ontology_context/capture.py": "4656ba416997330b3cf122d11c0cbdfa8a1284b913655bd518afd7e3fa7910c7",
+    "tools/project_ontology_context/composition.py": "dff003828d8726717ef7444842c046ceb29b0cce7d80082b0609cc8145be1b5f",
+    "tools/project_ontology_context/foundation.py": "d9e0725d30c5a12bede4baa9260bfa7e375fd91a27ec18aa3caeaf414fe4a24a"
+  },
+  "semantic_approval": "not_established",
+  "canonical_mutations_allowed": false,
+  "scope": "Synthetic project package and real release dependencies; no GitView project mutation; no joint spec inventory."
+}

@@ -85,6 +85,56 @@ and prose coverage retain their separate review processes.
 Each domain outcome policy lives in its own Specification module with immutable
 facts. Parsing, paths, subprocess adaptation and serialization remain at the edge.
 
+
+### One selected motivation composition
+
+Use the opt-in profile `ontologyc-motivation-composition-v1` in the same
+selection format and CLI. Select three packages with exact source and IR hashes:
+
+| Selected member | Namespace | Version |
+| --- | --- | --- |
+| Your project package | Your unique project namespace | An exact project version |
+| `org.0al.motivation.core` | `motivcore` | `0.1.0` |
+| `org.0al.events.core` | `eventcore` | `0.2.0` |
+
+Foundation is the existing pinned `specgraph.foundation@0.1.0` catalog and is
+not an additional selected member. The project must explicitly import
+motivation-core and may also import the selected events-core and foundation.
+Motivation imports exactly events-core and foundation; events imports only
+foundation. This bounds the supported graph; a different package set needs a
+separate profile. Each dependency source is supplied explicitly in the workspace,
+not downloaded or chosen by a remote version solver.
+
+For example, a project relation may use `range: motivcore:Motive` without
+declaring its own Motive class. Imports and references resolve by exact package
+ID, namespace, version and symbol role. An imported name must be qualified and
+visible through a direct import; a transitive dependency is not implicitly visible.
+Every resolved concept includes its source pointer and an `ontology://` URI.
+
+The CLI returns 0 for verified closure, 1 for unavailable checks and 2 for
+detected invalidity. Missing selected dependencies, incompatible import pins,
+namespace conflicts, cycle attempts and unknown qualified names are invalid.
+Absent source, IR or compiler stays unavailable unless another independently
+detected error makes the result invalid. Independently compiling each package
+cannot establish closure.
+
+`resolved_imports` records the selected dependency source paths and SHA-256
+alongside the foundation pin. Captured source/IR, compiler and profile inputs
+participate in the context revision. Reordering selection members preserves that
+revision. Package hashes pin the selected bytes; they do not attest publisher
+identity or accept package meanings.
+
+[The source-bound realization](reviews/0232_project_ontology_context/motivation-composition/README.md)
+and `tests/fixtures/motivation_composition` retain a runnable synthetic project
+and the actual dependency packages from Ontology 0.5.0. The events-core 0.2.0
+source is under `SPECS/ontology/packages/events-core/versions/0.2.0/`.
+
+This profile checks package composition and structural reference slots.
+The existing spec term inventory and advisory reports retain their
+single-member scope and return unavailable for joint multi-member analysis.
+A composed context does not establish natural-language coverage or semantic
+approval.
+
 ## Workspace CLI and native runtime
 
 From the source checkout, inspect help with

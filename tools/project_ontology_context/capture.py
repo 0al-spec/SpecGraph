@@ -19,7 +19,7 @@ from ontology_snapshot import (
     parse_ontology_ir,
 )
 
-from . import foundation
+from . import composition, foundation
 from .invalid_spec import INVALID_SPEC
 from .model import CheckResult, ContextFacts, ContextResult
 from .unavailable_spec import UNAVAILABLE_SPEC
@@ -129,6 +129,7 @@ def capture_project_context(
     rules: tuple[tuple[str, str], ...] = ()
     members: list[dict[str, str]] = []
     resolved_imports = ()
+    declarations: list[composition.PackageDeclarations] = []
     revision = None
     selection_ref = str(selection_path) if selection_path is not None else None
 
@@ -147,7 +148,11 @@ def capture_project_context(
             payload = _load_yaml(selection.read_bytes())
             members, profiles, rules = _parse(payload)
             identities = tuple((m["id"], m["namespace"], m["version"]) for m in members)
-            if profiles in (("ontologyc-structural-v1",), (foundation.PROFILE,)):
+            if profiles in (
+                ("ontologyc-structural-v1",),
+                (foundation.PROFILE,),
+                (composition.PROFILE,),
+            ):
                 add("profile", "verified", "supported structural checking profile")
             else:
                 add("profile", "unavailable", "required checking profile missing or unsupported")
@@ -176,6 +181,7 @@ def capture_project_context(
         )
 
     foundation_selected = profiles == (foundation.PROFILE,)
+    composition_selected = profiles == (composition.PROFILE,)
     for member in members:
         package = member["id"]
         source_data = None
@@ -223,6 +229,13 @@ def capture_project_context(
                 except (ValueError, yaml.YAMLError, UnicodeError) as error:
                     add("member_capture", "invalid", str(error), package)
                     input_failed = True
+            if (
+                composition_selected
+                and source_data is not None
+                and inputs.source is not None
+                and hashlib.sha256(inputs.source).hexdigest() == member["source_sha256"]
+            ):
+                declarations.append(composition.declarations(member, source_data))
             if input_failed:
                 add("dependency_closure", "unavailable", "member inputs not checked", package)
                 continue
@@ -234,7 +247,7 @@ def capture_project_context(
                 expected_source_sha256=member["source_sha256"],
                 expected_ir_sha256=member["ir_sha256"],
                 captured_inputs=inputs,
-                structured_check=foundation_selected,
+                structured_check=foundation_selected or composition_selected,
             )
             snapshots.append(snapshot)
             captured_members.append((member["id"], member["namespace"], member["version"]))
@@ -248,13 +261,22 @@ def capture_project_context(
             if not isinstance(source_spec, dict):
                 raise ValueError("source spec must be a mapping")
             imports = source_spec.get("imports", [])
-            if not isinstance(imports, list) or ir_data.get("imports", []) != imports:
+            ir_imports = ir_data.get("imports", [])
+            # The compiler sorts imports in normalized IR; order is not dependency identity.
+            if (
+                not isinstance(imports, list)
+                or not isinstance(ir_imports, list)
+                or sorted(imports, key=lambda row: json.dumps(row, sort_keys=True))
+                != sorted(ir_imports, key=lambda row: json.dumps(row, sort_keys=True))
+            ):
                 raise ValueError("source and IR imports differ or are malformed")
             if profiles == (foundation.PROFILE,):
                 closure_checks, resolved_imports = foundation.check_import(
                     source_spec, member, len(members)
                 )
                 checks.extend(closure_checks)
+            elif composition_selected:
+                pass  # Resolve one captured package set after all members have been examined.
             elif imports or len(members) > 1:
                 add(
                     "dependency_closure",
@@ -272,10 +294,29 @@ def capture_project_context(
                 )
         except FileNotFoundError:
             add("member_capture", "unavailable", "source or saved IR unavailable", package)
-        except (ValueError, yaml.YAMLError, UnicodeError) as error:
+        except (
+            ValueError,
+            KeyError,
+            TypeError,
+            AttributeError,
+            yaml.YAMLError,
+            UnicodeError,
+        ) as error:
             add("member_capture", "invalid", str(error), package)
         except OSError as error:
             add("member_capture", "unavailable", str(error), package)
+
+    if composition_selected:
+        try:
+            vocabulary = foundation.capture_vocabulary()
+            closure_checks, resolved_imports = composition.check_packages(
+                tuple(declarations), vocabulary, identities
+            )
+            checks.extend(closure_checks)
+        except OSError as error:
+            add("dependency_closure", "unavailable", f"Pinned foundation unavailable: {error}")
+        except ValueError as error:
+            add("dependency_closure", "invalid", str(error))
 
     if (
         members
@@ -297,7 +338,7 @@ def capture_project_context(
         members
         and len(snapshots) == len(members)
         and outcome != "invalid"
-        and (profiles != (foundation.PROFILE,) or resolved_imports)
+        and (not (foundation_selected or composition_selected) or resolved_imports)
     ):
         identity = {
             "members": [

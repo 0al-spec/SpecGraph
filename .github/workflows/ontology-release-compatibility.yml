@@ -65,7 +65,7 @@ jobs:
           "$compiler_dir/ontologyc" check specs/models/SG-SPEC-0072/domain-ontology-package.yaml
           "$compiler_dir/ontologyc" export-foundation > "$RUNNER_TEMP/foundation-exports.json"
           cmp "$RUNNER_TEMP/foundation-exports.json" tools/project_ontology_context/pinned_foundation/exports.json
-          ONTOLOGYC_BINARY_PATH="$compiler_dir/ontologyc" python -m pytest -q tests/test_project_ontology_foundation.py
+          ONTOLOGYC_BINARY_PATH="$compiler_dir/ontologyc" python -m pytest -q tests/test_project_ontology_foundation.py tests/test_project_ontology_composition.py
 
       - name: Reproduce the local model diagrams with the released visualizer
         id: model_tools
@@ -164,7 +164,7 @@ jobs:
           "$compiler_dir/ontologyc" check specs/models/SG-SPEC-0072/domain-ontology-package.yaml
           "$compiler_dir/ontologyc" export-foundation > "$RUNNER_TEMP/foundation-exports.json"
           cmp "$RUNNER_TEMP/foundation-exports.json" tools/project_ontology_context/pinned_foundation/exports.json
-          ONTOLOGYC_BINARY_PATH="$compiler_dir/ontologyc" python -m pytest -q tests/test_project_ontology_foundation.py
+          ONTOLOGYC_BINARY_PATH="$compiler_dir/ontologyc" python -m pytest -q tests/test_project_ontology_foundation.py tests/test_project_ontology_composition.py
 
       - name: Retain compatibility receipt
         uses: actions/upload-artifact@v4
