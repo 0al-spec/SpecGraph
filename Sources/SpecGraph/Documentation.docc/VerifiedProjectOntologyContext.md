@@ -199,3 +199,14 @@ as `GITVIEW-SPEC-0001` and legacy `SG-SPEC-0001` through a shared validator.
 The suffix is ASCII decimal. Requests address the exact filename and matching
 YAML ID; no ID allocation, alias following or source rewriting occurs.
 Workspace/path, symlink and report ownership protections remain in effect.
+
+## Readable ontology outline prototype
+
+The manual pair in
+`docs/reviews/0232_project_ontology_context/hypercode-overview/` presents one
+existing SG72-UNSUPPORTED-CLOSURE case as three readable composition roles.
+The Git-tracked `.hc` supports ordinary text review; `.hcs` retains versioned
+ontology references, distinct role IDs and exact source hashes. The chosen view
+and names remain proposed. It changes no stored SpecDraft notebook or canonical
+ontology and implements no general exporter. Hypercode's syntax/cascade checks
+and the local explicit ontology-link lookup are separate observations.

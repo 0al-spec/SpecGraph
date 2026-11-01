@@ -1,0 +1,21 @@
+ContextVerification:
+  projection_profile: "specgraph-ontology-overview-prototype-v0"
+  composition_status: "proposed"
+  role_id: "SG72-UNSUPPORTED-CLOSURE"
+  ontology_ref: "ontology://org.0al.specgraph.local.contextcase/0.2.0/classes/ContextVerificationCase"
+  composition_ref: "ontology://org.0al.specgraph.local.contextcase/0.2.0/relations/caseIncludesCheck"
+  ontology_source: "specs/models/SG-SPEC-0072/domain-ontology-package.yaml"
+  ontology_sha256: "512920428c4907fa6cdb938937797c50fd81e964c8d60e0d5290e688a6e10870"
+  scenario_source: "specs/models/SG-SPEC-0072/unsupported-closure.ts"
+  scenario_sha256: "082da26e0470d895958a164de4070fc443e700885bf22afbe4fab2fc86c202f2"
+  hc_sha256: "24916693bb2be3419c2b5e46999db7aef90d6f4d7a2164bdd50e93efb196f150"
+
+ContextVerification > Member:
+  role_id: "captured-member"
+  ontology_ref: "ontology://org.0al.specgraph.local.contextcase/0.2.0/classes/CheckResult"
+  ontology_pointer: "/spec/classes/CheckResult"
+
+ContextVerification > Dependencies:
+  role_id: "unsupported-closure"
+  ontology_ref: "ontology://org.0al.specgraph.local.contextcase/0.2.0/classes/CheckResult"
+  ontology_pointer: "/spec/classes/CheckResult"

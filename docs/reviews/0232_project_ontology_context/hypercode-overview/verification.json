@@ -1,0 +1,124 @@
+{
+  "artifact_kind": "ontology_hypercode_overview_local_observation",
+  "schema_version": 1,
+  "spec_id": "SG-SPEC-0072",
+  "proposal_id": "0232",
+  "source_revision": "54db6fb97c1b66754ddf1d0e63882c30c3841319",
+  "artifact_profile": "specgraph-ontology-overview-prototype-v0",
+  "manual_prototype": true,
+  "generator_implemented": false,
+  "inputs": {
+    "specs/models/SG-SPEC-0072/domain-ontology-package.yaml": "512920428c4907fa6cdb938937797c50fd81e964c8d60e0d5290e688a6e10870",
+    "specs/models/SG-SPEC-0072/unsupported-closure.ts": "082da26e0470d895958a164de4070fc443e700885bf22afbe4fab2fc86c202f2",
+    "docs/reviews/0232_project_ontology_context/hypercode-overview/context.hc": "24916693bb2be3419c2b5e46999db7aef90d6f4d7a2164bdd50e93efb196f150",
+    "docs/reviews/0232_project_ontology_context/hypercode-overview/context.hcs": "a7f2ad9d0744103f4996a31ba1ed05dd50e617a69863c6522c9979b7f869a78d"
+  },
+  "tools": {
+    "hypercode": {
+      "reported_resolver": {
+        "name": "hypercode-swift",
+        "version": "0.6.0-dev"
+      },
+      "executable_sha256": "f9631fa8c2dcfe6c1afd57c4919617e13e84838bfc289fb94440740231684e76",
+      "source_provenance": "not_verified"
+    },
+    "ontologyc": {
+      "release": "0.5.0",
+      "executable_sha256": "dcdc37216246f9acebca7387e14b61300d9dec4367f7c1630445b97280c80168",
+      "source_provenance": "not_verified"
+    }
+  },
+  "commands": [
+    {
+      "operation": "parse",
+      "exit_code": 0
+    },
+    {
+      "operation": "validate",
+      "exit_code": 0
+    },
+    {
+      "operation": "emit",
+      "exit_code": 0
+    },
+    {
+      "operation": "emit-repeat",
+      "exit_code": 0
+    },
+    {
+      "operation": "explain-member",
+      "exit_code": 0
+    },
+    {
+      "operation": "unknown-type-validate",
+      "exit_code": 0
+    },
+    {
+      "operation": "unknown-type-emit",
+      "exit_code": 0
+    },
+    {
+      "operation": "unmatched-selector-validate",
+      "exit_code": 0
+    },
+    {
+      "operation": "unmatched-selector-emit",
+      "exit_code": 0
+    },
+    {
+      "operation": "renamed-emit",
+      "exit_code": 0
+    }
+  ],
+  "explicit_mapping_lookup": {
+    "mapped_nodes": 3,
+    "total_nodes": 3,
+    "missing_mappings": [],
+    "unresolved_refs": [],
+    "hc_hash_matches": true,
+    "mappings": [
+      {
+        "path": "ContextVerification",
+        "role_id": "SG72-UNSUPPORTED-CLOSURE",
+        "ontology_ref": "ontology://org.0al.specgraph.local.contextcase/0.2.0/classes/ContextVerificationCase"
+      },
+      {
+        "path": "ContextVerification > Member",
+        "role_id": "captured-member",
+        "ontology_ref": "ontology://org.0al.specgraph.local.contextcase/0.2.0/classes/CheckResult"
+      },
+      {
+        "path": "ContextVerification > Dependencies",
+        "role_id": "unsupported-closure",
+        "ontology_ref": "ontology://org.0al.specgraph.local.contextcase/0.2.0/classes/CheckResult"
+      }
+    ]
+  },
+  "negative_controls": {
+    "unknown-type": {
+      "mapped_nodes": 2,
+      "total_nodes": 3,
+      "missing_mappings": [],
+      "unresolved_refs": [
+        "ontology://org.0al.specgraph.local.contextcase/0.2.0/classes/CheckReslut"
+      ],
+      "hc_hash_matches": true
+    },
+    "unmatched-selector": {
+      "mapped_nodes": 2,
+      "total_nodes": 3,
+      "missing_mappings": [
+        "ContextVerification > Member"
+      ],
+      "unresolved_refs": [],
+      "hc_hash_matches": true
+    }
+  },
+  "display_name_change_preserves_role_and_ontology_identity": true,
+  "repeated_emit_is_identical": true,
+  "input_files_unchanged": true,
+  "scope": "syntax, cascade, captured declaration existence, pair/source hashes and finite source role IDs; no execution or semantic approval",
+  "semantic_approval": "not_established",
+  "canonical_mutations_allowed": false,
+  "new_runtime_checker_installed": false
+}

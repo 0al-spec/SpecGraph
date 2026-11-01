@@ -317,3 +317,15 @@ unassessed and semantic approval remains absent. Imported closure can leave the
 context unavailable even when local advisory reports exist. Missing selection
 does not invoke refinement or prevent draft capture. Combining this mode with
 refinement, loop or approval options is rejected; legacy modes remain unchanged.
+
+## Readable ontology outline prototype
+
+A first [manual HC/HCS pair](reviews/0232_project_ontology_context/hypercode-overview/README.md)
+describes the existing SG72-UNSUPPORTED-CLOSURE case in three short composition
+roles. The tracked `.hc` is intended for human reading and ordinary PR diffs;
+its `.hcs` binds roles to versioned ontology declarations, distinct scenario IDs
+and source hashes. The selection and short names remain a proposed authoring
+interpretation. It neither changes SpecDraft's stored notes nor exports arbitrary
+ontologies automatically. Hypercode syntax/cascade checks and explicit ontology
+link checks are recorded separately; a valid property string alone does not
+establish a resolved ontology binding.
