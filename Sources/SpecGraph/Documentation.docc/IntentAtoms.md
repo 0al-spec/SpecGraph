@@ -86,7 +86,7 @@ liveness remains counted because `closed_world = false`.
 
 After successful `Python CI`, the PR workflow compares the current base and head
 Git trees using SpecificationMetrics pinned to commit
-`cd2bc093fec82983ec370536fa9f1d6014ab86e2`. The trusted counter parses source
+`38091108bc18056e345599ed8eb14bd0fb9e563a`. The trusted counter parses source
 data and does not execute PR-authored code. One informational comment reports
 S, U, S/U, dead and unknown Specifications, and supplementary Python SLOC,
 Cyclomatic Complexity (CC), Cognitive Complexity (Cog), and clone deltas.
@@ -101,7 +101,21 @@ conditions with a change in multiplicity appear as an ambiguous group. The
 comment shows up to 20 locations within a 12 KB row budget. The full
 `opportunity_changes` object is in `diff.json`. The summary labels the ambiguous
 groups' contribution separately and shows the total calculation, for example
-`Total ΔU: 23 − 2 + (+0) = +21.`, using all locations before display truncation.
+`Total ΔU: 23 − 2 + (+0) = +21.`, using all locations before display truncation. Source
+locations are collapsed under a spoiler while the totals remain visible.
+
+A separate collapsed Python function table shows metric-changed and unmatched
+functions, up to five CC and five Cog rows. Only the same path and unique
+reported name provide structural correspondence. Unmatched values and deltas
+remain unknown; possible moves and renames never receive a zero baseline.
+Edits with unchanged scores are not detected. Full observations remain in
+`diff.json` under `function_changes`; scores are not a combined quality rating.
+
+After merging an upstream SpecificationMetrics change, prepare its SpecGraph
+pin update as part of the same delivery follow-up. Update the full SHA in CLI
+installation, provenance and these guides together. The consumer PR still
+requires its own CI and review; verify hosted output on a subsequent open-PR
+event after it reaches the default branch.
 
 The comment links to the actual collection run and its `specificationmetrics-pr-*`
 artifact, retained for 30 days and downloadable with GitHub access. It contains

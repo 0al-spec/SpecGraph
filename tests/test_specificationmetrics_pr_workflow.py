@@ -141,7 +141,12 @@ def test_comment_combines_summary_with_pinned_cli_locations(tmp_path, render_fai
         "Location comparison **complete**. Added 1, removed 0, ambiguous groups 0 "
         "(contribution to ΔU: +0).\n"
         "Total ΔU: 1 − 0 + (+0) = +1.\n\n"
-        "- Added [site](https://example.invalid/)\n"
+        "<details>\n<summary>Source locations (added, removed and ambiguous)</summary>\n\n"
+        "- Added [site](https://example.invalid/)\n\n</details>\n\n"
+        "<details>\n<summary>Python function complexity hotspots · complete</summary>\n\n"
+        "| Metric | Before | After | Δ | Correspondence |\n"
+        "|---|---:|---:|---:|---|\n"
+        "| Cog | — | 77 | — | not established |\n\n</details>\n"
     )
     cli.write_text(
         f"#!{sys.executable}\n"
@@ -200,3 +205,5 @@ def test_comment_combines_summary_with_pinned_cli_locations(tmp_path, render_fai
         assert body.count("<!-- specificationmetrics-pr-report-v1 -->") == 1
         assert "| Remaining opportunities (U) | 4 | 5 (+1) |" in body
         assert body.endswith("\n\n" + snippet)
+        assert body.count("<details>") == body.count("</details>") == 2
+        assert "Total ΔU: 1 − 0 + (+0) = +1." in body.split("<details>", 1)[0]
