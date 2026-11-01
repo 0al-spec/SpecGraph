@@ -3,6 +3,8 @@
 import importlib.util
 import io
 import json
+import shutil
+import subprocess
 import sys
 import tarfile
 from pathlib import Path
@@ -99,7 +101,14 @@ def test_ready_spec_requires_a_complete_versioned_receipt():
     )
 
 
-def test_ontology_context_route_uses_selected_workspace(tmp_path, monkeypatch):
+@pytest.mark.parametrize(
+    ("operation", "tool"),
+    [
+        ("ontology-context", "project_ontology_context_cli.py"),
+        ("ontology-overview", "ontology_overview_cli.py"),
+    ],
+)
+def test_ontology_route_uses_selected_workspace(tmp_path, monkeypatch, operation, tool):
     root = tmp_path / "runtime"
     root.mkdir()
     (root / "runtime.json").write_text(
@@ -123,14 +132,14 @@ def test_ontology_context_route_uses_selected_workspace(tmp_path, monkeypatch):
         ),
     )
     monkeypatch.setenv("PYTHONPATH", "untrusted")
-    assert runtime.run(root, workspace, "ontology-context", ["--project-id", "demo"]) == 1
+    assert runtime.run(root, workspace, operation, ["--help"]) == 1
     command, options = calls[-1]
-    assert command[1].endswith("tools/project_ontology_context_cli.py")
+    assert command[1].endswith(f"tools/{tool}")
     assert command[2:4] == ["--workspace-root", str(workspace)]
     assert options["cwd"] == workspace and "PYTHONPATH" not in options["env"]
     for supplied in (["--workspace-root", "/elsewhere"], ["--workspace-root=/elsewhere"]):
         with pytest.raises(ValueError, match="selected by --workspace"):
-            runtime.run(root, workspace, "ontology-context", supplied)
+            runtime.run(root, workspace, operation, supplied)
     assert runtime.run(root, workspace, "init", ["--project-id", "demo"]) == 1
     assert calls[-1][0][1].endswith("tools/supervisor.py")
 
@@ -204,3 +213,111 @@ def test_ontology_context_launcher_runs_in_external_workspace(tmp_path):
             assert not attack.stdout and "unrecognized arguments" in attack.stderr
             assert not (target / "report.json").exists()
             assert not (workspace / "report.json").exists()
+
+
+@pytest.fixture
+def overview_runtime(tmp_path):
+    """Copy only the required engine modules; product commands cannot use the checkout."""
+    installation = tmp_path / "runtime with spaces"
+    tools = installation / "source/tools"
+    tools.mkdir(parents=True)
+    source = Path(__file__).resolve().parents[1] / "tools"
+    for name in (
+        "native_runtime.py",
+        "native_runtime_context.py",
+        "native_runtime_ready_spec.py",
+        "ontology_overview_cli.py",
+        "ontology_snapshot.py",
+    ):
+        shutil.copyfile(source / name, tools / name)
+    shutil.copytree(
+        source / "ontology_overview",
+        tools / "ontology_overview",
+        ignore=shutil.ignore_patterns("__pycache__"),
+    )
+    (installation / "venv").symlink_to(Path(sys.prefix), target_is_directory=True)
+    (installation / "runtime.json").write_text(
+        json.dumps(
+            {
+                "artifact_kind": "specgraph_native_runtime",
+                "status": "installed",
+                "schema_version": 1,
+                "source_commit": "a" * 40,
+            }
+        )
+    )
+    workspace, caller = tmp_path / "product with spaces", tmp_path / "caller"
+    workspace.mkdir()
+    caller.mkdir()
+    (workspace / "selection.hc").write_text("Selected\n")
+    (workspace / "selection.hcs").write_text("Selected:\n")
+    # A wrong cwd must not accidentally find usable inputs.
+    for directory in (installation, caller):
+        (directory / "selection.hc").write_bytes(b"\xff")
+    command = [
+        sys.executable,
+        str(tools / "native_runtime.py"),
+        "run",
+        "--installation",
+        str(installation),
+        "--workspace",
+        str(workspace),
+        "ontology-overview",
+        "--",
+    ]
+    arguments = [
+        "--hc",
+        "selection.hc",
+        "--hcs",
+        "selection.hcs",
+        "--hypercode",
+        str(tmp_path / "missing-hypercode"),
+        "--ontologyc",
+        str(tmp_path / "missing-ontologyc"),
+        "--output-dir",
+        "review-output",
+    ]
+    return installation, workspace, caller, command, arguments
+
+
+def test_native_overview_forwards_help_and_unavailable_status(overview_runtime):
+    installation, workspace, caller, command, arguments = overview_runtime
+    help_result = subprocess.run([*command, "--help"], cwd=caller, capture_output=True, text=True)
+    assert help_result.returncode == 0
+    assert "--hc" in help_result.stdout and "--output-dir" in help_result.stdout
+    result = subprocess.run([*command, *arguments], cwd=caller, capture_output=True, text=True)
+    assert result.returncode == 1 and not result.stdout
+    assert json.loads(result.stderr)["status"] == "unavailable"
+    assert not (workspace / "review-output").exists()
+    assert not (caller / "review-output").exists()
+    assert not (installation / "review-output").exists()
+
+
+@pytest.mark.parametrize(
+    "option", ["--workspace-root", "--workspace-root=", "--workspace-r", "--workspace-r="]
+)
+def test_native_overview_cannot_forward_a_foreign_workspace(overview_runtime, option):
+    installation, workspace, caller, command, arguments = overview_runtime
+    override = [option + str(caller)] if option.endswith("=") else [option, str(caller)]
+    result = subprocess.run(
+        [*command, *arguments, *override], cwd=caller, capture_output=True, text=True
+    )
+    assert result.returncode == 2 and not result.stdout
+    if option.startswith("--workspace-root"):
+        assert "selected by --workspace" in json.loads(result.stderr)["error"]
+    else:
+        assert "unrecognized arguments" in result.stderr
+    for directory in (installation, workspace, caller):
+        assert not (directory / "review-output").exists()
+
+
+def test_native_overview_preserves_an_existing_output(overview_runtime):
+    _, workspace, caller, command, arguments = overview_runtime
+    output = workspace / "review-output"
+    output.mkdir()
+    marker = output / "context.hc"
+    marker.write_bytes(b"Existing\n")
+    result = subprocess.run([*command, *arguments], cwd=caller, capture_output=True, text=True)
+    assert result.returncode == 2 and not result.stdout
+    assert json.loads(result.stderr)["status"] == "invalid"
+    assert marker.read_bytes() == b"Existing\n"

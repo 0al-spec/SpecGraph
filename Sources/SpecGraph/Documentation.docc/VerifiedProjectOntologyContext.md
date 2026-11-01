@@ -230,7 +230,7 @@ the target modules; authored bindings do not establish complete runtime coverage
 
 ## Readable overview export
 
-Checkout command `tools/ontology_overview_cli.py` implements the bounded
+Source command `tools/ontology_overview_cli.py` implements the bounded
 `specgraph-ontology-overview-v1` profile described in
 `docs/ontology_overview_export.md`. An authored HC composition and its single HCS
 sheet select hierarchy and order. `overview_name` supplies a short display name;
@@ -258,8 +258,20 @@ The first profile is context-free and does not expand HCS imports. Original
 class annotations and unprojected attributes remain in the input. Generated
 selector leakage and duplicate sibling names are rejected. Tests always cover
 the role/binding contract; setting `HYPERCODE_BIN` and `ONTOLOGYC_BIN` enables
-real-tool reproducibility and negative controls. Native-runtime packaging and
-SpecDraft update hooks are not part of this slice.
+real-tool reproducibility and negative controls. Automatic SpecDraft update hooks
+are outside this operation. The native runtime forwards
+`ontology-overview` to the same source command using its selected `--workspace`.
+Forwarded workspace-root overrides are rejected. Input/binding paths and relative
+output resolve from that root; explicit absolute output remains supported.
+The installed snapshot supplies Python/exporter code, with both compiler
+executables still explicit. No initializer or developer checkout is required.
+Exit codes and structural/advisory authority remain the same.
+
+The version-matched project ontology skill suggests this step when a person asks
+to see model structure or an ontology-bound composition needs a PR text diff.
+Agent-authored names/hierarchy, reviewable HC/HCS files and ordinary SpecDraft
+capture retain their separate meanings. Native smoke reports distinguish a
+real reference export from `reference_export: not_requested`.
 
 The second-fragment replay in
 `docs/reviews/0232_project_ontology_context/hypercode-overview/publication/`

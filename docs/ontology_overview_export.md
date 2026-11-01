@@ -36,8 +36,9 @@ approved the three-role outline and its source bindings in the
 The only input formats are existing HC/HCS. This is not a reverse importer or a
 lossless export of every HCS property. Extra source attributes and ontology
 relations remain in the original inputs; only the documented projection fields
-are emitted. The first CLI is checkout tooling, not yet an installed runtime
-command or an automatic SpecDraft update hook.
+are emitted. The CLI is available from the source checkout and the native
+runtime's `ontology-overview` operation. It is independent of SpecDraft note
+capture; there is no automatic notebook-conversion hook.
 
 ## Run the first example
 
@@ -63,6 +64,44 @@ output directory is resolved from the caller's current directory. Tools are
 operator-selected executables, never downloaded or built by this command.
 Their digests identify bytes, not publisher authenticity. The observed compiler
 combination is Hypercode IR v2 (`0.6.0-dev`) and ontologyc `0.5.0`.
+
+## Use an installed native runtime
+
+Install a reviewed SpecGraph revision containing this operation and inspect its
+help before use. The installed snapshot provides the exporter and its Python
+environment, while the project owns its ontology, selections and review files:
+
+```sh
+specgraph-runtime --workspace /absolute/product/project ontology-overview -- \
+  --hc ontology/views/publication.selection.hc \
+  --hcs ontology/views/publication.selection.hcs \
+  --hypercode /absolute/path/to/hypercode --ontologyc /absolute/path/to/ontologyc \
+  --output-dir docs/reviews/publication-new
+```
+
+Choose the root containing the selected ontology sources and any bound
+production files. This can be the product project even when its SpecGraph
+knowledge workspace is elsewhere. Export needs no initializer, project
+configuration or developer checkout. The runtime rejects forwarded
+`--workspace-root` overrides; the exporter also disables argument abbreviation.
+Inputs and source bindings resolve within the selected root. A relative output
+directory resolves there too; an explicit absolute output directory retains the
+exporter's existing semantics. Existing destinations are never overwritten.
+Pass the chosen compiler executables explicitly, preferably with absolute paths.
+The launcher does not install or select those tools.
+
+The route preserves stdout/stderr and exit codes: 0 `exported`, 1 `unavailable`,
+2 invalid/input error. Its files have the same structural/advisory meaning as a
+checkout export. To put version-matched guidance in the project, use the existing
+`draft -- skill install --name specgraph-project-ontology --project ...` command.
+The skill suggests this operation for a requested structure overview and useful
+ontology-composition PR diffs. It does not mandate an export for every edit.
+
+The installed-runtime smoke always checks the operation's help and unavailable
+tool result from separate workspaces. Passing `--hypercode` and `--ontologyc` to
+`tests/native_runtime_smoke.py` additionally checks a real export in both roots,
+including byte-identical output and delivery of the updated skill. An observation
+with `reference_export: not_requested` is not a successful reference export.
 
 Version 1 accepts a single HCS sheet and the empty context. HCS imports and
 context selection are not expanded by the export adapter. Generated HC removes

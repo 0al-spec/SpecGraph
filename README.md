@@ -55,6 +55,21 @@ project. The skill guides terminology discovery even when the workspace has no
 ontology package or `ontologyc`; it does not accept terms or publish changes.
 The launcher does not automatically install the skill or change agent settings.
 
+For an explicitly authored ontology composition, the native runtime can produce
+a readable HC/HCS review pair in the selected project:
+
+```sh
+<new-runtime-directory>/specgraph-runtime --workspace /absolute/product/project \
+  ontology-overview -- --hc ontology/views/selection.hc --hcs ontology/views/selection.hcs \
+  --hypercode /absolute/path/to/hypercode --ontologyc /absolute/path/to/ontologyc \
+  --output-dir docs/reviews/ontology-new
+```
+
+The project ontology skill explains when this overview is useful. See the
+[export contract](docs/ontology_overview_export.md) for input preparation, path
+semantics and structural verification limits. Compiler executables are supplied
+explicitly; ordinary SpecDraft capture remains independent.
+
 ## Installed SpecDraft
 
 Proposal 0230 provides a separate Python runtime for notes and local preview.

@@ -1,6 +1,6 @@
 ---
 name: specgraph-project-ontology
-description: Maintain consistent domain terminology while discussing, drafting, or reviewing specifications for a SpecGraph product. Use to inspect existing concepts and relations, identify ontology gaps, and prepare grounded proposals; do not model ordinary UI controls as domain concepts by default.
+description: Maintain consistent domain terminology while discussing, drafting, or reviewing specifications for a SpecGraph product. Inspect concepts and relations, identify gaps, and prepare grounded proposals or readable ontology HC/HCS overviews; do not model ordinary UI controls as domain concepts by default.
 ---
 
 # Project ontology during specification work
@@ -81,6 +81,49 @@ specifications; use the project's existing review and governance process. Do
 not equate human agreement to one point with approval of an entire sketch or
 package. A draft, preview, generated binding, validation result or candidate
 lock does not by itself accept terms or authorize canonical changes.
+
+## Show a readable ontology composition
+
+Use a compact overview when the person asks to see the model's structure, or
+when a PR changes an ontology-bound composition whose review would benefit from
+an ordinary text diff. Choose one useful scope and short responsibility names.
+Label the selected hierarchy and names as authored choices pending review.
+This step uses explicit ontology bindings; ordinary SpecDraft note capture
+remains independent of ontology availability.
+
+Prepare an HC selection with stable occurrence IDs and HCS with versioned
+`ontology_ref` bindings. Use `overview_name` for readable names. Put technical
+identity, source properties and optional production bindings in HCS. Nesting
+expresses the selected composition, not inferred inheritance, execution order
+or every relationship in the ontology. Reuse types for distinct local roles
+without collapsing their IDs. The exporter currently accepts ASCII display
+names and checks optional top-level Python function/anchor bindings.
+
+For a native runtime whose help lists `ontology-overview`, invoke its actual
+launcher path with the product workspace selected explicitly:
+
+```sh
+specgraph-runtime --workspace /absolute/product/workspace ontology-overview -- \
+  --hc ontology/views/publication.selection.hc \
+  --hcs ontology/views/publication.selection.hcs \
+  --hypercode /path/to/hypercode --ontologyc /path/to/ontologyc \
+  --output-dir /path/to/new-review-directory
+```
+
+Paths and names above are examples. HC/HCS and their source paths are relative
+to the selected workspace; relative output paths also use that workspace in
+native mode. Pass the selected compiler executables explicitly. In a source
+checkout, the equivalent entry point is `tools/ontology_overview_cli.py` with
+`--workspace-root`. If the runtime or tools are unavailable, keep the authored
+draft and state which check could not run. No compiler installation is implied.
+
+Generate into a new directory, inspect the result and compare it with any
+tracked review pair before updating that pair. Follow the project's Git and
+privacy rules; the overview need not contain raw conversation quotations.
+Show the person the short HC first and keep HCS available for definitions,
+identities and implementation navigation. Explain important omissions and
+unresolved meanings. `exported` confirms structural export and checked
+references; ontology meaning and composition acceptance remain review decisions.
 
 ## Tool boundary and handoff
 

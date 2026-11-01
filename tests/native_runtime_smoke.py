@@ -4,11 +4,115 @@ import argparse
 import hashlib
 import json
 import os
+import shutil
 import subprocess
 import sys
 from pathlib import Path
 
 import yaml
+
+
+def ontology_overview_probe(installation, workspace, environment, hypercode, ontologyc):
+    """Run installed tools against only project-owned inputs, never the source checkout."""
+    inputs = workspace / "runs/overview-inputs"
+    inputs.mkdir(parents=True)
+    shutil.copyfile(
+        installation / "source/specs/models/SG-SPEC-0072/domain-ontology-package.yaml",
+        inputs / "ontology.yaml",
+    )
+    (inputs / "selection.hc").write_text(
+        "ContextVerificationCase#case\n  CheckResult#member\n  CheckResult#dependencies\n"
+    )
+    (inputs / "rule.py").write_text(
+        "raise RuntimeError('bound modules must not execute')\n"
+        "def decide(value):\n    return bool(value)\n"
+    )
+    (inputs / "selection.hcs").write_text(
+        'ContextVerificationCase:\n  overview_name: "ContextVerification"\n'
+        '  ontology_source: "runs/overview-inputs/ontology.yaml"\n'
+        '  ontology_ref: "ontology://org.0al.specgraph.local.contextcase/0.2.0/classes/ContextVerificationCase"\n'
+        "CheckResult:\n"
+        '  ontology_ref: "ontology://org.0al.specgraph.local.contextcase/0.2.0/classes/CheckResult"\n'
+        '  production_path: "runs/overview-inputs/rule.py"\n'
+        '  production_symbol: "decide"\n  production_anchor: "return bool(value)"\n'
+        "'#member':\n  overview_name: \"Member\"\n"
+        "'#dependencies':\n  overview_name: \"Dependencies\"\n"
+    )
+    # A product-local module must not shadow the installed export adapter.
+    shadow = workspace / "ontology_overview.py"
+    shadow.write_text("raise RuntimeError('unexpected product import')\n")
+    command = [
+        str(installation / "specgraph-runtime"),
+        "--workspace",
+        str(workspace),
+        "ontology-overview",
+        "--",
+    ]
+    help_result = subprocess.run(
+        [*command, "--help"], cwd=workspace.parent, env=environment, capture_output=True, text=True
+    )
+    assert help_result.returncode == 0 and "--hc" in help_result.stdout
+    arguments = [
+        "--hc",
+        "runs/overview-inputs/selection.hc",
+        "--hcs",
+        "runs/overview-inputs/selection.hcs",
+        "--output-dir",
+        "runs/overview-result",
+    ]
+    missing = subprocess.run(
+        [
+            *command,
+            *arguments,
+            "--hypercode",
+            str(inputs / "missing-hypercode"),
+            "--ontologyc",
+            str(inputs / "missing-ontologyc"),
+        ],
+        cwd=workspace.parent,
+        env=environment,
+        capture_output=True,
+        text=True,
+    )
+    assert missing.returncode == 1 and not missing.stdout
+    assert json.loads(missing.stderr)["status"] == "unavailable"
+    output = workspace / "runs/overview-result"
+    assert not output.exists()
+    observation = {
+        "launcher_help": "passed",
+        "unavailable_report": "passed",
+        "reference_export": "not_requested",
+    }
+    before = {p.name: p.read_bytes() for p in inputs.iterdir()}
+    if hypercode is not None:
+        process = subprocess.run(
+            [*command, *arguments, "--hypercode", str(hypercode), "--ontologyc", str(ontologyc)],
+            cwd=workspace.parent,
+            env=environment,
+            capture_output=True,
+            text=True,
+        )
+        assert process.returncode == 0, (process.stdout, process.stderr)
+        exported = json.loads(process.stdout)
+        assert exported["status"] == "exported" and exported["roles"] == 3
+        assert exported["semantic_approval"] == "not_established"
+        for suffix in ("hc", "hcs"):
+            assert (
+                hashlib.sha256((output / f"context.{suffix}").read_bytes()).hexdigest()
+                == (exported[f"{suffix}_sha256"])
+            )
+        assert (
+            output / "context.hc"
+        ).read_text() == "ContextVerification\n  Member\n  Dependencies\n"
+        observation.update(
+            reference_export="passed",
+            hc_sha256=exported["hc_sha256"],
+            hcs_sha256=exported["hcs_sha256"],
+        )
+    assert before == {p.name: p.read_bytes() for p in inputs.iterdir()}
+    assert not (workspace.parent / "runs/overview-result").exists()
+    shadow.unlink()  # Keep the later initializer/refinement probe's allowed layout.
+    return observation
 
 
 def main() -> None:
@@ -17,7 +121,13 @@ def main() -> None:
     parser.add_argument("--revision", required=True)
     parser.add_argument("--root", required=True, type=Path)
     parser.add_argument("--output", required=True, type=Path)
+    parser.add_argument("--hypercode", type=Path, help="optional real overview export tool")
+    parser.add_argument("--ontologyc", type=Path, help="supply together with --hypercode")
     args = parser.parse_args()
+    if (args.hypercode is None) != (args.ontologyc is None):
+        parser.error("--hypercode and --ontologyc must be supplied together")
+    if args.hypercode is not None:
+        args.hypercode, args.ontologyc = args.hypercode.resolve(), args.ontologyc.resolve()
     root = args.root.resolve()
     root.mkdir(parents=True, exist_ok=True)
     install = root / "runtime with spaces"
@@ -62,6 +172,7 @@ def main() -> None:
     fixture = json.loads(
         (install / "source/docs/evidence/0227_local_workspace_path_reuse.json").read_text()
     )["fixture"]
+    overview_observations = []
     for index, project in enumerate((project_a, project_b), 1):
         workspace = project / "knowledge workspace"
         call(
@@ -178,7 +289,14 @@ def main() -> None:
             hashlib.sha256(skill_path.read_bytes()).hexdigest()
             == (installed_skill["files_sha256"]["SKILL.md"])
         )
+        assert (
+            skill_path.read_bytes()
+            == (install / "source/.codex/skills" / skill_name / "SKILL.md").read_bytes()
+        )
         assert not (workspace / ".codex" / "skills" / skill_name).exists()
+        overview_observations.append(
+            ontology_overview_probe(install, workspace, environment, args.hypercode, args.ontologyc)
+        )
         request = project / "request.json"
         request.write_text(
             json.dumps(
@@ -232,6 +350,7 @@ def main() -> None:
     assert (project_a / "knowledge workspace/specgraph.project.yaml").read_text() != (
         project_b / "knowledge workspace/specgraph.project.yaml"
     ).read_text()
+    assert overview_observations[0] == overview_observations[1]
     # Exercise the installed supervisor's real Git worktree/review path with a
     # deterministic executor. No agent, model or hosted inference is invoked.
     code = """
@@ -310,6 +429,7 @@ raise SystemExit(supervisor.main(
         "source_commit": args.revision,
         "status": "passed",
         "synthetic_workspaces": 2,
+        "ontology_overview": overview_observations,
         "checks": [
             "exact_snapshot_without_git",
             "isolated_venv",
