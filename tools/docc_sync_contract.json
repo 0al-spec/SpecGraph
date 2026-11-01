@@ -1387,7 +1387,8 @@
       "docc": ["Sources/SpecGraph/Documentation.docc/VerifiedProjectOntologyContext.md"],
       "required_terms": [
         "overview_name", "role_id", "ontology_ref", "production_symbol",
-        "exported", "HYPERCODE_BIN", "ONTOLOGYC_BIN"
+        "exported", "HYPERCODE_BIN", "ONTOLOGYC_BIN", "ontology-overview",
+        "reference_export: not_requested"
       ]
     },
     {

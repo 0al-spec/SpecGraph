@@ -256,7 +256,7 @@ the target modules; authored bindings do not establish complete runtime coverage
 
 ## Readable overview export
 
-Checkout command `tools/ontology_overview_cli.py` implements the bounded
+Source command `tools/ontology_overview_cli.py` implements the bounded
 `specgraph-ontology-overview-v1` profile described in
 `docs/ontology_overview_export.md`. An authored HC composition and its single HCS
 sheet select hierarchy and order. `overview_name` supplies a short display name;
@@ -275,8 +275,9 @@ The generated pair is resolved with Hypercode IR v2 and checked for role/propert
 preservation before a new destination is created. Existing exports are not
 overwritten. Exit 0 / `exported` means this structural export completed; exit 1
 means `unavailable` tooling, and exit 2 invalid input/export failure. The current
-observed tools are Hypercode `0.6.0-dev` and ontologyc `0.5.0`. Relative input paths
-are workspace-relative; a relative output is caller-directory-relative.
+observed tools are Hypercode `0.6.0-dev` and ontologyc `0.5.0`. In the source CLI,
+input paths are workspace-relative; relative output and compiler paths use the
+caller's current directory.
 
 There is no graph-to-tree inference, import-closure proof, relation applicability
 check, TypeScript scenario evaluation, runtime attestation or semantic approval.
@@ -284,8 +285,25 @@ The first profile is context-free and does not expand HCS imports. Original
 class annotations and unprojected attributes remain in the input. Generated
 selector leakage and duplicate sibling names are rejected. Tests always cover
 the role/binding contract; setting `HYPERCODE_BIN` and `ONTOLOGYC_BIN` enables
-real-tool reproducibility and negative controls. Native-runtime packaging and
-SpecDraft update hooks are not part of this slice.
+real-tool reproducibility and negative controls. Automatic SpecDraft update hooks
+are outside this operation. The native runtime forwards
+`ontology-overview` to the same source command using its selected `--workspace`.
+Forwarded workspace-root overrides are rejected. Input/binding paths and relative
+output resolve from that root; explicit absolute output remains supported.
+Relative compiler paths also use that root in native mode, regardless of the
+launcher's caller directory. Launcher validation errors use exit 2 and JSON
+`{"error": "..."}` without `status`; exporter errors add `status: invalid` or
+`status: unavailable`, while argument usage errors may be plain argparse text.
+Consumers read the exit code first and treat `status` as optional.
+The installed snapshot supplies Python/exporter code, with both compiler
+executables still explicit. No initializer or developer checkout is required.
+Exit codes and structural/advisory authority remain the same.
+
+The version-matched project ontology skill suggests this step when a person asks
+to see model structure or an ontology-bound composition needs a PR text diff.
+Agent-authored names/hierarchy, reviewable HC/HCS files and ordinary SpecDraft
+capture retain their separate meanings. Native smoke reports distinguish a
+real reference export from `reference_export: not_requested`.
 
 The second-fragment replay in
 `docs/reviews/0232_project_ontology_context/hypercode-overview/publication/`

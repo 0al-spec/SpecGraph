@@ -19,8 +19,9 @@ Local Git source paths are resolved against the caller's directory before Git
 enters its temporary repository; Git URL and SSH remote syntax stays unchanged.
 The installed-runtime smoke uses a relative source to preserve this behavior.
 
-The launcher accepts `--workspace` and `init`, `next-move`, `supervisor` or
-`draft`. `init` runs the existing initializer from the installed source root;
+The launcher accepts `--workspace` and `init`, `next-move`, `supervisor`,
+`draft`, `ontology-context` or `ontology-overview`.
+`init` runs the existing initializer from the installed source root;
 other operations run in the selected product workspace. Project-owned Git,
 notes, specs and runs are not installed data. Each workspace must be explicitly
 selected, and an existing workspace or Git history is not overwritten by setup.
@@ -40,6 +41,56 @@ terminology work even when the workspace has no ontology package or `ontologyc`.
 Installing it does not accept ontology terms, publish changes, or change agent
 settings. Existing differing skill content is not overwritten. The original
 conversation-notes installation with `--destination` remains available.
+
+## Readable ontology overview
+
+Use `ontology-overview` for a requested model overview or a useful review diff of
+an authored ontology composition:
+
+```sh
+specgraph-runtime --workspace /absolute/product/project ontology-overview -- \
+  --hc ontology/views/selection.hc --hcs ontology/views/selection.hcs \
+  --hypercode /absolute/path/to/hypercode --ontologyc /absolute/path/to/ontologyc \
+  --output-dir docs/reviews/ontology-new
+```
+
+The installed engine supplies the exporter and Python environment. Select the
+project root containing the ontology sources and bound production files, even
+if its knowledge workspace is separate. No initializer or project configuration
+is required for this operation. Input and binding paths resolve inside that root;
+a relative output uses the same root, and an explicit absolute output is kept.
+The destination must be new. Forwarded workspace-root overrides are rejected;
+argument abbreviation is disabled by the exporter. Hypercode and ontologyc are
+explicit executable inputs and are not installed by the launcher.
+Relative `--hypercode` and `--ontologyc` paths use the selected workspace,
+regardless of the caller's current directory. Absolute compiler paths avoid
+that ambiguity. The source CLI instead resolves relative compiler and output
+paths against its caller's current directory.
+
+Exit 0 / `exported` confirms the bounded structural export, 1 is `unavailable`,
+and 2 is invalid/input error. Launcher validation failures, such as a nonexistent
+workspace or an override, keep JSON `{"error": "..."}` without `status`.
+Dispatched exporter failures carry `{"status": "invalid", "error": "..."}` or
+`{"status": "unavailable", "error": "..."}`. Argument usage failures can be
+ordinary argparse text. Consumers inspect the exit code first and tolerate
+missing `status` or non-JSON usage diagnostics. Existing checks and output
+formats are preserved. The project ontology skill explains input preparation,
+showing the short HC first, keeping HCS for technical navigation, and reviewing
+the result before updating a tracked pair. This does not turn SpecDraft notes
+into an ontology or accept the proposed composition's meaning.
+
+Installed-runtime smoke always checks help and unavailable-tool forwarding.
+Optional `--hypercode` and `--ontologyc` smoke arguments enable real export in
+two separate roots, requiring identical outputs and the updated packaged skill.
+`reference_export: not_requested` records absent reference-tool execution.
+The local observation at
+`docs/reviews/0231_native_runtime/ontology-overview-verification.json` binds an
+actual no-history installation of `126ee3cd` and successful reference exports
+in two synthetic workspaces, with identical pair digests and matching installed
+skill bytes. It also preserves successful checks of the previous native routes.
+This does not upgrade an existing consumer or prove live-agent use.
+Subsequent path/error wording is checked through source/package skill equality;
+the retained observation still identifies its original installed skill revision.
 
 Current supervisor refinement requires its configured Codex executor. ASP is
 future work, and the invoking agent is not automatically the child executor.

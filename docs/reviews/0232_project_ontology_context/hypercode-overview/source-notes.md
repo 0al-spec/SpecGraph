@@ -104,3 +104,18 @@ The publication replay follows this corrected scope: existing ontology types
 and specification instances, with no SpecDraft adapter or notebook conversion.
 Its proposed display names remain for human review. This request authorizes the
 bounded experiment, not ontology publication or merge of the PR stack.
+
+## Approved native launcher and skill integration
+
+`overview-16`, assistant proposed next step after explaining the usage scenario:
+
+> Следующий шаг — добавить операцию в launcher и описать эти поводы запуска в project ontology skill.
+
+`overview-17`, user response to `overview-16`:
+
+> Хорошо, сделай
+
+This authorizes the native `ontology-overview` operation and version-matched
+skill guidance for a requested model overview or useful composition PR diff.
+It does not make every edit require an export, convert notes into ontologies,
+install a compiler automatically or approve ontology meanings.

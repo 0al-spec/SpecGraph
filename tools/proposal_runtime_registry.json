@@ -13512,6 +13512,7 @@
       "docs/reviews/0231_native_runtime/source-notes.json",
       "docs/reviews/0231_native_runtime/specdraft.md",
       "docs/reviews/0231_native_runtime/verification.json",
+      "docs/reviews/0231_native_runtime/ontology-overview-verification.json",
       "tools/native_runtime.py",
       "tools/native_runtime_context.py",
       "tools/native_runtime_ready_spec.py",
@@ -13613,7 +13614,13 @@
       "docs/reviews/0232_project_ontology_context/hypercode-overview/publication/selection.hc",
       "docs/reviews/0232_project_ontology_context/hypercode-overview/publication/selection.hcs",
       "docs/reviews/0232_project_ontology_context/hypercode-overview/publication/generated/context.hc",
-      "docs/reviews/0232_project_ontology_context/hypercode-overview/publication/generated/context.hcs"
+      "docs/reviews/0232_project_ontology_context/hypercode-overview/publication/generated/context.hcs",
+      "tools/native_runtime.py",
+      "tests/test_native_runtime.py",
+      "tests/native_runtime_smoke.py",
+      ".codex/skills/specgraph-project-ontology/SKILL.md",
+      "src/specgraph/resources/skills/specgraph-project-ontology/SKILL.md",
+      "Sources/SpecGraph/Documentation.docc/NativeRuntime.md"
     ],
     "runtime_markers": [
       {

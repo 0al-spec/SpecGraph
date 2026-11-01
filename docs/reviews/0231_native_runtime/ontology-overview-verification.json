@@ -1,0 +1,44 @@
+{
+  "artifact_kind": "native_runtime_observation",
+  "canonical_publication": "not_evaluated",
+  "checks": [
+    "exact_snapshot_without_git",
+    "isolated_venv",
+    "path_with_spaces",
+    "init",
+    "product_advisor",
+    "targeted_supervisor_dry_run",
+    "specdraft_read",
+    "named_skill_install_in_project_outside_workspace",
+    "specdraft_absolute_request_outside_workspace",
+    "specdraft_full_history_verification",
+    "repeat_init_after_git_worktree_refinement"
+  ],
+  "executor": "deterministic_fixture_not_a_real_agent",
+  "installer_sha256": "3f96b1d98c0754dfae35c9187fb189fa2d2e8c95c1edfbd58ae3c5a8d2149889",
+  "ontology_overview": [
+    {
+      "hc_sha256": "24916693bb2be3419c2b5e46999db7aef90d6f4d7a2164bdd50e93efb196f150",
+      "hcs_sha256": "dd105eb0cff931dbb8e70b4194db5de7dd3e57170ec6fc2b948ff0295d25b02a",
+      "launcher_help": "passed",
+      "reference_export": "passed",
+      "unavailable_report": "passed"
+    },
+    {
+      "hc_sha256": "24916693bb2be3419c2b5e46999db7aef90d6f4d7a2164bdd50e93efb196f150",
+      "hcs_sha256": "dd105eb0cff931dbb8e70b4194db5de7dd3e57170ec6fc2b948ff0295d25b02a",
+      "launcher_help": "passed",
+      "reference_export": "passed",
+      "unavailable_report": "passed"
+    }
+  ],
+  "refinement": {
+    "gate_state": "review_pending",
+    "isolation_mode": "git_worktree",
+    "outcome": "done"
+  },
+  "schema_version": 1,
+  "source_commit": "126ee3cd7155ca4914de958477b2cb94a849c17f",
+  "status": "passed",
+  "synthetic_workspaces": 2
+}

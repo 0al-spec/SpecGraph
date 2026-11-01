@@ -2,6 +2,20 @@
 
 SpecGraph treats proposal records and runtime evidence as connected surfaces.
 
+## PR evidence fields
+
+`Spec-ID:` and `Proposal-ID:` contain machine-readable IDs. Keep explanatory
+prose in another paragraph. A local check using only commit trailers does not
+validate the PR body; reproduce the hosted check with the prepared text:
+
+```sh
+.venv/bin/python tools/spec_evidence_gate.py --base-ref origin/main --head-ref HEAD \
+  --pr-body-file /path/to/prepared-pr-body.md
+```
+
+Editing the description creates a fresh PR CI event. Rerunning an older event
+continues to use its original body.
+
 ## Tooling defects and false warnings
 
 Confirmed false warnings are source-bound defect observations, with graph links
