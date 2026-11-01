@@ -128,3 +128,4 @@ The canonical source files remain in the repository:
 ### Proposed Project Ontology Context
 
 - <doc:VerifiedProjectOntologyContext>
+- <doc:MetaDomainApplicability>

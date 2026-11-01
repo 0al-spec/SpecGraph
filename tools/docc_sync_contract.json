@@ -1,6 +1,14 @@
 {
   "groups": [
     {
+      "id": "meta-domain-applicability-review",
+      "description": "Proposed meta-model/domain check separation remains distinct from runtime behavior and applicability approval.",
+      "docs": ["docs/reviews/0232_project_ontology_context/meta-domain-applicability/README.md"],
+      "docc": ["Sources/SpecGraph/Documentation.docc/MetaDomainApplicability.md"],
+      "required_terms": ["0232", "SG-SPEC-0072", "not_requested", "unavailable", "domain_vocabulary", "specification_metamodel"],
+      "docc_required_terms": ["runtime_profile_activation_allowed: false"]
+    },
+    {
       "id": "mechanical-specification-authoring",
       "description": "Source-bound authoring proposal and graph return path remain separate from pilot execution and policy activation.",
       "docs": [
