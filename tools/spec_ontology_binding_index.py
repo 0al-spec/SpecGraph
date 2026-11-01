@@ -8,12 +8,15 @@ import json
 import re
 import sys
 from pathlib import Path
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 import yaml
 
 from ontology_imports import ROOT, load_json, relative_path, write_json
 from ontology_snapshot import OntologySnapshot, capture_ontology_snapshot
+
+if TYPE_CHECKING:
+    from project_ontology_context.vocabulary import CapturedVocabulary
 
 PROPOSAL_ID = "0134"
 SCHEMA_VERSION = 1
@@ -167,6 +170,7 @@ def spec_entry(
     *,
     document: dict[str, Any] | None = None,
     path_label: str | None = None,
+    vocabulary: CapturedVocabulary | None = None,
 ) -> dict[str, Any]:
     spec = load_yaml(path) if document is None else document
     spec_id = str(spec.get("id", path.stem))
@@ -246,7 +250,48 @@ def spec_entry(
             target_count=len(acceptance_evidence),
         )
 
-    for key in terminology_keys(spec):
+    terms = [(key, "specification.terminology") for key in terminology_keys(spec)]
+    if vocabulary is not None:
+        # Explicit reference lists are data, never inferred from free prose.
+        for prefix, fields in (("", spec), ("specification.", spec.get("specification", {}))):
+            if not isinstance(fields, dict):
+                continue
+            refs = fields.get("ontology_refs", [])
+            if not isinstance(refs, list) or any(not isinstance(ref, str) for ref in refs):
+                raise ValueError(f"{prefix}ontology_refs must be a list of strings")
+            terms.extend((ref, f"{prefix}ontology_refs[{i}]") for i, ref in enumerate(refs))
+    for key, source in terms:
+        if vocabulary is not None:
+            matches = vocabulary.candidates(key)
+            origins = [s.origin() for s in matches]
+            if len(matches) == 1:
+                symbol = matches[0]
+                bindings.append(
+                    {
+                        "term": key,
+                        "ontology_ref": symbol.reference,
+                        "kind": symbol.kind,
+                        "source": source,
+                        "candidate_origins": origins,
+                    }
+                )
+            else:
+                gaps.append(
+                    {
+                        "gap_id": f"ontology-gap-{spec_id.lower()}-{slug(key)}",
+                        "term": key,
+                        "source": source,
+                        "classification": "ambiguous_ontology_term"
+                        if matches
+                        else "missing_ontology_ref"
+                        if ":" in key
+                        else "legacy_unknown_term",
+                        "resolution": "ambiguous" if matches else "unknown",
+                        "candidates": sorted({s.reference for s in matches}),
+                        "candidate_origins": origins,
+                    }
+                )
+            continue
         matched = next(
             (
                 ir_symbols.get(symbol_key)
@@ -302,19 +347,34 @@ def build_binding_index(
     snapshot: OntologySnapshot | None = None,
     ir: dict[str, Any] | None = None,
     documents: tuple[tuple[str, dict[str, Any]], ...] | None = None,
+    vocabulary: CapturedVocabulary | None = None,
 ) -> dict[str, Any]:
     if snapshot is not None and ir is not None:
         raise ValueError("provide snapshot or IR, not both")
-    if ir is None:
+    if vocabulary is not None and (snapshot is not None or ir is not None):
+        raise ValueError("provide vocabulary or a single IR input, not both")
+    if ir is None and vocabulary is None:
         ir = json.loads(snapshot.ir_bytes) if snapshot is not None else load_json(ir_path)
-    ir_symbols = ontology_symbols(ir)
+    ir_symbols = (
+        ontology_symbols(ir)
+        if ir is not None
+        else {
+            s.reference: {"ontology_ref": s.reference, "kind": s.kind, "symbol": s.name}
+            for s in vocabulary.symbols
+        }
+    )
     entries = (
         [
-            spec_entry(Path(path), ir_symbols, document=document, path_label=path)
+            spec_entry(
+                Path(path), ir_symbols, document=document, path_label=path, vocabulary=vocabulary
+            )
             for path, document in documents
         ]
         if documents is not None
-        else [spec_entry(path, ir_symbols) for path in sorted(specs_root.glob("SG-SPEC-*.yaml"))]
+        else [
+            spec_entry(path, ir_symbols, vocabulary=vocabulary)
+            for path in sorted(specs_root.glob("SG-SPEC-*.yaml"))
+        ]
     )
     accepted_binding_count = sum(len(entry["accepted_bindings"]) for entry in entries)
     relation_candidate_count = sum(len(entry["relation_candidates"]) for entry in entries)

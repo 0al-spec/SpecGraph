@@ -1,0 +1,94 @@
+{
+  "artifact_kind": "joint_ontology_vocabulary_local_observation",
+  "schema_version": 1,
+  "spec_id": "SG-SPEC-0072",
+  "proposal_id": "0232",
+  "baseline_revision": "710c4f602a6c9c129aa665ccb844d6336d00bcf3",
+  "source_observation": {
+    "repository": "GitView",
+    "revision": "4b32515",
+    "path": "ontology/pilots/motivation-composition/README.md"
+  },
+  "baseline_regression": {
+    "failed": 4,
+    "passed": 5
+  },
+  "replay": {
+    "baseline": {
+      "exit_code": 1,
+      "outcome": "unavailable",
+      "context_outcome": "verified",
+      "inventory_outcome": "unavailable",
+      "bundle_outcome": "unavailable",
+      "target_sha256": "d5fabfe1ea2e64e59806c00a88dcd5bfba6847152a8e4817c3268f9b7daf1310",
+      "term_count": 0
+    },
+    "updated": {
+      "exit_code": 0,
+      "outcome": "checked",
+      "context_outcome": "verified",
+      "inventory_outcome": "analyzed",
+      "bundle_outcome": "analyzed",
+      "target_sha256": "d5fabfe1ea2e64e59806c00a88dcd5bfba6847152a8e4817c3268f9b7daf1310",
+      "term_count": 0
+    },
+    "explicit_terms": {
+      "exit_code": 0,
+      "outcome": "checked",
+      "terms": {
+        "Motive": "spelling_candidate",
+        "Unknown": "unknown",
+        "motivcore:Motive": "structurally_resolved_candidate",
+        "sg:ValueObject": "structurally_resolved_candidate",
+        "missing:Motive": "unknown"
+      },
+      "motive_origin": [
+        {
+          "ontology_ref": "motivcore:Motive",
+          "ontology_uri": "ontology://org.0al.motivation.core/0.1.0/classes/Motive",
+          "package": {
+            "id": "org.0al.motivation.core",
+            "namespace": "motivcore",
+            "version": "0.1.0"
+          },
+          "source_sha256": "3061eca33ddc2296c2c292695d98daf6697e92fb582da544bc1d5107721ae955",
+          "ir_sha256": "25da040f4bd0b014014b1ed996250cd4c17a64503355f6f558917bec9ddd1fe9",
+          "compiler_sha256": "dcdc37216246f9acebca7387e14b61300d9dec4367f7c1630445b97280c80168",
+          "source_uri": "ontology/pilots/motivation-composition/dependencies/motivation-core/domain-ontology-package.yaml",
+          "verification": "compiler_checked"
+        }
+      ]
+    },
+    "original_gitview_pilot_hashes_unchanged": true,
+    "synthetic": true,
+    "compiler_sha256": "dcdc37216246f9acebca7387e14b61300d9dec4367f7c1630445b97280c80168",
+    "semantic_approval": "not_established",
+    "canonical_mutations_allowed": false
+  },
+  "hosted_ci": "not_observed",
+  "installed_runtime_updated": false,
+  "semantic_approval": "not_established",
+  "canonical_mutations_allowed": false,
+  "focused_tests": {
+    "passed": 171,
+    "skipped": 0,
+    "release_compiler": "Ontology 0.5.0",
+    "scope": "project context, CLI, foundation, composition, joint reports, inventory, freshness, target operation, legacy binding/validation, native runtime"
+  },
+  "local_checks": [
+    "python_quality",
+    "docc_sync",
+    "proposal_tracking",
+    "materialization_packet_integrity",
+    "git_diff_check"
+  ],
+  "implementation_sha256": {
+    "tools/project_ontology_context/vocabulary.py": "c48c89a5262a2295c589df67786215f58278aca329703d1d9b2cc098ea6565ae",
+    "tools/project_ontology_term_inventory.py": "6ed626614c2bc5731b755b56ee9bc3a91cc3dc02de2919f4cdaed30a9a4eae4f",
+    "tools/spec_ontology_context_reports.py": "ac956b4b84c0ec6690f955fced2b34637675b5229c30ac76c48f3c4719ca57da",
+    "tools/spec_ontology_binding_index.py": "06457872c73315d0cb0d206fed02aa72ac238156ea3dc9ba6b45ba5c6acaca88",
+    "tools/spec_ontology_validation_report.py": "d5e5be51cff0561a37d3f8d3fcf045adb6f6835ccae12d97becee92078c25062",
+    "tools/project_ontology_report_freshness.py": "ad3abe5a3078cba81f151b70d57f69d3a40f99eec794dfbff78bc2cab8781c31",
+    "tools/project_ontology_supervisor_check.py": "64875bc035e031a67c0283450a109c2ed64fbb717c098a1ff2a83a111b7ea4aa"
+  }
+}

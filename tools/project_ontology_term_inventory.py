@@ -9,8 +9,6 @@ from __future__ import annotations
 
 import hashlib
 import json
-import unicodedata
-from collections import defaultdict
 from pathlib import Path
 from typing import Any
 
@@ -18,25 +16,12 @@ import yaml
 from yaml.nodes import MappingNode, ScalarNode, SequenceNode
 from yaml.tokens import AliasToken
 
+from ontology_snapshot import OntologySnapshotError
 from project_ontology_context import ContextResult
-from spec_ontology_binding_index import slug, symbol_keys
+from project_ontology_context.vocabulary import capture_vocabulary
+from spec_ontology_binding_index import slug
 
 PROFILE = "specgraph-explicit-terms-v1"
-
-
-def _spelling_keys(value: str) -> set[str]:
-    """Keep Unicode terms distinct while retaining existing ASCII spelling rules."""
-    normalized = unicodedata.normalize("NFKC", value).casefold()
-    if not any(char.isalnum() for char in normalized):
-        return set()
-    if value.isascii():
-        return symbol_keys(value)
-    keys = set()
-    for part in (normalized, normalized.rsplit(":", 1)[-1]):
-        key = "-".join("".join(char if char.isalnum() else " " for char in part).split())
-        if key:
-            keys.update((key, key.replace("-", "")))
-    return keys
 
 
 def _sha(data: bytes) -> str:
@@ -128,55 +113,8 @@ def build_term_inventory(
         )
     if context.outcome not in {"verified", "unavailable"}:
         return failure("invalid", "unknown context outcome")
-    if len(context.members) > 1:
-        return failure("unavailable", "multiple-member inventory is unsupported")
-    if (
-        len(context.members) != 1
-        or len(context.snapshots) != 1
-        or len(context.captured_members) != 1
-    ):
-        return failure("unavailable", "exactly one selected and captured member is required")
-    member = context.members[0]
-    if context.captured_members[0] != member:
-        return failure("invalid", "captured member identity differs from selection")
-    checks = [c for c in context.checks if c.check == "member_capture" and c.package == member[0]]
-    if len(checks) != 1 or checks[0].outcome != "verified":
-        return failure("unavailable", "selected member lacks one successful capture check")
-    snapshot = context.snapshots[0]
-    if (
-        _sha(snapshot.source_bytes) != snapshot.source_sha256
-        or _sha(snapshot.ir_bytes) != snapshot.ir_sha256
-    ):
-        return failure("invalid", "captured source or IR digest mismatch")
     try:
-        ir = json.loads(snapshot.ir_bytes)
-        if (
-            not isinstance(ir, dict)
-            or tuple(ir.get(k) for k in ("id", "namespace", "version")) != member
-        ):
-            return failure("invalid", "captured IR identity differs from selection")
-        refs: dict[str, int] = defaultdict(int)
-        names: dict[str, set[str]] = defaultdict(set)
-        for section in ("classes", "relations"):
-            values = ir.get(section, [])
-            if not isinstance(values, list):
-                raise ValueError(f"IR {section} must be a list")
-            for item in values:
-                if (
-                    not isinstance(item, dict)
-                    or not isinstance(item.get("fqid"), str)
-                    or not isinstance(item.get("id"), str)
-                ):
-                    continue
-                ref = item["fqid"]
-                refs[ref] += 1
-                aliases = item.get("aliases", [])
-                spellings = [item["id"], ref] + (
-                    [v for v in aliases if isinstance(v, str)] if isinstance(aliases, list) else []
-                )
-                for name in spellings:
-                    for key in _spelling_keys(name):
-                        names[key].add(ref)
+        vocabulary = capture_vocabulary(context)
         selected_root = (root / specs_root).resolve()
         if not selected_root.is_relative_to(root) or not selected_root.is_dir():
             return failure("invalid", "specs_root must be an existing directory inside workspace")
@@ -233,24 +171,21 @@ def build_term_inventory(
             inputs.append({"path": name, "sha256": source_hash})
             for field, term_node in terms:
                 term = term_node.value
-                candidates = sorted(
-                    set().union(*(names.get(key, set()) for key in _spelling_keys(term)))
-                )
+                matches = vocabulary.candidates(term)
+                candidates = sorted({s.reference for s in matches})
                 if ":" in term:
-                    exact_count = refs.get(term, 0)
                     resolution = (
                         "structurally_resolved_candidate"
-                        if exact_count == 1
+                        if len(matches) == 1
                         else "ambiguous"
-                        if exact_count > 1
+                        if matches
                         else "unknown"
                     )
-                    candidates = [term] if exact_count else []
                     classification = "missing_ontology_ref"
                 else:
                     resolution = (
                         "spelling_candidate"
-                        if len(candidates) == 1
+                        if len(matches) == 1
                         else "ambiguous"
                         if candidates
                         else "unknown"
@@ -270,6 +205,7 @@ def build_term_inventory(
                     "source_sha256": source_hash,
                     "resolution": resolution,
                     "candidates": candidates,
+                    "candidate_origins": [s.origin() for s in matches],
                     "authority": "structural_advisory_only",
                 }
                 if resolution in {"unknown", "ambiguous"}:
@@ -286,19 +222,7 @@ def build_term_inventory(
             "outcome": "analyzed",
             "diagnostics": [],
             "analysis_profile": PROFILE,
-            "project_context": {
-                "project_id": context.project_id,
-                "workspace": str(root),
-                "context_revision": context.revision,
-                "context_outcome": context.outcome,
-                "scope": "single_member_local_symbols",
-                "verified_closure": False,
-                "semantic_approval": "not_established",
-                "selected_member": {"id": member[0], "namespace": member[1], "version": member[2]},
-                "source_sha256": snapshot.source_sha256,
-                "ir_sha256": snapshot.ir_sha256,
-                "compiler_sha256": snapshot.compiler_sha256,
-            },
+            "project_context": vocabulary.metadata(context),
             "inputs": {"specs_root": selected_root.relative_to(root).as_posix(), "specs": inputs},
             "entries": entries,
             "prose": "unassessed",
@@ -306,5 +230,7 @@ def build_term_inventory(
             "full_spec_conformance": "not_assessed",
             "canonical_mutations_allowed": False,
         }
+    except OntologySnapshotError as error:
+        return failure(error.outcome, str(error))
     except (OSError, ValueError, TypeError, yaml.YAMLError, UnicodeError) as error:
         return failure("invalid", f"cannot inventory inputs: {error}")

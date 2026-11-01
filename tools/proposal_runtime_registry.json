@@ -13574,7 +13574,13 @@
       "tools/project_ontology_supervisor_check.py",
       "tools/project_ontology_supervisor_cli.py",
       "tests/test_project_ontology_supervisor_check.py",
-      "tests/test_project_ontology_supervisor_cli.py"
+      "tests/test_project_ontology_supervisor_cli.py",
+      "tools/project_ontology_context/vocabulary.py",
+      "tools/project_ontology_term_inventory.py",
+      "tools/spec_ontology_context_reports.py",
+      "tests/test_project_ontology_joint_reports.py",
+      "docs/reviews/0232_project_ontology_context/joint-vocabulary/README.md",
+      "docs/reviews/0232_project_ontology_context/joint-vocabulary/verification.json"
     ],
     "runtime_markers": [
       {

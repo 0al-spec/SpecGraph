@@ -1,15 +1,16 @@
-"""Build advisory reports from one captured project context and spec corpus."""
+"""Build advisory reports from captured package vocabularies and one spec corpus."""
 
 from __future__ import annotations
 
 import hashlib
-import json
 from pathlib import Path
 from typing import Any
 
 import yaml
 
+from ontology_snapshot import OntologySnapshotError
 from project_ontology_context import ContextResult
+from project_ontology_context.vocabulary import capture_vocabulary
 from spec_ontology_binding_index import build_binding_index
 from spec_ontology_validation_report import build_validation_report
 
@@ -25,7 +26,7 @@ def build_context_reports(
     specs_root: Path,
     documents: tuple[tuple[str, bytes], ...] | None = None,
 ) -> dict[str, Any]:
-    """Analyze one member's local symbols; never reopen ontology inputs or fall back."""
+    """Analyze captured symbols; never reopen ontology inputs or fall back."""
 
     def failure(outcome: str, detail: str) -> dict[str, Any]:
         return {
@@ -44,35 +45,8 @@ def build_context_reports(
         return failure("invalid", f"invalid context: {details or 'no diagnostic supplied'}")
     if context.outcome not in {"verified", "unavailable"}:
         return failure("invalid", "unknown context outcome")
-    if len(context.members) > 1:
-        return failure("unavailable", "multiple-member joint reports are unsupported")
-    if (
-        len(context.members) != 1
-        or len(context.snapshots) != 1
-        or len(context.captured_members) != 1
-    ):
-        return failure("unavailable", "exactly one selected and captured member is required")
-    member = context.members[0]
-    if context.captured_members[0] != member:
-        return failure("invalid", "captured member identity differs from selection")
-    member_checks = [
-        c for c in context.checks if c.check == "member_capture" and c.package == member[0]
-    ]
-    if len(member_checks) != 1 or member_checks[0].outcome != "verified":
-        return failure("unavailable", "selected member does not have one successful capture check")
-    snapshot = context.snapshots[0]
-    if (
-        _sha256(snapshot.source_bytes) != snapshot.source_sha256
-        or _sha256(snapshot.ir_bytes) != snapshot.ir_sha256
-    ):
-        return failure("invalid", "captured source or IR digest mismatch")
     try:
-        ir = json.loads(snapshot.ir_bytes)
-        if (
-            not isinstance(ir, dict)
-            or tuple(ir.get(key) for key in ("id", "namespace", "version")) != member
-        ):
-            return failure("invalid", "captured IR identity differs from selected member")
+        vocabulary = capture_vocabulary(context)
         selected_root = (root / specs_root).resolve()
         if not selected_root.is_relative_to(root) or not selected_root.is_dir():
             return failure("invalid", "specs_root must be an existing directory inside workspace")
@@ -117,28 +91,25 @@ def build_context_reports(
             parsed_documents.append((name, document))
             identities.append({"path": name, "sha256": _sha256(raw)})
         inputs = {"specs_root": selected_root.relative_to(root).as_posix(), "specs": identities}
-        metadata = {
-            "project_id": context.project_id,
-            "workspace": str(root),
-            "context_revision": context.revision,
-            "context_outcome": context.outcome,
-            "scope": "single_member_local_symbols",
-            "verified_closure": False,
-            "analysis_profile": "specgraph-local-symbol-advisory-v1",
-            "semantic_approval": "not_established",
-            "binding_authority": "structural_advisory_only",
-            "selected_member": {"id": member[0], "namespace": member[1], "version": member[2]},
-            "source_sha256": snapshot.source_sha256,
-            "ir_sha256": snapshot.ir_sha256,
-            "compiler_sha256": snapshot.compiler_sha256,
-            "compiler_provenance": snapshot.compiler_provenance,
-        }
-        index = build_binding_index(snapshot=snapshot, documents=tuple(parsed_documents))
-        report = build_validation_report(snapshot=snapshot, binding_index=index)
+        metadata = vocabulary.metadata(context)
+        captured = (
+            {"vocabulary": vocabulary}
+            if vocabulary.composed
+            else {"snapshot": context.snapshots[0]}
+        )
+        index = build_binding_index(**captured, documents=tuple(parsed_documents))
+        report = build_validation_report(**captured, binding_index=index)
         for result in (index, report):
             result["ontology_ir_ref"] = None
             result["project_context"] = dict(metadata)
             result["inputs"] = inputs
+            if vocabulary.composed:
+                result["ontology_verification"] = {
+                    "status": "compiler_checked",
+                    "scope": metadata["scope"],
+                    "members": metadata["members"],
+                    "foundation_catalog": metadata["foundation_catalog"],
+                }
         return {
             "outcome": "analyzed",
             "diagnostics": [],
@@ -146,5 +117,7 @@ def build_context_reports(
             "binding_index": index,
             "validation_report": report,
         }
+    except OntologySnapshotError as error:
+        return failure(error.outcome, str(error))
     except (OSError, ValueError, yaml.YAMLError, UnicodeError) as error:
         return failure("invalid", f"cannot capture or analyze inputs: {error}")

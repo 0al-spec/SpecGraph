@@ -17,6 +17,7 @@ ROOT = Path(__file__).resolve().parents[1]
 FIXTURES = ROOT / "tests/fixtures/motivation_composition"
 sys.path.insert(0, str(ROOT / "tools"))
 from project_ontology_context import capture_project_context, composition, foundation  # noqa: E402
+from project_ontology_supervisor_check import build_target_context_check  # noqa: E402
 from project_ontology_term_inventory import build_term_inventory  # noqa: E402
 
 
@@ -188,10 +189,68 @@ def test_real_composition_cli_and_order_independent_revision(compiled_selection)
     assert capture(work, compiler).revision == result.revision
     assert result.report()["semantic_approval"] == "not_established"
     assert result.report()["canonical_mutations_allowed"] is False
-    inventory = build_term_inventory(
-        result, workspace_root=work, specs_root=work / "specs", documents=()
+    specs = work / "specs/nodes"
+    specs.mkdir(parents=True)
+    inventory = build_term_inventory(result, workspace_root=work, specs_root=specs, documents=())
+    assert inventory["outcome"] == "analyzed" and inventory["grounded"] is False
+
+
+def test_real_composition_target_reaches_checked_with_visible_gaps(compiled_selection):
+    work, compiler, _ = compiled_selection
+    specs = work / "specs/nodes"
+    specs.mkdir(parents=True)
+    target = specs / "GITVIEW-SPEC-0001.yaml"
+    raw = b"""id: GITVIEW-SPEC-0001
+specification:
+  terminology:
+    Motive: {}
+    Unknown: {}
+  ontology_refs:
+    - motivcore:Motive
+    - sg:ValueObject
+    - eventcore:Entity
+"""
+    target.write_bytes(raw)
+    checked = build_target_context_check(
+        work,
+        project_id="composition-pilot",
+        target_spec_id=target.stem,
+        selection_path=Path("selection.yaml"),
+        ontologyc=compiler,
+        compiler_sha256=sha(compiler.read_bytes()),
     )
-    assert inventory["outcome"] == "unavailable" and inventory["grounded"] is False
+    assert checked["outcome"] == "checked", checked
+    assert checked["context"]["outcome"] == "verified"
+    assert checked["bundle"]["outcome"] == checked["inventory"]["outcome"] == "analyzed"
+    terms = {e["term"]: e for e in checked["inventory"]["entries"]}
+    assert terms["motivcore:Motive"]["resolution"] == "structurally_resolved_candidate"
+    assert terms["eventcore:Entity"]["resolution"] == "structurally_resolved_candidate"
+    assert terms["Unknown"]["resolution"] == "unknown"
+    assert checked["canonical_mutations_allowed"] is False
+    assert target.read_bytes() == raw
+    proc = subprocess.run(
+        [
+            sys.executable,
+            ROOT / "tools/supervisor.py",
+            "--build-project-ontology-context-check",
+            "--ontology-context-project-id",
+            "composition-pilot",
+            "--target-spec",
+            target.stem,
+            "--ontology-context-selection",
+            "selection.yaml",
+            "--ontologyc",
+            compiler,
+            "--ontologyc-sha256",
+            sha(compiler.read_bytes()),
+        ],
+        capture_output=True,
+        text=True,
+        timeout=180,
+        cwd=work,
+    )
+    assert proc.returncode == 0, proc.stdout + proc.stderr
+    assert json.loads(proc.stdout)["outcome"] == "checked"
 
 
 @pytest.mark.parametrize(

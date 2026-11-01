@@ -115,9 +115,6 @@ def _shape(bundle: object) -> tuple[str, str] | None:
             "analysis_profile",
             "context_outcome",
             "scope",
-            "source_sha256",
-            "ir_sha256",
-            "compiler_sha256",
         )
     ):
         return "unavailable", "project context identity missing"
@@ -125,16 +122,43 @@ def _shape(bundle: object) -> tuple[str, str] | None:
         metadata["context_revision"][7:]
     ):
         return "unavailable", "context revision missing or malformed"
+    if metadata["scope"] == "selected_composition_symbols":
+        members = metadata.get("members")
+        if not isinstance(members, list) or len(members) != 3:
+            return "unavailable", "composed member capture inventory missing"
+        catalog = metadata.get("foundation_catalog")
+        if (
+            not isinstance(catalog, dict)
+            or any(
+                not _identity_valid(catalog.get(k))
+                for k in ("id", "namespace", "version", "source_uri")
+            )
+            or not isinstance(catalog.get("source_sha256"), str)
+            or not _HEX.fullmatch(catalog["source_sha256"])
+        ):
+            return "unavailable", "foundation catalog identity missing or malformed"
+    else:
+        member = metadata.get("selected_member")
+        if not isinstance(member, dict):
+            return "unavailable", "selected member identity missing"
+        members = [
+            {
+                **member,
+                **{k: metadata.get(k) for k in ("source_sha256", "ir_sha256", "compiler_sha256")},
+            }
+        ]
     if any(
-        not _HEX.fullmatch(metadata[key])
-        for key in ("source_sha256", "ir_sha256", "compiler_sha256")
+        not isinstance(row, dict)
+        or any(not _identity_valid(row.get(k)) for k in ("id", "namespace", "version"))
+        or any(
+            not isinstance(row.get(k), str) or not _HEX.fullmatch(row[k])
+            for k in ("source_sha256", "ir_sha256", "compiler_sha256")
+        )
+        for row in members
     ):
-        return "unavailable", "snapshot hash identity missing or malformed"
-    if not isinstance(metadata.get("selected_member"), dict) or any(
-        not _identity_valid(metadata["selected_member"].get(k))
-        for k in ("id", "namespace", "version")
-    ):
-        return "unavailable", "selected member identity missing"
+        return "unavailable", "selected member identity or snapshot hash missing or malformed"
+    if len({row["id"] for row in members}) != len(members):
+        return "invalid", "duplicate captured member identity"
     if any(
         k not in binding or k not in validation
         for k in (
@@ -248,6 +272,8 @@ def assess_report_freshness(
             "compiler_sha256",
             "context_outcome",
             "scope",
+            "members",
+            "foundation_catalog",
         )
         comparisons = (
             direct
