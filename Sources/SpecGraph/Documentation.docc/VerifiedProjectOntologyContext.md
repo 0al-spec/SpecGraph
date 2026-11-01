@@ -212,3 +212,68 @@ as `GITVIEW-SPEC-0001` and legacy `SG-SPEC-0001` through a shared validator.
 The suffix is ASCII decimal. Requests address the exact filename and matching
 YAML ID; no ID allocation, alias following or source rewriting occurs.
 Workspace/path, symlink and report ownership protections remain in effect.
+
+## Readable ontology outline prototype
+
+The manual pair in
+`docs/reviews/0232_project_ontology_context/hypercode-overview/` presents one
+existing SG72-UNSUPPORTED-CLOSURE case as three readable composition roles.
+The Git-tracked `.hc` supports ordinary text review; `.hcs` retains versioned
+ontology references, distinct role IDs and exact source hashes. The chosen view
+and names remain proposed. It changes no stored SpecDraft notebook or canonical
+ontology and implements no general exporter. Hypercode's syntax/cascade checks
+and the local explicit ontology-link lookup are separate observations.
+Production paths, function names, byte hashes and source anchors in the HCS now
+connect the same roles to the real capture/snapshot code. The retained source
+lookup checks symbol/fragment existence through Python AST without executing
+the target modules; authored bindings do not establish complete runtime coverage.
+
+## Readable overview export
+
+Checkout command `tools/ontology_overview_cli.py` implements the bounded
+`specgraph-ontology-overview-v1` profile described in
+`docs/ontology_overview_export.md`. An authored HC composition and its single HCS
+sheet select hierarchy and order. `overview_name` supplies a short display name;
+`role_id` or the original HC ID preserves occurrence identity. Every selected role
+has a versioned `ontology_ref`; the root selects the default local package, with
+explicit per-role overrides allowed. Class/protocol references and optional
+`composition_ref` are checked against the selected compiler-produced IR.
+
+Optional `production_path`, `production_symbol` and `production_anchor` bindings
+select a unique top-level Python function and one source line inside it. Target
+modules are parsed with AST, never imported. HCS retains exact source, IR and
+executable digests plus original input digests; those identify bytes rather than
+compiler authenticity. HC contains only the authored short names and hierarchy.
+
+The generated pair is resolved with Hypercode IR v2 and checked for role/property
+preservation before a new destination is created. Existing exports are not
+overwritten. Exit 0 / `exported` means this structural export completed; exit 1
+means `unavailable` tooling, and exit 2 invalid input/export failure. The current
+observed tools are Hypercode `0.6.0-dev` and ontologyc `0.5.0`. Relative input paths
+are workspace-relative; a relative output is caller-directory-relative.
+
+There is no graph-to-tree inference, import-closure proof, relation applicability
+check, TypeScript scenario evaluation, runtime attestation or semantic approval.
+The first profile is context-free and does not expand HCS imports. Original
+class annotations and unprojected attributes remain in the input. Generated
+selector leakage and duplicate sibling names are rejected. Tests always cover
+the role/binding contract; setting `HYPERCODE_BIN` and `ONTOLOGYC_BIN` enables
+real-tool reproducibility and negative controls. Native-runtime packaging and
+SpecDraft update hooks are not part of this slice.
+
+The second-fragment replay in
+`docs/reviews/0232_project_ontology_context/hypercode-overview/publication/`
+uses SG-SPEC-0071 and the existing core Spec, Requirement and AcceptanceCriterion
+declarations. Seven roles span three levels; five criteria retain distinct PB
+IDs while sharing one type and production verifier. Selected hierarchy follows
+the real specification's local criterion list. Relation existence does not prove
+the composition's meaning. This is an ontology-bound instance view, independent
+of SpecDraft notes; display names remain proposed.
+
+Ten replay tests check source IDs, byte-identical repeated output, display rename
+and ordering preservation, wrong class/version/hash, duplicate identity,
+missing function and root-name selector leakage. Nine real-tool cases require
+`HYPERCODE_BIN` and `ONTOLOGYC_BIN`; source-ID validation runs without them.
+No exporter implementation change was necessary. Shared metadata comparison
+anchors for Manifest and Checksums remain two roles, with no claim of observed
+criterion satisfaction or runtime execution.
