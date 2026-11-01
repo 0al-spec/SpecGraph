@@ -207,6 +207,20 @@ running a broader validation command.
 - If GitHub branch rules reject force-push for a stacked branch, do not fight the rule. Retarget the PR to `main`, verify it is clean and checks are green, then merge.
 - PR descriptions should include motivation, goal, scope, validation commands, and risks.
 
+`Spec-ID:` and `Proposal-ID:` are machine-readable fields containing IDs only;
+explanatory prose belongs in a separate paragraph. To reproduce the hosted
+spec-evidence check locally, include the prepared PR body as well as commit
+trailers:
+
+```bash
+.venv/bin/python tools/spec_evidence_gate.py --base-ref origin/main --head-ref HEAD \
+  --pr-body-file /path/to/prepared-pr-body.md
+```
+
+A trailers-only local run does not validate the PR description. Editing the
+description creates a fresh PR CI event; rerunning an older event retains its
+original body.
+
 After retargeting a stacked PR, verify the actual `refs/pull/<PR>/merge` snapshot:
 the merge must have exactly two parents and `merge^2` must equal the current
 PR-head SHA. A direct `merge^1` must equal the current base SHA. A virtual first
