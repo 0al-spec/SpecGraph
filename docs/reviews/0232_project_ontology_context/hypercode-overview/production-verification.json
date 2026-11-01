@@ -1,0 +1,116 @@
+{
+  "artifact_kind": "ontology_overview_production_bindings_local_observation",
+  "schema_version": 1,
+  "spec_id": "SG-SPEC-0072",
+  "proposal_id": "0232",
+  "source_revision": "0f0a056a522a9c6bbba0e75e3748bad909d1d5c7",
+  "inputs": {
+    "docs/reviews/0232_project_ontology_context/hypercode-overview/context.hc": "24916693bb2be3419c2b5e46999db7aef90d6f4d7a2164bdd50e93efb196f150",
+    "docs/reviews/0232_project_ontology_context/hypercode-overview/context.hcs": "4349ac5a87f04686d85ad3d2c4a7c8ff2e9b61f81ec6621e2ffc622f67541d7e",
+    "specs/models/SG-SPEC-0072/domain-ontology-package.yaml": "512920428c4907fa6cdb938937797c50fd81e964c8d60e0d5290e688a6e10870",
+    "specs/models/SG-SPEC-0072/unsupported-closure.ts": "082da26e0470d895958a164de4070fc443e700885bf22afbe4fab2fc86c202f2"
+  },
+  "tools": {
+    "hypercode_sha256": "f9631fa8c2dcfe6c1afd57c4919617e13e84838bfc289fb94440740231684e76",
+    "hypercode_resolver": {
+      "name": "hypercode-swift",
+      "version": "0.6.0-dev"
+    },
+    "ontologyc_sha256": "dcdc37216246f9acebca7387e14b61300d9dec4367f7c1630445b97280c80168",
+    "ontology_ir_sha256": "b2a350fd85c78e896ecc38e54200364fe33e296cc77359a1281b039cef66aaa4",
+    "executable_source_provenance": "not_verified"
+  },
+  "commands": [
+    {
+      "operation": "parse",
+      "exit_code": 0
+    },
+    {
+      "operation": "validate",
+      "exit_code": 0
+    },
+    {
+      "operation": "emit",
+      "exit_code": 0
+    },
+    {
+      "operation": "explain",
+      "exit_code": 0
+    },
+    {
+      "operation": "ontology-check",
+      "exit_code": 0
+    },
+    {
+      "operation": "ontology-compile",
+      "exit_code": 0
+    },
+    {
+      "operation": "stale-module-hash-emit",
+      "exit_code": 0
+    },
+    {
+      "operation": "unknown-function-emit",
+      "exit_code": 0
+    },
+    {
+      "operation": "anchor-outside-function-emit",
+      "exit_code": 0
+    }
+  ],
+  "source_bindings": [
+    {
+      "role": "ContextVerification",
+      "role_id": "SG72-UNSUPPORTED-CLOSURE",
+      "ontology_ref": "ontology://org.0al.specgraph.local.contextcase/0.2.0/classes/ContextVerificationCase",
+      "production_path": "tools/project_ontology_context/capture.py",
+      "production_symbol": "capture_project_context",
+      "function_span": {
+        "start_line": 114,
+        "end_line": 384
+      },
+      "anchor_line": 329,
+      "production_sha256": "4656ba416997330b3cf122d11c0cbdfa8a1284b913655bd518afd7e3fa7910c7",
+      "production_url": "https://github.com/0al-spec/SpecGraph/blob/0f0a056a522a9c6bbba0e75e3748bad909d1d5c7/tools/project_ontology_context/capture.py#L329"
+    },
+    {
+      "role": "ContextVerification > Member",
+      "role_id": "captured-member",
+      "ontology_ref": "ontology://org.0al.specgraph.local.contextcase/0.2.0/classes/CheckResult",
+      "production_path": "tools/ontology_snapshot.py",
+      "production_symbol": "capture_ontology_snapshot",
+      "function_span": {
+        "start_line": 144,
+        "end_line": 284
+      },
+      "anchor_line": 264,
+      "production_sha256": "51f64cf69e69532cda5dfdd44a71b4872af8d1b7cb6c106b97c0bb20ade05fae",
+      "production_url": "https://github.com/0al-spec/SpecGraph/blob/0f0a056a522a9c6bbba0e75e3748bad909d1d5c7/tools/ontology_snapshot.py#L264"
+    },
+    {
+      "role": "ContextVerification > Dependencies",
+      "role_id": "unsupported-closure",
+      "ontology_ref": "ontology://org.0al.specgraph.local.contextcase/0.2.0/classes/CheckResult",
+      "production_path": "tools/project_ontology_context/capture.py",
+      "production_symbol": "capture_project_context",
+      "function_span": {
+        "start_line": 114,
+        "end_line": 384
+      },
+      "anchor_line": 284,
+      "production_sha256": "4656ba416997330b3cf122d11c0cbdfa8a1284b913655bd518afd7e3fa7910c7",
+      "production_url": "https://github.com/0al-spec/SpecGraph/blob/0f0a056a522a9c6bbba0e75e3748bad909d1d5c7/tools/project_ontology_context/capture.py#L284"
+    }
+  ],
+  "negative_controls": {
+    "stale-module-hash": "production source hash mismatch",
+    "unknown-function": "production function missing or ambiguous",
+    "anchor-outside-function": "production anchor outside selected function"
+  },
+  "hc_unchanged": true,
+  "target_modules_imported_or_executed_by_source_lookup": false,
+  "scope": "source-attributed paths, function existence, in-function fragments, exact bytes and declaration references; not runtime tracing or complete responsibility coverage",
+  "runtime_checker_installed": false,
+  "semantic_approval": "not_established",
+  "canonical_mutations_allowed": false
+}

@@ -378,3 +378,27 @@ unassessed and semantic approval remains absent. Imported closure can leave the
 context unavailable even when local advisory reports exist. Missing selection
 does not invoke refinement or prevent draft capture. Combining this mode with
 refinement, loop or approval options is rejected; legacy modes remain unchanged.
+
+## Readable ontology outline prototype
+
+A first [manual HC/HCS pair](reviews/0232_project_ontology_context/hypercode-overview/README.md)
+describes the existing SG72-UNSUPPORTED-CLOSURE case in three short composition
+roles. The tracked `.hc` is intended for human reading and ordinary PR diffs;
+its `.hcs` binds roles to versioned ontology declarations, distinct scenario IDs
+and source hashes. The selection and short names remain a proposed authoring
+interpretation. It neither changes SpecDraft's stored notes nor exports arbitrary
+ontologies automatically. Hypercode syntax/cascade checks and explicit ontology
+link checks are recorded separately; a valid property string alone does not
+establish a resolved ontology binding.
+The companion HCS also records production paths, function names, byte hashes
+and in-function anchors for the same three roles. A separate local observation
+checks those bindings with Python AST without importing the target code. Root
+and dependency roles can select different fragments of one existing function.
+
+The next bounded [readable overview export](ontology_overview_export.md) now
+turns an authored HC/HCS selection into a minimized pair. It preserves tree order,
+role identity and exact ontology/source bindings, checks declarations through
+`ontologyc` and functions through AST, and resolves the generated cascade with
+Hypercode before saving to a new directory. It does not infer hierarchy, change
+notebook storage or approve ontology terms. This remains checkout tooling;
+native-runtime and SpecDraft hook integration are separate follow-ups.
