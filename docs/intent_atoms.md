@@ -184,7 +184,7 @@ manifest uses `closed_world = false`.
 After successful `Python CI`, the SpecificationMetrics PR workflow fetches the
 PR's current base and head as Git objects, overlays the same trusted counting
 contract onto both disposable source trees, and runs the CLI pinned to commit
-`cd2bc093fec82983ec370536fa9f1d6014ab86e2`. It does not run PR-authored code.
+`38091108bc18056e345599ed8eb14bd0fb9e563a`. It does not run PR-authored code.
 The comment updates one marker-owned PR comment with S, U, S/U, liveness counts,
 and supplementary Python SLOC, CC, Cog, and cross-language clone deltas from
 Radon 6.0.1, complexipy 8.0.1, and jscpd 5.0.11. The source cohort comes from
@@ -199,7 +199,21 @@ conditions with a change in multiplicity appear as an ambiguous group. The
 comment shows up to 20 locations within a 12 KB row budget. The full
 `opportunity_changes` object is in `diff.json`. The summary labels the ambiguous
 groups' contribution separately and shows the total calculation, for example
-`Total ΔU: 23 − 2 + (+0) = +21.`, using all locations before display truncation.
+`Total ΔU: 23 − 2 + (+0) = +21.`, using all locations before display truncation. Source
+locations are collapsed under a spoiler while the totals remain visible.
+
+A separate collapsed Python function table shows metric-changed and unmatched
+functions, up to five CC and five Cog rows. Only the same path and unique
+reported name provide structural correspondence. Unmatched values and deltas
+remain unknown; possible moves and renames never receive a zero baseline.
+Edits with unchanged scores are not detected. Full observations remain in
+`diff.json` under `function_changes`; scores are not a combined quality rating.
+
+After merging an upstream SpecificationMetrics change, prepare its SpecGraph
+pin update as part of the same delivery follow-up. Update the full SHA in CLI
+installation, provenance and these guides together. The consumer PR still
+requires its own CI and review; verify hosted output on a subsequent open-PR
+event after it reaches the default branch.
 
 The comment links to the actual collection run and its `specificationmetrics-pr-*`
 artifact, retained for 30 days. Download it from that run's **Artifacts** section
