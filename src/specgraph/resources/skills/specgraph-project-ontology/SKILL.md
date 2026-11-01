@@ -111,11 +111,20 @@ specgraph-runtime --workspace /absolute/product/workspace ontology-overview -- \
 ```
 
 Paths and names above are examples. HC/HCS and their source paths are relative
-to the selected workspace; relative output paths also use that workspace in
-native mode. Pass the selected compiler executables explicitly. In a source
-checkout, the equivalent entry point is `tools/ontology_overview_cli.py` with
-`--workspace-root`. If the runtime or tools are unavailable, keep the authored
-draft and state which check could not run. No compiler installation is implied.
+to the selected workspace. In native mode, relative `--output-dir`, `--hypercode`
+and `--ontologyc` paths also use that workspace, regardless of the caller's
+directory. Prefer absolute compiler paths. In a source checkout, the equivalent
+entry point is `tools/ontology_overview_cli.py` with `--workspace-root`: HC/HCS
+and source bindings still use that root, while relative output and compiler
+paths use the caller's current directory. If the runtime or tools are unavailable,
+keep the authored draft and state which check could not run. No compiler
+installation is implied.
+
+Read the exit code before inspecting an error report. Native launcher validation
+errors return code 2 with `{"error": "..."}` and no `status`; dispatched exporter
+errors additionally carry `status: invalid` or `status: unavailable`. Argument
+usage failures can print ordinary argparse diagnostics. Treat `status` as
+optional when handling an arbitrary failed native invocation.
 
 Generate into a new directory, inspect the result and compare it with any
 tracked review pair before updating that pair. Follow the project's Git and

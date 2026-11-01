@@ -62,9 +62,18 @@ a relative output uses the same root, and an explicit absolute output is kept.
 The destination must be new. Forwarded workspace-root overrides are rejected;
 argument abbreviation is disabled by the exporter. Hypercode and ontologyc are
 explicit executable inputs and are not installed by the launcher.
+Relative `--hypercode` and `--ontologyc` paths use the selected workspace,
+regardless of the caller's current directory. Absolute compiler paths avoid
+that ambiguity. The source CLI instead resolves relative compiler and output
+paths against its caller's current directory.
 
 Exit 0 / `exported` confirms the bounded structural export, 1 is `unavailable`,
-and 2 is invalid/input error. Existing ontology/source binding checks and output
+and 2 is invalid/input error. Launcher validation failures, such as a nonexistent
+workspace or an override, keep JSON `{"error": "..."}` without `status`.
+Dispatched exporter failures carry `{"status": "invalid", "error": "..."}` or
+`{"status": "unavailable", "error": "..."}`. Argument usage failures can be
+ordinary argparse text. Consumers inspect the exit code first and tolerate
+missing `status` or non-JSON usage diagnostics. Existing checks and output
 formats are preserved. The project ontology skill explains input preparation,
 showing the short HC first, keeping HCS for technical navigation, and reviewing
 the result before updating a tracked pair. This does not turn SpecDraft notes
@@ -80,6 +89,8 @@ actual no-history installation of `126ee3cd` and successful reference exports
 in two synthetic workspaces, with identical pair digests and matching installed
 skill bytes. It also preserves successful checks of the previous native routes.
 This does not upgrade an existing consumer or prove live-agent use.
+Subsequent path/error wording is checked through source/package skill equality;
+the retained observation still identifies its original installed skill revision.
 
 Current supervisor refinement requires its configured Codex executor. ASP is
 future work, and the invoking agent is not automatically the child executor.

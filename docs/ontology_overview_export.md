@@ -59,9 +59,11 @@ From the SpecGraph checkout, with explicitly selected reference tools:
   --output-dir /path/to/new-review-directory
 ```
 
-HC/HCS input paths and their source bindings are workspace-relative. A relative
-output directory is resolved from the caller's current directory. Tools are
-operator-selected executables, never downloaded or built by this command.
+In the source CLI, HC/HCS input paths and their source bindings are
+workspace-relative. Relative `--output-dir`, `--hypercode` and `--ontologyc`
+paths resolve from the caller's current directory; `--workspace-root` does not
+change that directory. Tools are operator-selected executables, never downloaded
+or built by this command.
 Their digests identify bytes, not publisher authenticity. The observed compiler
 combination is Hypercode IR v2 (`0.6.0-dev`) and ontologyc `0.5.0`.
 
@@ -88,11 +90,25 @@ Inputs and source bindings resolve within the selected root. A relative output
 directory resolves there too; an explicit absolute output directory retains the
 exporter's existing semantics. Existing destinations are never overwritten.
 Pass the chosen compiler executables explicitly, preferably with absolute paths.
+Relative `--hypercode` and `--ontologyc` values resolve from the selected
+workspace in native mode, not from the directory where the launcher was called.
 The launcher does not install or select those tools.
 
 The route preserves stdout/stderr and exit codes: 0 `exported`, 1 `unavailable`,
-2 invalid/input error. Its files have the same structural/advisory meaning as a
-checkout export. To put version-matched guidance in the project, use the existing
+2 invalid/input error. Error envelopes depend on which layer rejects the request:
+
+- Launcher validation, such as a workspace override or nonexistent workspace:
+  exit 2 and JSON `{"error": "..."}`, without `status`.
+- Exporter processing errors after dispatch: JSON
+  `{"status": "invalid", "error": "..."}` with exit 2, or
+  `{"status": "unavailable", "error": "..."}` with exit 1.
+- Argument usage errors from either parser: exit 2 and ordinary argparse text.
+
+Consumers should inspect the exit code first, read `error` for JSON failures,
+and tolerate missing `status` or non-JSON usage diagnostics. The launcher keeps
+its existing error contract. Exported files have the same structural/advisory
+meaning as a checkout export. To put version-matched guidance in the project,
+use the existing
 `draft -- skill install --name specgraph-project-ontology --project ...` command.
 The skill suggests this operation for a requested structure overview and useful
 ontology-composition PR diffs. It does not mandate an export for every edit.
@@ -110,6 +126,8 @@ real Hypercode/ontologyc exports with identical pair digests and received the
 matching project ontology skill. Existing init/advisor/Supervisor/note scenarios
 also passed. This is local fixture evidence; it does not update a consumer's
 existing installation or establish ontology acceptance or live agent behavior.
+Later skill wording clarifications are verified through source/package equality;
+this observation continues to identify the skill installed at `126ee3cd`.
 
 Version 1 accepts a single HCS sheet and the empty context. HCS imports and
 context selection are not expanded by the export adapter. Generated HC removes
