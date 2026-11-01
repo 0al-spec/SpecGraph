@@ -1,0 +1,76 @@
+{
+  "artifact_kind": "single_member_reference_local_observation",
+  "schema_version": 1,
+  "spec_id": "SG-SPEC-0072",
+  "proposal_id": "0232",
+  "baseline_regression": {
+    "failed": 8,
+    "passed": 13
+  },
+  "replay": {
+    "baseline_revision": "54db6fb97c1b66754ddf1d0e63882c30c3841319",
+    "draft_sha256": "56fd32cf5118687e2b14d8058fa35ca644e19b91f67b2091bb09b5fcd3ca7d4f",
+    "source_commit": "b388aa3",
+    "runs": {
+      "baseline": {
+        "outcome": "checked",
+        "exit_code": 0,
+        "context_outcome": "verified",
+        "target_sha256": "56fd32cf5118687e2b14d8058fa35ca644e19b91f67b2091bb09b5fcd3ca7d4f",
+        "inventory_resolution": "unknown",
+        "binding_gap_count": 0,
+        "validation_finding_count": 0,
+        "total_warnings": 4,
+        "profile": "specgraph-local-symbol-advisory-v1",
+        "ontology_verification": "compiler_checked"
+      },
+      "repaired": {
+        "outcome": "checked",
+        "exit_code": 0,
+        "context_outcome": "verified",
+        "target_sha256": "56fd32cf5118687e2b14d8058fa35ca644e19b91f67b2091bb09b5fcd3ca7d4f",
+        "inventory_resolution": "unknown",
+        "binding_gap_count": 1,
+        "validation_finding_count": 1,
+        "total_warnings": 5,
+        "profile": "specgraph-local-symbol-advisory-v2",
+        "ontology_verification": "compiler_checked"
+      },
+      "composition": {
+        "outcome": "checked",
+        "exit_code": 0,
+        "context_outcome": "verified",
+        "target_sha256": "56fd32cf5118687e2b14d8058fa35ca644e19b91f67b2091bb09b5fcd3ca7d4f",
+        "inventory_resolution": "structurally_resolved_candidate",
+        "binding_gap_count": 0,
+        "validation_finding_count": 0,
+        "total_warnings": 4,
+        "profile": "specgraph-composed-symbol-advisory-v1",
+        "ontology_verification": "compiler_checked"
+      }
+    },
+    "original_inputs_unchanged": true,
+    "semantic_approval": "not_established",
+    "canonical_mutations_allowed": false,
+    "scope": "real precanonical draft on an isolated workspace copy"
+  },
+  "semantic_approval": "not_established",
+  "canonical_mutations_allowed": false,
+  "installed_runtime_updated": false,
+  "focused_tests": {
+    "passed": 187,
+    "skipped": 0,
+    "compiler": "released ontologyc 0.5.0"
+  },
+  "local_checks": [
+    "python_quality",
+    "docc_sync",
+    "proposal_tracking",
+    "materialization_packet_integrity",
+    "git_diff_check"
+  ],
+  "implementation_sha256": {
+    "tools/spec_ontology_context_reports.py": "b90954815f64d9e2095af81d46ae769808ab27283a617a791a44b6110d48ec80",
+    "tools/project_ontology_context/vocabulary.py": "ed6977146d086274fe54b8e165f6a9fb883b15715f92e6a751f231dabba085d3"
+  }
+}

@@ -155,3 +155,16 @@ def test_changed_captured_ir_identity_is_stale(captured):
     changed = replace(context, snapshots=(snapshot,))
     result = assess(context=changed)
     assert result.outcome == "stale" and "ir_sha256 changed" in result.diagnostics
+
+
+def test_saved_single_member_v1_profile_is_stale(captured):
+    _, _, bundle, _, assess = captured
+    historical = copy.deepcopy(bundle)
+    for name in ("binding_index", "validation_report"):
+        historical[name]["project_context"]["analysis_profile"] = (
+            "specgraph-local-symbol-advisory-v1"
+        )
+    binding = bind_report_bundle(historical, producer_identity="producer-v1")
+    result = assess(bundle=historical, input_binding=binding)
+    assert result.outcome == "stale"
+    assert "analysis_profile changed" in result.diagnostics
