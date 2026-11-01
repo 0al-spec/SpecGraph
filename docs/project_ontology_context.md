@@ -175,14 +175,23 @@ SpecDraft wheel CLI.
 workspace_root=..., specs_root=..., documents=None)` connects the existing
 binding index and validation report to the captured context. It reads the
 selected `SG-SPEC-*.yaml` corpus once, or accepts explicit workspace-relative
-captured `(path, bytes)` documents. Both views consume the same snapshot and
+captured `(path, bytes)` documents. Both views consume the same captured vocabulary and
 parsed specifications; validation consumes the same built binding index.
 
 Inputs retain each specification path/hash and the profile
-`specgraph-local-symbol-advisory-v1`. Report metadata records project/workspace,
+`specgraph-local-symbol-advisory-v2`. Report metadata records project/workspace,
 context revision/outcome, member/source/IR/compiler identities and the
 `single_member_local_symbols` scope. The legacy field name `accepted_bindings`
 still describes structural extraction, not accepted meaning.
+
+Local v2 uses the same qualified-name and spelling/alias candidate resolver as
+inventory and the composed bundle. Root and nested `ontology_refs` are included:
+an unresolved qualified reference produces a binding gap and validation finding,
+even when its namespace is not selected. A wrong namespace/case cannot match a
+local symbol by stripping qualification. Ambiguous short names/aliases stay gaps.
+Compiler-checked single-member source/IR evidence and local-only scope are retained.
+Saved local v1 bundles are stale against v2. The legacy no-context builder defaults
+are unchanged. See the [source-bound defect and replay](reviews/0232_project_ontology_context/single-member-references/README.md).
 
 One successfully captured member may supply advisory local-symbol analysis
 while imported closure is unavailable. This does not claim verified context
@@ -268,7 +277,8 @@ The composed binding index resolves both terminology keys and explicit
 field name for compatibility; the field remains structural advisory data.
 Ambiguity creates gaps/findings rather than allowing package order to select a
 winner. Existing legacy structural mappings and warnings remain report-only.
-Single-member binding extraction retains its existing profile and behavior.
+Single-member context reports use local advisory v2 and the same explicit-term
+resolver; their vocabulary remains restricted to the one selected member.
 
 Freshness binding includes every member capture and catalog identity. A changed
 dependency cannot stay fresh just because the project package is unchanged.

@@ -60,10 +60,22 @@ workspace-contained and atomic. No compiler is installed or discovered implicitl
 
 `build_context_reports` connects the existing advisory binding and validation
 views to one captured context and specification byte set. Its
-`specgraph-local-symbol-advisory-v1` profile records exact input hashes and the
+`specgraph-local-symbol-advisory-v2` profile records exact input hashes and the
 `single_member_local_symbols` scope. Invalid/foreign or unsupported joint input
 does not fall back to saved IR. Local analysis does not verify imported closure
 or semantically accept the legacy `accepted_bindings` field.
+
+Local v2 routes terminology and root/nested `ontology_refs` through the same
+captured vocabulary as inventory. Missing qualified references now appear in
+binding gaps and validation findings; wrong namespaces/case do not match local
+names by stripping qualification, and ambiguous aliases remain gaps. Single-member
+`compiler_checked` source/IR evidence, local scope and unavailable-closure behavior
+are retained. Saved v1 local bundles become stale. Legacy no-context builder
+defaults remain unchanged. The source-bound regression and real-draft replay are in
+`docs/reviews/0232_project_ontology_context/single-member-references/README.md`.
+The contribution lesson is to exercise the same positive/negative explicit
+reference in default and specialized contexts, preserving capture evidence and
+versioning analysis semantics when a legacy bypass is removed.
 
 Explicit report assessment uses `ReportInputBinding` recorded at creation and
 compares declared current inputs through `REPORT_INPUTS_COMPATIBLE_SPEC`.
@@ -187,7 +199,8 @@ freshness remains unassessed; current inventory is computed from captured inputs
 Only this already verified composition is supported; missing or unverified
 members do not produce a partial successful joint inventory. Classes, relations
 and member aliases are included; protocol/policy inventories remain outside scope.
-Single-member binding extraction retains its existing profile. The legacy
+Single-member context reports use local advisory v2 with the same explicit-term
+resolver and only their selected member's vocabulary. The legacy
 `accepted_bindings` name confers no semantic approval, and an empty inventory does
 not establish grounding. The source-bound replay and regressions are in
 `docs/reviews/0232_project_ontology_context/joint-vocabulary/README.md`.

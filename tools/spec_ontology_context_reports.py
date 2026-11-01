@@ -11,7 +11,7 @@ import yaml
 from ontology_snapshot import OntologySnapshotError
 from project_ontology_context import ContextResult
 from project_ontology_context.vocabulary import capture_vocabulary
-from spec_ontology_binding_index import build_binding_index
+from spec_ontology_binding_index import build_binding_index, snapshot_evidence
 from spec_ontology_validation_report import build_validation_report
 
 
@@ -92,13 +92,8 @@ def build_context_reports(
             identities.append({"path": name, "sha256": _sha256(raw)})
         inputs = {"specs_root": selected_root.relative_to(root).as_posix(), "specs": identities}
         metadata = vocabulary.metadata(context)
-        captured = (
-            {"vocabulary": vocabulary}
-            if vocabulary.composed
-            else {"snapshot": context.snapshots[0]}
-        )
-        index = build_binding_index(**captured, documents=tuple(parsed_documents))
-        report = build_validation_report(**captured, binding_index=index)
+        index = build_binding_index(vocabulary=vocabulary, documents=tuple(parsed_documents))
+        report = build_validation_report(vocabulary=vocabulary, binding_index=index)
         for result in (index, report):
             result["ontology_ir_ref"] = None
             result["project_context"] = dict(metadata)
@@ -110,6 +105,8 @@ def build_context_reports(
                     "members": metadata["members"],
                     "foundation_catalog": metadata["foundation_catalog"],
                 }
+            else:
+                result["ontology_verification"] = snapshot_evidence(context.snapshots[0])
         return {
             "outcome": "analyzed",
             "diagnostics": [],

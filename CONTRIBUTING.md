@@ -103,6 +103,12 @@ Practical method:
 5. Move domain decisions into typed values and objects with explicit serialization at the edge.
 6. Run focused tests first, then the broader gate matching the blast radius.
 
+For multiple report paths, characterize the same positive and negative explicit
+reference across the default and specialized contexts. A shared vocabulary is
+insufficient if one consumer still takes a legacy bypass. When correcting that
+bypass, retain capture evidence and version the analysis profile so incomplete
+historical reports do not remain fresh.
+
 For refactoring experiments, report the edit surface and behavioral impact scope
 separately: a shared criterion can need one edit while changing every consumer.
 Keep criterion-only exercises distinct from end-to-end taxonomy or schema changes.
