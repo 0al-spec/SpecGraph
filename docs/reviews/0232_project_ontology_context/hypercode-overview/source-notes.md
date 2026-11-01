@@ -69,3 +69,19 @@ This authorizes extending the prototype mapping with direct production-symbol
 references and checking them. The response is linked to that bounded proposal;
 it is not treated as canonical publication or approval of arbitrary ontology
 interpretations. The existing role outline and note storage remain unchanged.
+
+## Approved follow-up: deterministic export
+
+`overview-11`, assistant next step after showing the actual HC/HCS example:
+
+> Следующий шаг — автоматизировать выпуск этой пары для явно выбранной композиции.
+
+`overview-12`, user response to that example and next step:
+
+> Ок, устраивает. Делаем далее.
+
+This authorizes implementing the bounded export of the shown authored
+composition and mapping. It does not approve inferred graph hierarchies,
+canonical ontology meanings, SpecDraft storage changes or automatic promotion.
+The source excerpts remain agent-curated attribution, not independently
+authenticated conversation records.
