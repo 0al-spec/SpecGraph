@@ -11,6 +11,7 @@ from typing import TYPE_CHECKING, Any
 
 from ontology_imports import ROOT, load_json, relative_path, write_json
 from ontology_snapshot import OntologySnapshot, capture_ontology_snapshot
+from project_ontology_check_scopes import SCOPED_ANALYSIS_PROFILE, SCOPED_SCHEMA_VERSION
 from spec_ontology_binding_index import (
     DEFAULT_IR_PATH,
     DEFAULT_ONTOLOGY_SOURCE,
@@ -46,6 +47,7 @@ def validate_entry(
     entry: dict[str, Any],
     *,
     relations: dict[str, dict[str, str]],
+    check_scope: str = "legacy_combined",
 ) -> dict[str, Any]:
     findings: list[dict[str, Any]] = []
     checks: list[dict[str, Any]] = []
@@ -56,24 +58,25 @@ def validate_entry(
         if isinstance(binding, dict) and isinstance(binding.get("ontology_ref"), str)
     }
 
-    if "sgcore:Spec" not in binding_refs:
-        findings.append(
-            {
-                "finding_id": f"{entry['spec_id']}.missing-spec-binding",
-                "severity": "warning",
-                "classification": "missing_required_binding",
-                "message": "Legacy spec entry has no sgcore:Spec binding.",
-                "suggested_action": "review_legacy_binding_extraction",
-            }
-        )
-    else:
-        checks.append(
-            {
-                "check_id": "required_binding.sgcore_spec",
-                "status": "passed",
-                "ontology_ref": "sgcore:Spec",
-            }
-        )
+    if check_scope == "legacy_combined":
+        if "sgcore:Spec" not in binding_refs:
+            findings.append(
+                {
+                    "finding_id": f"{entry['spec_id']}.missing-spec-binding",
+                    "severity": "warning",
+                    "classification": "missing_required_binding",
+                    "message": "Legacy spec entry has no sgcore:Spec binding.",
+                    "suggested_action": "review_legacy_binding_extraction",
+                }
+            )
+        else:
+            checks.append(
+                {
+                    "check_id": "required_binding.sgcore_spec",
+                    "status": "passed",
+                    "ontology_ref": "sgcore:Spec",
+                }
+            )
 
     for candidate in entry.get("relation_candidates", []):
         if not isinstance(candidate, dict):
@@ -156,7 +159,17 @@ def build_validation_report(
     snapshot: OntologySnapshot | None = None,
     binding_index: dict[str, Any] | None = None,
     vocabulary: CapturedVocabulary | None = None,
+    check_scope: str = "legacy_combined",
 ) -> dict[str, Any]:
+    if check_scope not in {"legacy_combined", "domain_vocabulary"}:
+        raise ValueError("unsupported validation check_scope")
+    if check_scope == "domain_vocabulary" and vocabulary is None:
+        raise ValueError("domain_vocabulary requires a captured vocabulary")
+    if (
+        binding_index is not None
+        and binding_index.get("check_scope", "legacy_combined") != check_scope
+    ):
+        raise ValueError("binding and validation check scopes differ")
     if vocabulary is not None and snapshot is not None:
         raise ValueError("provide vocabulary or snapshot, not both")
     ir = (
@@ -169,7 +182,7 @@ def build_validation_report(
     # Even legacy, unverified reports use a single in-memory read.
     if binding_index is None:
         if vocabulary is not None:
-            binding_index = build_binding_index(vocabulary=vocabulary)
+            binding_index = build_binding_index(vocabulary=vocabulary, check_scope=check_scope)
         elif snapshot is not None:
             binding_index = build_binding_index(ir_path=ir_path, snapshot=snapshot)
         else:
@@ -184,7 +197,7 @@ def build_validation_report(
         }
     )
     entries = [
-        validate_entry(entry, relations=relations)
+        validate_entry(entry, relations=relations, check_scope=check_scope)
         for entry in binding_index.get("entries", [])
         if isinstance(entry, dict)
     ]
@@ -198,7 +211,14 @@ def build_validation_report(
     passed_check_count = sum(len(entry["checks"]) for entry in entries)
     return {
         "artifact_kind": "spec_ontology_validation_report",
-        "schema_version": SCHEMA_VERSION,
+        **(
+            {"check_scope": check_scope, "analysis_profile": SCOPED_ANALYSIS_PROFILE}
+            if check_scope == "domain_vocabulary"
+            else {}
+        ),
+        "schema_version": SCOPED_SCHEMA_VERSION
+        if check_scope == "domain_vocabulary"
+        else SCHEMA_VERSION,
         "proposal_id": PROPOSAL_ID,
         "status": "report_only",
         "review_state": "ready_for_review",

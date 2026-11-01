@@ -13,6 +13,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "tools"))
 from ontology_snapshot import OntologySnapshot  # noqa: E402
 from project_ontology_context import CheckResult, ContextResult  # noqa: E402
 from project_ontology_report_freshness import (  # noqa: E402
+    ReportInputBinding,
     assess_report_freshness,
     bind_report_bundle,
 )
@@ -62,7 +63,13 @@ def captured(tmp_path):
     bundle = build_context_reports(context, workspace_root=tmp_path, specs_root=specs)
     input_binding = bind_report_bundle(bundle, producer_identity="producer-v1")
 
-    def assess(bundle=bundle, input_binding=input_binding, context=context, producer="producer-v1"):
+    def assess(
+        bundle=bundle,
+        input_binding=input_binding,
+        context=context,
+        producer="producer-v1",
+        requested_scopes=("domain_vocabulary",),
+    ):
         return assess_report_freshness(
             bundle,
             input_binding=input_binding,
@@ -70,6 +77,7 @@ def captured(tmp_path):
             workspace_root=tmp_path,
             specs_root=specs,
             producer_identity=producer,
+            requested_scopes=requested_scopes,
         )
 
     return spec, context, bundle, input_binding, assess
@@ -109,6 +117,9 @@ def test_binding_change_and_profile_change_are_stale(captured):
     changed_profile = copy.deepcopy(bundle)
     for key in ("binding_index", "validation_report"):
         changed_profile[key]["project_context"]["analysis_profile"] = "other-profile"
+    changed_profile["assessments"]["domain_vocabulary"]["project_context"] = copy.deepcopy(
+        changed_profile["binding_index"]["project_context"]
+    )
     saved = bind_report_bundle(changed_profile, producer_identity="producer-v1")
     assert (
         "analysis_profile changed"
@@ -164,7 +175,136 @@ def test_saved_single_member_v1_profile_is_stale(captured):
         historical[name]["project_context"]["analysis_profile"] = (
             "specgraph-local-symbol-advisory-v1"
         )
+    historical["assessments"]["domain_vocabulary"]["project_context"] = copy.deepcopy(
+        historical["binding_index"]["project_context"]
+    )
     binding = bind_report_bundle(historical, producer_identity="producer-v1")
     result = assess(bundle=historical, input_binding=binding)
     assert result.outcome == "stale"
     assert "analysis_profile changed" in result.diagnostics
+
+
+def test_fresh_comparisons_include_requested_and_assessed_scopes(captured):
+    _, _, bundle, _, assess = captured
+    result = assess()
+    assert result.outcome == "fresh"
+    assert bundle["schema_version"] == 2
+    assert bundle["requested_scopes"] == ["domain_vocabulary"]
+    assert bundle["assessments"]["specification_metamodel"]["outcome"] == "not_requested"
+    comparisons = dict(result.comparisons)
+    assert comparisons["requested_scopes"]
+    assert comparisons["scope_assessments"]
+    assert comparisons["bundle_analysis_profile"]
+
+
+def test_changed_scope_assessment_cannot_stay_fresh_with_matching_domain_payloads(captured):
+    _, _, bundle, _, assess = captured
+    changed = copy.deepcopy(bundle)
+    changed["assessments"]["specification_metamodel"]["diagnostics"] = [
+        "No metamodel assessment was requested at capture time."
+    ]
+    binding = bind_report_bundle(changed, producer_identity="producer-v1")
+    result = assess(bundle=changed, input_binding=binding)
+    assert result.outcome == "stale"
+    assert "scope_assessments changed" in result.diagnostics
+    assert dict(result.comparisons)["binding_payload"]
+    assert dict(result.comparisons)["validation_payload"]
+
+
+@pytest.mark.parametrize(
+    "requested",
+    [(), ("specification_metamodel",), ("domain_vocabulary", "specification_metamodel")],
+)
+def test_unassessed_current_scopes_never_compare_fresh(captured, requested):
+    *_, assess = captured
+    assert assess(requested_scopes=requested).outcome == "unavailable"
+
+
+@pytest.mark.parametrize("requested", [("unknown",), ("domain_vocabulary", "domain_vocabulary")])
+def test_invalid_current_scope_request_stays_invalid(captured, requested):
+    *_, assess = captured
+    assert assess(requested_scopes=requested).outcome == "invalid"
+
+
+@pytest.mark.parametrize(
+    "mutation",
+    [
+        lambda b: b.__setitem__("requested_scopes", ["unknown"]),
+        lambda b: b.__setitem__("requested_scopes", ["domain_vocabulary"] * 2),
+        lambda b: b["assessments"].pop("specification_metamodel"),
+        lambda b: b["assessments"]["domain_vocabulary"].__setitem__("check_scope", "wrong"),
+        lambda b: b["assessments"]["specification_metamodel"].__setitem__("outcome", "analyzed"),
+        lambda b: b["assessments"]["domain_vocabulary"].__setitem__("diagnostics", "clean"),
+        lambda b: b["binding_index"].__setitem__("check_scope", "specification_metamodel"),
+        lambda b: b["binding_index"].__setitem__("analysis_profile", "combined-legacy-profile"),
+        lambda b: b["validation_report"].__setitem__("analysis_profile", "combined-legacy-profile"),
+        lambda b: b["validation_report"].__setitem__("schema_version", 1),
+        lambda b: b["assessments"]["domain_vocabulary"].__setitem__("summary", {}),
+    ],
+    ids=[
+        "unknown-scope",
+        "duplicate-scope",
+        "missing-scope-status",
+        "wrong-assessment-scope",
+        "unexpected-meta-success",
+        "malformed-diagnostics",
+        "wrong-report-scope",
+        "wrong-binding-profile",
+        "wrong-validation-profile",
+        "old-report-version",
+        "inconsistent-summary",
+    ],
+)
+def test_malformed_saved_scope_claims_are_invalid(captured, mutation):
+    _, _, bundle, _, assess = captured
+    malformed = copy.deepcopy(bundle)
+    mutation(malformed)
+    assert assess(bundle=malformed).outcome == "invalid"
+    with pytest.raises(ValueError):
+        bind_report_bundle(malformed, producer_identity="producer-v1")
+
+
+def test_scope_manifest_tamper_is_invalid_before_current_scope_change(captured):
+    _, _, bundle, _, assess = captured
+    changed = copy.deepcopy(bundle)
+    changed["requested_scopes"].append("specification_metamodel")
+    changed["assessments"]["specification_metamodel"]["outcome"] = "unavailable"
+    changed["assessments"]["specification_metamodel"]["diagnostics"] = ["not supported"]
+    changed["outcome"] = "unavailable"
+    assert (
+        assess(bundle=changed, requested_scopes=("specification_metamodel",)).outcome == "invalid"
+    )
+
+
+def test_old_combined_bundle_cannot_become_fresh_by_rebinding(captured):
+    _, _, bundle, _, assess = captured
+    historical = copy.deepcopy(bundle)
+    for key in ("schema_version", "analysis_profile", "requested_scopes", "assessments"):
+        historical.pop(key)
+    for report in (historical["binding_index"], historical["validation_report"]):
+        report.pop("check_scope")
+        report["schema_version"] = 1
+        report["project_context"]["analysis_profile"] = "specgraph-local-symbol-advisory-v2"
+
+    def digest(value):
+        return hashlib.sha256(
+            json.dumps(value, sort_keys=True, separators=(",", ":"), allow_nan=False).encode()
+        ).hexdigest()
+
+    rebound = ReportInputBinding(
+        digest(historical), digest(historical["binding_index"]), "producer-v1"
+    )
+    assert assess(bundle=historical, input_binding=rebound).outcome == "unavailable"
+    with pytest.raises(ValueError, match="scoped advisory bundle version"):
+        bind_report_bundle(historical, producer_identity="producer-v1")
+
+
+@pytest.mark.parametrize("missing", ["validation_report", "assessments"])
+def test_incomplete_current_bundle_is_unavailable(captured, monkeypatch, missing):
+    import project_ontology_report_freshness as freshness
+
+    _, _, bundle, _, assess = captured
+    incomplete = copy.deepcopy(bundle)
+    incomplete.pop(missing)
+    monkeypatch.setattr(freshness, "build_context_reports", lambda *args, **kwargs: incomplete)
+    assert assess().outcome == "unavailable"

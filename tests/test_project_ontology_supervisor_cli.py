@@ -36,6 +36,18 @@ def call(workspace, *args):
     )
 
 
+def selected_workspace(tmp_path):
+    fixture_path = SUPERVISOR.parent.parent / "tests/test_project_ontology_supervisor_check.py"
+    spec = importlib.util.spec_from_file_location("ontology_check_test_fixture", fixture_path)
+    module = importlib.util.module_from_spec(spec)
+    old_path = list(sys.path)
+    try:
+        spec.loader.exec_module(module)
+        return module.workspace.__wrapped__(tmp_path)
+    finally:
+        sys.path[:] = old_path
+
+
 def test_external_workspace_missing_selection_persists_unavailable(workspace):
     target = workspace / "specs/nodes/SG-SPEC-0001.yaml"
     before = target.read_bytes()
@@ -51,6 +63,13 @@ def test_external_workspace_missing_selection_persists_unavailable(workspace):
     summary = json.loads(result.stdout)
     assert summary["outcome"] == "unavailable"
     assert summary["context_outcome"] == "unavailable"
+    assert summary["requested_scopes"] == ["domain_vocabulary"]
+    assert summary["assessments"]["domain_vocabulary"]["outcome"] == "unavailable"
+    assert summary["assessments"]["specification_metamodel"] == {
+        "check_scope": "specification_metamodel",
+        "outcome": "not_requested",
+        "diagnostics": [],
+    }
     output = workspace / summary["report_path"]
     report = json.loads(output.read_text())
     assert report["outcome"] == "unavailable" and report["target_spec_id"] == "SG-SPEC-0001"
@@ -258,15 +277,7 @@ def test_file_import_restores_sys_path(workspace, monkeypatch, capsys):
 
 @pytest.mark.parametrize("target_id", ["SG-SPEC-0001", "GITVIEW-SPEC-0001"])
 def test_checked_then_changed_target_reports_previous_stale(tmp_path, target_id):
-    fixture_path = SUPERVISOR.parent.parent / "tests/test_project_ontology_supervisor_check.py"
-    spec = importlib.util.spec_from_file_location("ontology_check_test_fixture", fixture_path)
-    module = importlib.util.module_from_spec(spec)
-    old_path = list(sys.path)
-    try:
-        spec.loader.exec_module(module)
-        root, target, compiler, _, _ = module.workspace.__wrapped__(tmp_path)
-    finally:
-        sys.path[:] = old_path
+    root, target, compiler, _, _ = selected_workspace(tmp_path)
     renamed = target.with_name(target_id + ".yaml")
     renamed.write_bytes(target.read_bytes().replace(b"SG-SPEC-0001", target_id.encode()))
     target = renamed
@@ -285,6 +296,9 @@ def test_checked_then_changed_target_reports_previous_stale(tmp_path, target_id)
     assert first.returncode == 0, first.stderr + first.stdout
     first_summary = json.loads(first.stdout)
     assert first_summary["outcome"] == "checked"
+    assert first_summary["requested_scopes"] == ["domain_vocabulary"]
+    assert first_summary["assessments"]["domain_vocabulary"]["outcome"] == "analyzed"
+    assert first_summary["assessments"]["specification_metamodel"]["outcome"] == "not_requested"
     assert first_summary["target_spec_id"] == target_id
     previous = first_summary["report_path"]
     target.write_text(
@@ -295,6 +309,89 @@ def test_checked_then_changed_target_reports_previous_stale(tmp_path, target_id)
     summary = json.loads(second.stdout)
     assert summary["outcome"] == "checked"
     assert summary["previous_freshness"]["outcome"] == "stale"
+
+
+@pytest.mark.parametrize("with_domain", [False, True])
+def test_explicit_metamodel_scope_is_unavailable_in_summary_and_persisted_report(
+    tmp_path, with_domain
+):
+    root, target, compiler, _, _ = selected_workspace(tmp_path)
+    before = target.read_bytes()
+    args = [
+        "--build-project-ontology-context-check",
+        "--target-spec",
+        "SG-SPEC-0001",
+        "--ontology-context-project-id",
+        "project",
+        "--ontology-context-selection",
+        "selection.yaml",
+        "--ontologyc",
+        str(compiler),
+        "--ontology-context-check-scope",
+        "specification_metamodel",
+    ]
+    if with_domain:
+        args += ["--ontology-context-check-scope", "domain_vocabulary"]
+    result = call(root, *args)
+    assert result.returncode == 1, result.stderr + result.stdout
+    summary = json.loads(result.stdout)
+    assert summary["outcome"] == "unavailable"
+    assert summary["requested_scopes"] == (
+        ["domain_vocabulary", "specification_metamodel"]
+        if with_domain
+        else ["specification_metamodel"]
+    )
+    assert summary["assessments"]["specification_metamodel"]["outcome"] == "unavailable"
+    assert summary["assessments"]["domain_vocabulary"]["outcome"] == (
+        "analyzed" if with_domain else "not_requested"
+    )
+    report = json.loads((root / summary["report_path"]).read_text())
+    assert report["requested_scopes"] == summary["requested_scopes"]
+    assert report["assessments"] == report["bundle"]["assessments"]
+    assert (report["inventory"] is not None) == with_domain
+    assert (report["bundle"]["binding_index"] is not None) == with_domain
+    assert (report["bundle"]["validation_report"] is not None) == with_domain
+    assert report["input_binding"] is None
+    assert target.read_bytes() == before
+
+
+@pytest.mark.parametrize(
+    "scope_args",
+    [
+        ("unknown",),
+        ("domain_vocabulary", "--ontology-context-check-scope", "domain_vocabulary"),
+    ],
+)
+def test_invalid_or_duplicate_scope_has_no_report(workspace, scope_args):
+    result = call(
+        workspace,
+        "--build-project-ontology-context-check",
+        "--target-spec",
+        "SG-SPEC-0001",
+        "--ontology-context-project-id",
+        "demo",
+        "--ontology-context-check-scope",
+        *scope_args,
+    )
+    assert result.returncode == 2 and not result.stdout
+    assert not (workspace / "runs").exists()
+
+
+def test_run_request_rejects_noncollection_scopes_before_writing(workspace, monkeypatch, capsys):
+    spec = importlib.util.spec_from_file_location("supervisor_for_scope_cli", SUPERVISOR)
+    module = importlib.util.module_from_spec(spec)
+    sys.modules[spec.name] = module
+    spec.loader.exec_module(module)
+    monkeypatch.setattr(module, "ROOT", workspace)
+    for scopes in (None, "domain_vocabulary", {"domain_vocabulary": True}, 1, [1]):
+        code = module.main(
+            target_spec="SG-SPEC-0001",
+            ontology_context_request={"project_id": "demo", "requested_scopes": scopes},
+        )
+        captured = capsys.readouterr()
+        assert code == 2 and not captured.out
+        assert json.loads(captured.err)["error"]
+        assert not (workspace / "runs").exists()
 
 
 def test_legacy_abbreviation_remains_enabled_without_context_mode(workspace):

@@ -60,7 +60,7 @@ workspace-contained and atomic. No compiler is installed or discovered implicitl
 
 `build_context_reports` connects the existing advisory binding and validation
 views to one captured context and specification byte set. Its
-`specgraph-local-symbol-advisory-v2` profile records exact input hashes and the
+`specgraph-local-symbol-advisory-v3` profile records exact input hashes and the
 `single_member_local_symbols` scope. Invalid/foreign or unsupported joint input
 does not fall back to saved IR. Local analysis does not verify imported closure
 or semantically accept the legacy `accepted_bindings` field.
@@ -192,7 +192,7 @@ Candidate origins retain package ID/namespace/version, concept URI and captured
 source/IR/compiler hashes. Captured dependency source URIs are retained where
 available. Foundation origins identify the pinned export catalog without invented
 IR/compiler digests. Composed reports use `selected_composition_symbols` and
-`specgraph-composed-symbol-advisory-v1`, recording every member capture and the
+`specgraph-composed-symbol-advisory-v2`, recording every member capture and the
 catalog separately. Freshness binds all of those inputs. Previous inventory
 freshness remains unassessed; current inventory is computed from captured inputs.
 
@@ -212,6 +212,32 @@ as `GITVIEW-SPEC-0001` and legacy `SG-SPEC-0001` through a shared validator.
 The suffix is ASCII decimal. Requests address the exact filename and matching
 YAML ID; no ID allocation, alias following or source rewriting occurs.
 Workspace/path, symlink and report ownership protections remain in effect.
+
+## Scoped domain and meta assessments
+
+Context-bound binding/validation bundles now use schema 2 and
+`specgraph-scoped-ontology-advisory-v1`. Their default `domain_vocabulary`
+assessment checks explicit terminology and ontology_refs, without inferring
+sgcore bindings from kind/id/acceptance/evidence or requiring sgcore:Spec.
+The `specification_metamodel` assessment is visibly `not_requested` with null
+summary/context/profile, not a clean or passing meta check. Explicit sgcore
+references still resolve or remain domain gaps normally.
+
+Request scopes with repeatable `--ontology-context-check-scope` on the
+Supervisor target operation. Requested meta checking remains `unavailable`
+until a source, applicability and supported checking are established; when both
+scopes are requested, domain results remain visible but aggregate completion is
+unavailable. Meta-only and empty requests do not run domain reports/inventory.
+Unknown/duplicate scopes are invalid. Full and compact outputs expose the scope
+manifest; zero requested scopes cannot yield checked.
+
+Freshness compares current requested scopes and the complete assessment manifest,
+profiles, producer identity and exact captured inputs. Old combined bundles are
+unavailable for scoped freshness even with new attribution. Legacy no-context
+0134/0135 APIs retain schema 1 and their structural rules. Context metadata scope
+still distinguishes local and composed symbols; check_scope identifies the
+assessment. Inventory freshness stays not_assessed and prose/semantic authority
+remain unassessed. See <doc:MetaDomainApplicability> for the GitView replay.
 
 ## Readable ontology outline prototype
 

@@ -1,0 +1,59 @@
+{
+  "baseline_commit": "0f0a056a522a9c6bbba0e75e3748bad909d1d5c7",
+  "spec_sha256": "56fd32cf5118687e2b14d8058fa35ca644e19b91f67b2091bb09b5fcd3ca7d4f",
+  "compiler_sha256": "dcdc37216246f9acebca7387e14b61300d9dec4367f7c1630445b97280c80168",
+  "cases": {
+    "default": {
+      "baseline_outcome": "checked",
+      "baseline_warnings": 5,
+      "scoped_outcome": "checked",
+      "domain_warnings": 2,
+      "domain_gap_terms": [
+        "Activity",
+        "motivcore:Motive"
+      ],
+      "metamodel_outcome": "not_requested",
+      "requested_meta_outcome": "unavailable",
+      "old_bundle_freshness": "unavailable",
+      "inputs_unchanged": true,
+      "cli_verified": true,
+      "unchanged_scoped_freshness": "fresh"
+    },
+    "composition": {
+      "baseline_outcome": "checked",
+      "baseline_warnings": 4,
+      "scoped_outcome": "checked",
+      "domain_warnings": 1,
+      "domain_gap_terms": [
+        "Activity"
+      ],
+      "metamodel_outcome": "not_requested",
+      "requested_meta_outcome": "unavailable",
+      "old_bundle_freshness": "unavailable",
+      "inputs_unchanged": true,
+      "cli_verified": true,
+      "unchanged_scoped_freshness": "fresh"
+    }
+  },
+  "artifact_kind": "project_ontology_scope_separation_verification",
+  "schema_version": 1,
+  "analysis_profile": "specgraph-scoped-ontology-advisory-v1",
+  "evidence_scope": "local_reexecuted_isolated_copies",
+  "canonical_mutations_allowed": false,
+  "semantic_approval": "not_established",
+  "inventory_freshness": "not_assessed",
+  "metamodel_applicability": "undecided",
+  "production_sources_unchanged": true,
+  "candidate_source_sha256": {
+    "tools/project_ontology_check_scopes.py": "a319f375d3f5a38961e0a590d6e42043cc7a50ecbd860f153e3807794f2a9ba7",
+    "tools/project_ontology_scope_outcome_spec.py": "e4c6fa5ea5c57d45418f112f76f5eb2734d16773070f5b029c2e604f18a2911e",
+    "tools/spec_ontology_context_reports.py": "8521842b084d0c574501fc9b8a55395b7f280002126f9d300af87e50d693073d",
+    "tools/spec_ontology_binding_index.py": "6bbd1d5a8cf4934c6183a2543fb85bddc04afb06e89376eccc64a5547790791a",
+    "tools/spec_ontology_validation_report.py": "027ae37334ddc212a66571d82bb2a36921896bb2c20e80b3675b755ddc2c8a55",
+    "tools/project_ontology_report_freshness.py": "b661052fd5d3b8e87545e513b259847a1abf0f16e4f5c47d304c53ebad238452",
+    "tools/project_ontology_supervisor_check.py": "477edf0f6a8398708e1a755d5974442e781caf06e93cdb33483aa98eeab7557b",
+    "tools/project_ontology_supervisor_cli.py": "2312691b83e97f03546a997e047ca20422f7f083515dc719067779ee2d3d7285",
+    "tools/supervisor.py": "5cf02b93bf971f14702c63426464dde0d7a008f7f322487f72f7e7aa43f07e7f",
+    "tools/project_ontology_context/vocabulary.py": "7a6b8969d9a23b6f7dd01d578c46ecf09093d24d34c788d8456ade48a7b0d511"
+  }
+}
