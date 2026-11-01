@@ -12,6 +12,7 @@ from typing import Any
 
 import yaml
 
+from project_ontology_check_scopes import DEFAULT_SCOPES, normalize_requested_scopes
 from project_ontology_context.capture import _load_yaml, _parse
 from project_ontology_supervisor_check import (
     TARGET_SPEC_ID_FORMAT,
@@ -27,6 +28,9 @@ def run_request(
 ) -> int:
     """Compute once, atomically persist only the derived report, and print its view."""
     try:
+        if not isinstance(request, dict):
+            raise ValueError("ontology context request must be a mapping")
+        scopes = normalize_requested_scopes(request.get("requested_scopes", DEFAULT_SCOPES))
         root = Path(root).resolve(strict=True)
         if not root.is_dir():
             raise ValueError("workspace must be a directory")
@@ -94,6 +98,7 @@ def run_request(
             ontologyc=Path(request["ontologyc"]) if request.get("ontologyc") is not None else None,
             compiler_sha256=request.get("compiler_sha256"),
             previous_report_path=Path(previous) if previous is not None else None,
+            requested_scopes=scopes,
         )
         output.parent.mkdir(parents=True, exist_ok=True)
         if output.is_symlink() or not output.resolve().is_relative_to(root):
@@ -119,6 +124,18 @@ def run_request(
                 "outcome": report["outcome"],
                 "target_spec_id": target_spec,
                 "project_id": project_id,
+                "requested_scopes": report["requested_scopes"],
+                "assessments": (
+                    {
+                        scope: {
+                            key: assessment[key]
+                            for key in ("check_scope", "outcome", "diagnostics")
+                        }
+                        for scope, assessment in report["assessments"].items()
+                    }
+                    if report["assessments"] is not None
+                    else None
+                ),
                 "context_revision": context.get("context_revision"),
                 "context_outcome": context.get("outcome"),
                 "report_path": output.relative_to(root).as_posix(),

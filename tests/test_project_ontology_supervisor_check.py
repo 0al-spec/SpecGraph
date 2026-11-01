@@ -95,6 +95,23 @@ def test_checked_single_target_and_previous_freshness(workspace):
     root, _, _, _, run = workspace
     result = run()
     assert result["outcome"] == "checked"
+    assert result["schema_version"] == 1
+    assert result["requested_scopes"] == ["domain_vocabulary"]
+    assert result["assessments"] == result["bundle"]["assessments"]
+    assert result["producer"]["identity"].startswith(
+        "specgraph-scoped-ontology-advisory-v1:sha256:"
+    )
+    assert "project_ontology_check_scopes.py" in result["producer"]["source_sha256"]
+    assert "project_ontology_scope_outcome_spec.py" in result["producer"]["source_sha256"]
+    assert result["assessments"]["domain_vocabulary"]["outcome"] == "analyzed"
+    assert result["assessments"]["specification_metamodel"] == {
+        "check_scope": "specification_metamodel",
+        "outcome": "not_requested",
+        "diagnostics": [],
+        "project_context": None,
+        "analysis_profile": None,
+        "summary": None,
+    }
     assert result["context"]["outcome"] == "verified"
     assert result["inventory"]["prose"] == "unassessed"
     assert result["canonical_mutations_allowed"] is False
@@ -106,6 +123,85 @@ def test_checked_single_target_and_previous_freshness(workspace):
     assert (
         run(previous_report_path=Path("previous.json"))["previous_freshness"]["outcome"] == "fresh"
     )
+
+
+def test_both_scopes_keep_completed_domain_check_without_claiming_metamodel(workspace):
+    _, _, _, _, run = workspace
+    domain = run()
+    result = run(requested_scopes=("specification_metamodel", "domain_vocabulary"))
+    assert result["outcome"] == "unavailable"
+    assert result["requested_scopes"] == ["domain_vocabulary", "specification_metamodel"]
+    assert result["assessments"]["domain_vocabulary"]["outcome"] == "analyzed"
+    assert result["assessments"]["specification_metamodel"]["outcome"] == "unavailable"
+    assert result["bundle"]["binding_index"] == domain["bundle"]["binding_index"]
+    assert result["bundle"]["validation_report"] == domain["bundle"]["validation_report"]
+    assert result["inventory"] == domain["inventory"]
+    assert result["input_binding"] is None
+
+
+@pytest.mark.parametrize("scopes", [("specification_metamodel",), ()])
+def test_unrequested_domain_never_builds_inventory(workspace, monkeypatch, scopes):
+    _, _, _, _, run = workspace
+
+    def unexpected_inventory(*args, **kwargs):
+        pytest.fail("an unrequested domain must not produce a term inventory")
+
+    monkeypatch.setattr(check, "build_term_inventory", unexpected_inventory)
+    result = run(requested_scopes=scopes)
+    assert result["outcome"] == "unavailable"
+    assert result["requested_scopes"] == list(scopes)
+    assert result["inventory"] is None
+    assert result["bundle"]["binding_index"] is None
+    assert result["bundle"]["validation_report"] is None
+    assert result["assessments"]["domain_vocabulary"]["outcome"] == "not_requested"
+    assert result["assessments"]["specification_metamodel"]["outcome"] == (
+        "unavailable" if scopes else "not_requested"
+    )
+    assert result["input_binding"] is result["producer"] is None
+
+
+@pytest.mark.parametrize(
+    "scopes",
+    [
+        None,
+        "domain_vocabulary",
+        {"domain_vocabulary": True},
+        1,
+        (1,),
+        ("unknown",),
+        ("domain_vocabulary", "domain_vocabulary"),
+    ],
+)
+def test_invalid_requested_scopes_never_capture_target(workspace, scopes):
+    _, _, _, _, run = workspace
+    result = run(requested_scopes=scopes)
+    assert result["outcome"] == "invalid"
+    assert result["context"] is result["target"] is result["assessments"] is None
+    assert result["diagnostics"]
+
+
+def test_previous_freshness_compares_current_requested_scopes(workspace):
+    root, _, _, _, run = workspace
+    previous = run()
+    (root / "previous.json").write_text(json.dumps(previous))
+    result = run(
+        requested_scopes=("domain_vocabulary", "specification_metamodel"),
+        previous_report_path=Path("previous.json"),
+    )
+    assert result["outcome"] == "unavailable"
+    assert result["previous_freshness"]["outcome"] != "fresh"
+
+
+def test_invalid_context_remains_invalid_when_only_metamodel_is_requested(workspace):
+    root, _, _, _, run = workspace
+    source = root / "source.yaml"
+    source.write_bytes(source.read_bytes() + b"\n")
+    result = run(requested_scopes=("specification_metamodel",))
+    assert result["outcome"] == result["context"]["outcome"] == "invalid"
+    assert result["assessments"]["domain_vocabulary"]["outcome"] == "not_requested"
+    meta = result["assessments"]["specification_metamodel"]
+    assert meta["outcome"] == "unavailable"
+    assert meta["project_context"] is meta["analysis_profile"] is meta["summary"] is None
 
 
 def test_unavailable_closure_keeps_local_advisory(workspace):

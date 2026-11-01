@@ -87,9 +87,9 @@ class CapturedVocabulary:
             if self.composed
             else "single_member_local_symbols",
             "verified_closure": self.composed,
-            "analysis_profile": "specgraph-composed-symbol-advisory-v1"
+            "analysis_profile": "specgraph-composed-symbol-advisory-v2"
             if self.composed
-            else "specgraph-local-symbol-advisory-v2",
+            else "specgraph-local-symbol-advisory-v3",
             "semantic_approval": "not_established",
             "binding_authority": "structural_advisory_only",
         }

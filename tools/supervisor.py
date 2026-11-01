@@ -59889,6 +59889,12 @@ if __name__ == "__main__":
         parser.add_argument("--ontologyc")
         parser.add_argument("--ontologyc-sha256")
         parser.add_argument("--ontology-context-previous-report")
+        parser.add_argument(
+            "--ontology-context-check-scope",
+            action="append",
+            choices=("domain_vocabulary", "specification_metamodel"),
+            help="Advisory scope; repeat to request both (default: domain_vocabulary)",
+        )
     parser.add_argument("--dry-run", action="store_true", help="Show selection and prompt only")
     parser.add_argument(
         "--verbose",
@@ -60776,6 +60782,7 @@ if __name__ == "__main__":
             "--ontologyc",
             "--ontologyc-sha256",
             "--ontology-context-previous-report",
+            "--ontology-context-check-scope",
             "--output-mode",
         }
         if any(arg.split("=", 1)[0] not in allowed for arg in sys.argv[1:] if arg.startswith("--")):
@@ -60814,6 +60821,7 @@ if __name__ == "__main__":
                     "ontologyc": args.ontologyc,
                     "compiler_sha256": args.ontologyc_sha256,
                     "previous_report": args.ontology_context_previous_report,
+                    "requested_scopes": args.ontology_context_check_scope or ["domain_vocabulary"],
                 }
                 if ontology_mode
                 else None

@@ -4,12 +4,13 @@
 
 Design candidate for review under SG-SPEC-0072 and
 [proposal 0232](../../../proposals/0232_verified_project_ontology_context.md).
-This records feedback and proposes the next bounded contract; it does not
-change runtime behavior, approve applicability, or activate a policy.
+The original triage recorded feedback and proposed the bounded contract below.
+The implementation described at the end realizes its first slice; meta-model
+applicability and optional meta checking remain unresolved.
 
 ```yaml
 canonical_mutations_allowed: false
-runtime_profile_activation_allowed: false
+global_policy_activation_allowed: false
 ```
 
 GitView's source report is `docs/drafts/sgcore-applicability-0f0a056a.md`,
@@ -80,7 +81,8 @@ requested and meta analysis `not_requested`, visibly recorded. Explicitly
 selecting sgcore as a domain package does not itself request its structural
 meta checks or settle their applicability. Requested meta checks with missing
 prerequisites remain `unavailable`, while completed domain results stay visible.
-This default is a proposal, not an active policy.
+The initial triage proposed this default; the first implementation slice below
+now realizes it for the bounded advisory operation.
 
 Aggregate completion refers only to the explicitly requested scopes. Any requested
 invalid/unavailable scope prevents an overall completed result. At least one
@@ -143,9 +145,10 @@ These are future checks, not tests executed by this documentation PR.
   bytes make saved results stale/unavailable as appropriate; do not silently reuse
   historical combined reports or claim inventory freshness.
 
-## Decisions before runtime implementation
+## Remaining applicability decision
 
-Review the proposed domain-only default first. Then decide whether sgcore can
+The domain-only default is realized by the first slice below. Before enabling
+meta checking, decide whether sgcore can
 describe external specification artifacts under an explicit applicability
 profile, needs a revised applicability declaration, or needs a separately governed
 meta source. This packet does not choose or publish that ontology decision.
@@ -155,3 +158,59 @@ risks. Retained GitView control summaries were read, and pinned source hashes
 were cross-checked; no compiler/runtime probe or note-restoration check was
 rerun for this documentation-only triage. Preparation, review, merge and policy
 activation remain separate events.
+
+## First implementation slice
+
+The context-bound report operation now requests `domain_vocabulary` by default
+and explicitly records `specification_metamodel: not_requested`. Structural
+kind/id/acceptance/evidence extraction and the unconditional required-Spec check
+remain in the no-context legacy 0134/0135 APIs. They no longer contribute to the
+context-bound domain report. Authored sgcore references still participate in
+ordinary resolution; selecting sgcore as domain input does not enable meta rules.
+
+Bundles and domain binding/validation artifacts use schema 2 and
+`specgraph-scoped-ontology-advisory-v1`. Local/composed vocabulary metadata is
+versioned to v3/v2. The report's separate `check_scope` does not change the
+existing context `scope` or pretend that meta and domain packages were composed.
+A named completion Specification requires at least one requested scope and all
+requested scopes analyzed. Existing invalid-before-unavailable precedence is
+preserved; parsing, path capture and legacy projections remain boundary code.
+
+The repeatable Supervisor flag `--ontology-context-check-scope` accepts
+`domain_vocabulary` and `specification_metamodel`. Full and compact outputs show
+the request and both outcomes. Requested meta is currently `unavailable` because
+source, applicability and supported checking have not been established. With
+both scopes requested, completed domain results remain visible while the
+aggregate is unavailable. Meta-only/empty requests do not analyze domain reports
+or inventory. No per-file approval ceremony or ontology-composition extension
+was added.
+
+Freshness binds the complete assessment manifest, current requested scopes,
+profiles, producer source identity and captured inputs. Saved combined bundles
+are unavailable for scoped comparison and cannot be relabelled as fresh by
+recomputing their attributed binding. Analyzed children carry their own scope,
+profile and schema, so extracting a report does not hide its changed semantics.
+Previous inventory freshness stays `not_assessed`.
+
+### Re-executed GitView control
+
+[The verification capsule](verification.json) records a local replay using
+isolated copies of the original spec and ontology inputs plus the same pinned
+release ontologyc 0.5.0. Neither GitView's working files, selected context nor
+precanonical graph status changed. The old runtime and this candidate ran over
+the same copied workspace inputs; files were hashed before and after.
+
+| Context | Old mixed warnings | Domain warnings | Meta |
+| --- | ---: | ---: | --- |
+| Main GitView | 5 | 2: Activity, motivcore:Motive | not_requested |
+| Motivation composition | 4 | 1: Activity | not_requested |
+
+In both cases, explicitly requesting meta preserved domain output and returned
+`unavailable`; old mixed bundles did not become fresh scoped results. The lower
+warning count corrects attribution/scope, and does not mean missing meta work
+was completed or the product ontology gained concepts.
+
+Regressions cover structural-only documents, explicit sgcore references,
+unchanged legacy output, unknown/ambiguous terms, scope combinations and invalid
+inputs, CLI summaries, legacy-bundle migration, manifest integrity and changed
+current scopes. Full semantic coverage and applicability remain unclaimed.

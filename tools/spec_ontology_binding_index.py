@@ -14,6 +14,7 @@ import yaml
 
 from ontology_imports import ROOT, load_json, relative_path, write_json
 from ontology_snapshot import OntologySnapshot, capture_ontology_snapshot
+from project_ontology_check_scopes import SCOPED_ANALYSIS_PROFILE, SCOPED_SCHEMA_VERSION
 
 if TYPE_CHECKING:
     from project_ontology_context.vocabulary import CapturedVocabulary
@@ -171,6 +172,7 @@ def spec_entry(
     document: dict[str, Any] | None = None,
     path_label: str | None = None,
     vocabulary: CapturedVocabulary | None = None,
+    check_scope: str = "legacy_combined",
 ) -> dict[str, Any]:
     spec = load_yaml(path) if document is None else document
     spec_id = str(spec.get("id", path.stem))
@@ -178,77 +180,78 @@ def spec_entry(
     relation_candidates: list[dict[str, Any]] = []
     gaps: list[dict[str, str]] = []
 
-    if str(spec.get("kind", "")).lower() == "spec":
-        add_structural_binding(
-            bindings,
-            gaps,
-            ir_symbols,
-            spec_id=spec_id,
-            term="spec",
-            ontology_ref="sgcore:Spec",
-            kind="class",
-            source="kind",
-        )
+    if check_scope == "legacy_combined":
+        if str(spec.get("kind", "")).lower() == "spec":
+            add_structural_binding(
+                bindings,
+                gaps,
+                ir_symbols,
+                spec_id=spec_id,
+                term="spec",
+                ontology_ref="sgcore:Spec",
+                kind="class",
+                source="kind",
+            )
 
-    if spec.get("id"):
-        add_structural_binding(
-            bindings,
-            gaps,
-            ir_symbols,
-            spec_id=spec_id,
-            term="node",
-            ontology_ref="sgcore:Node",
-            kind="class",
-            source="id",
-        )
+        if spec.get("id"):
+            add_structural_binding(
+                bindings,
+                gaps,
+                ir_symbols,
+                spec_id=spec_id,
+                term="node",
+                ontology_ref="sgcore:Node",
+                kind="class",
+                source="id",
+            )
 
-    acceptance = spec.get("acceptance")
-    if isinstance(acceptance, list) and acceptance:
-        add_structural_binding(
-            bindings,
-            gaps,
-            ir_symbols,
-            spec_id=spec_id,
-            term="acceptance",
-            ontology_ref="sgcore:AcceptanceCriterion",
-            kind="class",
-            source="acceptance",
-        )
-        add_relation_candidate(
-            relation_candidates,
-            gaps,
-            ir_symbols,
-            spec_id=spec_id,
-            relation_ref="sgcore:hasAcceptanceCriterion",
-            domain_ref="sgcore:Spec",
-            range_ref="sgcore:AcceptanceCriterion",
-            source="acceptance",
-            target_count=len(acceptance),
-        )
+        acceptance = spec.get("acceptance")
+        if isinstance(acceptance, list) and acceptance:
+            add_structural_binding(
+                bindings,
+                gaps,
+                ir_symbols,
+                spec_id=spec_id,
+                term="acceptance",
+                ontology_ref="sgcore:AcceptanceCriterion",
+                kind="class",
+                source="acceptance",
+            )
+            add_relation_candidate(
+                relation_candidates,
+                gaps,
+                ir_symbols,
+                spec_id=spec_id,
+                relation_ref="sgcore:hasAcceptanceCriterion",
+                domain_ref="sgcore:Spec",
+                range_ref="sgcore:AcceptanceCriterion",
+                source="acceptance",
+                target_count=len(acceptance),
+            )
 
-    acceptance_evidence = spec.get("acceptance_evidence")
-    if isinstance(acceptance_evidence, list) and acceptance_evidence:
-        add_structural_binding(
-            bindings,
-            gaps,
-            ir_symbols,
-            spec_id=spec_id,
-            term="acceptance_evidence",
-            ontology_ref="sgcore:Evidence",
-            kind="class",
-            source="acceptance_evidence",
-        )
-        add_relation_candidate(
-            relation_candidates,
-            gaps,
-            ir_symbols,
-            spec_id=spec_id,
-            relation_ref="sgcore:evidenceSupportsCriterion",
-            domain_ref="sgcore:Evidence",
-            range_ref="sgcore:AcceptanceCriterion",
-            source="acceptance_evidence",
-            target_count=len(acceptance_evidence),
-        )
+        acceptance_evidence = spec.get("acceptance_evidence")
+        if isinstance(acceptance_evidence, list) and acceptance_evidence:
+            add_structural_binding(
+                bindings,
+                gaps,
+                ir_symbols,
+                spec_id=spec_id,
+                term="acceptance_evidence",
+                ontology_ref="sgcore:Evidence",
+                kind="class",
+                source="acceptance_evidence",
+            )
+            add_relation_candidate(
+                relation_candidates,
+                gaps,
+                ir_symbols,
+                spec_id=spec_id,
+                relation_ref="sgcore:evidenceSupportsCriterion",
+                domain_ref="sgcore:Evidence",
+                range_ref="sgcore:AcceptanceCriterion",
+                source="acceptance_evidence",
+                target_count=len(acceptance_evidence),
+            )
 
     terms = [(key, "specification.terminology") for key in terminology_keys(spec)]
     if vocabulary is not None:
@@ -321,7 +324,9 @@ def spec_entry(
     return {
         "spec_id": spec_id,
         "path": relative_path(path) if path_label is None else path_label,
-        "status": "legacy_report_only",
+        "status": "legacy_report_only"
+        if check_scope == "legacy_combined"
+        else "domain_report_only",
         "accepted_bindings": sorted(bindings, key=lambda item: (item["source"], item["term"])),
         "relation_candidates": relation_candidates,
         "gaps": gaps,
@@ -348,7 +353,12 @@ def build_binding_index(
     ir: dict[str, Any] | None = None,
     documents: tuple[tuple[str, dict[str, Any]], ...] | None = None,
     vocabulary: CapturedVocabulary | None = None,
+    check_scope: str = "legacy_combined",
 ) -> dict[str, Any]:
+    if check_scope not in {"legacy_combined", "domain_vocabulary"}:
+        raise ValueError("unsupported binding check_scope")
+    if check_scope == "domain_vocabulary" and vocabulary is None:
+        raise ValueError("domain_vocabulary requires a captured vocabulary")
     if snapshot is not None and ir is not None:
         raise ValueError("provide snapshot or IR, not both")
     if vocabulary is not None and (snapshot is not None or ir is not None):
@@ -366,13 +376,18 @@ def build_binding_index(
     entries = (
         [
             spec_entry(
-                Path(path), ir_symbols, document=document, path_label=path, vocabulary=vocabulary
+                Path(path),
+                ir_symbols,
+                document=document,
+                path_label=path,
+                vocabulary=vocabulary,
+                check_scope=check_scope,
             )
             for path, document in documents
         ]
         if documents is not None
         else [
-            spec_entry(path, ir_symbols, vocabulary=vocabulary)
+            spec_entry(path, ir_symbols, vocabulary=vocabulary, check_scope=check_scope)
             for path in sorted(specs_root.glob("SG-SPEC-*.yaml"))
         ]
     )
@@ -381,13 +396,20 @@ def build_binding_index(
     gap_count = sum(len(entry["gaps"]) for entry in entries)
     return {
         "artifact_kind": "spec_ontology_binding_index",
-        "schema_version": SCHEMA_VERSION,
+        **(
+            {"check_scope": check_scope, "analysis_profile": SCOPED_ANALYSIS_PROFILE}
+            if check_scope == "domain_vocabulary"
+            else {}
+        ),
+        "schema_version": SCOPED_SCHEMA_VERSION
+        if check_scope == "domain_vocabulary"
+        else SCHEMA_VERSION,
         "proposal_id": PROPOSAL_ID,
         "status": "report_only",
         "review_state": "ready_for_review",
         "canonical_mutations_allowed": False,
         "tracked_artifacts_written": False,
-        "legacy_corpus": True,
+        "legacy_corpus": check_scope == "legacy_combined",
         "ontology_ir_ref": relative_path(ir_path),
         "ontology_verification": snapshot_evidence(snapshot),
         "summary": {

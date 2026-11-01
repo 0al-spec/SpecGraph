@@ -13587,7 +13587,11 @@
       "tests/test_project_ontology_report_freshness.py",
       "docs/reviews/0232_project_ontology_context/meta-domain-applicability/README.md",
       "docs/reviews/0232_project_ontology_context/meta-domain-applicability/observation.json",
-      "Sources/SpecGraph/Documentation.docc/MetaDomainApplicability.md"
+      "Sources/SpecGraph/Documentation.docc/MetaDomainApplicability.md",
+      "tools/project_ontology_check_scopes.py",
+      "tools/project_ontology_scope_outcome_spec.py",
+      "tests/test_project_ontology_check_scopes.py",
+      "docs/reviews/0232_project_ontology_context/meta-domain-applicability/verification.json"
     ],
     "runtime_markers": [
       {

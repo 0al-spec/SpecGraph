@@ -13,6 +13,12 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
+from project_ontology_check_scopes import (
+    CHECK_SCOPES,
+    DEFAULT_SCOPES,
+    SCOPED_ANALYSIS_PROFILE,
+    SCOPED_SCHEMA_VERSION,
+)
 from project_ontology_context import ContextResult
 from project_ontology_report_freshness_spec import REPORT_INPUTS_COMPATIBLE_SPEC, FreshnessFacts
 from spec_ontology_context_reports import build_context_reports
@@ -84,8 +90,66 @@ def _identity_valid(value: object) -> bool:
 
 
 def _shape(bundle: object) -> tuple[str, str] | None:
-    if not isinstance(bundle, dict) or bundle.get("outcome") != "analyzed":
+    if not isinstance(bundle, dict):
         return "unavailable", "analyzed bundle unavailable"
+    if bundle.get("schema_version") != SCOPED_SCHEMA_VERSION:
+        return "unavailable", "scoped advisory bundle version unavailable"
+    if bundle.get("analysis_profile") != SCOPED_ANALYSIS_PROFILE:
+        return "unavailable", "scoped advisory analysis profile unavailable"
+    requested = bundle.get("requested_scopes")
+    if (
+        not isinstance(requested, list)
+        or any(not isinstance(scope, str) or scope not in CHECK_SCOPES for scope in requested)
+        or requested != [scope for scope in CHECK_SCOPES if scope in requested]
+    ):
+        return "invalid", "requested scope manifest is malformed"
+    assessments = bundle.get("assessments")
+    if not isinstance(assessments, dict) or set(assessments) != set(CHECK_SCOPES):
+        return "invalid", "scope assessment manifest is incomplete or malformed"
+    for scope in CHECK_SCOPES:
+        assessment = assessments[scope]
+        if (
+            not isinstance(assessment, dict)
+            or assessment.get("check_scope") != scope
+            or assessment.get("outcome")
+            not in ("analyzed", "unavailable", "invalid", "not_requested")
+            or not isinstance(assessment.get("diagnostics"), list)
+            or any(not isinstance(detail, str) for detail in assessment["diagnostics"])
+            or any(
+                key not in assessment for key in ("project_context", "analysis_profile", "summary")
+            )
+        ):
+            return "invalid", "scope assessment is malformed"
+        outcome = assessment["outcome"]
+        if (scope not in requested) != (outcome == "not_requested"):
+            return "invalid", "scope assessment differs from requested scopes"
+        if scope == "specification_metamodel" and outcome == "analyzed":
+            return "invalid", "specification metamodel analysis is not supported"
+        if outcome == "analyzed":
+            if (
+                not isinstance(assessment["project_context"], dict)
+                or assessment["analysis_profile"] != bundle["analysis_profile"]
+                or not isinstance(assessment["summary"], dict)
+                or assessment["diagnostics"]
+            ):
+                return "invalid", "analyzed scope assessment is inconsistent"
+        elif any(
+            assessment[key] is not None
+            for key in ("project_context", "analysis_profile", "summary")
+        ):
+            return "invalid", "unanalyzed scope claims analysis identity or summary"
+    outcomes = [assessments[scope]["outcome"] for scope in requested]
+    expected = (
+        "invalid"
+        if "invalid" in outcomes
+        else "unavailable"
+        if not outcomes or "unavailable" in outcomes
+        else "analyzed"
+    )
+    if bundle.get("outcome") != expected:
+        return "invalid", "aggregate outcome differs from scope assessments"
+    if expected != "analyzed":
+        return expected, "analyzed scope bundle unavailable"
     inputs = bundle.get("inputs")
     binding = bundle.get("binding_index")
     validation = bundle.get("validation_report")
@@ -168,6 +232,8 @@ def _shape(bundle: object) -> tuple[str, str] | None:
             "summary",
             "inputs",
             "project_context",
+            "check_scope",
+            "analysis_profile",
         )
     ):
         return "unavailable", "report payload incomplete"
@@ -182,6 +248,19 @@ def _shape(bundle: object) -> tuple[str, str] | None:
         or validation["artifact_kind"] != "spec_ontology_validation_report"
     ):
         return "invalid", "report kind is inconsistent"
+    if any(
+        report["check_scope"] != "domain_vocabulary"
+        or report["schema_version"] != SCOPED_SCHEMA_VERSION
+        or report["analysis_profile"] != SCOPED_ANALYSIS_PROFILE
+        for report in (binding, validation)
+    ):
+        return "invalid", "domain report scope, profile or version is inconsistent"
+    domain = assessments["domain_vocabulary"]
+    if domain["project_context"] != metadata or domain["summary"] != {
+        "binding_index": binding["summary"],
+        "validation_report": validation["summary"],
+    }:
+        return "invalid", "domain assessment differs from report payloads"
     return None
 
 
@@ -202,6 +281,7 @@ def assess_report_freshness(
     specs_root: Path,
     producer_identity: str | None,
     documents: tuple[tuple[str, bytes], ...] | None = None,
+    requested_scopes: tuple[str, ...] = DEFAULT_SCOPES,
 ) -> FreshnessResult:
     """Compare saved data and input_binding with newly captured explicit current inputs."""
     if input_binding is None or saved_bundle is None or not _identity_valid(producer_identity):
@@ -216,16 +296,26 @@ def assess_report_freshness(
         ):
             return FreshnessResult("unavailable", ("input_binding identities missing",))
         issue = _shape(saved_bundle)
-        if issue:
+        if issue and issue[0] == "invalid":
             return FreshnessResult(issue[0], (issue[1],))
+        complete_payload = isinstance(saved_bundle, dict) and all(
+            isinstance(saved_bundle.get(key), dict)
+            for key in ("inputs", "binding_index", "validation_report")
+        )
         if (
-            _digest(saved_bundle) != saved_input_binding.bundle_sha256
-            or _digest(saved_bundle["binding_index"]) != saved_input_binding.binding_sha256
+            complete_payload
+            and (issue is None or saved_bundle.get("outcome") != "analyzed")
+            and (
+                _digest(saved_bundle) != saved_input_binding.bundle_sha256
+                or _digest(saved_bundle["binding_index"]) != saved_input_binding.binding_sha256
+            )
         ):
             return FreshnessResult(
                 "invalid",
                 ("saved bundle or binding payload differs from its capture input_binding",),
             )
+        if issue:
+            return FreshnessResult(issue[0], (issue[1],))
         if (
             not _identity_valid(context.revision)
             or not context.revision.startswith("sha256:")
@@ -247,7 +337,11 @@ def assess_report_freshness(
                 "stale", tuple(f"{name} changed" for name, ok in direct if not ok), direct
             )
         current = build_context_reports(
-            context, workspace_root=workspace_root, specs_root=specs_root, documents=documents
+            context,
+            workspace_root=workspace_root,
+            specs_root=specs_root,
+            documents=documents,
+            requested_scopes=requested_scopes,
         )
         if current.get("outcome") != "analyzed":
             return FreshnessResult(
@@ -279,6 +373,20 @@ def assess_report_freshness(
             direct
             + tuple((key, saved_meta.get(key) == current_meta.get(key)) for key in keys)
             + (
+                (
+                    "bundle_schema_version",
+                    saved_bundle["schema_version"] == current["schema_version"],
+                ),
+                (
+                    "bundle_analysis_profile",
+                    saved_bundle["analysis_profile"] == current["analysis_profile"],
+                ),
+                (
+                    "requested_scopes",
+                    saved_bundle["requested_scopes"] == current["requested_scopes"],
+                ),
+                ("scope_assessments", saved_bundle["assessments"] == current["assessments"]),
+                ("bundle_outcome", saved_bundle["outcome"] == current["outcome"]),
                 ("spec_inputs", saved_bundle["inputs"] == current["inputs"]),
                 (
                     "binding_payload",

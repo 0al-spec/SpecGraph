@@ -10,6 +10,11 @@ from typing import Any
 
 import yaml
 
+from project_ontology_check_scopes import (
+    DEFAULT_SCOPES,
+    SCOPED_ANALYSIS_PROFILE,
+    normalize_requested_scopes,
+)
 from project_ontology_context import CheckResult, capture_project_context
 from project_ontology_context.invalid_spec import INVALID_SPEC
 from project_ontology_context.model import ContextFacts
@@ -28,6 +33,8 @@ _PRODUCER_FILES = (
     "spec_ontology_context_reports.py",
     "spec_ontology_binding_index.py",
     "spec_ontology_validation_report.py",
+    "project_ontology_check_scopes.py",
+    "project_ontology_scope_outcome_spec.py",
     "ontology_imports.py",
     "ontology_snapshot.py",
     "project_ontology_context/vocabulary.py",
@@ -47,9 +54,7 @@ def _producer() -> tuple[str, dict[str, str]]:
         name: hashlib.sha256((root / name).read_bytes()).hexdigest() for name in _PRODUCER_FILES
     }
     encoded = json.dumps(hashes, sort_keys=True, separators=(",", ":")).encode()
-    return "specgraph-local-symbol-advisory-v1:sha256:" + hashlib.sha256(
-        encoded
-    ).hexdigest(), hashes
+    return SCOPED_ANALYSIS_PROFILE + ":sha256:" + hashlib.sha256(encoded).hexdigest(), hashes
 
 
 def _previous(path: Path | None, root: Path) -> tuple[dict[str, Any] | None, dict[str, Any] | None]:
@@ -98,6 +103,7 @@ def build_target_context_check(
     ontologyc: Path | None,
     compiler_sha256: str | None = None,
     previous_report_path: Path | None = None,
+    requested_scopes: tuple[str, ...] = DEFAULT_SCOPES,
 ) -> dict[str, Any]:
     """Capture one context and one target; never mutate canonical data or approve terms."""
     root = Path(workspace_root).resolve()
@@ -109,6 +115,8 @@ def build_target_context_check(
         "target_spec_id": target_spec_id,
         "outcome": "unavailable",
         "diagnostics": [],
+        "requested_scopes": [],
+        "assessments": None,
         "target": None,
         "context": None,
         "bundle": None,
@@ -129,6 +137,12 @@ def build_target_context_check(
             outcome="invalid", diagnostics=[f"target_spec_id must be {TARGET_SPEC_ID_FORMAT}"]
         )
         return output
+    try:
+        scopes = normalize_requested_scopes(requested_scopes)
+    except (TypeError, ValueError) as error:
+        output.update(outcome="invalid", diagnostics=[str(error)])
+        return output
+    output["requested_scopes"] = list(scopes)
     specs_root = root / "specs" / "nodes"
     target = specs_root / f"{target_spec_id}.yaml"
     try:
@@ -163,23 +177,36 @@ def build_target_context_check(
     )
     output["context"] = context.report()
     bundle = build_context_reports(
-        context, workspace_root=root, specs_root=specs_root, documents=documents
+        context,
+        workspace_root=root,
+        specs_root=specs_root,
+        documents=documents,
+        requested_scopes=scopes,
     )
-    inventory = build_term_inventory(
-        context, workspace_root=root, specs_root=specs_root, documents=documents
+    inventory = (
+        build_term_inventory(
+            context, workspace_root=root, specs_root=specs_root, documents=documents
+        )
+        if "domain_vocabulary" in scopes
+        else None
     )
     output["bundle"] = bundle
     output["inventory"] = inventory
+    output["requested_scopes"] = bundle.get("requested_scopes", list(scopes))
+    output["assessments"] = bundle.get("assessments")
     component_checks = (
         _component_check("context", context.outcome, complete="verified"),
         _component_check("binding_validation_bundle", bundle.get("outcome"), complete="analyzed"),
-        _component_check("term_inventory", inventory.get("outcome"), complete="analyzed"),
     )
+    if inventory is not None:
+        component_checks += (
+            _component_check("term_inventory", inventory.get("outcome"), complete="analyzed"),
+        )
     output["outcome"] = _outcome(ContextFacts(component_checks))
     output["diagnostics"] = (
         [c.detail for c in context.checks if c.outcome != "verified"]
         + bundle["diagnostics"]
-        + inventory["diagnostics"]
+        + (inventory["diagnostics"] if inventory is not None else [])
     )
     producer_identity = None
     if bundle["outcome"] == "analyzed":
@@ -217,6 +244,7 @@ def build_target_context_check(
                 specs_root=specs_root,
                 producer_identity=producer_identity,
                 documents=documents,
+                requested_scopes=scopes,
             ).report()
     if output["previous_freshness"] is not None:
         output["previous_freshness"]["scope"] = "binding_validation_bundle"

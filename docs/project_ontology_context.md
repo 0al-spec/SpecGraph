@@ -172,25 +172,26 @@ SpecDraft wheel CLI.
 ## Context-bound advisory reports
 
 `spec_ontology_context_reports.build_context_reports(context,
-workspace_root=..., specs_root=..., documents=None)` connects the existing
+workspace_root=..., specs_root=..., documents=None,
+requested_scopes=("domain_vocabulary",))` connects the existing
 binding index and validation report to the captured context. It reads the
 selected `SG-SPEC-*.yaml` corpus once, or accepts explicit workspace-relative
 captured `(path, bytes)` documents. Both views consume the same captured vocabulary and
 parsed specifications; validation consumes the same built binding index.
 
 Inputs retain each specification path/hash and the profile
-`specgraph-local-symbol-advisory-v2`. Report metadata records project/workspace,
+`specgraph-local-symbol-advisory-v3`. Report metadata records project/workspace,
 context revision/outcome, member/source/IR/compiler identities and the
 `single_member_local_symbols` scope. The legacy field name `accepted_bindings`
 still describes structural extraction, not accepted meaning.
 
-Local v2 uses the same qualified-name and spelling/alias candidate resolver as
+Local v3 uses the same qualified-name and spelling/alias candidate resolver as
 inventory and the composed bundle. Root and nested `ontology_refs` are included:
 an unresolved qualified reference produces a binding gap and validation finding,
 even when its namespace is not selected. A wrong namespace/case cannot match a
 local symbol by stripping qualification. Ambiguous short names/aliases stay gaps.
 Compiler-checked single-member source/IR evidence and local-only scope are retained.
-Saved local v1 bundles are stale against v2. The legacy no-context builder defaults
+Historical local v1/v2 combined bundles require recomputation under the scoped contract. The legacy no-context builder defaults
 are unchanged. See the [source-bound defect and replay](reviews/0232_project_ontology_context/single-member-references/README.md).
 
 One successfully captured member may supply advisory local-symbol analysis
@@ -200,12 +201,45 @@ IDs or unsupported joint multi-member analysis return diagnostics without
 falling back to mutable saved IR. Ordinary no-context report APIs remain
 backward-compatible. These profiles do not assess all natural-language prose.
 
+### Separate domain and meta assessments
+
+Context-bound bundles and their binding/validation children use schema version 2,
+profile `specgraph-scoped-ontology-advisory-v1`. Existing context `scope` still
+means local or composed symbols; `check_scope` identifies what was analyzed.
+The default request is `domain_vocabulary`: explicit terminology keys and
+`ontology_refs` are checked against the selected project vocabulary. `kind`,
+`id`, `acceptance` and `acceptance_evidence` no longer synthesize sgcore bindings,
+relations or a required-Spec check inside that domain assessment. Authored
+`sgcore:*` references remain ordinary explicit inputs, not filtered warnings.
+
+Every bundle lists `requested_scopes` and both `assessments`. Domain `analyzed`
+retains captured context/profile and binding/validation summaries. Meta is
+`not_requested` with `summary`, `project_context` and `analysis_profile` set to
+null: it supplies no passing check or zero-gap claim. Neither an empty explicit
+term inventory nor an analyzed scope proves whole-spec grounding.
+
+An explicit `specification_metamodel` request currently returns `unavailable`
+with a missing source/applicability/supported-checking diagnostic. This slice
+has not enabled meta checking or established sgcore applicability. With both
+scopes requested, completed domain reports stay visible but aggregate completion
+is unavailable. Meta-only and empty requests do not analyze domain reports or
+inventory. Invalid requested inputs retain precedence over unavailable results;
+an empty scope request cannot complete. Unknown and duplicate scopes are input
+errors, and ordering is canonicalized without adding requests.
+
+The no-context 0134/0135 APIs keep schema 1 and the characterized legacy combined
+structural/domain behavior. Old combined bundles cannot bind as schema-2 results
+or become fresh by matching producer attribution alone. Report freshness does
+not authenticate a producer, approve semantics or cover previous inventory.
+See the [source-bound scope split and replay](reviews/0232_project_ontology_context/meta-domain-applicability/README.md).
+
 ## Explicit report freshness assessment
 
 At creation, `bind_report_bundle(bundle, producer_identity=...)` produces an
 immutable `ReportInputBinding`. Save its `report()` alongside that exact advisory
 bundle. `assess_report_freshness(saved_bundle, input_binding=..., context=...,
-workspace_root=..., specs_root=..., producer_identity=..., documents=None)`
+workspace_root=..., specs_root=..., producer_identity=..., documents=None,
+requested_scopes=("domain_vocabulary",))`
 compares it with explicitly supplied current inputs and a rebuilt advisory view.
 No directory is searched for a latest result, and no cache is selected implicitly.
 
@@ -216,7 +250,8 @@ a binding later cannot establish who produced historical data.
 
 `fresh` means compatible declared advisory inputs: project/workspace, context,
 captured member/source/IR/compiler, exact specification paths/hashes, binding and
-validation payloads, analysis profile and producer identity. Changed known inputs
+validation payloads, analysis profile, requested check scopes, per-scope assessment
+manifest and producer identity. Changed known inputs
 are stale, inconsistent saved content is invalid, and missing/partial identity
 or original binding remains unavailable. Missing data cannot become fresh by
 reconstructing a historical binding during assessment. A named Specification
@@ -267,7 +302,7 @@ Each inventory candidate and composed binding/gap has `candidate_origins`:
 package ID/namespace/version, concept URI, captured source/IR/compiler hashes and
 the captured import source URI where available. Foundation entries are explicitly
 `pinned_export_catalog`, with no fabricated IR/compiler digest. The bundle records
-`selected_composition_symbols` and `specgraph-composed-symbol-advisory-v1`, an
+`selected_composition_symbols` and `specgraph-composed-symbol-advisory-v2`, an
 ordered `members` capture inventory and `foundation_catalog`. It has no invented
 single `selected_member` or aggregate source/IR hash. `verified_closure: true`
 refers only to the already verified selected dependency closure.
@@ -276,8 +311,9 @@ The composed binding index resolves both terminology keys and explicit
 `ontology_refs` through that vocabulary. It keeps the legacy `accepted_bindings`
 field name for compatibility; the field remains structural advisory data.
 Ambiguity creates gaps/findings rather than allowing package order to select a
-winner. Existing legacy structural mappings and warnings remain report-only.
-Single-member context reports use local advisory v2 and the same explicit-term
+winner. Context-bound reports analyze explicit domain occurrences; legacy structural
+mappings are retained only by the no-context 0134/0135 APIs.
+Single-member context reports use local advisory v3 and the same explicit-term
 resolver; their vocabulary remains restricted to the one selected member.
 
 Freshness binding includes every member capture and catalog identity. A changed
@@ -304,6 +340,21 @@ inventory and explicit comparison. It saves
 with atomic replacement restricted to the same report/target/project kind.
 Compact JSON goes to stdout; `--output-mode full` prints the full report.
 The same command can be forwarded through native runtime `supervisor -- ...`.
+
+The exact repeatable flag `--ontology-context-check-scope` requests
+`domain_vocabulary` or `specification_metamodel`. Omit it for the domain-only
+default; repeat it to request both. Full and compact output enumerate requested
+scopes and per-scope outcomes. For example, adding both flags retains domain
+findings but exits 1 because requested meta checking is unavailable:
+
+```sh
+# Append to the target-scoped command above:
+--ontology-context-check-scope domain_vocabulary \
+--ontology-context-check-scope specification_metamodel
+```
+
+The native `ontology-context` route remains capture-only. Use native `supervisor`
+forwarding for the scoped analysis operation.
 
 Pass `--ontology-context-previous-report <workspace-relative-path>` to assess
 an explicitly chosen previous target report. There is no automatic latest-report

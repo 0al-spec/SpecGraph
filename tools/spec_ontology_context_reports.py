@@ -9,8 +9,17 @@ from typing import Any
 import yaml
 
 from ontology_snapshot import OntologySnapshotError
+from project_ontology_check_scopes import (
+    CHECK_SCOPES,
+    DEFAULT_SCOPES,
+    SCOPED_ANALYSIS_PROFILE,
+    SCOPED_SCHEMA_VERSION,
+    ScopeFacts,
+    normalize_requested_scopes,
+)
 from project_ontology_context import ContextResult
 from project_ontology_context.vocabulary import capture_vocabulary
+from project_ontology_scope_outcome_spec import REQUESTED_SCOPES_ANALYZED_SPEC
 from spec_ontology_binding_index import build_binding_index, snapshot_evidence
 from spec_ontology_validation_report import build_validation_report
 
@@ -25,17 +34,66 @@ def build_context_reports(
     workspace_root: Path,
     specs_root: Path,
     documents: tuple[tuple[str, bytes], ...] | None = None,
+    requested_scopes: tuple[str, ...] = DEFAULT_SCOPES,
 ) -> dict[str, Any]:
-    """Analyze captured symbols; never reopen ontology inputs or fall back."""
+    """Analyze explicitly requested scopes; never reopen ontology inputs or fall back."""
+
+    assessments: dict[str, dict[str, Any]] = {}
+    bundle: dict[str, Any] = {
+        "schema_version": SCOPED_SCHEMA_VERSION,
+        "analysis_profile": SCOPED_ANALYSIS_PROFILE,
+        "requested_scopes": [],
+        "assessments": assessments,
+        "outcome": "unavailable",
+        "diagnostics": [],
+        "inputs": None,
+        "binding_index": None,
+        "validation_report": None,
+        "semantic_approval": "not_established",
+        "full_spec_conformance": "not_assessed",
+    }
+    try:
+        requested = normalize_requested_scopes(requested_scopes)
+    except ValueError as error:
+        bundle.update(outcome="invalid", diagnostics=[str(error)])
+        return bundle
+    bundle["requested_scopes"] = list(requested)
+    for scope in CHECK_SCOPES:
+        assessments[scope] = {
+            "check_scope": scope,
+            "outcome": "unavailable" if scope in requested else "not_requested",
+            "diagnostics": [],
+            "project_context": None,
+            "analysis_profile": None,
+            "summary": None,
+        }
+    if "specification_metamodel" in requested:
+        assessments["specification_metamodel"]["diagnostics"] = [
+            "Meta source, applicability profile and supported checking are not established."
+        ]
+
+    def finish() -> dict[str, Any]:
+        outcomes = tuple(assessments[scope]["outcome"] for scope in requested)
+        facts = ScopeFacts(requested, outcomes)
+        bundle["outcome"] = (
+            "invalid"
+            if "invalid" in outcomes
+            else "analyzed"
+            if REQUESTED_SCOPES_ANALYZED_SPEC.is_satisfied_by(facts)
+            else "unavailable"
+        )
+        bundle["diagnostics"] = [
+            detail for scope in requested for detail in assessments[scope]["diagnostics"]
+        ] or ([] if requested else ["No ontology check scope was requested."])
+        return bundle
 
     def failure(outcome: str, detail: str) -> dict[str, Any]:
-        return {
-            "outcome": outcome,
-            "diagnostics": [detail],
-            "inputs": None,
-            "binding_index": None,
-            "validation_report": None,
-        }
+        assessments["domain_vocabulary"].update(outcome=outcome, diagnostics=[detail])
+        return finish()
+
+    # This slice cannot execute meta rules. No domain work is implied by a meta request.
+    if "domain_vocabulary" not in requested:
+        return finish()
 
     root = Path(workspace_root).resolve()
     if not root.is_dir() or root != Path(context.workspace).resolve():
@@ -92,9 +150,17 @@ def build_context_reports(
             identities.append({"path": name, "sha256": _sha256(raw)})
         inputs = {"specs_root": selected_root.relative_to(root).as_posix(), "specs": identities}
         metadata = vocabulary.metadata(context)
-        index = build_binding_index(vocabulary=vocabulary, documents=tuple(parsed_documents))
-        report = build_validation_report(vocabulary=vocabulary, binding_index=index)
+        index = build_binding_index(
+            vocabulary=vocabulary,
+            documents=tuple(parsed_documents),
+            check_scope="domain_vocabulary",
+        )
+        report = build_validation_report(
+            vocabulary=vocabulary, binding_index=index, check_scope="domain_vocabulary"
+        )
         for result in (index, report):
+            result["schema_version"] = SCOPED_SCHEMA_VERSION
+            result["analysis_profile"] = SCOPED_ANALYSIS_PROFILE
             result["ontology_ir_ref"] = None
             result["project_context"] = dict(metadata)
             result["inputs"] = inputs
@@ -107,13 +173,14 @@ def build_context_reports(
                 }
             else:
                 result["ontology_verification"] = snapshot_evidence(context.snapshots[0])
-        return {
-            "outcome": "analyzed",
-            "diagnostics": [],
-            "inputs": inputs,
-            "binding_index": index,
-            "validation_report": report,
-        }
+        bundle.update(inputs=inputs, binding_index=index, validation_report=report)
+        assessments["domain_vocabulary"].update(
+            outcome="analyzed",
+            project_context=metadata,
+            analysis_profile=SCOPED_ANALYSIS_PROFILE,
+            summary={"binding_index": index["summary"], "validation_report": report["summary"]},
+        )
+        return finish()
     except OntologySnapshotError as error:
         return failure(error.outcome, str(error))
     except (OSError, ValueError, yaml.YAMLError, UnicodeError) as error:
