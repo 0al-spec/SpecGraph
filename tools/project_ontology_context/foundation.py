@@ -24,7 +24,7 @@ PIN = ResolvedImport(
 EXPORTS = Path(__file__).parent / "pinned_foundation/exports.json"
 
 
-def _reference_sites(spec: dict) -> Iterator[tuple[str, str, str]]:
+def reference_sites(spec: dict) -> Iterator[tuple[str, str, str]]:
     """Qualified concept slots from v1alpha1. Text, labels and field values are data."""
     for name, cls in spec["classes"].items():
         path = f"/spec/classes/{name}"
@@ -161,22 +161,15 @@ def check_import(
     if issue is not None:
         return [issue], ()
     try:
-        data = EXPORTS.read_bytes()
+        vocab = capture_vocabulary()
     except OSError as error:
         return [closure("unavailable", f"Pinned foundation vocabulary unavailable: {error}")], ()
-    if hashlib.sha256(data).hexdigest() != PIN.source_sha256:
-        return [closure("invalid", "Foundation exports SHA-256 differs from the release pin")], ()
-
-    catalog = json.loads(data)
-    vocab = {
-        "classes": set(catalog["classes"]),
-        "protocols": set(catalog["protocols"]),
-        "policy_base": set(catalog["policyBases"]),
-    }
+    except ValueError as error:
+        return [closure("invalid", str(error))], ()
     try:
         checks = [
             _resolve(path, ref, role, vocab, package)
-            for path, ref, role in _reference_sites(spec)
+            for path, ref, role in reference_sites(spec)
             if _external(ref, member["namespace"])
         ]
     except (KeyError, TypeError, AttributeError, ValueError) as error:
@@ -190,3 +183,16 @@ def check_import(
             closure("verified", "Pinned foundation vocabulary and qualified references checked")
         )
     return checks, (PIN,)
+
+
+def capture_vocabulary() -> dict[str, set[str]]:
+    """Read and verify one immutable release catalog before resolving references."""
+    data = EXPORTS.read_bytes()
+    if hashlib.sha256(data).hexdigest() != PIN.source_sha256:
+        raise ValueError("Foundation exports SHA-256 differs from the release pin")
+    catalog = json.loads(data)
+    return {
+        "classes": set(catalog["classes"]),
+        "protocols": set(catalog["protocols"]),
+        "policy_base": set(catalog["policyBases"]),
+    }

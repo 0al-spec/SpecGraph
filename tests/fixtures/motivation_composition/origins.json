@@ -1,0 +1,13 @@
+{
+  "revision": "0fcc94469d971aaf39fcc182bc5c6b8acff37fd2",
+  "packages": {
+    "events-core": {
+      "source": "https://github.com/0al-spec/Ontology/blob/0fcc94469d971aaf39fcc182bc5c6b8acff37fd2/SPECS/ontology/packages/events-core/versions/0.2.0/domain-ontology-package.yaml",
+      "sha256": "92a3245fc9acd15748fd1fa3cfb8e4fdc8fda429a5fd6cffd7a97bc13f2f359e"
+    },
+    "motivation-core": {
+      "source": "https://github.com/0al-spec/Ontology/blob/0fcc94469d971aaf39fcc182bc5c6b8acff37fd2/SPECS/ontology/packages/motivation-core/domain-ontology-package.yaml",
+      "sha256": "3061eca33ddc2296c2c292695d98daf6697e92fb582da544bc1d5107721ae955"
+    }
+  }
+}

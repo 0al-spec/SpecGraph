@@ -13566,7 +13566,10 @@
       "specs/nodes/SG-SPEC-0072.yaml",
       "docs/reviews/0232_project_ontology_context/adoption/README.md",
       "docs/reviews/0232_project_ontology_context/adoption/review.json",
-      "docs/reviews/0232_project_ontology_context/marathon.md"
+      "docs/reviews/0232_project_ontology_context/marathon.md",
+      "docs/reviews/0232_project_ontology_context/motivation-composition/README.md",
+      "tools/project_ontology_context/composition.py",
+      "tests/test_project_ontology_composition.py"
     ],
     "runtime_markers": [
       {

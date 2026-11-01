@@ -1,0 +1,11 @@
+apiVersion: ontology.specgraph.io/v1alpha1
+kind: DomainOntologyPackage
+metadata: {id: app.composition.pilot, namespace: pilot, version: 0.1.0, approvalStatus: draft}
+spec:
+  imports:
+    - {id: specgraph.foundation, namespace: sg, version: 0.1.0}
+    - {id: org.0al.motivation.core, namespace: motivcore, version: 0.1.0}
+  classes:
+    Project: {extends: "sg:DomainEntity", description: A synthetic project for the import pilot.}
+  relations:
+    hasMotive: {domain: Project, range: "motivcore:Motive", cardinality: {min: 0, max: 1}}
