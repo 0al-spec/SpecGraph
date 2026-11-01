@@ -101,3 +101,17 @@ source-path and AST binding checks, no-overwrite behavior and failed export
 preservation. Optional cases use both real executables to reproduce the example
 and reject bad mappings before destination creation. Neither suite validates
 ontology meaning or observed runtime behavior.
+
+## Second fragment: publication criteria
+
+The [publication replay](reviews/0232_project_ontology_context/hypercode-overview/publication/README.md)
+selects the existing core `Spec`, `Requirement` and `AcceptanceCriterion` types
+for SG-SPEC-0071: seven roles, three levels and five distinct criterion IDs sharing
+one type. A common HCS type selector supplies the shared ontology/production
+binding while exact IDs choose display names and source fragments.
+
+Real-tool controls preserve identities across renaming and tree reordering,
+reject incorrect references/hashes and detect root-name selector leakage.
+No exporter code change was required. This is an ontology-bound instance view;
+SpecDraft capture and notebook conversion are outside this experiment. The
+readable names remain proposed for human review.

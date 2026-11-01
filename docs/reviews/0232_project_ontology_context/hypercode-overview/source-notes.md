@@ -85,3 +85,22 @@ composition and mapping. It does not approve inferred graph hierarchies,
 canonical ontology meanings, SpecDraft storage changes or automatic promotion.
 The source excerpts remain agent-curated attribution, not independently
 authenticated conversation records.
+
+## Corrected next experiment: another ontology fragment
+
+`overview-13`, user correction to the suggested SpecDraft-subtree experiment:
+
+> А это для проверки? Так-то SpecDraft - не онтология, вдруг ты путаешь их…
+
+`overview-14`, assistant corrected next step selected by the user:
+
+> Правильный следующий шаг — испытать экспорт на другом содержательном фрагменте онтологии, согласовав его композицию и читаемые имена. Это проверит переносимость решения за пределами первого трёхузлового примера.
+
+`overview-15`, user response to `overview-14`:
+
+> Проверь
+
+The publication replay follows this corrected scope: existing ontology types
+and specification instances, with no SpecDraft adapter or notebook conversion.
+Its proposed display names remain for human review. This request authorizes the
+bounded experiment, not ontology publication or merge of the PR stack.

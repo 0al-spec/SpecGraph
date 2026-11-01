@@ -260,3 +260,20 @@ selector leakage and duplicate sibling names are rejected. Tests always cover
 the role/binding contract; setting `HYPERCODE_BIN` and `ONTOLOGYC_BIN` enables
 real-tool reproducibility and negative controls. Native-runtime packaging and
 SpecDraft update hooks are not part of this slice.
+
+The second-fragment replay in
+`docs/reviews/0232_project_ontology_context/hypercode-overview/publication/`
+uses SG-SPEC-0071 and the existing core Spec, Requirement and AcceptanceCriterion
+declarations. Seven roles span three levels; five criteria retain distinct PB
+IDs while sharing one type and production verifier. Selected hierarchy follows
+the real specification's local criterion list. Relation existence does not prove
+the composition's meaning. This is an ontology-bound instance view, independent
+of SpecDraft notes; display names remain proposed.
+
+Ten replay tests check source IDs, byte-identical repeated output, display rename
+and ordering preservation, wrong class/version/hash, duplicate identity,
+missing function and root-name selector leakage. Nine real-tool cases require
+`HYPERCODE_BIN` and `ONTOLOGYC_BIN`; source-ID validation runs without them.
+No exporter implementation change was necessary. Shared metadata comparison
+anchors for Manifest and Checksums remain two roles, with no claim of observed
+criterion satisfaction or runtime execution.

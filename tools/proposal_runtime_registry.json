@@ -13600,7 +13600,13 @@
       "tools/ontology_overview/model.py",
       "tools/ontology_overview/export.py",
       "tools/ontology_overview_cli.py",
-      "tests/test_ontology_overview.py"
+      "tests/test_ontology_overview.py",
+      "tests/test_ontology_overview_publication.py",
+      "docs/reviews/0232_project_ontology_context/hypercode-overview/publication/README.md",
+      "docs/reviews/0232_project_ontology_context/hypercode-overview/publication/selection.hc",
+      "docs/reviews/0232_project_ontology_context/hypercode-overview/publication/selection.hcs",
+      "docs/reviews/0232_project_ontology_context/hypercode-overview/publication/generated/context.hc",
+      "docs/reviews/0232_project_ontology_context/hypercode-overview/publication/generated/context.hcs"
     ],
     "runtime_markers": [
       {

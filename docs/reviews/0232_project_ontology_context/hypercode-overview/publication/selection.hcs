@@ -1,0 +1,39 @@
+'#SG-SPEC-0071':
+  overview_name: "Publication"
+  ontology_source: "ontology/packages/specgraph-core/domain-ontology-package.yaml"
+  ontology_sha256: "5bfa2ff40b6174def589546ab2fea2501e1f256c4f1446f36c45c7f3fffcd929"
+  ontology_ref: "ontology://org.0al.specgraph.core/0.1.0/classes/Spec"
+  composition_ref: "ontology://org.0al.specgraph.core/0.1.0/relations/definesRequirement"
+  scenario_source: "specs/nodes/SG-SPEC-0071.yaml"
+  scenario_sha256: "9f4a8b8332138ef3b6d1d9cc873b2a40a1a4620f7fceb35db32d4d9e1d6521a9"
+
+'#SG-REQ-PUBLICATION-VERIFIED':
+  overview_name: "Verification"
+  ontology_ref: "ontology://org.0al.specgraph.core/0.1.0/classes/Requirement"
+  composition_ref: "ontology://org.0al.specgraph.core/0.1.0/relations/requirementValidatedByCriterion"
+
+AcceptanceCriterion:
+  ontology_ref: "ontology://org.0al.specgraph.core/0.1.0/classes/AcceptanceCriterion"
+  production_path: "tools/static_artifact_incremental_stage.py"
+  production_symbol: "verify_remote_bundle"
+  production_sha256: "247a69929786a136baa9606d5bc847a371bfb09b53c6a94097d996a5d3ed16b0"
+
+'#PB-ALL':
+  overview_name: "AllFiles"
+  production_anchor: "verified = list(pool.map(verify, local_files.items()))"
+
+'#PB-PAYLOAD':
+  overview_name: "Payload"
+  production_anchor: "remote artifact digest mismatch:"
+
+'#PB-MANIFEST':
+  overview_name: "Manifest"
+  production_anchor: "remote metadata digest mismatch:"
+
+'#PB-CHECKSUMS':
+  overview_name: "Checksums"
+  production_anchor: "remote metadata digest mismatch:"
+
+'#PB-MISSING':
+  overview_name: "Missing"
+  production_anchor: "remote artifact request failed for"
