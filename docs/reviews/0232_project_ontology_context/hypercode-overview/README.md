@@ -51,10 +51,38 @@ The HCS properties use a prototype consumer convention:
 | `scenario_source`, `scenario_sha256` | Existing case declaration and exact bytes |
 | `hc_sha256` | The readable outline bytes paired with this mapping |
 | `projection_profile`, `composition_status` | Prototype convention and proposed interpretation |
+| `production_path`, `production_symbol` | Repository-relative Python module and its top-level function |
+| `production_sha256` | Exact bytes of that production module |
+| `production_anchor` | Selected source fragment inside the function, narrowing this role's scope |
+| `production_url` | Convenience link to the same source revision and anchor line |
 
 Root metadata describes the pair. It is not implicitly inherited by child nodes:
 Hypercode resolves properties on matched nodes. The root supplies shared input
 identity; each child has its own complete versioned type URI and role ID.
+
+## Direct production bindings
+
+The same HCS now also identifies the real code behind each role:
+
+| Readable role | Production symbol | Selected responsibility |
+| --- | --- | --- |
+| `ContextVerification` | `tools/project_ontology_context/capture.py: capture_project_context` | Collect checks and choose the overall outcome through existing Specifications |
+| `Member` | `tools/ontology_snapshot.py: capture_ontology_snapshot` | Capture exact source/compiler bytes, execute the compiler and compare generated/saved IR |
+| `Dependencies` | `tools/project_ontology_context/capture.py: capture_project_context` | Retain unavailable closure for a profile that does not support the declared imports |
+
+The root and Dependencies roles select different fragments of the same function;
+they do not assert that separate implementation classes exist. Member identifies
+the snapshot function called by the parent capture operation; package selection
+and identity checks also remain in the caller. These are authored source bindings,
+not claims of complete symbol coverage or observed runtime invocation.
+
+The [production binding observation](production-verification.json) was derived
+from the resolved pair: module hashes match, each function is found through
+Python AST, and its selected fragment is inside that function. An altered module
+hash, missing symbol and anchor outside the selected function are rejected by
+the local probe. `production_url` is a navigation aid; path, symbol, bytes and
+fragment are the independently checked binding. No target Python module is
+imported or executed by the source lookup.
 
 ## What remains outside the outline
 
@@ -87,10 +115,13 @@ hypercode explain docs/reviews/0232_project_ontology_context/hypercode-overview/
   'ContextVerification > Member' ontology_ref
 ```
 
-The retained [local verification](verification.json) records executable/input
+The initial [local verification](verification.json) records executable/input
 hashes, parse/validate/emit checks, declaration lookup, mapping coverage and
 negative controls. Generated IR and command transcripts remain on TB5.
 No new compiler build or inference is needed to inspect the pair.
+That receipt observes the original pair at PR head `34161286`; its old HCS hash
+is historical. The production observation binds the current extended pair and
+retains its own inputs. The three-line `.hc` is unchanged.
 
 Hypercode validates syntax and resolves property strings with provenance.
 It does **not** interpret `ontology_ref`, fetch an ontology or validate the

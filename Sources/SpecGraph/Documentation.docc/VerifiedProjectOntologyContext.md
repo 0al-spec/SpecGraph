@@ -223,3 +223,7 @@ ontology references, distinct role IDs and exact source hashes. The chosen view
 and names remain proposed. It changes no stored SpecDraft notebook or canonical
 ontology and implements no general exporter. Hypercode's syntax/cascade checks
 and the local explicit ontology-link lookup are separate observations.
+Production paths, function names, byte hashes and source anchors in the HCS now
+connect the same roles to the real capture/snapshot code. The retained source
+lookup checks symbol/fragment existence through Python AST without executing
+the target modules; authored bindings do not establish complete runtime coverage.

@@ -1,4 +1,9 @@
 ContextVerification:
+  production_path: "tools/project_ontology_context/capture.py"
+  production_symbol: "capture_project_context"
+  production_sha256: "4656ba416997330b3cf122d11c0cbdfa8a1284b913655bd518afd7e3fa7910c7"
+  production_anchor: "facts = ContextFacts(tuple(checks))"
+  production_url: "https://github.com/0al-spec/SpecGraph/blob/0f0a056a522a9c6bbba0e75e3748bad909d1d5c7/tools/project_ontology_context/capture.py#L329"
   projection_profile: "specgraph-ontology-overview-prototype-v0"
   composition_status: "proposed"
   role_id: "SG72-UNSUPPORTED-CLOSURE"
@@ -11,11 +16,21 @@ ContextVerification:
   hc_sha256: "24916693bb2be3419c2b5e46999db7aef90d6f4d7a2164bdd50e93efb196f150"
 
 ContextVerification > Member:
+  production_path: "tools/ontology_snapshot.py"
+  production_symbol: "capture_ontology_snapshot"
+  production_sha256: "51f64cf69e69532cda5dfdd44a71b4872af8d1b7cb6c106b97c0bb20ade05fae"
+  production_anchor: "saved ontology IR differs from compiler output"
+  production_url: "https://github.com/0al-spec/SpecGraph/blob/0f0a056a522a9c6bbba0e75e3748bad909d1d5c7/tools/ontology_snapshot.py#L264"
   role_id: "captured-member"
   ontology_ref: "ontology://org.0al.specgraph.local.contextcase/0.2.0/classes/CheckResult"
   ontology_pointer: "/spec/classes/CheckResult"
 
 ContextVerification > Dependencies:
+  production_path: "tools/project_ontology_context/capture.py"
+  production_symbol: "capture_project_context"
+  production_sha256: "4656ba416997330b3cf122d11c0cbdfa8a1284b913655bd518afd7e3fa7910c7"
+  production_anchor: "dependency closure and composition checks are unsupported"
+  production_url: "https://github.com/0al-spec/SpecGraph/blob/0f0a056a522a9c6bbba0e75e3748bad909d1d5c7/tools/project_ontology_context/capture.py#L284"
   role_id: "unsupported-closure"
   ontology_ref: "ontology://org.0al.specgraph.local.contextcase/0.2.0/classes/CheckResult"
   ontology_pointer: "/spec/classes/CheckResult"

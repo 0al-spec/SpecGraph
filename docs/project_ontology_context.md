@@ -339,3 +339,7 @@ interpretation. It neither changes SpecDraft's stored notes nor exports arbitrar
 ontologies automatically. Hypercode syntax/cascade checks and explicit ontology
 link checks are recorded separately; a valid property string alone does not
 establish a resolved ontology binding.
+The companion HCS also records production paths, function names, byte hashes
+and in-function anchors for the same three roles. A separate local observation
+checks those bindings with Python AST without importing the target code. Root
+and dependency roles can select different fragments of one existing function.

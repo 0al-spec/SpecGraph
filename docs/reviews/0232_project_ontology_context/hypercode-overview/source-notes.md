@@ -54,3 +54,18 @@ This authorizes preparing the first prototype of the proposed pair. It does
 not approve the particular short names selected afterwards, a general exporter,
 canonical ontology meanings, automatic promotion or a deployment. The current
 HCS metadata explicitly keeps the composition proposed for review.
+
+## Approved follow-up: production source bindings
+
+`overview-9`, assistant proposal selected by the user:
+
+> Следующий полезный шаг — добавить в HCS прямые привязки к production-символам, чтобы эту расшифровку можно было получить из самой пары файлов.
+
+`overview-10`, user response to `overview-9`:
+
+> Хорошо, меня устраивает, так что я одобряю. нужно делать далее.
+
+This authorizes extending the prototype mapping with direct production-symbol
+references and checking them. The response is linked to that bounded proposal;
+it is not treated as canonical publication or approval of arbitrary ontology
+interpretations. The existing role outline and note storage remain unchanged.
