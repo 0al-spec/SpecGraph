@@ -1,0 +1,103 @@
+{
+  "artifact_kind": "meta_domain_applicability_triage",
+  "schema_version": 1,
+  "spec_id": "SG-SPEC-0072",
+  "proposal_id": "0232",
+  "status": "design_candidate",
+  "runtime_profile_activation_allowed": false,
+  "canonical_mutations_allowed": false,
+  "source_observation": {
+    "repository": "GitView",
+    "commit": "60c67f7",
+    "path": "docs/drafts/sgcore-applicability-0f0a056a.md",
+    "sha256": "06035181f5cbedd421d969b6b8808a2310f70ab0f69371310919d358c4b7d55e",
+    "committed_source_matches": true
+  },
+  "baseline_specgraph_revision": "0f0a056a522a9c6bbba0e75e3748bad909d1d5c7",
+  "retained_summary_sha256": "e9ff61304dcc52f272c313ab64fcd13d2c6b5897933bca718bbf54c627d37e43",
+  "reported_input_pins": {
+    "real_spec_sha256": "56fd32cf5118687e2b14d8058fa35ca644e19b91f67b2091bb09b5fcd3ca7d4f",
+    "sgcore_source_sha256": "5bfa2ff40b6174def589546ab2fea2501e1f256c4f1446f36c45c7f3fffcd929",
+    "sgcore_ir_sha256": "7a9d1cb640f154c32a2a15a4ec8868349bee04be30a0b5da886422c0d3eb638f",
+    "compiler_sha256": "dcdc37216246f9acebca7387e14b61300d9dec4367f7c1630445b97280c80168",
+    "runtime_commit": "0f0a056a522a9c6bbba0e75e3748bad909d1d5c7",
+    "project_sources_unchanged": true
+  },
+  "reported_controls": {
+    "default": {
+      "target": "checked",
+      "context": "verified",
+      "warning_count": 5,
+      "domain_unknowns": [
+        "Activity",
+        "motivcore:Motive"
+      ]
+    },
+    "composition": {
+      "target": "checked",
+      "context": "verified",
+      "warning_count": 4,
+      "domain_unknowns": [
+        "Activity"
+      ]
+    },
+    "sgcore-only": {
+      "target": "checked",
+      "context": "verified",
+      "warning_count": 12,
+      "domain_unknowns": [
+        "Project",
+        "Repository",
+        "Code",
+        "VersionControlSystem",
+        "GitHub",
+        "Issue",
+        "PullRequest",
+        "ReviewThread",
+        "CIStatus",
+        "Metric",
+        "Activity",
+        "motivcore:Motive"
+      ]
+    },
+    "composition-plus-sgcore": {
+      "target": "invalid",
+      "context": "invalid",
+      "warning_count": null,
+      "domain_unknowns": null
+    },
+    "foundation-pair": {
+      "target": "unavailable",
+      "context": "unavailable",
+      "warning_count": null,
+      "domain_unknowns": null
+    },
+    "structural-pair": {
+      "target": "unavailable",
+      "context": "unavailable",
+      "warning_count": null,
+      "domain_unknowns": null
+    }
+  },
+  "independent_verification": {
+    "source_inspection": true,
+    "retained_summary_read": true,
+    "sgcore_source_hash_matches": true,
+    "compiler_or_runtime_reexecuted": false,
+    "note_history_restoration_reexecuted": false,
+    "proposed_acceptance_matrix_executed": false
+  },
+  "source_files": {
+    "tools/spec_ontology_binding_index.py": "06457872c73315d0cb0d206fed02aa72ac238156ea3dc9ba6b45ba5c6acaca88",
+    "tools/spec_ontology_validation_report.py": "d5e5be51cff0561a37d3f8d3fcf045adb6f6835ccae12d97becee92078c25062",
+    "tools/spec_ontology_context_reports.py": "b90954815f64d9e2095af81d46ae769808ab27283a617a791a44b6110d48ec80",
+    "tools/project_ontology_report_freshness.py": "ad3abe5a3078cba81f151b70d57f69d3a40f99eec794dfbff78bc2cab8781c31",
+    "ontology/packages/specgraph-core/domain-ontology-package.yaml": "5bfa2ff40b6174def589546ab2fea2501e1f256c4f1446f36c45c7f3fffcd929"
+  },
+  "open_decisions": [
+    "domain-only default with explicit unrequested meta status",
+    "meta-model source and applicability for external specification artifacts",
+    "scoped report/profile and freshness migration"
+  ],
+  "semantic_approval": "not_established"
+}

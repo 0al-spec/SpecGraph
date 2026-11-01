@@ -13584,7 +13584,10 @@
       "docs/reviews/0232_project_ontology_context/single-member-references/README.md",
       "docs/reviews/0232_project_ontology_context/single-member-references/verification.json",
       "tests/test_spec_ontology_context_reports.py",
-      "tests/test_project_ontology_report_freshness.py"
+      "tests/test_project_ontology_report_freshness.py",
+      "docs/reviews/0232_project_ontology_context/meta-domain-applicability/README.md",
+      "docs/reviews/0232_project_ontology_context/meta-domain-applicability/observation.json",
+      "Sources/SpecGraph/Documentation.docc/MetaDomainApplicability.md"
     ],
     "runtime_markers": [
       {
