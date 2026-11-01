@@ -74,6 +74,12 @@ Installed-runtime smoke always checks help and unavailable-tool forwarding.
 Optional `--hypercode` and `--ontologyc` smoke arguments enable real export in
 two separate roots, requiring identical outputs and the updated packaged skill.
 `reference_export: not_requested` records absent reference-tool execution.
+The local observation at
+`docs/reviews/0231_native_runtime/ontology-overview-verification.json` binds an
+actual no-history installation of `126ee3cd` and successful reference exports
+in two synthetic workspaces, with identical pair digests and matching installed
+skill bytes. It also preserves successful checks of the previous native routes.
+This does not upgrade an existing consumer or prove live-agent use.
 
 Current supervisor refinement requires its configured Codex executor. ASP is
 future work, and the invoking agent is not automatically the child executor.

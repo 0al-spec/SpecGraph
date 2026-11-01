@@ -103,6 +103,14 @@ tool result from separate workspaces. Passing `--hypercode` and `--ontologyc` to
 including byte-identical output and delivery of the updated skill. An observation
 with `reference_export: not_requested` is not a successful reference export.
 
+The [installed-runtime observation](reviews/0231_native_runtime/ontology-overview-verification.json)
+records a local installation of commit `126ee3cd7155ca4914de958477b2cb94a849c17f`
+with a separate venv and no engine `.git`. Both synthetic workspaces completed
+real Hypercode/ontologyc exports with identical pair digests and received the
+matching project ontology skill. Existing init/advisor/Supervisor/note scenarios
+also passed. This is local fixture evidence; it does not update a consumer's
+existing installation or establish ontology acceptance or live agent behavior.
+
 Version 1 accepts a single HCS sheet and the empty context. HCS imports and
 context selection are not expanded by the export adapter. Generated HC removes
 source classes/IDs; `source_type` and `role_id` retain type/occurrence identity in
