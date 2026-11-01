@@ -1,0 +1,33 @@
+{
+  "artifact_kind": "external_target_id_local_observation",
+  "schema_version": 1,
+  "spec_id": "SG-SPEC-0072",
+  "proposal_id": "0232",
+  "baseline_revision": "8e39d784dda561698089af4a23512a44ef4804bd",
+  "baseline": {
+    "legacy_namespace": "accepted",
+    "product_namespaces": [
+      "GITVIEW-SPEC-0001",
+      "ACME-UI-SPEC-12345"
+    ],
+    "product_exit_code": 2,
+    "diagnostic": "--target-spec must be SG-SPEC-NNNN"
+  },
+  "repaired_source_checkout": {
+    "target_id": "GITVIEW-SPEC-0001",
+    "target_source": "synthetic copy",
+    "exit_code": 1,
+    "context_outcome": "verified",
+    "inventory_outcome": "unavailable",
+    "inventory_diagnostics": [
+      "multiple-member inventory is unsupported"
+    ],
+    "original_gitview_pilot_hashes_unchanged": true
+  },
+  "focused_tests": {
+    "passed": 75,
+    "skipped": 0
+  },
+  "semantic_approval": "not_established",
+  "canonical_mutations_allowed": false
+}
