@@ -137,3 +137,12 @@ First review the short outline and role choices. If useful, define a small
 deterministic export profile taking an explicit selected composition plus its
 ontology bindings, then produce this same pair without a reverse importer.
 Preserve source/role identity and known omissions as names and structure evolve.
+
+That follow-up is now implemented by the opt-in
+[readable overview export](../../../ontology_overview_export.md). The explicit
+[selection HC](selection.hc) retains source type/role IDs; its
+[selection HCS](selection.hcs) supplies display names and existing bindings.
+The [generated HC](generated/context.hc) has the same three readable lines.
+The manual pair and its historical observations above remain unchanged.
+The exporter checks local declaration existence and selected source fragments;
+it does not establish the composition's meaning or activate a policy.

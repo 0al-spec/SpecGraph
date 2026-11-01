@@ -343,3 +343,11 @@ The companion HCS also records production paths, function names, byte hashes
 and in-function anchors for the same three roles. A separate local observation
 checks those bindings with Python AST without importing the target code. Root
 and dependency roles can select different fragments of one existing function.
+
+The next bounded [readable overview export](ontology_overview_export.md) now
+turns an authored HC/HCS selection into a minimized pair. It preserves tree order,
+role identity and exact ontology/source bindings, checks declarations through
+`ontologyc` and functions through AST, and resolves the generated cascade with
+Hypercode before saving to a new directory. It does not infer hierarchy, change
+notebook storage or approve ontology terms. This remains checkout tooling;
+native-runtime and SpecDraft hook integration are separate follow-ups.

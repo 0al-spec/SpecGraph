@@ -1373,6 +1373,16 @@
       ]
     },
     {
+      "id": "readable-ontology-overview-export",
+      "description": "The authored one-way HC/HCS projection and structural export boundaries stay aligned.",
+      "docs": ["docs/ontology_overview_export.md"],
+      "docc": ["Sources/SpecGraph/Documentation.docc/VerifiedProjectOntologyContext.md"],
+      "required_terms": [
+        "overview_name", "role_id", "ontology_ref", "production_symbol",
+        "exported", "HYPERCODE_BIN", "ONTOLOGYC_BIN"
+      ]
+    },
+    {
       "id": "project-ontology-context-runtime",
       "description": "The implemented bounded context capture scope stays aligned with DocC.",
       "docs": ["docs/project_ontology_context.md"],
