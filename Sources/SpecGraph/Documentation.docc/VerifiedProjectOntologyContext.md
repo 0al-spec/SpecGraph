@@ -167,7 +167,30 @@ Exact imports and structural references resolve with source pointers and
 qualified concept URIs. Missing dependencies, incompatible pins and unknown
 names are invalid; absent source/IR/compiler is unavailable. Selection order
 does not affect the context revision. This does not establish semantic
-approval or multi-member specification term inventory, which remains unsupported.
+approval. The same verified selection now supplies a joint advisory vocabulary.
+
+Inventory and the binding/validation bundle reuse all three captured member
+IRs and the pinned foundation class catalog. They never synthesize a compiler IR
+or reopen saved package inputs. Qualified references match exactly; unqualified
+spellings/aliases can be candidates, unknown or ambiguous across the whole selected
+vocabulary. Ambiguity never selects a package-order winner. This does not broaden
+direct-import visibility inside a package.
+
+Candidate origins retain package ID/namespace/version, concept URI and captured
+source/IR/compiler hashes. Captured dependency source URIs are retained where
+available. Foundation origins identify the pinned export catalog without invented
+IR/compiler digests. Composed reports use `selected_composition_symbols` and
+`specgraph-composed-symbol-advisory-v1`, recording every member capture and the
+catalog separately. Freshness binds all of those inputs. Previous inventory
+freshness remains unassessed; current inventory is computed from captured inputs.
+
+Only this already verified composition is supported; missing or unverified
+members do not produce a partial successful joint inventory. Classes, relations
+and member aliases are included; protocol/policy inventories remain outside scope.
+Single-member binding extraction retains its existing profile. The legacy
+`accepted_bindings` name confers no semantic approval, and an empty inventory does
+not establish grounding. The source-bound replay and regressions are in
+`docs/reviews/0232_project_ontology_context/joint-vocabulary/README.md`.
 
 ## Product target IDs
 

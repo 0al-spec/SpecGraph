@@ -7,7 +7,7 @@ import argparse
 import json
 import sys
 from pathlib import Path
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 from ontology_imports import ROOT, load_json, relative_path, write_json
 from ontology_snapshot import OntologySnapshot, capture_ontology_snapshot
@@ -17,6 +17,9 @@ from spec_ontology_binding_index import (
     build_binding_index,
     snapshot_evidence,
 )
+
+if TYPE_CHECKING:
+    from project_ontology_context.vocabulary import CapturedVocabulary
 
 PROPOSAL_ID = "0135"
 SCHEMA_VERSION = 1
@@ -123,10 +126,17 @@ def validate_entry(
             {
                 "finding_id": f"{entry['spec_id']}.gap.{gap.get('term')}",
                 "severity": "warning",
-                "classification": "unknown_legacy_term",
+                "classification": "ambiguous_ontology_term"
+                if gap.get("resolution") == "ambiguous"
+                else "unknown_legacy_term",
                 "term": gap.get("term"),
                 "source": gap.get("source"),
                 "gap_ref": gap.get("gap_id"),
+                **(
+                    {"candidates": gap["candidates"], "candidate_origins": gap["candidate_origins"]}
+                    if "candidate_origins" in gap
+                    else {}
+                ),
                 "suggested_action": "review_ontology_gap",
             }
         )
@@ -145,19 +155,34 @@ def build_validation_report(
     ir_path: Path = DEFAULT_IR_PATH,
     snapshot: OntologySnapshot | None = None,
     binding_index: dict[str, Any] | None = None,
+    vocabulary: CapturedVocabulary | None = None,
 ) -> dict[str, Any]:
-    ir = json.loads(snapshot.ir_bytes) if snapshot is not None else load_json(ir_path)
-    # Even legacy, unverified reports use a single in-memory read.
-    binding_index = (
-        binding_index
-        if binding_index is not None
-        else (
-            build_binding_index(ir_path=ir_path, snapshot=snapshot)
-            if snapshot is not None
-            else build_binding_index(ir_path=ir_path, ir=ir)
-        )
+    if vocabulary is not None and snapshot is not None:
+        raise ValueError("provide vocabulary or snapshot, not both")
+    ir = (
+        {}
+        if vocabulary is not None
+        else json.loads(snapshot.ir_bytes)
+        if snapshot is not None
+        else load_json(ir_path)
     )
-    relations = relation_contracts(ir)
+    # Even legacy, unverified reports use a single in-memory read.
+    if binding_index is None:
+        if vocabulary is not None:
+            binding_index = build_binding_index(vocabulary=vocabulary)
+        elif snapshot is not None:
+            binding_index = build_binding_index(ir_path=ir_path, snapshot=snapshot)
+        else:
+            binding_index = build_binding_index(ir_path=ir_path, ir=ir)
+    relations = (
+        relation_contracts(ir)
+        if vocabulary is None
+        else {
+            s.reference: {"domain": s.domain, "range": s.range}
+            for s in vocabulary.symbols
+            if s.kind == "relation" and isinstance(s.domain, str) and isinstance(s.range, str)
+        }
+    )
     entries = [
         validate_entry(entry, relations=relations)
         for entry in binding_index.get("entries", [])

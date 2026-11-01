@@ -30,6 +30,9 @@ _PRODUCER_FILES = (
     "spec_ontology_validation_report.py",
     "ontology_imports.py",
     "ontology_snapshot.py",
+    "project_ontology_context/vocabulary.py",
+    "project_ontology_context/composition.py",
+    "project_ontology_context/foundation.py",
 )
 
 

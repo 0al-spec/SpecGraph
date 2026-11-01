@@ -130,8 +130,8 @@ and the actual dependency packages from Ontology 0.5.0. The events-core 0.2.0
 source is under `SPECS/ontology/packages/events-core/versions/0.2.0/`.
 
 This profile checks package composition and structural reference slots.
-The existing spec term inventory and advisory reports retain their
-single-member scope and return unavailable for joint multi-member analysis.
+The explicit term inventory and advisory reports also support this one verified
+composition, as described below. Other multi-member profiles remain unavailable.
 A composed context does not establish natural-language coverage or semantic
 approval.
 
@@ -232,10 +232,49 @@ where applicable. Captured documents may be shared with the advisory reports;
 the inventory never reopens saved ontology IR or changes source specifications.
 
 Free prose remains `unassessed`, `grounded` remains false, and an empty inventory
-does not certify a specification. Multi-member resolution is unsupported in this
-profile. A single captured member may supply local advisory candidates while
+does not certify a specification. A single captured member may supply local advisory candidates while
 overall dependency closure remains unavailable. Foreign workspace, malformed
 input and duplicate identities remain explicit failures.
+
+### Joint vocabulary for the selected motivation composition
+
+For a verified `ontologyc-motivation-composition-v1` context, inventory and the
+binding/validation bundle share the captured-vocabulary implementation. It
+reads classes, relations and aliases from all three immutable selected IR
+snapshots, plus classes from the hash-checked pinned foundation catalog.
+It does not merge packages into a fictional compiler IR or reopen saved source/IR
+files. Protocol/policy inventories and arbitrary package compositions are outside
+this slice. An incomplete or unverified composition cannot fall back to the
+symbols of whichever packages happen to be available.
+
+Qualified names such as `motivcore:Motive` require an exact reference match.
+Unqualified spellings and aliases search the selected vocabulary as a whole:
+one match is a candidate, multiple declarations remain ambiguous, no match is
+unknown. This is a specification-wide advisory vocabulary, not the direct-import
+visibility rule for references inside an individual ontology package.
+The existing package compiler/closure check still owns that separate rule.
+
+Each inventory candidate and composed binding/gap has `candidate_origins`:
+package ID/namespace/version, concept URI, captured source/IR/compiler hashes and
+the captured import source URI where available. Foundation entries are explicitly
+`pinned_export_catalog`, with no fabricated IR/compiler digest. The bundle records
+`selected_composition_symbols` and `specgraph-composed-symbol-advisory-v1`, an
+ordered `members` capture inventory and `foundation_catalog`. It has no invented
+single `selected_member` or aggregate source/IR hash. `verified_closure: true`
+refers only to the already verified selected dependency closure.
+
+The composed binding index resolves both terminology keys and explicit
+`ontology_refs` through that vocabulary. It keeps the legacy `accepted_bindings`
+field name for compatibility; the field remains structural advisory data.
+Ambiguity creates gaps/findings rather than allowing package order to select a
+winner. Existing legacy structural mappings and warnings remain report-only.
+Single-member binding extraction retains its existing profile and behavior.
+
+Freshness binding includes every member capture and catalog identity. A changed
+dependency cannot stay fresh just because the project package is unchanged.
+Changing only member selection order does not change the results. Previous
+inventory freshness remains `not_assessed`; current inventory is recomputed.
+See the [source-bound GitView replay](reviews/0232_project_ontology_context/joint-vocabulary/README.md).
 
 ## Target-scoped Supervisor operation
 
