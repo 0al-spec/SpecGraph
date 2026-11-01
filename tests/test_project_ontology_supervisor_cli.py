@@ -71,6 +71,37 @@ def test_external_workspace_missing_selection_persists_unavailable(workspace):
     assert json.loads(full.stdout)["previous_freshness"] is not None
 
 
+@pytest.mark.parametrize("target_id", ["SG-SPEC-0001", "GITVIEW-SPEC-0001", "ACME-UI-SPEC-12345"])
+def test_product_spec_namespace_reaches_context_check_without_source_mutation(workspace, target_id):
+    target = workspace / "specs/nodes" / f"{target_id}.yaml"
+    target.write_text(f"id: {target_id}\nkind: spec\n")
+    policy = workspace / ".specgraph/spec-id-policy.json"
+    policy.parent.mkdir()
+    policy.write_text(
+        json.dumps({"schema_version": 1, "prefix": target_id.rsplit("-", 1)[0], "aliases": {}})
+    )
+    before = target.read_bytes(), policy.read_bytes()
+    result = call(
+        workspace,
+        "--build-project-ontology-context-check",
+        "--target-spec",
+        target_id,
+        "--ontology-context-project-id",
+        "demo",
+        "--output-mode",
+        "full",
+    )
+    assert result.returncode == 1, result.stderr
+    report = json.loads(result.stdout)
+    assert report["outcome"] == "unavailable"
+    assert report["target"]["id"] == target_id
+    assert report["target"]["path"] == f"specs/nodes/{target_id}.yaml"
+    saved = workspace / "runs/project_ontology_context" / f"{target_id}.json"
+    assert json.loads(saved.read_text()) == report
+    assert (target.read_bytes(), policy.read_bytes()) == before
+    assert report["canonical_mutations_allowed"] is False
+
+
 @pytest.mark.parametrize(
     "arguments",
     [
@@ -135,6 +166,62 @@ def test_input_errors_have_no_report(workspace, arguments):
     assert not result.stdout and not (workspace / "runs").exists()
 
 
+@pytest.mark.parametrize(
+    "target_id",
+    [
+        "../GITVIEW-SPEC-0001",
+        "GITVIEW-SPEC-0001/child",
+        "GITVIEW-SPEC-0001\n",
+        "GITVIEW-SPEC-０００１",
+        "gitview-SPEC-0001",
+    ],
+)
+def test_product_namespace_cannot_bypass_cli_path_validation(workspace, target_id):
+    result = call(
+        workspace,
+        "--build-project-ontology-context-check",
+        "--target-spec",
+        target_id,
+        "--ontology-context-project-id",
+        "demo",
+    )
+    assert result.returncode == 2 and not result.stdout
+    assert not (workspace / "runs").exists()
+
+
+def test_product_target_does_not_follow_alias_or_rewrite_mismatched_yaml(workspace):
+    target = workspace / "specs/nodes/GITVIEW-SPEC-0001.yaml"
+    target.write_text("id: SG-SPEC-0001\nkind: spec\n")
+    policy = workspace / ".specgraph/spec-id-policy.json"
+    policy.parent.mkdir()
+    policy.write_text(
+        json.dumps(
+            {
+                "schema_version": 1,
+                "prefix": "GITVIEW-SPEC",
+                "aliases": {"SG-SPEC-0001": "GITVIEW-SPEC-0001"},
+            }
+        )
+    )
+    before = target.read_bytes()
+    result = call(
+        workspace,
+        "--build-project-ontology-context-check",
+        "--target-spec",
+        "GITVIEW-SPEC-0001",
+        "--ontology-context-project-id",
+        "demo",
+        "--output-mode",
+        "full",
+    )
+    assert result.returncode == 2
+    report = json.loads(result.stdout)
+    assert report["outcome"] == "invalid"
+    assert report["target"] is None
+    assert "target YAML id does not match" in report["diagnostics"][0]
+    assert target.read_bytes() == before
+
+
 def test_output_symlink_and_unrelated_artifact_are_rejected(workspace, tmp_path):
     directory = workspace / "runs/project_ontology_context"
     directory.mkdir(parents=True)
@@ -169,7 +256,8 @@ def test_file_import_restores_sys_path(workspace, monkeypatch, capsys):
     assert sys.path == before
 
 
-def test_checked_then_changed_target_reports_previous_stale(tmp_path):
+@pytest.mark.parametrize("target_id", ["SG-SPEC-0001", "GITVIEW-SPEC-0001"])
+def test_checked_then_changed_target_reports_previous_stale(tmp_path, target_id):
     fixture_path = SUPERVISOR.parent.parent / "tests/test_project_ontology_supervisor_check.py"
     spec = importlib.util.spec_from_file_location("ontology_check_test_fixture", fixture_path)
     module = importlib.util.module_from_spec(spec)
@@ -179,10 +267,13 @@ def test_checked_then_changed_target_reports_previous_stale(tmp_path):
         root, target, compiler, _, _ = module.workspace.__wrapped__(tmp_path)
     finally:
         sys.path[:] = old_path
+    renamed = target.with_name(target_id + ".yaml")
+    renamed.write_bytes(target.read_bytes().replace(b"SG-SPEC-0001", target_id.encode()))
+    target = renamed
     args = (
         "--build-project-ontology-context-check",
         "--target-spec",
-        "SG-SPEC-0001",
+        target_id,
         "--ontology-context-project-id",
         "project",
         "--ontology-context-selection",
@@ -194,9 +285,10 @@ def test_checked_then_changed_target_reports_previous_stale(tmp_path):
     assert first.returncode == 0, first.stderr + first.stdout
     first_summary = json.loads(first.stdout)
     assert first_summary["outcome"] == "checked"
+    assert first_summary["target_spec_id"] == target_id
     previous = first_summary["report_path"]
     target.write_text(
-        "id: SG-SPEC-0001\nkind: spec\nspecification:\n  terminology:\n    Changed: {}\n"
+        f"id: {target_id}\nkind: spec\nspecification:\n  terminology:\n    Changed: {{}}\n"
     )
     second = call(root, *args, "--ontology-context-previous-report", previous)
     assert second.returncode == 0, second.stderr + second.stdout

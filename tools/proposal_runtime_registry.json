@@ -13569,7 +13569,12 @@
       "docs/reviews/0232_project_ontology_context/marathon.md",
       "docs/reviews/0232_project_ontology_context/motivation-composition/README.md",
       "tools/project_ontology_context/composition.py",
-      "tests/test_project_ontology_composition.py"
+      "tests/test_project_ontology_composition.py",
+      "docs/reviews/0232_project_ontology_context/external-target-id/README.md",
+      "tools/project_ontology_supervisor_check.py",
+      "tools/project_ontology_supervisor_cli.py",
+      "tests/test_project_ontology_supervisor_check.py",
+      "tests/test_project_ontology_supervisor_cli.py"
     ],
     "runtime_markers": [
       {

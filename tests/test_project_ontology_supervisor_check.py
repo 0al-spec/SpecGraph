@@ -241,3 +241,76 @@ def test_previous_bundle_freshness_never_certifies_inventory(workspace):
     assert current["previous_freshness"]["scope"] == "binding_validation_bundle"
     assert current["previous_freshness"]["inventory_freshness"] == "not_assessed"
     assert current["inventory_freshness"] == "not_assessed"
+
+
+@pytest.mark.parametrize("target_id", ["SG-SPEC-0001", "GITVIEW-SPEC-0001", "ACME-UI-SPEC-12345"])
+def test_project_target_id_is_checked_with_exact_captured_identity(workspace, target_id):
+    root, original, compiler, _, _ = workspace
+    target = original.with_name(target_id + ".yaml")
+    raw = original.read_bytes().replace(b"SG-SPEC-0001", target_id.encode())
+    target.write_bytes(raw)
+    before = target.read_bytes()
+    result = check.build_target_context_check(
+        root,
+        project_id="project",
+        target_spec_id=target_id,
+        selection_path=Path("selection.yaml"),
+        ontologyc=compiler,
+    )
+    assert result["outcome"] == "checked", result["diagnostics"]
+    assert result["target"] == {
+        "id": target_id,
+        "path": f"specs/nodes/{target_id}.yaml",
+        "sha256": sha(raw),
+    }
+    assert result["target"]["sha256"] == result["bundle"]["inputs"]["specs"][0]["sha256"]
+    assert result["canonical_mutations_allowed"] is False
+    assert target.read_bytes() == before
+
+
+@pytest.mark.parametrize(
+    "target_id",
+    [
+        "../GITVIEW-SPEC-0001",
+        "/GITVIEW-SPEC-0001",
+        "gitview-SPEC-0001",
+        "GITVIEW-SPEC-0001/child",
+        "GITVIEW-SPEC-0001\n",
+        "GITVIEW-SPEC-０００１",
+        "GITVIEW--SPEC-0001",
+        "",
+        None,
+    ],
+)
+def test_malformed_advisory_target_never_captures_a_source(workspace, target_id):
+    root, _, compiler, _, _ = workspace
+    assert not check.is_target_spec_id(target_id)
+    result = check.build_target_context_check(
+        root,
+        project_id="project",
+        target_spec_id=target_id,
+        selection_path=Path("selection.yaml"),
+        ontologyc=compiler,
+    )
+    assert result["outcome"] == "invalid" and result["target"] is None
+    assert result["context"] is None
+
+
+@pytest.mark.parametrize("mode", ["mismatch", "outside_symlink"])
+def test_product_target_preserves_yaml_identity_and_workspace_boundary(workspace, tmp_path, mode):
+    root, original, compiler, _, _ = workspace
+    target = original.with_name("GITVIEW-SPEC-0001.yaml")
+    if mode == "mismatch":
+        target.write_bytes(original.read_bytes())
+    else:
+        outside = tmp_path.parent / (tmp_path.name + "-outside.yaml")
+        outside.write_text("id: GITVIEW-SPEC-0001\n")
+        target.symlink_to(outside)
+    result = check.build_target_context_check(
+        root,
+        project_id="project",
+        target_spec_id="GITVIEW-SPEC-0001",
+        selection_path=Path("selection.yaml"),
+        ontologyc=compiler,
+    )
+    assert result["outcome"] == "invalid" and result["context"] is None

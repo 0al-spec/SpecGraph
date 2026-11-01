@@ -22,7 +22,8 @@ from project_ontology_report_freshness import (
 from project_ontology_term_inventory import build_term_inventory
 from spec_ontology_context_reports import build_context_reports
 
-_TARGET = re.compile(r"SG-SPEC-[0-9]{4}\Z")
+_TARGET = re.compile(r"[A-Z][A-Z0-9]*(?:-[A-Z0-9]+)*-SPEC-[0-9]+\Z")
+TARGET_SPEC_ID_FORMAT = "PREFIX-SPEC-number (uppercase namespace and ASCII decimal suffix)"
 _PRODUCER_FILES = (
     "spec_ontology_context_reports.py",
     "spec_ontology_binding_index.py",
@@ -30,6 +31,11 @@ _PRODUCER_FILES = (
     "ontology_imports.py",
     "ontology_snapshot.py",
 )
+
+
+def is_target_spec_id(value: object) -> bool:
+    """Validate a safe exact filename identity, without allocation or alias resolution."""
+    return isinstance(value, str) and _TARGET.fullmatch(value) is not None
 
 
 def _producer() -> tuple[str, dict[str, str]]:
@@ -115,8 +121,10 @@ def build_target_context_check(
         "canonical_mutations_allowed": False,
         "policy_activation_allowed": False,
     }
-    if not isinstance(target_spec_id, str) or not _TARGET.fullmatch(target_spec_id):
-        output.update(outcome="invalid", diagnostics=["target_spec_id must be SG-SPEC-NNNN"])
+    if not is_target_spec_id(target_spec_id):
+        output.update(
+            outcome="invalid", diagnostics=[f"target_spec_id must be {TARGET_SPEC_ID_FORMAT}"]
+        )
         return output
     specs_root = root / "specs" / "nodes"
     target = specs_root / f"{target_spec_id}.yaml"

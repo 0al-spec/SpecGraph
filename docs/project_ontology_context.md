@@ -264,6 +264,14 @@ binding/validation bundle is compared, while `inventory_freshness` stays
 report is recomputed from current captured inputs. Producer source digests are attributed
 input identity, not execution attestation.
 
+Targets may use a product namespace such as `GITVIEW-SPEC-0001`, as well
+as legacy `SG-SPEC-0001`. Both advisory entry points share the safe uppercase
+`PREFIX-SPEC-number` syntax with an ASCII decimal suffix. The operation reads
+the exact `specs/nodes/<target-id>.yaml` and requires its YAML ID to match.
+It does not allocate IDs, rename nodes or follow allocation-policy aliases.
+Workspace, symlink and report ownership restrictions remain enforced.
+See the [source-bound defect and regression record](reviews/0232_project_ontology_context/external-target-id/README.md).
+
 Exit status is 0 for `checked`, 1 for `unavailable`, and 2 for invalid/input
 errors. `checked` is only this structural advisory operation; prose stays
 unassessed and semantic approval remains absent. Imported closure can leave the

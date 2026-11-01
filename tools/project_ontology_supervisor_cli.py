@@ -13,9 +13,12 @@ from typing import Any
 import yaml
 
 from project_ontology_context.capture import _load_yaml, _parse
-from project_ontology_supervisor_check import build_target_context_check
+from project_ontology_supervisor_check import (
+    TARGET_SPEC_ID_FORMAT,
+    build_target_context_check,
+    is_target_spec_id,
+)
 
-_TARGET = re.compile(r"SG-SPEC-[0-9]{4}\Z")
 _PROJECT = re.compile(r"[A-Za-z0-9][A-Za-z0-9._-]*\Z")
 
 
@@ -27,8 +30,8 @@ def run_request(
         root = Path(root).resolve(strict=True)
         if not root.is_dir():
             raise ValueError("workspace must be a directory")
-        if not isinstance(target_spec, str) or not _TARGET.fullmatch(target_spec):
-            raise ValueError("--target-spec must be SG-SPEC-NNNN")
+        if not is_target_spec_id(target_spec):
+            raise ValueError(f"--target-spec must be {TARGET_SPEC_ID_FORMAT}")
         project_id = request.get("project_id")
         if not isinstance(project_id, str) or not _PROJECT.fullmatch(project_id):
             raise ValueError("--ontology-context-project-id must be a valid project id")

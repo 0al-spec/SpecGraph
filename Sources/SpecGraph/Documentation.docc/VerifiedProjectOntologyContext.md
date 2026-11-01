@@ -168,3 +168,11 @@ qualified concept URIs. Missing dependencies, incompatible pins and unknown
 names are invalid; absent source/IR/compiler is unavailable. Selection order
 does not affect the context revision. This does not establish semantic
 approval or multi-member specification term inventory, which remains unsupported.
+
+## Product target IDs
+
+The target-scoped advisory operation accepts safe uppercase product IDs such
+as `GITVIEW-SPEC-0001` and legacy `SG-SPEC-0001` through a shared validator.
+The suffix is ASCII decimal. Requests address the exact filename and matching
+YAML ID; no ID allocation, alias following or source rewriting occurs.
+Workspace/path, symlink and report ownership protections remain in effect.
