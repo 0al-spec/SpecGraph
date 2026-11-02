@@ -13603,6 +13603,7 @@
       "docs/reviews/0232_project_ontology_context/meta-domain-applicability/external-profile-source-notes.json",
       "docs/reviews/0232_project_ontology_context/meta-domain-applicability/applicability-decision-candidate.md",
       "docs/reviews/0232_project_ontology_context/meta-domain-applicability/applicability-decision.json",
+      "docs/reviews/0232_project_ontology_context/meta-domain-applicability/legacy-freshness-defect.json",
       "tools/spec_ontology_metamodel_check.py",
       "tools/project_ontology_meta_freshness.py",
       "tests/test_spec_ontology_metamodel_check.py",

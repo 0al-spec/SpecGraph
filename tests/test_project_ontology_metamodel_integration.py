@@ -155,4 +155,9 @@ def test_previous_domain_only_schema2_never_fresh_for_meta(env):
     (root / "previous.json").write_text(json.dumps(original))
     result = run(previous_report_path=Path("previous.json"))
     assert result["outcome"] == "checked", result["diagnostics"]
-    assert result["previous_freshness"]["outcome"] != "fresh"
+    assert result["previous_freshness"]["outcome"] == "unavailable"
+    assert "schema 2" in result["previous_freshness"]["diagnostics"][0]
+    original["bundle"]["binding_index"]["summary"]["spec_count"] = 999
+    (root / "previous.json").write_text(json.dumps(original))
+    tampered = run(previous_report_path=Path("previous.json"))
+    assert tampered["previous_freshness"]["outcome"] == "invalid"

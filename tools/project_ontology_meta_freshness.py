@@ -15,7 +15,7 @@ from pathlib import PurePosixPath
 from typing import Any
 
 from project_ontology_check_scopes import CHECK_SCOPES, SCOPED_ANALYSIS_PROFILE
-from project_ontology_report_freshness import FreshnessResult
+from project_ontology_report_freshness import FreshnessResult, bind_report_bundle
 from project_ontology_report_freshness import _shape as domain_shape
 from spec_ontology_metamodel_check import PACKAGE, PROFILE, SOURCE_SHA256
 
@@ -237,6 +237,20 @@ def assess_meta_freshness(
     """Compare a bound saved bundle to caller's newly computed complete bundle."""
     if saved_bundle is None or input_binding is None or not _text(producer_identity):
         return FreshnessResult("unavailable", ("saved bundle, binding or producer missing",))
+    if isinstance(saved_bundle, dict) and saved_bundle.get("schema_version") == 2:
+        if not isinstance(input_binding, dict):
+            return FreshnessResult("invalid", ("legacy binding shape invalid",))
+        try:
+            legacy = bind_report_bundle(
+                saved_bundle, producer_identity=input_binding.get("producer_identity")
+            ).report()
+            if legacy != input_binding:
+                return FreshnessResult("invalid", ("legacy bundle or binding differs",))
+        except (TypeError, ValueError, OverflowError) as error:
+            return FreshnessResult("invalid", (f"invalid legacy report: {error}",))
+        return FreshnessResult(
+            "unavailable", ("schema 2 domain report has no metamodel freshness evidence",)
+        )
     if isinstance(input_binding, dict):
         if (
             input_binding.get("artifact_kind") != "project_ontology_meta_report_binding"
