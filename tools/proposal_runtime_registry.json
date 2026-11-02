@@ -13599,6 +13599,8 @@
       "tests/test_project_ontology_check_scopes.py",
       "docs/reviews/0232_project_ontology_context/meta-domain-applicability/verification.json",
       "docs/reviews/0232_project_ontology_context/meta-domain-applicability/consumer-closeout.json",
+      "docs/reviews/0232_project_ontology_context/meta-domain-applicability/external-specification-artifact-profile.md",
+      "docs/reviews/0232_project_ontology_context/meta-domain-applicability/external-profile-source-notes.json",
       "docs/reviews/0232_project_ontology_context/hypercode-overview/production-verification.json",
       "docs/ontology_overview_export.md",
       "docs/reviews/0232_project_ontology_context/hypercode-overview/selection.hc",
@@ -13645,7 +13647,7 @@
         "pattern": "\"accepted_canonical_diff\": false"
       }
     ],
-    "notes": "The original planning and two-run review packet remain historical. A fresh Terra 6.1 High Supervisor materialization and independent review now prepare the bounded SG-SPEC-0072 selection contract and SG-SPEC-0064 reconciliation through supported gate resolution on a PR branch. Final PR acceptance is separate; no package meaning, complete term coverage, cross-operation cache admission or global runtime policy is approved. The seven-layer implementation track is in the linked marathon document. Overall 0232 posture remains deferred_until_canonicalized for its broader proposed governance/migration scope."
+    "notes": "The original planning and two-run review packet remain historical. A fresh Terra 6.1 High Supervisor materialization and independent review now prepare the bounded SG-SPEC-0072 selection contract and SG-SPEC-0064 reconciliation through supported gate resolution on a PR branch. Final PR acceptance is separate; no package meaning, complete term coverage, cross-operation cache admission or global runtime policy is approved. The seven-layer implementation track is in the linked marathon document. Overall 0232 posture remains deferred_until_canonicalized for its broader proposed governance/migration scope. The external specification artifact profile is a proposed consumer contract with source-bound static characterization only: no runtime implementation, applicability approval or profile activation."
   },
   {
     "proposal_id": "0233",

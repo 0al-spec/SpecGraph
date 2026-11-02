@@ -14,6 +14,11 @@ The [consumer closeout](consumer-closeout.json) records the installed-runtime
 confirmation below. The broader applicability question remains open; this is not
 closure of proposal 0232 or acceptance of GitView's draft specification.
 
+The [external specification artifact profile](external-specification-artifact-profile.md)
+is the next design candidate: an explicit mapping for the document itself,
+separate from the product vocabulary. It does not enable meta checking or resolve
+the package's applicability declaration by itself.
+
 ```yaml
 canonical_mutations_allowed: false
 global_policy_activation_allowed: false
