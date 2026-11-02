@@ -53,3 +53,18 @@ Supervisor operation. Compact output exposes both outcomes. Freshness binds the
 current scope manifest, profiles and captured inputs; old combined reports need
 recomputation. Empty requests do not complete and meta-only requests do not run
 domain inventory. The native ontology-context route remains capture-only.
+
+The mixed-warning defect is now fixed and verified on the GitView consumer.
+Its committed report at `3931998f6680b08bdc2bb56629017a42a8738734` exercised the
+installed native runtime `3610997a9555a6347a23f9980f5b87eb95bbbf14` over copies
+of the real draft: main warnings changed from 5 to 2, composition from 4 to 1,
+with domain analyzed and meta `not_requested`. Requested meta remained
+`unavailable`; domain findings stayed visible. New default bundle freshness was
+`fresh`, while previous inventory freshness remained `not_assessed`.
+
+`docs/reviews/0232_project_ontology_context/meta-domain-applicability/consumer-closeout.json`
+binds the consumer report, runtime, input and retained artifact hashes. Closeout
+inspection cross-checked those artifacts and producer sources, without another
+runtime execution or an attestation claim. The historical observation is unchanged.
+This closes the scope-attribution defect only: meta-model applicability, semantic
+approval and canonical acceptance remain unresolved; proposal 0232 is not closed.

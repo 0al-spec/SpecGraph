@@ -1,0 +1,108 @@
+{
+  "artifact_kind": "project_ontology_scope_separation_consumer_closeout",
+  "schema_version": 1,
+  "spec_id": "SG-SPEC-0072",
+  "proposal_id": "0232",
+  "status": "fixed_verified_on_consumer",
+  "closed_defect": "Synthesized specification-metamodel findings leaked into context-bound domain vocabulary warnings.",
+  "observation": "observation.json",
+  "implementation_verification": "verification.json",
+  "fix": {
+    "design_pr": "https://github.com/0al-spec/SpecGraph/pull/860",
+    "implementation_pr": "https://github.com/0al-spec/SpecGraph/pull/862",
+    "runtime_commit": "3610997a9555a6347a23f9980f5b87eb95bbbf14",
+    "analysis_profile": "specgraph-scoped-ontology-advisory-v1"
+  },
+  "consumer_evidence": {
+    "repository": "GitView",
+    "commit": "3931998f6680b08bdc2bb56629017a42a8738734",
+    "path": "docs/drafts/ontology-scope-recheck-3610997a.md",
+    "sha256": "903e6538def8e2441a6c31a44b63147969b34a02f2a3685ce79517080c4fcbb8",
+    "committed_source_matches": true,
+    "target_id": "GITVIEW-SPEC-0001",
+    "spec_sha256": "56fd32cf5118687e2b14d8058fa35ca644e19b91f67b2091bb09b5fcd3ca7d4f",
+    "baseline_runtime_commit": "0f0a056a522a9c6bbba0e75e3748bad909d1d5c7",
+    "compiler_version": "0.5.0",
+    "compiler_sha256": "dcdc37216246f9acebca7387e14b61300d9dec4367f7c1630445b97280c80168",
+    "compiler_provenance_in_reports": "not_verified",
+    "producer_provenance": "caller_attributed_not_attested",
+    "execution_scope": "installed_native_runtime_over_real_draft_copies_in_isolated_workspaces",
+    "artifact_locator": "GitView report reproduction section; local raw artifacts are not published here.",
+    "artifact_sha256": {
+      "summary.json": "d4ee30e8382af295f6429b1e582dec03fa78e46a6645d18b14b1f9e8457b0dc2",
+      "default/old.json": "9eb75ff5cc26e0d2279d39052cdb2c57b34cb3d2068cdfc53e45b5e166a2c80d",
+      "default/new.json": "e149b14bbb820f0ba3884788e71f27f783a9a9d41f950aacccb8192190a5a2a0",
+      "default/both.json": "b4a40638e9126a2f4803fe70e6a8eab317d775592ec75ebb99335711939baef3",
+      "default/fresh.json": "c734b5c7e032b12a03c987e8afe2714bb14c09091b2243594b254aea745c911c",
+      "composition/old.json": "b5c095969724bcf91e9e243de9d57f845faef9f62cea9bbffe00529079801068",
+      "composition/new.json": "bcfa3aed44e014fea90622cdcd5011b1bb4843895021009798c03c26d1f72268",
+      "composition/both.json": "8a816f2794111ca957d04c749b4d886fbf74d5b5e4cc6bcd666ba294b02224d5",
+      "composition/meta.json": "26fbf9bc523ee5dd2e6897933835dd2660ffa8d36d642e63262b32c8ac2195e7"
+    }
+  },
+  "cases": {
+    "default": {
+      "context_revision": "sha256:4689c23e30301e0cb22573e57272107f328b4387ac9a6eed3ffbebf568b6f491",
+      "spec_sha256": "56fd32cf5118687e2b14d8058fa35ca644e19b91f67b2091bb09b5fcd3ca7d4f",
+      "old_warnings": 5,
+      "new_warnings": 2,
+      "unknown": [
+        "Activity",
+        "motivcore:Motive"
+      ],
+      "default_outcome": "checked",
+      "context": "verified",
+      "domain": "analyzed",
+      "meta_default": "not_requested",
+      "old_report_freshness": "unavailable",
+      "both_requested_outcome": "unavailable",
+      "both_domain": "analyzed",
+      "both_meta": "unavailable"
+    },
+    "composition": {
+      "context_revision": "sha256:5915bdd93ad17b781ae01c82d1f7652007661ef797653cfc7bed7eb5b64100e6",
+      "spec_sha256": "56fd32cf5118687e2b14d8058fa35ca644e19b91f67b2091bb09b5fcd3ca7d4f",
+      "old_warnings": 4,
+      "new_warnings": 1,
+      "unknown": [
+        "Activity"
+      ],
+      "default_outcome": "checked",
+      "context": "verified",
+      "domain": "analyzed",
+      "meta_default": "not_requested",
+      "old_report_freshness": "unavailable",
+      "both_requested_outcome": "unavailable",
+      "both_domain": "analyzed",
+      "both_meta": "unavailable"
+    }
+  },
+  "additional_controls": {
+    "default_unchanged_binding_validation_bundle_freshness": "fresh",
+    "previous_inventory_freshness": "not_assessed",
+    "composition_meta_only": {
+      "target_outcome": "unavailable",
+      "domain_outcome": "not_requested",
+      "inventory": null,
+      "binding_index": null,
+      "validation_report": null
+    }
+  },
+  "closeout_verification": {
+    "date": "2026-11-02",
+    "source_report_and_raw_artifacts_inspected": true,
+    "reported_results_cross_checked_against_raw_artifacts": true,
+    "raw_report_producer_sources_match_runtime_commit": true,
+    "compiler_or_runtime_reexecuted_during_closeout": false,
+    "note_history_restoration_reexecuted_during_closeout": false
+  },
+  "remaining_open": [
+    "Metamodel source, applicability to external specification artifacts, and supported checking.",
+    "Domain gaps remain advisory: Activity in both contexts; motivcore:Motive only outside the selected composition.",
+    "Full prose coverage and semantic approval remain unestablished."
+  ],
+  "metamodel_applicability": "undecided",
+  "semantic_approval": "not_established",
+  "canonical_mutations_allowed": false,
+  "global_policy_activation_allowed": false
+}
