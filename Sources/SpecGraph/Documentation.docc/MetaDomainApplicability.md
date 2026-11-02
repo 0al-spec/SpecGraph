@@ -97,3 +97,10 @@ The contract and future control matrix are in
 `docs/reviews/0232_project_ontology_context/meta-domain-applicability/external-specification-artifact-profile.md`.
 Its source notes record static characterization only; runtime implementation,
 applicability approval and global policy activation remain absent.
+
+The source-bound applicability decision candidate is recorded alongside the
+profile in `docs/reviews/0232_project_ontology_context/meta-domain-applicability/applicability-decision-candidate.md`.
+It proposes considering the external document's role within SpecGraph, preserves
+the package's own applicability declarations and includes the alternative of
+changing source scope. Human review remains pending; the candidate does not
+activate the profile or approve GitView's product ontology.

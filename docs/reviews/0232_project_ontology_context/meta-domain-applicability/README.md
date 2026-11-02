@@ -19,6 +19,11 @@ is the next design candidate: an explicit mapping for the document itself,
 separate from the product vocabulary. It does not enable meta checking or resolve
 the package's applicability declaration by itself.
 
+The [source-bound applicability decision candidate](applicability-decision-candidate.md)
+prepares the specific external-artifact interpretation for human review. Its
+disposition remains pending; preparing or merging the packet does not activate
+the profile or override the source package's stated applicability.
+
 ```yaml
 canonical_mutations_allowed: false
 global_policy_activation_allowed: false
