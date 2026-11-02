@@ -40,11 +40,18 @@ def run_request(
         if not isinstance(project_id, str) or not _PROJECT.fullmatch(project_id):
             raise ValueError("--ontology-context-project-id must be a valid project id")
         selection = request.get("selection")
+        meta_selection = request.get("metamodel_selection")
+        if not isinstance(request.get("map_spec_artifact", False), bool):
+            raise ValueError("map_spec_artifact must be a boolean")
         previous = request.get("previous_report")
-        for value, label in ((selection, "selection"), (previous, "previous report")):
+        for value, label in (
+            (selection, "selection"),
+            (meta_selection, "metamodel selection"),
+            (previous, "previous report"),
+        ):
             if value is not None:
                 path = Path(value)
-                if (label == "selection" and path.is_absolute()) or not (
+                if (label in ("selection", "metamodel selection") and path.is_absolute()) or not (
                     root / path
                 ).resolve().is_relative_to(root):
                     raise ValueError(f"{label} path must stay under workspace")
@@ -55,8 +62,10 @@ def run_request(
         protected = []
         if request.get("ontologyc") is not None:
             protected.append((Path(request["ontologyc"]).resolve(), "compiler"))
-        if selection is not None:
-            selection_file = (root / Path(selection)).resolve()
+        for selected in (selection, meta_selection):
+            if selected is None:
+                continue
+            selection_file = (root / Path(selected)).resolve()
             protected.append((selection_file, "selection"))
             if selection_file == output_path:
                 raise ValueError("report output collides with selected selection input")
@@ -99,6 +108,8 @@ def run_request(
             compiler_sha256=request.get("compiler_sha256"),
             previous_report_path=Path(previous) if previous is not None else None,
             requested_scopes=scopes,
+            metamodel_selection_path=Path(meta_selection) if meta_selection is not None else None,
+            map_spec_artifact=request.get("map_spec_artifact", False),
         )
         output.parent.mkdir(parents=True, exist_ok=True)
         if output.is_symlink() or not output.resolve().is_relative_to(root):

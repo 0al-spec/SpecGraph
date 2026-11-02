@@ -59886,6 +59886,8 @@ if __name__ == "__main__":
         )
         parser.add_argument("--ontology-context-project-id")
         parser.add_argument("--ontology-context-selection")
+        parser.add_argument("--ontology-context-metamodel-selection")
+        parser.add_argument("--ontology-context-map-spec-artifact", action="store_true")
         parser.add_argument("--ontologyc")
         parser.add_argument("--ontologyc-sha256")
         parser.add_argument("--ontology-context-previous-report")
@@ -60779,6 +60781,8 @@ if __name__ == "__main__":
             "--target-spec",
             "--ontology-context-project-id",
             "--ontology-context-selection",
+            "--ontology-context-metamodel-selection",
+            "--ontology-context-map-spec-artifact",
             "--ontologyc",
             "--ontologyc-sha256",
             "--ontology-context-previous-report",
@@ -60818,6 +60822,8 @@ if __name__ == "__main__":
                 {
                     "project_id": args.ontology_context_project_id,
                     "selection": args.ontology_context_selection,
+                    "metamodel_selection": args.ontology_context_metamodel_selection,
+                    "map_spec_artifact": args.ontology_context_map_spec_artifact,
                     "ontologyc": args.ontologyc,
                     "compiler_sha256": args.ontologyc_sha256,
                     "previous_report": args.ontology_context_previous_report,

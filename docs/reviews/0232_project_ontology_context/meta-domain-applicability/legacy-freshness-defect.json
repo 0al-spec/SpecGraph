@@ -1,0 +1,17 @@
+{
+  "artifact_kind": "specgraph_source_bound_defect_observation",
+  "schema_version": 1,
+  "spec_id": "SG-SPEC-0072",
+  "proposal_id": "0232",
+  "status": "fix_prepared_not_merged",
+  "source": {
+    "project": "GitView",
+    "commit": "c8937b043cad4a1eec3626e9e502f191d535dffb",
+    "path": "docs/drafts/consumer-meta-b8657bc8.md",
+    "sha256": "21a9b0ad5b4b75820f563db9e90bbf6de259896b6286933f70caf69f94d1214f",
+    "specgraph_head": "b8657bc8a90b9904105edfdc3f667afee9be6d4f"
+  },
+  "observation": "A valid domain-only schema 2 report was marked invalid when compared with a schema 3 meta report; the current check succeeded and the old report was not reported fresh.",
+  "expected": "A validated legacy report is unavailable for meta freshness; malformed or altered legacy data remains invalid.",
+  "regression": "tests/test_project_ontology_metamodel_integration.py::test_previous_domain_only_schema2_never_fresh_for_meta"
+}
