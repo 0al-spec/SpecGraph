@@ -1,0 +1,30 @@
+{
+  "artifact_kind": "specgraph_metamodel_applicability_decision",
+  "schema_version": 1,
+  "profile": "specgraph-external-specification-artifact-v1",
+  "outcome": "approved",
+  "scope": "A specification of a consumer project may be examined as an artifact processed by SpecGraph, using an explicit mapping to sgcore:Spec, separately from the consumer's domain ontology.",
+  "package": "org.0al.specgraph.core@0.1.0",
+  "package_source_sha256": "5bfa2ff40b6174def589546ab2fea2501e1f256c4f1446f36c45c7f3fffcd929",
+  "profile_path": "docs/reviews/0232_project_ontology_context/meta-domain-applicability/external-specification-artifact-profile.md",
+  "profile_sha256": "77a875baff2f828785de3be8abf385a9fdcb81995f8ad22330834d06da969775",
+  "candidate_path": "docs/reviews/0232_project_ontology_context/meta-domain-applicability/applicability-decision-candidate.md",
+  "candidate_sha256": "8b0def4586d94d8d04e782891a7733b97100ef1be65161e4e44e1dd55af12c71",
+  "review": {
+    "source": "current_codex_conversation",
+    "proposal_excerpt": "Для этого предлагается использовать класс `sgcore:Spec` из метамодели SpecGraph. В первом пилоте проверка будет узкой: явная привязка документа к этому классу и его identity. Она не доказывает, что содержание спецификации полное или правильное.",
+    "user_quote": "Да, оставляем вот как ты описал.",
+    "recorded_by": "agent:codex",
+    "recorded_at": "2026-11-02T15:38:48Z",
+    "original_message_timestamp": null,
+    "native_message_id": null,
+    "provenance": "agent_curated_conversation_excerpts_not_independent_attestation",
+    "reviewer_identity_attested": false
+  },
+  "excluded_effects": [
+    "acceptance of the consumer specification or its domain ontology",
+    "publication or general expansion of sgcore authority",
+    "canonical graph admission or inference of sgcore:Node",
+    "lifecycle approval, semantic approval, or trusted attestation"
+  ]
+}

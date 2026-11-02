@@ -1,5 +1,24 @@
 # Separate specification meta checks from project vocabulary
 
+## Follow-up: approved bounded interpretation and opt-in check
+
+The human project author approved the bounded document-artifact interpretation
+in the current conversation. The [decision record](applicability-decision.json)
+preserves the actual excerpt, the profile and source pins, and the limits of its
+agent-recorded provenance. The original candidate and observations below remain
+historical snapshots, not current pending status. This decision does not accept
+GitView's specification or product ontology or publish sgcore as a general ontology.
+
+The opt-in target check takes an independent workspace-relative metamodel
+selection with `--ontology-context-metamodel-selection` and an explicit
+`--ontology-context-map-spec-artifact`. Request the
+`specification_metamodel` scope to run the one `sgcore:Spec` class check. Its
+selection pins the existing sgcore source, IR and compiler independently of the
+domain selection. Missing selection or mapping cannot produce a successful check.
+The schema-3 bundle binds the document, both selected contexts when requested,
+mapping, recorded disposition and producer; it does not claim authentication.
+No ID-derived Node, lifecycle, acceptance or semantic verification is implied.
+
 ## Status and source
 
 Design candidate for review under SG-SPEC-0072 and

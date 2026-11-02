@@ -35,6 +35,9 @@ def build_context_reports(
     specs_root: Path,
     documents: tuple[tuple[str, bytes], ...] | None = None,
     requested_scopes: tuple[str, ...] = DEFAULT_SCOPES,
+    meta_context: ContextResult | None = None,
+    meta_mapping: dict[str, Any] | None = None,
+    meta_decision: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
     """Analyze explicitly requested scopes; never reopen ontology inputs or fall back."""
 
@@ -71,6 +74,22 @@ def build_context_reports(
         assessments["specification_metamodel"]["diagnostics"] = [
             "Meta source, applicability profile and supported checking are not established."
         ]
+        if meta_context is not None and documents and len(documents) == 1:
+            from spec_ontology_metamodel_check import assess_metamodel
+
+            name, raw = documents[0]
+            target_id = Path(name).stem
+            meta = assess_metamodel(
+                meta_context,
+                document=raw,
+                document_path=name,
+                target_id=target_id,
+                decision=meta_decision,
+                mapping=meta_mapping,
+            )
+            assessments["specification_metamodel"].update(meta)
+            bundle["schema_version"] = 3
+            bundle["analysis_profile"] = "specgraph-scoped-ontology-advisory-v2"
 
     def finish() -> dict[str, Any]:
         outcomes = tuple(assessments[scope]["outcome"] for scope in requested)

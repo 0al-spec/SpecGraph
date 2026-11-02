@@ -69,6 +69,22 @@ runtime execution or an attestation claim. The historical observation is unchang
 This closes the scope-attribution defect only: meta-model applicability, semantic
 approval and canonical acceptance remain unresolved; proposal 0232 is not closed.
 
+## Follow-up: bounded artifact applicability
+
+The human project author approved the profile-level interpretation that a
+consumer project's specification may be checked as an artifact processed by
+SpecGraph, separately from its product-domain ontology. The recorded excerpts
+and exact profile and package pins are in
+`docs/reviews/0232_project_ontology_context/meta-domain-applicability/applicability-decision.json`.
+The record is agent-curated, not an identity attestation.
+
+The opt-in target check accepts a separate `--ontology-context-metamodel-selection`
+and `--ontology-context-map-spec-artifact`. With the explicit
+`specification_metamodel` scope it checks one mapped `sgcore:Spec` class.
+Schema 3 binds document, context, mapping, disposition and producer inputs for
+freshness. It does not infer graph membership, lifecycle or semantic approval.
+The discussion below is retained as the historical design candidate.
+
 ## External specification artifact profile candidate
 
 The proposed `specgraph-external-specification-artifact-v1` profile under

@@ -19,6 +19,7 @@ from project_ontology_context import CheckResult, capture_project_context
 from project_ontology_context.invalid_spec import INVALID_SPEC
 from project_ontology_context.model import ContextFacts
 from project_ontology_context.unavailable_spec import UNAVAILABLE_SPEC
+from project_ontology_meta_freshness import assess_meta_freshness, bind_meta_bundle
 from project_ontology_report_freshness import (
     FreshnessResult,
     assess_report_freshness,
@@ -30,6 +31,8 @@ from spec_ontology_context_reports import build_context_reports
 _TARGET = re.compile(r"[A-Z][A-Z0-9]*(?:-[A-Z0-9]+)*-SPEC-[0-9]+\Z")
 TARGET_SPEC_ID_FORMAT = "PREFIX-SPEC-number (uppercase namespace and ASCII decimal suffix)"
 _PRODUCER_FILES = (
+    "project_ontology_supervisor_check.py",
+    "project_ontology_supervisor_cli.py",
     "spec_ontology_context_reports.py",
     "spec_ontology_binding_index.py",
     "spec_ontology_validation_report.py",
@@ -40,6 +43,8 @@ _PRODUCER_FILES = (
     "project_ontology_context/vocabulary.py",
     "project_ontology_context/composition.py",
     "project_ontology_context/foundation.py",
+    "spec_ontology_metamodel_check.py",
+    "project_ontology_meta_freshness.py",
 )
 
 
@@ -104,6 +109,8 @@ def build_target_context_check(
     compiler_sha256: str | None = None,
     previous_report_path: Path | None = None,
     requested_scopes: tuple[str, ...] = DEFAULT_SCOPES,
+    metamodel_selection_path: Path | None = None,
+    map_spec_artifact: bool = False,
 ) -> dict[str, Any]:
     """Capture one context and one target; never mutate canonical data or approve terms."""
     root = Path(workspace_root).resolve()
@@ -168,20 +175,71 @@ def build_target_context_check(
     except (OSError, ValueError, yaml.YAMLError, UnicodeError) as error:
         output.update(outcome="invalid", diagnostics=[f"target capture failed: {error}"])
         return output
-    context = capture_project_context(
-        root,
-        project_id=project_id,
-        selection_path=selection_path,
-        ontologyc=ontologyc,
-        compiler_sha256=compiler_sha256,
-    )
-    output["context"] = context.report()
+    context = None
+    if "domain_vocabulary" in scopes:
+        context = capture_project_context(
+            root,
+            project_id=project_id,
+            selection_path=selection_path,
+            ontologyc=ontologyc,
+            compiler_sha256=compiler_sha256,
+        )
+        output["context"] = context.report()
+    meta_context = None
+    meta_decision = None
+    meta_mapping = None
+    if "specification_metamodel" in scopes and metamodel_selection_path is not None:
+        meta_context = capture_project_context(
+            root,
+            project_id=project_id,
+            selection_path=metamodel_selection_path,
+            ontologyc=ontologyc,
+            compiler_sha256=compiler_sha256,
+        )
+        output["metamodel_context"] = meta_context.report()
+        if map_spec_artifact:
+            meta_mapping = {
+                "profile": "specgraph-external-specification-artifact-v1",
+                "document_kind": "spec",
+                "ontology_class": "sgcore:Spec",
+            }
+        decision_path = (
+            Path(__file__).resolve().parent.parent
+            / "docs/reviews/0232_project_ontology_context"
+            / "meta-domain-applicability/applicability-decision.json"
+        )
+        try:
+            decision_raw = decision_path.read_bytes()
+            if (
+                hashlib.sha256(decision_raw).hexdigest()
+                != "c9f53fba2b25364084ff1fb3cdc086d0b86b93588d6bfee21696a92d1891b17b"
+            ):
+                raise ValueError("recorded applicability decision does not match the reviewed pin")
+            meta_decision = json.loads(decision_raw)
+            source_root = Path(__file__).resolve().parent.parent
+            for key in ("profile", "candidate"):
+                source = source_root / meta_decision[f"{key}_path"]
+                if not source.resolve().is_relative_to(source_root):
+                    raise ValueError("decision source escapes runtime root")
+                if (
+                    hashlib.sha256(source.read_bytes()).hexdigest()
+                    != meta_decision[f"{key}_sha256"]
+                ):
+                    raise ValueError(f"recorded decision {key} has changed")
+        except FileNotFoundError:
+            meta_decision = None
+        except (OSError, ValueError, json.JSONDecodeError) as error:
+            output.update(outcome="invalid", diagnostics=[str(error)])
+            return output
     bundle = build_context_reports(
         context,
         workspace_root=root,
         specs_root=specs_root,
         documents=documents,
         requested_scopes=scopes,
+        meta_context=meta_context,
+        meta_mapping=meta_mapping,
+        meta_decision=meta_decision,
     )
     inventory = (
         build_term_inventory(
@@ -195,16 +253,18 @@ def build_target_context_check(
     output["requested_scopes"] = bundle.get("requested_scopes", list(scopes))
     output["assessments"] = bundle.get("assessments")
     component_checks = (
-        _component_check("context", context.outcome, complete="verified"),
         _component_check("binding_validation_bundle", bundle.get("outcome"), complete="analyzed"),
     )
+    if "domain_vocabulary" in scopes:
+        assert context is not None
+        component_checks += (_component_check("context", context.outcome, complete="verified"),)
     if inventory is not None:
         component_checks += (
             _component_check("term_inventory", inventory.get("outcome"), complete="analyzed"),
         )
     output["outcome"] = _outcome(ContextFacts(component_checks))
     output["diagnostics"] = (
-        [c.detail for c in context.checks if c.outcome != "verified"]
+        ([c.detail for c in context.checks if c.outcome != "verified"] if context else [])
         + bundle["diagnostics"]
         + (inventory["diagnostics"] if inventory is not None else [])
     )
@@ -217,9 +277,8 @@ def build_target_context_check(
                 "source_sha256": hashes,
                 "provenance": "caller_attributed_not_attested",
             }
-            output["input_binding"] = bind_report_bundle(
-                bundle, producer_identity=producer_identity
-            ).report()
+            binder = bind_meta_bundle if bundle.get("schema_version") == 3 else bind_report_bundle
+            output["input_binding"] = binder(bundle, producer_identity=producer_identity).report()
         except (OSError, ValueError, TypeError) as error:
             output["outcome"] = _outcome(
                 ContextFacts(
@@ -235,7 +294,14 @@ def build_target_context_check(
             output["previous_freshness"] = FreshnessResult(
                 "stale", ("previous target differs",)
             ).report()
-        else:
+        elif bundle.get("schema_version") == 3:
+            output["previous_freshness"] = assess_meta_freshness(
+                previous.get("bundle"),
+                input_binding=previous.get("input_binding"),
+                current_bundle=bundle,
+                producer_identity=producer_identity,
+            ).report()
+        elif context is not None:
             output["previous_freshness"] = assess_report_freshness(
                 previous.get("bundle"),
                 input_binding=previous.get("input_binding"),
@@ -245,6 +311,10 @@ def build_target_context_check(
                 producer_identity=producer_identity,
                 documents=documents,
                 requested_scopes=scopes,
+            ).report()
+        else:
+            output["previous_freshness"] = FreshnessResult(
+                "unavailable", ("current domain context unavailable",)
             ).report()
     if output["previous_freshness"] is not None:
         output["previous_freshness"]["scope"] = "binding_validation_bundle"

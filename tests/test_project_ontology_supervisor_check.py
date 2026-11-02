@@ -192,12 +192,13 @@ def test_previous_freshness_compares_current_requested_scopes(workspace):
     assert result["previous_freshness"]["outcome"] != "fresh"
 
 
-def test_invalid_context_remains_invalid_when_only_metamodel_is_requested(workspace):
+def test_invalid_domain_context_does_not_affect_metamodel_only_request(workspace):
     root, _, _, _, run = workspace
     source = root / "source.yaml"
     source.write_bytes(source.read_bytes() + b"\n")
     result = run(requested_scopes=("specification_metamodel",))
-    assert result["outcome"] == result["context"]["outcome"] == "invalid"
+    assert result["outcome"] == "unavailable"
+    assert result["context"] is None
     assert result["assessments"]["domain_vocabulary"]["outcome"] == "not_requested"
     meta = result["assessments"]["specification_metamodel"]
     assert meta["outcome"] == "unavailable"
