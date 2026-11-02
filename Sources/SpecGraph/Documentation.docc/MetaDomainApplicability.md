@@ -68,3 +68,32 @@ inspection cross-checked those artifacts and producer sources, without another
 runtime execution or an attestation claim. The historical observation is unchanged.
 This closes the scope-attribution defect only: meta-model applicability, semantic
 approval and canonical acceptance remain unresolved; proposal 0232 is not closed.
+
+## External specification artifact profile candidate
+
+The proposed `specgraph-external-specification-artifact-v1` profile under
+SG-SPEC-0072 / 0232 describes the document separately from its product domain.
+An explicit mapping may represent the artifact as `sgcore:Spec`; an ID alone
+does not imply `sgcore:Node`, graph membership or canonical acceptance.
+The captured sgcore applicability declaration remains intact. Before activation,
+review must resolve whether processing an external artifact inside SpecGraph
+fits that scope; an unresolved or contrary disposition leaves meta unavailable.
+This is a profile-level decision, not a new per-file approval ceremony.
+
+Document `status` is not mapped to the sgcore `draft/reviewed` review-state
+machine. GitView's `idea/pre_canonical` and SG-SPEC-0072's `specified` remain
+authored values, with lifecycle `not_assessed`. Only explicitly mapped criteria
+and criterion-linked evidence can supply structural candidates. The source's
+`hasAcceptanceCriterion` permits zero criteria; missing criteria do not establish
+an ontology violation. Review examples are not silently converted into criteria.
+
+The candidate requires separate pinned metamodel capture, explicit applicability
+evidence and a mapping revision. Existing `not_requested`, `unavailable`,
+`invalid` and `analyzed` scope outcomes remain distinct from findings and approval.
+Meta execution needs a versioned report/freshness extension; merging this design
+does not change schema 2, enable an evaluator or create successful meta evidence.
+
+The contract and future control matrix are in
+`docs/reviews/0232_project_ontology_context/meta-domain-applicability/external-specification-artifact-profile.md`.
+Its source notes record static characterization only; runtime implementation,
+applicability approval and global policy activation remain absent.

@@ -3,10 +3,13 @@
     {
       "id": "meta-domain-applicability-review",
       "description": "Scoped domain reports, explicit unavailable meta checks and versioned freshness remain separate from applicability approval.",
-      "docs": ["docs/reviews/0232_project_ontology_context/meta-domain-applicability/README.md"],
+      "docs": [
+        "docs/reviews/0232_project_ontology_context/meta-domain-applicability/README.md",
+        "docs/reviews/0232_project_ontology_context/meta-domain-applicability/external-specification-artifact-profile.md"
+      ],
       "docc": ["Sources/SpecGraph/Documentation.docc/MetaDomainApplicability.md"],
       "required_terms": ["0232", "SG-SPEC-0072", "not_requested", "unavailable", "domain_vocabulary", "specification_metamodel"],
-      "docc_required_terms": ["specgraph-scoped-ontology-advisory-v1", "schema 2"]
+      "docc_required_terms": ["specgraph-scoped-ontology-advisory-v1", "schema 2", "specgraph-external-specification-artifact-v1", "not_assessed"]
     },
     {
       "id": "mechanical-specification-authoring",

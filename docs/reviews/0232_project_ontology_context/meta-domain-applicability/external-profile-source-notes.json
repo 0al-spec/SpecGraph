@@ -1,0 +1,73 @@
+{
+  "artifact_kind": "external_specification_artifact_profile_source_notes",
+  "schema_version": 1,
+  "spec_id": "SG-SPEC-0072",
+  "proposal_id": "0232",
+  "profile_id": "specgraph-external-specification-artifact-v1",
+  "status": "design_candidate",
+  "tracking_classification": "proposed_consumer_contract_no_runtime_implementation",
+  "operator_direction": {
+    "attribution": "local_conversation_excerpt_not_independently_authenticated",
+    "assistant_proposal": "Следующий шаг — через proposal 0232 описать узкий профиль «внешний документ спецификации»: явное связывание со Spec, отдельное отображение состояний и проверка только заявленных структурных связей.",
+    "user_scope_question": "Это правка в SpecGraph?",
+    "assistant_scope": "Да, это правка в SpecGraph — описание того, как он применяет метамодель к спецификациям внешних проектов.",
+    "user_response": "Ок, давай сделаем",
+    "interpreted_authorization": "Prepare the proposed consumer contract for review in SpecGraph, not activate an evaluator or approve metamodel applicability."
+  },
+  "specgraph_source_revision": "90af6b58a4803869aff79426ece49cb3cb84666a",
+  "source_sha256": {
+    "ontology/packages/specgraph-core/domain-ontology-package.yaml": "5bfa2ff40b6174def589546ab2fea2501e1f256c4f1446f36c45c7f3fffcd929",
+    "specs/nodes/SG-SPEC-0072.yaml": "46a6be05a4a0c4c5de7cfe29a8b44d5bd25fab09404f20fb2f2646a433fc196e",
+    "tools/spec_ontology_binding_index.py": "6bbd1d5a8cf4934c6183a2543fb85bddc04afb06e89376eccc64a5547790791a",
+    "tools/spec_ontology_validation_report.py": "027ae37334ddc212a66571d82bb2a36921896bb2c20e80b3675b755ddc2c8a55",
+    "tools/spec_ontology_context_reports.py": "8521842b084d0c574501fc9b8a55395b7f280002126f9d300af87e50d693073d"
+  },
+  "ontology_contract_source": {
+    "repository": "0al-spec/Ontology",
+    "revision": "613b0accf17e30fa774e126f50c163f5a697a24a",
+    "path": "SPECS/ontology/model-applicability-consumer-roadmap.md",
+    "sha256": "701a94650e11413b2f6b8fdbfe2ad9137bebdc9aede715d346cff9691b9d9fdf",
+    "boundary": "Authored modelApplicability is compiler-validated inert review metadata, not an application evaluator."
+  },
+  "consumer_document": {
+    "repository": "GitView",
+    "path": "docs/drafts/GITVIEW-SPEC-0001.yaml",
+    "last_modifying_commit": "b388aa305953b573b0e7c89531d24e297802798c",
+    "sha256": "56fd32cf5118687e2b14d8058fa35ca644e19b91f67b2091bb09b5fcd3ca7d4f",
+    "id": "GITVIEW-SPEC-0001",
+    "kind": "spec",
+    "status": "idea",
+    "draft_status": "pre_canonical",
+    "top_level_acceptance_present": false,
+    "top_level_acceptance_evidence_present": false,
+    "review_example_count": 3,
+    "canonical_status": "pre_canonical"
+  },
+  "static_characterization": {
+    "date": "2026-11-02",
+    "method": "Read YAML and code; assert the declared fields and package structure. No proposed profile evaluator was executed.",
+    "sgcore_review_states": [
+      "draft",
+      "reviewed"
+    ],
+    "specgraph_control_status": "specified",
+    "gitview_status_in_review_states": false,
+    "specgraph_status_in_review_states": false,
+    "spec_and_node_are_separate_domain_entity_classes": true,
+    "criterion_relation_minimum": 0,
+    "existing_meta_evaluator": "unavailable",
+    "compiler_invoked": false,
+    "supervisor_executor_invoked": false,
+    "future_acceptance_matrix_executed": false
+  },
+  "open_decisions": [
+    "Source-bound applicability disposition for external artifacts processed within SpecGraph.",
+    "Selection interface and report/freshness extension for the first opt-in Spec artifact check.",
+    "Any later lifecycle or full criterion/evidence mapping remains outside that first slice."
+  ],
+  "runtime_implemented": false,
+  "applicability_approved": false,
+  "semantic_approval": "not_established",
+  "canonical_mutations_allowed": false,
+  "global_policy_activation_allowed": false
+}
