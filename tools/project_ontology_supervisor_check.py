@@ -45,6 +45,7 @@ _PRODUCER_FILES = (
     "project_ontology_context/foundation.py",
     "spec_ontology_metamodel_check.py",
     "project_ontology_meta_freshness.py",
+    "project_ontology_meta_authority_spec.py",
 )
 
 

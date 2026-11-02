@@ -289,3 +289,30 @@ def test_scope_authority_and_cross_context_inconsistencies_fail_closed():
         ).outcome in {"invalid", "unavailable"}
         with pytest.raises(ValueError):
             bind_meta_bundle(changed, producer_identity="producer-v2")
+
+
+@pytest.mark.parametrize(
+    ("field", "value"),
+    [
+        ("decision_provenance", "attested"),
+        ("node_membership", "accepted"),
+        ("lifecycle", "reviewed"),
+        ("semantic_approval", "established"),
+        ("canonical_mutations_allowed", True),
+        ("canonical_mutations_allowed", 0),
+    ],
+)
+def test_meta_authority_claims_cannot_be_upgraded(field, value):
+    bundle = _bundle()
+    bundle["assessments"][META]["summary"][field] = value
+    with pytest.raises(ValueError, match="meta authority or lifecycle boundary inconsistent"):
+        bind_meta_bundle(bundle, producer_identity="producer-v2")
+
+
+def test_missing_disposition_takes_precedence_over_invalid_authority():
+    bundle = _bundle()
+    bundle["assessments"][META]["summary"].update(
+        decision_sha256=None, canonical_mutations_allowed=True
+    )
+    with pytest.raises(ValueError, match="mapping or disposition digest missing"):
+        bind_meta_bundle(bundle, producer_identity="producer-v2")
