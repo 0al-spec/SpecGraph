@@ -2,7 +2,12 @@ from __future__ import annotations
 
 import hashlib
 import json
+import os
+import subprocess
 from pathlib import Path
+
+import pytest
+import yaml
 
 ROOT = Path(__file__).resolve().parents[1]
 
@@ -236,7 +241,6 @@ def test_pages_technical_root_builds_docc_surface() -> None:
     workflow = _workflow_text("pages-technical-root.yml")
 
     assert "name: Deploy DocC Technical Surface" in workflow
-    assert "pull_request:" in workflow
     assert "runs-on: macos-15" in workflow
     assert "generate-documentation" in workflow
     assert "--target SpecGraph" in workflow
@@ -245,7 +249,6 @@ def test_pages_technical_root_builds_docc_surface() -> None:
     assert "Add mixed-case DocC compatibility redirect" in workflow
     assert "test -f ./.docc-build/documentation/specgraph/index.html" in workflow
     assert "test -f ./.docc-build/documentation/SpecGraph/index.html" in workflow
-    assert "if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'" in workflow
     archive_step = _step_block(workflow, "Archive DocC artifact")
     assert "actions/upload-artifact@v7" in archive_step
     assert "include-hidden-files: true" in archive_step
@@ -255,6 +258,88 @@ def test_pages_technical_root_builds_docc_surface() -> None:
     assert "include-hidden-files: true" in pages_upload_step
     assert "path: ./.docc-build" in pages_upload_step
     assert "actions/deploy-pages@v5" in workflow
+
+
+def test_docc_publishes_only_stable_release_sources_with_one_artifact_chain() -> None:
+    # BaseLoader preserves the GitHub `on` key instead of YAML 1.1's boolean coercion.
+    workflow = yaml.load(_workflow_text("pages-technical-root.yml"), Loader=yaml.BaseLoader)
+
+    assert workflow["on"] == {"release": {"types": ["released"]}}
+    build = workflow["jobs"]["build"]
+    assert "github.event_name == 'release'" in build["if"]
+    assert "!github.event.release.draft" in build["if"]
+    assert "!github.event.release.prerelease" in build["if"]
+    steps = {step["name"]: step for step in build["steps"]}
+    assert steps["Checkout"]["with"]["ref"] == "${{ github.sha }}"
+    assert "if" not in steps["Archive DocC artifact"]
+    assert workflow["permissions"] == {"contents": "read"}
+    assert "permissions" not in build
+
+    prepare = workflow["jobs"]["prepare-pages-artifact"]
+    assert prepare["needs"] == "build"
+    download = next(
+        step for step in prepare["steps"] if "download-artifact" in step.get("uses", "")
+    )
+    assert download["with"]["name"] == steps["Archive DocC artifact"]["with"]["name"]
+    assert "run-id" not in download["with"]
+    assert "if" not in prepare
+    deploy = workflow["jobs"]["deploy"]
+    assert deploy["needs"] == "prepare-pages-artifact"
+    assert "if" not in deploy
+    assert deploy["permissions"] == {"contents": "read", "pages": "write", "id-token": "write"}
+
+
+@pytest.mark.parametrize("matching_revision", [True, False])
+def test_docc_release_source_rejects_a_different_checkout(
+    tmp_path: Path, matching_revision: bool
+) -> None:
+    workflow = yaml.load(_workflow_text("pages-technical-root.yml"), Loader=yaml.BaseLoader)
+    source = next(
+        step
+        for step in workflow["jobs"]["build"]["steps"]
+        if step["name"] == "Record release source"
+    )
+    assert source["env"]["RELEASE_TAG"] == "${{ github.event.release.tag_name }}"
+    subprocess.run(["git", "init", "-q", str(tmp_path)], check=True)
+    subprocess.run(
+        [
+            "git",
+            "-c",
+            "user.name=DocC test",
+            "-c",
+            "user.email=docc@example.invalid",
+            "-c",
+            "commit.gpgsign=false",
+            "-c",
+            "core.hooksPath=/dev/null",
+            "commit",
+            "--allow-empty",
+            "-qm",
+            "Release source",
+        ],
+        cwd=tmp_path,
+        check=True,
+    )
+    actual = subprocess.check_output(["git", "rev-parse", "HEAD"], cwd=tmp_path, text=True).strip()
+    (tmp_path / ".docc-build").mkdir()
+    result = subprocess.run(
+        ["bash", "-e", "-c", source["run"]],
+        cwd=tmp_path,
+        env={
+            **os.environ,
+            "GITHUB_SHA": actual if matching_revision else "0" * 40,
+            "RELEASE_TAG": "v1.0.0",
+        },
+        capture_output=True,
+        text=True,
+    )
+    provenance = tmp_path / ".docc-build" / "release-source.txt"
+    if matching_revision:
+        assert result.returncode == 0, result.stderr
+        assert provenance.read_text() == f"release_tag=v1.0.0\nsource_revision={actual}\n"
+    else:
+        assert result.returncode != 0
+        assert not provenance.exists()
 
 
 def test_github_pages_root_docs_card_points_to_docc_entrypoint() -> None:
