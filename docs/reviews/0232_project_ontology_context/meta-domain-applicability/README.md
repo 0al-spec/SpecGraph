@@ -8,6 +8,12 @@ The original triage recorded feedback and proposed the bounded contract below.
 The implementation described at the end realizes its first slice; meta-model
 applicability and optional meta checking remain unresolved.
 
+**Defect disposition: fixed and verified on the GitView consumer.** The closed
+defect is the attribution of synthesized meta-model findings to domain vocabulary.
+The [consumer closeout](consumer-closeout.json) records the installed-runtime
+confirmation below. The broader applicability question remains open; this is not
+closure of proposal 0232 or acceptance of GitView's draft specification.
+
 ```yaml
 canonical_mutations_allowed: false
 global_policy_activation_allowed: false
@@ -214,3 +220,39 @@ Regressions cover structural-only documents, explicit sgcore references,
 unchanged legacy output, unknown/ambiguous terms, scope combinations and invalid
 inputs, CLI summaries, legacy-bundle migration, manifest integrity and changed
 current scopes. Full semantic coverage and applicability remain unclaimed.
+
+### Installed-runtime consumer confirmation
+
+GitView's committed report `docs/drafts/ontology-scope-recheck-3610997a.md` at
+`3931998f6680b08bdc2bb56629017a42a8738734` confirms the fix using the installed
+native runtime `3610997a9555a6347a23f9980f5b87eb95bbbf14` from PR #862.
+It checked byte-identical copies of the real pre-canonical GITVIEW-SPEC-0001
+draft in isolated workspaces with the existing selections and ontologyc 0.5.0.
+This extends the implementation replay above with consumer distribution evidence.
+
+| Context | Legacy warnings | Domain warnings | Default assessment |
+| --- | ---: | ---: | --- |
+| Main GitView | 5 | 2: Activity, motivcore:Motive | domain analyzed; meta not_requested |
+| Motivation composition | 4 | 1: Activity | domain analyzed; meta not_requested |
+
+Both contexts returned `verified` context and `checked` target. Explicitly
+requesting both scopes retained domain findings but returned meta and aggregate
+`unavailable`. The composition meta-only control did not create domain inventory,
+binding or validation reports. Old combined bundles remained unavailable for
+scoped freshness comparison; the unchanged new default binding/validation bundle
+was `fresh`. Previous inventory freshness remained `not_assessed`.
+
+The closeout inspected the committed consumer report and retained raw JSON,
+cross-checked their outcomes and input hashes, and matched the report producer's
+source hashes to the pinned runtime commit. It did not execute another compiler,
+runtime or notebook-restoration run. The capsule records nine local artifact
+hashes; complete reports and private draft text remain local, located through
+the consumer report's reproduction section. Caller-attributed producer identity
+and compiler provenance marked `not_verified` are not promoted to attestation.
+
+Only the mixed-warning defect is closed. Meta-model source, applicability to
+external specification artifacts and supported checking remain unresolved.
+`Activity` and the main-context `motivcore:Motive` gap remain advisory; the lower
+count does not establish semantic approval, full prose coverage or canonical
+acceptance. The original observation and implementation verification are retained
+unchanged as historical evidence.

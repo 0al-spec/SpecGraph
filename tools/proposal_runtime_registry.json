@@ -13598,6 +13598,7 @@
       "tools/project_ontology_scope_outcome_spec.py",
       "tests/test_project_ontology_check_scopes.py",
       "docs/reviews/0232_project_ontology_context/meta-domain-applicability/verification.json",
+      "docs/reviews/0232_project_ontology_context/meta-domain-applicability/consumer-closeout.json",
       "docs/reviews/0232_project_ontology_context/hypercode-overview/production-verification.json",
       "docs/ontology_overview_export.md",
       "docs/reviews/0232_project_ontology_context/hypercode-overview/selection.hc",
