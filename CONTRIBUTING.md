@@ -563,12 +563,16 @@ This gate is intentionally anchor-based rather than byte-for-byte comparison:
 DocC pages can have different navigation and formatting, but they must preserve
 the same operational facts, paths, commands, and boundary terms.
 
-DocC validation runs use a concurrency group scoped to the PR number
-(`specgraph-docc-pr-<number>`). Different PRs must not cancel one another or a
-Pages publication; a newer run for the same PR may supersede its older run.
-Push and manual publishing runs retain the shared `github-pages` group and
-its existing cancellation behavior. When a DocC check is cancelled, inspect
-the event and concurrency group before interpreting it as validation evidence.
+The hosted macOS DocC build and Pages publication run on stable GitHub releases
+(`release: released`), not PRs or ordinary pushes. PR Python CI retains
+`make docc-sync`. A release build checks out the event's exact SHA and publishes
+`release-source.txt` identifying the tag and revision. Use Actions **Re-run jobs**
+on the release run for retries; do not publish an unreleased branch manually.
+Release publications share `github-pages` concurrency. Its environment must
+permit the selected release tag; ordinary version tags match the tag policy `*`.
+See [publishing instructions](docs/static_artifact_publish.md) before the first
+release or when a tag contains `/`. This scheduling change does not turn a
+skipped/cancelled historical DocC job into successful build evidence.
 
 ## Metrics
 

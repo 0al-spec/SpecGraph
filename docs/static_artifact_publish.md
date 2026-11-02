@@ -98,12 +98,27 @@ should use the lowercase DocC path emitted by the plugin. Do not deploy
 `landing/` to GitHub Pages root; doing so can create navigation loops where
 documentation links return to the marketing page.
 
-DocC PR validation uses `specgraph-docc-pr-<number>` as its concurrency group.
-Different PRs cannot cancel each other's validation or a Pages publication;
-newer runs for the same PR can supersede older ones. Push and manual publishing
-runs retain the shared `github-pages` group with `cancel-in-progress: true`.
-An unrelated PR must not cause a cancelled DocC check to stand in for a completed
-validation result.
+DocC builds and GitHub Pages publication run on stable GitHub releases only
+(`release: released`), including promotion of a prerelease to stable. PRs and
+ordinary branch pushes keep the lightweight `make docc-sync` check in Python CI;
+they do not schedule a macOS DocC build. Drafts and prereleases do not replace
+the stable technical site. See [GitHub's release event contract](https://docs.github.com/en/actions/reference/workflows-and-actions/events-that-trigger-workflows#release).
+
+The checkout uses the release event's exact commit SHA, not moving `main` or a
+re-resolved tag. `release-source.txt` in the published site records the release
+tag and checked-out revision. It identifies source, not runtime attestation.
+Build, redirect preparation and deploy consume the current workflow run's
+artifact chain. Publication retains the shared `github-pages` concurrency group
+and `cancel-in-progress: true`; a newer release can supersede an older run.
+
+The `github-pages` environment must allow release tags as well as the existing
+`main` branch policy. Its tag policy `*` covers ordinary version tags without
+slashes, such as `v1.0.0`; a slash-containing tag needs a matching explicit
+environment policy. The first release must point to a commit containing the
+release-triggered workflow. To retry a runner-capacity or build failure, use
+Actions **Re-run jobs** on that release's existing run. There is no unrestricted
+manual publication from an unreleased branch. Until the next successful release
+deployment, the previously published technical site remains in place.
 
 The source `runs/` directory remains local and unchanged. The publish bundle is
 a redacted mirror: local absolute paths such as `/Users/...` are replaced with
