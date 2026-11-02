@@ -14,12 +14,21 @@ GitHub Pages owns the technical surface:
 
 The root page is intentionally not the product landing page.
 
-DocC PR validation uses `specgraph-docc-pr-<number>` as its concurrency group.
-Different PRs cannot cancel each other's validation or a Pages publication;
-newer runs for the same PR can supersede older ones. Push and manual publishing
-runs retain the shared `github-pages` group with `cancel-in-progress: true`.
-An unrelated PR must not cause a cancelled DocC check to stand in for a completed
-validation result.
+DocC builds and GitHub Pages publication run only for stable GitHub releases
+(`release: released`), including promotion from prerelease. PRs and ordinary
+pushes retain the lightweight `make docc-sync` check in Python CI. Drafts and
+prereleases do not replace the stable site. The checkout uses the release event's
+exact SHA; published `release-source.txt` records its tag and revision without
+claiming runtime attestation. The artifact chain is local to the release run.
+
+Release publications share `github-pages` concurrency with
+`cancel-in-progress: true`. The environment permits ordinary version tags via a
+tag policy `*`, alongside its existing `main` branch policy; tags containing `/`
+need an explicit matching policy. The first release must include the new workflow.
+Retry failures through Actions **Re-run jobs** for that release, rather than
+publishing a moving unreleased branch. The prior site stays until a successful
+release deployment. The full operating instructions are in
+`docs/static_artifact_publish.md`.
 
 ## Static Host
 
