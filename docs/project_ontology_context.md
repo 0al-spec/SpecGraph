@@ -180,12 +180,12 @@ captured `(path, bytes)` documents. Both views consume the same captured vocabul
 parsed specifications; validation consumes the same built binding index.
 
 Inputs retain each specification path/hash and the profile
-`specgraph-local-symbol-advisory-v3`. Report metadata records project/workspace,
+`specgraph-local-symbol-advisory-v4`. Report metadata records project/workspace,
 context revision/outcome, member/source/IR/compiler identities and the
 `single_member_local_symbols` scope. The legacy field name `accepted_bindings`
 still describes structural extraction, not accepted meaning.
 
-Local v3 uses the same qualified-name and spelling/alias candidate resolver as
+Local v4 uses the same qualified-name and spelling/alias candidate resolver as
 inventory and the composed bundle. Root and nested `ontology_refs` are included:
 an unresolved qualified reference produces a binding gap and validation finding,
 even when its namespace is not selected. A wrong namespace/case cannot match a
@@ -287,8 +287,9 @@ binding/validation bundle share the captured-vocabulary implementation. It
 reads classes, relations and aliases from all three immutable selected IR
 snapshots, plus classes from the hash-checked pinned foundation catalog.
 It does not merge packages into a fictional compiler IR or reopen saved source/IR
-files. Protocol/policy inventories and arbitrary package compositions are outside
-this slice. An incomplete or unverified composition cannot fall back to the
+files. Protocol declarations are included as distinct `protocol` candidates;
+policy inventories and arbitrary package compositions remain outside this slice.
+An incomplete or unverified composition cannot fall back to the
 symbols of whichever packages happen to be available.
 
 Qualified names such as `motivcore:Motive` require an exact reference match.
@@ -299,10 +300,10 @@ visibility rule for references inside an individual ontology package.
 The existing package compiler/closure check still owns that separate rule.
 
 Each inventory candidate and composed binding/gap has `candidate_origins`:
-package ID/namespace/version, concept URI, captured source/IR/compiler hashes and
+package ID/namespace/version, symbol kind, concept URI, captured source/IR/compiler hashes and
 the captured import source URI where available. Foundation entries are explicitly
 `pinned_export_catalog`, with no fabricated IR/compiler digest. The bundle records
-`selected_composition_symbols` and `specgraph-composed-symbol-advisory-v2`, an
+`selected_composition_symbols` and `specgraph-composed-symbol-advisory-v3`, an
 ordered `members` capture inventory and `foundation_catalog`. It has no invented
 single `selected_member` or aggregate source/IR hash. `verified_closure: true`
 refers only to the already verified selected dependency closure.
@@ -313,8 +314,17 @@ field name for compatibility; the field remains structural advisory data.
 Ambiguity creates gaps/findings rather than allowing package order to select a
 winner. Context-bound reports analyze explicit domain occurrences; legacy structural
 mappings are retained only by the no-context 0134/0135 APIs.
-Single-member context reports use local advisory v3 and the same explicit-term
+Single-member context reports use local advisory v4 and the same explicit-term
 resolver; their vocabulary remains restricted to the one selected member.
+
+Protocol references retain their kind and `/protocols/` origin URI; they do not
+become classes, concrete entities or accepted semantic bindings. A class and a
+protocol with a matching name remain ambiguous, even with the same qualified
+spelling. Malformed protocol exports invalidate the capture, rather than
+silently hiding declarations. The vocabulary producer revision changes, so
+previous reports must be recomputed for current freshness. The GitView consumer
+observation and replay are recorded under
+`reviews/0232_project_ontology_context/protocol-vocabulary/observation.json`.
 
 Freshness binding includes every member capture and catalog identity. A changed
 dependency cannot stay fresh just because the project package is unchanged.

@@ -1,0 +1,30 @@
+{
+  "artifact_kind": "specgraph_source_bound_defect_observation",
+  "schema_version": 1,
+  "spec_id": "SG-SPEC-0072",
+  "proposal_id": "0232",
+  "status": "fix_prepared_not_merged",
+  "source": {
+    "project": "GitView",
+    "commit": "0f0fc8e3b943d0462b55423429a80e8e40fae8e3",
+    "path": "ontology/review/protocol-vocabulary-observation/observation.json",
+    "sha256": "90cf5f6bc54247d5a4d4e11f1b79495692702aae06175782d5df0374d2003fcf",
+    "reported_specgraph_revision": "dc35597b7c29528f68cf74502fb3b379b284478c",
+    "candidate_source_sha256": "0cdf42f607438739315a95b239a45ef3648a54389e91d39a14d9f13e167ed8cd",
+    "candidate_ir_sha256": "ee19051689b9e7b1a5746407e4b51d8027481a30303733b2ee993bab5abceee4",
+    "synthetic_document_sha256": "b6ce96df47f672e9e2439bd3b95c4f20c021ee6f3248bdccf7a79e47755a94c1"
+  },
+  "observation": "Compiler-exported gitview:User and gitview:GitHubRepository protocols were reported unknown because the captured vocabulary included classes and relations only.",
+  "prepared_fix": "Include protocols as distinct advisory symbols with kind, package and /protocols/ provenance. Names colliding across kinds remain ambiguous; malformed exports are invalid. No meaning, implementation, canonical graph or ontology acceptance is implied.",
+  "replay": {
+    "workspace": "/Volumes/TB5/Developer/Builds/GitHub/SpecGraph-protocol-vocabulary-d8513b4d73c128f7/gitview-protocol-replay-sq68rdpr",
+    "reports": [
+      {"path": "foundation-replay.json", "sha256": "fbabccd9d117c2ddde68058e23ff56718f88c4e0e51a466382070f66fa808679"},
+      {"path": "composition-replay.json", "sha256": "f471806f6c9ed784fc05e75f16db41a1ca506e0f660c96df6b9da1602ec35beb"}
+    ],
+    "compiler_sha256": "dcdc37216246f9acebca7387e14b61300d9dec4367f7c1630445b97280c80168",
+    "compiler_provenance": "not_verified",
+    "result": "In both pinned contexts gitview:Project is a class; gitview:User and gitview:GitHubRepository are protocols; the prior two unknown findings are absent"
+  },
+  "regression": "tests/test_project_ontology_joint_reports.py::test_protocols_are_attributed_as_protocols_in_every_advisory_view"
+}
