@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import hashlib
 import unicodedata
-from dataclasses import dataclass
+from dataclasses import asdict, dataclass
 
 from ontology_snapshot import OntologySnapshot, OntologySnapshotError, parse_ontology_ir
 from spec_ontology_binding_index import symbol_keys
@@ -95,16 +95,12 @@ class CapturedVocabulary:
             "binding_authority": "structural_advisory_only",
         }
         if self.composed:
-            metadata.update(
-                members=members,
-                foundation_catalog={
-                    "id": foundation.PIN.id,
-                    "namespace": foundation.PIN.namespace,
-                    "version": foundation.PIN.version,
-                    "source_uri": foundation.PIN.source_uri,
-                    "source_sha256": foundation.PIN.source_sha256,
-                },
-            )
+            pins = [pin for pin in foundation.PINS if pin in context.resolved_imports]
+            catalogs = [asdict(pin) for pin in pins]
+            primary = foundation.ACTION_PIN if foundation.ACTION_PIN in pins else foundation.PIN
+            metadata.update(members=members, foundation_catalog=asdict(primary))
+            if len(catalogs) > 1:
+                metadata["foundation_catalogs"] = catalogs
         else:
             metadata.update(
                 selected_member={k: members[0][k] for k in ("id", "namespace", "version")},
@@ -212,15 +208,15 @@ def capture_vocabulary(context: ContextResult) -> CapturedVocabulary:
                     )
                 )
     if composed:
-        try:
-            catalog = foundation.capture_vocabulary()
-        except OSError as error:
-            raise OntologySnapshotError(
-                f"pinned foundation catalog unavailable: {error}", outcome="unavailable"
-            ) from error
         for pin in foundation.PINS:
             if pin not in context.resolved_imports:
                 continue
+            try:
+                catalog = foundation.capture_vocabulary(pin)
+            except OSError as error:
+                raise OntologySnapshotError(
+                    f"pinned foundation catalog unavailable: {error}", outcome="unavailable"
+                ) from error
             for name in sorted(catalog["classes"]):
                 symbols.append(
                     VocabularySymbol(

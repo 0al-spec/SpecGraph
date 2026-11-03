@@ -249,7 +249,7 @@ def test_shadowed_identity_is_invalid_even_without_ir(compiler, tmp_path, old, n
     )
 
 
-@pytest.mark.parametrize("pin", foundation.PINS, ids=["canonical", "legacy"])
+@pytest.mark.parametrize("pin", foundation.PINS, ids=["canonical", "legacy", "actions"])
 def test_supported_import_keeps_authored_identity_and_release_catalog(pin):
     spec, member = member_spec()
     old = spec["imports"][0]
@@ -258,7 +258,7 @@ def test_supported_import_keeps_authored_identity_and_release_catalog(pin):
     checks, imports = foundation.check_import(spec, member, 1)
     assert all(c.outcome == "verified" for c in checks)
     assert imports == (pin,)
-    assert imports[0].source_sha256 == sha(foundation.EXPORTS.read_bytes())
+    assert imports[0].source_sha256 == pin.source_sha256
     assert old["id"] == "specgraph.foundation"  # The retained legacy fixture is unchanged.
 
 
@@ -268,3 +268,33 @@ def test_unavailable_foundation_identity_is_not_replaced_by_the_catalog(field, v
     spec["imports"][0][field] = value
     checks, imports = foundation.check_import(spec, member, 1)
     assert checks[-1].outcome == "unavailable" and not imports
+
+
+def test_action_relationship_reports_authored_fields_and_rejected_action(tmp_path, compiler):
+    doc = yaml.safe_load(MEMBER.read_bytes())
+    spec = doc["spec"]
+    spec["imports"] = [{"id": "ontology.foundation", "namespace": "ont", "version": "0.2.0"}]
+    spec["classes"]["Entry"]["extends"] = "ont:DomainEntity"
+    spec["classes"]["Add"] = {"extends": "ont:Action", "description": "Add an entry."}
+    spec["relations"]["adds"] = {
+        "subject": "Entry",
+        "action": "Add",
+        "object": {"oneOf": ["Entry"]},
+    }
+    code, report = capture(tmp_path / "valid", compiler, yaml.safe_dump(doc).encode())
+    assert (code, report["outcome"]) == (0, "verified")
+    pointers = {row["reference"]["pointer"] for row in report["checks"] if "reference" in row}
+    assert {
+        "/spec/relations/adds/" + field for field in ("subject", "action", "object/oneOf/0")
+    } <= pointers
+    spec["relations"]["adds"]["action"] = "Ad"
+    code, report = capture(
+        tmp_path / "typo",
+        compiler,
+        yaml.safe_dump(doc).encode(),
+        prior_ir=(tmp_path / "valid/ir/ontology.normalized.json").read_bytes(),
+    )
+    assert (code, report["outcome"]) == (2, "invalid")
+    [error] = [row for row in report["checks"] if row.get("compiler_diagnostic")]
+    assert error["compiler_diagnostic"]["code"] == "relation.action.unresolved"
+    assert error["reference"]["pointer"] == "/spec/relations/adds/action"

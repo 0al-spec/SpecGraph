@@ -11,8 +11,8 @@ permissions:
 
 env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
-  ONTOLOGY_RELEASE: 0.6.0
-  ONTOLOGY_REVISION: c52553f872f440dde26c61abf9193f5fff171d98
+  ONTOLOGY_RELEASE: 0.7.0
+  ONTOLOGY_REVISION: 40672c189f33dee2b8c6fdac903758e90d9fba86
 
 jobs:
   compiler-compatibility:
@@ -64,13 +64,13 @@ jobs:
             --work-dir "$RUNNER_TEMP/ontology-release-smoke"
           "$compiler_dir/ontologyc" check specs/models/SG-SPEC-0072/domain-ontology-package.yaml
           "$compiler_dir/ontologyc" export-foundation > "$RUNNER_TEMP/foundation-exports.json"
-          cmp "$RUNNER_TEMP/foundation-exports.json" tools/project_ontology_context/pinned_foundation/exports.json
+          cmp "$RUNNER_TEMP/foundation-exports.json" tools/project_ontology_context/pinned_foundation/exports-0.2.0.json
           ONTOLOGYC_BINARY_PATH="$compiler_dir/ontologyc" python -m pytest -q tests/test_project_ontology_foundation.py tests/test_project_ontology_composition.py tests/test_project_ontology_joint_reports.py
 
       - name: Reproduce the local model diagrams with the released visualizer
         id: model_tools
         env:
-          ARCHIVE_SHA256: 65b0d874123abd18112c7baa705a608db983dee354319baf3a6640068cb23346
+          ARCHIVE_SHA256: a5099a8e59fbc53009a4d5a03b69a536093187a615f7198396d81fd08e6a17d7
         run: |
           set -euo pipefail
           work=$(mktemp -d "$RUNNER_TEMP/ontology-models.XXXXXXXX")
@@ -163,7 +163,7 @@ jobs:
             --work-dir "$RUNNER_TEMP/ontology-release-smoke"
           "$compiler_dir/ontologyc" check specs/models/SG-SPEC-0072/domain-ontology-package.yaml
           "$compiler_dir/ontologyc" export-foundation > "$RUNNER_TEMP/foundation-exports.json"
-          cmp "$RUNNER_TEMP/foundation-exports.json" tools/project_ontology_context/pinned_foundation/exports.json
+          cmp "$RUNNER_TEMP/foundation-exports.json" tools/project_ontology_context/pinned_foundation/exports-0.2.0.json
           ONTOLOGYC_BINARY_PATH="$compiler_dir/ontologyc" python -m pytest -q tests/test_project_ontology_foundation.py tests/test_project_ontology_composition.py tests/test_project_ontology_joint_reports.py
 
       - name: Retain compatibility receipt

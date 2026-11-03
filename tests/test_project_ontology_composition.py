@@ -38,7 +38,6 @@ def packages():
 def assess(values, selected=None):
     return composition.check_packages(
         values,
-        foundation.capture_vocabulary(),
         selected if selected is not None else tuple(p.identity for p in values),
     )
 
@@ -188,12 +187,19 @@ def compiled_selection(tmp_path):
     return tmp_path, compiler, selection
 
 
-def test_real_compiler_keeps_both_foundation_origins_in_a_mixed_closure(compiled_selection):
+@pytest.mark.parametrize("project_pin", [foundation.PIN, foundation.ACTION_PIN])
+def test_real_compiler_keeps_both_foundation_origins_in_a_mixed_closure(
+    compiled_selection, project_pin
+):
     root, compiler, selection = compiled_selection
     project = selection["packages"][0]
     path = root / project["source"]
     source = path.read_bytes().replace(b"specgraph.foundation", b"ontology.foundation")
     source = source.replace(b"namespace: sg", b"namespace: ont").replace(b"sg:", b"ont:")
+    doc = yaml.safe_load(source)
+    imported = next(row for row in doc["spec"]["imports"] if row["id"] == project_pin.id)
+    imported["version"] = project_pin.version
+    source = yaml.safe_dump(doc).encode()
     path.write_bytes(source)
     out = root / "canonical-project"
     subprocess.run(
@@ -215,7 +221,7 @@ def test_real_compiler_keeps_both_foundation_origins_in_a_mixed_closure(compiled
         compiler_sha256=sha(compiler.read_bytes()),
     )
     assert context.outcome == "verified", context.checks
-    assert all(pin in context.resolved_imports for pin in foundation.PINS)
+    assert all(pin in context.resolved_imports for pin in (project_pin, foundation.LEGACY_PIN))
     docs = (
         (
             "specs/nodes/SG-SPEC-0001.yaml",
@@ -227,12 +233,20 @@ def test_real_compiler_keeps_both_foundation_origins_in_a_mixed_closure(compiled
     specs.mkdir(parents=True)
     inventory = build_term_inventory(context, workspace_root=root, specs_root=specs, documents=docs)
     terms = {entry["term"]: entry for entry in inventory["entries"]}
-    for pin in foundation.PINS:
+    for pin in (project_pin, foundation.LEGACY_PIN):
         term = terms[f"{pin.namespace}:ValueObject"]
         assert term["resolution"] == "structurally_resolved_candidate"
         assert term["candidate_origins"][0]["ontology_uri"] == (
-            f"ontology://{pin.id}/0.1.0/classes/ValueObject"
+            f"ontology://{pin.id}/{pin.version}/classes/ValueObject"
         )
+
+    from project_ontology_context.vocabulary import capture_vocabulary
+
+    vocab = capture_vocabulary(context)
+    assert bool(vocab.candidates("ont:Action")) == (project_pin == foundation.ACTION_PIN)
+    assert not vocab.candidates("sg:Action")
+    assert bool(vocab.candidates("ont:Actor")) == (project_pin == foundation.PIN)
+    assert vocab.candidates("sg:Actor")
 
 
 def capture(work, compiler):

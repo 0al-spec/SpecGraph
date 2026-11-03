@@ -288,9 +288,11 @@ def capture_project_context(
                 add("dependency_closure", "verified", "single package declares no imports", package)
         except OntologySnapshotError as error:
             add("member_capture", error.outcome, str(error), package)
-            if foundation_selected and source_data is not None:
+            if (foundation_selected or composition_selected) and source_data is not None:
                 checks.extend(
-                    foundation.failed_capture_checks(source_data, member, len(members), error)
+                    foundation.failed_capture_checks(
+                        source_data, member, len(members), error, composed=composition_selected
+                    )
                 )
         except FileNotFoundError:
             add("member_capture", "unavailable", "source or saved IR unavailable", package)
@@ -308,9 +310,8 @@ def capture_project_context(
 
     if composition_selected:
         try:
-            vocabulary = foundation.capture_vocabulary()
             closure_checks, resolved_imports = composition.check_packages(
-                tuple(declarations), vocabulary, identities
+                tuple(declarations), identities
             )
             checks.extend(closure_checks)
         except OSError as error:

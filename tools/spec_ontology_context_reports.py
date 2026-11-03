@@ -189,6 +189,11 @@ def build_context_reports(
                     "scope": metadata["scope"],
                     "members": metadata["members"],
                     "foundation_catalog": metadata["foundation_catalog"],
+                    **(
+                        {"foundation_catalogs": metadata["foundation_catalogs"]}
+                        if "foundation_catalogs" in metadata
+                        else {}
+                    ),
                 }
             else:
                 result["ontology_verification"] = snapshot_evidence(context.snapshots[0])

@@ -36,7 +36,7 @@ compiler pin is checked before execution. Named outcome policies preserve
 invalid-before-unavailable precedence; errors have typed outcomes.
 An ambiguous compiler process failure or undecodable process output is unavailable;
 independently detected identity, pin and source/IR mismatches remain invalid.
-With Ontology 0.6.0 every compilable domain package declares an import.
+With Ontology 0.7.0 every compilable domain package declares an import.
 The original `ontologyc-structural-v1` profile verifies closure only for a single package without imports.
 A member can therefore verify while the overall project context remains unavailable.
 The bounded probe is recorded in
@@ -44,9 +44,9 @@ The bounded probe is recorded in
 `docs/project_ontology_context.md` for the actual API and manifest shape.
 
 The opt-in `ontologyc-foundation-v1` profile resolves one member's single
-`ontology.foundation@0.1.0` import in namespace `ont`, or the supported legacy
+`ontology.foundation@0.1.0` or `ontology.foundation@0.2.0` import in namespace `ont`, or the supported legacy
 `specgraph.foundation@0.1.0` import in namespace `sg`. It verifies the local
-copy of the 0.6.0 canonical compiler export catalog by SHA-256 and binds its identity to the context
+copy of each selected version’s export catalog by SHA-256 and binds its identity to the context
 revision. Qualified references in declaration slots carry the source pointer,
 name and resolved URI. Legacy packages retain their own authored identity/URI;
 neither `sgcore` nor historical observations are renamed. Mixed compositions
@@ -329,3 +329,5 @@ missing function and root-name selector leakage. Nine real-tool cases require
 No exporter implementation change was necessary. Shared metadata comparison
 anchors for Manifest and Checksums remain two roles, with no claim of observed
 criterion satisfaction or runtime execution.
+
+Action-bearing relationships carry source pointers for subject, action and object, including each object.oneOf alternative. Each member of a mixed-version composition resolves against its own imported catalog.
