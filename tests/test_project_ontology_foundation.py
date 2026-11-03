@@ -97,15 +97,23 @@ def capture(work, compiler, source, *, prior_ir=None, keep_prior=False):
 
 
 @pytest.mark.parametrize("keep_prior", [False, True], ids=["no-ir", "stale-ir"])
+@pytest.mark.parametrize("legacy", [False, True], ids=["canonical-ont", "legacy-sg"])
 def test_same_pinned_foundation_resolves_valueobject_and_rejects_typo(
-    compiler, tmp_path, keep_prior
+    compiler, tmp_path, keep_prior, legacy
 ):
     source = MEMBER.read_bytes()
+    pin = foundation.LEGACY_PIN if legacy else foundation.PIN
+    if not legacy:
+        source = source.replace(b"specgraph.foundation", b"ontology.foundation")
+        source = source.replace(b"namespace: sg", b"namespace: ont").replace(b"sg:", b"ont:")
+    name = f"{pin.namespace}:ValueObject"
+    typo = f"{pin.namespace}:Typo"
+    rejected_source = source.replace(name.encode(), typo.encode())
     good_code, good = capture(tmp_path / "valid", compiler, source)
     bad_code, bad = capture(
         tmp_path / "typo",
         compiler,
-        source.replace(b"sg:ValueObject", b"sg:Typo"),
+        rejected_source,
         prior_ir=(tmp_path / "valid/ir/ontology.normalized.json").read_bytes(),
         keep_prior=keep_prior,
     )
@@ -124,18 +132,18 @@ def test_same_pinned_foundation_resolves_valueobject_and_rejects_typo(
     [error] = [c for c in bad["checks"] if c.get("compiler_diagnostic")]
     assert error["compiler_diagnostic"] == {
         "code": "class.extends.unresolved",
-        "source_sha256": sha(source.replace(b"sg:ValueObject", b"sg:Typo")),
+        "source_sha256": sha(rejected_source),
         "compiler_sha256": sha(compiler.read_bytes()),
     }
-    for report, name, uri in (
-        (good, "sg:ValueObject", "ontology://specgraph.foundation/0.1.0/classes/ValueObject"),
-        (bad, "sg:Typo", None),
+    for report, reference_name, uri in (
+        (good, name, f"ontology://{pin.id}/0.1.0/classes/ValueObject"),
+        (bad, typo, None),
     ):
         [resolution] = [c for c in report["checks"] if c["check"] == "name_resolution"]
         assert resolution["outcome"] == report["outcome"]
         assert resolution["reference"] == {
             "pointer": "/spec/classes/Entry/extends",
-            "name": name,
+            "name": reference_name,
             "uri": uri,
         }
 
@@ -218,7 +226,12 @@ def test_compiler_sites_are_bound_to_captured_values():
 
 @pytest.mark.parametrize(
     ("old", "new"),
-    [(b"namespace: sample", b"namespace: sg"), (b"test.sg72-member", b"specgraph.foundation")],
+    [
+        (b"namespace: sample", b"namespace: sg"),
+        (b"namespace: sample", b"namespace: ont"),
+        (b"test.sg72-member", b"specgraph.foundation"),
+        (b"test.sg72-member", b"ontology.foundation"),
+    ],
 )
 def test_shadowed_identity_is_invalid_even_without_ir(compiler, tmp_path, old, new):
     source = MEMBER.read_bytes()
@@ -234,3 +247,24 @@ def test_shadowed_identity_is_invalid_even_without_ir(compiler, tmp_path, old, n
         and "shadows" in c["detail"]
         for c in report["checks"]
     )
+
+
+@pytest.mark.parametrize("pin", foundation.PINS, ids=["canonical", "legacy"])
+def test_supported_import_keeps_authored_identity_and_release_catalog(pin):
+    spec, member = member_spec()
+    old = spec["imports"][0]
+    spec["imports"] = [{"id": pin.id, "namespace": pin.namespace, "version": pin.version}]
+    spec["classes"]["Entry"]["extends"] = f"{pin.namespace}:ValueObject"
+    checks, imports = foundation.check_import(spec, member, 1)
+    assert all(c.outcome == "verified" for c in checks)
+    assert imports == (pin,)
+    assert imports[0].source_sha256 == sha(foundation.EXPORTS.read_bytes())
+    assert old["id"] == "specgraph.foundation"  # The retained legacy fixture is unchanged.
+
+
+@pytest.mark.parametrize("field,value", [("id", "foreign.foundation"), ("version", "9.0.0")])
+def test_unavailable_foundation_identity_is_not_replaced_by_the_catalog(field, value):
+    spec, member = member_spec()
+    spec["imports"][0][field] = value
+    checks, imports = foundation.check_import(spec, member, 1)
+    assert checks[-1].outcome == "unavailable" and not imports

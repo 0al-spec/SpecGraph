@@ -13632,7 +13632,9 @@
       "tests/native_runtime_smoke.py",
       ".codex/skills/specgraph-project-ontology/SKILL.md",
       "src/specgraph/resources/skills/specgraph-project-ontology/SKILL.md",
-      "Sources/SpecGraph/Documentation.docc/NativeRuntime.md"
+      "Sources/SpecGraph/Documentation.docc/NativeRuntime.md",
+      "docs/reviews/0232_project_ontology_context/ontology-0.6.0/README.md",
+      "docs/reviews/0232_project_ontology_context/ontology-0.6.0/verification.json"
     ],
     "runtime_markers": [
       {
@@ -13656,7 +13658,7 @@
         "pattern": "\"accepted_canonical_diff\": false"
       }
     ],
-    "notes": "The original planning and review packets remain historical. Overall 0232 posture remains deferred_until_canonicalized for its broader proposed governance and migration scope. A human decision permits the bounded artifact interpretation; an opt-in document identity and class check is implemented without accepting the consumer domain, canonical publication, or global policy activation."
+    "notes": "The original planning and review packets remain historical. Overall 0232 posture remains deferred_until_canonicalized for its broader proposed governance and migration scope. A human decision permits the bounded artifact interpretation; an opt-in document identity and class check is implemented without accepting the consumer domain, canonical publication, or global policy activation. Ontology 0.6.0 consumer integration pins c52553f872f440dde26c61abf9193f5fff171d98 and its canonical ontology.foundation/ont export; explicitly supported legacy specgraph.foundation/sg imports retain their authored identity. New release verification is separate from historical evidence; sgcore, approval boundaries and SpecGraph SemVer remain unchanged."
   },
   {
     "proposal_id": "0233",

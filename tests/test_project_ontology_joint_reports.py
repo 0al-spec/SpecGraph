@@ -75,7 +75,7 @@ specification:
     Unknown: {}
   ontology_refs:
     - motivcore:Motive
-    - sg:ValueObject
+    - ont:ValueObject
     - missing:Motive
 """
     documents = (("specs/nodes/GITVIEW-SPEC-0001.yaml", raw),)
@@ -103,9 +103,9 @@ def test_joint_explicit_inventory_and_binding_share_resolution_and_origins(joint
     )
     assert origin["ontology_uri"] == "ontology://org.0al.motivation.core/0.1.0/classes/Motive"
     assert origin["ir_sha256"] == joint[2].snapshots[1].ir_sha256
-    assert terms["sg:ValueObject"]["resolution"] == "structurally_resolved_candidate"
+    assert terms["ont:ValueObject"]["resolution"] == "structurally_resolved_candidate"
     assert (
-        terms["sg:ValueObject"]["candidate_origins"][0]["verification"] == "pinned_export_catalog"
+        terms["ont:ValueObject"]["candidate_origins"][0]["verification"] == "pinned_export_catalog"
     )
     for name in ("Motive", "Shared"):
         assert terms[name]["resolution"] == "ambiguous"

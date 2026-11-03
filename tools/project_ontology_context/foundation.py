@@ -15,13 +15,35 @@ from .model import CheckResult, CompilerDiagnostic, ContextFacts, ReferenceSite,
 
 PROFILE = "ontologyc-foundation-v1"
 PIN = ResolvedImport(
+    id="ontology.foundation",
+    namespace="ont",
+    version="0.1.0",
+    source_uri="https://github.com/0al-spec/Ontology/blob/c52553f872f440dde26c61abf9193f5fff171d98/SPECS/ontology/foundation/0.1.0/exports.json",
+    source_sha256="1c6b3ac3e4aa9b4e56d823b3645f94c126840c1922c555998b848e9e0fe18f8f",
+)
+# The release catalog is canonical; existing packages retain their authored alias.
+LEGACY_PIN = ResolvedImport(
     id="specgraph.foundation",
     namespace="sg",
-    version="0.1.0",
-    source_uri="https://github.com/0al-spec/Ontology/blob/0fcc94469d971aaf39fcc182bc5c6b8acff37fd2/SPECS/ontology/foundation/0.1.0/exports.json",
-    source_sha256="ef07cf4e8dd4cdc8c8dd583971fc3cabfe82e4b00fb0e680b6d1db48cfe262ad",
+    version=PIN.version,
+    source_uri=PIN.source_uri,
+    source_sha256=PIN.source_sha256,
 )
+PINS = (PIN, LEGACY_PIN)
 EXPORTS = Path(__file__).parent / "pinned_foundation/exports.json"
+
+
+def selected_import(spec: dict) -> ResolvedImport | None:
+    """The profile supports the canonical and legacy default namespaces only."""
+    return next(
+        (
+            pin
+            for pin in PINS
+            if spec.get("imports")
+            == [{"id": pin.id, "namespace": pin.namespace, "version": pin.version}]
+        ),
+        None,
+    )
 
 
 def reference_sites(spec: dict) -> Iterator[tuple[str, str, str]]:
@@ -92,7 +114,8 @@ def failed_capture_checks(
             else:
                 break
         else:
-            if isinstance(value, str) and value.startswith(PIN.namespace + ":"):
+            pin = selected_import(spec)
+            if pin and isinstance(value, str) and value.startswith(pin.namespace + ":"):
                 yield CheckResult(
                     "name_resolution",
                     "invalid",
@@ -107,16 +130,15 @@ def failed_capture_checks(
 
 def _scope_issue(spec: dict, member: dict, member_count: int) -> CheckResult | None:
     package = member["id"]
-    if member_count != 1 or spec.get("imports") != [
-        {"id": PIN.id, "namespace": PIN.namespace, "version": PIN.version}
-    ]:
+    if member_count != 1 or selected_import(spec) is None:
         return CheckResult(
             "dependency_closure",
             "unavailable",
-            "Profile requires one member importing specgraph.foundation@0.1.0 as sg",
+            "Profile requires one member importing ontology.foundation@0.1.0 as ont "
+            "or legacy specgraph.foundation@0.1.0 as sg",
             package,
         )
-    if package == PIN.id or member["namespace"] == PIN.namespace:
+    if any(package == pin.id or member["namespace"] == pin.namespace for pin in PINS):
         return CheckResult(
             "dependency_closure",
             "invalid",
@@ -127,10 +149,10 @@ def _scope_issue(spec: dict, member: dict, member_count: int) -> CheckResult | N
 
 
 def _resolve(
-    path: str, ref: str, role: str, vocab: dict[str, set[str]], package: str
+    path: str, ref: str, role: str, vocab: dict[str, set[str]], package: str, pin: ResolvedImport
 ) -> CheckResult:
     namespace, _, name = ref.partition(":")
-    if namespace != PIN.namespace or name not in vocab[role]:
+    if namespace != pin.namespace or name not in vocab[role]:
         return CheckResult(
             "name_resolution",
             "invalid",
@@ -139,7 +161,7 @@ def _resolve(
             ReferenceSite(path, ref),
         )
     section = "protocols" if role == "protocols" else "classes"
-    uri = f"ontology://{PIN.id}/{PIN.version}/{section}/{name}"
+    uri = f"ontology://{pin.id}/{pin.version}/{section}/{name}"
     return CheckResult(
         "name_resolution",
         "verified",
@@ -160,6 +182,8 @@ def check_import(
     issue = _scope_issue(spec, member, member_count)
     if issue is not None:
         return [issue], ()
+    pin = selected_import(spec)
+    assert pin is not None
     try:
         vocab = capture_vocabulary()
     except OSError as error:
@@ -168,12 +192,12 @@ def check_import(
         return [closure("invalid", str(error))], ()
     try:
         checks = [
-            _resolve(path, ref, role, vocab, package)
+            _resolve(path, ref, role, vocab, package, pin)
             for path, ref, role in reference_sites(spec)
             if _external(ref, member["namespace"])
         ]
     except (KeyError, TypeError, AttributeError, ValueError) as error:
-        return [closure("invalid", f"Malformed captured reference declaration: {error}")], (PIN,)
+        return [closure("invalid", f"Malformed captured reference declaration: {error}")], (pin,)
     if INVALID_SPEC.is_satisfied_by(ContextFacts(tuple(checks))):
         checks.append(
             closure("invalid", "The selected foundation import has unresolved references")
@@ -182,7 +206,7 @@ def check_import(
         checks.append(
             closure("verified", "Pinned foundation vocabulary and qualified references checked")
         )
-    return checks, (PIN,)
+    return checks, (pin,)
 
 
 def capture_vocabulary() -> dict[str, set[str]]:

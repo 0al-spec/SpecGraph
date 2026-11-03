@@ -58,7 +58,7 @@ remain invalid. See the [compiler outcome defect record](reviews/0232_project_on
 for the repair and its evidence.
 
 With `profiles: [ontologyc-structural-v1]`, imported packages have unavailable
-closure. Ontology 0.5.0 requires at least one import. The [earlier compatibility
+closure. Ontology 0.6.0 requires at least one import. The [earlier compatibility
 probe](reviews/0233_mechanical_specification_authoring/local-model-pilot/README.md#single-package-verified-probe-31-october-2026)
 records this combination.
 
@@ -66,21 +66,37 @@ records this combination.
 
 Set `profiles: [ontologyc-foundation-v1]` in the existing selection file.
 Select one package whose only import is
-`{id: specgraph.foundation, namespace: sg, version: 0.1.0}`.
+`{id: ontology.foundation, namespace: ont, version: 0.1.0}`.
+The previously supported `{id: specgraph.foundation, namespace: sg, version: 0.1.0}`
+remains supported as a legacy import. These are two exact default-namespace pins;
+other aliases or versions remain outside this consumer profile even if a compiler
+supports them. Existing package bytes, `sgcore` and historical evidence are not rewritten.
 Run the workspace CLI shown below with the same source, IR and compiler pins.
 
-The profile pins the [foundation export catalog from Ontology 0.5.0](https://github.com/0al-spec/Ontology/blob/0fcc94469d971aaf39fcc182bc5c6b8acff37fd2/SPECS/ontology/foundation/0.1.0/exports.json). Release compatibility CI compares the vendored bytes with `ontologyc export-foundation` on both platforms. The profile checks the SHA-256 of those bytes before linking verified references to their URIs.
+The profile pins the [canonical foundation export catalog from Ontology 0.6.0](https://github.com/0al-spec/Ontology/blob/c52553f872f440dde26c61abf9193f5fff171d98/SPECS/ontology/foundation/0.1.0/exports.json).
+Release compatibility CI compares the vendored bytes with `ontologyc export-foundation`
+on both platforms. The profile checks the catalog SHA-256 before resolving names.
+Both import identities use these canonical catalog bytes; reported references and
+URIs retain the identity actually authored by the package.
 
 SpecGraph runs `ontologyc check --format json` on private copies of the selected compiler and the pinned source. A compiler rejection can identify an invalid foundation reference before there is any generated IR. The report binds the compiler's code and field to the value at that location in the captured source. A valid source with missing IR remains unavailable. A process failure or an unreadable diagnostic response is also unavailable.
 
-For `Entry.extends: sg:ValueObject`, the report includes the declaration's
-JSON pointer and `ontology://specgraph.foundation/0.1.0/classes/ValueObject`.
-For `sg:Typo` at that site the outcome is `invalid`. The reference includes the pointer and the source value. The `compiler_diagnostic` records `class.extends.unresolved` and the SHA-256 of the checked source and executable. A rejected package has no verified snapshot or context revision.
+For `Entry.extends: ont:ValueObject`, the report includes the declaration's
+JSON pointer and `ontology://ontology.foundation/0.1.0/classes/ValueObject`.
+A legacy `sg:ValueObject` instead retains
+`ontology://specgraph.foundation/0.1.0/classes/ValueObject`. `ont:Typo` and `sg:Typo`
+at that site are `invalid`. The reference includes the pointer and source value.
+The `compiler_diagnostic` records `class.extends.unresolved` and the SHA-256 of
+the checked source and executable. A rejected package has no verified snapshot
+or context revision.
 The `resolved_imports` entry identifies the content actually consulted and
 participates in the context revision. An unavailable catalog or an unsupported
 import set produces `unavailable`; a catalog digest mismatch produces `invalid`.
 Verification covers structural name resolution in this profile. Package approval
 and prose coverage retain their separate review processes.
+
+The [Ontology 0.6.0 consumer verification](reviews/0232_project_ontology_context/ontology-0.6.0/README.md)
+records canonical and legacy controls separately from the historical observations.
 
 Each domain outcome policy lives in its own Specification module with immutable
 facts. Parsing, paths, subprocess adaptation and serialization remain at the edge.
@@ -97,8 +113,11 @@ selection format and CLI. Select three packages with exact source and IR hashes:
 | `org.0al.motivation.core` | `motivcore` | `0.1.0` |
 | `org.0al.events.core` | `eventcore` | `0.2.0` |
 
-Foundation is the existing pinned `specgraph.foundation@0.1.0` catalog and is
-not an additional selected member. The project must explicitly import
+Foundation is the pinned `ontology.foundation@0.1.0` catalog and is not an
+additional selected member. The legacy `specgraph.foundation@0.1.0` / `sg` import
+remains supported. A composition may mix the two supported imports across
+packages; each reference resolves in its own package's declared namespace.
+The project must explicitly import
 motivation-core and may also import the selected events-core and foundation.
 Motivation imports exactly events-core and foundation; events imports only
 foundation. This bounds the supported graph; a different package set needs a
@@ -303,7 +322,7 @@ Each inventory candidate and composed binding/gap has `candidate_origins`:
 package ID/namespace/version, symbol kind, concept URI, captured source/IR/compiler hashes and
 the captured import source URI where available. Foundation entries are explicitly
 `pinned_export_catalog`, with no fabricated IR/compiler digest. The bundle records
-`selected_composition_symbols` and `specgraph-composed-symbol-advisory-v3`, an
+`selected_composition_symbols` and `specgraph-composed-symbol-advisory-v4`, an
 ordered `members` capture inventory and `foundation_catalog`. It has no invented
 single `selected_member` or aggregate source/IR hash. `verified_closure: true`
 refers only to the already verified selected dependency closure.

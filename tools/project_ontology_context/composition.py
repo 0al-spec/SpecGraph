@@ -11,6 +11,7 @@ PROFILE = "ontologyc-motivation-composition-v1"
 MOTIVATION = ("org.0al.motivation.core", "motivcore", "0.1.0")
 EVENTS = ("org.0al.events.core", "eventcore", "0.2.0")
 FOUNDATION = (foundation.PIN.id, foundation.PIN.namespace, foundation.PIN.version)
+FOUNDATIONS = tuple((pin.id, pin.namespace, pin.version) for pin in foundation.PINS)
 
 
 @dataclass(frozen=True, slots=True)
@@ -73,7 +74,7 @@ def check_packages(
         closure(
             "unavailable", "Profile requires one project package plus motivation-core/events-core"
         )
-    if any(p[0] == FOUNDATION[0] or p[1] == FOUNDATION[1] for p in selected):
+    if any(p[0] == f[0] or p[1] == f[1] for p in selected for f in FOUNDATIONS):
         closure("invalid", "Selected package shadows the pinned foundation")
     if {p.identity for p in packages} != set(selected):
         closure("unavailable", "Not all selected package declarations were captured")
@@ -83,20 +84,20 @@ def check_packages(
         pid = identity[0]
         if len(package.imports) != len(set(package.imports)):
             closure("invalid", "Duplicate import declaration", pid)
-        if pid == MOTIVATION[0] and set(package.imports) != {FOUNDATION, EVENTS}:
+        if pid == MOTIVATION[0] and not any(
+            set(package.imports) == {f, EVENTS} for f in FOUNDATIONS
+        ):
             closure(
                 "invalid", "motivation-core must import the pinned foundation and events-core", pid
             )
-        if pid == EVENTS[0] and set(package.imports) != {FOUNDATION}:
+        if pid == EVENTS[0] and not any(set(package.imports) == {f} for f in FOUNDATIONS):
             closure("invalid", "events-core must import only the pinned foundation", pid)
         if identity in roots and MOTIVATION not in package.imports:
             closure("invalid", "Project package must explicitly import motivation-core", pid)
 
         visible = {identity[1]: identity}
         for dependency in package.imports:
-            target = (
-                FOUNDATION if dependency[0] == FOUNDATION[0] else (identities.get(dependency[0]))
-            )
+            target = dependency if dependency in FOUNDATIONS else identities.get(dependency[0])
             if target != dependency or dependency == identity:
                 closure("invalid", f"Missing, incompatible or self import {dependency}", pid)
             elif dependency[1] in visible:
@@ -111,7 +112,7 @@ def check_packages(
             target = visible.get(namespace)
             accepted: frozenset[str] | set[str] = frozenset()
             unavailable = False
-            if target == FOUNDATION:
+            if target in FOUNDATIONS:
                 accepted = vocabulary[role]
             elif target is not None:
                 captured_target = by_id.get(target[0])
@@ -143,7 +144,11 @@ def check_packages(
                 )
             )
 
-    resolved = (foundation.PIN,) + tuple(
+    resolved = tuple(
+        pin
+        for pin in foundation.PINS
+        if any((pin.id, pin.namespace, pin.version) in p.imports for p in packages)
+    ) + tuple(
         ResolvedImport(*p.identity, p.source, p.source_sha256)
         for p in sorted(packages, key=lambda p: p.identity)
         if p.identity[0] in {MOTIVATION[0], EVENTS[0]}
