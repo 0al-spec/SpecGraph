@@ -91,13 +91,40 @@ Label the selected hierarchy and names as authored choices pending review.
 This step uses explicit ontology bindings; ordinary SpecDraft note capture
 remains independent of ontology availability.
 
-Prepare an HC selection with stable occurrence IDs and HCS with versioned
-`ontology_ref` bindings. Use `overview_name` for readable names. Put technical
-identity, source properties and optional production bindings in HCS. Nesting
-expresses the selected composition, not inferred inheritance, execution order
-or every relationship in the ontology. Reuse types for distinct local roles
-without collapsing their IDs. The exporter currently accepts ASCII display
-names and checks optional top-level Python function/anchor bindings.
+Prepare the overview from the project's actual materials:
+
+1. Select the relevant terms from an existing ontology package and specification
+   or attributed draft. Record the source revision and draft/accepted status.
+   Choose the few concepts needed to review this topic; do not traverse all
+   relations to construct a tree or turn ordinary SpecDraft notes into an ontology.
+2. Author the composition in HC with stable occurrence IDs. Use short role names
+   through HCS `overview_name`. Nesting expresses this selected composition,
+   not inferred inheritance, execution order, causality or every ontology edge.
+   Reuse a type for distinct local roles without collapsing their IDs.
+3. Bind each role in HCS to its versioned `ontology_ref` and exact source package
+   with `ontology_source` and `ontology_sha256`. The root source is the exporter's
+   default; explicitly override it for a role defined in another package. Reuse
+   that package's term instead of inventing a local duplicate. Keep technical
+   identity, source properties and optional production bindings in HCS so the
+   readable HC contains just names and hierarchy.
+4. Export into a new directory using the command below. Inspect the generated
+   pair: hierarchy and names in HC, distinct role IDs, type URIs, package versions
+   and source hashes in HCS. For a first use in another product, repeat with the
+   same inputs/tools into another new directory and compare both files' bytes.
+   If implementation is absent, leave production bindings absent and describe
+   the result as a model overview. Existing code bindings currently support
+   top-level Python functions with an anchor; display names must be ASCII.
+5. Show the compact HC for human review with HCS available for inspection.
+   Record agreement at its actual scope: approving a view does not accept the
+   entire ontology or prove an actor's motive, causality or implemented behavior.
+   When saving the view is authorized, preserve the selection inputs and generated
+   HC/HCS together in the owning project's version control, following its privacy
+   rules. Review changes to both files; labels may change while IDs stay stable.
+
+The exporter checks declarations in each explicitly selected source, not import
+closure. If claiming that the packages compose, separately run the project's
+supported `ontology-context` check for its selected profile and retain its result.
+Keep `exported`, context `verified` and semantic acceptance distinct.
 
 For a native runtime whose help lists `ontology-overview`, invoke its actual
 launcher path with the product workspace selected explicitly:
