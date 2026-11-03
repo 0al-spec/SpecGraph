@@ -85,9 +85,13 @@ lock does not by itself accept terms or authorize canonical changes.
 ## Check an executable relationship in a project package
 
 For Ontology 0.7.0 with `ontology.foundation@0.2.0`, inspect the authored
-`subject`, `action` and `object`. For example, an operator adds a repository
-to a project: `User → AddRepository → Project`. The project is the object
-whose membership changes. The repository reference can be an action parameter.
+`subject`, `action` and `object` together with the action's fields. For example,
+`User → AddRepository(repositoryId) → Project` names the operator, which
+repository they add, and the project whose membership changes. The action's
+required string field carries the ID of an existing `Repository`. The generated
+record schema can reject a missing field. To check that the ID resolves, exercise
+the application's lookup with a known ID and an unknown one, and observe project
+membership in both cases. Membership alone does not tell you who added it.
 
 If `relation.subject.unresolved` points at `User`, inspect its declaration
 in the selected source. A protocol describes a contract. When the project
