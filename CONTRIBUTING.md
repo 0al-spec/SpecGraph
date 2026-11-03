@@ -571,8 +571,30 @@ on the release run for retries; do not publish an unreleased branch manually.
 Release publications share `github-pages` concurrency. Its environment must
 permit the selected release tag; ordinary version tags match the tag policy `*`.
 See [publishing instructions](docs/static_artifact_publish.md) before the first
-release or when a tag contains `/`. This scheduling change does not turn a
+release. This scheduling change does not turn a
 skipped/cancelled historical DocC job into successful build evidence.
+
+## SpecGraph product releases
+
+SpecGraph uses [Semantic Versioning](https://semver.org/). The product version
+lives in `src/specgraph/__init__.py`. The wheel and `specgraph --version` read
+that value; the full native distribution comes from the same release commit.
+Compatibility covers documented consumer commands, flags, exit codes and
+published artifact contracts. Individual schema versions, ontology package
+versions and dependency pins keep their own lifecycles.
+
+During 0.x, use a patch for compatible fixes and a minor for new features or
+incompatible changes; describe incompatible changes and migration in the release
+notes. From 1.0, incompatible changes require a major bump.
+
+1. Review the product version in a PR. The first tag can adopt the existing
+   package version (`0.2.0`). Later stable releases must advance the version.
+2. At the reviewed, tested commit, run `python3 tools/check_release_tag.py vX.Y.Z`
+   with the intended tag. Create that tag on the **same full SHA**, push it and
+   publish a stable GitHub Release from the existing tag. Never move a released tag.
+3. Verify the release and DocC's `release-source.txt`. Native installations
+   still use the tag's full **commit** SHA as `--revision`; a version alone does
+   not identify an untagged development build.
 
 ## Metrics
 

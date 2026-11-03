@@ -289,6 +289,31 @@ def test_docc_publishes_only_stable_release_sources_with_one_artifact_chain() ->
     assert deploy["permissions"] == {"contents": "read", "pages": "write", "id-token": "write"}
 
 
+def test_stable_docc_tag_must_match_the_product_before_build() -> None:
+    from specgraph import __version__
+
+    workflow = yaml.load(_workflow_text("pages-technical-root.yml"), Loader=yaml.BaseLoader)
+    steps = workflow["jobs"]["build"]["steps"]
+    names = [step["name"] for step in steps]
+    check = steps[names.index("Check stable product version")]
+    assert names.index(check["name"]) < names.index("Build DocC documentation")
+    assert check["env"]["RELEASE_TAG"] == "${{ github.event.release.tag_name }}"
+    for tag, accepted in [
+        (f"v{__version__}", True),
+        (__version__, False),
+        (f"v{__version__}-rc.1", False),
+        (f"v{__version__}0", False),
+    ]:
+        result = subprocess.run(
+            ["bash", "-e", "-c", check["run"]],
+            cwd=ROOT,
+            env={**os.environ, "RELEASE_TAG": tag},
+            capture_output=True,
+            text=True,
+        )
+        assert (result.returncode == 0) == accepted, (tag, result.stderr)
+
+
 @pytest.mark.parametrize("matching_revision", [True, False])
 def test_docc_release_source_rejects_a_different_checkout(
     tmp_path: Path, matching_revision: bool

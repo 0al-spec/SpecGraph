@@ -98,6 +98,11 @@ should use the lowercase DocC path emitted by the plugin. Do not deploy
 `landing/` to GitHub Pages root; doing so can create navigation loops where
 documentation links return to the marketing page.
 
+Stable SpecGraph releases use a tag of the form `vMAJOR.MINOR.PATCH`, matching
+the product version reported by `specgraph --version` at the release commit.
+The DocC job checks this before building. The native installer continues to
+take the tag's resolved commit SHA. Schema and ontology versions are independent.
+
 DocC builds and GitHub Pages publication run on stable GitHub releases only
 (`release: released`), including promotion of a prerelease to stable. PRs and
 ordinary branch pushes keep the lightweight `make docc-sync` check in Python CI;
@@ -113,8 +118,7 @@ and `cancel-in-progress: true`; a newer release can supersede an older run.
 
 The `github-pages` environment must allow release tags as well as the existing
 `main` branch policy. Its tag policy `*` covers ordinary version tags without
-slashes, such as `v1.0.0`; a slash-containing tag needs a matching explicit
-environment policy. The first release must point to a commit containing the
+slashes, such as `v1.0.0`. The first release must point to a commit containing the
 release-triggered workflow. To retry a runner-capacity or build failure, use
 Actions **Re-run jobs** on that release's existing run. There is no unrestricted
 manual publication from an unreleased branch. Until the next successful release
