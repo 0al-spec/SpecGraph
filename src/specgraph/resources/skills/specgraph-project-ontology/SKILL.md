@@ -82,6 +82,37 @@ not equate human agreement to one point with approval of an entire sketch or
 package. A draft, preview, generated binding, validation result or candidate
 lock does not by itself accept terms or authorize canonical changes.
 
+## Check an executable relationship in a project package
+
+For Ontology 0.7.0 with `ontology.foundation@0.2.0`, inspect the authored
+`subject`, `action` and `object`. For example, an operator adds a repository
+to a project: `User → AddRepository → Project`. The project is the object
+whose membership changes. The repository reference can be an action parameter.
+
+If `relation.subject.unresolved` points at `User`, inspect its declaration
+in the selected source. A protocol describes a contract. When the project
+means a particular operator, use its identified entity class in the subject
+slot. Preserve the project's name and review the modeling choice there.
+For `relation.action.unresolved`, check the spelling, import and ancestry of
+the action class against `ont:Action`.
+
+Use the project's pinned compiler to check and compile the source. Refresh
+source and IR digests in the candidate selection. Run the installed runtime
+against each selection being claimed, for example:
+
+```sh
+specgraph-runtime --workspace "$PROJECT" ontology-context -- \
+  --project-id "$PROJECT_ID" --selection "$SELECTION" \
+  --ontologyc "$ONTOLOGYC" --compiler-sha256 "$COMPILER_SHA256"
+```
+
+In a composition, resolve each reference against the version its own package
+imports. Inspect the report's `outcome` and the JSON pointer for each disputed
+field. If direct compilation passes but the runtime reports an unsupported
+foundation version, record that profile gap separately. Report runtime
+execution only when an application or SDK test actually triggers the action
+and observes the affected state.
+
 ## Show a readable ontology composition
 
 Use a compact overview when the person asks to see the model's structure, or
