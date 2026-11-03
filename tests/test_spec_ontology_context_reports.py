@@ -212,7 +212,7 @@ def test_single_member_explicit_references_appear_in_all_advisory_views(
     for result in (bundle["binding_index"], bundle["validation_report"]):
         assert result["ontology_verification"]["status"] == "compiler_checked"
         assert result["ontology_verification"]["ir_sha256"] == context.snapshots[0].ir_sha256
-        assert result["project_context"]["analysis_profile"] == "specgraph-local-symbol-advisory-v3"
+        assert result["project_context"]["analysis_profile"] == "specgraph-local-symbol-advisory-v4"
         assert result["project_context"]["verified_closure"] is False
         assert result["canonical_mutations_allowed"] is False
 

@@ -38,10 +38,11 @@ class VocabularySymbol:
     range: str | None = None
 
     def origin(self) -> dict[str, object]:
-        section = "classes" if self.kind == "class" else "relations"
+        section = {"class": "classes", "relation": "relations", "protocol": "protocols"}[self.kind]
         return {
             "ontology_ref": self.reference,
             "ontology_uri": f"ontology://{self.package[0]}/{self.package[2]}/{section}/{self.name}",
+            "kind": self.kind,
             "package": dict(zip(("id", "namespace", "version"), self.package, strict=True)),
             "source_sha256": self.source_sha256,
             "ir_sha256": self.ir_sha256,
@@ -87,9 +88,9 @@ class CapturedVocabulary:
             if self.composed
             else "single_member_local_symbols",
             "verified_closure": self.composed,
-            "analysis_profile": "specgraph-composed-symbol-advisory-v2"
+            "analysis_profile": "specgraph-composed-symbol-advisory-v3"
             if self.composed
-            else "specgraph-local-symbol-advisory-v3",
+            else "specgraph-local-symbol-advisory-v4",
             "semantic_approval": "not_established",
             "binding_authority": "structural_advisory_only",
         }
@@ -176,7 +177,11 @@ def capture_vocabulary(context: ContextResult) -> CapturedVocabulary:
             ),
             None,
         )
-        for section, kind in (("classes", "class"), ("relations", "relation")):
+        for section, kind in (
+            ("classes", "class"),
+            ("relations", "relation"),
+            ("protocols", "protocol"),
+        ):
             rows = ir.get(section, [])
             if not isinstance(rows, list):
                 raise OntologySnapshotError(f"IR {section} must be a list")

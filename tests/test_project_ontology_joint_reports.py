@@ -264,3 +264,85 @@ def test_saved_composed_bundle_requires_every_member_hash(joint):
         result["project_context"]["members"][1].pop("ir_sha256", None)
     with pytest.raises(ValueError, match="snapshot hash"):
         bind_report_bundle(bundle, producer_identity="test-producer")
+
+
+@pytest.mark.parametrize("composed", [False, True])
+def test_protocols_are_attributed_as_protocols_in_every_advisory_view(joint, composed):
+    context = joint[2]
+    snapshot = context.snapshots[0]
+    ir = json.loads(snapshot.ir_bytes)
+    ir["protocols"] = [
+        {"id": "User", "fqid": "gitview:User", "aliases": ["Operator"]},
+        {"id": "GitHubRepository", "fqid": "gitview:GitHubRepository"},
+    ]
+    raw = json.dumps(ir).encode()
+    changed = replace(snapshot, ir_bytes=raw, ir_sha256=sha(raw))
+    if composed:
+        context = replace(context, snapshots=(changed, *context.snapshots[1:]))
+    else:
+        context = replace(
+            context,
+            snapshots=(changed,),
+            members=context.members[:1],
+            captured_members=context.captured_members[:1],
+            profiles=("ontologyc-structural-v1",),
+            resolved_imports=(),
+        )
+    documents = (
+        (
+            "specs/nodes/GITVIEW-SPEC-0001.yaml",
+            b"id: GITVIEW-SPEC-0001\nspecification:\n  terminology:\n    Operator: {}\n"
+            b"  ontology_refs:\n"
+            b"    - gitview:Project\n    - gitview:User\n"
+            b"    - gitview:GitHubRepository\n    - gitview:Typo\n",
+        ),
+    )
+    inventory, bundle = analyze(joint, context, documents)
+    assert inventory["outcome"] == bundle["outcome"] == "analyzed"
+    terms = {item["term"]: item for item in inventory["entries"]}
+    for name in ("User", "GitHubRepository"):
+        entry = terms[f"gitview:{name}"]
+        assert entry["resolution"] == "structurally_resolved_candidate"
+        assert entry["candidate_origins"][0]["ontology_uri"].endswith(f"/protocols/{name}")
+        assert entry["candidate_origins"][0]["kind"] == "protocol"
+    assert terms["gitview:Typo"]["resolution"] == "unknown"
+    assert terms["Operator"]["resolution"] == "spelling_candidate"
+    index = bundle["binding_index"]["entries"][0]
+    bindings = {item["term"]: item for item in index["accepted_bindings"]}
+    assert bindings["gitview:User"]["kind"] == "protocol"
+    assert bindings["gitview:Project"]["kind"] == "class"
+    assert {item["term"] for item in index["gaps"]} == {"gitview:Typo"}
+    findings = bundle["validation_report"]["entries"][0]["findings"]
+    assert {item["term"] for item in findings} == {"gitview:Typo"}
+    assert inventory["grounded"] is False
+
+
+def test_same_name_across_class_and_protocol_stays_ambiguous(joint):
+    context = joint[2]
+    snapshot = context.snapshots[0]
+    ir = json.loads(snapshot.ir_bytes)
+    ir["protocols"] = [{"id": "Project", "fqid": "gitview:Project"}]
+    raw = json.dumps(ir).encode()
+    context = replace(
+        context,
+        snapshots=(replace(snapshot, ir_bytes=raw, ir_sha256=sha(raw)), *context.snapshots[1:]),
+    )
+    inventory, bundle = analyze(joint, context)
+    project = next(item for item in inventory["entries"] if item["term"] == "Project")
+    assert project["resolution"] == "ambiguous"
+    assert {origin["kind"] for origin in project["candidate_origins"]} == {"class", "protocol"}
+    assert any(item["term"] == "Project" for item in bundle["binding_index"]["entries"][0]["gaps"])
+
+
+@pytest.mark.parametrize("protocols", [None, {}, [{"id": "User"}]])
+def test_malformed_protocol_exports_fail_closed(joint, protocols):
+    context = joint[2]
+    snapshot = context.snapshots[0]
+    ir = json.loads(snapshot.ir_bytes)
+    ir["protocols"] = protocols
+    raw = json.dumps(ir).encode()
+    context = replace(
+        context,
+        snapshots=(replace(snapshot, ir_bytes=raw, ir_sha256=sha(raw)), *context.snapshots[1:]),
+    )
+    assert all(report["outcome"] == "invalid" for report in analyze(joint, context))
