@@ -118,10 +118,10 @@ The smoke passes only when:
 - the authority boundary forbids report authority, automatic import-lock
   updates, and automatic canonical node updates.
 
-### Ontology 0.6.0 release integration
+### Ontology 0.7.0 release integration
 
-The release integration smoke uses the Ontology tooling release `0.6.0`, Git
-commit `c52553f872f440dde26c61abf9193f5fff171d98`. This is the version of the
+The release integration smoke uses the Ontology tooling release `0.7.0`, Git
+commit `40672c189f33dee2b8c6fdac903758e90d9fba86`. This is the version of the
 compiler source, separate from the `0.1.0` version of SpecGraph's own
 `org.0al.specgraph.core` ontology package. The project-local package remains a
 draft; a compiler release does not accept its terms.
@@ -140,7 +140,7 @@ package, which now omits unused `policies` and `stateMachines` sections.
 That package check establishes structural compatibility, not scenario execution.
 
 For the [SG-SPEC-0072 diagram](../specs/models/SG-SPEC-0072/README.md), the
-macOS job also downloads the published 0.6.0 archive, checks its pinned SHA-256
+macOS job also downloads the published 0.7.0 archive, checks its pinned SHA-256
 and uses the extracted `ontologyviz` to reproduce the checked-in DOT.
 
 For a local reproduction with a supported Swift toolchain, build `ontologyc`

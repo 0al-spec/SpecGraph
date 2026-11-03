@@ -68,15 +68,16 @@ Set `profiles: [ontologyc-foundation-v1]` in the existing selection file.
 Select one package whose only import is
 `{id: ontology.foundation, namespace: ont, version: 0.1.0}`.
 The previously supported `{id: specgraph.foundation, namespace: sg, version: 0.1.0}`
-remains supported as a legacy import. These are two exact default-namespace pins;
+remains supported as a legacy import. Ontology 0.7.0 also supports `ontology.foundation@0.2.0` as `ont`. These are exact default-namespace pins;
 other aliases or versions remain outside this consumer profile even if a compiler
 supports them. Existing package bytes, `sgcore` and historical evidence are not rewritten.
 Run the workspace CLI shown below with the same source, IR and compiler pins.
 
 The profile pins the [canonical foundation export catalog from Ontology 0.6.0](https://github.com/0al-spec/Ontology/blob/c52553f872f440dde26c61abf9193f5fff171d98/SPECS/ontology/foundation/0.1.0/exports.json).
-Release compatibility CI compares the vendored bytes with `ontologyc export-foundation`
+For 0.2.0 the profile uses the [Action catalog](https://github.com/0al-spec/Ontology/blob/40672c189f33dee2b8c6fdac903758e90d9fba86/SPECS/ontology/foundation/0.2.0/exports.json). It resolves subject, action and object from the authored relationship, including each object.oneOf alternative. Each member uses its own imported catalog version.
+Release compatibility CI compares the latest vendored bytes with `ontologyc export-foundation`
 on both platforms. The profile checks the catalog SHA-256 before resolving names.
-Both import identities use these canonical catalog bytes; reported references and
+Both 0.1.0 import identities use the archived canonical catalog bytes; reported references and
 URIs retain the identity actually authored by the package.
 
 SpecGraph runs `ontologyc check --format json` on private copies of the selected compiler and the pinned source. A compiler rejection can identify an invalid foundation reference before there is any generated IR. The report binds the compiler's code and field to the value at that location in the captured source. A valid source with missing IR remains unavailable. A process failure or an unreadable diagnostic response is also unavailable.
@@ -113,7 +114,7 @@ selection format and CLI. Select three packages with exact source and IR hashes:
 | `org.0al.motivation.core` | `motivcore` | `0.1.0` |
 | `org.0al.events.core` | `eventcore` | `0.2.0` |
 
-Foundation is the pinned `ontology.foundation@0.1.0` catalog and is not an
+Foundation is a version-pinned 0.1.0 or 0.2.0 catalog and is not an
 additional selected member. The legacy `specgraph.foundation@0.1.0` / `sg` import
 remains supported. A composition may mix the two supported imports across
 packages; each reference resolves in its own package's declared namespace.

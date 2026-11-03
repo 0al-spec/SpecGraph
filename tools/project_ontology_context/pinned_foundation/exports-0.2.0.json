@@ -1,0 +1,29 @@
+{
+  "classes" : [
+    "Action",
+    "Capability",
+    "Command",
+    "DomainEntity",
+    "Event",
+    "Invariant",
+    "Policy",
+    "StateMachine",
+    "ValueObject"
+  ],
+  "id" : "ontology.foundation",
+  "namespace" : "ont",
+  "policyBases" : [
+    "Policy"
+  ],
+  "protocols" : [
+    "Approvable",
+    "Auditable",
+    "DeviceBound",
+    "RestrictableCapability",
+    "Signable",
+    "TimeBound",
+    "Versioned"
+  ],
+  "schemaVersion" : 1,
+  "version" : "0.2.0"
+}

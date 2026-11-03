@@ -368,6 +368,7 @@ def assess_report_freshness(
             "scope",
             "members",
             "foundation_catalog",
+            "foundation_catalogs",
         )
         comparisons = (
             direct

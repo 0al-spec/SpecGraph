@@ -29,7 +29,14 @@ LEGACY_PIN = ResolvedImport(
     source_uri=PIN.source_uri,
     source_sha256=PIN.source_sha256,
 )
-PINS = (PIN, LEGACY_PIN)
+ACTION_PIN = ResolvedImport(
+    id="ontology.foundation",
+    namespace="ont",
+    version="0.2.0",
+    source_uri="https://github.com/0al-spec/Ontology/blob/40672c189f33dee2b8c6fdac903758e90d9fba86/SPECS/ontology/foundation/0.2.0/exports.json",
+    source_sha256="0444a5848b89cc8b0505ebc8a3114d07bfce9c9089a07f1c5a952f6ce8087841",
+)
+PINS = (PIN, LEGACY_PIN, ACTION_PIN)
 EXPORTS = Path(__file__).parent / "pinned_foundation/exports.json"
 
 
@@ -55,13 +62,16 @@ def reference_sites(spec: dict) -> Iterator[tuple[str, str, str]]:
             yield f"{path}/implements/{i}", ref, "protocols"
     for name, rel in spec["relations"].items():
         path = f"/spec/relations/{name}"
-        yield path + "/domain", rel["domain"], "classes"
-        target = rel["range"]
+        subject, obj = ("subject", "object") if "subject" in rel else ("domain", "range")
+        yield f"{path}/{subject}", rel[subject], "classes"
+        if "action" in rel:
+            yield path + "/action", rel["action"], "classes"
+        target = rel[obj]
         if isinstance(target, str):
-            yield path + "/range", target, "classes"
+            yield f"{path}/{obj}", target, "classes"
         else:
             for i, ref in enumerate(target["oneOf"]):
-                yield f"{path}/range/oneOf/{i}", ref, "classes"
+                yield f"{path}/{obj}/oneOf/{i}", ref, "classes"
     for name, policy in spec.get("policies", {}).items():
         path = f"/spec/policies/{name}"
         yield path + "/extends", policy["extends"], "policy_base"
@@ -75,14 +85,19 @@ def _external(ref: str, package_namespace: str) -> bool:
 
 
 def failed_capture_checks(
-    source: dict, member: dict, member_count: int, rejection: OntologySnapshotError
+    source: dict,
+    member: dict,
+    member_count: int,
+    rejection: OntologySnapshotError,
+    *,
+    composed: bool = False,
 ) -> Iterator[CheckResult]:
     """Bind compiler reference errors to existing fields in the same captured source."""
     spec = source.get("spec")
     if not isinstance(spec, dict):
         return
     issue = _scope_issue(spec, member, member_count)
-    if issue is not None:
+    if not composed and issue is not None:
         yield issue
         return
     if not isinstance(rejection, OntologySourceRejection):
@@ -91,6 +106,12 @@ def failed_capture_checks(
     sites = {
         "class.extends.unresolved": rf"classes\.{symbol}\.extends",
         "protocol.unresolved": rf"classes\.{symbol}\.implements\[[0-9]+\]",
+        "relation.subject.unresolved": rf"relations\.{symbol}\.subject",
+        "relation.object.unresolved": rf"relations\.{symbol}\.object(?:\.oneOf\[[0-9]+\])?",
+        **{
+            f"relation.action.{reason}": rf"relations\.{symbol}\.action"
+            for reason in ("unresolved", "wrong_kind", "cyclic_ancestry")
+        },
         "relation.domain.unresolved": rf"relations\.{symbol}\.domain",
         "relation.range.unresolved": rf"relations\.{symbol}\.range(?:\.oneOf\[[0-9]+\])?",
         "policy.extends.unresolved": rf"policies\.{symbol}\.extends",
@@ -115,7 +136,9 @@ def failed_capture_checks(
                 break
         else:
             pin = selected_import(spec)
-            if pin and isinstance(value, str) and value.startswith(pin.namespace + ":"):
+            if isinstance(value, str) and (
+                code.startswith("relation.") or (pin and value.startswith(pin.namespace + ":"))
+            ):
                 yield CheckResult(
                     "name_resolution",
                     "invalid",
@@ -134,7 +157,7 @@ def _scope_issue(spec: dict, member: dict, member_count: int) -> CheckResult | N
         return CheckResult(
             "dependency_closure",
             "unavailable",
-            "Profile requires one member importing ontology.foundation@0.1.0 as ont "
+            "Profile requires one member importing ontology.foundation@0.1.0 or @0.2.0 as ont "
             "or legacy specgraph.foundation@0.1.0 as sg",
             package,
         )
@@ -185,17 +208,42 @@ def check_import(
     pin = selected_import(spec)
     assert pin is not None
     try:
-        vocab = capture_vocabulary()
+        vocab = capture_vocabulary(pin)
     except OSError as error:
         return [closure("unavailable", f"Pinned foundation vocabulary unavailable: {error}")], ()
     except ValueError as error:
         return [closure("invalid", str(error))], ()
     try:
-        checks = [
-            _resolve(path, ref, role, vocab, package, pin)
-            for path, ref, role in reference_sites(spec)
-            if _external(ref, member["namespace"])
-        ]
+        checks = []
+        for path, ref, role in reference_sites(spec):
+            if _external(ref, member["namespace"]):
+                checks.append(_resolve(path, ref, role, vocab, package, pin))
+            elif (
+                path.startswith("/spec/relations/")
+                and "action" in spec["relations"][path.split("/")[3]]
+            ):
+                name = ref.rsplit(":", 1)[-1]
+                if name not in spec["classes"]:
+                    checks.append(
+                        CheckResult(
+                            "name_resolution",
+                            "invalid",
+                            f"{path}: unknown local class {ref}",
+                            package,
+                            ReferenceSite(path, ref),
+                        )
+                    )
+                    continue
+                uri = f"ontology://{package}/{member['version']}/classes/{name}"
+                checks.append(
+                    CheckResult(
+                        "name_resolution",
+                        "verified",
+                        f"{path}: {ref} -> {uri}",
+                        package,
+                        ReferenceSite(path, ref, uri),
+                    )
+                )
     except (KeyError, TypeError, AttributeError, ValueError) as error:
         return [closure("invalid", f"Malformed captured reference declaration: {error}")], (pin,)
     if INVALID_SPEC.is_satisfied_by(ContextFacts(tuple(checks))):
@@ -209,10 +257,11 @@ def check_import(
     return checks, (pin,)
 
 
-def capture_vocabulary() -> dict[str, set[str]]:
+def capture_vocabulary(pin: ResolvedImport = PIN) -> dict[str, set[str]]:
     """Read and verify one immutable release catalog before resolving references."""
-    data = EXPORTS.read_bytes()
-    if hashlib.sha256(data).hexdigest() != PIN.source_sha256:
+    path = EXPORTS.with_name("exports-0.2.0.json") if pin == ACTION_PIN else EXPORTS
+    data = path.read_bytes()
+    if hashlib.sha256(data).hexdigest() != pin.source_sha256:
         raise ValueError("Foundation exports SHA-256 differs from the release pin")
     catalog = json.loads(data)
     return {

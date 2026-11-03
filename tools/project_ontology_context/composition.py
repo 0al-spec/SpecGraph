@@ -52,7 +52,6 @@ def declarations(member: dict, source: dict) -> PackageDeclarations:
 
 def check_packages(
     packages: tuple[PackageDeclarations, ...],
-    vocabulary: dict[str, set[str]],
     selected: tuple[tuple[str, str, str], ...],
 ) -> tuple[list[CheckResult], tuple[ResolvedImport, ...]]:
     """Resolve declared edges and concept slots; do not infer semantic acceptance."""
@@ -79,6 +78,11 @@ def check_packages(
     if {p.identity for p in packages} != set(selected):
         closure("unavailable", "Not all selected package declarations were captured")
 
+    catalogs = {
+        (pin.id, pin.namespace, pin.version): foundation.capture_vocabulary(pin)
+        for pin in foundation.PINS
+        if any((pin.id, pin.namespace, pin.version) in package.imports for package in packages)
+    }
     for package in packages:
         identity = package.identity
         pid = identity[0]
@@ -113,7 +117,7 @@ def check_packages(
             accepted: frozenset[str] | set[str] = frozenset()
             unavailable = False
             if target in FOUNDATIONS:
-                accepted = vocabulary[role]
+                accepted = catalogs[target][role]
             elif target is not None:
                 captured_target = by_id.get(target[0])
                 if captured_target is None:
