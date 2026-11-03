@@ -14,6 +14,11 @@ GitHub Pages owns the technical surface:
 
 The root page is intentionally not the product landing page.
 
+Stable SpecGraph releases use a tag of the form `vMAJOR.MINOR.PATCH`, matching
+the product version reported by `specgraph --version` at the release commit.
+The DocC job checks this before building. The native installer continues to
+take the tag's resolved commit SHA. Schema and ontology versions are independent.
+
 DocC builds and GitHub Pages publication run only for stable GitHub releases
 (`release: released`), including promotion from prerelease. PRs and ordinary
 pushes retain the lightweight `make docc-sync` check in Python CI. Drafts and
@@ -23,8 +28,7 @@ claiming runtime attestation. The artifact chain is local to the release run.
 
 Release publications share `github-pages` concurrency with
 `cancel-in-progress: true`. The environment permits ordinary version tags via a
-tag policy `*`, alongside its existing `main` branch policy; tags containing `/`
-need an explicit matching policy. The first release must include the new workflow.
+tag policy `*`, alongside its existing `main` branch policy. The first release must include the new workflow.
 Retry failures through Actions **Re-run jobs** for that release, rather than
 publishing a moving unreleased branch. The prior site stays until a successful
 release deployment. The full operating instructions are in
