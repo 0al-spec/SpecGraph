@@ -15,6 +15,7 @@ from pathlib import PurePosixPath
 from typing import Any
 
 from project_ontology_check_scopes import CHECK_SCOPES, SCOPED_ANALYSIS_PROFILE
+from project_ontology_meta_authority_spec import META_AUTHORITY_BOUNDARY_SPEC, MetaAuthorityFacts
 from project_ontology_report_freshness import FreshnessResult, bind_report_bundle
 from project_ontology_report_freshness import _shape as domain_shape
 from spec_ontology_metamodel_check import PACKAGE, PROFILE, SOURCE_SHA256
@@ -55,7 +56,7 @@ class MetaReportBinding:
         }
 
 
-def _shape(bundle: object) -> tuple[str, str] | None:
+def _envelope_issue(bundle: object) -> tuple[str, str] | None:
     if not isinstance(bundle, dict):
         return "unavailable", "meta bundle unavailable"
     if type(bundle.get("schema_version")) is not int or bundle["schema_version"] != 3:
@@ -82,6 +83,11 @@ def _shape(bundle: object) -> tuple[str, str] | None:
     ):
         return "invalid", "bundle outcome or authority boundaries inconsistent"
 
+    return None
+
+
+def _assessment_issue(bundle: dict[str, Any]) -> tuple[str, str] | None:
+    assessments = bundle["assessments"]
     meta, domain = assessments[_META], assessments[_DOMAIN]
     if not isinstance(meta, dict) or not isinstance(domain, dict):
         return "invalid", "scope assessment malformed"
@@ -95,6 +101,11 @@ def _shape(bundle: object) -> tuple[str, str] | None:
     summary, context = meta.get("summary"), meta.get("project_context")
     if not isinstance(summary, dict) or not isinstance(context, dict):
         return "unavailable", "meta summary or captured context missing"
+    return None
+
+
+def _document_issue(bundle: dict[str, Any]) -> tuple[str, str] | None:
+    summary = bundle["assessments"][_META]["summary"]
     document = summary.get("document")
     if not isinstance(document, dict):
         return "unavailable", "captured document missing"
@@ -112,15 +123,21 @@ def _shape(bundle: object) -> tuple[str, str] | None:
         return "invalid", "captured document path or identity invalid"
     if any(not _hash(summary.get(key)) for key in ("mapping_sha256", "decision_sha256")):
         return "unavailable", "mapping or disposition digest missing"
-    if (
-        summary.get("decision_provenance") != "caller_attributed_not_attested"
-        or summary.get("node_membership") != "not_assessed"
-        or summary.get("lifecycle") != "not_assessed"
-        or summary.get("semantic_approval") != "not_established"
-        or summary.get("canonical_mutations_allowed") is not False
-    ):
+    facts = MetaAuthorityFacts(
+        decision_provenance=summary.get("decision_provenance"),
+        node_membership=summary.get("node_membership"),
+        lifecycle=summary.get("lifecycle"),
+        semantic_approval=summary.get("semantic_approval"),
+        canonical_mutations_allowed=summary.get("canonical_mutations_allowed"),
+    )
+    if not META_AUTHORITY_BOUNDARY_SPEC.is_satisfied_by(facts):
         return "invalid", "meta authority or lifecycle boundary inconsistent"
 
+    return None
+
+
+def _context_issue(bundle: dict[str, Any]) -> tuple[str, str] | None:
+    context = bundle["assessments"][_META]["project_context"]
     revision = context.get("context_revision")
     if (
         any(
@@ -149,6 +166,13 @@ def _shape(bundle: object) -> tuple[str, str] | None:
     ):
         return "invalid", "captured meta context differs from supported package or authority"
 
+    return None
+
+
+def _class_issue(bundle: dict[str, Any]) -> tuple[str, str] | None:
+    meta = bundle["assessments"][_META]
+    summary, context = meta["summary"], meta["project_context"]
+    member = context["selected_member"]
     check = summary.get("class_check")
     if not isinstance(check, dict) or not isinstance(check.get("origin"), dict):
         return "unavailable", "class check or origin missing"
@@ -168,6 +192,16 @@ def _shape(bundle: object) -> tuple[str, str] | None:
     ):
         return "invalid", "meta class check does not match captured context"
 
+    return None
+
+
+def _domain_issue(bundle: dict[str, Any]) -> tuple[str, str] | None:
+    requested = bundle["requested_scopes"]
+    meta = bundle["assessments"][_META]
+    domain = bundle["assessments"][_DOMAIN]
+    summary, context = meta["summary"], meta["project_context"]
+    document = summary["document"]
+    document_path = document["path"]
     if _DOMAIN not in requested:
         if (
             domain.get("check_scope") != _DOMAIN
@@ -214,6 +248,18 @@ def _shape(bundle: object) -> tuple[str, str] | None:
         or domain["project_context"].get("workspace") != context["workspace"]
     ):
         return "invalid", "domain and meta workspace identities differ"
+    return None
+
+
+def _shape(bundle: object) -> tuple[str, str] | None:
+    """Validate in order so the first diagnostic keeps its established priority."""
+    issue = _envelope_issue(bundle)
+    if issue:
+        return issue
+    for check in (_assessment_issue, _document_issue, _context_issue, _class_issue, _domain_issue):
+        issue = check(bundle)
+        if issue:
+            return issue
     return None
 
 

@@ -103,6 +103,7 @@ def test_meta_only_never_captures_domain(env):
     assert result["assessments"][DOMAIN]["outcome"] == "not_requested"
     assert result["inventory"] is None
     assert result["input_binding"]["producer_provenance"] == "caller_attributed"
+    assert "project_ontology_meta_authority_spec.py" in result["producer"]["source_sha256"]
 
 
 def test_both_scopes_capture_distinct_sources(env):
