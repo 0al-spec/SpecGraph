@@ -27,6 +27,11 @@ jobs:
         with:
           ref: ${{ github.sha }}
 
+      - name: Check stable product version
+        env:
+          RELEASE_TAG: ${{ github.event.release.tag_name }}
+        run: python3 tools/check_release_tag.py -- "$RELEASE_TAG"
+
       - name: Setup Xcode
         uses: maxim-lobanov/setup-xcode@v1
         with:
