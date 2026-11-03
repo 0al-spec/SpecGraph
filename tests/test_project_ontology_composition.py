@@ -56,13 +56,52 @@ def test_release_packages_reuse_motive_with_a_complete_closure():
     ]
     assert motive.reference.uri == "ontology://org.0al.motivation.core/0.1.0/classes/Motive"
     assert {i.id for i in imports} == {
-        foundation.PIN.id,
+        foundation.LEGACY_PIN.id,
         composition.MOTIVATION[0],
         composition.EVENTS[0],
     }
     origins = json.loads((FIXTURES / "origins.json").read_bytes())
     for name, origin in origins["packages"].items():
         assert sha((FIXTURES / f"{name}.yaml").read_bytes()) == origin["sha256"]
+
+
+@pytest.mark.parametrize("canonical_members", [(0, 1, 2), (0, 2)])
+def test_canonical_and_mixed_foundation_imports_resolve_per_package(canonical_members):
+    legacy = (foundation.LEGACY_PIN.id, foundation.LEGACY_PIN.namespace, "0.1.0")
+    canonical = composition.FOUNDATION
+    values = tuple(
+        replace(
+            package,
+            imports=tuple(canonical if item == legacy else item for item in package.imports),
+            references=tuple(
+                (path, name.replace("sg:", "ont:"), role) for path, name, role in package.references
+            ),
+        )
+        if index in canonical_members
+        else package
+        for index, package in enumerate(packages())
+    )
+    checks, imports = assess(values)
+    assert all(c.outcome == "verified" for c in checks)
+    assert foundation.PIN in imports
+    assert (foundation.LEGACY_PIN in imports) is (len(canonical_members) != 3)
+    assert any(c.reference and c.reference.name.startswith("ont:") for c in checks)
+    for check in checks:
+        if check.reference and check.reference.name.startswith("ont:"):
+            assert check.reference.uri.startswith("ontology://ontology.foundation/0.1.0/")
+
+
+def test_canonical_foundation_typo_is_not_satisfied_by_legacy_exports():
+    root, *dependencies = packages()
+    root = replace(
+        root,
+        imports=root.imports + (composition.FOUNDATION,),
+        references=(("/spec/classes/Project/extends", "ont:Typo", "classes"),),
+    )
+    checks, _ = assess((root, *dependencies))
+    assert any(
+        c.reference and c.reference.name == "ont:Typo" and c.outcome == "invalid" for c in checks
+    )
 
 
 @pytest.mark.parametrize("name", ["motivcore:Typo", "Motive", "eventcore:Entity", "sg:Auditable"])
@@ -147,6 +186,53 @@ def compiled_selection(tmp_path):
     }
     (tmp_path / "selection.yaml").write_text(yaml.safe_dump(selection))
     return tmp_path, compiler, selection
+
+
+def test_real_compiler_keeps_both_foundation_origins_in_a_mixed_closure(compiled_selection):
+    root, compiler, selection = compiled_selection
+    project = selection["packages"][0]
+    path = root / project["source"]
+    source = path.read_bytes().replace(b"specgraph.foundation", b"ontology.foundation")
+    source = source.replace(b"namespace: sg", b"namespace: ont").replace(b"sg:", b"ont:")
+    path.write_bytes(source)
+    out = root / "canonical-project"
+    subprocess.run(
+        [compiler, "compile", path, "--target", "typescript", "--out", out],
+        check=True,
+        capture_output=True,
+        timeout=60,
+    )
+    ir = out / "ontology.normalized.json"
+    project.update(
+        source_sha256=sha(source), ir=str(ir.relative_to(root)), ir_sha256=sha(ir.read_bytes())
+    )
+    (root / "selection.yaml").write_text(yaml.safe_dump(selection))
+    context = capture_project_context(
+        root,
+        project_id="mixed-foundation",
+        selection_path=Path("selection.yaml"),
+        ontologyc=compiler,
+        compiler_sha256=sha(compiler.read_bytes()),
+    )
+    assert context.outcome == "verified", context.checks
+    assert all(pin in context.resolved_imports for pin in foundation.PINS)
+    docs = (
+        (
+            "specs/nodes/SG-SPEC-0001.yaml",
+            b"id: SG-SPEC-0001\nspecification:\n"
+            b"  ontology_refs: [ont:ValueObject, sg:ValueObject]\n",
+        ),
+    )
+    specs = root / "specs/nodes"
+    specs.mkdir(parents=True)
+    inventory = build_term_inventory(context, workspace_root=root, specs_root=specs, documents=docs)
+    terms = {entry["term"]: entry for entry in inventory["entries"]}
+    for pin in foundation.PINS:
+        term = terms[f"{pin.namespace}:ValueObject"]
+        assert term["resolution"] == "structurally_resolved_candidate"
+        assert term["candidate_origins"][0]["ontology_uri"] == (
+            f"ontology://{pin.id}/0.1.0/classes/ValueObject"
+        )
 
 
 def capture(work, compiler):

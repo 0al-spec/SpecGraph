@@ -11,8 +11,8 @@
     "SystemActor",
     "ValueObject"
   ],
-  "id" : "specgraph.foundation",
-  "namespace" : "sg",
+  "id" : "ontology.foundation",
+  "namespace" : "ont",
   "policyBases" : [
     "Policy"
   ],

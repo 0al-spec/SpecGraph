@@ -49,10 +49,10 @@ ref, and digest. The digest must match the normalized IR `sourceDigest`.
 The smoke also verifies that output refs resolve under the fixture directory and
 that report counts match the resolved concept refs and ontology gaps.
 
-### Ontology 0.5.0 release integration
+### Ontology 0.6.0 release integration
 
-CI builds `ontologyc` from Ontology tooling release `0.5.0`, commit
-`0fcc94469d971aaf39fcc182bc5c6b8acff37fd2`, before invoking the release
+CI builds `ontologyc` from Ontology tooling release `0.6.0`, commit
+`c52553f872f440dde26c61abf9193f5fff171d98`, before invoking the release
 integration smoke. The smoke invokes the supplied binary and checks the source
 checkout HEAD. This compiler release is distinct from SpecGraph's project-local
 `org.0al.specgraph.core@0.1.0` package, which remains a draft. The freshly
@@ -65,7 +65,7 @@ independently for each platform. Both jobs also check the local SG72-MIXED
 package without unused `policies` and `stateMachines` sections. This establishes
 structural compatibility; it does not execute the scenario.
 
-The macOS job also checks the SHA-256 of the published 0.5.0 archive and
+The macOS job also checks the SHA-256 of the published 0.6.0 archive and
 reproduces the SG-SPEC-0072 model's DOT with the extracted `ontologyviz`.
 The SVG preview and rendering command are in `specs/models/SG-SPEC-0072/README.md`.
 

@@ -88,7 +88,7 @@ class CapturedVocabulary:
             if self.composed
             else "single_member_local_symbols",
             "verified_closure": self.composed,
-            "analysis_profile": "specgraph-composed-symbol-advisory-v3"
+            "analysis_profile": "specgraph-composed-symbol-advisory-v4"
             if self.composed
             else "specgraph-local-symbol-advisory-v4",
             "semantic_approval": "not_established",
@@ -140,7 +140,8 @@ def capture_vocabulary(context: ContextResult) -> CapturedVocabulary:
     ) != len(context.members):
         raise OntologySnapshotError("captured member identity differs from selection")
     if composed and (
-        context.outcome != "verified" or foundation.PIN not in context.resolved_imports
+        context.outcome != "verified"
+        or not any(pin in context.resolved_imports for pin in foundation.PINS)
     ):
         raise OntologySnapshotError(
             "joint vocabulary requires verified pinned closure", outcome="unavailable"
@@ -217,20 +218,23 @@ def capture_vocabulary(context: ContextResult) -> CapturedVocabulary:
             raise OntologySnapshotError(
                 f"pinned foundation catalog unavailable: {error}", outcome="unavailable"
             ) from error
-        for name in sorted(catalog["classes"]):
-            symbols.append(
-                VocabularySymbol(
-                    f"sg:{name}",
-                    name,
-                    "class",
-                    (),
-                    composition.FOUNDATION,
-                    foundation.PIN.source_sha256,
-                    None,
-                    None,
-                    foundation.PIN.source_uri,
+        for pin in foundation.PINS:
+            if pin not in context.resolved_imports:
+                continue
+            for name in sorted(catalog["classes"]):
+                symbols.append(
+                    VocabularySymbol(
+                        f"{pin.namespace}:{name}",
+                        name,
+                        "class",
+                        (),
+                        (pin.id, pin.namespace, pin.version),
+                        pin.source_sha256,
+                        None,
+                        None,
+                        pin.source_uri,
+                    )
                 )
-            )
     return CapturedVocabulary(
         packages, tuple(sorted(symbols, key=lambda s: (s.reference, s.kind))), composed
     )

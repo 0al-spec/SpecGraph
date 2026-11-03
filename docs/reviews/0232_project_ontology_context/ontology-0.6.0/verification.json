@@ -1,0 +1,170 @@
+{
+  "artifact_kind": "specgraph_ontology_release_consumer_verification",
+  "schema_version": 1,
+  "release": "0.6.0",
+  "source_commit": "c52553f872f440dde26c61abf9193f5fff171d98",
+  "release_archive_sha256": "65b0d874123abd18112c7baa705a608db983dee354319baf3a6640068cb23346",
+  "compiler_sha256": "ed79a676c6bdc0cb67bd24edb8d7ca11f67eab33eba1f854439edb5ce22e8aa8",
+  "foundation_catalog_sha256": "1c6b3ac3e4aa9b4e56d823b3645f94c126840c1922c555998b848e9e0fe18f8f",
+  "foundation_catalog_matches_compiler_export": true,
+  "foundation_catalog_identity": {
+    "id": "ontology.foundation",
+    "namespace": "ont",
+    "version": "0.1.0"
+  },
+  "foundation_cases": [
+    {
+      "case": "test_same_pinned_foundation_re0/typo",
+      "outcome": "invalid",
+      "import": [],
+      "references": [
+        {
+          "name": "ont:Typo",
+          "pointer": "/spec/classes/Entry/extends",
+          "uri": null
+        }
+      ],
+      "context_revision_present": false,
+      "snapshots": 0
+    },
+    {
+      "case": "test_same_pinned_foundation_re0/valid",
+      "outcome": "verified",
+      "import": [
+        {
+          "id": "ontology.foundation",
+          "namespace": "ont",
+          "source_sha256": "1c6b3ac3e4aa9b4e56d823b3645f94c126840c1922c555998b848e9e0fe18f8f",
+          "source_uri": "https://github.com/0al-spec/Ontology/blob/c52553f872f440dde26c61abf9193f5fff171d98/SPECS/ontology/foundation/0.1.0/exports.json",
+          "version": "0.1.0"
+        }
+      ],
+      "references": [
+        {
+          "name": "ont:ValueObject",
+          "pointer": "/spec/classes/Entry/extends",
+          "uri": "ontology://ontology.foundation/0.1.0/classes/ValueObject"
+        }
+      ],
+      "context_revision_present": true,
+      "snapshots": 1
+    },
+    {
+      "case": "test_same_pinned_foundation_re1/typo",
+      "outcome": "invalid",
+      "import": [],
+      "references": [
+        {
+          "name": "ont:Typo",
+          "pointer": "/spec/classes/Entry/extends",
+          "uri": null
+        }
+      ],
+      "context_revision_present": false,
+      "snapshots": 0
+    },
+    {
+      "case": "test_same_pinned_foundation_re1/valid",
+      "outcome": "verified",
+      "import": [
+        {
+          "id": "ontology.foundation",
+          "namespace": "ont",
+          "source_sha256": "1c6b3ac3e4aa9b4e56d823b3645f94c126840c1922c555998b848e9e0fe18f8f",
+          "source_uri": "https://github.com/0al-spec/Ontology/blob/c52553f872f440dde26c61abf9193f5fff171d98/SPECS/ontology/foundation/0.1.0/exports.json",
+          "version": "0.1.0"
+        }
+      ],
+      "references": [
+        {
+          "name": "ont:ValueObject",
+          "pointer": "/spec/classes/Entry/extends",
+          "uri": "ontology://ontology.foundation/0.1.0/classes/ValueObject"
+        }
+      ],
+      "context_revision_present": true,
+      "snapshots": 1
+    },
+    {
+      "case": "test_same_pinned_foundation_re2/typo",
+      "outcome": "invalid",
+      "import": [],
+      "references": [
+        {
+          "name": "sg:Typo",
+          "pointer": "/spec/classes/Entry/extends",
+          "uri": null
+        }
+      ],
+      "context_revision_present": false,
+      "snapshots": 0
+    },
+    {
+      "case": "test_same_pinned_foundation_re2/valid",
+      "outcome": "verified",
+      "import": [
+        {
+          "id": "specgraph.foundation",
+          "namespace": "sg",
+          "source_sha256": "1c6b3ac3e4aa9b4e56d823b3645f94c126840c1922c555998b848e9e0fe18f8f",
+          "source_uri": "https://github.com/0al-spec/Ontology/blob/c52553f872f440dde26c61abf9193f5fff171d98/SPECS/ontology/foundation/0.1.0/exports.json",
+          "version": "0.1.0"
+        }
+      ],
+      "references": [
+        {
+          "name": "sg:ValueObject",
+          "pointer": "/spec/classes/Entry/extends",
+          "uri": "ontology://specgraph.foundation/0.1.0/classes/ValueObject"
+        }
+      ],
+      "context_revision_present": true,
+      "snapshots": 1
+    },
+    {
+      "case": "test_same_pinned_foundation_re3/typo",
+      "outcome": "invalid",
+      "import": [],
+      "references": [
+        {
+          "name": "sg:Typo",
+          "pointer": "/spec/classes/Entry/extends",
+          "uri": null
+        }
+      ],
+      "context_revision_present": false,
+      "snapshots": 0
+    },
+    {
+      "case": "test_same_pinned_foundation_re3/valid",
+      "outcome": "verified",
+      "import": [
+        {
+          "id": "specgraph.foundation",
+          "namespace": "sg",
+          "source_sha256": "1c6b3ac3e4aa9b4e56d823b3645f94c126840c1922c555998b848e9e0fe18f8f",
+          "source_uri": "https://github.com/0al-spec/Ontology/blob/c52553f872f440dde26c61abf9193f5fff171d98/SPECS/ontology/foundation/0.1.0/exports.json",
+          "version": "0.1.0"
+        }
+      ],
+      "references": [
+        {
+          "name": "sg:ValueObject",
+          "pointer": "/spec/classes/Entry/extends",
+          "uri": "ontology://specgraph.foundation/0.1.0/classes/ValueObject"
+        }
+      ],
+      "context_revision_present": true,
+      "snapshots": 1
+    }
+  ],
+  "focused_tests_passed": 112,
+  "compiler_provenance": "archive_digest_matches_published_metadata_not_source_attestation",
+  "semantic_approval": "not_established",
+  "canonical_mutations_allowed": false,
+  "legacy_model_diagrams": {
+    "SG-SPEC-0072": "matches_preserved_DOT",
+    "SG-SPEC-0071": "matches_preserved_DOT"
+  },
+  "additional_real_compiler_tests_passed": 5
+}
