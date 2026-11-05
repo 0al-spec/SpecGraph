@@ -27,6 +27,12 @@ and a [pinned reference worksheet](../evidence/0226_c2b_reference_worksheet.json
 This defines the proposed rules; a runtime qualifier is not implemented or
 activated by this contract-only slice.
 
+C2c proposes a criterion observation report, informed by a local ExamCalc pilot.
+Its [source and limitations](../archive/proposal_sources/0226_criterion_observation_report.md)
+are retained separately. This is a contract-only follow-up: the local adapter
+is not a registered SpecGraph provider, and this amendment activates no CLI,
+collector, metric, canonical state or evidence admission.
+
 ```yaml
 canonical_mutations_allowed: false
 runtime_profile_activation_allowed: false
@@ -239,6 +245,7 @@ their original scope and provenance; no historical run gate is replayed.
 | C1 | Implemented: publication declaration EvidenceProvider, explicit registry and immutable TraceSnapshot | Pinned inventories, partial/missing sources, duplicate/conflicting reports and independent CLI |
 | C2a | Implemented: explicit retained publication tests/delivery artifacts and run binding | Existing producer contracts, exact Git file inventory/run/attempt, negative nested provenance cases and a real CI artifact |
 | C2b | Proposed structural test-channel qualification contract; runtime qualifier pending | Decision tables, 16 proposed acceptance cases and a pinned 13-atom / 18-link reference worksheet; execution remains separate |
+| C2c | Proposed criterion observation report using explicit FeaturePassport bindings and retained test observations; runtime pending | Complete criterion inventory, exact source/run/step/measurement joins and negative controls; local ExamCalc pilot is supporting evidence, not SpecGraph integration |
 | D | Connect to existing metric-pack artifacts with explicit provenance | Consumer compatibility, profile-separated comparisons and one real pilot |
 
 Each slice has its own focused PR. Failure or incompleteness stays visible;
@@ -319,6 +326,135 @@ reported separately in the implementing PR.
 - Select the minimal existing artifact inventory consumed by the first provider.
 - Decide the additive result field/schema version for existing viewers in slice D.
 - Review any Supervisor semantic candidate independently of this tooling design.
+
+## C2c: Criterion observation report (proposed)
+
+### User-visible result
+
+Given a selected specification and an explicit evidence package, the author
+sees every selected acceptance criterion, its declared test binding, the
+observed test step and measurement, and any missing or inconsistent inputs.
+The report answers **what was observed for this criterion, at which inputs?**
+It does not answer whether the criterion is semantically sufficient or admitted.
+
+One author-curated example of the intended presentation is:
+
+| Criterion | Observed step | Measurement | Binding / observation |
+| --- | --- | --- | --- |
+| Returning an issue closes it | Press using the returned issue | calculation count 1 → 1; result unknown | checked / passed |
+| A late return preserves a newer issue | Press using the newer issue after the old return | count 2 → 3; result available | checked / passed |
+| A new issue works while the returned issue stays closed | New-issue press, then old-issue press | 1 → 2 available; 3 → 3 unknown | checked / passed |
+
+These are summarized local pilot observations, not executable fixtures or
+SpecGraph output. Every actual row retains machine-readable criterion, source,
+passport, plan, provider, run, attempt, step and artifact identities. A missing
+journal would retain the row with unavailable observation, not reuse this table.
+
+### Ownership and integration seam
+
+- [0224](0224_compositional_test_context_and_evidence_binding.md) supplies the
+  producer-side binding and execution-context direction. The first adapter is
+  bounded to a declared Cucumber Messages profile; its support matrix must be
+  explicit. Other runners remain replaceable producers, not new requirements
+  on how a person phrases intent.
+- FeaturePassport owns provider-neutral feature/passport/criterion identities,
+  implementation bindings and the generic receipt contract. A SpecGraph locator
+  stays inside an optional provider-owned contract reference. Validate the
+  passport against its pinned supported schema and preserve its draft status.
+  Do not invent an L0–L8 level for local tests or embed SpecGraph identity rules
+  into the generic passport schema.
+- SpecGraph owns exact spec/criterion resolution and the derived report through
+  the explicit `EvidenceRegistry` / `EvidenceProvider` / `TraceSnapshot` seam.
+  Add a reviewed typed criterion-observation selection and facts; the existing
+  `PublicationExecutionSelection` and SG-SPEC-0071-specific providers do not
+  already accept arbitrary passports or Cucumber journals. Preserve their
+  contracts and keep parsing/I/O in the adapter, report decisions in named
+  policies over immutable facts. No dynamic plugin loading is proposed.
+- [0225](0225_tests_verified_evidence_admission_plan.md) remains the separate
+  path from observations and FeaturePassport receipts to claim admission.
+  C2c neither issues receipts nor creates a second acceptance authority.
+
+### Explicit inputs and output boundary
+
+The proposed standalone report request selects one workspace/repository,
+spec ID, exact source revision, criterion inventory, passport revision/digest,
+binding-plan revision/digest, adapter ID/version/profile, and retained artifact
+paths with digests and run/attempt identity. Paths alone and mutable `latest`
+selection are insufficient. File ingestion is read-only and bounded to the
+explicit allowed inputs; it must not execute code or commands from artifacts.
+
+Criterion identity includes its owning spec, exact source revision, file digest
+and pointer, with a stable local criterion ID when available. A list index
+alone cannot identify a criterion across edits. Preserve distinct declaration,
+test-source and execution-source revisions; prove their compatibility under the
+selected profile rather than requiring their commits to be numerically equal.
+Keep source-build linkage labeled `producer_declared` unless independently
+established. Matching bytes and a successful run do not establish attestation.
+
+The expected criterion set comes from the pinned specification inventory, not
+from whichever evidence files are present. Every criterion gets a row, including
+unbound, unavailable and failed cases. If an explicit subset is selected, label
+that scope and list exclusions; do not call it whole-spec coverage. For every
+criterion the pinned binding plan declares the expected observations/assertions;
+a passing subset cannot satisfy that declared set. Reviewing that plan's semantic
+sufficiency remains a human/agent task, not a consequence of structural validity.
+
+An additive derived `criterion_observation_report/v1` is the proposed output;
+its serialization and CLI flags remain implementation decisions. It retains
+request/plan/provider/source digests, original lifecycle, full findings and
+separate axes for **binding integrity**, **observed outcome** and **admission**.
+Checked binding can accompany a failed test. Missing evidence is unavailable;
+malformed or inconsistent evidence is invalid; conflicting facts stay visible.
+None of these may become a passing observation through text similarity.
+
+Repeated agreeing records do not multiply criteria. Conflicts cannot be
+resolved by arrival order or selecting a convenient passing retry. Attempt
+selection and run-completion policy are explicit; unsupported retries,
+versions or unresolved selections remain unavailable. Partial/failed runs
+retain observations and findings but cannot be represented as wholly passed.
+
+The first report is diagnostic: `scope: local_test`, admission `not_evaluated`
+and no receipt. The proposed envelope is a derived observation view, not a
+FeaturePassport receipt format. It changes neither legacy `acceptance_coverage`
+nor C2b structural SVC, S/U, canonical status, UI defaults or CI merge policy.
+The ASCII-only legacy coverage heuristic is a separately observed defect;
+C2c uses exact identity and pointers and does not hide it by translating specs.
+
+### Acceptance controls for implementation
+
+These are **future SpecGraph checks**, not tests already executed by this PR:
+
+| ID | Input/control | Expected report |
+| --- | --- | --- |
+| CER-01 | Three pinned criteria, valid passport/plan and matching completed run observations | Three rows retain exact step identities and measurements; admission remains not_evaluated |
+| CER-02 | Journal absent from a fresh checkout, although a previous report says passed | Explicit unavailable row; no inherited success |
+| CER-03 | Wrong source, passport, plan or journal digest | Invalid affected binding; mismatched inputs remain identifiable |
+| CER-04 | Foreign run/case/step, or a modified measurement projection with a newly computed projection hash | Reject the join against the authoritative selected journal |
+| CER-05 | A declared observation is missing, failed, skipped, pending or belongs to an unfinished/unsupported attempt | Preserve outcome/diagnostic; criterion is not wholly passed |
+| CER-06 | A criterion is unbound, duplicated, or omitted from input evidence | Keep complete inventory, detect duplicates and show the gap; no smaller denominator |
+| CER-07 | Same facts repeated in a different order, then conflicting outcomes supplied | Agreeing duplicates are idempotent; conflicts remain visible and order independent |
+| CER-08 | Russian criterion text and unrelated English keywords | Exact identity/text/source checks work without lexical coverage inference |
+| CER-09 | Correct FeaturePassport envelope with a wrong binding target or test role | Native passport validation fails; no collection success is inferred from envelope presence |
+| CER-10 | Complete successful local observations without independent source attestation or trusted receipt | Producer-declared provenance stays explicit; no tests_verified, runtime_verified or receipt |
+
+The local ExamCalc prototype demonstrated one concrete three-row output and
+nine adapter controls plus three passport-validation controls. It does not
+demonstrate every control above, a general 0224 implementation, or C2c integration.
+Its raw artifacts remain local-only; source records state their availability.
+
+### Bounded next implementation
+
+1. Review the input/row contract and expected binding plan against the pilot;
+   retain this proposal's authority boundaries and named draft obligations.
+2. Add the minimal typed selection/facts and a single explicit retained-test
+   provider behind the existing registry. Use independently committed synthetic
+   fixtures; public CI must not depend on the local ExamCalc checkout.
+3. Add the diagnostic projection and the controls above, then repeat the local
+   consumer pilot using the native SpecGraph entry point. Retain missing inputs
+   and unsupported cases; do not infer that the old local adapter is activated.
+
+The receipt/admission step is deferred to 0225. A useful local observation report
+does not require implementing trusted receipt infrastructure first.
 
 ## Authority and Non-Goals
 

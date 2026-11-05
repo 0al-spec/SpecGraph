@@ -203,3 +203,10 @@ witnesses. Relevant Git blobs were independently reread to verify their hashes.
 Its author-expected 13/13 result applies the proposed structural interpretation;
 no production C2b evaluator, runtime metric, test execution or semantic acceptance
 is claimed. The existing C2a five-scenario report was not joined to these 13 atoms.
+
+## Criterion observation follow-up
+
+The [C2c source record](0226_criterion_observation_report.md) captures the operator's
+request to move the target result of the local ExamCalc experiment into this
+SpecGraph proposal. Its five CER draft obligations describe a proposed derived
+report. The consumer prototype is not native provider activation or admission.

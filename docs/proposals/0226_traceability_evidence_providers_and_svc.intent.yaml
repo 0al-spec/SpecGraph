@@ -20,3 +20,13 @@ atoms:
     statement: Repeated agreeing observations retain provenance without multiplying atoms, while conflicting identity, binding or inventory facts remain unresolved and order independent.
   - id: C2B-SEPARATION
     statement: Test execution, results, semantic sufficiency, fulfillment and admission remain separate from structural channel qualification and do not activate legacy metric, viewer or CI behavior.
+  - id: CER-INVENTORY
+    statement: Criterion observation reports use an explicit pinned specification inventory and expected binding plan, retain every selected criterion including gaps, and label any subset rather than silently reducing coverage.
+  - id: CER-PROVENANCE
+    statement: Each criterion observation retains exact source, passport, plan, provider, run, attempt, step and artifact identities; inconsistent joins and measurements are rejected and producer-declared execution provenance is not upgraded by matching hashes.
+  - id: CER-OUTCOME
+    statement: Binding integrity, observed outcome and admission remain separate; missing or unsupported observations stay unavailable, bad inputs invalid, and partial or failed expected assertions cannot become passing coverage.
+  - id: CER-CONFLICT
+    statement: Repeated agreeing observations do not multiply criteria, and conflicting or ambiguously selected attempts remain explicit and order independent.
+  - id: CER-BOUNDARY
+    statement: The explicit EvidenceProvider integration preserves FeaturePassport ownership and optional SpecGraph locators; local observation reports issue no receipt, claim, canonical transition or metric activation, with trusted admission deferred to 0225.

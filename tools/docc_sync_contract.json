@@ -1135,7 +1135,11 @@
         "SG-SPEC-0071",
         "deferred_until_canonicalized",
         "canonical_mutations_allowed: false",
-        "evidence_admission_allowed: false"
+        "evidence_admission_allowed: false",
+        "C2c",
+        "criterion_observation_report/v1",
+        "producer_declared",
+        "0225"
       ]
     },
     {
