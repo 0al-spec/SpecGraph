@@ -10,6 +10,7 @@ from .fact_agreement_spec import FACT_AGREEMENT_SPEC
 
 SNAPSHOT_PROFILE = "specgraph.trace-snapshot/declarations-v1"
 EXECUTION_SNAPSHOT_PROFILE = "specgraph.trace-snapshot/execution-v1"
+CRITERION_SNAPSHOT_PROFILE = "specgraph.trace-snapshot/criterion-observations-v1"
 
 
 @dataclass(frozen=True)
@@ -71,11 +72,21 @@ class TraceSnapshot:
         )
 
     def to_payload(self) -> dict[str, object]:
-        collected_execution = any(r.execution is not None for r in self.reports)
+        collected_criteria = any(r.criterion is not None for r in self.reports)
+        collected_execution = collected_criteria or any(
+            r.execution is not None for r in self.reports
+        )
+        profile = (
+            CRITERION_SNAPSHOT_PROFILE
+            if collected_criteria
+            else EXECUTION_SNAPSHOT_PROFILE
+            if collected_execution
+            else SNAPSHOT_PROFILE
+        )
         payload = {
             "artifact_kind": "trace_snapshot",
             "schema_version": 1,
-            "profile": EXECUTION_SNAPSHOT_PROFILE if collected_execution else SNAPSHOT_PROFILE,
+            "profile": profile,
             "scope": self.scope.to_payload(),
             "reports": [r.to_payload() for r in self.reports],
             "observed_subjects": [dict(spec_id=s, atom_id=a) for s, a in self.observed_subjects],

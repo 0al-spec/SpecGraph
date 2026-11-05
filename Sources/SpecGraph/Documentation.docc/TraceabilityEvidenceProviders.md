@@ -137,36 +137,26 @@ Execution, fulfillment and admission remain separate; defaults and gates stay
 unchanged. The next implementation slice is a pure typed qualifier and an opt-in
 diagnostic entry point, followed by its negative/conflict acceptance cases.
 
-## C2c: proposed criterion observation report
+## C2c criterion observation report
 
-C2c is contract-only preparation for `criterion_observation_report/v1`. A local
-ExamCalc prototype demonstrated a three-row output and input-integrity controls;
-it is not a registered SpecGraph provider. Its raw evidence remains local-only.
-Five CER obligations are explicitly counted in the proposal's draft intent file.
+The bounded `criterion_observation_report/v1` diagnostic is implemented
+through the explicit `criterion.retained_cucumber` provider and standalone
+CLI. It starts from a complete pinned `acceptance` inventory and expected
+binding plan. Each row preserves exact pointers and available source,
+passport, plan, provider, run, attempt, step and artifact identities.
+Unbound, unavailable and failed criteria remain visible.
 
-The report joins an explicitly selected pinned criterion inventory and binding
-plan with a draft FeaturePassport and retained test observations. Each row keeps
-source/passport/plan/provider digests, run/attempt/step identities and measurements.
-It preserves distinct binding integrity, observed outcome and admission axes.
-A checked binding may carry a failed test; missing evidence stays unavailable,
-bad inputs invalid, and a passing subset cannot replace the expected set.
-Repeated agreeing records are idempotent; conflicts remain order independent.
+The first profile supports Cucumber Messages 34.2.1 with one run per
+journal and explicit case selection at attempt 0. Its native FeaturePassport validator checks the
+document and local references. The provider resolves the SpecGraph-owned
+locator and compares the selected measurements from the retained journal.
+Separate integrity and outcome policies preserve a checked binding even
+when an observation fails. Matching source bytes retain
+`producer_declared` provenance. See <doc:EvidenceProvider> for details.
 
-The proposed integration reuses the explicit EvidenceRegistry / EvidenceProvider /
-TraceSnapshot seam with a reviewed typed selection and facts. Existing publication
-providers and PublicationExecutionSelection do not already accept Cucumber
-journals. Other runners can supply equivalent normalized observations; the person
-need not rewrite intent to suit a runner. This is not dynamic plugin discovery.
-
-FeaturePassport retains generic passport and receipt ownership, with optional
-provider-owned SpecGraph locators. Proposal 0224 supplies producer-binding
-direction. Local reports keep `producer_declared` execution provenance where
-that is all the input supports, `scope: local_test`, admission `not_evaluated`
-and no receipt. The L0–L8 levels are not redefined to mean local test success.
-Trusted admission stays under 0225; no tests_verified, runtime_verified, canonical
-transition, metric default or CI threshold is activated. The legacy ASCII-only
-text-coverage defect remains separate.
-
-See RFC 0226 C2c for ten future acceptance controls and the source record
-`docs/archive/proposal_sources/0226_criterion_observation_report.md` for the
-local pilot revisions and availability limits. The amendment changes no runtime.
+The report carries `scope: local_test`, `admission: not_evaluated` and a
+null receipt. Trusted admission remains with RFC 0225. This diagnostic
+does not change legacy coverage, SVC, S/U, canonical status, UI or CI
+defaults. The independent synthetic tests and the earlier local ExamCalc
+pilot are separate observations. See
+`docs/archive/proposal_sources/0226_criterion_observation_report.md`.

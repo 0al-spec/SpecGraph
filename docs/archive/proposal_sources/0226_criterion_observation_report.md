@@ -62,3 +62,15 @@ Thus `untracked` was not interpreted as loss of the existing observations.
 The new C2c contract is author synthesis of these observations and the operator's
 request. No fresh autonomous refinement run or independent review is claimed.
 No canonical SG-SPEC-0021 criteria or lifecycle state are changed.
+
+## Bounded runtime follow-up
+
+After PR #878 merged the proposed report contract, the operator authorized the
+first implementation. SpecGraph now composes a retained Cucumber provider
+through the explicit registry and projects the diagnostic report on request.
+The public regression fixtures describe a synthetic parcel locker. No local
+consumer notebook, journal or measured test code was carried forward. The
+implementation tests the supported profile with one run per journal, explicit
+case selection at attempt 0 and an opt-in native FeaturePassport validator check.
+See [EvidenceProvider](../../evidence_provider.md#retained-cucumber-criterion-observations-c2c)
+for input shapes, replay instructions and deferred formats.

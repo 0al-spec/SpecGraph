@@ -88,3 +88,35 @@ The real CI observation in
 pytest obligations from run 39757869156 attempt 1 at its actual merge-checkout
 SHA. Deploy/runtime stay missing because deployment was skipped on the PR.
 Successful HTTP paths are tested through synthetic offline producer fixtures.
+
+## Retained criterion observations
+
+C2c provides the opt-in `criterion.retained_cucumber` collector and
+`tools/criterion_observation_report.py` projection. The additive
+`specgraph.trace-snapshot/criterion-observations-v1` profile marks the
+retained-artifact capability independently of observation success. The
+`criterion_observation_report/v1` envelope uses
+`specgraph.criterion-observation/cucumber-messages-34.2.1-v1`. Select one
+specification revision, the entire pinned `acceptance` string inventory, a
+FeaturePassport, a binding plan and explicit retained journal paths and
+digests. Each row retains its exact pointer and the selected run, case,
+attempt, step and measurement identities. Missing and unbound rows remain
+visible.
+
+The pinned native FeaturePassport validator checks the passport bytes before
+the provider joins SpecGraph-owned locators. The Cucumber Messages 34.2.1
+profile supports one run per journal and explicit case selection at attempt 0.
+Retries of the selected case are unavailable.
+A passed row requires the completed run, case and all case steps, plus a
+matching journal attachment for every expected assertion. If the selected
+assertions pass while the run fails, the row remains partial and records
+`run_success: false`. Declaration,
+test-source and execution-source commits may differ. Matching pinned bytes
+establish compatibility and preserve `producer_declared` execution provenance.
+
+`CRITERION_PASSPORT_BINDING_SPEC` evaluates the explicit declaration join,
+`CRITERION_BINDING_INTEGRITY_SPEC` classifies binding integrity and
+`CRITERION_OBSERVATION_OUTCOME_SPEC` evaluates observation outcome. A checked
+binding can accompany a failed observation. Reports carry `not_evaluated`
+admission and a null receipt. See `docs/evidence_provider.md` for the CLI
+invocation, plan schema, accepted Cucumber profile and handling of conflicts.

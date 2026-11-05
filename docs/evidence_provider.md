@@ -185,3 +185,114 @@ not establish a live deployment.
 
 Next: qualify atom-to-check channels for a separately reviewed SVC profile and
 connect snapshot diagnostics to the existing viewer. Neither is activated here.
+
+## Retained Cucumber criterion observations (C2c)
+
+The explicit `criterion.retained_cucumber` provider produces
+`criterion_observation_report/v1` through the existing registry and
+`TraceSnapshot`. The additive snapshot profile is
+`specgraph.trace-snapshot/criterion-observations-v1`. The snapshot
+reports the retained-artifact capability independently of observation
+success. The collector profile is
+`specgraph.criterion-observation/cucumber-messages-34.2.1-v1`. Select one
+Git repository, one full commit ID, one spec node, and its entire
+`acceptance` list of strings. The provider reads the pinned Git blob and retains
+its lifecycle, exact text, file SHA-256 and JSON Pointer for every criterion.
+An unreadable or invalid inventory has no criterion count. A readable inventory
+with a mismatched pin retains its rows as invalid. Subset selection is outside
+this profile.
+
+Run from SpecGraph with the repository Python environment. The roots and
+variables below refer to inputs prepared by the operator. Each `PATH SHA256`
+pair is independent and `--journal` can be repeated for additional artifacts.
+
+```sh
+python tools/criterion_observation_report.py \
+  --repository-root "$source_checkout" --retained-root "$retained_artifacts" \
+  --repository-id "$repository_id" --workspace "$workspace" \
+  --revision "$declaration_commit" --spec-id "$spec_id" \
+  --spec "$spec_path" "$spec_sha" \
+  --passport "$passport_path" "$passport_sha" \
+  --binding-plan "$plan_path" "$plan_sha" \
+  --journal "$journal_id" "$journal_path" "$journal_sha" \
+  --validator "$trusted_feature_passport_binary" --validator-sha256 "$validator_sha"
+```
+
+The executable is a trusted, operator-installed native `feature-passport` tool
+with an adjacent SwiftPM/Xcode resource bundle. The adapter pins its binary
+digest and checks the bundled v1 schema from FeaturePassport commit
+`0fe35e9edb1461744ffa89161ec64cc86d44f728`. It passes the captured, hash-checked
+passport bytes to the native `validate` command. This checks schema shape and
+local references, including the test element role. Tool and resource custody
+are the operator's responsibility. The provider reads pinned Git objects and
+explicit regular files, up to 2 MiB each. The retained root constrains retained
+paths. Only the operator selects the validator, never the evidence package.
+The CLI prints one report and returns 0 when that report was produced, including
+a report with gaps or failures. Invocation errors produce a nonzero status.
+Treat output as local diagnostic data because it includes selected JSON
+attachment values.
+
+### Binding plan v1
+
+The pinned JSON object has the exact keys below. SHA-256 pins are lowercase hex.
+The scope fields also appear in the selected passport `specgraph` contract
+locator, alongside `pointer` and `scenario_id`.
+
+| Field | Shape |
+| --- | --- |
+| `artifact_kind` | `criterion_observation_binding_plan` |
+| `schema_version` | `1` |
+| `profile` | `specgraph.criterion-observation/cucumber-messages-34.2.1-v1` |
+| `scope` | `workspace`, `repository`, `node_id`, `revision`, `path`, `sha256` |
+| `passport_sha256` | Exact passport bytes |
+| `journals[]` | `artifact_id`, `sha256`, `run_id`, `test_source_revision`, `execution_source_revision`, and `feature` with `path`, `sha256` |
+| `bindings[]` | `pointer`, `criterion_id`, `contract_ref_id`, `passport_binding_id`, `artifact_id`, `case_id`, `case_started_id`, `attempt`, `assertions` |
+| `bindings[].assertions[]` | `id`, `step_id`, `media_type`, `expected_measurement` as a JSON object |
+
+Each pointer is `/acceptance/N` in the selected Git blob. The selected passport
+criterion text must match exactly. Its named implementation binding must name
+that criterion, the selected `implements` contract reference and at least one
+test element. A plan journal declaration must match its independently selected
+artifact digest. Each binding has at least one expected assertion. Each
+assertion selects one step and JSON attachment media type. The entire observed
+JSON object is compared with the expected object using a stable key order.
+The report takes measured values from the retained attachment. The plan carries
+expectations only. Binding integrity, observed outcome and admission are
+reported separately. A checked binding can yield a failed outcome.
+
+### Supported journal profile
+
+- UTF-8 NDJSON Cucumber Messages `34.2.1`, one run per artifact. Select the
+  exact test case and case start. Attempt 0 is supported when the selected
+  case has no retry or ambiguous selection. A run may contain other cases
+  and supply multiple assertions or criteria.
+- The selected test case and attempt must join the sole run and pickle. The
+  pickle names the pinned feature URI and explicit `@specgraph-id=<scenario_id>`
+  tag. The journal source text must match the feature bytes in both selected
+  test and execution commits. The execution commit must also contain identical
+  spec bytes. These compatibility checks allow distinct revisions while
+  preserving `producer_declared` source-build provenance. They do not
+  independently resolve test source anchors, compile Gherkin, or attest checkout.
+- Every case step, including hooks, needs a passing result for the criterion
+  to pass. Run and case must finish and every expected attachment must be
+  present and match. Unrelated cases do not supply results or measurements
+  for the selected attempt. When its own steps and assertions pass but the
+  overall run reports failure, the criterion is partial and retains
+  `run_success: false` plus the passing selected-step facts. The report
+  retains available step statuses and measurements. Unfinished, missing, skipped, pending,
+  unsupported, and failed evidence remain distinguishable. Attachments use
+  `IDENTITY` encoding and `application/json` or `application/*+json` types.
+- Exact repeated plan rows and identical journal messages are idempotent.
+  Inconsistent records for the same selected identity remain conflicts.
+  The raw plan and journal fingerprints still reflect duplicates and ordering.
+  Unknown journal versions, retries of the selected case and alternate
+  attachment encodings remain outside the supported profile.
+
+`tools/traceability/` keeps the decision policies in separate modules.
+`CRITERION_PASSPORT_BINDING_SPEC` checks the declaration join,
+`CRITERION_BINDING_INTEGRITY_SPEC` classifies binding findings and
+`CRITERION_OBSERVATION_OUTCOME_SPEC` evaluates the observed outcome. Git, file
+and native-tool invocation, Cucumber indexing and serialization are adapters.
+The report carries `admission: not_evaluated` and a null receipt. Proposal
+0225 owns future trusted admission. C2b, legacy acceptance coverage, S/U and
+existing publication snapshots retain their existing behavior.

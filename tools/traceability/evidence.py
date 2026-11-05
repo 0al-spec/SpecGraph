@@ -8,6 +8,7 @@ from pathlib import Path
 from intent_decision_review.sources import encoded
 
 from .context import Declaration, ReferenceResolution
+from .criterion import CriterionEvidence, CriterionSelection
 from .execution import ExecutionEvidence, PublicationExecutionSelection
 
 
@@ -50,6 +51,7 @@ class EvidenceRequest:
     scope: EvidenceScope
     artifact_paths: tuple[str, ...] = ()
     execution_selection: PublicationExecutionSelection | None = None
+    criterion_selection: CriterionSelection | None = None
 
     def __post_init__(self) -> None:
         object.__setattr__(self, "artifact_paths", tuple(self.artifact_paths))
@@ -152,6 +154,7 @@ class ProviderEvidence:
     sources: tuple[SourceEvidence, ...]
     collection_digest: str | None = None
     execution: ExecutionEvidence | None = None
+    criterion: CriterionEvidence | None = None
 
     def __post_init__(self) -> None:
         object.__setattr__(self, "nodes", tuple(sorted(self.nodes, key=lambda n: n.spec_id)))
@@ -171,6 +174,8 @@ class ProviderEvidence:
         )
         if self.execution is not None:
             payload["execution"] = self.execution.to_payload()
+        if self.criterion is not None:
+            payload["criterion"] = self.criterion.to_payload()
         return payload
 
 

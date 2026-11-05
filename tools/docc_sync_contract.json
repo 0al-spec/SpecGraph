@@ -155,6 +155,18 @@
       ]
     },
     {
+      "id": "retained-criterion-observation",
+      "description": "Pinned criterion observation scope, provider, policies and trust remain aligned.",
+      "docs": ["docs/evidence_provider.md"],
+      "docc": ["Sources/SpecGraph/Documentation.docc/EvidenceProvider.md"],
+      "required_terms": [
+        "criterion.retained_cucumber", "criterion_observation_report/v1",
+        "specgraph.criterion-observation/cucumber-messages-34.2.1-v1",
+        "CRITERION_PASSPORT_BINDING_SPEC", "CRITERION_BINDING_INTEGRITY_SPEC",
+        "CRITERION_OBSERVATION_OUTCOME_SPEC", "producer_declared", "not_evaluated"
+      ]
+    },
+    {
       "id": "publication-exact-links",
       "description": "Pinned source resolution remains separate from execution and readiness.",
       "docs": ["docs/publication_trace_links.md"],
