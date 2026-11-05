@@ -25,13 +25,17 @@ def details(title: str, value: object) -> str:
     return f"<details><summary>{literal(title)}</summary>{json_block(value)}</details>"
 
 
+def status_badge(value: str) -> str:
+    return f"<span class='status' data-status='{literal(value.lower())}'>{literal(value)}</span>"
+
+
 def findings_html(findings: list[dict]) -> str:
     if not findings:
         return "<p>No diagnostic findings recorded.</p>"
     return (
         "<ul>"
         + "".join(
-            f"<li><strong>{literal(f['kind'])}</strong> · <code>{literal(f['code'])}</code>"
+            f"<li>{status_badge(f['kind'])} · <code>{literal(f['code'])}</code>"
             f"<p>{literal(f['detail'])}</p></li>"
             for f in findings
         )
@@ -50,7 +54,7 @@ def measurements_html(steps: list[dict]) -> str:
         rows.append(
             "<tr><th scope='row'>"
             f"<p>{literal(label)}</p><small>"
-            f"Producer result: {literal(step.get('producer_status') or 'unavailable')}</small>"
+            f"Producer result: {status_badge(step.get('producer_status') or 'unavailable')}</small>"
             "</th><td><span class='measurement-label'>Expected</span>"
             f"{json_block(step['expected_measurement'])}</td>"
             f"<td><span class='measurement-label'>Observed</span>{observation}</td></tr>"
@@ -71,9 +75,12 @@ def criterion_html(row: dict, position: int) -> str:
         f"<p class='eyebrow'>Criterion {position + 1} · {literal(source['pointer'])}</p>",
         f"<h2>{literal(source['text'])}</h2>",
         "<dl class='statuses'>",
-        f"<div><dt>Binding integrity</dt><dd>{literal(row['binding_integrity'])}</dd></div>",
-        f"<div><dt>Observed outcome</dt><dd>{literal(row['observed_outcome'])}</dd></div>",
-        f"<div><dt>Trust admission</dt><dd>{literal(row['admission'])}</dd></div></dl>",
+        f"<div data-status='{literal(row['binding_integrity'])}'><dt>Binding integrity</dt>"
+        f"<dd>{literal(row['binding_integrity'])}</dd></div>",
+        f"<div data-status='{literal(row['observed_outcome'])}'><dt>Observed outcome</dt>"
+        f"<dd>{literal(row['observed_outcome'])}</dd></div>",
+        f"<div data-status='{literal(row['admission'])}'><dt>Trust admission</dt>"
+        f"<dd>{literal(row['admission'])}</dd></div></dl>",
     ]
     if observation is not None:
         parts += [
@@ -118,7 +125,17 @@ header,.criterion,.overview {background:white; border:1px solid #c6d5d9;
 h1 {font-size:2rem; margin:.3rem 0} h2 {font-size:1.3rem; line-height:1.4}
 h3 {font-size:1.05rem} .eyebrow,small {color:#455c66} .eyebrow {margin:0}
 dl.statuses {display:flex; flex-wrap:wrap; gap:12px}
-.statuses div {background:#eef3f4; padding:10px 14px; border-radius:6px}
+.statuses div {padding:10px 14px; border-radius:6px}
+.status,.statuses div {background:var(--status-bg,#f1f5f9); color:var(--status-fg,#475569);
+ border:1px solid var(--status-border,#cbd5e1)}
+.status {display:inline-block; padding:2px 8px; border-radius:5px; font-weight:650}
+[data-status='checked'],[data-status='passed']
+ {--status-bg:#dcfce7; --status-fg:#166534; --status-border:#86efac}
+[data-status='failed'],[data-status='invalid'],[data-status='conflict'],
+[data-status='ambiguous'],[data-status='undefined']
+ {--status-bg:#fee2e2; --status-fg:#991b1b; --status-border:#fca5a5}
+[data-status='partial'],[data-status='pending'],[data-status='skipped'],[data-status='unbound']
+ {--status-bg:#fef3c7; --status-fg:#854d0e; --status-border:#fcd34d}
 dt {font-size:.85rem} dd {margin:0; font-weight:650}
 table {width:100%; border-collapse:collapse; text-align:left}
 th,td {padding:12px; border:1px solid #c6d5d9; vertical-align:top}

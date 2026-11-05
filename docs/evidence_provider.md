@@ -310,6 +310,9 @@ steps with expected and observed JSON values side by side. These are selected
 measurements, not a reconstructed full scenario or a new interpretation of the
 person's intent. Step text and criterion text are preserved as literal data.
 The collection's decisions are displayed, never recalculated by the renderer.
+Status labels retain their text: green for checked/passed, red for failure,
+invalidity or conflict, amber for partial/pending/skipped/unbound, and neutral
+for unavailable or unevaluated states. Color never replaces the status label.
 
 Missing observations keep the planned expectations visible. Incomplete
 inventories display an unknown total; they are not reported as zero criteria.

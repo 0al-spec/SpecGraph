@@ -129,6 +129,9 @@ needs no server, JavaScript, network or external resources. It displays every
 criterion with separate binding integrity, observed outcome and admission,
 followed by selected step text and expected/observed JSON measurements. It does
 not reconstruct the full scenario or reinterpret intent.
+Status labels use green for checked/passed, red for failure/invalidity/conflict,
+amber for partial/pending/skipped/unbound, and neutral for unavailable or
+unevaluated states. The text label remains visible independently of color.
 
 Missing measurements retain expectations; incomplete inventories have an
 unknown total. Conflicts, unmatched bindings and findings stay visible. Details
