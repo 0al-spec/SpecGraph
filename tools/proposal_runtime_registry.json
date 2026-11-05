@@ -13290,7 +13290,9 @@
       "tools/traceability/criterion_provider.py",
       "tools/traceability/cucumber_messages.py",
       "tests/test_criterion_observation_provider.py",
-      "Sources/SpecGraph/Documentation.docc/EvidenceProvider.md"
+      "Sources/SpecGraph/Documentation.docc/EvidenceProvider.md",
+      "tools/traceability/criterion_report_html.py",
+      "tests/test_criterion_report_html.py"
     ],
     "runtime_markers": [
       {
@@ -13320,6 +13322,10 @@
       {
         "path": "tools/traceability/criterion_provider.py",
         "pattern": "class RetainedCriterionEvidenceProvider:"
+      },
+      {
+        "path": "tools/traceability/criterion_report_html.py",
+        "pattern": "def render_html("
       }
     ],
     "validation_markers": [
@@ -13346,6 +13352,10 @@
       {
         "path": "tests/test_criterion_observation_provider.py",
         "pattern": "def test_registered_provider_projects_pinned_full_inventory("
+      },
+      {
+        "path": "tests/test_criterion_report_html.py",
+        "pattern": "def test_missing_evidence_retains_expected_measurements_and_every_criterion("
       }
     ],
     "observation_markers": [
@@ -13354,7 +13364,7 @@
         "pattern": "evidence_admission_allowed: false"
       }
     ],
-    "notes": "Partial realization: slice B preserves the legacy proxy behind immutable facts and an injectable metric protocol; the independent exact-link prerequisite names resolution and mapping policies. Slice C1 adds a declaration EvidenceProvider, explicit in-process registry and immutable source-bound TraceSnapshot with capability completeness and duplicate/conflicting observations. Slice C2a adds explicit retained publication execution-artifact collection with source/run/attempt and nested signal binding; original producer outcomes stay separate from binding status. A pinned real CI build observation retains five successful pytest obligations and missing deploy/runtime. The recovered SG-SPEC-0021 v2 boundary clarification merged through PR #810 at b4d0f25e; the five notes and acceptance-evidence explanation preserve existing input classes and lifecycle. Atom SVC qualification, direct derived-input admission and profile activation remain deferred. No threshold or trusted admission change is implemented. C2b now has a proposed three-valued structural pytest-channel qualification contract, six explicit draft obligations and a pinned author-reference worksheet for 13 atoms and 18 resolved test links at b4d0f25e. This is contract-only preparation: the C2b runtime evaluator is not implemented, reference expectations are not production SVC or passing-test counts, and activation/defaults/direct-derived-input admission remain deferred. C2c implements a registered opt-in criterion_observation_report/v1 with one pinned whole-spec acceptance inventory, FeaturePassport v1 and explicit Cucumber Messages 34.2.1 artifacts. One run per journal, explicit case selection at attempt zero and identity-encoded JSON measurements are supported. Separate binding and observation policies preserve diagnostic failures and conflicts. Independent synthetic fixtures exercise the public runtime boundary; the local ExamCalc pilot remains separate. Trusted admission under 0225 and all metric/canonical activation remain deferred."
+    "notes": "Partial realization: slice B preserves the legacy proxy behind immutable facts and an injectable metric protocol; the independent exact-link prerequisite names resolution and mapping policies. Slice C1 adds a declaration EvidenceProvider, explicit in-process registry and immutable source-bound TraceSnapshot with capability completeness and duplicate/conflicting observations. Slice C2a adds explicit retained publication execution-artifact collection with source/run/attempt and nested signal binding; original producer outcomes stay separate from binding status. A pinned real CI build observation retains five successful pytest obligations and missing deploy/runtime. The recovered SG-SPEC-0021 v2 boundary clarification merged through PR #810 at b4d0f25e; the five notes and acceptance-evidence explanation preserve existing input classes and lifecycle. Atom SVC qualification, direct derived-input admission and profile activation remain deferred. No threshold or trusted admission change is implemented. C2b now has a proposed three-valued structural pytest-channel qualification contract, six explicit draft obligations and a pinned author-reference worksheet for 13 atoms and 18 resolved test links at b4d0f25e. This is contract-only preparation: the C2b runtime evaluator is not implemented, reference expectations are not production SVC or passing-test counts, and activation/defaults/direct-derived-input admission remain deferred. C2c implements a registered opt-in criterion_observation_report/v1 with one pinned whole-spec acceptance inventory, FeaturePassport v1 and explicit Cucumber Messages 34.2.1 artifacts. One run per journal, explicit case selection at attempt zero and identity-encoded JSON measurements are supported. Separate binding and observation policies preserve diagnostic failures and conflicts. Independent synthetic fixtures exercise the public runtime boundary; the local ExamCalc pilot remains separate. Trusted admission under 0225 and all metric/canonical activation remain deferred. The optional standalone HTML projection preserves collector decisions, all criterion rows, missing expectations, diagnostic findings and exact source identities; JSON remains the default and no trust admission changes."
   },
   {
     "proposal_id": "0227",

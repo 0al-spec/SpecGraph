@@ -296,3 +296,32 @@ and native-tool invocation, Cucumber indexing and serialization are adapters.
 The report carries `admission: not_evaluated` and a null receipt. Proposal
 0225 owns future trusted admission. C2b, legacy acceptance coverage, S/U and
 existing publication snapshots retain their existing behavior.
+
+### Readable local report
+
+The same command accepts `--format html`. Keep all pinned input arguments from
+the invocation above and redirect stdout into a new local `.html` file. Open
+that file in a browser; it needs no server, scripts, network or installed assets.
+The default remains `--format json`, with the same envelope and exit semantics.
+
+The page shows the entire criterion inventory and separate binding integrity,
+observed outcome and trust admission. Each criterion shows selected measured
+steps with expected and observed JSON values side by side. These are selected
+measurements, not a reconstructed full scenario or a new interpretation of the
+person's intent. Step text and criterion text are preserved as literal data.
+The collection's decisions are displayed, never recalculated by the renderer.
+
+Missing observations keep the planned expectations visible. Incomplete
+inventories display an unknown total; they are not reported as zero criteria.
+Conflicting bindings, unmatched pointers and diagnostic findings remain visible.
+Expandable details retain all case step statuses, source and journal identities,
+the selected inputs, original lifecycle and provider hashes. Source locators
+remain exact text rather than inferred repository URLs. The page includes the
+SHA-256 of the JSON report from which it was rendered; this is a reproducibility
+reference, not an attestation of the HTML file.
+
+HTML is still local diagnostic evidence: attachment values can contain sensitive
+data. Treat it with the same custody as the JSON report; generation does not
+publish it. All collected text is escaped, with no artifact-supplied links,
+scripts or external resources. `local_test`, `producer_declared`,
+`not_evaluated` and the null receipt remain explicit.

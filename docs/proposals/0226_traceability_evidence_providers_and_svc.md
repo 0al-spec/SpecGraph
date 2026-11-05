@@ -409,6 +409,14 @@ Checked binding can accompany a failed test. Missing evidence is unavailable;
 malformed or inconsistent evidence is invalid; conflicting facts stay visible.
 None of these may become a passing observation through text similarity.
 
+An optional `--format html` presents the same freshly collected report as a
+standalone local page. It displays all criteria, selected measured steps,
+expected/observed values and findings, with exact identities in expandable
+details. Missing measurements retain expectations; an incomplete inventory has
+an unknown total. JSON stays the default. The view formats existing decisions
+and does not reconstruct the full scenario, infer source URLs, reinterpret
+intent or confer trust. See the [readable report contract](../evidence_provider.md#readable-local-report).
+
 Repeated agreeing records do not multiply criteria. Conflicts cannot be
 resolved by arrival order or selecting a convenient passing retry. Attempt
 selection and run-completion policy are explicit; unsupported retries,

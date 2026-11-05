@@ -160,6 +160,7 @@
       "docs": ["docs/evidence_provider.md"],
       "docc": ["Sources/SpecGraph/Documentation.docc/EvidenceProvider.md"],
       "required_terms": [
+        "--format html", "--format json",
         "criterion.retained_cucumber", "criterion_observation_report/v1",
         "specgraph.criterion-observation/cucumber-messages-34.2.1-v1",
         "CRITERION_PASSPORT_BINDING_SPEC", "CRITERION_BINDING_INTEGRITY_SPEC",

@@ -74,3 +74,15 @@ implementation tests the supported profile with one run per journal, explicit
 case selection at attempt 0 and an opt-in native FeaturePassport validator check.
 See [EvidenceProvider](../../evidence_provider.md#retained-cucumber-criterion-observations-c2c)
 for input shapes, replay instructions and deferred formats.
+
+## Readable presentation follow-up
+
+After the first provider report was explained step by step, the agent proposed:
+“Следующий практический шаг — сделать этот отчёт удобным для чтения:
+критерий → выполненные действия → ожидание → наблюдение → оставшийся пробел,
+со ссылками на исходные записи.” The operator replied:
+“Звучит очень похоже на мой замысел, круто! Продолжай работу.” This author-captured
+continuation supports the proposed readable presentation of criterion, expected
+measurement, observed measurement and gaps. It does not approve trusted admission
+or receipt issuance. The bounded implementation adds optional standalone HTML
+to the existing CLI, retaining default JSON and the same collection decisions.
