@@ -95,7 +95,12 @@ class CriterionInventory:
 
 
 def parse_inventory(raw: bytes, spec_id: str, revision: str, path: str) -> CriterionInventory:
-    document = load_yaml_text(raw.decode())
+    try:
+        document = load_yaml_text(raw.decode())
+    except TypeError as error:
+        # SpecYamlLoader can raise TypeError for unhashable mapping keys.
+        # Normalize only this parser boundary, not arbitrary provider bugs.
+        raise ValueError(f"invalid specification YAML: {error}") from error
     if document.get("id") != spec_id:
         raise ValueError("pinned source node ID differs from selection")
     criteria = document.get("acceptance")

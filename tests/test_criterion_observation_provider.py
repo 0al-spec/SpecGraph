@@ -317,6 +317,26 @@ def test_missing_journal_keeps_every_criterion(retained):
     assert states(retained.run(selection)) == [("unavailable", "unavailable")] * 3
 
 
+@pytest.mark.parametrize("key", ["[a, b]", "{a: b}"])
+def test_unhashable_yaml_key_keeps_invalid_inventory_diagnostic(retained, key):
+    raw = f"id: TEST-SPEC-0001\n? {key}\n: value\n".encode()
+    (retained.root / SPEC).write_bytes(raw)
+    retained.scope.update(
+        revision=commit(retained.root, "Malformed YAML mapping"), sha256=sha256(raw)
+    )
+    report = retained.run()
+    assert report["inventory"] == {
+        "scope": "whole_spec",
+        "complete": False,
+        "criterion_count": None,
+    }
+    assert report["criteria"] == []
+    finding = next(f for f in report["findings"] if f["code"] == "spec_input")
+    assert finding["kind"] == "invalid"
+    assert "invalid specification YAML" in finding["detail"]
+    assert report["admission"] == "not_evaluated"
+
+
 @pytest.mark.parametrize("part", ["spec", "passport", "plan", "journals"])
 def test_changed_digest_cannot_validate_selected_inputs(retained, part):
     selection = retained.select()
@@ -436,8 +456,13 @@ def test_native_feature_passport_accepts_and_rejects_exact_pinned_bytes(retained
     assert "invalid_reference_role" in result["findings"][0]["detail"]
 
 
-def test_cli_native_validator_and_read_only_projection(retained):
+@pytest.mark.parametrize("malformed_spec", [False, True])
+def test_cli_native_validator_and_read_only_projection(retained, malformed_spec):
     validator = native_validator()
+    if malformed_spec:
+        raw = b"id: TEST-SPEC-0001\n? [a, b]\n: value\n"
+        (retained.root / SPEC).write_bytes(raw)
+        retained.scope.update(revision=commit(retained.root, "Malformed spec"), sha256=sha256(raw))
     selection = retained.select()
     result = subprocess.run(
         [
@@ -477,7 +502,14 @@ def test_cli_native_validator_and_read_only_projection(retained):
         capture_output=True,
         text=True,
     )
-    assert states(json.loads(result.stdout)) == [("checked", "passed")] * 3
+    report = json.loads(result.stdout)
+    assert "Traceback" not in result.stderr
+    if malformed_spec:
+        assert report["inventory"]["complete"] is False
+        assert report["inventory"]["criterion_count"] is None
+        assert any(f["code"] == "spec_input" and f["kind"] == "invalid" for f in report["findings"])
+    else:
+        assert states(report) == [("checked", "passed")] * 3
     assert git(retained.root, "status", "--porcelain") == ""
     assert {path.name for path in retained.artifacts.iterdir()} == {
         "passport.json",
