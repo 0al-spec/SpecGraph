@@ -1,0 +1,45 @@
+{
+  "artifact_kind": "specgraph.intent-decision-review/v1",
+  "base_sha": "92cb1f4eb4b96e39598edfb9b2671d9d4903a313",
+  "decisions": [
+    {
+      "change_sha256": "fe1c1d3141b23ff63a2e5f6399fd02eb4fb1c9a7b26b3443aa5cdfcd4ac61c27",
+      "disposition": "contract_only",
+      "implementation_refs": [],
+      "rationale": "CER-INVENTORY: C2c Explicit inputs and output boundary defines the pinned expected criterion and observation sets, visible gaps and subset labeling; CER-01/06 are future controls. No inventory collector or canonical schema changes are made.",
+      "specification_refs": []
+    },
+    {
+      "change_sha256": "20f68010e5e44ad4994626b2c57471289de3b9ae5bdc9738a19a4af8d024946a",
+      "disposition": "contract_only",
+      "implementation_refs": [],
+      "rationale": "CER-PROVENANCE: C2c records exact source/passport/plan/provider/run/step/artifact provenance and separates declared execution source from attestation. CER-03/04/10 describe future checks. The cited consumer prototype is local supporting evidence, not integrated production code.",
+      "specification_refs": []
+    },
+    {
+      "change_sha256": "99f7baceaff0236222c874408eb818ab3e7fe02b02dc6f256c8a14a17972b89e",
+      "disposition": "contract_only",
+      "implementation_refs": [],
+      "rationale": "CER-OUTCOME: C2c explicitly separates binding integrity, outcome and admission, retaining failed and unavailable observations. CER-02/05/08/10 specify future regression expectations. Existing coverage, runtime reports and statuses are unchanged.",
+      "specification_refs": []
+    },
+    {
+      "change_sha256": "5a82f2b7b5f3b052956fb864c7ecfd147a2c4571daed35517e2ae3c58ae1e482",
+      "disposition": "contract_only",
+      "implementation_refs": [],
+      "rationale": "CER-CONFLICT: C2c proposes idempotence of agreeing records and order-independent visibility of conflicts and ambiguous attempts. CER-07 is a proposed test, not a claimed executed integration test; no aggregation policy implementation changes.",
+      "specification_refs": []
+    },
+    {
+      "change_sha256": "c1ef8669126925a7a7bc48c36d3726bda932093b4234f117e7b521a6400b3ea1",
+      "disposition": "contract_only",
+      "implementation_refs": [],
+      "rationale": "CER-BOUNDARY: C2c Ownership and integration seam preserves FeaturePassport authority, explicit provider registration and the 0225 admission boundary. No production source, receipt issuer, canonical transition, metric activation or dynamic loading is introduced.",
+      "specification_refs": []
+    }
+  ],
+  "intent_delta_sha256": "a0210f78f33efc09f525be6249cf011c7f48a08fbe960c267c2bd8f170665ccf",
+  "pr_body_sha256": "31099a5c70ca22cd295760e985d0dfe576a22ec651123e0ba528ccb198b59d8d",
+  "schema_version": 1,
+  "source_scope_sha256": "ac3e82478dc0b07f089a2b5e7acab8e559d04bce3ee05f7b70439937a018cdbd"
+}
