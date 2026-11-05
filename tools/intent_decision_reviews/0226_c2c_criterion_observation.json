@@ -39,7 +39,7 @@
     }
   ],
   "intent_delta_sha256": "a0210f78f33efc09f525be6249cf011c7f48a08fbe960c267c2bd8f170665ccf",
-  "pr_body_sha256": "80d81f99f6c96f0aeaae0474bdce21f1022075530cdef873447e7bb8229acd78",
+  "pr_body_sha256": "31099a5c70ca22cd295760e985d0dfe576a22ec651123e0ba528ccb198b59d8d",
   "schema_version": 1,
   "source_scope_sha256": "ac3e82478dc0b07f089a2b5e7acab8e559d04bce3ee05f7b70439937a018cdbd"
 }
