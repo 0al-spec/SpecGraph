@@ -24,6 +24,9 @@ lockfile, or accept owner decisions without an explicit SpecGraph change.
 - `domain-ontology-package.yaml`: project-local package source.
 - `generated/ontology.normalized.json`: normalized compiler IR consumed by
   SpecGraph and SpecSpace read-only surfaces.
+- `generated/ontology.graph.json`: derived read-only visualization projection,
+  generated from the package source with the pinned Ontology 0.7.0 `ontologyviz`
+  (`--format json --view full`). It does not replace the normalized compiler IR.
 - `ontologyc-adapter-report.yaml`: typed adapter evidence for the current
   compiler run.
 - `ontologyc/`: non-canonical compiler outputs such as concept refs, gaps, and
