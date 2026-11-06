@@ -84,14 +84,22 @@ lock does not by itself accept terms or authorize canonical changes.
 
 ## Check an executable relationship in a project package
 
-For Ontology 0.7.0 with `ontology.foundation@0.2.0`, inspect the authored
-`subject`, `action` and `object` together with the action's fields. For example,
-`User → AddRepository(repositoryId) → Project` names the operator, which
-repository they add, and the project whose membership changes. The action's
-required string field carries the ID of an existing `Repository`. The generated
-record schema can reject a missing field. To check that the ID resolves, exercise
-the application's lookup with a known ID and an unknown one, and observe project
-membership in both cases. Membership alone does not tell you who added it.
+For a package using `ontology.foundation@0.2.0`, inspect the authored
+`subject`, `action` and `object` together with the action's fields. Check which
+features the project's pinned compiler and SDK support before changing its
+source. For example, `User → AddRepository(repository: Ref<Repository>) → Project`
+names the operator, the referenced repository and the project whose membership
+changes. Declare the required action field as `type: ref, target: Repository`.
+A reference preserves the target type while the application chooses and resolves
+its locator, such as a database key or a graph-node address. Do not prescribe a
+string ID or silently replace a typed reference with one for an older compiler.
+
+Check the generated SDK and record schema separately: `Ref<Project>` must not
+fit the repository field, and a missing required field must be rejected.
+Then exercise the application's resolver with known and unknown references.
+A known reference adds the resolved repository to the target project; an unknown
+one must leave membership unchanged. Type checking alone does not prove that a
+referenced instance exists. Membership alone does not tell you who added it.
 
 If `relation.subject.unresolved` points at `User`, inspect its declaration
 in the selected source. A protocol describes a contract. When the project
