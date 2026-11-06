@@ -13747,7 +13747,12 @@
       "tools/verification_workflow/collection_spec.py",
       "tools/verification_workflow/lifecycle_spec.py",
       "tools/verification_workflow/verdict_spec.py",
-      "tests/test_verification_workflow.py"
+      "tests/test_verification_workflow.py",
+      "tools/verification_workflow/collection_context.py",
+      "tools/verification_workflow/collection_selection_spec.py",
+      "tools/verification_workflow/collection_journal_spec.py",
+      "tools/verification_workflow/collection_criterion_spec.py",
+      "tools/verification_workflow/collection_observation_spec.py"
     ],
     "runtime_markers": [
       {

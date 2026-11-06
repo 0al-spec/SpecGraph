@@ -50,6 +50,13 @@ the next adapter slice. The installed CLI and Supervisor mode are not active.
 The `deferred_until_canonicalized` activation posture remains unchanged. Local
 results retain `producer_declared`, `not_evaluated` admission and null receipt.
 
+Collection checks are partitioned into selection identity, journal provenance,
+criterion binding/projection and observation consistency. Two immutable contexts
+carry facts between those named policies. The public collection interface and
+C2c outcome ownership remain unchanged. Independent review and the unchanged
+65-test core suite confirm the refactor's bounded behavior; aggregate metric
+changes require a fresh report and are not inferred from smaller functions.
+
 - `docs/proposals/0234_verification_workflow.md`
 - `docs/proposals/0234_verification_workflow.intent.yaml`
 - `docs/archive/proposal_sources/0234_verification_workflow.md`

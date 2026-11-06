@@ -106,3 +106,20 @@ Implementation workspace: primary checkout branch
 `codex/0234-verification-core`, dependent on proposal PR #884. No extra worktree
 was allocated. The historical proposal registration and its source hashes are
 unchanged; this implementation does not manufacture an applied Supervisor run.
+
+## Collection policy decomposition
+
+The complete SpecificationMetrics comparison for `0ab17bde` -> `17f065ae`
+reported `collection_scope` at CC 54 / Cog 78. Inspection found four concerns
+inside the same routine: selection identity, journal provenance, criterion
+bindings and nested observation consistency. The implementation now gives each
+concern a named Specification in its own module, sharing two immutable contexts.
+`collection_scope` retains its public interface and composes those checks;
+`criterion_row` still owns the C2c outcome projection.
+
+All 65 existing tests pass unchanged, independently repeated after refactoring.
+The implementation author also compared 55 fixture evaluations with the prior
+predicate at `17f065ae`; all agreed. Independent review found no blockers and
+confirmed that both earlier P2 protections remain intact. The tradeoff is more
+files and explicit contexts. The old metric values are a baseline; no reduction
+in total CC, Cog, SLOC or U is claimed before measurement of the new head.
