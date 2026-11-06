@@ -1,0 +1,66 @@
+{
+  "artifact_kind": "specgraph.intent-decision-review/v1",
+  "base_sha": "002eb0691b39ea2ccdcc50d0c5c31fc84022e3bf",
+  "decisions": [
+    {
+      "change_sha256": "ee2534b0fa7a4eed928a35380cf4a7ad51e0fae4e731fbc79435529a5c319500",
+      "disposition": "contract_only",
+      "implementation_refs": [],
+      "rationale": "WF-COMPOSITION: proposed fixed operation composition and typed interfaces only; no runner, registry code or CLI behavior is introduced by this PR.",
+      "specification_refs": []
+    },
+    {
+      "change_sha256": "91e8c8af4147501e97d89a7bcbbe8b77b0cf85cfc97e09543b0184943e8032d0",
+      "disposition": "contract_only",
+      "implementation_refs": [],
+      "rationale": "WF-EXECUTION: proposed structural preflight and current-run producer requirement; negative controls are planned, not implemented or claimed passed.",
+      "specification_refs": []
+    },
+    {
+      "change_sha256": "56cbddb183033453a67bcac6349c0c41cdf3fa184dcb4837addb0d3c4bcdccc2",
+      "disposition": "contract_only",
+      "implementation_refs": [],
+      "rationale": "WF-SOURCE: proposed revision, inventory and tool pin compatibility; existing evidence checks are described, no source policy is changed.",
+      "specification_refs": []
+    },
+    {
+      "change_sha256": "5b1da884cbd4fe2d236638038265f4bee346d022b9a4a76546a451309beb0e03",
+      "disposition": "contract_only",
+      "implementation_refs": [],
+      "rationale": "WF-OBSERVATIONS: proposed separation of expected values and fresh observed identities, grounded in the prior ExamCalc pilot; no adapter migration occurs here.",
+      "specification_refs": []
+    },
+    {
+      "change_sha256": "7634d1cad01e52c4a6135f630682f80aa0084070b9ef0550ce4b7f80509e5a85",
+      "disposition": "contract_only",
+      "implementation_refs": [],
+      "rationale": "WF-COMPLETION: proposed lifecycle and verification predicate, with gaps and nonempty inventory; existing collector exit semantics and canonical statuses remain unchanged.",
+      "specification_refs": []
+    },
+    {
+      "change_sha256": "add70af29f5fc484bd400bdc9f9d4fa754a5adacf774ba5c5d45bac965d8a1ec",
+      "disposition": "contract_only",
+      "implementation_refs": [],
+      "rationale": "WF-REPLAY: proposed fresh-run versus retained replay distinction; execution ownership enforcement is deferred to the bounded implementation.",
+      "specification_refs": []
+    },
+    {
+      "change_sha256": "dd2a569fcfa1264ba7a2f52a52738ca48a5ab4c142531af1955531584705a21c",
+      "disposition": "contract_only",
+      "implementation_refs": [],
+      "rationale": "WF-AUTHORITY: planning preserves existing local evidence and admission boundaries; no new receipt authority, signed artifact or canonical write is introduced.",
+      "specification_refs": []
+    },
+    {
+      "change_sha256": "29d436e047959f5516df7119708ce380fdbfaa046c905f9f7f561337641a40d0",
+      "disposition": "contract_only",
+      "implementation_refs": [],
+      "rationale": "WF-PILOT: future installed consumer pilot and bypass controls are declared; historical ExamCalc observations are explicitly not this workflow implementation.",
+      "specification_refs": []
+    }
+  ],
+  "intent_delta_sha256": "167e03762acda972478a8c5aa96dbaf26bd12834169205db70710851824b1335",
+  "pr_body_sha256": "c96b9b0341fb8dfb346f807b8ffbd6f7d7f80387edefda00999ef94deed2d3f5",
+  "schema_version": 1,
+  "source_scope_sha256": "ca1f9e551f1cca75a861ee1eeda969a549c9c5a970ad7a30a11f9357d379bcf1"
+}
