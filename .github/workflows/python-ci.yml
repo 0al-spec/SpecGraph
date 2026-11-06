@@ -1,12 +1,23 @@
 name: Python CI
 
 on:
+  workflow_dispatch:
   pull_request:
     types: [opened, synchronize, reopened, edited]
+    # These exact skill copies are covered by wheel/native installation and
+    # Markdown checks. Any other changed path retains the full workflow.
+    paths-ignore:
+      - '.codex/skills/specgraph-project-ontology/SKILL.md'
+      - 'src/specgraph/resources/skills/specgraph-project-ontology/SKILL.md'
   push:
     branches:
       - main
       - master
+    # These exact skill copies are covered by wheel/native installation and
+    # Markdown checks. Any other changed path retains the full workflow.
+    paths-ignore:
+      - '.codex/skills/specgraph-project-ontology/SKILL.md'
+      - 'src/specgraph/resources/skills/specgraph-project-ontology/SKILL.md'
 
 env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
