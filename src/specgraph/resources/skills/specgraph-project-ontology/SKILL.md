@@ -82,6 +82,49 @@ not equate human agreement to one point with approval of an entire sketch or
 package. A draft, preview, generated binding, validation result or candidate
 lock does not by itself accept terms or authorize canonical changes.
 
+## Check an executable relationship in a project package
+
+For a package using `ontology.foundation@0.2.0`, inspect the authored
+`subject`, `action` and `object` together with the action's fields. Check which
+features the project's pinned compiler and SDK support before changing its
+source. For example, `User → AddRepository(repository: Ref<Repository>) → Project`
+names the operator, the referenced repository and the project whose membership
+changes. Declare the required action field as `type: ref, target: Repository`.
+A reference preserves the target type while the application chooses and resolves
+its locator, such as a database key or a graph-node address. Do not prescribe a
+string ID or silently replace a typed reference with one for an older compiler.
+
+Check the generated SDK and record schema separately: `Ref<Project>` must not
+fit the repository field, and a missing required field must be rejected.
+Then exercise the application's resolver with known and unknown references.
+A known reference adds the resolved repository to the target project; an unknown
+one must leave membership unchanged. Type checking alone does not prove that a
+referenced instance exists. Membership alone does not tell you who added it.
+
+If `relation.subject.unresolved` points at `User`, inspect its declaration
+in the selected source. A protocol describes a contract. When the project
+means a particular operator, use its identified entity class in the subject
+slot. Preserve the project's name and review the modeling choice there.
+For `relation.action.unresolved`, check the spelling, import and ancestry of
+the action class against `ont:Action`.
+
+Use the project's pinned compiler to check and compile the source. Refresh
+source and IR digests in the candidate selection. Run the installed runtime
+against each selection being claimed, for example:
+
+```sh
+specgraph-runtime --workspace "$PROJECT" ontology-context -- \
+  --project-id "$PROJECT_ID" --selection "$SELECTION" \
+  --ontologyc "$ONTOLOGYC" --compiler-sha256 "$COMPILER_SHA256"
+```
+
+In a composition, resolve each reference against the version its own package
+imports. Inspect the report's `outcome` and the JSON pointer for each disputed
+field. If direct compilation passes but the runtime reports an unsupported
+foundation version, record that profile gap separately. Report runtime
+execution only when an application or SDK test actually triggers the action
+and observes the affected state.
+
 ## Show a readable ontology composition
 
 Use a compact overview when the person asks to see the model's structure, or
