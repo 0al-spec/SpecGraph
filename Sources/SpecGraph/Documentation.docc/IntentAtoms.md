@@ -86,7 +86,7 @@ liveness remains counted because `closed_world = false`.
 
 After successful `Python CI`, the PR workflow compares the current base and head
 Git trees using SpecificationMetrics pinned to commit
-`38091108bc18056e345599ed8eb14bd0fb9e563a`. The trusted counter parses source
+`19461c7dd4d91db52df2bd6140cd196e2ce7f2cf`. The trusted counter parses source
 data and does not execute PR-authored code. One informational comment reports
 S, U, S/U, dead and unknown Specifications, and supplementary Python SLOC,
 Cyclomatic Complexity (CC), Cognitive Complexity (Cog), and clone deltas.
@@ -148,8 +148,9 @@ records the source snapshot, supported subset and regression coverage.
 
 Counting rule v10 adds resolved Python `PredicateSpec[T]` factories. On the
 same SpecGraph revision `4add3afe`, this analyzer change raises S from 127 to
-130 with U at 10,676 under both rules. Collect both sides with the pinned v10
-analyzer for each new PR comparison.
+130 with U at 10,676 under both rules. Counting rule v11 updates the Swift grammar; collect both sides with the pinned
+v11 analyzer for each new PR comparison. The grammar update is an analyzer
+change, not an application refactoring. Preserve historical v10 results.
 
 ### Verify an analyzer rollout
 
@@ -162,7 +163,7 @@ reruns for merged PRs do not produce a new PR measurement.
 For that verification, download the linked artifact and check all six named
 files above. Bind `provenance.json` to the repository, PR base/head, upstream CI
 run, collection run/attempt, trusted tooling revision and expected analyzer SHA.
-Check counting rule v10 in both collection reports, matching collection contracts,
+Check counting rule v11 in both collection reports, matching collection contracts,
 complete collection/supplementary statuses, and primary diagnostics. Verify that
 the comment describes the same revisions and values as those JSON reports.
 
