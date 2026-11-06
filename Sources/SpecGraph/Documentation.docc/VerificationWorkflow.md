@@ -26,8 +26,29 @@ not_evaluated`, `receipt: null`, without a `tests_verified` transition.
 Local run records do not attest a host whose producer/runtime can be rewritten.
 
 The prior ExamCalc pilot demonstrates the underlying snapshot/test/provider
-chain. The new workflow's bypass and installed-runtime tests are planned,
-not executed by this documentation change.
+chain. End-to-end bypass controls and installed-runtime tests for the new
+workflow remain planned; the pure-core checks below exercise supplied records.
+
+## Consistency core available
+
+`tools/verification_workflow/` now provides immutable request and stage records
+with separate SpecificationCore policies for topology, pinned scope, linkage,
+collection consistency, lifecycle and verdict. The scope carries FeaturePassport
+identity, feature and criterion/contract/binding references, file hash and
+schema/validator pins. C2c continues to interpret criterion observations.
+
+The 65 focused pure-core tests cover missing execution, foreign-run records,
+revision/passport drift, incomplete inventory and conflicting nested step facts.
+Independent review reproduced two false-success cases involving individual
+versus aggregate statuses and lost observation conflicts/retry state; both are
+fixed with regression tests and confirmed by re-review. A valid observation
+remains `completed/passed`, and a consistent negative test `completed/failed`.
+
+This core checks supplied facts. Actual processes, unique run allocation,
+source-byte verification, output custody and atomic terminal persistence remain
+the next adapter slice. The installed CLI and Supervisor mode are not active.
+The `deferred_until_canonicalized` activation posture remains unchanged. Local
+results retain `producer_declared`, `not_evaluated` admission and null receipt.
 
 - `docs/proposals/0234_verification_workflow.md`
 - `docs/proposals/0234_verification_workflow.intent.yaml`
