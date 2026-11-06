@@ -1165,6 +1165,45 @@ def test_build_public_bundle_publishes_ontology_materialized_ir(
     )
 
 
+def test_build_public_bundle_publishes_source_bound_core_graph(
+    tmp_path: Path, bundle_module: object
+) -> None:
+    repo = make_repo(tmp_path / "repo")
+    folder = repo / "ontology/packages/specgraph-core"
+    source = folder / "domain-ontology-package.yaml"
+    source.parent.mkdir(parents=True, exist_ok=True)
+    source.write_text("kind: DomainOntologyPackage\n", encoding="utf-8")
+    ir = "ontology/packages/specgraph-core/generated/ontology.normalized.json"
+    graph = "ontology/packages/specgraph-core/generated/ontology.graph.json"
+    write_json(repo / ir, {"id": "org.0al.specgraph.core"})
+    write_json(
+        repo / graph,
+        {
+            "schemaVersion": "ontology.diagram-projection/v1",
+            "id": "org.0al.specgraph.core",
+            "sources": [
+                {
+                    "id": "org.0al.specgraph.core",
+                    "sourceByteDigest": "sha256:" + bundle_module.file_sha256(source),
+                }
+            ],
+        },
+    )
+    write_json(
+        repo / "runs/ontology_package_index.json",
+        {"artifact_kind": "ontology_package_index", "packages": [{"materialized_ir": ir}]},
+    )
+    result = bundle_module.build_public_bundle(
+        repo_root=repo, output_dir=repo / "dist/specgraph-public"
+    )
+    manifest = json.loads(result.manifest_path.read_text(encoding="utf-8"))
+    assert (result.output_dir / graph).is_file()
+    assert any(entry["path"] == graph for entry in manifest["files"])
+    source.write_text("kind: DomainOntologyPackage\nchanged: true\n", encoding="utf-8")
+    with pytest.raises(bundle_module.PublishBundleError, match="projection does not match"):
+        bundle_module.build_public_bundle(repo_root=repo, output_dir=repo / "dist/second")
+
+
 def test_build_public_bundle_rejects_unsafe_ontology_materialized_ir(
     tmp_path: Path,
     bundle_module: object,

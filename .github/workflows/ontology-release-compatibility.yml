@@ -80,6 +80,9 @@ jobs:
             --output "$work/archive.tar.gz"
           (cd "$work" && printf '%s  archive.tar.gz\n' "$ARCHIVE_SHA256" | shasum -a 256 -c -)
           tar -xzf "$work/archive.tar.gz" -C "$work" "$bundle/ontologyviz" "$bundle/ontologyc"
+          "$work/$bundle/ontologyviz" ontology/packages/specgraph-core/domain-ontology-package.yaml \
+            --format json --view full --out "$work/specgraph-core"
+          cmp "$work/specgraph-core/ontology.graph.json" ontology/packages/specgraph-core/generated/ontology.graph.json
           for id in SG-SPEC-0072 SG-SPEC-0071; do
             model="specs/models/$id"
             "$work/$bundle/ontologyviz" "$model/domain-ontology-package.yaml" --format dot --out "$work/$id"

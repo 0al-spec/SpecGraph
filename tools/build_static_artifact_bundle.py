@@ -1194,7 +1194,14 @@ def build_public_bundle(
             )
         )
 
-    for rel_path in ontology_materialized_ir_refs(repo_root, workspace_bootstrap_run_dir):
+    ontology_refs = ontology_materialized_ir_refs(repo_root, workspace_bootstrap_run_dir)
+    core_ir = PurePosixPath("ontology/packages/specgraph-core/generated/ontology.normalized.json")
+    core_graph = PurePosixPath("ontology/packages/specgraph-core/generated/ontology.graph.json")
+    graph_source = repo_root / core_graph
+    if core_ir in ontology_refs and (graph_source.exists() or graph_source.is_symlink()):
+        ontology_refs.append(core_graph)
+
+    for rel_path in ontology_refs:
         if rel_path.parts and rel_path.parts[0] == "runs":
             run_rel = rel_path.relative_to("runs").as_posix()
             if is_local_only_run_path(run_rel):
@@ -1209,6 +1216,25 @@ def build_public_bundle(
 
         text = load_text(source_path)
         validate_json_artifact(source_path, text)
+        if rel_path == core_graph:
+            source = repo_root / "ontology/packages/specgraph-core/domain-ontology-package.yaml"
+            if not source.is_file() or has_symlink_component(source, repo_root):
+                raise PublishBundleError("ontology graph source is missing or symlinked")
+            graph = json.loads(text)
+            expected = "sha256:" + file_sha256(source)
+            if (
+                not isinstance(graph, dict)
+                or graph.get("schemaVersion") != "ontology.diagram-projection/v1"
+                or graph.get("id") != "org.0al.specgraph.core"
+                or not isinstance(graph.get("sources"), list)
+                or not any(
+                    isinstance(item, dict)
+                    and item.get("id") == graph.get("id")
+                    and item.get("sourceByteDigest") == expected
+                    for item in graph["sources"]
+                )
+            ):
+                raise PublishBundleError("ontology graph projection does not match its source")
         redacted_text, redaction_count = redact_local_paths(text)
         redacted_total += redaction_count
         secret_findings.extend(detect_secret_like_content(rel_path, redacted_text))
