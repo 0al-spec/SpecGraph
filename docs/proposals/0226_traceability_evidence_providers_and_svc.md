@@ -27,11 +27,13 @@ and a [pinned reference worksheet](../evidence/0226_c2b_reference_worksheet.json
 This defines the proposed rules; a runtime qualifier is not implemented or
 activated by this contract-only slice.
 
-C2c proposes a criterion observation report, informed by a local ExamCalc pilot.
-Its [source and limitations](../archive/proposal_sources/0226_criterion_observation_report.md)
-are retained separately. This is a contract-only follow-up: the local adapter
-is not a registered SpecGraph provider, and this amendment activates no CLI,
-collector, metric, canonical state or evidence admission.
+C2c now has a bounded [retained Cucumber provider](../evidence_provider.md#retained-cucumber-criterion-observations-c2c)
+and opt-in report CLI. The earlier local pilot and its limits remain in the
+[source record](../archive/proposal_sources/0226_criterion_observation_report.md).
+The implemented profile reads one complete pinned specification inventory and
+one run per journal with an explicitly selected case and attempt. Trusted
+admission and profile activation remain
+deferred.
 
 ```yaml
 canonical_mutations_allowed: false
@@ -245,7 +247,7 @@ their original scope and provenance; no historical run gate is replayed.
 | C1 | Implemented: publication declaration EvidenceProvider, explicit registry and immutable TraceSnapshot | Pinned inventories, partial/missing sources, duplicate/conflicting reports and independent CLI |
 | C2a | Implemented: explicit retained publication tests/delivery artifacts and run binding | Existing producer contracts, exact Git file inventory/run/attempt, negative nested provenance cases and a real CI artifact |
 | C2b | Proposed structural test-channel qualification contract; runtime qualifier pending | Decision tables, 16 proposed acceptance cases and a pinned 13-atom / 18-link reference worksheet; execution remains separate |
-| C2c | Proposed criterion observation report using explicit FeaturePassport bindings and retained test observations; runtime pending | Complete criterion inventory, exact source/run/step/measurement joins and negative controls; local ExamCalc pilot is supporting evidence, not SpecGraph integration |
+| C2c | Implemented diagnostic slice for one full pinned criterion inventory and retained Cucumber Messages 34.2.1, an explicitly selected case without retries | Independent synthetic fixtures cover exact source/run/step/measurement joins, failed/partial evidence and conflicts; native passport checks run with an explicitly supplied validator |
 | D | Connect to existing metric-pack artifacts with explicit provenance | Consumer compatibility, profile-separated comparisons and one real pilot |
 
 Each slice has its own focused PR. Failure or incompleteness stays visible;
@@ -327,7 +329,7 @@ reported separately in the implementing PR.
 - Decide the additive result field/schema version for existing viewers in slice D.
 - Review any Supervisor semantic candidate independently of this tooling design.
 
-## C2c: Criterion observation report (proposed)
+## C2c: Criterion observation report
 
 ### User-visible result
 
@@ -376,7 +378,7 @@ journal would retain the row with unavailable observation, not reuse this table.
 
 ### Explicit inputs and output boundary
 
-The proposed standalone report request selects one workspace/repository,
+The standalone report request selects one workspace/repository,
 spec ID, exact source revision, criterion inventory, passport revision/digest,
 binding-plan revision/digest, adapter ID/version/profile, and retained artifact
 paths with digests and run/attempt identity. Paths alone and mutable `latest`
@@ -399,8 +401,8 @@ criterion the pinned binding plan declares the expected observations/assertions;
 a passing subset cannot satisfy that declared set. Reviewing that plan's semantic
 sufficiency remains a human/agent task, not a consequence of structural validity.
 
-An additive derived `criterion_observation_report/v1` is the proposed output;
-its serialization and CLI flags remain implementation decisions. It retains
+The additive derived `criterion_observation_report/v1` is available through
+`tools/criterion_observation_report.py` with the documented profile. It retains
 request/plan/provider/source digests, original lifecycle, full findings and
 separate axes for **binding integrity**, **observed outcome** and **admission**.
 Checked binding can accompany a failed test. Missing evidence is unavailable;
@@ -422,7 +424,9 @@ C2c uses exact identity and pointers and does not hide it by translating specs.
 
 ### Acceptance controls for implementation
 
-These are **future SpecGraph checks**, not tests already executed by this PR:
+These controls define the bounded implementation checks. Independent synthetic
+fixtures live in `tests/test_criterion_observation_provider.py`. The native
+FeaturePassport checks require the operator-supplied validator:
 
 | ID | Input/control | Expected report |
 | --- | --- | --- |
@@ -441,6 +445,9 @@ The local ExamCalc prototype demonstrated one concrete three-row output and
 nine adapter controls plus three passport-validation controls. It does not
 demonstrate every control above, a general 0224 implementation, or C2c integration.
 Its raw artifacts remain local-only; source records state their availability.
+The implemented provider uses independent synthetic inputs. Subset selection,
+selected-case retries, alternative producers, general 0224 bindings and
+trusted admission remain separate follow-ups.
 
 ### Bounded next implementation
 

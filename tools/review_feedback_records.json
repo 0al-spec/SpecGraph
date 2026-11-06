@@ -1408,5 +1408,22 @@
     "residual_risk": "The smoke uses synthetic request data and does not cover every possible user path or real agent behavior.",
     "recorded_at": "2026-10-28T06:28:54.818624+00:00",
     "prevention_path": "tests/native_runtime_smoke.py runs notes update through the installed launcher with an absolute request in the product directory outside the selected workspace."
+  },
+  {
+    "feedback_id": "pr-879-unhashable-spec-yaml",
+    "source_pr": 879,
+    "source_thread_url": "https://github.com/0al-spec/SpecGraph/pull/879#discussion_r4486566272",
+    "reviewer": "chatgpt-codex-connector",
+    "review_comment_summary": "An unhashable YAML mapping key escapes the criterion provider as TypeError instead of an incomplete inventory diagnostic.",
+    "fix_summary": "Normalize TypeError only at the specification YAML parser boundary; preserve invalid spec_input and unknown inventory count.",
+    "root_cause_class": "artifact_contract_validation_gap",
+    "prevention_action": "regression_test_added",
+    "verification": [
+      "targeted_test",
+      "lint_or_format_check"
+    ],
+    "residual_risk": "This fixes malformed-input handling; it does not establish source authenticity or semantic adequacy of a specification.",
+    "recorded_at": "2026-11-05T22:08:15+00:00",
+    "prevention_path": "tests/test_criterion_observation_provider.py covers sequence and mapping keys through the registry plus malformed YAML through the standalone CLI with the native FeaturePassport validator."
   }
 ]
