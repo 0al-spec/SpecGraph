@@ -1,0 +1,34 @@
+{
+  "artifact_kind": "proposal_registration_observation",
+  "schema_version": 1,
+  "recorded_at": "2026-11-06T08:20:14.275391+00:00",
+  "source_base_revision": "002eb0691b39ea2ccdcc50d0c5c31fc84022e3bf",
+  "proposal_id": "0234",
+  "source_ref": "docs/archive/proposal_sources/0234_verification_workflow.md",
+  "source_sha256": "92e743d1d1dd6e5dd0f11cb1547642729820fc53da398f644e15259adca41504",
+  "proposal_ref": "docs/proposals/0234_verification_workflow.md",
+  "proposal_sha256": "bfa5a87dc5df269dace35b94748cee22c9f8fa207bbcdb19960651912afd5e5d",
+  "handles": {
+    "user_intent": "user_intent::0234-verification-workflow",
+    "operator_request": "operator_request::0234-verification-workflow",
+    "proposal": "proposal::0234-verification-workflow"
+  },
+  "paths": {
+    "user_intent": "intent_layer/nodes/user_intent--0234-verification-workflow--c03e0097.json",
+    "operator_request": "intent_layer/nodes/operator_request--0234-verification-workflow--f6d7f9ec.json",
+    "proposal": "proposal_lane/nodes/proposal--0234-verification-workflow--26beab5e.json"
+  },
+  "target_spec_id": "SG-SPEC-0009",
+  "registration_method": [
+    "normalize_operator_request_packet",
+    "sync_user_intent_node",
+    "sync_operator_request_node",
+    "sync_tracked_proposal_lane_node"
+  ],
+  "executor_invoked": false,
+  "workflow_executed": false,
+  "canonical_mutations_allowed": false,
+  "runtime_profile_activation_allowed": false,
+  "evidence_admission_allowed": false,
+  "next_action": "Review fixed profile and negative controls, then prepare bounded implementation PR."
+}
