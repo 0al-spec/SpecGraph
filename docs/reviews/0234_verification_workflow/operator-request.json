@@ -1,0 +1,25 @@
+{
+  "artifact_kind": "operator_request_packet",
+  "schema_version": 1,
+  "user_intent": {
+    "intent_handle": "user_intent::0234-verification-workflow",
+    "source_kind": "chat_instruction",
+    "source_summary": "Compose Supervisor and graph capabilities into a simple verification workflow whose mandatory test execution cannot be replaced by an old report. Exact attributed excerpts and authorization limits: docs/archive/proposal_sources/0234_verification_workflow.md.",
+    "selected_node_ref": "SG-SPEC-0009",
+    "unresolved_questions": [
+      "Review the fixed verify-criteria/v1 contract before implementation and runtime activation."
+    ]
+  },
+  "operator_request": {
+    "request_handle": "operator_request::0234-verification-workflow",
+    "target_spec_id": "SG-SPEC-0009",
+    "run_mode": "targeted_refine",
+    "operator_note": "Registration only: retain SG-RFC-0234 and source in existing graph lanes. Do not execute this packet as refinement, invoke a model, mutate canonical specs or activate the workflow. Next action: review contract then a bounded implementation PR.",
+    "mutation_budget": [],
+    "run_authority": [],
+    "execution_profile": "standard",
+    "stop_conditions": [
+      "review_boundary_reached"
+    ]
+  }
+}

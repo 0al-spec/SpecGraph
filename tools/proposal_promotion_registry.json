@@ -3015,5 +3015,18 @@
     "required_provenance_links": [
       "source_draft_ref"
     ]
+  },
+  {
+    "proposal_id": "0234",
+    "source_artifact_class": "working_draft",
+    "source_refs": [
+      "docs/archive/proposal_sources/0234_verification_workflow.md"
+    ],
+    "motivating_concern": "Compose verification operations to remove manual rituals while requiring current-run test execution.",
+    "normalized_title": "Composable verification workflow",
+    "bounded_scope": "Draft fixed verify-criteria/v1 contracts and failure controls; register sources and graph return path. No workflow execution, canonical mutation or admission activation.",
+    "required_provenance_links": [
+      "source_draft_ref"
+    ]
   }
 ]

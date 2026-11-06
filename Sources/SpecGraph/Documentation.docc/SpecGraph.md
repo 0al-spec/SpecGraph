@@ -105,6 +105,7 @@ The canonical source files remain in the repository:
 - <doc:OntologyCAdapterReport>
 - <doc:ProposalsAndRuntime>
 - <doc:MechanicalSpecificationAuthoring>
+- <doc:VerificationWorkflow>
 - <doc:TraceabilityEvidenceProviders>
 - <doc:ImplementationContractPack>
 - <doc:ProductWorkspacePilots>

@@ -1475,6 +1475,30 @@
         "intent/proposal",
         "review-pending"
       ]
+    },
+    {
+      "id": "verification-workflow-proposal",
+      "description": "Fixed verification workflow planning, fresh execution and separate admission.",
+      "docs": [
+        "docs/proposals/0234_verification_workflow.md",
+        "docs/reviews/0234_verification_workflow/README.md"
+      ],
+      "docc": [
+        "Sources/SpecGraph/Documentation.docc/VerificationWorkflow.md"
+      ],
+      "required_terms": [
+        "SG-RFC-0234",
+        "verify-criteria/v1",
+        "deferred_until_canonicalized",
+        "proposal::0234-verification-workflow",
+        "SG-SPEC-0009"
+      ],
+      "docc_required_terms": [
+        "producer_declared",
+        "not_evaluated",
+        "0225",
+        "0226"
+      ]
     }
   ]
 }

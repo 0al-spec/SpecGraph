@@ -1,0 +1,26 @@
+id: SG-RFC-0234
+kind: proposal
+status: draft
+proposal_ref: docs/proposals/0234_verification_workflow.md
+provenance:
+  authored_by: agent
+  authority: proposal_draft
+  source_ref: docs/archive/proposal_sources/0234_verification_workflow.md
+atoms:
+  intents:
+  - id: WF-COMPOSITION
+    statement: One requested verification shall compose explicitly registered versioned operations with typed inputs, outputs and declared effects through the same native CLI and Supervisor operation.
+  - id: WF-EXECUTION
+    statement: The fixed verification profile shall reject missing, optional or disconnected mandatory test execution and require collection to consume that stage's current-run outputs.
+  - id: WF-SOURCE
+    statement: Each verification run shall pin criterion inventory, source revisions, binding template and tool identities, preserve declaration and execution revisions separately, and invalidate results for incompatible or mutated inputs.
+  - id: WF-OBSERVATIONS
+    statement: The producer binding adapter shall select fresh run and step identities without deriving expected measurements from observed values, preserving the complete declared criterion inventory.
+  - id: WF-COMPLETION
+    statement: Verification success shall require completed mandatory stages, successful fresh execution and complete nonempty checked and passed criteria; skipped, aborted, missing or conflicting evidence shall not count as success.
+  - id: WF-REPLAY
+    statement: Retained-report replay shall remain distinguishable from fresh execution and shall not satisfy a new workflow run's mandatory test obligation.
+  - id: WF-AUTHORITY
+    statement: Workflow reports shall preserve local producer-declared provenance and explicit gaps without canonical mutation, trusted receipts or automatic evidence admission.
+  - id: WF-PILOT
+    statement: The first installed-runtime ExamCalc workflow shall demonstrate successful fresh execution and sensitivity to missing producers, old outputs, wrong commits, incomplete criteria and aborted execution before wider composition is added.

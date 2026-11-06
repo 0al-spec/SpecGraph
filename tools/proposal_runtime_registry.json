@@ -13724,5 +13724,40 @@
       }
     ],
     "notes": "Source-attributed authoring direction and existing intent/proposal registration only. Pilot, new checker adapters, canonical refinement, threshold changes and runtime profile activation remain pending. Resume through proposal::0233-mechanical-specification-authoring."
+  },
+  {
+    "proposal_id": "0234",
+    "posture": "deferred_until_canonicalized",
+    "runtime_surfaces": [
+      "docs/proposals/0234_verification_workflow.md",
+      "docs/archive/proposal_sources/0234_verification_workflow.md",
+      "docs/proposals/0234_verification_workflow.intent.yaml",
+      "Sources/SpecGraph/Documentation.docc/VerificationWorkflow.md",
+      "docs/reviews/0234_verification_workflow/README.md",
+      "docs/reviews/0234_verification_workflow/operator-request.json",
+      "docs/reviews/0234_verification_workflow/graph-links.json",
+      "intent_layer/nodes/user_intent--0234-verification-workflow--c03e0097.json",
+      "intent_layer/nodes/operator_request--0234-verification-workflow--f6d7f9ec.json",
+      "proposal_lane/nodes/proposal--0234-verification-workflow--26beab5e.json"
+    ],
+    "runtime_markers": [
+      {
+        "path": "docs/proposals/0234_verification_workflow.md",
+        "pattern": "Draft proposal; planning contract only."
+      }
+    ],
+    "validation_markers": [
+      {
+        "path": "docs/proposals/0234_verification_workflow.md",
+        "pattern": "These cases plan future verification; none has been executed by this proposal."
+      }
+    ],
+    "observation_markers": [
+      {
+        "path": "docs/reviews/0234_verification_workflow/graph-links.json",
+        "pattern": "\"executor_invoked\": false"
+      }
+    ],
+    "notes": "Registration and planning only. Reuses 0224 bindings and 0226 collection; 0225 admission remains separate. The fixed workflow and installed pilot controls are not implemented. Resume through proposal::0234-verification-workflow."
   }
 ]
