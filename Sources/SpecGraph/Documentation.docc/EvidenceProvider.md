@@ -120,3 +120,24 @@ establish compatibility and preserve `producer_declared` execution provenance.
 binding can accompany a failed observation. Reports carry `not_evaluated`
 admission and a null receipt. See `docs/evidence_provider.md` for the CLI
 invocation, plan schema, accepted Cucumber profile and handling of conflicts.
+
+### Readable local report
+
+Use the same pinned-input invocation with `--format html` and redirect stdout
+to a local HTML file. The default remains `--format json`. The standalone page
+needs no server, JavaScript, network or external resources. It displays every
+criterion with separate binding integrity, observed outcome and admission,
+followed by selected step text and expected/observed JSON measurements. It does
+not reconstruct the full scenario or reinterpret intent.
+Status labels use green for checked/passed, red for failure/invalidity/conflict,
+amber for partial/pending/skipped/unbound, and neutral for unavailable or
+unevaluated states. The text label remains visible independently of color.
+
+Missing measurements retain expectations; incomplete inventories have an
+unknown total. Conflicts, unmatched bindings and findings stay visible. Details
+retain case statuses, exact source/journal identities, lifecycle and input
+hashes. The JSON report SHA-256 is a reproducibility reference, not HTML
+attestation. Locators are literal text; URLs are not inferred. Artifact text is
+escaped and cannot add executable markup. Keep these potentially sensitive
+attachments local. The renderer only presents existing decisions; `local_test`,
+`producer_declared`, `not_evaluated` and the null receipt are unchanged.

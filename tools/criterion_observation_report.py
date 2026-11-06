@@ -11,6 +11,7 @@ from traceability.criterion import CriterionSelection, FilePin
 from traceability.criterion_inputs import PROFILE
 from traceability.criterion_passport import NativePassportValidation
 from traceability.criterion_provider import PROVIDER_ID, RetainedCriterionEvidenceProvider
+from traceability.criterion_report_html import render_html
 from traceability.evidence import EvidenceRequest, EvidenceScope
 from traceability.providers import EvidenceRegistry
 from traceability.snapshot import TraceSnapshot
@@ -53,6 +54,7 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--journal", action="append", nargs=3, metavar=("ID", "PATH", "SHA256"))
     parser.add_argument("--validator", type=Path, required=True)
     parser.add_argument("--validator-sha256", required=True)
+    parser.add_argument("--format", choices=("json", "html"), default="json")
     args = parser.parse_args(argv)
     try:
         root = args.repository_root.resolve(strict=True)
@@ -75,7 +77,13 @@ def main(argv: list[str] | None = None) -> int:
     except (ValueError, OSError) as error:
         print(f"criterion observation request error: {error}", file=sys.stderr)
         return 1
-    print(json.dumps(report_payload(snapshot), indent=2, ensure_ascii=False, sort_keys=True))
+    payload = report_payload(snapshot)
+    output = (
+        render_html(payload)
+        if args.format == "html"
+        else json.dumps(payload, indent=2, ensure_ascii=False, sort_keys=True)
+    )
+    print(output)
     return 0  # Diagnostic report availability does not imply successful criteria.
 
 

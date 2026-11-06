@@ -457,7 +457,8 @@ def test_native_feature_passport_accepts_and_rejects_exact_pinned_bytes(retained
 
 
 @pytest.mark.parametrize("malformed_spec", [False, True])
-def test_cli_native_validator_and_read_only_projection(retained, malformed_spec):
+@pytest.mark.parametrize("output_format", [None, "json", "html"])
+def test_cli_native_validator_and_read_only_projection(retained, malformed_spec, output_format):
     validator = native_validator()
     if malformed_spec:
         raw = b"id: TEST-SPEC-0001\n? [a, b]\n: value\n"
@@ -497,19 +498,27 @@ def test_cli_native_validator_and_read_only_projection(retained, malformed_spec)
             str(validator.executable),
             "--validator-sha256",
             validator.executable_sha256,
-        ],
+        ]
+        + (["--format", output_format] if output_format else []),
         check=True,
         capture_output=True,
         text=True,
     )
-    report = json.loads(result.stdout)
     assert "Traceback" not in result.stderr
-    if malformed_spec:
+    if output_format == "html":
+        assert result.stdout.startswith("<!doctype html>")
+        assert (
+            "total criterion count unknown" in result.stdout
+            if malformed_spec
+            else ("Complete inventory · 3 criteria" in result.stdout)
+        )
+    elif malformed_spec:
+        report = json.loads(result.stdout)
         assert report["inventory"]["complete"] is False
         assert report["inventory"]["criterion_count"] is None
         assert any(f["code"] == "spec_input" and f["kind"] == "invalid" for f in report["findings"])
     else:
-        assert states(report) == [("checked", "passed")] * 3
+        assert states(json.loads(result.stdout)) == [("checked", "passed")] * 3
     assert git(retained.root, "status", "--porcelain") == ""
     assert {path.name for path in retained.artifacts.iterdir()} == {
         "passport.json",
