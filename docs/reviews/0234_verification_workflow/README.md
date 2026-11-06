@@ -44,11 +44,82 @@ not tested or implemented in this proposal.
 
 ## Next task and workspace
 
-Review the fixed profile and five bypass controls, then implement the narrow
-operation and façade in a separate PR. Preserve 0224/0226 contracts and keep
-0225 admission separate. The first profile has no general DAG engine or resume.
+The first pure-core slice is implemented in `tools/verification_workflow/`.
+The next slice supplies actual execution and persistence adapters, then connects
+the native CLI and explicit Supervisor operation. Preserve 0224/0226 contracts
+and keep 0225 admission separate. The first profile has no general DAG engine
+or resume.
 
 Preparation uses primary checkout branch `codex/0234-verification-workflow`;
 no extra worktree was created. The PR is the durable handoff. After publication,
 read-only review can inspect the branch commit without changing the checkout;
 no service or notebook depends on this branch.
+
+## First implementation: consistency core
+
+The operator reminded the agent, “Не забывай про FeaturePassport”, and replied
+“Думаю, можно приступать” to the proposed passport-through-workflow design.
+These are agent-attributed conversation excerpts, not authenticated receipts.
+The preceding agent proposal was to carry a pinned FeaturePassport through the
+workflow and check observations against its feature and criteria, while keeping
+admission separate. The reply authorizes starting implementation; it does not
+adopt a canonical specification or approve the entire conversation sketch.
+The local SpecDraft `conversation_memory/sketches/verification-workflow` retains
+both speakers and the response link at revision
+`aef9e59d13c6467fa7722a540456c355` (five revisions, history verified complete).
+That notebook follows this checkout's existing Git-ignore rule. The selected
+excerpts and scope are preserved here in tracked documentation.
+
+The core provides immutable request, scope, stage and result records. Separate
+SpecificationCore policies check the fixed mandatory topology, passport-bound
+inventory, current-run record linkage, C2c collection compatibility, lifecycle
+and verification verdict. Parsing, process execution and persistence remain
+adapter responsibilities. C2c retains ownership of criterion interpretation.
+
+FeaturePassport ID, feature ID, version, file hash, validator/schema pins and
+criterion/contract/binding references are carried in the scope. Expected
+measurements precede observation. The result keeps the complete inventory and
+distinguishes `workflow_outcome` from `verification_outcome`; a normally
+finished negative test remains `completed/failed`.
+
+`tests/test_verification_workflow.py` has 65 passing cases, including missing or
+disconnected execution, foreign-run records, source/passport drift, empty or
+incomplete inventory, nonzero/aborted producers and inconsistent observations.
+Independent review found two consistency defects: selected step statuses could
+disagree with aggregate statuses, and nested conflicts/retry state could be
+lost. Regression tests reproduced the failures before correction. Re-review
+confirmed all four original negative probes now return `failed/incomplete`,
+while passing and consistently failing controls retain their expected results.
+Root cause: treating a derived C2c row as sufficient proof of the consistency of
+its nested facts. Prevention: explicit nested-fact checks plus regressions.
+
+These tests supply facts to a pure core. They do not establish that a process
+ran or that file bytes were independently checked. The future adapter must
+allocate unique runs, validate source/passport bytes, execute tests, establish
+output custody, check mutation and atomically persist completion. No CLI or
+Supervisor mode is activated, and no installed ExamCalc run is claimed here.
+Admission remains `not_evaluated`, provenance `producer_declared`, receipt null.
+The registry's `deferred_until_canonicalized` posture refers to activation;
+the preparation code is now available for the next bounded slice.
+
+Implementation workspace: primary checkout branch
+`codex/0234-verification-core`, dependent on proposal PR #884. No extra worktree
+was allocated. The historical proposal registration and its source hashes are
+unchanged; this implementation does not manufacture an applied Supervisor run.
+
+## Collection policy decomposition
+
+The complete SpecificationMetrics comparison for `0ab17bde` -> `17f065ae`
+reported `collection_scope` at CC 54 / Cog 78. Inspection found four concerns
+inside the same routine: selection identity, journal provenance, criterion
+bindings and nested observation consistency. The implementation now gives each
+concern a named Specification in its own module, sharing two immutable contexts.
+`collection_scope` retains its public interface and composes those checks;
+`criterion_row` still owns the C2c outcome projection.
+
+All 65 existing tests pass unchanged, independently repeated after refactoring.
+The implementation author also compared 55 fixture evaluations with the prior
+predicate at `17f065ae`; all agreed. Independent review found no blockers and
+confirmed that both earlier P2 protections remain intact. The tradeoff is more
+files and explicit contexts. The old metric values are a baseline; no reduction
+in total CC, Cog, SLOC or U is claimed before measurement of the new head.
