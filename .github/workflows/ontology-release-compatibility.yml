@@ -21,8 +21,8 @@ permissions:
 
 env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
-  ONTOLOGY_RELEASE: 0.7.0
-  ONTOLOGY_REVISION: 40672c189f33dee2b8c6fdac903758e90d9fba86
+  ONTOLOGY_RELEASE: 0.8.0
+  ONTOLOGY_REVISION: 35b9eb1408f0160317cbd2846f84ce10931f3c6c
 
 jobs:
   compiler-compatibility:
@@ -80,7 +80,7 @@ jobs:
       - name: Reproduce the local model diagrams with the released visualizer
         id: model_tools
         env:
-          ARCHIVE_SHA256: a5099a8e59fbc53009a4d5a03b69a536093187a615f7198396d81fd08e6a17d7
+          ARCHIVE_SHA256: 1e3f3290d3973d982f6575753d92f16e7d9fffb76414ee67baa4da7b1ce91374
         run: |
           set -euo pipefail
           work=$(mktemp -d "$RUNNER_TEMP/ontology-models.XXXXXXXX")
