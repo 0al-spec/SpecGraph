@@ -12,6 +12,7 @@
   ],
   "observation": {
     "source_package": "specs/models/SG-SPEC-0053/intent-to-proposal/domain-ontology-package.yaml",
+    "source_revision": "f48d26a26d68b834347c1e3685be8f11db24e56d",
     "source_sha256": "ad9a5ea0758d70eaf339afe55c58bfef14821007c4e922a07c40fac1b01609c6",
     "project_release": "0.8.0",
     "previous_binary_sha256": "c943f484cccfc5fbd3a24d078dce624e3bb3bc6ab4a33160fdd29fbcb2b84c75",

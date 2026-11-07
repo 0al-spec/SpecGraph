@@ -6,7 +6,9 @@ conversation text, was:
 > Ложные предупреждения нужно проводить как дефекты тоже через граф со всеми вытекающими процедурами
 
 On 2026-11-07, a SpecGraph commit containing the valid draft
-`SG-SPEC-0053/intent-to-proposal` ontology produced seven advisory errors about
+`SG-SPEC-0053/intent-to-proposal` ontology at
+[SpecGraph revision f48d26a2](https://github.com/0al-spec/SpecGraph/blob/f48d26a26d68b834347c1e3685be8f11db24e56d/specs/models/SG-SPEC-0053/intent-to-proposal/domain-ontology-package.yaml)
+produced seven advisory errors about
 `ref` and action-relationship fields. The same source passes the
 Ontology 0.8.0 compiler pinned by SpecGraph PR #890. The configured local Git
 hook pointed to a different, older compiler binary; it remained non-blocking.
