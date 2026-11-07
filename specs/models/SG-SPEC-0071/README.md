@@ -4,6 +4,10 @@ This pilot exercises all five criteria of `SG-REQ-PUBLICATION-VERIFIED`.
 Four examples describe an individual file. PB-ALL asks whether the evidence
 from one verification attempt covers the entire retained manifest and both metadata files.
 
+The [verification action](verification-action/README.md) is a separate draft
+projection of the same production behavior. It shows the acting verifier,
+published bundle and reference to the retained comparison input in the Viewer.
+
 | Criterion | Address in [SG-SPEC-0071](../../nodes/SG-SPEC-0071.yaml) | Source of the expected digest |
 | --- | --- | --- |
 | [PB-ALL](all-case.json) | `/specification/requirement/criteria/0`, `/atoms/intents/0` | Both retained metadata files and every path and SHA-256 declared by the retained manifest. |

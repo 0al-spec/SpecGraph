@@ -1,0 +1,33 @@
+apiVersion: ontology.specgraph.io/v1alpha1
+kind: DomainOntologyPackage
+metadata:
+  id: org.0al.specgraph.publication-verification
+  namespace: pubverify
+  version: 0.1.0-draft.1
+  publisher: SpecGraph
+  source: specs/models/SG-SPEC-0071/verification-action/domain-ontology-package.yaml
+  approvalStatus: draft
+spec:
+  imports:
+    - {id: ontology.foundation, namespace: ont, version: 0.2.0}
+  classes:
+    PublicationVerifier:
+      extends: ont:DomainEntity
+      description: SpecGraph's verifier that reads the published bundle and compares it with retained local artifacts.
+    PublishedBundle:
+      extends: ont:DomainEntity
+      description: The bundle served at the selected HTTPS base URL for this verification attempt.
+    RetainedBundle:
+      extends: ont:DomainEntity
+      description: The local bundle supplying exact metadata bytes and the manifest of expected payload paths and digests.
+    VerifyPublishedBundle:
+      extends: ont:Action
+      description: Compare the published bundle against the selected retained bundle.
+      fields:
+        expectedBundle: {type: ref, target: RetainedBundle, required: true}
+  relations:
+    verifiesPublishedBundle:
+      subject: PublicationVerifier
+      action: VerifyPublishedBundle
+      object: PublishedBundle
+      description: The verifier checks the published bundle against the retained bundle and produces an observation on success.
