@@ -1,11 +1,11 @@
-# Intent to proposal: a draft action model
+# Pre-spec intent and proposal: a draft action model
 
 This is a **reviewable draft**, not an accepted ontology change or a change to
 the published SpecGraph core. It models one branch of
-[SG-SPEC-0053](../../../nodes/SG-SPEC-0053.yaml): a `Proposal` may
-operationalize an `Intent`, while the proposal remains a distinct,
-pre-canonical candidate. The spec also permits proposals based on an
-`IntentDraft`; that path is deliberately outside this slice.
+[SG-SPEC-0053](../../../nodes/SG-SPEC-0053.yaml): fragments can contribute to
+an `IntentDraft`, a draft can lead toward an `Intent` or `Proposal`, and
+a `Proposal` can operationalize an `Intent`. These kinds remain distinct
+pre-canonical declarations within this spec's scope.
 
 The request motivating this model was to make the SpecGraph ontology more
 expressive with entities, actions and relationships, as in the publication
@@ -19,23 +19,39 @@ facts.
 | Declaration | Meaning and source |
 | --- | --- |
 | `sgcore:Intent` | The existing project-core term, imported from `org.0al.specgraph.core@0.1.0`; this example concerns the pre-spec interpretation in SG-SPEC-0053. |
+| `sgproposal:RawInput` | Source material for the observed-intent path; capture does not establish identity or truth. |
+| `sgproposal:IntentFragment` | A partial observable signal; one fragment is not a complete intent draft. |
+| `sgproposal:IntentDraft` | A synthesis of one or more fragments and optional context, not yet canonical intent. |
+| `sgproposal:Hypothesis` | A reviewable epistemic statement, distinct from normative intent. |
 | `sgproposal:Proposal` | The candidate operationalization in `specification.kind_roles.proposal`. |
+| `sgproposal:IntentSynthesizer` | A proposed contextual role for whoever develops the draft; it may be a person or agent and grants no authority. |
+| `sgproposal:InterpretFragmentForDraft` | A proposed action that interprets one fragment for an **existing** draft. `candidateDraft: Ref<IntentDraft>` identifies that draft. |
+| `sgproposal:interpretsFragmentForDraft` | Action relationship: subject = synthesizer, action = interpretation, object = the fragment being interpreted. |
+| `sgproposal:rawInputSourceForFragment` | A raw input supplies source material for a fragment. |
+| `sgproposal:fragmentContributesToDraft` | A fragment contributes partial observed meaning to a draft. Multiple fragments may contribute. |
+| `sgproposal:hypothesisInformsIntentDraft` | A hypothesis can support, challenge or contextualize a draft; the relation alone does not select a polarity. |
+| `sgproposal:hypothesisInformsProposal` | A hypothesis can also inform a proposal without itself becoming the proposal. |
+| `sgproposal:intentDraftSourceForIntent` | A draft supplies observed meaning for a later intent; the relation alone is not approval or canonicalization. |
+| `sgproposal:intentDraftMotivatesProposal` | A proposal can be motivated by a draft without a separately stabilized intent. |
 | `sgproposal:ProposalAuthor` | A proposed contextual role for whoever develops the candidate; it may be a person or agent and grants no authority. |
 | `sgproposal:InterpretIntentForProposal` | A proposed action that interprets an intent for an **existing** candidate. `candidateProposal: Ref<Proposal>` identifies that candidate. |
 | `sgproposal:interpretsIntentForProposal` | Action relationship: subject = author, action = interpretation, object = the intent being interpreted. |
 | `sgproposal:intentMotivatesProposal` | The separate `intent → proposal` relation required by `specification.kind_separation.required_edges` when this path introduces a candidate. |
 
-The action reads/interprets the intent; it does not assert that the intent is
-changed. A typed reference names the candidate, but does not create it, resolve
-its locator, establish that the interpretation succeeded, or prove that a
-proposal implements the intent. This single-intent example does not assert that
-other motivations are absent. Review, promotion, canonical publication and the
-actual authoring implementation are outside this model.
+The actions read/interpret the fragment or intent; they do not assert that
+either is changed. A typed reference names an existing candidate, but does not
+create it, resolve its locator, establish that the interpretation succeeded, or
+prove semantic preservation. Each action occurrence mentions one fragment or
+intent; it does not assert that other sources are absent. Review, promotion,
+canonical publication and the actual authoring implementation are outside this
+model. The package keeps its original identity and advances its draft version
+to `0.2.0-draft.1` for these additive declarations.
 
 The [SDK example](sdk-example.ts) supplies an **in-memory test actor**, not
-SpecGraph's production executor. It illustrates a known candidate gaining a
-link to the selected intent and an unknown candidate leaving the store
-unchanged. The record schema rejects a missing or incorrectly typed reference.
+SpecGraph's production executor. It illustrates two fragments contributing to
+one known draft, a proposal gaining a link to an intent, and unknown candidates
+leaving the example stores unchanged. The record schema rejects a missing or
+incorrectly typed reference.
 This demonstrates those bounded sample behaviors, not semantic equivalence or
 approval of an actual proposal.
 
@@ -55,10 +71,11 @@ ontologyviz "$model" --view full --format json \
 
 Open `$OUT/graph/ontology.graph.json` in SpecSpace's local Ontology Viewer.
 The projection includes the existing core and this candidate, so filter by
-package to inspect each separately. Select `interpretsIntentForProposal` to
-inspect its subject, action and object, then follow the action's
-`candidateProposal` field. Projection and SDK are derived artifacts; loading
-them neither updates the public site nor accepts the candidate ontology.
+package to inspect each separately. Select `interpretsFragmentForDraft` or
+`interpretsIntentForProposal` to inspect subject, action and object, then
+follow the action's typed candidate field. Projection and SDK are derived
+artifacts; loading them neither updates the public site nor accepts the
+candidate ontology.
 
 ## Current tool boundaries
 

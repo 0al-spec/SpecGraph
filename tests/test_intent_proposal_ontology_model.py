@@ -48,7 +48,18 @@ def test_model_tracks_the_selected_spec_and_existing_intent():
         "intent -> proposal" in edge
         for edge in spec["specification"]["kind_separation"]["required_edges"]
     )
+    assert (
+        "intent_fragment -> intent_draft"
+        in spec["specification"]["observed_intent_path"]["allowed_edges"]
+    )
+    assert set(("intent_fragment", "intent_draft", "hypothesis", "proposal")) <= set(
+        spec["specification"]["kind_roles"]
+    )
+    assert {"RawInput", "IntentFragment", "IntentDraft", "Hypothesis", "Proposal"} <= set(
+        model["spec"]["classes"]
+    )
     assert model["metadata"]["approvalStatus"] == "draft"
+    assert model["metadata"]["version"] == "0.2.0-draft.1"
     _check_core_endpoints(model, _document(CORE))
 
 
@@ -66,13 +77,20 @@ def compiler():
     return Path(value).resolve(strict=True)
 
 
-def test_compiler_accepts_model_and_rejects_wrong_local_reference(compiler, tmp_path):
+@pytest.mark.parametrize(
+    ("action", "field"),
+    [
+        ("InterpretIntentForProposal", "candidateProposal"),
+        ("InterpretFragmentForDraft", "candidateDraft"),
+    ],
+)
+def test_compiler_accepts_model_and_rejects_wrong_local_reference(
+    compiler, tmp_path, action, field
+):
     source = MODEL / "domain-ontology-package.yaml"
     subprocess.run([compiler, "check", source], check=True, capture_output=True, timeout=60)
     broken = _document(source)
-    broken["spec"]["classes"]["InterpretIntentForProposal"]["fields"]["candidateProposal"][
-        "target"
-    ] = "MissingProposal"
+    broken["spec"]["classes"][action]["fields"][field]["target"] = "MissingTarget"
     candidate = tmp_path / "broken.yaml"
     candidate.write_text(yaml.safe_dump(broken), encoding="utf-8")
     result = subprocess.run(
@@ -123,6 +141,25 @@ def test_full_projection_reuses_exact_core_source(tmp_path):
     )
     motivation = relations["sgproposal:intentMotivatesProposal"]
     assert (motivation["domain"], motivation["range"]) == ("sgcore:Intent", "sgproposal:Proposal")
+    synthesis = classes["sgproposal:InterpretFragmentForDraft"]
+    assert synthesis["kind"] == "Action"
+    assert synthesis["fields"][0]["target"] == "sgproposal:IntentDraft"
+    binding = relations["sgproposal:interpretsFragmentForDraft"]
+    assert (binding["domain"], binding["action"], binding["range"]) == (
+        "sgproposal:IntentSynthesizer",
+        "sgproposal:InterpretFragmentForDraft",
+        "sgproposal:IntentFragment",
+    )
+    for name, domain, target in (
+        ("rawInputSourceForFragment", "RawInput", "sgproposal:IntentFragment"),
+        ("fragmentContributesToDraft", "IntentFragment", "sgproposal:IntentDraft"),
+        ("hypothesisInformsIntentDraft", "Hypothesis", "sgproposal:IntentDraft"),
+        ("hypothesisInformsProposal", "Hypothesis", "sgproposal:Proposal"),
+        ("intentDraftSourceForIntent", "IntentDraft", "sgcore:Intent"),
+        ("intentDraftMotivatesProposal", "IntentDraft", "sgproposal:Proposal"),
+    ):
+        relation = relations[f"sgproposal:{name}"]
+        assert (relation["domain"], relation["range"]) == (f"sgproposal:{domain}", target)
 
 
 def test_generated_sdk_example(compiler, tmp_path):

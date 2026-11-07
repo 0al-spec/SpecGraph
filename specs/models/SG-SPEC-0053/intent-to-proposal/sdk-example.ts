@@ -1,7 +1,7 @@
 // A bounded demonstration using the generated SDK, not the SpecGraph executor.
 import { trigger, type ActionRelationship } from "./generated/relations";
 import { ActionRelationshipRecordSchema } from "./generated/validators";
-import type { InterpretIntentForProposal } from "./generated/types";
+import type { InterpretFragmentForDraft, InterpretIntentForProposal } from "./generated/types";
 
 const intent = { $type: "sgcore:Intent" as const, id: "intent-1" };
 const action: InterpretIntentForProposal = {
@@ -43,7 +43,58 @@ async function main(): Promise<void> {
     "wrong relationship object accepted",
   );
 
-  // This resolver is deliberately an example, not a claim about real authoring.
+  // These resolvers are examples, not claims about real authoring.
+  const fragmentsByDraft = new Map<string, string[]>([["draft-1", []]]);
+  const fragment = { $type: "sgproposal:IntentFragment" as const, id: "fragment-1" };
+  const draftAction: InterpretFragmentForDraft = {
+    $type: "sgproposal:InterpretFragmentForDraft",
+    candidateDraft: { target: "sgproposal:IntentDraft", locator: "draft-1" },
+  };
+  const synthesizer = {
+    $type: "sgproposal:IntentSynthesizer" as const,
+    id: "synthesizer-1",
+    run: (input: InterpretFragmentForDraft, selected: typeof fragment) => {
+      const locator = input.candidateDraft.locator;
+      if (typeof locator !== "string") throw new Error("unsupported draft locator");
+      const links = fragmentsByDraft.get(locator);
+      if (!links) throw new Error("draft not found");
+      links.push(selected.id);
+    },
+  };
+  const synthesis: ActionRelationship<"sgproposal:interpretsFragmentForDraft"> = {
+    relation: "sgproposal:interpretsFragmentForDraft",
+    subject: synthesizer,
+    action: draftAction,
+    object: fragment,
+  };
+  requireCondition(ActionRelationshipRecordSchema.safeParse(synthesis).success, "draft record rejected");
+  requireCondition(
+    !ActionRelationshipRecordSchema.safeParse({
+      ...synthesis,
+      action: { $type: draftAction.$type },
+    }).success,
+    "missing draft reference accepted",
+  );
+  requireCondition(fragmentsByDraft.get("draft-1")?.length === 0, "unexpected initial fragments");
+  await trigger(synthesis);
+  await trigger({ ...synthesis, object: { ...fragment, id: "fragment-2" } });
+  requireCondition(
+    fragmentsByDraft.get("draft-1")?.join() === "fragment-1,fragment-2",
+    "fragments not recorded in the selected draft",
+  );
+  const draftBefore = JSON.stringify([...fragmentsByDraft]);
+  let unknownDraftRejected = false;
+  try {
+    await trigger({
+      ...synthesis,
+      action: { ...draftAction, candidateDraft: { ...draftAction.candidateDraft, locator: "missing" } },
+    });
+  } catch {
+    unknownDraftRejected = true;
+  }
+  requireCondition(unknownDraftRejected, "unknown draft accepted by the example resolver");
+  requireCondition(JSON.stringify([...fragmentsByDraft]) === draftBefore, "unknown draft changed state");
+
   const candidateIntents = new Map<string, string[]>([["candidate-1", []]]);
   const author = {
     ...authorRecord,
