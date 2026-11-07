@@ -1,0 +1,40 @@
+apiVersion: ontology.specgraph.io/v1alpha1
+kind: DomainOntologyPackage
+metadata:
+  id: org.0al.specgraph.intent-proposal
+  namespace: sgproposal
+  version: 0.1.0-draft.1
+  publisher: SpecGraph
+  source: specs/models/SG-SPEC-0053/intent-to-proposal/domain-ontology-package.yaml
+  approvalStatus: draft
+spec:
+  imports:
+    - {id: ontology.foundation, namespace: ont, version: 0.2.0}
+    - {id: specgraph.foundation, namespace: sg, version: 0.1.0}
+    - {id: org.0al.specgraph.core, namespace: sgcore, version: 0.1.0}
+  classes:
+    ProposalAuthor:
+      extends: ont:DomainEntity
+      description: A person or agent acting as the author of a candidate proposal in this interpretation.
+    Proposal:
+      extends: ont:DomainEntity
+      description: A reviewable candidate operationalization, distinct from its motivating intent.
+    InterpretIntentForProposal:
+      extends: ont:Action
+      description: Interpret an intent in the context of an existing candidate proposal.
+      fields:
+        candidateProposal:
+          type: ref
+          target: Proposal
+          required: true
+          description: The candidate for which the intent is interpreted; the application resolves this reference.
+  relations:
+    interpretsIntentForProposal:
+      subject: ProposalAuthor
+      action: InterpretIntentForProposal
+      object: sgcore:Intent
+      description: An author interprets an intent while developing the candidate identified by the action.
+    proposalOperationalizesIntent:
+      domain: Proposal
+      range: sgcore:Intent
+      description: A candidate proposal operationalizes an intent without replacing it.
