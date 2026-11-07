@@ -1,0 +1,24 @@
+{
+  "artifact_kind": "operator_request_packet",
+  "schema_version": 1,
+  "user_intent": {
+    "intent_handle": "user_intent::ontology-advice-version-drift-20261107",
+    "source_kind": "chat_instruction",
+    "source_summary": "Register the observed false ontology advisory as a graph-tracked defect, retain its reproduction and repair evidence, and preserve real diagnostics.",
+    "selected_node_ref": "SG-SPEC-0072",
+    "unresolved_questions": []
+  },
+  "operator_request": {
+    "request_handle": "operator_request::ontology-advice-version-drift-20261107",
+    "target_spec_id": "SG-SPEC-0072",
+    "run_mode": "targeted_refine",
+    "operator_note": "Record the workstation's stale compiler advisory, the local version correction and an isolated staged-index regression. Keep compiler identity distinct from package identity. Do not claim SG-SPEC-0072 implements Git hooks, change canonical ontology, or claim automatic future upgrade.",
+    "mutation_budget": [],
+    "run_authority": [],
+    "execution_profile": "standard",
+    "stop_conditions": [
+      "first_structured_outcome",
+      "review_boundary_reached"
+    ]
+  }
+}

@@ -1,0 +1,43 @@
+{
+  "artifact_kind": "ontology_advice_version_drift_verification",
+  "schema_version": 1,
+  "defect_id": "ONTOLOGY-ADVICE-VERSION-DRIFT-20261107",
+  "status": "local_checks_passed_review_pending",
+  "checks": [
+    {
+      "case": "old_advisory_on_valid_package",
+      "result": "reproduced_false_diagnostics",
+      "evidence": "The focused staged-index regression fails against the previous compiler."
+    },
+    {
+      "case": "release_080_advisory_on_valid_package",
+      "result": "passed",
+      "evidence": "The same regression passes without an advisory on the valid package."
+    },
+    {
+      "case": "release_080_advisory_on_invalid_reference",
+      "result": "passed",
+      "evidence": "A nonexistent local reference produces class.field.target.unresolved and the advisory remains non-blocking."
+    },
+    {
+      "case": "configured_git_hook",
+      "result": "passed",
+      "evidence": "The actual configured hook command and event were copied into an isolated Git 2.54 repository and invoked for valid and invalid staged packages."
+    },
+    {
+      "case": "release_provenance",
+      "result": "passed",
+      "evidence": "The release archive SHA-256 matches the GitHub 0.8.0 asset digest; the installed compiler matches the archive member."
+    },
+    {
+      "case": "existing_graph_overlays",
+      "result": "passed",
+      "evidence": "Supervisor's intent overlay reports both selected intent/request nodes as ok; its proposal overlay reports the selected linked proposal as queryable under_review, with no findings."
+    }
+  ],
+  "limits": [
+    "A local hook setting is not a repository-wide guarantee.",
+    "The regression checks the selected executable, not automatic detection of stale installations.",
+    "No ontology candidate was accepted or published."
+  ]
+}

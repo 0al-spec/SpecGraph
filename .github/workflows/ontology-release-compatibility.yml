@@ -112,6 +112,7 @@ jobs:
           TYPESCRIPT_TSC_PATH="$toolchain/node_modules/typescript/bin/tsc" \
             python -m pytest -v tests/test_publication_digest_ontology_model.py \
               tests/test_intent_proposal_ontology_model.py \
+              tests/test_ontology_advice_release.py \
               tests/test_publication_bundle_ontology_model.py \
               tests/test_static_artifact_incremental_stage.py::test_pb_payload_model_against_bundle_verifier \
               tests/test_static_artifact_incremental_stage.py::test_pb_manifest_model_against_bundle_verifier \

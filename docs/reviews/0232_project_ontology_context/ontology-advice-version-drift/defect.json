@@ -1,0 +1,45 @@
+{
+  "artifact_kind": "ontology_advice_version_drift_defect_observation",
+  "schema_version": 1,
+  "defect_id": "ONTOLOGY-ADVICE-VERSION-DRIFT-20261107",
+  "status": "local_configuration_corrected_regression_review_pending",
+  "source_ref": "docs/reviews/0232_project_ontology_context/ontology-advice-version-drift/source.md",
+  "affected_contract_refs": [
+    "specs/nodes/SG-SPEC-0072.yaml",
+    "docs/proposals/0232_verified_project_ontology_context.md",
+    ".github/workflows/ontology-release-compatibility.yml",
+    "https://github.com/0al-spec/Ontology/blob/0.8.0/SPECS/ontology/ontologyc.md#commit-time-package-advice"
+  ],
+  "observation": {
+    "source_package": "specs/models/SG-SPEC-0053/intent-to-proposal/domain-ontology-package.yaml",
+    "source_revision": "f48d26a26d68b834347c1e3685be8f11db24e56d",
+    "source_sha256": "ad9a5ea0758d70eaf339afe55c58bfef14821007c4e922a07c40fac1b01609c6",
+    "project_release": "0.8.0",
+    "previous_binary_sha256": "c943f484cccfc5fbd3a24d078dce624e3bb3bc6ab4a33160fdd29fbcb2b84c75",
+    "selected_binary_sha256": "19c4db62253d13025f67a97b9ad45a6166cfb4818d670f11ce17bf7eeb4da785",
+    "false_diagnostics_include": [
+      "class.field.type.unsupported",
+      "relation.domain.required",
+      "relation.range.required"
+    ],
+    "advisory_is_blocking": false
+  },
+  "root_cause": "The locally configured Git advisory executable was pinned independently from the repository's updated Ontology release.",
+  "local_resolution": "Installed the checksum-verified 0.8.0 macOS release compiler alongside the previous binary and updated the shared SpecGraph Git hook configuration; retained a local rollback copy.",
+  "verification_ref": "docs/reviews/0232_project_ontology_context/ontology-advice-version-drift/verification.json",
+  "regression_ref": "tests/test_ontology_advice_release.py",
+  "graph": {
+    "user_intent_handle": "user_intent::ontology-advice-version-drift-20261107",
+    "user_intent_path": "intent_layer/nodes/user_intent--ontology-advice-version-drift-20261107--5ca6761a.json",
+    "operator_request_handle": "operator_request::ontology-advice-version-drift-20261107",
+    "operator_request_path": "intent_layer/nodes/operator_request--ontology-advice-version-drift-20261107--bf373207.json",
+    "proposal_handle": "proposal::ontology-advice-version-drift-20261107",
+    "proposal_node_path": "proposal_lane/nodes/proposal--ontology-advice-version-drift-20261107--53b352e9.json"
+  },
+  "closure": {
+    "local_configuration_fixed": true,
+    "regression_merged": false,
+    "automatic_version_alignment_implemented": false,
+    "status": "review_pending"
+  }
+}
