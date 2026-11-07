@@ -1,0 +1,8 @@
+{
+  "user_intent_path": "intent_layer/nodes/user_intent--specgraph-promotion-ontology-20261107--e32f5af5.json",
+  "user_intent_handle": "user_intent::specgraph-promotion-ontology-20261107",
+  "operator_request_path": "intent_layer/nodes/operator_request--specgraph-promotion-ontology-20261107--b913fd85.json",
+  "operator_request_handle": "operator_request::specgraph-promotion-ontology-20261107",
+  "proposal_node_path": "proposal_lane/nodes/proposal--specgraph-promotion-ontology-20261107--23f0e275.json",
+  "proposal_handle": "proposal::specgraph-promotion-ontology-20261107"
+}

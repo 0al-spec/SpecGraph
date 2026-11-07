@@ -1,0 +1,27 @@
+{
+  "artifact_kind": "operator_request_packet",
+  "schema_version": 1,
+  "user_intent": {
+    "intent_handle": "user_intent::specgraph-promotion-ontology-20261107",
+    "source_kind": "chat_instruction",
+    "source_summary": "The operator requested improving the SpecGraph ontology and asked to continue after merging the inventory. This bounded follow-up models the proposal-to-canonical path from SG-SPEC-0051 as a reviewable ontology candidate.",
+    "selected_node_ref": "SG-SPEC-0051",
+    "unresolved_questions": [
+      "Which declarations belong in a composed package or the public core?",
+      "How should pending transition templates relate to completed decisions?"
+    ]
+  },
+  "operator_request": {
+    "request_handle": "operator_request::specgraph-promotion-ontology-20261107",
+    "target_spec_id": "SG-SPEC-0051",
+    "run_mode": "targeted_refine",
+    "operator_note": "Model one proposal-to-SpecDraft-to-canonical path from the existing spec as a noncanonical ontology candidate, retaining explicit review and separate transition records. Reuse the existing Proposal declaration. Do not authorize a canonical write.",
+    "mutation_budget": [],
+    "run_authority": [],
+    "execution_profile": "standard",
+    "stop_conditions": [
+      "first_structured_outcome",
+      "review_boundary_reached"
+    ]
+  }
+}
