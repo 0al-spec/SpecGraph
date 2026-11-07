@@ -101,6 +101,23 @@ jobs:
           echo "compiler=$work/$bundle/ontologyc" >> "$GITHUB_OUTPUT"
           echo "visualizer=$work/$bundle/ontologyviz" >> "$GITHUB_OUTPUT"
 
+      - name: Check and export the ontology review overview
+        env:
+          ONTOLOGYVIZ_BINARY_PATH: ${{ steps.model_tools.outputs.visualizer }}
+        run: |
+          set -euo pipefail
+          python -m pytest -q tests/test_ontology_review_overview.py
+          "$ONTOLOGYVIZ_BINARY_PATH" \
+            --profile specs/models/review/ontology-overview/ontology.profile.json \
+            --format json --out "$RUNNER_TEMP/ontology-review-overview"
+
+      - name: Retain the ontology review overview
+        uses: actions/upload-artifact@v4
+        with:
+          name: ontology-review-overview
+          path: ${{ runner.temp }}/ontology-review-overview/ontology.graph.json
+          if-no-files-found: error
+
       - name: Check publication file criteria with their shared SDK and production verifier
         env:
           ONTOLOGYC_BINARY_PATH: ${{ steps.model_tools.outputs.compiler }}
