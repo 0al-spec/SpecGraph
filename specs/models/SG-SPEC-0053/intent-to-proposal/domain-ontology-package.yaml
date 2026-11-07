@@ -34,7 +34,7 @@ spec:
       action: InterpretIntentForProposal
       object: sgcore:Intent
       description: An author interprets an intent while developing the candidate identified by the action.
-    proposalOperationalizesIntent:
-      domain: Proposal
-      range: sgcore:Intent
-      description: A candidate proposal operationalizes an intent without replacing it.
+    intentMotivatesProposal:
+      domain: sgcore:Intent
+      range: Proposal
+      description: An intent motivates a candidate proposal without being replaced by it.

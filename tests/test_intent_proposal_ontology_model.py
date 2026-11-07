@@ -28,7 +28,7 @@ def _check_core_endpoints(candidate, core):
     rels = candidate["spec"]["relations"]
     for reference in (
         rels["interpretsIntentForProposal"]["object"],
-        rels["proposalOperationalizesIntent"]["range"],
+        rels["intentMotivatesProposal"]["domain"],
     ):
         namespace, name = reference.split(":", 1)
         assert namespace == selected["namespace"]
@@ -43,6 +43,10 @@ def test_model_tracks_the_selected_spec_and_existing_intent():
     assert (
         "operationalizes one or more intents"
         in spec["specification"]["kind_roles"]["proposal"]["role"]
+    )
+    assert any(
+        "intent -> proposal" in edge
+        for edge in spec["specification"]["kind_separation"]["required_edges"]
     )
     assert model["metadata"]["approvalStatus"] == "draft"
     _check_core_endpoints(model, _document(CORE))
@@ -117,6 +121,8 @@ def test_full_projection_reuses_exact_core_source(tmp_path):
         "sgproposal:InterpretIntentForProposal",
         "sgcore:Intent",
     )
+    motivation = relations["sgproposal:intentMotivatesProposal"]
+    assert (motivation["domain"], motivation["range"]) == ("sgcore:Intent", "sgproposal:Proposal")
 
 
 def test_generated_sdk_example(compiler, tmp_path):

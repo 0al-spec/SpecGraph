@@ -23,7 +23,7 @@ facts.
 | `sgproposal:ProposalAuthor` | A proposed contextual role for whoever develops the candidate; it may be a person or agent and grants no authority. |
 | `sgproposal:InterpretIntentForProposal` | A proposed action that interprets an intent for an **existing** candidate. `candidateProposal: Ref<Proposal>` identifies that candidate. |
 | `sgproposal:interpretsIntentForProposal` | Action relationship: subject = author, action = interpretation, object = the intent being interpreted. |
-| `sgproposal:proposalOperationalizesIntent` | The separate, persistent proposal-to-intent relation described in `specification.semantic_adjacency`. |
+| `sgproposal:intentMotivatesProposal` | The separate `intent → proposal` relation required by `specification.kind_separation.required_edges` when this path introduces a candidate. |
 
 The action reads/interprets the intent; it does not assert that the intent is
 changed. A typed reference names the candidate, but does not create it, resolve
