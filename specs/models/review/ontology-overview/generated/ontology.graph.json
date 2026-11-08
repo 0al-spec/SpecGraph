@@ -873,11 +873,34 @@
       "source" : {
         "id" : "org.0al.specgraph.intent-proposal",
         "pointer" : "/spec/classes/Hypothesis",
-        "sourceByteDigest" : "sha256:d2896dfbcfc81717cc0e7b9b8f09152f69cf7690b5eef64b66fe1c56b699d656",
-        "sourceDigest" : "sha256:d2896dfbcfc81717cc0e7b9b8f09152f69cf7690b5eef64b66fe1c56b699d656",
+        "sourceByteDigest" : "sha256:bb51c9faf03f565b8f35866b30be8dc01002062b8f1f150efd7333a259989b11",
+        "sourceDigest" : "sha256:bb51c9faf03f565b8f35866b30be8dc01002062b8f1f150efd7333a259989b11",
         "version" : "0.3.0-draft.1"
       },
       "uri" : "ontology://org.0al.specgraph.intent-proposal/0.3.0-draft.1/classes/Hypothesis"
+    },
+    {
+      "aliases" : [
+
+      ],
+      "central" : false,
+      "description" : "Deliberate duplicate used to test the merge gate.",
+      "diagramOrigin" : "org.0al.specgraph.intent-proposal@0.3.0-draft.1",
+      "extends" : "ont:DomainEntity",
+      "fqid" : "sgproposal:Intent",
+      "id" : "Intent",
+      "implements" : [
+
+      ],
+      "kind" : "DomainEntity",
+      "source" : {
+        "id" : "org.0al.specgraph.intent-proposal",
+        "pointer" : "/spec/classes/Intent",
+        "sourceByteDigest" : "sha256:bb51c9faf03f565b8f35866b30be8dc01002062b8f1f150efd7333a259989b11",
+        "sourceDigest" : "sha256:bb51c9faf03f565b8f35866b30be8dc01002062b8f1f150efd7333a259989b11",
+        "version" : "0.3.0-draft.1"
+      },
+      "uri" : "ontology://org.0al.specgraph.intent-proposal/0.3.0-draft.1/classes/Intent"
     },
     {
       "aliases" : [
@@ -896,8 +919,8 @@
       "source" : {
         "id" : "org.0al.specgraph.intent-proposal",
         "pointer" : "/spec/classes/IntentDraft",
-        "sourceByteDigest" : "sha256:d2896dfbcfc81717cc0e7b9b8f09152f69cf7690b5eef64b66fe1c56b699d656",
-        "sourceDigest" : "sha256:d2896dfbcfc81717cc0e7b9b8f09152f69cf7690b5eef64b66fe1c56b699d656",
+        "sourceByteDigest" : "sha256:bb51c9faf03f565b8f35866b30be8dc01002062b8f1f150efd7333a259989b11",
+        "sourceDigest" : "sha256:bb51c9faf03f565b8f35866b30be8dc01002062b8f1f150efd7333a259989b11",
         "version" : "0.3.0-draft.1"
       },
       "uri" : "ontology://org.0al.specgraph.intent-proposal/0.3.0-draft.1/classes/IntentDraft"
@@ -919,8 +942,8 @@
       "source" : {
         "id" : "org.0al.specgraph.intent-proposal",
         "pointer" : "/spec/classes/IntentFragment",
-        "sourceByteDigest" : "sha256:d2896dfbcfc81717cc0e7b9b8f09152f69cf7690b5eef64b66fe1c56b699d656",
-        "sourceDigest" : "sha256:d2896dfbcfc81717cc0e7b9b8f09152f69cf7690b5eef64b66fe1c56b699d656",
+        "sourceByteDigest" : "sha256:bb51c9faf03f565b8f35866b30be8dc01002062b8f1f150efd7333a259989b11",
+        "sourceDigest" : "sha256:bb51c9faf03f565b8f35866b30be8dc01002062b8f1f150efd7333a259989b11",
         "version" : "0.3.0-draft.1"
       },
       "uri" : "ontology://org.0al.specgraph.intent-proposal/0.3.0-draft.1/classes/IntentFragment"
@@ -942,8 +965,8 @@
       "source" : {
         "id" : "org.0al.specgraph.intent-proposal",
         "pointer" : "/spec/classes/IntentSynthesizer",
-        "sourceByteDigest" : "sha256:d2896dfbcfc81717cc0e7b9b8f09152f69cf7690b5eef64b66fe1c56b699d656",
-        "sourceDigest" : "sha256:d2896dfbcfc81717cc0e7b9b8f09152f69cf7690b5eef64b66fe1c56b699d656",
+        "sourceByteDigest" : "sha256:bb51c9faf03f565b8f35866b30be8dc01002062b8f1f150efd7333a259989b11",
+        "sourceDigest" : "sha256:bb51c9faf03f565b8f35866b30be8dc01002062b8f1f150efd7333a259989b11",
         "version" : "0.3.0-draft.1"
       },
       "uri" : "ontology://org.0al.specgraph.intent-proposal/0.3.0-draft.1/classes/IntentSynthesizer"
@@ -964,8 +987,8 @@
           "source" : {
             "id" : "org.0al.specgraph.intent-proposal",
             "pointer" : "/spec/classes/InterpretFragmentForDraft/fields/candidateDraft",
-            "sourceByteDigest" : "sha256:d2896dfbcfc81717cc0e7b9b8f09152f69cf7690b5eef64b66fe1c56b699d656",
-            "sourceDigest" : "sha256:d2896dfbcfc81717cc0e7b9b8f09152f69cf7690b5eef64b66fe1c56b699d656",
+            "sourceByteDigest" : "sha256:bb51c9faf03f565b8f35866b30be8dc01002062b8f1f150efd7333a259989b11",
+            "sourceDigest" : "sha256:bb51c9faf03f565b8f35866b30be8dc01002062b8f1f150efd7333a259989b11",
             "version" : "0.3.0-draft.1"
           },
           "target" : "sgproposal:IntentDraft",
@@ -981,8 +1004,8 @@
       "source" : {
         "id" : "org.0al.specgraph.intent-proposal",
         "pointer" : "/spec/classes/InterpretFragmentForDraft",
-        "sourceByteDigest" : "sha256:d2896dfbcfc81717cc0e7b9b8f09152f69cf7690b5eef64b66fe1c56b699d656",
-        "sourceDigest" : "sha256:d2896dfbcfc81717cc0e7b9b8f09152f69cf7690b5eef64b66fe1c56b699d656",
+        "sourceByteDigest" : "sha256:bb51c9faf03f565b8f35866b30be8dc01002062b8f1f150efd7333a259989b11",
+        "sourceDigest" : "sha256:bb51c9faf03f565b8f35866b30be8dc01002062b8f1f150efd7333a259989b11",
         "version" : "0.3.0-draft.1"
       },
       "uri" : "ontology://org.0al.specgraph.intent-proposal/0.3.0-draft.1/classes/InterpretFragmentForDraft"
@@ -1003,8 +1026,8 @@
           "source" : {
             "id" : "org.0al.specgraph.intent-proposal",
             "pointer" : "/spec/classes/InterpretIntentForProposal/fields/candidateProposal",
-            "sourceByteDigest" : "sha256:d2896dfbcfc81717cc0e7b9b8f09152f69cf7690b5eef64b66fe1c56b699d656",
-            "sourceDigest" : "sha256:d2896dfbcfc81717cc0e7b9b8f09152f69cf7690b5eef64b66fe1c56b699d656",
+            "sourceByteDigest" : "sha256:bb51c9faf03f565b8f35866b30be8dc01002062b8f1f150efd7333a259989b11",
+            "sourceDigest" : "sha256:bb51c9faf03f565b8f35866b30be8dc01002062b8f1f150efd7333a259989b11",
             "version" : "0.3.0-draft.1"
           },
           "target" : "sgproposal:Proposal",
@@ -1020,8 +1043,8 @@
       "source" : {
         "id" : "org.0al.specgraph.intent-proposal",
         "pointer" : "/spec/classes/InterpretIntentForProposal",
-        "sourceByteDigest" : "sha256:d2896dfbcfc81717cc0e7b9b8f09152f69cf7690b5eef64b66fe1c56b699d656",
-        "sourceDigest" : "sha256:d2896dfbcfc81717cc0e7b9b8f09152f69cf7690b5eef64b66fe1c56b699d656",
+        "sourceByteDigest" : "sha256:bb51c9faf03f565b8f35866b30be8dc01002062b8f1f150efd7333a259989b11",
+        "sourceDigest" : "sha256:bb51c9faf03f565b8f35866b30be8dc01002062b8f1f150efd7333a259989b11",
         "version" : "0.3.0-draft.1"
       },
       "uri" : "ontology://org.0al.specgraph.intent-proposal/0.3.0-draft.1/classes/InterpretIntentForProposal"
@@ -1043,8 +1066,8 @@
       "source" : {
         "id" : "org.0al.specgraph.intent-proposal",
         "pointer" : "/spec/classes/Proposal",
-        "sourceByteDigest" : "sha256:d2896dfbcfc81717cc0e7b9b8f09152f69cf7690b5eef64b66fe1c56b699d656",
-        "sourceDigest" : "sha256:d2896dfbcfc81717cc0e7b9b8f09152f69cf7690b5eef64b66fe1c56b699d656",
+        "sourceByteDigest" : "sha256:bb51c9faf03f565b8f35866b30be8dc01002062b8f1f150efd7333a259989b11",
+        "sourceDigest" : "sha256:bb51c9faf03f565b8f35866b30be8dc01002062b8f1f150efd7333a259989b11",
         "version" : "0.3.0-draft.1"
       },
       "uri" : "ontology://org.0al.specgraph.intent-proposal/0.3.0-draft.1/classes/Proposal"
@@ -1066,8 +1089,8 @@
       "source" : {
         "id" : "org.0al.specgraph.intent-proposal",
         "pointer" : "/spec/classes/ProposalAuthor",
-        "sourceByteDigest" : "sha256:d2896dfbcfc81717cc0e7b9b8f09152f69cf7690b5eef64b66fe1c56b699d656",
-        "sourceDigest" : "sha256:d2896dfbcfc81717cc0e7b9b8f09152f69cf7690b5eef64b66fe1c56b699d656",
+        "sourceByteDigest" : "sha256:bb51c9faf03f565b8f35866b30be8dc01002062b8f1f150efd7333a259989b11",
+        "sourceDigest" : "sha256:bb51c9faf03f565b8f35866b30be8dc01002062b8f1f150efd7333a259989b11",
         "version" : "0.3.0-draft.1"
       },
       "uri" : "ontology://org.0al.specgraph.intent-proposal/0.3.0-draft.1/classes/ProposalAuthor"
@@ -1089,8 +1112,8 @@
       "source" : {
         "id" : "org.0al.specgraph.intent-proposal",
         "pointer" : "/spec/classes/RawInput",
-        "sourceByteDigest" : "sha256:d2896dfbcfc81717cc0e7b9b8f09152f69cf7690b5eef64b66fe1c56b699d656",
-        "sourceDigest" : "sha256:d2896dfbcfc81717cc0e7b9b8f09152f69cf7690b5eef64b66fe1c56b699d656",
+        "sourceByteDigest" : "sha256:bb51c9faf03f565b8f35866b30be8dc01002062b8f1f150efd7333a259989b11",
+        "sourceDigest" : "sha256:bb51c9faf03f565b8f35866b30be8dc01002062b8f1f150efd7333a259989b11",
         "version" : "0.3.0-draft.1"
       },
       "uri" : "ontology://org.0al.specgraph.intent-proposal/0.3.0-draft.1/classes/RawInput"
@@ -1731,8 +1754,8 @@
       "source" : {
         "id" : "org.0al.specgraph.intent-proposal",
         "pointer" : "/spec/relations/fragmentContributesToDraft",
-        "sourceByteDigest" : "sha256:d2896dfbcfc81717cc0e7b9b8f09152f69cf7690b5eef64b66fe1c56b699d656",
-        "sourceDigest" : "sha256:d2896dfbcfc81717cc0e7b9b8f09152f69cf7690b5eef64b66fe1c56b699d656",
+        "sourceByteDigest" : "sha256:bb51c9faf03f565b8f35866b30be8dc01002062b8f1f150efd7333a259989b11",
+        "sourceDigest" : "sha256:bb51c9faf03f565b8f35866b30be8dc01002062b8f1f150efd7333a259989b11",
         "version" : "0.3.0-draft.1"
       },
       "uri" : "ontology://org.0al.specgraph.intent-proposal/0.3.0-draft.1/relations/fragmentContributesToDraft"
@@ -1747,8 +1770,8 @@
       "source" : {
         "id" : "org.0al.specgraph.intent-proposal",
         "pointer" : "/spec/relations/hypothesisInformsIntentDraft",
-        "sourceByteDigest" : "sha256:d2896dfbcfc81717cc0e7b9b8f09152f69cf7690b5eef64b66fe1c56b699d656",
-        "sourceDigest" : "sha256:d2896dfbcfc81717cc0e7b9b8f09152f69cf7690b5eef64b66fe1c56b699d656",
+        "sourceByteDigest" : "sha256:bb51c9faf03f565b8f35866b30be8dc01002062b8f1f150efd7333a259989b11",
+        "sourceDigest" : "sha256:bb51c9faf03f565b8f35866b30be8dc01002062b8f1f150efd7333a259989b11",
         "version" : "0.3.0-draft.1"
       },
       "uri" : "ontology://org.0al.specgraph.intent-proposal/0.3.0-draft.1/relations/hypothesisInformsIntentDraft"
@@ -1763,8 +1786,8 @@
       "source" : {
         "id" : "org.0al.specgraph.intent-proposal",
         "pointer" : "/spec/relations/hypothesisInformsProposal",
-        "sourceByteDigest" : "sha256:d2896dfbcfc81717cc0e7b9b8f09152f69cf7690b5eef64b66fe1c56b699d656",
-        "sourceDigest" : "sha256:d2896dfbcfc81717cc0e7b9b8f09152f69cf7690b5eef64b66fe1c56b699d656",
+        "sourceByteDigest" : "sha256:bb51c9faf03f565b8f35866b30be8dc01002062b8f1f150efd7333a259989b11",
+        "sourceDigest" : "sha256:bb51c9faf03f565b8f35866b30be8dc01002062b8f1f150efd7333a259989b11",
         "version" : "0.3.0-draft.1"
       },
       "uri" : "ontology://org.0al.specgraph.intent-proposal/0.3.0-draft.1/relations/hypothesisInformsProposal"
@@ -1779,8 +1802,8 @@
       "source" : {
         "id" : "org.0al.specgraph.intent-proposal",
         "pointer" : "/spec/relations/intentDraftMotivatesProposal",
-        "sourceByteDigest" : "sha256:d2896dfbcfc81717cc0e7b9b8f09152f69cf7690b5eef64b66fe1c56b699d656",
-        "sourceDigest" : "sha256:d2896dfbcfc81717cc0e7b9b8f09152f69cf7690b5eef64b66fe1c56b699d656",
+        "sourceByteDigest" : "sha256:bb51c9faf03f565b8f35866b30be8dc01002062b8f1f150efd7333a259989b11",
+        "sourceDigest" : "sha256:bb51c9faf03f565b8f35866b30be8dc01002062b8f1f150efd7333a259989b11",
         "version" : "0.3.0-draft.1"
       },
       "uri" : "ontology://org.0al.specgraph.intent-proposal/0.3.0-draft.1/relations/intentDraftMotivatesProposal"
@@ -1795,8 +1818,8 @@
       "source" : {
         "id" : "org.0al.specgraph.intent-proposal",
         "pointer" : "/spec/relations/intentDraftSourceForIntent",
-        "sourceByteDigest" : "sha256:d2896dfbcfc81717cc0e7b9b8f09152f69cf7690b5eef64b66fe1c56b699d656",
-        "sourceDigest" : "sha256:d2896dfbcfc81717cc0e7b9b8f09152f69cf7690b5eef64b66fe1c56b699d656",
+        "sourceByteDigest" : "sha256:bb51c9faf03f565b8f35866b30be8dc01002062b8f1f150efd7333a259989b11",
+        "sourceDigest" : "sha256:bb51c9faf03f565b8f35866b30be8dc01002062b8f1f150efd7333a259989b11",
         "version" : "0.3.0-draft.1"
       },
       "uri" : "ontology://org.0al.specgraph.intent-proposal/0.3.0-draft.1/relations/intentDraftSourceForIntent"
@@ -1811,8 +1834,8 @@
       "source" : {
         "id" : "org.0al.specgraph.intent-proposal",
         "pointer" : "/spec/relations/intentMotivatesProposal",
-        "sourceByteDigest" : "sha256:d2896dfbcfc81717cc0e7b9b8f09152f69cf7690b5eef64b66fe1c56b699d656",
-        "sourceDigest" : "sha256:d2896dfbcfc81717cc0e7b9b8f09152f69cf7690b5eef64b66fe1c56b699d656",
+        "sourceByteDigest" : "sha256:bb51c9faf03f565b8f35866b30be8dc01002062b8f1f150efd7333a259989b11",
+        "sourceDigest" : "sha256:bb51c9faf03f565b8f35866b30be8dc01002062b8f1f150efd7333a259989b11",
         "version" : "0.3.0-draft.1"
       },
       "uri" : "ontology://org.0al.specgraph.intent-proposal/0.3.0-draft.1/relations/intentMotivatesProposal"
@@ -1828,8 +1851,8 @@
       "source" : {
         "id" : "org.0al.specgraph.intent-proposal",
         "pointer" : "/spec/relations/interpretsFragmentForDraft",
-        "sourceByteDigest" : "sha256:d2896dfbcfc81717cc0e7b9b8f09152f69cf7690b5eef64b66fe1c56b699d656",
-        "sourceDigest" : "sha256:d2896dfbcfc81717cc0e7b9b8f09152f69cf7690b5eef64b66fe1c56b699d656",
+        "sourceByteDigest" : "sha256:bb51c9faf03f565b8f35866b30be8dc01002062b8f1f150efd7333a259989b11",
+        "sourceDigest" : "sha256:bb51c9faf03f565b8f35866b30be8dc01002062b8f1f150efd7333a259989b11",
         "version" : "0.3.0-draft.1"
       },
       "uri" : "ontology://org.0al.specgraph.intent-proposal/0.3.0-draft.1/relations/interpretsFragmentForDraft"
@@ -1845,8 +1868,8 @@
       "source" : {
         "id" : "org.0al.specgraph.intent-proposal",
         "pointer" : "/spec/relations/interpretsIntentForProposal",
-        "sourceByteDigest" : "sha256:d2896dfbcfc81717cc0e7b9b8f09152f69cf7690b5eef64b66fe1c56b699d656",
-        "sourceDigest" : "sha256:d2896dfbcfc81717cc0e7b9b8f09152f69cf7690b5eef64b66fe1c56b699d656",
+        "sourceByteDigest" : "sha256:bb51c9faf03f565b8f35866b30be8dc01002062b8f1f150efd7333a259989b11",
+        "sourceDigest" : "sha256:bb51c9faf03f565b8f35866b30be8dc01002062b8f1f150efd7333a259989b11",
         "version" : "0.3.0-draft.1"
       },
       "uri" : "ontology://org.0al.specgraph.intent-proposal/0.3.0-draft.1/relations/interpretsIntentForProposal"
@@ -1861,8 +1884,8 @@
       "source" : {
         "id" : "org.0al.specgraph.intent-proposal",
         "pointer" : "/spec/relations/rawInputSourceForFragment",
-        "sourceByteDigest" : "sha256:d2896dfbcfc81717cc0e7b9b8f09152f69cf7690b5eef64b66fe1c56b699d656",
-        "sourceDigest" : "sha256:d2896dfbcfc81717cc0e7b9b8f09152f69cf7690b5eef64b66fe1c56b699d656",
+        "sourceByteDigest" : "sha256:bb51c9faf03f565b8f35866b30be8dc01002062b8f1f150efd7333a259989b11",
+        "sourceDigest" : "sha256:bb51c9faf03f565b8f35866b30be8dc01002062b8f1f150efd7333a259989b11",
         "version" : "0.3.0-draft.1"
       },
       "uri" : "ontology://org.0al.specgraph.intent-proposal/0.3.0-draft.1/relations/rawInputSourceForFragment"
@@ -1923,8 +1946,8 @@
       "alias" : "sgproposal",
       "id" : "org.0al.specgraph.intent-proposal",
       "namespace" : "sgproposal",
-      "sourceByteDigest" : "sha256:d2896dfbcfc81717cc0e7b9b8f09152f69cf7690b5eef64b66fe1c56b699d656",
-      "sourceDigest" : "sha256:d2896dfbcfc81717cc0e7b9b8f09152f69cf7690b5eef64b66fe1c56b699d656",
+      "sourceByteDigest" : "sha256:bb51c9faf03f565b8f35866b30be8dc01002062b8f1f150efd7333a259989b11",
+      "sourceDigest" : "sha256:bb51c9faf03f565b8f35866b30be8dc01002062b8f1f150efd7333a259989b11",
       "version" : "0.3.0-draft.1"
     }
   ],

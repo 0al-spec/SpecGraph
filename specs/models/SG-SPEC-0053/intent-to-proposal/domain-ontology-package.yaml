@@ -13,6 +13,9 @@ spec:
     - {id: specgraph.foundation, namespace: sg, version: 0.1.0}
     - {id: org.0al.specgraph.core, namespace: sgcore, version: 0.3.0}
   classes:
+    Intent:
+      extends: ont:DomainEntity
+      description: Deliberate duplicate used to test the merge gate.
     RawInput:
       extends: ont:DomainEntity
       description: Source input from which one or more partial intent signals may be extracted.
