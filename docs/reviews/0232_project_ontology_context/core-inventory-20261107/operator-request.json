@@ -1,0 +1,27 @@
+{
+  "artifact_kind": "operator_request_packet",
+  "schema_version": 1,
+  "user_intent": {
+    "intent_handle": "user_intent::specgraph-core-ontology-inventory-20261107",
+    "source_kind": "chat_instruction",
+    "source_summary": "The operator asks to improve, clarify and refine the whole SpecGraph ontology graph. The bounded inventory and source references are retained in docs/reviews/0232_project_ontology_context/core-inventory-20261107/README.md.",
+    "selected_node_ref": "SG-SPEC-0001",
+    "unresolved_questions": [
+      "Which current declarations should be refined, retained, moved into a composed package or left unresolved?",
+      "How do the review-state and node-lifecycle scopes relate?"
+    ]
+  },
+  "operator_request": {
+    "request_handle": "operator_request::specgraph-core-ontology-inventory-20261107",
+    "target_spec_id": "SG-SPEC-0001",
+    "run_mode": "targeted_refine",
+    "operator_note": "Inventory every declaration in the pinned project-local core, bind review questions to existing spec sources, and identify bounded follow-up slices. Treat lexical index findings as candidates and keep semantic acceptance and canonical mutation outside this packet.",
+    "mutation_budget": [],
+    "run_authority": [],
+    "execution_profile": "standard",
+    "stop_conditions": [
+      "first_structured_outcome",
+      "review_boundary_reached"
+    ]
+  }
+}

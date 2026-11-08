@@ -1,0 +1,8 @@
+{
+  "user_intent_path": "intent_layer/nodes/user_intent--specgraph-core-ontology-inventory-20261107--de2fda1e.json",
+  "user_intent_handle": "user_intent::specgraph-core-ontology-inventory-20261107",
+  "operator_request_path": "intent_layer/nodes/operator_request--specgraph-core-ontology-inventory-20261107--86e0c6ca.json",
+  "operator_request_handle": "operator_request::specgraph-core-ontology-inventory-20261107",
+  "proposal_node_path": "proposal_lane/nodes/proposal--specgraph-core-ontology-inventory-20261107--82778ca9.json",
+  "proposal_handle": "proposal::specgraph-core-ontology-inventory-20261107"
+}

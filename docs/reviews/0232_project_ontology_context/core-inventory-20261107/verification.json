@@ -1,0 +1,14 @@
+{
+  "artifact_kind": "specgraph_core_ontology_inventory_verification",
+  "schema_version": 1,
+  "snapshot_source_sha256": "5bfa2ff40b6174def589546ab2fea2501e1f256c4f1446f36c45c7f3fffcd929",
+  "class_count": 14,
+  "relation_count": 16,
+  "policy_count": 1,
+  "state_machine_count": 1,
+  "source_declarations_match": true,
+  "human_table_covers_all_declarations": true,
+  "selected_graph_nodes_queryable": true,
+  "canonical_mutations_allowed": false,
+  "semantic_acceptance": false
+}

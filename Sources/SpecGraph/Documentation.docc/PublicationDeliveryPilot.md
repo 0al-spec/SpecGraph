@@ -59,6 +59,12 @@ The profile does not activate `tests_verified_v1` or alter signed receipt and
 claim-admission contracts. The Python bindings do not use the Swift resolver.
 Ontology supplies the existing `SG-SPEC-0020` trace vocabulary.
 
+The draft model in `specs/models/SG-SPEC-0071/verification-action/` describes
+the existing PB-ALL verifier as an action on the served bundle. Its
+`expectedBundle: Ref<RetainedBundle>` points to the separate local comparison
+input. The model README shows how to export a full graph for SpecSpace and
+compare its subject, action, object and reference ports across layouts.
+
 The rule inventory is `SG-SPEC-0071.atoms.intents[]`: 13 explicitly identified
 atoms with executable `verifiable_by` references. Seven SpecificationCore
 policies in `tools/publication_evidence/` receive immutable typed contexts.

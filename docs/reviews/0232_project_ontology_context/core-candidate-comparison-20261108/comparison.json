@@ -1,0 +1,74 @@
+{
+  "artifact_kind": "specgraph_core_candidate_comparison",
+  "schema_version": 1,
+  "authority": "review_only",
+  "base_revision": "2a57e8e08e28ad59a0be5aed70dbcf4219bcc68e",
+  "semantic_acceptance": false,
+  "canonical_write_authorized": false,
+  "sources": {
+    "sgcore": {
+      "path": "ontology/packages/specgraph-core/domain-ontology-package.yaml",
+      "sha256": "5bfa2ff40b6174def589546ab2fea2501e1f256c4f1446f36c45c7f3fffcd929"
+    },
+    "sgproposal": {
+      "path": "specs/models/SG-SPEC-0053/intent-to-proposal/domain-ontology-package.yaml",
+      "sha256": "95f10af181380b9f1b3cd21b219f2a63bde090626cfd345b3e913c810dd9589d"
+    },
+    "sgpromotion": {
+      "path": "specs/models/SG-SPEC-0051/proposal-promotion/domain-ontology-package.yaml",
+      "sha256": "4633d2b4303d20e692ed821405b7e9159a823bfa85c4d8a8877286741f9bd6b0"
+    },
+    "pubverify": {
+      "path": "specs/models/SG-SPEC-0071/verification-action/domain-ontology-package.yaml",
+      "sha256": "4c7933225808e570a1b0b8ca29e372369e9469b9130a6de34cef96af8a037204"
+    },
+    "SG-SPEC-0051": {
+      "path": "specs/nodes/SG-SPEC-0051.yaml",
+      "sha256": "4869849286711830bba3bf19aa45526f96e535f4633949a0deb18ada071daceb"
+    },
+    "SG-SPEC-0052": {
+      "path": "specs/nodes/SG-SPEC-0052.yaml",
+      "sha256": "c70b4f94e0244eb1e4bf7191e11e887dcc70c957dce85e7927fc5e220398b229"
+    },
+    "SG-SPEC-0053": {
+      "path": "specs/nodes/SG-SPEC-0053.yaml",
+      "sha256": "e7e7cd2c7d667cdce2a0627f19e7192be1ce4e78365d0b9586bc712df920ee63"
+    },
+    "SG-SPEC-0071": {
+      "path": "specs/nodes/SG-SPEC-0071.yaml",
+      "sha256": "9f4a8b8332138ef3b6d1d9cc873b2a40a1a4620f7fceb35db32d4d9e1d6521a9"
+    },
+    "core_0_2_compatibility_fixture": {
+      "path": "ontology/packages/specgraph-core/compatibility/specgraph-core-0.2.0-claim-calibration.yaml",
+      "sha256": "4ff40103a3ea5cd2095e6ce61fd4332a74ace878c67dc324ec84e4360edfbebb"
+    }
+  },
+  "decisions": {
+    "sgproposal": {
+      "classes": {
+        "first_slice_core_candidate": ["IntentFragment", "IntentDraft", "Hypothesis", "Proposal"],
+        "defer_package_or_role": ["RawInput", "IntentSynthesizer", "ProposalAuthor", "InterpretIntentForProposal", "InterpretFragmentForDraft"]
+      },
+      "relations": {
+        "first_slice_core_candidate": ["fragmentContributesToDraft", "hypothesisInformsIntentDraft", "hypothesisInformsProposal", "intentDraftSourceForIntent", "intentDraftMotivatesProposal", "intentMotivatesProposal"],
+        "defer_package_or_role": ["rawInputSourceForFragment", "interpretsFragmentForDraft", "interpretsIntentForProposal"]
+      }
+    },
+    "sgpromotion": {
+      "classes": {
+        "later_boundary_review": ["SpecDraft", "CanonicalTarget", "TransitionRecord", "PromotionActor", "PromoteProposalToSpecDraft", "MaterializeSpecDraft"]
+      },
+      "relations": {
+        "later_boundary_review": ["promotesProposalToDraft", "materializesSpecDraft", "proposalMotivatesSpecDraft", "draftTargetsCanonicalDestination"]
+      }
+    },
+    "pubverify": {
+      "classes": {
+        "retain_bounded_package": ["PublicationVerifier", "PublishedBundle", "RetainedBundle", "VerifyPublishedBundle"]
+      },
+      "relations": {
+        "retain_bounded_package": ["verifiesPublishedBundle"]
+      }
+    }
+  }
+}
