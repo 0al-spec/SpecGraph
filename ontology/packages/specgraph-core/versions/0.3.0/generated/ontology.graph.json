@@ -1,0 +1,962 @@
+{
+  "classes" : [
+    {
+      "aliases" : [
+
+      ],
+      "central" : false,
+      "description" : "Concrete condition used to validate whether a requirement or specification is satisfied.",
+      "extends" : "sg:DomainEntity",
+      "fqid" : "sgcore:AcceptanceCriterion",
+      "id" : "AcceptanceCriterion",
+      "implements" : [
+
+      ],
+      "kind" : "DomainEntity",
+      "source" : {
+        "id" : "org.0al.specgraph.core",
+        "pointer" : "/spec/classes/AcceptanceCriterion",
+        "sourceByteDigest" : "sha256:56dbc9f05f439eb7bf6b028433906c3bcf87b10486fdb6bef23332defa5281f8",
+        "sourceDigest" : "sha256:56dbc9f05f439eb7bf6b028433906c3bcf87b10486fdb6bef23332defa5281f8",
+        "version" : "0.3.0"
+      },
+      "uri" : "ontology://org.0al.specgraph.core/0.3.0/classes/AcceptanceCriterion"
+    },
+    {
+      "aliases" : [
+
+      ],
+      "central" : false,
+      "description" : "Derived executable or source-facing surface that implements specifications.",
+      "extends" : "sg:DomainEntity",
+      "fqid" : "sgcore:CodeSurface",
+      "id" : "CodeSurface",
+      "implements" : [
+
+      ],
+      "kind" : "DomainEntity",
+      "source" : {
+        "id" : "org.0al.specgraph.core",
+        "pointer" : "/spec/classes/CodeSurface",
+        "sourceByteDigest" : "sha256:56dbc9f05f439eb7bf6b028433906c3bcf87b10486fdb6bef23332defa5281f8",
+        "sourceDigest" : "sha256:56dbc9f05f439eb7bf6b028433906c3bcf87b10486fdb6bef23332defa5281f8",
+        "version" : "0.3.0"
+      },
+      "uri" : "ontology://org.0al.specgraph.core/0.3.0/classes/CodeSurface"
+    },
+    {
+      "aliases" : [
+
+      ],
+      "central" : false,
+      "description" : "Rule or boundary that limits valid graph, specification, or implementation behavior.",
+      "extends" : "sg:DomainEntity",
+      "fqid" : "sgcore:Constraint",
+      "id" : "Constraint",
+      "implements" : [
+
+      ],
+      "kind" : "DomainEntity",
+      "source" : {
+        "id" : "org.0al.specgraph.core",
+        "pointer" : "/spec/classes/Constraint",
+        "sourceByteDigest" : "sha256:56dbc9f05f439eb7bf6b028433906c3bcf87b10486fdb6bef23332defa5281f8",
+        "sourceDigest" : "sha256:56dbc9f05f439eb7bf6b028433906c3bcf87b10486fdb6bef23332defa5281f8",
+        "version" : "0.3.0"
+      },
+      "uri" : "ontology://org.0al.specgraph.core/0.3.0/classes/Constraint"
+    },
+    {
+      "aliases" : [
+
+      ],
+      "central" : false,
+      "description" : "Chosen design or product direction that constrains later specification and implementation work.",
+      "extends" : "sg:Command",
+      "fqid" : "sgcore:Decision",
+      "id" : "Decision",
+      "implements" : [
+
+      ],
+      "kind" : "Command",
+      "source" : {
+        "id" : "org.0al.specgraph.core",
+        "pointer" : "/spec/classes/Decision",
+        "sourceByteDigest" : "sha256:56dbc9f05f439eb7bf6b028433906c3bcf87b10486fdb6bef23332defa5281f8",
+        "sourceDigest" : "sha256:56dbc9f05f439eb7bf6b028433906c3bcf87b10486fdb6bef23332defa5281f8",
+        "version" : "0.3.0"
+      },
+      "uri" : "ontology://org.0al.specgraph.core/0.3.0/classes/Decision"
+    },
+    {
+      "aliases" : [
+
+      ],
+      "central" : false,
+      "description" : "Directed typed relation between two nodes.",
+      "extends" : "sg:DomainEntity",
+      "fqid" : "sgcore:Edge",
+      "id" : "Edge",
+      "implements" : [
+
+      ],
+      "kind" : "DomainEntity",
+      "source" : {
+        "id" : "org.0al.specgraph.core",
+        "pointer" : "/spec/classes/Edge",
+        "sourceByteDigest" : "sha256:56dbc9f05f439eb7bf6b028433906c3bcf87b10486fdb6bef23332defa5281f8",
+        "sourceDigest" : "sha256:56dbc9f05f439eb7bf6b028433906c3bcf87b10486fdb6bef23332defa5281f8",
+        "version" : "0.3.0"
+      },
+      "uri" : "ontology://org.0al.specgraph.core/0.3.0/classes/Edge"
+    },
+    {
+      "aliases" : [
+
+      ],
+      "central" : false,
+      "description" : "Traceable support for acceptance, validation, and review decisions.",
+      "extends" : "sg:DomainEntity",
+      "fqid" : "sgcore:Evidence",
+      "id" : "Evidence",
+      "implements" : [
+
+      ],
+      "kind" : "DomainEntity",
+      "source" : {
+        "id" : "org.0al.specgraph.core",
+        "pointer" : "/spec/classes/Evidence",
+        "sourceByteDigest" : "sha256:56dbc9f05f439eb7bf6b028433906c3bcf87b10486fdb6bef23332defa5281f8",
+        "sourceDigest" : "sha256:56dbc9f05f439eb7bf6b028433906c3bcf87b10486fdb6bef23332defa5281f8",
+        "version" : "0.3.0"
+      },
+      "uri" : "ontology://org.0al.specgraph.core/0.3.0/classes/Evidence"
+    },
+    {
+      "aliases" : [
+
+      ],
+      "central" : false,
+      "description" : "A reviewable epistemic claim that may inform interpretation without becoming intent or authorizing promotion.",
+      "extends" : "sg:DomainEntity",
+      "fqid" : "sgcore:Hypothesis",
+      "id" : "Hypothesis",
+      "implements" : [
+
+      ],
+      "kind" : "DomainEntity",
+      "source" : {
+        "id" : "org.0al.specgraph.core",
+        "pointer" : "/spec/classes/Hypothesis",
+        "sourceByteDigest" : "sha256:56dbc9f05f439eb7bf6b028433906c3bcf87b10486fdb6bef23332defa5281f8",
+        "sourceDigest" : "sha256:56dbc9f05f439eb7bf6b028433906c3bcf87b10486fdb6bef23332defa5281f8",
+        "version" : "0.3.0"
+      },
+      "uri" : "ontology://org.0al.specgraph.core/0.3.0/classes/Hypothesis"
+    },
+    {
+      "aliases" : [
+
+      ],
+      "central" : false,
+      "description" : "Governed representation of what the product must be and how it can be validated.",
+      "extends" : "sg:DomainEntity",
+      "fqid" : "sgcore:Intent",
+      "id" : "Intent",
+      "implements" : [
+
+      ],
+      "kind" : "DomainEntity",
+      "source" : {
+        "id" : "org.0al.specgraph.core",
+        "pointer" : "/spec/classes/Intent",
+        "sourceByteDigest" : "sha256:56dbc9f05f439eb7bf6b028433906c3bcf87b10486fdb6bef23332defa5281f8",
+        "sourceDigest" : "sha256:56dbc9f05f439eb7bf6b028433906c3bcf87b10486fdb6bef23332defa5281f8",
+        "version" : "0.3.0"
+      },
+      "uri" : "ontology://org.0al.specgraph.core/0.3.0/classes/Intent"
+    },
+    {
+      "aliases" : [
+
+      ],
+      "central" : false,
+      "description" : "A pre-canonical synthesis of one or more intent fragments and optional context, not an approved Intent.",
+      "extends" : "sg:DomainEntity",
+      "fqid" : "sgcore:IntentDraft",
+      "id" : "IntentDraft",
+      "implements" : [
+
+      ],
+      "kind" : "DomainEntity",
+      "source" : {
+        "id" : "org.0al.specgraph.core",
+        "pointer" : "/spec/classes/IntentDraft",
+        "sourceByteDigest" : "sha256:56dbc9f05f439eb7bf6b028433906c3bcf87b10486fdb6bef23332defa5281f8",
+        "sourceDigest" : "sha256:56dbc9f05f439eb7bf6b028433906c3bcf87b10486fdb6bef23332defa5281f8",
+        "version" : "0.3.0"
+      },
+      "uri" : "ontology://org.0al.specgraph.core/0.3.0/classes/IntentDraft"
+    },
+    {
+      "aliases" : [
+
+      ],
+      "central" : false,
+      "description" : "A partial observable intent signal that does not by itself constitute a complete intent draft.",
+      "extends" : "sg:DomainEntity",
+      "fqid" : "sgcore:IntentFragment",
+      "id" : "IntentFragment",
+      "implements" : [
+
+      ],
+      "kind" : "DomainEntity",
+      "source" : {
+        "id" : "org.0al.specgraph.core",
+        "pointer" : "/spec/classes/IntentFragment",
+        "sourceByteDigest" : "sha256:56dbc9f05f439eb7bf6b028433906c3bcf87b10486fdb6bef23332defa5281f8",
+        "sourceDigest" : "sha256:56dbc9f05f439eb7bf6b028433906c3bcf87b10486fdb6bef23332defa5281f8",
+        "version" : "0.3.0"
+      },
+      "uri" : "ontology://org.0al.specgraph.core/0.3.0/classes/IntentFragment"
+    },
+    {
+      "aliases" : [
+
+      ],
+      "central" : false,
+      "description" : "Condition that must remain true across valid graph evolution.",
+      "extends" : "sg:DomainEntity",
+      "fqid" : "sgcore:Invariant",
+      "id" : "Invariant",
+      "implements" : [
+
+      ],
+      "kind" : "DomainEntity",
+      "source" : {
+        "id" : "org.0al.specgraph.core",
+        "pointer" : "/spec/classes/Invariant",
+        "sourceByteDigest" : "sha256:56dbc9f05f439eb7bf6b028433906c3bcf87b10486fdb6bef23332defa5281f8",
+        "sourceDigest" : "sha256:56dbc9f05f439eb7bf6b028433906c3bcf87b10486fdb6bef23332defa5281f8",
+        "version" : "0.3.0"
+      },
+      "uri" : "ontology://org.0al.specgraph.core/0.3.0/classes/Invariant"
+    },
+    {
+      "aliases" : [
+
+      ],
+      "central" : false,
+      "description" : "First-class graph entity with stable identity, lifecycle, provenance, and versioned state.",
+      "extends" : "sg:DomainEntity",
+      "fqid" : "sgcore:Node",
+      "id" : "Node",
+      "implements" : [
+
+      ],
+      "kind" : "DomainEntity",
+      "source" : {
+        "id" : "org.0al.specgraph.core",
+        "pointer" : "/spec/classes/Node",
+        "sourceByteDigest" : "sha256:56dbc9f05f439eb7bf6b028433906c3bcf87b10486fdb6bef23332defa5281f8",
+        "sourceDigest" : "sha256:56dbc9f05f439eb7bf6b028433906c3bcf87b10486fdb6bef23332defa5281f8",
+        "version" : "0.3.0"
+      },
+      "uri" : "ontology://org.0al.specgraph.core/0.3.0/classes/Node"
+    },
+    {
+      "aliases" : [
+
+      ],
+      "central" : false,
+      "description" : "A reviewable candidate operationalization of intent, distinct from its motivating intent and not itself an approval.",
+      "extends" : "sg:DomainEntity",
+      "fqid" : "sgcore:Proposal",
+      "id" : "Proposal",
+      "implements" : [
+
+      ],
+      "kind" : "DomainEntity",
+      "source" : {
+        "id" : "org.0al.specgraph.core",
+        "pointer" : "/spec/classes/Proposal",
+        "sourceByteDigest" : "sha256:56dbc9f05f439eb7bf6b028433906c3bcf87b10486fdb6bef23332defa5281f8",
+        "sourceDigest" : "sha256:56dbc9f05f439eb7bf6b028433906c3bcf87b10486fdb6bef23332defa5281f8",
+        "version" : "0.3.0"
+      },
+      "uri" : "ontology://org.0al.specgraph.core/0.3.0/classes/Proposal"
+    },
+    {
+      "aliases" : [
+
+      ],
+      "central" : false,
+      "description" : "Packaged delivery state that contains derived code surfaces and their validation evidence.",
+      "extends" : "sg:DomainEntity",
+      "fqid" : "sgcore:Release",
+      "id" : "Release",
+      "implements" : [
+
+      ],
+      "kind" : "DomainEntity",
+      "source" : {
+        "id" : "org.0al.specgraph.core",
+        "pointer" : "/spec/classes/Release",
+        "sourceByteDigest" : "sha256:56dbc9f05f439eb7bf6b028433906c3bcf87b10486fdb6bef23332defa5281f8",
+        "sourceDigest" : "sha256:56dbc9f05f439eb7bf6b028433906c3bcf87b10486fdb6bef23332defa5281f8",
+        "version" : "0.3.0"
+      },
+      "uri" : "ontology://org.0al.specgraph.core/0.3.0/classes/Release"
+    },
+    {
+      "aliases" : [
+
+      ],
+      "central" : false,
+      "description" : "Verifiable product or system obligation that can be checked by acceptance criteria or tests.",
+      "extends" : "sg:DomainEntity",
+      "fqid" : "sgcore:Requirement",
+      "id" : "Requirement",
+      "implements" : [
+
+      ],
+      "kind" : "DomainEntity",
+      "source" : {
+        "id" : "org.0al.specgraph.core",
+        "pointer" : "/spec/classes/Requirement",
+        "sourceByteDigest" : "sha256:56dbc9f05f439eb7bf6b028433906c3bcf87b10486fdb6bef23332defa5281f8",
+        "sourceDigest" : "sha256:56dbc9f05f439eb7bf6b028433906c3bcf87b10486fdb6bef23332defa5281f8",
+        "version" : "0.3.0"
+      },
+      "uri" : "ontology://org.0al.specgraph.core/0.3.0/classes/Requirement"
+    },
+    {
+      "aliases" : [
+
+      ],
+      "central" : false,
+      "description" : "Versioned specification artifact that refines intent into machine-readable requirements and decisions.",
+      "extends" : "sg:DomainEntity",
+      "fqid" : "sgcore:Spec",
+      "id" : "Spec",
+      "implements" : [
+
+      ],
+      "kind" : "DomainEntity",
+      "lifecycle" : "SpecReviewState",
+      "source" : {
+        "id" : "org.0al.specgraph.core",
+        "pointer" : "/spec/classes/Spec",
+        "sourceByteDigest" : "sha256:56dbc9f05f439eb7bf6b028433906c3bcf87b10486fdb6bef23332defa5281f8",
+        "sourceDigest" : "sha256:56dbc9f05f439eb7bf6b028433906c3bcf87b10486fdb6bef23332defa5281f8",
+        "version" : "0.3.0"
+      },
+      "uri" : "ontology://org.0al.specgraph.core/0.3.0/classes/Spec"
+    },
+    {
+      "aliases" : [
+
+      ],
+      "central" : true,
+      "description" : "Executable product ontology that represents intent, specifications, graph structure, and derived code surfaces.",
+      "extends" : "sg:DomainEntity",
+      "fqid" : "sgcore:SpecGraph",
+      "id" : "SpecGraph",
+      "implements" : [
+
+      ],
+      "kind" : "DomainEntity",
+      "source" : {
+        "id" : "org.0al.specgraph.core",
+        "pointer" : "/spec/classes/SpecGraph",
+        "sourceByteDigest" : "sha256:56dbc9f05f439eb7bf6b028433906c3bcf87b10486fdb6bef23332defa5281f8",
+        "sourceDigest" : "sha256:56dbc9f05f439eb7bf6b028433906c3bcf87b10486fdb6bef23332defa5281f8",
+        "version" : "0.3.0"
+      },
+      "uri" : "ontology://org.0al.specgraph.core/0.3.0/classes/SpecGraph"
+    },
+    {
+      "aliases" : [
+
+      ],
+      "central" : false,
+      "description" : "Validation artifact that checks requirements, specifications, or implementation behavior.",
+      "extends" : "sg:DomainEntity",
+      "fqid" : "sgcore:Test",
+      "id" : "Test",
+      "implements" : [
+
+      ],
+      "kind" : "DomainEntity",
+      "source" : {
+        "id" : "org.0al.specgraph.core",
+        "pointer" : "/spec/classes/Test",
+        "sourceByteDigest" : "sha256:56dbc9f05f439eb7bf6b028433906c3bcf87b10486fdb6bef23332defa5281f8",
+        "sourceDigest" : "sha256:56dbc9f05f439eb7bf6b028433906c3bcf87b10486fdb6bef23332defa5281f8",
+        "version" : "0.3.0"
+      },
+      "uri" : "ontology://org.0al.specgraph.core/0.3.0/classes/Test"
+    }
+  ],
+  "compatibility" : {
+    "major" : {
+      "requires" : [
+        "remove class",
+        "remove relation",
+        "change relation domain",
+        "change relation range",
+        "make optional field required",
+        "change meaning of central concept"
+      ]
+    },
+    "minor" : {
+      "allowed" : [
+        "add class",
+        "add relation",
+        "add optional property",
+        "add protocol"
+      ]
+    },
+    "patch" : {
+      "allowed" : [
+        "add description",
+        "add alias",
+        "add non-breaking metadata"
+      ]
+    }
+  },
+  "id" : "org.0al.specgraph.core",
+  "imports" : [
+    {
+      "id" : "specgraph.foundation",
+      "namespace" : "sg",
+      "version" : "0.1.0"
+    }
+  ],
+  "modelApplicability" : {
+    "appliesTo" : {
+      "agentTypes" : [
+        "SpecAuthorAgent",
+        "SpecGraphSupervisor"
+      ],
+      "domains" : [
+        "specgraph_core"
+      ],
+      "lifecyclePhases" : [
+        "draft_spec_authoring",
+        "ontology_import_review"
+      ]
+    },
+    "assumptions" : [
+      {
+        "id" : "human_review_required",
+        "layer" : "execution",
+        "text" : "Generated or imported ontology changes require human review before canonical SpecGraph specs are updated."
+      },
+      {
+        "id" : "project_local_authority",
+        "layer" : "meta",
+        "text" : "SpecGraph core ontology packages remain project-local unless an explicit governance decision publishes them elsewhere."
+      }
+    ],
+    "excludes" : {
+      "domains" : [
+        "unrelated_product_domain"
+      ]
+    },
+    "invalidationTriggers" : [
+      {
+        "id" : "ontology_layer_contract_changed",
+        "layer" : "meta",
+        "text" : "Re-review applicability when the ontology layer vocabulary or layer semantics change."
+      },
+      {
+        "id" : "specgraph_core_vocabulary_changed",
+        "layer" : "mechanics",
+        "text" : "Re-review applicability when core SpecGraph classes, relations, or validation semantics change."
+      }
+    ]
+  },
+  "namespace" : "sgcore",
+  "policies" : [
+    {
+      "appliesTo" : [
+        "sgcore:SpecGraph"
+      ],
+      "enforceability" : "manual",
+      "extends" : "sg:Policy",
+      "fqid" : "sgcore:DraftAuthorityBoundary",
+      "id" : "DraftAuthorityBoundary",
+      "source" : {
+        "id" : "org.0al.specgraph.core",
+        "pointer" : "/spec/policies/DraftAuthorityBoundary",
+        "sourceByteDigest" : "sha256:56dbc9f05f439eb7bf6b028433906c3bcf87b10486fdb6bef23332defa5281f8",
+        "sourceDigest" : "sha256:56dbc9f05f439eb7bf6b028433906c3bcf87b10486fdb6bef23332defa5281f8",
+        "version" : "0.3.0"
+      },
+      "text" : "SpecGraph Core v0 is a draft compiler-backed seed and does not authorize canonical SpecGraph mutations or trusted ontology publication."
+    }
+  ],
+  "protocols" : [
+
+  ],
+  "relations" : [
+    {
+      "cardinality" : {
+        "max" : "*",
+        "min" : 0
+      },
+      "description" : "A code surface implements a specification.",
+      "domain" : "sgcore:CodeSurface",
+      "fqid" : "sgcore:codeSurfaceImplementsSpec",
+      "id" : "codeSurfaceImplementsSpec",
+      "range" : "sgcore:Spec",
+      "source" : {
+        "id" : "org.0al.specgraph.core",
+        "pointer" : "/spec/relations/codeSurfaceImplementsSpec",
+        "sourceByteDigest" : "sha256:56dbc9f05f439eb7bf6b028433906c3bcf87b10486fdb6bef23332defa5281f8",
+        "sourceDigest" : "sha256:56dbc9f05f439eb7bf6b028433906c3bcf87b10486fdb6bef23332defa5281f8",
+        "version" : "0.3.0"
+      },
+      "uri" : "ontology://org.0al.specgraph.core/0.3.0/relations/codeSurfaceImplementsSpec"
+    },
+    {
+      "cardinality" : {
+        "max" : "*",
+        "min" : 0
+      },
+      "description" : "A constraint applies to graph nodes.",
+      "domain" : "sgcore:Constraint",
+      "fqid" : "sgcore:constraintAppliesToNode",
+      "id" : "constraintAppliesToNode",
+      "range" : "sgcore:Node",
+      "source" : {
+        "id" : "org.0al.specgraph.core",
+        "pointer" : "/spec/relations/constraintAppliesToNode",
+        "sourceByteDigest" : "sha256:56dbc9f05f439eb7bf6b028433906c3bcf87b10486fdb6bef23332defa5281f8",
+        "sourceDigest" : "sha256:56dbc9f05f439eb7bf6b028433906c3bcf87b10486fdb6bef23332defa5281f8",
+        "version" : "0.3.0"
+      },
+      "uri" : "ontology://org.0al.specgraph.core/0.3.0/relations/constraintAppliesToNode"
+    },
+    {
+      "cardinality" : {
+        "max" : "*",
+        "min" : 0
+      },
+      "description" : "SpecGraph contains graph edges.",
+      "domain" : "sgcore:SpecGraph",
+      "fqid" : "sgcore:containsEdge",
+      "id" : "containsEdge",
+      "range" : "sgcore:Edge",
+      "source" : {
+        "id" : "org.0al.specgraph.core",
+        "pointer" : "/spec/relations/containsEdge",
+        "sourceByteDigest" : "sha256:56dbc9f05f439eb7bf6b028433906c3bcf87b10486fdb6bef23332defa5281f8",
+        "sourceDigest" : "sha256:56dbc9f05f439eb7bf6b028433906c3bcf87b10486fdb6bef23332defa5281f8",
+        "version" : "0.3.0"
+      },
+      "uri" : "ontology://org.0al.specgraph.core/0.3.0/relations/containsEdge"
+    },
+    {
+      "cardinality" : {
+        "max" : "*",
+        "min" : 0
+      },
+      "description" : "SpecGraph contains graph nodes.",
+      "domain" : "sgcore:SpecGraph",
+      "fqid" : "sgcore:containsNode",
+      "id" : "containsNode",
+      "range" : "sgcore:Node",
+      "source" : {
+        "id" : "org.0al.specgraph.core",
+        "pointer" : "/spec/relations/containsNode",
+        "sourceByteDigest" : "sha256:56dbc9f05f439eb7bf6b028433906c3bcf87b10486fdb6bef23332defa5281f8",
+        "sourceDigest" : "sha256:56dbc9f05f439eb7bf6b028433906c3bcf87b10486fdb6bef23332defa5281f8",
+        "version" : "0.3.0"
+      },
+      "uri" : "ontology://org.0al.specgraph.core/0.3.0/relations/containsNode"
+    },
+    {
+      "cardinality" : {
+        "max" : "*",
+        "min" : 0
+      },
+      "description" : "SpecGraph contains specification artifacts.",
+      "domain" : "sgcore:SpecGraph",
+      "fqid" : "sgcore:containsSpec",
+      "id" : "containsSpec",
+      "range" : "sgcore:Spec",
+      "source" : {
+        "id" : "org.0al.specgraph.core",
+        "pointer" : "/spec/relations/containsSpec",
+        "sourceByteDigest" : "sha256:56dbc9f05f439eb7bf6b028433906c3bcf87b10486fdb6bef23332defa5281f8",
+        "sourceDigest" : "sha256:56dbc9f05f439eb7bf6b028433906c3bcf87b10486fdb6bef23332defa5281f8",
+        "version" : "0.3.0"
+      },
+      "uri" : "ontology://org.0al.specgraph.core/0.3.0/relations/containsSpec"
+    },
+    {
+      "cardinality" : {
+        "max" : "*",
+        "min" : 0
+      },
+      "description" : "A decision constrains a specification.",
+      "domain" : "sgcore:Decision",
+      "fqid" : "sgcore:decisionConstrainsSpec",
+      "id" : "decisionConstrainsSpec",
+      "range" : "sgcore:Spec",
+      "source" : {
+        "id" : "org.0al.specgraph.core",
+        "pointer" : "/spec/relations/decisionConstrainsSpec",
+        "sourceByteDigest" : "sha256:56dbc9f05f439eb7bf6b028433906c3bcf87b10486fdb6bef23332defa5281f8",
+        "sourceDigest" : "sha256:56dbc9f05f439eb7bf6b028433906c3bcf87b10486fdb6bef23332defa5281f8",
+        "version" : "0.3.0"
+      },
+      "uri" : "ontology://org.0al.specgraph.core/0.3.0/relations/decisionConstrainsSpec"
+    },
+    {
+      "cardinality" : {
+        "max" : "*",
+        "min" : 0
+      },
+      "description" : "A spec defines requirements.",
+      "domain" : "sgcore:Spec",
+      "fqid" : "sgcore:definesRequirement",
+      "id" : "definesRequirement",
+      "range" : "sgcore:Requirement",
+      "source" : {
+        "id" : "org.0al.specgraph.core",
+        "pointer" : "/spec/relations/definesRequirement",
+        "sourceByteDigest" : "sha256:56dbc9f05f439eb7bf6b028433906c3bcf87b10486fdb6bef23332defa5281f8",
+        "sourceDigest" : "sha256:56dbc9f05f439eb7bf6b028433906c3bcf87b10486fdb6bef23332defa5281f8",
+        "version" : "0.3.0"
+      },
+      "uri" : "ontology://org.0al.specgraph.core/0.3.0/relations/definesRequirement"
+    },
+    {
+      "cardinality" : {
+        "max" : "*",
+        "min" : 1
+      },
+      "description" : "An edge relates one or more nodes.",
+      "domain" : "sgcore:Edge",
+      "fqid" : "sgcore:edgeRelatesNode",
+      "id" : "edgeRelatesNode",
+      "range" : "sgcore:Node",
+      "source" : {
+        "id" : "org.0al.specgraph.core",
+        "pointer" : "/spec/relations/edgeRelatesNode",
+        "sourceByteDigest" : "sha256:56dbc9f05f439eb7bf6b028433906c3bcf87b10486fdb6bef23332defa5281f8",
+        "sourceDigest" : "sha256:56dbc9f05f439eb7bf6b028433906c3bcf87b10486fdb6bef23332defa5281f8",
+        "version" : "0.3.0"
+      },
+      "uri" : "ontology://org.0al.specgraph.core/0.3.0/relations/edgeRelatesNode"
+    },
+    {
+      "cardinality" : {
+        "max" : "*",
+        "min" : 0
+      },
+      "description" : "Evidence supports an acceptance criterion.",
+      "domain" : "sgcore:Evidence",
+      "fqid" : "sgcore:evidenceSupportsCriterion",
+      "id" : "evidenceSupportsCriterion",
+      "range" : "sgcore:AcceptanceCriterion",
+      "source" : {
+        "id" : "org.0al.specgraph.core",
+        "pointer" : "/spec/relations/evidenceSupportsCriterion",
+        "sourceByteDigest" : "sha256:56dbc9f05f439eb7bf6b028433906c3bcf87b10486fdb6bef23332defa5281f8",
+        "sourceDigest" : "sha256:56dbc9f05f439eb7bf6b028433906c3bcf87b10486fdb6bef23332defa5281f8",
+        "version" : "0.3.0"
+      },
+      "uri" : "ontology://org.0al.specgraph.core/0.3.0/relations/evidenceSupportsCriterion"
+    },
+    {
+      "cardinality" : {
+        "max" : "*",
+        "min" : 0
+      },
+      "description" : "An intent fragment contributes partial observable meaning to a draft.",
+      "domain" : "sgcore:IntentFragment",
+      "fqid" : "sgcore:fragmentContributesToDraft",
+      "id" : "fragmentContributesToDraft",
+      "range" : "sgcore:IntentDraft",
+      "source" : {
+        "id" : "org.0al.specgraph.core",
+        "pointer" : "/spec/relations/fragmentContributesToDraft",
+        "sourceByteDigest" : "sha256:56dbc9f05f439eb7bf6b028433906c3bcf87b10486fdb6bef23332defa5281f8",
+        "sourceDigest" : "sha256:56dbc9f05f439eb7bf6b028433906c3bcf87b10486fdb6bef23332defa5281f8",
+        "version" : "0.3.0"
+      },
+      "uri" : "ontology://org.0al.specgraph.core/0.3.0/relations/fragmentContributesToDraft"
+    },
+    {
+      "cardinality" : {
+        "max" : "*",
+        "min" : 0
+      },
+      "description" : "A spec has acceptance criteria.",
+      "domain" : "sgcore:Spec",
+      "fqid" : "sgcore:hasAcceptanceCriterion",
+      "id" : "hasAcceptanceCriterion",
+      "range" : "sgcore:AcceptanceCriterion",
+      "source" : {
+        "id" : "org.0al.specgraph.core",
+        "pointer" : "/spec/relations/hasAcceptanceCriterion",
+        "sourceByteDigest" : "sha256:56dbc9f05f439eb7bf6b028433906c3bcf87b10486fdb6bef23332defa5281f8",
+        "sourceDigest" : "sha256:56dbc9f05f439eb7bf6b028433906c3bcf87b10486fdb6bef23332defa5281f8",
+        "version" : "0.3.0"
+      },
+      "uri" : "ontology://org.0al.specgraph.core/0.3.0/relations/hasAcceptanceCriterion"
+    },
+    {
+      "cardinality" : {
+        "max" : "*",
+        "min" : 0
+      },
+      "description" : "A hypothesis may support, challenge, or contextualize interpretation of a draft.",
+      "domain" : "sgcore:Hypothesis",
+      "fqid" : "sgcore:hypothesisInformsIntentDraft",
+      "id" : "hypothesisInformsIntentDraft",
+      "range" : "sgcore:IntentDraft",
+      "source" : {
+        "id" : "org.0al.specgraph.core",
+        "pointer" : "/spec/relations/hypothesisInformsIntentDraft",
+        "sourceByteDigest" : "sha256:56dbc9f05f439eb7bf6b028433906c3bcf87b10486fdb6bef23332defa5281f8",
+        "sourceDigest" : "sha256:56dbc9f05f439eb7bf6b028433906c3bcf87b10486fdb6bef23332defa5281f8",
+        "version" : "0.3.0"
+      },
+      "uri" : "ontology://org.0al.specgraph.core/0.3.0/relations/hypothesisInformsIntentDraft"
+    },
+    {
+      "cardinality" : {
+        "max" : "*",
+        "min" : 0
+      },
+      "description" : "A hypothesis may support, challenge, or contextualize a proposal without becoming the proposal.",
+      "domain" : "sgcore:Hypothesis",
+      "fqid" : "sgcore:hypothesisInformsProposal",
+      "id" : "hypothesisInformsProposal",
+      "range" : "sgcore:Proposal",
+      "source" : {
+        "id" : "org.0al.specgraph.core",
+        "pointer" : "/spec/relations/hypothesisInformsProposal",
+        "sourceByteDigest" : "sha256:56dbc9f05f439eb7bf6b028433906c3bcf87b10486fdb6bef23332defa5281f8",
+        "sourceDigest" : "sha256:56dbc9f05f439eb7bf6b028433906c3bcf87b10486fdb6bef23332defa5281f8",
+        "version" : "0.3.0"
+      },
+      "uri" : "ontology://org.0al.specgraph.core/0.3.0/relations/hypothesisInformsProposal"
+    },
+    {
+      "cardinality" : {
+        "max" : "*",
+        "min" : 0
+      },
+      "description" : "An intent draft motivates a candidate proposal without being replaced by it.",
+      "domain" : "sgcore:IntentDraft",
+      "fqid" : "sgcore:intentDraftMotivatesProposal",
+      "id" : "intentDraftMotivatesProposal",
+      "range" : "sgcore:Proposal",
+      "source" : {
+        "id" : "org.0al.specgraph.core",
+        "pointer" : "/spec/relations/intentDraftMotivatesProposal",
+        "sourceByteDigest" : "sha256:56dbc9f05f439eb7bf6b028433906c3bcf87b10486fdb6bef23332defa5281f8",
+        "sourceDigest" : "sha256:56dbc9f05f439eb7bf6b028433906c3bcf87b10486fdb6bef23332defa5281f8",
+        "version" : "0.3.0"
+      },
+      "uri" : "ontology://org.0al.specgraph.core/0.3.0/relations/intentDraftMotivatesProposal"
+    },
+    {
+      "cardinality" : {
+        "max" : "*",
+        "min" : 0
+      },
+      "description" : "A draft records originating observed meaning for a governed product intent; the relationship does not itself grant approval.",
+      "domain" : "sgcore:IntentDraft",
+      "fqid" : "sgcore:intentDraftSourceForIntent",
+      "id" : "intentDraftSourceForIntent",
+      "range" : "sgcore:Intent",
+      "source" : {
+        "id" : "org.0al.specgraph.core",
+        "pointer" : "/spec/relations/intentDraftSourceForIntent",
+        "sourceByteDigest" : "sha256:56dbc9f05f439eb7bf6b028433906c3bcf87b10486fdb6bef23332defa5281f8",
+        "sourceDigest" : "sha256:56dbc9f05f439eb7bf6b028433906c3bcf87b10486fdb6bef23332defa5281f8",
+        "version" : "0.3.0"
+      },
+      "uri" : "ontology://org.0al.specgraph.core/0.3.0/relations/intentDraftSourceForIntent"
+    },
+    {
+      "cardinality" : {
+        "max" : "*",
+        "min" : 0
+      },
+      "description" : "A governed product intent motivates a candidate proposal without being replaced by it.",
+      "domain" : "sgcore:Intent",
+      "fqid" : "sgcore:intentMotivatesProposal",
+      "id" : "intentMotivatesProposal",
+      "range" : "sgcore:Proposal",
+      "source" : {
+        "id" : "org.0al.specgraph.core",
+        "pointer" : "/spec/relations/intentMotivatesProposal",
+        "sourceByteDigest" : "sha256:56dbc9f05f439eb7bf6b028433906c3bcf87b10486fdb6bef23332defa5281f8",
+        "sourceDigest" : "sha256:56dbc9f05f439eb7bf6b028433906c3bcf87b10486fdb6bef23332defa5281f8",
+        "version" : "0.3.0"
+      },
+      "uri" : "ontology://org.0al.specgraph.core/0.3.0/relations/intentMotivatesProposal"
+    },
+    {
+      "cardinality" : {
+        "max" : "*",
+        "min" : 0
+      },
+      "description" : "An invariant governs valid SpecGraph evolution.",
+      "domain" : "sgcore:Invariant",
+      "fqid" : "sgcore:invariantGovernsSpecGraph",
+      "id" : "invariantGovernsSpecGraph",
+      "range" : "sgcore:SpecGraph",
+      "source" : {
+        "id" : "org.0al.specgraph.core",
+        "pointer" : "/spec/relations/invariantGovernsSpecGraph",
+        "sourceByteDigest" : "sha256:56dbc9f05f439eb7bf6b028433906c3bcf87b10486fdb6bef23332defa5281f8",
+        "sourceDigest" : "sha256:56dbc9f05f439eb7bf6b028433906c3bcf87b10486fdb6bef23332defa5281f8",
+        "version" : "0.3.0"
+      },
+      "uri" : "ontology://org.0al.specgraph.core/0.3.0/relations/invariantGovernsSpecGraph"
+    },
+    {
+      "cardinality" : {
+        "max" : "*",
+        "min" : 0
+      },
+      "description" : "A node is connected by an edge.",
+      "domain" : "sgcore:Node",
+      "fqid" : "sgcore:nodeConnectedByEdge",
+      "id" : "nodeConnectedByEdge",
+      "range" : "sgcore:Edge",
+      "source" : {
+        "id" : "org.0al.specgraph.core",
+        "pointer" : "/spec/relations/nodeConnectedByEdge",
+        "sourceByteDigest" : "sha256:56dbc9f05f439eb7bf6b028433906c3bcf87b10486fdb6bef23332defa5281f8",
+        "sourceDigest" : "sha256:56dbc9f05f439eb7bf6b028433906c3bcf87b10486fdb6bef23332defa5281f8",
+        "version" : "0.3.0"
+      },
+      "uri" : "ontology://org.0al.specgraph.core/0.3.0/relations/nodeConnectedByEdge"
+    },
+    {
+      "cardinality" : {
+        "max" : "*",
+        "min" : 0
+      },
+      "description" : "A spec refines product intent.",
+      "domain" : "sgcore:Spec",
+      "fqid" : "sgcore:refinesIntent",
+      "id" : "refinesIntent",
+      "range" : "sgcore:Intent",
+      "source" : {
+        "id" : "org.0al.specgraph.core",
+        "pointer" : "/spec/relations/refinesIntent",
+        "sourceByteDigest" : "sha256:56dbc9f05f439eb7bf6b028433906c3bcf87b10486fdb6bef23332defa5281f8",
+        "sourceDigest" : "sha256:56dbc9f05f439eb7bf6b028433906c3bcf87b10486fdb6bef23332defa5281f8",
+        "version" : "0.3.0"
+      },
+      "uri" : "ontology://org.0al.specgraph.core/0.3.0/relations/refinesIntent"
+    },
+    {
+      "cardinality" : {
+        "max" : "*",
+        "min" : 0
+      },
+      "description" : "A release packages code surfaces.",
+      "domain" : "sgcore:Release",
+      "fqid" : "sgcore:releasePackagesCodeSurface",
+      "id" : "releasePackagesCodeSurface",
+      "range" : "sgcore:CodeSurface",
+      "source" : {
+        "id" : "org.0al.specgraph.core",
+        "pointer" : "/spec/relations/releasePackagesCodeSurface",
+        "sourceByteDigest" : "sha256:56dbc9f05f439eb7bf6b028433906c3bcf87b10486fdb6bef23332defa5281f8",
+        "sourceDigest" : "sha256:56dbc9f05f439eb7bf6b028433906c3bcf87b10486fdb6bef23332defa5281f8",
+        "version" : "0.3.0"
+      },
+      "uri" : "ontology://org.0al.specgraph.core/0.3.0/relations/releasePackagesCodeSurface"
+    },
+    {
+      "cardinality" : {
+        "max" : "*",
+        "min" : 0
+      },
+      "description" : "A requirement is validated by acceptance criteria.",
+      "domain" : "sgcore:Requirement",
+      "fqid" : "sgcore:requirementValidatedByCriterion",
+      "id" : "requirementValidatedByCriterion",
+      "range" : "sgcore:AcceptanceCriterion",
+      "source" : {
+        "id" : "org.0al.specgraph.core",
+        "pointer" : "/spec/relations/requirementValidatedByCriterion",
+        "sourceByteDigest" : "sha256:56dbc9f05f439eb7bf6b028433906c3bcf87b10486fdb6bef23332defa5281f8",
+        "sourceDigest" : "sha256:56dbc9f05f439eb7bf6b028433906c3bcf87b10486fdb6bef23332defa5281f8",
+        "version" : "0.3.0"
+      },
+      "uri" : "ontology://org.0al.specgraph.core/0.3.0/relations/requirementValidatedByCriterion"
+    },
+    {
+      "cardinality" : {
+        "max" : "*",
+        "min" : 0
+      },
+      "description" : "A test validates a requirement.",
+      "domain" : "sgcore:Test",
+      "fqid" : "sgcore:testValidatesRequirement",
+      "id" : "testValidatesRequirement",
+      "range" : "sgcore:Requirement",
+      "source" : {
+        "id" : "org.0al.specgraph.core",
+        "pointer" : "/spec/relations/testValidatesRequirement",
+        "sourceByteDigest" : "sha256:56dbc9f05f439eb7bf6b028433906c3bcf87b10486fdb6bef23332defa5281f8",
+        "sourceDigest" : "sha256:56dbc9f05f439eb7bf6b028433906c3bcf87b10486fdb6bef23332defa5281f8",
+        "version" : "0.3.0"
+      },
+      "uri" : "ontology://org.0al.specgraph.core/0.3.0/relations/testValidatesRequirement"
+    }
+  ],
+  "schemaVersion" : "ontology.diagram-projection/v1",
+  "sourceByteDigest" : "sha256:56dbc9f05f439eb7bf6b028433906c3bcf87b10486fdb6bef23332defa5281f8",
+  "sourceDigest" : "sha256:56dbc9f05f439eb7bf6b028433906c3bcf87b10486fdb6bef23332defa5281f8",
+  "sources" : [
+    {
+      "alias" : "sgcore",
+      "id" : "org.0al.specgraph.core",
+      "namespace" : "sgcore",
+      "sourceByteDigest" : "sha256:56dbc9f05f439eb7bf6b028433906c3bcf87b10486fdb6bef23332defa5281f8",
+      "sourceDigest" : "sha256:56dbc9f05f439eb7bf6b028433906c3bcf87b10486fdb6bef23332defa5281f8",
+      "version" : "0.3.0"
+    }
+  ],
+  "stateMachines" : [
+    {
+      "fqid" : "sgcore:SpecReviewState",
+      "id" : "SpecReviewState",
+      "source" : {
+        "id" : "org.0al.specgraph.core",
+        "pointer" : "/spec/stateMachines/SpecReviewState",
+        "sourceByteDigest" : "sha256:56dbc9f05f439eb7bf6b028433906c3bcf87b10486fdb6bef23332defa5281f8",
+        "sourceDigest" : "sha256:56dbc9f05f439eb7bf6b028433906c3bcf87b10486fdb6bef23332defa5281f8",
+        "version" : "0.3.0"
+      },
+      "states" : [
+        "draft",
+        "reviewed"
+      ],
+      "transitions" : [
+        {
+          "command" : "sgcore:Decision",
+          "from" : "draft",
+          "to" : "reviewed"
+        }
+      ]
+    }
+  ],
+  "version" : "0.3.0",
+  "view" : "full"
+}

@@ -1170,23 +1170,40 @@ def test_build_public_bundle_publishes_source_bound_core_graph(
 ) -> None:
     repo = make_repo(tmp_path / "repo")
     folder = repo / "ontology/packages/specgraph-core"
-    source = folder / "domain-ontology-package.yaml"
+    source = folder / "versions/0.3.0/domain-ontology-package.yaml"
     source.parent.mkdir(parents=True, exist_ok=True)
     source.write_text("kind: DomainOntologyPackage\n", encoding="utf-8")
     ir = "ontology/packages/specgraph-core/generated/ontology.normalized.json"
-    graph = "ontology/packages/specgraph-core/generated/ontology.graph.json"
-    write_json(repo / ir, {"id": "org.0al.specgraph.core"})
+    legacy_graph = "ontology/packages/specgraph-core/generated/ontology.graph.json"
+    graph = "ontology/packages/specgraph-core/versions/0.3.0/generated/ontology.graph.json"
+    old_source = folder / "domain-ontology-package.yaml"
+    old_source.write_text("kind: DomainOntologyPackage\nlegacy: true\n", encoding="utf-8")
+    current_ir = (
+        "ontology/packages/specgraph-core/versions/0.3.0/generated/ontology.normalized.json"
+    )
+    identity = {"id": "org.0al.specgraph.core", "namespace": "sgcore", "version": "0.3.0"}
+    digest = "sha256:" + bundle_module.file_sha256(source)
+    write_json(repo / ir, {"id": "org.0al.specgraph.core", "version": "0.1.0"})
     write_json(
-        repo / graph,
+        repo / legacy_graph,
         {
             "schemaVersion": "ontology.diagram-projection/v1",
             "id": "org.0al.specgraph.core",
             "sources": [
                 {
                     "id": "org.0al.specgraph.core",
-                    "sourceByteDigest": "sha256:" + bundle_module.file_sha256(source),
+                    "sourceByteDigest": "sha256:" + bundle_module.file_sha256(old_source),
                 }
             ],
+        },
+    )
+    write_json(repo / current_ir, {**identity, "sourceDigest": digest})
+    write_json(
+        repo / graph,
+        {
+            **identity,
+            "schemaVersion": "ontology.diagram-projection/v1",
+            "sources": [{**identity, "sourceByteDigest": digest}],
         },
     )
     write_json(
@@ -1198,7 +1215,28 @@ def test_build_public_bundle_publishes_source_bound_core_graph(
     )
     manifest = json.loads(result.manifest_path.read_text(encoding="utf-8"))
     assert (result.output_dir / graph).is_file()
+    assert (result.output_dir / legacy_graph).is_file()
+    assert (result.output_dir / current_ir).is_file()
     assert any(entry["path"] == graph for entry in manifest["files"])
+    assert any(entry["path"] == current_ir for entry in manifest["files"])
+    # Selecting the published version must continue to include its diagram.
+    package_index = repo / "runs/ontology_package_index.json"
+    write_json(
+        package_index,
+        {"artifact_kind": "ontology_package_index", "packages": [{"materialized_ir": current_ir}]},
+    )
+    current_only = bundle_module.build_public_bundle(
+        repo_root=repo, output_dir=repo / "dist/current-only"
+    )
+    assert (current_only.output_dir / graph).is_file()
+    write_json(
+        package_index,
+        {"artifact_kind": "ontology_package_index", "packages": [{"materialized_ir": ir}]},
+    )
+    write_json(repo / current_ir, {**identity, "sourceDigest": "sha256:" + "0" * 64})
+    with pytest.raises(bundle_module.PublishBundleError, match="ontology IR does not match"):
+        bundle_module.build_public_bundle(repo_root=repo, output_dir=repo / "dist/ir-drift")
+    write_json(repo / current_ir, {**identity, "sourceDigest": digest})
     source.write_text("kind: DomainOntologyPackage\nchanged: true\n", encoding="utf-8")
     with pytest.raises(bundle_module.PublishBundleError, match="projection does not match"):
         bundle_module.build_public_bundle(repo_root=repo, output_dir=repo / "dist/second")
