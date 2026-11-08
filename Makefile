@@ -19,6 +19,7 @@ EXECUTOR_FOLLOWUP_DECISION ?= needs_more_evidence
 EXECUTOR_FOLLOWUP_REVIEWER ?= local_operator
 EXECUTOR_FOLLOWUP_RATIONALE ?=
 ONTOLOGY_TERM_BINDING_ARTIFACT ?= tests/fixtures/ontology_term_binding/generated_artifact_review_required.json
+ONTOLOGY_COLLISION_BASE ?= origin/main
 ONTOLOGY_TERM_BINDING_GATE_OUTPUT ?= runs/ontology_term_binding_gate_report.json
 ONTOLOGY_GAP_REVIEW_GENERATED_ARTIFACT ?=
 ONTOLOGY_GAP_REVIEW_OUTPUT ?= runs/ontology_gap_review_workflow.json
@@ -455,6 +456,7 @@ help:
 		'  make external-handoffs        Refresh external consumer handoff JSON' \
 			'  make external-consumer-evidence Refresh external consumer evidence JSON' \
 			'  make ontology-imports          Refresh ontology import and semantic-control surfaces' \
+			'  make ontology-name-collisions  Check the composed graph against origin/main' \
 			'  make ontology-imports-public   Refresh public-safe ontology review placeholders' \
 			'  make ontology-package-validate Validate project-local ontology package authoring state' \
 			'  make ontology-package-preview  Preview project-local ontology package refs/diffs' \
@@ -657,6 +659,10 @@ external-consumer-evidence:
 .PHONY: ontology-imports
 ontology-imports:
 	@$(PYTHON) tools/ontology_imports.py --write
+
+.PHONY: ontology-name-collisions
+ontology-name-collisions: check-python
+	@$(PYTHON) tools/ontology_name_collisions.py --base-ref "$(ONTOLOGY_COLLISION_BASE)"
 
 .PHONY: ontology-imports-public
 ontology-imports-public:

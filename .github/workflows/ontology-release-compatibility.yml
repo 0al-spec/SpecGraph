@@ -55,6 +55,9 @@ jobs:
       - name: Install SpecGraph dependencies
         run: python -m pip install -e '.[dev]'
 
+      - name: Test ontology name collision detection
+        run: python -m pytest -q tests/test_ontology_name_collisions.py
+
       - name: Build ontologyc from pinned source
         run: |
           set -euo pipefail

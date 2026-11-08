@@ -44,3 +44,19 @@ Open `$OUT/ontology.graph.json` in SpecSpace at `/ontology?source=local`.
 The inspector shows the owning package and pointer; package filters can hide
 scaffolding or narrow the comparison. The file is a compiler-derived draft
 projection of declarations, not executable evidence.
+
+## Check for duplicate names
+
+Run `make ontology-name-collisions` after updating the projection. The check
+compares its exact names with `origin/main`; set `ONTOLOGY_COLLISION_BASE` to
+compare another Git revision. CI compares against the exact pull request base
+and rejects a newly colliding pair, identifying each package and YAML pointer.
+At introduction the check reports four class and six relation collisions as
+unresolved debt, not accepted as equivalent. Removing a collision needs no
+exception file.
+
+The check covers the full set of classes, relations, protocols, policies and
+state machines in this overview, not models omitted from the profile. Matching
+names signal a conflict to resolve; they do not prove that meanings are equal.
+The separate reproducibility check ensures that the committed graph matches its
+source packages before merge.
