@@ -9,7 +9,8 @@ from pathlib import Path
 import pytest
 
 ROOT = Path(__file__).resolve().parents[1]
-MODEL = ROOT / "specs/models/SG-SPEC-0051/proposal-promotion/domain-ontology-package.yaml"
+MODEL = ROOT / "specs/models/SG-SPEC-0053/intent-to-proposal/domain-ontology-package.yaml"
+CORE = Path("ontology/packages/specgraph-core/versions/0.3.0/domain-ontology-package.yaml")
 
 
 @pytest.fixture
@@ -19,7 +20,9 @@ def compiler():
     return Path(value).resolve(strict=True)
 
 
-def test_staged_action_package_is_quiet_but_invalid_reference_is_reported(compiler, tmp_path):
+def test_staged_import_is_used_when_worktree_differs_and_invalid_reference_is_reported(
+    compiler, tmp_path
+):
     # A disposable index exercises the real advisory without affecting any user checkout.
     template = tmp_path / "empty-template"
     template.mkdir()
@@ -34,12 +37,17 @@ def test_staged_action_package_is_quiet_but_invalid_reference_is_reported(compil
     )
     package = repo / "domain-ontology-package.yaml"
     original = MODEL.read_text(encoding="utf-8")
+    core = repo / CORE
+    core.parent.mkdir(parents=True)
+    core.write_bytes((ROOT / CORE).read_bytes())
+    subprocess.run(["git", "add", str(CORE)], cwd=repo, check=True, env=env)
+    core.write_text("unstaged: not the package\n", encoding="utf-8")
 
     def check(source):
         package.write_text(source, encoding="utf-8")
         subprocess.run(["git", "add", package.name], cwd=repo, check=True, env=env)
         return subprocess.run(
-            [compiler, "advise-staged"],
+            [compiler, "advise-staged", "--import", str(CORE)],
             cwd=repo,
             env=env,
             capture_output=True,
@@ -49,7 +57,7 @@ def test_staged_action_package_is_quiet_but_invalid_reference_is_reported(compil
 
     valid = check(original)
     assert "[ontology advice]" not in valid.stderr
-    assert original.count("target: CanonicalTarget") == 1
-    invalid = check(original.replace("target: CanonicalTarget", "target: MissingCanonicalTarget"))
+    assert original.count("target: sgcore:Proposal") == 1
+    invalid = check(original.replace("target: sgcore:Proposal", "target: sgcore:MissingProposal"))
     assert "[ontology advice]" in invalid.stderr
     assert "class.field.target.unresolved" in invalid.stderr

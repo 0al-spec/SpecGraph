@@ -57,7 +57,7 @@ approval of an actual proposal.
 
 ## Reproduce and inspect
 
-With the released Ontology **0.9.0** `ontologyc` and `ontologyviz` on PATH,
+With the released Ontology **0.9.1** `ontologyc` and `ontologyviz` on PATH,
 from the SpecGraph root, set `OUT` to a build directory outside the checkout:
 
 ```sh
@@ -76,6 +76,18 @@ package to inspect each separately. Select `interpretsFragmentForDraft` or
 follow the action's typed candidate field. Projection and SDK are derived
 artifacts; loading them neither updates the public site nor accepts the
 candidate ontology.
+
+To enable non-blocking commit-time advice for this model with Ontology 0.9.1
+on `PATH`, configure the Git hook once in this checkout:
+
+```sh
+git config --local hook.ontology-package-advice.command 'ontologyc advise-staged --import ontology/packages/specgraph-core/versions/0.3.0/domain-ontology-package.yaml || echo "[ontology advice] compiler unavailable; packages were not checked" >&2'
+git config --local hook.ontology-package-advice.event pre-commit
+```
+
+The hook reads the staged model and staged core from the same active index;
+unavailable imports are reported and do not block the commit. The required
+composition check in CI separately blocks newly colliding names before merge.
 
 ## Current tool boundaries
 

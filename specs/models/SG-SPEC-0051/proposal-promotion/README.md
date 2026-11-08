@@ -54,7 +54,7 @@ boundary or evidence that a real transition occurred.
 
 ## Reproduce and inspect
 
-With Ontology **0.9.0** and an output directory outside the checkout:
+With Ontology **0.9.1** and an output directory outside the checkout:
 
 ```sh
 model=specs/models/SG-SPEC-0051/proposal-promotion/domain-ontology-package.yaml
