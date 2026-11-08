@@ -1,14 +1,16 @@
 # Verification workflow return path
 
 SG-RFC-0234 records the requested `verify-criteria/v1` composition. Status:
-`deferred_until_canonicalized`; planning target SG-SPEC-0009. Runtime workflow
-execution and canonical adoption remain pending.
+`deferred_until_canonicalized`; planning target SG-SPEC-0009. The local
+execution adapter is available for review. CLI and Supervisor activation and
+canonical adoption remain pending.
 
 - [Proposal](../../proposals/0234_verification_workflow.md)
 - [Attributed conversation](../../archive/proposal_sources/0234_verification_workflow.md)
 - [Draft obligations](../../proposals/0234_verification_workflow.intent.yaml)
 - [Registration packet](operator-request.json)
 - [Registration observation](graph-links.json)
+- [Cached journal defect and regression evidence](execution-replay-defect.json)
 - [User intent](../../../intent_layer/nodes/user_intent--0234-verification-workflow--c03e0097.json)
 - [Operator request](../../../intent_layer/nodes/operator_request--0234-verification-workflow--f6d7f9ec.json)
 - [Proposal node](../../../proposal_lane/nodes/proposal--0234-verification-workflow--26beab5e.json)
@@ -45,10 +47,10 @@ not tested or implemented in this proposal.
 ## Next task and workspace
 
 The first pure-core slice is implemented in `tools/verification_workflow/`.
-The next slice supplies actual execution and persistence adapters, then connects
-the native CLI and explicit Supervisor operation. Preserve 0224/0226 contracts
-and keep 0225 admission separate. The first profile has no general DAG engine
-or resume.
+The execution slice adds local process and artifact custody. The next slice
+connects the native CLI and explicit Supervisor operation. Preserve 0224/0226
+contracts and keep 0225 admission separate. The first profile has no general
+DAG engine or resume.
 
 Preparation uses primary checkout branch `codex/0234-verification-workflow`;
 no extra worktree was created. The PR is the durable handoff. After publication,
@@ -123,3 +125,25 @@ predicate at `17f065ae`; all agreed. Independent review found no blockers and
 confirmed that both earlier P2 protections remain intact. The tradeoff is more
 files and explicit contexts. The old metric values are a baseline; no reduction
 in total CC, Cog, SLOC or U is claimed before measurement of the new head.
+
+## Local execution and replay review
+
+The adapter snapshots the pinned commit, validates the FeaturePassport using
+the pinned native tool, runs the selected producer in a POSIX process group,
+and collects the current journal through C2c. It keeps the original journal,
+frozen expectations, process log and report under one run identity. The
+terminal record is written atomically after integrity checks.
+
+Initial review reproduced a false pass when a producer copied an older journal
+to a new path. Before launch, SpecGraph now issues a unique challenge. The
+producer emits it in each selected test case. SpecGraph joins it to that case
+and its executing step before accepting observations. The binding adapter
+selects runtime identities and cannot replace expected measurements.
+
+Independent re-review passed 97 tests, including the original copy-only
+reproduction, replay of a previously correlated journal, and missing, wrong
+or misplaced markers. The local ExamCalc pilot ran twice through real
+Cucumber and native FeaturePassport validation. Both runs verified the whole
+three-criterion inventory. Copying the first journal into a third run exited
+zero and was rejected before collection. Local producer records retain
+`producer_declared` provenance, `not_evaluated` admission and a null receipt.

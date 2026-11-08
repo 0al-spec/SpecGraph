@@ -1,0 +1,38 @@
+{
+  "artifact_kind": "verification_execution_defect_observation",
+  "schema_version": 1,
+  "defect_id": "VERIFICATION-EXECUTION-CACHED-JOURNAL",
+  "status": "fix_prepared_review_pending",
+  "source_ref": "docs/archive/proposal_sources/0234_verification_workflow.md",
+  "intent_handle": "user_intent::0234-verification-workflow",
+  "operator_request_handle": "operator_request::0234-verification-workflow",
+  "proposal_handle": "proposal::0234-verification-workflow",
+  "affected_contract": "docs/proposals/0234_verification_workflow.md",
+  "baseline": {
+    "base_revision": "a6cfdb7d44bbc8687bf2db5078fa42701bc74d0c",
+    "execution_source_sha256": "b28499097e478318d0530033a802703400ad9ac67adab07f353d8a5fbed96d83",
+    "reproduction": "The producer copies a retained successful journal byte for byte to a newly allocated output and exits zero. The existing binder selects its case and step identities.",
+    "observed": "Two distinct workflow runs reported passed with the same producer run ID and journal hash.",
+    "journal_sha256": "708db7908eb00cfc823a7a3929d1f4b6ddb30209fdf4284c27fbfb94543d3a79"
+  },
+  "root_cause_class": "artifact_contract_validation_gap",
+  "root_cause": "The new path proved where the bytes were captured, but did not establish which invocation produced the observation.",
+  "fix": {
+    "policy": "verification.producer_invocation_correlation",
+    "execution_source_sha256": "aaa3c3ecbaa009f92733c66276ea18b9ed35f67b7eae1ee5fc604b92210da12c",
+    "implementation_refs": [
+      "tools/verification_workflow/execution_invocation.py",
+      "tools/verification_workflow/execution_invocation_spec.py"
+    ]
+  },
+  "verification": {
+    "status": "passed_local_checks",
+    "independent_focused_tests_passed": 97,
+    "test_refs": [
+      "tests/test_verification_execution.py::test_exact_cached_copy_reproduction_is_rejected_on_both_runs",
+      "tests/test_verification_execution.py::test_copy_of_previously_correlated_journal_is_rejected",
+      "tests/test_verification_execution.py::test_fresh_emission_does_not_require_globally_unused_producer_id"
+    ]
+  },
+  "admission": "not_evaluated"
+}

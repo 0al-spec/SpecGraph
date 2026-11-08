@@ -25,9 +25,11 @@ admission boundary. Results remain `producer_declared`, `admission:
 not_evaluated`, `receipt: null`, without a `tests_verified` transition.
 Local run records do not attest a host whose producer/runtime can be rewritten.
 
-The prior ExamCalc pilot demonstrates the underlying snapshot/test/provider
-chain. End-to-end bypass controls and installed-runtime tests for the new
-workflow remain planned; the pure-core checks below exercise supplied records.
+The local ExamCalc pilot exercised the execution adapter with Cucumber and
+native FeaturePassport validation. The two fresh runs verified all three
+criteria. A process that copied the first journal exited zero and was rejected
+before collection. Testing the workflow through an installed native command
+remains a follow-up.
 
 ## Consistency core available
 
@@ -44,11 +46,12 @@ versus aggregate statuses and lost observation conflicts/retry state; both are
 fixed with regression tests and confirmed by re-review. A valid observation
 remains `completed/passed`, and a consistent negative test `completed/failed`.
 
-This core checks supplied facts. Actual processes, unique run allocation,
-source-byte verification, output custody and atomic terminal persistence remain
-the next adapter slice. The installed CLI and Supervisor mode are not active.
-The `deferred_until_canonicalized` activation posture remains unchanged. Local
-results retain `producer_declared`, `not_evaluated` admission and null receipt.
+The execution adapter creates a separate run directory, snapshots the pinned
+Git commit and launches the test producer in a POSIX process group. The
+producer emits a challenge from the current invocation inside each selected
+test case. The adapter checks this marker before handing the original journal
+to C2c. It writes the terminal record atomically after integrity checks.
+The installed CLI and Supervisor mode remain pending.
 
 Collection checks are partitioned into selection identity, journal provenance,
 criterion binding/projection and observation consistency. Two immutable contexts
@@ -61,3 +64,4 @@ changes require a fresh report and are not inferred from smaller functions.
 - `docs/proposals/0234_verification_workflow.intent.yaml`
 - `docs/archive/proposal_sources/0234_verification_workflow.md`
 - `docs/reviews/0234_verification_workflow/README.md`
+- `docs/reviews/0234_verification_workflow/execution-replay-defect.json`
