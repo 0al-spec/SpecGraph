@@ -57,7 +57,7 @@ approval of an actual proposal.
 
 ## Reproduce and inspect
 
-With `ontologyc` and `ontologyviz` supporting imported typed references on PATH,
+With the released Ontology **0.9.0** `ontologyc` and `ontologyviz` on PATH,
 from the SpecGraph root, set `OUT` to a build directory outside the checkout:
 
 ```sh
