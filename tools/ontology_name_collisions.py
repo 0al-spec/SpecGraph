@@ -33,7 +33,25 @@ class Definition:
 CollisionKey = tuple[str, str, tuple[str, str], tuple[str, str]]
 
 
-def collisions(graph: Any) -> dict[CollisionKey, tuple[Definition, Definition]]:
+def declaration(record: Any, section: str) -> tuple[str, Definition]:
+    if not isinstance(record, dict) or not isinstance(record.get("source"), dict):
+        raise ValueError(f"{section} declaration has no source")
+    source = record["source"]
+    fqid, package, pointer, version = (
+        record.get("fqid"),
+        source.get("id"),
+        source.get("pointer"),
+        source.get("version"),
+    )
+    if not all(isinstance(item, str) and item for item in (fqid, package, pointer, version)):
+        raise ValueError(f"{section} declaration has incomplete identity or source")
+    namespace, separator, name = fqid.partition(":")
+    if not namespace or not separator or not name:
+        raise ValueError(f"{section} declaration has invalid fqid {fqid!r}")
+    return name, Definition(package, pointer, fqid, version)
+
+
+def declarations(graph: Any) -> list[tuple[str, str, Definition]]:
     if (
         not isinstance(graph, dict)
         or graph.get("schemaVersion") != "ontology.diagram-projection/v1"
@@ -42,37 +60,27 @@ def collisions(graph: Any) -> dict[CollisionKey, tuple[Definition, Definition]]:
     if graph.get("view") != "full":
         raise ValueError("the collision check requires a full graph")
 
-    result: dict[CollisionKey, tuple[Definition, Definition]] = {}
+    result = []
     for section in SECTIONS:
         records = graph.get(section)
         if not isinstance(records, list):
             raise ValueError(f"graph section {section} must be a list")
-        groups: dict[str, dict[tuple[str, str], Definition]] = {}
         for record in records:
-            if not isinstance(record, dict) or not isinstance(record.get("source"), dict):
-                raise ValueError(f"{section} declaration has no source")
-            source = record["source"]
-            fqid, package, pointer, version = (
-                record.get("fqid"),
-                source.get("id"),
-                source.get("pointer"),
-                source.get("version"),
-            )
-            if not all(
-                isinstance(item, str) and item for item in (fqid, package, pointer, version)
-            ):
-                raise ValueError(f"{section} declaration has incomplete identity or source")
-            namespace, separator, name = fqid.partition(":")
-            if not namespace or not separator or not name:
-                raise ValueError(f"{section} declaration has invalid fqid {fqid!r}")
-            definition = Definition(package, pointer, fqid, version)
-            groups.setdefault(name, {})[definition.identity] = definition
-        for name, by_identity in groups.items():
-            for left, right in itertools.combinations(sorted(by_identity.values()), 2):
-                if left.package == right.package:
-                    continue
-                key = (section, name, left.identity, right.identity)
-                result[key] = (left, right)
+            name, definition = declaration(record, section)
+            result.append((section, name, definition))
+    return result
+
+
+def collisions(graph: Any) -> dict[CollisionKey, tuple[Definition, Definition]]:
+    groups: dict[tuple[str, str], dict[tuple[str, str], Definition]] = {}
+    for section, name, definition in declarations(graph):
+        groups.setdefault((section, name), {})[definition.identity] = definition
+
+    result: dict[CollisionKey, tuple[Definition, Definition]] = {}
+    for (section, name), by_identity in groups.items():
+        for left, right in itertools.combinations(sorted(by_identity.values()), 2):
+            if left.package != right.package:
+                result[(section, name, left.identity, right.identity)] = (left, right)
     return result
 
 
