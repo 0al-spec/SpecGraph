@@ -1,0 +1,52 @@
+apiVersion: ontology.specgraph.io/v1alpha1
+changes:
+  addedClasses:
+  - sgcore:Hypothesis
+  - sgcore:IntentDraft
+  - sgcore:IntentFragment
+  - sgcore:Proposal
+  addedFields: []
+  addedRelations:
+  - sgcore:fragmentContributesToDraft
+  - sgcore:hypothesisInformsIntentDraft
+  - sgcore:hypothesisInformsProposal
+  - sgcore:intentDraftMotivatesProposal
+  - sgcore:intentDraftSourceForIntent
+  - sgcore:intentMotivatesProposal
+  breakingChanges: []
+  changeClassification:
+    annotationChanges: []
+    applicabilityChanges: []
+    structuralChanges:
+    - kind: classAdded
+      ref: sgcore:Hypothesis
+    - kind: classAdded
+      ref: sgcore:IntentDraft
+    - kind: classAdded
+      ref: sgcore:IntentFragment
+    - kind: classAdded
+      ref: sgcore:Proposal
+    - kind: relationAdded
+      ref: sgcore:fragmentContributesToDraft
+    - kind: relationAdded
+      ref: sgcore:hypothesisInformsIntentDraft
+    - kind: relationAdded
+      ref: sgcore:hypothesisInformsProposal
+    - kind: relationAdded
+      ref: sgcore:intentDraftMotivatesProposal
+    - kind: relationAdded
+      ref: sgcore:intentDraftSourceForIntent
+    - kind: relationAdded
+      ref: sgcore:intentMotivatesProposal
+  changedFields: []
+  removedClasses: []
+  removedFields: []
+  removedRelations: []
+kind: OntologyCompatibilityReport
+metadata:
+  from: org.0al.specgraph.core@0.1.0
+  to: org.0al.specgraph.core@0.3.0
+result:
+  compatible: true
+  requiredSpecGraphActions:
+  - updateLockfile
