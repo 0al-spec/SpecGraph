@@ -10,6 +10,7 @@ from pathlib import Path
 
 import pytest
 import yaml
+from tools.ontology_name_collisions import collisions
 
 ROOT = Path(__file__).resolve().parents[1]
 REVIEW = ROOT / "specs/models/review/ontology-overview"
@@ -90,6 +91,7 @@ def test_real_projection_preserves_sources_and_existing_declarations(tmp_path):
         == (REVIEW / "generated/ontology.graph.json").read_bytes()
     )
     assert sum(bool(relation.get("action")) for relation in combined["relations"]) == 5
+    assert not collisions(combined)
 
     sources = {source["id"]: source for source in combined["sources"]}
     expected_paths = (PACKAGE, CORE, INTENT, PROMOTION, PUBLICATION)
@@ -104,6 +106,7 @@ def test_real_projection_preserves_sources_and_existing_declarations(tmp_path):
         expected_digest = "sha256:" + hashlib.sha256(path.read_bytes()).hexdigest()
         assert source["sourceByteDigest"] == expected_digest
 
+    intent = _export(viz, tmp_path / "intent", INTENT, "--view", "full", "--import", CORE)
     promotion = _export(
         viz,
         tmp_path / "promotion",
@@ -111,17 +114,17 @@ def test_real_projection_preserves_sources_and_existing_declarations(tmp_path):
         "--view",
         "full",
         "--import",
-        INTENT,
-        "--import",
         CORE,
     )
     publication = _export(viz, tmp_path / "publication", PUBLICATION, "--view", "full")
     review_id = _document(PACKAGE)["metadata"]["id"]
     for section in SECTIONS:
-        promotion_records = _records(promotion, section)
-        publication_records = _records(publication, section)
-        assert promotion_records.keys().isdisjoint(publication_records)
-        expected = promotion_records | publication_records
+        expected = {}
+        for graph in (intent, promotion, publication):
+            for key, record in _records(graph, section).items():
+                if key in expected:
+                    assert expected[key] == record
+                expected[key] = record
         actual = {
             key: record
             for key, record in _records(combined, section).items()
@@ -131,10 +134,10 @@ def test_real_projection_preserves_sources_and_existing_declarations(tmp_path):
 
     relations = {record["fqid"]: record for record in combined["relations"]}
     assert (
-        relations["sgproposal:intentMotivatesProposal"]["domain"],
-        relations["sgproposal:intentMotivatesProposal"]["range"],
-    ) == ("sgcore:Intent", "sgproposal:Proposal")
-    assert relations["sgpromotion:promotesProposalToDraft"]["range"] == "sgproposal:Proposal"
+        relations["sgcore:intentMotivatesProposal"]["domain"],
+        relations["sgcore:intentMotivatesProposal"]["range"],
+    ) == ("sgcore:Intent", "sgcore:Proposal")
+    assert relations["sgpromotion:promotesProposalToDraft"]["range"] == "sgcore:Proposal"
     assert (
         relations["pubverify:verifiesPublishedBundle"]["action"]
         == "pubverify:VerifyPublishedBundle"

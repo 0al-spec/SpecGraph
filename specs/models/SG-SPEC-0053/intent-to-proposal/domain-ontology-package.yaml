@@ -3,7 +3,7 @@ kind: DomainOntologyPackage
 metadata:
   id: org.0al.specgraph.intent-proposal
   namespace: sgproposal
-  version: 0.3.0-draft.1
+  version: 0.4.0-draft.1
   publisher: SpecGraph
   source: specs/models/SG-SPEC-0053/intent-to-proposal/domain-ontology-package.yaml
   approvalStatus: draft
@@ -16,31 +16,19 @@ spec:
     RawInput:
       extends: ont:DomainEntity
       description: Source input from which one or more partial intent signals may be extracted.
-    IntentFragment:
-      extends: ont:DomainEntity
-      description: A partial observable intent signal, not a complete intent draft.
-    IntentDraft:
-      extends: ont:DomainEntity
-      description: A pre-canonical synthesis of one or more intent fragments and optional context.
-    Hypothesis:
-      extends: ont:DomainEntity
-      description: A reviewable epistemic claim that may inform interpretation without becoming intent.
     IntentSynthesizer:
       extends: ont:DomainEntity
       description: A person or agent acting to synthesize fragments into a candidate draft in this interpretation.
     ProposalAuthor:
       extends: ont:DomainEntity
       description: A person or agent acting as the author of a candidate proposal in this interpretation.
-    Proposal:
-      extends: ont:DomainEntity
-      description: A reviewable candidate operationalization, distinct from its motivating intent.
     InterpretIntentForProposal:
       extends: ont:Action
       description: Interpret an intent in the context of an existing candidate proposal.
       fields:
         candidateProposal:
           type: ref
-          target: Proposal
+          target: sgcore:Proposal
           required: true
           description: The candidate for which the intent is interpreted; the application resolves this reference.
     InterpretFragmentForDraft:
@@ -49,45 +37,21 @@ spec:
       fields:
         candidateDraft:
           type: ref
-          target: IntentDraft
+          target: sgcore:IntentDraft
           required: true
           description: The candidate draft for which the fragment is interpreted; the application resolves this reference.
   relations:
     rawInputSourceForFragment:
       domain: RawInput
-      range: IntentFragment
+      range: sgcore:IntentFragment
       description: A raw input supplies source material for an extracted fragment.
     interpretsFragmentForDraft:
       subject: IntentSynthesizer
       action: InterpretFragmentForDraft
-      object: IntentFragment
+      object: sgcore:IntentFragment
       description: A synthesizer interprets a fragment while developing the draft identified by the action.
-    fragmentContributesToDraft:
-      domain: IntentFragment
-      range: IntentDraft
-      description: An intent fragment contributes partial observable meaning to a draft.
-    hypothesisInformsIntentDraft:
-      domain: Hypothesis
-      range: IntentDraft
-      description: A hypothesis supplies supporting, challenging, or contextual information for a draft.
-    hypothesisInformsProposal:
-      domain: Hypothesis
-      range: Proposal
-      description: A hypothesis supplies supporting, challenging, or contextual information for a proposal.
-    intentDraftSourceForIntent:
-      domain: IntentDraft
-      range: sgcore:Intent
-      description: An intent draft supplies the originating observed meaning for a stabilized intent.
-    intentDraftMotivatesProposal:
-      domain: IntentDraft
-      range: Proposal
-      description: An intent draft motivates a candidate proposal without being replaced by it.
     interpretsIntentForProposal:
       subject: ProposalAuthor
       action: InterpretIntentForProposal
       object: sgcore:Intent
       description: An author interprets an intent while developing the candidate identified by the action.
-    intentMotivatesProposal:
-      domain: sgcore:Intent
-      range: Proposal
-      description: An intent motivates a candidate proposal without being replaced by it.

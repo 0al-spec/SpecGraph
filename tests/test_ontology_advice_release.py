@@ -9,7 +9,7 @@ from pathlib import Path
 import pytest
 
 ROOT = Path(__file__).resolve().parents[1]
-MODEL = ROOT / "specs/models/SG-SPEC-0053/intent-to-proposal/domain-ontology-package.yaml"
+MODEL = ROOT / "specs/models/SG-SPEC-0051/proposal-promotion/domain-ontology-package.yaml"
 
 
 @pytest.fixture
@@ -49,7 +49,7 @@ def test_staged_action_package_is_quiet_but_invalid_reference_is_reported(compil
 
     valid = check(original)
     assert "[ontology advice]" not in valid.stderr
-    assert original.count("target: Proposal") == 1
-    invalid = check(original.replace("target: Proposal", "target: MissingProposal"))
+    assert original.count("target: CanonicalTarget") == 1
+    invalid = check(original.replace("target: CanonicalTarget", "target: MissingCanonicalTarget"))
     assert "[ontology advice]" in invalid.stderr
     assert "class.field.target.unresolved" in invalid.stderr

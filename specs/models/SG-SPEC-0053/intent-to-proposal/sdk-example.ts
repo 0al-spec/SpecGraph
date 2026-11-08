@@ -6,7 +6,7 @@ import type { InterpretFragmentForDraft, InterpretIntentForProposal } from "./ge
 const intent = { $type: "sgcore:Intent" as const, id: "intent-1" };
 const action: InterpretIntentForProposal = {
   $type: "sgproposal:InterpretIntentForProposal",
-  candidateProposal: { target: "sgproposal:Proposal", locator: "candidate-1" },
+  candidateProposal: { target: "sgcore:Proposal", locator: "candidate-1" },
 };
 const authorRecord = { $type: "sgproposal:ProposalAuthor" as const, id: "author-1" };
 const record = {
@@ -45,10 +45,10 @@ async function main(): Promise<void> {
 
   // These resolvers are examples, not claims about real authoring.
   const fragmentsByDraft = new Map<string, string[]>([["draft-1", []]]);
-  const fragment = { $type: "sgproposal:IntentFragment" as const, id: "fragment-1" };
+  const fragment = { $type: "sgcore:IntentFragment" as const, id: "fragment-1" };
   const draftAction: InterpretFragmentForDraft = {
     $type: "sgproposal:InterpretFragmentForDraft",
-    candidateDraft: { target: "sgproposal:IntentDraft", locator: "draft-1" },
+    candidateDraft: { target: "sgcore:IntentDraft", locator: "draft-1" },
   };
   const synthesizer = {
     $type: "sgproposal:IntentSynthesizer" as const,

@@ -528,7 +528,7 @@
       ],
       "central" : false,
       "description" : "A proposed canonical destination and identity, not proof that an artifact exists.",
-      "diagramOrigin" : "org.0al.specgraph.proposal-promotion@0.2.0-draft.1",
+      "diagramOrigin" : "org.0al.specgraph.proposal-promotion@0.3.0-draft.1",
       "extends" : "ont:DomainEntity",
       "fqid" : "sgpromotion:CanonicalTarget",
       "id" : "CanonicalTarget",
@@ -539,11 +539,11 @@
       "source" : {
         "id" : "org.0al.specgraph.proposal-promotion",
         "pointer" : "/spec/classes/CanonicalTarget",
-        "sourceByteDigest" : "sha256:1d4036e23a3e384896f7dfeb29748342a79deb1eee572aaf380a0a143d9980ba",
-        "sourceDigest" : "sha256:1d4036e23a3e384896f7dfeb29748342a79deb1eee572aaf380a0a143d9980ba",
-        "version" : "0.2.0-draft.1"
+        "sourceByteDigest" : "sha256:f1cf64ab336347b0aa9c4105413aac6462eeb0d847793692b607740a7e3cde4f",
+        "sourceDigest" : "sha256:f1cf64ab336347b0aa9c4105413aac6462eeb0d847793692b607740a7e3cde4f",
+        "version" : "0.3.0-draft.1"
       },
-      "uri" : "ontology://org.0al.specgraph.proposal-promotion/0.2.0-draft.1/classes/CanonicalTarget"
+      "uri" : "ontology://org.0al.specgraph.proposal-promotion/0.3.0-draft.1/classes/CanonicalTarget"
     },
     {
       "aliases" : [
@@ -551,7 +551,7 @@
       ],
       "central" : false,
       "description" : "Attempt canonical materialization of a draft against its ingress and a separate decision.",
-      "diagramOrigin" : "org.0al.specgraph.proposal-promotion@0.2.0-draft.1",
+      "diagramOrigin" : "org.0al.specgraph.proposal-promotion@0.3.0-draft.1",
       "extends" : "ont:Action",
       "fields" : [
         {
@@ -561,9 +561,9 @@
           "source" : {
             "id" : "org.0al.specgraph.proposal-promotion",
             "pointer" : "/spec/classes/MaterializeSpecDraft/fields/ingressRecord",
-            "sourceByteDigest" : "sha256:1d4036e23a3e384896f7dfeb29748342a79deb1eee572aaf380a0a143d9980ba",
-            "sourceDigest" : "sha256:1d4036e23a3e384896f7dfeb29748342a79deb1eee572aaf380a0a143d9980ba",
-            "version" : "0.2.0-draft.1"
+            "sourceByteDigest" : "sha256:f1cf64ab336347b0aa9c4105413aac6462eeb0d847793692b607740a7e3cde4f",
+            "sourceDigest" : "sha256:f1cf64ab336347b0aa9c4105413aac6462eeb0d847793692b607740a7e3cde4f",
+            "version" : "0.3.0-draft.1"
           },
           "target" : "sgpromotion:TransitionRecord",
           "type" : "ref"
@@ -575,9 +575,9 @@
           "source" : {
             "id" : "org.0al.specgraph.proposal-promotion",
             "pointer" : "/spec/classes/MaterializeSpecDraft/fields/target",
-            "sourceByteDigest" : "sha256:1d4036e23a3e384896f7dfeb29748342a79deb1eee572aaf380a0a143d9980ba",
-            "sourceDigest" : "sha256:1d4036e23a3e384896f7dfeb29748342a79deb1eee572aaf380a0a143d9980ba",
-            "version" : "0.2.0-draft.1"
+            "sourceByteDigest" : "sha256:f1cf64ab336347b0aa9c4105413aac6462eeb0d847793692b607740a7e3cde4f",
+            "sourceDigest" : "sha256:f1cf64ab336347b0aa9c4105413aac6462eeb0d847793692b607740a7e3cde4f",
+            "version" : "0.3.0-draft.1"
           },
           "target" : "sgpromotion:CanonicalTarget",
           "type" : "ref"
@@ -589,9 +589,9 @@
           "source" : {
             "id" : "org.0al.specgraph.proposal-promotion",
             "pointer" : "/spec/classes/MaterializeSpecDraft/fields/transitionRecord",
-            "sourceByteDigest" : "sha256:1d4036e23a3e384896f7dfeb29748342a79deb1eee572aaf380a0a143d9980ba",
-            "sourceDigest" : "sha256:1d4036e23a3e384896f7dfeb29748342a79deb1eee572aaf380a0a143d9980ba",
-            "version" : "0.2.0-draft.1"
+            "sourceByteDigest" : "sha256:f1cf64ab336347b0aa9c4105413aac6462eeb0d847793692b607740a7e3cde4f",
+            "sourceDigest" : "sha256:f1cf64ab336347b0aa9c4105413aac6462eeb0d847793692b607740a7e3cde4f",
+            "version" : "0.3.0-draft.1"
           },
           "target" : "sgpromotion:TransitionRecord",
           "type" : "ref"
@@ -606,11 +606,11 @@
       "source" : {
         "id" : "org.0al.specgraph.proposal-promotion",
         "pointer" : "/spec/classes/MaterializeSpecDraft",
-        "sourceByteDigest" : "sha256:1d4036e23a3e384896f7dfeb29748342a79deb1eee572aaf380a0a143d9980ba",
-        "sourceDigest" : "sha256:1d4036e23a3e384896f7dfeb29748342a79deb1eee572aaf380a0a143d9980ba",
-        "version" : "0.2.0-draft.1"
+        "sourceByteDigest" : "sha256:f1cf64ab336347b0aa9c4105413aac6462eeb0d847793692b607740a7e3cde4f",
+        "sourceDigest" : "sha256:f1cf64ab336347b0aa9c4105413aac6462eeb0d847793692b607740a7e3cde4f",
+        "version" : "0.3.0-draft.1"
       },
-      "uri" : "ontology://org.0al.specgraph.proposal-promotion/0.2.0-draft.1/classes/MaterializeSpecDraft"
+      "uri" : "ontology://org.0al.specgraph.proposal-promotion/0.3.0-draft.1/classes/MaterializeSpecDraft"
     },
     {
       "aliases" : [
@@ -618,7 +618,7 @@
       ],
       "central" : false,
       "description" : "Attempt the proposal-to-draft transition against a separately recorded review.",
-      "diagramOrigin" : "org.0al.specgraph.proposal-promotion@0.2.0-draft.1",
+      "diagramOrigin" : "org.0al.specgraph.proposal-promotion@0.3.0-draft.1",
       "extends" : "ont:Action",
       "fields" : [
         {
@@ -628,9 +628,9 @@
           "source" : {
             "id" : "org.0al.specgraph.proposal-promotion",
             "pointer" : "/spec/classes/PromoteProposalToSpecDraft/fields/targetDraft",
-            "sourceByteDigest" : "sha256:1d4036e23a3e384896f7dfeb29748342a79deb1eee572aaf380a0a143d9980ba",
-            "sourceDigest" : "sha256:1d4036e23a3e384896f7dfeb29748342a79deb1eee572aaf380a0a143d9980ba",
-            "version" : "0.2.0-draft.1"
+            "sourceByteDigest" : "sha256:f1cf64ab336347b0aa9c4105413aac6462eeb0d847793692b607740a7e3cde4f",
+            "sourceDigest" : "sha256:f1cf64ab336347b0aa9c4105413aac6462eeb0d847793692b607740a7e3cde4f",
+            "version" : "0.3.0-draft.1"
           },
           "target" : "sgpromotion:SpecDraft",
           "type" : "ref"
@@ -642,9 +642,9 @@
           "source" : {
             "id" : "org.0al.specgraph.proposal-promotion",
             "pointer" : "/spec/classes/PromoteProposalToSpecDraft/fields/transitionRecord",
-            "sourceByteDigest" : "sha256:1d4036e23a3e384896f7dfeb29748342a79deb1eee572aaf380a0a143d9980ba",
-            "sourceDigest" : "sha256:1d4036e23a3e384896f7dfeb29748342a79deb1eee572aaf380a0a143d9980ba",
-            "version" : "0.2.0-draft.1"
+            "sourceByteDigest" : "sha256:f1cf64ab336347b0aa9c4105413aac6462eeb0d847793692b607740a7e3cde4f",
+            "sourceDigest" : "sha256:f1cf64ab336347b0aa9c4105413aac6462eeb0d847793692b607740a7e3cde4f",
+            "version" : "0.3.0-draft.1"
           },
           "target" : "sgpromotion:TransitionRecord",
           "type" : "ref"
@@ -659,11 +659,11 @@
       "source" : {
         "id" : "org.0al.specgraph.proposal-promotion",
         "pointer" : "/spec/classes/PromoteProposalToSpecDraft",
-        "sourceByteDigest" : "sha256:1d4036e23a3e384896f7dfeb29748342a79deb1eee572aaf380a0a143d9980ba",
-        "sourceDigest" : "sha256:1d4036e23a3e384896f7dfeb29748342a79deb1eee572aaf380a0a143d9980ba",
-        "version" : "0.2.0-draft.1"
+        "sourceByteDigest" : "sha256:f1cf64ab336347b0aa9c4105413aac6462eeb0d847793692b607740a7e3cde4f",
+        "sourceDigest" : "sha256:f1cf64ab336347b0aa9c4105413aac6462eeb0d847793692b607740a7e3cde4f",
+        "version" : "0.3.0-draft.1"
       },
-      "uri" : "ontology://org.0al.specgraph.proposal-promotion/0.2.0-draft.1/classes/PromoteProposalToSpecDraft"
+      "uri" : "ontology://org.0al.specgraph.proposal-promotion/0.3.0-draft.1/classes/PromoteProposalToSpecDraft"
     },
     {
       "aliases" : [
@@ -671,7 +671,7 @@
       ],
       "central" : false,
       "description" : "A proposed contextual role for an actor initiating a promotion, without implied authority.",
-      "diagramOrigin" : "org.0al.specgraph.proposal-promotion@0.2.0-draft.1",
+      "diagramOrigin" : "org.0al.specgraph.proposal-promotion@0.3.0-draft.1",
       "extends" : "ont:DomainEntity",
       "fqid" : "sgpromotion:PromotionActor",
       "id" : "PromotionActor",
@@ -682,11 +682,11 @@
       "source" : {
         "id" : "org.0al.specgraph.proposal-promotion",
         "pointer" : "/spec/classes/PromotionActor",
-        "sourceByteDigest" : "sha256:1d4036e23a3e384896f7dfeb29748342a79deb1eee572aaf380a0a143d9980ba",
-        "sourceDigest" : "sha256:1d4036e23a3e384896f7dfeb29748342a79deb1eee572aaf380a0a143d9980ba",
-        "version" : "0.2.0-draft.1"
+        "sourceByteDigest" : "sha256:f1cf64ab336347b0aa9c4105413aac6462eeb0d847793692b607740a7e3cde4f",
+        "sourceDigest" : "sha256:f1cf64ab336347b0aa9c4105413aac6462eeb0d847793692b607740a7e3cde4f",
+        "version" : "0.3.0-draft.1"
       },
-      "uri" : "ontology://org.0al.specgraph.proposal-promotion/0.2.0-draft.1/classes/PromotionActor"
+      "uri" : "ontology://org.0al.specgraph.proposal-promotion/0.3.0-draft.1/classes/PromotionActor"
     },
     {
       "aliases" : [
@@ -694,7 +694,7 @@
       ],
       "central" : false,
       "description" : "A reviewable pre-canonical draft; a recorded ingress is required before materialization.",
-      "diagramOrigin" : "org.0al.specgraph.proposal-promotion@0.2.0-draft.1",
+      "diagramOrigin" : "org.0al.specgraph.proposal-promotion@0.3.0-draft.1",
       "extends" : "ont:DomainEntity",
       "fqid" : "sgpromotion:SpecDraft",
       "id" : "SpecDraft",
@@ -705,11 +705,11 @@
       "source" : {
         "id" : "org.0al.specgraph.proposal-promotion",
         "pointer" : "/spec/classes/SpecDraft",
-        "sourceByteDigest" : "sha256:1d4036e23a3e384896f7dfeb29748342a79deb1eee572aaf380a0a143d9980ba",
-        "sourceDigest" : "sha256:1d4036e23a3e384896f7dfeb29748342a79deb1eee572aaf380a0a143d9980ba",
-        "version" : "0.2.0-draft.1"
+        "sourceByteDigest" : "sha256:f1cf64ab336347b0aa9c4105413aac6462eeb0d847793692b607740a7e3cde4f",
+        "sourceDigest" : "sha256:f1cf64ab336347b0aa9c4105413aac6462eeb0d847793692b607740a7e3cde4f",
+        "version" : "0.3.0-draft.1"
       },
-      "uri" : "ontology://org.0al.specgraph.proposal-promotion/0.2.0-draft.1/classes/SpecDraft"
+      "uri" : "ontology://org.0al.specgraph.proposal-promotion/0.3.0-draft.1/classes/SpecDraft"
     },
     {
       "aliases" : [
@@ -717,7 +717,7 @@
       ],
       "central" : false,
       "description" : "A completed decision for one promotion edge; pending templates are outside this class.",
-      "diagramOrigin" : "org.0al.specgraph.proposal-promotion@0.2.0-draft.1",
+      "diagramOrigin" : "org.0al.specgraph.proposal-promotion@0.3.0-draft.1",
       "extends" : "ont:DomainEntity",
       "fields" : [
         {
@@ -726,9 +726,9 @@
           "source" : {
             "id" : "org.0al.specgraph.proposal-promotion",
             "pointer" : "/spec/classes/TransitionRecord/fields/decision_timestamp",
-            "sourceByteDigest" : "sha256:1d4036e23a3e384896f7dfeb29748342a79deb1eee572aaf380a0a143d9980ba",
-            "sourceDigest" : "sha256:1d4036e23a3e384896f7dfeb29748342a79deb1eee572aaf380a0a143d9980ba",
-            "version" : "0.2.0-draft.1"
+            "sourceByteDigest" : "sha256:f1cf64ab336347b0aa9c4105413aac6462eeb0d847793692b607740a7e3cde4f",
+            "sourceDigest" : "sha256:f1cf64ab336347b0aa9c4105413aac6462eeb0d847793692b607740a7e3cde4f",
+            "version" : "0.3.0-draft.1"
           },
           "type" : "string"
         },
@@ -738,9 +738,9 @@
           "source" : {
             "id" : "org.0al.specgraph.proposal-promotion",
             "pointer" : "/spec/classes/TransitionRecord/fields/gate_type",
-            "sourceByteDigest" : "sha256:1d4036e23a3e384896f7dfeb29748342a79deb1eee572aaf380a0a143d9980ba",
-            "sourceDigest" : "sha256:1d4036e23a3e384896f7dfeb29748342a79deb1eee572aaf380a0a143d9980ba",
-            "version" : "0.2.0-draft.1"
+            "sourceByteDigest" : "sha256:f1cf64ab336347b0aa9c4105413aac6462eeb0d847793692b607740a7e3cde4f",
+            "sourceDigest" : "sha256:f1cf64ab336347b0aa9c4105413aac6462eeb0d847793692b607740a7e3cde4f",
+            "version" : "0.3.0-draft.1"
           },
           "type" : "string"
         },
@@ -750,9 +750,9 @@
           "source" : {
             "id" : "org.0al.specgraph.proposal-promotion",
             "pointer" : "/spec/classes/TransitionRecord/fields/outcome",
-            "sourceByteDigest" : "sha256:1d4036e23a3e384896f7dfeb29748342a79deb1eee572aaf380a0a143d9980ba",
-            "sourceDigest" : "sha256:1d4036e23a3e384896f7dfeb29748342a79deb1eee572aaf380a0a143d9980ba",
-            "version" : "0.2.0-draft.1"
+            "sourceByteDigest" : "sha256:f1cf64ab336347b0aa9c4105413aac6462eeb0d847793692b607740a7e3cde4f",
+            "sourceDigest" : "sha256:f1cf64ab336347b0aa9c4105413aac6462eeb0d847793692b607740a7e3cde4f",
+            "version" : "0.3.0-draft.1"
           },
           "type" : "string"
         },
@@ -762,9 +762,9 @@
           "source" : {
             "id" : "org.0al.specgraph.proposal-promotion",
             "pointer" : "/spec/classes/TransitionRecord/fields/promotion_edge",
-            "sourceByteDigest" : "sha256:1d4036e23a3e384896f7dfeb29748342a79deb1eee572aaf380a0a143d9980ba",
-            "sourceDigest" : "sha256:1d4036e23a3e384896f7dfeb29748342a79deb1eee572aaf380a0a143d9980ba",
-            "version" : "0.2.0-draft.1"
+            "sourceByteDigest" : "sha256:f1cf64ab336347b0aa9c4105413aac6462eeb0d847793692b607740a7e3cde4f",
+            "sourceDigest" : "sha256:f1cf64ab336347b0aa9c4105413aac6462eeb0d847793692b607740a7e3cde4f",
+            "version" : "0.3.0-draft.1"
           },
           "type" : "string"
         },
@@ -774,9 +774,9 @@
           "source" : {
             "id" : "org.0al.specgraph.proposal-promotion",
             "pointer" : "/spec/classes/TransitionRecord/fields/rationale",
-            "sourceByteDigest" : "sha256:1d4036e23a3e384896f7dfeb29748342a79deb1eee572aaf380a0a143d9980ba",
-            "sourceDigest" : "sha256:1d4036e23a3e384896f7dfeb29748342a79deb1eee572aaf380a0a143d9980ba",
-            "version" : "0.2.0-draft.1"
+            "sourceByteDigest" : "sha256:f1cf64ab336347b0aa9c4105413aac6462eeb0d847793692b607740a7e3cde4f",
+            "sourceDigest" : "sha256:f1cf64ab336347b0aa9c4105413aac6462eeb0d847793692b607740a7e3cde4f",
+            "version" : "0.3.0-draft.1"
           },
           "type" : "string"
         },
@@ -786,9 +786,9 @@
           "source" : {
             "id" : "org.0al.specgraph.proposal-promotion",
             "pointer" : "/spec/classes/TransitionRecord/fields/reviewer_or_decider",
-            "sourceByteDigest" : "sha256:1d4036e23a3e384896f7dfeb29748342a79deb1eee572aaf380a0a143d9980ba",
-            "sourceDigest" : "sha256:1d4036e23a3e384896f7dfeb29748342a79deb1eee572aaf380a0a143d9980ba",
-            "version" : "0.2.0-draft.1"
+            "sourceByteDigest" : "sha256:f1cf64ab336347b0aa9c4105413aac6462eeb0d847793692b607740a7e3cde4f",
+            "sourceDigest" : "sha256:f1cf64ab336347b0aa9c4105413aac6462eeb0d847793692b607740a7e3cde4f",
+            "version" : "0.3.0-draft.1"
           },
           "type" : "string"
         },
@@ -798,9 +798,9 @@
           "source" : {
             "id" : "org.0al.specgraph.proposal-promotion",
             "pointer" : "/spec/classes/TransitionRecord/fields/source_ref",
-            "sourceByteDigest" : "sha256:1d4036e23a3e384896f7dfeb29748342a79deb1eee572aaf380a0a143d9980ba",
-            "sourceDigest" : "sha256:1d4036e23a3e384896f7dfeb29748342a79deb1eee572aaf380a0a143d9980ba",
-            "version" : "0.2.0-draft.1"
+            "sourceByteDigest" : "sha256:f1cf64ab336347b0aa9c4105413aac6462eeb0d847793692b607740a7e3cde4f",
+            "sourceDigest" : "sha256:f1cf64ab336347b0aa9c4105413aac6462eeb0d847793692b607740a7e3cde4f",
+            "version" : "0.3.0-draft.1"
           },
           "type" : "string"
         },
@@ -810,9 +810,9 @@
           "source" : {
             "id" : "org.0al.specgraph.proposal-promotion",
             "pointer" : "/spec/classes/TransitionRecord/fields/target_ref",
-            "sourceByteDigest" : "sha256:1d4036e23a3e384896f7dfeb29748342a79deb1eee572aaf380a0a143d9980ba",
-            "sourceDigest" : "sha256:1d4036e23a3e384896f7dfeb29748342a79deb1eee572aaf380a0a143d9980ba",
-            "version" : "0.2.0-draft.1"
+            "sourceByteDigest" : "sha256:f1cf64ab336347b0aa9c4105413aac6462eeb0d847793692b607740a7e3cde4f",
+            "sourceDigest" : "sha256:f1cf64ab336347b0aa9c4105413aac6462eeb0d847793692b607740a7e3cde4f",
+            "version" : "0.3.0-draft.1"
           },
           "type" : "string"
         },
@@ -822,9 +822,9 @@
           "source" : {
             "id" : "org.0al.specgraph.proposal-promotion",
             "pointer" : "/spec/classes/TransitionRecord/fields/transition_identifier",
-            "sourceByteDigest" : "sha256:1d4036e23a3e384896f7dfeb29748342a79deb1eee572aaf380a0a143d9980ba",
-            "sourceDigest" : "sha256:1d4036e23a3e384896f7dfeb29748342a79deb1eee572aaf380a0a143d9980ba",
-            "version" : "0.2.0-draft.1"
+            "sourceByteDigest" : "sha256:f1cf64ab336347b0aa9c4105413aac6462eeb0d847793692b607740a7e3cde4f",
+            "sourceDigest" : "sha256:f1cf64ab336347b0aa9c4105413aac6462eeb0d847793692b607740a7e3cde4f",
+            "version" : "0.3.0-draft.1"
           },
           "type" : "string"
         },
@@ -834,9 +834,9 @@
           "source" : {
             "id" : "org.0al.specgraph.proposal-promotion",
             "pointer" : "/spec/classes/TransitionRecord/fields/transition_record_id",
-            "sourceByteDigest" : "sha256:1d4036e23a3e384896f7dfeb29748342a79deb1eee572aaf380a0a143d9980ba",
-            "sourceDigest" : "sha256:1d4036e23a3e384896f7dfeb29748342a79deb1eee572aaf380a0a143d9980ba",
-            "version" : "0.2.0-draft.1"
+            "sourceByteDigest" : "sha256:f1cf64ab336347b0aa9c4105413aac6462eeb0d847793692b607740a7e3cde4f",
+            "sourceDigest" : "sha256:f1cf64ab336347b0aa9c4105413aac6462eeb0d847793692b607740a7e3cde4f",
+            "version" : "0.3.0-draft.1"
           },
           "type" : "string"
         }
@@ -850,80 +850,11 @@
       "source" : {
         "id" : "org.0al.specgraph.proposal-promotion",
         "pointer" : "/spec/classes/TransitionRecord",
-        "sourceByteDigest" : "sha256:1d4036e23a3e384896f7dfeb29748342a79deb1eee572aaf380a0a143d9980ba",
-        "sourceDigest" : "sha256:1d4036e23a3e384896f7dfeb29748342a79deb1eee572aaf380a0a143d9980ba",
-        "version" : "0.2.0-draft.1"
-      },
-      "uri" : "ontology://org.0al.specgraph.proposal-promotion/0.2.0-draft.1/classes/TransitionRecord"
-    },
-    {
-      "aliases" : [
-
-      ],
-      "central" : false,
-      "description" : "A reviewable epistemic claim that may inform interpretation without becoming intent.",
-      "diagramOrigin" : "org.0al.specgraph.intent-proposal@0.3.0-draft.1",
-      "extends" : "ont:DomainEntity",
-      "fqid" : "sgproposal:Hypothesis",
-      "id" : "Hypothesis",
-      "implements" : [
-
-      ],
-      "kind" : "DomainEntity",
-      "source" : {
-        "id" : "org.0al.specgraph.intent-proposal",
-        "pointer" : "/spec/classes/Hypothesis",
-        "sourceByteDigest" : "sha256:d2896dfbcfc81717cc0e7b9b8f09152f69cf7690b5eef64b66fe1c56b699d656",
-        "sourceDigest" : "sha256:d2896dfbcfc81717cc0e7b9b8f09152f69cf7690b5eef64b66fe1c56b699d656",
+        "sourceByteDigest" : "sha256:f1cf64ab336347b0aa9c4105413aac6462eeb0d847793692b607740a7e3cde4f",
+        "sourceDigest" : "sha256:f1cf64ab336347b0aa9c4105413aac6462eeb0d847793692b607740a7e3cde4f",
         "version" : "0.3.0-draft.1"
       },
-      "uri" : "ontology://org.0al.specgraph.intent-proposal/0.3.0-draft.1/classes/Hypothesis"
-    },
-    {
-      "aliases" : [
-
-      ],
-      "central" : false,
-      "description" : "A pre-canonical synthesis of one or more intent fragments and optional context.",
-      "diagramOrigin" : "org.0al.specgraph.intent-proposal@0.3.0-draft.1",
-      "extends" : "ont:DomainEntity",
-      "fqid" : "sgproposal:IntentDraft",
-      "id" : "IntentDraft",
-      "implements" : [
-
-      ],
-      "kind" : "DomainEntity",
-      "source" : {
-        "id" : "org.0al.specgraph.intent-proposal",
-        "pointer" : "/spec/classes/IntentDraft",
-        "sourceByteDigest" : "sha256:d2896dfbcfc81717cc0e7b9b8f09152f69cf7690b5eef64b66fe1c56b699d656",
-        "sourceDigest" : "sha256:d2896dfbcfc81717cc0e7b9b8f09152f69cf7690b5eef64b66fe1c56b699d656",
-        "version" : "0.3.0-draft.1"
-      },
-      "uri" : "ontology://org.0al.specgraph.intent-proposal/0.3.0-draft.1/classes/IntentDraft"
-    },
-    {
-      "aliases" : [
-
-      ],
-      "central" : false,
-      "description" : "A partial observable intent signal, not a complete intent draft.",
-      "diagramOrigin" : "org.0al.specgraph.intent-proposal@0.3.0-draft.1",
-      "extends" : "ont:DomainEntity",
-      "fqid" : "sgproposal:IntentFragment",
-      "id" : "IntentFragment",
-      "implements" : [
-
-      ],
-      "kind" : "DomainEntity",
-      "source" : {
-        "id" : "org.0al.specgraph.intent-proposal",
-        "pointer" : "/spec/classes/IntentFragment",
-        "sourceByteDigest" : "sha256:d2896dfbcfc81717cc0e7b9b8f09152f69cf7690b5eef64b66fe1c56b699d656",
-        "sourceDigest" : "sha256:d2896dfbcfc81717cc0e7b9b8f09152f69cf7690b5eef64b66fe1c56b699d656",
-        "version" : "0.3.0-draft.1"
-      },
-      "uri" : "ontology://org.0al.specgraph.intent-proposal/0.3.0-draft.1/classes/IntentFragment"
+      "uri" : "ontology://org.0al.specgraph.proposal-promotion/0.3.0-draft.1/classes/TransitionRecord"
     },
     {
       "aliases" : [
@@ -931,7 +862,7 @@
       ],
       "central" : false,
       "description" : "A person or agent acting to synthesize fragments into a candidate draft in this interpretation.",
-      "diagramOrigin" : "org.0al.specgraph.intent-proposal@0.3.0-draft.1",
+      "diagramOrigin" : "org.0al.specgraph.intent-proposal@0.4.0-draft.1",
       "extends" : "ont:DomainEntity",
       "fqid" : "sgproposal:IntentSynthesizer",
       "id" : "IntentSynthesizer",
@@ -942,11 +873,11 @@
       "source" : {
         "id" : "org.0al.specgraph.intent-proposal",
         "pointer" : "/spec/classes/IntentSynthesizer",
-        "sourceByteDigest" : "sha256:d2896dfbcfc81717cc0e7b9b8f09152f69cf7690b5eef64b66fe1c56b699d656",
-        "sourceDigest" : "sha256:d2896dfbcfc81717cc0e7b9b8f09152f69cf7690b5eef64b66fe1c56b699d656",
-        "version" : "0.3.0-draft.1"
+        "sourceByteDigest" : "sha256:f97facc5a1f85c6a95435097359ea88061ce1bae5bf2f6e1cbfdc28538d251de",
+        "sourceDigest" : "sha256:f97facc5a1f85c6a95435097359ea88061ce1bae5bf2f6e1cbfdc28538d251de",
+        "version" : "0.4.0-draft.1"
       },
-      "uri" : "ontology://org.0al.specgraph.intent-proposal/0.3.0-draft.1/classes/IntentSynthesizer"
+      "uri" : "ontology://org.0al.specgraph.intent-proposal/0.4.0-draft.1/classes/IntentSynthesizer"
     },
     {
       "aliases" : [
@@ -954,7 +885,7 @@
       ],
       "central" : false,
       "description" : "Interpret a fragment in the context of an existing candidate intent draft.",
-      "diagramOrigin" : "org.0al.specgraph.intent-proposal@0.3.0-draft.1",
+      "diagramOrigin" : "org.0al.specgraph.intent-proposal@0.4.0-draft.1",
       "extends" : "ont:Action",
       "fields" : [
         {
@@ -964,11 +895,14 @@
           "source" : {
             "id" : "org.0al.specgraph.intent-proposal",
             "pointer" : "/spec/classes/InterpretFragmentForDraft/fields/candidateDraft",
-            "sourceByteDigest" : "sha256:d2896dfbcfc81717cc0e7b9b8f09152f69cf7690b5eef64b66fe1c56b699d656",
-            "sourceDigest" : "sha256:d2896dfbcfc81717cc0e7b9b8f09152f69cf7690b5eef64b66fe1c56b699d656",
-            "version" : "0.3.0-draft.1"
+            "sourceByteDigest" : "sha256:f97facc5a1f85c6a95435097359ea88061ce1bae5bf2f6e1cbfdc28538d251de",
+            "sourceDigest" : "sha256:f97facc5a1f85c6a95435097359ea88061ce1bae5bf2f6e1cbfdc28538d251de",
+            "version" : "0.4.0-draft.1"
           },
-          "target" : "sgproposal:IntentDraft",
+          "target" : "sgcore:IntentDraft",
+          "targetSourceDigest" : "sha256:56dbc9f05f439eb7bf6b028433906c3bcf87b10486fdb6bef23332defa5281f8",
+          "targetType" : "sgcore:IntentDraft",
+          "targetUri" : "ontology://org.0al.specgraph.core/0.3.0/classes/IntentDraft",
           "type" : "ref"
         }
       ],
@@ -981,11 +915,11 @@
       "source" : {
         "id" : "org.0al.specgraph.intent-proposal",
         "pointer" : "/spec/classes/InterpretFragmentForDraft",
-        "sourceByteDigest" : "sha256:d2896dfbcfc81717cc0e7b9b8f09152f69cf7690b5eef64b66fe1c56b699d656",
-        "sourceDigest" : "sha256:d2896dfbcfc81717cc0e7b9b8f09152f69cf7690b5eef64b66fe1c56b699d656",
-        "version" : "0.3.0-draft.1"
+        "sourceByteDigest" : "sha256:f97facc5a1f85c6a95435097359ea88061ce1bae5bf2f6e1cbfdc28538d251de",
+        "sourceDigest" : "sha256:f97facc5a1f85c6a95435097359ea88061ce1bae5bf2f6e1cbfdc28538d251de",
+        "version" : "0.4.0-draft.1"
       },
-      "uri" : "ontology://org.0al.specgraph.intent-proposal/0.3.0-draft.1/classes/InterpretFragmentForDraft"
+      "uri" : "ontology://org.0al.specgraph.intent-proposal/0.4.0-draft.1/classes/InterpretFragmentForDraft"
     },
     {
       "aliases" : [
@@ -993,7 +927,7 @@
       ],
       "central" : false,
       "description" : "Interpret an intent in the context of an existing candidate proposal.",
-      "diagramOrigin" : "org.0al.specgraph.intent-proposal@0.3.0-draft.1",
+      "diagramOrigin" : "org.0al.specgraph.intent-proposal@0.4.0-draft.1",
       "extends" : "ont:Action",
       "fields" : [
         {
@@ -1003,11 +937,14 @@
           "source" : {
             "id" : "org.0al.specgraph.intent-proposal",
             "pointer" : "/spec/classes/InterpretIntentForProposal/fields/candidateProposal",
-            "sourceByteDigest" : "sha256:d2896dfbcfc81717cc0e7b9b8f09152f69cf7690b5eef64b66fe1c56b699d656",
-            "sourceDigest" : "sha256:d2896dfbcfc81717cc0e7b9b8f09152f69cf7690b5eef64b66fe1c56b699d656",
-            "version" : "0.3.0-draft.1"
+            "sourceByteDigest" : "sha256:f97facc5a1f85c6a95435097359ea88061ce1bae5bf2f6e1cbfdc28538d251de",
+            "sourceDigest" : "sha256:f97facc5a1f85c6a95435097359ea88061ce1bae5bf2f6e1cbfdc28538d251de",
+            "version" : "0.4.0-draft.1"
           },
-          "target" : "sgproposal:Proposal",
+          "target" : "sgcore:Proposal",
+          "targetSourceDigest" : "sha256:56dbc9f05f439eb7bf6b028433906c3bcf87b10486fdb6bef23332defa5281f8",
+          "targetType" : "sgcore:Proposal",
+          "targetUri" : "ontology://org.0al.specgraph.core/0.3.0/classes/Proposal",
           "type" : "ref"
         }
       ],
@@ -1020,34 +957,11 @@
       "source" : {
         "id" : "org.0al.specgraph.intent-proposal",
         "pointer" : "/spec/classes/InterpretIntentForProposal",
-        "sourceByteDigest" : "sha256:d2896dfbcfc81717cc0e7b9b8f09152f69cf7690b5eef64b66fe1c56b699d656",
-        "sourceDigest" : "sha256:d2896dfbcfc81717cc0e7b9b8f09152f69cf7690b5eef64b66fe1c56b699d656",
-        "version" : "0.3.0-draft.1"
+        "sourceByteDigest" : "sha256:f97facc5a1f85c6a95435097359ea88061ce1bae5bf2f6e1cbfdc28538d251de",
+        "sourceDigest" : "sha256:f97facc5a1f85c6a95435097359ea88061ce1bae5bf2f6e1cbfdc28538d251de",
+        "version" : "0.4.0-draft.1"
       },
-      "uri" : "ontology://org.0al.specgraph.intent-proposal/0.3.0-draft.1/classes/InterpretIntentForProposal"
-    },
-    {
-      "aliases" : [
-
-      ],
-      "central" : false,
-      "description" : "A reviewable candidate operationalization, distinct from its motivating intent.",
-      "diagramOrigin" : "org.0al.specgraph.intent-proposal@0.3.0-draft.1",
-      "extends" : "ont:DomainEntity",
-      "fqid" : "sgproposal:Proposal",
-      "id" : "Proposal",
-      "implements" : [
-
-      ],
-      "kind" : "DomainEntity",
-      "source" : {
-        "id" : "org.0al.specgraph.intent-proposal",
-        "pointer" : "/spec/classes/Proposal",
-        "sourceByteDigest" : "sha256:d2896dfbcfc81717cc0e7b9b8f09152f69cf7690b5eef64b66fe1c56b699d656",
-        "sourceDigest" : "sha256:d2896dfbcfc81717cc0e7b9b8f09152f69cf7690b5eef64b66fe1c56b699d656",
-        "version" : "0.3.0-draft.1"
-      },
-      "uri" : "ontology://org.0al.specgraph.intent-proposal/0.3.0-draft.1/classes/Proposal"
+      "uri" : "ontology://org.0al.specgraph.intent-proposal/0.4.0-draft.1/classes/InterpretIntentForProposal"
     },
     {
       "aliases" : [
@@ -1055,7 +969,7 @@
       ],
       "central" : false,
       "description" : "A person or agent acting as the author of a candidate proposal in this interpretation.",
-      "diagramOrigin" : "org.0al.specgraph.intent-proposal@0.3.0-draft.1",
+      "diagramOrigin" : "org.0al.specgraph.intent-proposal@0.4.0-draft.1",
       "extends" : "ont:DomainEntity",
       "fqid" : "sgproposal:ProposalAuthor",
       "id" : "ProposalAuthor",
@@ -1066,11 +980,11 @@
       "source" : {
         "id" : "org.0al.specgraph.intent-proposal",
         "pointer" : "/spec/classes/ProposalAuthor",
-        "sourceByteDigest" : "sha256:d2896dfbcfc81717cc0e7b9b8f09152f69cf7690b5eef64b66fe1c56b699d656",
-        "sourceDigest" : "sha256:d2896dfbcfc81717cc0e7b9b8f09152f69cf7690b5eef64b66fe1c56b699d656",
-        "version" : "0.3.0-draft.1"
+        "sourceByteDigest" : "sha256:f97facc5a1f85c6a95435097359ea88061ce1bae5bf2f6e1cbfdc28538d251de",
+        "sourceDigest" : "sha256:f97facc5a1f85c6a95435097359ea88061ce1bae5bf2f6e1cbfdc28538d251de",
+        "version" : "0.4.0-draft.1"
       },
-      "uri" : "ontology://org.0al.specgraph.intent-proposal/0.3.0-draft.1/classes/ProposalAuthor"
+      "uri" : "ontology://org.0al.specgraph.intent-proposal/0.4.0-draft.1/classes/ProposalAuthor"
     },
     {
       "aliases" : [
@@ -1078,7 +992,7 @@
       ],
       "central" : false,
       "description" : "Source input from which one or more partial intent signals may be extracted.",
-      "diagramOrigin" : "org.0al.specgraph.intent-proposal@0.3.0-draft.1",
+      "diagramOrigin" : "org.0al.specgraph.intent-proposal@0.4.0-draft.1",
       "extends" : "ont:DomainEntity",
       "fqid" : "sgproposal:RawInput",
       "id" : "RawInput",
@@ -1089,11 +1003,11 @@
       "source" : {
         "id" : "org.0al.specgraph.intent-proposal",
         "pointer" : "/spec/classes/RawInput",
-        "sourceByteDigest" : "sha256:d2896dfbcfc81717cc0e7b9b8f09152f69cf7690b5eef64b66fe1c56b699d656",
-        "sourceDigest" : "sha256:d2896dfbcfc81717cc0e7b9b8f09152f69cf7690b5eef64b66fe1c56b699d656",
-        "version" : "0.3.0-draft.1"
+        "sourceByteDigest" : "sha256:f97facc5a1f85c6a95435097359ea88061ce1bae5bf2f6e1cbfdc28538d251de",
+        "sourceDigest" : "sha256:f97facc5a1f85c6a95435097359ea88061ce1bae5bf2f6e1cbfdc28538d251de",
+        "version" : "0.4.0-draft.1"
       },
-      "uri" : "ontology://org.0al.specgraph.intent-proposal/0.3.0-draft.1/classes/RawInput"
+      "uri" : "ontology://org.0al.specgraph.intent-proposal/0.4.0-draft.1/classes/RawInput"
     },
     {
       "aliases" : [
@@ -1111,11 +1025,11 @@
       "source" : {
         "id" : "org.0al.specgraph.review.ontology-overview",
         "pointer" : "/spec/classes/ReviewScope",
-        "sourceByteDigest" : "sha256:9fa094a8350d99ea1b1365c092ea5209c51eef4cd42d34fb476746a174cedc17",
-        "sourceDigest" : "sha256:9fa094a8350d99ea1b1365c092ea5209c51eef4cd42d34fb476746a174cedc17",
-        "version" : "0.2.0-draft.1"
+        "sourceByteDigest" : "sha256:401daee68a60daa7d39855d4efc034489a4af830e16179db9f1f16fc70c5354c",
+        "sourceDigest" : "sha256:401daee68a60daa7d39855d4efc034489a4af830e16179db9f1f16fc70c5354c",
+        "version" : "0.3.0-draft.1"
       },
-      "uri" : "ontology://org.0al.specgraph.review.ontology-overview/0.2.0-draft.1/classes/ReviewScope"
+      "uri" : "ontology://org.0al.specgraph.review.ontology-overview/0.3.0-draft.1/classes/ReviewScope"
     },
     {
       "aliases" : [
@@ -1133,11 +1047,11 @@
       "source" : {
         "id" : "org.0al.specgraph.review.ontology-overview",
         "pointer" : "/spec/classes/SelectedPackage",
-        "sourceByteDigest" : "sha256:9fa094a8350d99ea1b1365c092ea5209c51eef4cd42d34fb476746a174cedc17",
-        "sourceDigest" : "sha256:9fa094a8350d99ea1b1365c092ea5209c51eef4cd42d34fb476746a174cedc17",
-        "version" : "0.2.0-draft.1"
+        "sourceByteDigest" : "sha256:401daee68a60daa7d39855d4efc034489a4af830e16179db9f1f16fc70c5354c",
+        "sourceDigest" : "sha256:401daee68a60daa7d39855d4efc034489a4af830e16179db9f1f16fc70c5354c",
+        "version" : "0.3.0-draft.1"
       },
-      "uri" : "ontology://org.0al.specgraph.review.ontology-overview/0.2.0-draft.1/classes/SelectedPackage"
+      "uri" : "ontology://org.0al.specgraph.review.ontology-overview/0.3.0-draft.1/classes/SelectedPackage"
     }
   ],
   "id" : "org.0al.specgraph.review.ontology-overview",
@@ -1155,12 +1069,12 @@
     {
       "id" : "org.0al.specgraph.intent-proposal",
       "namespace" : "sgproposal",
-      "version" : "0.3.0-draft.1"
+      "version" : "0.4.0-draft.1"
     },
     {
       "id" : "org.0al.specgraph.proposal-promotion",
       "namespace" : "sgpromotion",
-      "version" : "0.2.0-draft.1"
+      "version" : "0.3.0-draft.1"
     },
     {
       "id" : "org.0al.specgraph.publication-verification",
@@ -1657,7 +1571,7 @@
     },
     {
       "description" : "The draft has a proposed canonical destination; no publication is implied.",
-      "diagramOrigin" : "org.0al.specgraph.proposal-promotion@0.2.0-draft.1",
+      "diagramOrigin" : "org.0al.specgraph.proposal-promotion@0.3.0-draft.1",
       "domain" : "sgpromotion:SpecDraft",
       "fqid" : "sgpromotion:draftTargetsCanonicalDestination",
       "id" : "sgpromotion:draftTargetsCanonicalDestination",
@@ -1665,16 +1579,16 @@
       "source" : {
         "id" : "org.0al.specgraph.proposal-promotion",
         "pointer" : "/spec/relations/draftTargetsCanonicalDestination",
-        "sourceByteDigest" : "sha256:1d4036e23a3e384896f7dfeb29748342a79deb1eee572aaf380a0a143d9980ba",
-        "sourceDigest" : "sha256:1d4036e23a3e384896f7dfeb29748342a79deb1eee572aaf380a0a143d9980ba",
-        "version" : "0.2.0-draft.1"
+        "sourceByteDigest" : "sha256:f1cf64ab336347b0aa9c4105413aac6462eeb0d847793692b607740a7e3cde4f",
+        "sourceDigest" : "sha256:f1cf64ab336347b0aa9c4105413aac6462eeb0d847793692b607740a7e3cde4f",
+        "version" : "0.3.0-draft.1"
       },
-      "uri" : "ontology://org.0al.specgraph.proposal-promotion/0.2.0-draft.1/relations/draftTargetsCanonicalDestination"
+      "uri" : "ontology://org.0al.specgraph.proposal-promotion/0.3.0-draft.1/relations/draftTargetsCanonicalDestination"
     },
     {
       "action" : "sgpromotion:MaterializeSpecDraft",
       "description" : "An actor attempts to materialize the selected draft at the target named by the action.",
-      "diagramOrigin" : "org.0al.specgraph.proposal-promotion@0.2.0-draft.1",
+      "diagramOrigin" : "org.0al.specgraph.proposal-promotion@0.3.0-draft.1",
       "domain" : "sgpromotion:PromotionActor",
       "fqid" : "sgpromotion:materializesSpecDraft",
       "id" : "sgpromotion:materializesSpecDraft",
@@ -1682,162 +1596,66 @@
       "source" : {
         "id" : "org.0al.specgraph.proposal-promotion",
         "pointer" : "/spec/relations/materializesSpecDraft",
-        "sourceByteDigest" : "sha256:1d4036e23a3e384896f7dfeb29748342a79deb1eee572aaf380a0a143d9980ba",
-        "sourceDigest" : "sha256:1d4036e23a3e384896f7dfeb29748342a79deb1eee572aaf380a0a143d9980ba",
-        "version" : "0.2.0-draft.1"
+        "sourceByteDigest" : "sha256:f1cf64ab336347b0aa9c4105413aac6462eeb0d847793692b607740a7e3cde4f",
+        "sourceDigest" : "sha256:f1cf64ab336347b0aa9c4105413aac6462eeb0d847793692b607740a7e3cde4f",
+        "version" : "0.3.0-draft.1"
       },
-      "uri" : "ontology://org.0al.specgraph.proposal-promotion/0.2.0-draft.1/relations/materializesSpecDraft"
+      "uri" : "ontology://org.0al.specgraph.proposal-promotion/0.3.0-draft.1/relations/materializesSpecDraft"
     },
     {
       "action" : "sgpromotion:PromoteProposalToSpecDraft",
       "description" : "An actor attempts to promote a proposal to the draft named by the action.",
-      "diagramOrigin" : "org.0al.specgraph.proposal-promotion@0.2.0-draft.1",
+      "diagramOrigin" : "org.0al.specgraph.proposal-promotion@0.3.0-draft.1",
       "domain" : "sgpromotion:PromotionActor",
       "fqid" : "sgpromotion:promotesProposalToDraft",
       "id" : "sgpromotion:promotesProposalToDraft",
-      "range" : "sgproposal:Proposal",
+      "range" : "sgcore:Proposal",
       "source" : {
         "id" : "org.0al.specgraph.proposal-promotion",
         "pointer" : "/spec/relations/promotesProposalToDraft",
-        "sourceByteDigest" : "sha256:1d4036e23a3e384896f7dfeb29748342a79deb1eee572aaf380a0a143d9980ba",
-        "sourceDigest" : "sha256:1d4036e23a3e384896f7dfeb29748342a79deb1eee572aaf380a0a143d9980ba",
-        "version" : "0.2.0-draft.1"
+        "sourceByteDigest" : "sha256:f1cf64ab336347b0aa9c4105413aac6462eeb0d847793692b607740a7e3cde4f",
+        "sourceDigest" : "sha256:f1cf64ab336347b0aa9c4105413aac6462eeb0d847793692b607740a7e3cde4f",
+        "version" : "0.3.0-draft.1"
       },
-      "uri" : "ontology://org.0al.specgraph.proposal-promotion/0.2.0-draft.1/relations/promotesProposalToDraft"
+      "uri" : "ontology://org.0al.specgraph.proposal-promotion/0.3.0-draft.1/relations/promotesProposalToDraft"
     },
     {
       "description" : "The proposal is a source of the draft; this relation is not itself a promotion record.",
-      "diagramOrigin" : "org.0al.specgraph.proposal-promotion@0.2.0-draft.1",
-      "domain" : "sgproposal:Proposal",
+      "diagramOrigin" : "org.0al.specgraph.proposal-promotion@0.3.0-draft.1",
+      "domain" : "sgcore:Proposal",
       "fqid" : "sgpromotion:proposalMotivatesSpecDraft",
       "id" : "sgpromotion:proposalMotivatesSpecDraft",
       "range" : "sgpromotion:SpecDraft",
       "source" : {
         "id" : "org.0al.specgraph.proposal-promotion",
         "pointer" : "/spec/relations/proposalMotivatesSpecDraft",
-        "sourceByteDigest" : "sha256:1d4036e23a3e384896f7dfeb29748342a79deb1eee572aaf380a0a143d9980ba",
-        "sourceDigest" : "sha256:1d4036e23a3e384896f7dfeb29748342a79deb1eee572aaf380a0a143d9980ba",
-        "version" : "0.2.0-draft.1"
-      },
-      "uri" : "ontology://org.0al.specgraph.proposal-promotion/0.2.0-draft.1/relations/proposalMotivatesSpecDraft"
-    },
-    {
-      "description" : "An intent fragment contributes partial observable meaning to a draft.",
-      "diagramOrigin" : "org.0al.specgraph.intent-proposal@0.3.0-draft.1",
-      "domain" : "sgproposal:IntentFragment",
-      "fqid" : "sgproposal:fragmentContributesToDraft",
-      "id" : "sgproposal:fragmentContributesToDraft",
-      "range" : "sgproposal:IntentDraft",
-      "source" : {
-        "id" : "org.0al.specgraph.intent-proposal",
-        "pointer" : "/spec/relations/fragmentContributesToDraft",
-        "sourceByteDigest" : "sha256:d2896dfbcfc81717cc0e7b9b8f09152f69cf7690b5eef64b66fe1c56b699d656",
-        "sourceDigest" : "sha256:d2896dfbcfc81717cc0e7b9b8f09152f69cf7690b5eef64b66fe1c56b699d656",
+        "sourceByteDigest" : "sha256:f1cf64ab336347b0aa9c4105413aac6462eeb0d847793692b607740a7e3cde4f",
+        "sourceDigest" : "sha256:f1cf64ab336347b0aa9c4105413aac6462eeb0d847793692b607740a7e3cde4f",
         "version" : "0.3.0-draft.1"
       },
-      "uri" : "ontology://org.0al.specgraph.intent-proposal/0.3.0-draft.1/relations/fragmentContributesToDraft"
-    },
-    {
-      "description" : "A hypothesis supplies supporting, challenging, or contextual information for a draft.",
-      "diagramOrigin" : "org.0al.specgraph.intent-proposal@0.3.0-draft.1",
-      "domain" : "sgproposal:Hypothesis",
-      "fqid" : "sgproposal:hypothesisInformsIntentDraft",
-      "id" : "sgproposal:hypothesisInformsIntentDraft",
-      "range" : "sgproposal:IntentDraft",
-      "source" : {
-        "id" : "org.0al.specgraph.intent-proposal",
-        "pointer" : "/spec/relations/hypothesisInformsIntentDraft",
-        "sourceByteDigest" : "sha256:d2896dfbcfc81717cc0e7b9b8f09152f69cf7690b5eef64b66fe1c56b699d656",
-        "sourceDigest" : "sha256:d2896dfbcfc81717cc0e7b9b8f09152f69cf7690b5eef64b66fe1c56b699d656",
-        "version" : "0.3.0-draft.1"
-      },
-      "uri" : "ontology://org.0al.specgraph.intent-proposal/0.3.0-draft.1/relations/hypothesisInformsIntentDraft"
-    },
-    {
-      "description" : "A hypothesis supplies supporting, challenging, or contextual information for a proposal.",
-      "diagramOrigin" : "org.0al.specgraph.intent-proposal@0.3.0-draft.1",
-      "domain" : "sgproposal:Hypothesis",
-      "fqid" : "sgproposal:hypothesisInformsProposal",
-      "id" : "sgproposal:hypothesisInformsProposal",
-      "range" : "sgproposal:Proposal",
-      "source" : {
-        "id" : "org.0al.specgraph.intent-proposal",
-        "pointer" : "/spec/relations/hypothesisInformsProposal",
-        "sourceByteDigest" : "sha256:d2896dfbcfc81717cc0e7b9b8f09152f69cf7690b5eef64b66fe1c56b699d656",
-        "sourceDigest" : "sha256:d2896dfbcfc81717cc0e7b9b8f09152f69cf7690b5eef64b66fe1c56b699d656",
-        "version" : "0.3.0-draft.1"
-      },
-      "uri" : "ontology://org.0al.specgraph.intent-proposal/0.3.0-draft.1/relations/hypothesisInformsProposal"
-    },
-    {
-      "description" : "An intent draft motivates a candidate proposal without being replaced by it.",
-      "diagramOrigin" : "org.0al.specgraph.intent-proposal@0.3.0-draft.1",
-      "domain" : "sgproposal:IntentDraft",
-      "fqid" : "sgproposal:intentDraftMotivatesProposal",
-      "id" : "sgproposal:intentDraftMotivatesProposal",
-      "range" : "sgproposal:Proposal",
-      "source" : {
-        "id" : "org.0al.specgraph.intent-proposal",
-        "pointer" : "/spec/relations/intentDraftMotivatesProposal",
-        "sourceByteDigest" : "sha256:d2896dfbcfc81717cc0e7b9b8f09152f69cf7690b5eef64b66fe1c56b699d656",
-        "sourceDigest" : "sha256:d2896dfbcfc81717cc0e7b9b8f09152f69cf7690b5eef64b66fe1c56b699d656",
-        "version" : "0.3.0-draft.1"
-      },
-      "uri" : "ontology://org.0al.specgraph.intent-proposal/0.3.0-draft.1/relations/intentDraftMotivatesProposal"
-    },
-    {
-      "description" : "An intent draft supplies the originating observed meaning for a stabilized intent.",
-      "diagramOrigin" : "org.0al.specgraph.intent-proposal@0.3.0-draft.1",
-      "domain" : "sgproposal:IntentDraft",
-      "fqid" : "sgproposal:intentDraftSourceForIntent",
-      "id" : "sgproposal:intentDraftSourceForIntent",
-      "range" : "sgcore:Intent",
-      "source" : {
-        "id" : "org.0al.specgraph.intent-proposal",
-        "pointer" : "/spec/relations/intentDraftSourceForIntent",
-        "sourceByteDigest" : "sha256:d2896dfbcfc81717cc0e7b9b8f09152f69cf7690b5eef64b66fe1c56b699d656",
-        "sourceDigest" : "sha256:d2896dfbcfc81717cc0e7b9b8f09152f69cf7690b5eef64b66fe1c56b699d656",
-        "version" : "0.3.0-draft.1"
-      },
-      "uri" : "ontology://org.0al.specgraph.intent-proposal/0.3.0-draft.1/relations/intentDraftSourceForIntent"
-    },
-    {
-      "description" : "An intent motivates a candidate proposal without being replaced by it.",
-      "diagramOrigin" : "org.0al.specgraph.intent-proposal@0.3.0-draft.1",
-      "domain" : "sgcore:Intent",
-      "fqid" : "sgproposal:intentMotivatesProposal",
-      "id" : "sgproposal:intentMotivatesProposal",
-      "range" : "sgproposal:Proposal",
-      "source" : {
-        "id" : "org.0al.specgraph.intent-proposal",
-        "pointer" : "/spec/relations/intentMotivatesProposal",
-        "sourceByteDigest" : "sha256:d2896dfbcfc81717cc0e7b9b8f09152f69cf7690b5eef64b66fe1c56b699d656",
-        "sourceDigest" : "sha256:d2896dfbcfc81717cc0e7b9b8f09152f69cf7690b5eef64b66fe1c56b699d656",
-        "version" : "0.3.0-draft.1"
-      },
-      "uri" : "ontology://org.0al.specgraph.intent-proposal/0.3.0-draft.1/relations/intentMotivatesProposal"
+      "uri" : "ontology://org.0al.specgraph.proposal-promotion/0.3.0-draft.1/relations/proposalMotivatesSpecDraft"
     },
     {
       "action" : "sgproposal:InterpretFragmentForDraft",
       "description" : "A synthesizer interprets a fragment while developing the draft identified by the action.",
-      "diagramOrigin" : "org.0al.specgraph.intent-proposal@0.3.0-draft.1",
+      "diagramOrigin" : "org.0al.specgraph.intent-proposal@0.4.0-draft.1",
       "domain" : "sgproposal:IntentSynthesizer",
       "fqid" : "sgproposal:interpretsFragmentForDraft",
       "id" : "sgproposal:interpretsFragmentForDraft",
-      "range" : "sgproposal:IntentFragment",
+      "range" : "sgcore:IntentFragment",
       "source" : {
         "id" : "org.0al.specgraph.intent-proposal",
         "pointer" : "/spec/relations/interpretsFragmentForDraft",
-        "sourceByteDigest" : "sha256:d2896dfbcfc81717cc0e7b9b8f09152f69cf7690b5eef64b66fe1c56b699d656",
-        "sourceDigest" : "sha256:d2896dfbcfc81717cc0e7b9b8f09152f69cf7690b5eef64b66fe1c56b699d656",
-        "version" : "0.3.0-draft.1"
+        "sourceByteDigest" : "sha256:f97facc5a1f85c6a95435097359ea88061ce1bae5bf2f6e1cbfdc28538d251de",
+        "sourceDigest" : "sha256:f97facc5a1f85c6a95435097359ea88061ce1bae5bf2f6e1cbfdc28538d251de",
+        "version" : "0.4.0-draft.1"
       },
-      "uri" : "ontology://org.0al.specgraph.intent-proposal/0.3.0-draft.1/relations/interpretsFragmentForDraft"
+      "uri" : "ontology://org.0al.specgraph.intent-proposal/0.4.0-draft.1/relations/interpretsFragmentForDraft"
     },
     {
       "action" : "sgproposal:InterpretIntentForProposal",
       "description" : "An author interprets an intent while developing the candidate identified by the action.",
-      "diagramOrigin" : "org.0al.specgraph.intent-proposal@0.3.0-draft.1",
+      "diagramOrigin" : "org.0al.specgraph.intent-proposal@0.4.0-draft.1",
       "domain" : "sgproposal:ProposalAuthor",
       "fqid" : "sgproposal:interpretsIntentForProposal",
       "id" : "sgproposal:interpretsIntentForProposal",
@@ -1845,27 +1663,27 @@
       "source" : {
         "id" : "org.0al.specgraph.intent-proposal",
         "pointer" : "/spec/relations/interpretsIntentForProposal",
-        "sourceByteDigest" : "sha256:d2896dfbcfc81717cc0e7b9b8f09152f69cf7690b5eef64b66fe1c56b699d656",
-        "sourceDigest" : "sha256:d2896dfbcfc81717cc0e7b9b8f09152f69cf7690b5eef64b66fe1c56b699d656",
-        "version" : "0.3.0-draft.1"
+        "sourceByteDigest" : "sha256:f97facc5a1f85c6a95435097359ea88061ce1bae5bf2f6e1cbfdc28538d251de",
+        "sourceDigest" : "sha256:f97facc5a1f85c6a95435097359ea88061ce1bae5bf2f6e1cbfdc28538d251de",
+        "version" : "0.4.0-draft.1"
       },
-      "uri" : "ontology://org.0al.specgraph.intent-proposal/0.3.0-draft.1/relations/interpretsIntentForProposal"
+      "uri" : "ontology://org.0al.specgraph.intent-proposal/0.4.0-draft.1/relations/interpretsIntentForProposal"
     },
     {
       "description" : "A raw input supplies source material for an extracted fragment.",
-      "diagramOrigin" : "org.0al.specgraph.intent-proposal@0.3.0-draft.1",
+      "diagramOrigin" : "org.0al.specgraph.intent-proposal@0.4.0-draft.1",
       "domain" : "sgproposal:RawInput",
       "fqid" : "sgproposal:rawInputSourceForFragment",
       "id" : "sgproposal:rawInputSourceForFragment",
-      "range" : "sgproposal:IntentFragment",
+      "range" : "sgcore:IntentFragment",
       "source" : {
         "id" : "org.0al.specgraph.intent-proposal",
         "pointer" : "/spec/relations/rawInputSourceForFragment",
-        "sourceByteDigest" : "sha256:d2896dfbcfc81717cc0e7b9b8f09152f69cf7690b5eef64b66fe1c56b699d656",
-        "sourceDigest" : "sha256:d2896dfbcfc81717cc0e7b9b8f09152f69cf7690b5eef64b66fe1c56b699d656",
-        "version" : "0.3.0-draft.1"
+        "sourceByteDigest" : "sha256:f97facc5a1f85c6a95435097359ea88061ce1bae5bf2f6e1cbfdc28538d251de",
+        "sourceDigest" : "sha256:f97facc5a1f85c6a95435097359ea88061ce1bae5bf2f6e1cbfdc28538d251de",
+        "version" : "0.4.0-draft.1"
       },
-      "uri" : "ontology://org.0al.specgraph.intent-proposal/0.3.0-draft.1/relations/rawInputSourceForFragment"
+      "uri" : "ontology://org.0al.specgraph.intent-proposal/0.4.0-draft.1/relations/rawInputSourceForFragment"
     },
     {
       "description" : "Review metadata describing package selection; it does not connect or approve the selected models.",
@@ -1876,24 +1694,24 @@
       "source" : {
         "id" : "org.0al.specgraph.review.ontology-overview",
         "pointer" : "/spec/relations/scopeIncludesPackage",
-        "sourceByteDigest" : "sha256:9fa094a8350d99ea1b1365c092ea5209c51eef4cd42d34fb476746a174cedc17",
-        "sourceDigest" : "sha256:9fa094a8350d99ea1b1365c092ea5209c51eef4cd42d34fb476746a174cedc17",
-        "version" : "0.2.0-draft.1"
+        "sourceByteDigest" : "sha256:401daee68a60daa7d39855d4efc034489a4af830e16179db9f1f16fc70c5354c",
+        "sourceDigest" : "sha256:401daee68a60daa7d39855d4efc034489a4af830e16179db9f1f16fc70c5354c",
+        "version" : "0.3.0-draft.1"
       },
-      "uri" : "ontology://org.0al.specgraph.review.ontology-overview/0.2.0-draft.1/relations/scopeIncludesPackage"
+      "uri" : "ontology://org.0al.specgraph.review.ontology-overview/0.3.0-draft.1/relations/scopeIncludesPackage"
     }
   ],
   "schemaVersion" : "ontology.diagram-projection/v1",
-  "sourceByteDigest" : "sha256:9fa094a8350d99ea1b1365c092ea5209c51eef4cd42d34fb476746a174cedc17",
-  "sourceDigest" : "sha256:9fa094a8350d99ea1b1365c092ea5209c51eef4cd42d34fb476746a174cedc17",
+  "sourceByteDigest" : "sha256:401daee68a60daa7d39855d4efc034489a4af830e16179db9f1f16fc70c5354c",
+  "sourceDigest" : "sha256:401daee68a60daa7d39855d4efc034489a4af830e16179db9f1f16fc70c5354c",
   "sources" : [
     {
       "alias" : "sgreview",
       "id" : "org.0al.specgraph.review.ontology-overview",
       "namespace" : "sgreview",
-      "sourceByteDigest" : "sha256:9fa094a8350d99ea1b1365c092ea5209c51eef4cd42d34fb476746a174cedc17",
-      "sourceDigest" : "sha256:9fa094a8350d99ea1b1365c092ea5209c51eef4cd42d34fb476746a174cedc17",
-      "version" : "0.2.0-draft.1"
+      "sourceByteDigest" : "sha256:401daee68a60daa7d39855d4efc034489a4af830e16179db9f1f16fc70c5354c",
+      "sourceDigest" : "sha256:401daee68a60daa7d39855d4efc034489a4af830e16179db9f1f16fc70c5354c",
+      "version" : "0.3.0-draft.1"
     },
     {
       "alias" : "pubverify",
@@ -1915,17 +1733,17 @@
       "alias" : "sgpromotion",
       "id" : "org.0al.specgraph.proposal-promotion",
       "namespace" : "sgpromotion",
-      "sourceByteDigest" : "sha256:1d4036e23a3e384896f7dfeb29748342a79deb1eee572aaf380a0a143d9980ba",
-      "sourceDigest" : "sha256:1d4036e23a3e384896f7dfeb29748342a79deb1eee572aaf380a0a143d9980ba",
-      "version" : "0.2.0-draft.1"
+      "sourceByteDigest" : "sha256:f1cf64ab336347b0aa9c4105413aac6462eeb0d847793692b607740a7e3cde4f",
+      "sourceDigest" : "sha256:f1cf64ab336347b0aa9c4105413aac6462eeb0d847793692b607740a7e3cde4f",
+      "version" : "0.3.0-draft.1"
     },
     {
       "alias" : "sgproposal",
       "id" : "org.0al.specgraph.intent-proposal",
       "namespace" : "sgproposal",
-      "sourceByteDigest" : "sha256:d2896dfbcfc81717cc0e7b9b8f09152f69cf7690b5eef64b66fe1c56b699d656",
-      "sourceDigest" : "sha256:d2896dfbcfc81717cc0e7b9b8f09152f69cf7690b5eef64b66fe1c56b699d656",
-      "version" : "0.3.0-draft.1"
+      "sourceByteDigest" : "sha256:f97facc5a1f85c6a95435097359ea88061ce1bae5bf2f6e1cbfdc28538d251de",
+      "sourceDigest" : "sha256:f97facc5a1f85c6a95435097359ea88061ce1bae5bf2f6e1cbfdc28538d251de",
+      "version" : "0.4.0-draft.1"
     }
   ],
   "stateMachines" : [
@@ -1953,6 +1771,6 @@
       ]
     }
   ],
-  "version" : "0.2.0-draft.1",
+  "version" : "0.3.0-draft.1",
   "view" : "full"
 }
