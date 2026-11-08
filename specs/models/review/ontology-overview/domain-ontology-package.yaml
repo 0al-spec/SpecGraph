@@ -1,0 +1,29 @@
+apiVersion: ontology.specgraph.io/v1alpha1
+kind: DomainOntologyPackage
+metadata:
+  id: org.0al.specgraph.review.ontology-overview
+  namespace: sgreview
+  version: 0.1.0-draft.1
+  publisher: SpecGraph
+  source: specs/models/review/ontology-overview/domain-ontology-package.yaml
+  approvalStatus: draft
+spec:
+  imports:
+    - {id: ontology.foundation, namespace: ont, version: 0.2.0}
+    - {id: specgraph.foundation, namespace: sg, version: 0.1.0}
+    - {id: org.0al.specgraph.core, namespace: sgcore, version: 0.1.0}
+    - {id: org.0al.specgraph.intent-proposal, namespace: sgproposal, version: 0.2.0-draft.1}
+    - {id: org.0al.specgraph.proposal-promotion, namespace: sgpromotion, version: 0.1.0-draft.1}
+    - {id: org.0al.specgraph.publication-verification, namespace: pubverify, version: 0.1.0-draft.1}
+  classes:
+    ReviewScope:
+      extends: ont:DomainEntity
+      description: Tooling metadata for a read-only review selection, not a proposed SpecGraph domain concept.
+    SelectedPackage:
+      extends: ont:DomainEntity
+      description: Tooling metadata describing a source package selected for a review, not a proposed domain concept.
+  relations:
+    scopeIncludesPackage:
+      domain: ReviewScope
+      range: SelectedPackage
+      description: Review metadata describing package selection; it does not connect or approve the selected models.
