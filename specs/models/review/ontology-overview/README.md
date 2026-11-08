@@ -1,12 +1,12 @@
 # SpecGraph ontology review overview
 
-This is a **draft, read-only review selection**, not a replacement for the
-published `specgraph-core` ontology. It brings four existing source packages
-into one `ontologyviz` diagram without adding relations between those models:
+This is a **public, read-only draft overview** of SpecGraph ontology models.
+It brings four existing source packages into one `ontologyviz` diagram
+without adding relations between those models:
 
 | Package | Source | Purpose in this view |
 | --- | --- | --- |
-| `sgcore` | [Project core](../../../../ontology/packages/specgraph-core/domain-ontology-package.yaml) | Existing public baseline |
+| `sgcore` | [Project core](../../../../ontology/packages/specgraph-core/versions/0.3.0/domain-ontology-package.yaml) | Current public core 0.3.0 |
 | `sgproposal` | [Intent to proposal](../../SG-SPEC-0053/intent-to-proposal/README.md) | Draft capture and authoring interpretation |
 | `sgpromotion` | [Proposal promotion](../../SG-SPEC-0051/proposal-promotion/README.md) | Draft promotion and materialization interpretation |
 | `pubverify` | [Publication verification](../../SG-SPEC-0071/verification-action/README.md) | Draft model of an existing verification action |
@@ -42,5 +42,5 @@ ontologyviz --profile specs/models/review/ontology-overview/ontology.profile.jso
 
 Open `$OUT/ontology.graph.json` in SpecSpace at `/ontology?source=local`.
 The inspector shows the owning package and pointer; package filters can hide
-scaffolding or narrow the comparison. The file is a compiler-derived
-projection of declarations, not a published ontology or executable evidence.
+scaffolding or narrow the comparison. The file is a compiler-derived draft
+projection of declarations, not executable evidence.

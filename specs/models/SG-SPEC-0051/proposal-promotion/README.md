@@ -59,7 +59,7 @@ With Ontology **0.8.0** and an output directory outside the checkout:
 ```sh
 model=specs/models/SG-SPEC-0051/proposal-promotion/domain-ontology-package.yaml
 prior=specs/models/SG-SPEC-0053/intent-to-proposal/domain-ontology-package.yaml
-core=ontology/packages/specgraph-core/domain-ontology-package.yaml
+core=ontology/packages/specgraph-core/versions/0.3.0/domain-ontology-package.yaml
 ontologyc check "$model"
 ontologyc compile "$model" --target typescript --out "$OUT/sdk"
 ontologyviz "$model" --view full --format json \

@@ -15,7 +15,7 @@ ROOT = Path(__file__).resolve().parents[1]
 REVIEW = ROOT / "specs/models/review/ontology-overview"
 PROFILE = REVIEW / "ontology.profile.json"
 PACKAGE = REVIEW / "domain-ontology-package.yaml"
-CORE = ROOT / "ontology/packages/specgraph-core/domain-ontology-package.yaml"
+CORE = ROOT / "ontology/packages/specgraph-core/versions/0.3.0/domain-ontology-package.yaml"
 INTENT = ROOT / "specs/models/SG-SPEC-0053/intent-to-proposal/domain-ontology-package.yaml"
 PROMOTION = ROOT / "specs/models/SG-SPEC-0051/proposal-promotion/domain-ontology-package.yaml"
 PUBLICATION = ROOT / "specs/models/SG-SPEC-0071/verification-action/domain-ontology-package.yaml"
@@ -84,9 +84,12 @@ def test_real_projection_preserves_sources_and_existing_declarations(tmp_path):
     combined = _export(viz, tmp_path / "combined", "--profile", PROFILE)
     repeated = _export(viz, tmp_path / "repeated", "--profile", PROFILE)
     assert combined == repeated
-    assert (tmp_path / "combined/ontology.graph.json").read_bytes() == (
-        tmp_path / "repeated/ontology.graph.json"
-    ).read_bytes()
+    assert (
+        (tmp_path / "combined/ontology.graph.json").read_bytes()
+        == (tmp_path / "repeated/ontology.graph.json").read_bytes()
+        == (REVIEW / "generated/ontology.graph.json").read_bytes()
+    )
+    assert sum(bool(relation.get("action")) for relation in combined["relations"]) == 5
 
     sources = {source["id"]: source for source in combined["sources"]}
     expected_paths = (PACKAGE, CORE, INTENT, PROMOTION, PUBLICATION)

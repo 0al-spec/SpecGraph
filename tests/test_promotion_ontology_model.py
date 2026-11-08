@@ -15,7 +15,7 @@ import yaml
 ROOT = Path(__file__).resolve().parents[1]
 MODEL = ROOT / "specs/models/SG-SPEC-0051/proposal-promotion"
 PRIOR = ROOT / "specs/models/SG-SPEC-0053/intent-to-proposal/domain-ontology-package.yaml"
-CORE = ROOT / "ontology/packages/specgraph-core/domain-ontology-package.yaml"
+CORE = ROOT / "ontology/packages/specgraph-core/versions/0.3.0/domain-ontology-package.yaml"
 
 
 def _document(path):
