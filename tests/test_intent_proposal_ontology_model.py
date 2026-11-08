@@ -26,14 +26,21 @@ def _check_core_endpoints(candidate, core):
     selected = core["metadata"]
     assert {k: selected[k] for k in ("id", "namespace", "version")} in candidate["spec"]["imports"]
     rels = candidate["spec"]["relations"]
-    for reference in (
-        rels["interpretsIntentForProposal"]["object"],
-        rels["intentMotivatesProposal"]["domain"],
+    classes = candidate["spec"]["classes"]
+    for reference, expected_name in (
+        (rels["interpretsIntentForProposal"]["object"], "Intent"),
+        (rels["interpretsFragmentForDraft"]["object"], "IntentFragment"),
+        (rels["rawInputSourceForFragment"]["range"], "IntentFragment"),
+        (
+            classes["InterpretIntentForProposal"]["fields"]["candidateProposal"]["target"],
+            "Proposal",
+        ),
+        (classes["InterpretFragmentForDraft"]["fields"]["candidateDraft"]["target"], "IntentDraft"),
     ):
         namespace, name = reference.split(":", 1)
         assert namespace == selected["namespace"]
         assert name in core["spec"]["classes"]
-        assert name == "Intent"
+        assert name == expected_name
 
 
 def test_model_tracks_the_selected_spec_and_existing_intent():
@@ -55,11 +62,12 @@ def test_model_tracks_the_selected_spec_and_existing_intent():
     assert set(("intent_fragment", "intent_draft", "hypothesis", "proposal")) <= set(
         spec["specification"]["kind_roles"]
     )
-    assert {"RawInput", "IntentFragment", "IntentDraft", "Hypothesis", "Proposal"} <= set(
-        model["spec"]["classes"]
-    )
+    assert "RawInput" in model["spec"]["classes"]
+    reused = {"IntentFragment", "IntentDraft", "Hypothesis", "Proposal"}
+    assert reused <= set(_document(CORE)["spec"]["classes"])
+    assert reused.isdisjoint(model["spec"]["classes"])
     assert model["metadata"]["approvalStatus"] == "draft"
-    assert model["metadata"]["version"] == "0.3.0-draft.1"
+    assert model["metadata"]["version"] == "0.4.0-draft.1"
     _check_core_endpoints(model, _document(CORE))
 
 
@@ -88,13 +96,17 @@ def test_compiler_accepts_model_and_rejects_wrong_local_reference(
     compiler, tmp_path, action, field
 ):
     source = MODEL / "domain-ontology-package.yaml"
-    subprocess.run([compiler, "check", source], check=True, capture_output=True, timeout=60)
+    subprocess.run(
+        [compiler, "check", source, "--import", CORE], check=True, capture_output=True, timeout=60
+    )
     broken = _document(source)
     broken["spec"]["classes"][action]["fields"][field]["target"] = "MissingTarget"
     candidate = tmp_path / "broken.yaml"
     candidate.write_text(yaml.safe_dump(broken), encoding="utf-8")
     result = subprocess.run(
-        [compiler, "check", candidate, "--format", "json"], capture_output=True, timeout=60
+        [compiler, "check", candidate, "--import", CORE, "--format", "json"],
+        capture_output=True,
+        timeout=60,
     )
     assert result.returncode == 1
     assert any(d["code"] == "class.field.target.unresolved" for d in json.loads(result.stdout))
@@ -132,34 +144,34 @@ def test_full_projection_reuses_exact_core_source(tmp_path):
     )
     action = classes["sgproposal:InterpretIntentForProposal"]
     assert action["kind"] == "Action"
-    assert action["fields"][0]["target"] == "sgproposal:Proposal"
+    assert action["fields"][0]["target"] == "sgcore:Proposal"
     relationship = relations["sgproposal:interpretsIntentForProposal"]
     assert (relationship["domain"], relationship["action"], relationship["range"]) == (
         "sgproposal:ProposalAuthor",
         "sgproposal:InterpretIntentForProposal",
         "sgcore:Intent",
     )
-    motivation = relations["sgproposal:intentMotivatesProposal"]
-    assert (motivation["domain"], motivation["range"]) == ("sgcore:Intent", "sgproposal:Proposal")
+    motivation = relations["sgcore:intentMotivatesProposal"]
+    assert (motivation["domain"], motivation["range"]) == ("sgcore:Intent", "sgcore:Proposal")
     synthesis = classes["sgproposal:InterpretFragmentForDraft"]
     assert synthesis["kind"] == "Action"
-    assert synthesis["fields"][0]["target"] == "sgproposal:IntentDraft"
+    assert synthesis["fields"][0]["target"] == "sgcore:IntentDraft"
     binding = relations["sgproposal:interpretsFragmentForDraft"]
     assert (binding["domain"], binding["action"], binding["range"]) == (
         "sgproposal:IntentSynthesizer",
         "sgproposal:InterpretFragmentForDraft",
-        "sgproposal:IntentFragment",
+        "sgcore:IntentFragment",
     )
     for name, domain, target in (
-        ("rawInputSourceForFragment", "RawInput", "sgproposal:IntentFragment"),
-        ("fragmentContributesToDraft", "IntentFragment", "sgproposal:IntentDraft"),
-        ("hypothesisInformsIntentDraft", "Hypothesis", "sgproposal:IntentDraft"),
-        ("hypothesisInformsProposal", "Hypothesis", "sgproposal:Proposal"),
-        ("intentDraftSourceForIntent", "IntentDraft", "sgcore:Intent"),
-        ("intentDraftMotivatesProposal", "IntentDraft", "sgproposal:Proposal"),
+        ("sgproposal:rawInputSourceForFragment", "sgproposal:RawInput", "sgcore:IntentFragment"),
+        ("sgcore:fragmentContributesToDraft", "sgcore:IntentFragment", "sgcore:IntentDraft"),
+        ("sgcore:hypothesisInformsIntentDraft", "sgcore:Hypothesis", "sgcore:IntentDraft"),
+        ("sgcore:hypothesisInformsProposal", "sgcore:Hypothesis", "sgcore:Proposal"),
+        ("sgcore:intentDraftSourceForIntent", "sgcore:IntentDraft", "sgcore:Intent"),
+        ("sgcore:intentDraftMotivatesProposal", "sgcore:IntentDraft", "sgcore:Proposal"),
     ):
-        relation = relations[f"sgproposal:{name}"]
-        assert (relation["domain"], relation["range"]) == (f"sgproposal:{domain}", target)
+        relation = relations[name]
+        assert (relation["domain"], relation["range"]) == (domain, target)
 
 
 def test_generated_sdk_example(compiler, tmp_path):
@@ -175,6 +187,8 @@ def test_generated_sdk_example(compiler, tmp_path):
             compiler,
             "compile",
             MODEL / "domain-ontology-package.yaml",
+            "--import",
+            CORE,
             "--target",
             "typescript",
             "--out",

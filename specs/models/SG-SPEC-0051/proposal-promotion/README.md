@@ -22,7 +22,7 @@ supervisor child or authorize a canonical write.
 
 | Declaration | Meaning |
 | --- | --- |
-| `sgproposal:Proposal` | Reuses the existing candidate from the SG-SPEC-0053 model. |
+| `sgcore:Proposal` | Reuses the existing candidate from the project core. |
 | `sgpromotion:SpecDraft` | A pre-canonical draft; its existence does not imply it has a valid ingress or is ready to publish. |
 | `sgpromotion:CanonicalTarget` | A selected destination and identity, not proof that a canonical artifact already exists. |
 | `sgpromotion:TransitionRecord` | A completed transition decision carrying the fields required by SG-SPEC-0051. Pending templates remain possible, but are not completed records. |
@@ -54,25 +54,23 @@ boundary or evidence that a real transition occurred.
 
 ## Reproduce and inspect
 
-With Ontology **0.8.0** and an output directory outside the checkout:
+With a visualizer supporting imported typed references and an output directory outside the checkout:
 
 ```sh
 model=specs/models/SG-SPEC-0051/proposal-promotion/domain-ontology-package.yaml
-prior=specs/models/SG-SPEC-0053/intent-to-proposal/domain-ontology-package.yaml
 core=ontology/packages/specgraph-core/versions/0.3.0/domain-ontology-package.yaml
 ontologyc check "$model"
 ontologyc compile "$model" --target typescript --out "$OUT/sdk"
 ontologyviz "$model" --view full --format json \
-  --import "$prior" --import "$core" --out "$OUT/graph"
+  --import "$core" --out "$OUT/graph"
 ```
 
 Open `$OUT/graph/ontology.graph.json` in the local SpecSpace Ontology Viewer.
-The root package explicitly declares transitive dependencies needed by the
-0.8.0 visualizer. The graph includes the earlier draft and the selected core;
-neither their appearance nor compilation establishes acceptance or execution.
+The graph includes this draft and the selected core; neither their appearance
+nor compilation establishes acceptance or execution.
 
 Standalone compiler checks do not prove imported symbol membership. Focused
-tests bind the imported Proposal to the exact prior package and check its graph
+tests bind the imported Proposal to the exact core package and check its graph
 origin; they are not a general ontology-composition verifier. They also verify
 that the source's required completed-record fields stay represented in this
 candidate. The production publication tests remain separate evidence for the

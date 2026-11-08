@@ -11,7 +11,7 @@ without adding relations between those models:
 | `sgpromotion` | [Proposal promotion](../../SG-SPEC-0051/proposal-promotion/README.md) | Draft promotion and materialization interpretation |
 | `pubverify` | [Publication verification](../../SG-SPEC-0071/verification-action/README.md) | Draft model of an existing verification action |
 
-The first two candidate models already reference one another and the core.
+The first two candidate models reuse declarations from the core.
 The publication model is displayed alongside them; **no domain relation to
 the other models is implied**. Each declaration retains its own source package
 identity, version, digests and logical YAML pointer. The foundation imports
@@ -28,11 +28,8 @@ any candidate or prove that an action was executed.
 
 ## Reproduce
 
-Use `ontologyviz` from the Ontology **0.8.0** release or a compatible later
-version. All four model files are explicitly supplied by the profile. The
-same selection has also been checked with the post-release Ontology commit
-`b1a0da17ddd9256c74c36d6ea83f50d96af10e48`, producing identical bytes for
-the current sources. From the SpecGraph root, with `OUT` naming a directory
+Use an `ontologyviz` build supporting imported typed references. All four model
+files are explicitly supplied by the profile. From the SpecGraph root, with `OUT` naming a directory
 outside the checkout:
 
 ```sh
@@ -51,9 +48,8 @@ Run `make ontology-name-collisions` after updating the projection. The check
 compares its exact names with `origin/main`; set `ONTOLOGY_COLLISION_BASE` to
 compare another Git revision. CI compares against the exact pull request base
 and rejects a newly colliding pair, identifying each package and YAML pointer.
-At introduction the check reports four class and six relation collisions as
-unresolved debt, not accepted as equivalent. Removing a collision needs no
-exception file.
+The current selection has no exact-name collisions: four classes and six
+relations formerly repeated in the intent-proposal draft now reuse core.
 
 The check covers the full set of classes, relations, protocols, policies and
 state machines in this overview, not models omitted from the profile. Matching

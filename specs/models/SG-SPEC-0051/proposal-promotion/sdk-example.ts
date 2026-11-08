@@ -52,7 +52,7 @@ function requireRecord(id: string, edge: string, source: string, target: string)
 
 const drafts = new Map<string, string>();
 const published = new Set<string>();
-const proposal = { $type: "sgproposal:Proposal" as const, id: "proposal-1" };
+const proposal = { $type: "sgcore:Proposal" as const, id: "proposal-1" };
 const draft = { $type: "sgpromotion:SpecDraft" as const, id: "draft-1" };
 const toDraft: PromoteProposalToSpecDraft = {
   $type: "sgpromotion:PromoteProposalToSpecDraft",

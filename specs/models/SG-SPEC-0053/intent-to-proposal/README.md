@@ -20,23 +20,23 @@ facts.
 | --- | --- |
 | `sgcore:Intent` | The existing project-core term, imported from `org.0al.specgraph.core@0.3.0`; this example concerns the pre-spec interpretation in SG-SPEC-0053. |
 | `sgproposal:RawInput` | Source material for the observed-intent path; capture does not establish identity or truth. |
-| `sgproposal:IntentFragment` | A partial observable signal; one fragment is not a complete intent draft. |
-| `sgproposal:IntentDraft` | A synthesis of one or more fragments and optional context, not yet canonical intent. |
-| `sgproposal:Hypothesis` | A reviewable epistemic statement, distinct from normative intent. |
-| `sgproposal:Proposal` | The candidate operationalization in `specification.kind_roles.proposal`. |
+| `sgcore:IntentFragment` | A partial observable signal; one fragment is not a complete intent draft. |
+| `sgcore:IntentDraft` | A synthesis of one or more fragments and optional context, not yet canonical intent. |
+| `sgcore:Hypothesis` | A reviewable epistemic statement, distinct from normative intent. |
+| `sgcore:Proposal` | The candidate operationalization in `specification.kind_roles.proposal`. |
 | `sgproposal:IntentSynthesizer` | A proposed contextual role for whoever develops the draft; it may be a person or agent and grants no authority. |
 | `sgproposal:InterpretFragmentForDraft` | A proposed action that interprets one fragment for an **existing** draft. `candidateDraft: Ref<IntentDraft>` identifies that draft. |
 | `sgproposal:interpretsFragmentForDraft` | Action relationship: subject = synthesizer, action = interpretation, object = the fragment being interpreted. |
 | `sgproposal:rawInputSourceForFragment` | A raw input supplies source material for a fragment. |
-| `sgproposal:fragmentContributesToDraft` | A fragment contributes partial observed meaning to a draft. Multiple fragments may contribute. |
-| `sgproposal:hypothesisInformsIntentDraft` | A hypothesis can support, challenge or contextualize a draft; the relation alone does not select a polarity. |
-| `sgproposal:hypothesisInformsProposal` | A hypothesis can also inform a proposal without itself becoming the proposal. |
-| `sgproposal:intentDraftSourceForIntent` | A draft supplies observed meaning for a later intent; the relation alone is not approval or canonicalization. |
-| `sgproposal:intentDraftMotivatesProposal` | A proposal can be motivated by a draft without a separately stabilized intent. |
+| `sgcore:fragmentContributesToDraft` | A fragment contributes partial observed meaning to a draft. Multiple fragments may contribute. |
+| `sgcore:hypothesisInformsIntentDraft` | A hypothesis can support, challenge or contextualize a draft; the relation alone does not select a polarity. |
+| `sgcore:hypothesisInformsProposal` | A hypothesis can also inform a proposal without itself becoming the proposal. |
+| `sgcore:intentDraftSourceForIntent` | A draft supplies observed meaning for a later intent; the relation alone is not approval or canonicalization. |
+| `sgcore:intentDraftMotivatesProposal` | A proposal can be motivated by a draft without a separately stabilized intent. |
 | `sgproposal:ProposalAuthor` | A proposed contextual role for whoever develops the candidate; it may be a person or agent and grants no authority. |
 | `sgproposal:InterpretIntentForProposal` | A proposed action that interprets an intent for an **existing** candidate. `candidateProposal: Ref<Proposal>` identifies that candidate. |
 | `sgproposal:interpretsIntentForProposal` | Action relationship: subject = author, action = interpretation, object = the intent being interpreted. |
-| `sgproposal:intentMotivatesProposal` | The separate `intent → proposal` relation required by `specification.kind_separation.required_edges` when this path introduces a candidate. |
+| `sgcore:intentMotivatesProposal` | The separate `intent → proposal` relation required by `specification.kind_separation.required_edges` when this path introduces a candidate. |
 
 The actions read/interpret the fragment or intent; they do not assert that
 either is changed. A typed reference names an existing candidate, but does not
@@ -45,7 +45,7 @@ prove semantic preservation. Each action occurrence mentions one fragment or
 intent; it does not assert that other sources are absent. Review, promotion,
 canonical publication and the actual authoring implementation are outside this
 model. The package keeps its original identity and advances its draft version
-to `0.3.0-draft.1` for the current core import.
+to `0.4.0-draft.1` to reuse the existing core declarations.
 
 The [SDK example](sdk-example.ts) supplies an **in-memory test actor**, not
 SpecGraph's production executor. It illustrates two fragments contributing to
@@ -57,16 +57,16 @@ approval of an actual proposal.
 
 ## Reproduce and inspect
 
-With the released Ontology **0.8.0** `ontologyc` and `ontologyviz` on PATH,
+With `ontologyc` and `ontologyviz` supporting imported typed references on PATH,
 from the SpecGraph root, set `OUT` to a build directory outside the checkout:
 
 ```sh
 model=specs/models/SG-SPEC-0053/intent-to-proposal/domain-ontology-package.yaml
-ontologyc check "$model"
-ontologyc compile "$model" --target typescript --out "$OUT/sdk"
+core=ontology/packages/specgraph-core/versions/0.3.0/domain-ontology-package.yaml
+ontologyc check "$model" --import "$core"
+ontologyc compile "$model" --import "$core" --target typescript --out "$OUT/sdk"
 ontologyviz "$model" --view full --format json \
-  --import ontology/packages/specgraph-core/versions/0.3.0/domain-ontology-package.yaml \
-  --out "$OUT/graph"
+  --import "$core" --out "$OUT/graph"
 ```
 
 Open `$OUT/graph/ontology.graph.json` in SpecSpace's local Ontology Viewer.
@@ -79,17 +79,9 @@ candidate ontology.
 
 ## Current tool boundaries
 
-Ontology 0.8.0 accepts `sgcore:Intent` as an imported relation endpoint, but
-`Ref<sgcore:Intent>` as an action field is rejected with
-`class.field.target.unresolved`: field targets must name a class in the same
-package. The existing `Intent` is therefore **not duplicated** to work around
-the restriction. A direction that passes an imported intent as an action field
-remains an option to revisit when the compiler supports it.
-
-The compiler's standalone check and the full graph export do not prove imported
-symbol membership. The focused test compares this model's `sgcore:Intent`
-endpoints with the exact imported core source and checks the exported
-declaration's origin. A general composition check for this particular pair is
-not claimed: the current SpecGraph composition profile is specialized for the
-motivation/events packages. Layout direction is also a viewer policy; adding
-valid relationships alone does not guarantee the desired left-to-right order.
+Typed `Ref` fields are validated against the explicitly supplied core source.
+Other imported relation endpoints are checked against that source by the
+focused model tests. The combined overview also checks for same-named
+declarations; it does not establish that differently named concepts are unique.
+Layout direction is a viewer policy; valid relationships do not guarantee a
+particular left-to-right order.

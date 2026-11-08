@@ -3,7 +3,7 @@ kind: DomainOntologyPackage
 metadata:
   id: org.0al.specgraph.proposal-promotion
   namespace: sgpromotion
-  version: 0.2.0-draft.1
+  version: 0.3.0-draft.1
   publisher: SpecGraph
   source: specs/models/SG-SPEC-0051/proposal-promotion/domain-ontology-package.yaml
   approvalStatus: draft
@@ -12,7 +12,6 @@ spec:
     - {id: ontology.foundation, namespace: ont, version: 0.2.0}
     - {id: specgraph.foundation, namespace: sg, version: 0.1.0}
     - {id: org.0al.specgraph.core, namespace: sgcore, version: 0.3.0}
-    - {id: org.0al.specgraph.intent-proposal, namespace: sgproposal, version: 0.3.0-draft.1}
   classes:
     SpecDraft:
       extends: ont:DomainEntity
@@ -74,7 +73,7 @@ spec:
     promotesProposalToDraft:
       subject: PromotionActor
       action: PromoteProposalToSpecDraft
-      object: sgproposal:Proposal
+      object: sgcore:Proposal
       description: An actor attempts to promote a proposal to the draft named by the action.
     materializesSpecDraft:
       subject: PromotionActor
@@ -82,7 +81,7 @@ spec:
       object: SpecDraft
       description: An actor attempts to materialize the selected draft at the target named by the action.
     proposalMotivatesSpecDraft:
-      domain: sgproposal:Proposal
+      domain: sgcore:Proposal
       range: SpecDraft
       description: The proposal is a source of the draft; this relation is not itself a promotion record.
     draftTargetsCanonicalDestination:

@@ -14,7 +14,6 @@ import yaml
 
 ROOT = Path(__file__).resolve().parents[1]
 MODEL = ROOT / "specs/models/SG-SPEC-0051/proposal-promotion"
-PRIOR = ROOT / "specs/models/SG-SPEC-0053/intent-to-proposal/domain-ontology-package.yaml"
 CORE = ROOT / "ontology/packages/specgraph-core/versions/0.3.0/domain-ontology-package.yaml"
 
 
@@ -22,8 +21,8 @@ def _document(path):
     return yaml.safe_load(path.read_bytes())
 
 
-def _check_imported_proposal(candidate, prior):
-    selected = prior["metadata"]
+def _check_imported_proposal(candidate, core):
+    selected = core["metadata"]
     assert {key: selected[key] for key in ("id", "namespace", "version")} in candidate["spec"][
         "imports"
     ]
@@ -33,7 +32,7 @@ def _check_imported_proposal(candidate, prior):
     ):
         namespace, name = reference.split(":", 1)
         assert namespace == selected["namespace"]
-        assert name == "Proposal" and name in prior["spec"]["classes"]
+        assert name == "Proposal" and name in core["spec"]["classes"]
 
 
 def test_model_tracks_the_selected_spec_and_reuses_proposal():
@@ -58,14 +57,14 @@ def test_model_tracks_the_selected_spec_and_reuses_proposal():
     assert all(fields[name]["required"] is True for name in required)
     assert "Proposal" not in model["spec"]["classes"]
     assert model["metadata"]["approvalStatus"] == "draft"
-    _check_imported_proposal(model, _document(PRIOR))
+    _check_imported_proposal(model, _document(CORE))
 
 
 def test_unknown_imported_proposal_is_not_accepted_by_the_pilot_check():
     model = _document(MODEL / "domain-ontology-package.yaml")
-    model["spec"]["relations"]["promotesProposalToDraft"]["object"] = "sgproposal:Missing"
+    model["spec"]["relations"]["promotesProposalToDraft"]["object"] = "sgcore:Missing"
     with pytest.raises(AssertionError):
-        _check_imported_proposal(model, _document(PRIOR))
+        _check_imported_proposal(model, _document(CORE))
 
 
 @pytest.fixture(scope="module")
@@ -93,7 +92,7 @@ def test_compiler_accepts_model_and_rejects_unknown_local_reference(compiler, tm
     )
 
 
-def test_full_projection_reuses_the_prior_proposal(tmp_path):
+def test_full_projection_reuses_the_core_proposal(tmp_path):
     if not (value := os.environ.get("ONTOLOGYVIZ_BINARY_PATH")):
         pytest.skip("set ONTOLOGYVIZ_BINARY_PATH to check the released graph export")
     subprocess.run(
@@ -102,8 +101,6 @@ def test_full_projection_reuses_the_prior_proposal(tmp_path):
             MODEL / "domain-ontology-package.yaml",
             "--view",
             "full",
-            "--import",
-            PRIOR,
             "--import",
             CORE,
             "--format",
@@ -116,18 +113,18 @@ def test_full_projection_reuses_the_prior_proposal(tmp_path):
         timeout=60,
     )
     graph = json.loads((tmp_path / "ontology.graph.json").read_bytes())
-    proposals = [item for item in graph["classes"] if item["fqid"] == "sgproposal:Proposal"]
+    proposals = [item for item in graph["classes"] if item["fqid"] == "sgcore:Proposal"]
     assert len(proposals) == 1
-    assert proposals[0]["source"]["id"] == "org.0al.specgraph.intent-proposal"
+    assert proposals[0]["source"]["id"] == "org.0al.specgraph.core"
     assert proposals[0]["source"]["pointer"] == "/spec/classes/Proposal"
     assert (
         proposals[0]["source"]["sourceByteDigest"]
-        == "sha256:" + hashlib.sha256(PRIOR.read_bytes()).hexdigest()
+        == "sha256:" + hashlib.sha256(CORE.read_bytes()).hexdigest()
     )
     classes = {item["fqid"]: item for item in graph["classes"]}
     relations = {item["fqid"]: item for item in graph["relations"]}
     for name, expected in (
-        ("promotesProposalToDraft", ("PromoteProposalToSpecDraft", "sgproposal:Proposal")),
+        ("promotesProposalToDraft", ("PromoteProposalToSpecDraft", "sgcore:Proposal")),
         ("materializesSpecDraft", ("MaterializeSpecDraft", "sgpromotion:SpecDraft")),
     ):
         relation = relations[f"sgpromotion:{name}"]
