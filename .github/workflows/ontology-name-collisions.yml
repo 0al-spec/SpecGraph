@@ -1,0 +1,45 @@
+name: Ontology name collisions
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened, edited, ready_for_review]
+  push:
+    branches: [main, master]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  ontology-name-collisions:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          persist-credentials: false
+
+      - name: Reproduce the composed graph
+        run: |
+          set -euo pipefail
+          archive="$RUNNER_TEMP/ontologyc.tar.gz"
+          curl --fail --location --silent --show-error --retry 3 \
+            https://github.com/0al-spec/Ontology/releases/download/0.8.0/ontologyc-0.8.0-linux-x86_64.tar.gz \
+            --output "$archive"
+          printf '%s  %s\n' dfbdfe5c6de533a149f5ee51da48cac06f8660930c88f1d87fcff3effb7abbbd "$archive" | sha256sum -c -
+          tar -xzf "$archive" -C "$RUNNER_TEMP" ontologyc-0.8.0-linux-x86_64/ontologyviz
+          "$RUNNER_TEMP/ontologyc-0.8.0-linux-x86_64/ontologyviz" \
+            --profile specs/models/review/ontology-overview/ontology.profile.json \
+            --format json --out "$RUNNER_TEMP/ontology-overview"
+          cmp "$RUNNER_TEMP/ontology-overview/ontology.graph.json" \
+            specs/models/review/ontology-overview/generated/ontology.graph.json
+
+      - name: Reject newly colliding names
+        env:
+          PR_BASE: ${{ github.event.pull_request.base.sha }}
+          PUSH_BASE: ${{ github.event.before }}
+        run: |
+          set -euo pipefail
+          base="${PR_BASE:-${PUSH_BASE:-$GITHUB_SHA}}"
+          if [[ "$base" =~ ^0+$ ]]; then base="$GITHUB_SHA"; fi
+          git fetch --no-tags --depth=1 origin "$base"
+          python3 tools/ontology_name_collisions.py --base-ref "$base"
