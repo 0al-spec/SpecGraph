@@ -1,0 +1,10 @@
+{
+  "user_intent_handle": "user_intent::specgraph-core-ontology-inventory-20261107",
+  "user_intent_path": "intent_layer/nodes/user_intent--specgraph-core-ontology-inventory-20261107--de2fda1e.json",
+  "prior_inventory_proposal_handle": "proposal::specgraph-core-ontology-inventory-20261107",
+  "prior_inventory_proposal_path": "proposal_lane/nodes/proposal--specgraph-core-ontology-inventory-20261107--82778ca9.json",
+  "proposal_handle": "proposal::specgraph-core-prespec-migration-review-20261108",
+  "proposal_node_path": "proposal_lane/nodes/proposal--specgraph-core-prespec-migration-review-20261108--32f7cb0e.json",
+  "target_spec_id": "SG-SPEC-0053",
+  "target_spec_path": "specs/nodes/SG-SPEC-0053.yaml"
+}
