@@ -14,7 +14,7 @@ import yaml
 
 ROOT = Path(__file__).resolve().parents[1]
 MODEL = ROOT / "specs/models/SG-SPEC-0053/intent-to-proposal"
-CORE = ROOT / "ontology/packages/specgraph-core/domain-ontology-package.yaml"
+CORE = ROOT / "ontology/packages/specgraph-core/versions/0.3.0/domain-ontology-package.yaml"
 
 
 def _document(path):
@@ -59,7 +59,7 @@ def test_model_tracks_the_selected_spec_and_existing_intent():
         model["spec"]["classes"]
     )
     assert model["metadata"]["approvalStatus"] == "draft"
-    assert model["metadata"]["version"] == "0.2.0-draft.1"
+    assert model["metadata"]["version"] == "0.3.0-draft.1"
     _check_core_endpoints(model, _document(CORE))
 
 

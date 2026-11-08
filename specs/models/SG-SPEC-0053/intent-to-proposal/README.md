@@ -18,7 +18,7 @@ facts.
 
 | Declaration | Meaning and source |
 | --- | --- |
-| `sgcore:Intent` | The existing project-core term, imported from `org.0al.specgraph.core@0.1.0`; this example concerns the pre-spec interpretation in SG-SPEC-0053. |
+| `sgcore:Intent` | The existing project-core term, imported from `org.0al.specgraph.core@0.3.0`; this example concerns the pre-spec interpretation in SG-SPEC-0053. |
 | `sgproposal:RawInput` | Source material for the observed-intent path; capture does not establish identity or truth. |
 | `sgproposal:IntentFragment` | A partial observable signal; one fragment is not a complete intent draft. |
 | `sgproposal:IntentDraft` | A synthesis of one or more fragments and optional context, not yet canonical intent. |
@@ -45,7 +45,7 @@ prove semantic preservation. Each action occurrence mentions one fragment or
 intent; it does not assert that other sources are absent. Review, promotion,
 canonical publication and the actual authoring implementation are outside this
 model. The package keeps its original identity and advances its draft version
-to `0.2.0-draft.1` for these additive declarations.
+to `0.3.0-draft.1` for the current core import.
 
 The [SDK example](sdk-example.ts) supplies an **in-memory test actor**, not
 SpecGraph's production executor. It illustrates two fragments contributing to
@@ -65,7 +65,7 @@ model=specs/models/SG-SPEC-0053/intent-to-proposal/domain-ontology-package.yaml
 ontologyc check "$model"
 ontologyc compile "$model" --target typescript --out "$OUT/sdk"
 ontologyviz "$model" --view full --format json \
-  --import ontology/packages/specgraph-core/domain-ontology-package.yaml \
+  --import ontology/packages/specgraph-core/versions/0.3.0/domain-ontology-package.yaml \
   --out "$OUT/graph"
 ```
 

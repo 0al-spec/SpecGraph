@@ -3,7 +3,7 @@
   "package": "domain-ontology-package.yaml",
   "view": "full",
   "imports": [
-    "../../../../ontology/packages/specgraph-core/domain-ontology-package.yaml",
+    "../../../../ontology/packages/specgraph-core/versions/0.3.0/domain-ontology-package.yaml",
     "../../SG-SPEC-0053/intent-to-proposal/domain-ontology-package.yaml",
     "../../SG-SPEC-0051/proposal-promotion/domain-ontology-package.yaml",
     "../../SG-SPEC-0071/verification-action/domain-ontology-package.yaml"

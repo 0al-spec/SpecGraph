@@ -1242,6 +1242,20 @@ def test_build_public_bundle_publishes_source_bound_core_graph(
         bundle_module.build_public_bundle(repo_root=repo, output_dir=repo / "dist/second")
 
 
+def test_build_public_bundle_includes_combined_draft_ontology(tmp_path, bundle_module):
+    repo = make_repo(tmp_path / "repo")
+    relative = Path("specs/models/review/ontology-overview/generated/ontology.graph.json")
+    source = Path(__file__).resolve().parents[1] / relative
+    target = repo / relative
+    target.parent.mkdir(parents=True, exist_ok=True)
+    shutil.copyfile(source, target)
+    result = bundle_module.build_public_bundle(repo_root=repo, output_dir=repo / "dist/public")
+    published = result.output_dir / relative
+    assert published.read_bytes() == source.read_bytes()
+    entry = next(item for item in result.manifest["files"] if item["path"] == relative.as_posix())
+    assert entry["sha256"] == hashlib.sha256(source.read_bytes()).hexdigest()
+
+
 def test_build_public_bundle_rejects_unsafe_ontology_materialized_ir(
     tmp_path: Path,
     bundle_module: object,

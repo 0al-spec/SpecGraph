@@ -117,6 +117,7 @@ jobs:
           "$ONTOLOGYVIZ_BINARY_PATH" \
             --profile specs/models/review/ontology-overview/ontology.profile.json \
             --format json --out "$RUNNER_TEMP/ontology-review-overview"
+          cmp "$RUNNER_TEMP/ontology-review-overview/ontology.graph.json" specs/models/review/ontology-overview/generated/ontology.graph.json
 
       - name: Retain the ontology review overview
         uses: actions/upload-artifact@v4
