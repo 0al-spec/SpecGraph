@@ -28,7 +28,7 @@ any candidate or prove that an action was executed.
 
 ## Reproduce
 
-Use `ontologyviz` from Ontology **0.9.0**. All four model files are explicitly
+Use `ontologyviz` from Ontology **0.9.1**. All four model files are explicitly
 supplied by the profile. From the SpecGraph root, with `OUT` naming a directory
 outside the checkout:
 
