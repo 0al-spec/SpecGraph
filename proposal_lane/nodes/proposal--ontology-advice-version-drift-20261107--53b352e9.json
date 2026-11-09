@@ -3,7 +3,7 @@
   "schema_version": 1,
   "title": "Implementation Handoff Proposal for SG-SPEC-0072 (ontology_advice_version_drift)",
   "created_at": "2026-11-07T16:16:47.918804+00:00",
-  "updated_at": "2026-11-07T16:16:47.918816+00:00",
+  "updated_at": "2026-11-09T16:19:00+00:00",
   "policy_reference": {
     "artifact_path": "tools/proposal_lane_policy.json",
     "artifact_sha256": "cf16a8601fee008b754a9852160bb249386fc6182e9500fad95e72adc585eabc",
@@ -37,6 +37,11 @@
       "source_reference": "docs/reviews/0232_project_ontology_context/ontology-advice-version-drift/defect.json"
     },
     {
+      "lineage_role": "derived_from",
+      "source_kind": "runtime_artifact",
+      "source_reference": "docs/reviews/0232_project_ontology_context/ontology-advice-version-drift/import-versions-20261109.md"
+    },
+    {
       "lineage_role": "motivated_by",
       "source_kind": "intent_layer_node",
       "source_reference": "user_intent::ontology-advice-version-drift-20261107"
@@ -52,6 +57,11 @@
       "artifact_role": "supporting_runtime_artifact",
       "reference_kind": "runtime_artifact",
       "reference_value": "docs/reviews/0232_project_ontology_context/ontology-advice-version-drift/defect.json"
+    },
+    {
+      "artifact_role": "supporting_runtime_artifact",
+      "reference_kind": "runtime_artifact",
+      "reference_value": "docs/reviews/0232_project_ontology_context/ontology-advice-version-drift/import-versions-20261109.md"
     }
   ],
   "proposal_payload": {
