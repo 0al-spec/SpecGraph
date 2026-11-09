@@ -1,0 +1,24 @@
+{
+  "artifact_kind": "project_ontology_name_overlap_review",
+  "schema_version": 1,
+  "base_revision": "88126b616a7fb2d3e300c9c3e5cd23af0f3beb6f",
+  "proposal": "0232",
+  "spec_nodes": ["SG-SPEC-0001", "SG-SPEC-0010", "SG-SPEC-0072"],
+  "source_sha256": {
+    "specs/nodes/SG-SPEC-0001.yaml": "a4a084ef61caba1881355638f65076f098a859967de34bd41ebfe9245ac9829e",
+    "specs/nodes/SG-SPEC-0010.yaml": "4264c06c937aa23194cd998edf6c449bd5cd2dceaf8e932c90907c765b55aea6",
+    "ontology/packages/specgraph-core/versions/0.3.0/domain-ontology-package.yaml": "56dbc9f05f439eb7bf6b028433906c3bcf87b10486fdb6bef23332defa5281f8",
+    "tools/project_ontology_context/pinned_foundation/exports.json": "1c6b3ac3e4aa9b4e56d823b3645f94c126840c1922c555998b848e9e0fe18f8f",
+    "Ontology@c52553f872f440dde26c61abf9193f5fff171d98/SPECS/ontology/foundation-types.md": "322d149e9cd68f89012feeab56987f57d6b339139056f35f96506093667f6f7b"
+  },
+  "outcome": "scope_differs_identity_equivalence_unproven",
+  "canonical_ontology_changed": false,
+  "collision_whitelisted": false,
+  "supervisor": {
+    "target": "SG-SPEC-0010",
+    "mode": "observe_graph_health",
+    "subtree_nodes": 2,
+    "structural_observations": 0,
+    "semantic_equivalence_assessed": false
+  }
+}
