@@ -1304,7 +1304,9 @@ def test_build_public_bundle_includes_source_bound_current_and_historical_core(
         bundle_module.build_public_bundle(repo_root=repo, output_dir=repo / "dist/stale")
     assert not (repo / "dist/stale").exists()
     source.write_bytes(original)
-    (repo / base / "versions/0.4.0/generated/ontology.graph.json").unlink()
+    graph_path = repo / base / "versions/0.4.0/generated/ontology.graph.json"
+    original_graph = graph_path.read_bytes()
+    graph_path.unlink()
     with pytest.raises(bundle_module.PublishBundleError, match="current ontology graph projection"):
         bundle_module.build_public_bundle(repo_root=repo, output_dir=repo / "dist/missing")
     assert not (repo / "dist/missing").exists()
@@ -1312,6 +1314,19 @@ def test_build_public_bundle_includes_source_bound_current_and_historical_core(
     with pytest.raises(bundle_module.PublishBundleError, match="current ontology graph projection"):
         bundle_module.build_public_bundle(repo_root=repo, output_dir=repo / "dist/missing-both")
     assert not (repo / "dist/missing-both").exists()
+    source.write_bytes(original)
+    graph_path.symlink_to(root / base / "versions/0.4.0/generated/ontology.graph.json")
+    with pytest.raises(
+        bundle_module.PublishBundleError, match="symlinked ontology materialized IR"
+    ):
+        bundle_module.build_public_bundle(repo_root=repo, output_dir=repo / "dist/symlink")
+    assert not (repo / "dist/symlink").exists()
+    graph_path.unlink()
+    graph_path.write_bytes(original_graph)
+    (repo / base / "versions/0.4.0/generated/ontology.normalized.json").unlink()
+    with pytest.raises(bundle_module.PublishBundleError, match="missing ontology materialized IR"):
+        bundle_module.build_public_bundle(repo_root=repo, output_dir=repo / "dist/missing-ir")
+    assert not (repo / "dist/missing-ir").exists()
 
 
 def test_build_public_bundle_includes_combined_draft_ontology(tmp_path, bundle_module):

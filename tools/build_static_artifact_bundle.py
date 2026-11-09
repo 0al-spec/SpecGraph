@@ -491,6 +491,114 @@ def ontology_materialized_ir_refs(
     return refs
 
 
+CORE_ONTOLOGY_DIR = PurePosixPath("ontology/packages/specgraph-core")
+CORE_LEGACY_IR = CORE_ONTOLOGY_DIR / "generated/ontology.normalized.json"
+CORE_LEGACY_GRAPH = CORE_ONTOLOGY_DIR / "generated/ontology.graph.json"
+
+
+def versioned_core_ontology_paths() -> list[
+    tuple[str, PurePosixPath, PurePosixPath, PurePosixPath]
+]:
+    paths = []
+    for version in ("0.3.0", "0.4.0"):
+        package = CORE_ONTOLOGY_DIR / "versions" / version
+        paths.append(
+            (
+                version,
+                package / "domain-ontology-package.yaml",
+                package / "generated/ontology.normalized.json",
+                package / "generated/ontology.graph.json",
+            )
+        )
+    return paths
+
+
+def add_core_ontology_graph_refs(repo_root: Path, refs: list[PurePosixPath]) -> bool:
+    """Include available diagrams for an indexed core without inventing an index entry."""
+    versions = versioned_core_ontology_paths()
+    selected = CORE_LEGACY_IR in refs or any(ir in refs for _, _, ir, _ in versions)
+    if not selected:
+        return False
+    pairs = [(CORE_LEGACY_GRAPH, CORE_LEGACY_IR)]
+    pairs.extend((graph, ir) for _, _, ir, graph in versions)
+    for graph, ir in pairs:
+        source = repo_root / graph
+        if source.exists() or source.is_symlink():
+            for ref in (graph, ir):
+                if ref not in refs:
+                    refs.append(ref)
+    return True
+
+
+def validate_core_ontology_artifact(
+    repo_root: Path, output_dir: Path, rel_path: PurePosixPath, text: str
+) -> None:
+    """Bind published core projections to the exact source and package version."""
+    if rel_path == CORE_LEGACY_GRAPH:
+        source = repo_root / CORE_ONTOLOGY_DIR / "domain-ontology-package.yaml"
+        if not source.is_file() or has_symlink_component(source, repo_root):
+            raise PublishBundleError("ontology graph source is missing or symlinked")
+        graph = json.loads(text)
+        expected = "sha256:" + file_sha256(source)
+        if (
+            not isinstance(graph, dict)
+            or graph.get("schemaVersion") != "ontology.diagram-projection/v1"
+            or graph.get("id") != "org.0al.specgraph.core"
+            or not isinstance(graph.get("sources"), list)
+            or not any(
+                isinstance(item, dict)
+                and item.get("id") == graph.get("id")
+                and item.get("sourceByteDigest") == expected
+                for item in graph["sources"]
+            )
+        ):
+            raise PublishBundleError("ontology graph projection does not match its source")
+        return
+
+    for version, source_ref, ir_ref, graph_ref in versioned_core_ontology_paths():
+        if rel_path not in (ir_ref, graph_ref):
+            continue
+        source = repo_root / source_ref
+        if not source.is_file() or has_symlink_component(source, repo_root):
+            shutil.rmtree(output_dir)
+            raise PublishBundleError("published ontology source is missing or symlinked")
+        payload = json.loads(text)
+        expected = "sha256:" + file_sha256(source)
+        same_package = (
+            isinstance(payload, dict)
+            and payload.get("id") == "org.0al.specgraph.core"
+            and payload.get("namespace") == "sgcore"
+            and payload.get("version") == version
+        )
+        if rel_path == graph_ref:
+            valid = (
+                same_package
+                and payload.get("schemaVersion") == "ontology.diagram-projection/v1"
+                and isinstance(payload.get("sources"), list)
+                and any(
+                    isinstance(item, dict)
+                    and item.get("id") == payload.get("id")
+                    and item.get("version") == payload.get("version")
+                    and item.get("sourceByteDigest") == expected
+                    for item in payload["sources"]
+                )
+            )
+            if not valid:
+                shutil.rmtree(output_dir)
+                raise PublishBundleError("ontology graph projection does not match its source")
+        elif not same_package or payload.get("sourceDigest") != expected:
+            shutil.rmtree(output_dir)
+            raise PublishBundleError("published ontology IR does not match its source")
+        return
+
+
+def require_current_core_ontology(refs: list[PurePosixPath], output_dir: Path) -> None:
+    _, _, current_ir, current_graph = versioned_core_ontology_paths()[-1]
+    if current_ir not in refs or current_graph not in refs:
+        shutil.rmtree(output_dir)
+        raise PublishBundleError("current ontology graph projection or IR is missing")
+
+
 def load_text(path: Path) -> str:
     try:
         return path.read_text(encoding="utf-8")
@@ -1195,39 +1303,7 @@ def build_public_bundle(
         )
 
     ontology_refs = ontology_materialized_ir_refs(repo_root, workspace_bootstrap_run_dir)
-    core_ir = PurePosixPath("ontology/packages/specgraph-core/generated/ontology.normalized.json")
-    core_graph = PurePosixPath("ontology/packages/specgraph-core/generated/ontology.graph.json")
-    published_cores = []
-    for version in ("0.3.0", "0.4.0"):
-        package = PurePosixPath("ontology/packages/specgraph-core/versions") / version
-        published_cores.append(
-            (
-                version,
-                package / "domain-ontology-package.yaml",
-                package / "generated/ontology.normalized.json",
-                package / "generated/ontology.graph.json",
-            )
-        )
-    if core_ir in ontology_refs or any(
-        ir_ref in ontology_refs for _, _, ir_ref, _ in published_cores
-    ):
-        graph_pairs = [(core_graph, core_ir)]
-        for version, source_ref, ir_ref, graph_ref in published_cores:
-            source = repo_root / source_ref
-            graph = repo_root / graph_ref
-            if version == "0.4.0" and (source.exists() or source.is_symlink()):
-                if not graph.is_file() or graph.is_symlink():
-                    shutil.rmtree(output_dir)
-                    raise PublishBundleError(
-                        "current ontology graph projection is missing or symlinked"
-                    )
-            graph_pairs.append((graph_ref, ir_ref))
-        for graph_ref, ir_ref in graph_pairs:
-            graph_source = repo_root / graph_ref
-            if graph_source.exists() or graph_source.is_symlink():
-                for ref in (graph_ref, ir_ref):
-                    if ref not in ontology_refs:
-                        ontology_refs.append(ref)
+    core_selected = add_core_ontology_graph_refs(repo_root, ontology_refs)
 
     for rel_path in ontology_refs:
         if rel_path.parts and rel_path.parts[0] == "runs":
@@ -1238,67 +1314,15 @@ def build_public_bundle(
                 )
         source_path = repo_root / rel_path.as_posix()
         if not source_path.is_file():
+            shutil.rmtree(output_dir)
             raise PublishBundleError(f"missing ontology materialized IR: {rel_path.as_posix()}")
         if has_symlink_component(source_path, repo_root):
+            shutil.rmtree(output_dir)
             raise PublishBundleError(f"symlinked ontology materialized IR: {rel_path.as_posix()}")
 
         text = load_text(source_path)
         validate_json_artifact(source_path, text)
-        if rel_path == core_graph:
-            source = repo_root / "ontology/packages/specgraph-core/domain-ontology-package.yaml"
-            if not source.is_file() or has_symlink_component(source, repo_root):
-                raise PublishBundleError("ontology graph source is missing or symlinked")
-            graph = json.loads(text)
-            expected = "sha256:" + file_sha256(source)
-            if (
-                not isinstance(graph, dict)
-                or graph.get("schemaVersion") != "ontology.diagram-projection/v1"
-                or graph.get("id") != "org.0al.specgraph.core"
-                or not isinstance(graph.get("sources"), list)
-                or not any(
-                    isinstance(item, dict)
-                    and item.get("id") == graph.get("id")
-                    and item.get("sourceByteDigest") == expected
-                    for item in graph["sources"]
-                )
-            ):
-                raise PublishBundleError("ontology graph projection does not match its source")
-        published_core = next(
-            (item for item in published_cores if rel_path in (item[2], item[3])), None
-        )
-        if published_core:
-            version, source_ref, _, graph_ref = published_core
-            source = repo_root / source_ref
-            if not source.is_file() or has_symlink_component(source, repo_root):
-                shutil.rmtree(output_dir)
-                raise PublishBundleError("published ontology source is missing or symlinked")
-            payload = json.loads(text)
-            expected = "sha256:" + file_sha256(source)
-            same_package = (
-                isinstance(payload, dict)
-                and payload.get("id") == "org.0al.specgraph.core"
-                and payload.get("namespace") == "sgcore"
-                and payload.get("version") == version
-            )
-            if rel_path == graph_ref:
-                valid = (
-                    same_package
-                    and payload.get("schemaVersion") == "ontology.diagram-projection/v1"
-                    and isinstance(payload.get("sources"), list)
-                    and any(
-                        isinstance(item, dict)
-                        and item.get("id") == payload.get("id")
-                        and item.get("version") == payload.get("version")
-                        and item.get("sourceByteDigest") == expected
-                        for item in payload["sources"]
-                    )
-                )
-                if not valid:
-                    shutil.rmtree(output_dir)
-                    raise PublishBundleError("ontology graph projection does not match its source")
-            elif not same_package or payload.get("sourceDigest") != expected:
-                shutil.rmtree(output_dir)
-                raise PublishBundleError("published ontology IR does not match its source")
+        validate_core_ontology_artifact(repo_root, output_dir, rel_path, text)
         redacted_text, redaction_count = redact_local_paths(text)
         redacted_total += redaction_count
         secret_findings.extend(detect_secret_like_content(rel_path, redacted_text))
@@ -1327,13 +1351,8 @@ def build_public_bundle(
     if ontology_fixture_findings:
         shutil.rmtree(output_dir)
         raise PublishBundleError("; ".join(sorted(set(ontology_fixture_findings))))
-    if core_ir in ontology_refs or any(
-        ir_ref in ontology_refs for _, _, ir_ref, _ in published_cores
-    ):
-        _, _, current_ir, current_graph = published_cores[-1]
-        if current_ir not in ontology_refs or current_graph not in ontology_refs:
-            shutil.rmtree(output_dir)
-            raise PublishBundleError("current ontology graph projection or IR is missing")
+    if core_selected:
+        require_current_core_ontology(ontology_refs, output_dir)
 
     manifest = build_manifest(
         repo_root=repo_root,
