@@ -20,7 +20,7 @@ enters its temporary repository; Git URL and SSH remote syntax stays unchanged.
 The installed-runtime smoke uses a relative source to preserve this behavior.
 
 The launcher accepts `--workspace` and `init`, `next-move`, `supervisor`,
-`draft`, `ontology-context` or `ontology-overview`.
+`draft`, `ontology-context`, `ontology-doctor` or `ontology-overview`.
 `init` runs the existing initializer from the installed source root;
 other operations run in the selected product workspace. Project-owned Git,
 notes, specs and runs are not installed data. Each workspace must be explicitly
