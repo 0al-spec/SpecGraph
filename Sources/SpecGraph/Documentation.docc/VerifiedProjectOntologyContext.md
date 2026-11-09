@@ -337,3 +337,15 @@ anchors for Manifest and Checksums remain two roles, with no claim of observed
 criterion satisfaction or runtime execution.
 
 Action-bearing relationships carry source pointers for subject, action and object, including each object.oneOf alternative. Each member of a mixed-version composition resolves against its own imported catalog.
+
+
+## Runtime prerequisites
+
+`specgraph-runtime --workspace /path/to/project ontology-doctor` reports the
+selected ontology context and discovers `ontologyc` on PATH. Pass
+`-- --ontologyc /path/to/ontologyc --compiler-sha256 HASH` for an explicitly
+pinned compiler. The diagnostic checks the pin before executing the compiler.
+It reports the path, digest and version when available. A compiler that does not
+support `--version` has an unknown version. Missing compiler or selection has
+an actionable next step. Structural verification does not establish semantic
+approval. See `docs/project_ontology_context.md` for selection setup.

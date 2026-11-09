@@ -157,13 +157,14 @@ def run(installation: Path, workspace: Path, operation: str, arguments: list[str
             *arguments,
         ]
         cwd = project
-    elif operation in ("ontology-context", "ontology-overview"):
+    elif operation in ("ontology-context", "ontology-overview", "ontology-doctor"):
         if any(
             arg == "--workspace-root" or arg.startswith("--workspace-root=") for arg in arguments
         ):
             raise ValueError(f"{operation} workspace is selected by --workspace")
         tool = {
             "ontology-context": "project_ontology_context_cli.py",
+            "ontology-doctor": "ontology_doctor.py",
             "ontology-overview": "ontology_overview_cli.py",
         }[operation]
         command = [
@@ -207,6 +208,7 @@ def main(argv: list[str] | None = None) -> int:
             "supervisor",
             "draft",
             "ontology-context",
+            "ontology-doctor",
             "ontology-overview",
         ),
     )

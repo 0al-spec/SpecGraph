@@ -105,6 +105,7 @@ def test_ready_spec_requires_a_complete_versioned_receipt():
     ("operation", "tool"),
     [
         ("ontology-context", "project_ontology_context_cli.py"),
+        ("ontology-doctor", "ontology_doctor.py"),
         ("ontology-overview", "ontology_overview_cli.py"),
     ],
 )

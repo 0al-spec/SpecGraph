@@ -1,0 +1,36 @@
+{
+  "artifact_kind": "ontology_doctor_launch_defect_observation",
+  "schema_version": 1,
+  "defect_id": "ONTOLOGY-DOCTOR-LAUNCH-20261109",
+  "status": "fix_prepared_review_pending",
+  "source_pr": "https://github.com/0al-spec/SpecGraph/pull/907",
+  "observed_head": "7fb16e4184daff47c9837491e2401b7ed7c0b8db",
+  "affected_contract_refs": [
+    "specs/nodes/SG-SPEC-0072.yaml",
+    "docs/proposals/0232_verified_project_ontology_context.intent.yaml"
+  ],
+  "observation": {
+    "reproduction": "Run ontology-doctor with --project-id and --ontologyc pointing to an executable script whose absolute interpreter does not exist.",
+    "actual": "The operating system rejects the compiler launch, but compiler.status is available and the recovery hints omit installing a working compiler.",
+    "expected": "A failed compiler launch is unavailable and includes a useful recovery hint. A launchable compiler without supported version output may have an unknown version."
+  },
+  "root_cause": "The version probe discarded operating-system launch errors together with unsupported or undecodable version output.",
+  "fix_commit": "51207c0d020c0ce378e02cef2f34a8ccc24882f2",
+  "implementation_ref": "tools/ontology_doctor.py",
+  "regression_ref": "tests/test_ontology_doctor.py::test_unlaunchable_compiler_reports_unavailable",
+  "verification": {
+    "red_before_fix": "The regression failed because compiler.status was available.",
+    "focused_tests": "43 passed: tests/test_ontology_doctor.py, tests/test_native_runtime.py and tests/test_project_ontology_context.py.",
+    "ruff": "passed for the changed implementation and test",
+    "limitations": "Local execution used a missing interpreter fixture. Hosted checks and merge are separate."
+  },
+  "graph": {
+    "existing_proposal_handle": "proposal::compiler-outcome-defect-20261030",
+    "existing_proposal_path": "proposal_lane/nodes/proposal--compiler-outcome-defect-20261030--a91d06f4.json",
+    "relationship": "additional source-bound observation of compiler outcome classification; not a historical cause of the earlier proposal"
+  },
+  "closure": {
+    "status": "review_pending",
+    "merged_fix": false
+  }
+}

@@ -7,6 +7,30 @@ It does not initialize a project, download a compiler, approve meanings or
 activate a global gate. The broader 0232 migration/coverage proposal remains
 separately scoped.
 
+## Check prerequisites
+
+The native runtime exposes a read-only diagnostic:
+
+```sh
+specgraph-runtime --workspace /path/to/project ontology-doctor
+```
+
+The command looks for `ontologyc` on PATH. Supply `-- --ontologyc /path/to/ontologyc`
+to select another executable, and `--compiler-sha256 HASH` to pin its bytes before
+any version probe or structural check. It reports the executable path and SHA-256,
+and a version only when the executable supports `--version`. Current versions of
+ontologyc may not expose that option, in which case the version is null.
+
+The diagnostic runs the existing ontology-context check using the project's selected
+package and reports its checks, package identities, pin mismatches and missing
+inputs. With no selection it suggests creating one and setting
+`ontology_context.selection` in `specgraph.project.yaml`. Install the compiler
+from a trusted [Ontology release](https://github.com/0al-spec/Ontology/releases)
+and pass its path if it is not on PATH. A package must be authored or selected
+for the project; the diagnostic does not choose one. Exit 0 means the selected
+context is structurally verified, 1 unavailable and 2 invalid. Semantic approval
+remains separate from these checks.
+
 ## Selection v1
 
 Store a YAML selection inside the workspace. Paths are workspace-relative;

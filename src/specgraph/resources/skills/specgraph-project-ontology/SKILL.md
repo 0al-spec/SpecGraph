@@ -226,3 +226,13 @@ new candidates or gaps, unresolved questions, checks actually run and their
 limits. Keep product-specific ontology with its owning project, following its
 existing storage and review policy; do not change shared Ontology packages or
 publish private conversation material as a side effect.
+
+
+## Check the runtime prerequisites
+
+Run `specgraph-runtime --workspace "$PROJECT" ontology-doctor` before a project
+ontology check. It reports the selected package, structural checks and the
+compiler found on PATH. Pass `-- --ontologyc "$ONTOLOGYC" --compiler-sha256
+"$COMPILER_SHA256"` to select and pin an executable explicitly. An unknown
+compiler version is reported as null. Follow the reported setup steps for missing
+inputs; retain gaps for review and do not infer semantic approval.
