@@ -7,9 +7,9 @@
     "../../../../tools/project_ontology_context/pinned_foundation/model-0.2.0.json"
   ],
   "imports": [
-    "../../../../ontology/packages/specgraph-core/versions/0.3.0/domain-ontology-package.yaml",
-    "../../SG-SPEC-0053/intent-to-proposal/domain-ontology-package.yaml",
-    "../../SG-SPEC-0051/proposal-promotion/domain-ontology-package.yaml",
+    "../../../../ontology/packages/specgraph-core/versions/0.4.0/domain-ontology-package.yaml",
+    "../../SG-SPEC-0053/intent-to-proposal/versions/0.5.0-draft.1/domain-ontology-package.yaml",
+    "../../SG-SPEC-0051/proposal-promotion/versions/0.4.0-draft.1/domain-ontology-package.yaml",
     "../../SG-SPEC-0071/verification-action/domain-ontology-package.yaml"
   ]
 }

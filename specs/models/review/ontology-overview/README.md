@@ -6,9 +6,9 @@ without adding relations between those models:
 
 | Package | Source | Purpose in this view |
 | --- | --- | --- |
-| `sgcore` | [Project core](../../../../ontology/packages/specgraph-core/versions/0.3.0/domain-ontology-package.yaml) | Current public core 0.3.0 |
-| `sgproposal` | [Intent to proposal](../../SG-SPEC-0053/intent-to-proposal/README.md) | Draft capture and authoring interpretation |
-| `sgpromotion` | [Proposal promotion](../../SG-SPEC-0051/proposal-promotion/README.md) | Draft promotion and materialization interpretation |
+| `sgcore` | [Project core 0.4.0](../../../../ontology/packages/specgraph-core/versions/0.4.0/domain-ontology-package.yaml) | Draft graph-specific invariant subtype |
+| `sgproposal` | [Intent to proposal 0.5.0-draft.1](../../SG-SPEC-0053/intent-to-proposal/versions/0.5.0-draft.1/domain-ontology-package.yaml) | Draft capture and authoring interpretation |
+| `sgpromotion` | [Proposal promotion 0.4.0-draft.1](../../SG-SPEC-0051/proposal-promotion/versions/0.4.0-draft.1/domain-ontology-package.yaml) | Draft promotion and materialization interpretation |
 | `pubverify` | [Publication verification](../../SG-SPEC-0071/verification-action/README.md) | Draft model of an existing verification action |
 
 The first two candidate models reuse declarations from the core.
@@ -19,6 +19,12 @@ foundation catalogs provide source-attributed definitions for the referenced
 0.1.0 and 0.2.0 foundation imports; they are not synthetic YAML packages.
 Other unprovided imports remain external references. A digest identifies bytes;
 it does not authenticate their author.
+
+The two versioned authoring packages change only their own version/source and
+the core import pin; their historical sources remain available. Core 0.4.0
+changes `sgcore:Invariant` to the graph-specific `sgcore:GraphInvariant` and
+declares it as a subtype of `sg:Invariant`. This is a breaking identity change,
+not an automatic migration of historical references or approval of the draft.
 
 The `sgreview` package is only scaffolding for this selection. Its two classes
 and `scopeIncludesPackage` relationship describe review metadata, not

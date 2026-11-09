@@ -16,9 +16,17 @@ ROOT = Path(__file__).resolve().parents[1]
 REVIEW = ROOT / "specs/models/review/ontology-overview"
 PROFILE = REVIEW / "ontology.profile.json"
 PACKAGE = REVIEW / "domain-ontology-package.yaml"
-CORE = ROOT / "ontology/packages/specgraph-core/versions/0.3.0/domain-ontology-package.yaml"
-INTENT = ROOT / "specs/models/SG-SPEC-0053/intent-to-proposal/domain-ontology-package.yaml"
-PROMOTION = ROOT / "specs/models/SG-SPEC-0051/proposal-promotion/domain-ontology-package.yaml"
+CORE = ROOT / "ontology/packages/specgraph-core/versions/0.4.0/domain-ontology-package.yaml"
+INTENT = (
+    ROOT
+    / "specs/models/SG-SPEC-0053/intent-to-proposal"
+    / "versions/0.5.0-draft.1/domain-ontology-package.yaml"
+)
+PROMOTION = (
+    ROOT
+    / "specs/models/SG-SPEC-0051/proposal-promotion"
+    / "versions/0.4.0-draft.1/domain-ontology-package.yaml"
+)
 PUBLICATION = ROOT / "specs/models/SG-SPEC-0071/verification-action/domain-ontology-package.yaml"
 SECTIONS = ("classes", "relations", "protocols", "policies", "stateMachines")
 FOUNDATION = ROOT / "tools/project_ontology_context/pinned_foundation"
@@ -87,6 +95,76 @@ def _records(graph: dict, section: str) -> dict[tuple[str, str], dict]:
             normalized["id"] = normalized["fqid"].split(":", 1)[1]
         records[key] = normalized
     return records
+
+
+def test_migrated_draft_packages_only_change_identity_and_core_pin():
+    for old_path, new_path in (
+        (
+            ROOT / "specs/models/SG-SPEC-0053/intent-to-proposal/domain-ontology-package.yaml",
+            INTENT,
+        ),
+        (
+            ROOT / "specs/models/SG-SPEC-0051/proposal-promotion/domain-ontology-package.yaml",
+            PROMOTION,
+        ),
+    ):
+        old = _document(old_path)
+        new = _document(new_path)
+        for key in ("id", "namespace", "publisher", "approvalStatus"):
+            assert new["metadata"][key] == old["metadata"][key]
+        assert new["metadata"]["version"] != old["metadata"]["version"]
+        assert new["metadata"]["source"] == new_path.relative_to(ROOT).as_posix()
+        new_imports = new["spec"].pop("imports")
+        old_imports = old["spec"].pop("imports")
+        assert new["spec"] == old["spec"]
+        assert [
+            {**item, "version": "0.4.0"} if item["id"] == "org.0al.specgraph.core" else item
+            for item in old_imports
+        ] == new_imports
+
+
+def test_review_projection_selects_the_graph_specific_invariant():
+    graph = json.loads((REVIEW / "generated/ontology.graph.json").read_bytes())
+    classes = {item["fqid"]: item for item in graph["classes"]}
+    assert "sgcore:Invariant" not in classes
+    assert classes["sgcore:GraphInvariant"]["extends"] == "sg:Invariant"
+    assert classes["sgcore:GraphInvariant"]["kind"] == "Invariant"
+    relations = {item["fqid"]: item for item in graph["relations"]}
+    assert relations["sgcore:invariantGovernsSpecGraph"]["domain"] == "sgcore:GraphInvariant"
+
+
+@pytest.mark.parametrize("package", [INTENT, PROMOTION])
+def test_migrated_packages_check_and_compile_against_exact_new_core(package, tmp_path):
+    if not (compiler := os.environ.get("ONTOLOGYC_BINARY_PATH")):
+        pytest.skip("set ONTOLOGYC_BINARY_PATH to check the released compiler")
+    subprocess.run(
+        [compiler, "check", package, "--import", CORE],
+        check=True,
+        capture_output=True,
+        timeout=60,
+    )
+    subprocess.run(
+        [
+            compiler,
+            "compile",
+            package,
+            "--import",
+            CORE,
+            "--target",
+            "typescript",
+            "--out",
+            tmp_path,
+        ],
+        check=True,
+        capture_output=True,
+        timeout=60,
+    )
+    ir = json.loads((tmp_path / "ontology.normalized.json").read_bytes())
+    assert {
+        "id": "org.0al.specgraph.core",
+        "namespace": "sgcore",
+        "version": "0.4.0",
+    } in ir["imports"]
 
 
 def test_real_projection_preserves_sources_and_existing_declarations(tmp_path):

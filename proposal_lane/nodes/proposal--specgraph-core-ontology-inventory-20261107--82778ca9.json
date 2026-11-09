@@ -3,7 +3,7 @@
   "schema_version": 1,
   "title": "Implementation Handoff Proposal for SG-SPEC-0001 (core_ontology_source_grounded_inventory)",
   "created_at": "2026-11-07T16:33:05.906372+00:00",
-  "updated_at": "2026-11-07T16:33:05.906380+00:00",
+  "updated_at": "2026-11-09T16:02:27.895171+00:00",
   "policy_reference": {
     "artifact_path": "tools/proposal_lane_policy.json",
     "artifact_sha256": "cf16a8601fee008b754a9852160bb249386fc6182e9500fad95e72adc585eabc",
@@ -52,6 +52,11 @@
       "artifact_role": "supporting_runtime_artifact",
       "reference_kind": "runtime_artifact",
       "reference_value": "docs/reviews/0232_project_ontology_context/core-inventory-20261107/README.md"
+    },
+    {
+      "artifact_role": "supporting_runtime_artifact",
+      "reference_kind": "runtime_artifact",
+      "reference_value": "docs/reviews/0232_project_ontology_context/graph-invariant-typescript-defect.json"
     }
   ],
   "proposal_payload": {

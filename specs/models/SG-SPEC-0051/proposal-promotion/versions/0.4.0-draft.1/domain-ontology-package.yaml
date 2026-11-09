@@ -1,0 +1,90 @@
+apiVersion: ontology.specgraph.io/v1alpha1
+kind: DomainOntologyPackage
+metadata:
+  id: org.0al.specgraph.proposal-promotion
+  namespace: sgpromotion
+  version: 0.4.0-draft.1
+  publisher: SpecGraph
+  source: specs/models/SG-SPEC-0051/proposal-promotion/versions/0.4.0-draft.1/domain-ontology-package.yaml
+  approvalStatus: draft
+spec:
+  imports:
+    - {id: ontology.foundation, namespace: ont, version: 0.2.0}
+    - {id: specgraph.foundation, namespace: sg, version: 0.1.0}
+    - {id: org.0al.specgraph.core, namespace: sgcore, version: 0.4.0}
+  classes:
+    SpecDraft:
+      extends: ont:DomainEntity
+      description: A reviewable pre-canonical draft; a recorded ingress is required before materialization.
+    CanonicalTarget:
+      extends: ont:DomainEntity
+      description: A proposed canonical destination and identity, not proof that an artifact exists.
+    TransitionRecord:
+      extends: ont:DomainEntity
+      description: A completed decision for one promotion edge; pending templates are outside this class.
+      fields:
+        transition_record_id: {type: string, required: true}
+        transition_identifier: {type: string, required: true}
+        promotion_edge: {type: string, required: true}
+        gate_type: {type: string, required: true}
+        reviewer_or_decider: {type: string, required: true}
+        decision_timestamp: {type: string, required: true}
+        outcome: {type: string, required: true}
+        rationale: {type: string, required: true}
+        source_ref: {type: string, required: true}
+        target_ref: {type: string, required: true}
+    PromotionActor:
+      extends: ont:DomainEntity
+      description: A proposed contextual role for an actor initiating a promotion, without implied authority.
+    PromoteProposalToSpecDraft:
+      extends: ont:Action
+      description: Attempt the proposal-to-draft transition against a separately recorded review.
+      fields:
+        targetDraft:
+          type: ref
+          target: SpecDraft
+          required: true
+          description: Identifies the selected candidate draft; a reference does not approve it.
+        transitionRecord:
+          type: ref
+          target: TransitionRecord
+          required: true
+          description: Identifies the proposal-to-draft transition record for independent validation.
+    MaterializeSpecDraft:
+      extends: ont:Action
+      description: Attempt canonical materialization of a draft against its ingress and a separate decision.
+      fields:
+        target:
+          type: ref
+          target: CanonicalTarget
+          required: true
+          description: Identifies a selected destination, which need not already exist as a canonical artifact.
+        ingressRecord:
+          type: ref
+          target: TransitionRecord
+          required: true
+          description: Identifies the existing recorded ingress into this draft.
+        transitionRecord:
+          type: ref
+          target: TransitionRecord
+          required: true
+          description: Identifies the separate draft-to-canonical transition record.
+  relations:
+    promotesProposalToDraft:
+      subject: PromotionActor
+      action: PromoteProposalToSpecDraft
+      object: sgcore:Proposal
+      description: An actor attempts to promote a proposal to the draft named by the action.
+    materializesSpecDraft:
+      subject: PromotionActor
+      action: MaterializeSpecDraft
+      object: SpecDraft
+      description: An actor attempts to materialize the selected draft at the target named by the action.
+    proposalMotivatesSpecDraft:
+      domain: sgcore:Proposal
+      range: SpecDraft
+      description: The proposal is a source of the draft; this relation is not itself a promotion record.
+    draftTargetsCanonicalDestination:
+      domain: SpecDraft
+      range: CanonicalTarget
+      description: The draft has a proposed canonical destination; no publication is implied.
