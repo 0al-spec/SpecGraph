@@ -21,8 +21,8 @@ permissions:
 
 env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
-  ONTOLOGY_RELEASE: 0.9.1
-  ONTOLOGY_REVISION: b9c737deb78ce967df0d06a565a57ed858c4299f
+  ONTOLOGY_RELEASE: 0.10.0
+  ONTOLOGY_REVISION: a31935ab7e4051fec60651eec4196d71c2a5d265
 
 jobs:
   compiler-compatibility:
@@ -45,6 +45,10 @@ jobs:
         run: |
           set -euo pipefail
           test "$(git -C .ontology-release-source rev-parse HEAD)" = "$ONTOLOGY_REVISION"
+          for version in 0.1.0 0.2.0; do
+            cmp ".ontology-release-source/SPECS/ontology/foundation/$version/model.json" \
+              "tools/project_ontology_context/pinned_foundation/model-$version.json"
+          done
           swift --version
 
       - name: Set up Python
@@ -83,7 +87,7 @@ jobs:
       - name: Reproduce the local model diagrams with the released visualizer
         id: model_tools
         env:
-          ARCHIVE_SHA256: 741605268c015223c6b1af72ba33674f772c5e357e1146e3205c5d6d09191f05
+          ARCHIVE_SHA256: a6ad0aadff7a028373853f66fc57b27be4bd90b71bed614b8a87931a33511204
         run: |
           set -euo pipefail
           work=$(mktemp -d "$RUNNER_TEMP/ontology-models.XXXXXXXX")

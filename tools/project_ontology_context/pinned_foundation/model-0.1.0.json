@@ -1,0 +1,350 @@
+{
+  "schemaVersion": "ontology.foundation-model/v1",
+  "id": "ontology.foundation",
+  "version": "0.1.0",
+  "namespace": "ont",
+  "source": {
+    "path": "model.md",
+    "revision": "c52553f872f440dde26c61abf9193f5fff171d98",
+    "sha256": "322d149e9cd68f89012feeab56987f57d6b339139056f35f96506093667f6f7b"
+  },
+  "classes": {
+    "Actor": {
+      "declaration": "export interface Actor extends OntologyNode {\n  readonly kind: \"Actor\";\n}",
+      "extends": "OntologyNode",
+      "properties": [
+        {
+          "name": "kind",
+          "type": "\"Actor\"",
+          "optional": false
+        }
+      ]
+    },
+    "Capability": {
+      "declaration": "export interface Capability extends OntologyNode {\n  readonly kind: \"Capability\";\n}",
+      "extends": "OntologyNode",
+      "properties": [
+        {
+          "name": "kind",
+          "type": "\"Capability\"",
+          "optional": false
+        }
+      ]
+    },
+    "Command": {
+      "declaration": "export interface Command extends OntologyNode {\n  readonly kind: \"Command\";\n}",
+      "extends": "OntologyNode",
+      "properties": [
+        {
+          "name": "kind",
+          "type": "\"Command\"",
+          "optional": false
+        }
+      ]
+    },
+    "DomainEntity": {
+      "declaration": "export interface DomainEntity extends OntologyNode {\n  readonly kind: \"DomainEntity\";\n  readonly lifecycle?: StateMachineRef;\n}",
+      "extends": "OntologyNode",
+      "properties": [
+        {
+          "name": "kind",
+          "type": "\"DomainEntity\"",
+          "optional": false
+        },
+        {
+          "name": "lifecycle",
+          "type": "StateMachineRef",
+          "optional": true
+        }
+      ]
+    },
+    "Event": {
+      "declaration": "export interface Event extends OntologyNode {\n  readonly kind: \"Event\";\n}",
+      "extends": "OntologyNode",
+      "properties": [
+        {
+          "name": "kind",
+          "type": "\"Event\"",
+          "optional": false
+        }
+      ]
+    },
+    "Invariant": {
+      "declaration": "export interface Invariant extends OntologyNode {\n  readonly kind: \"Invariant\";\n  readonly appliesTo: readonly ConceptRef[];\n}",
+      "extends": "OntologyNode",
+      "properties": [
+        {
+          "name": "kind",
+          "type": "\"Invariant\"",
+          "optional": false
+        },
+        {
+          "name": "appliesTo",
+          "type": "readonly ConceptRef[]",
+          "optional": false
+        }
+      ]
+    },
+    "Policy": {
+      "declaration": "export interface Policy extends OntologyNode {\n  readonly kind: \"Policy\";\n  readonly enforceability: \"design\" | \"runtime\" | \"manual\" | \"audit\";\n  readonly appliesTo: readonly ConceptRef[];\n}",
+      "extends": "OntologyNode",
+      "properties": [
+        {
+          "name": "kind",
+          "type": "\"Policy\"",
+          "optional": false
+        },
+        {
+          "name": "enforceability",
+          "type": "\"design\" | \"runtime\" | \"manual\" | \"audit\"",
+          "optional": false
+        },
+        {
+          "name": "appliesTo",
+          "type": "readonly ConceptRef[]",
+          "optional": false
+        }
+      ]
+    },
+    "StateMachine": {
+      "declaration": "export interface StateMachine extends OntologyNode {\n  readonly kind: \"StateMachine\";\n  readonly states: readonly string[];\n  readonly transitions: readonly StateTransition[];\n}",
+      "extends": "OntologyNode",
+      "properties": [
+        {
+          "name": "kind",
+          "type": "\"StateMachine\"",
+          "optional": false
+        },
+        {
+          "name": "states",
+          "type": "readonly string[]",
+          "optional": false
+        },
+        {
+          "name": "transitions",
+          "type": "readonly StateTransition[]",
+          "optional": false
+        }
+      ]
+    },
+    "SystemActor": {
+      "declaration": "export interface SystemActor extends OntologyNode {\n  readonly kind: \"SystemActor\";\n}",
+      "extends": "OntologyNode",
+      "properties": [
+        {
+          "name": "kind",
+          "type": "\"SystemActor\"",
+          "optional": false
+        }
+      ]
+    },
+    "ValueObject": {
+      "declaration": "export interface ValueObject extends OntologyNode {\n  readonly kind: \"ValueObject\";\n}",
+      "extends": "OntologyNode",
+      "properties": [
+        {
+          "name": "kind",
+          "type": "\"ValueObject\"",
+          "optional": false
+        }
+      ]
+    }
+  },
+  "protocols": {
+    "Approvable": {
+      "declaration": "export interface Approvable {\n  readonly approvalStatus: \"draft\" | \"submitted\" | \"approved\" | \"rejected\";\n  readonly approvedBy?: string;\n}",
+      "properties": [
+        {
+          "name": "approvalStatus",
+          "type": "\"draft\" | \"submitted\" | \"approved\" | \"rejected\"",
+          "optional": false
+        },
+        {
+          "name": "approvedBy",
+          "type": "string",
+          "optional": true
+        }
+      ]
+    },
+    "Auditable": {
+      "declaration": "export interface Auditable {\n  readonly auditRefs?: readonly string[];\n}",
+      "properties": [
+        {
+          "name": "auditRefs",
+          "type": "readonly string[]",
+          "optional": true
+        }
+      ]
+    },
+    "DeviceBound": {
+      "declaration": "export interface DeviceBound {\n  readonly deviceRef?: string;\n}",
+      "properties": [
+        {
+          "name": "deviceRef",
+          "type": "string",
+          "optional": true
+        }
+      ]
+    },
+    "RestrictableCapability": {
+      "declaration": "export interface RestrictableCapability {\n  readonly restrictionMode?: \"allow\" | \"deny\" | \"conditional\";\n}",
+      "properties": [
+        {
+          "name": "restrictionMode",
+          "type": "\"allow\" | \"deny\" | \"conditional\"",
+          "optional": true
+        }
+      ]
+    },
+    "Signable": {
+      "declaration": "export interface Signable {\n  readonly signature?: {\n    readonly algorithm: string;\n    readonly publicKeyRef: string;\n    readonly value?: string;\n  };\n}",
+      "properties": [
+        {
+          "name": "signature",
+          "type": "{\n    readonly algorithm: string;\n    readonly publicKeyRef: string;\n    readonly value?: string;\n  }",
+          "optional": true
+        }
+      ]
+    },
+    "TimeBound": {
+      "declaration": "export interface TimeBound {\n  readonly validFrom?: string;\n  readonly validUntil?: string;\n}",
+      "properties": [
+        {
+          "name": "validFrom",
+          "type": "string",
+          "optional": true
+        },
+        {
+          "name": "validUntil",
+          "type": "string",
+          "optional": true
+        }
+      ]
+    },
+    "Versioned": {
+      "declaration": "export interface Versioned {\n  readonly version: string;\n}",
+      "properties": [
+        {
+          "name": "version",
+          "type": "string",
+          "optional": false
+        }
+      ]
+    }
+  },
+  "supportingTypes": {
+    "ConceptKind": {
+      "declaration": "export type ConceptKind =\n  | \"Actor\"\n  | \"SystemActor\"\n  | \"DomainEntity\"\n  | \"ValueObject\"\n  | \"Capability\"\n  | \"Command\"\n  | \"Event\"\n  | \"Policy\"\n  | \"Invariant\"\n  | \"StateMachine\";"
+    },
+    "ConceptRef": {
+      "declaration": "export interface ConceptRef<\n  TOntology extends string = string,\n  TVersion extends string = string,\n  TConcept extends string = string,\n  TKind extends ConceptKind = ConceptKind\n> {\n  readonly ontology: TOntology;\n  readonly version: TVersion;\n  readonly namespace: string;\n  readonly concept: TConcept;\n  readonly kind: TKind;\n  readonly alias: `${string}:${string}`;\n  readonly uri: `ontology://${TOntology}/${TVersion}/${string}`;\n}",
+      "properties": [
+        {
+          "name": "ontology",
+          "type": "TOntology",
+          "optional": false
+        },
+        {
+          "name": "version",
+          "type": "TVersion",
+          "optional": false
+        },
+        {
+          "name": "namespace",
+          "type": "string",
+          "optional": false
+        },
+        {
+          "name": "concept",
+          "type": "TConcept",
+          "optional": false
+        },
+        {
+          "name": "kind",
+          "type": "TKind",
+          "optional": false
+        },
+        {
+          "name": "alias",
+          "type": "`${string}:${string}`",
+          "optional": false
+        },
+        {
+          "name": "uri",
+          "type": "`ontology://${TOntology}/${TVersion}/${string}`",
+          "optional": false
+        }
+      ]
+    },
+    "OntologyNode": {
+      "declaration": "export interface OntologyNode {\n  readonly id: string;\n  readonly fqid: string;\n  readonly uri: string;\n  readonly kind: ConceptKind;\n  readonly description?: string;\n  readonly aliases?: readonly string[];\n}",
+      "properties": [
+        {
+          "name": "id",
+          "type": "string",
+          "optional": false
+        },
+        {
+          "name": "fqid",
+          "type": "string",
+          "optional": false
+        },
+        {
+          "name": "uri",
+          "type": "string",
+          "optional": false
+        },
+        {
+          "name": "kind",
+          "type": "ConceptKind",
+          "optional": false
+        },
+        {
+          "name": "description",
+          "type": "string",
+          "optional": true
+        },
+        {
+          "name": "aliases",
+          "type": "readonly string[]",
+          "optional": true
+        }
+      ]
+    },
+    "StateMachineRef": {
+      "declaration": "export interface StateMachineRef {\n  readonly alias: `${string}:${string}`;\n}",
+      "properties": [
+        {
+          "name": "alias",
+          "type": "`${string}:${string}`",
+          "optional": false
+        }
+      ]
+    },
+    "StateTransition": {
+      "declaration": "export interface StateTransition {\n  readonly from: string;\n  readonly to: string;\n  readonly command?: ConceptRef;\n  readonly event?: ConceptRef;\n}",
+      "properties": [
+        {
+          "name": "from",
+          "type": "string",
+          "optional": false
+        },
+        {
+          "name": "to",
+          "type": "string",
+          "optional": false
+        },
+        {
+          "name": "command",
+          "type": "ConceptRef",
+          "optional": true
+        },
+        {
+          "name": "event",
+          "type": "ConceptRef",
+          "optional": true
+        }
+      ]
+    }
+  }
+}
