@@ -37,6 +37,11 @@
       "source_reference": "docs/reviews/0232_project_ontology_context/core-inventory-20261107/README.md"
     },
     {
+      "lineage_role": "derived_from",
+      "source_kind": "runtime_artifact",
+      "source_reference": "docs/reviews/0232_project_ontology_context/inheritance-validation-gap-20261109/observation.json"
+    },
+    {
       "lineage_role": "motivated_by",
       "source_kind": "intent_layer_node",
       "source_reference": "user_intent::specgraph-core-ontology-inventory-20261107"
@@ -57,6 +62,11 @@
       "artifact_role": "supporting_runtime_artifact",
       "reference_kind": "runtime_artifact",
       "reference_value": "docs/reviews/0232_project_ontology_context/graph-invariant-typescript-defect.json"
+    },
+    {
+      "artifact_role": "supporting_runtime_artifact",
+      "reference_kind": "runtime_artifact",
+      "reference_value": "docs/reviews/0232_project_ontology_context/inheritance-validation-gap-20261109/observation.json"
     }
   ],
   "proposal_payload": {

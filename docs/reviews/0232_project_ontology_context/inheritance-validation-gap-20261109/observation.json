@@ -1,0 +1,26 @@
+{
+  "artifact_kind": "ontology_inheritance_validation_defect_observation",
+  "schema_version": 1,
+  "defect_id": "ONTOLOGY-INHERITANCE-CHECK-20261109",
+  "status": "observed_open",
+  "source_ref": "docs/reviews/0232_project_ontology_context/inheritance-validation-gap-20261109/README.md",
+  "fixture_ref": "docs/reviews/0232_project_ontology_context/inheritance-validation-gap-20261109/cycle.yaml",
+  "fixture_sha256": "904a5ce523bfbaeba55e8f7d3ec7af300878d4b85ded24c0cf151bbad30717c2",
+  "release_compiler_sha256": "ed6db089372b7ac4ad97eff89bb6f6e0825fbb6e5fea79d9181d75179850864e",
+  "candidate_compiler_sha256": "395fd09c81f921d71dceac51ff5d0eb11e84fb10096961dc888837c2fbe57237",
+  "candidate_source_revision": "4c65676a5ab9d37777e32a7f8ca8f28efdf0c7f3",
+  "candidate_pr": "https://github.com/0al-spec/Ontology/pull/113",
+  "affected_spec_refs": ["specs/nodes/SG-SPEC-0001.yaml", "specs/nodes/SG-SPEC-0072.yaml"],
+  "affected_proposal_ref": "docs/proposals/0232_verified_project_ontology_context.md",
+  "observed": "A cyclic inheritance fixture passes check and produces no staged-advice diagnostic on the release and ONT-086 candidate; candidate compile rejects it before SDK output.",
+  "prevention_action": "ONT-087 source-attributed validation and staged-advice regression",
+  "closure": {"status": "open", "merged_fix": false},
+  "graph": {
+    "user_intent_path": "intent_layer/nodes/user_intent--specgraph-core-ontology-inventory-20261107--de2fda1e.json",
+    "user_intent_handle": "user_intent::specgraph-core-ontology-inventory-20261107",
+    "operator_request_path": "intent_layer/nodes/operator_request--specgraph-core-ontology-inventory-20261107--86e0c6ca.json",
+    "operator_request_handle": "operator_request::specgraph-core-ontology-inventory-20261107",
+    "proposal_node_path": "proposal_lane/nodes/proposal--specgraph-core-ontology-inventory-20261107--82778ca9.json",
+    "proposal_handle": "proposal::specgraph-core-ontology-inventory-20261107"
+  }
+}

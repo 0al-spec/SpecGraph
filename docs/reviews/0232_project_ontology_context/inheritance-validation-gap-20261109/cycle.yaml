@@ -1,0 +1,10 @@
+apiVersion: ontology.specgraph.io/v1alpha1
+kind: DomainOntologyPackage
+metadata: {id: example.inheritance-cycle, namespace: cycle, version: 1.0.0}
+spec:
+  imports: [{id: ontology.foundation, version: 0.2.0}]
+  classes:
+    A: {extends: B, description: A cyclic class.}
+    B: {extends: A, description: Another cyclic class.}
+  relations:
+    links: {domain: A, range: B, description: A valid relation.}
