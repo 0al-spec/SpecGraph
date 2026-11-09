@@ -14,9 +14,11 @@ without adding relations between those models:
 The first two candidate models reuse declarations from the core.
 The publication model is displayed alongside them; **no domain relation to
 the other models is implied**. Each declaration retains its own source package
-identity, version, digests and logical YAML pointer. The foundation imports
-are intentionally not loaded as source packages and may appear as external
-references. A digest identifies bytes; it does not authenticate their author.
+identity, version, digests and logical YAML pointer. Explicitly supplied
+foundation catalogs provide source-attributed definitions for the referenced
+0.1.0 and 0.2.0 foundation imports; they are not synthetic YAML packages.
+Other unprovided imports remain external references. A digest identifies bytes;
+it does not authenticate their author.
 
 The `sgreview` package is only scaffolding for this selection. Its two classes
 and `scopeIncludesPackage` relationship describe review metadata, not
@@ -28,9 +30,10 @@ any candidate or prove that an action was executed.
 
 ## Reproduce
 
-Use `ontologyviz` from Ontology **0.9.1**. All four model files are explicitly
-supplied by the profile. From the SpecGraph root, with `OUT` naming a directory
-outside the checkout:
+Use `ontologyviz` from Ontology **0.10.0**. The profile explicitly supplies all
+four model files and byte-identical foundation catalogs copied from that tagged
+release under `tools/project_ontology_context/pinned_foundation/`. From the
+SpecGraph root, with `OUT` naming a directory outside the checkout:
 
 ```sh
 ontologyviz --profile specs/models/review/ontology-overview/ontology.profile.json \

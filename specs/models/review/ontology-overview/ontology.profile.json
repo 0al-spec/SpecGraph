@@ -2,6 +2,10 @@
   "schemaVersion": 1,
   "package": "domain-ontology-package.yaml",
   "view": "full",
+  "foundationModels": [
+    "../../../../tools/project_ontology_context/pinned_foundation/model-0.1.0.json",
+    "../../../../tools/project_ontology_context/pinned_foundation/model-0.2.0.json"
+  ],
   "imports": [
     "../../../../ontology/packages/specgraph-core/versions/0.3.0/domain-ontology-package.yaml",
     "../../SG-SPEC-0053/intent-to-proposal/domain-ontology-package.yaml",

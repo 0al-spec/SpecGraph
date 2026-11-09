@@ -21,6 +21,11 @@ INTENT = ROOT / "specs/models/SG-SPEC-0053/intent-to-proposal/domain-ontology-pa
 PROMOTION = ROOT / "specs/models/SG-SPEC-0051/proposal-promotion/domain-ontology-package.yaml"
 PUBLICATION = ROOT / "specs/models/SG-SPEC-0071/verification-action/domain-ontology-package.yaml"
 SECTIONS = ("classes", "relations", "protocols", "policies", "stateMachines")
+FOUNDATION = ROOT / "tools/project_ontology_context/pinned_foundation"
+FOUNDATION_MODELS = {
+    "0.1.0": "7999a4ce110535c8093f177493532420a04ab7db9ff86492db802580531d7e48",
+    "0.2.0": "2f43dbd772c8356de107e3ea48cd548405023edb6a641702ddbec52c4942033b",
+}
 
 
 def _document(path: Path):
@@ -38,6 +43,12 @@ def test_profile_selects_the_four_real_packages_as_review_sources():
         PROMOTION,
         PUBLICATION,
     }
+    assert {(REVIEW / path).resolve() for path in profile["foundationModels"]} == {
+        FOUNDATION / f"model-{version}.json" for version in FOUNDATION_MODELS
+    }
+    for version, expected in FOUNDATION_MODELS.items():
+        actual = hashlib.sha256((FOUNDATION / f"model-{version}.json").read_bytes()).hexdigest()
+        assert actual == expected
 
     review = _document(PACKAGE)
     assert review["metadata"]["approvalStatus"] == "draft"
@@ -92,6 +103,17 @@ def test_real_projection_preserves_sources_and_existing_declarations(tmp_path):
     )
     assert sum(bool(relation.get("action")) for relation in combined["relations"]) == 5
     assert not collisions(combined)
+    catalogs = {
+        (item["id"], item["version"], item["alias"]): item
+        for item in combined["foundationCatalogs"]
+    }
+    assert set(catalogs) == {
+        ("ontology.foundation", "0.2.0", "ont"),
+        ("specgraph.foundation", "0.1.0", "sg"),
+    }
+    for (_, version, _), item in catalogs.items():
+        assert item["catalogByteDigest"] == "sha256:" + FOUNDATION_MODELS[version]
+        assert item["catalog"]["classes"]["DomainEntity"]["declaration"]
 
     sources = {source["id"]: source for source in combined["sources"]}
     expected_paths = (PACKAGE, CORE, INTENT, PROMOTION, PUBLICATION)
