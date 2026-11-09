@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import shutil
 import subprocess
 import sys
 from pathlib import Path
@@ -58,6 +59,15 @@ def check(root: Path) -> subprocess.CompletedProcess[str]:
         text=True,
         check=False,
     )
+
+
+def add_foundation(root: Path) -> None:
+    for name in ("exports.json", "exports-0.2.0.json"):
+        path = Path("tools/project_ontology_context/pinned_foundation") / name
+        (root / path).parent.mkdir(parents=True, exist_ok=True)
+        shutil.copyfile(ROOT / path, root / path)
+    git(root, "add", ".")
+    git(root, "commit", "-qm", "pinned foundation")
 
 
 def test_imported_duplicate_outside_overview_blocks(repo: Path):
@@ -125,6 +135,36 @@ def test_known_package_with_wrong_version_fails_closed(repo: Path):
     result = check(repo)
     assert result.returncode == 2
     assert "core@2" in result.stderr
+
+
+@pytest.mark.parametrize(
+    ("identity", "version", "name"),
+    [("ontology.foundation", "0.2.0", "Action"), ("specgraph.foundation", "0.1.0", "Invariant")],
+)
+def test_pinned_foundation_exports_are_checked(repo: Path, identity: str, version: str, name: str):
+    add_foundation(repo)
+    package(repo, "model", imports=((identity, version),), classes=(name,))
+    result = check(repo)
+    assert result.returncode == 1
+    assert f"ontology.foundation@{version} /classes/{name}" in result.stdout
+    assert "tools/project_ontology_context/pinned_foundation/exports" in result.stdout
+
+
+def test_foundation_aliases_are_one_source(repo: Path):
+    add_foundation(repo)
+    package(
+        repo, "model", imports=(("ontology.foundation", "0.1.0"), ("specgraph.foundation", "0.1.0"))
+    )
+    assert check(repo).returncode == 0
+
+
+def test_altered_foundation_catalog_fails_closed(repo: Path):
+    add_foundation(repo)
+    path = repo / "tools/project_ontology_context/pinned_foundation/exports.json"
+    path.write_text(path.read_text() + "\n", encoding="utf-8")
+    result = check(repo)
+    assert result.returncode == 2
+    assert "pinned foundation digest does not match" in result.stderr
 
 
 def test_conflicting_versions_in_one_closure_fail_closed(repo: Path):

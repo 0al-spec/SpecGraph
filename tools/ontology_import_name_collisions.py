@@ -4,6 +4,8 @@
 from __future__ import annotations
 
 import argparse
+import hashlib
+import json
 import subprocess
 import sys
 from dataclasses import dataclass
@@ -13,10 +15,16 @@ from typing import Any
 import yaml
 
 from ontology_name_collisions import SECTIONS, CollisionKey, Definition, collisions, report
+from project_ontology_context.foundation import ACTION_PIN, LEGACY_PIN, PIN
 
 ROOT = Path(__file__).resolve().parents[1]
 SEARCH_ROOTS = (".",)
 PROJECT_PREFIX = "org.0al.specgraph."
+FOUNDATION_FILES = {
+    "tools/project_ontology_context/pinned_foundation/exports.json": PIN,
+    "tools/project_ontology_context/pinned_foundation/exports-0.2.0.json": ACTION_PIN,
+}
+FOUNDATION_IDS = {(pin.id, pin.version) for pin in (PIN, LEGACY_PIN, ACTION_PIN)}
 
 
 class UniqueKeyLoader(yaml.SafeLoader):
@@ -40,6 +48,8 @@ class Package:
     namespace: str
     imports: tuple[tuple[str, str], ...]
     sections: dict[str, dict[str, Any]]
+    source_id: str | None = None
+    pointer_root: str = "/spec"
 
 
 def git(root: Path, *args: str) -> bytes:
@@ -99,17 +109,19 @@ def catalog(root: Path, revision: str | None) -> dict[tuple[str, str], Package]:
     )
     paths = git(root, *command, *SEARCH_ROOTS).decode("utf-8").split("\0")
     packages: dict[tuple[str, str], Package] = {}
+
+    def content(path: str) -> bytes:
+        local = root / path
+        if revision:
+            return git(root, "show", f"{revision}:{path}")
+        if local.is_symlink():
+            raise ValueError(f"{path}: symbolic links are not supported")
+        return local.read_bytes()
+
     for path in sorted(
         p for p in paths if p.endswith((".yaml", ".yml")) and not p.startswith("tests/")
     ):
-        local = root / path
-        if revision:
-            content = git(root, "show", f"{revision}:{path}")
-        else:
-            if local.is_symlink():
-                raise ValueError(f"{path}: symbolic links are not supported")
-            content = local.read_bytes()
-        package = parse_package(path, content)
+        package = parse_package(path, content(path))
         if package is None:
             continue
         if package.identity in packages:
@@ -119,6 +131,34 @@ def catalog(root: Path, revision: str | None) -> dict[tuple[str, str], Package]:
                 f"{first.path}, {package.path}"
             )
         packages[package.identity] = package
+
+    for path, pin in FOUNDATION_FILES.items():
+        if path not in paths:
+            continue
+        payload = content(path)
+        if revision is None and hashlib.sha256(payload).hexdigest() != pin.source_sha256:
+            raise ValueError(f"{path}: pinned foundation digest does not match")
+        exports = json.loads(payload)
+        if not isinstance(exports, dict) or (
+            exports.get("schemaVersion"),
+            exports.get("id"),
+            exports.get("version"),
+        ) != (1, pin.id, pin.version):
+            raise ValueError(f"{path}: invalid foundation identity")
+        sections: dict[str, dict[str, Any]] = {section: {} for section in SECTIONS}
+        for section in ("classes", "protocols"):
+            names = exports.get(section)
+            if not isinstance(names, list) or any(not isinstance(x, str) or not x for x in names):
+                raise ValueError(f"{path}: invalid foundation {section}")
+            if len(names) != len(set(names)):
+                raise ValueError(f"{path}: duplicate foundation {section}")
+            sections[section] = dict.fromkeys(names, {})
+        aliases = (pin, LEGACY_PIN) if pin == PIN else (pin,)
+        for alias in aliases:
+            identity = (alias.id, alias.version)
+            if identity in packages:
+                raise ValueError(f"ambiguous package {alias.id}@{alias.version}")
+            packages[identity] = Package(path, identity, alias.namespace, (), sections, pin.id, "")
     return packages
 
 
@@ -146,7 +186,11 @@ def import_collisions(
             closure.append(package)
             for imported in package.imports:
                 if imported not in packages:
-                    if imported[0] in local_ids or imported[0].startswith(PROJECT_PREFIX):
+                    if (
+                        imported in FOUNDATION_IDS
+                        or imported[0] in local_ids
+                        or imported[0].startswith(PROJECT_PREFIX)
+                    ):
                         raise ValueError(f"missing project import {imported[0]}@{imported[1]}")
                     missing.add((package.path, *imported))
                 else:
@@ -162,9 +206,9 @@ def import_collisions(
                         {
                             "fqid": f"{package.namespace}:{name}",
                             "source": {
-                                "id": package.identity[0],
+                                "id": package.source_id or package.identity[0],
                                 "version": package.identity[1],
-                                "pointer": f"/spec/{section}/{pointer_name}",
+                                "pointer": f"{package.pointer_root}/{section}/{pointer_name}",
                             },
                         }
                     )

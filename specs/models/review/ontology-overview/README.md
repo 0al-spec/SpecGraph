@@ -57,6 +57,10 @@ throughout the repository outside `tests/`, including packages omitted from this
 overview. Package imports resolve by exact ID and version; missing project-local
 imports and ambiguous identities fail closed. An unavailable external import
 is reported as not checked, so an empty collision report does not cover it.
+The pinned foundation 0.1.0 and 0.2.0 export catalogs, including the legacy
+`specgraph.foundation` alias, are checked against their recorded digests and
+included. This broader check reports the existing `Invariant` name overlap
+between foundation and specgraph-core for semantic review.
 Local runs inspect tracked files in the working tree; add a new package to the
 index before checking it. CI checks the committed PR head against its base.
 Matching names signal a conflict to resolve; they do not prove that meanings
