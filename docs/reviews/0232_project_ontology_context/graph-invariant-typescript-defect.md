@@ -1,5 +1,21 @@
 # Graph invariant: TypeScript inheritance projection observation
 
+## Correction, 2026-11-09
+
+The original probe below compared an **instance** of `GraphInvariant` against
+fields in the foundation model's **ontology declaration** interface. That
+comparison does not establish that `kind` and `appliesTo` are missing instance
+fields. The compiler still had a separate, real gap: declared fields and
+semantic ancestry of domain classes were not projected into generated SDK
+interfaces and schemas. [Ontology PR #113](https://github.com/0al-spec/Ontology/pull/113)
+proposes a source-bound fix, including a type-only marker for the exact
+foundation base. It remains subject to review, CI, merge and a later release.
+
+Testing the proposed fix also exposed the separate
+[inheritance validation gap](inheritance-validation-gap-20261109/README.md):
+`check` and staged advice accept an inheritance cycle that the proposed
+`compile` rejects. The original observation below is retained for traceability.
+
 The [0.4.0 candidate](../../../ontology/packages/specgraph-core/versions/0.4.0/domain-ontology-package.yaml)
 declares `GraphInvariant` with `extends: sg:Invariant`. Ontology 0.10.0
 `ontologyc check` and `compile` succeed, and its normalized IR and full graph

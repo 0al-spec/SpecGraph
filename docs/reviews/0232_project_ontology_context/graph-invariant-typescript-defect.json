@@ -15,6 +15,9 @@
   "candidate_ref": "ontology/packages/specgraph-core/versions/0.4.0/domain-ontology-package.yaml",
   "expected": "Resolve the documented TypeScript inheritance contract for a class extending a foundation invariant.",
   "observed": "The emitted GraphInvariant interface contains its own $type and optional id but no projected base fields or TypeScript extends clause; a type-check against the foundation's required kind and appliesTo fields fails.",
+  "interpretation_correction": "The original kind/appliesTo probe compared instance data with foundation declaration metadata; it does not establish missing instance fields. Domain class instance inheritance is a separate confirmed SDK projection gap.",
+  "candidate_fix_ref": "https://github.com/0al-spec/Ontology/pull/113",
+  "validation_gap_ref": "docs/reviews/0232_project_ontology_context/inheritance-validation-gap-20261109/observation.json",
   "prevention_action": "upstream_regression_and_contract_resolution_needed",
   "closure": {
     "status": "open",

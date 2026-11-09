@@ -99,6 +99,26 @@ def test_unfixed_typescript_projection_defect_is_linked_to_existing_proposal():
     }
 
 
+def test_inheritance_validation_gap_has_reproducible_graph_lineage():
+    observation_path = (
+        ROOT
+        / "docs/reviews/0232_project_ontology_context/inheritance-validation-gap-20261109"
+        / "observation.json"
+    )
+    observation = json.loads(observation_path.read_bytes())
+    fixture = ROOT / observation["fixture_ref"]
+    assert hashlib.sha256(fixture.read_bytes()).hexdigest() == observation["fixture_sha256"]
+    assert (ROOT / observation["source_ref"]).is_file()
+    assert observation["closure"] == {"status": "open", "merged_fix": False}
+    graph = observation["graph"]
+    assert (ROOT / graph["user_intent_path"]).is_file()
+    assert (ROOT / graph["operator_request_path"]).is_file()
+    proposal = json.loads((ROOT / graph["proposal_node_path"]).read_bytes())
+    reference = str(observation_path.relative_to(ROOT))
+    assert reference in {link["reference_value"] for link in proposal["proposal_artifact_link"]}
+    assert reference in {link["source_reference"] for link in proposal["proposal_lineage_link"]}
+
+
 def test_published_candidate_artifacts_bind_to_the_exact_source():
     ir = json.loads(IR.read_bytes())
     graph = json.loads(GRAPH.read_bytes())
