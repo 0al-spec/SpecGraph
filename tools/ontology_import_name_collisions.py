@@ -14,7 +14,7 @@ from typing import Any
 
 import yaml
 
-from ontology_foundation_pins import ACTION_PIN, LEGACY_PIN, PIN
+from ontology_foundation_pins import ACTION_PIN, LEGACY_PIN, PIN, FoundationPin
 from ontology_name_collisions import SECTIONS, CollisionKey, Definition, collisions, report
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -107,6 +107,52 @@ def parse_package(path: str, content: bytes) -> Package | None:
     return Package(path, (package_id, version), namespace, identities, sections)
 
 
+def source_bytes(root: Path, revision: str | None, path: str) -> bytes:
+    if revision:
+        return git(root, "show", f"{revision}:{path}")
+    local = root / path
+    if local.is_symlink():
+        raise ValueError(f"{path}: symbolic links are not supported")
+    return local.read_bytes()
+
+
+def register(packages: dict[tuple[str, str], Package], package: Package) -> None:
+    if package.identity in packages:
+        first = packages[package.identity]
+        raise ValueError(
+            f"ambiguous package {package.identity[0]}@{package.identity[1]}: "
+            f"{first.path}, {package.path}"
+        )
+    packages[package.identity] = package
+
+
+def foundation_packages(
+    path: str, pin: FoundationPin, payload: bytes, *, verify_digest: bool
+) -> list[Package]:
+    if verify_digest and hashlib.sha256(payload).hexdigest() != pin.source_sha256:
+        raise ValueError(f"{path}: pinned foundation digest does not match")
+    exports = json.loads(payload)
+    if not isinstance(exports, dict) or (
+        exports.get("schemaVersion"),
+        exports.get("id"),
+        exports.get("version"),
+    ) != (1, pin.id, pin.version):
+        raise ValueError(f"{path}: invalid foundation identity")
+    sections: dict[str, dict[str, Any]] = {section: {} for section in SECTIONS}
+    for section in ("classes", "protocols"):
+        names = exports.get(section)
+        if not isinstance(names, list) or any(not isinstance(x, str) or not x for x in names):
+            raise ValueError(f"{path}: invalid foundation {section}")
+        if len(names) != len(set(names)):
+            raise ValueError(f"{path}: duplicate foundation {section}")
+        sections[section] = dict.fromkeys(names, {})
+    aliases = (pin, LEGACY_PIN) if pin == PIN else (pin,)
+    return [
+        Package(path, (alias.id, alias.version), alias.namespace, (), sections, pin.id, "")
+        for alias in aliases
+    ]
+
+
 def catalog(root: Path, revision: str | None) -> dict[tuple[str, str], Package]:
     command = (
         ("ls-tree", "-r", "-z", "--name-only", revision, "--")
@@ -115,57 +161,61 @@ def catalog(root: Path, revision: str | None) -> dict[tuple[str, str], Package]:
     )
     paths = git(root, *command, *SEARCH_ROOTS).decode("utf-8").split("\0")
     packages: dict[tuple[str, str], Package] = {}
-
-    def content(path: str) -> bytes:
-        local = root / path
-        if revision:
-            return git(root, "show", f"{revision}:{path}")
-        if local.is_symlink():
-            raise ValueError(f"{path}: symbolic links are not supported")
-        return local.read_bytes()
-
     for path in sorted(
         p for p in paths if p.endswith((".yaml", ".yml")) and not p.startswith("tests/")
     ):
-        package = parse_package(path, content(path))
-        if package is None:
-            continue
-        if package.identity in packages:
-            first = packages[package.identity]
-            raise ValueError(
-                f"ambiguous package {package.identity[0]}@{package.identity[1]}: "
-                f"{first.path}, {package.path}"
-            )
-        packages[package.identity] = package
-
+        package = parse_package(path, source_bytes(root, revision, path))
+        if package is not None:
+            register(packages, package)
     for path, pin in FOUNDATION_FILES.items():
-        if path not in paths:
-            continue
-        payload = content(path)
-        if revision is None and hashlib.sha256(payload).hexdigest() != pin.source_sha256:
-            raise ValueError(f"{path}: pinned foundation digest does not match")
-        exports = json.loads(payload)
-        if not isinstance(exports, dict) or (
-            exports.get("schemaVersion"),
-            exports.get("id"),
-            exports.get("version"),
-        ) != (1, pin.id, pin.version):
-            raise ValueError(f"{path}: invalid foundation identity")
-        sections: dict[str, dict[str, Any]] = {section: {} for section in SECTIONS}
-        for section in ("classes", "protocols"):
-            names = exports.get(section)
-            if not isinstance(names, list) or any(not isinstance(x, str) or not x for x in names):
-                raise ValueError(f"{path}: invalid foundation {section}")
-            if len(names) != len(set(names)):
-                raise ValueError(f"{path}: duplicate foundation {section}")
-            sections[section] = dict.fromkeys(names, {})
-        aliases = (pin, LEGACY_PIN) if pin == PIN else (pin,)
-        for alias in aliases:
-            identity = (alias.id, alias.version)
-            if identity in packages:
-                raise ValueError(f"ambiguous package {alias.id}@{alias.version}")
-            packages[identity] = Package(path, identity, alias.namespace, (), sections, pin.id, "")
+        if path in paths:
+            payload = source_bytes(root, revision, path)
+            for package in foundation_packages(path, pin, payload, verify_digest=revision is None):
+                register(packages, package)
     return packages
+
+
+def import_closure(
+    start: tuple[str, str], packages: dict[tuple[str, str], Package], local_ids: set[str]
+) -> tuple[list[Package], set[tuple[str, str, str]]]:
+    missing: set[tuple[str, str, str]] = set()
+    pending = [start]
+    visited: dict[str, str] = {}
+    closure: list[Package] = []
+    while pending:
+        identity = pending.pop()
+        package = packages[identity]
+        previous = visited.get(identity[0])
+        if previous is not None:
+            if previous != identity[1]:
+                raise ValueError(f"conflicting versions of {identity[0]} in {start[0]} imports")
+            continue
+        visited[identity[0]] = identity[1]
+        closure.append(package)
+        for imported in package.imports:
+            if imported in packages:
+                pending.append(imported)
+            elif (
+                imported in FOUNDATION_IDS
+                or imported[0] in local_ids
+                or imported[0].startswith(PROJECT_PREFIX)
+            ):
+                raise ValueError(f"missing project import {imported[0]}@{imported[1]}")
+            else:
+                missing.add((package.path, *imported))
+    return closure, missing
+
+
+def projection_record(package: Package, section: str, name: str) -> dict[str, Any]:
+    pointer_name = name.replace("~", "~0").replace("/", "~1")
+    return {
+        "fqid": f"{package.namespace}:{name}",
+        "source": {
+            "id": package.source_id or package.identity[0],
+            "version": package.identity[1],
+            "pointer": f"{package.pointer_root}/{section}/{pointer_name}",
+        },
+    }
 
 
 def import_collisions(
@@ -175,49 +225,15 @@ def import_collisions(
     missing: set[tuple[str, str, str]] = set()
     local_ids = {identity[0] for identity in packages}
     for start in sorted(packages):
-        pending = [start]
-        visited: dict[str, str] = {}
-        closure: list[Package] = []
-        while pending:
-            identity = pending.pop()
-            package = packages.get(identity)
-            if package is None:
-                continue
-            previous = visited.get(identity[0])
-            if previous is not None:
-                if previous != identity[1]:
-                    raise ValueError(f"conflicting versions of {identity[0]} in {start[0]} imports")
-                continue
-            visited[identity[0]] = identity[1]
-            closure.append(package)
-            for imported in package.imports:
-                if imported not in packages:
-                    if (
-                        imported in FOUNDATION_IDS
-                        or imported[0] in local_ids
-                        or imported[0].startswith(PROJECT_PREFIX)
-                    ):
-                        raise ValueError(f"missing project import {imported[0]}@{imported[1]}")
-                    missing.add((package.path, *imported))
-                else:
-                    pending.append(imported)
-
+        closure, unresolved = import_closure(start, packages, local_ids)
+        missing.update(unresolved)
         graph: dict[str, Any] = {"schemaVersion": "ontology.diagram-projection/v1", "view": "full"}
         for section in SECTIONS:
-            graph[section] = []
-            for package in closure:
-                for name in package.sections[section]:
-                    pointer_name = name.replace("~", "~0").replace("/", "~1")
-                    graph[section].append(
-                        {
-                            "fqid": f"{package.namespace}:{name}",
-                            "source": {
-                                "id": package.source_id or package.identity[0],
-                                "version": package.identity[1],
-                                "pointer": f"{package.pointer_root}/{section}/{pointer_name}",
-                            },
-                        }
-                    )
+            graph[section] = [
+                projection_record(package, section, name)
+                for package in closure
+                for name in package.sections[section]
+            ]
         found.update(collisions(graph))
     return found, missing
 
