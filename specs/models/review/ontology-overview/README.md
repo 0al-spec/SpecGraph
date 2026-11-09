@@ -36,7 +36,7 @@ any candidate or prove that an action was executed.
 
 ## Reproduce
 
-Use `ontologyviz` from Ontology **0.10.0**. The profile explicitly supplies all
+Use `ontologyviz` from Ontology **0.11.0**. The profile explicitly supplies all
 four model files and byte-identical foundation catalogs copied from that tagged
 release under `tools/project_ontology_context/pinned_foundation/`. From the
 SpecGraph root, with `OUT` naming a directory outside the checkout:
