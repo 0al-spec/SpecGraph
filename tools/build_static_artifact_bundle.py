@@ -1217,6 +1217,7 @@ def build_public_bundle(
             graph = repo_root / graph_ref
             if version == "0.4.0" and (source.exists() or source.is_symlink()):
                 if not graph.is_file() or graph.is_symlink():
+                    shutil.rmtree(output_dir)
                     raise PublishBundleError(
                         "current ontology graph projection is missing or symlinked"
                     )
@@ -1269,6 +1270,7 @@ def build_public_bundle(
             version, source_ref, _, graph_ref = published_core
             source = repo_root / source_ref
             if not source.is_file() or has_symlink_component(source, repo_root):
+                shutil.rmtree(output_dir)
                 raise PublishBundleError("published ontology source is missing or symlinked")
             payload = json.loads(text)
             expected = "sha256:" + file_sha256(source)
@@ -1292,8 +1294,10 @@ def build_public_bundle(
                     )
                 )
                 if not valid:
+                    shutil.rmtree(output_dir)
                     raise PublishBundleError("ontology graph projection does not match its source")
             elif not same_package or payload.get("sourceDigest") != expected:
+                shutil.rmtree(output_dir)
                 raise PublishBundleError("published ontology IR does not match its source")
         redacted_text, redaction_count = redact_local_paths(text)
         redacted_total += redaction_count
@@ -1317,19 +1321,19 @@ def build_public_bundle(
             )
         )
 
-    if core_ir in ontology_refs or any(
-        ir_ref in ontology_refs for _, _, ir_ref, _ in published_cores
-    ):
-        _, _, current_ir, current_graph = published_cores[-1]
-        if current_ir not in ontology_refs or current_graph not in ontology_refs:
-            raise PublishBundleError("current ontology graph projection or IR is missing")
-
     if secret_findings:
         shutil.rmtree(output_dir)
         raise PublishBundleError("; ".join(sorted(set(secret_findings))))
     if ontology_fixture_findings:
         shutil.rmtree(output_dir)
         raise PublishBundleError("; ".join(sorted(set(ontology_fixture_findings))))
+    if core_ir in ontology_refs or any(
+        ir_ref in ontology_refs for _, _, ir_ref, _ in published_cores
+    ):
+        _, _, current_ir, current_graph = published_cores[-1]
+        if current_ir not in ontology_refs or current_graph not in ontology_refs:
+            shutil.rmtree(output_dir)
+            raise PublishBundleError("current ontology graph projection or IR is missing")
 
     manifest = build_manifest(
         repo_root=repo_root,

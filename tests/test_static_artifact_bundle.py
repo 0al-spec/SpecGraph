@@ -1302,13 +1302,16 @@ def test_build_public_bundle_includes_source_bound_current_and_historical_core(
     source.write_bytes(original + b"\n# changed\n")
     with pytest.raises(bundle_module.PublishBundleError, match="ontology (IR|graph projection)"):
         bundle_module.build_public_bundle(repo_root=repo, output_dir=repo / "dist/stale")
+    assert not (repo / "dist/stale").exists()
     source.write_bytes(original)
     (repo / base / "versions/0.4.0/generated/ontology.graph.json").unlink()
     with pytest.raises(bundle_module.PublishBundleError, match="current ontology graph projection"):
         bundle_module.build_public_bundle(repo_root=repo, output_dir=repo / "dist/missing")
+    assert not (repo / "dist/missing").exists()
     source.unlink()
     with pytest.raises(bundle_module.PublishBundleError, match="current ontology graph projection"):
         bundle_module.build_public_bundle(repo_root=repo, output_dir=repo / "dist/missing-both")
+    assert not (repo / "dist/missing-both").exists()
 
 
 def test_build_public_bundle_includes_combined_draft_ontology(tmp_path, bundle_module):
