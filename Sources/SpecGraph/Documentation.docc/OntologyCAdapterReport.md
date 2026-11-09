@@ -82,6 +82,17 @@ ensure the binary was built from the checked source: checking the source HEAD
 alone does not establish binary provenance. The integration leaves canonical
 permissions, ontology package status, and publication unchanged.
 
+### Commit-time ontology advice
+
+`make ontology-advice-install ONTOLOGYC_BINARY_PATH=/absolute/path/to/ontologyc`
+installs an advisory configured hook in the clone's common Git directory.
+It requires Git 2.54 or compatible hook support and the project Python
+environment. The hook chooses explicit imports by package ID and version from
+the active Git index, including alternate indexes, and reports missing or
+conflicting sources. It stays nonblocking; strict validation still requires
+`ontologyc check` with explicit sources. Reinstall after changing the selected
+interpreter, compiler or advisory script.
+
 ### Captured ontology snapshot
 
 `tools/ontology_snapshot.py` exposes `capture_ontology_snapshot`, which captures

@@ -665,6 +665,11 @@ ontology-name-collisions: check-python
 	@$(PYTHON) tools/ontology_name_collisions.py --base-ref "$(ONTOLOGY_COLLISION_BASE)"
 	@$(PYTHON) tools/ontology_import_name_collisions.py --base-ref "$(ONTOLOGY_COLLISION_BASE)"
 
+.PHONY: ontology-advice-install
+ontology-advice-install: check-python
+	@test -n "$(ONTOLOGYC_BINARY_PATH)" || { echo "Set ONTOLOGYC_BINARY_PATH to a trusted ontologyc executable" >&2; exit 1; }
+	@$(PYTHON) tools/ontology_advice_staged.py --compiler "$(ONTOLOGYC_BINARY_PATH)" --install
+
 .PHONY: ontology-imports-public
 ontology-imports-public:
 	@$(PYTHON) tools/ontology_imports.py --write-public-placeholder
