@@ -38,7 +38,16 @@ def compiler_info(path: Path | None, expected_sha256: str | None) -> dict:
         match = VERSION.fullmatch(result.stdout.strip()) if result.returncode == 0 else None
         if match:
             version = match.group(1)
-    except (OSError, subprocess.TimeoutExpired, UnicodeError):
+    except OSError as error:
+        return {
+            "status": "unavailable",
+            "path": str(path.resolve()),
+            "version": None,
+            "sha256": digest,
+            "provenance": "not_verified",
+            "detail": f"Cannot launch compiler: {error}",
+        }
+    except (subprocess.TimeoutExpired, UnicodeError):
         pass
     return {
         "status": "available",
@@ -121,6 +130,8 @@ def main(argv: list[str] | None = None) -> int:
     print(json.dumps(payload, indent=2, sort_keys=True))
     if info["status"] == "invalid":
         return 2
+    if info["status"] == "unavailable" and result.returncode == 0:
+        return 1
     return result.returncode if result.returncode in (0, 1, 2) else 1
 
 

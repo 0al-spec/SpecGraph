@@ -80,6 +80,21 @@ def test_compiler_discovery_and_explicit_override(tmp_path):
     assert missing["compiler"]["path"] == str(tmp_path / "missing")
 
 
+def test_unlaunchable_compiler_reports_unavailable(tmp_path):
+    compiler = tmp_path / "ontologyc"
+    compiler.write_text("#!/nonexistent-ontologyc-interpreter\n")
+    compiler.chmod(0o700)
+
+    result = run(tmp_path, "--ontologyc", str(compiler))
+    report = json.loads(result.stdout)
+    assert result.returncode == 1
+    assert report["compiler"]["status"] == "unavailable"
+    assert report["compiler"]["path"] == str(compiler)
+    assert len(report["compiler"]["sha256"]) == 64
+    assert report["compiler"]["detail"]
+    assert any("Install a trusted ontologyc" in hint for hint in report["next_steps"])
+
+
 def test_wrong_pin_never_executes_compiler(tmp_path):
     marker = tmp_path / "executed"
     compiler = tmp_path / "ontologyc"
