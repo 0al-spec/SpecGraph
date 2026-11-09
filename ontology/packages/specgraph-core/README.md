@@ -66,3 +66,16 @@ the source draft uses `ontology.foundation@0.2.0` (`ont`). Their names do not
 establish foundation equivalence. Migration of their references and acceptance
 of any equivalence remain separate work. The `0.2.0` claim-calibration compatibility fixture is
 reserved for its existing test and is not this release.
+
+## Graph invariant in the 0.4.0 candidate
+
+The versioned [0.4.0 candidate](versions/0.4.0/domain-ontology-package.yaml)
+keeps the shared `sg:Invariant` foundation type and declares the graph-specific
+`sgcore:GraphInvariant` as its subtype. `invariantGovernsSpecGraph` uses that
+subtype. The broader `invariant` graph-node kind in SG-SPEC-0001 is unchanged.
+
+The [0.3.0 compatibility report](versions/0.4.0/compatibility/from-0.3.0.yaml)
+marks this as breaking: the old class identity is removed and the relation's
+domain changes. Version 0.3.0, its lockfiles and existing consumers stay pinned
+to their historical bytes. Migration and selection of the new candidate for
+the public combined overview are separate steps; the candidate is still draft.

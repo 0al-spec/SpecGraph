@@ -1,0 +1,32 @@
+{
+  "artifact_kind": "ontology_compiler_inheritance_defect_observation",
+  "schema_version": 1,
+  "defect_id": "ONTOLOGY-TS-INHERITANCE-20261109",
+  "status": "observed_open",
+  "source_ref": "docs/reviews/0232_project_ontology_context/graph-invariant-typescript-defect.md",
+  "specgraph_base_revision": "9390b8ca1b2d7d9b46a09ed2423185f3c581e44b",
+  "compiler_release": "0.10.0",
+  "compiler_source_revision": "a31935ab7e4051fec60651eec4196d71c2a5d265",
+  "affected_spec_refs": [
+    "specs/nodes/SG-SPEC-0001.yaml",
+    "specs/nodes/SG-SPEC-0072.yaml"
+  ],
+  "affected_proposal_ref": "docs/proposals/0232_verified_project_ontology_context.md",
+  "candidate_ref": "ontology/packages/specgraph-core/versions/0.4.0/domain-ontology-package.yaml",
+  "expected": "Resolve the documented TypeScript inheritance contract for a class extending a foundation invariant.",
+  "observed": "The emitted GraphInvariant interface contains its own $type and optional id but no projected base fields or TypeScript extends clause; a type-check against the foundation's required kind and appliesTo fields fails.",
+  "prevention_action": "upstream_regression_and_contract_resolution_needed",
+  "closure": {
+    "status": "open",
+    "merged_fix": false,
+    "semantic_acceptance_proven": false
+  },
+  "graph": {
+    "user_intent_path": "intent_layer/nodes/user_intent--specgraph-core-ontology-inventory-20261107--de2fda1e.json",
+    "user_intent_handle": "user_intent::specgraph-core-ontology-inventory-20261107",
+    "operator_request_path": "intent_layer/nodes/operator_request--specgraph-core-ontology-inventory-20261107--86e0c6ca.json",
+    "operator_request_handle": "operator_request::specgraph-core-ontology-inventory-20261107",
+    "proposal_node_path": "proposal_lane/nodes/proposal--specgraph-core-ontology-inventory-20261107--82778ca9.json",
+    "proposal_handle": "proposal::specgraph-core-ontology-inventory-20261107"
+  }
+}

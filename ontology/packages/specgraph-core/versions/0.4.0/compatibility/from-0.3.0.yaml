@@ -1,0 +1,32 @@
+apiVersion: ontology.specgraph.io/v1alpha1
+changes:
+  addedClasses:
+  - sgcore:GraphInvariant
+  addedFields: []
+  addedRelations: []
+  breakingChanges:
+  - remove class sgcore:Invariant
+  - change relation domain sgcore:invariantGovernsSpecGraph
+  changeClassification:
+    annotationChanges: []
+    applicabilityChanges: []
+    structuralChanges:
+    - kind: classAdded
+      ref: sgcore:GraphInvariant
+    - kind: classRemoved
+      ref: sgcore:Invariant
+    - kind: relationDomainChanged
+      ref: sgcore:invariantGovernsSpecGraph
+  changedFields: []
+  removedClasses:
+  - sgcore:Invariant
+  removedFields: []
+  removedRelations: []
+kind: OntologyCompatibilityReport
+metadata:
+  from: org.0al.specgraph.core@0.3.0
+  to: org.0al.specgraph.core@0.4.0
+result:
+  compatible: false
+  requiredSpecGraphActions:
+  - reviewBreakingOntologyChange

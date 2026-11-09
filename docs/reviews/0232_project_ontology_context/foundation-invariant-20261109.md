@@ -38,6 +38,34 @@ should reuse the foundation type from its actual fields and scope; do not infer
 that answer from the proposed name. The versioned candidate, migration and
 comparison belong in a separate reviewed implementation.
 
+## Operator direction and 0.4.0 candidate
+
+The operator clarified the desired hierarchy in conversation: keep the general
+invariant and name the narrower concept `GraphInvariant` if it really concerns
+the graph. The source declaration above describes valid graph evolution and its
+relation targets `SpecGraph`, so the condition applies to this declaration. It
+does not narrow SG-SPEC-0001's broader `invariant` node kind.
+
+The draft [0.4.0 candidate](../../../ontology/packages/specgraph-core/versions/0.4.0/domain-ontology-package.yaml)
+declares `sgcore:GraphInvariant` as a subtype of the existing imported
+`sg:Invariant`; `invariantGovernsSpecGraph` uses the subtype as its domain.
+The candidate keeps the existing foundation import identity and does not claim
+that other packages, versions or generic invariants have been migrated. The
+conversation records the operator's scoped direction, not independently
+authenticated identity or approval of the whole ontology.
+
+Ontology 0.10.0 checks and compiles the candidate and emits a full graph with
+the pinned foundation catalog. Its [compatibility report](../../../ontology/packages/specgraph-core/versions/0.4.0/compatibility/from-0.3.0.yaml)
+classifies removal of `sgcore:Invariant` and the changed relation domain as
+breaking. Existing 0.3.0 sources, identities and consumers remain unchanged;
+the default public review overview must be migrated separately before it can
+show the new candidate. The compiler and graph-health checks do not prove the
+meaning or execution of an invariant.
+
+A separate [source-bound compiler defect observation](graph-invariant-typescript-defect.md)
+records that the generated TypeScript does not project this inheritance. The
+ontology graph is therefore not evidence of TypeScript subtyping.
+
 ## Foundation nodes in the Viewer
 
 The five foundation references in the current combined projection are genuinely

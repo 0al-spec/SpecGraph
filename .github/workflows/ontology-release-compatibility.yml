@@ -120,7 +120,7 @@ jobs:
           ONTOLOGYVIZ_BINARY_PATH: ${{ steps.model_tools.outputs.visualizer }}
         run: |
           set -euo pipefail
-          python -m pytest -q tests/test_core_ontology_publication.py tests/test_ontology_review_overview.py
+          python -m pytest -q tests/test_core_ontology_publication.py tests/test_ontology_review_overview.py tests/test_graph_invariant_ontology.py
           "$ONTOLOGYVIZ_BINARY_PATH" \
             --profile specs/models/review/ontology-overview/ontology.profile.json \
             --format json --out "$RUNNER_TEMP/ontology-review-overview"
