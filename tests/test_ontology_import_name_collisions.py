@@ -114,6 +114,18 @@ def test_package_in_another_directory_is_discovered(repo: Path):
     assert "new-area/other.yaml" in result.stdout
 
 
+def test_escaped_yaml_kind_is_still_discovered(repo: Path):
+    package(repo, "escaped", imports=(("core", "1"),), classes=("Intent",))
+    path = repo / "specs/models/escaped.yaml"
+    path.write_text(
+        path.read_text().replace("DomainOntologyPackage", r"DomainOntologyPack\u0061ge"),
+        encoding="utf-8",
+    )
+    result = check(repo)
+    assert result.returncode == 1
+    assert "escaped@1 /spec/classes/Intent" in result.stdout
+
+
 def test_transitive_import_and_same_kind_are_checked(repo: Path):
     package(repo, "middle", imports=(("core", "1"),))
     package(repo, "leaf", imports=(("middle", "1"),), classes=("Proposal",))

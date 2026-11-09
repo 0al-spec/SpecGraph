@@ -63,7 +63,13 @@ def required_string(value: Any, context: str) -> str:
 
 
 def parse_package(path: str, content: bytes) -> Package | None:
-    if b"DomainOntologyPackage" not in content:
+    try:
+        candidate = yaml.safe_load(content)
+    except yaml.YAMLError:
+        if b"DomainOntologyPackage" in content:
+            raise
+        return None
+    if not isinstance(candidate, dict) or candidate.get("kind") != "DomainOntologyPackage":
         return None
     loader = UniqueKeyLoader(content)
     try:
@@ -71,7 +77,7 @@ def parse_package(path: str, content: bytes) -> Package | None:
     finally:
         loader.dispose()
     if not isinstance(data, dict) or data.get("kind") != "DomainOntologyPackage":
-        return None
+        raise ValueError(f"{path}: invalid ontology package")
     metadata, spec = data.get("metadata"), data.get("spec")
     if not isinstance(metadata, dict) or not isinstance(spec, dict):
         raise ValueError(f"{path}: missing metadata or spec")
