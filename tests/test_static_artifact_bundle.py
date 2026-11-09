@@ -1242,6 +1242,56 @@ def test_build_public_bundle_publishes_source_bound_core_graph(
         bundle_module.build_public_bundle(repo_root=repo, output_dir=repo / "dist/second")
 
 
+def test_build_public_bundle_includes_source_bound_current_and_historical_core(
+    tmp_path, bundle_module
+):
+    repo = make_repo(tmp_path / "repo")
+    root = Path(__file__).resolve().parents[1]
+    base = Path("ontology/packages/specgraph-core")
+    legacy_ir = base / "generated/ontology.normalized.json"
+    write_json(repo / legacy_ir, {"id": "org.0al.specgraph.core", "version": "0.1.0"})
+    for version in ("0.3.0", "0.4.0"):
+        package = base / "versions" / version
+        for name in (
+            "domain-ontology-package.yaml",
+            "generated/ontology.normalized.json",
+            "generated/ontology.graph.json",
+        ):
+            relative = package / name
+            target = repo / relative
+            target.parent.mkdir(parents=True, exist_ok=True)
+            shutil.copyfile(root / relative, target)
+    write_json(
+        repo / "runs/ontology_package_index.json",
+        {
+            "artifact_kind": "ontology_package_index",
+            "packages": [{"materialized_ir": str(legacy_ir)}],
+        },
+    )
+
+    result = bundle_module.build_public_bundle(repo_root=repo, output_dir=repo / "dist/public")
+    for version in ("0.3.0", "0.4.0"):
+        for name in ("ontology.normalized.json", "ontology.graph.json"):
+            relative = base / "versions" / version / "generated" / name
+            assert (result.output_dir / relative).read_bytes() == (root / relative).read_bytes()
+            assert any(item["path"] == relative.as_posix() for item in result.manifest["files"])
+    graph = json.loads(
+        (result.output_dir / base / "versions/0.4.0/generated/ontology.graph.json").read_bytes()
+    )
+    assert any(item["fqid"] == "sgcore:GraphInvariant" for item in graph["classes"])
+    assert not any(item["fqid"] == "sgcore:Invariant" for item in graph["classes"])
+
+    source = repo / base / "versions/0.4.0/domain-ontology-package.yaml"
+    original = source.read_bytes()
+    source.write_bytes(original + b"\n# changed\n")
+    with pytest.raises(bundle_module.PublishBundleError, match="ontology (IR|graph projection)"):
+        bundle_module.build_public_bundle(repo_root=repo, output_dir=repo / "dist/stale")
+    source.write_bytes(original)
+    (repo / base / "versions/0.4.0/generated/ontology.graph.json").unlink()
+    with pytest.raises(bundle_module.PublishBundleError, match="current ontology graph projection"):
+        bundle_module.build_public_bundle(repo_root=repo, output_dir=repo / "dist/missing")
+
+
 def test_build_public_bundle_includes_combined_draft_ontology(tmp_path, bundle_module):
     repo = make_repo(tmp_path / "repo")
     relative = Path("specs/models/review/ontology-overview/generated/ontology.graph.json")

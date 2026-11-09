@@ -1197,17 +1197,31 @@ def build_public_bundle(
     ontology_refs = ontology_materialized_ir_refs(repo_root, workspace_bootstrap_run_dir)
     core_ir = PurePosixPath("ontology/packages/specgraph-core/generated/ontology.normalized.json")
     core_graph = PurePosixPath("ontology/packages/specgraph-core/generated/ontology.graph.json")
-    published_core_source = PurePosixPath(
-        "ontology/packages/specgraph-core/versions/0.3.0/domain-ontology-package.yaml"
-    )
-    published_core_ir = PurePosixPath(
-        "ontology/packages/specgraph-core/versions/0.3.0/generated/ontology.normalized.json"
-    )
-    published_core_graph = PurePosixPath(
-        "ontology/packages/specgraph-core/versions/0.3.0/generated/ontology.graph.json"
-    )
-    if core_ir in ontology_refs or published_core_ir in ontology_refs:
-        for graph_ref, ir_ref in ((core_graph, core_ir), (published_core_graph, published_core_ir)):
+    published_cores = []
+    for version in ("0.3.0", "0.4.0"):
+        package = PurePosixPath("ontology/packages/specgraph-core/versions") / version
+        published_cores.append(
+            (
+                version,
+                package / "domain-ontology-package.yaml",
+                package / "generated/ontology.normalized.json",
+                package / "generated/ontology.graph.json",
+            )
+        )
+    if core_ir in ontology_refs or any(
+        ir_ref in ontology_refs for _, _, ir_ref, _ in published_cores
+    ):
+        graph_pairs = [(core_graph, core_ir)]
+        for version, source_ref, ir_ref, graph_ref in published_cores:
+            source = repo_root / source_ref
+            graph = repo_root / graph_ref
+            if version == "0.4.0" and (source.exists() or source.is_symlink()):
+                if not graph.is_file() or graph.is_symlink():
+                    raise PublishBundleError(
+                        "current ontology graph projection is missing or symlinked"
+                    )
+            graph_pairs.append((graph_ref, ir_ref))
+        for graph_ref, ir_ref in graph_pairs:
             graph_source = repo_root / graph_ref
             if graph_source.exists() or graph_source.is_symlink():
                 for ref in (graph_ref, ir_ref):
@@ -1248,8 +1262,12 @@ def build_public_bundle(
                 )
             ):
                 raise PublishBundleError("ontology graph projection does not match its source")
-        if rel_path in (published_core_graph, published_core_ir):
-            source = repo_root / published_core_source
+        published_core = next(
+            (item for item in published_cores if rel_path in (item[2], item[3])), None
+        )
+        if published_core:
+            version, source_ref, _, graph_ref = published_core
+            source = repo_root / source_ref
             if not source.is_file() or has_symlink_component(source, repo_root):
                 raise PublishBundleError("published ontology source is missing or symlinked")
             payload = json.loads(text)
@@ -1258,9 +1276,9 @@ def build_public_bundle(
                 isinstance(payload, dict)
                 and payload.get("id") == "org.0al.specgraph.core"
                 and payload.get("namespace") == "sgcore"
-                and payload.get("version") == "0.3.0"
+                and payload.get("version") == version
             )
-            if rel_path == published_core_graph:
+            if rel_path == graph_ref:
                 valid = (
                     same_package
                     and payload.get("schemaVersion") == "ontology.diagram-projection/v1"
