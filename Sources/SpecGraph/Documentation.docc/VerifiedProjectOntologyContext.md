@@ -1,5 +1,11 @@
 # Verified Project Ontology Context
 
+The source-attributed review at
+`docs/reviews/0232_project_ontology_context/foundation-invariant-20261109.md`
+compares the existing foundation and SpecGraph `Invariant` declarations. Their
+scopes differ and identity equivalence remains unproven; the collision check
+continues to report the overlap pending a reviewed versioned migration.
+
 ## Reviewed selection contract and implementation track
 
 The 0232 selection contract is prepared as SG-SPEC-0072 with parent

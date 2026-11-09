@@ -118,6 +118,10 @@ Neither may certify complete semantic coverage from spelling matches. Human
 review and bounded profiles establish what was actually assessed. A partial
 inventory cannot produce a whole-specification conformance claim.
 
+The [foundation invariant review](../reviews/0232_project_ontology_context/foundation-invariant-20261109.md)
+applies this distinction to the existing `Invariant` name collision and
+records a versioned migration candidate without suppressing the diagnostic.
+
 ### Valid package, unresolved term and action-specific readiness
 
 Keep structural validity, terminology coverage, freshness and semantic approval
