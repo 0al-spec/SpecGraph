@@ -1,5 +1,28 @@
 # Tools
 
+## Commit-time ontology advice
+
+With the project Python environment, Git 2.54 or compatible configured-hook
+support, and a trusted `ontologyc` that supports `advise-staged --import`, run:
+
+```sh
+make ontology-advice-install ONTOLOGYC_BINARY_PATH=/absolute/path/to/ontologyc
+```
+
+The installer copies `ontology_advice_staged.py` into the clone's common Git
+directory and configures its advisory pre-commit hook. It records the selected
+Python interpreter and compiler paths; reinstall after upgrading the tool or
+moving either path. This shared hook also works in older worktrees: it reads
+the active index, not a particular checkout's files.
+
+For each staged ontology package, the advisory discovers its explicitly
+declared package ID and version and follows available indexed imports. It
+reports missing sources and conflicting source bytes instead of guessing;
+unresolved-reference diagnostics can be caused by an unavailable import.
+Identical indexed copies use the same blob, with a stable source path. The
+advisory is nonblocking and does not access the network. Run `ontologyc check`
+with explicit sources when a strict validation result is required.
+
 Proposal 0215 adds `static_artifact_incremental_stage.py`. Its `stage` command
 copies only manifest paths whose SHA-256 differs from the durable remote
 manifest, with an optional workspace URL prefix. Its `verify` command downloads

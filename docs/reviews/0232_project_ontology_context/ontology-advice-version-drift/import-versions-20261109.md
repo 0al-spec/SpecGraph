@@ -1,6 +1,6 @@
 # Commit-time advice: matching versions of imported packages
 
-Status: **observed; automatic import selection not implemented**.
+Status: **observed; automatic import selection prepared for review**.
 
 While preparing the `GraphInvariant` migration, the configured SpecGraph Git
 advice hook passed only `specgraph-core@0.3.0` to `ontologyc advise-staged`.
@@ -39,5 +39,11 @@ The local hook configuration is shared by worktrees. Hard-coding a second
 path globally would leave older branches, whose indexes do not contain that
 path, unable to check their packages. A durable fix should select matching
 available inputs from the active index, identify unavailable or ambiguous
-imports explicitly, and retain actual diagnostics. The implementation and
-its review remain open. No local shared hook configuration was changed here.
+imports explicitly, and retain actual diagnostics.
+
+`tools/ontology_advice_staged.py` now implements this selection and can install
+the configured hook in the clone's shared Git directory. The regression tests
+exercise both versions together, modified worktree files, missing and
+conflicting sources, an alternate index, a real invalid reference, and a real
+nonblocking Git commit. The code is a review candidate; its presence alone
+does not establish that a clone has installed it or that the PR has merged.
