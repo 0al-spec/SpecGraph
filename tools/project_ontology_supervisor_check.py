@@ -40,6 +40,7 @@ _PRODUCER_FILES = (
     "project_ontology_scope_outcome_spec.py",
     "ontology_imports.py",
     "ontology_snapshot.py",
+    "ontology_foundation_pins.py",
     "project_ontology_context/vocabulary.py",
     "project_ontology_context/composition.py",
     "project_ontology_context/foundation.py",

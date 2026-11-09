@@ -61,6 +61,23 @@ def check(root: Path) -> subprocess.CompletedProcess[str]:
     )
 
 
+def test_checker_runs_without_specification_core(repo: Path):
+    command = (
+        "import runpy, sys; "
+        "sys.modules['specification_core'] = None; "
+        "sys.path.insert(0, sys.argv[1]); "
+        "sys.argv = [sys.argv[2], '--root', sys.argv[3], '--base-ref', 'HEAD']; "
+        "runpy.run_path(sys.argv[0], run_name='__main__')"
+    )
+    result = subprocess.run(
+        [sys.executable, "-c", command, str(TOOL.parent), str(TOOL), str(repo)],
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    assert result.returncode == 0, result.stderr
+
+
 def add_foundation(root: Path) -> None:
     for name in ("exports.json", "exports-0.2.0.json"):
         path = Path("tools/project_ontology_context/pinned_foundation") / name

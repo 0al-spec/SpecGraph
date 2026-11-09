@@ -421,6 +421,9 @@ def test_verified_foundation_model_runs_through_all_four_layers(real_tools, copi
     assert report["scenario_id"] == "SG72-PINNED-FOUNDATION"
     assert all(layer["status"] == "passed" for layer in report["layers"].values())
     assert report["observed"]["outcome"] == "verified"
+    assert (work / "producer-source/tools/ontology_foundation_pins.py").read_bytes() == (
+        ROOT / "tools/ontology_foundation_pins.py"
+    ).read_bytes()
     assert [
         row["pointer"] for row in report["coverage"]["acceptance"] if row["status"] == "partial"
     ] == ["/acceptance/0", "/acceptance/2"]

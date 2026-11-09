@@ -14,8 +14,8 @@ from typing import Any
 
 import yaml
 
+from ontology_foundation_pins import ACTION_PIN, LEGACY_PIN, PIN
 from ontology_name_collisions import SECTIONS, CollisionKey, Definition, collisions, report
-from project_ontology_context.foundation import ACTION_PIN, LEGACY_PIN, PIN
 
 ROOT = Path(__file__).resolve().parents[1]
 SEARCH_ROOTS = (".",)
