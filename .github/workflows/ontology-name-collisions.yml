@@ -33,11 +33,11 @@ jobs:
           set -euo pipefail
           archive="$RUNNER_TEMP/ontologyc.tar.gz"
           curl --fail --location --silent --show-error --retry 3 \
-            https://github.com/0al-spec/Ontology/releases/download/0.10.0/ontologyc-0.10.0-linux-x86_64.tar.gz \
+            https://github.com/0al-spec/Ontology/releases/download/0.11.0/ontologyc-0.11.0-linux-x86_64.tar.gz \
             --output "$archive"
-          printf '%s  %s\n' 8439f82b6a0378e793219548b0d7b764fa9eda117b31c8249503d27bf57c6171 "$archive" | sha256sum -c -
-          tar -xzf "$archive" -C "$RUNNER_TEMP" ontologyc-0.10.0-linux-x86_64/ontologyviz
-          "$RUNNER_TEMP/ontologyc-0.10.0-linux-x86_64/ontologyviz" \
+          printf '%s  %s\n' 3dfc48969ae2baf58c350b29cc90a975ecbc9d03e4d52bd0a7b69a390a99be6a "$archive" | sha256sum -c -
+          tar -xzf "$archive" -C "$RUNNER_TEMP" ontologyc-0.11.0-linux-x86_64/ontologyviz
+          "$RUNNER_TEMP/ontologyc-0.11.0-linux-x86_64/ontologyviz" \
             --profile specs/models/review/ontology-overview/ontology.profile.json \
             --format json --out "$RUNNER_TEMP/ontology-overview"
           cmp "$RUNNER_TEMP/ontology-overview/ontology.graph.json" \

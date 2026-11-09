@@ -21,8 +21,8 @@ permissions:
 
 env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
-  ONTOLOGY_RELEASE: 0.10.0
-  ONTOLOGY_REVISION: a31935ab7e4051fec60651eec4196d71c2a5d265
+  ONTOLOGY_RELEASE: 0.11.0
+  ONTOLOGY_REVISION: 918e83367297545ecd86cfdb2c2a6b940d6fdafb
 
 jobs:
   compiler-compatibility:
@@ -87,7 +87,7 @@ jobs:
       - name: Reproduce the local model diagrams with the released visualizer
         id: model_tools
         env:
-          ARCHIVE_SHA256: a6ad0aadff7a028373853f66fc57b27be4bd90b71bed614b8a87931a33511204
+          ARCHIVE_SHA256: 998bbce97c6f61729fea85ce766363099c35a48b6332475fe0fa73407ccf79a7
         run: |
           set -euo pipefail
           work=$(mktemp -d "$RUNNER_TEMP/ontology-models.XXXXXXXX")
@@ -146,6 +146,7 @@ jobs:
               tests/test_intent_proposal_ontology_model.py \
               tests/test_promotion_ontology_model.py \
               tests/test_ontology_advice_release.py \
+              tests/test_ontology_inheritance_release.py \
               tests/test_publication_bundle_ontology_model.py \
               tests/test_static_artifact_incremental_stage.py::test_pb_payload_model_against_bundle_verifier \
               tests/test_static_artifact_incremental_stage.py::test_pb_manifest_model_against_bundle_verifier \

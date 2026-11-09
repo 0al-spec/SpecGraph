@@ -2,7 +2,7 @@
   "artifact_kind": "ontology_compiler_inheritance_defect_observation",
   "schema_version": 1,
   "defect_id": "ONTOLOGY-TS-INHERITANCE-20261109",
-  "status": "observed_open",
+  "status": "resolved_in_release",
   "source_ref": "docs/reviews/0232_project_ontology_context/graph-invariant-typescript-defect.md",
   "specgraph_base_revision": "9390b8ca1b2d7d9b46a09ed2423185f3c581e44b",
   "compiler_release": "0.10.0",
@@ -17,11 +17,16 @@
   "observed": "The emitted GraphInvariant interface contains its own $type and optional id but no projected base fields or TypeScript extends clause; a type-check against the foundation's required kind and appliesTo fields fails.",
   "interpretation_correction": "The original kind/appliesTo probe compared instance data with foundation declaration metadata; it does not establish missing instance fields. Domain class instance inheritance is a separate confirmed SDK projection gap.",
   "candidate_fix_ref": "https://github.com/0al-spec/Ontology/pull/113",
+  "resolution": {
+    "release": "0.11.0",
+    "source_revision": "918e83367297545ecd86cfdb2c2a6b940d6fdafb",
+    "verification_ref": "tests/test_ontology_inheritance_release.py"
+  },
   "validation_gap_ref": "docs/reviews/0232_project_ontology_context/inheritance-validation-gap-20261109/observation.json",
   "prevention_action": "upstream_regression_and_contract_resolution_needed",
   "closure": {
-    "status": "open",
-    "merged_fix": false,
+    "status": "resolved",
+    "merged_fix": true,
     "semantic_acceptance_proven": false
   },
   "graph": {

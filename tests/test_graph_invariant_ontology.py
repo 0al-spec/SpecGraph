@@ -84,10 +84,13 @@ def test_compatibility_report_exposes_breaking_identity_change():
     }
 
 
-def test_unfixed_typescript_projection_defect_is_linked_to_existing_proposal():
+def test_typescript_projection_defect_and_resolution_link_to_existing_proposal():
     defect = json.loads(DEFECT.read_bytes())
-    assert defect["status"] == "observed_open"
-    assert not defect["closure"]["merged_fix"]
+    assert defect["status"] == "resolved_in_release"
+    assert defect["closure"]["merged_fix"]
+    assert not defect["closure"]["semantic_acceptance_proven"]
+    assert defect["resolution"]["release"] == "0.11.0"
+    assert (ROOT / defect["resolution"]["verification_ref"]).is_file()
     assert (ROOT / defect["candidate_ref"]) == NEW
     graph = defect["graph"]
     assert (ROOT / graph["user_intent_path"]).is_file()
@@ -109,7 +112,9 @@ def test_inheritance_validation_gap_has_reproducible_graph_lineage():
     fixture = ROOT / observation["fixture_ref"]
     assert hashlib.sha256(fixture.read_bytes()).hexdigest() == observation["fixture_sha256"]
     assert (ROOT / observation["source_ref"]).is_file()
-    assert observation["closure"] == {"status": "open", "merged_fix": False}
+    assert observation["closure"] == {"status": "resolved", "merged_fix": True}
+    assert observation["resolution"]["release"] == "0.11.0"
+    assert (ROOT / observation["resolution"]["verification_ref"]).is_file()
     graph = observation["graph"]
     assert (ROOT / graph["user_intent_path"]).is_file()
     assert (ROOT / graph["operator_request_path"]).is_file()
@@ -129,7 +134,12 @@ def test_multiversion_false_conflict_has_reproducible_graph_lineage():
     fixture = ROOT / observation["fixture_ref"]
     assert hashlib.sha256(fixture.read_bytes()).hexdigest() == observation["fixture_sha256"]
     assert (ROOT / observation["source_ref"]).is_file()
-    assert observation["closure"]["status"] == "candidate_fix_verified_locally"
+    assert observation["closure"] == {
+        "status": "resolved",
+        "merged_fix": True,
+        "released_fix": True,
+    }
+    assert observation["resolution"]["release"] == "0.11.0"
     graph = observation["graph"]
     assert (ROOT / graph["user_intent_path"]).is_file()
     assert (ROOT / graph["operator_request_path"]).is_file()

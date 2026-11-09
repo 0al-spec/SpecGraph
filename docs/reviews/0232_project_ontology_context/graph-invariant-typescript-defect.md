@@ -8,13 +8,16 @@ comparison does not establish that `kind` and `appliesTo` are missing instance
 fields. The compiler still had a separate, real gap: declared fields and
 semantic ancestry of domain classes were not projected into generated SDK
 interfaces and schemas. [Ontology PR #113](https://github.com/0al-spec/Ontology/pull/113)
-proposes a source-bound fix, including a type-only marker for the exact
-foundation base. It remains subject to review, CI, merge and a later release.
+added a source-bound fix, including a type-only marker for the exact foundation
+base. It is included in [Ontology 0.11.0](https://github.com/0al-spec/Ontology/releases/tag/0.11.0).
+The project checks the released compiler with
+[`test_ontology_inheritance_release.py`](../../../tests/test_ontology_inheritance_release.py).
 
 Testing the proposed fix also exposed the separate
 [inheritance validation gap](inheritance-validation-gap-20261109/README.md):
-`check` and staged advice accept an inheritance cycle that the proposed
-`compile` rejects. The original observation below is retained for traceability.
+`check` and staged advice accepted an inheritance cycle that the proposed
+`compile` rejected. That gap is fixed in the same release. The original
+observation below is retained for traceability.
 
 The [0.4.0 candidate](../../../ontology/packages/specgraph-core/versions/0.4.0/domain-ontology-package.yaml)
 declares `GraphInvariant` with `extends: sg:Invariant`. Ontology 0.10.0
@@ -57,6 +60,6 @@ This establishes a discrepancy between the documented projection and this
 generated artifact. It does not establish that the compiler should directly
 extend the current foundation interface: foundation declarations use `kind`
 and describe ontology nodes, while generated instance interfaces use `$type`.
-Resolve that contract boundary in Ontology, then add a regression covering the
-chosen representation. No upstream fix, TypeScript subtyping or runtime
-enforcement is claimed by publishing this graph candidate.
+The original graph candidate itself did not establish an upstream fix,
+TypeScript subtyping or runtime enforcement; the later release and regression
+above address the projection, while runtime enforcement remains separate.

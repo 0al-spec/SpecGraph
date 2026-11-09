@@ -2,7 +2,7 @@
   "artifact_kind": "ontology_false_conflict_defect_observation",
   "schema_version": 1,
   "defect_id": "ONTOLOGY-UNRELATED-IMPORT-VERSION-20261109",
-  "status": "candidate_fix_verified_locally",
+  "status": "resolved_in_release",
   "source_ref": "docs/reviews/0232_project_ontology_context/multiversion-inheritance-false-conflict-20261109/README.md",
   "fixture_ref": "tests/test_ontology_advice_release.py",
   "fixture_sha256": "cbdb6f2e4697cc69da89b26bd34a791a7f5803cde06b3599a71f6687396064b3",
@@ -12,7 +12,12 @@
   "locally_verified_fix_revision": "770d02cb45bb7c3b8f64b1d286785d1da0f6ed08",
   "observed": "Two existing staged-advice integration tests reported false reference namespace conflicts when unrelated core versions were both supplied; after restricting lookup to the exact import closure, all five tests passed locally.",
   "affected_spec_refs": ["specs/nodes/SG-SPEC-0001.yaml", "specs/nodes/SG-SPEC-0072.yaml"],
-  "closure": {"status": "candidate_fix_verified_locally", "merged_fix": false, "released_fix": false},
+  "resolution": {
+    "release": "0.11.0",
+    "source_revision": "918e83367297545ecd86cfdb2c2a6b940d6fdafb",
+    "verification_ref": "tests/test_ontology_advice_release.py"
+  },
+  "closure": {"status": "resolved", "merged_fix": true, "released_fix": true},
   "graph": {
     "user_intent_path": "intent_layer/nodes/user_intent--specgraph-core-ontology-inventory-20261107--de2fda1e.json",
     "user_intent_handle": "user_intent::specgraph-core-ontology-inventory-20261107",
