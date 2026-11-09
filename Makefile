@@ -663,6 +663,7 @@ ontology-imports:
 .PHONY: ontology-name-collisions
 ontology-name-collisions: check-python
 	@$(PYTHON) tools/ontology_name_collisions.py --base-ref "$(ONTOLOGY_COLLISION_BASE)"
+	@$(PYTHON) tools/ontology_import_name_collisions.py --base-ref "$(ONTOLOGY_COLLISION_BASE)"
 
 .PHONY: ontology-imports-public
 ontology-imports-public:
