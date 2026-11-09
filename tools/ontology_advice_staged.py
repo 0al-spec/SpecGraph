@@ -110,6 +110,8 @@ def select_imports() -> tuple[list[str], list[str]]:
             )
         )
     )
+    if not changed:
+        return [], []
     candidates = set(
         paths(
             git(
