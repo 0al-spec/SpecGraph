@@ -21,8 +21,8 @@ permissions:
 
 env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
-  ONTOLOGY_RELEASE: 0.11.0
-  ONTOLOGY_REVISION: 918e83367297545ecd86cfdb2c2a6b940d6fdafb
+  ONTOLOGY_RELEASE: 0.12.0
+  ONTOLOGY_REVISION: 4c5027b7fe075e80d141e77f576eaa58ca0d3679
 
 jobs:
   compiler-compatibility:
@@ -87,7 +87,7 @@ jobs:
       - name: Reproduce the local model diagrams with the released visualizer
         id: model_tools
         env:
-          ARCHIVE_SHA256: 998bbce97c6f61729fea85ce766363099c35a48b6332475fe0fa73407ccf79a7
+          ARCHIVE_SHA256: c9fa61a8fae43b3f934e3ef139ad6045a467d6477febb5a1df73a007dc856063
         run: |
           set -euo pipefail
           work=$(mktemp -d "$RUNNER_TEMP/ontology-models.XXXXXXXX")
@@ -147,6 +147,7 @@ jobs:
               tests/test_promotion_ontology_model.py \
               tests/test_ontology_advice_release.py \
               tests/test_ontology_inheritance_release.py \
+              tests/test_ontology_protocol_conformance_release.py \
               tests/test_publication_bundle_ontology_model.py \
               tests/test_static_artifact_incremental_stage.py::test_pb_payload_model_against_bundle_verifier \
               tests/test_static_artifact_incremental_stage.py::test_pb_manifest_model_against_bundle_verifier \
@@ -215,7 +216,9 @@ jobs:
           "$compiler_dir/ontologyc" check specs/models/SG-SPEC-0072/domain-ontology-package.yaml
           "$compiler_dir/ontologyc" export-foundation > "$RUNNER_TEMP/foundation-exports.json"
           cmp "$RUNNER_TEMP/foundation-exports.json" tools/project_ontology_context/pinned_foundation/exports-0.2.0.json
-          ONTOLOGYC_BINARY_PATH="$compiler_dir/ontologyc" python -m pytest -q tests/test_project_ontology_foundation.py tests/test_project_ontology_composition.py tests/test_project_ontology_joint_reports.py
+          ONTOLOGYC_BINARY_PATH="$compiler_dir/ontologyc" python -m pytest -q \
+            tests/test_project_ontology_foundation.py tests/test_project_ontology_composition.py \
+            tests/test_project_ontology_joint_reports.py tests/test_ontology_protocol_conformance_release.py
 
       - name: Retain compatibility receipt
         uses: actions/upload-artifact@v4
