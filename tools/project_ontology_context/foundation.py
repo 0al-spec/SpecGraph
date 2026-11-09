@@ -8,34 +8,19 @@ import re
 from collections.abc import Iterator
 from pathlib import Path
 
+from ontology_foundation_pins import ACTION_PIN as ACTION_PIN_DATA
+from ontology_foundation_pins import LEGACY_PIN as LEGACY_PIN_DATA
+from ontology_foundation_pins import PIN as PIN_DATA
 from ontology_snapshot import OntologySnapshotError, OntologySourceRejection
 
 from .invalid_spec import INVALID_SPEC
 from .model import CheckResult, CompilerDiagnostic, ContextFacts, ReferenceSite, ResolvedImport
 
 PROFILE = "ontologyc-foundation-v1"
-PIN = ResolvedImport(
-    id="ontology.foundation",
-    namespace="ont",
-    version="0.1.0",
-    source_uri="https://github.com/0al-spec/Ontology/blob/c52553f872f440dde26c61abf9193f5fff171d98/SPECS/ontology/foundation/0.1.0/exports.json",
-    source_sha256="1c6b3ac3e4aa9b4e56d823b3645f94c126840c1922c555998b848e9e0fe18f8f",
-)
+PIN = ResolvedImport(*PIN_DATA)
 # The release catalog is canonical; existing packages retain their authored alias.
-LEGACY_PIN = ResolvedImport(
-    id="specgraph.foundation",
-    namespace="sg",
-    version=PIN.version,
-    source_uri=PIN.source_uri,
-    source_sha256=PIN.source_sha256,
-)
-ACTION_PIN = ResolvedImport(
-    id="ontology.foundation",
-    namespace="ont",
-    version="0.2.0",
-    source_uri="https://github.com/0al-spec/Ontology/blob/40672c189f33dee2b8c6fdac903758e90d9fba86/SPECS/ontology/foundation/0.2.0/exports.json",
-    source_sha256="0444a5848b89cc8b0505ebc8a3114d07bfce9c9089a07f1c5a952f6ce8087841",
-)
+LEGACY_PIN = ResolvedImport(*LEGACY_PIN_DATA)
+ACTION_PIN = ResolvedImport(*ACTION_PIN_DATA)
 PINS = (PIN, LEGACY_PIN, ACTION_PIN)
 EXPORTS = Path(__file__).parent / "pinned_foundation/exports.json"
 

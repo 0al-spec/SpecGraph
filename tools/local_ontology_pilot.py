@@ -396,7 +396,7 @@ def run(args: argparse.Namespace, root: Path) -> tuple[dict, int]:
         declared = verify_declaration(declaration, expected, scenario)
         report["layers"][layer]["status"] = "passed"
         layer = "behavior"
-        producer_paths = ["tools/ontology_snapshot.py"] + [
+        producer_paths = ["tools/ontology_snapshot.py", "tools/ontology_foundation_pins.py"] + [
             f"tools/project_ontology_context/{name}.py"
             for name in ("__init__", "capture", "model", "invalid_spec", "unavailable_spec")
         ]

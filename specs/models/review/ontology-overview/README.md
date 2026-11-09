@@ -51,8 +51,18 @@ and rejects a newly colliding pair, identifying each package and YAML pointer.
 The current selection has no exact-name collisions: four classes and six
 relations formerly repeated in the intent-proposal draft now reuse core.
 
-The check covers the full set of classes, relations, protocols, policies and
-state machines in this overview, not models omitted from the profile. Matching
-names signal a conflict to resolve; they do not prove that meanings are equal.
-The separate reproducibility check ensures that the committed graph matches its
-source packages before merge.
+The check covers classes, relations, protocols, policies and state machines in
+this overview. It also inspects import closures of tracked ontology packages
+throughout the repository outside `tests/`, including packages omitted from this
+overview. Package imports resolve by exact ID and version; missing project-local
+imports and ambiguous identities fail closed. An unavailable external import
+is reported as not checked, so an empty collision report does not cover it.
+The pinned foundation 0.1.0 and 0.2.0 export catalogs, including the legacy
+`specgraph.foundation` alias, are checked against their recorded digests and
+included. This broader check reports the existing `Invariant` name overlap
+between foundation and specgraph-core for semantic review.
+Local runs inspect tracked files in the working tree; add a new package to the
+index before checking it. CI checks the committed PR head against its base.
+Matching names signal a conflict to resolve; they do not prove that meanings
+are equal. The separate reproducibility check ensures that the committed graph
+matches its source packages before merge.

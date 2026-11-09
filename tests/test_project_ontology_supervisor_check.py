@@ -102,6 +102,7 @@ def test_checked_single_target_and_previous_freshness(workspace):
         "specgraph-scoped-ontology-advisory-v1:sha256:"
     )
     assert "project_ontology_check_scopes.py" in result["producer"]["source_sha256"]
+    assert "ontology_foundation_pins.py" in result["producer"]["source_sha256"]
     assert "project_ontology_scope_outcome_spec.py" in result["producer"]["source_sha256"]
     assert result["assessments"]["domain_vocabulary"]["outcome"] == "analyzed"
     assert result["assessments"]["specification_metamodel"] == {
