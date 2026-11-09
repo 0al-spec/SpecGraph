@@ -1108,11 +1108,26 @@ def test_build_public_bundle_publishes_ontology_tombstones(
     assert (result.output_dir / "runs" / "ontology_review_dashboard.json").is_file()
 
 
+def add_current_core_fixture(repo: Path) -> None:
+    root = Path(__file__).resolve().parents[1]
+    package = Path("ontology/packages/specgraph-core/versions/0.4.0")
+    for name in (
+        "domain-ontology-package.yaml",
+        "generated/ontology.normalized.json",
+        "generated/ontology.graph.json",
+    ):
+        relative = package / name
+        target = repo / relative
+        target.parent.mkdir(parents=True, exist_ok=True)
+        shutil.copyfile(root / relative, target)
+
+
 def test_build_public_bundle_publishes_ontology_materialized_ir(
     tmp_path: Path,
     bundle_module: object,
 ) -> None:
     repo = make_repo(tmp_path / "repo")
+    add_current_core_fixture(repo)
     ir_path = repo / "ontology" / "packages" / "specgraph-core" / "generated"
     write_json(
         ir_path / "ontology.normalized.json",
@@ -1169,6 +1184,7 @@ def test_build_public_bundle_publishes_source_bound_core_graph(
     tmp_path: Path, bundle_module: object
 ) -> None:
     repo = make_repo(tmp_path / "repo")
+    add_current_core_fixture(repo)
     folder = repo / "ontology/packages/specgraph-core"
     source = folder / "versions/0.3.0/domain-ontology-package.yaml"
     source.parent.mkdir(parents=True, exist_ok=True)
@@ -1290,6 +1306,9 @@ def test_build_public_bundle_includes_source_bound_current_and_historical_core(
     (repo / base / "versions/0.4.0/generated/ontology.graph.json").unlink()
     with pytest.raises(bundle_module.PublishBundleError, match="current ontology graph projection"):
         bundle_module.build_public_bundle(repo_root=repo, output_dir=repo / "dist/missing")
+    source.unlink()
+    with pytest.raises(bundle_module.PublishBundleError, match="current ontology graph projection"):
+        bundle_module.build_public_bundle(repo_root=repo, output_dir=repo / "dist/missing-both")
 
 
 def test_build_public_bundle_includes_combined_draft_ontology(tmp_path, bundle_module):

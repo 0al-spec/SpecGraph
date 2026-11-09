@@ -1317,6 +1317,13 @@ def build_public_bundle(
             )
         )
 
+    if core_ir in ontology_refs or any(
+        ir_ref in ontology_refs for _, _, ir_ref, _ in published_cores
+    ):
+        _, _, current_ir, current_graph = published_cores[-1]
+        if current_ir not in ontology_refs or current_graph not in ontology_refs:
+            raise PublishBundleError("current ontology graph projection or IR is missing")
+
     if secret_findings:
         shutil.rmtree(output_dir)
         raise PublishBundleError("; ".join(sorted(set(secret_findings))))
