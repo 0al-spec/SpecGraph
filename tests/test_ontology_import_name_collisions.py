@@ -127,6 +127,18 @@ def test_known_package_with_wrong_version_fails_closed(repo: Path):
     assert "core@2" in result.stderr
 
 
+def test_conflicting_versions_in_one_closure_fail_closed(repo: Path):
+    second = repo / "ontology/core-v2.yaml"
+    second.parent.mkdir(parents=True, exist_ok=True)
+    content = json.loads((repo / "specs/models/core.yaml").read_text())
+    content["metadata"]["version"] = "2"
+    second.write_text(json.dumps(content), encoding="utf-8")
+    package(repo, "model", imports=(("core", "1"), ("core", "2")))
+    result = check(repo)
+    assert result.returncode == 2
+    assert "conflicting versions of core" in result.stderr
+
+
 def test_duplicate_package_identity_fails_closed(repo: Path):
     path = repo / "ontology/duplicate.yaml"
     path.parent.mkdir(parents=True, exist_ok=True)
