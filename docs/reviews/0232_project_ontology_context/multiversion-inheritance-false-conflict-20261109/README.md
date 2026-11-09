@@ -16,6 +16,8 @@ local candidate passed all five existing advisory integration tests. See
 [Ontology PR #114](https://github.com/0al-spec/Ontology/pull/114) for the
 change and hosted review.
 
-This observation records a defect found before that candidate was merged. It
-does not claim the original 0.10.0 release emitted these new diagnostics or
-that the fix has been released. Local test results do not prove deployed state.
+This observation records a defect found before that candidate was merged. The
+fix is included in [Ontology 0.11.0](https://github.com/0al-spec/Ontology/releases/tag/0.11.0);
+the released compiler passed the existing staged-advice integration tests.
+The original 0.10.0 release is not claimed to have emitted these new
+diagnostics. Local test results do not prove deployed state.

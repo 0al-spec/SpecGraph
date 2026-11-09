@@ -2,7 +2,7 @@
   "artifact_kind": "ontology_inheritance_validation_defect_observation",
   "schema_version": 1,
   "defect_id": "ONTOLOGY-INHERITANCE-CHECK-20261109",
-  "status": "observed_open",
+  "status": "resolved_in_release",
   "source_ref": "docs/reviews/0232_project_ontology_context/inheritance-validation-gap-20261109/README.md",
   "fixture_ref": "docs/reviews/0232_project_ontology_context/inheritance-validation-gap-20261109/cycle.yaml",
   "fixture_sha256": "904a5ce523bfbaeba55e8f7d3ec7af300878d4b85ded24c0cf151bbad30717c2",
@@ -14,7 +14,13 @@
   "affected_proposal_ref": "docs/proposals/0232_verified_project_ontology_context.md",
   "observed": "A cyclic inheritance fixture passes check and produces no staged-advice diagnostic on the release and ONT-086 candidate; candidate compile rejects it before SDK output.",
   "prevention_action": "ONT-087 source-attributed validation and staged-advice regression",
-  "closure": {"status": "open", "merged_fix": false},
+  "resolution": {
+    "release": "0.11.0",
+    "source_revision": "918e83367297545ecd86cfdb2c2a6b940d6fdafb",
+    "fix_ref": "https://github.com/0al-spec/Ontology/pull/114",
+    "verification_ref": "tests/test_ontology_inheritance_release.py"
+  },
+  "closure": {"status": "resolved", "merged_fix": true},
   "graph": {
     "user_intent_path": "intent_layer/nodes/user_intent--specgraph-core-ontology-inventory-20261107--de2fda1e.json",
     "user_intent_handle": "user_intent::specgraph-core-ontology-inventory-20261107",

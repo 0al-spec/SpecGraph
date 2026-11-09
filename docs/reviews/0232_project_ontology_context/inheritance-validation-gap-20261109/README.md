@@ -1,6 +1,8 @@
 # Inheritance validation gap, 2026-11-09
 
-Status: **observed; Ontology follow-up ONT-087 proposed in PR #113**.
+Status: **fixed in [Ontology 0.11.0](https://github.com/0al-spec/Ontology/releases/tag/0.11.0)**
+by [PR #114](https://github.com/0al-spec/Ontology/pull/114). The original
+observation is retained below for traceability.
 
 The synthetic [cycle.yaml](cycle.yaml) has `A extends B` and `B extends A`.
 Its SHA-256 is `904a5ce523bfbaeba55e8f7d3ec7af300878d4b85ded24c0cf151bbad30717c2`.
@@ -24,7 +26,7 @@ built from the code represented by candidate commit `4c65676a5ab9d37777e32a7f8ca
 These hashes identify locally exercised bytes; they do not authenticate the
 executables or establish a published release.
 
-Next: implement ONT-087 with source-attributed cycle and incompatible-field
-diagnostics in `check`, `checkSources`, and `advise-staged`, including
-explicitly supplied transitive imports. Preserve the advisory's nonblocking
-exit contract. No fix or canonical acceptance is claimed by this record.
+The release adds source-attributed cycle and incompatible-field diagnostics in
+`check`, `checkSources`, and `advise-staged`, including explicitly supplied
+transitive imports. Advice retains its nonblocking exit contract; canonical
+acceptance is separate from this compiler fix.
