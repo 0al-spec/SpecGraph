@@ -1,6 +1,22 @@
 {
   "groups": [
     {
+      "id": "graph-before-implementation",
+      "description": "Keep proposal 0236's graph readiness and leaf-first composition visible in DocC with human approval.",
+      "docs": ["docs/proposals/0236_graph_before_implementation.md"],
+      "docc": ["Sources/SpecGraph/Documentation.docc/SpecGraph.md"],
+      "required_terms": [
+        "constitutional amendment",
+        "implementation pilots",
+        "acceptance criteria",
+        "interfaces",
+        "dependencies",
+        "parent specifications"
+      ],
+      "docs_required_terms": ["Human approval"],
+      "docc_required_terms": ["Proposal 0236", "human approval", "implementing leaves first"]
+    },
+    {
       "id": "meta-domain-applicability-review",
       "description": "Scoped domain reports, explicit unavailable meta checks and versioned freshness remain separate from applicability approval.",
       "docs": [
