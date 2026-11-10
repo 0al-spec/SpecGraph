@@ -13791,6 +13791,7 @@
       "docs/archive/proposal_sources/0235_product_draft_candidate_check.md",
       "docs/reviews/0235_product_draft_candidate_check/operator-request.json",
       "docs/reviews/0235_product_draft_candidate_check/graph-links.json",
+      "docs/reviews/0235_product_draft_candidate_check/gitview-pilot.json",
       "intent_layer/nodes/user_intent--0235-product-draft-candidate-check--1487ad2e.json",
       "intent_layer/nodes/operator_request--0235-product-draft-candidate-check--caf61766.json",
       "proposal_lane/nodes/proposal--0235-product-draft-candidate-check--9478f261.json",
@@ -13815,10 +13816,10 @@
     ],
     "observation_markers": [
       {
-        "path": "docs/reviews/0235_product_draft_candidate_check/graph-links.json",
-        "pattern": "\"canonical_mutations_allowed\": false"
+        "path": "docs/reviews/0235_product_draft_candidate_check/gitview-pilot.json",
+        "pattern": "\"source_digest_matched\": true"
       }
     ],
-    "notes": "Explicit pre-canonical candidate file selection and YAML identity checks. Resume through proposal::0235-product-draft-candidate-check."
+    "notes": "Explicit pre-canonical candidate file selection and YAML identity checks. Installed GitView pilot bound the live draft digest and preserved canonical target selection. Resume through proposal::0235-product-draft-candidate-check."
   }
 ]
