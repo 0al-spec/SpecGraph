@@ -1116,6 +1116,13 @@ product governance places forbidden core targets in `blocked_moves`.
 The installed `tools/project_environment_policy.json` is its explicit
 governance dependency, recorded by digest in the advisory artifact.
 
+Use `next-move --candidate-file docs/drafts/PRODUCT-SPEC-0001.yaml` with the
+native launcher to check one draft in place. The workspace-relative path
+selects a YAML mapping with `kind: spec` and an ID matching its filename.
+The `product_workspace_candidate_check` report goes to stdout and records
+the source path, SHA-256, authored statuses and `canonical: false`.
+Candidate mode is read-only and exclusive with `--target-spec`.
+
 ## Durable workspace binding evidence
 
 Product child allocation can use `.specgraph/spec-id-policy.json` with

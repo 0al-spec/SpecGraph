@@ -1,0 +1,21 @@
+{
+  "artifact_kind": "operator_request_packet",
+  "schema_version": 1,
+  "user_intent": {
+    "intent_handle": "user_intent::0235-product-draft-candidate-check",
+    "source_kind": "chat_instruction",
+    "source_summary": "Check a GitView draft at its original path, with a SHA-256 bound candidate report. The 0AL observation and operator scope are summarized in docs/archive/proposal_sources/0235_product_draft_candidate_check.md.",
+    "selected_node_ref": "SG-SPEC-0009",
+    "unresolved_questions": []
+  },
+  "operator_request": {
+    "request_handle": "operator_request::0235-product-draft-candidate-check",
+    "target_spec_id": "SG-SPEC-0009",
+    "run_mode": "targeted_refine",
+    "operator_note": "Register the draft check as a bounded tooling proposal for PR review. This packet records lineage and has an empty mutation budget. Stop at the review boundary.",
+    "mutation_budget": [],
+    "run_authority": [],
+    "execution_profile": "standard",
+    "stop_conditions": ["review_boundary_reached"]
+  }
+}

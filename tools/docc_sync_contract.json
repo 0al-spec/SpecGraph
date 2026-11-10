@@ -611,10 +611,14 @@
         "product_spec_workspace"
       ],
       "docs_required_terms": [
-        "Team Decision Log Pilot Config"
+        "Team Decision Log Pilot Config",
+        "--candidate-file",
+        "product_workspace_candidate_check"
       ],
       "docc_required_terms": [
-        "Canonical Sources"
+        "Canonical Sources",
+        "--candidate-file",
+        "product_workspace_candidate_check"
       ]
     },
     {

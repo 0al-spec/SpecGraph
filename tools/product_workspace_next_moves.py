@@ -13,6 +13,7 @@ from pathlib import Path
 from typing import Any
 
 import product_workspace_next_moves_support as workspace
+from product_workspace_candidate_check import check_candidate
 
 POLICY_PATH = Path(__file__).with_name("product_workspace_next_moves_policy.json")
 VALID_STATUSES = {"idea", "stub", "outlined", "specified", "linked", "reviewed", "frozen"}
@@ -249,11 +250,17 @@ def atomic_write_json(path: Path, payload: dict[str, Any]) -> None:
 
 
 def main() -> int:
-    parser = argparse.ArgumentParser(description=__doc__)
+    parser = argparse.ArgumentParser(description=__doc__, allow_abbrev=False)
     parser.add_argument("--workspace-root", type=Path, required=True)
-    parser.add_argument("--target-spec")
+    selection = parser.add_mutually_exclusive_group()
+    selection.add_argument("--target-spec")
+    selection.add_argument("--candidate-file", help="one YAML draft under workspace docs/drafts/")
     args = parser.parse_args()
     try:
+        if args.candidate_file is not None:
+            report = check_candidate(args.workspace_root, args.candidate_file)
+            print(json.dumps(report, ensure_ascii=False, indent=2))
+            return 0
         report = build_product_workspace_next_moves(
             args.workspace_root, target_spec=args.target_spec
         )

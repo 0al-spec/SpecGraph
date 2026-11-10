@@ -104,12 +104,13 @@ def test_ready_spec_requires_a_complete_versioned_receipt():
 @pytest.mark.parametrize(
     ("operation", "tool"),
     [
+        ("next-move", "product_workspace_next_moves.py"),
         ("ontology-context", "project_ontology_context_cli.py"),
         ("ontology-doctor", "ontology_doctor.py"),
         ("ontology-overview", "ontology_overview_cli.py"),
     ],
 )
-def test_ontology_route_uses_selected_workspace(tmp_path, monkeypatch, operation, tool):
+def test_advisory_route_uses_selected_workspace(tmp_path, monkeypatch, operation, tool):
     root = tmp_path / "runtime"
     root.mkdir()
     (root / "runtime.json").write_text(
