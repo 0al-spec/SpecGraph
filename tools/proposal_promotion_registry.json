@@ -3028,5 +3028,18 @@
     "required_provenance_links": [
       "source_draft_ref"
     ]
+  },
+  {
+    "proposal_id": "0235",
+    "source_artifact_class": "working_draft",
+    "source_refs": [
+      "docs/archive/proposal_sources/0235_product_draft_candidate_check.md"
+    ],
+    "motivating_concern": "Check a product draft in place without copying it into the canonical graph of a disposable workspace.",
+    "normalized_title": "Check a product draft in place",
+    "bounded_scope": "One explicitly selected draft, identity checks and a read-only byte-bound report.",
+    "required_provenance_links": [
+      "source_draft_ref"
+    ]
   }
 ]

@@ -175,6 +175,22 @@ The output remains advice; gate approval and refinement still use their existing
 review workflow.
 The advisor rejects unknown spec statuses and refuses a symlinked output path.
 
+### Check one draft in place
+
+```bash
+specgraph-runtime --workspace /path/to/product-workspace next-move \
+  --candidate-file docs/drafts/PRODUCT-SPEC-0001.yaml
+```
+
+Use a workspace-relative YAML path under `docs/drafts/`. This selection is
+exclusive with `--target-spec`. The candidate check validates the YAML
+mapping, `kind: spec` and the exact match between the filename stem and ID.
+It prints a `product_workspace_candidate_check` report to stdout with
+`canonical: false`, the authored statuses and the SHA-256 of the parsed
+bytes. It writes no files and offers candidate review as the next action.
+See [proposal 0235](proposals/0235_product_draft_candidate_check.md) for the
+input and evidence boundaries.
+
 ## SpecSpace / Viewer Expectations
 
 SpecSpace's existing core selector reads `runs/project_environment.json` and

@@ -13781,5 +13781,45 @@
       }
     ],
     "notes": "Pure consistency core prepared and independently reviewed: fixed profile, FeaturePassport-bound inputs, lifecycle and C2c linkage policies. Activation remains deferred_until_canonicalized; actual execution/custody/persistence adapters, native/Supervisor entrypoints and installed ExamCalc pilot remain pending. 0225 admission stays separate. Resume through proposal::0234-verification-workflow."
+  },
+  {
+    "proposal_id": "0235",
+    "posture": "synchronous_runtime_slice",
+    "runtime_surfaces": [
+      "docs/proposals/0235_product_draft_candidate_check.md",
+      "docs/proposals/0235_product_draft_candidate_check.intent.yaml",
+      "docs/archive/proposal_sources/0235_product_draft_candidate_check.md",
+      "docs/reviews/0235_product_draft_candidate_check/operator-request.json",
+      "docs/reviews/0235_product_draft_candidate_check/graph-links.json",
+      "docs/reviews/0235_product_draft_candidate_check/gitview-pilot.json",
+      "intent_layer/nodes/user_intent--0235-product-draft-candidate-check--1487ad2e.json",
+      "intent_layer/nodes/operator_request--0235-product-draft-candidate-check--caf61766.json",
+      "proposal_lane/nodes/proposal--0235-product-draft-candidate-check--9478f261.json",
+      "tools/product_workspace_candidate_check.py",
+      "tools/product_workspace_next_moves.py",
+      "tools/native_runtime.py",
+      "tests/test_product_workspace_next_moves.py",
+      "tests/test_native_runtime.py",
+      "Sources/SpecGraph/Documentation.docc/ProductWorkspacePilots.md"
+    ],
+    "runtime_markers": [
+      {
+        "path": "tools/product_workspace_candidate_check.py",
+        "pattern": "product_workspace_candidate_check"
+      }
+    ],
+    "validation_markers": [
+      {
+        "path": "tests/test_product_workspace_next_moves.py",
+        "pattern": "def test_explicit_candidate_binds_bytes_without_changing_advice("
+      }
+    ],
+    "observation_markers": [
+      {
+        "path": "docs/reviews/0235_product_draft_candidate_check/gitview-pilot.json",
+        "pattern": "\"source_digest_matched\": true"
+      }
+    ],
+    "notes": "Explicit pre-canonical candidate file selection and YAML identity checks. Installed GitView pilot bound the live draft digest and preserved canonical target selection. Resume through proposal::0235-product-draft-candidate-check."
   }
 ]

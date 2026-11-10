@@ -1,0 +1,14 @@
+id: SG-RFC-0235
+kind: proposal
+status: draft
+proposal_ref: docs/proposals/0235_product_draft_candidate_check.md
+provenance:
+  authored_by: agent
+  authority: proposal_draft
+  source_ref: docs/archive/proposal_sources/0235_product_draft_candidate_check.md
+atoms:
+  intents:
+  - id: DRAFT-IN-PLACE
+    statement: Check one explicitly selected product draft in its original workspace and bind the candidate report to the exact document bytes.
+  - id: DRAFT-BOUNDARY
+    statement: Keep draft checks read-only and separate from canonical next-move advice, graph membership and execution authority.

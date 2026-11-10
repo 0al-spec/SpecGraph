@@ -1,0 +1,48 @@
+{
+  "artifact_kind": "product_draft_candidate_pilot",
+  "schema_version": 1,
+  "consumer": {
+    "project": "GitView",
+    "workspace_head": "361b6e66b411d588e4f9183499d6ce9ebf76ff06",
+    "draft_has_local_changes": true
+  },
+  "baseline": {
+    "runtime_commit": "8303a681d8f2b33989b004de6954dc371c86da51",
+    "exit_code": 1,
+    "diagnostic": "target spec is absent from product workspace: GITVIEW-SPEC-0004"
+  },
+  "candidate": {
+    "runtime_commit": "488db875b65ed5628620fe2da52f6fb25d8d0c00",
+    "python_version": "3.12.11",
+    "exit_code": 0,
+    "report": {
+      "artifact_kind": "product_workspace_candidate_check",
+      "schema_version": 1,
+      "status": "checked",
+      "canonical": false,
+      "source": {
+        "path": "docs/drafts/GITVIEW-SPEC-0004.yaml",
+        "spec_id": "GITVIEW-SPEC-0004",
+        "sha256": "5a940eaa890847a22f9512ba680ebab482647348e2c662a5e452c10a13c64d48"
+      },
+      "authored_status": {
+        "status": "idea",
+        "draft_status": "pre_canonical"
+      },
+      "checked": [
+        "yaml_mapping",
+        "spec_kind",
+        "file_id_match"
+      ],
+      "next_action": "review_candidate"
+    }
+  },
+  "controls": {
+    "canonical_target_exit_code": 1,
+    "canonical_target_diagnostic": "target spec is absent from product workspace: GITVIEW-SPEC-0004",
+    "workspace_override_exit_code": 2,
+    "document_canonical_nodes_and_advisory_unchanged": true,
+    "workspace_copy_created": false,
+    "source_digest_matched": true
+  }
+}

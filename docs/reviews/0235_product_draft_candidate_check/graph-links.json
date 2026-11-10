@@ -1,0 +1,23 @@
+{
+  "artifact_kind": "proposal_registration_observation",
+  "schema_version": 1,
+  "source_base_revision": "8303a681d8f2b33989b004de6954dc371c86da51",
+  "proposal_id": "0235",
+  "target_spec_id": "SG-SPEC-0009",
+  "source_ref": "docs/archive/proposal_sources/0235_product_draft_candidate_check.md",
+  "source_sha256": "0ae14beaf1e37a3d767fec585abb0f13db91e0f8be84dcebf27caaacda066a85",
+  "proposal_ref": "docs/proposals/0235_product_draft_candidate_check.md",
+  "proposal_sha256": "945fd07dcfbca0c5ce4644763e63d81f6957c47d42a6ec94f23cd31178a5c8fa",
+  "handles": {
+    "user_intent": "user_intent::0235-product-draft-candidate-check",
+    "operator_request": "operator_request::0235-product-draft-candidate-check",
+    "proposal": "proposal::0235-product-draft-candidate-check"
+  },
+  "paths": {
+    "user_intent": "intent_layer/nodes/user_intent--0235-product-draft-candidate-check--1487ad2e.json",
+    "operator_request": "intent_layer/nodes/operator_request--0235-product-draft-candidate-check--caf61766.json",
+    "proposal": "proposal_lane/nodes/proposal--0235-product-draft-candidate-check--9478f261.json"
+  },
+  "executor_invoked": false,
+  "canonical_mutations_allowed": false
+}
