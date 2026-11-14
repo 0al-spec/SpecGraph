@@ -3041,5 +3041,18 @@
     "required_provenance_links": [
       "source_draft_ref"
     ]
+  },
+  {
+    "proposal_id": "0236",
+    "source_artifact_class": "working_draft",
+    "source_refs": [
+      "docs/archive/proposal_sources/0236_graph_before_implementation.md"
+    ],
+    "motivating_concern": "Use the product specification graph to establish readiness and scope before implementation.",
+    "normalized_title": "Build the specification graph before implementation",
+    "bounded_scope": "Constitutional rule on graph readiness and leaf-first implementation through composition under the project's own specified architecture.",
+    "required_provenance_links": [
+      "source_draft_ref"
+    ]
   }
 ]

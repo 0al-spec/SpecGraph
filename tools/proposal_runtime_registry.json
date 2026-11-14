@@ -13821,5 +13821,16 @@
       }
     ],
     "notes": "Explicit pre-canonical candidate file selection and YAML identity checks. Installed GitView pilot bound the live draft digest and preserved canonical target selection. Resume through proposal::0235-product-draft-candidate-check."
+  },
+  {
+    "proposal_id": "0236",
+    "posture": "document_only",
+    "runtime_surfaces": [
+      "CONSTITUTION.md",
+      "docs/proposals/0236_graph_before_implementation.md",
+      "docs/proposals/0236_graph_before_implementation.intent.yaml",
+      "docs/archive/proposal_sources/0236_graph_before_implementation.md"
+    ],
+    "notes": "Constitutional amendment for human review. Readiness is an engineering review obligation; this proposal introduces no runtime enforcement."
   }
 ]
