@@ -236,3 +236,31 @@ compiler found on PATH. Pass `-- --ontologyc "$ONTOLOGYC" --compiler-sha256
 "$COMPILER_SHA256"` to select and pin an executable explicitly. An unknown
 compiler version is reported as null. Follow the reported setup steps for missing
 inputs; retain gaps for review and do not infer semantic approval.
+
+## Prepare an ontology Viewer projection
+
+`ontology-doctor` checks the compiler and selected context; it does not install
+`ontologyviz` or confirm that Viewer definitions were included. For visualization:
+
+1. Find `ontologyc` and `ontologyviz` from a trusted Ontology release or a
+   known source build. Record their paths, source revision or release, and
+   SHA-256. If provenance is unknown, say so; a digest alone is not provenance.
+   Check `ontologyviz --help` for the needed options. An older release may not
+   support foundation models; obtain a compatible build rather than silently
+   generating an incomplete projection.
+2. Identify the project's selected package, imported packages, and exact
+   foundation identities and versions. Obtain the corresponding versioned
+   `SPECS/ontology/foundation/<version>/model.json` catalogs from a matching,
+   trusted Ontology source snapshot. Do not confuse them with `exports.json`.
+3. For JSON output, supply the packages and repeat `--foundation-model` for
+   each needed catalog; alternatively put their paths in the saved profile's
+   `foundationModels`. `--profile` and `--foundation-model` cannot be mixed.
+   Use `ontologyviz --help` for the installed version's complete syntax.
+4. Inspect the resulting projection and Viewer for the definitions expected by
+   this task. Report unresolved references and their scope: some imports may be
+   intentionally excluded. A structurally verified context is not evidence that
+   the Viewer loaded every definition, and loaded terms are not semantic approval.
+
+If a compatible tool or catalog is unavailable, report the missing input and
+leave the projection explicitly incomplete. Do not silently change the
+project's selected ontology or replace its pins.
