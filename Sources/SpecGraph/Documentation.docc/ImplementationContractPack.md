@@ -62,6 +62,13 @@ meaning and satisfying the graph-first rule. The pilot used a structural
 candidate check and a manual review of the cited clauses. Transition readiness
 assessment is a proposed slice. The runtime below produces a contract preview.
 
+The proposed criterion delta compares findings for the same graph scope,
+transition and profile across revisions. It identifies which blockers appear,
+clear or remain unresolved. In the illustrative filter, a current draft flag
+changing from true to false makes an open PR a confirmed match. An
+unavailable current draft flag leaves the filter result unknown. The actual
+display can be verified with a separate observation.
+
 ## Implemented explicit-node projection
 
 Proposal `0047`, Slice 4 provides the `explicit_node_observability_v1` profile.

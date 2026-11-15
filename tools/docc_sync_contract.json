@@ -1277,7 +1277,9 @@
         "criterion finding",
         "evidence",
         "authorization",
-        "GitView"
+        "GitView",
+        "criterion delta",
+        "unknown"
       ]
     },
     {

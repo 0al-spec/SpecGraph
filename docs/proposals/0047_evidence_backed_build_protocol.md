@@ -268,6 +268,40 @@ open “ready” criterion. The checks covered YAML mapping, spec kind and
 filename/ID agreement. The finding about the product meaning came from
 manual review. It remains scoped to the inspected sources and revision.
 
+#### Measure the change
+
+These cases illustrate the optional **open non-draft PR** filter in
+`specification.contract.review_stage`. The broader product meaning of “ready”
+remains open. Use the same source PR identity and the same Project or Repository
+scope in both observations. Assume current access and applicable evidence for
+the stated fields. The filter goal is `lifecycle == open AND draft == false`.
+Its observable consequence is inclusion on the next evaluation of that filter.
+
+| Case | Before | After | Observed delta | Goal evaluation and expected display |
+| --- | --- | --- | --- | --- |
+| The draft flag changes | Open, `draft = true` | Open, `draft = false` | `draft: true → false` | `not_satisfied → satisfied`. The PR appears as a confirmed match. |
+| The new draft flag is unavailable | Open, `draft = true` | Open, current `draft` unknown | The draft change is unknown. | `not_satisfied → unknown`. The filter reports uncertainty. |
+
+This example specifies expected behavior. The snapshots could establish the
+field change and its provenance. Attributing an action to an actor would
+require event evidence. Observing the expected display would require a
+separate observation of the filter result.
+
+The criterion delta in SpecGraph compares the same graph scope at two
+revisions. Use the same transition, criterion identity and profile version.
+For example, the criterion “a governing selection rule is recorded” has an
+`open` finding at the first revision. If an applicable owner decision is later
+recorded and the reviewer verifies its meaning and scope, the finding becomes
+`verified` at the second revision. That clears the blocker associated with this
+criterion. If the decision cannot be checked against the second revision, record
+`unverified` and retain the unresolved blocker for this required criterion.
+An authorization decision for the full transition remains separate.
+
+Report which blockers were added, cleared or remain unresolved by criterion ID,
+with the before and after findings and their evidence or the reason it is
+missing. Count changes only for comparable criteria. When the scope or policy
+changes, report the change in review inputs separately from changes in findings.
+
 Blocked nodes should name why they are blocked:
 
 - `blocked_by_missing_contract`;
