@@ -216,30 +216,57 @@ Only implementation-ready leaves should be handed to coding agents.
 
 ## Implementation Readiness
 
-Implementation readiness should be a derived signal, not a manual label.
+Evaluate readiness for a named transition over an explicit graph scope.
+Bind each assessment to the graph revision, criterion profile and evidence
+revisions it used. An implementation assessment covers the agreed product
+scope under [the graph-first rule](../../CONSTITUTION.md#9-build-the-specification-graph-before-implementation).
+A leaf assessment can inform that review. Admission to implementation also
+requires the readiness of every in-scope branch.
 
-Example shape:
+- **Entry criteria** establish that the review inputs are available. For
+  example, the target scope and profile must resolve on the specified revision.
+- **Success criteria** establish what must be known or supported to recommend
+  the transition. Keep each criterion's finding, evidence and consequence
+  visible. A finding can be described, verified, open, unverified,
+  conflicting or outside scope. The profile determines which findings
+  require a decision or block this transition.
+- **Authorization** comes from the authority defined for that transition.
+  Record its decision separately, bound to the reviewed revision, scope and
+  transition. An assessment can recommend proceeding, seeking a decision or
+  resolving a blocker before review. Authorization requires its own record.
 
-```json
-{
-  "spec_id": "SG-SPEC-0123",
-  "implementation_readiness": {
-    "status": "ready_to_implement",
-    "score": 0.91,
-    "blockers": [],
-    "required_artifacts": {
-      "contract": "present",
-      "tests": "present",
-      "invariants": "present",
-      "dependencies": "resolved",
-      "side_effects": "declared",
-      "failure_modes": "declared",
-      "security_policy": "present",
-      "observability": "present"
-    }
-  }
-}
-```
+A qualified evidence reference identifies a source revision, artifact and
+locator. Mechanical checks can verify those bindings, detect changed inputs
+and evaluate criteria expressed as explicit rules. A reviewer can assess
+whether a cited clause actually supports a semantic finding. Revalidate
+findings that depend on changed inputs before relying on them again.
+Report each blocker with its reason and affected scope. A scalar score
+would obscure which required criterion is still open.
+
+### Worked example from GitView
+
+The same open criterion applies to two candidate transitions for the PR
+overview: **has the product owner chosen what “ready” means for an open
+pull request?** The GitView pilot recorded the criterion as open. Its
+candidate spec `GITVIEW-SPEC-0125` distinguishes review-stage signals,
+completion and merge eligibility under `specification.contract.distinction`
+and retains the open question at `specification.unresolved[0]`. This example
+is a paraphrase of a local pilot. Its source is
+`docs/drafts/GITVIEW-SPEC-0125.yaml` at GitView revision
+`98f2c3c3ec10c4b7d30b7eb2e747f958a09a1ecd`
+with SHA-256
+`7d4e22db3b544eef14ff23408e4f471d2153e5a45c058a1544a641aa253730f3`.
+
+| Proposed transition | Consequence of the open criterion | Decision authority |
+| --- | --- | --- |
+| Product clarification → product review | The owner can review the proposed meanings and separate CI and review signals while the unified label stays open. The assessment can recommend bringing the options to review. | The product owner evaluates the options and records any product choice. |
+| Specification → implementation of a unified “Ready” filter | The filter's membership and acceptance criteria depend on the outstanding choice. Flag it as a blocker for this scope and apply the graph-first rule before starting implementation. | The product owner resolves the product meaning. The authority designated for implementation records any subsequent authorization against the reviewed graph and scope. |
+
+In the pilot, `next-move --candidate-file` returned `checked` for both a
+candidate with an explicitly described Today rule and the candidate with the
+open “ready” criterion. The checks covered YAML mapping, spec kind and
+filename/ID agreement. The finding about the product meaning came from
+manual review. It remains scoped to the inspected sources and revision.
 
 Blocked nodes should name why they are blocked:
 
@@ -309,7 +336,7 @@ frontier:
     {
       "spec_id": "SG-SPEC-0123",
       "kind": "implementation_leaf",
-      "readiness": 0.94,
+      "readiness": "ready_to_implement",
       "priority": 0.88,
       "reasons": [
         "contract_complete",
@@ -333,7 +360,7 @@ frontier:
 
 Ranking should not be pure topology. It should consider:
 
-- readiness score;
+- readiness findings for the implementation transition;
 - dependency-unblocking value;
 - risk reduction;
 - graph centrality;
@@ -443,7 +470,9 @@ license review, or otherwise constrained.
 
 - Add a derived artifact that classifies candidate nodes as
   `ready_to_implement`, blocked, or not applicable.
-- Start with conservative rule-based blockers.
+- Start with conservative rule-based blockers. Pin the scope, source revision and
+  profile. Retain criterion findings, evidence references and their impact on the
+  transition. An explicit review decision supplies authorization separately.
 - Do not create code tasks yet.
 
 ### Slice 3: Implementation Frontier Viewer Contract
@@ -500,7 +529,7 @@ Nested refinement now reads the run-local `--output-last-message` artifact and
 joins both stream readers before cleanup. Missing/empty final messages still fail
 the existing protocol gate; transcript text cannot authorize a candidate.
 
-This realizes only the observability part of Slice 4. Generic readiness scoring,
+This realizes only the observability part of Slice 4. Transition readiness assessment,
 complete contract-pack dimensions, inherited-policy resolution, automatic task
 dispatch, Feature Passport observation ingestion, and production storage remain
 unimplemented by this slice. See [the operator contract](../implementation_contract_pack.md).
@@ -528,7 +557,9 @@ unimplemented by this slice. See [the operator contract](../implementation_contr
 - Raw `runs/*` remain local by default.
 - The proposal defines why curated evidence packets are different from raw run
   logs.
-- The proposal defines implementation readiness as a derived signal.
+- The proposal defines implementation readiness as a derived signal for a named
+  transition and scope, with criterion findings and evidence separate from
+  authorization. The worked example applies one open criterion to two transitions.
 - The proposal distinguishes semantic, implementation, and runtime leaves.
 - The proposal defines parent composition contracts.
 - The proposal includes risk-based evidence ceremony.
