@@ -1123,6 +1123,11 @@ The `product_workspace_candidate_check` report goes to stdout and records
 the source path, SHA-256, authored statuses and `canonical: false`.
 Candidate mode is read-only and exclusive with `--target-spec`.
 
+The GitView independent review pilot used candidate reports as file identity
+evidence. Its manual handoff bound review scope, findings and author
+dispositions to revisions. RFC `0235` links the pilot observation and its
+follow-up checks.
+
 ## Durable workspace binding evidence
 
 Product child allocation can use `.specgraph/spec-id-policy.json` with

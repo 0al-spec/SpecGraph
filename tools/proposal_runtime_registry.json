@@ -13820,7 +13820,7 @@
         "pattern": "\"source_digest_matched\": true"
       }
     ],
-    "notes": "Explicit pre-canonical candidate file selection and YAML identity checks. Installed GitView pilot bound the live draft digest and preserved canonical target selection. Resume through proposal::0235-product-draft-candidate-check."
+    "notes": "Explicit pre-canonical candidate file selection and YAML identity checks. Installed GitView pilot bound the live draft digest and preserved canonical target selection. The independent review handoff observation is retained at docs/reviews/0235_product_draft_candidate_check/independent-review-handoff.md. Resume through proposal::0235-product-draft-candidate-check."
   },
   {
     "proposal_id": "0236",
