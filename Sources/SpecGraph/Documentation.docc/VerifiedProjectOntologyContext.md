@@ -100,6 +100,13 @@ captured context identity. Qualified matches are structural candidates;
 unknown/ambiguous terms remain review gaps. Prose is unassessed and an empty
 inventory does not mean grounded. No package or term acceptance is created.
 
+Use `specgraph-runtime --workspace <project> ontology-ref-diff -- <before> <after>`
+to compare explicit declarations in two workspace-relative YAML files. The
+`specgraph_ontology_ref_diff` report records input digests, retained, added
+and removed terms, and their YAML locations. Repeat `--explain-removal TERM REASON`
+to record intended removals. Exit 0 means the comparison completed and exit 2
+indicates invalid input.
+
 Supervisor's opt-in `--build-project-ontology-context-check` takes an explicit
 target, project ID, selection and operator-provided compiler. One captured target
 byte set supplies advisory reports, inventory and optional previous-report

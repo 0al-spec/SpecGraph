@@ -1,0 +1,12 @@
+id: SG-RFC-0238
+kind: proposal
+status: draft
+proposal_ref: docs/proposals/0238_ontology_ref_diff.md
+provenance:
+  authored_by: agent
+  authority: proposal_draft
+  source_ref: docs/archive/proposal_sources/0238_ontology_ref_diff.md
+atoms:
+  intents:
+  - id: DECLARED-REFERENCE-DIFF
+    statement: Compare explicit ontology declarations in two selected specification documents, preserving source identity and occurrence locations and an optional rationale for each removal.

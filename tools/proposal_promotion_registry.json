@@ -3067,5 +3067,18 @@
     "required_provenance_links": [
       "source_draft_ref"
     ]
+  },
+  {
+    "proposal_id": "0238",
+    "source_artifact_class": "working_draft",
+    "source_refs": [
+      "docs/archive/proposal_sources/0238_ontology_ref_diff.md"
+    ],
+    "motivating_concern": "GitView lost explicit ontology declarations during the draft-to-node handoff.",
+    "normalized_title": "Compare explicit ontology declarations across two specifications",
+    "bounded_scope": "Read two explicitly selected YAML files and report retained, added and removed declarations, source locations and author rationale.",
+    "required_provenance_links": [
+      "source_draft_ref"
+    ]
   }
 ]

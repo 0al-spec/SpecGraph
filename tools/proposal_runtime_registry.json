@@ -13866,5 +13866,32 @@
       }
     ],
     "notes": "Exposes the existing YAML linter in the native launcher and reports exactly which checks ran. The product draft identity route in 0235 remains separate."
+  },
+  {
+    "proposal_id": "0238",
+    "posture": "synchronous_runtime_slice",
+    "runtime_surfaces": [
+      "docs/proposals/0238_ontology_ref_diff.md",
+      "docs/proposals/0238_ontology_ref_diff.intent.yaml",
+      "docs/archive/proposal_sources/0238_ontology_ref_diff.md",
+      "tools/project_ontology_term_declarations.py",
+      "tools/project_ontology_term_inventory.py",
+      "tools/ontology_ref_diff.py",
+      "tools/native_runtime.py",
+      "tests/test_ontology_ref_diff.py"
+    ],
+    "runtime_markers": [
+      {
+        "path": "tools/ontology_ref_diff.py",
+        "pattern": "\"artifact_kind\": \"specgraph_ontology_ref_diff\""
+      }
+    ],
+    "validation_markers": [
+      {
+        "path": "tests/test_ontology_ref_diff.py",
+        "pattern": "def test_diff_reports_disappearance_when_successor_declares_nothing("
+      }
+    ],
+    "notes": "Standalone comparison of explicit declarations. Related authoring profile proposal 0233 retains its own scope and approval boundary."
   }
 ]

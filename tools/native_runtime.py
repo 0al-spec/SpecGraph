@@ -154,6 +154,7 @@ def run(installation: Path, workspace: Path, operation: str, arguments: list[str
         "ontology-context",
         "ontology-overview",
         "ontology-doctor",
+        "ontology-ref-diff",
     ):
         if any(
             arg == "--workspace-root" or arg.startswith("--workspace-root=") for arg in arguments
@@ -165,6 +166,7 @@ def run(installation: Path, workspace: Path, operation: str, arguments: list[str
             "ontology-context": "project_ontology_context_cli.py",
             "ontology-doctor": "ontology_doctor.py",
             "ontology-overview": "ontology_overview_cli.py",
+            "ontology-ref-diff": "ontology_ref_diff.py",
         }[operation]
         command = [
             str(python),
@@ -210,6 +212,7 @@ def main(argv: list[str] | None = None) -> int:
             "ontology-context",
             "ontology-doctor",
             "ontology-overview",
+            "ontology-ref-diff",
         ),
     )
     args, extra = parser.parse_known_args(argv)
