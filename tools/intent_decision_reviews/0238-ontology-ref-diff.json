@@ -1,0 +1,30 @@
+{
+  "artifact_kind": "specgraph.intent-decision-review/v1",
+  "base_sha": "3a7f176a5524569f46a048a3fa673a1663304142",
+  "decisions": [
+    {
+      "change_sha256": "042791e647e1c7675cdb6cc6e2d1daa42d459cffc23e44c0fef33e6b708f578d",
+      "disposition": "mechanics",
+      "implementation_refs": [
+        {
+          "path": "tools/ontology_ref_diff.py",
+          "symbol": "build_ref_diff"
+        },
+        {
+          "path": "tools/ontology_ref_diff.py",
+          "symbol": "read_document"
+        },
+        {
+          "path": "tools/project_ontology_term_declarations.py",
+          "symbol": "read_term_declarations"
+        }
+      ],
+      "rationale": "The command compares the spelling of declarations in two explicit inputs, records byte hashes and locations, and carries optional author-supplied rationale. It makes no determination about ontology meaning, adoption or readiness.",
+      "specification_refs": []
+    }
+  ],
+  "intent_delta_sha256": "113bff5306b0d877d628d84a294d3c9b1cf9b1c3a5ebd09b4fd94aaf41b4db18",
+  "pr_body_sha256": "fe0104ac3dcf0ef20468d54c0327649e6e5b1338c2e8926c9c9e2b1e0baf9cb3",
+  "schema_version": 1,
+  "source_scope_sha256": "c7cd849d0b99bc14aa9a94254edc4c516396ebabe57b6c377c1bfde4669b9db7"
+}
