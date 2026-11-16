@@ -106,6 +106,7 @@ def test_ready_spec_requires_a_complete_versioned_receipt():
     [
         ("next-move", "product_workspace_next_moves.py"),
         ("lint", "spec_yaml_lint.py"),
+        ("ontology-ref-diff", "ontology_ref_diff.py"),
         ("ontology-context", "project_ontology_context_cli.py"),
         ("ontology-doctor", "ontology_doctor.py"),
         ("ontology-overview", "ontology_overview_cli.py"),

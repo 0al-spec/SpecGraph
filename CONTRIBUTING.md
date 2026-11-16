@@ -293,6 +293,12 @@ Rules of thumb:
 - Large fan-out is structural pressure. Prefer semantic clusters or bounded split proposals over prose cleanup.
 - When a node has reached a refinement plateau, do not keep rewriting it. Emit a split proposal or move to evidence/runtime realization.
 
+When reporting an ontology check after a draft-to-node handoff, bind the result
+to the successor's bytes. Use
+[`ontology-ref-diff`](docs/project_ontology_context.md#compare-declarations-between-two-files)
+to review dropped declarations against the selected predecessor and record any
+intentional removals.
+
 ## Proposals and Runtime Realization
 
 Proposals are not a parking lot. If a proposal introduces a new surface or process, close the loop:
