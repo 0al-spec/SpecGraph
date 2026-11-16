@@ -223,7 +223,7 @@ def _validate_spec_shape(data: dict[str, Any]) -> list[str]:
     return messages
 
 
-def inspect_yaml(path: Path) -> YamlLintResult:
+def inspect_yaml(path: Path, *, formatter_hint: bool = False) -> YamlLintResult:
     try:
         source = path.read_text(encoding="utf-8")
     except FileNotFoundError:
@@ -241,15 +241,10 @@ def inspect_yaml(path: Path) -> YamlLintResult:
 
     canonical = dump_canonical_yaml(data)
     if source != canonical:
-        issues.append(
-            LintIssue(
-                path=path,
-                message=(
-                    "file is not canonically formatted; run "
-                    f"`python tools/spec_yaml_format.py {path}`"
-                ),
-            )
-        )
+        message = "file is not canonically formatted"
+        if formatter_hint:
+            message += f"; run `python tools/spec_yaml_format.py {path}`"
+        issues.append(LintIssue(path=path, message=message))
     return YamlLintResult(
         parsing
         + (
@@ -264,7 +259,7 @@ def inspect_yaml(path: Path) -> YamlLintResult:
 
 
 def lint_file(path: Path) -> list[LintIssue]:
-    return inspect_yaml(path).issues
+    return inspect_yaml(path, formatter_hint=True).issues
 
 
 def format_file(path: Path) -> bool:

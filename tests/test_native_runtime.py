@@ -233,12 +233,16 @@ def test_native_lint_reports_executed_checks_for_each_workspace_file(lint_runtim
     draft_source = source.replace("0001", "0002").replace(
         "updated_at: '2026-11-16T06:00:00Z'\n", ""
     )
+    draft_source = "# Noncanonical formatting\n" + draft_source
     draft.write_text(draft_source)
     failed = subprocess.run([*command, draft_arg], capture_output=True, text=True)
     assert failed.returncode == 1
     result = json.loads(failed.stdout)["files"][0]
     assert result["checks_run"] == checks
-    assert result["issues"] == ["updated_at must be a non-empty ISO 8601 timestamp string"]
+    assert result["issues"] == [
+        "updated_at must be a non-empty ISO 8601 timestamp string",
+        "file is not canonically formatted",
+    ]
     assert draft.read_text() == draft_source
     assert node.read_text() == source
     assert not (workspace / "runs").exists()
