@@ -191,6 +191,22 @@ bytes. It writes no files and offers candidate review as the next action.
 See [proposal 0235](proposals/0235_product_draft_candidate_check.md) for the
 input and evidence boundaries.
 
+### Lint specification YAML in place
+
+```bash
+specgraph-runtime --workspace /path/to/product-workspace lint -- \
+  specs/nodes/PRODUCT-SPEC-0001.yaml docs/drafts/PRODUCT-SPEC-0002.yaml
+```
+
+Pass one or more explicit workspace-relative YAML paths. The read-only
+`specgraph_yaml_lint` report goes to stdout with each file's `checks_run` and
+`issues`. Exit 0 means lint passed, 1 means findings, and 2 means invalid
+invocation or path selection. Lint covers YAML mapping and duplicate keys,
+timestamps, acceptance and evidence declaration shape, and canonical
+formatting. A file that cannot be parsed has only the parse check listed.
+Draft kind and ID/filename matching belong to `next-move --candidate-file`.
+See [proposal 0237](proposals/0237_native_spec_yaml_lint.md).
+
 ## SpecSpace / Viewer Expectations
 
 SpecSpace's existing core selector reads `runs/project_environment.json` and

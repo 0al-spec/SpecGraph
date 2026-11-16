@@ -13832,5 +13832,39 @@
       "docs/archive/proposal_sources/0236_graph_before_implementation.md"
     ],
     "notes": "Constitutional amendment for human review. Readiness is an engineering review obligation; this proposal introduces no runtime enforcement."
+  },
+  {
+    "proposal_id": "0237",
+    "posture": "synchronous_runtime_slice",
+    "runtime_surfaces": [
+      "docs/proposals/0237_native_spec_yaml_lint.md",
+      "docs/proposals/0237_native_spec_yaml_lint.intent.yaml",
+      "docs/archive/proposal_sources/0237_native_spec_yaml_lint.md",
+      "tools/native_runtime.py",
+      "tools/spec_yaml.py",
+      "tools/spec_yaml_lint.py",
+      "tests/test_native_runtime.py",
+      "docs/product_workspace_stable_mode_guide.md",
+      "Sources/SpecGraph/Documentation.docc/ProductWorkspacePilots.md"
+    ],
+    "runtime_markers": [
+      {
+        "path": "tools/spec_yaml_lint.py",
+        "pattern": "\"artifact_kind\": \"specgraph_yaml_lint\""
+      }
+    ],
+    "validation_markers": [
+      {
+        "path": "tests/test_native_runtime.py",
+        "pattern": "def test_native_lint_reports_executed_checks_for_each_workspace_file("
+      }
+    ],
+    "observation_markers": [
+      {
+        "path": "docs/archive/proposal_sources/0237_native_spec_yaml_lint.md",
+        "pattern": "All 24 explicitly selected canonical GitView nodes passed the same linter."
+      }
+    ],
+    "notes": "Exposes the existing YAML linter in the native launcher and reports exactly which checks ran. The product draft identity route in 0235 remains separate."
   }
 ]

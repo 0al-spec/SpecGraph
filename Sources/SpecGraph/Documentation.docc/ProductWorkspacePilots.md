@@ -1123,6 +1123,21 @@ The `product_workspace_candidate_check` report goes to stdout and records
 the source path, SHA-256, authored statuses and `canonical: false`.
 Candidate mode is read-only and exclusive with `--target-spec`.
 
+## Lint specification YAML in place
+
+Use the native launcher to lint canonical nodes and draft YAML in place:
+
+```bash
+specgraph-runtime --workspace /path/to/product-workspace lint -- \
+  specs/nodes/PRODUCT-SPEC-0001.yaml docs/drafts/PRODUCT-SPEC-0002.yaml
+```
+
+The read-only `specgraph_yaml_lint` report lists each file's `checks_run` and
+`issues`. Exit 0 means lint passed, 1 means findings, and 2 means invalid
+invocation or path selection. Lint covers YAML mapping and duplicate keys,
+timestamps, acceptance and evidence declaration shape, and canonical
+formatting. Draft kind and ID/filename matching stay in the candidate check.
+
 ## Durable workspace binding evidence
 
 Product child allocation can use `.specgraph/spec-id-policy.json` with
