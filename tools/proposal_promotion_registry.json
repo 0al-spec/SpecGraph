@@ -3054,5 +3054,18 @@
     "required_provenance_links": [
       "source_draft_ref"
     ]
+  },
+  {
+    "proposal_id": "0237",
+    "source_artifact_class": "working_draft",
+    "source_refs": [
+      "docs/archive/proposal_sources/0237_native_spec_yaml_lint.md"
+    ],
+    "motivating_concern": "GitView needed to check a canonical node in place and distinguish identity checks from YAML lint.",
+    "normalized_title": "Run YAML lint through the native runtime",
+    "bounded_scope": "A read-only native lint command for selected workspace files with a report of checks and findings per file.",
+    "required_provenance_links": [
+      "source_draft_ref"
+    ]
   }
 ]

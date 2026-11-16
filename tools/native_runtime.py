@@ -148,13 +148,20 @@ def run(installation: Path, workspace: Path, operation: str, arguments: list[str
             *arguments,
         ]
         cwd = source
-    elif operation in ("next-move", "ontology-context", "ontology-overview", "ontology-doctor"):
+    elif operation in (
+        "next-move",
+        "lint",
+        "ontology-context",
+        "ontology-overview",
+        "ontology-doctor",
+    ):
         if any(
             arg == "--workspace-root" or arg.startswith("--workspace-root=") for arg in arguments
         ):
             raise ValueError(f"{operation} workspace is selected by --workspace")
         tool = {
             "next-move": "product_workspace_next_moves.py",
+            "lint": "spec_yaml_lint.py",
             "ontology-context": "project_ontology_context_cli.py",
             "ontology-doctor": "ontology_doctor.py",
             "ontology-overview": "ontology_overview_cli.py",
@@ -197,6 +204,7 @@ def main(argv: list[str] | None = None) -> int:
         choices=(
             "init",
             "next-move",
+            "lint",
             "supervisor",
             "draft",
             "ontology-context",

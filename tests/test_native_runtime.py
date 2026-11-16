@@ -105,6 +105,7 @@ def test_ready_spec_requires_a_complete_versioned_receipt():
     ("operation", "tool"),
     [
         ("next-move", "product_workspace_next_moves.py"),
+        ("lint", "spec_yaml_lint.py"),
         ("ontology-context", "project_ontology_context_cli.py"),
         ("ontology-doctor", "ontology_doctor.py"),
         ("ontology-overview", "ontology_overview_cli.py"),
@@ -144,6 +145,122 @@ def test_advisory_route_uses_selected_workspace(tmp_path, monkeypatch, operation
             runtime.run(root, workspace, operation, supplied)
     assert runtime.run(root, workspace, "init", ["--project-id", "demo"]) == 1
     assert calls[-1][0][1].endswith("tools/supervisor.py")
+
+
+@pytest.fixture
+def lint_runtime(tmp_path):
+    installation = tmp_path / "runtime"
+    installation.mkdir()
+    source = Path(__file__).resolve().parents[1]
+    (installation / "source").symlink_to(source, target_is_directory=True)
+    (installation / "venv").symlink_to(Path(sys.prefix), target_is_directory=True)
+    (installation / "runtime.json").write_text(
+        json.dumps(
+            {
+                "artifact_kind": "specgraph_native_runtime",
+                "status": "installed",
+                "schema_version": 1,
+                "source_commit": "a" * 40,
+            }
+        )
+    )
+    workspace = tmp_path / "project with spaces"
+    (workspace / "specs/nodes").mkdir(parents=True)
+    (workspace / "docs/drafts").mkdir(parents=True)
+    command = [
+        sys.executable,
+        str(source / "tools" / "native_runtime.py"),
+        "run",
+        "--installation",
+        str(installation),
+        "--workspace",
+        str(workspace),
+        "lint",
+        "--",
+    ]
+    return workspace, command
+
+
+def test_native_lint_reports_executed_checks_for_each_workspace_file(lint_runtime):
+    workspace, command = lint_runtime
+    node = workspace / "specs/nodes/PRODUCT-SPEC-0001.yaml"
+    source = (
+        "id: PRODUCT-SPEC-0001\n"
+        "kind: spec\n"
+        "created_at: '2026-11-16T06:00:00Z'\n"
+        "updated_at: '2026-11-16T06:00:00Z'\n"
+        "acceptance:\n"
+        "- One criterion.\n"
+    )
+    node.write_text(source)
+    draft = workspace / "docs/drafts/PRODUCT-SPEC-0002.yaml"
+    node_arg, draft_arg = (str(path.relative_to(workspace)) for path in (node, draft))
+
+    passed = subprocess.run(
+        [*command, node_arg], cwd=workspace.parent, capture_output=True, text=True
+    )
+    assert passed.returncode == 0, passed.stderr
+    report = json.loads(passed.stdout)
+    assert report["artifact_kind"] == "specgraph_yaml_lint"
+    assert report["schema_version"] == 1
+    assert report["status"] == "passed"
+    checks = [
+        "yaml_mapping_and_unique_keys",
+        "evidence_claim_declarations",
+        "spec_timestamps",
+        "acceptance_shape",
+        "acceptance_evidence_shape",
+        "canonical_format",
+    ]
+    assert report["files"] == [{"path": node_arg, "checks_run": checks, "issues": []}]
+
+    draft.write_text("id: one\nid: two\n")
+    failed = subprocess.run(
+        [*command, node_arg, draft_arg], cwd=workspace.parent, capture_output=True, text=True
+    )
+    assert failed.returncode == 1, failed.stderr
+    report = json.loads(failed.stdout)
+    assert report["status"] == "failed"
+    assert report["files"] == [
+        {"path": node_arg, "checks_run": checks, "issues": []},
+        {
+            "path": draft_arg,
+            "checks_run": ["yaml_mapping_and_unique_keys"],
+            "issues": ["duplicate key: 'id'"],
+        },
+    ]
+
+    draft_source = source.replace("0001", "0002").replace(
+        "updated_at: '2026-11-16T06:00:00Z'\n", ""
+    )
+    draft.write_text(draft_source)
+    failed = subprocess.run([*command, draft_arg], capture_output=True, text=True)
+    assert failed.returncode == 1
+    result = json.loads(failed.stdout)["files"][0]
+    assert result["checks_run"] == checks
+    assert result["issues"] == ["updated_at must be a non-empty ISO 8601 timestamp string"]
+    assert draft.read_text() == draft_source
+    assert node.read_text() == source
+    assert not (workspace / "runs").exists()
+
+
+def test_native_lint_refuses_unselected_and_escaping_paths(lint_runtime):
+    workspace, command = lint_runtime
+    external = workspace.parent / "outside.yaml"
+    external.write_text("private: value\n")
+    (workspace / "specs/nodes/link.yaml").symlink_to(external)
+    (workspace / "docs/drafts/linked").symlink_to(workspace.parent, target_is_directory=True)
+    for arguments in (
+        [],
+        [str(external)],
+        ["docs/drafts/../../outside.yaml"],
+        ["specs/nodes/link.yaml"],
+        ["docs/drafts/linked/outside.yaml"],
+        ["--workspace-r", str(workspace.parent)],
+    ):
+        result = subprocess.run([*command, *arguments], capture_output=True, text=True)
+        assert result.returncode == 2 and not result.stdout
+        assert "error:" in result.stderr
 
 
 def test_ontology_context_launcher_runs_in_external_workspace(tmp_path):
