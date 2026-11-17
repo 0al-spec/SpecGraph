@@ -1267,6 +1267,26 @@
       ]
     },
     {
+      "id": "contextual-transition-readiness",
+      "description": "Proposal 0047 binds readiness to a transition, graph scope and evidence. Authorization is a separate decision.",
+      "docs": [
+        "docs/proposals/0047_evidence_backed_build_protocol.md"
+      ],
+      "docc": [
+        "Sources/SpecGraph/Documentation.docc/ImplementationContractPack.md"
+      ],
+      "required_terms": [
+        "transition",
+        "graph scope",
+        "criterion finding",
+        "evidence",
+        "authorization",
+        "GitView",
+        "criterion delta",
+        "unknown"
+      ]
+    },
+    {
       "id": "zeusus-second-pass-feedback-triage",
       "description": "Source-bound external feedback routing and unimplemented follow-ups remain distinct from adoption.",
       "docs": [
