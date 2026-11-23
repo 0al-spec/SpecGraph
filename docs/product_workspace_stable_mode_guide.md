@@ -207,6 +207,24 @@ formatting. A file that cannot be parsed has only the parse check listed.
 Draft kind and ID/filename matching belong to `next-move --candidate-file`.
 See [proposal 0237](proposals/0237_native_spec_yaml_lint.md).
 
+### Correct canonical formatting
+
+```bash
+specgraph-runtime --workspace /path/to/product-workspace format -- \
+  specs/nodes/PRODUCT-SPEC-0001.yaml
+```
+
+Native lint provides `format_command` when it detects formatting issues.
+Use the absolute installed launcher path if `specgraph-runtime` is outside
+PATH. The formatter uses existing canonical YAML rules, normalizes timestamp
+representations and removes comments. The `specgraph_yaml_format` JSON report
+records per-file status and SHA-256 before and after. It parses all selected
+files before any write and replaces changed files individually, retaining
+permission modes. Exit 0 means completion, 1 means a write failure with
+partial results and `not_attempted` paths, and 2 means invalid input before
+writes. Repeating the command on canonical files returns `unchanged`.
+See [proposal 0239](proposals/0239_native_yaml_format.md).
+
 ## SpecSpace / Viewer Expectations
 
 SpecSpace's existing core selector reads `runs/project_environment.json` and

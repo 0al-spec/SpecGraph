@@ -631,14 +631,18 @@
         "--candidate-file",
         "product_workspace_candidate_check",
         "specgraph_yaml_lint",
-        "checks_run"
+        "checks_run",
+        "specgraph_yaml_format",
+        "format_command"
       ],
       "docc_required_terms": [
         "Canonical Sources",
         "--candidate-file",
         "product_workspace_candidate_check",
         "specgraph_yaml_lint",
-        "checks_run"
+        "checks_run",
+        "specgraph_yaml_format",
+        "format_command"
       ]
     },
     {

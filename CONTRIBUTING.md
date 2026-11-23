@@ -282,6 +282,10 @@ When running supervisor marathons:
 
 ## Graph Semantics
 
+For an installed product workspace, use native `lint` to identify YAML issues
+and its `format_command` to correct canonical formatting through the same
+launcher. Review the resulting file diff and run lint again.
+
 Topology belongs in edges and registries, not in prose. Spec text should describe owned semantics; it should not narrate graph wiring such as "this node reaches that node through this path" unless the spec is explicitly about that protocol.
 
 Rules of thumb:

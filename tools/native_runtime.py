@@ -151,6 +151,7 @@ def run(installation: Path, workspace: Path, operation: str, arguments: list[str
     elif operation in (
         "next-move",
         "lint",
+        "format",
         "ontology-context",
         "ontology-overview",
         "ontology-doctor",
@@ -163,6 +164,7 @@ def run(installation: Path, workspace: Path, operation: str, arguments: list[str
         tool = {
             "next-move": "product_workspace_next_moves.py",
             "lint": "spec_yaml_lint.py",
+            "format": "spec_yaml_format.py",
             "ontology-context": "project_ontology_context_cli.py",
             "ontology-doctor": "ontology_doctor.py",
             "ontology-overview": "ontology_overview_cli.py",
@@ -207,6 +209,7 @@ def main(argv: list[str] | None = None) -> int:
             "init",
             "next-move",
             "lint",
+            "format",
             "supervisor",
             "draft",
             "ontology-context",

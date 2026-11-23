@@ -3080,5 +3080,18 @@
     "required_provenance_links": [
       "source_draft_ref"
     ]
-  }
+  },
+{
+  "proposal_id": "0239",
+  "source_artifact_class": "working_draft",
+  "source_refs": [
+    "docs/archive/proposal_sources/0239_native_yaml_format.md"
+  ],
+  "motivating_concern": "GitView lint detected formatting problems without a native correction command.",
+  "normalized_title": "Format selected specification YAML through the native runtime",
+  "bounded_scope": "Expose the existing formatter with explicit workspace selection, before/after hashes and a correction command in lint.",
+  "required_provenance_links": [
+    "source_draft_ref"
+  ]
+}
 ]

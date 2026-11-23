@@ -9,6 +9,7 @@ import sys
 from pathlib import Path
 
 from spec_yaml import discover_paths, inspect_yaml, lint_file
+from spec_yaml_workspace import selected_yaml_files
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -24,23 +25,7 @@ def build_parser() -> argparse.ArgumentParser:
 
 def lint_workspace(workspace: Path, paths: list[str]) -> int:
     root = workspace.resolve(strict=True)
-    if not paths:
-        raise ValueError("specify at least one workspace-relative YAML file")
-    selected = []
-    for value in paths:
-        relative = Path(value)
-        if (
-            relative.parts[:2] not in {("specs", "nodes"), ("docs", "drafts")}
-            or ".." in relative.parts
-            or relative.suffix not in {".yaml", ".yml"}
-        ):
-            raise ValueError(
-                "lint paths must be workspace-relative YAML under specs/nodes or docs/drafts"
-            )
-        path = root / relative
-        if path.resolve() != path or (path.exists() and not path.is_file()):
-            raise ValueError("lint paths must identify regular files and cannot traverse symlinks")
-        selected.append((relative, path))
+    selected = selected_yaml_files(root, paths)
 
     files = []
     for relative, path in selected:
@@ -59,6 +44,18 @@ def lint_workspace(workspace: Path, paths: list[str]) -> int:
         "status": "failed" if failed else "passed",
         "files": files,
     }
+    formatting = [
+        entry["path"] for entry in files if "file is not canonically formatted" in entry["issues"]
+    ]
+    if formatting:
+        report["format_command"] = [
+            "specgraph-runtime",
+            "--workspace",
+            str(root),
+            "format",
+            "--",
+            *formatting,
+        ]
     print(json.dumps(report, ensure_ascii=False, indent=2))
     return int(failed)
 
