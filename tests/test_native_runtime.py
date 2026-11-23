@@ -106,6 +106,7 @@ def test_ready_spec_requires_a_complete_versioned_receipt():
     [
         ("next-move", "product_workspace_next_moves.py"),
         ("lint", "spec_yaml_lint.py"),
+        ("format", "spec_yaml_format.py"),
         ("ontology-ref-diff", "ontology_ref_diff.py"),
         ("ontology-context", "project_ontology_context_cli.py"),
         ("ontology-doctor", "ontology_doctor.py"),
@@ -266,6 +267,111 @@ def test_native_lint_refuses_unselected_and_escaping_paths(lint_runtime):
         result = subprocess.run([*command, *arguments], capture_output=True, text=True)
         assert result.returncode == 2 and not result.stdout
         assert "error:" in result.stderr
+
+
+def test_native_format_corrects_lint_and_is_idempotent(lint_runtime):
+    import hashlib
+
+    import yaml
+
+    workspace, lint = lint_runtime
+    relative = "specs/nodes/PRODUCT-SPEC-0001.yaml"
+    path = workspace / relative
+    original = (
+        b"id: PRODUCT-SPEC-0001\nkind: spec\n"
+        b"created_at: '2026-11-23T00:00:00Z'\nupdated_at: '2026-11-23T00:00:00Z'\n"
+        b"acceptance: ['Read the current activity.']\n"
+    )
+    path.write_bytes(original)
+    path.chmod(0o640)
+    linted = subprocess.run([*lint, relative], capture_output=True, text=True)
+    assert linted.returncode == 1
+    suggestion = json.loads(linted.stdout)["format_command"]
+    assert suggestion == [
+        "specgraph-runtime",
+        "--workspace",
+        str(workspace),
+        "format",
+        "--",
+        relative,
+    ]
+    command = [*lint[:-2], "format", "--", relative]
+    changed = subprocess.run(command, cwd=workspace.parent, capture_output=True, text=True)
+    assert changed.returncode == 0, changed.stderr
+    canonical = path.read_bytes()
+    assert yaml.safe_load(original) == yaml.safe_load(canonical)
+    assert original != canonical
+    assert path.stat().st_mode & 0o777 == 0o640
+    report = json.loads(changed.stdout)
+    assert report["artifact_kind"] == "specgraph_yaml_format"
+    assert report["status"] == "complete"
+    assert report["not_attempted"] == []
+    assert report["files"] == [
+        {
+            "path": relative,
+            "status": "changed",
+            "before_sha256": hashlib.sha256(original).hexdigest(),
+            "after_sha256": hashlib.sha256(canonical).hexdigest(),
+        }
+    ]
+    assert subprocess.run([*lint, relative], capture_output=True).returncode == 0
+    unchanged = subprocess.run([*command, relative], capture_output=True, text=True)
+    assert unchanged.returncode == 0
+    assert json.loads(unchanged.stdout)["files"] == [
+        {
+            "path": relative,
+            "status": "unchanged",
+            "before_sha256": hashlib.sha256(canonical).hexdigest(),
+            "after_sha256": hashlib.sha256(canonical).hexdigest(),
+        }
+    ]
+
+
+def test_native_format_preflights_entire_selection(lint_runtime):
+    workspace, lint = lint_runtime
+    valid = "specs/nodes/PRODUCT-SPEC-0001.yaml"
+    broken = "docs/drafts/PRODUCT-SPEC-0002.yaml"
+    source = "kind: spec\nacceptance: ['One criterion.']\n"
+    (workspace / valid).write_text(source)
+    (workspace / broken).write_text("id: one\nid: two\n")
+    command = [*lint[:-2], "format", "--"]
+    for invalid in (broken, "specs/nodes/missing.yaml", "../outside.yaml", str(workspace / valid)):
+        process = subprocess.run([*command, valid, invalid], capture_output=True, text=True)
+        assert process.returncode == 2 and not process.stdout
+        assert (workspace / valid).read_text() == source
+    (workspace / "specs/nodes/link.yaml").symlink_to(workspace / valid)
+    process = subprocess.run([*command, "specs/nodes/link.yaml"], capture_output=True, text=True)
+    assert process.returncode == 2 and not process.stdout
+    assert (workspace / valid).read_text() == source
+
+
+def test_native_format_reports_partial_write_failure(lint_runtime, monkeypatch, capsys):
+    import spec_yaml_format
+
+    workspace, _ = lint_runtime
+    names = [f"specs/nodes/PRODUCT-SPEC-000{i}.yaml" for i in range(1, 4)]
+    for name in names:
+        (workspace / name).write_text("kind: spec\nacceptance: ['Criterion']\n")
+    replace = spec_yaml_format.os.replace
+
+    def fail_second(source, destination):
+        if destination.name == "PRODUCT-SPEC-0002.yaml":
+            raise OSError("disk write failed")
+        replace(source, destination)
+
+    monkeypatch.setattr(spec_yaml_format.os, "replace", fail_second)
+    assert spec_yaml_format.main(["--workspace-root", str(workspace), *names]) == 1
+    report = json.loads(capsys.readouterr().out)
+    assert report["status"] == "failed"
+    assert [entry["status"] for entry in report["files"]] == ["changed", "failed"]
+    assert report["files"][1]["error"] == "disk write failed"
+    assert report["files"][1]["after_sha256"] is None
+    assert report["not_attempted"] == [names[2]]
+    for name in names[1:]:
+        assert (workspace / name).read_text() == "kind: spec\nacceptance: ['Criterion']\n"
+    assert sorted(path.name for path in (workspace / "specs/nodes").iterdir()) == [
+        Path(name).name for name in names
+    ]
 
 
 def test_ontology_context_launcher_runs_in_external_workspace(tmp_path):

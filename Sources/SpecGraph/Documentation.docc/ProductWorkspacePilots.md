@@ -1138,6 +1138,17 @@ invocation or path selection. Lint covers YAML mapping and duplicate keys,
 timestamps, acceptance and evidence declaration shape, and canonical
 formatting. Draft kind and ID/filename matching stay in the candidate check.
 
+## Correct canonical formatting
+
+Use `specgraph-runtime --workspace <project> format -- <file> ...` to correct
+canonical formatting. Native lint supplies `format_command` for affected
+files. The `specgraph_yaml_format` report records per-file status and hashes
+before and after. All selected inputs are parsed before writes, changed
+files are replaced individually, and permission modes are retained.
+Canonicalization normalizes timestamps and removes comments. Exit 0 means
+completion, 1 reports a write failure and `not_attempted` paths, and 2 means
+invalid input. A repeated command on canonical files returns `unchanged`.
+
 ## Durable workspace binding evidence
 
 Product child allocation can use `.specgraph/spec-id-policy.json` with
