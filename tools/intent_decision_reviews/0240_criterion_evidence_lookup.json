@@ -1,0 +1,17 @@
+{
+  "artifact_kind": "specgraph.intent-decision-review/v1",
+  "base_sha": "d3b46dc01f0bf337ebf5765f15f619e59622f54a",
+  "decisions": [
+    {
+      "change_sha256": "77558bed66e90166fe85845fea243bde860eadd3483910f3a33fb784a54edcc3",
+      "disposition": "contract_only",
+      "implementation_refs": [],
+      "rationale": "The draft defines exact criterion selection, retained input discovery and explicit gaps. Existing C2c interpretation and admission are reused as contract boundaries. This proposal adds no production code.",
+      "specification_refs": []
+    }
+  ],
+  "intent_delta_sha256": "ee6e0467229cfb46a2688a22ca43de49f98739c585c57149e289e1329b692e70",
+  "pr_body_sha256": "ea1545b3983286ae259a89fb08d8c46a807f1cc8c463c83d503b6801ce3e1694",
+  "schema_version": 1,
+  "source_scope_sha256": "e11b67f35d419a400597d38bc5f699ca5ffda7e39db0869262b3ee15fc0ed5d0"
+}
