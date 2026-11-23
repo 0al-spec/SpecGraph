@@ -104,6 +104,7 @@ def retained(tmp_path):
     git(root, "config", "user.name", "Synthetic Fixture")
     git(root, "config", "user.email", "fixture@example.invalid")
     git(root, "config", "commit.gpgsign", "false")
+    (root / "specgraph.project.yaml").write_text("project_id: demo\n")
     (root / SPEC).parent.mkdir(parents=True)
     (root / SPEC).write_text(
         "id: TEST-SPEC-0001\nstatus: specified\nacceptance:\n"

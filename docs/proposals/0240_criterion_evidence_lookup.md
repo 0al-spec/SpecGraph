@@ -40,10 +40,38 @@ no criterion subject. [0234](0234_verification_workflow.md) owns execution;
 
 The lookup reads retained artifacts and can be used by a later agent or Viewer.
 It neither starts tests nor changes their results or lifecycle. The first slice
-should reuse the retained run artifact references from 0234 or the equivalent
-explicit C2c input description. Review which descriptor the current producer
-can supply before fixing its wire format. The lookup does not establish a
-second evidence registry or canonical graph.
+uses retained run artifact references from workflow 0234.
+
+## Native runtime slice
+
+From the selected product Git workspace:
+
+```sh
+specgraph-runtime --workspace /path/to/product criterion-evidence -- PRODUCT-SPEC-0001 \
+  --revision FULL_DECLARATION_COMMIT --criterion /acceptance/1 --runs-root /path/to/retained-runs
+```
+
+Set `--runs-root` to the workflow's local output directory. Relative paths are
+relative to the selected workspace. The declaration revision supplies
+`specgraph.project.yaml` and the exact `specs/nodes/<ID>.yaml` blob. The project
+ID selects the run's workspace and is the default repository ID. Use
+`--repository-id` when the producer records a separate repository ID.
+
+The reader opens `terminal.json` only under immediate UUID-named run directories
+of the selected root, with a limit of 1,000 directory entries. Each matching record preserves the run ID, terminal
+digest, workflow outcome, verification outcome and local admission. Its
+collection must match the pinned C2c report before the selected historical row
+is returned. Selected artifact paths are relative to the run directory.
+`recheck_inputs` describes the current availability and integrity of the
+retained report, passport, binding plan and journal bytes. Rechecking C2c
+observations is a separate operation.
+
+The JSON report has status `found`, `not_found` or `incomplete` when a catalog
+was read. A corrupt or unreadable run entry appears in findings. Exit 0 means
+the lookup produced a report. An invalid request or unavailable required
+source or catalog returns 2 with `invalid` or `unavailable`. This slice reads
+`verify-criteria/v1` terminal records. Independently archived C2c reports are
+outside the first slice.
 
 ## Acceptance cases for the first implementation
 
@@ -57,5 +85,6 @@ second evidence registry or canonical graph.
 | No workspace artifact declarations | Report the missing configuration rather than claiming no evidence exists. |
 
 Use synthetic retained artifacts for public regression tests. The local ExamCalc
-scenario is the follow-up consumer check. These cases specify future behavior.
-Resume at `proposal::0240-criterion-evidence-lookup` after contract review.
+scenario was checked on saved runs and separate local copies. See the
+[pilot result](../reviews/0240_criterion_evidence_lookup/examcalc-pilot.json). Track this work through
+`proposal::0240-criterion-evidence-lookup`.

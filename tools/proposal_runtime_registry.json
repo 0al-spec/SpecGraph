@@ -13932,16 +13932,21 @@
   },
   {
     "proposal_id": "0240",
-    "posture": "deferred_until_canonicalized",
+    "posture": "synchronous_runtime_slice",
     "runtime_surfaces": [
       "docs/proposals/0240_criterion_evidence_lookup.md",
       "docs/proposals/0240_criterion_evidence_lookup.intent.yaml",
       "docs/archive/proposal_sources/0240_criterion_evidence_lookup.md",
       "docs/reviews/0240_criterion_evidence_lookup/operator-request.json",
-      "docs/reviews/0240_criterion_evidence_lookup/graph-links.json"
+      "docs/reviews/0240_criterion_evidence_lookup/graph-links.json",
+      "docs/reviews/0240_criterion_evidence_lookup/examcalc-pilot.json",
+      "tools/criterion_evidence_lookup.py",
+      "tools/native_runtime.py",
+      "tools/verification_workflow/retained_criterion_scope_spec.py",
+      "tests/test_criterion_evidence_lookup.py"
     ],
-    "runtime_markers": [],
-    "validation_markers": [],
-    "notes": "Contract draft for one retained criterion lookup. Existing C2c was checked with present and missing journals. Lookup implementation is pending. Resume through proposal::0240-criterion-evidence-lookup."
+    "runtime_markers": [{"path": "tools/criterion_evidence_lookup.py", "pattern": "specgraph_criterion_evidence_lookup"}],
+    "validation_markers": [{"path": "tests/test_criterion_evidence_lookup.py", "pattern": "def test_lookup_retains_distinct_runs_and_checks_inputs("}],
+    "notes": "Native read-only lookup over 0234 terminal records. The ExamCalc pilot retained two passing runs and one failed run separately and checked journal availability, integrity and declaration revision. Standalone C2c archives remain outside this slice. Resume through proposal::0240-criterion-evidence-lookup."
   }
 ]

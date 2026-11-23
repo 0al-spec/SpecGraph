@@ -8,7 +8,7 @@
   "source_ref": "docs/archive/proposal_sources/0240_criterion_evidence_lookup.md",
   "source_sha256": "f30ca56119a93915315ce44ff35284c90ddb61c89b19d0ffaeb2bb4d72a564da",
   "proposal_ref": "docs/proposals/0240_criterion_evidence_lookup.md",
-  "proposal_sha256": "e34f96aca1ae46642e832a966a0d41fa3cc3406a2ecfde1e802bb56a000b0dbe",
+  "proposal_sha256": "0260a5358d903181b622b0616d216883c1532dc6a35f93d7634064d96f95ed70",
   "handles": {
     "user_intent": "user_intent::0240-criterion-evidence-lookup",
     "operator_request": "operator_request::0240-criterion-evidence-lookup",
@@ -28,5 +28,6 @@
   "executor_invoked": false,
   "canonical_mutations_allowed": false,
   "evidence_admission_allowed": false,
-  "next_action": "Review the source of retained artifact declarations, then prepare the bounded lookup implementation."
+  "next_action": "Review the native lookup implementation and the retained ExamCalc pilot.",
+  "registration_proposal_sha256": "e34f96aca1ae46642e832a966a0d41fa3cc3406a2ecfde1e802bb56a000b0dbe"
 }

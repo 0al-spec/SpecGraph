@@ -328,3 +328,13 @@ data. Treat it with the same custody as the JSON report; generation does not
 publish it. All collected text is escaped, with no artifact-supplied links,
 scripts or external resources. `local_test`, `producer_declared`,
 `not_evaluated` and the null receipt remain explicit.
+
+## Look up retained criterion evidence
+
+The [native lookup from RFC 0240](proposals/0240_criterion_evidence_lookup.md)
+uses an explicit workflow 0234 run directory. Invoke `criterion-evidence`
+with one exact declaration revision and an `/acceptance/N` pointer. Each matching
+run lists its retained passport, plan, report and journal when declared. The
+saved observation and admission are separate from the current integrity and
+availability of the source artifacts. The lookup does not execute the producer
+or recompute the C2c verdict.

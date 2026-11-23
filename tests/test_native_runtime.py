@@ -108,6 +108,7 @@ def test_ready_spec_requires_a_complete_versioned_receipt():
         ("lint", "spec_yaml_lint.py"),
         ("format", "spec_yaml_format.py"),
         ("ontology-ref-diff", "ontology_ref_diff.py"),
+        ("criterion-evidence", "criterion_evidence_lookup.py"),
         ("ontology-context", "project_ontology_context_cli.py"),
         ("ontology-doctor", "ontology_doctor.py"),
         ("ontology-overview", "ontology_overview_cli.py"),
