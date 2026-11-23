@@ -1,0 +1,32 @@
+{
+  "artifact_kind": "proposal_registration_observation",
+  "schema_version": 1,
+  "recorded_at": "2026-11-23T17:16:24.534932+00:00",
+  "source_base_revision": "d3b46dc01f0bf337ebf5765f15f619e59622f54a",
+  "proposal_id": "0240",
+  "target_spec_id": "SG-SPEC-0068",
+  "source_ref": "docs/archive/proposal_sources/0240_criterion_evidence_lookup.md",
+  "source_sha256": "f30ca56119a93915315ce44ff35284c90ddb61c89b19d0ffaeb2bb4d72a564da",
+  "proposal_ref": "docs/proposals/0240_criterion_evidence_lookup.md",
+  "proposal_sha256": "e34f96aca1ae46642e832a966a0d41fa3cc3406a2ecfde1e802bb56a000b0dbe",
+  "handles": {
+    "user_intent": "user_intent::0240-criterion-evidence-lookup",
+    "operator_request": "operator_request::0240-criterion-evidence-lookup",
+    "proposal": "proposal::0240-criterion-evidence-lookup"
+  },
+  "paths": {
+    "user_intent": "intent_layer/nodes/user_intent--0240-criterion-evidence-lookup--0fe25931.json",
+    "operator_request": "intent_layer/nodes/operator_request--0240-criterion-evidence-lookup--5dfa98f4.json",
+    "proposal": "proposal_lane/nodes/proposal--0240-criterion-evidence-lookup--66fb24e1.json"
+  },
+  "registration_method": [
+    "normalize_operator_request_packet",
+    "sync_user_intent_node",
+    "sync_operator_request_node",
+    "sync_tracked_proposal_lane_node"
+  ],
+  "executor_invoked": false,
+  "canonical_mutations_allowed": false,
+  "evidence_admission_allowed": false,
+  "next_action": "Review the source of retained artifact declarations, then prepare the bounded lookup implementation."
+}

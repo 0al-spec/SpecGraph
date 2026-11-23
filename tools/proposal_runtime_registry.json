@@ -13929,5 +13929,19 @@
         "pattern": "\"original_file_hash_unchanged\": true"
       }
     ]
+  },
+  {
+    "proposal_id": "0240",
+    "posture": "deferred_until_canonicalized",
+    "runtime_surfaces": [
+      "docs/proposals/0240_criterion_evidence_lookup.md",
+      "docs/proposals/0240_criterion_evidence_lookup.intent.yaml",
+      "docs/archive/proposal_sources/0240_criterion_evidence_lookup.md",
+      "docs/reviews/0240_criterion_evidence_lookup/operator-request.json",
+      "docs/reviews/0240_criterion_evidence_lookup/graph-links.json"
+    ],
+    "runtime_markers": [],
+    "validation_markers": [],
+    "notes": "Contract draft for one retained criterion lookup. Existing C2c was checked with present and missing journals. Lookup implementation is pending. Resume through proposal::0240-criterion-evidence-lookup."
   }
 ]
