@@ -13894,33 +13894,40 @@
     ],
     "notes": "Standalone comparison of explicit declarations. Related authoring profile proposal 0233 retains its own scope and approval boundary."
   },
-{
-  "proposal_id": "0239",
-  "posture": "synchronous_runtime_slice",
-  "runtime_surfaces": [
-    "docs/proposals/0239_native_yaml_format.md",
-    "docs/proposals/0239_native_yaml_format.intent.yaml",
-    "docs/archive/proposal_sources/0239_native_yaml_format.md",
-    "tools/native_runtime.py",
-    "tools/spec_yaml_format.py",
-    "tools/spec_yaml_lint.py",
-    "tools/spec_yaml_workspace.py",
-    "tests/test_native_runtime.py",
-    "docs/product_workspace_stable_mode_guide.md",
-    "Sources/SpecGraph/Documentation.docc/ProductWorkspacePilots.md"
-  ],
-  "runtime_markers": [
-    {
-      "path": "tools/spec_yaml_format.py",
-      "pattern": "\"artifact_kind\": \"specgraph_yaml_format\""
-    }
-  ],
-  "validation_markers": [
-    {
-      "path": "tests/test_native_runtime.py",
-      "pattern": "def test_native_format_corrects_lint_and_is_idempotent("
-    }
-  ],
-  "notes": "Closes the installed lint correction route using existing canonicalization rules and explicit workspace selection."
-}
+  {
+    "proposal_id": "0239",
+    "posture": "synchronous_runtime_slice",
+    "runtime_surfaces": [
+      "docs/proposals/0239_native_yaml_format.md",
+      "docs/proposals/0239_native_yaml_format.intent.yaml",
+      "docs/archive/proposal_sources/0239_native_yaml_format.md",
+      "tools/native_runtime.py",
+      "tools/spec_yaml_format.py",
+      "tools/spec_yaml_lint.py",
+      "tools/spec_yaml_workspace.py",
+      "tests/test_native_runtime.py",
+      "docs/product_workspace_stable_mode_guide.md",
+      "Sources/SpecGraph/Documentation.docc/ProductWorkspacePilots.md",
+      "docs/reviews/0239_native_yaml_format/gitview-pilot.json"
+    ],
+    "runtime_markers": [
+      {
+        "path": "tools/spec_yaml_format.py",
+        "pattern": "\"artifact_kind\": \"specgraph_yaml_format\""
+      }
+    ],
+    "validation_markers": [
+      {
+        "path": "tests/test_native_runtime.py",
+        "pattern": "def test_native_format_corrects_lint_and_is_idempotent("
+      }
+    ],
+    "notes": "Closes the installed lint correction route using existing canonicalization rules and explicit workspace selection.",
+    "observation_markers": [
+      {
+        "path": "docs/reviews/0239_native_yaml_format/gitview-pilot.json",
+        "pattern": "\"original_file_hash_unchanged\": true"
+      }
+    ]
+  }
 ]
