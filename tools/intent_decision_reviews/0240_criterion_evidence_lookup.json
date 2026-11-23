@@ -4,14 +4,24 @@
   "decisions": [
     {
       "change_sha256": "77558bed66e90166fe85845fea243bde860eadd3483910f3a33fb784a54edcc3",
-      "disposition": "contract_only",
-      "implementation_refs": [],
-      "rationale": "The draft defines exact criterion selection, retained input discovery and explicit gaps. Existing C2c interpretation and admission are reused as contract boundaries. This proposal adds no production code.",
-      "specification_refs": []
+      "disposition": "new_specification",
+      "implementation_refs": [
+        {
+          "path": "tools/criterion_evidence_lookup.py",
+          "symbol": "selected_scope"
+        }
+      ],
+      "rationale": "The exact-scope Specification compares the selected workspace, repository, spec and revision-bound criterion source. The lookup adapter reuses C2c pins and stored outcomes and reports current artifact integrity separately. Admission stays in RFC 0225.",
+      "specification_refs": [
+        {
+          "path": "tools/verification_workflow/retained_criterion_scope_spec.py",
+          "symbol": "RETAINED_CRITERION_SCOPE_SPEC"
+        }
+      ]
     }
   ],
   "intent_delta_sha256": "ee6e0467229cfb46a2688a22ca43de49f98739c585c57149e289e1329b692e70",
-  "pr_body_sha256": "ea1545b3983286ae259a89fb08d8c46a807f1cc8c463c83d503b6801ce3e1694",
+  "pr_body_sha256": "132cc3dc069e49273ef64dce5615351fca9b2dcdf001724bcc77bc927ad17339",
   "schema_version": 1,
-  "source_scope_sha256": "e11b67f35d419a400597d38bc5f699ca5ffda7e39db0869262b3ee15fc0ed5d0"
+  "source_scope_sha256": "0a3c55e12d4fb8205cfd35c43d4d644ae3416e94c08066671fcf78bac2fc78a8"
 }
