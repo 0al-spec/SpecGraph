@@ -21,7 +21,7 @@
     }
   ],
   "intent_delta_sha256": "ee6e0467229cfb46a2688a22ca43de49f98739c585c57149e289e1329b692e70",
-  "pr_body_sha256": "132cc3dc069e49273ef64dce5615351fca9b2dcdf001724bcc77bc927ad17339",
+  "pr_body_sha256": "83cfd1fb05b83aa4822b171455f4b9fca8c83eb026ed3b6175039abf5dc57f07",
   "schema_version": 1,
-  "source_scope_sha256": "0a3c55e12d4fb8205cfd35c43d4d644ae3416e94c08066671fcf78bac2fc78a8"
+  "source_scope_sha256": "c9b8e2c0839bcabd880dae6455bf564d33fa0fb88984fcab1bc01997fd7973ad"
 }
