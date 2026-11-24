@@ -177,6 +177,29 @@ The system should be maintained through this loop:
 4. occasionally probe the behavior through the supervisor
 5. reconcile any mismatch
 
+### 9. Build the Specification Graph Before Implementation
+
+Build a coherent specification graph for the agreed product scope. Refine the
+product intent from the root through each branch until its leaf specifications
+are detailed enough to implement and verify. Parent specifications establish
+goals, boundaries, and obligations. Child specifications make them concrete.
+
+Keep a leaf in draft while an unresolved decision in an ancestor or dependency
+can change its purpose, boundary, behavior, or acceptance criteria. Resolve
+the upstream decision before declaring the leaf ready.
+
+Begin product implementation, including implementation pilots, only after the
+graph covers the agreed scope and every in-scope branch reaches an
+implementation-ready leaf. Each such leaf must describe the expected behavior
+and provide explicit acceptance criteria. Use the graph's requirements to
+determine what a pilot should verify and which technical constraints to
+investigate.
+
+Implement from the leaves upward. Build leaf behavior in composable modules
+that follow the boundaries, interfaces, and dependencies defined in the
+project's own specifications. Compose those modules to fulfill the parent
+specifications.
+
 ## Constitutional Default
 
 When there is uncertainty, prefer the safer path:

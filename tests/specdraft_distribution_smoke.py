@@ -62,6 +62,7 @@ def observe(command: Path, python: Path, wheel: Path, project: Path, forbidden: 
         for name in ("SKILL.md", "references/usage.md"):
             assert archive.read(f"specgraph/resources/skills/specgraph-conversation-notes/{name}")
         assert archive.read("specgraph/resources/skills/specgraph-project-ontology/SKILL.md")
+        assert archive.read("specgraph/resources/skills/specgraph-criterion-evidence/SKILL.md")
 
     probe = subprocess.check_output(
         [

@@ -141,3 +141,13 @@ attestation. Locators are literal text; URLs are not inferred. Artifact text is
 escaped and cannot add executable markup. Keep these potentially sensitive
 attachments local. The renderer only presents existing decisions; `local_test`,
 `producer_declared`, `not_evaluated` and the null receipt are unchanged.
+
+## Retained evidence lookup
+
+RFC 0240 adds the read-only `criterion-evidence` native operation for one
+workspace, exact specification revision and criterion pointer. With an explicit
+`--runs-root`, it reads workflow 0234 terminal records and resolves declared
+passport, plan, report and journal references, names missing inputs and keeps
+recorded observations separate from current input availability and admission.
+See `docs/proposals/0240_criterion_evidence_lookup.md` for the ExamCalc control
+cases and the boundary with RFCs 0225, 0226 and 0234.

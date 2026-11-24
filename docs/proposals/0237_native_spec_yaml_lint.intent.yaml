@@ -1,0 +1,12 @@
+id: SG-RFC-0237
+kind: proposal
+status: draft
+proposal_ref: docs/proposals/0237_native_spec_yaml_lint.md
+provenance:
+  authored_by: agent
+  authority: proposal_draft
+  source_ref: docs/archive/proposal_sources/0237_native_spec_yaml_lint.md
+atoms:
+  intents:
+  - id: NATIVE-YAML-LINT
+    statement: Run read-only YAML lint from the native runtime on explicitly selected workspace files and report which checks ran for each file.

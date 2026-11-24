@@ -14,6 +14,7 @@ on:
         type: string
   pull_request:
     paths:
+      - "demos/**"
       - "landing/**"
       - "ontology/**"
       - "specs/**"
@@ -26,6 +27,7 @@ on:
       - main
       - master
     paths:
+      - "demos/**"
       - "landing/**"
       - "ontology/**"
       - "specs/**"
@@ -183,12 +185,25 @@ jobs:
             --decision-specs-root specs/workspaces/hosted-operation-canary \
             --output-dir dist/specgraph-public/workspaces/hosted-operation-canary
 
+      - name: Prepare read-only GitView demo bundle
+        run: |
+          (cd demos/gitview && sha256sum -c checksums.sha256)
+          mkdir -p dist/specgraph-public/workspaces/gitview
+          cp -R demos/gitview/. dist/specgraph-public/workspaces/gitview/
+
       - name: Checkout pinned SpecSpace publication consumer
         uses: actions/checkout@v6
         with:
           repository: 0al-spec/SpecSpace
           ref: bd3de6137ebe5c2fa2c53079b699f6d9d18f89da
           path: external/SpecSpace
+
+      - name: Verify GitView demo graph through pinned SpecSpace
+        run: |
+          python tools/gitview_demo_consumer_smoke.py \
+            --bundle-dir dist/specgraph-public/workspaces/gitview \
+            --consumer-repo external/SpecSpace \
+            --consumer-commit bd3de6137ebe5c2fa2c53079b699f6d9d18f89da
 
       - name: Verify workspace bundles through real HTTP consumer
         run: |
@@ -308,6 +323,13 @@ jobs:
             --staging-prefix workspaces/hosted-operation-canary \
             --output "$RUNNER_TEMP/specgraph-incremental-reports/hosted-operation-canary.json"
 
+          python tools/static_artifact_incremental_stage.py stage \
+            --bundle-dir dist/specgraph-public/workspaces/gitview \
+            --remote-manifest-url "$STATIC_ARTIFACT_PUBLIC_BASE_URL/workspaces/gitview/artifact_manifest.json" \
+            --staging-dir "$INCREMENTAL_STAGE_DIR" \
+            --staging-prefix workspaces/gitview \
+            --output "$RUNNER_TEMP/specgraph-incremental-reports/gitview.json"
+
       - name: Install transfer client
         if: env.SFTP_HOST != ''
         run: |
@@ -339,12 +361,15 @@ jobs:
           mirror -R --parallel=4 --verbose . "$REMOTE_ROOT"
           mkdir -p "$REMOTE_ROOT/workspaces/team-decision-log"
           mkdir -p "$REMOTE_ROOT/workspaces/hosted-operation-canary"
+          mkdir -p "$REMOTE_ROOT/workspaces/gitview"
           put "$GITHUB_WORKSPACE/dist/specgraph-public/checksums.sha256" -o "$REMOTE_ROOT/checksums.sha256"
           put "$GITHUB_WORKSPACE/dist/specgraph-public/workspaces/team-decision-log/checksums.sha256" -o "$REMOTE_ROOT/workspaces/team-decision-log/checksums.sha256"
           put "$GITHUB_WORKSPACE/dist/specgraph-public/workspaces/hosted-operation-canary/checksums.sha256" -o "$REMOTE_ROOT/workspaces/hosted-operation-canary/checksums.sha256"
+          put "$GITHUB_WORKSPACE/dist/specgraph-public/workspaces/gitview/checksums.sha256" -o "$REMOTE_ROOT/workspaces/gitview/checksums.sha256"
           put "$GITHUB_WORKSPACE/dist/specgraph-public/artifact_manifest.json" -o "$REMOTE_ROOT/artifact_manifest.json"
           put "$GITHUB_WORKSPACE/dist/specgraph-public/workspaces/team-decision-log/artifact_manifest.json" -o "$REMOTE_ROOT/workspaces/team-decision-log/artifact_manifest.json"
           put "$GITHUB_WORKSPACE/dist/specgraph-public/workspaces/hosted-operation-canary/artifact_manifest.json" -o "$REMOTE_ROOT/workspaces/hosted-operation-canary/artifact_manifest.json"
+          put "$GITHUB_WORKSPACE/dist/specgraph-public/workspaces/gitview/artifact_manifest.json" -o "$REMOTE_ROOT/workspaces/gitview/artifact_manifest.json"
           bye
           EOF
             exit 0
@@ -366,12 +391,15 @@ jobs:
           mirror -R --parallel=4 --verbose . "$REMOTE_ROOT"
           mkdir -p "$REMOTE_ROOT/workspaces/team-decision-log"
           mkdir -p "$REMOTE_ROOT/workspaces/hosted-operation-canary"
+          mkdir -p "$REMOTE_ROOT/workspaces/gitview"
           put "$GITHUB_WORKSPACE/dist/specgraph-public/checksums.sha256" -o "$REMOTE_ROOT/checksums.sha256"
           put "$GITHUB_WORKSPACE/dist/specgraph-public/workspaces/team-decision-log/checksums.sha256" -o "$REMOTE_ROOT/workspaces/team-decision-log/checksums.sha256"
           put "$GITHUB_WORKSPACE/dist/specgraph-public/workspaces/hosted-operation-canary/checksums.sha256" -o "$REMOTE_ROOT/workspaces/hosted-operation-canary/checksums.sha256"
+          put "$GITHUB_WORKSPACE/dist/specgraph-public/workspaces/gitview/checksums.sha256" -o "$REMOTE_ROOT/workspaces/gitview/checksums.sha256"
           put "$GITHUB_WORKSPACE/dist/specgraph-public/artifact_manifest.json" -o "$REMOTE_ROOT/artifact_manifest.json"
           put "$GITHUB_WORKSPACE/dist/specgraph-public/workspaces/team-decision-log/artifact_manifest.json" -o "$REMOTE_ROOT/workspaces/team-decision-log/artifact_manifest.json"
           put "$GITHUB_WORKSPACE/dist/specgraph-public/workspaces/hosted-operation-canary/artifact_manifest.json" -o "$REMOTE_ROOT/workspaces/hosted-operation-canary/artifact_manifest.json"
+          put "$GITHUB_WORKSPACE/dist/specgraph-public/workspaces/gitview/artifact_manifest.json" -o "$REMOTE_ROOT/workspaces/gitview/artifact_manifest.json"
           bye
           EOF
           else
@@ -384,12 +412,15 @@ jobs:
           mirror -R --parallel=4 --verbose . "$REMOTE_ROOT"
           mkdir -p "$REMOTE_ROOT/workspaces/team-decision-log"
           mkdir -p "$REMOTE_ROOT/workspaces/hosted-operation-canary"
+          mkdir -p "$REMOTE_ROOT/workspaces/gitview"
           put "$GITHUB_WORKSPACE/dist/specgraph-public/checksums.sha256" -o "$REMOTE_ROOT/checksums.sha256"
           put "$GITHUB_WORKSPACE/dist/specgraph-public/workspaces/team-decision-log/checksums.sha256" -o "$REMOTE_ROOT/workspaces/team-decision-log/checksums.sha256"
           put "$GITHUB_WORKSPACE/dist/specgraph-public/workspaces/hosted-operation-canary/checksums.sha256" -o "$REMOTE_ROOT/workspaces/hosted-operation-canary/checksums.sha256"
+          put "$GITHUB_WORKSPACE/dist/specgraph-public/workspaces/gitview/checksums.sha256" -o "$REMOTE_ROOT/workspaces/gitview/checksums.sha256"
           put "$GITHUB_WORKSPACE/dist/specgraph-public/artifact_manifest.json" -o "$REMOTE_ROOT/artifact_manifest.json"
           put "$GITHUB_WORKSPACE/dist/specgraph-public/workspaces/team-decision-log/artifact_manifest.json" -o "$REMOTE_ROOT/workspaces/team-decision-log/artifact_manifest.json"
           put "$GITHUB_WORKSPACE/dist/specgraph-public/workspaces/hosted-operation-canary/artifact_manifest.json" -o "$REMOTE_ROOT/workspaces/hosted-operation-canary/artifact_manifest.json"
+          put "$GITHUB_WORKSPACE/dist/specgraph-public/workspaces/gitview/artifact_manifest.json" -o "$REMOTE_ROOT/workspaces/gitview/artifact_manifest.json"
           bye
           EOF
           fi
@@ -416,6 +447,11 @@ jobs:
             --bundle-dir dist/specgraph-public/workspaces/hosted-operation-canary \
             --remote-base-url "$STATIC_ARTIFACT_PUBLIC_BASE_URL/workspaces/hosted-operation-canary" \
             --output "$RUNNER_TEMP/specgraph-incremental-reports/hosted-operation-canary-verification.json"
+
+          python tools/static_artifact_incremental_stage.py verify \
+            --bundle-dir dist/specgraph-public/workspaces/gitview \
+            --remote-base-url "$STATIC_ARTIFACT_PUBLIC_BASE_URL/workspaces/gitview" \
+            --output "$RUNNER_TEMP/specgraph-incremental-reports/gitview-verification.json"
 
       - name: Upload incremental deployment reports
         if: always() && env.SFTP_HOST != ''

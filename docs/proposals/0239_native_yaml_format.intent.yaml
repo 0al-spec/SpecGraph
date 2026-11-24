@@ -1,0 +1,12 @@
+id: SG-RFC-0239
+kind: proposal
+status: draft
+proposal_ref: docs/proposals/0239_native_yaml_format.md
+provenance:
+  authored_by: agent
+  authority: proposal_draft
+  source_ref: docs/archive/proposal_sources/0239_native_yaml_format.md
+atoms:
+  intents:
+  - id: NATIVE-YAML-CORRECTION
+    statement: Format explicitly selected specification YAML through the native launcher, report file changes with before and after hashes, and offer the correction command when lint finds formatting issues.

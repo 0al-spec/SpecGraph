@@ -1,0 +1,14 @@
+id: SG-RFC-0236
+kind: proposal
+status: draft
+proposal_ref: docs/proposals/0236_graph_before_implementation.md
+provenance:
+  authored_by: agent
+  authority: proposal_draft
+  source_ref: docs/archive/proposal_sources/0236_graph_before_implementation.md
+atoms:
+  intents:
+  - id: GRAPH-BEFORE-IMPLEMENTATION
+    statement: Begin product implementation and its pilots only when the specification graph covers the agreed scope and each branch reaches a leaf with defined behavior, explicit acceptance criteria, and the upstream decisions that can change it resolved.
+  - id: LEAF-FIRST-COMPOSITION
+    statement: Implement leaf specifications first in composable modules that follow the project's specified architecture, then compose those modules to fulfill parent specifications.

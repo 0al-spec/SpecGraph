@@ -49,6 +49,12 @@ class LintIssue:
     message: str
 
 
+@dataclass(frozen=True)
+class YamlLintResult:
+    checks_run: tuple[str, ...]
+    issues: list[LintIssue]
+
+
 def discover_paths(raw_paths: list[str]) -> list[Path]:
     if raw_paths:
         return [Path(path).resolve() for path in raw_paths]
@@ -217,33 +223,43 @@ def _validate_spec_shape(data: dict[str, Any]) -> list[str]:
     return messages
 
 
-def lint_file(path: Path) -> list[LintIssue]:
-    issues: list[LintIssue] = []
+def inspect_yaml(path: Path, *, formatter_hint: bool = False) -> YamlLintResult:
     try:
         source = path.read_text(encoding="utf-8")
     except FileNotFoundError:
-        return [LintIssue(path=path, message="file does not exist")]
+        return YamlLintResult((), [LintIssue(path=path, message="file does not exist")])
+    except (OSError, UnicodeError) as exc:
+        return YamlLintResult((), [LintIssue(path=path, message=str(exc))])
 
+    parsing = ("yaml_mapping_and_unique_keys",)
     try:
         data = load_yaml_text(source)
     except Exception as exc:
-        return [LintIssue(path=path, message=str(exc))]
+        return YamlLintResult(parsing, [LintIssue(path=path, message=str(exc))])
 
-    for message in _validate_spec_shape(data):
-        issues.append(LintIssue(path=path, message=message))
+    issues = [LintIssue(path=path, message=message) for message in _validate_spec_shape(data)]
 
     canonical = dump_canonical_yaml(data)
     if source != canonical:
-        issues.append(
-            LintIssue(
-                path=path,
-                message=(
-                    "file is not canonically formatted; run "
-                    f"`python tools/spec_yaml_format.py {path}`"
-                ),
-            )
-        )
-    return issues
+        message = "file is not canonically formatted"
+        if formatter_hint:
+            message += f"; run `python tools/spec_yaml_format.py {path}`"
+        issues.append(LintIssue(path=path, message=message))
+    return YamlLintResult(
+        parsing
+        + (
+            "evidence_claim_declarations",
+            "spec_timestamps",
+            "acceptance_shape",
+            "acceptance_evidence_shape",
+            "canonical_format",
+        ),
+        issues,
+    )
+
+
+def lint_file(path: Path) -> list[LintIssue]:
+    return inspect_yaml(path, formatter_hint=True).issues
 
 
 def format_file(path: Path) -> bool:

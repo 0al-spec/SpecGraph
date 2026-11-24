@@ -24,6 +24,17 @@ code-shape and EO-inspired trend metrics. The long-running supervisor refactor
 roadmap is tracked in `docs/supervisor_refactor_roadmap.md` as engineering
 governance rather than a SpecGraph semantic specification.
 
+Proposal 0236 describes a constitutional amendment for human approval. Before
+implementation or implementation pilots, the specification graph would need
+to cover the agreed product scope. Each branch would end at a leaf with defined
+behavior and explicit acceptance criteria. A decision in an ancestor or
+dependency that can change a leaf must be resolved before it is ready.
+
+The proposal calls for implementing leaves first, then composing their modules
+to satisfy the parent specifications. Each project's specifications define its
+module boundaries, interfaces, and dependencies. The repository's
+`CONSTITUTION.md` is the authority for the adopted rule.
+
 The lifecycle pilot also has a versioned state-classification contract. Its PR
 report checks import direction and cycles, identifies unclassified lifecycle
 modules, and measures branch structure in declared state classifiers, including
