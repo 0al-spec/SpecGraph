@@ -1,0 +1,35 @@
+--- a/Sources/OntologyViz/main.swift
++++ b/Sources/OntologyViz/main.swift
+@@ -14,0 +15,28 @@
++// Local evaluation only. Record the arguments accepted by the tool, including
++// catalogs supplied through a profile, separately from Codex's shell trace.
++func recordTrialInvocation(_ argv: [String], resolved: VizArguments?) {
++    guard !argv.isEmpty, argv != ["--version"] else { return }
++    let trace = URL(fileURLWithPath: "output/.ontologyviz-invocations.jsonl")
++    let row: [String: Any] = [
++        "argv": argv,
++        "parsed": resolved != nil,
++        "format": resolved.map { $0.format.rawValue as Any } ?? NSNull(),
++        "catalogs": resolved?.diagram.foundationModels.map {
++            $0.url.resolvingSymlinksInPath().path
++        } ?? [],
++    ]
++    do {
++        var data = try JSONSerialization.data(withJSONObject: row, options: [.sortedKeys])
++        data.append(0x0A)
++        if !FileManager.default.fileExists(atPath: trace.path) {
++            try Data().write(to: trace)
++        }
++        let handle = try FileHandle(forWritingTo: trace)
++        defer { try? handle.close() }
++        try handle.seekToEnd()
++        try handle.write(contentsOf: data)
++    } catch {
++        fail("Could not record evaluation invocation: \(error)", code: 2)
++    }
++}
++
+@@ -18,0 +47 @@
++    recordTrialInvocation(rawArguments, resolved: nil)
+@@ -20,0 +50 @@
++recordTrialInvocation(rawArguments, resolved: arguments)

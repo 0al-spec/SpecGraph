@@ -2,19 +2,26 @@
 """Run an exploratory paired ontology projection pilot; no semantic grading."""
 
 import argparse
-import hashlib
 import json
+import os
 import pathlib
 import shutil
 import subprocess
 import time
 
 import mlflow
-from grade import grade
-
-
-def digest(path):
-    return hashlib.sha256(path.read_bytes()).hexdigest()
+from grade import first_catalog_correct, grade
+from scenario import (
+    CATALOG,
+    DISTRACTOR,
+    FIXTURE,
+    GRAPH,
+    INPUT_SHA256,
+    TRACE,
+    digest,
+    inputs_match,
+    trial_inputs,
+)
 
 
 def main():
@@ -26,36 +33,63 @@ def main():
     P.add_argument("--output", type=pathlib.Path, required=True)
     P.add_argument("--repetitions", type=int, default=3)
     P.add_argument("--tracking-uri", required=True)
+    P.add_argument(
+        "--scenario", choices=("single-catalog", "two-catalogs"), default="single-catalog"
+    )
+    P.add_argument(
+        "--codex-home", type=pathlib.Path, help="Dedicated Codex home for two-catalog runs"
+    )
     args = P.parse_args()
+    if args.repetitions < 1:
+        P.error("--repetitions must be positive")
+    two_catalogs = args.scenario == "two-catalogs"
+    environment = None
+    sandbox_args = ["--ignore-user-config", "--sandbox", "workspace-write"]
+    if two_catalogs:
+        if args.codex_home is None or not (args.codex_home / "config.toml").is_file():
+            P.error("--scenario two-catalogs requires --codex-home with a dedicated config.toml")
+        environment = {
+            "PATH": os.environ.get("PATH", os.defpath),
+            "CODEX_HOME": str(args.codex_home.resolve()),
+        }
+        sandbox_args = ["--ignore-rules"]
+
+    frozen = trial_inputs(1, two_catalogs)
+    for source in frozen:
+        path = args.ontology / source
+        if not path.is_file() or digest(path) != INPUT_SHA256[source]:
+            P.error(f"Unexpected bytes for {path}. Use the pinned Ontology snapshot.")
+    catalog = args.ontology / CATALOG
 
     args.output.mkdir(parents=True, exist_ok=True)
     mlflow.set_tracking_uri(args.tracking_uri)
-    experiment = mlflow.get_experiment_by_name("ontology-viewer-skill-pilot")
+    experiment_name = (
+        "ontology-viewer-skill-two-catalogs" if two_catalogs else "ontology-viewer-skill-pilot"
+    )
+    experiment = mlflow.get_experiment_by_name(experiment_name)
     if experiment is None:
         experiment_id = mlflow.create_experiment(
-            "ontology-viewer-skill-pilot",
+            experiment_name,
             artifact_location=(args.output.parent / "artifacts").resolve().as_uri(),
         )
     else:
         experiment_id = experiment.experiment_id
     mlflow.set_experiment(experiment_id=experiment_id)
-    fixture = args.ontology / "Examples/package-visualization/domain-ontology-package.yaml"
-    catalog = args.ontology / "SPECS/ontology/foundation/0.1.0/model.json"
-    if digest(fixture) != "7b87c27205c1079b983456f710eb413672724a242a28fdc0ce48ccdd0e75a009":
-        raise SystemExit("Unexpected fixture bytes; use the pinned Ontology snapshot")
-    if digest(catalog) != "7999a4ce110535c8093f177493532420a04ab7db9ff86492db802580531d7e48":
-        raise SystemExit("Unexpected foundation catalog bytes")
     for n in range(args.repetitions):
+        paths = trial_inputs(n + 1, two_catalogs)
         for condition, skill in (
             [("baseline", args.baseline), ("treatment", args.treatment)]
             if n % 2 == 0
             else [("treatment", args.treatment), ("baseline", args.baseline)]
         ):
             run_dir = args.output / f"{n + 1}-{condition}"
-            run_dir.mkdir(exist_ok=False)
-            shutil.copy2(fixture, run_dir / "package.yaml")
-            (run_dir / "catalogs").mkdir()
-            shutil.copy2(catalog, run_dir / "catalogs/model.json")
+            run_dir.mkdir()
+            if two_catalogs:
+                (run_dir / GRAPH.parent).mkdir()
+            for source, relative in paths.items():
+                target = run_dir / relative
+                target.parent.mkdir(parents=True, exist_ok=True)
+                shutil.copy2(args.ontology / source, target)
             shutil.copy2(args.viz, run_dir / "ontologyviz")
             task = (
                 "Create a JSON ontology viewer projection for package.yaml. "
@@ -68,10 +102,8 @@ def main():
                 "codex",
                 "exec",
                 "--ephemeral",
-                "--ignore-user-config",
                 "--skip-git-repo-check",
-                "--sandbox",
-                "workspace-write",
+                *sandbox_args,
                 "--json",
                 "-m",
                 "gpt-6-luna",
@@ -88,17 +120,28 @@ def main():
                         "model": "gpt-6-luna",
                         "reasoning": "medium",
                         "skill_sha256": digest(skill),
-                        "package_sha256": digest(fixture),
-                        "catalog_sha256": digest(catalog),
+                        "scenario": args.scenario,
+                        "package_sha256": INPUT_SHA256[FIXTURE],
+                        "catalog_sha256": INPUT_SHA256[CATALOG],
                         "viz_sha256": digest(args.viz),
                     }
                 )
+                if two_catalogs:
+                    mlflow.log_params(
+                        {
+                            "other_catalog_sha256": INPUT_SHA256[DISTRACTOR],
+                            "matching_catalog_path": paths[CATALOG].as_posix(),
+                            "other_catalog_path": paths[DISTRACTOR].as_posix(),
+                            "sandbox_profile_sha256": digest(args.codex_home / "config.toml"),
+                        }
+                    )
                 try:
                     process = subprocess.run(
                         cmd,
                         cwd=run_dir,
                         stdin=subprocess.DEVNULL,
                         capture_output=True,
+                        env=environment,
                         timeout=360,
                     )
                     exit_code = process.returncode
@@ -108,16 +151,31 @@ def main():
                     stdout, stderr = exc.stdout or b"", exc.stderr or b""
                 (run_dir / "events.jsonl").write_bytes(stdout)
                 (run_dir / "stderr.log").write_bytes(stderr)
-                good = grade(run_dir / "output/ontology.graph.json", catalog)
-                inputs_intact = digest(run_dir / "package.yaml") == digest(fixture) and digest(
-                    run_dir / "catalogs/model.json"
-                ) == digest(catalog)
+                graph = run_dir / GRAPH
+                good = grade(graph, catalog, exact_binding=two_catalogs)
+                inputs_intact = inputs_match(run_dir, paths)
+                result = {
+                    "run": n + 1,
+                    "condition": condition,
+                    "complete": good,
+                    "inputs_intact": inputs_intact,
+                    "exit": exit_code,
+                }
                 metrics = {
                     "projection_complete": int(good),
                     "inputs_intact": int(inputs_intact),
                     "exit_code": exit_code,
                     "elapsed_seconds": time.monotonic() - start,
                 }
+                if two_catalogs:
+                    trace = run_dir / TRACE
+                    first = first_catalog_correct(trace, (run_dir / paths[CATALOG]).resolve())
+                    result["first_catalog_correct"] = first
+                    metrics["first_catalog_observed"] = int(first is not None)
+                    if first is not None:
+                        metrics["first_catalog_correct"] = int(first)
+                    if trace.is_file():
+                        mlflow.log_artifact(str(trace))
                 for line in stdout.splitlines():
                     try:
                         event = json.loads(line)
@@ -130,21 +188,9 @@ def main():
                 mlflow.log_metrics(metrics)
                 mlflow.log_artifact(str(run_dir / "events.jsonl"))
                 mlflow.log_artifact(str(run_dir / "stderr.log"))
-                graph = run_dir / "output/ontology.graph.json"
                 if graph.is_file():
                     mlflow.log_artifact(str(graph))
-                print(
-                    json.dumps(
-                        {
-                            "run": n + 1,
-                            "condition": condition,
-                            "complete": good,
-                            "inputs_intact": inputs_intact,
-                            "exit": exit_code,
-                        }
-                    ),
-                    flush=True,
-                )
+                print(json.dumps(result), flush=True)
 
 
 if __name__ == "__main__":

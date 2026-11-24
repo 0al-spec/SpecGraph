@@ -1,0 +1,17 @@
+--- a/Sources/OntologyViz/GraphvizRenderer.swift
++++ b/Sources/OntologyViz/GraphvizRenderer.swift
+@@ -7 +7 @@
+-        let staging = fileManager.temporaryDirectory.appendingPathComponent("ontologyviz-\(UUID().uuidString)")
++        let staging = arguments.output.appendingPathComponent("ontologyviz-\(UUID().uuidString)")
+@@ -11 +11 @@
+-        try json.write(to: staging.appendingPathComponent(name), atomically: true, encoding: .utf8)
++        try json.write(to: staging.appendingPathComponent(name), atomically: false, encoding: .utf8)
+@@ -19 +19 @@
+-        let staging = fileManager.temporaryDirectory.appendingPathComponent("ontologyviz-\(UUID().uuidString)")
++        let staging = arguments.output.appendingPathComponent("ontologyviz-\(UUID().uuidString)")
+@@ -23 +23 @@
+-        try dot.write(to: source, atomically: true, encoding: .utf8)
++        try dot.write(to: source, atomically: false, encoding: .utf8)
+@@ -80 +80 @@
+-            try data.write(to: arguments.output.appendingPathComponent(name), options: .atomic)
++            try data.write(to: arguments.output.appendingPathComponent(name))
