@@ -16,9 +16,8 @@ from project_ontology_check_scopes import (
     normalize_requested_scopes,
 )
 from project_ontology_context import CheckResult, capture_project_context
-from project_ontology_context.invalid_spec import INVALID_SPEC
 from project_ontology_context.model import ContextFacts
-from project_ontology_context.unavailable_spec import UNAVAILABLE_SPEC
+from project_ontology_context.outcome_spec import context_check_outcome
 from project_ontology_meta_freshness import assess_meta_freshness, bind_meta_bundle
 from project_ontology_report_freshness import (
     FreshnessResult,
@@ -44,6 +43,9 @@ _PRODUCER_FILES = (
     "project_ontology_context/vocabulary.py",
     "project_ontology_context/composition.py",
     "project_ontology_context/foundation.py",
+    "project_ontology_context/outcome_spec.py",
+    "project_ontology_context/invalid_spec.py",
+    "project_ontology_context/unavailable_spec.py",
     "spec_ontology_metamodel_check.py",
     "project_ontology_meta_freshness.py",
     "project_ontology_meta_authority_spec.py",
@@ -87,11 +89,7 @@ def _previous(path: Path | None, root: Path) -> tuple[dict[str, Any] | None, dic
 
 
 def _outcome(facts: ContextFacts) -> str:
-    if INVALID_SPEC.is_satisfied_by(facts):
-        return "invalid"
-    if UNAVAILABLE_SPEC.is_satisfied_by(facts):
-        return "unavailable"
-    return "checked"
+    return context_check_outcome(facts, success="checked")
 
 
 def _component_check(name: str, outcome: object, *, complete: str) -> CheckResult:
