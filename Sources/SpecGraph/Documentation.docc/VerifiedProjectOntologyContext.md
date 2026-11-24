@@ -100,6 +100,11 @@ captured context identity. Qualified matches are structural candidates;
 unknown/ambiguous terms remain review gaps. Prose is unassessed and an empty
 inventory does not mean grounded. No package or term acceptance is created.
 
+The shared `project_ontology_context/outcome_spec.py` composes invalid and
+unavailable through `FirstMatch`. The caller supplies the success label,
+`verified` for context capture and `checked` for the Supervisor target check.
+An optional recorder exposes selected and skipped rules.
+
 Use `specgraph-runtime --workspace <project> ontology-ref-diff -- <before> <after>`
 to compare explicit declarations in two workspace-relative YAML files. The
 `specgraph_ontology_ref_diff` report records input digests, retained, added

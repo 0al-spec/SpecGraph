@@ -104,6 +104,9 @@ def test_checked_single_target_and_previous_freshness(workspace):
     assert "project_ontology_check_scopes.py" in result["producer"]["source_sha256"]
     assert "ontology_foundation_pins.py" in result["producer"]["source_sha256"]
     assert "project_ontology_scope_outcome_spec.py" in result["producer"]["source_sha256"]
+    assert "project_ontology_context/outcome_spec.py" in result["producer"]["source_sha256"]
+    assert "project_ontology_context/invalid_spec.py" in result["producer"]["source_sha256"]
+    assert "project_ontology_context/unavailable_spec.py" in result["producer"]["source_sha256"]
     assert result["assessments"]["domain_vocabulary"]["outcome"] == "analyzed"
     assert result["assessments"]["specification_metamodel"] == {
         "check_scope": "specification_metamodel",
