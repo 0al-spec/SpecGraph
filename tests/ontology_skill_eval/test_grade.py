@@ -1,4 +1,7 @@
 import json
+import os
+import shutil
+import subprocess
 import sys
 from pathlib import Path
 
@@ -6,7 +9,7 @@ import pytest
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "tools" / "ontology_skill_eval"))
 from grade import first_catalog_correct, grade
-from scenario import CATALOG, DISTRACTOR, digest, trial_inputs
+from scenario import CATALOG, DISTRACTOR, GRAPH, TRACE, digest, trial_inputs
 
 
 def test_projection_requires_expected_catalog_and_binding(tmp_path):
@@ -92,3 +95,60 @@ def test_catalog_layout_swaps_between_repeats():
     second = trial_inputs(2, two_catalogs=True)
     assert first[CATALOG] == second[DISTRACTOR] == Path("catalogs/b/model.json")
     assert second[CATALOG] == first[DISTRACTOR] == Path("catalogs/a/model.json")
+
+
+def test_journal_captures_first_call_from_trial_subdirectory(tmp_path):
+    viz = os.environ.get("ONTOLOGY_SKILL_EVAL_VIZ")
+    source = os.environ.get("ONTOLOGY_SKILL_EVAL_SOURCE")
+    if not viz or not source:
+        pytest.skip("Requires the instrumented ontologyviz and pinned Ontology snapshot")
+
+    files = trial_inputs(1, two_catalogs=True)
+    for origin, relative in files.items():
+        local = tmp_path / relative
+        local.parent.mkdir(parents=True, exist_ok=True)
+        shutil.copy2(Path(source) / origin, local)
+    shutil.copy2(viz, tmp_path / "ontologyviz")
+    output = tmp_path / GRAPH.parent
+    output.mkdir()
+
+    first = subprocess.run(
+        [
+            "../ontologyviz",
+            "../package.yaml",
+            "--format",
+            "json",
+            "--out",
+            ".",
+            "--foundation-model",
+            str(Path("..") / files[DISTRACTOR]),
+        ],
+        cwd=output,
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    assert first.returncode == 1
+    assert "Foundation model 0.2.0 is not imported" in first.stderr
+    catalog = tmp_path / files[CATALOG]
+    subprocess.run(
+        [
+            "../ontologyviz",
+            "../package.yaml",
+            "--format",
+            "json",
+            "--out",
+            ".",
+            "--foundation-model",
+            str(Path("..") / files[CATALOG]),
+        ],
+        cwd=output,
+        capture_output=True,
+        text=True,
+        check=True,
+    )
+    calls = [json.loads(line) for line in (tmp_path / TRACE).read_text().splitlines()]
+    assert len(calls) == 2
+    assert first_catalog_correct(tmp_path / TRACE, catalog.resolve()) is False
+    assert calls[1]["catalogs"] == [str(catalog.resolve())]
+    assert grade(tmp_path / GRAPH, catalog, exact_binding=True)

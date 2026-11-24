@@ -26,7 +26,7 @@ Use an isolated Python environment with `mlflow` and a dedicated, authenticated 
      --product ontologyviz
    ```
 
-   The scratch patch confines temporary files to the trial output. The invocation patch writes `output/.ontologyviz-invocations.jsonl` in the trial working directory. Use the same patched build for both arms, and keep the source commit and executable hash with the results.
+   The scratch patch confines temporary files to the trial output. The runner copies the executable to the trial root. The invocation patch writes `output/.ontologyviz-invocations.jsonl` relative to that executable, so calls from subdirectories share the same journal. Keep the source commit and executable hash with the results.
 3. Configure the dedicated Codex home's `config.toml`. This sample is for macOS. Substitute the actual home path and place the trial root outside the denied directories. Check that the profile blocks reading a file outside the trial, writing the inputs, and command network access. Check that the instrumented binary can write the output and trace inside the trial.
 
    ```toml
@@ -71,6 +71,13 @@ Use an isolated Python environment with `mlflow` and a dedicated, authenticated 
    ```
 
 Use `--scenario single-catalog` or omit `--scenario` to run the original experiment with a compatible release binary and the original workspace-write sandbox. That mode grades the final graph using the original catalog declaration check. The first-invocation metric belongs to the instrumented two-catalog run. The original single-catalog sandbox allows external filesystem reads.
+
+To exercise the journal with the built binary and pinned fixtures, run the integration test from the SpecGraph checkout.
+
+```sh
+ONTOLOGY_SKILL_EVAL_VIZ="$VIZ" ONTOLOGY_SKILL_EVAL_SOURCE="$ONTOLOGY_SNAPSHOT" \
+  python -m pytest -q tests/ontology_skill_eval -k journal
+```
 
 ## Regrade saved artifacts without inference
 
