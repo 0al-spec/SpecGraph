@@ -42,3 +42,8 @@ workspace. Compare the reported hash to the actual draft and check that
 the ordinary advisor still rejects that ID. In a synthetic workspace,
 verify that changed bytes produce a new hash and that invalid identity,
 malformed YAML and path escapes are rejected.
+
+The [GitView independent review pilot](../reviews/0235_product_draft_candidate_check/independent-review-handoff.md)
+records the manual handoff from the candidate check through review findings,
+repair and focused re-review. It includes a source digest observed during
+repair and the digest of the originally reviewed file.
