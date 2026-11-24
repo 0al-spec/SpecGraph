@@ -8,76 +8,25 @@ with end positions exclusive; offsets are Unicode character offsets.
 from __future__ import annotations
 
 import hashlib
-import json
 from pathlib import Path
 from typing import Any
 
 import yaml
-from yaml.nodes import MappingNode, ScalarNode, SequenceNode
-from yaml.tokens import AliasToken
 
 from ontology_snapshot import OntologySnapshotError
 from project_ontology_context import ContextResult
 from project_ontology_context.vocabulary import capture_vocabulary
+from project_ontology_term_declarations import (
+    PROFILE,
+    read_term_declarations,
+    source_position,
+    term_field_path,
+)
 from spec_ontology_binding_index import slug
-
-PROFILE = "specgraph-explicit-terms-v1"
 
 
 def _sha(data: bytes) -> str:
     return hashlib.sha256(data).hexdigest()
-
-
-def _fields(node: MappingNode) -> dict[str, Any]:
-    fields = {}
-    for key, value in node.value:
-        if not isinstance(key, ScalarNode) or key.tag != "tag:yaml.org,2002:str":
-            raise ValueError("mapping keys must be strings")
-        if key.value in fields:
-            raise ValueError(f"duplicate YAML key: {key.value}")
-        fields[key.value] = value
-    return fields
-
-
-def _position(node: ScalarNode) -> dict[str, Any]:
-    start, end = node.start_mark, node.end_mark
-    return {
-        "start": {"line": start.line + 1, "column": start.column + 1, "offset": start.index},
-        "end": {"line": end.line + 1, "column": end.column + 1, "offset": end.index},
-    }
-
-
-def _explicit(node: MappingNode) -> tuple[str | None, list[tuple[str, ScalarNode]]]:
-    top = _fields(node)
-    identity = top.get("id")
-    if identity is not None and (
-        not isinstance(identity, ScalarNode) or identity.tag != "tag:yaml.org,2002:str"
-    ):
-        raise ValueError("spec id must be a string")
-    terms = []
-    contexts = [("", top)]
-    if "specification" in top:
-        if not isinstance(top["specification"], MappingNode):
-            raise ValueError("specification must be a mapping")
-        specification = _fields(top["specification"])
-        contexts.append(("specification.", specification))
-        if "terminology" in specification:
-            terminology = specification["terminology"]
-            if not isinstance(terminology, MappingNode):
-                raise ValueError("specification.terminology must be a mapping")
-            _fields(terminology)
-            terms.extend(("specification.terminology", key) for key, _ in terminology.value)
-    for prefix, fields in contexts:
-        if "ontology_refs" not in fields:
-            continue
-        refs = fields["ontology_refs"]
-        if not isinstance(refs, SequenceNode):
-            raise ValueError(f"{prefix}ontology_refs must be a list")
-        for index, item in enumerate(refs.value):
-            if not isinstance(item, ScalarNode) or item.tag != "tag:yaml.org,2002:str":
-                raise ValueError(f"{prefix}ontology_refs entries must be strings")
-            terms.append((f"{prefix}ontology_refs[{index}]", item))
-    return identity.value if identity is not None else None, terms
 
 
 def build_term_inventory(
@@ -156,14 +105,7 @@ def build_term_inventory(
             if name in seen_paths:
                 raise ValueError(f"duplicate document path: {name}")
             seen_paths.add(name)
-            text = raw.decode("utf-8")
-            if any(isinstance(token, AliasToken) for token in yaml.scan(text)):
-                raise ValueError(f"YAML aliases are unsupported for source locations: {name}")
-            node = yaml.compose(text)
-            if not isinstance(node, MappingNode):
-                raise ValueError(f"spec is not a YAML mapping: {name}")
-            spec_id, terms = _explicit(node)
-            spec_id = spec_id or path.stem
+            spec_id, terms = read_term_declarations(name, raw)
             if spec_id in seen_ids:
                 raise ValueError(f"duplicate spec identity: {spec_id}")
             seen_ids.add(spec_id)
@@ -196,12 +138,8 @@ def build_term_inventory(
                     "spec_id": spec_id,
                     "path": name,
                     "source": field,
-                    "field_path": (
-                        f"{field}[{json.dumps(term, ensure_ascii=False)}]"
-                        if field == "specification.terminology"
-                        else field
-                    ),
-                    "location": _position(term_node),
+                    "field_path": term_field_path(field, term),
+                    "location": source_position(term_node),
                     "source_sha256": source_hash,
                     "resolution": resolution,
                     "candidates": candidates,

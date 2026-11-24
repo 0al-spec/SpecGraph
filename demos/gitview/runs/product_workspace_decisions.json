@@ -1,0 +1,11 @@
+{
+  "artifact_kind": "specgraph_product_workspace_decision_index",
+  "contract_ref": "specgraph.product-workspace-decisions.v0.1",
+  "decisions": [],
+  "schema_version": 1,
+  "status": "ready",
+  "summary": {
+    "decision_count": 0
+  },
+  "workspace_id": "gitview"
+}

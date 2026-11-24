@@ -324,6 +324,20 @@ does not certify a specification. A single captured member may supply local advi
 overall dependency closure remains unavailable. Foreign workspace, malformed
 input and duplicate identities remain explicit failures.
 
+### Compare declarations between two files
+
+```sh
+specgraph-runtime --workspace /path/to/project ontology-ref-diff -- \
+  docs/drafts/PRODUCT-SPEC-0001.yaml specs/nodes/PRODUCT-SPEC-0001.yaml
+```
+
+The `specgraph_ontology_ref_diff` report compares exact spellings from the
+explicit term inventory and includes each occurrence's YAML location and the
+SHA-256 of each input. The two documents may share an ID. Repeat
+`--explain-removal TERM REASON` to record intended removals. Exit 0 means the
+comparison completed and exit 2 indicates invalid input. For the comparison
+contract and GitView pilot, see [proposal 0238](proposals/0238_ontology_ref_diff.md).
+
 ### Joint vocabulary for the selected motivation composition
 
 For a verified `ontologyc-motivation-composition-v1` context, inventory and the

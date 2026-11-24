@@ -1,0 +1,116 @@
+{
+  "artifact_kind": "platform_product_workspace_initialization_execution_report",
+  "authority_boundary": {
+    "accepts_ontology_terms": false,
+    "creates_git_commits": false,
+    "creates_workspace_files": true,
+    "executes_platform": true,
+    "executes_specgraph": true,
+    "mutates_canonical_specs": false,
+    "opens_pull_requests": false,
+    "publishes_read_models": false,
+    "updates_workspace_catalog": true,
+    "writes_ontology_packages": false
+  },
+  "catalog_ref": "$LOCAL_PATH",
+  "diagnostics": [],
+  "dry_run": false,
+  "executed_operations": [
+    "validate_product_workspace_initialization_plan",
+    "execute_specgraph_product_workspace_initializer",
+    "append_platform_workspace_catalog_entry"
+  ],
+  "execution_request_ref": null,
+  "generated_at": "2026-11-16T20:41:11.401625+00:00",
+  "local_files_written": [
+    "$LOCAL_PATH"
+  ],
+  "ok": true,
+  "plan_ref": "$LOCAL_PATH",
+  "schema_version": 1,
+  "specgraph_initialization_report_ref": "$LOCAL_PATH",
+  "summary": {
+    "catalog_written": true,
+    "error_count": 0,
+    "specgraph_executed": true,
+    "status": "workspace_initialization_executed",
+    "workspace_files_created": true
+  },
+  "workspace": {
+    "display_name": "GitView demo",
+    "governance_profile": "product_workspace",
+    "repository_role": "product_spec_workspace",
+    "route": "/gitview",
+    "workspace_id": "gitview",
+    "workspace_root": "$LOCAL_PATH"
+  },
+  "workspace_binding": {
+    "artifact_kind": "platform_product_workspace_binding",
+    "binding_authority": {
+      "may_create_git_commit": false,
+      "may_execute_platform": false,
+      "may_execute_specgraph": false,
+      "may_mutate_specspace_state": false,
+      "may_write_catalog": false,
+      "report_only": true
+    },
+    "binding_id": "product-workspace-binding://gitview",
+    "binding_revision_sha256": "a1af1b19b103f6b96afc5f60d57bd54dabcbbe62044f0f21554150e2894e9e31",
+    "contract_ref": "platform.product-workspace.binding.v1",
+    "display_name": "GitView demo",
+    "execution": {
+      "local_only": true,
+      "platform_default_run_dir_ref": "runs/gitview",
+      "workspace_root": "$LOCAL_PATH",
+      "workspace_runs_root": "$LOCAL_PATH"
+    },
+    "governance_profile": "product_workspace",
+    "identity": {
+      "display_name": "GitView demo",
+      "governance_profile": "product_workspace",
+      "repository_role": "product_spec_workspace",
+      "route": "/gitview",
+      "workspace_id": "gitview"
+    },
+    "platform_default_run_dir_ref": "runs/gitview",
+    "privacy_boundary": {
+      "local_execution_paths_public": false,
+      "public_safe_projection_available": true,
+      "raw_idea_public": false
+    },
+    "product_artifact_base_url": "https://specgraph.tech/workspaces/gitview",
+    "product_artifact_bundle_ref": "workspaces/gitview",
+    "product_artifact_manifest_ref": "workspaces/gitview/artifact_manifest.json",
+    "product_artifact_manifest_url": "https://specgraph.tech/workspaces/gitview/artifact_manifest.json",
+    "provenance": {
+      "plan_ref": "$LOCAL_PATH",
+      "plan_sha256": "15f0170fcf62dc83a68c7f41fecc413a2dabb63f7be95e45276a5b74bb5590b9",
+      "specgraph_initialization_report_ref": "$LOCAL_PATH",
+      "specgraph_initialization_report_sha256": "6c903dde07517fa6b5f44797b58a7c4710afc09873942cfff6034632ed49b689"
+    },
+    "repository": {
+      "creates_worktree": false,
+      "repository_role": "product_spec_workspace",
+      "workspace_identity": "gitview",
+      "worktree_identity": "product-workspace/gitview"
+    },
+    "repository_role": "product_spec_workspace",
+    "root_artifact_base_url": "https://specgraph.tech",
+    "route": "/gitview",
+    "routing": {
+      "product_artifact_base_url": "https://specgraph.tech/workspaces/gitview",
+      "product_artifact_bundle_ref": "workspaces/gitview",
+      "product_artifact_manifest_ref": "workspaces/gitview/artifact_manifest.json",
+      "product_artifact_manifest_url": "https://specgraph.tech/workspaces/gitview/artifact_manifest.json",
+      "root_artifact_base_url": "https://specgraph.tech",
+      "specspace_state_namespace_ref": "specspace-state://workspace/gitview"
+    },
+    "schema_version": 1,
+    "specspace_state_namespace_ref": "specspace-state://workspace/gitview",
+    "status": "ready",
+    "workspace_id": "gitview",
+    "workspace_root": "$LOCAL_PATH",
+    "workspace_runs_root": "$LOCAL_PATH"
+  },
+  "workspace_root": "$LOCAL_PATH"
+}

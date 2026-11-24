@@ -282,6 +282,10 @@ When running supervisor marathons:
 
 ## Graph Semantics
 
+For an installed product workspace, use native `lint` to identify YAML issues
+and its `format_command` to correct canonical formatting through the same
+launcher. Review the resulting file diff and run lint again.
+
 Topology belongs in edges and registries, not in prose. Spec text should describe owned semantics; it should not narrate graph wiring such as "this node reaches that node through this path" unless the spec is explicitly about that protocol.
 
 Rules of thumb:
@@ -292,6 +296,12 @@ Rules of thumb:
 - Historical lineage is still useful evidence, but it should be visually quieter than active work.
 - Large fan-out is structural pressure. Prefer semantic clusters or bounded split proposals over prose cleanup.
 - When a node has reached a refinement plateau, do not keep rewriting it. Emit a split proposal or move to evidence/runtime realization.
+
+When reporting an ontology check after a draft-to-node handoff, bind the result
+to the successor's bytes. Use
+[`ontology-ref-diff`](docs/project_ontology_context.md#compare-declarations-between-two-files)
+to review dropped declarations against the selected predecessor and record any
+intentional removals.
 
 ## Proposals and Runtime Realization
 

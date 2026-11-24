@@ -10,6 +10,7 @@ DEFAULT_SKILL = "specgraph-conversation-notes"
 SKILL_FILES = {
     DEFAULT_SKILL: ("SKILL.md", "references/usage.md"),
     "specgraph-project-ontology": ("SKILL.md",),
+    "specgraph-criterion-evidence": ("SKILL.md",),
 }
 
 

@@ -1,0 +1,91 @@
+{
+  "artifact_kind": "criterion_evidence_lookup_pilot",
+  "schema_version": 1,
+  "date": "2026-11-23",
+  "workspace_revision": "5d59ec3",
+  "declaration_revision": "e080d4f5644f8f86cd33199b7149e53922c7873b",
+  "spec_id": "EXAMCALC-SPEC-0003",
+  "criterion": "/acceptance/1",
+  "scope": "local_test",
+  "admission": "not_evaluated",
+  "new_test_execution": false,
+  "controls": [
+    {
+      "control": "multiple",
+      "status": "found",
+      "runs": [
+        {
+          "run_id": "2cf15d8d-c31e-4b74-8374-50ed231f345e",
+          "terminal_sha256": "0a081160e1114b65e3351a174e27d2bebe08ccd9189813d2414f3ae510174e8f",
+          "workflow_outcome": "completed",
+          "verification_outcome": "passed",
+          "recorded_outcome": "passed",
+          "recheck_inputs": "available"
+        },
+        {
+          "run_id": "735ba177-588d-4a7e-8dca-2223180291b8",
+          "terminal_sha256": "15271ed10423ba8f343e2c348ec72d04a898d0e6b4b2966fb9410cecbaa94224",
+          "workflow_outcome": "failed",
+          "verification_outcome": "incomplete",
+          "recorded_outcome": null,
+          "recheck_inputs": "unavailable"
+        },
+        {
+          "run_id": "af5ff3fb-9570-4cda-9eb3-cbf04b8bddbb",
+          "terminal_sha256": "c6891e596ae58a87131119b1660c0bbfb20214958272881cd80b0c111bb33586",
+          "workflow_outcome": "completed",
+          "verification_outcome": "passed",
+          "recorded_outcome": "passed",
+          "recheck_inputs": "available"
+        }
+      ]
+    },
+    {
+      "control": "complete",
+      "status": "found",
+      "runs": [
+        {
+          "run_id": "af5ff3fb-9570-4cda-9eb3-cbf04b8bddbb",
+          "terminal_sha256": "c6891e596ae58a87131119b1660c0bbfb20214958272881cd80b0c111bb33586",
+          "workflow_outcome": "completed",
+          "verification_outcome": "passed",
+          "recorded_outcome": "passed",
+          "recheck_inputs": "available"
+        }
+      ]
+    },
+    {
+      "control": "missing",
+      "status": "found",
+      "runs": [
+        {
+          "run_id": "af5ff3fb-9570-4cda-9eb3-cbf04b8bddbb",
+          "terminal_sha256": "c6891e596ae58a87131119b1660c0bbfb20214958272881cd80b0c111bb33586",
+          "workflow_outcome": "completed",
+          "verification_outcome": "passed",
+          "recorded_outcome": "passed",
+          "recheck_inputs": "unavailable"
+        }
+      ]
+    },
+    {
+      "control": "changed",
+      "status": "found",
+      "runs": [
+        {
+          "run_id": "af5ff3fb-9570-4cda-9eb3-cbf04b8bddbb",
+          "terminal_sha256": "c6891e596ae58a87131119b1660c0bbfb20214958272881cd80b0c111bb33586",
+          "workflow_outcome": "completed",
+          "verification_outcome": "passed",
+          "recorded_outcome": "passed",
+          "recheck_inputs": "invalid"
+        }
+      ]
+    },
+    {
+      "control": "different-revision",
+      "status": "not_found",
+      "runs": []
+    }
+  ]
+}

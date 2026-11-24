@@ -1,0 +1,12 @@
+id: SG-RFC-0240
+kind: proposal
+status: draft
+proposal_ref: docs/proposals/0240_criterion_evidence_lookup.md
+provenance:
+  authored_by: agent
+  authority: proposal_draft
+  source_ref: docs/archive/proposal_sources/0240_criterion_evidence_lookup.md
+atoms:
+  intents:
+  - id: CRITERION-EVIDENCE-LOOKUP
+    statement: Look up retained evidence for one exact workspace-scoped specification revision and criterion locator, returning its artifact references, scoped observations and admission separately, with explicit missing, invalid or multiple inputs.

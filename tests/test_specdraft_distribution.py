@@ -129,10 +129,10 @@ def test_cli_reports_skill_errors_as_json(tmp_path, capsys):
     assert destination.read_text() == "preserve me"
 
 
-def test_cli_installs_named_skill_to_existing_project(tmp_path, capsys):
+@pytest.mark.parametrize("name", ["specgraph-project-ontology", "specgraph-criterion-evidence"])
+def test_cli_installs_named_skill_to_existing_project(tmp_path, capsys, name):
     project = tmp_path / "consumer project"
     project.mkdir()
-    name = "specgraph-project-ontology"
     destination = project / ".codex" / "skills" / name
     args = ["skill", "install", "--name", name, "--project", str(project)]
     assert main(args) == 0
@@ -149,10 +149,11 @@ def test_cli_installs_named_skill_to_existing_project(tmp_path, capsys):
     assert (destination / "SKILL.md").read_text() == "user-maintained instructions"
 
 
-def test_ontology_skill_matches_repository_workflow():
+@pytest.mark.parametrize("name", ["specgraph-project-ontology", "specgraph-criterion-evidence"])
+def test_named_skill_matches_repository_workflow(name):
     root = Path(__file__).resolve().parents[1]
-    repository_skill = root / ".codex/skills/specgraph-project-ontology/SKILL.md"
-    assert skill_contents("specgraph-project-ontology")["SKILL.md"] == repository_skill.read_bytes()
+    repository_skill = root / ".codex" / "skills" / name / "SKILL.md"
+    assert skill_contents(name)["SKILL.md"] == repository_skill.read_bytes()
 
 
 def test_cli_project_destination_defaults_to_conversation_skill(tmp_path, capsys):

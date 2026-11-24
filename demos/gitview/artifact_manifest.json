@@ -1,0 +1,80 @@
+{
+  "artifact_kind": "specgraph_static_artifact_manifest",
+  "checksums_path": "checksums.sha256",
+  "files": [
+    {
+      "path": "runs/candidate_spec_graph.json",
+      "root": "runs",
+      "sha256": "fcfc647e82d878aac2296c72b325f6413ff622565b08d5bd29cd5dc4412d5f12",
+      "size_bytes": 369459
+    },
+    {
+      "path": "runs/platform_product_workspace_initialization_execution_report.json",
+      "root": "runs",
+      "sha256": "8e394dc6e0c38b050a3a012b3b4feb029a5677c35a414e3c2e23cd176fc27cb6",
+      "size_bytes": 4422
+    },
+    {
+      "path": "runs/gitview/candidate_spec_graph.json",
+      "root": "runs",
+      "sha256": "fcfc647e82d878aac2296c72b325f6413ff622565b08d5bd29cd5dc4412d5f12",
+      "size_bytes": 369459
+    },
+    {
+      "path": "runs/gitview/platform_product_workspace_initialization_execution_report.json",
+      "root": "runs",
+      "sha256": "8e394dc6e0c38b050a3a012b3b4feb029a5677c35a414e3c2e23cd176fc27cb6",
+      "size_bytes": 4422
+    },
+    {
+      "path": "runs/product_workspace_decisions.json",
+      "root": "runs",
+      "sha256": "22b52f44bb2a23eedb4ee0ec5a995832be016f4d51b6553c03162cd9477df3a5",
+      "size_bytes": 268
+    }
+  ],
+  "generated_at": "2026-11-16T20:44:41Z",
+  "git": {
+    "ref": null,
+    "sha": null
+  },
+  "platform_handoff_surfaces": {
+    "active_idea_to_spec_candidate.json": {
+      "path": "runs/active_idea_to_spec_candidate.json",
+      "present": false,
+      "ready": false,
+      "source_mode": "not_configured"
+    },
+    "candidate_spec_materialization_report.json": {
+      "path": "runs/candidate_spec_materialization_report.json",
+      "present": false
+    },
+    "idea_to_spec_promotion_gate.json": {
+      "path": "runs/idea_to_spec_promotion_gate.json",
+      "present": false
+    }
+  },
+  "published_roots": [
+    "specs",
+    "runs"
+  ],
+  "required_surfaces": {
+    "platform_product_workspace_initialization_execution_report.json": true
+  },
+  "roots": {
+    "runs": {
+      "byte_count": 748030,
+      "file_count": 5
+    },
+    "specs": {
+      "byte_count": 0,
+      "file_count": 0
+    }
+  },
+  "safety_gate": {
+    "redacted_local_path_occurrences": 0,
+    "status": "passed",
+    "warnings": []
+  },
+  "schema_version": 1
+}
