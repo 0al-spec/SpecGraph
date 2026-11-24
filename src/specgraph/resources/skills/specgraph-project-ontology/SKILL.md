@@ -248,23 +248,30 @@ inputs; retain gaps for review and do not infer semantic approval.
    Check `ontologyviz --help` for the needed options. An older release may not
    support foundation models; obtain a compatible build rather than silently
    generating an incomplete projection.
-2. Before the first projection command, read the foundation import IDs and
-   versions in the selected package and its supplied imports. Open the
-   candidate `SPECS/ontology/foundation/<version>/model.json` files from the
-   trusted Ontology snapshot and match their `id` and `version` to those
+2. Before the first projection command, follow the selected package's YAML
+   imports recursively. Match each required package by pinned ID and version
+   and include both direct and transitive dependencies. Collect the foundation
+   import IDs and versions across those packages. Open the candidate
+   `SPECS/ontology/foundation/<version>/model.json` files from the trusted
+   Ontology snapshot and match their `id` and `version` to those
    import pins. Ontology supports the historical `specgraph.foundation@0.1.0`
    import via the `ontology.foundation@0.1.0` catalog. Use the version in
    the import even when a newer catalog is available.
-3. Pass only matched `model.json` paths, one per required foundation catalog.
-   Repeat `--foundation-model` for each match or put the same paths in the
-   saved profile's `foundationModels`. Use `--profile` on its own.
+3. Pass each required imported YAML package with its own `--import` flag or
+   list the paths under `imports` in the saved profile. Pass only matched
+   `model.json` paths, one per required foundation catalog. Repeat
+   `--foundation-model` for each match or list those paths under
+   `foundationModels`. Use `--profile` on its own.
    Use `ontologyviz --help` for the installed version's complete syntax.
-4. Inspect the resulting projection and Viewer for the definitions expected by
-   this task. Report unresolved references and their scope: some imports may be
-   intentionally excluded. A structurally verified context is not evidence that
+4. Check the projection's `sources` for the required package IDs and versions
+   and its `foundationCatalogs` for the matched catalogs. Inspect the projection
+   and Viewer for the definitions expected by this task. Report unresolved
+   references and their scope, including any intentional exclusions.
+   A structurally verified context is not evidence that
    the Viewer loaded every definition, and loaded terms are not semantic approval.
 
 If `ontologyviz` rejects a catalog, recheck the import and catalog metadata
-and retry with the exact match. If a compatible tool or matching catalog is
-unavailable, report the missing input and mark any partial projection
-explicitly incomplete. Preserve the project's selected ontology and pins.
+and retry with the exact match. If a compatible tool, required YAML package
+or matching catalog is unavailable, report the missing input and mark any
+partial projection explicitly incomplete. Preserve the project's selected
+ontology and pins.
