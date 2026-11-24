@@ -19,7 +19,7 @@ from project_ontology_check_scopes import (
 )
 from project_ontology_context import ContextResult
 from project_ontology_context.vocabulary import capture_vocabulary
-from project_ontology_scope_outcome_spec import REQUESTED_SCOPES_ANALYZED_SPEC
+from project_ontology_scope_aggregation_spec import scope_check_outcome
 from spec_ontology_binding_index import build_binding_index, snapshot_evidence
 from spec_ontology_validation_report import build_validation_report
 
@@ -94,13 +94,7 @@ def build_context_reports(
     def finish() -> dict[str, Any]:
         outcomes = tuple(assessments[scope]["outcome"] for scope in requested)
         facts = ScopeFacts(requested, outcomes)
-        bundle["outcome"] = (
-            "invalid"
-            if "invalid" in outcomes
-            else "analyzed"
-            if REQUESTED_SCOPES_ANALYZED_SPEC.is_satisfied_by(facts)
-            else "unavailable"
-        )
+        bundle["outcome"] = scope_check_outcome(facts)
         bundle["diagnostics"] = [
             detail for scope in requested for detail in assessments[scope]["diagnostics"]
         ] or ([] if requested else ["No ontology check scope was requested."])

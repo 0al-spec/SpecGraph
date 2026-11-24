@@ -1464,7 +1464,7 @@
       "description": "The implemented bounded context capture scope stays aligned with DocC.",
       "docs": ["docs/project_ontology_context.md"],
       "docc": ["Sources/SpecGraph/Documentation.docc/VerifiedProjectOntologyContext.md"],
-      "required_terms": ["capture_project_context", "SG-SPEC-0072", "ontologyc-structural-v1", "unavailable", "ontology-ref-diff", "specgraph_ontology_ref_diff", "outcome_spec.py", "FirstMatch"]
+      "required_terms": ["capture_project_context", "SG-SPEC-0072", "ontologyc-structural-v1", "unavailable", "ontology-ref-diff", "specgraph_ontology_ref_diff", "outcome_spec.py", "FirstMatch", "project_ontology_scope_aggregation_spec.py"]
     },
     {
       "id": "verified-project-ontology-context",

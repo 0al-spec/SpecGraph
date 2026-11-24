@@ -131,6 +131,14 @@ success label and the Supervisor target check supplies `checked`. Optional
 rule traces preserve the priority order and skipped branches. See the
 [decision table and refactor record](reviews/0232_project_ontology_context/outcome-refactor.md).
 
+For requested report scopes, `project_ontology_scope_aggregation_spec.py` shares
+one `FirstMatch` between report production and saved-report validation: detected
+invalidity wins, a nonempty request with every scope analyzed yields `analyzed`,
+and otherwise the result is `unavailable`. The existing completion Specification
+is reused. The saved-report adapter still validates scope identities, allowed
+statuses and payload consistency before invoking this policy. See the
+[scope aggregation record](reviews/0232_project_ontology_context/scope-aggregation-refactor.md).
+
 
 ### One selected motivation composition
 
