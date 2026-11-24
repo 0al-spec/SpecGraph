@@ -20,9 +20,8 @@ from ontology_snapshot import (
 )
 
 from . import composition, foundation
-from .invalid_spec import INVALID_SPEC
 from .model import CheckResult, ContextFacts, ContextResult
-from .unavailable_spec import UNAVAILABLE_SPEC
+from .outcome_spec import context_check_outcome
 
 _DIGEST = re.compile(r"[0-9a-f]{64}\Z")
 
@@ -328,13 +327,7 @@ def capture_project_context(
     if not members or len(snapshots) != len(members):
         add("context_capture", "unavailable", "selected context capture is incomplete")
     facts = ContextFacts(tuple(checks))
-    outcome = (
-        "invalid"
-        if INVALID_SPEC.is_satisfied_by(facts)
-        else "unavailable"
-        if UNAVAILABLE_SPEC.is_satisfied_by(facts)
-        else "verified"
-    )
+    outcome = context_check_outcome(facts, success="verified")
     if (
         members
         and len(snapshots) == len(members)

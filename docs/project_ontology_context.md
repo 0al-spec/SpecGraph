@@ -125,6 +125,11 @@ records canonical and legacy controls separately from the historical observation
 
 Each domain outcome policy lives in its own Specification module with immutable
 facts. Parsing, paths, subprocess adaptation and serialization remain at the edge.
+The shared `project_ontology_context/outcome_spec.py` composes invalid and
+unavailable through `FirstMatch`. Context capture supplies `verified` as its
+success label and the Supervisor target check supplies `checked`. Optional
+rule traces preserve the priority order and skipped branches. See the
+[decision table and refactor record](reviews/0232_project_ontology_context/outcome-refactor.md).
 
 
 ### One selected motivation composition
