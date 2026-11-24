@@ -225,6 +225,41 @@ partial results and `not_attempted` paths, and 2 means invalid input before
 writes. Repeating the command on canonical files returns `unchanged`.
 See [proposal 0239](proposals/0239_native_yaml_format.md).
 
+### Inspect saved evidence for a criterion
+
+Use a native runtime revision that includes `criterion-evidence`. Install the
+optional project-local agent skill from that same runtime:
+
+```sh
+specgraph-runtime --workspace /path/to/product-workspace draft -- skill install \
+  --name specgraph-criterion-evidence --project /path/to/product-workspace
+```
+
+The command places the skill under `.codex/skills/` and preserves any differing
+installation for manual reconciliation. The lookup also works independently
+of the skill:
+
+```sh
+specgraph-runtime --workspace /path/to/product-workspace criterion-evidence -- \
+  PRODUCT-SPEC-0001 --revision "$DECLARATION_COMMIT" --criterion /acceptance/1 \
+  --runs-root /path/to/verification-runs
+```
+
+Set `DECLARATION_COMMIT` to the full Git SHA containing the selected criterion.
+`/acceptance/1` points to the second criterion at that commit. Supply the
+directory that holds the individual workflow 0234 runs. When the producer's
+repository ID differs from the project ID, supply `--repository-id`.
+
+Read `runs` and `findings` in the JSON. Keep the saved observation, current
+artifact availability and admission visible for each run. In the
+[ExamCalc pilot](reviews/0240_criterion_evidence_lookup/examcalc-pilot.json),
+two local runs observed that the late return of the previous issue preserved
+the current issue. A rejected run had no observation. Removing a journal from a test copy kept the saved observation
+readable and changed `recheck_inputs` to `unavailable`. Changed journal bytes
+gave `invalid`. Admission remained `not_evaluated`.
+See [RFC 0240](proposals/0240_criterion_evidence_lookup.md) for supported
+inputs and exit statuses.
+
 ## SpecSpace / Viewer Expectations
 
 SpecSpace's existing core selector reads `runs/project_environment.json` and

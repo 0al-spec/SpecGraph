@@ -3093,5 +3093,14 @@
     "required_provenance_links": [
       "source_draft_ref"
     ]
+  },
+  {
+    "proposal_id": "0240",
+    "source_artifact_class": "working_draft",
+    "source_refs": ["docs/archive/proposal_sources/0240_criterion_evidence_lookup.md"],
+    "motivating_concern": "An agent knows the criterion address but must locate its retained passport, plan, report and journal manually.",
+    "normalized_title": "Look up retained evidence for one acceptance criterion",
+    "bounded_scope": "Read retained evidence for one exact criterion through declared workspace inputs. Preserve local observation and admission boundaries.",
+    "required_provenance_links": ["source_draft_ref"]
   }
 ]

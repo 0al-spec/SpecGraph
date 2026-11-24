@@ -25,6 +25,10 @@ Assume repository root:
 - Treat invalid worktree YAML, transport issues, and timeout residue as runtime problems first.
 - Read `runs/latest-summary.md` and the specific `runs/<RUN_ID>.json` after every meaningful run.
 
+For questions about existing evidence for a product acceptance criterion, use
+the [criterion evidence skill](../specgraph-criterion-evidence/SKILL.md). The
+native lookup reads retained verification runs for one exact declaration.
+
 ## Default Commands
 
 Dry-run selection:
