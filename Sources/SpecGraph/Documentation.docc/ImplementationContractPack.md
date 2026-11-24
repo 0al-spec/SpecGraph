@@ -49,6 +49,26 @@ mapping completeness or verified execution. Current tooling **does not enforce
 preparation declares `canonical_mutations_allowed: false`,
 `runtime_code_mutations_allowed: false` and `evidence_admission_allowed: false`.
 
+## Proposed transition readiness
+
+Proposal `0047` describes assessment for a named transition and an explicit
+graph scope. Each criterion finding cites evidence at the reviewed revision.
+The assessment records open questions and their consequences. The authority
+declared for the transition records authorization in a separate decision.
+
+The GitView example allows product review of possible meanings of “ready” for
+an open pull request. Implementing a unified filter requires resolving that
+meaning and satisfying the graph-first rule. The pilot used a structural
+candidate check and a manual review of the cited clauses. Transition readiness
+assessment is a proposed slice. The runtime below produces a contract preview.
+
+The proposed criterion delta compares findings for the same graph scope,
+transition and profile across revisions. It identifies which blockers appear,
+clear or remain unresolved. In the illustrative filter, a current draft flag
+changing from true to false makes an open PR a confirmed match. An
+unavailable current draft flag leaves the filter result unknown. The actual
+display can be verified with a separate observation.
+
 ## Implemented explicit-node projection
 
 Proposal `0047`, Slice 4 provides the `explicit_node_observability_v1` profile.
