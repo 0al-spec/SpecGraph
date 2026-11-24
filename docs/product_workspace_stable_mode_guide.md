@@ -191,6 +191,75 @@ bytes. It writes no files and offers candidate review as the next action.
 See [proposal 0235](proposals/0235_product_draft_candidate_check.md) for the
 input and evidence boundaries.
 
+### Lint specification YAML in place
+
+```bash
+specgraph-runtime --workspace /path/to/product-workspace lint -- \
+  specs/nodes/PRODUCT-SPEC-0001.yaml docs/drafts/PRODUCT-SPEC-0002.yaml
+```
+
+Pass one or more explicit workspace-relative YAML paths. The read-only
+`specgraph_yaml_lint` report goes to stdout with each file's `checks_run` and
+`issues`. Exit 0 means lint passed, 1 means findings, and 2 means invalid
+invocation or path selection. Lint covers YAML mapping and duplicate keys,
+timestamps, acceptance and evidence declaration shape, and canonical
+formatting. A file that cannot be parsed has only the parse check listed.
+Draft kind and ID/filename matching belong to `next-move --candidate-file`.
+See [proposal 0237](proposals/0237_native_spec_yaml_lint.md).
+
+### Correct canonical formatting
+
+```bash
+specgraph-runtime --workspace /path/to/product-workspace format -- \
+  specs/nodes/PRODUCT-SPEC-0001.yaml
+```
+
+Native lint provides `format_command` when it detects formatting issues.
+Use the absolute installed launcher path if `specgraph-runtime` is outside
+PATH. The formatter uses existing canonical YAML rules, normalizes timestamp
+representations and removes comments. The `specgraph_yaml_format` JSON report
+records per-file status and SHA-256 before and after. It parses all selected
+files before any write and replaces changed files individually, retaining
+permission modes. Exit 0 means completion, 1 means a write failure with
+partial results and `not_attempted` paths, and 2 means invalid input before
+writes. Repeating the command on canonical files returns `unchanged`.
+See [proposal 0239](proposals/0239_native_yaml_format.md).
+
+### Inspect saved evidence for a criterion
+
+Use a native runtime revision that includes `criterion-evidence`. Install the
+optional project-local agent skill from that same runtime:
+
+```sh
+specgraph-runtime --workspace /path/to/product-workspace draft -- skill install \
+  --name specgraph-criterion-evidence --project /path/to/product-workspace
+```
+
+The command places the skill under `.codex/skills/` and preserves any differing
+installation for manual reconciliation. The lookup also works independently
+of the skill:
+
+```sh
+specgraph-runtime --workspace /path/to/product-workspace criterion-evidence -- \
+  PRODUCT-SPEC-0001 --revision "$DECLARATION_COMMIT" --criterion /acceptance/1 \
+  --runs-root /path/to/verification-runs
+```
+
+Set `DECLARATION_COMMIT` to the full Git SHA containing the selected criterion.
+`/acceptance/1` points to the second criterion at that commit. Supply the
+directory that holds the individual workflow 0234 runs. When the producer's
+repository ID differs from the project ID, supply `--repository-id`.
+
+Read `runs` and `findings` in the JSON. Keep the saved observation, current
+artifact availability and admission visible for each run. In the
+[ExamCalc pilot](reviews/0240_criterion_evidence_lookup/examcalc-pilot.json),
+two local runs observed that the late return of the previous issue preserved
+the current issue. A rejected run had no observation. Removing a journal from a test copy kept the saved observation
+readable and changed `recheck_inputs` to `unavailable`. Changed journal bytes
+gave `invalid`. Admission remained `not_evaluated`.
+See [RFC 0240](proposals/0240_criterion_evidence_lookup.md) for supported
+inputs and exit statuses.
+
 ## SpecSpace / Viewer Expectations
 
 SpecSpace's existing core selector reads `runs/project_environment.json` and

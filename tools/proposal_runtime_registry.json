@@ -2347,7 +2347,7 @@
         "pattern": "evidence-claim-gate:"
       }
     ],
-    "notes": "Existing observability projection and source/signed-decision admission are bounded runtime realizations. The 2026-09-30 cross-repository receipt issuance handoff is proposal_only: generic issuer work belongs to FeaturePassport, pilot wiring to Zeusus, trust configuration to explicit operators, and admission to SpecGraph. No issuer, key provisioning, trust adoption or lifecycle transition is implemented by this amendment. The CLI delivery amendment also remains proposal_only: FeaturePassport releases target-specific artifacts; Platform owns runner dependency/image delivery; SpecGraph owns curated read-model publication. No binary installation, release workflow or deployment is implemented by this documentation slice. The 2026-10-23 observability_identity_declarations_v1 follow-up is contract preparation only, deferred_until_canonicalized: docs/observability_identity_profile.md and docs/contracts/observability_identity_profile_v1.json prepare exact per-obligation declarations, immutable opt-in selection and future shared diagnostics. The definition is not loaded by runtime; sixteen acceptance cases are proposed, not executed conformance tests. No validator wiring, canonical adoption, SDK propagation, mapping completeness or evidence admission is implemented by this amendment. The source-intent follow-up in docs/reviews/0047_authored_traceability is review preparation only: native mediated intent captures, six proposed local requirements, four acceptance criteria and seven engineering choices. The initial failed attempt and assistant-authored candidate remain historical. After the CLI update to 0.163.0, the corrected Sol 6.1 Medium retry completed ok/done/review_pending with eight validators passed and accepted_canonical_diff false. Raw child candidate, parent pending envelope, native retry copies and diagnostic findings are retained separately under retry/; the 10-of-15 mapping scenario remains unexecuted. Canonical Intent/Requirement adoption and reachability remain unresolved; generic SG-SPEC-0020 evidence is not a substitute. No runtime realization or profile activation is introduced. A subsequent review-only canonical adoption packet at docs/reviews/0047_authored_traceability/adoption/packet.json prepares six Requirement origins, four shared criterion origins, three logical Intent roots, eight proposed derived_from edges and twenty pending subject transitions. Existing SG-SPEC-0069 workspace planning and recorded-decision format are reused. Source interpretation and all adoption decisions remain pending. The current writer cannot publish Intent roots or external relations, so complete-chain publication and canonical reachability remain unresolved; supported-record publication alone cannot close that gap."
+    "notes": "Existing observability projection and source/signed-decision admission are bounded runtime realizations. The 2026-09-30 cross-repository receipt issuance handoff is proposal_only: generic issuer work belongs to FeaturePassport, pilot wiring to Zeusus, trust configuration to explicit operators, and admission to SpecGraph. No issuer, key provisioning, trust adoption or lifecycle transition is implemented by this amendment. The CLI delivery amendment also remains proposal_only: FeaturePassport releases target-specific artifacts; Platform owns runner dependency/image delivery; SpecGraph owns curated read-model publication. No binary installation, release workflow or deployment is implemented by this documentation slice. The 2026-10-23 observability_identity_declarations_v1 follow-up is contract preparation only, deferred_until_canonicalized: docs/observability_identity_profile.md and docs/contracts/observability_identity_profile_v1.json prepare exact per-obligation declarations, immutable opt-in selection and future shared diagnostics. The definition is not loaded by runtime; sixteen acceptance cases are proposed, not executed conformance tests. No validator wiring, canonical adoption, SDK propagation, mapping completeness or evidence admission is implemented by this amendment. The source-intent follow-up in docs/reviews/0047_authored_traceability is review preparation only: native mediated intent captures, six proposed local requirements, four acceptance criteria and seven engineering choices. The initial failed attempt and assistant-authored candidate remain historical. After the CLI update to 0.163.0, the corrected Sol 6.1 Medium retry completed ok/done/review_pending with eight validators passed and accepted_canonical_diff false. Raw child candidate, parent pending envelope, native retry copies and diagnostic findings are retained separately under retry/; the 10-of-15 mapping scenario remains unexecuted. Canonical Intent/Requirement adoption and reachability remain unresolved; generic SG-SPEC-0020 evidence is not a substitute. No runtime realization or profile activation is introduced. A subsequent review-only canonical adoption packet at docs/reviews/0047_authored_traceability/adoption/packet.json prepares six Requirement origins, four shared criterion origins, three logical Intent roots, eight proposed derived_from edges and twenty pending subject transitions. Existing SG-SPEC-0069 workspace planning and recorded-decision format are reused. Source interpretation and all adoption decisions remain pending. The current writer cannot publish Intent roots or external relations, so complete-chain publication and canonical reachability remain unresolved; supported-record publication alone cannot close that gap. The contextual transition readiness amendment is proposal_only. The GitView example records a manual finding, two transition consequences and separate authorization. The worked state-change example and criterion delta are proposal-only illustrations, including an unknown input case. No evaluator or new runtime gate is introduced."
   },
   {
     "proposal_id": "0048",
@@ -13820,7 +13820,7 @@
         "pattern": "\"source_digest_matched\": true"
       }
     ],
-    "notes": "Explicit pre-canonical candidate file selection and YAML identity checks. Installed GitView pilot bound the live draft digest and preserved canonical target selection. Resume through proposal::0235-product-draft-candidate-check."
+    "notes": "Explicit pre-canonical candidate file selection and YAML identity checks. Installed GitView pilot bound the live draft digest and preserved canonical target selection. The independent review handoff observation is retained at docs/reviews/0235_product_draft_candidate_check/independent-review-handoff.md. Resume through proposal::0235-product-draft-candidate-check."
   },
   {
     "proposal_id": "0236",
@@ -13832,5 +13832,124 @@
       "docs/archive/proposal_sources/0236_graph_before_implementation.md"
     ],
     "notes": "Constitutional amendment for human review. Readiness is an engineering review obligation; this proposal introduces no runtime enforcement."
+  },
+  {
+    "proposal_id": "0237",
+    "posture": "synchronous_runtime_slice",
+    "runtime_surfaces": [
+      "docs/proposals/0237_native_spec_yaml_lint.md",
+      "docs/proposals/0237_native_spec_yaml_lint.intent.yaml",
+      "docs/archive/proposal_sources/0237_native_spec_yaml_lint.md",
+      "tools/native_runtime.py",
+      "tools/spec_yaml.py",
+      "tools/spec_yaml_lint.py",
+      "tests/test_native_runtime.py",
+      "docs/product_workspace_stable_mode_guide.md",
+      "Sources/SpecGraph/Documentation.docc/ProductWorkspacePilots.md"
+    ],
+    "runtime_markers": [
+      {
+        "path": "tools/spec_yaml_lint.py",
+        "pattern": "\"artifact_kind\": \"specgraph_yaml_lint\""
+      }
+    ],
+    "validation_markers": [
+      {
+        "path": "tests/test_native_runtime.py",
+        "pattern": "def test_native_lint_reports_executed_checks_for_each_workspace_file("
+      }
+    ],
+    "observation_markers": [
+      {
+        "path": "docs/archive/proposal_sources/0237_native_spec_yaml_lint.md",
+        "pattern": "All 24 explicitly selected canonical GitView nodes passed the same linter."
+      }
+    ],
+    "notes": "Exposes the existing YAML linter in the native launcher and reports exactly which checks ran. The product draft identity route in 0235 remains separate."
+  },
+  {
+    "proposal_id": "0238",
+    "posture": "synchronous_runtime_slice",
+    "runtime_surfaces": [
+      "docs/proposals/0238_ontology_ref_diff.md",
+      "docs/proposals/0238_ontology_ref_diff.intent.yaml",
+      "docs/archive/proposal_sources/0238_ontology_ref_diff.md",
+      "tools/project_ontology_term_declarations.py",
+      "tools/project_ontology_term_inventory.py",
+      "tools/ontology_ref_diff.py",
+      "tools/native_runtime.py",
+      "tests/test_ontology_ref_diff.py"
+    ],
+    "runtime_markers": [
+      {
+        "path": "tools/ontology_ref_diff.py",
+        "pattern": "\"artifact_kind\": \"specgraph_ontology_ref_diff\""
+      }
+    ],
+    "validation_markers": [
+      {
+        "path": "tests/test_ontology_ref_diff.py",
+        "pattern": "def test_diff_reports_disappearance_when_successor_declares_nothing("
+      }
+    ],
+    "notes": "Standalone comparison of explicit declarations. Related authoring profile proposal 0233 retains its own scope and approval boundary."
+  },
+  {
+    "proposal_id": "0239",
+    "posture": "synchronous_runtime_slice",
+    "runtime_surfaces": [
+      "docs/proposals/0239_native_yaml_format.md",
+      "docs/proposals/0239_native_yaml_format.intent.yaml",
+      "docs/archive/proposal_sources/0239_native_yaml_format.md",
+      "tools/native_runtime.py",
+      "tools/spec_yaml_format.py",
+      "tools/spec_yaml_lint.py",
+      "tools/spec_yaml_workspace.py",
+      "tests/test_native_runtime.py",
+      "docs/product_workspace_stable_mode_guide.md",
+      "Sources/SpecGraph/Documentation.docc/ProductWorkspacePilots.md",
+      "docs/reviews/0239_native_yaml_format/gitview-pilot.json"
+    ],
+    "runtime_markers": [
+      {
+        "path": "tools/spec_yaml_format.py",
+        "pattern": "\"artifact_kind\": \"specgraph_yaml_format\""
+      }
+    ],
+    "validation_markers": [
+      {
+        "path": "tests/test_native_runtime.py",
+        "pattern": "def test_native_format_corrects_lint_and_is_idempotent("
+      }
+    ],
+    "notes": "Closes the installed lint correction route using existing canonicalization rules and explicit workspace selection.",
+    "observation_markers": [
+      {
+        "path": "docs/reviews/0239_native_yaml_format/gitview-pilot.json",
+        "pattern": "\"original_file_hash_unchanged\": true"
+      }
+    ]
+  },
+  {
+    "proposal_id": "0240",
+    "posture": "synchronous_runtime_slice",
+    "runtime_surfaces": [
+      "docs/proposals/0240_criterion_evidence_lookup.md",
+      "docs/proposals/0240_criterion_evidence_lookup.intent.yaml",
+      "docs/archive/proposal_sources/0240_criterion_evidence_lookup.md",
+      "docs/reviews/0240_criterion_evidence_lookup/operator-request.json",
+      "docs/reviews/0240_criterion_evidence_lookup/graph-links.json",
+      "docs/reviews/0240_criterion_evidence_lookup/examcalc-pilot.json",
+      "tools/criterion_evidence_lookup.py",
+      "tools/native_runtime.py",
+      "tools/verification_workflow/retained_criterion_scope_spec.py",
+      "tests/test_criterion_evidence_lookup.py",
+      ".codex/skills/specgraph-criterion-evidence/SKILL.md",
+      "src/specgraph/resources/skills/specgraph-criterion-evidence/SKILL.md",
+      "docs/product_workspace_stable_mode_guide.md"
+    ],
+    "runtime_markers": [{"path": "tools/criterion_evidence_lookup.py", "pattern": "specgraph_criterion_evidence_lookup"}],
+    "validation_markers": [{"path": "tests/test_criterion_evidence_lookup.py", "pattern": "def test_lookup_retains_distinct_runs_and_checks_inputs("}],
+    "notes": "Native read-only lookup over 0234 terminal records. The ExamCalc pilot retained two passing runs and one failed run separately and checked journal availability, integrity and declaration revision. Standalone C2c archives remain outside this slice. Resume through proposal::0240-criterion-evidence-lookup."
   }
 ]

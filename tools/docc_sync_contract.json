@@ -629,12 +629,20 @@
       "docs_required_terms": [
         "Team Decision Log Pilot Config",
         "--candidate-file",
-        "product_workspace_candidate_check"
+        "product_workspace_candidate_check",
+        "specgraph_yaml_lint",
+        "checks_run",
+        "specgraph_yaml_format",
+        "format_command"
       ],
       "docc_required_terms": [
         "Canonical Sources",
         "--candidate-file",
-        "product_workspace_candidate_check"
+        "product_workspace_candidate_check",
+        "specgraph_yaml_lint",
+        "checks_run",
+        "specgraph_yaml_format",
+        "format_command"
       ]
     },
     {
@@ -1263,6 +1271,26 @@
       ]
     },
     {
+      "id": "contextual-transition-readiness",
+      "description": "Proposal 0047 binds readiness to a transition, graph scope and evidence. Authorization is a separate decision.",
+      "docs": [
+        "docs/proposals/0047_evidence_backed_build_protocol.md"
+      ],
+      "docc": [
+        "Sources/SpecGraph/Documentation.docc/ImplementationContractPack.md"
+      ],
+      "required_terms": [
+        "transition",
+        "graph scope",
+        "criterion finding",
+        "evidence",
+        "authorization",
+        "GitView",
+        "criterion delta",
+        "unknown"
+      ]
+    },
+    {
       "id": "zeusus-second-pass-feedback-triage",
       "description": "Source-bound external feedback routing and unimplemented follow-ups remain distinct from adoption.",
       "docs": [
@@ -1436,7 +1464,7 @@
       "description": "The implemented bounded context capture scope stays aligned with DocC.",
       "docs": ["docs/project_ontology_context.md"],
       "docc": ["Sources/SpecGraph/Documentation.docc/VerifiedProjectOntologyContext.md"],
-      "required_terms": ["capture_project_context", "SG-SPEC-0072", "ontologyc-structural-v1", "unavailable"]
+      "required_terms": ["capture_project_context", "SG-SPEC-0072", "ontologyc-structural-v1", "unavailable", "ontology-ref-diff", "specgraph_ontology_ref_diff"]
     },
     {
       "id": "verified-project-ontology-context",

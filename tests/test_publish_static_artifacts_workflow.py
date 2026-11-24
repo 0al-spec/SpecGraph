@@ -89,15 +89,19 @@ def test_deploy_stages_workspace_payloads_and_finalizes_manifests_last() -> None
     upload_block = _step_block(workflow, "Upload changed artifact payloads and metadata")
     verify_block = _step_block(workflow, "Verify published artifact digests")
 
-    assert stage_block.count("tools/static_artifact_incremental_stage.py stage") == 3
+    assert stage_block.count("tools/static_artifact_incremental_stage.py stage") == 4
     assert "--staging-prefix workspaces/team-decision-log" in stage_block
     assert "--staging-prefix workspaces/hosted-operation-canary" in stage_block
+    assert "--staging-prefix workspaces/gitview" in stage_block
     assert upload_block.index("mirror -R --parallel=4 --verbose") < upload_block.index(
         "checksums.sha256"
     )
     assert upload_block.index("checksums.sha256") < upload_block.index("artifact_manifest.json")
-    assert verify_block.count("tools/static_artifact_incremental_stage.py verify") == 3
+    assert verify_block.count("tools/static_artifact_incremental_stage.py verify") == 4
     assert "$STATIC_ARTIFACT_PUBLIC_BASE_URL/workspaces/hosted-operation-canary" in (verify_block)
+    assert "$STATIC_ARTIFACT_PUBLIC_BASE_URL/workspaces/gitview" in verify_block
+    assert upload_block.count("workspaces/gitview/checksums.sha256") == 6
+    assert upload_block.count("workspaces/gitview/artifact_manifest.json") == 6
     assert "name: specgraph-incremental-deployment-reports" in workflow
 
 

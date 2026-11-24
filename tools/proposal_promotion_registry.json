@@ -3054,5 +3054,53 @@
     "required_provenance_links": [
       "source_draft_ref"
     ]
+  },
+  {
+    "proposal_id": "0237",
+    "source_artifact_class": "working_draft",
+    "source_refs": [
+      "docs/archive/proposal_sources/0237_native_spec_yaml_lint.md"
+    ],
+    "motivating_concern": "GitView needed to check a canonical node in place and distinguish identity checks from YAML lint.",
+    "normalized_title": "Run YAML lint through the native runtime",
+    "bounded_scope": "A read-only native lint command for selected workspace files with a report of checks and findings per file.",
+    "required_provenance_links": [
+      "source_draft_ref"
+    ]
+  },
+  {
+    "proposal_id": "0238",
+    "source_artifact_class": "working_draft",
+    "source_refs": [
+      "docs/archive/proposal_sources/0238_ontology_ref_diff.md"
+    ],
+    "motivating_concern": "GitView lost explicit ontology declarations during the draft-to-node handoff.",
+    "normalized_title": "Compare explicit ontology declarations across two specifications",
+    "bounded_scope": "Read two explicitly selected YAML files and report retained, added and removed declarations, source locations and author rationale.",
+    "required_provenance_links": [
+      "source_draft_ref"
+    ]
+  },
+  {
+    "proposal_id": "0239",
+    "source_artifact_class": "working_draft",
+    "source_refs": [
+      "docs/archive/proposal_sources/0239_native_yaml_format.md"
+    ],
+    "motivating_concern": "GitView lint detected formatting problems without a native correction command.",
+    "normalized_title": "Format selected specification YAML through the native runtime",
+    "bounded_scope": "Expose the existing formatter with explicit workspace selection, before/after hashes and a correction command in lint.",
+    "required_provenance_links": [
+      "source_draft_ref"
+    ]
+  },
+  {
+    "proposal_id": "0240",
+    "source_artifact_class": "working_draft",
+    "source_refs": ["docs/archive/proposal_sources/0240_criterion_evidence_lookup.md"],
+    "motivating_concern": "An agent knows the criterion address but must locate its retained passport, plan, report and journal manually.",
+    "normalized_title": "Look up retained evidence for one acceptance criterion",
+    "bounded_scope": "Read retained evidence for one exact criterion through declared workspace inputs. Preserve local observation and admission boundaries.",
+    "required_provenance_links": ["source_draft_ref"]
   }
 ]

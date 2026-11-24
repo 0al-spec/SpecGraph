@@ -1,0 +1,30 @@
+{
+  "artifact_kind": "specgraph.intent-decision-review/v1",
+  "base_sha": "c802c181c7b8aa53c4379cac3c2b5dec5d4d94c5",
+  "decisions": [
+    {
+      "change_sha256": "0bd368b482be5be1be48164a673bb5c35dd2a29f00483eba015dd1a3dd547c0f",
+      "disposition": "mechanics",
+      "implementation_refs": [
+        {
+          "path": "tools/spec_yaml_format.py",
+          "symbol": "format_workspace"
+        },
+        {
+          "path": "tools/spec_yaml_lint.py",
+          "symbol": "lint_workspace"
+        },
+        {
+          "path": "tools/spec_yaml_workspace.py",
+          "symbol": "selected_yaml_files"
+        }
+      ],
+      "rationale": "The launcher forwards explicit YAML file selection to existing canonicalization. Shared path confinement, preflight, byte comparison and file replacement are parsing and I/O mechanics. The report records changes and partial failures without deciding specification readiness or ontology meaning.",
+      "specification_refs": []
+    }
+  ],
+  "intent_delta_sha256": "83684939fca4dd4089e3c21fe2b0984bb8c2f2ae20808cc22d1f332651d095b2",
+  "pr_body_sha256": "d6958f252b96ad286da633fef84de00315f834f26e019787a43fc4c84dd11416",
+  "schema_version": 1,
+  "source_scope_sha256": "c4a6d9016f6f3287f29689f16bf3c37111507fdba63e5ff597dece567b968f00"
+}
