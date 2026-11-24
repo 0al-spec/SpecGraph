@@ -1,0 +1,19 @@
+{
+  "artifact_kind": "native_yaml_format_pilot",
+  "schema_version": 1,
+  "source_project": "GitView",
+  "source_revision": "aead32459d7b7ab44f77d336b54b4dc197b7c736",
+  "source_path": "specs/nodes/GITVIEW-SPEC-0007.yaml",
+  "source_sha256": "56b074f1fb98cff62b74a59a6a7b610fe891391f8fa75849f01ef4a2f2aa98fe",
+  "working_tree_differs_from_commit": true,
+  "runtime_revision": "37542d4d7b84fa9738d61212de97b13916bd5d74",
+  "initial_lint": "passed",
+  "initial_format": "unchanged",
+  "controlled_change": "Added one leading blank line to the isolated copy.",
+  "controlled_lint": "failed",
+  "correction_status": "changed",
+  "lint_after": "passed",
+  "repeated_format": "unchanged",
+  "parsed_content_preserved": true,
+  "original_file_hash_unchanged": true
+}

@@ -1,0 +1,23 @@
+{
+  "artifact_kind": "operator_request_packet",
+  "schema_version": 1,
+  "user_intent": {
+    "intent_handle": "user_intent::0240-criterion-evidence-lookup",
+    "source_kind": "chat_instruction",
+    "source_summary": "Prepare a SpecGraph proposal for retrieving existing evidence by specification revision and criterion. See docs/archive/proposal_sources/0240_criterion_evidence_lookup.md.",
+    "selected_node_ref": "SG-SPEC-0068",
+    "unresolved_questions": [
+      "Review the source of retained artifact declarations for the first implementation."
+    ]
+  },
+  "operator_request": {
+    "request_handle": "operator_request::0240-criterion-evidence-lookup",
+    "target_spec_id": "SG-SPEC-0068",
+    "run_mode": "targeted_refine",
+    "operator_note": "Register the draft only. Review the retained artifact selection contract before implementation.",
+    "mutation_budget": [],
+    "run_authority": [],
+    "execution_profile": "standard",
+    "stop_conditions": ["review_boundary_reached"]
+  }
+}

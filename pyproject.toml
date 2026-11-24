@@ -37,6 +37,7 @@ specgraph = [
     "resources/skills/specgraph-conversation-notes/SKILL.md",
     "resources/skills/specgraph-conversation-notes/references/*.md",
     "resources/skills/specgraph-project-ontology/SKILL.md",
+    "resources/skills/specgraph-criterion-evidence/SKILL.md",
 ]
 specdraft_preview = ["static/*.html", "static/*.css", "static/*.js", "static/*.svg"]
 

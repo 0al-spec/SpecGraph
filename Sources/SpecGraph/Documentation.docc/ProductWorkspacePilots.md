@@ -1123,6 +1123,52 @@ The `product_workspace_candidate_check` report goes to stdout and records
 the source path, SHA-256, authored statuses and `canonical: false`.
 Candidate mode is read-only and exclusive with `--target-spec`.
 
+The GitView independent review pilot used candidate reports as file identity
+evidence. Its manual handoff bound review scope, findings and author
+dispositions to revisions. RFC `0235` links the pilot observation and its
+follow-up checks.
+
+## Lint specification YAML in place
+
+Use the native launcher to lint canonical nodes and draft YAML in place:
+
+```bash
+specgraph-runtime --workspace /path/to/product-workspace lint -- \
+  specs/nodes/PRODUCT-SPEC-0001.yaml docs/drafts/PRODUCT-SPEC-0002.yaml
+```
+
+The read-only `specgraph_yaml_lint` report lists each file's `checks_run` and
+`issues`. Exit 0 means lint passed, 1 means findings, and 2 means invalid
+invocation or path selection. Lint covers YAML mapping and duplicate keys,
+timestamps, acceptance and evidence declaration shape, and canonical
+formatting. Draft kind and ID/filename matching stay in the candidate check.
+
+## Correct canonical formatting
+
+Use `specgraph-runtime --workspace <project> format -- <file> ...` to correct
+canonical formatting. Native lint supplies `format_command` for affected
+files. The `specgraph_yaml_format` report records per-file status and hashes
+before and after. All selected inputs are parsed before writes, changed
+files are replaced individually, and permission modes are retained.
+Canonicalization normalizes timestamps and removes comments. Exit 0 means
+completion, 1 reports a write failure and `not_attempted` paths, and 2 means
+invalid input. A repeated command on canonical files returns `unchanged`.
+
+## Inspect saved evidence for a criterion
+
+Install the optional `specgraph-criterion-evidence` project skill using
+`draft -- skill install --name specgraph-criterion-evidence --project <project>`
+through a native runtime that supports `criterion-evidence`.
+
+Run `criterion-evidence` with the specification ID, full declaration Git SHA,
+an `/acceptance/N` pointer and `--runs-root`. Select the local directory of
+workflow 0234 runs. The JSON lists each matching run with its saved observation,
+current `recheck_inputs` and admission. A missing journal can leave a readable
+saved observation with `recheck_inputs: unavailable`. Read the saved outcome
+within its recorded scope. The ExamCalc pilot retained two passing local
+observations and one rejected run, with admission `not_evaluated`.
+See <doc:EvidenceProvider> and RFC 0240 for the evidence contract.
+
 ## Durable workspace binding evidence
 
 Product child allocation can use `.specgraph/spec-id-policy.json` with

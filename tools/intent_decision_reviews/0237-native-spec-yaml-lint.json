@@ -1,0 +1,30 @@
+{
+  "artifact_kind": "specgraph.intent-decision-review/v1",
+  "base_sha": "2375a56660b24b5dbd403423c7ad640569886718",
+  "decisions": [
+    {
+      "change_sha256": "799eb7d8a939cc4c138ed479abcff2801ff9efe327d7ad2e40b5dc4ba32e5b48",
+      "disposition": "mechanics",
+      "implementation_refs": [
+        {
+          "path": "tools/native_runtime.py",
+          "symbol": "run"
+        },
+        {
+          "path": "tools/spec_yaml_lint.py",
+          "symbol": "lint_workspace"
+        },
+        {
+          "path": "tools/spec_yaml.py",
+          "symbol": "inspect_yaml"
+        }
+      ],
+      "rationale": "The native launcher selects the product workspace. The CLI confines explicitly selected paths, invokes the existing YAML lint mechanics and serializes only the checks run and their findings. This adds no product policy or authority decision.",
+      "specification_refs": []
+    }
+  ],
+  "intent_delta_sha256": "99cbb04580dcbcbc1779c5b0dc5508787c06257e6d1582415e381303c253a18f",
+  "pr_body_sha256": "caa1a9c2d3217012a880c494062d561514df8a084ecbe3e68367e3b4b103fa4d",
+  "schema_version": 1,
+  "source_scope_sha256": "99d6dac753be770f5c2c7dde930058947b586aea7b5424f6bfd6a534ce491beb"
+}
