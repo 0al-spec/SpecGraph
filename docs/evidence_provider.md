@@ -337,4 +337,6 @@ with one exact declaration revision and an `/acceptance/N` pointer. Each matchin
 run lists its retained passport, plan, report and journal when declared. The
 saved observation and admission are separate from the current integrity and
 availability of the source artifacts. The lookup does not execute the producer
-or recompute the C2c verdict.
+or recompute the C2c verdict. See the
+[product workspace guide](product_workspace_stable_mode_guide.md#inspect-saved-evidence-for-a-criterion)
+for a command example and the optional agent skill.

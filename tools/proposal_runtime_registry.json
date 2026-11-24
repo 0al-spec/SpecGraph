@@ -13943,7 +13943,10 @@
       "tools/criterion_evidence_lookup.py",
       "tools/native_runtime.py",
       "tools/verification_workflow/retained_criterion_scope_spec.py",
-      "tests/test_criterion_evidence_lookup.py"
+      "tests/test_criterion_evidence_lookup.py",
+      ".codex/skills/specgraph-criterion-evidence/SKILL.md",
+      "src/specgraph/resources/skills/specgraph-criterion-evidence/SKILL.md",
+      "docs/product_workspace_stable_mode_guide.md"
     ],
     "runtime_markers": [{"path": "tools/criterion_evidence_lookup.py", "pattern": "specgraph_criterion_evidence_lookup"}],
     "validation_markers": [{"path": "tests/test_criterion_evidence_lookup.py", "pattern": "def test_lookup_retains_distinct_runs_and_checks_inputs("}],

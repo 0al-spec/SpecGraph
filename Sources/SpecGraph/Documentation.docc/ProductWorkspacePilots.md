@@ -1149,6 +1149,21 @@ Canonicalization normalizes timestamps and removes comments. Exit 0 means
 completion, 1 reports a write failure and `not_attempted` paths, and 2 means
 invalid input. A repeated command on canonical files returns `unchanged`.
 
+## Inspect saved evidence for a criterion
+
+Install the optional `specgraph-criterion-evidence` project skill using
+`draft -- skill install --name specgraph-criterion-evidence --project <project>`
+through a native runtime that supports `criterion-evidence`.
+
+Run `criterion-evidence` with the specification ID, full declaration Git SHA,
+an `/acceptance/N` pointer and `--runs-root`. Select the local directory of
+workflow 0234 runs. The JSON lists each matching run with its saved observation,
+current `recheck_inputs` and admission. A missing journal can leave a readable
+saved observation with `recheck_inputs: unavailable`. Read the saved outcome
+within its recorded scope. The ExamCalc pilot retained two passing local
+observations and one rejected run, with admission `not_evaluated`.
+See <doc:EvidenceProvider> and RFC 0240 for the evidence contract.
+
 ## Durable workspace binding evidence
 
 Product child allocation can use `.specgraph/spec-id-policy.json` with
