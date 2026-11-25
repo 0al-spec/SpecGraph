@@ -23,7 +23,7 @@ specgraph = "specgraph.cli:main"
 [tool.setuptools]
 include-package-data = false
 packages = ["specgraph", "conversation_notes", "specdraft_preview"]
-py-modules = ["conversation_notes_cli", "specdraft_preview_cli"]
+py-modules = ["conversation_notes_cli", "specdraft_preview_cli", "ontology_viewer"]
 
 [tool.setuptools.package-dir]
 "" = "tools"

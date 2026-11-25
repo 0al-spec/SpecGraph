@@ -63,6 +63,10 @@ def observe(command: Path, python: Path, wheel: Path, project: Path, forbidden: 
             assert archive.read(f"specgraph/resources/skills/specgraph-conversation-notes/{name}")
         assert archive.read("specgraph/resources/skills/specgraph-project-ontology/SKILL.md")
         assert archive.read("specgraph/resources/skills/specgraph-criterion-evidence/SKILL.md")
+        assert archive.read("ontology_viewer.py")
+
+    viewer_help = run("ontology-viewer", "--help").stdout
+    assert "--foundation-catalog" in viewer_help and "--viz-sha256" in viewer_help
 
     probe = subprocess.check_output(
         [

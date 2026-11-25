@@ -183,6 +183,9 @@ def run(installation: Path, workspace: Path, operation: str, arguments: list[str
     elif operation == "supervisor":
         command = [str(python), str(source / "tools" / "supervisor.py"), *arguments]
         cwd = project
+    elif operation == "ontology-viewer":
+        command = [str(python), "-I", "-m", "specgraph", operation, *arguments]
+        cwd = project
     else:
         command = [str(python), "-I", "-m", "specgraph", *arguments]
         cwd = project
@@ -219,6 +222,7 @@ def main(argv: list[str] | None = None) -> int:
             "ontology-overview",
             "ontology-ref-diff",
             "criterion-evidence",
+            "ontology-viewer",
         ),
     )
     args, extra = parser.parse_known_args(argv)

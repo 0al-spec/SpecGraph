@@ -239,39 +239,40 @@ inputs; retain gaps for review and do not infer semantic approval.
 
 ## Prepare an ontology Viewer projection
 
-`ontology-doctor` checks the compiler and selected context; it does not install
-`ontologyviz` or confirm that Viewer definitions were included. For visualization:
+`ontology-doctor` checks the compiler and selected context. For a Viewer graph,
+locate `ontologyviz` from a trusted Ontology release or a known source build.
+Use `specgraph ontology-viewer` for the first projection. Give it the root YAML,
+all candidate imported YAML files and all candidate foundation catalogs:
 
-1. Find `ontologyc` and `ontologyviz` from a trusted Ontology release or a
-   known source build. Record their paths, source revision or release, and
-   SHA-256. If provenance is unknown, say so; a digest alone is not provenance.
-   Check `ontologyviz --help` for the needed options. An older release may not
-   support foundation models; obtain a compatible build rather than silently
-   generating an incomplete projection.
-2. Before the first projection command, follow the selected package's YAML
-   imports recursively. Match each required package by pinned ID and version
-   and include both direct and transitive dependencies. Collect the foundation
-   import IDs and versions across those packages. Open the candidate
-   `SPECS/ontology/foundation/<version>/model.json` files from the trusted
-   Ontology snapshot and match their `id` and `version` to those
-   import pins. Ontology supports the historical `specgraph.foundation@0.1.0`
-   import via the `ontology.foundation@0.1.0` catalog. Use the version in
-   the import even when a newer catalog is available.
-3. Pass each required imported YAML package with its own `--import` flag or
-   list the paths under `imports` in the saved profile. Pass only matched
-   `model.json` paths, one per required foundation catalog. Repeat
-   `--foundation-model` for each match or list those paths under
-   `foundationModels`. Use `--profile` on its own.
-   Use `ontologyviz --help` for the installed version's complete syntax.
-4. Check the projection's `sources` for the required package IDs and versions
-   and its `foundationCatalogs` for the matched catalogs. Inspect the projection
-   and Viewer for the definitions expected by this task. Report unresolved
-   references and their scope, including any intentional exclusions.
-   A structurally verified context is not evidence that
-   the Viewer loaded every definition, and loaded terms are not semantic approval.
+```sh
+specgraph ontology-viewer package.yaml --ontologyviz ./ontologyviz --out output \
+  --package-candidate packages/parent.yaml \
+  --package-candidate packages/contracts.yaml \
+  --foundation-catalog catalogs/a/model.json \
+  --foundation-catalog catalogs/b/model.json
+```
 
-If `ontologyviz` rejects a catalog, recheck the import and catalog metadata
-and retry with the exact match. If a compatible tool, required YAML package
-or matching catalog is unavailable, report the missing input and mark any
-partial projection explicitly incomplete. Preserve the project's selected
-ontology and pins.
+Adjust the candidate paths to your project. Repeat each candidate option once
+per file. With the native runtime, use
+`specgraph-runtime --workspace . ontology-viewer --` followed by the same
+arguments. Paths are relative to the selected project. The command follows
+reachable YAML imports by ID and exact version, matches each foundation pin
+and calls `ontologyviz` once with the selected inputs. The historical
+`specgraph.foundation@0.1.0` matches the `ontology.foundation@0.1.0` catalog.
+A missing or ambiguous input is reported before rendering.
+
+Record the renderer release or source revision. The command prints the
+renderer SHA-256 and compares it when you supply `--viz-sha256` with a trusted
+expected digest. It handles hashing internally. If SHA-256 fails, inspect the
+path or digest named in that diagnostic. If the renderer rejects an input,
+check its own diagnostic and `ontologyviz --help` for supported options.
+
+On an older runtime without `ontology-viewer`, select the inputs by the same
+pins before calling `ontologyviz`. Pass each required YAML with `--import` and
+each matching catalog with `--foundation-model`, or supply them in a saved
+profile. Mark a graph that lacks required inputs as incomplete.
+
+Check `output/ontology.graph.json` for the required package IDs and versions
+in `sources`, the matching `foundationCatalogs`, and the definitions expected
+by the task. Report unresolved references and any intentional exclusions.
+Preserve the project's selected ontology and pins.

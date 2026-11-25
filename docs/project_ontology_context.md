@@ -31,6 +31,18 @@ for the project; the diagnostic does not choose one. Exit 0 means the selected
 context is structurally verified, 1 unavailable and 2 invalid. Semantic approval
 remains separate from these checks.
 
+## Build a Viewer projection
+
+Run `specgraph ontology-viewer --help` for the projection command. With the
+native runtime, run `specgraph-runtime --workspace . ontology-viewer -- --help`.
+Supply the root YAML, a trusted `--ontologyviz` path, an output directory, and
+the local candidates using repeated `--package-candidate` and
+`--foundation-catalog` options. The command selects reachable imports and
+catalogs by exact ID and version, prints the renderer SHA-256, and checks it
+when `--viz-sha256` is supplied. Ontology validates the selected inputs.
+For skill evaluations, check the first saved graph's sources, foundation
+bindings and expected definitions independently of the process exit code.
+
 ## Selection v1
 
 Store a YAML selection inside the workspace. Paths are workspace-relative;
