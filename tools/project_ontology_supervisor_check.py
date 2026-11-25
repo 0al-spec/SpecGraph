@@ -37,6 +37,8 @@ _PRODUCER_FILES = (
     "spec_ontology_validation_report.py",
     "project_ontology_check_scopes.py",
     "project_ontology_scope_outcome_spec.py",
+    "project_ontology_scope_aggregation_spec.py",
+    "project_ontology_scope_invalid_spec.py",
     "ontology_imports.py",
     "ontology_snapshot.py",
     "ontology_foundation_pins.py",

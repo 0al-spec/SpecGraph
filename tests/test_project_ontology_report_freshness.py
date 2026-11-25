@@ -14,6 +14,7 @@ from ontology_snapshot import OntologySnapshot  # noqa: E402
 from project_ontology_context import CheckResult, ContextResult  # noqa: E402
 from project_ontology_report_freshness import (  # noqa: E402
     ReportInputBinding,
+    _shape,
     assess_report_freshness,
     bind_report_bundle,
 )
@@ -262,6 +263,70 @@ def test_malformed_saved_scope_claims_are_invalid(captured, mutation):
     assert assess(bundle=malformed).outcome == "invalid"
     with pytest.raises(ValueError):
         bind_report_bundle(malformed, producer_identity="producer-v1")
+
+
+@pytest.mark.parametrize(
+    ("requested", "outcomes", "expected"),
+    [
+        ((), (), "unavailable"),
+        (("domain_vocabulary",), ("analyzed",), "analyzed"),
+        (("domain_vocabulary",), ("unavailable",), "unavailable"),
+        (("domain_vocabulary",), ("invalid",), "invalid"),
+        (("specification_metamodel",), ("unavailable",), "unavailable"),
+        (("specification_metamodel",), ("invalid",), "invalid"),
+        (
+            ("domain_vocabulary", "specification_metamodel"),
+            ("analyzed", "unavailable"),
+            "unavailable",
+        ),
+        (("domain_vocabulary", "specification_metamodel"), ("analyzed", "invalid"), "invalid"),
+        (
+            ("domain_vocabulary", "specification_metamodel"),
+            ("unavailable", "unavailable"),
+            "unavailable",
+        ),
+        (("domain_vocabulary", "specification_metamodel"), ("unavailable", "invalid"), "invalid"),
+        (("domain_vocabulary", "specification_metamodel"), ("invalid", "unavailable"), "invalid"),
+        (("domain_vocabulary", "specification_metamodel"), ("invalid", "invalid"), "invalid"),
+    ],
+)
+def test_saved_scope_aggregation_checks_claims_against_independent_table(
+    captured, requested, outcomes, expected
+):
+    _, _, original, _, _ = captured
+    bundle = copy.deepcopy(original)
+    bundle["requested_scopes"] = list(requested)
+    selected = dict(zip(requested, outcomes, strict=True))
+    for scope, assessment in bundle["assessments"].items():
+        outcome = selected.get(scope, "not_requested")
+        assessment["outcome"] = outcome
+        if outcome != "analyzed":
+            for field in ("project_context", "analysis_profile", "summary"):
+                assessment[field] = None
+    for claim in ("invalid", "unavailable", "analyzed"):
+        bundle["outcome"] = claim
+        if claim != expected:
+            assert _shape(bundle) == (
+                "invalid",
+                "aggregate outcome differs from scope assessments",
+            )
+        elif expected == "analyzed":
+            assert _shape(bundle) is None
+        else:
+            assert _shape(bundle) == (expected, "analyzed scope bundle unavailable")
+
+
+@pytest.mark.parametrize("outcome", ["unknown", "not_requested"])
+def test_requested_scope_cannot_claim_unknown_or_unrequested_outcome(captured, outcome):
+    _, _, original, _, _ = captured
+    bundle = copy.deepcopy(original)
+    bundle["assessments"]["domain_vocabulary"]["outcome"] = outcome
+    assert _shape(bundle) == (
+        "invalid",
+        "scope assessment is malformed"
+        if outcome == "unknown"
+        else "scope assessment differs from requested scopes",
+    )
 
 
 def test_scope_manifest_tamper_is_invalid_before_current_scope_change(captured):
