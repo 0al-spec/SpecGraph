@@ -18,9 +18,11 @@ from project_ontology_check_scopes import (
     DEFAULT_SCOPES,
     SCOPED_ANALYSIS_PROFILE,
     SCOPED_SCHEMA_VERSION,
+    ScopeFacts,
 )
 from project_ontology_context import ContextResult
 from project_ontology_report_freshness_spec import REPORT_INPUTS_COMPATIBLE_SPEC, FreshnessFacts
+from project_ontology_scope_aggregation_spec import scope_check_outcome
 from spec_ontology_context_reports import build_context_reports
 
 _HEX = re.compile(r"[0-9a-f]{64}\Z")
@@ -138,14 +140,8 @@ def _shape(bundle: object) -> tuple[str, str] | None:
             for key in ("project_context", "analysis_profile", "summary")
         ):
             return "invalid", "unanalyzed scope claims analysis identity or summary"
-    outcomes = [assessments[scope]["outcome"] for scope in requested]
-    expected = (
-        "invalid"
-        if "invalid" in outcomes
-        else "unavailable"
-        if not outcomes or "unavailable" in outcomes
-        else "analyzed"
-    )
+    outcomes = tuple(assessments[scope]["outcome"] for scope in requested)
+    expected = scope_check_outcome(ScopeFacts(tuple(requested), outcomes))
     if bundle.get("outcome") != expected:
         return "invalid", "aggregate outcome differs from scope assessments"
     if expected != "analyzed":

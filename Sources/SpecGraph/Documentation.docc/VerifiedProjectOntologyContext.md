@@ -105,6 +105,12 @@ unavailable through `FirstMatch`. The caller supplies the success label,
 `verified` for context capture and `checked` for the Supervisor target check.
 An optional recorder exposes selected and skipped rules.
 
+The separate `project_ontology_scope_aggregation_spec.py` shares a `FirstMatch`
+between report production and saved-report validation. Invalidity wins; a
+nonempty request with every scope analyzed yields `analyzed`; otherwise the
+result is `unavailable`. Saved-report shape and scope validation still precede
+the shared policy. This does not establish semantic approval or freshness.
+
 Use `specgraph-runtime --workspace <project> ontology-ref-diff -- <before> <after>`
 to compare explicit declarations in two workspace-relative YAML files. The
 `specgraph_ontology_ref_diff` report records input digests, retained, added

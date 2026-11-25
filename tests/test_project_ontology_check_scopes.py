@@ -9,7 +9,7 @@ import pytest
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "tools"))
 import spec_ontology_context_reports as reports  # noqa: E402
-from ontology_snapshot import OntologySnapshot  # noqa: E402
+from ontology_snapshot import OntologySnapshot, OntologySnapshotError  # noqa: E402
 from project_ontology_check_scopes import ScopeFacts, normalize_requested_scopes  # noqa: E402
 from project_ontology_context import CheckResult, ContextResult  # noqa: E402
 from project_ontology_scope_outcome_spec import REQUESTED_SCOPES_ANALYZED_SPEC  # noqa: E402
@@ -233,6 +233,56 @@ def test_invalid_domain_precedes_unavailable_requested_meta(workspace):
     assert bundle["assessments"][DOMAIN]["outcome"] == "invalid"
     assert bundle["assessments"][META]["outcome"] == "unavailable"
     assert bundle["assessments"][META]["diagnostics"]
+
+
+@pytest.mark.parametrize(
+    ("domain_outcome", "meta_outcome", "expected"),
+    [
+        ("analyzed", "analyzed", "analyzed"),
+        ("analyzed", "unavailable", "unavailable"),
+        ("analyzed", "invalid", "invalid"),
+        ("unavailable", "analyzed", "unavailable"),
+        ("unavailable", "unavailable", "unavailable"),
+        ("unavailable", "invalid", "invalid"),
+        ("invalid", "analyzed", "invalid"),
+        ("invalid", "unavailable", "invalid"),
+        ("invalid", "invalid", "invalid"),
+    ],
+)
+def test_producer_aggregates_both_scopes_without_losing_findings(
+    workspace, monkeypatch, domain_outcome, meta_outcome, expected
+):
+    import spec_ontology_metamodel_check as meta_check
+
+    meta = {
+        "check_scope": META,
+        "outcome": meta_outcome,
+        "diagnostics": [] if meta_outcome == "analyzed" else ["meta finding"],
+        "project_context": None,
+        "analysis_profile": None,
+        "summary": None,
+    }
+    monkeypatch.setattr(meta_check, "assess_metamodel", lambda *a, **k: meta)
+    if domain_outcome != "analyzed":
+
+        def unavailable_vocabulary(*args, **kwargs):
+            raise OntologySnapshotError("domain finding", outcome=domain_outcome)
+
+        monkeypatch.setattr(reports, "capture_vocabulary", unavailable_vocabulary)
+    bundle = workspace(
+        _structural_document(),
+        requested_scopes=(DOMAIN, META),
+        meta_context=object(),
+    )
+    assert bundle["outcome"] == expected
+    assert bundle["assessments"][DOMAIN]["outcome"] == domain_outcome
+    assert bundle["assessments"][META]["outcome"] == meta_outcome
+    assert bundle["diagnostics"] == (
+        ([] if domain_outcome == "analyzed" else ["domain finding"])
+        + ([] if meta_outcome == "analyzed" else ["meta finding"])
+    )
+    assert bundle["semantic_approval"] == "not_established"
+    assert bundle["full_spec_conformance"] == "not_assessed"
 
 
 @pytest.mark.parametrize(
