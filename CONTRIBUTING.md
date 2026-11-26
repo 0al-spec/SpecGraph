@@ -540,6 +540,11 @@ When SpecGraph adds or changes a viewer-facing surface:
 - Prefer read-only overlays first; mutation flows need a separate proposal.
 - Tell the viewer developer which artifact, endpoint, and UI behavior changed.
 
+When evaluating the ontology Viewer skill, preserve the first rendered graph
+before retries. Grade its package sources, foundation bindings and expected
+definitions against the fixture. Keep input, SHA-256 and renderer diagnostics
+distinct in the execution record.
+
 Common viewer-facing surfaces include:
 
 - `runs/graph_dashboard.json`

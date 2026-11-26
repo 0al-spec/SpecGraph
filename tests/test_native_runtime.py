@@ -150,6 +150,44 @@ def test_advisory_route_uses_selected_workspace(tmp_path, monkeypatch, operation
     assert calls[-1][0][1].endswith("tools/supervisor.py")
 
 
+def test_ontology_viewer_routes_through_the_installed_cli(monkeypatch, tmp_path):
+    root = tmp_path / "runtime"
+    root.mkdir()
+    (root / "runtime.json").write_text(
+        json.dumps(
+            {
+                "artifact_kind": "specgraph_native_runtime",
+                "status": "installed",
+                "schema_version": 1,
+                "source_commit": "a" * 40,
+            }
+        )
+    )
+    workspace = tmp_path / "project"
+    workspace.mkdir()
+    calls = []
+
+    def run_command(command, *, cwd, env, check):
+        calls.append((command, cwd))
+        return subprocess.CompletedProcess(command, 1)
+
+    monkeypatch.setattr(runtime.subprocess, "run", run_command)
+    assert runtime.run(root, workspace, "ontology-viewer", ["package.yaml"]) == 1
+    assert calls == [
+        (
+            [
+                str(root / "venv/bin/python"),
+                "-I",
+                "-m",
+                "specgraph",
+                "ontology-viewer",
+                "package.yaml",
+            ],
+            workspace,
+        )
+    ]
+
+
 @pytest.fixture
 def lint_runtime(tmp_path):
     installation = tmp_path / "runtime"

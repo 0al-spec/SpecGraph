@@ -1,4 +1,4 @@
-"""Installed facade over the unchanged SpecDraft note and preview commands."""
+"""Installed facade for portable SpecGraph commands."""
 
 import argparse
 import json
@@ -15,6 +15,7 @@ def main(argv: list[str] | None = None) -> int:
     commands = parser.add_subparsers(dest="command", required=True)
     commands.add_parser("notes", add_help=False, help="Read or update an explicit sketch")
     commands.add_parser("preview", add_help=False, help="Serve a read-only loopback preview")
+    commands.add_parser("ontology-viewer", add_help=False, help="Resolve and project an ontology")
     skill = commands.add_parser("skill", help="Install the version-matched, self-contained skill")
     skill.add_argument("operation", choices=("install",))
     skill.add_argument("--name", choices=tuple(SKILL_FILES), default=DEFAULT_SKILL)
@@ -30,6 +31,10 @@ def main(argv: list[str] | None = None) -> int:
         from specdraft_preview_cli import main as preview_main
 
         return preview_main(remaining)
+    if args.command == "ontology-viewer":
+        from ontology_viewer import main as viewer_main
+
+        return viewer_main(remaining)
     if remaining:
         parser.error(f"unrecognized arguments: {' '.join(remaining)}")
     try:

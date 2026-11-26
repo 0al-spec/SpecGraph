@@ -61,6 +61,16 @@ A structured compiler rejection at a captured reference field yields `invalid` e
 remain unavailable for this profile. See `docs/project_ontology_context.md`
 for the selection setting and diagnostic contract.
 
+`specgraph ontology-viewer` accepts the root YAML, a trusted `--ontologyviz`
+path, the output directory and repeated `--package-candidate` and
+`--foundation-catalog` options. It selects reachable imports and catalogs by
+exact ID and version, prints the renderer SHA-256, and compares the digest
+when `--viz-sha256` is supplied. The native runtime exposes the same command
+with workspace-relative paths. When evaluating the Viewer skill, preserve the
+first saved graph before retries and check its package sources, foundation
+bindings and expected definitions. Input, SHA-256 and renderer diagnostics
+remain distinct.
+
 The source CLI `project_ontology_context_cli.py` and native runtime
 `ontology-context` route operate on an explicit external workspace. Optional
 project configuration supplies defaults without initialization or mutation.

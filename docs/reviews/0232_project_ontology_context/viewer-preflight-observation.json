@@ -1,0 +1,28 @@
+{
+  "artifact_kind": "ontology_viewer_preflight_defect_observation",
+  "schema_version": 1,
+  "status": "fix_prepared_review_pending",
+  "source_pr": "https://github.com/0al-spec/SpecGraph/pull/933",
+  "observed_head": "e819c508db65e39aac99da352ce464829fd6ffe3",
+  "affected_contract_refs": [
+    "specs/nodes/SG-SPEC-0072.yaml",
+    "docs/proposals/0232_verified_project_ontology_context.intent.yaml"
+  ],
+  "fixture": {
+    "repository": "https://github.com/0al-spec/Ontology",
+    "revision": "4c5027b7fe075e80d141e77f576eaa58ca0d3679",
+    "root": "Examples/typescript-imported-protocol/model.yaml"
+  },
+  "observation": {
+    "actual": "On one trial the first render omitted the selected imports. On another trial ontologyviz --help succeeded, shasum failed to load Perl in the restricted environment, and the agent attributed the failure to ontologyviz without attempting a render.",
+    "expected": "Construct the complete renderer invocation from matching imports before rendering; report a renderer SHA-256 read or comparison failure by name."
+  },
+  "implementation_refs": [
+    "tools/ontology_viewer.py",
+    ".codex/skills/specgraph-project-ontology/SKILL.md"
+  ],
+  "regression_refs": [
+    "tests/test_ontology_viewer.py::test_first_call_includes_entire_dependency_chain",
+    "tests/test_ontology_viewer.py::test_preflight_stops_before_renderer"
+  ]
+}
